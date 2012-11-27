@@ -19,7 +19,7 @@ class TestRDocRIPaths < RDoc::TestCase
     ]
 
     specs.each do |spec|
-      spec.loaded_from = File.join @tempdir, spec.spec_file
+      spec.loaded_from = spec.spec_file
 
       open spec.spec_file, 'w' do |file|
         file.write spec.to_ruby_for_cache

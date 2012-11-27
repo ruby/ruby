@@ -1,3 +1,8 @@
+Tue Nov 27 16:24:45 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rdoc/test_rdoc_ri_paths.rb:  Fixed duplicate path bug which
+	  caused windows failures.
+
 Tue Nov 27 16:06:00 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rdoc/test_rdoc_generator_darkfish.rb:  Updated tests for windows
