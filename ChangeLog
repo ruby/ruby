@@ -1,3 +1,7 @@
+Tue Nov 27 13:59:29 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* NEWS: add improvements of the garbage collector.
+
 Tue Nov 27 13:27:46 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*:  Updated to RDoc 4.0 (pre-release)

@@ -50,6 +50,12 @@ with all sufficient information, see the ChangeLog file.
       * File.fnmatch? now expands braces in the pattern if
         File::FNM_EXTGLOB option is given.
 
+  * GC
+    * improvements:
+      * introduced the bitmap marking which suppresses to copy a memory page
+        with Copy-on-Write.
+      * introduced the non-recurcive marking which avoids unexpected stack overflow.
+
   * GC::Profiler
     * added method:
       * added GC::Profiler.raw_data which returns raw profile data for GC.
