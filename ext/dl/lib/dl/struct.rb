@@ -76,7 +76,7 @@ module DL
   end
 
   # A C struct wrapper
-  class CStructEntity < CPtr
+  class CStructEntity < (DL.fiddle? ? Fiddle::Pointer : CPtr)
     include PackInfo
     include ValueUtil
 

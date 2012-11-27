@@ -25,7 +25,7 @@ module DL
       func = CFunc.new(addr, TYPE_VOIDP, 'test')
       f = Function.new(func, [TYPE_VOIDP])
       ptr = CPtr['blah']
-      assert_equal ptr, f.call(ptr)
+      assert_equal ptr.to_i, f.call(ptr).to_i
     end
 
     def test_callback_return_arbitrary
