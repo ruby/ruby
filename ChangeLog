@@ -99,7 +99,7 @@ Tue Nov 27 10:31:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Tue Nov 27 09:29:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread.c (thread_join): raises ThreadError if target therad
+	* thread.c (thread_join): raises ThreadError if target thread
 	  is a main thread.
 	* test/ruby/test_thread.rb (test_thread_join_main_thread):
 	  test for the above.
@@ -126,7 +126,7 @@ Tue Nov 27 09:58:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 27 09:17:59 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* NEWS: add TracePont.
+	* NEWS: add TracePoint.
 
 Tue Nov 27 08:16:03 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -152,7 +152,7 @@ Tue Nov 27 07:58:03 2012  Koichi Sasada  <ko1@atdot.net>
 	  * `line' represents line calculated from cfp.
 	  * `file' represents line calculated from cfp.
 
-	* vm_trace.c: fix to use above data stractures.
+	* vm_trace.c: fix to use above data structures.
 	  No need to calculate klass and id, line and file
 	  pairs for each trace points.
 
@@ -171,7 +171,7 @@ Tue Nov 27 00:13:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_trylock, rb_mutex_unlock, mutex_sleep):
 	  raises ThreadError if called from trap handler as Thread#join.
-	* NEWS: news fot the above.
+	* NEWS: news for the above.
 
 Mon Nov 26 23:55:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
