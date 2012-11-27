@@ -20,3 +20,8 @@ ext
 
 # rdoc files
 doc/*.rdoc
+
+README
+README.ja
+README.EXT
+README.EXT.ja
