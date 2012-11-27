@@ -159,6 +159,9 @@ ruby_cleanup(volatile int ex)
     rb_thread_t *th = GET_THREAD();
     int nerr;
 
+    /* protect from thread.raise */
+    th->status = THREAD_KILLED;
+
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     PUSH_TAG();

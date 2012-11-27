@@ -889,4 +889,16 @@ class TestThreadGroup < Test::Unit::TestCase
       }.join
     end
   end
+
+  def test_main_thread_status_at_exit
+    assert_in_out_err([], <<-INPUT, %w(false), [])
+Thread.new(Thread.current) {|mth|
+  begin
+    sleep 0.1
+  ensure
+    p mth.alive?
+  end
+}
+    INPUT
+  end
 end

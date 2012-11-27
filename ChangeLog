@@ -1,3 +1,10 @@
+Tue Nov 27 10:55:09 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* eval.c (ruby_cleanup): set thread status to THREAD_KILLED
+	  for preventing thr.raise.
+	* test/ruby/test_thread.rb (test_main_thread_status_at_exit):
+	  test for the above.
+
 Tue Nov 27 10:31:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): suppress a warning.
