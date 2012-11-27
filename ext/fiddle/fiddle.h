@@ -12,6 +12,30 @@
 #include <sys/mman.h>
 #endif
 
+#if defined(HAVE_DLFCN_H)
+# include <dlfcn.h>
+# /* some stranger systems may not define all of these */
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+#else
+# if defined(_WIN32)
+#   include <windows.h>
+#   define dlopen(name,flag) ((void*)LoadLibrary(name))
+#   define dlerror() strerror(rb_w32_map_errno(GetLastError()))
+#   define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
+#   define RTLD_LAZY -1
+#   define RTLD_NOW  -1
+#   define RTLD_GLOBAL -1
+# endif
+#endif
+
 #ifdef USE_HEADER_HACKS
 #include <ffi/ffi.h>
 #else
@@ -98,6 +122,9 @@
 #define TYPE_DOUBLE 8
 
 extern VALUE mFiddle;
+extern VALUE rb_eFiddleError;
+
+VALUE rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type);
 
 #endif
 /* vim: set noet sws=4 sw=4: */
