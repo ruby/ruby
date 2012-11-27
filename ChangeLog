@@ -1,3 +1,8 @@
+Wed Nov 28 08:56:00 2012  Zachary Scott <zachary@zacharyscott.net>
+
+	* doc/globals.rdoc: Add documentation file for magic globals
+	[ruby-core:29048] [Bug #3022]
+
 Wed Nov 28 08:55:00 2012  Zachary Scott <zachary@zacharyscott.net>
 
 	* .document: Add README's to be included with docs
