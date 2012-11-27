@@ -54,7 +54,7 @@ with all sufficient information, see the ChangeLog file.
     * improvements:
       * introduced the bitmap marking which suppresses to copy a memory page
         with Copy-on-Write.
-      * introduced the non-recurcive marking which avoids unexpected stack overflow.
+      * introduced the non-recursive marking which avoids unexpected stack overflow.
 
   * GC::Profiler
     * added method:
@@ -114,8 +114,8 @@ with all sufficient information, see the ChangeLog file.
   * Mutex
     * incompatible changes:
       * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize
-        and Mutex#sleep no longer allows to be used from trap handler.
-	Now it raises ThreadError.
+        and Mutex#sleep are no longer allowed to be used from trap handler
+        and raise a ThreadError in such case.
 
   * NilClass
     * added method:
@@ -123,7 +123,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Process
     * added method:
-      * added getsid for getting sessin id (unix only).
+      * added getsid for getting session id (unix only).
 
   * Range
     * added method:
@@ -164,9 +164,10 @@ with all sufficient information, see the ChangeLog file.
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
     * incompatible changes:
-      * Thread#join no longer allows to be used from trap handler. Now it raises
-        ThreadError.
-      * Thread#join raises ThreadError if target therad is a current or main thread. 
+      * Thread#join is no longer allowed to be used from trap handler and
+        raises a ThreadError in such case.
+      * Thread#join now raises a ThreadError if target thread is the current
+        or main thread.
 
   * Time
     * change return value:
