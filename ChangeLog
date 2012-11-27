@@ -1,3 +1,9 @@
+Tue Nov 27 14:56:45 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/rubygems_hook.rb:  Updated for (upcoming) RubyGems 2
+	  import.
+	* test/rdoc/test_rdoc_rubygems_hook.rb:  ditto
+
 Tue Nov 27 13:59:29 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* NEWS: add improvements of the garbage collector.

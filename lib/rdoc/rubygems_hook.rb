@@ -109,8 +109,10 @@ class RDoc::RubygemsHook
     options.op_dir = destination
     options.finish
 
+    generator = options.generator.new @rdoc.store, options
+
     @rdoc.options = options
-    @rdoc.generator = options.generator.new options
+    @rdoc.generator = generator
 
     say "Installing #{generator} documentation for #{@spec.full_name}"
 
@@ -134,8 +136,6 @@ class RDoc::RubygemsHook
 
     setup
 
-    ::RDoc::RDoc.reset
-
     options = ::RDoc::Options.new
     options.default_title = "#{@spec.full_name} Documentation"
     options.files = []
@@ -157,6 +157,14 @@ class RDoc::RubygemsHook
 
     @rdoc = new_rdoc
     @rdoc.options = options
+
+    store = RDoc::Store.new
+    store.encoding = options.encoding if options.respond_to? :encoding
+    store.dry_run  = options.dry_run
+    store.main     = options.main_page
+    store.title    = options.title
+
+    @rdoc.store = RDoc::Store.new
 
     Dir.chdir @spec.full_gem_path do
       @rdoc.parse_files options.files
