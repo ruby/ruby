@@ -201,6 +201,7 @@ def extmake(target)
             begin
               load $0 = conf
             ensure
+              Logging::log_close
               $stderr.reopen(stderr)
               $stdout.reopen(stdout)
               stdout.close

@@ -1,3 +1,8 @@
+Tue Nov 27 09:59:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): close mkmf.log for each libraries so that
+	  failure messages are not mixed.
+
 Tue Nov 27 09:58:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/*/extconf.rb, ext/openssl/extconf.rb: get git rid of
