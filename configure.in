@@ -241,10 +241,9 @@ AC_ARG_WITH(arch,
 
 AC_DEFUN([RUBY_DEFAULT_ARCH], [
 AC_MSG_CHECKING([arch option])
-AS_CASE([$1-$target_os],
-	[*64-*],        [ARCH_FLAG=-m64],
-	[[i[3-6]86-linux]], [ARCH_FLAG=-march=$1],
-	[[i[3-6]86-*]], [ARCH_FLAG=-m32],
+AS_CASE([$1],
+	[*64],        [ARCH_FLAG=-m64],
+	[[i[3-6]86]], [ARCH_FLAG=-m32],
 	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
 	)
 AC_MSG_RESULT([$ARCH_FLAG])
@@ -1533,6 +1532,17 @@ AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
+
+    AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
+       AC_TRY_LINK([unsigned long atomic_var;],
+                   [
+                       __sync_val_compare_and_swap(&atomic_var, 0, 1);
+                   ],
+                   [rb_cv_gcc_compiler_cas=yes],
+                   [rb_cv_gcc_compiler_cas=no])])
+    if test "$rb_cv_gcc_compiler_cas" = no; then
+       ARCH_FLAG="-march=i486"
+    fi
 
 
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
