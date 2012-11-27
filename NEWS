@@ -166,6 +166,10 @@ with all sufficient information, see the ChangeLog file.
       * Time#to_s returned encoding defaults to US-ASCII but automatically
         transcodes to Encoding.default_internal if it is set.
 
+  * TracePoint
+    * new class. This class is replacement of set_trace_func.
+      Easy to use and efficient implementation.
+
   * toplevel
     * added method:
       * added main.define_method which defines a global function.

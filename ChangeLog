@@ -1,3 +1,7 @@
+Tue Nov 27 09:17:59 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add TracePont.
+
 Tue Nov 27 08:16:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: rename TracePoint#file and TracePoint#line
