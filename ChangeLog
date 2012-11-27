@@ -5,7 +5,7 @@ Wed Nov 28 03:03:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Wed Nov 28 02:55:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (ARCH_FLAG): __sync_val_compare_and_swap_4 needs
-	  -march=i486 on at least linux gcc 4.1.
+	  -march=$target_cpu on at least linux gcc 4.1.
 
 Tue Nov 27 22:03:09 2012  Akinori MUSHA  <knu@iDaemons.org>
 
