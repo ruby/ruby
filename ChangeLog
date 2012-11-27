@@ -1,3 +1,12 @@
+Tue Nov 27 18:51:06 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ruby_atomic.h (ATOMIC_CAS): added for Solaris and other platforms.
+	* ruby_atomic.h, signal.c (NEED_RUBY_ATOMIC_OPS): renamed from
+	  NEED_RUBY_ATOMIC_EXCHANGE.
+	* signal.c (ruby_atomic_compare_and_swap): naive, non-atomic
+	  compare-and-swap implementation only used for platforms without
+	  valid support for atomic operations.
+
 Tue Nov 27 17:43:46 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/*:  Added --root option for building documentation outside

@@ -73,6 +73,7 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_DEC(var) atomic_dec_uint(&(var))
 # define ATOMIC_OR(var, val) atomic_or_uint(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
+# define ATOMIC_CAS(var, oldval, newval) atomic_cas_uint(&(var), (oldval), (newval))
 
 # if SIZEOF_SIZE_T == SIZEOF_LONG
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_long(&(var), (val))
@@ -90,14 +91,18 @@ typedef unsigned int rb_atomic_t;
 
 #else
 typedef int rb_atomic_t;
-#define NEED_RUBY_ATOMIC_EXCHANGE
+#define NEED_RUBY_ATOMIC_OPS
 extern rb_atomic_t ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val);
+extern rb_atomic_t ruby_atomic_compare_and_swap(rb_atomic_t *ptr,
+						rb_atomic_t cmp,
+						rb_atomic_t newval);
 
 # define ATOMIC_SET(var, val) (void)((var) = (val))
 # define ATOMIC_INC(var) ((var)++)
 # define ATOMIC_DEC(var) ((var)--)
 # define ATOMIC_OR(var, val) ((var) |= (val))
 # define ATOMIC_EXCHANGE(var, val) ruby_atomic_exchange(&(var), (val))
+# define ATOMIC_CAS(var, oldval, newval) ruby_atomic_compare_and_swap(&(var), (oldval), (newval))
 
 # define ATOMIC_SIZE_ADD(var, val) (void)((var) += (val))
 # define ATOMIC_SIZE_SUB(var, val) (void)((var) -= (val))

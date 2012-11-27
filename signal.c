@@ -23,12 +23,23 @@
 # include "nacl/signal.h"
 #endif
 
-#ifdef NEED_RUBY_ATOMIC_EXCHANGE
+#ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
 ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
 {
     rb_atomic_t old = *ptr;
     *ptr = val;
+    return old;
+}
+
+rb_atomic_t
+ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
+			     rb_atomic_t newval)
+{
+    rb_atomic_t old = *ptr;
+    if (old == cmp) {
+      *ptr = newval;
+    }
     return old;
 }
 #endif
