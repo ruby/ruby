@@ -1,3 +1,7 @@
+Wed Nov 28 03:03:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (opt-dir): don't use non portable flag -E of sed.
+
 Wed Nov 28 02:55:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (ARCH_FLAG): __sync_val_compare_and_swap_4 needs
