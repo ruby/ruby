@@ -476,13 +476,23 @@ vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *ep, VALUE ary)
 }
 
 static void vm_rewrite_ep_in_errinfo(rb_thread_t *th);
+static VALUE vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block);
 
 VALUE
 rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
 {
     VALUE envval;
+    VALUE *lep = VM_CF_LEP(cfp);
+    rb_block_t *blockptr = VM_EP_BLOCK_PTR(lep);
 
-    envval = vm_make_env_each(th, cfp, cfp->ep, VM_CF_LEP(cfp));
+    if (blockptr) {
+	VALUE blockprocval = vm_make_proc_from_block(th, blockptr);
+	rb_proc_t *p;
+	GetProcPtr(blockprocval, p);
+	lep[0] = VM_ENVVAL_BLOCK_PTR(&p->block);
+    }
+
+    envval = vm_make_env_each(th, cfp, cfp->ep, lep);
     vm_rewrite_ep_in_errinfo(th);
 
     if (PROCDEBUG) {
@@ -545,19 +555,9 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     VALUE procval, envval, blockprocval = 0;
     rb_proc_t *proc;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
-    rb_block_t *block2;
 
     if (block->proc) {
 	rb_bug("rb_vm_make_proc: Proc value is already created.");
-    }
-
-    if ((block2 = VM_CF_BLOCK_PTR(cfp)) != 0) {
-	rb_proc_t *p;
-
-	blockprocval = vm_make_proc_from_block(th, block2);
-
-	GetProcPtr(blockprocval, p);
-	*VM_CF_LEP(cfp) = VM_ENVVAL_BLOCK_PTR(&p->block);
     }
 
     envval = rb_vm_make_env_object(th, cfp);

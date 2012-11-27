@@ -1,3 +1,13 @@
+Tue Nov 27 19:56:43 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_make_env_object): make Proc object if Env is possible
+	  to point block.
+	  [ruby-core:41038] [ruby-trunk - Bug #5634]
+
+	* vm.c (rb_vm_make_proc): No need to make Proc object here.
+
+	* bootstraptest/test_proc.rb: add tests.
+
 Tue Nov 27 18:51:06 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ruby_atomic.h (ATOMIC_CAS): added for Solaris and other platforms.
