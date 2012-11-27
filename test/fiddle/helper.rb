@@ -1,4 +1,5 @@
 require 'minitest/autorun'
+require 'dl'
 require 'fiddle'
 
 # FIXME: this is stolen from DL and needs to be refactored.
@@ -103,8 +104,8 @@ Fiddle::LIBM_SO = libm_so
 module Fiddle
   class TestCase < MiniTest::Unit::TestCase
     def setup
-      @libc = Fiddle.dlopen(LIBC_SO)
-      @libm = Fiddle.dlopen(LIBM_SO)
+      @libc = DL.dlopen(LIBC_SO)
+      @libm = DL.dlopen(LIBM_SO)
     end
   end
 end

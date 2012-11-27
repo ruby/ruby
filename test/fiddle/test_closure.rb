@@ -57,8 +57,8 @@ module Fiddle
     end
 
     %w[INT SHORT CHAR LONG LONG_LONG].each do |name|
-      type = Fiddle.const_get("TYPE_#{name}") rescue next
-      size = Fiddle.const_get("SIZEOF_#{name}")
+      type = DL.const_get("TYPE_#{name}") rescue next
+      size = DL.const_get("SIZEOF_#{name}")
       [[type, size-1, name], [-type, size, "unsigned_"+name]].each do |t, s, n|
         define_method("test_conversion_#{n.downcase}") do
           arg = nil

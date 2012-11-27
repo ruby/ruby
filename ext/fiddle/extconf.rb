@@ -19,20 +19,6 @@ end
 
 have_header 'sys/mman.h'
 
-if have_header "dlfcn.h"
-  have_library "dl"
-
-  %w{ dlopen dlclose dlsym }.each do |func|
-    abort "missing function #{func}" unless have_func(func)
-  end
-
-  have_func "dlerror"
-elsif have_header "windows.h"
-  %w{ LoadLibrary FreeLibrary GetProcAddress }.each do |func|
-    abort "missing function #{func}" unless have_func(func)
-  end
-end
-
 config = File.read(RbConfig.expand(File.join($arch_hdrdir, "ruby/config.h")))
 types = {"SIZE_T"=>"SSIZE_T", "PTRDIFF_T"=>nil, "INTPTR_T"=>nil}
 types.each do |type, signed|

@@ -46,30 +46,6 @@ Tue Nov 27 09:24:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  test for the above.
 	* NEWS: news for the above.
 
-Tue Nov 27 10:37:44 2012  Aaron Patterson <aaron@tenderlovemaking.com>
-
-	* ext/fiddle/handle.c: Make Fiddle independent of DL, copy DL::Handle
-	  to Fiddle::Handle.
-	* ext/fiddle/pointer.c: Make Fiddle independent of DL, copy
-	  DL::Pointer to Fiddle::Pointer.
-	* test/fiddle/test_func.rb: relevent tests
-	* test/fiddle/test_handle.rb: ditto
-	* test/fiddle/test_pointer.rb: ditto
-	* ext/dl/lib/dl/struct.rb: use Fiddle::Pointer if available
-	* ext/fiddle/extconf.rb: check for dlfcn.h
-	* ext/fiddle/fiddle.c: add constants for sizeof() things
-	* ext/fiddle/fiddle.h: include dlfcn.h
-	* ext/fiddle/function.c: expose a C function for creating new
-	  Fiddle::Function objects.
-	* ext/fiddle/lib/fiddle.rb: include constants for dl backwards compat
-	* ext/fiddle/lib/fiddle/function.rb: read the pointer from the
-	  function for dl backwards compat.
-	* test/dl/test_callback.rb: check the addresses of the pointers rather
-	  than their types.
-	* test/fiddle/helper.rb: remove dependency on dl
-	* test/fiddle/test_closure.rb: ditto
-	* test/fiddle/test_fiddle.rb: ditto
-
 Tue Nov 27 09:59:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): close mkmf.log for each libraries so that

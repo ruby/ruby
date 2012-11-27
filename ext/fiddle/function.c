@@ -38,18 +38,6 @@ allocate(VALUE klass)
     return TypedData_Make_Struct(klass, ffi_cif, &function_data_type, cif);
 }
 
-VALUE
-rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
-{
-    VALUE argv[3];
-
-    argv[0] = address;
-    argv[1] = arg_types;
-    argv[2] = ret_type;
-
-    return rb_class_new_instance(3, argv, cFiddleFunction);
-}
-
 static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
