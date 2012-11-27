@@ -739,6 +739,9 @@ thread_join(rb_thread_t *target_th, double delay)
     if (th == target_th) {
 	rb_raise(rb_eThreadError, "Target thread must not be current thread");
     }
+    if (GET_VM()->main_thread == target_th) {
+	rb_raise(rb_eThreadError, "Target thread must not be main thread");
+    }
 
     arg.target = target_th;
     arg.waiting = th;

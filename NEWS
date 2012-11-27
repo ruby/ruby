@@ -160,7 +160,7 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * Thread#join no longer allows to be used from trap handler. Now it raises
         ThreadError.
-      * Thread#join raises ThreadError if target therad is a current thread.
+      * Thread#join raises ThreadError if target therad is a current or main thread. 
 
   * Time
     * change return value:

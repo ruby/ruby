@@ -1,3 +1,11 @@
+Tue Nov 27 09:29:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_join): raises ThreadError if target therad
+	  is a main thread.
+	* test/ruby/test_thread.rb (test_thread_join_main_thread):
+	  test for the above.
+	* NEWS: news for the above.
+
 Tue Nov 27 09:24:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_join): raises ThreadError if target thread

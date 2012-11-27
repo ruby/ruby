@@ -881,4 +881,12 @@ class TestThreadGroup < Test::Unit::TestCase
       Thread.current.join
     end
   end
+
+  def test_thread_join_main_thread
+    assert_raises(ThreadError) do
+      Thread.new(Thread.current) {|t|
+        t.join
+      }.join
+    end
+  end
 end
