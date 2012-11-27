@@ -1,3 +1,7 @@
+Tue Nov 27 10:31:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): suppress a warning.
+
 Tue Nov 27 09:29:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_join): raises ThreadError if target therad
