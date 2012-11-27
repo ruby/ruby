@@ -1,3 +1,14 @@
+Tue Nov 27 21:29:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (bigdivrem): optimize the way to retry calculation of
+	  bigdivrem so that the calculation is started from the point where
+	  the last interruption was occurred.
+
+	* bignum.c (bigdivrem1): ditto.
+
+	* test/ruby/test_bignum.rb: add a test case for rb_bigdivrem in the
+	  case that an interruption is occurred during bigdivrem1 is running.
+
 Tue Nov 27 19:56:43 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_make_env_object): make Proc object if Env is possible

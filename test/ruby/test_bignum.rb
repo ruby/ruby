@@ -581,6 +581,36 @@ class TestBignum < Test::Unit::TestCase
     assert_interrupt {(65536 ** 65536).to_s}
   end
 
+  def test_interrupt_during_bigdivrem
+    return unless Process.respond_to?(:kill)
+    begin
+      trace = []
+      oldtrap = Signal.trap(:INT) {|sig| trace << :int }
+      a = 456 ** 100
+      b = 123 ** 100
+      c = nil
+      100.times do |n|
+        a **= 3
+        b **= 3
+        trace.clear
+        th = Thread.new do
+          sleep 0.1; Process.kill :INT, $$
+          sleep 0.1; Process.kill :INT, $$
+        end
+        c = a / b
+        trace << :end
+        th.join
+        if trace == [:int, :int, :end]
+          assert_equal(a / b, c)
+          return
+        end
+      end
+      skip "cannot create suitable test case"
+    ensure
+      Signal.trap(:INT, oldtrap) if oldtrap
+    end
+  end
+
   def test_too_big_to_s
     if (big = 2**31-1).is_a?(Fixnum)
       return

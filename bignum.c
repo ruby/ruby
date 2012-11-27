@@ -2655,7 +2655,7 @@ rb_big_mul(VALUE x, VALUE y)
 }
 
 struct big_div_struct {
-    long nx, ny;
+    long nx, ny, j, nyzero;
     BDIGIT *yds, *zds;
     volatile VALUE stop;
 };
@@ -2664,21 +2664,23 @@ static void *
 bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
-    long nx = bds->nx, ny = bds->ny;
-    long i, j, nyzero;
+    long ny = bds->ny;
+    long i, j;
     BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL t2;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
-    j = nx==ny?nx+1:nx;
-    for (nyzero = 0; !yds[nyzero]; nyzero++);
+    j = bds->j;
     do {
-	if (bds->stop) return 0;
+	if (bds->stop) {
+	    bds->j = j;
+	    return 0;
+        }
 	if (zds[j] ==  yds[ny-1]) q = (BDIGIT)BIGRAD-1;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
-           i = nyzero; num = 0; t2 = 0;
+           i = bds->nyzero; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
 		BDIGIT_DBL ee;
 		t2 += (BDIGIT_DBL)yds[i] * q;
@@ -2713,21 +2715,15 @@ rb_big_stop(void *ptr)
 }
 
 static VALUE
-bigdivrem(VALUE x, VALUE y_, volatile VALUE *divp, volatile VALUE *modp)
+bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
-    VALUE y;
     struct big_div_struct bds;
-    long nx, ny;
+    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y);
     long i, j;
     VALUE z, yy, zz;
     BDIGIT *xds, *yds, *zds, *tds;
     BDIGIT_DBL t2;
     BDIGIT dd, q;
-
-  retry:
-    y = y_;
-    nx = RBIGNUM_LEN(x);
-    ny = RBIGNUM_LEN(y);
 
     if (BIGZEROP(y)) rb_num_zerodiv();
     xds = BDIGITS(x);
@@ -2799,7 +2795,11 @@ bigdivrem(VALUE x, VALUE y_, volatile VALUE *divp, volatile VALUE *modp)
     bds.zds = zds;
     bds.yds = yds;
     bds.stop = Qfalse;
+    bds.j = nx==ny?nx+1:nx;
+    for (bds.nyzero = 0; !yds[bds.nyzero]; bds.nyzero++);
     if (nx > 10000 || ny > 10000) {
+      retry:
+	bds.stop = Qfalse;
 	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
 
 	if (bds.stop == Qtrue) {
