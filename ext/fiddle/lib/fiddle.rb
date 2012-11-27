@@ -27,6 +27,12 @@ module Fiddle
     Thread.current[:__FIDDLE_LAST_ERROR__] = error
   end
 
+  # call-seq: dlopen(library) => Fiddle::Handle
+  #
+  # Creates a new handler that opens +library+, and returns an instance of
+  # Fiddle::Handle.
+  #
+  # See Fiddle::Handle.new for more.
   def dlopen library
     Fiddle::Handle.new library
   end

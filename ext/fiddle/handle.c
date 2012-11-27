@@ -56,8 +56,9 @@ static const rb_data_type_t fiddle_handle_data_type = {
 /*
  * call-seq: close
  *
- * Close this Fiddle::Handle.  Calling close more than once will raise a
- * Fiddle::DLError exception.
+ * Close this handle.
+ *
+ * Calling close more than once will raise a Fiddle::DLError exception.
  */
 static VALUE
 rb_fiddle_handle_close(VALUE self)
@@ -112,7 +113,7 @@ predefined_fiddle_handle(void *handle)
 
 /*
  * call-seq:
- *    initialize(lib = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
+ *    new(lib = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
  *
  * Create a new handler that opens library named +lib+ with +flags+.  If no
  * library is specified, RTLD_DEFAULT is used.
@@ -194,7 +195,7 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 /*
  * call-seq: enable_close
  *
- * Enable a call to dlclose() when this Fiddle::Handle is garbage collected.
+ * Enable a call to dlclose() when this handle is garbage collected.
  */
 static VALUE
 rb_fiddle_handle_enable_close(VALUE self)
@@ -209,7 +210,7 @@ rb_fiddle_handle_enable_close(VALUE self)
 /*
  * call-seq: disable_close
  *
- * Disable a call to dlclose() when this Fiddle::Handle is garbage collected.
+ * Disable a call to dlclose() when this handle is garbage collected.
  */
 static VALUE
 rb_fiddle_handle_disable_close(VALUE self)
@@ -224,8 +225,9 @@ rb_fiddle_handle_disable_close(VALUE self)
 /*
  * call-seq: close_enabled?
  *
- * Returns +true+ if dlclose() will be called when this Fiddle::Handle is
- * garbage collected.
+ * Returns +true+ if dlclose() will be called when this handle is garbage collected.
+ *
+ * See man(3) dlclose() for more info.
  */
 static VALUE
 rb_fiddle_handle_close_enabled_p(VALUE self)
@@ -256,7 +258,6 @@ static VALUE fiddle_handle_sym(void *handle, const char *symbol);
 
 /*
  * Document-method: sym
- * Document-method: []
  *
  * call-seq: sym(name)
  *
@@ -284,12 +285,13 @@ rb_fiddle_handle_sym(VALUE self, VALUE sym)
 
 /*
  * Document-method: sym
- * Document-method: []
  *
  * call-seq: sym(name)
  *
  * Get the address as an Integer for the function named +name+.  The function
- * is searched via dlsym on RTLD_NEXT.  See man(3) dlsym() for more info.
+ * is searched via dlsym on RTLD_NEXT.
+ *
+ * See man(3) dlsym() for more info.
  */
 static VALUE
 rb_fiddle_handle_s_sym(VALUE self, VALUE sym)
@@ -386,6 +388,8 @@ Init_fiddle_handle(void)
      *   @handle = Fiddle::Handle.new(libc_so, Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
      *   => #<Fiddle::Handle:0x00000000d69ef8>
      *
+     * See RTLD_LAZY and RTLD_GLOBAL
+     *
      * === Addresses to symbols
      *
      *   strcpy_addr = @handle['strcpy']
@@ -447,8 +451,8 @@ Init_fiddle_handle(void)
      *
      * If this value is specified or the environment variable LD_BIND_NOW is
      * set to a nonempty string, all undefined symbols in the library are
-     * resolved before dlopen() returns.  If this cannot be done an error is
-     * returned.
+     * resolved before Fiddle.dlopen returns.  If this cannot be done an error
+     * is returned.
      */
     rb_define_const(rb_cHandle, "RTLD_NOW",    INT2NUM(RTLD_NOW));
 

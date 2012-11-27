@@ -1,3 +1,12 @@
+Wed Nov 28 08:25:00 2012  Zachary Scott <zachary@zacharyscott.net>
+
+	* ext/fiddle/closure.c: Documentation for Fiddle
+	* ext/fiddle/pointer.c: ditto
+	* ext/fiddle/function.c: ditto
+	* ext/fiddle/lib/fiddle.rb: ditto
+	* ext/fiddle/fiddle.c: ditto
+	* ext/fiddle/handle.c: ditto
+
 Wed Nov 28 04:53:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/handle.c: Make Fiddle independent of DL, copy DL::Handle

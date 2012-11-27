@@ -271,11 +271,11 @@ Init_fiddle_closure()
      *       10
      *     end
      *   }.new(Fiddle::TYPE_INT, [])
-     *   => #<#<Class:0x0000000150d308>:0x0000000150d240>
+     *	    #=> #<#<Class:0x0000000150d308>:0x0000000150d240>
      *   func = Fiddle::Function.new(closure, [], Fiddle::TYPE_INT)
-     *   => #<Fiddle::Function:0x00000001516e58>
+     *	    #=> #<Fiddle::Function:0x00000001516e58>
      *   func.call
-     *   => 10
+     *	    #=> 10
      */
     cFiddleClosure = rb_define_class_under(mFiddle, "Closure", rb_cObject);
 

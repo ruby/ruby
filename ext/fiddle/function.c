@@ -161,25 +161,28 @@ Init_fiddle_function(void)
      *
      * === 'strcpy'
      *
-     *   @libc = DL.dlopen "/lib/libc.so.6"
-     *   => #<DL::Handle:0x00000001d7a8d8>
-     *   f = Fiddle::Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-     *   => #<Fiddle::Function:0x00000001d8ee00>
+     *   @libc = Fiddle.dlopen "/lib/libc.so.6"
+     *	    #=> #<Fiddle::Handle:0x00000001d7a8d8>
+     *   f = Fiddle::Function.new(
+     *     @libc['strcpy'],
+     *     [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VOIDP],
+     *     Fiddle::TYPE_VOIDP)
+     *	    #=> #<Fiddle::Function:0x00000001d8ee00>
      *   buff = "000"
-     *   => "000"
+     *	    #=> "000"
      *   str = f.call(buff, "123")
-     *   => #<DL::CPtr:0x00000001d0c380 ptr=0x000000018a21b8 size=0 free=0x00000000000000>
+     *	    #=> #<Fiddle::Pointer:0x00000001d0c380 ptr=0x000000018a21b8 size=0 free=0x00000000000000>
      *   str.to_s
      *   => "123"
      *
      * === ABI check
      *
      *   @libc = DL.dlopen "/lib/libc.so.6"
-     *   => #<DL::Handle:0x00000001d7a8d8>
+     *	    #=> #<Fiddle::Handle:0x00000001d7a8d8>
      *   f = Fiddle::Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-     *   => #<Fiddle::Function:0x00000001d8ee00>
+     *	    #=> #<Fiddle::Function:0x00000001d8ee00>
      *   f.abi == Fiddle::Function::DEFAULT
-     *   => true
+     *	    #=> true
      */
     cFiddleFunction = rb_define_class_under(mFiddle, "Function", rb_cObject);
 
@@ -218,7 +221,7 @@ Init_fiddle_function(void)
      * call-seq: new(ptr, *args, ret_type, abi = DEFAULT)
      *
      * Constructs a Function object.
-     * * +ptr+ is a referenced function, of a DL::Handle
+     * * +ptr+ is a referenced function, of a Fiddle::Handle
      * * +args+ is an Array of arguments, passed to the +ptr+ function
      * * +ret_type+ is the return type of the function
      * * +abi+ is the ABI of the function

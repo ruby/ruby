@@ -140,11 +140,12 @@ rb_fiddle_ptr_s_allocate(VALUE klass)
 
 /*
  * call-seq:
- *    Fiddle::Pointer.new(address)                   => fiddle_cptr
- *    Fiddle::Pointer.new(address, size)             => fiddle_cptr
- *    Fiddle::Pointer.new(address, size, freefunc)   => fiddle_cptr
+ *    Fiddle::Pointer.new(address)      => fiddle_cptr
+ *    new(address, size)		=> fiddle_cptr
+ *    new(address, size, freefunc)	=> fiddle_cptr
  *
  * Create a new pointer to +address+ with an optional +size+ and +freefunc+.
+ *
  * +freefunc+ will be called when the instance is garbage collected.
  */
 static VALUE
@@ -191,6 +192,7 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
  *
  * Allocate +size+ bytes of memory and associate it with an optional
  * +freefunc+ that will be called when the pointer is garbage collected.
+ *
  * +freefunc+ must be an address pointing to a function or an instance of
  * Fiddle::Function
  */
@@ -223,7 +225,7 @@ rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 /*
  * call-seq: to_i
  *
- * Returns the integer memory location of this DL::CPtr.
+ * Returns the integer memory location of this pointer.
  */
 static VALUE
 rb_fiddle_ptr_to_i(VALUE self)
@@ -237,7 +239,7 @@ rb_fiddle_ptr_to_i(VALUE self)
 /*
  * call-seq: to_value
  *
- * Cast this CPtr to a ruby object.
+ * Cast this pointer to a ruby object.
  */
 static VALUE
 rb_fiddle_ptr_to_value(VALUE self)
@@ -250,7 +252,9 @@ rb_fiddle_ptr_to_value(VALUE self)
 /*
  * call-seq: ptr
  *
- * Returns a DL::CPtr that is a dereferenced pointer for this DL::CPtr.
+ * Returns a new Fiddle::Pointer instance that is a dereferenced pointer for
+ * this pointer.
+ *
  * Analogous to the star operator in C.
  */
 static VALUE
@@ -265,7 +269,9 @@ rb_fiddle_ptr_ptr(VALUE self)
 /*
  * call-seq: ref
  *
- * Returns a DL::CPtr that is a reference pointer for this DL::CPtr.
+ * Returns a new Fiddle::Pointer instance that is a reference pointer for this
+ * pointer.
+ *
  * Analogous to the ampersand operator in C.
  */
 static VALUE
@@ -280,7 +286,7 @@ rb_fiddle_ptr_ref(VALUE self)
 /*
  * call-seq: null?
  *
- * Returns true if this is a null pointer.
+ * Returns +true+ if this is a null pointer.
  */
 static VALUE
 rb_fiddle_ptr_null_p(VALUE self)
@@ -294,7 +300,8 @@ rb_fiddle_ptr_null_p(VALUE self)
 /*
  * call-seq: free=(function)
  *
- * Set the free function for this pointer to the DL::CFunc in +function+.
+ * Set the free function for this pointer to +function+ in the given
+ * Fiddle::Function.
  */
 static VALUE
 rb_fiddle_ptr_free_set(VALUE self, VALUE val)
@@ -308,9 +315,13 @@ rb_fiddle_ptr_free_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq: free
+ * call-seq: free => Fiddle::Function
  *
- * Get the free function for this pointer.  Returns Fiddle::Function.
+ * Get the free function for this pointer.
+ *
+ * Returns a new instance of Fiddle::Function.
+ *
+ * See Fiddle::Function.new
  */
 static VALUE
 rb_fiddle_ptr_free_get(VALUE self)
@@ -339,9 +350,14 @@ rb_fiddle_ptr_free_get(VALUE self)
  *    ptr.to_s        => string
  *    ptr.to_s(len)   => string
  *
- * Returns the pointer contents as a string.  When called with no arguments,
- * this method will return the contents until the first NULL byte.  When
- * called with +len+, a string of +len+ bytes will be returned.
+ * Returns the pointer contents as a string.
+ *
+ * When called with no arguments, this method will return the contents until
+ * the first NULL byte.
+ *
+ * When called with +len+, a string of +len+ bytes will be returned.
+ *
+ * See to_str
  */
 static VALUE
 rb_fiddle_ptr_to_s(int argc, VALUE argv[], VALUE self)
@@ -372,9 +388,14 @@ rb_fiddle_ptr_to_s(int argc, VALUE argv[], VALUE self)
  *    ptr.to_str        => string
  *    ptr.to_str(len)   => string
  *
- * Returns the pointer contents as a string.  When called with no arguments,
- * this method will return the contents with the length of this pointer's
- * +size+. When called with +len+, a string of +len+ bytes will be returned.
+ * Returns the pointer contents as a string.
+ *
+ * When called with no arguments, this method will return the contents with the
+ * length of this pointer's +size+.
+ *
+ * When called with +len+, a string of +len+ bytes will be returned.
+ *
+ * See to_s
  */
 static VALUE
 rb_fiddle_ptr_to_str(int argc, VALUE argv[], VALUE self)
@@ -403,7 +424,7 @@ rb_fiddle_ptr_to_str(int argc, VALUE argv[], VALUE self)
  * call-seq: inspect
  *
  * Returns a string formatted with an easily readable representation of the
- * internal state of the DL::CPtr
+ * internal state of the pointer.
  */
 static VALUE
 rb_fiddle_ptr_inspect(VALUE self)
@@ -442,8 +463,9 @@ rb_fiddle_ptr_eql(VALUE self, VALUE other)
  *  call-seq:
  *    ptr <=> other   => -1, 0, 1, or nil
  *
- * Returns -1 if less than, 0 if equal to, 1 if greater than +other+.  Returns
- * nil if +ptr+ cannot be compared to +other+.
+ * Returns -1 if less than, 0 if equal to, 1 if greater than +other+.
+ *
+ * Returns nil if +ptr+ cannot be compared to +other+.
  */
 static VALUE
 rb_fiddle_ptr_cmp(VALUE self, VALUE other)
@@ -464,7 +486,7 @@ rb_fiddle_ptr_cmp(VALUE self, VALUE other)
  * call-seq:
  *    ptr + n   => new cptr
  *
- * Returns a new DL::CPtr that has been advanced +n+ bytes.
+ * Returns a new pointer instance that has been advanced +n+ bytes.
  */
 static VALUE
 rb_fiddle_ptr_plus(VALUE self, VALUE other)
@@ -482,7 +504,7 @@ rb_fiddle_ptr_plus(VALUE self, VALUE other)
  * call-seq:
  *    ptr - n   => new cptr
  *
- * Returns a new DL::CPtr that has been moved back +n+ bytes.
+ * Returns a new pointer instance that has been moved back +n+ bytes.
  */
 static VALUE
 rb_fiddle_ptr_minus(VALUE self, VALUE other)
@@ -501,9 +523,10 @@ rb_fiddle_ptr_minus(VALUE self, VALUE other)
  *     ptr[index]                -> an_integer
  *     ptr[start, length]        -> a_string
  *
- * Returns integer stored at _index_.  If _start_ and _length_ are given,
- * a string containing the bytes from _start_ of length _length_ will be
- * returned.
+ * Returns integer stored at _index_.
+ *
+ * If _start_ and _length_ are given, a string containing the bytes from
+ * _start_ of _length_ will be returned.
  */
 static VALUE
 rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
@@ -536,9 +559,11 @@ rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
  *     ptr[index]         = int                    ->  int
  *     ptr[start, length] = string or cptr or addr ->  string or dl_cptr or addr
  *
- * Set the value at +index+ to +int+.  Or, set the memory at +start+ until
- * +length+ with the contents of +string+, the memory from +dl_cptr+, or the
- * memory pointed at by the memory address +addr+.
+ * Set the value at +index+ to +int+.
+ *
+ * Or, set the memory at +start+ until +length+ with the contents of +string+,
+ * the memory from +dl_cptr+, or the memory pointed at by the memory address
+ * +addr+.
  */
 static VALUE
 rb_fiddle_ptr_aset(int argc, VALUE argv[], VALUE self)
@@ -603,8 +628,8 @@ rb_fiddle_ptr_size_get(VALUE self)
 
 /*
  * call-seq:
- *    Fiddle::Pointer.to_ptr(val)  => cptr
  *    Fiddle::Pointer[val]         => cptr
+ *    to_ptr(val)  => cptr
  *
  * Get the underlying pointer for ruby object +val+ and return it as a
  * Fiddle::Pointer object.
