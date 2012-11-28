@@ -1,7 +1,7 @@
 require 'fiddle'
 
 module Fiddle
-  module PackInfo
+  module PackInfo # :nodoc: all
     ALIGN_MAP = {
       TYPE_VOIDP => ALIGN_VOIDP,
       TYPE_CHAR  => ALIGN_CHAR,
@@ -60,7 +60,7 @@ module Fiddle
     module_function :align
   end
 
-  class Packer
+  class Packer # :nodoc: all
     include PackInfo
 
     def self.[](*types)

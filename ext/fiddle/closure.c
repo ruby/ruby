@@ -289,7 +289,7 @@ Init_fiddle_closure()
      * Construct a new Closure object.
      *
      * * +ret+ is the C type to be returned
-     * * +args+ are passed the callback
+     * * +args+is an Array of arguments, passed to the callback function
      * * +abi+ is the abi of the closure
      *
      * If there is an error in preparing the ffi_cif or ffi_prep_closure,

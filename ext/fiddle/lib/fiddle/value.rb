@@ -1,7 +1,7 @@
 require 'fiddle'
 
 module Fiddle
-  module ValueUtil
+  module ValueUtil #:nodoc: all
     def unsigned_value(val, ty)
       case ty.abs
       when TYPE_CHAR

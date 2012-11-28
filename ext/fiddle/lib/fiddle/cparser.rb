@@ -1,12 +1,25 @@
 module Fiddle
-  # Methods for parsing C struct and C prototype signatures.
+  # A mixin that provides methods for parsing C struct and prototype signatures.
+  #
+  # == Example
+  #   require 'fiddle/import'
+  #
+  #   include Fiddle::CParser
+  #     #=> Object
+  #
+  #   parse_ctype('int increment(int)')
+  #     #=> ["increment", Fiddle::TYPE_INT, [Fiddle::TYPE_INT]]
+  #
   module CParser
     # Parses a C struct's members
     #
     # Example:
     #
+    #   include Fiddle::CParser
+    #     #=> Object
+    #
     #   parse_struct_signature(['int i', 'char c'])
-    #   => [[Fiddle::TYPE_INT, Fiddle::TYPE_CHAR], ["i", "c"]]
+    #     #=> [[Fiddle::TYPE_INT, Fiddle::TYPE_CHAR], ["i", "c"]]
     #
     def parse_struct_signature(signature, tymap=nil)
       if( signature.is_a?(String) )
@@ -45,13 +58,17 @@ module Fiddle
 
     # Parses a C prototype signature
     #
+    # If Hash +tymap+ is provided, the return value and the arguments from the
+    # +signature+ are expected to be keys, and the value will be the C type to
+    # be looked up.
+    #
     # Example:
     #
     #   include Fiddle::CParser
-    #   => Object
+    #     #=> Object
     #
     #   parse_signature('double sum(double, double)')
-    #   => ["sum", Fiddle::TYPE_DOUBLE, [Fiddle::TYPE_DOUBLE, Fiddle::TYPE_DOUBLE]]
+    #     #=> ["sum", Fiddle::TYPE_DOUBLE, [Fiddle::TYPE_DOUBLE, Fiddle::TYPE_DOUBLE]]
     #
     def parse_signature(signature, tymap=nil)
       tymap ||= {}
@@ -74,24 +91,27 @@ module Fiddle
       end
     end
 
-    # Given a String of C type +ty+, return the corresponding DL constant.
+    # Given a String of C type +ty+, returns the corresponding Fiddle constant.
     #
-    # +ty+ can also accept an Array of C type Strings, and will returned in a
-    # corresponding Array.
+    # +ty+ can also accept an Array of C type Strings, and will be returned in
+    # a corresponding Array.
     #
     # If Hash +tymap+ is provided, +ty+ is expected to be the key, and the
     # value will be the C type to be looked up.
     #
     # Example:
     #
+    #   include Fiddle::CParser
+    #     #=> Object
+    #
     #   parse_ctype('int')
-    #   => Fiddle::TYPE_INT
+    #     #=> Fiddle::TYPE_INT
     #
     #   parse_ctype('double')
-    #   => Fiddle::TYPE_DOUBLE
+    #     #=> Fiddle::TYPE_DOUBLE
     #
     #   parse_ctype('unsigned char')
-    #   => -Fiddle::TYPE_CHAR
+    #     #=> -Fiddle::TYPE_CHAR
     #
     def parse_ctype(ty, tymap=nil)
       tymap ||= {}

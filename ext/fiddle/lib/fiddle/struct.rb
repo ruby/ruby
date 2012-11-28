@@ -36,14 +36,14 @@ module Fiddle
     #
     # Example:
     #
-    #   require 'dl/struct'
-    #   require 'dl/cparser'
+    #   require 'fiddle/struct'
+    #   require 'fiddle/cparser'
     #
     #   include Fiddle::CParser
     #
     #   types, members = parse_struct_signature(['int i','char c'])
     #
-    #   MyStruct = Fiddle::CStructBuilder.create(CUnion, types, members)
+    #   MyStruct = Fiddle::CStructBuilder.create(Fiddle::CUnion, types, members)
     #
     #   obj = MyStruct.allocate
     #
@@ -80,18 +80,21 @@ module Fiddle
     include PackInfo
     include ValueUtil
 
-    # Allocates a C struct the +types+ provided.  The C function +func+ is
-    # called when the instance is garbage collected.
+    # Allocates a C struct with the +types+ provided.
+    #
+    # When the instance is garbage collected, the C function +func+ is called.
     def CStructEntity.malloc(types, func = nil)
       addr = Fiddle.malloc(CStructEntity.size(types))
       CStructEntity.new(addr, types, func)
     end
 
-    # Given +types+, returns the offset for the packed sizes of those types
+    # Returns the offset for the packed sizes for the given +types+.
     #
-    #   Fiddle::CStructEntity.size([Fiddle::TYPE_DOUBLE, Fiddle::TYPE_INT, Fiddle::TYPE_CHAR,
-    #                           Fiddle::TYPE_VOIDP])
-    #   => 24
+    #   Fiddle::CStructEntity.size(
+    #     [ Fiddle::TYPE_DOUBLE,
+    #       Fiddle::TYPE_INT,
+    #       Fiddle::TYPE_CHAR,
+    #       Fiddle::TYPE_VOIDP ]) #=> 24
     def CStructEntity.size(types)
       offset = 0
 
@@ -108,10 +111,11 @@ module Fiddle
       PackInfo.align(offset, max_align)
     end
 
-    # Wraps the C pointer +addr+ as a C struct with the given +types+.  The C
-    # function +func+ is called when the instance is garbage collected.
+    # Wraps the C pointer +addr+ as a C struct with the given +types+.
     #
-    # See also Fiddle::CPtr.new
+    # When the instance is garbage collected, the C function +func+ is called.
+    #
+    # See also Fiddle::Pointer.new
     def initialize(addr, types, func = nil)
       set_ctypes(types)
       super(addr, @size, func)
@@ -122,8 +126,7 @@ module Fiddle
       @members = members
     end
 
-    # Given +types+, calculate the offsets and sizes for the types in the
-    # struct.
+    # Calculates the offsets and sizes for the given +types+ in the struct.
     def set_ctypes(types)
       @ctypes = types
       @offset = []
@@ -207,25 +210,29 @@ module Fiddle
   class CUnionEntity < CStructEntity
     include PackInfo
 
-    # Allocates a C union the +types+ provided.  The C function +func+ is
-    # called when the instance is garbage collected.
+    # Allocates a C union the +types+ provided.
+    #
+    # When the instance is garbage collected, the C function +func+ is called.
     def CUnionEntity.malloc(types, func=nil)
       addr = Fiddle.malloc(CUnionEntity.size(types))
       CUnionEntity.new(addr, types, func)
     end
 
-    # Given +types+, returns the size needed for the union.
+    # Returns the size needed for the union with the given +types+.
     #
-    #   Fiddle::CUnionEntity.size([Fiddle::TYPE_DOUBLE, Fiddle::TYPE_INT, Fiddle::TYPE_CHAR,
-    #                          Fiddle::TYPE_VOIDP])
-    #   => 8
+    #   Fiddle::CUnionEntity.size(
+    #     [ Fiddle::TYPE_DOUBLE,
+    #       Fiddle::TYPE_INT,
+    #       Fiddle::TYPE_CHAR,
+    #       Fiddle::TYPE_VOIDP ]) #=> 8
     def CUnionEntity.size(types)
       types.map { |type, count = 1|
         PackInfo::SIZE_MAP[type] * count
       }.max
     end
 
-    # Given +types+, calculate the necessary offset and for each union member
+    # Calculate the necessary offset and for each union member with the given
+    # +types+
     def set_ctypes(types)
       @ctypes = types
       @offset = Array.new(types.length, 0)
