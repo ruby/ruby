@@ -1,3 +1,8 @@
+Thu Nov 29 06:24:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_start_func_2): remove unused code. security
+	  level is checked before rb_eSecurityError raises.
+
 Thu Nov 29 05:26:32 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (backtrace_to_str_ary2): rename to backtrace_to_str_ary.
