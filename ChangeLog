@@ -1,3 +1,8 @@
+Thu Nov 29 06:37:08 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_start_func_2): remove unused code.
+	  this function never be used for main thread.
+
 Thu Nov 29 06:27:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): remove unused code.

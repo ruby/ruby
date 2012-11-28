@@ -454,6 +454,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_register_sigaltstack(th);
 # endif
 
+    if (th == th->vm->main_thread)
+	rb_bug("thread_start_func_2 must not used for main thread");
+
     ruby_thread_set_native(th);
 
     th->machine_stack_start = stack_start;
@@ -502,11 +505,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	thread_debug("thread end: %p\n", (void *)th);
 
 	main_th = th->vm->main_thread;
-	if (th != main_th) {
-	    if (RB_TYPE_P(errinfo, T_OBJECT)) {
-		/* treat with normal error object */
-		rb_threadptr_raise(main_th, 1, &errinfo);
-	    }
+	if (RB_TYPE_P(errinfo, T_OBJECT)) {
+	    /* treat with normal error object */
+	    rb_threadptr_raise(main_th, 1, &errinfo);
 	}
 	TH_POP_TAG();
 
@@ -517,17 +518,15 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 
 	/* delete self other than main thread from living_threads */
-	if (th != main_th) {
-	    st_delete_wrap(th->vm->living_threads, th->self);
-	    if (rb_thread_alone()) {
-		rb_threadptr_interrupt(main_th);
-	    }
+	st_delete_wrap(th->vm->living_threads, th->self);
+	if (rb_thread_alone()) {
+	    /* I'm last thread. wake up main thread from rb_thread_terminate_all */
+	    rb_threadptr_interrupt(main_th);
 	}
 
 	/* wake up joining threads */
 	join_list = th->join_list;
 	while (join_list) {
-	    if (join_list->th == main_th) errinfo = Qnil;
 	    rb_threadptr_interrupt(join_list->th);
 	    switch (join_list->th->status) {
 	      case THREAD_STOPPED: case THREAD_STOPPED_FOREVER:
@@ -538,20 +537,15 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 
 	rb_threadptr_unlock_all_locking_mutexes(th);
-	if (th != main_th) rb_check_deadlock(th->vm);
+	rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
 	    rb_thread_recycle_stack_release(th->stack);
 	    th->stack = 0;
 	}
     }
-    if (th->vm->main_thread == th) {
-	ruby_cleanup(state);
-    }
-    else {
-	thread_cleanup_func(th, FALSE);
-	gvl_release(th->vm);
-    }
+    thread_cleanup_func(th, FALSE);
+    gvl_release(th->vm);
 
     return 0;
 }
