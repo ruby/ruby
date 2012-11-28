@@ -1,3 +1,8 @@
+Wed Nov 28 22:20:55 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_thread_status_in_trap): change test for
+	  thread status in trap. now can accept Thread#join and Thread#value in trap.
+
 Wed Nov 28 21:58:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/thread.h (rb_thread_call_without_gvl2): change
