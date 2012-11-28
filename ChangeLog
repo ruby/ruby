@@ -1,3 +1,10 @@
+Wed Nov 28 13:39:54 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_s_new): uses main_thread->status instead of
+	  th->inhibit_thread_creation for preventing thread creation.
+	* vm_core.h (rb_vm_struct): remove inhibit_thread_creation field.
+	* thread.c (rb_thread_terminate_all): ditto.
+
 Wed Nov 28 13:27:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/extconf.rb: use embedded libyaml if no system libyaml is

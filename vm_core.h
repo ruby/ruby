@@ -341,7 +341,6 @@ typedef struct rb_vm_struct {
     VALUE thgroup_default;
 
     int running;
-    int inhibit_thread_creation;
     int thread_abort_on_exception;
     int trace_running;
     volatile int sleeper;

@@ -378,8 +378,6 @@ rb_thread_terminate_all(void)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
-    vm->inhibit_thread_creation = 1;
-
   retry:
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
     st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
@@ -611,7 +609,7 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
     rb_thread_t *th;
     VALUE thread = rb_thread_alloc(klass);
 
-    if (GET_VM()->inhibit_thread_creation)
+    if (GET_VM()->main_thread->status == THREAD_KILLED)
 	rb_raise(rb_eThreadError, "can't alloc thread");
 
     rb_obj_call_init(thread, argc, argv);
