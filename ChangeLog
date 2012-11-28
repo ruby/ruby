@@ -1,3 +1,32 @@
+Wed Nov 28 13:27:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/extconf.rb: use embedded libyaml if no system libyaml is
+	  found. [ruby-core:49463]
+	* ext/psych/lib/psych.rb: updating to psych 2.0.0
+	* ext/psych/lib/psych/deprecated.rb: updated docs
+	* ext/psych/psych.gemspec: updated to psych 2.0.0
+	* ext/psych/psych.h: fixing header file include for rename
+	* ext/psych/psych_emitter.c: renamed to avoid libyaml conflict.
+	* ext/psych/psych_emitter.h: ditto
+	* ext/psych/psych_parser.c: ditto
+	* ext/psych/psych_parser.h: ditto
+	* ext/psych/psych_to_ruby.c: ditto
+	* ext/psych/psych_to_ruby.h: ditto
+	* ext/psych/psych_yaml_tree.c: ditto
+	* ext/psych/psych_yaml_tree.h: ditto
+	* ext/psych/yaml/LICENSE: embedding libyaml 0.1.4
+	* ext/psych/yaml/api.c: ditto
+	* ext/psych/yaml/config.h: ditto
+	* ext/psych/yaml/dumper.c: ditto
+	* ext/psych/yaml/emitter.c: ditto
+	* ext/psych/yaml/loader.c: ditto
+	* ext/psych/yaml/parser.c: ditto
+	* ext/psych/yaml/reader.c: ditto
+	* ext/psych/yaml/scanner.c: ditto
+	* ext/psych/yaml/writer.c: ditto
+	* ext/psych/yaml/yaml.h: ditto
+	* ext/psych/yaml/yaml_private.h: ditto
+
 Wed Nov 28 12:54:59 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_join): A trap handler check was moved from

@@ -21,6 +21,7 @@ module Psych
     target.psych_to_yaml unless opts[:nodump]
   end
 
+  # This method is deprecated, use Psych.load_stream instead.
   def self.load_documents yaml, &block
     if $VERBOSE
       warn "#{caller[0]}: load_documents is deprecated, use load_stream"

@@ -9,10 +9,10 @@
 
 #include <yaml.h>
 
-#include <parser.h>
-#include <emitter.h>
-#include <to_ruby.h>
-#include <yaml_tree.h>
+#include <psych_parser.h>
+#include <psych_emitter.h>
+#include <psych_to_ruby.h>
+#include <psych_yaml_tree.h>
 
 extern VALUE mPsych;
 
