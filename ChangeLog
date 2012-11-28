@@ -1,3 +1,7 @@
+Thu Nov 29 06:46:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_start_func_2): small cleanups.
+
 Thu Nov 29 06:37:08 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): remove unused code.
