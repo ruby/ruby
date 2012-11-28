@@ -727,8 +727,6 @@ flush_before_seek(rb_io_t *fptr)
 # define SEEK_END 2
 #endif
 
-#define FMODE_SYNCWRITE (FMODE_SYNC|FMODE_WRITABLE)
-
 void
 rb_io_check_char_readable(rb_io_t *fptr)
 {

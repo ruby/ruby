@@ -1,3 +1,7 @@
+Wed Nov 28 15:31:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (FMODE_SYNCWRITE): removed unused macro.
+
 Wed Nov 28 15:19:25 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: revert r37911, r37906 and r37904 which break build
