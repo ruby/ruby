@@ -63,9 +63,9 @@
 VALUE rb_cMutex;
 VALUE rb_cThreadShield;
 
-static void sleep_timeval(rb_thread_t *th, struct timeval time);
-static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
-static void sleep_forever(rb_thread_t *th, int nodeadlock);
+static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
+static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
+static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
@@ -443,7 +443,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     int state;
     VALUE args = th->first_args;
     rb_proc_t *proc;
-    rb_thread_t *join_th;
+    rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
 # ifdef USE_SIGALTSTACK
@@ -532,16 +532,16 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 
 	/* wake up joining threads */
-	join_th = th->join_list_head;
-	while (join_th) {
-	    if (join_th == main_th) errinfo = Qnil;
-	    rb_threadptr_interrupt(join_th);
-	    switch (join_th->status) {
+	join_list = th->join_list;
+	while (join_list) {
+	    if (join_list->th == main_th) errinfo = Qnil;
+	    rb_threadptr_interrupt(join_list->th);
+	    switch (join_list->th->status) {
 	      case THREAD_STOPPED: case THREAD_STOPPED_FOREVER:
-		join_th->status = THREAD_RUNNABLE;
+		join_list->th->status = THREAD_RUNNABLE;
 	      default: break;
 	    }
-	    join_th = join_th->join_list_next;
+	    join_list = join_list->next;
 	}
 
 	rb_threadptr_unlock_all_locking_mutexes(th);
@@ -686,14 +686,14 @@ remove_from_join_list(VALUE arg)
     rb_thread_t *target_th = p->target, *th = p->waiting;
 
     if (target_th->status != THREAD_KILLED) {
-	rb_thread_t **pth = &target_th->join_list_head;
+	rb_thread_list_t **p = &target_th->join_list;
 
-	while (*pth) {
-	    if (*pth == th) {
-		*pth = th->join_list_next;
+	while (*p) {
+	    if ((*p)->th == th) {
+		*p = (*p)->next;
 		break;
 	    }
-	    pth = &(*pth)->join_list_next;
+	    p = &(*p)->next;
 	}
     }
 
@@ -709,7 +709,7 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (p->forever) {
-	    sleep_forever(th, 1);
+	    sleep_forever(th, 1, 0);
 	}
 	else {
 	    now = timeofday();
@@ -718,7 +718,7 @@ thread_join_sleep(VALUE arg)
 			     (void *)target_th->thread_id);
 		return Qfalse;
 	    }
-	    sleep_wait_for_interrupt(th, limit - now);
+	    sleep_wait_for_interrupt(th, limit - now, 0);
 	}
 	thread_debug("thread_join: interrupted (thid: %p)\n",
 		     (void *)target_th->thread_id);
@@ -738,10 +738,6 @@ thread_join(rb_thread_t *target_th, double delay)
     if (GET_VM()->main_thread == target_th) {
 	rb_raise(rb_eThreadError, "Target thread must not be main thread");
     }
-    /* When running trap handler */
-    if (th->interrupt_mask & TRAP_INTERRUPT_MASK) {
-	rb_raise(rb_eThreadError, "can't be called from trap context");
-    }
 
     arg.target = target_th;
     arg.waiting = th;
@@ -751,8 +747,10 @@ thread_join(rb_thread_t *target_th, double delay)
     thread_debug("thread_join (thid: %p)\n", (void *)target_th->thread_id);
 
     if (target_th->status != THREAD_KILLED) {
-	th->join_list_next = target_th->join_list_head;
-	target_th->join_list_head = th;
+	rb_thread_list_t list;
+	list.next = target_th->join_list;
+	list.th = th;
+	target_th->join_list = &list;
 	if (!rb_ensure(thread_join_sleep, (VALUE)&arg,
 		       remove_from_join_list, (VALUE)&arg)) {
 	    return Qnil;
@@ -876,7 +874,7 @@ double2timeval(double d)
 }
 
 static void
-sleep_forever(rb_thread_t *th, int deadlockable)
+sleep_forever(rb_thread_t *th, int deadlockable,int spurious_check)
 {
     enum rb_thread_status prev_status = th->status;
     enum rb_thread_status status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
@@ -892,7 +890,7 @@ sleep_forever(rb_thread_t *th, int deadlockable)
 	    th->vm->sleeper--;
 	}
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
-    } while (th->status == status);
+    } while (spurious_check && th->status == status);
     th->status = prev_status;
 }
 
@@ -913,7 +911,7 @@ getclockofday(struct timeval *tp)
 }
 
 static void
-sleep_timeval(rb_thread_t *th, struct timeval tv)
+sleep_timeval(rb_thread_t *th, struct timeval tv,int spurious_check)
 {
     struct timeval to, tvn;
     enum rb_thread_status prev_status = th->status;
@@ -940,7 +938,7 @@ sleep_timeval(rb_thread_t *th, struct timeval tv)
 	    --tv.tv_sec;
 	    tv.tv_usec += 1000000;
 	}
-    } while (th->status == THREAD_STOPPED);
+    } while (spurious_check && th->status == THREAD_STOPPED);
     th->status = prev_status;
 }
 
@@ -948,14 +946,14 @@ void
 rb_thread_sleep_forever(void)
 {
     thread_debug("rb_thread_sleep_forever\n");
-    sleep_forever(GET_THREAD(), 0);
+    sleep_forever(GET_THREAD(), 0, 1);
 }
 
 static void
 rb_thread_sleep_deadly(void)
 {
     thread_debug("rb_thread_sleep_deadly\n");
-    sleep_forever(GET_THREAD(), 1);
+    sleep_forever(GET_THREAD(), 1, 1);
 }
 
 static double
@@ -976,9 +974,9 @@ timeofday(void)
 }
 
 static void
-sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec)
+sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec,int spurious_check)
 {
-    sleep_timeval(th, double2timeval(sleepsec));
+    sleep_timeval(th, double2timeval(sleepsec),spurious_check);
 }
 
 static void
@@ -987,14 +985,14 @@ sleep_for_polling(rb_thread_t *th)
     struct timeval time;
     time.tv_sec = 0;
     time.tv_usec = 100 * 1000;	/* 0.1 sec */
-    sleep_timeval(th, time);
+    sleep_timeval(th, time, 1);
 }
 
 void
 rb_thread_wait_for(struct timeval time)
 {
     rb_thread_t *th = GET_THREAD();
-    sleep_timeval(th, time);
+    sleep_timeval(th, time, 1);
 }
 
 void
@@ -3704,7 +3702,7 @@ void
 rb_thread_atfork(void)
 {
     rb_thread_atfork_internal(terminate_atfork_i);
-    GET_THREAD()->join_list_head = 0;
+    GET_THREAD()->join_list = NULL;
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();

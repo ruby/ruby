@@ -457,6 +457,13 @@ struct rb_mutex_struct;
 #define ALT_STACK_SIZE (4*1024)
 #endif
 
+struct rb_thread_struct;
+typedef struct rb_thread_list_struct{
+    struct rb_thread_list_struct *next;
+    struct rb_thread_struct *th;
+} rb_thread_list_t;
+
+
 typedef struct rb_thread_struct {
     VALUE self;
     rb_vm_t *vm;
@@ -546,8 +553,7 @@ typedef struct rb_thread_struct {
     /* storage */
     st_table *local_storage;
 
-    struct rb_thread_struct *join_list_next;
-    struct rb_thread_struct *join_list_head;
+    rb_thread_list_t *join_list;
 
     VALUE first_proc;
     VALUE first_args;

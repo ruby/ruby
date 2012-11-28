@@ -1,3 +1,21 @@
+Wed Nov 28 21:31:21 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* thread.c (thread_join_sleep): check spurious wakeup by itself for
+	corresponding status change in trap context.
+	* vm_core.h (struct rb_thread_struct): add rb_thread_list_t and use as join_list for
+	reentry by trap context.
+	* thread.c (thread_start_func_2): ditto.
+	* thread.c (remove_from_join_list): ditto.
+	* thread.c (rb_thread_atfork): ditto.
+	* thread.c (thread_join): ditto. & remove trap handler check.
+	* thread.c (sleep_forever): add argument : spurious_check.
+	* thread.c (sleep_timeval): ditto.
+	* thread.c (rb_thread_sleep_forever): set spurious_check.
+	* thread.c (rb_thread_sleep_deadly): ditto.
+	* thread.c (sleep_for_polling): ditto.
+	* thread.c (rb_thread_wait_for): ditto.
+	* thread.c (sleep_wait_for_interrupt): bypass spurious_check.
+
 Wed Nov 28 21:23:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/psych/yaml/emitter.c (yaml_emitter_write_indicator): constify.
