@@ -112,7 +112,7 @@ Wed Nov 28 16:21:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed Nov 28 16:59:12 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: remove Proc#== and Proc#eql?.
-	  Proc objects compared with thier object ids.
+	  Proc objects compared with their object ids.
 	  [Bug #4559]
 
 	* test/ruby/test_proc.rb: remove related test.
