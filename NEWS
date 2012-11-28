@@ -164,6 +164,9 @@ with all sufficient information, see the ChangeLog file.
         variable has been set.
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
+    * incompatible changes:
+      * Thread#join and Thread#value now raises a ThreadError if target thread
+        is the current or main thread.
 
   * Time
     * change return value:
@@ -371,6 +374,10 @@ with all sufficient information, see the ChangeLog file.
 
   * OpenStruct new methods can conflict with custom attributes named
     "each_pair", "eql?", "hash" or "to_h".
+
+  * Thread#join, Thread#value
+   
+    See above.
 
   * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize and Mutex#sleep
 
