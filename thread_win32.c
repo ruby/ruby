@@ -240,7 +240,7 @@ rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_wait_events_blocking(events, num, timeout),
-		    ubf_handle, ruby_thread_from_native());
+		    ubf_handle, ruby_thread_from_native(), FALSE);
     return ret;
 }
 
@@ -294,7 +294,7 @@ rb_w32_Sleep(unsigned long msec)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_sleep(msec),
-		    ubf_handle, ruby_thread_from_native());
+		    ubf_handle, ruby_thread_from_native(), FALSE);
     return ret;
 }
 
