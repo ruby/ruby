@@ -1,3 +1,8 @@
+Wed Nov 28 21:18:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#each_compile_rules): splat $(*VPATH*) for
+	  each VPATH elements.
+
 Wed Nov 28 16:40:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (enum rb_thread_status): remove THREAD_TO_KILL

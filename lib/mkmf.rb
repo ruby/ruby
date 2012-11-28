@@ -1879,6 +1879,19 @@ all install static install-so install-rb: Makefile
 RULES
   end
 
+  def each_compile_rules
+    vpath_splat = /\$\(\*VPATH\*\)/
+    COMPILE_RULES.each do |rule|
+      if vpath_splat =~ rule
+        $VPATH.each do |path|
+          yield rule.sub(vpath_splat) {path}
+        end
+      else
+        yield rule
+      end
+    end
+  end
+
   # Processes the data contents of the "depend" file.  Each line of this file
   # is expected to be a file name.
   #
@@ -1889,7 +1902,7 @@ RULES
     depout = []
     cont = implicit = nil
     impconv = proc do
-      COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
+      each_compile_rules {|rule| depout << (rule % implicit[0]) << implicit[1]}
       implicit = nil
     end
     ruleconv = proc do |line|
@@ -2208,13 +2221,13 @@ site-install-rb: install-rb
 
     compile_command = "\n\t$(ECHO) compiling $(<#{rsep})\n\t$(Q) %s\n\n"
     CXX_EXT.each do |e|
-      COMPILE_RULES.each do |rule|
+      each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
         mfile.printf(compile_command, COMPILE_CXX)
       end
     end
     C_EXT.each do |e|
-      COMPILE_RULES.each do |rule|
+      each_compile_rules do |rule|
         mfile.printf(rule, e, $OBJEXT)
         mfile.printf(compile_command, COMPILE_C)
       end
@@ -2297,7 +2310,7 @@ site-install-rb: install-rb
     $LIBPATH = []
     $INSTALLFILES = []
     $NONINSTALLFILES = [/~\z/, /\A#.*#\z/, /\A\.#/, /\.bak\z/i, /\.orig\z/, /\.rej\z/, /\.l[ao]\z/, /\.o\z/]
-    $VPATH = %w[$(srcdir) $(arch_hdrdir)/ruby $(hdrdir)/ruby]
+    $VPATH = %w[$(srcdir) $(topdir) $(arch_hdrdir)/ruby $(hdrdir)/ruby]
 
     $objs = nil
     $srcs = nil
