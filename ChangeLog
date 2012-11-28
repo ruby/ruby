@@ -1,3 +1,13 @@
+Wed Nov 28 21:58:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/thread.h (rb_thread_call_without_gvl2): change
+	  meaning of function.
+	  This function is called with same parameters of
+	  `rb_thread_call_without_gvl()'.
+	  However, if interrupts are detected, when return immediately.
+
+	* thread.c: implement `rb_thread_call_without_gvl2()'.
+
 Wed Nov 28 21:31:21 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* thread.c (thread_join_sleep): check spurious wakeup by itself for
