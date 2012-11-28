@@ -1,3 +1,16 @@
+Wed Nov 28 16:21:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (struct rb_mutex_struct): add allow_trap field.
+	* internal.h (rb_mutex_allow_trap): added.
+	* thread.c (rb_mutex_lock, rb_mutex_unlock): check mutex->allow_trap.
+	* thread.c (mutex_sleep): remove trap check because it uses
+	  rb_mutex_lock and rb_mutex_unlock internally.
+	* thread.c (rb_mutex_allow_trap): new helper function for the above.
+
+	* io.c (io_binwrite): mark fptr->write_lock as writable in trap.
+
+	* test/ruby/test_signal.rb (test_trap_puts): test for the above.
+
 Wed Nov 28 16:59:12 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: remove Proc#== and Proc#eql?.

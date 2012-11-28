@@ -342,6 +342,7 @@ typedef struct rb_mutex_struct
     struct rb_thread_struct volatile *th;
     int cond_waiting;
     struct rb_mutex_struct *next_mutex;
+    int allow_trap;
 } rb_mutex_t;
 
 static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
@@ -4140,16 +4141,15 @@ VALUE
 rb_mutex_lock(VALUE self)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_mutex_t *mutex;
+    GetMutexPtr(self, mutex);
 
     /* When running trap handler */
-    if (th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+    if (!mutex->allow_trap && th->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
     if (rb_mutex_trylock(self) == Qfalse) {
-	rb_mutex_t *mutex;
-	GetMutexPtr(self, mutex);
-
 	if (mutex->th == GET_THREAD()) {
 	    rb_raise(rb_eThreadError, "deadlock; recursive locking");
 	}
@@ -4254,7 +4254,7 @@ rb_mutex_unlock(VALUE self)
     GetMutexPtr(self, mutex);
 
     /* When running trap handler */
-    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
+    if (!mutex->allow_trap && GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
@@ -4326,11 +4326,6 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout;
 
-    /* When running trap handler */
-    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
-	rb_raise(rb_eThreadError, "can't be called from trap context");
-    }
-
     rb_scan_args(argc, argv, "01", &timeout);
     return rb_mutex_sleep(self, timeout);
 }
@@ -4365,6 +4360,14 @@ rb_mutex_synchronize_m(VALUE self, VALUE args)
     }
 
     return rb_mutex_synchronize(self, rb_yield, Qnil);
+}
+
+void rb_mutex_allow_trap(VALUE self, int val)
+{
+    rb_mutex_t *m;
+    GetMutexPtr(self, m);
+
+    m->allow_trap = val;
 }
 
 /*

@@ -1126,6 +1126,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         fptr->wbuf.capa = IO_WBUF_CAPA_MIN;
         fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
 	fptr->write_lock = rb_mutex_new();
+	rb_mutex_allow_trap(fptr->write_lock, 1);
     }
     if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
         (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {

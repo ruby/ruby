@@ -260,4 +260,17 @@ EOS
       end
     end
   end
+
+  def test_trap_puts
+    assert_in_out_err([], <<-INPUT, ["a"*10000], [])
+      Signal.trap(:INT) {
+          # for enable internal io mutex
+          sync = false
+          # larger than internal io buffer
+          print "a"*10000
+      }
+      Process.kill :INT, $$
+      sleep 0.1
+    INPUT
+  end
 end
