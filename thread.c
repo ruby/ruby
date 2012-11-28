@@ -4294,15 +4294,15 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
 {
-    rb_thread_sleep_deadly();
+    sleep_forever(GET_THREAD(), 1, 0); /* permit spurious check */
     return Qnil;
 }
 
 static VALUE
 rb_mutex_wait_for(VALUE time)
 {
-    const struct timeval *t = (struct timeval *)time;
-    rb_thread_wait_for(*t);
+    struct timeval *t = (struct timeval *)time;
+    sleep_timeval(GET_THREAD(), *t, 0); /* permit spurious check */
     return Qnil;
 }
 
@@ -4334,6 +4334,9 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
  * the current thread.
+ *
+ * Note that this method can wakeup without explicit Thread#wakeup call.
+ * For example, receiving signal and so on.
  */
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)

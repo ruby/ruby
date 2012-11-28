@@ -116,6 +116,7 @@ with all sufficient information, see the ChangeLog file.
       * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize
         and Mutex#sleep are no longer allowed to be used from trap handler
         and raise a ThreadError in such case.
+      * Mutex#sleep may spurious wakeup. Check after wakeup.
 
   * NilClass
     * added method:
