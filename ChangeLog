@@ -1,3 +1,8 @@
+Wed Nov 28 14:50:55 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/psych/extconf.rb: copy sources into build directory,
+	  not into srcdir.
+
 Wed Nov 28 14:34:06 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock): moved trap context check from

@@ -11,11 +11,16 @@ unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
   srcdir = File.expand_path File.dirname __FILE__
   files = Dir.chdir File.join(srcdir, 'yaml') do
     Dir.entries(Dir.pwd).find_all { |f|
-      File.file?(f) && File.extname(f) =~ /^\.[hc]/
+      File.file?(f) && /^\.[hc]/ =~ File.extname(f)
     }.map { |f| File.expand_path f }
   end
 
-  FileUtils.cp_r files, srcdir
+  dstdir = Dir.pwd
+  FileUtils.cp_r files, dstdir
+
+  $objs = (Dir.glob(File.join(File.dirname(__FILE__), '*.c')) + Dir.glob('*.c')).map{|f|
+    File.basename(f, '.c') + ".#{$OBJEXT}"
+  }
 
   if $mswin
     $CFLAGS += " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"
