@@ -1,3 +1,8 @@
+Wed Nov 28 22:54:21 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method): fix undefined behavior.
+	  Should not access scope local variable from outer scope.
+
 Wed Nov 28 22:20:55 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (test_thread_status_in_trap): change test for

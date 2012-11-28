@@ -1698,6 +1698,7 @@ static inline VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     int enable_fastpath = 1;
+    rb_call_info_t ci_temp;
 
   start_method_dispatch:
     if (ci->me != 0) {
@@ -1735,8 +1736,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
 		VALUE klass = RCLASS_SUPER(ci->me->klass);
-		rb_call_info_t cie = *ci;
-		ci = &cie;
+		ci_temp = *ci;
+		ci = &ci_temp;
 
 		ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
 
