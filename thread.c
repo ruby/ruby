@@ -4060,11 +4060,6 @@ rb_mutex_trylock(VALUE self)
     VALUE locked = Qfalse;
     GetMutexPtr(self, mutex);
 
-    /* When running trap handler */
-    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
-	rb_raise(rb_eThreadError, "can't be called from trap context");
-    }
-
     native_mutex_lock(&mutex->lock);
     if (mutex->th == 0) {
 	mutex->th = GET_THREAD();
@@ -4144,10 +4139,15 @@ static const rb_thread_t *patrol_thread = NULL;
 VALUE
 rb_mutex_lock(VALUE self)
 {
+    rb_thread_t *th = GET_THREAD();
+
+    /* When running trap handler */
+    if (th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
 
     if (rb_mutex_trylock(self) == Qfalse) {
 	rb_mutex_t *mutex;
-	rb_thread_t *th = GET_THREAD();
 	GetMutexPtr(self, mutex);
 
 	if (mutex->th == GET_THREAD()) {

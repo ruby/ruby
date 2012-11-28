@@ -1,3 +1,11 @@
+Wed Nov 28 14:34:06 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_lock): moved trap context check from
+	  rb_mutex_trylock because try_lock have no change to make
+	  a deadlock.
+	* thread.c (rb_mutex_trylock): ditto.
+	* NEWS: news for the above.
+
 Wed Nov 28 13:39:54 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_s_new): uses main_thread->status instead of
