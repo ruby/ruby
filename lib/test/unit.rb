@@ -146,8 +146,6 @@ module Test
     end
 
     module GlobOption
-      include Options
-
       @@testfile_prefix = "test"
 
       def setup_options(parser, options)
@@ -194,8 +192,6 @@ module Test
     end
 
     module LoadPathOption
-      include Options
-
       def setup_options(parser, options)
         super
         parser.on '-Idirectory', 'Add library load path' do |dirs|
