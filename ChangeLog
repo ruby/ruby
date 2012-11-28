@@ -1,4 +1,9 @@
-Wed Nov 28 21:22:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 28 21:23:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/yaml/emitter.c (yaml_emitter_write_indicator): constify.
+
+	* ext/psych/yaml/emitter.c (yaml_emitter_write_block_scalar_hints):
+	  ditto.
 
 	* ext/psych/extconf.rb: mingw32 also needs macros for win32, not
 	  only mswin32.
