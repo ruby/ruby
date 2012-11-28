@@ -874,6 +874,17 @@ class TestThreadGroup < Test::Unit::TestCase
 
       t.join
     }
+
+    assert_raise(ThreadError) {
+      t = Thread.new{ sleep 0.2; Process.kill(:INT, $$) }
+
+      Signal.trap :INT do
+        t.value
+      end
+
+      t.value
+    }
+
   end
 
   def test_thread_join_current

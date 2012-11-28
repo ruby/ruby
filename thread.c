@@ -740,6 +740,10 @@ thread_join(rb_thread_t *target_th, double delay)
     if (GET_VM()->main_thread == target_th) {
 	rb_raise(rb_eThreadError, "Target thread must not be main thread");
     }
+    /* When running trap handler */
+    if (th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
 
     arg.target = target_th;
     arg.waiting = th;
@@ -822,14 +826,8 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *target_th;
-    rb_thread_t *cur_th = GET_THREAD();
     double delay = DELAY_INFTY;
     VALUE limit;
-
-    /* When running trap handler */
-    if (cur_th->interrupt_mask & TRAP_INTERRUPT_MASK) {
-	rb_raise(rb_eThreadError, "can't be called from trap context");
-    }
 
     GetThreadPtr(self, target_th);
 

@@ -1,3 +1,13 @@
+Wed Nov 28 12:54:59 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_join): A trap handler check was moved from
+	  thread_join_m because Thread#value should be raised an exception
+	  too.
+	* thread.c (thread_join_m): remove trap handler check.
+	* test/ruby/test_thread.rb (test_thread_join_in_trap): add test
+	  for thread#value.
+	* NEWS: documentation fix for the above.
+
 Wed Nov 28 11:07:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/fiddle/closure.c: Documentation for Fiddle
