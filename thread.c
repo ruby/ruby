@@ -485,7 +485,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 	else {
 	    errinfo = th->errinfo;
-	    if (NIL_P(errinfo)) errinfo = rb_errinfo();
 	    if (state == TAG_FATAL) {
 		/* fatal error within this thread, need to stop whole script */
 	    }
