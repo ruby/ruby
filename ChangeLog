@@ -1,3 +1,7 @@
+Wed Nov 28 15:37:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: fix r37294: run only on i[3-6]86-linux.
+
 Wed Nov 28 15:31:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (FMODE_SYNCWRITE): removed unused macro.
