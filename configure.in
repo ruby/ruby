@@ -1533,17 +1533,6 @@ AS_CASE(["$target_os"],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
 
-    AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
-       AC_TRY_LINK([unsigned long atomic_var;],
-                   [
-                       __sync_val_compare_and_swap(&atomic_var, 0, 1);
-                   ],
-                   [rb_cv_gcc_compiler_cas=yes],
-                   [rb_cv_gcc_compiler_cas=no])])
-    if test "$rb_cv_gcc_compiler_cas" = no; then
-       ARCH_FLAG="-march=i486"
-    fi
-
 
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
   [AC_TRY_LINK([

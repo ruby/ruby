@@ -1,3 +1,9 @@
+Wed Nov 28 15:19:25 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: revert r37911, r37906 and r37904 which break build
+	  with non-gcc and/or non-IA32 compilers, e.g. Solaris Studio,
+	  Fujitsu C Compiler. [ruby-dev:46646] [Bug #7451]
+
 Wed Nov 28 14:50:55 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/psych/extconf.rb: copy sources into build directory,
