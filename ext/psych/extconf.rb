@@ -8,19 +8,10 @@ dir_config 'libyaml'
 unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
   # Embed libyaml since we could not find it.
 
-  srcdir = File.expand_path File.dirname __FILE__
-  files = Dir.chdir File.join(srcdir, 'yaml') do
-    Dir.entries(Dir.pwd).find_all { |f|
-      File.file?(f) && /^\.[hc]/ =~ File.extname(f)
-    }.map { |f| File.expand_path f }
-  end
+  $VPATH << "$(srcdir)/yaml"
+  $INCFLAGS << " -I$(srcdir)/yaml"
 
-  dstdir = Dir.pwd
-  FileUtils.cp_r files, dstdir
-
-  $objs = (Dir.glob(File.join(File.dirname(__FILE__), '*.c')) + Dir.glob('*.c')).map{|f|
-    File.basename(f, '.c') + ".#{$OBJEXT}"
-  }
+  $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}
 
   if $mswin
     $CFLAGS += " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"

@@ -1,3 +1,8 @@
+Wed Nov 28 21:21:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/extconf.rb: compile sources in the source directory
+	  without copying by using VPATH.
+
 Wed Nov 28 21:18:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#each_compile_rules): splat $(*VPATH*) for
