@@ -29,7 +29,7 @@ Wed Nov 28 21:58:47 2012  Koichi Sasada  <ko1@atdot.net>
 	  meaning of function.
 	  This function is called with same parameters of
 	  `rb_thread_call_without_gvl()'.
-	  However, if interrupts are detected, when return immediately.
+	  However, if interrupts are detected, then return immediately.
 
 	* thread.c: implement `rb_thread_call_without_gvl2()'.
 
