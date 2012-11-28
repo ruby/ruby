@@ -1,4 +1,7 @@
-Wed Nov 28 21:21:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 28 21:22:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/extconf.rb: mingw32 also needs macros for win32, not
+	  only mswin32.
 
 	* ext/psych/extconf.rb: compile sources in the source directory
 	  without copying by using VPATH.

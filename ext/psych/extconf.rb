@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'mkmf'
 require 'fileutils'
 
@@ -13,8 +14,8 @@ unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
 
   $srcs = Dir.glob("#{$srcdir}/{,yaml/}*.c").map {|n| File.basename(n)}
 
-  if $mswin
-    $CFLAGS += " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"
+  if have_macro("_WIN32")
+    $CPPFLAGS << " -DYAML_DECLARE_STATIC -DHAVE_CONFIG_H"
   end
 
   have_header 'dlfcn.h'
