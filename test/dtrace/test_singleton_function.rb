@@ -4,7 +4,7 @@ module DTrace
   class TestSingletonFunctionEntry < TestCase
     def test_entry
       probe = <<-eoprobe
-ruby$target:::function-entry
+ruby$target:::method-entry
 /strstr(copyinstr(arg0), "Foo") != NULL/
 {
   printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
@@ -25,7 +25,7 @@ ruby$target:::function-entry
 
     def test_exit
       probe = <<-eoprobe
-ruby$target:::function-return
+ruby$target:::method-return
 {
   printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
 }

@@ -1,3 +1,14 @@
+Thu Nov 29 05:19:25 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* probes.d: Change function-entry probe to method-entry.
+	* insns.def: ditto
+	* probes_helper.h: ditto
+	* test/dtrace/test_function_entry.rb: ditto
+	* test/dtrace/test_singleton_function.rb: ditto
+	* vm.c: ditto
+	* vm_eval.c: ditto
+	* vm_insnhelper.c: ditto
+
 Thu Nov 29 04:45:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: rename Class name from

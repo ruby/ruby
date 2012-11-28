@@ -4,13 +4,13 @@
 #include "ruby/ruby.h"
 #include "probes.h"
 
-#define RUBY_DTRACE_FUNC_ENTRY_HOOK(klass, id) \
-    if (RUBY_DTRACE_FUNCTION_ENTRY_ENABLED()) { \
+#define RUBY_DTRACE_METHOD_ENTRY_HOOK(klass, id) \
+    if (RUBY_DTRACE_METHOD_ENTRY_ENABLED()) { \
 	const char * classname  = rb_class2name((klass)); \
 	const char * methodname = rb_id2name((id)); \
 	const char * filename   = rb_sourcefile(); \
 	if (classname && methodname && filename) { \
-	    RUBY_DTRACE_FUNCTION_ENTRY( \
+	    RUBY_DTRACE_METHOD_ENTRY( \
 		    classname, \
 		    methodname, \
 		    filename, \
@@ -18,13 +18,13 @@
 	} \
     } \
 
-#define RUBY_DTRACE_FUNC_RETURN_HOOK(klass, id) \
-    if (RUBY_DTRACE_FUNCTION_RETURN_ENABLED()) { \
+#define RUBY_DTRACE_METHOD_RETURN_HOOK(klass, id) \
+    if (RUBY_DTRACE_METHOD_RETURN_ENABLED()) { \
 	const char * classname  = rb_class2name((klass)); \
 	const char * methodname = rb_id2name((id)); \
 	const char * filename   = rb_sourcefile(); \
 	if (classname && methodname && filename) { \
-	    RUBY_DTRACE_FUNCTION_RETURN( \
+	    RUBY_DTRACE_METHOD_RETURN( \
 		    classname, \
 		    methodname, \
 		    filename, \

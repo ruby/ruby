@@ -4,7 +4,7 @@ module DTrace
   class TestFunctionEntry < TestCase
     def test_function_entry
       probe = <<-eoprobe
-ruby$target:::function-entry
+ruby$target:::method-entry
 /arg0 && arg1 && arg2/
 {
   printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
@@ -25,7 +25,7 @@ ruby$target:::function-entry
 
     def test_function_return
       probe = <<-eoprobe
-ruby$target:::function-return
+ruby$target:::method-return
 /arg0 && arg1 && arg2/
 {
   printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);

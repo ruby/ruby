@@ -1177,7 +1177,7 @@ vm_exec(rb_thread_t *th)
 	    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
 		const rb_method_entry_t *me = th->cfp->me;
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass, Qnil);
-		RUBY_DTRACE_FUNC_RETURN_HOOK(me->klass, me->called_id);
+		RUBY_DTRACE_METHOD_RETURN_HOOK(me->klass, me->called_id);
 	    }
 	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	}
