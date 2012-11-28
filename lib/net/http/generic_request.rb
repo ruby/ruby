@@ -75,7 +75,7 @@ class Net::HTTPGenericRequest
   def set_body_internal(str)   #:nodoc: internal use only
     raise ArgumentError, "both of body argument and HTTPRequest#body set" if str and (@body or @body_stream)
     self.body = str if str
-    if @body.nil? && @body_stream.nil? && @body_data.nil?
+    if @body.nil? && @body_stream.nil? && @body_data.nil? && request_body_permitted?
       self.body = ''
     end
   end
