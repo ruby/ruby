@@ -326,7 +326,6 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
     if (th != main_thread) {
 	thread_debug("terminate_i: %p\n", (void *)th);
 	rb_threadptr_async_errinfo_enque(th, eTerminateSignal);
-	th->status = THREAD_TO_KILL;
 	rb_threadptr_interrupt(th);
     }
     else {
@@ -1732,7 +1731,8 @@ static void
 rb_threadptr_to_kill(rb_thread_t *th)
 {
     rb_threadptr_async_errinfo_clear(th);
-    th->status = THREAD_TO_KILL;
+    th->status = THREAD_RUNNABLE;
+    th->to_kill = 1;
     th->errinfo = INT2FIX(TAG_FATAL);
     TH_JUMP_TAG(th, TAG_FATAL);
 }
@@ -1743,7 +1743,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
     if (th->raised_flag) return;
 
     while (1) {
-	enum rb_thread_status status = th->status;
 	rb_atomic_t interrupt;
 	rb_atomic_t old;
 	int sig;
@@ -1766,13 +1765,16 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	finalizer_interrupt = interrupt & FINALIZER_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
-	th->status = THREAD_RUNNABLE;
+
 
 	/* signal handling */
 	if (trap_interrupt && (th == th->vm->main_thread)) {
+	    enum rb_thread_status prev_status = th->status;
+	    th->status = THREAD_RUNNABLE;
 	    while ((sig = rb_get_next_signal()) != 0) {
 		rb_signal_exec(th, sig);
 	    }
+	    th->status = prev_status;
 	}
 
 	/* exception from another thread */
@@ -1788,10 +1790,13 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 		rb_threadptr_to_kill(th);
 	    }
 	    else {
+		/* set runnable if th was slept. */
+		if (th->status == THREAD_STOPPED ||
+		    th->status == THREAD_STOPPED_FOREVER)
+		    th->status = THREAD_RUNNABLE;
 		rb_exc_raise(err);
 	    }
 	}
-	th->status = status;
 
 	if (finalizer_interrupt) {
 	    rb_gc_finalize_deferred();
@@ -1805,7 +1810,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    else
 		limits_us >>= -th->priority;
 
-	    if (status == THREAD_RUNNABLE || status == THREAD_TO_KILL)
+	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0, Qundef);
@@ -1985,7 +1990,7 @@ rb_thread_kill(VALUE thread)
     if (th != GET_THREAD() && th->safe_level < 4) {
 	rb_secure(4);
     }
-    if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED) {
+    if (th->to_kill || th->status == THREAD_KILLED) {
 	return thread;
     }
     if (th == th->vm->main_thread) {
@@ -2000,7 +2005,6 @@ rb_thread_kill(VALUE thread)
     }
     else {
 	rb_threadptr_async_errinfo_enque(th, eKillSignal);
-	th->status = THREAD_TO_KILL;
 	rb_threadptr_interrupt(th);
     }
     return thread;
@@ -2082,9 +2086,8 @@ rb_thread_wakeup_alive(VALUE thread)
 	return Qnil;
     }
     rb_threadptr_ready(th);
-    if (th->status != THREAD_TO_KILL) {
+    if (th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER)
 	th->status = THREAD_RUNNABLE;
-    }
     return thread;
 }
 
@@ -2157,7 +2160,6 @@ thread_list_i(st_data_t key, st_data_t val, void *data)
       case THREAD_RUNNABLE:
       case THREAD_STOPPED:
       case THREAD_STOPPED_FOREVER:
-      case THREAD_TO_KILL:
 	rb_ary_push(ary, th->self);
       default:
 	break;
@@ -2352,16 +2354,17 @@ rb_thread_group(VALUE thread)
 }
 
 static const char *
-thread_status_name(enum rb_thread_status status)
+thread_status_name(rb_thread_t *th)
 {
-    switch (status) {
+    switch (th->status) {
       case THREAD_RUNNABLE:
-	return "run";
+	if (th->to_kill)
+	    return "aborting";
+	else
+	    return "run";
       case THREAD_STOPPED:
       case THREAD_STOPPED_FOREVER:
 	return "sleep";
-      case THREAD_TO_KILL:
-	return "aborting";
       case THREAD_KILLED:
 	return "dead";
       default:
@@ -2411,7 +2414,7 @@ rb_thread_status(VALUE thread)
 	}
 	return Qfalse;
     }
-    return rb_str_new2(thread_status_name(th->status));
+    return rb_str_new2(thread_status_name(th));
 }
 
 
@@ -2500,7 +2503,7 @@ rb_thread_inspect(VALUE thread)
     VALUE str;
 
     GetThreadPtr(thread, th);
-    status = thread_status_name(th->status);
+    status = thread_status_name(th);
     str = rb_sprintf("#<%s:%p %s>", cname, (void *)thread, status);
     OBJ_INFECT(str, thread);
 

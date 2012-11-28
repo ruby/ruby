@@ -738,15 +738,8 @@ thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
     rb_thread_t *th;
     GetThreadPtr(thval, th);
 
-    switch (th->status) {
-      case THREAD_RUNNABLE:
-      case THREAD_STOPPED:
-      case THREAD_STOPPED_FOREVER:
-	break;
-      case THREAD_TO_KILL:
-      case THREAD_KILLED:
+    if (th->to_kill || th->status == THREAD_KILLED)
 	return Qnil;
-    }
 
     return vm_backtrace_to_ary(th, argc, argv, 0, 0, to_str);
 }

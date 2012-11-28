@@ -1,3 +1,30 @@
+Wed Nov 28 16:40:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (enum rb_thread_status): remove THREAD_TO_KILL
+	* vm_core.h (struct rb_thread_struct): add to_kill field
+	* thread.c (terminate_i): convert THREAD_TO_KILL to to_kill.
+	* thread.c (rb_threadptr_to_kill): ditto.
+	* thread.c (rb_thread_kill): ditto.
+	* thread.c (rb_thread_wakeup_alive): ditto.
+	* thread.c (thread_list_i): ditto.
+	* thread.c (static const char): ditto.
+	* thread.c (thread_status_name): ditto.
+	* thread.c (rb_thread_status): ditto.
+	* thread.c (rb_thread_inspect): ditto.
+	* vm_backtrace.c (thread_backtrace_to_ary): ditto.
+
+	* thread.c (rb_threadptr_execute_interrupts): fix thread status
+	  overwritten issue. [Bug #7450] [ruby-core:50249]
+
+	* test/ruby/test_thread.rb (test_hread_status_raise_after_kill):
+	  test for the above.
+	* test/ruby/test_thread.rb (test_thread_status_in_trap): test for
+	  thread status in trap.
+	* test/ruby/test_thread.rb (test_status_and_stop_p): remove
+	  Thread.control_interrupt unsafe test. Thread#kill no longer
+	  changes thread status. Instead of, Thread#kill receiver changes
+	  their own status when receiving kill signal.
+
 Wed Nov 28 16:21:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (struct rb_mutex_struct): add allow_trap field.

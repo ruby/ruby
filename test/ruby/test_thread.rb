@@ -497,7 +497,6 @@ class TestThread < Test::Unit::TestCase
     a = ::Thread.new { raise("die now") }
     b = Thread.new { Thread.stop }
     c = Thread.new { Thread.exit }
-    d = Thread.new { sleep }
     e = Thread.current
     sleep 0.5
 
@@ -511,21 +510,14 @@ class TestThread < Test::Unit::TestCase
     assert_match(/^#<TestThread::Thread:.* dead>$/, c.inspect)
     assert(c.stop?)
 
-    d.kill
-    # to avoid thread switching...
-    ds1 = d.status
-    ds2 = d.stop?
     es1 = e.status
     es2 = e.stop?
-    assert_equal(["aborting", false], [ds1, ds2])
-
     assert_equal(["run", false], [es1, es2])
 
   ensure
     a.kill if a
     b.kill if b
     c.kill if c
-    d.kill if d
   end
 
   def test_safe_level
@@ -911,5 +903,48 @@ Thread.new(Thread.current) {|mth|
   end
 }
     INPUT
+  end
+
+  def test_thread_status_in_trap
+    # when running trap handler, Thread#status must show "run"
+    # Even though interrupted from sleeping function
+    assert_in_out_err([], <<-INPUT, %w(sleep run), [])
+      Signal.trap(:INT) {
+        puts Thread.current.status
+      }
+
+      Thread.new(Thread.current) {|mth|
+        sleep 0.01
+        puts mth.status
+        Process.kill(:INT, $$)
+      }
+      sleep 0.1
+    INPUT
+  end
+
+  # Bug #7450
+  def test_thread_status_raise_after_kill
+    ary = []
+
+    t = Thread.new {
+      begin
+        ary << Thread.current.status
+        sleep
+      ensure
+        begin
+          ary << Thread.current.status
+          sleep
+        ensure
+          ary << Thread.current.status
+        end
+      end
+    }
+
+    sleep 0.01
+    t.kill
+    sleep 0.01
+    t.raise
+    sleep 0.01
+    assert_equal(ary, ["run", "aborting", "aborting"])
   end
 end

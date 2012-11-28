@@ -425,7 +425,6 @@ extern const rb_data_type_t ruby_threadptr_data_type;
     TypedData_Get_Struct((obj), rb_thread_t, &ruby_threadptr_data_type, (ptr))
 
 enum rb_thread_status {
-    THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
     THREAD_STOPPED_FOREVER,
@@ -498,6 +497,7 @@ typedef struct rb_thread_struct {
     /* thread control */
     rb_thread_id_t thread_id;
     enum rb_thread_status status;
+    int to_kill;
     int priority;
 
     native_thread_data_t native_thread_data;
