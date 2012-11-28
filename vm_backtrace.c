@@ -490,23 +490,8 @@ location_to_str_dmyarg(rb_backtrace_location_t *loc, void *dmy)
     return location_to_str(loc);
 }
 
-VALUE
-rb_backtrace_to_str_ary(VALUE self)
-{
-    rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
-
-    if (bt->strary) {
-	return bt->strary;
-    }
-    else {
-	bt->strary = backtrace_collect(bt, 0, bt->backtrace_size, location_to_str_dmyarg, 0);
-	return bt->strary;
-    }
-}
-
 static VALUE
-backtrace_to_str_ary2(VALUE self, int lev, int n)
+backtrace_to_str_ary(VALUE self, int lev, int n)
 {
     rb_backtrace_t *bt;
     int size;
@@ -523,6 +508,18 @@ backtrace_to_str_ary2(VALUE self, int lev, int n)
     return backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
 }
 
+VALUE
+rb_backtrace_to_str_ary(VALUE self)
+{
+    rb_backtrace_t *bt;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+
+    if (!bt->strary) {
+	bt->strary = backtrace_to_str_ary(self, 0, bt->backtrace_size);
+    }
+    return bt->strary;
+}
+
 static VALUE
 location_create(rb_backtrace_location_t *srcloc, void *btobj)
 {
@@ -537,7 +534,7 @@ location_create(rb_backtrace_location_t *srcloc, void *btobj)
 }
 
 static VALUE
-backtrace_to_frame_ary(VALUE self, int lev, int n)
+backtrace_to_location_ary(VALUE self, int lev, int n)
 {
     rb_backtrace_t *bt;
     int size;
@@ -573,13 +570,13 @@ backtrace_load_data(VALUE self, VALUE str)
 VALUE
 vm_backtrace_str_ary(rb_thread_t *th, int lev, int n)
 {
-    return backtrace_to_str_ary2(backtrace_object(th), lev, n);
+    return backtrace_to_str_ary(backtrace_object(th), lev, n);
 }
 
 VALUE
-vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n)
+vm_backtrace_location_ary(rb_thread_t *th, int lev, int n)
 {
-    return backtrace_to_frame_ary(backtrace_object(th), lev, n);
+    return backtrace_to_location_ary(backtrace_object(th), lev, n);
 }
 
 /* make old style backtrace directly */
@@ -728,7 +725,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 	return vm_backtrace_str_ary(th, lev+lev_plus, n);
     }
     else {
-	return vm_backtrace_frame_ary(th, lev+lev_plus, n);
+	return vm_backtrace_location_ary(th, lev+lev_plus, n);
     }
 }
 
