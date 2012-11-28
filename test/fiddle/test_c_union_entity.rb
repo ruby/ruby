@@ -1,9 +1,9 @@
-require_relative 'test_base'
+require_relative 'helper'
 
-require 'dl/struct'
+require 'fiddle/struct'
 
-module DL
-  class TestCUnionEntity < TestBase
+module Fiddle
+  class TestCUnionEntity < TestCase
     def test_class_size
       size = CUnionEntity.size([TYPE_DOUBLE, TYPE_CHAR])
 

@@ -1,9 +1,9 @@
-require_relative 'test_base'
+require_relative 'helper'
 
-require 'dl/cparser'
+require 'fiddle/cparser'
 
-module DL
-  class TestCParser < TestBase
+module Fiddle
+  class TestCParser < TestCase
     include CParser
 
     def test_uint_ctype

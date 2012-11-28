@@ -1,9 +1,9 @@
-require_relative 'test_base'
+require_relative 'helper'
 
-require 'dl/struct'
+require 'fiddle/struct'
 
-module DL
-  class TestCStructEntity < TestBase
+module Fiddle
+  class TestCStructEntity < TestCase
     def test_class_size
       types = [TYPE_DOUBLE, TYPE_CHAR]
 

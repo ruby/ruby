@@ -1,8 +1,8 @@
 # coding: US-ASCII
-require_relative 'test_base'
-require 'dl/import'
+require_relative 'helper'
+require 'fiddle/import'
 
-module DL
+module Fiddle
   module LIBC
     extend Importer
     dlload LIBC_SO, LIBM_SO
@@ -18,7 +18,6 @@ module DL
     extern "int fprintf(FILE*, char*)"
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
-    QsortCallback = bind("void *qsort_callback(void*, void*)", :temp)
     BoundQsortCallback = bind("void *bound_qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
     Timeval = struct [
       "long tv_sec",
@@ -34,14 +33,13 @@ module DL
       "unsigned char buff[7]",
     ]
 
-    CallCallback = bind("void call_callback(void*, void*)"){|ptr1, ptr2|
-      f = Function.new(CFunc.new(ptr1.to_i, TYPE_VOID, "<anonymous>"), [TYPE_VOIDP])
+    CallCallback = bind("void call_callback(void*, void*)"){ | ptr1, ptr2|
+      f = Function.new(ptr1.to_i, [TYPE_VOIDP], TYPE_VOID)
       f.call(ptr2)
     }
-    CarriedFunction = bind("void callback_function(void*)", :carried, 0)
   end
 
-  class TestImport < TestBase
+  class TestImport < TestCase
     def test_ensure_call_dlload
       err = assert_raises(RuntimeError) do
         Class.new do
@@ -55,7 +53,7 @@ module DL
     def test_malloc()
       s1 = LIBC::Timeval.malloc()
       s2 = LIBC::Timeval.malloc()
-      assert_not_equal(s1.to_ptr.to_i, s2.to_ptr.to_i)
+      refute_equal(s1.to_ptr.to_i, s2.to_ptr.to_i)
     end
 
     def test_sizeof()
@@ -94,15 +92,6 @@ module DL
       assert_equal([0,1,2], ary.value)
     end
 
-    def test_carried_function()
-      data1 = "data"
-      data2 = nil
-      LIBC.call_callback(LIBC::CarriedFunction, LIBC::CarriedFunction.create_carrier(data1)){|d|
-        data2 = d
-      }
-      assert_equal(data1, data2)
-    end
-
     def test_struct()
       s = LIBC::MyStruct.malloc()
       s.num = [0,1,2,3,4]
@@ -130,36 +119,18 @@ module DL
       assert_equal("123", str.to_s)
     end
 
-    def test_isdigit()
+    def test_isdigit
       r1 = LIBC.isdigit(?1.ord)
       r2 = LIBC.isdigit(?2.ord)
       rr = LIBC.isdigit(?r.ord)
-      assert_positive(r1)
-      assert_positive(r2)
-      assert_zero(rr)
+      assert_operator(r1, :>, 0)
+      assert_operator(r2, :>, 0)
+      assert_equal(0, rr)
     end
 
-    def test_atof()
+    def test_atof
       r = LIBC.atof("12.34")
-      assert_match(12.00..13.00, r)
-    end
-
-    def test_strtod()
-      f = Function.new(CFunc.new(@libc['strtod'], TYPE_DOUBLE, 'strtod'),
-                       [TYPE_VOIDP, TYPE_VOIDP])
-      buff1 = "12.34"
-      buff2 = "     "
-      r = f.call(buff1, buff2)
-      assert_match(12.00..13.00, r)
-    end
-
-    def test_qsort()
-      buff = "9341"
-      LIBC.qsort(buff, buff.size, 1, LIBC::QsortCallback){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
-      assert_equal("1349", buff)
-      buff = "9341"
-      LIBC.qsort(buff, buff.size, 1, LIBC::BoundQsortCallback)
-      assert_equal("1349", buff)
+      assert_includes(12.00..13.00, r)
     end
   end
 end

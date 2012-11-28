@@ -260,6 +260,86 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "TYPE_UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
 
+    /* Document-const: ALIGN_VOIDP
+     *
+     * The alignment size of a void*
+     */
+    rb_define_const(mFiddle, "ALIGN_VOIDP", INT2NUM(ALIGN_VOIDP));
+
+    /* Document-const: ALIGN_CHAR
+     *
+     * The alignment size of a char
+     */
+    rb_define_const(mFiddle, "ALIGN_CHAR",  INT2NUM(ALIGN_CHAR));
+
+    /* Document-const: ALIGN_SHORT
+     *
+     * The alignment size of a short
+     */
+    rb_define_const(mFiddle, "ALIGN_SHORT", INT2NUM(ALIGN_SHORT));
+
+    /* Document-const: ALIGN_INT
+     *
+     * The alignment size of an int
+     */
+    rb_define_const(mFiddle, "ALIGN_INT",   INT2NUM(ALIGN_INT));
+
+    /* Document-const: ALIGN_LONG
+     *
+     * The alignment size of a long
+     */
+    rb_define_const(mFiddle, "ALIGN_LONG",  INT2NUM(ALIGN_LONG));
+
+#if HAVE_LONG_LONG
+    /* Document-const: ALIGN_LONG_LONG
+     *
+     * The alignment size of a long long
+     */
+    rb_define_const(mFiddle, "ALIGN_LONG_LONG",  INT2NUM(ALIGN_LONG_LONG));
+#endif
+
+    /* Document-const: ALIGN_FLOAT
+     *
+     * The alignment size of a float
+     */
+    rb_define_const(mFiddle, "ALIGN_FLOAT", INT2NUM(ALIGN_FLOAT));
+
+    /* Document-const: ALIGN_DOUBLE
+     *
+     * The alignment size of a double
+     */
+    rb_define_const(mFiddle, "ALIGN_DOUBLE",INT2NUM(ALIGN_DOUBLE));
+
+    /* Document-const: ALIGN_SIZE_T
+     *
+     * The alignment size of a size_t
+     */
+    rb_define_const(mFiddle, "ALIGN_SIZE_T", INT2NUM(ALIGN_OF(size_t)));
+
+    /* Document-const: ALIGN_SSIZE_T
+     *
+     * The alignment size of a ssize_t
+     */
+    rb_define_const(mFiddle, "ALIGN_SSIZE_T", INT2NUM(ALIGN_OF(size_t))); /* same as size_t */
+
+    /* Document-const: ALIGN_PTRDIFF_T
+     *
+     * The alignment size of a ptrdiff_t
+     */
+    rb_define_const(mFiddle, "ALIGN_PTRDIFF_T", INT2NUM(ALIGN_OF(ptrdiff_t)));
+
+    /* Document-const: ALIGN_INTPTR_T
+     *
+     * The alignment size of a intptr_t
+     */
+    rb_define_const(mFiddle, "ALIGN_INTPTR_T", INT2NUM(ALIGN_OF(intptr_t)));
+
+    /* Document-const: ALIGN_UINTPTR_T
+     *
+     * The alignment size of a uintptr_t
+     */
+    rb_define_const(mFiddle, "ALIGN_UINTPTR_T", INT2NUM(ALIGN_OF(uintptr_t)));
+
     /* Document-const: WINDOWS
      *
      * Returns a boolean regarding whether the host is WIN32
@@ -355,6 +435,14 @@ Init_fiddle(void)
      * Address of the ruby_xfree() function
      */
     rb_define_const(mFiddle, "RUBY_FREE", PTR2NUM(ruby_xfree));
+
+    /* Document-const: BUILD_RUBY_PLATFORM
+     *
+     * Platform built against (i.e. "x86_64-linux", etc.)
+     *
+     * See also RUBY_PLATFORM
+     */
+    rb_define_const(mFiddle, "BUILD_RUBY_PLATFORM", rb_str_new2(RUBY_PLATFORM));
 
     rb_define_module_function(mFiddle, "dlwrap", rb_fiddle_value2ptr, 1);
     rb_define_module_function(mFiddle, "dlunwrap", rb_fiddle_ptr2value, 1);

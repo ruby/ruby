@@ -1,3 +1,26 @@
+Wed Nov 28 09:00:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/fiddle/fiddle.c: adding alignment constants for compatibility
+	  with DL.
+	* ext/fiddle/fiddle.h: ditto
+	* ext/fiddle/lib/fiddle/cparser.rb: importing the C parser for DL
+	  backwards compatibility.
+	* ext/fiddle/lib/fiddle/import.rb: importing the import DSL for DL
+	  backwards compatibility.
+	* ext/fiddle/lib/fiddle/pack.rb: importing structure pack for DL
+	  backwards compatibility.
+	* ext/fiddle/lib/fiddle/value.rb: ditto
+	* ext/fiddle/lib/fiddle/struct.rb: importing struct DSL for DL backwards
+	  compatibility.
+	* test/dl/test_c_struct_entry.rb: importing tests
+	* test/dl/test_c_union_entity.rb: ditto
+	* test/dl/test_cparser.rb: ditto
+	* test/dl/test_import.rb: ditto
+	* test/fiddle/test_c_struct_entry.rb: ditto
+	* test/fiddle/test_c_union_entity.rb: ditto
+	* test/fiddle/test_cparser.rb: ditto
+	* test/fiddle/test_import.rb: ditto
+
 Wed Nov 28 08:56:00 2012  Zachary Scott <zachary@zacharyscott.net>
 
 	* doc/globals.rdoc: Add documentation file for magic globals

@@ -121,6 +121,19 @@
 #define TYPE_FLOAT 7
 #define TYPE_DOUBLE 8
 
+#define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
+
+#define ALIGN_VOIDP  ALIGN_OF(void*)
+#define ALIGN_SHORT  ALIGN_OF(short)
+#define ALIGN_CHAR   ALIGN_OF(char)
+#define ALIGN_INT    ALIGN_OF(int)
+#define ALIGN_LONG   ALIGN_OF(long)
+#if HAVE_LONG_LONG
+#define ALIGN_LONG_LONG ALIGN_OF(LONG_LONG)
+#endif
+#define ALIGN_FLOAT  ALIGN_OF(float)
+#define ALIGN_DOUBLE ALIGN_OF(double)
+
 extern VALUE mFiddle;
 extern VALUE rb_eFiddleError;
 
