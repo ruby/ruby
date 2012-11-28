@@ -339,12 +339,6 @@ class TestProc < Test::Unit::TestCase
     t.kill
   end
 
-  def test_eq2
-    b1 = proc { }
-    b2 = b1.dup
-    assert(b1 == b2)
-  end
-
   def test_to_proc
     b = proc { :foo }
     assert_equal(:foo, b.to_proc.call)
