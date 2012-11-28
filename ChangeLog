@@ -1,3 +1,11 @@
+Wed Nov 28 16:41:04 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/servlet.rb:  Add support for serving documentation from a
+	  subdirectory.
+	* lib/rdoc/generator/darkfish.rb:  ditto
+	* test/rdoc/test_rdoc_servlet.rb:  Test for above
+	* test/rdoc/test_rdoc_servlet.rb:  ditto
+
 Wed Nov 28 15:37:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: fix r37294: run only on i[3-6]86-linux.

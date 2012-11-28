@@ -1,4 +1,5 @@
 require 'rdoc/test_case'
+
 class TestRDocServlet < RDoc::TestCase
 
   def setup
@@ -16,13 +17,13 @@ class TestRDocServlet < RDoc::TestCase
     Gem::Specification.reset
     Gem::Specification.all = [@spec]
 
-    server = {}
-    def server.mount(*) end
+    @server = {}
+    def @server.mount(*) end
 
     @stores = {}
     @cache  = Hash.new { |hash, store| hash[store] = {} }
 
-    @s = RDoc::Servlet.new server, @stores, @cache
+    @s = RDoc::Servlet.new @server, @stores, @cache
 
     @req = WEBrick::HTTPRequest.new :Logger => nil
     @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
@@ -124,6 +125,22 @@ class TestRDocServlet < RDoc::TestCase
     @s.do_GET @req, @res
 
     assert_equal 500, @res.status
+  end
+
+  def test_do_GET_mount_path
+    @s = RDoc::Servlet.new @server, @stores, @cache, '/mount/path'
+
+    temp_dir do
+      FileUtils.touch 'rdoc.css'
+
+      @s.asset_dirs[:darkfish] = '.'
+
+      @req.path = '/mount/path/rdoc.css'
+
+      @s.do_GET @req, @res
+
+      assert_equal 'text/css', @res.content_type
+    end
   end
 
   def test_do_GET_not_modified

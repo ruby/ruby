@@ -17,11 +17,13 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     new server, stores, @cache, *options
   end
 
-  def initialize server, stores, cache
+  def initialize server, stores, cache, mount_path = nil
     super server
 
-    @stores  = stores
-    @cache   = cache
+    @cache      = cache
+    @mount_path = mount_path
+    @stores     = stores
+
     @options = RDoc::Options.new
     @options.op_dir = '.'
 
@@ -59,6 +61,8 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   end
 
   def do_GET req, res
+    req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
+
     case req.path
     when '/' then
       root req, res
@@ -128,7 +132,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 
 <title>Error - #{ERB::Util.html_escape e.class}</title>
 
-<link type="text/css" media="screen" href="/rdoc.css" rel="stylesheet">
+<link type="text/css" media="screen" href="#{@mouth_path}/rdoc.css" rel="stylesheet">
 </head>
 <body>
 <h1>Error</h1>

@@ -467,7 +467,7 @@ class RDoc::Generator::Darkfish
     render_template template_file do |io| binding end
   rescue => e
     error = RDoc::Error.new \
-      "error generating servlet_root: #{e.message} (#{e.class})"
+      "error generating servlet_not_found: #{e.message} (#{e.class})"
     error.set_backtrace e.backtrace
 
     raise error
@@ -484,12 +484,9 @@ class RDoc::Generator::Darkfish
 
     debug_msg 'Rendering the servlet root page...'
 
-    rel_prefix = rel_prefix = ''
+    rel_prefix = asset_rel_prefix = '.'
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
-
-    # suppress 1.9.3 warning
-    asset_rel_prefix = asset_rel_prefix = ''
 
     @title = 'Local RDoc Documentation'
 
