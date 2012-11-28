@@ -21,6 +21,7 @@
 
 static VALUE StringScanner;
 static VALUE ScanError;
+static ID id_byteslice;
 
 struct strscanner
 {
@@ -371,7 +372,7 @@ strscan_concat(VALUE self, VALUE str)
  * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
  * this value is the bytesize of the string.
  *
- * In short, it's a 0-based index into the string.
+ * In short, it's a 0-based index into bytes of the string.
  *
  *   s = StringScanner.new('test string')
  *   s.pos               # -> 0
@@ -387,6 +388,32 @@ strscan_get_pos(VALUE self)
 
     GET_SCANNER(self, p);
     return INT2FIX(p->curr);
+}
+
+/*
+ * Returns the character position of the scan pointer.  In the 'reset' position, this
+ * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
+ * this value is the size of the string.
+ *
+ * In short, it's a 0-based index into the string.
+ *
+ *   s = StringScanner.new("abcädeföghi")
+ *   s.charpos           # -> 0
+ *   s.scan_until(/ä/)   # -> "abcä"
+ *   s.pos               # -> 5
+ *   s.charpos           # -> 4
+ */
+static VALUE
+strscan_get_charpos(VALUE self)
+{
+    struct strscanner *p;
+    VALUE substr;
+
+    GET_SCANNER(self, p);
+
+    substr = rb_funcall(p->str, id_byteslice, 2, INT2FIX(0), INT2NUM(p->curr));
+
+    return rb_str_length(substr);
 }
 
 /*
@@ -1262,6 +1289,8 @@ Init_strscan()
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 
+    id_byteslice = rb_intern("byteslice");
+
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
     if (!rb_const_defined(rb_cObject, id_scanerr)) {
@@ -1287,6 +1316,7 @@ Init_strscan()
     rb_define_method(StringScanner, "<<",          strscan_concat,      1);
     rb_define_method(StringScanner, "pos",         strscan_get_pos,     0);
     rb_define_method(StringScanner, "pos=",        strscan_set_pos,     1);
+    rb_define_method(StringScanner, "charpos",     strscan_get_charpos, 0);
     rb_define_method(StringScanner, "pointer",     strscan_get_pos,     0);
     rb_define_method(StringScanner, "pointer=",    strscan_set_pos,     1);
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # test/strscan/test_stringscanner.rb
 #
@@ -197,6 +198,17 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 2, s.pos
     s.terminate
     assert_equal 11, s.pos
+  end
+
+  def test_pos_unicode
+    s = StringScanner.new("abcädeföghi")
+    assert_equal 0, s.charpos
+    assert_equal "abcä", s.scan_until(/ä/)
+    assert_equal 4, s.charpos
+    assert_equal "defö", s.scan_until(/ö/)
+    assert_equal 8, s.charpos
+    s.terminate
+    assert_equal 11, s.charpos
   end
 
   def test_concat

@@ -1,3 +1,8 @@
+Wed Nov 28 09:15:51 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* ext/strscan/strscan.c: Added #charpos for multibyte string position.
+	* test/strscan/test_stringscanner.rb: ditto
+
 Wed Nov 28 09:00:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/fiddle.c: adding alignment constants for compatibility
