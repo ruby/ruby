@@ -1343,7 +1343,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     assert_equal "hi\n", out
     assert_equal "bye!\n", err
   ensure
-    $VERBOSE = orig_verbose
+    $VERBOSE = orig_verbose unless orig_verbose.nil?
   end
 
   def test_class_asserts_match_refutes
