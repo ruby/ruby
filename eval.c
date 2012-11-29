@@ -159,9 +159,6 @@ ruby_cleanup(volatile int ex)
     rb_thread_t *th = GET_THREAD();
     int nerr;
 
-    /* protect from thread.raise */
-    th->status = THREAD_KILLED;
-
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     PUSH_TAG();
@@ -179,6 +176,9 @@ ruby_cleanup(volatile int ex)
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
     }
     POP_TAG();
+
+    /* protect from Thread#raise */
+    th->status = THREAD_KILLED;
 
     errs[0] = th->errinfo;
     PUSH_TAG();

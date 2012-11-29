@@ -1,3 +1,8 @@
+Thu Nov 29 09:36:09 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (ruby_cleanup): delay THREAD_KILLED timing.
+	  It should be located just before rb_thread_terminate_all().
+
 Thu Nov 29 09:10:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (vm_backtrace_to_ary): support range argument
