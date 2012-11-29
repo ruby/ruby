@@ -146,7 +146,7 @@ lib/foo.rb
 #{Gem::ConfigMap[:archdir]}/default_gem.so
     EOF
 
-    assert_equal expected, @ui.output
+    assert_equal expected.lines.sort, @ui.output.line.sort
     assert_equal "", @ui.error
   end
 
