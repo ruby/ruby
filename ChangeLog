@@ -1,3 +1,12 @@
+Thu Nov 29 14:56:30 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_tracepoint_attr_method_id): 
+	  rename TracePoint#id to TracePoint#method_id.
+
+	* include/ruby/debug.h: ditto.
+
+	* test/ruby/test_settracefunc.rb: ditto,
+
 Thu Nov 29 14:49:10 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_tracepoint_attr_defined_class): 

@@ -418,7 +418,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
-    2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
+    2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.method_id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
     3: }
     4: 1.times{|;local_var| local_var = :inner
     5:   tap{}
@@ -587,7 +587,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_raise(RuntimeError){tp_store.lineno}
     assert_raise(RuntimeError){tp_store.event}
     assert_raise(RuntimeError){tp_store.path}
-    assert_raise(RuntimeError){tp_store.id}
+    assert_raise(RuntimeError){tp_store.method_id}
     assert_raise(RuntimeError){tp_store.defined_class}
     assert_raise(RuntimeError){tp_store.binding}
     assert_raise(RuntimeError){tp_store.self}
@@ -601,7 +601,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_enable
     ary = []
     trace = TracePoint.new(:call){|tp|
-      ary << tp.id
+      ary << tp.method_id
     }
     foo
     trace.enable{
@@ -614,7 +614,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_disable
     ary = []
     trace = TracePoint.trace(:call){|tp|
-      ary << tp.id
+      ary << tp.method_id
     }
     foo
     trace.disable{

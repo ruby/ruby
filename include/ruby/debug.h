@@ -54,7 +54,7 @@ VALUE rb_tracepoint_enabled_p(VALUE tpval);
 VALUE rb_tracepoint_attr_event(VALUE tpval);
 VALUE rb_tracepoint_attr_lineno(VALUE tpval);
 VALUE rb_tracepoint_attr_path(VALUE tpval);
-VALUE rb_tracepoint_attr_id(VALUE tpval);
+VALUE rb_tracepoint_attr_method_id(VALUE tpval);
 VALUE rb_tracepoint_attr_defined_class(VALUE tpval);
 VALUE rb_tracepoint_attr_binding(VALUE tpval);
 VALUE rb_tracepoint_attr_self(VALUE tpval);
