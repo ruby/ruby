@@ -126,7 +126,7 @@ class TestRDocContextSection < RDoc::TestCase
   end
 
   def test_sequence
-    _, err = capture_io do
+    _, err = verbose_capture_io do
       assert_match(/\ASEC\d{5}\Z/, @s.sequence)
     end
 

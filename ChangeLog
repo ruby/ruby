@@ -1,3 +1,11 @@
+Thu Nov 29 15:56:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/test_case.rb (RDoc::TestCase#verbose_capture_io):
+	  defined for asserts of warnings.
+
+	* test/rdoc: use verbose_capture_io on asserts of warnings.
+	  they failed when tests was run with RUBYOPT=-W0.
+
 Thu Nov 29 15:53:38 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/psych/extconf.rb: added --enable-bundled-libyaml option.  this

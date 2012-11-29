@@ -230,7 +230,7 @@ class TestRDocContext < XrefTestCase
     meth2.record_location @store.add_file 'second.rb'
     meth2.comment = comment 'second'
 
-    _, err = capture_io do
+    _, err = verbose_capture_io do
       @context.add_method meth2
     end
 

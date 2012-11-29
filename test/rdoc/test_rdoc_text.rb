@@ -553,7 +553,7 @@ The comments associated with
   end
 
   def test_to_html_tt_tag_mismatch
-    _, err = capture_io do
+    _, err = verbose_capture_io do
       assert_equal '<tt>hi', to_html('<tt>hi')
     end
 

@@ -16,13 +16,13 @@ class TestRDocTask < RDoc::TestCase
   end
 
   def test_inline_source
-    _, err = capture_io do
+    _, err = verbose_capture_io do
       assert @t.inline_source
     end
 
     assert_equal "RDoc::Task#inline_source is deprecated\n", err
 
-    _, err = capture_io do
+    _, err = verbose_capture_io do
       @t.inline_source = false
     end
 

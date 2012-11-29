@@ -45,7 +45,7 @@ class TestRDocOptions < RDoc::TestCase
   def test_check_files_warn
     @options.verbosity = 2
 
-    out, err = capture_io do
+    out, err = verbose_capture_io do
       @options.files = %w[nonexistent]
 
       @options.check_files
@@ -572,7 +572,7 @@ rdoc_include:
 
     @options.verbosity = 2
 
-    out, err = capture_io do
+    out, err = verbose_capture_io do
       @options.warn "warnings on"
     end
 

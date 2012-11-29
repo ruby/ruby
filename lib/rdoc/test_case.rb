@@ -151,6 +151,20 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
     @RM::Verbatim.new(*parts)
   end
 
+  ##
+  # run capture_io with setting $VERBOSE = true
+
+  def verbose_capture_io
+    capture_io do
+      begin
+        orig_verbose = $VERBOSE
+        $VERBOSE = true
+        yield
+      ensure
+        $VERBOSE = orig_verbose
+      end
+    end
+  end
 end
 
 # This hack allows autoload to work when Dir.pwd is changed for Ruby 1.8 since

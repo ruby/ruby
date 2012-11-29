@@ -128,7 +128,7 @@ class TestRDocRDoc < RDoc::TestCase
 
     files = nil
 
-    out, err = capture_io do
+    out, err = verbose_capture_io do
       files = @rdoc.normalized_file_list %w[/dev/stdin]
     end
 
