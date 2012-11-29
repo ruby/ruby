@@ -1,3 +1,11 @@
+Thu Nov 29 14:02:15 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): GC.stat supports new information
+	  * total_allocated_object: total allocated object number.
+	  * total_freed_object: total freed object number.
+	  Above two numbers are only accumulated and they will
+	  overflow (return to 0). Please use them as a hint.
+
 Thu Nov 29 12:13:54 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 4.3.2 (r8026)
