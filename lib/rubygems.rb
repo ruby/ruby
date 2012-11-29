@@ -536,6 +536,7 @@ module Gem
 
   def self.load_yaml
     return if @yaml_loaded
+    return unless defined?(gem)
 
     test_syck = ENV['TEST_SYCK']
 

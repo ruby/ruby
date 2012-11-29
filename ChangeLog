@@ -1,3 +1,10 @@
+Thu Nov 29 17:31:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems.rb (Gem.load_yaml): return if Kernel#gem is not defined
+	  yet. This causes crash if test-all requires libraries in a certain
+	  order. A simple reproducible code is
+	  ruby --disable-gem -e'require"yaml";require"minitest/autorun"'
+
 Thu Nov 29 17:19:26 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/tracer.rb:  Updated to match removal of custom_require from
@@ -34,7 +41,7 @@ Thu Nov 29 16:18:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/test_case.rb:  Disable loading of keys and certificates
 	  outside rubygems or ruby tests as the files are not available (or
-          necessary).
+	  necessary).
 
 Thu Nov 29 16:14:41 2012  Koichi Sasada  <ko1@atdot.net>
 
