@@ -2,6 +2,14 @@
 require 'minitest/autorun'
 require 'tempfile'
 
+if Process.euid == 0
+  ok = true
+elsif (sudo = ENV["SUDO"]) and (`#{sudo} echo ok` rescue false)
+  ok = true
+else
+  ok = false
+end
+ok &= (`dtrace -V` rescue false)
 module DTrace
   class TestCase < MiniTest::Unit::TestCase
     INCLUDE = File.expand_path(File.join(File.dirname(__FILE__), '..'))
@@ -18,7 +26,8 @@ module DTrace
       d_path  = d.path
       rb_path = rb.path
 
-      cmd = "dtrace -q -s #{d_path} -c '#{Gem.ruby} -I#{INCLUDE} #{rb_path}'"
+      cmd = ["dtrace", "-q", "-s", d_path, "-c", "#{Gem.ruby} -I#{INCLUDE} #{rb_path}"]
+      sudo = ENV["SUDO"] and cmd.unshift(sudo)
       probes = IO.popen(cmd) do |io|
         io.readlines
       end
@@ -27,4 +36,4 @@ module DTrace
       yield(d_path, rb_path, probes)
     end
   end
-end if Process.euid == 0 and (`dtrace -V` rescue false)
+end if ok
