@@ -499,6 +499,8 @@ backtrace_to_str_ary(VALUE self, long lev, long n)
 {
     rb_backtrace_t *bt;
     int size;
+    VALUE r;
+
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     size = bt->backtrace_size;
 
@@ -509,7 +511,9 @@ backtrace_to_str_ary(VALUE self, long lev, long n)
 	return Qnil;
     }
 
-    return backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
+    r = backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
+    RB_GC_GUARD_PTR(&self);
+    return r;
 }
 
 VALUE
@@ -542,6 +546,8 @@ backtrace_to_location_ary(VALUE self, long lev, long n)
 {
     rb_backtrace_t *bt;
     int size;
+    VALUE r;
+
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     size = bt->backtrace_size;
 
@@ -552,7 +558,9 @@ backtrace_to_location_ary(VALUE self, long lev, long n)
 	return Qnil;
     }
 
-    return backtrace_collect(bt, lev, n, location_create, (void *)self);
+    r = backtrace_collect(bt, lev, n, location_create, (void *)self);
+    RB_GC_GUARD_PTR(&self);
+    return r;
 }
 
 static VALUE
@@ -706,7 +714,9 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
     VALUE level, vn;
     long lev, n;
     VALUE btval = backtrace_object(th);
+    VALUE r;
     rb_backtrace_t *bt;
+
     GetCoreDataFromValue(btval, rb_backtrace_t, bt);
 
     rb_scan_args(argc, argv, "02", &level, &vn);
@@ -755,11 +765,13 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
     }
 
     if (to_str) {
-	return backtrace_to_str_ary(btval, lev, n);
+	r = backtrace_to_str_ary(btval, lev, n);
     }
     else {
-	return backtrace_to_location_ary(btval, lev, n);
+	r = backtrace_to_location_ary(btval, lev, n);
     }
+    RB_GC_GUARD_PTR(&btval);
+    return r;
 }
 
 static VALUE
