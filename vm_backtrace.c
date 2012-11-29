@@ -698,7 +698,7 @@ static VALUE
 vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
     VALUE level, vn;
-    int lev, n;
+    long lev, n;
     VALUE btval = backtrace_object(th);
     rb_backtrace_t *bt;
     GetCoreDataFromValue(btval, rb_backtrace_t, bt);

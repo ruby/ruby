@@ -1,3 +1,7 @@
+Thu Nov 29 10:24:25 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: use `long' for return values of `NUM2LONG()'.
+
 Thu Nov 29 09:52:08 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (do_select): suppress warning (uninitialized value warning)
