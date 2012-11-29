@@ -6,7 +6,7 @@ Thu Nov 29 22:39:35 2012  Naohisa Goto  <ngotogenome@gmail.com>
 Thu Nov 29 22:23:31 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/openssl/test_cipher.rb (test_ctr_if_exists): add CTR mode test
-  	  if underlying OpenSSL supports it. See #4408
+	  if underlying OpenSSL supports it. See #4408
 
 Thu Nov 29 21:42:16 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
@@ -107,12 +107,12 @@ Thu Nov 29 15:59:55 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: ditto.
 
-	* common.mk: add dpendency from vm_backtrace.o to
+	* common.mk: add dependency from vm_backtrace.o to
 	  include/ruby/debug.h.
 
 	* proc.c (rb_binding_new_with_cfp): constify.
 
-	* vm.c (rb_vm_get_ruby_level_next_cfp): consitify.
+	* vm.c (rb_vm_get_ruby_level_next_cfp): constify.
 
 	* vm_core.h, vm_trace.c: move decls.
 
@@ -144,7 +144,7 @@ Thu Nov 29 15:38:14 2012  Koichi Sasada  <ko1@atdot.net>
 	* include/ruby/debug.h: provide rb_tracearg_*() APIs,
 	  instead of rb_tracepoint_attr_*().
 	  These APIs are for debuggers/profilers.
-	  They will be explained in another docs somtime.
+	  They will be explained in another docs sometime.
 
 	* vm_trace.c: ditto.
 
@@ -175,7 +175,7 @@ Thu Nov 29 14:49:10 2012  Koichi Sasada  <ko1@atdot.net>
 
 Thu Nov 29 14:27:57 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c (gc_stat): prepre Symbol objects at first time
+	* gc.c (gc_stat): prepare Symbol objects at first time
 	  to make it fast.
 
 Thu Nov 29 14:02:15 2012  Koichi Sasada  <ko1@atdot.net>
@@ -529,7 +529,7 @@ Wed Nov 28 04:53:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 	  to Fiddle::Handle.
 	* ext/fiddle/pointer.c: Make Fiddle independent of DL, copy
 	  DL::Pointer to Fiddle::Pointer.
-	* test/fiddle/test_func.rb: relevent tests
+	* test/fiddle/test_func.rb: relevant tests
 	* test/fiddle/test_handle.rb: ditto
 	* test/fiddle/test_pointer.rb: ditto
 	* ext/dl/lib/dl/struct.rb: use Fiddle::Pointer if available
