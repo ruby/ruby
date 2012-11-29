@@ -1,4 +1,5 @@
 require_relative 'test_base'
+require_relative '../ruby/envutil'
 
 module DL
   class TestHandle < TestBase
@@ -158,9 +159,11 @@ module DL
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        require 'objspace'
-        handle = DL::Handle::NEXT
-        assert_not_nil handle['Init_objspace']
+        out, err = capture_io do
+          require 'objspace'
+          print DL::Handle::NEXT.inspect
+        end
+        assert_match(/\A#<DL::Handle:0x[0-9a-f]+>\z/, out + err)
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
