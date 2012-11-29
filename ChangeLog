@@ -1,8 +1,3 @@
-Thu Nov 29 19:15:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* compile.c (compile_array_): hash elements must be paired even for
-	  literal elements.  [ruby-dev:46658] [Bug #7466]
-
 Thu Nov 29 17:45:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_const_set): show namespace in warning messages.
