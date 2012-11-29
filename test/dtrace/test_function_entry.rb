@@ -44,6 +44,35 @@ ruby$target:::method-return
       }
     end
 
+    def test_return_from_raise
+      program = <<-eoruby
+      class Foo
+        def bar; raise; end
+        def baz
+          bar
+        rescue
+        end
+      end
+
+      Foo.new.baz
+      eoruby
+
+      probe = <<-eoprobe
+ruby$target:::method-return
+/arg0 && arg1 && arg2/
+{
+  printf("%s %s %s %d\\n", copyinstr(arg0), copyinstr(arg1), copyinstr(arg2), arg3);
+}
+      eoprobe
+
+      trap_probe(probe, program) { |d_file, rb_file, probes|
+	foo_calls = probes.map { |line| line.split }.find_all { |row|
+	  row.first == 'Foo'  && row[1] == 'bar'
+	}
+        assert foo_calls.any?
+      }
+    end
+
     private
     def ruby_program
       <<-eoruby

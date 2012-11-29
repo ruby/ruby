@@ -18,7 +18,7 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "vm_core.h"
-#include "probes.h"
+#include "probes_helper.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 

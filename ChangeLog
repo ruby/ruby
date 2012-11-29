@@ -1,3 +1,17 @@
+Fri Nov 30 02:53:47 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* vm.c: add a return hook when a method raises an exception.
+
+	* probes_helper.h: look up klass and method if none are provided.
+
+	* eval.c: update macro usage.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* test/dtrace/test_function_entry.rb: test for change.
+
 Fri Nov 30 02:27:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* compile.c (compile_array_): refix r37991 remove assertion:

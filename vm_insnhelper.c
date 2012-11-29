@@ -1468,7 +1468,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_i
     vm_pop_frame(th);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass, val);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(me->klass, me->called_id);
+    RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->klass, me->called_id);
 
     return val;
 }
@@ -1526,7 +1526,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
     val = vm_call_cfunc_latter(th, reg_cfp, ci);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass, val);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(me->klass, me->called_id);
+    RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->klass, me->called_id);
 
     return val;
 }
@@ -1584,7 +1584,7 @@ vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
     val = vm_invoke_proc(th, proc, ci->recv, ci->defined_class, ci->argc, argv, ci->blockptr);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, ci->recv, ci->me->called_id, ci->me->klass, val);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(ci->me->klass, ci->me->called_id);
+    RUBY_DTRACE_METHOD_RETURN_HOOK(th, ci->me->klass, ci->me->called_id);
 
     return val;
 }
