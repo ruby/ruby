@@ -26,4 +26,4 @@ ruby$target:::raise
       '10.times { raise rescue nil }'
     end
   end
-end if (`dtrace -V` rescue false)
+end if defined?(DTrace::TestCase)

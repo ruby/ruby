@@ -49,4 +49,4 @@ ruby$target:::load-return
       "10.times { load '#{@rbfile.path}' }"
     end
   end
-end if (`dtrace -V` rescue false)
+end if defined?(DTrace::TestCase)

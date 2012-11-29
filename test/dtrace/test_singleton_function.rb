@@ -52,4 +52,4 @@ ruby$target:::method-return
       eoruby
     end
   end
-end if (`dtrace -V` rescue false)
+end if defined?(DTrace::TestCase)

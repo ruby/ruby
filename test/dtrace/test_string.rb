@@ -24,4 +24,4 @@ ruby$target:::string-create
       eoprobe
     end
   end
-end if (`dtrace -V` rescue false)
+end if defined?(DTrace::TestCase)

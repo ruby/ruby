@@ -1,13 +1,10 @@
+# -*- coding: us-ascii -*-
 require 'minitest/autorun'
 require 'tempfile'
 
 module DTrace
   class TestCase < MiniTest::Unit::TestCase
     INCLUDE = File.expand_path(File.join(File.dirname(__FILE__), '..'))
-
-    def setup
-      skip "must be setuid 0 to run dtrace tests" unless Process.euid == 0
-    end
 
     def trap_probe d_program, ruby_program
       d = Tempfile.new('probe.d')
@@ -30,4 +27,4 @@ module DTrace
       yield(d_path, rb_path, probes)
     end
   end
-end
+end if Process.euid == 0 and (`dtrace -V` rescue false)
