@@ -47,7 +47,7 @@ class PrideIO
 
   def puts(*o) # :nodoc:
     o.map! { |s|
-      s.sub(/Finished tests/) {
+      s.to_s.sub(/Finished tests/) {
         @index = 0
         'Fabulous tests'.split(//).map { |c|
           pride(c)

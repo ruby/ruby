@@ -49,6 +49,17 @@ discovery.
 
     -- Piotr Szotkowski
 
+Comparing to rspec:
+
+    rspec is a testing DSL. minitest is ruby.
+
+    -- Adam Hawkins, "Bow Before MiniTest"
+
+minitest doesn't reinvent anything that ruby already provides, like:
+classes, modules, inheritance, methods. This means you only have to
+learn ruby to use minitest and all of your regular OO practices like
+extract-method refactorings still apply.
+
 == FEATURES/PROBLEMS:
 
 * minitest/autorun - the easy and explicit way to run all your tests.
@@ -92,6 +103,10 @@ Given that you'd like to test the following class:
 
     def test_that_it_will_not_blend
       refute_match /^no/i, @meme.will_it_blend?
+    end
+    
+    def test_that_will_be_skipped
+      skip "test this later"
     end
   end
 
@@ -260,43 +275,74 @@ fixture loading:
 
 == Known Extensions:
 
-minitest-capistrano    :: Assertions and expectations for testing Capistrano recipes
-minitest-capybara      :: Capybara matchers support for minitest unit and spec
-minitest-chef-handler  :: Run Minitest suites as Chef report handlers
-minitest-ci            :: CI reporter plugin for MiniTest.
-minitest-colorize      :: Colorize MiniTest output and show failing tests instantly.
-minitest-context       :: Defines contexts for code reuse in MiniTest
-                          specs that share common expectations.
-minitest-debugger      :: Wraps assert so failed assertions drop into
-                          the ruby debugger.
-minitest-display       :: Patches MiniTest to allow for an easily configurable output.
-minitest-emoji         :: Print out emoji for your test passes, fails, and skips.
-minitest-excludes      :: Clean API for excluding certain tests you
-                          don't want to run under certain conditions.
-minitest-firemock      :: Makes your MiniTest mocks more resilient.
-minitest-growl         :: Test notifier for minitest via growl.
-minitest-instrument    :: Instrument ActiveSupport::Notifications when
-                          test method is executed
-minitest-instrument-db :: Store information about speed of test
-                          execution provided by minitest-instrument in database
-minitest-libnotify     :: Test notifier for minitest via libnotify.
-minitest-macruby       :: Provides extensions to minitest for macruby UI testing.
-minitest-matchers      :: Adds support for RSpec-style matchers to minitest.
-minitest-metadata      :: Annotate tests with metadata (key-value).
-minitest-mongoid       :: Mongoid assertion matchers for MiniTest
-minitest-must_not      :: Provides must_not as an alias for wont in MiniTest
-minitest-predicates    :: Adds support for .predicate? methods
-minitest-pry           :: A minitest plugin to drop into pry on assertion failure.
-minitest-rails         :: MiniTest integration for Rails 3.1.
-minitest-reporters     :: Create customizable MiniTest output formats
-minitest-rg            :: redgreen minitest
-minitest-spec-magic    :: Minitest::Spec extensions for Rails and beyond
-minitest-tags          :: add tags for minitest
-minitest-wscolor       :: Yet another test colorizer.
-minitest_owrapper      :: Get tests results as a TestResult object.
-minitest_should        :: Shoulda style syntax for minitest test::unit.
-minitest_tu_shim       :: minitest_tu_shim bridges between test/unit and minitest.
-mongoid-minitest       :: MiniTest matchers for Mongoid.
+minitest-capistrano     :: Assertions and expectations for testing Capistrano recipes
+minitest-capybara       :: Capybara matchers support for minitest unit and spec
+minitest-chef-handler   :: Run Minitest suites as Chef report handlers
+minitest-ci             :: CI reporter plugin for MiniTest.
+minitest-colorize       :: Colorize MiniTest output and show failing tests instantly.
+minitest-context        :: Defines contexts for code reuse in MiniTest
+                           specs that share common expectations.
+minitest-debugger       :: Wraps assert so failed assertions drop into
+                           the ruby debugger.
+minitest-display        :: Patches MiniTest to allow for an easily configurable output.
+minitest-emoji          :: Print out emoji for your test passes, fails, and skips.
+minitest-excludes       :: Clean API for excluding certain tests you
+                           don't want to run under certain conditions.
+minitest-firemock       :: Makes your MiniTest mocks more resilient.
+minitest-growl          :: Test notifier for minitest via growl.
+minitest-instrument     :: Instrument ActiveSupport::Notifications when
+                           test method is executed
+minitest-instrument-db  :: Store information about speed of test
+                           execution provided by minitest-instrument in database
+minitest-libnotify      :: Test notifier for minitest via libnotify.
+minitest-macruby        :: Provides extensions to minitest for macruby UI testing.
+minitest-matchers       :: Adds support for RSpec-style matchers to minitest.
+minitest-metadata       :: Annotate tests with metadata (key-value).
+minitest-mongoid        :: Mongoid assertion matchers for MiniTest
+minitest-must_not       :: Provides must_not as an alias for wont in MiniTest
+minitest-predicates     :: Adds support for .predicate? methods
+minitest-rails          :: MiniTest integration for Rails 3.x
+minitest-rails-capybara :: Capybara integration for MiniTest::Rails
+minitest-reporters      :: Create customizable MiniTest output formats
+minitest-rg             :: redgreen minitest
+minitest-shouldify      :: Adding all manner of shoulds to MiniTest (bad idea)
+minitest-spec-magic     :: Minitest::Spec extensions for Rails and beyond
+minitest-tags           :: add tags for minitest
+minitest-wscolor        :: Yet another test colorizer.
+minitest_owrapper       :: Get tests results as a TestResult object.
+minitest_should         :: Shoulda style syntax for minitest test::unit.
+minitest_tu_shim        :: minitest_tu_shim bridges between test/unit and minitest.
+mongoid-minitest        :: MiniTest matchers for Mongoid.
+pry-rescue              :: A pry plugin w/ minitest support. See pry-rescue/minitest.rb.
+
+== Unknown Extensions:
+
+Authors... Please send me a pull request with a description of your minitest extension.
+
+* assay-minitest
+* capybara_minitest_spec
+* detroit-minitest
+* em-minitest-spec
+* flexmock-minitest
+* guard-minitest
+* guard-minitest-decisiv
+* minitest-activemodel
+* minitest-ar-assertions
+* minitest-around
+* minitest-capybara-unit
+* minitest-colorer
+* minitest-deluxe
+* minitest-extra-assertions
+* minitest-nc
+* minitest-rails-shoulda
+* minitest-spec
+* minitest-spec-context
+* minitest-spec-rails
+* minitest-spec-should
+* minitest-sugar
+* minitest_should
+* mongoid-minitest
+* spork-minitest
 
 == REQUIREMENTS:
 

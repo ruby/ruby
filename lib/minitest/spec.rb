@@ -537,5 +537,5 @@ module MiniTest::Expectations
 end
 
 class Object # :nodoc:
-  include MiniTest::Expectations
+  include MiniTest::Expectations unless ENV["MT_NO_EXPECTATIONS"]
 end

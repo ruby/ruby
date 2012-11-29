@@ -24,7 +24,9 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
 
     EOM
 
-    @tu.run flags
+    with_output do
+      @tu.run flags
+    end
 
     output = @output.string.dup
     output.sub!(/Finished tests in .*/, "Finished tests in 0.00")
@@ -49,14 +51,24 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
     srand 42
     MiniTest::Unit::TestCase.reset
     @tu = MiniTest::Unit.new
-    @output = StringIO.new("")
+
     MiniTest::Unit.runner = nil # protect the outer runner from the inner tests
-    MiniTest::Unit.output = @output
   end
 
   def teardown
     super
-    MiniTest::Unit.output = $stdout
-    Object.send :remove_const, :ATestCase if defined? ATestCase
+  end
+
+  def with_output
+    synchronize do
+      begin
+        @output = StringIO.new("")
+        MiniTest::Unit.output = @output
+
+        yield
+      ensure
+        MiniTest::Unit.output = STDOUT
+      end
+    end
   end
 end

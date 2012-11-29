@@ -31,14 +31,18 @@ module MiniTest
     end
 
     ##
-    # Expect that method +name+ is called, optionally with +args+, and returns
-    # +retval+.
+    # Expect that method +name+ is called, optionally with +args+ or a
+    # +blk+, and returns +retval+.
     #
     #   @mock.expect(:meaning_of_life, 42)
     #   @mock.meaning_of_life # => 42
     #
     #   @mock.expect(:do_something_with, true, [some_obj, true])
     #   @mock.do_something_with(some_obj, true) # => true
+    #
+    #   @mock.expect(:do_something_else, true) do |a1, a2|
+    #     a1 == "buggs" && a2 == :bunny
+    #   end
     #
     # +args+ is compared to the expected args using case equality (ie, the
     # '===' operator), allowing for less specific expectations.
@@ -51,9 +55,14 @@ module MiniTest
     #   @mock.uses_one_string("bar") # => true
     #   @mock.verify  # => raises MockExpectationError
 
-    def expect(name, retval, args=[])
-      raise ArgumentError, "args must be an array" unless Array === args
-      @expected_calls[name] << { :retval => retval, :args => args }
+    def expect(name, retval, args=[], &blk)
+      if block_given?
+        raise ArgumentError, "args ignored when block given" unless args.empty?
+        @expected_calls[name] << { :retval => retval, :block => blk }
+      else
+        raise ArgumentError, "args must be an array" unless Array === args
+        @expected_calls[name] << { :retval => retval, :args => args }
+      end
       self
     end
 
@@ -103,7 +112,17 @@ module MiniTest
           [sym, args]
       end
 
-      expected_args, retval = expected_call[:args], expected_call[:retval]
+      expected_args, retval, val_block =
+        expected_call.values_at(:args, :retval, :block)
+
+      if val_block then
+        raise MockExpectationError, "mocked method %p failed block w/ %p" %
+          [sym, args] unless val_block.call(args)
+
+        # keep "verify" happy
+        @actual_calls[sym] << expected_call
+        return retval
+      end
 
       if expected_args.size != args.size then
         raise ArgumentError, "mocked method %p expects %d arguments, got %d" %
@@ -127,9 +146,9 @@ module MiniTest
       retval
     end
 
-    def respond_to?(sym) # :nodoc:
+    def respond_to?(sym, include_private = false) # :nodoc:
       return true if @expected_calls.has_key?(sym.to_sym)
-      return __respond_to?(sym)
+      return __respond_to?(sym, include_private)
     end
   end
 end
@@ -155,7 +174,15 @@ class Object # :nodoc:
     new_name = "__minitest_stub__#{name}"
 
     metaclass = class << self; self; end
+
+    if respond_to? name and not methods.map(&:to_s).include? name.to_s then
+      metaclass.send :define_method, name do |*args|
+        super(*args)
+      end
+    end
+
     metaclass.send :alias_method, new_name, name
+
     metaclass.send :define_method, name do |*args|
       if val_or_callable.respond_to? :call then
         val_or_callable.call(*args)

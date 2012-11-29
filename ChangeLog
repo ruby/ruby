@@ -1,3 +1,8 @@
+Thu Nov 29 12:13:54 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 4.3.2 (r8026)
+	* test/minitest/*: ditto
+
 Thu Nov 29 11:06:06 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): remove unused code. When

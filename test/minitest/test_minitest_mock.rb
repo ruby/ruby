@@ -11,6 +11,8 @@ require 'minitest/unit'
 MiniTest::Unit.autorun
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
+  parallelize_me! if ENV["PARALLEL"]
+
   def setup
     @mock = MiniTest::Mock.new.expect(:foo, nil)
     @mock.expect(:meaning_of_life, 42)
@@ -103,6 +105,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
 
   def test_respond_appropriately
     assert @mock.respond_to?(:foo)
+    assert @mock.respond_to?(:foo, true)
     assert @mock.respond_to?('foo')
     assert !@mock.respond_to?(:bar)
   end
@@ -202,6 +205,68 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
     assert_equal exp, e.message
   end
 
+  def test_verify_passes_when_mock_block_returns_true
+    mock = MiniTest::Mock.new
+    mock.expect :foo, nil do
+      true
+    end
+
+    mock.foo
+
+    assert mock.verify
+  end
+
+  def test_mock_block_is_passed_function_params
+    arg1, arg2, arg3 = :bar, [1,2,3], {:a => 'a'}
+    mock = MiniTest::Mock.new
+    mock.expect :foo, nil do |a1, a2, a3|
+      a1 == arg1 &&
+      a2 == arg2 &&
+      a3 == arg3
+    end
+
+    mock.foo arg1, arg2, arg3
+
+    assert mock.verify
+  end
+
+  def test_verify_fails_when_mock_block_returns_false
+    mock = MiniTest::Mock.new
+    mock.expect :foo, nil do
+      false
+    end
+
+    e = assert_raises(MockExpectationError) { mock.foo }
+    exp = "mocked method :foo failed block w/ []"
+
+    assert_equal exp, e.message
+  end
+
+  def test_mock_block_throws_if_args_passed
+    mock = MiniTest::Mock.new
+
+    e = assert_raises(ArgumentError) do
+      mock.expect :foo, nil, [:a, :b, :c] do
+        true
+      end
+    end
+
+    exp = "args ignored when block given"
+
+    assert_equal exp, e.message
+  end
+
+  def test_mock_returns_retval_when_called_with_block
+    mock = MiniTest::Mock.new
+    mock.expect(:foo, 32) do
+      true
+    end
+
+    rs = mock.foo
+
+    assert_equal rs, 32
+  end
+
   def util_verify_bad exp
     e = assert_raises MockExpectationError do
       @mock.verify
@@ -214,6 +279,8 @@ end
 require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
+  parallelize_me! if ENV["PARALLEL"]
+
   def setup
     super
     MiniTest::Unit::TestCase.reset
@@ -230,13 +297,15 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
   def assert_stub val_or_callable
     @assertion_count += 1
 
-    t = Time.now.to_i
+    synchronize do
+      t = Time.now.to_i
 
-    Time.stub :now, val_or_callable do
-      @tc.assert_equal 42, Time.now
+      Time.stub :now, val_or_callable do
+        @tc.assert_equal 42, Time.now
+      end
+
+      @tc.assert_operator Time.now.to_i, :>=, t
     end
-
-    @tc.assert_operator Time.now.to_i, :>=, t
   end
 
   def test_stub_value
@@ -250,13 +319,15 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
   def test_stub_block_args
     @assertion_count += 1
 
-    t = Time.now.to_i
+    synchronize do
+      t = Time.now.to_i
 
-    Time.stub :now,  lambda { |n| n * 2 } do
-      @tc.assert_equal 42, Time.now(21)
+      Time.stub :now,  lambda { |n| n * 2 } do
+        @tc.assert_equal 42, Time.now(21)
+      end
+
+      @tc.assert_operator Time.now.to_i, :>=, t
     end
-
-    @tc.assert_operator Time.now.to_i, :>=, t
   end
 
   def test_stub_callable
@@ -277,5 +348,30 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
     end
 
     @tc.assert_equal "bar", val
+  end
+
+  def test_dynamic_method
+    @assertion_count = 2
+
+    dynamic = Class.new do
+      def self.respond_to?(meth)
+        meth == :found
+      end
+
+      def self.method_missing(meth, *args, &block)
+        if meth == :found
+          false
+        else
+          super
+        end
+      end
+    end
+
+    val = dynamic.stub(:found, true) do |s|
+      s.found
+    end
+
+    @tc.assert_equal true, val
+    @tc.assert_equal false, dynamic.found
   end
 end
