@@ -1,19 +1,11 @@
+# -*- coding: us-ascii -*-
 require 'erb'
 require 'optparse'
 require 'fileutils'
+$:.unshift(File.dirname(__FILE__))
+require 'vpath'
 
-vpath = ["."]
-def vpath.open(file, *rest)
-  find do |dir|
-    begin
-      path = File.join(dir, file)
-      return File.open(path, *rest) {|f| yield(f)}
-    rescue Errno::ENOENT
-      nil
-    end
-  end or raise(Errno::ENOENT, file)
-end
-
+vpath = VPath.new
 timestamp = nil
 output = nil
 ifchange = nil
@@ -22,7 +14,7 @@ opt = OptionParser.new do |o|
   o.on('-t', '--timestamp[=PATH]') {|v| timestamp = v || true}
   o.on('-o', '--output=PATH') {|v| output = v}
   o.on('-c', '--[no-]if-change') {|v| ifchange = v}
-  o.on('-v', '--vpath=DIR') {|dirs| vpath.concat dirs.split(File::PATH_SEPARATOR)}
+  vpath.def_options(o)
   o.order!(ARGV)
 end
 template = ARGV.shift or abort opt.to_s

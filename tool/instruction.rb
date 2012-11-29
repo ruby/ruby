@@ -1,8 +1,11 @@
 #!./miniruby
+# -*- coding: us-ascii -*-
 #
 #
 
 require 'erb'
+$:.unshift(File.dirname(__FILE__))
+require 'vpath'
 
 class RubyVM
   class Instruction
@@ -1256,66 +1259,6 @@ class RubyVM
     end
   end
 
-  module VPATH
-    def search(meth, base, *rest)
-      begin
-        meth.call(base, *rest)
-      rescue Errno::ENOENT => error
-        each do |dir|
-          return meth.call(File.join(dir, base), *rest) rescue nil
-        end
-        raise error
-      end
-    end
-
-    def process(*args, &block)
-      search(File.method(__callee__), *args, &block)
-    end
-
-    alias stat process
-    alias lstat process
-
-    def open(*args)
-      f = search(File.method(:open), *args)
-      if block_given?
-        begin
-          yield f
-        ensure
-          f.close unless f.closed?
-        end
-      else
-        f
-      end
-    end
-
-    def read(*args)
-      open(*args) {|f| f.read}
-    end
-
-    def foreach(file, *args, &block)
-      open(file) {|f| f.each(*args, &block)}
-    end
-
-    def self.def_options(opt)
-      vpath = []
-      path_sep = ':'
-
-      opt.on("-I", "--srcdir=DIR", "add a directory to search path") {|dir|
-        vpath |= [dir]
-      }
-      opt.on("-L", "--vpath=PATH LIST", "add directories to search path") {|dirs|
-        vpath |= dirs.split(path_sep)
-      }
-      opt.on("--path-separator=SEP", /\A\W\z/, "separator for vpath") {|sep|
-        path_sep = sep
-      }
-
-      proc {
-        vpath.extend(self) unless vpath.empty?
-      }
-    end
-  end
-
   class SourceCodeGenerator
     Files = { # codes
       'vm.inc'         => VmBodyGenerator,
@@ -1382,16 +1325,17 @@ class RubyVM
         opts[:verbose] = v
       }
 
-      vpath = VPATH.def_options(opt)
+      vpath = VPath.new
+      vpath.def_options(opt)
 
       proc {
-        opts[:VPATH] = vpath.call
+        opts[:VPATH] = vpath
         build opts
       }
     end
 
     def self.build opts, vpath = ['./']
-      opts[:VPATH] = vpath.extend(VPATH) unless opts[:VPATH]
+      opts[:VPATH] ||= VPath.new(*vpath)
       self.new InstructionsLoader.new(opts)
     end
   end

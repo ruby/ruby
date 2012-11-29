@@ -1,3 +1,10 @@
+Thu Nov 29 17:12:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/generic_erb.rb, tool/id2token.rb: add --path-separator option
+	  for mingw where make and built ruby live in different world.
+
+	* tool/vpath.rb: extract from tool/instruction.rb.
+
 Thu Nov 29 17:11:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/io/wait/test_io_wait.rb (TestIOWait#fill_pipe):
