@@ -26,6 +26,16 @@ extern "C" {
 /* Note: This file contains experimental APIs. */
 /* APIs can be replaced at Ruby 2.0.1 or later */
 
+/* debug inspector APIs */
+typedef struct rb_debug_inspector_struct rb_debug_inspector_t;
+typedef VALUE (*rb_debug_inspector_func_t)(const rb_debug_inspector_t *, void *);
+
+VALUE rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data);
+VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, int index);
+VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, int index);
+VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, int index);
+VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
+
 /* Old style set_trace_func APIs */
 
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
@@ -55,7 +65,7 @@ VALUE rb_tracearg_self(struct rb_trace_arg_struct *trace_arg);
 VALUE rb_tracearg_return_value(struct rb_trace_arg_struct *trace_arg);
 VALUE rb_tracearg_raised_exception(struct rb_trace_arg_struct *trace_arg);
 
-/* undocumented advanced APIs */
+/* undocumented advanced tracing APIs */
 
 typedef enum {
     RUBY_EVENT_HOOK_FLAG_SAFE    = 0x01,

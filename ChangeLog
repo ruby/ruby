@@ -1,3 +1,18 @@
+Thu Nov 29 15:59:55 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h: add rb_debug_inspector_* APIs.
+
+	* vm_backtrace.c: ditto.
+
+	* common.mk: add dpendency from vm_backtrace.o to
+	  include/ruby/debug.h.
+
+	* proc.c (rb_binding_new_with_cfp): constify.
+
+	* vm.c (rb_vm_get_ruby_level_next_cfp): consitify.
+
+	* vm_core.h, vm_trace.c: move decls.
+
 Thu Nov 29 15:56:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/test_case.rb (RDoc::TestCase#verbose_capture_io):

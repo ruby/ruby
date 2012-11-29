@@ -310,7 +310,7 @@ binding_clone(VALUE self)
 }
 
 VALUE
-rb_binding_new_with_cfp(rb_thread_t *th, rb_control_frame_t *src_cfp)
+rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 {
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
     VALUE bindval = binding_alloc(rb_cBinding);

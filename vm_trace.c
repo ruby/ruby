@@ -644,9 +644,7 @@ rb_tracearg_event(rb_trace_arg_t *trace_arg)
     return ID2SYM(get_event_id(trace_arg->event));
 }
 
-rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 int rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
-VALUE rb_binding_new_with_cfp(rb_thread_t *th, rb_control_frame_t *src_cfp);
 
 static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)

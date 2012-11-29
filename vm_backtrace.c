@@ -11,9 +11,11 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/debug.h"
 
 #include "internal.h"
 #include "vm_core.h"
+#include "eval_intern.h"
 #include "iseq.h"
 
 static VALUE rb_cBacktrace;
@@ -358,8 +360,8 @@ backtrace_alloc(VALUE klass)
 static void
 backtrace_each(rb_thread_t *th,
 	       void (*init)(void *arg, size_t size),
-	       void (*iter_iseq)(void *arg, const rb_iseq_t *iseq, const VALUE *pc),
-	       void (*iter_cfunc)(void *arg, ID mid),
+	       void (*iter_iseq)(void *arg, const rb_control_frame_t *cfp),
+	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
 	       void *arg)
 {
     rb_control_frame_t *last_cfp = th->cfp;
@@ -395,13 +397,13 @@ backtrace_each(rb_thread_t *th,
 	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(th->stack + th->stack_size) - cfp); */
 	if (cfp->iseq) {
 	    if (cfp->pc) {
-		iter_iseq(arg, cfp->iseq, cfp->pc);
+		iter_iseq(arg, cfp);
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    ID mid = cfp->me->def ? cfp->me->def->original_id : cfp->me->called_id;
 
-	    iter_cfunc(arg, mid);
+	    iter_cfunc(arg, cfp, mid);
 	}
     }
 }
@@ -423,8 +425,10 @@ bt_init(void *ptr, size_t size)
 }
 
 static void
-bt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
+bt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
 {
+    const rb_iseq_t *iseq = cfp->iseq;
+    const VALUE *pc = cfp->pc;
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
     loc->type = LOCATION_TYPE_ISEQ;
@@ -434,7 +438,7 @@ bt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
 }
 
 static void
-bt_iter_cfunc(void *ptr, ID mid)
+bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
 {
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
@@ -599,8 +603,10 @@ oldbt_init(void *ptr, size_t dmy)
 }
 
 static void
-oldbt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
+oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
 {
+    const rb_iseq_t *iseq = cfp->iseq;
+    const VALUE *pc = cfp->pc;
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = iseq->location.path;
     VALUE name = iseq->location.label;
@@ -610,7 +616,7 @@ oldbt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
 }
 
 static void
-oldbt_iter_cfunc(void *ptr, ID mid)
+oldbt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
 {
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename;
@@ -846,3 +852,137 @@ Init_vm_backtrace(void)
     rb_define_global_function("caller", rb_f_caller, -1);
     rb_define_global_function("caller_locations", rb_f_caller_locations, -1);
 }
+
+/* debugger API */
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
+
+struct rb_debug_inspector_struct {
+    rb_thread_t *th;
+    rb_control_frame_t *cfp;
+    VALUE backtrace;
+    VALUE contexts; /* [[klass, binding, iseq, cfp], ...] */
+    int backtrace_size;
+};
+
+struct collect_caller_bindings_data {
+    rb_thread_t *th;
+    VALUE ary;
+};
+
+static void
+collect_caller_bindings_init(void *arg, size_t size)
+{
+    /* */
+}
+
+static void
+collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
+{
+    struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
+    rb_ary_push(data->ary,
+		rb_ary_new3(4,
+			    cfp->klass,
+			    rb_binding_new_with_cfp(data->th, cfp),
+			    cfp->iseq ? cfp->iseq->self : Qnil,
+			    GC_GUARDED_PTR(cfp)));
+}
+
+static void
+collect_caller_bindings_cfunc(void *arg, const rb_control_frame_t *cfp, ID mid)
+{
+    struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
+    rb_ary_push(data->ary, rb_ary_new3(2, cfp->klass, Qnil));
+}
+
+static VALUE
+collect_caller_bindings(rb_thread_t *th)
+{
+    struct collect_caller_bindings_data data;
+    data.ary = rb_ary_new();
+    data.th = th;
+    backtrace_each(th,
+		   collect_caller_bindings_init,
+		   collect_caller_bindings_iseq,
+		   collect_caller_bindings_cfunc,
+		   &data);
+    return rb_ary_reverse(data.ary);
+}
+
+/*
+ * Note that the passed `rb_debug_inspector_t' will be disabled
+ * after `rb_debug_inspector_open'.
+ */
+
+VALUE
+rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
+{
+    rb_debug_inspector_t dbg_context;
+    rb_thread_t *th = GET_THREAD();
+    int state;
+    VALUE result;
+
+    dbg_context.th = th;
+    dbg_context.cfp = dbg_context.th->cfp;
+    dbg_context.backtrace = vm_backtrace_location_ary(th, 0, 0);
+    dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
+    dbg_context.contexts = collect_caller_bindings(th);
+
+    TH_PUSH_TAG(th);
+    if ((state = EXEC_TAG()) == 0) {
+	result = (*func)(&dbg_context, data);
+    }
+    TH_POP_TAG();
+
+    /* invalidate bindings? */
+    
+
+    if (state) {
+	JUMP_TAG(state);
+    }
+
+    return result;
+}
+
+static VALUE
+frame_get(const rb_debug_inspector_t *dc, int index)
+{
+    if (index < 0 || index >= dc->backtrace_size) {
+	rb_raise(rb_eArgError, "no such frame");
+    }
+    return rb_ary_entry(dc->contexts, index);
+}
+
+VALUE
+rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, int index)
+{
+    VALUE frame = frame_get(dc, index);
+    return rb_ary_entry(frame, 0);
+}
+
+VALUE
+rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, int index)
+{
+    VALUE frame = frame_get(dc, index);
+    return rb_ary_entry(frame, 1);
+}
+
+VALUE
+rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, int index)
+{
+    VALUE frame = frame_get(dc, index);
+    return rb_ary_entry(frame, 2);
+}
+
+VALUE
+rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc)
+{
+    return dc->backtrace;
+}
+

@@ -793,6 +793,7 @@ VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 			int argc, const VALUE *argv, const rb_block_t *blockptr);
 VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+VALUE rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
@@ -808,7 +809,7 @@ void rb_thread_wakeup_timer_thread(void);
 
 int ruby_thread_has_gvl_p(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
-rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
+rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, const rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 VALUE rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method);
 void rb_vm_stack_to_heap(rb_thread_t *th);
