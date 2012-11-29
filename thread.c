@@ -3180,7 +3180,8 @@ static int
 do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	  struct timeval *timeout)
 {
-    int result, lerrno;
+    int UNINITIALIZED_VAR(result);
+    int lerrno;
     rb_fdset_t UNINITIALIZED_VAR(orig_read);
     rb_fdset_t UNINITIALIZED_VAR(orig_write);
     rb_fdset_t UNINITIALIZED_VAR(orig_except);
