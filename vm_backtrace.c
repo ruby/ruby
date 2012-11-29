@@ -931,7 +931,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->cfp;
     dbg_context.backtrace = vm_backtrace_location_ary(th, 0, 0);
-    dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
+    dbg_context.backtrace_size = RARRAY_LENINT(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(th);
 
     TH_PUSH_TAG(th);

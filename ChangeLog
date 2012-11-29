@@ -1,3 +1,8 @@
+Thu Nov 29 16:14:41 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c (rb_debug_inspector_open): use RARRAY_LENINT() for
+	  int variable.
+
 Thu Nov 29 15:59:55 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/debug.h: add rb_debug_inspector_* APIs.
