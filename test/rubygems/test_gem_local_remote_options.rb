@@ -40,6 +40,8 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   end
 
   def test_clear_sources_option_idiot_proof
+    util_setup_fake_fetcher
+
     @cmd.add_local_remote_options
     @cmd.handle_options %W[--clear-sources]
     assert_equal Gem.default_sources, Gem.sources
@@ -78,10 +80,14 @@ class TestGemLocalRemoteOptions < Gem::TestCase
     s4 = URI.parse 'http://more-gems.example.com/' # Intentional duplicate
 
     original_sources = Gem.sources.dup
+
     @cmd.handle_options %W[--source #{s1} --source #{s2} --source #{s3} --source #{s4}]
 
-    assert_equal [original_sources, s1.to_s, s2.to_s, "#{s3}/"].flatten,
-      Gem.sources
+    original_sources << s1.to_s
+    original_sources << s2.to_s
+    original_sources << "#{s3}/"
+
+    assert_equal original_sources, Gem.sources
   end
 
   def test_update_sources_option

@@ -1,3 +1,13 @@
+Thu Nov 29 15:51:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*:  Updated to RubyGems 2.0
+	* test/rubygems*:  ditto.
+
+	* common.mk (prelude):  Updated for RubyGems 2.0 source rearrangement.
+
+	* tool/change_maker.rb:  Allow invalid UTF-8 characters in source
+	  files.
+
 Thu Nov 29 15:38:14 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/debug.h: provide rb_tracearg_*() APIs,

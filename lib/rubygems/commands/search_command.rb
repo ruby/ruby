@@ -1,30 +1,16 @@
 require 'rubygems/command'
-require 'rubygems/commands/query_command'
+require 'rubygems/commands/list_command'
 
-class Gem::Commands::SearchCommand < Gem::Commands::QueryCommand
+class Gem::Commands::SearchCommand < Gem::Commands::ListCommand
 
   def initialize
     super 'search', 'Display all gems whose name contains STRING'
 
-    remove_option '--name-matches'
-  end
-
-  def arguments # :nodoc:
-    "STRING        fragment of gem name to search for"
+    @defaults[:domain] = :remote
   end
 
   def defaults_str # :nodoc:
-    "--local --no-details"
-  end
-
-  def usage # :nodoc:
-    "#{program_name} [STRING]"
-  end
-
-  def execute
-    string = get_one_optional_argument
-    options[:name] = /#{string}/i
-    super
+    "--remote --no-details"
   end
 
 end

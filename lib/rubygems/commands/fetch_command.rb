@@ -34,7 +34,6 @@ class Gem::Commands::FetchCommand < Gem::Command
 
   def execute
     version = options[:version] || Gem::Requirement.default
-    all = Gem::Requirement.default != version
 
     platform  = Gem.platforms.last
     gem_names = get_all_gem_names
@@ -43,32 +42,20 @@ class Gem::Commands::FetchCommand < Gem::Command
       dep = Gem::Dependency.new gem_name, version
       dep.prerelease = options[:prerelease]
 
-      specs_and_sources, errors =
-        Gem::SpecFetcher.fetcher.fetch_with_errors(dep, all, true,
-                                                   dep.prerelease?)
-
+      specs_and_sources, errors = Gem::SpecFetcher.fetcher.spec_for_dependency dep
       if platform then
         filtered = specs_and_sources.select { |s,| s.platform == platform }
         specs_and_sources = filtered unless filtered.empty?
       end
 
-      spec, source_uri = specs_and_sources.sort_by { |s,| s.version }.last
+      spec, source = specs_and_sources.sort_by { |s,| s.version }.first
 
       if spec.nil? then
         show_lookup_failure gem_name, version, errors, options[:domain]
         next
       end
 
-      file = "#{spec.full_name}.gem"
-      remote_path = URI.parse(source_uri) + "gems/#{file}"
-
-      fetch = Gem::RemoteFetcher.fetcher
-
-      gem = fetch.fetch_path remote_path.to_s
-
-      File.open file, "wb" do |f|
-        f.write gem
-      end
+      source.download spec
 
       say "Downloaded #{spec.full_name}"
     end

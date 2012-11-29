@@ -1,5 +1,5 @@
 require 'rubygems/command'
-require 'rubygems/format'
+require 'rubygems/package'
 require 'rubygems/installer'
 require 'rubygems/version_option'
 
@@ -22,6 +22,11 @@ class Gem::Commands::PristineCommand < Gem::Command
     add_option('--[no-]extensions',
                'Restore gems with extensions') do |value, options|
       options[:extensions] = value
+    end
+
+    add_option('--only-executables',
+               'Only restore executables') do |value, options|
+      options[:only_executables] = value
     end
 
     add_version_option('restore to', 'pristine condition')
@@ -78,6 +83,11 @@ extensions.
     say "Restoring gems to pristine condition..."
 
     specs.each do |spec|
+      if spec.default_gem?
+        say "Skipped #{spec.full_name}, it is a default gem"
+        next
+      end
+
       unless spec.extensions.empty? or options[:extensions] then
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
@@ -101,8 +111,13 @@ extensions.
                                      :wrappers => true,
                                      :force => true,
                                      :install_dir => spec.base_dir,
-                                     :env_shebang => installer_env_shebang)
-      installer.install
+                                     :env_shebang => installer_env_shebang,
+                                     :build_args => spec.build_args)
+      if options[:only_executables] then
+        installer.generate_bin
+      else
+        installer.install
+      end
 
       say "Restored #{spec.full_name}"
     end

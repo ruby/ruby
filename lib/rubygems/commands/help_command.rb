@@ -37,7 +37,7 @@ Some examples of 'gem' usage.
 
 * Create a gem:
 
-    See http://rubygems.rubyforge.org/wiki/wiki.pl?CreateAGemInTenMinutes
+    See http://guides.rubygems.org/make-your-own-gem/
 
 * See information about RubyGems:
 

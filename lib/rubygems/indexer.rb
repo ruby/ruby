@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'rubygems/format'
+require 'rubygems/package'
 require 'time'
 
 begin
@@ -14,11 +14,6 @@ end
 class Gem::Indexer
 
   include Gem::UserInteraction
-
-  ##
-  # Build indexes for RubyGems older than 1.2.0 when true
-
-  attr_accessor :build_legacy
 
   ##
   # Build indexes for RubyGems 1.2.0 and newer when true
@@ -63,14 +58,9 @@ class Gem::Indexer
            "\n\tgem install builder"
     end
 
-    options = { :build_legacy => true, :build_modern => true }.merge options
+    options = { :build_modern => true }.merge options
 
-    @build_legacy = options[:build_legacy]
     @build_modern = options[:build_modern]
-
-    @rss_title = options[:rss_title]
-    @rss_host = options[:rss_host]
-    @rss_gems_host = options[:rss_gems_host]
 
     @dest_directory = directory
     @directory = File.join(Dir.tmpdir, "gem_generate_index_#{$$}")
@@ -99,8 +89,6 @@ class Gem::Indexer
     @dest_prerelease_specs_index =
       File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
 
-    @rss_index = File.join @directory, 'index.rss'
-
     @files = []
   end
 
@@ -109,6 +97,8 @@ class Gem::Indexer
   # searching, downloading and related activities and do not need deployment
   # specific information (e.g. list of files).  So we abbreviate the spec,
   # making it much smaller for quicker downloads.
+  #--
+  # TODO move to Gem::Specification
 
   def abbreviate(spec)
     spec.files = []
@@ -123,35 +113,13 @@ class Gem::Indexer
   # Build various indicies
 
   def build_indicies
-    # Marshal gemspecs are used by both modern and legacy RubyGems
-
     Gem::Specification.dirs = []
     Gem::Specification.add_specs(*map_gems_to_specs(gem_file_list))
 
     build_marshal_gemspecs
-    build_legacy_indicies if @build_legacy
     build_modern_indicies if @build_modern
-    build_rss
 
     compress_indicies
-  end
-
-  ##
-  # Builds indicies for RubyGems older than 1.2.x
-
-  def build_legacy_indicies
-    index = collect_specs
-
-    say "Generating Marshal master index"
-
-    Gem.time 'Generated Marshal master index' do
-      open @marshal_index, 'wb' do |io|
-        io.write index.dump
-      end
-    end
-
-    @files << @marshal_index
-    @files << "#{@marshal_index}.Z"
   end
 
   ##
@@ -238,104 +206,6 @@ class Gem::Indexer
                "#{@prerelease_specs_index}.gz"]
   end
 
-  ##
-  # Builds an RSS feed for past two days gem releases according to the gem's
-  # date.
-
-  def build_rss
-    if @rss_host.nil? or @rss_gems_host.nil? then
-      if Gem.configuration.really_verbose then
-        alert_warning "no --rss-host or --rss-gems-host, RSS generation disabled"
-      end
-      return
-    end
-
-    require 'cgi'
-    require 'rubygems/text'
-
-    extend Gem::Text
-
-    Gem.time 'Generated rss' do
-      open @rss_index, 'wb' do |io|
-        rss_host = CGI.escapeHTML @rss_host
-        rss_title = CGI.escapeHTML(@rss_title || 'gems')
-
-        io.puts <<-HEADER
-<?xml version="1.0"?>
-<rss version="2.0">
-  <channel>
-    <title>#{rss_title}</title>
-    <link>http://#{rss_host}</link>
-    <description>Recently released gems from http://#{rss_host}</description>
-    <generator>RubyGems v#{Gem::VERSION}</generator>
-    <docs>http://cyber.law.harvard.edu/rss/rss.html</docs>
-        HEADER
-
-        today = Gem::Specification::TODAY
-        yesterday = today - 86400
-
-        index = Gem::Specification.select do |spec|
-          spec_date = spec.date
-          # TODO: remove this and make YAML based specs properly normalized
-          spec_date = Time.parse(spec_date.to_s) if Date === spec_date
-
-          spec_date >= yesterday && spec_date <= today
-        end
-
-        index.sort_by { |spec| [-spec.date.to_i, spec] }.each do |spec|
-          file_name = File.basename spec.cache_file
-          gem_path = CGI.escapeHTML "http://#{@rss_gems_host}/gems/#{file_name}"
-          size = File.stat(spec.loaded_from).size # rescue next
-
-          description = spec.description || spec.summary || ''
-          authors = Array spec.authors
-          emails = Array spec.email
-          authors = emails.zip(authors).map do |email, author|
-            email += " (#{author})" if author and not author.empty?
-          end.join ', '
-
-          description = description.split(/\n\n+/).map do |chunk|
-            format_text chunk, 78
-          end
-
-          description = description.join "\n\n"
-
-          item = ''
-
-          item << <<-ITEM
-    <item>
-      <title>#{CGI.escapeHTML spec.full_name}</title>
-      <description>
-&lt;pre&gt;#{CGI.escapeHTML description.chomp}&lt;/pre&gt;
-      </description>
-      <author>#{CGI.escapeHTML authors}</author>
-      <guid>#{CGI.escapeHTML spec.full_name}</guid>
-      <enclosure url=\"#{gem_path}\"
-                 length=\"#{size}\" type=\"application/octet-stream\" />
-      <pubDate>#{spec.date.rfc2822}</pubDate>
-          ITEM
-
-          item << <<-ITEM if spec.homepage
-      <link>#{CGI.escapeHTML spec.homepage}</link>
-          ITEM
-
-          item << <<-ITEM
-    </item>
-          ITEM
-
-          io.puts item
-        end
-
-        io.puts <<-FOOTER
-  </channel>
-</rss>
-        FOOTER
-      end
-    end
-
-    @files << @rss_index
-  end
-
   def map_gems_to_specs gems
     gems.map { |gemfile|
       if File.size(gemfile) == 0 then
@@ -344,7 +214,7 @@ class Gem::Indexer
       end
 
       begin
-        spec = Gem::Format.from_file_by_path(gemfile).spec
+        spec = Gem::Package.new(gemfile).spec
         spec.loaded_from = gemfile
 
         # HACK: fuck this shit - borks all tests that use pl1
@@ -374,21 +244,6 @@ class Gem::Indexer
   end
 
   ##
-  # Collect specifications from .gem files from the gem directory.
-
-  def collect_specs(gems = gem_file_list)
-    Gem::Deprecate.skip_during do
-      index = Gem::SourceIndex.new
-
-      map_gems_to_specs(gems).each do |spec|
-        index.add_spec spec, spec.original_name
-      end
-
-      index
-    end
-  end
-
-  ##
   # Compresses indicies on disk
   #--
   # All future files should be compressed using gzip, not deflate
@@ -397,11 +252,6 @@ class Gem::Indexer
     say "Compressing indicies"
 
     Gem.time 'Compressed indicies' do
-      if @build_legacy then
-        compress @marshal_index, 'Z'
-        paranoid @marshal_index, 'Z'
-      end
-
       if @build_modern then
         gzip @specs_index
         gzip @latest_specs_index
@@ -559,12 +409,9 @@ class Gem::Indexer
   end
 
   ##
-  # Perform an in-place update of the repository from newly added gems.  Only
-  # works for modern indicies, and sets #build_legacy to false when run.
+  # Perform an in-place update of the repository from newly added gems.
 
   def update_index
-    @build_legacy = false
-
     make_temp_directories
 
     specs_mtime = File.stat(@dest_specs_index).mtime
@@ -583,6 +430,9 @@ class Gem::Indexer
 
     specs = map_gems_to_specs updated_gems
     prerelease, released = specs.partition { |s| s.version.prerelease? }
+
+    Gem::Specification.dirs = []
+    Gem::Specification.add_specs(*specs)
 
     files = build_marshal_gemspecs
 

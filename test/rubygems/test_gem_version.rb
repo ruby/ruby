@@ -33,6 +33,9 @@ class TestGemVersion < Gem::TestCase
     assert_same  fake, Gem::Version.create(fake)
     assert_nil   Gem::Version.create(nil)
     assert_equal v("5.1"), Gem::Version.create("5.1")
+    
+    ver = '1.1'.freeze
+    assert_equal v('1.1'), Gem::Version.create(ver)
   end
 
   def test_eql_eh
@@ -56,7 +59,7 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_initialize
-    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n"].each do |good|
+    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n", "1.0".freeze].each do |good|
       assert_version_equal "1.0", good
     end
 
@@ -106,13 +109,13 @@ class TestGemVersion < Gem::TestCase
     assert_nil v("1.0") <=> "whatever"
   end
 
-  def test_spermy_recommendation
-    assert_spermy_equal "~> 1.0", "1"
-    assert_spermy_equal "~> 1.0", "1.0"
-    assert_spermy_equal "~> 1.2", "1.2"
-    assert_spermy_equal "~> 1.2", "1.2.0"
-    assert_spermy_equal "~> 1.2", "1.2.3"
-    assert_spermy_equal "~> 1.2", "1.2.3.a.4"
+  def test_approximate_recommendation
+    assert_approximate_equal "~> 1.0", "1"
+    assert_approximate_equal "~> 1.0", "1.0"
+    assert_approximate_equal "~> 1.2", "1.2"
+    assert_approximate_equal "~> 1.2", "1.2.0"
+    assert_approximate_equal "~> 1.2", "1.2.3"
+    assert_approximate_equal "~> 1.2", "1.2.3.a.4"
   end
 
   def test_to_s
@@ -125,10 +128,10 @@ class TestGemVersion < Gem::TestCase
     assert v(version).prerelease?, "#{version} is a prerelease"
   end
 
-  # Assert that +expected+ is the "spermy" recommendation for +version".
+  # Assert that +expected+ is the "approximate" recommendation for +version".
 
-  def assert_spermy_equal expected, version
-    assert_equal expected, v(version).spermy_recommendation
+  def assert_approximate_equal expected, version
+    assert_equal expected, v(version).approximate_recommendation
   end
 
   # Assert that bumping the +unbumped+ version yields the +expected+.

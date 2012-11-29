@@ -4,12 +4,10 @@ require 'rubygems'
 class TestConfig < Gem::TestCase
 
   def test_datadir
-    _, err = capture_io do
-      datadir = RbConfig::CONFIG['datadir']
-      assert_equal "#{datadir}/xyz", RbConfig.datadir('xyz')
-    end
-
-    assert_match(/deprecate/, err)
+    util_make_gems
+    spec = Gem::Specification.find_by_name("a")
+    spec.activate
+    assert_equal "#{spec.full_gem_path}/data/a", Gem.datadir('a')
   end
 
 end

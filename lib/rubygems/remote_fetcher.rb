@@ -1,14 +1,13 @@
 require 'rubygems'
 require 'rubygems/user_interaction'
 require 'uri'
+require 'resolv'
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
 # a remote source.
 
 class Gem::RemoteFetcher
-
-  BuiltinSSLCerts = File.expand_path("./ssl_certs/*.pem", File.dirname(__FILE__))
 
   include Gem::UserInteraction
 
@@ -34,6 +33,13 @@ class Gem::RemoteFetcher
 
   end
 
+  ##
+  # A FetchError that indicates that the reason for not being
+  # able to fetch data was that the host could not be contacted
+
+  class UnknownHostError < FetchError
+  end
+
   @fetcher = nil
 
   ##
@@ -53,8 +59,11 @@ class Gem::RemoteFetcher
   # * nil: respect environment variables (HTTP_PROXY, HTTP_PROXY_USER,
   #        HTTP_PROXY_PASS)
   # * <tt>:no_proxy</tt>: ignore environment variables and _don't_ use a proxy
+  #
+  # +dns+: An object to use for DNS resolution of the API endpoint.
+  #        By default, use Resolv::DNS.
 
-  def initialize(proxy = nil)
+  def initialize(proxy=nil, dns=Resolv::DNS.new)
     require 'net/http'
     require 'stringio'
     require 'time'
@@ -72,6 +81,27 @@ class Gem::RemoteFetcher
       else URI.parse(proxy)
       end
     @user_agent = user_agent
+    @env_no_proxy = get_no_proxy_from_env
+
+    @dns = dns
+  end
+
+  ##
+  #
+  # Given a source at +uri+, calculate what hostname to actually
+  # connect to query the data for it.
+
+  def api_endpoint(uri)
+    host = uri.host
+
+    begin
+      res = @dns.getresource "_rubygems._tcp.#{host}",
+                             Resolv::DNS::Resource::IN::SRV
+    rescue Resolv::ResolvError
+      uri
+    else
+      URI.parse "#{res.target}#{uri.path}"
+    end
   end
 
   ##
@@ -82,14 +112,13 @@ class Gem::RemoteFetcher
   # larger, more emcompassing effort. -erikh
 
   def download_to_cache dependency
-    found = Gem::SpecFetcher.fetcher.fetch dependency, true, true,
-                                           dependency.prerelease?
+    found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dependency
 
     return if found.empty?
 
-    spec, source_uri = found.sort_by { |(s,_)| s.version }.last
+    spec, source = found.sort_by { |(s,_)| s.version }.last
 
-    download spec, source_uri
+    download spec, source.uri.to_s
   end
 
   ##
@@ -100,11 +129,14 @@ class Gem::RemoteFetcher
   def download(spec, source_uri, install_dir = Gem.dir)
     Gem.ensure_gem_subdirectories(install_dir) rescue nil
 
-    if File.writable?(install_dir)
-      cache_dir = File.join install_dir, "cache"
-    else
-      cache_dir = File.join Gem.user_dir, "cache"
-    end
+    cache_dir =
+      if Dir.pwd == install_dir then # see fetch_command
+        install_dir
+      elsif File.writable? install_dir then
+        File.join install_dir, "cache"
+      else
+        File.join Gem.user_dir, "cache"
+      end
 
     gem_file_name = File.basename spec.cache_file
     local_gem_path = File.join cache_dir, gem_file_name
@@ -123,6 +155,8 @@ class Gem::RemoteFetcher
     # URI.parse gets confused by MS Windows paths with forward slashes.
     scheme = nil if scheme =~ /^[a-z]$/i
 
+    # REFACTOR: split this up and dispatch on scheme (eg download_http)
+    # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
     when 'http', 'https' then
       unless File.exist? local_gem_path then
@@ -132,7 +166,7 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
-          gem = self.fetch_path remote_gem_path
+          self.cache_update_path remote_gem_path, local_gem_path
         rescue Gem::RemoteFetcher::FetchError
           raise if spec.original_platform == spec.platform
 
@@ -143,11 +177,7 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{alternate_name}"
 
-          gem = self.fetch_path remote_gem_path
-        end
-
-        File.open local_gem_path, 'wb' do |fp|
-          fp.write gem
+          self.cache_update_path remote_gem_path, local_gem_path
         end
       end
     when 'file' then
@@ -184,7 +214,7 @@ class Gem::RemoteFetcher
       say "Using local gem #{local_gem_path}" if
         Gem.configuration.really_verbose
     else
-      raise Gem::InstallError, "unsupported URI scheme #{source_uri.scheme}"
+      raise ArgumentError, "unsupported URI scheme #{source_uri.scheme}"
     end
 
     local_gem_path
@@ -232,18 +262,54 @@ class Gem::RemoteFetcher
     uri = URI.parse uri unless URI::Generic === uri
 
     raise ArgumentError, "bad uri: #{uri}" unless uri
-    raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}" unless
-      uri.scheme
+
+    unless uri.scheme
+      raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
+    end
 
     data = send "fetch_#{uri.scheme}", uri, mtime, head
-    data = Gem.gunzip data if data and not head and uri.to_s =~ /gz$/
+
+    if data and !head and uri.to_s =~ /gz$/
+      begin
+        data = Gem.gunzip data
+      rescue Zlib::GzipFile::Error
+        raise FetchError.new("server did not return a valid file", uri.to_s)
+      end
+    end
+
     data
   rescue FetchError
     raise
   rescue Timeout::Error
-    raise FetchError.new('timed out', uri.to_s)
+    raise UnknownHostError.new('timed out', uri.to_s)
   rescue IOError, SocketError, SystemCallError => e
-    raise FetchError.new("#{e.class}: #{e}", uri.to_s)
+    if e.message =~ /getaddrinfo/
+      raise UnknownHostError.new('no such name', uri.to_s)
+    else
+      raise FetchError.new("#{e.class}: #{e}", uri.to_s)
+    end
+  end
+
+  ##
+  # Downloads +uri+ to +path+ if necessary. If no path is given, it just
+  # passes the data.
+
+  def cache_update_path(uri, path = nil)
+    mtime = path && File.stat(path).mtime rescue nil
+
+    if mtime && Net::HTTPNotModified === fetch_path(uri, mtime, true)
+      Gem.read_binary(path)
+    else
+      data = fetch_path(uri)
+
+      if path
+        open(path, 'wb') do |io|
+          io.write data
+        end
+      end
+
+      data
+    end
   end
 
   ##
@@ -274,6 +340,17 @@ class Gem::RemoteFetcher
   end
 
   ##
+  # Returns list of no_proxy entries (if any) from the environment
+
+  def get_no_proxy_from_env
+    env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
+
+    return [] if env_no_proxy.nil?  or env_no_proxy.empty?
+
+    env_no_proxy.split(/\s*,\s*/)
+  end
+
+  ##
   # Returns an HTTP proxy URI if one is set in the environment variables.
 
   def get_proxy_from_env
@@ -296,7 +373,7 @@ class Gem::RemoteFetcher
   # Normalize the URI by adding "http://" if it is missing.
 
   def normalize_uri(uri)
-    (uri =~ /^(https?|ftp|file):/) ? uri : "http://#{uri}"
+    (uri =~ /^(https?|ftp|file):/i) ? uri : "http://#{uri}"
   end
 
   ##
@@ -306,7 +383,7 @@ class Gem::RemoteFetcher
   def connection_for(uri)
     net_http_args = [uri.host, uri.port]
 
-    if @proxy_uri then
+    if @proxy_uri and not no_proxy?(uri.host) then
       net_http_args += [
         @proxy_uri.host,
         @proxy_uri.port,
@@ -319,37 +396,23 @@ class Gem::RemoteFetcher
     @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
     connection = @connections[connection_id]
 
-    if https?(uri) and !connection.started? then
+    if https?(uri) and not connection.started? then
       configure_connection_for_https(connection)
-
-      # Don't refactor this with the else branch. We don't want the
-      # http-only code path to not depend on anything in OpenSSL.
-      #
-      begin
-        connection.start
-      rescue OpenSSL::SSL::SSLError, Errno::EHOSTDOWN => e
-        raise FetchError.new(e.message, uri)
-      end
-    else
-      begin
-        connection.start unless connection.started?
-      rescue Errno::EHOSTDOWN => e
-        raise FetchError.new(e.message, uri)
-      end
     end
 
+    connection.start unless connection.started?
+
     connection
+  rescue OpenSSL::SSL::SSLError, Errno::EHOSTDOWN => e
+    raise FetchError.new(e.message, uri)
   end
 
   def configure_connection_for_https(connection)
     require 'net/https'
-
     connection.use_ssl = true
     connection.verify_mode =
       Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
-
     store = OpenSSL::X509::Store.new
-
     if Gem.configuration.ssl_ca_cert
       if File.directory? Gem.configuration.ssl_ca_cert
         store.add_path Gem.configuration.ssl_ca_cert
@@ -360,12 +423,12 @@ class Gem::RemoteFetcher
       store.set_default_paths
       add_rubygems_trusted_certs(store)
     end
-
     connection.cert_store = store
   end
 
   def add_rubygems_trusted_certs(store)
-    Dir.glob(BuiltinSSLCerts).each do |ssl_cert_file|
+    pattern = File.expand_path("./ssl_certs/*.pem", File.dirname(__FILE__))
+    Dir.glob(pattern).each do |ssl_cert_file|
       store.add_file ssl_cert_file
     end
   end
@@ -378,13 +441,13 @@ class Gem::RemoteFetcher
     end
   end
 
-  ##
-  # Read the data from the (source based) URI, but if it is a file:// URI,
-  # read from the filesystem instead.
-
-  def open_uri_or_path(uri, last_modified = nil, head = false, depth = 0)
-    raise "NO: Use fetch_path instead"
-    # TODO: deprecate for fetch_path
+  def no_proxy? host
+    host = host.downcase
+    @env_no_proxy.each do |pattern|
+      pattern = pattern.downcase
+      return true if host[-pattern.length, pattern.length ] == pattern
+    end
+    return false
   end
 
   ##

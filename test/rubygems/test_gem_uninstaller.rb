@@ -6,19 +6,17 @@ class TestGemUninstaller < Gem::InstallerTestCase
   def setup
     super
 
-    @user_spec.executables = ["executable"]
-
     build_rake_in do
       use_ui ui do
         @installer.install
+        @spec = @installer.spec
+
         @user_installer.install
-
-        Gem.use_paths @gemhome, Gem.user_dir
-
-        @spec      = Gem::Specification.find_by_name 'a'
-        @user_spec = Gem::Specification.find_by_name 'b'
+        @user_spec = @user_installer.spec
       end
     end
+
+    Gem::Specification.reset
   end
 
   def test_initialize_expand_path
@@ -42,7 +40,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   def test_remove_executables_force_keep
     uninstaller = Gem::Uninstaller.new nil, :executables => false
 
-    executable = File.join Gem.user_dir, 'bin', 'executable'
+    executable = File.join Gem.bindir(@user_spec.base_dir), 'executable'
     assert File.exist?(executable), 'executable not written'
 
     use_ui @ui do
@@ -57,7 +55,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   def test_remove_executables_force_remove
     uninstaller = Gem::Uninstaller.new nil, :executables => true
 
-    executable = File.join Gem.user_dir, 'bin', 'executable'
+    executable = File.join Gem.bindir(@user_spec.base_dir), 'executable'
     assert File.exist?(executable), 'executable not written'
 
     use_ui @ui do
@@ -77,7 +75,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     end
 
     exec_path = File.join Gem.user_dir, 'bin', 'executable'
-    assert_equal false, File.exist?(exec_path), 'removed exec from bin dir'
+    refute File.exist?(exec_path), 'exec still exists in user bin dir'
 
     assert_equal "Removing executable\n", @ui.output
   end
@@ -200,7 +198,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
                                        :executables  => true,
                                        :user_install => true)
 
-    gem_dir = File.join Gem.user_dir, 'gems', @user_spec.full_name
+    gem_dir = File.join @user_spec.gem_dir
 
     Gem.pre_uninstall do
       assert_path_exists gem_dir
@@ -218,6 +216,23 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_wrong_repo
+    Gem.use_paths "#{@gemhome}2", [@gemhome]
+
+    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+
+    e = assert_raises Gem::InstallError do
+      uninstaller.uninstall
+    end
+
+    expected = <<-MESSAGE.strip
+#{@spec.name} is not installed in GEM_HOME, try:
+\tgem uninstall -i #{@gemhome} a
+    MESSAGE
+
+    assert_equal expected, e.message
+  end
+
   def test_uninstall_selection_greater_than_one
     util_make_gems
 
@@ -225,11 +240,119 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     uninstaller = Gem::Uninstaller.new('a')
 
-    use_ui Gem::MockGemUi.new("2\n") do
+    use_ui Gem::MockGemUi.new("2\ny\n") do
       uninstaller.uninstall
     end
 
     updated_list = Gem::Specification.find_all_by_name('a')
     assert_equal list.length - 1, updated_list.length
+  end
+
+  def test_uninstall_prompts_about_broken_deps
+    util_gem 'r', '1', 'q' => '= 1'
+    util_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q')
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+    lines.shift
+
+    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    lines.shift
+    lines.shift
+
+    assert_match %r!r-1 depends on q \(= 1\)!, lines.shift
+    assert_match %r!Successfully uninstalled q-1!, lines.last
+  end
+
+  def test_uninstall_only_lists_unsatified_deps
+    util_gem 'r', '1', 'q' => '~> 1.0'
+    util_gem 'x', '1', 'q' => '= 1.0'
+    util_gem 'q', '1.0'
+    util_gem 'q', '1.1'
+
+    un = Gem::Uninstaller.new('q', :version => "1.0")
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+    lines.shift
+
+    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    lines.shift
+    lines.shift
+
+    assert_match %r!x-1 depends on q \(= 1.0\)!, lines.shift
+    assert_match %r!Successfully uninstalled q-1.0!, lines.last
+  end
+
+  def test_uninstall_doesnt_prompt_when_other_gem_satifies_requirement
+    util_gem 'r', '1', 'q' => '~> 1.0'
+    util_gem 'q', '1.0'
+    util_gem 'q', '1.1'
+
+    un = Gem::Uninstaller.new('q', :version => "1.0")
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+
+    assert_equal "Successfully uninstalled q-1.0", lines.shift
+  end
+
+  def test_uninstall_doesnt_prompt_when_removing_a_dev_dep
+    util_gem('r', '1') do |s|
+      s.add_development_dependency "q", "= 1.0"
+    end
+
+    util_gem 'q', '1.0'
+
+    un = Gem::Uninstaller.new('q', :version => "1.0")
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+
+    assert_equal "Successfully uninstalled q-1.0", lines.shift
+  end
+
+
+  def test_uninstall_prompt_includes_dep_type
+    util_gem 'r', '1' do |s|
+      s.add_development_dependency 'q', '= 1'
+    end
+
+    util_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q', :check_dev => true)
+    ui = Gem::MockGemUi.new("y\n")
+
+    use_ui ui do
+      un.uninstall
+    end
+
+    lines = ui.output.split("\n")
+    lines.shift
+
+    assert_match %r!You have requested to uninstall the gem:!, lines.shift
+    lines.shift
+    lines.shift
+
+    assert_match %r!r-1 depends on q \(= 1, development\)!, lines.shift
+    assert_match %r!Successfully uninstalled q-1!, lines.last
   end
 end

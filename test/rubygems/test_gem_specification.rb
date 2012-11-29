@@ -81,6 +81,7 @@ end
       files
       homepage
       licenses
+      metadata
       name
       platform
       post_install_message
@@ -117,7 +118,6 @@ end
   end
 
   def test_self_from_yaml_syck_date_bug
-    return unless have_syck     # No meanings if no syck
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.
     yaml = @a1.to_yaml
@@ -132,7 +132,6 @@ end
   end
 
   def test_self_from_yaml_syck_default_key_bug
-    return unless have_syck     # No meanings if no syck
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.
     yaml = <<-YAML
@@ -302,6 +301,21 @@ dependencies: []
     assert_equal @a2, spec
   end
 
+  def test_self_load_tainted
+    full_path = @a2.spec_file
+    write_file full_path do |io|
+      io.write @a2.to_ruby_for_cache
+    end
+
+    full_path.taint
+    loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
+    spec = loader.value
+
+    @a2.files.clear
+
+    assert_equal @a2, spec
+  end
+
   def test_self_load_escape_curly
     @a2.name = 'a};raise "improper escaping";%q{'
 
@@ -421,13 +435,15 @@ dependencies: []
   end
 
   def test_emits_zulu_timestamps_properly
+    skip "bug only on 1.9.2" unless RUBY_VERSION =~ /1\.9\.2/
+
     t = Time.utc(2012, 3, 12)
     @a2.date = t
 
     yaml = with_psych { @a2.to_yaml }
 
     assert_match %r!date: 2012-03-12 00:00:00\.000000000 Z!, yaml
-  end if RUBY_VERSION =~ /1\.9\.2/
+  end
 
   def test_initialize
     spec = Gem::Specification.new do |s|
@@ -571,10 +587,6 @@ dependencies: []
     @a2.activate
 
     assert @a2.activated?
-
-    Gem::Deprecate.skip_during do
-      assert @a2.loaded?
-    end
   end
 
   def test_add_dependency_with_explicit_type
@@ -643,9 +655,27 @@ dependencies: []
     assert_equal Time.utc(2003, 9, 17, 0,0,0), @a1.date
   end
 
+  def test_date_tolerates_hour_sec_zulu
+    @a1.date = "2012-01-12 11:22:33.4444444 Z"
+    assert_equal Time.utc(2012,01,12,0,0,0), @a1.date
+  end
+
+  def test_date_tolerates_hour_sec_and_timezone
+    @a1.date = "2012-01-12 11:22:33.4444444 +02:33"
+    assert_equal Time.utc(2012,01,12,0,0,0), @a1.date
+  end
+
   def test_dependencies
     util_setup_deps
     assert_equal [@bonobo, @monkey], @gem.dependencies
+  end
+
+  def test_doc_dir
+    assert_equal File.join(@gemhome, 'doc', 'a-1'), @a1.doc_dir
+  end
+
+  def test_doc_dir_type
+    assert_equal File.join(@gemhome, 'doc', 'a-1', 'ri'), @a1.doc_dir('ri')
   end
 
   def test_runtime_dependencies
@@ -812,14 +842,17 @@ dependencies: []
   def test_full_name
     assert_equal 'a-1', @a1.full_name
 
+    @a1 = Gem::Specification.new "a", 1
     @a1.platform = Gem::Platform.new ['universal', 'darwin', nil]
     assert_equal 'a-1-universal-darwin', @a1.full_name
 
+    @a1 = Gem::Specification.new "a", 1
     @a1.instance_variable_set :@new_platform, 'mswin32'
     assert_equal 'a-1-mswin32', @a1.full_name, 'legacy'
 
     return if win_platform?
 
+    @a1 = Gem::Specification.new "a", 1
     @a1.platform = 'current'
     assert_equal 'a-1-x86-darwin-8', @a1.full_name
   end
@@ -832,6 +865,7 @@ dependencies: []
     }
 
     test_cases.each do |arch, expected|
+      @a1 = Gem::Specification.new "a", 1
       util_set_arch arch
       @a1.platform = 'current'
       assert_equal expected, @a1.full_name
@@ -844,15 +878,12 @@ dependencies: []
     refute_equal @a1.hash, @a2.hash
   end
 
-  def test_installation_path
-    Gem::Deprecate.skip_during do
-      assert_equal @gemhome, @a1.installation_path
+  def test_base_dir
+    assert_equal @gemhome, @a1.base_dir
 
-      @a1.instance_variable_set :@loaded_from, nil
-      @a1.instance_variable_set :@loaded, false
+    @a1.instance_variable_set :@loaded_from, nil
 
-      assert_nil @a1.installation_path
-    end
+    assert_equal Gem.dir, @a1.base_dir
   end
 
   def test_lib_files
@@ -883,6 +914,20 @@ dependencies: []
 
   def test_platform
     assert_equal Gem::Platform::RUBY, @a1.platform
+  end
+
+  def test_platform_change_reset_full_name
+    orig_full_name = @a1.full_name
+
+    @a1.platform = "universal-unknown"
+    refute_equal orig_full_name, @a1.full_name
+  end
+
+  def test_platform_change_reset_cache_file
+    orig_cache_file = @a1.cache_file
+
+    @a1.platform = "universal-unknown"
+    refute_equal orig_cache_file, @a1.cache_file
   end
 
   def test_platform_equals
@@ -976,6 +1021,11 @@ dependencies: []
     assert_equal( -1, (s1 <=> s2))
     assert_equal(  0, (s1 <=> s1))
     assert_equal(  1, (s2 <=> s1))
+  end
+
+  def test_spec_file
+    assert_equal File.join(@gemhome, 'specifications', 'a-1.gemspec'),
+                 @a1.spec_file
   end
 
   def test_spec_name
@@ -1118,7 +1168,7 @@ Gem::Specification.new do |s|
   s.test_files = ["test/suite.rb"]
 
   if s.respond_to? :specification_version then
-    s.specification_version = 3
+    s.specification_version = 4
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])
@@ -1152,6 +1202,17 @@ end
     gemspec2 = eval ruby_code
 
     assert_equal gemspec1, gemspec2
+  end
+
+  def test_to_ruby_nested_hash
+    metadata = {}
+    metadata[metadata] = metadata
+
+    @a2.metadata = metadata
+
+    ruby = @a2.to_ruby
+
+    assert_match %r%^  s\.metadata = \{ "%, ruby
   end
 
   def test_to_ruby_platform
@@ -1208,25 +1269,6 @@ end
     @a1.instance_variable_set :@original_platform, nil
 
     assert_match %r|^platform: ruby$|, @a1.to_yaml
-  end
-
-  def test_to_yaml_emits_syck_compat_yaml
-    if YAML.const_defined?(:ENGINE) && YAML::ENGINE.syck?
-      begin
-        yamler, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
-      rescue LoadError
-        skip 'cannot load psych'
-      end
-    end
-    begin
-      @a1.add_dependency "gx", "1.0.0"
-
-      y = @a1.to_yaml
-
-      refute_match %r!^\s*- - =!, y
-    ensure
-      YAML::ENGINE.yamler = yamler if yamler
-    end
   end
 
   def test_validate
@@ -1294,6 +1336,26 @@ end
 
       assert_equal "#{w}:  deprecated autorequire specified\n",
                    @ui.error, 'error'
+    end
+  end
+
+  def test_validate_dependencies
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.add_runtime_dependency     'b', '>= 1.0.rc1'
+      @a1.add_development_dependency 'c', '>= 2.0.rc2'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      expected = <<-EXPECTED
+#{w}:  prerelease dependency on b (>= 1.0.rc1) is not recommended
+#{w}:  prerelease dependency on c (>= 2.0.rc2, development) is not recommended
+      EXPECTED
+
+      assert_equal expected, @ui.error, 'warning'
     end
   end
 
@@ -1494,6 +1556,25 @@ end
     end
   end
 
+  def test_validate_permissions
+    skip 'chmod not supported' if Gem.win_platform?
+
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      File.chmod 0640, File.join('lib', 'code.rb')
+      File.chmod 0640, File.join('bin', 'exec')
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_match "#{w}:  lib/code.rb is not world-readable\n", @ui.error
+      assert_match "#{w}:  bin/exec is not world-readable\n", @ui.error
+      assert_match "#{w}:  bin/exec is not executable\n", @ui.error
+    end
+  end
+
   def test_validate_platform_legacy
     util_setup_validate
 
@@ -1570,6 +1651,22 @@ end
 
   def test_version
     assert_equal Gem::Version.new('1'), @a1.version
+  end
+
+  def test_version_change_reset_full_name
+    orig_full_name = @a1.full_name
+
+    @a1.version = "2"
+
+    refute_equal orig_full_name, @a1.full_name
+  end
+
+  def test_version_change_reset_cache_file
+    orig_cache_file = @a1.cache_file
+
+    @a1.version = "2"
+
+    refute_equal orig_cache_file, @a1.cache_file
   end
 
   def test__load_fixes_Date_objects
@@ -1649,13 +1746,172 @@ end
                   a-3-x86-other_platform-1
                   a_evil-9
                   c-1.2
+                  dep_x-1
                   p-1
                   #{p1_curr.full_name}
+                  x-1
                  ]
 
     latest_specs = Gem::Specification.latest_specs.map(&:full_name).sort
 
     assert_equal expected, latest_specs
+  end
+
+  def test_metadata_validates_ok
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m1 = quick_gem 'm', '1' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { 'one' => "two", 'two' => "three" }
+      end
+
+      use_ui @ui do
+        @m1.validate
+      end
+    end
+  end
+
+  def test_metadata_key_type_validation_fails
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem 'm', '2' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { 1 => "fail" }
+      end
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @m2.validate
+      end
+
+      assert_equal "metadata keys must be a String", e.message
+    end
+  end
+
+  def test_metadata_key_size_validation_fails
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem 'm', '2' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { ("x" * 129) => "fail" }
+      end
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @m2.validate
+      end
+
+      assert_equal "metadata key too large (129 > 128)", e.message
+    end
+  end
+
+  def test_metadata_value_type_validation_fails
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem 'm', '2' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { 'fail' => [] }
+      end
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @m2.validate
+      end
+
+      assert_equal "metadata values must be a String", e.message
+    end
+  end
+
+  def test_metadata_value_size_validation_fails
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem 'm', '2' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { 'fail' => ("x" * 1025) }
+      end
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @m2.validate
+      end
+
+      assert_equal "metadata value too large (1025 > 1024)", e.message
+    end
+  end
+
+  def test_metadata_specs
+    valid_ruby_spec = <<-EOF
+# -*- encoding: utf-8 -*-
+
+Gem::Specification.new do |s|
+  s.name = "m"
+  s.version = "1"
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  s.metadata = { "one" => "two", "two" => "three" } if s.respond_to? :metadata=
+  s.authors = ["A User"]
+  s.date = "#{Gem::Specification::TODAY.strftime("%Y-%m-%d")}"
+  s.description = "This is a test description"
+  s.email = "example@example.com"
+  s.files = ["lib/code.rb"]
+  s.homepage = "http://example.com"
+  s.require_paths = ["lib"]
+  s.rubygems_version = "#{Gem::VERSION}"
+  s.summary = "this is a summary"
+end
+    EOF
+
+    @m1 = quick_gem 'm', '1' do |s|
+      s.files = %w[lib/code.rb]
+      s.metadata = { 'one' => "two", 'two' => "three" }
+    end
+
+    assert_equal @m1.to_ruby, valid_ruby_spec
+  end
+
+  def test_find_by_name
+    util_make_gems
+    assert(Gem::Specification.find_by_name("a"))
+    assert(Gem::Specification.find_by_name("a", "1"))
+    assert(Gem::Specification.find_by_name("a", ">1"))
+    assert_raises(Gem::LoadError) do
+      Gem::Specification.find_by_name("monkeys")
+    end
+  end
+
+  def test_find_by_path
+    a = new_spec "foo", "1", nil, "lib/foo.rb"
+
+    install_specs a
+
+    assert_equal a, Gem::Specification.find_by_path('foo')
+    a.activate
+    assert_equal a, Gem::Specification.find_by_path('foo')
+  end
+
+  def test_find_inactive_by_path
+    a = new_spec "foo", "1", nil, "lib/foo.rb"
+
+    install_specs a
+
+    assert_equal a, Gem::Specification.find_inactive_by_path('foo')
+    a.activate
+    assert_equal nil, Gem::Specification.find_inactive_by_path('foo')
+  end
+
+  def test_load_default_gem
+    Gem::Specification.reset
+    assert_equal [], Gem::Specification.map(&:full_name)
+
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    spec_path = File.join(@default_spec_dir, default_gem_spec.spec_name)
+    write_file(spec_path) do |file|
+      file.print(default_gem_spec.to_ruby)
+    end
+    Gem::Specification.reset
+    assert_equal ["default-2.0.0.0"], Gem::Specification.map(&:full_name)
   end
 
   def util_setup_deps
@@ -1679,7 +1935,7 @@ end
       FileUtils.touch File.join("lib", "code.rb")
       FileUtils.touch File.join("test", "suite.rb")
 
-      File.open "bin/exec", "w" do |fp|
+      File.open "bin/exec", "w", 0755 do |fp|
         fp.puts "#!#{Gem.ruby}"
       end
     end
@@ -1730,17 +1986,5 @@ end
     yield
   ensure
     $VERBOSE = old_verbose
-  end
-
-  def have_syck
-    unless defined?(@@have_syck)
-      begin
-        old_verbose, $VERBOSE = $VERBOSE, nil
-        @@have_syck = with_syck {YAML::ENGINE.syck?}
-      ensure
-        $VERBOSE = old_verbose
-      end
-    end
-    @@have_syck
   end
 end

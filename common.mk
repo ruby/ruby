@@ -887,7 +887,8 @@ $(MINIPRELUDE_C): $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(Q) $(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
-	   $(srcdir)/lib/rubygems/defaults.rb $(srcdir)/lib/rubygems/custom_require.rb \
+	   $(srcdir)/lib/rubygems/defaults.rb \
+	   $(srcdir)/lib/rubygems/core_ext/kernel_gem.rb \
 	   $(PRELUDE_SCRIPTS) $(PREP)
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(PRELUDE_SCRIPTS) $@

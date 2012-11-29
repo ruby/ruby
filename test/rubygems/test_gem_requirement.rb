@@ -21,9 +21,19 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_equal "= 2", v(2)
   end
 
-  def test_class_available_as_gem_version_requirement
-    assert_same Gem::Requirement, Gem::Version::Requirement,
-      "Gem::Version::Requirement is aliased for old YAML compatibility."
+  def test_empty_requirements_is_none
+    r = Gem::Requirement.new
+    assert_equal true, r.none?
+  end
+
+  def test_explicit_default_is_none
+    r = Gem::Requirement.new ">= 0"
+    assert_equal true, r.none?
+  end
+
+  def test_basic_non_none
+    r = Gem::Requirement.new "= 1"
+    assert_equal false, r.none?
   end
 
   def test_parse
@@ -37,17 +47,19 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_parse_bad
-    e = assert_raises ArgumentError do
+    e = assert_raises Gem::Requirement::BadRequirementError do
       Gem::Requirement.parse nil
     end
 
     assert_equal 'Illformed requirement [nil]', e.message
 
-    e = assert_raises ArgumentError do
+    e = assert_raises Gem::Requirement::BadRequirementError do
       Gem::Requirement.parse ""
     end
 
     assert_equal 'Illformed requirement [""]', e.message
+
+    assert_equal Gem::Requirement::BadRequirementError.superclass, ArgumentError
   end
 
   def test_prerelease_eh
@@ -67,28 +79,37 @@ class TestGemRequirement < Gem::TestCase
   def test_satisfied_by_eh_bang_equal
     r = req '!= 1.2'
 
-    assert_satisfied_by nil,   r
     assert_satisfied_by "1.1", r
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
+
+    assert_raises ArgumentError do
+      assert_satisfied_by nil, r
+    end
   end
 
   def test_satisfied_by_eh_blank
     r = req "1.2"
 
-    refute_satisfied_by nil,   r
     refute_satisfied_by "1.1", r
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
+
+    assert_raises ArgumentError do
+      assert_satisfied_by nil, r
+    end
   end
 
   def test_satisfied_by_eh_equal
     r = req "= 1.2"
 
-    refute_satisfied_by nil,   r
     refute_satisfied_by "1.1", r
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
+
+    assert_raises ArgumentError do
+      assert_satisfied_by nil, r
+    end
   end
 
   def test_satisfied_by_eh_gt
@@ -98,7 +119,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -110,7 +131,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -122,7 +143,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -134,7 +155,7 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -146,7 +167,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     refute_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -158,7 +179,7 @@ class TestGemRequirement < Gem::TestCase
     assert_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
-    assert_raises NoMethodError do
+    assert_raises ArgumentError do
       r.satisfied_by? nil
     end
   end
@@ -200,9 +221,19 @@ class TestGemRequirement < Gem::TestCase
 
   def test_illformed_requirements
     [ ">>> 1.3.5", "> blah" ].each do |rq|
-      assert_raises ArgumentError, "req [#{rq}] should fail" do
+      assert_raises Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
         Gem::Requirement.new rq
       end
+    end
+  end
+
+  def test_satisfied_by_eh_non_versions
+    assert_raises ArgumentError do
+      req(">= 0").satisfied_by? Object.new
+    end
+
+    assert_raises ArgumentError do
+      req(">= 0").satisfied_by? Gem::Requirement.default
     end
   end
 

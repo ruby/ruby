@@ -42,5 +42,37 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     end
   end
 
+  def test_seek
+    tar = tar_dir_header "foo", "bar", 0
+    tar << tar_file_header("bar", "baz", 0, 0)
+
+    io = TempIO.new tar
+
+    Gem::Package::TarReader.new io do |tar_reader|
+      tar_reader.seek 'baz/bar' do |entry|
+        assert_kind_of Gem::Package::TarReader::Entry, entry
+
+        assert_equal 'baz/bar', entry.full_name
+      end
+
+      assert_equal 0, io.pos
+    end
+  end
+
+  def test_seek_missing
+    tar = tar_dir_header "foo", "bar", 0
+    tar << tar_file_header("bar", "baz", 0, 0)
+
+    io = TempIO.new tar
+
+    Gem::Package::TarReader.new io do |tar_reader|
+      tar_reader.seek 'nonexistent' do |entry|
+        flunk 'entry missing but entry-found block was run'
+      end
+
+      assert_equal 0, io.pos
+    end
+  end
+
 end
 

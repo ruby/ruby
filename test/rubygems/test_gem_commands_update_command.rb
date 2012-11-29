@@ -14,20 +14,22 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd = Gem::Commands::UpdateCommand.new
 
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
+    @cmd.options[:document] = []
 
-    util_setup_fake_fetcher
+    util_setup_fake_fetcher(true)
     util_clear_gems
-    util_setup_spec_fetcher @a1, @a2
+    util_setup_spec_fetcher @a1, @a2, @a3a
 
     @a1_path = @a1.cache_file
     @a2_path = @a2.cache_file
+    @a3a_path = @a3a.cache_file
 
     @fetcher.data["#{@gem_repo}gems/#{File.basename @a1_path}"] =
       read_binary @a1_path
     @fetcher.data["#{@gem_repo}gems/#{File.basename @a2_path}"] =
       read_binary @a2_path
+    @fetcher.data["#{@gem_repo}gems/#{File.basename @a3a_path}"] =
+      read_binary @a3a_path
   end
 
   def test_execute
@@ -36,8 +38,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     Gem::Installer.new(@a1_path).install
 
     @cmd.options[:args] = []
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     use_ui @ui do
       @cmd.execute
@@ -46,7 +46,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Updating #{@a2.name}", out.shift
-    assert_equal "Successfully installed #{@a2.full_name}", out.shift
     assert_equal "Gems updated: #{@a2.name}", out.shift
     assert_empty out
   end
@@ -91,8 +90,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     use_ui @ui do
       @cmd.execute
@@ -100,7 +97,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
     assert_equal "Updating rubygems-update", out.shift
-    assert_equal "Successfully installed rubygems-update-9", out.shift
     assert_equal "Installing RubyGems 9", out.shift
     assert_equal "RubyGems system software updated", out.shift
 
@@ -115,8 +111,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     assert_raises Gem::MockGemUi::SystemExitException do
       use_ui @ui do
@@ -138,8 +132,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     use_ui @ui do
       @cmd.execute
@@ -147,7 +139,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
     assert_equal "Updating rubygems-update", out.shift
-    assert_equal "Successfully installed rubygems-update-9", out.shift
     assert_equal "Installing RubyGems 9", out.shift
     assert_equal "RubyGems system software updated", out.shift
 
@@ -163,8 +154,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "8"
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     use_ui @ui do
       @cmd.execute
@@ -172,7 +161,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
     assert_equal "Updating rubygems-update", out.shift
-    assert_equal "Successfully installed rubygems-update-8", out.shift
     assert_equal "Installing RubyGems 8", out.shift
     assert_equal "RubyGems system software updated", out.shift
 
@@ -188,8 +176,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.options[:args]          = []
     @cmd.options[:system]        = "9"
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     use_ui @ui do
       @cmd.execute
@@ -197,7 +183,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
     assert_equal "Updating rubygems-update", out.shift
-    assert_equal "Successfully installed rubygems-update-9", out.shift
     assert_equal "Installing RubyGems 9", out.shift
     assert_equal "RubyGems system software updated", out.shift
 
@@ -207,8 +192,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   def test_execute_system_with_gems
     @cmd.options[:args]          = %w[gem]
     @cmd.options[:system]        = true
-    @cmd.options[:generate_rdoc] = false
-    @cmd.options[:generate_ri]   = false
 
     assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
@@ -270,13 +253,31 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Updating #{@a2.name}", out.shift
-    assert_equal "Successfully installed #{@c2.full_name}", out.shift
-    assert_equal "Successfully installed #{@b2.full_name}", out.shift
-    assert_equal "Successfully installed #{@a2.full_name}", out.shift
-    assert_equal "Gems updated: #{@c2.name}, #{@b2.name}, #{@a2.name}",
+    assert_equal "Gems updated: #{@c2.name} #{@b2.name} #{@a2.name}",
                  out.shift
 
     assert_empty out
+  end
+
+  def test_execute_rdoc
+    Gem.done_installing(&Gem::RDoc.method(:generation_hook))
+
+    @cmd.options[:document] = %w[rdoc ri]
+
+    util_clear_gems
+
+    Gem::Installer.new(@a1_path).install
+
+    @cmd.options[:args] = [@a1.name]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    wait_for_child_process_to_exit
+
+    assert_path_exists File.join(@a2.doc_dir, 'ri')
+    assert_path_exists File.join(@a2.doc_dir, 'rdoc')
   end
 
   def test_execute_named
@@ -293,7 +294,6 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Updating #{@a2.name}", out.shift
-    assert_equal "Successfully installed #{@a2.full_name}", out.shift
     assert_equal "Gems updated: #{@a2.name}", out.shift
 
     assert_empty out
@@ -313,6 +313,26 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Nothing to update", out.shift
+
+    assert_empty out
+  end
+
+  def test_execute_named_up_to_date_prerelease
+    util_clear_gems
+
+    Gem::Installer.new(@a2_path).install
+
+    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:prerelease] = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating #{@a3a.name}", out.shift
+    assert_equal "Gems updated: #{@a3a.name}", out.shift
 
     assert_empty out
   end
@@ -339,11 +359,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system]
 
     expected = {
-      :generate_ri   => true,
-      :system        => true,
-      :force         => false,
-      :args          => [],
-      :generate_rdoc => true,
+      :args     => [],
+      :document => %w[rdoc ri],
+      :force    => false,
+      :system   => true,
     }
 
     assert_equal expected, @cmd.options
@@ -359,11 +378,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system 1.3.7]
 
     expected = {
-      :generate_ri   => true,
-      :system        => "1.3.7",
-      :force         => false,
-      :args          => [],
-      :generate_rdoc => true,
+      :args     => [],
+      :document => %w[rdoc ri],
+      :force    => false,
+      :system   => "1.3.7",
     }
 
     assert_equal expected, @cmd.options

@@ -13,49 +13,32 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     @cmd = Gem::Commands::UninstallCommand.new
-    @cmd.options[:executables] = true
     @executable = File.join(@gemhome, 'bin', 'executable')
   end
 
-  def test_execute_mulitple
-    @other = quick_gem 'c'
-    util_make_exec @other
-    util_build_gem @other
+  def test_execute_dependency_order
+    c = quick_gem 'c' do |spec|
+      spec.add_dependency 'a'
+    end
 
-    @other_installer = util_installer @other, @gemhome
+    util_build_gem c
+    installer = util_installer c, @gemhome
+    use_ui @ui do installer.install end
 
     ui = Gem::MockGemUi.new
-    util_setup_gem ui
 
-    build_rake_in do
-      use_ui ui do
-        @other_installer.install
-      end
-    end
+    @cmd.options[:args] = %w[a c]
+    @cmd.options[:executables] = true
 
-    @cmd.options[:args] = [@spec.name, @other.name]
-
-    use_ui @ui do
+    use_ui ui do
       @cmd.execute
     end
 
-    output = @ui.output.split "\n"
+    output = ui.output.split "\n"
 
-    assert_includes output, "Successfully uninstalled #{@spec.full_name}"
-    assert_includes output, "Successfully uninstalled #{@other.full_name}"
-  end
-
-  def test_execute_mulitple_nonexistent
-    @cmd.options[:args] = %w[x y]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    output = @ui.output.split "\n"
-
-    assert_includes output, 'INFO:  gem "x" is not installed'
-    assert_includes output, 'INFO:  gem "y" is not installed'
+    assert_equal 'Successfully uninstalled c-2', output.shift
+    assert_equal "Removing executable",          output.shift
+    assert_equal 'Successfully uninstalled a-2', output.shift
   end
 
   def test_execute_removes_executable
@@ -79,6 +62,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     open @executable, "wb+" do |f| f.puts "binary" end
 
+    @cmd.options[:executables] = true
     @cmd.options[:args] = [@spec.name]
     use_ui @ui do
       @cmd.execute
@@ -102,6 +86,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     formatted_executable = File.join @gemhome, 'bin', 'foo-executable-bar'
     assert_equal true, File.exist?(formatted_executable)
 
+    @cmd.options[:executables] = true
     @cmd.options[:format_executable] = true
     @cmd.execute
 
@@ -123,6 +108,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       end
     end
 
+    @cmd.options[:executables] = true
     @cmd.options[:args] = ["pre"]
 
     use_ui @ui do
@@ -133,5 +119,79 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_match(/Successfully uninstalled/, output)
   end
 
+  def test_execute_with_force_leaves_executable
+    ui = Gem::MockGemUi.new
+
+    util_make_gems
+    util_setup_gem ui
+
+    @cmd.options[:version] = '1'
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ['a']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    assert !Gem::Specification.all_names.include?('a')
+    assert File.exist? File.join(@gemhome, 'bin', 'executable')
+  end
+
+  def test_execute_with_force_uninstalls_all_versions
+    ui = Gem::MockGemUi.new "y\n"
+
+    util_make_gems
+    util_setup_gem ui
+
+    assert Gem::Specification.find_all_by_name('a').length > 1
+
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ['a']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    refute_includes Gem::Specification.all_names, 'a'
+  end
+
+  def test_execute_with_force_ignores_dependencies
+    ui = Gem::MockGemUi.new
+
+    util_make_gems
+    util_setup_gem ui
+
+    assert Gem::Specification.find_all_by_name('dep_x').length > 0
+    assert Gem::Specification.find_all_by_name('x').length > 0
+
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ['x']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    assert Gem::Specification.find_all_by_name('dep_x').length > 0
+    assert Gem::Specification.find_all_by_name('x').length == 0
+  end
+
+  def test_execute_default_gem
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+
+    ui = Gem::MockGemUi.new
+
+    @cmd.options[:args] = %w[default]
+    @cmd.options[:executables] = true
+
+    use_ui ui do
+      e = assert_raises Gem::InstallError do
+        @cmd.execute
+      end
+      assert_equal "gem \"default\" cannot be uninstalled because it is a default gem",
+                   e.message
+    end
+  end
 end
 

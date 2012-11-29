@@ -17,6 +17,9 @@ class TestGemConfigFile < Gem::TestCase
     Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
     Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
+    @env_gemrc = ENV['GEMRC']
+    ENV['GEMRC'] = ''
+
     util_config_file
   end
 
@@ -27,6 +30,8 @@ class TestGemConfigFile < Gem::TestCase
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
                          @orig_SYSTEM_WIDE_CONFIG_FILE
 
+    ENV['GEMRC'] = @env_gemrc
+
     super
   end
 
@@ -35,7 +40,6 @@ class TestGemConfigFile < Gem::TestCase
 
     assert_equal false, @cfg.backtrace
     assert_equal true, @cfg.update_sources
-    assert_equal false, @cfg.benchmark
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
     assert_equal [@gem_repo], Gem.sources
@@ -43,7 +47,6 @@ class TestGemConfigFile < Gem::TestCase
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
       fp.puts ":update_sources: false"
-      fp.puts ":benchmark: true"
       fp.puts ":bulk_threshold: 10"
       fp.puts ":verbose: false"
       fp.puts ":sources:"
@@ -59,7 +62,6 @@ class TestGemConfigFile < Gem::TestCase
     util_config_file
 
     assert_equal true, @cfg.backtrace
-    assert_equal true, @cfg.benchmark
     assert_equal 10, @cfg.bulk_threshold
     assert_equal false, @cfg.verbose
     assert_equal false, @cfg.update_sources
@@ -131,6 +133,37 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.backtrace
   end
 
+  def test_initialize_environment_variable_override
+    File.open Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE, 'w' do |fp|
+      fp.puts ':backtrace: false'
+      fp.puts ':verbose: false'
+      fp.puts ':bulk_threshold: 2048'
+    end
+
+    conf1 = File.join @tempdir, 'gemrc1'
+    File.open conf1, 'w' do |fp|
+      fp.puts ':backtrace: true'
+    end
+
+    conf2 = File.join @tempdir, 'gemrc2'
+    File.open conf2, 'w' do |fp|
+      fp.puts ':verbose: true'
+    end
+
+    conf3 = File.join @tempdir, 'gemrc3'
+    File.open conf3, 'w' do |fp|
+      fp.puts ':verbose: :loud'
+    end
+
+    ENV['GEMRC'] = conf1 + ':' + conf2 + ';' + conf3
+
+    util_config_file
+
+    assert_equal true, @cfg.backtrace
+    assert_equal :loud, @cfg.verbose
+    assert_equal 2048, @cfg.bulk_threshold
+  end
+
   def test_handle_arguments
     args = %w[--backtrace --bunch --of --args here]
 
@@ -149,16 +182,6 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.backtrace
   end
 
-  def test_handle_arguments_benchmark
-    assert_equal false, @cfg.benchmark
-
-    args = %w[--benchmark]
-
-    @cfg.handle_arguments args
-
-    assert_equal true, @cfg.benchmark
-  end
-
   def test_handle_arguments_debug
     old_dollar_DEBUG = $DEBUG
     assert_equal false, $DEBUG
@@ -174,12 +197,12 @@ class TestGemConfigFile < Gem::TestCase
 
   def test_handle_arguments_override
     File.open @temp_conf, 'w' do |fp|
-      fp.puts ":benchmark: false"
+      fp.puts ":backtrace: false"
     end
 
-    util_config_file %W[--benchmark --config-file=#{@temp_conf}]
+    util_config_file %W[--backtrace --config-file=#{@temp_conf}]
 
-    assert_equal true, @cfg.benchmark
+    assert_equal true, @cfg.backtrace
   end
 
   def test_handle_arguments_traceback
@@ -206,7 +229,6 @@ class TestGemConfigFile < Gem::TestCase
 
   def test_write
     @cfg.backtrace = true
-    @cfg.benchmark = true
     @cfg.update_sources = false
     @cfg.bulk_threshold = 10
     @cfg.verbose = false
@@ -219,7 +241,6 @@ class TestGemConfigFile < Gem::TestCase
 
     # These should not be written out to the config file.
     assert_equal false, @cfg.backtrace,     'backtrace'
-    assert_equal false, @cfg.benchmark,     'benchmark'
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold,
                  'bulk_threshold'
     assert_equal true, @cfg.update_sources, 'update_sources'
@@ -234,7 +255,6 @@ class TestGemConfigFile < Gem::TestCase
   def test_write_from_hash
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
-      fp.puts ":benchmark: true"
       fp.puts ":bulk_threshold: 10"
       fp.puts ":update_sources: false"
       fp.puts ":verbose: false"
@@ -246,7 +266,6 @@ class TestGemConfigFile < Gem::TestCase
     util_config_file
 
     @cfg.backtrace = :junk
-    @cfg.benchmark = :junk
     @cfg.update_sources = :junk
     @cfg.bulk_threshold = 20
     @cfg.verbose = :junk
@@ -259,7 +278,6 @@ class TestGemConfigFile < Gem::TestCase
 
     # These should not be written out to the config file
     assert_equal true,  @cfg.backtrace,      'backtrace'
-    assert_equal true,  @cfg.benchmark,      'benchmark'
     assert_equal 10,    @cfg.bulk_threshold, 'bulk_threshold'
     assert_equal false, @cfg.update_sources, 'update_sources'
     assert_equal false, @cfg.verbose,        'verbose'
@@ -295,6 +313,26 @@ class TestGemConfigFile < Gem::TestCase
                   :other => 'a5fdbb6ba150cbb83aad2bb2fede64c'}, @cfg.api_keys)
   end
 
+  def test_save_credentials_file_with_strict_permissions
+    util_config_file
+    FileUtils.mkdir File.dirname(@cfg.credentials_path)
+    @cfg.rubygems_api_key = '701229f217cdf23b1344c7b4b54ca97'
+    mode = 0100600 & (~File.umask)
+    assert_equal mode, File.stat(@cfg.credentials_path).mode unless win_platform?
+  end
+
+  def test_ignore_invalid_config_file
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts "some-non-yaml-hash-string"
+    end
+
+    # Avoid writing stuff to output when running tests
+    Gem::ConfigFile.class_eval { def warn(args); end } 
+
+    # This should not raise exception
+    util_config_file
+  end
+
   def test_load_ssl_verify_mode_from_config
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":ssl_verify_mode: 1"
@@ -315,5 +353,12 @@ class TestGemConfigFile < Gem::TestCase
     @cfg = Gem::ConfigFile.new args
   end
 
+  def test_disable_default_gem_server
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":disable_default_gem_server: true"
+    end
+    util_config_file
+    assert_equal(true, @cfg.disable_default_gem_server)
+  end
 end
 

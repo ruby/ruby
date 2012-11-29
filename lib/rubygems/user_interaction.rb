@@ -144,6 +144,16 @@ class Gem::StreamUI
   end
 
   ##
+  # Prints a formatted backtrace to the errors stream if backtraces are
+  # enabled.
+
+  def backtrace exception
+    return unless Gem.configuration.backtrace
+
+    @errs.puts "\t#{exception.backtrace.join "\n\t"}"
+  end
+
+  ##
   # Choose from a list of options.  +question+ is a prompt displayed above
   # the list.  +list+ is a list of option strings.  Returns the pair
   # [option_name, option_index].

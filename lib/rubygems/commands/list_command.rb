@@ -7,8 +7,9 @@ require 'rubygems/commands/query_command'
 
 class Gem::Commands::ListCommand < Gem::Commands::QueryCommand
 
-  def initialize
-    super 'list', 'Display gems whose name starts with STRING'
+  def initialize(name = 'list',
+                 summary = 'Display gems whose name starts with STRING')
+    super name, summary
 
     remove_option('--name-matches')
   end
@@ -26,8 +27,9 @@ class Gem::Commands::ListCommand < Gem::Commands::QueryCommand
   end
 
   def execute
-    string = get_one_optional_argument || ''
-    options[:name] = /^#{string}/i
+    name = get_one_optional_argument || ''
+    options[:name] = /^#{name}/i
+
     super
   end
 

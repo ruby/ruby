@@ -24,15 +24,6 @@ class TestGemDependencyList < Gem::TestCase
     @d1 = quick_spec 'd', '1' do |s| s.add_dependency 'c', '>= 1' end
   end
 
-  def test_self_from_source_index
-    util_clear_gems
-    install_specs @a1, @b2
-
-    deps = Gem::Deprecate.skip_during { Gem::DependencyList.from_source_index }
-
-    assert_equal %w[b-2 a-1], deps.dependency_order.map { |s| s.full_name }
-  end
-
   def test_active_count
     assert_equal 0, @deplist.send(:active_count, [], {})
     assert_equal 1, @deplist.send(:active_count, [@a1], {})

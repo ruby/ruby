@@ -1,22 +1,102 @@
 require 'rubygems/installer_test_case'
 require 'rubygems/install_update_options'
 require 'rubygems/command'
+require 'rubygems/dependency_installer'
 
 class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
   def setup
     super
 
-    @cmd = Gem::Command.new 'dummy', 'dummy'
+    @cmd = Gem::Command.new 'dummy', 'dummy',
+                            Gem::DependencyInstaller::DEFAULT_OPTIONS
     @cmd.extend Gem::InstallUpdateOptions
     @cmd.add_install_update_options
   end
 
   def test_add_install_update_options
-    args = %w[-i /install_to --rdoc --ri -E -f -w -P HighSecurity
-              --ignore-dependencies --format-exec --include-dependencies]
+    args = %w[
+      --document
+      --format-exec
+      --ignore-dependencies
+      --rdoc
+      --ri
+      -E
+      -P HighSecurity
+      -f
+      -i /install_to
+      -w
+    ]
 
     assert @cmd.handles?(args)
+  end
+
+  def test_doc
+    @cmd.handle_options %w[--doc]
+
+    assert_equal %w[ri], @cmd.options[:document].sort
+  end
+
+  def test_doc_rdoc
+    @cmd.handle_options %w[--doc=rdoc]
+
+    assert_equal %w[rdoc], @cmd.options[:document]
+
+    @cmd.handle_options %w[--doc ri]
+
+    assert_equal %w[ri], @cmd.options[:document]
+  end
+
+  def test_doc_rdoc_ri
+    @cmd.handle_options %w[--doc=rdoc,ri]
+
+    assert_equal %w[rdoc ri], @cmd.options[:document]
+  end
+
+  def test_doc_no
+    @cmd.handle_options %w[--no-doc]
+
+    assert_equal [], @cmd.options[:document]
+  end
+
+  def test_document
+    @cmd.handle_options %w[--document]
+
+    assert_equal %w[ri], @cmd.options[:document].sort
+  end
+
+  def test_document_no
+    @cmd.handle_options %w[--no-document]
+
+    assert_equal %w[], @cmd.options[:document]
+  end
+
+  def test_document_rdoc
+    @cmd.handle_options %w[--document=rdoc]
+
+    assert_equal %w[rdoc], @cmd.options[:document]
+
+    @cmd.handle_options %w[--document ri]
+
+    assert_equal %w[ri], @cmd.options[:document]
+  end
+
+  def test_rdoc
+    @cmd.handle_options %w[--rdoc]
+
+    assert_equal %w[rdoc ri], @cmd.options[:document].sort
+  end
+
+  def test_rdoc_no
+    @cmd.handle_options %w[--no-rdoc]
+
+    assert_equal %w[ri], @cmd.options[:document]
+  end
+
+  def test_ri
+    @cmd.handle_options %w[--no-ri]
+
+    assert_equal %w[], @cmd.options[:document]
   end
 
   def test_security_policy

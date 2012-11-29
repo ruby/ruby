@@ -129,8 +129,8 @@
 # specify your dependency as ">= 2.0.0" then, you're good, right? What
 # happens if fnord 3.0 comes out and it isn't backwards compatible
 # with 2.y.z? Your stuff will break as a result of using ">=". The
-# better route is to specify your dependency with a "spermy" version
-# specifier. They're a tad confusing, so here is how the dependency
+# better route is to specify your dependency with an "approximate" version
+# specifier ("~>"). They're a tad confusing, so here is how the dependency
 # specifiers work:
 #
 #   Specification From  ... To (exclusive)
@@ -145,6 +145,8 @@ class Gem::Version
 
   include Comparable
 
+  # FIX: These are only used once, in .correct?. Do they deserve to be
+  # constants?
   VERSION_PATTERN = '[0-9]+(\.[0-9a-zA-Z]+)*' # :nodoc:
   ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})*\s*\z/ # :nodoc:
 
@@ -169,6 +171,8 @@ class Gem::Version
   #   ver2 = Version.create(ver1)       # -> (ver1)
   #   ver3 = Version.create(nil)        # -> nil
 
+  # REFACTOR: There's no real reason this should be separate from #initialize.
+
   def self.create input
     if input.respond_to? :version then
       input
@@ -187,8 +191,7 @@ class Gem::Version
     raise ArgumentError, "Malformed version number string #{version}" unless
       self.class.correct?(version)
 
-    @version = version.to_s
-    @version.strip!
+    @version = version.to_s.dup.strip
   end
 
   ##
@@ -248,11 +251,19 @@ class Gem::Version
     @hash = nil
   end
 
+  def to_yaml_properties
+    ["@version"]
+  end
+
+  def encode_with coder
+    coder.add 'version', @version
+  end
+
   ##
   # A version is considered a prerelease if it contains a letter.
 
   def prerelease?
-    @prerelease ||= @version =~ /[a-zA-Z]/
+    @prerelease ||= !!(@version =~ /[a-zA-Z]/)
   end
 
   def pretty_print q # :nodoc:
@@ -284,7 +295,7 @@ class Gem::Version
   ##
   # A recommended version for use with a ~> Requirement.
 
-  def spermy_recommendation
+  def approximate_recommendation
     segments = self.segments.dup
 
     segments.pop    while segments.any? { |s| String === s }

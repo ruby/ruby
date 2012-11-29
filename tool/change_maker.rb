@@ -3,7 +3,9 @@
 def diff2index(cmd, *argv)
   lines = []
   path = nil
-  `#{cmd} #{argv.join(" ")}`.split(/\n/).each do |line|
+  output = `#{cmd} #{argv.join(" ")}`
+  output.force_encoding Encoding::BINARY
+  output.each_line do |line|
     case line
     when /^Index: (\S*)/, /^diff --git [a-z]\/(\S*) [a-z]\/\1/
       path = $1

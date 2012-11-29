@@ -51,7 +51,12 @@ Gem b-2
 
 Gem c-1.2
 
+Gem dep_x-1
+  x (>= 1)
+
 Gem pl-1-x86-linux
+
+Gem x-1
 
     EOF
 

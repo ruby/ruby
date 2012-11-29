@@ -1,6 +1,6 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/build_command'
-require 'rubygems/format'
+require 'rubygems/package'
 
 class TestGemCommandsBuildCommand < Gem::TestCase
 
@@ -19,16 +19,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     File.open gemspec_file, 'w' do |gs|
       gs.write @gem.to_ruby
-    end
-
-    util_test_build_gem @gem, gemspec_file
-  end
-
-  def test_execute_yaml
-    gemspec_file = File.join(@tempdir, @gem.spec_name)
-
-    File.open gemspec_file, 'w' do |gs|
-      gs.write @gem.to_yaml
     end
 
     util_test_build_gem @gem, gemspec_file
@@ -72,7 +62,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "ERROR:  Gemspec file not found: some_gem\n", @ui.error
   end
 
-  def util_test_build_gem(gem, gemspec_file)
+  def util_test_build_gem(gem, gemspec_file, check_licenses=true)
     @cmd.options[:args] = [gemspec_file]
 
     use_ui @ui do
@@ -87,32 +77,34 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "  Version: 2", output.shift
     assert_equal "  File: some_gem-2.gem", output.shift
     assert_equal [], output
-    assert_equal '', @ui.error
+
+    if check_licenses
+      assert_equal "WARNING:  licenses is empty\n", @ui.error
+    end
 
     gem_file = File.join @tempdir, File.basename(gem.cache_file)
     assert File.exist?(gem_file)
 
-    spec = Gem::Format.from_file_by_path(gem_file).spec
+    spec = Gem::Package.new(gem_file).spec
 
     assert_equal "some_gem", spec.name
     assert_equal "this is a summary", spec.summary
   end
 
   def test_execute_force
-    @gem.instance_variable_set :@required_rubygems_version, nil
-
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
+    @gem.send :remove_instance_variable, :@rubygems_version
+
     File.open gemspec_file, 'w' do |gs|
-      gs.write @gem.to_yaml
+      gs.write @gem.to_ruby
     end
 
     @cmd.options[:args] = [gemspec_file]
     @cmd.options[:force] = true
 
-    util_test_build_gem @gem, gemspec_file
+    util_test_build_gem @gem, gemspec_file, false
   end
-
 
 end
 

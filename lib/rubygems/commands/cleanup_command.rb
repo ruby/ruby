@@ -26,6 +26,9 @@ class Gem::Commands::CleanupCommand < Gem::Command
     <<-EOF
 The cleanup command removes old gems from GEM_HOME.  If an older version is
 installed elsewhere in GEM_PATH the cleanup command won't touch it.
+
+Older gems that are required to satisify the dependencies of gems
+are not removed.
     EOF
   end
 
@@ -56,6 +59,8 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
       primary_gems[spec.name].version != spec.version
     }
 
+    full = Gem::DependencyList.from_specs
+
     deplist = Gem::DependencyList.new
     gems_to_cleanup.uniq.each do |spec| deplist.add spec end
 
@@ -64,6 +69,8 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
     original_path = Gem.path
 
     deps.each do |spec|
+      next unless full.ok_to_remove?(spec.full_name)
+
       if options[:dryrun] then
         say "Dry Run Mode: Would uninstall #{spec.full_name}"
       else

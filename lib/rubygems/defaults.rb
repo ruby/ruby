@@ -1,8 +1,8 @@
 module Gem
-
-  # TODO: move this whole file back into rubygems.rb
+  DEFAULT_HOST = "https://rubygems.org"
 
   @post_install_hooks   ||= []
+  @done_installing_hooks  ||= []
   @post_uninstall_hooks ||= []
   @pre_uninstall_hooks  ||= []
   @pre_install_hooks    ||= []
@@ -61,7 +61,7 @@ module Gem
   # Default gem load path
 
   def self.default_path
-    if File.exist? Gem.user_home then
+    if Gem.user_home && File.exist?(Gem.user_home) then
       [user_dir, default_dir]
     else
       [default_dir]
@@ -91,24 +91,6 @@ module Gem
     else # generic install
       ConfigMap[:bindir]
     end
-  end
-
-  ##
-  # The default system-wide source info cache directory
-
-  def self.default_system_source_cache_dir
-    File.join(Gem.dir, 'source_cache')
-  end
-
-  ##
-  # The default user-specific source info cache directory
-
-  def self.default_user_source_cache_dir
-    #
-    # NOTE Probably an argument for moving this to per-ruby supported dirs like
-    # user_dir
-    #
-    File.join(Gem.user_home, '.gem', 'source_cache')
   end
 
   ##

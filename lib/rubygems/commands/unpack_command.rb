@@ -69,8 +69,10 @@ class Gem::Commands::UnpackCommand < Gem::Command
       else
         basename = File.basename path, '.gem'
         target_dir = File.expand_path basename, options[:target]
-        FileUtils.mkdir_p target_dir
-        Gem::Installer.new(path, :unpack => true).unpack target_dir
+
+        package = Gem::Package.new path
+        package.extract_files target_dir
+
         say "Unpacked gem: '#{target_dir}'"
       end
     end
@@ -134,9 +136,11 @@ class Gem::Commands::UnpackCommand < Gem::Command
   ##
   # Extracts the Gem::Specification and raw metadata from the .gem file at
   # +path+.
+  #--
+  # TODO move to Gem::Package as #raw_spec or something
 
   def get_metadata path
-    format = Gem::Format.from_file_by_path path
+    format = Gem::Package.new path
     spec = format.spec
 
     metadata = nil

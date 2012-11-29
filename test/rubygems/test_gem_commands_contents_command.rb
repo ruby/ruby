@@ -127,6 +127,29 @@ lib/foo.rb
     assert_equal "", @ui.error
   end
 
+  def test_execute_default_gem
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    default_gem_spec.executables = ["default_command"]
+    default_gem_spec.files += ["default_gem.so"]
+    install_default_specs(default_gem_spec)
+
+    @cmd.options[:args] = %w[default]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+#{Gem::ConfigMap[:bindir]}/default_command
+#{Gem::ConfigMap[:rubylibdir]}/default/gem.rb
+#{Gem::ConfigMap[:archdir]}/default_gem.so
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_handle_options
     refute @cmd.options[:lib_only]
     assert @cmd.options[:prefix]

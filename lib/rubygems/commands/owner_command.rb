@@ -14,6 +14,10 @@ class Gem::Commands::OwnerCommand < Gem::Command
     "GEM       gem to manage owners for"
   end
 
+  def usage # :nodoc:
+    "#{program_name} GEM"
+  end
+
   def initialize
     super 'owner', description
     add_proxy_option
@@ -63,12 +67,16 @@ class Gem::Commands::OwnerCommand < Gem::Command
 
   def manage_owners method, name, owners
     owners.each do |owner|
-      response = rubygems_api_request method, "api/v1/gems/#{name}/owners" do |request|
-        request.set_form_data 'email' => owner
-        request.add_field "Authorization", api_key
-      end
+      begin
+        response = rubygems_api_request method, "api/v1/gems/#{name}/owners" do |request|
+          request.set_form_data 'email' => owner
+          request.add_field "Authorization", api_key
+        end
 
-      with_response response
+        with_response response
+      rescue
+        # ignore
+      end
     end
   end
 

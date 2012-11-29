@@ -24,11 +24,17 @@ class Gem::FakeFetcher
 
   attr_reader :data
   attr_reader :last_request
+  attr_reader :api_endpoints
   attr_accessor :paths
 
   def initialize
     @data = {}
     @paths = []
+    @api_endpoints = {}
+  end
+
+  def api_endpoint(uri)
+    @api_endpoints[uri] || uri
   end
 
   def find_data(path)
@@ -54,6 +60,15 @@ class Gem::FakeFetcher
       end
 
       data
+    end
+  end
+
+  def cache_update_path uri, path = nil
+    if data = fetch_path(uri)
+      open(path, 'wb') { |io| io.write data } if path
+      data
+    else
+      Gem.read_binary(path) if path
     end
   end
 
@@ -98,7 +113,13 @@ class Gem::FakeFetcher
 
   def download spec, source_uri, install_dir = Gem.dir
     name = File.basename spec.cache_file
-    path = File.join install_dir, "cache", name
+    path = if Dir.pwd == install_dir then # see fetch_command
+             install_dir
+           else
+             File.join install_dir, "cache"
+           end
+
+    path = File.join path, name
 
     Gem.ensure_gem_subdirectories install_dir
 
@@ -114,14 +135,13 @@ class Gem::FakeFetcher
   end
 
   def download_to_cache dependency
-    found = Gem::SpecFetcher.fetcher.fetch dependency, true, true,
-                                           dependency.prerelease?
+    found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dependency
 
     return if found.empty?
 
-    spec, source_uri = found.first
+    spec, source = found.first
 
-    download spec, source_uri
+    download spec, source.uri.to_s
   end
 
 end

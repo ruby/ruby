@@ -51,6 +51,8 @@ class TestGemPlatform < Gem::TestCase
       'i386-freebsd5'          => ['x86',       'freebsd',   '5'],
       'i386-freebsd6'          => ['x86',       'freebsd',   '6'],
       'i386-freebsd7'          => ['x86',       'freebsd',   '7'],
+      'i386-freebsd'           => ['x86',       'freebsd',   nil],
+      'universal-freebsd'      => ['universal', 'freebsd',   nil],
       'i386-java1.5'           => ['x86',       'java',      '1.5'],
       'x86-java1.6'            => ['x86',       'java',      '1.6'],
       'i386-java1.6'           => ['x86',       'java',      '1.6'],
@@ -67,8 +69,7 @@ class TestGemPlatform < Gem::TestCase
       'x86-mswin32'            => ['x86',       'mswin32',   nil],
       'x86-mswin32_60'         => ['x86',       'mswin32',   '60'],
       'x86-mswin32-60'         => ['x86',       'mswin32',   '60'],
-      'i386-netbsdelf5.1.'     => ['x86',       'netbsdelf', '5'],
-      'x86_64-netbsd6.99.7'    => ['x86_64',    'netbsd',    '6'],
+      'i386-netbsdelf'         => ['x86',       'netbsdelf', nil],
       'i386-openbsd4.0'        => ['x86',       'openbsd',   '4.0'],
       'i386-solaris2.10'       => ['x86',       'solaris',   '2.10'],
       'i386-solaris2.8'        => ['x86',       'solaris',   '2.8'],
@@ -76,6 +77,7 @@ class TestGemPlatform < Gem::TestCase
       'x86_64-linux'           => ['x86_64',    'linux',     nil],
       'x86_64-openbsd3.9'      => ['x86_64',    'openbsd',   '3.9'],
       'x86_64-openbsd4.0'      => ['x86_64',    'openbsd',   '4.0'],
+      'x86_64-openbsd'         => ['x86_64',    'openbsd',   nil],
     }
 
     test_cases.each do |arch, expected|
@@ -135,12 +137,6 @@ class TestGemPlatform < Gem::TestCase
     assert_equal 'cpu', platform.cpu
     assert_equal 'other_platform', platform.os
     assert_equal '1', platform.version
-  end
-
-  def test_empty
-    platform = Gem::Platform.new 'cpu-other_platform1'
-    assert_respond_to platform, :empty?
-    assert_equal false, Gem::Deprecate.skip_during { platform.empty? }
   end
 
   def test_to_s

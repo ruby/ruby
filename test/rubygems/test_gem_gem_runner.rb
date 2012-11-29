@@ -3,6 +3,18 @@ require 'rubygems/gem_runner'
 
 class TestGemGemRunner < Gem::TestCase
 
+  def setup
+    super
+
+    @orig_args = Gem::Command.build_args
+  end
+
+  def teardown
+    super
+
+    Gem::Command.build_args = @orig_args
+  end
+
   def test_do_configuration
     Gem.clear_paths
 
@@ -25,17 +37,27 @@ class TestGemGemRunner < Gem::TestCase
     gr = Gem::GemRunner.new
     gr.send :do_configuration, %W[--config-file #{temp_conf}]
 
-    assert_equal [other_gem_home, other_gem_path], Gem.path
+    assert_equal [other_gem_path, other_gem_home], Gem.path
     assert_equal %w[--commands], Gem::Command.extra_args
-    assert_equal %w[--all], Gem::DocManager.configured_args
   end
 
-  def test_build_args__are_handled
+  def test_build_args_are_handled
     Gem.clear_paths
 
-    Gem::GemRunner.new.run(%W[help -- --build_arg1 --build_arg2])
+    cls = Class.new(Gem::Command) do
+      def execute
+      end
+    end
 
-    assert_equal %w[--build_arg1 --build_arg2], Gem::Command.build_args
+    test_obj = cls.new :ba_test
+
+    cmds = Gem::CommandManager.new
+    cmds.register_command :ba_test, test_obj
+
+    runner = Gem::GemRunner.new :command_manager => cmds
+    runner.run(%W[ba_test -- --build_arg1 --build_arg2])
+
+    assert_equal %w[--build_arg1 --build_arg2], test_obj.options[:build_args]
   end
 
 end

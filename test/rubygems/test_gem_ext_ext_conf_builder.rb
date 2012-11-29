@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require 'rubygems/test_case'
 require 'rubygems/ext'
 
@@ -119,6 +121,7 @@ checking for main\(\) in .*?nonexistent/m, error.message)
     output = []
     makefile_path = File.join(@ext, 'Makefile')
     File.open makefile_path, 'w' do |makefile|
+      makefile.puts "# π"
       makefile.puts "RUBYARCHDIR = $(foo)$(target_prefix)"
       makefile.puts "RUBYLIBDIR = $(bar)$(target_prefix)"
       makefile.puts "all:"
@@ -132,14 +135,10 @@ checking for main\(\) in .*?nonexistent/m, error.message)
     assert_equal make_command, output[0]
     assert_equal "#{make_command} install", output[2]
 
-    edited_makefile = <<-EOF
-RUBYARCHDIR = #{@ext}$(target_prefix)
-RUBYLIBDIR = #{@ext}$(target_prefix)
-all:
-install:
-    EOF
+    edited_makefile = Gem.read_binary makefile_path
 
-    assert_equal edited_makefile, File.read(makefile_path)
+    assert_match "\nRUBYARCHDIR = #{@ext}$(target_prefix)\n", edited_makefile
+    assert_match "\nRUBYLIBDIR = #{@ext}$(target_prefix)\n", edited_makefile
   end
 
   def test_class_make_no_Makefile

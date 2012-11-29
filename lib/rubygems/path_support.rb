@@ -1,4 +1,5 @@
 ##
+#
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings
 # to the rest of RubyGems.
 #
@@ -42,16 +43,18 @@ class Gem::PathSupport
   # Set the Gem search path (as reported by Gem.path).
 
   def path=(gpaths)
-    gem_path = [@home]
+    # FIX: it should be [home, *path], not [*path, home]
+
+    gem_path = []
 
     # FIX: I can't tell wtf this is doing.
     gpaths ||= (ENV['GEM_PATH'] || "").empty? ? nil : ENV["GEM_PATH"]
 
-    if gpaths then
-      if gpaths.kind_of?(Array) then
-        gem_path.push(*gpaths)
+    if gpaths
+      if gpaths.kind_of?(Array)
+        gem_path = gpaths.dup
       else
-        gem_path.push(*gpaths.split(File::PATH_SEPARATOR))
+        gem_path = gpaths.split(File::PATH_SEPARATOR)
       end
 
       if File::ALT_SEPARATOR then
@@ -59,10 +62,14 @@ class Gem::PathSupport
           this_path.gsub File::ALT_SEPARATOR, File::SEPARATOR
         end
       end
-    else
-      gem_path.push(*Gem.default_path)
 
-      gem_path << APPLE_GEM_HOME if defined?(APPLE_GEM_HOME)
+      gem_path << @home
+    else
+      gem_path = Gem.default_path + [@home]
+
+      if defined?(APPLE_GEM_HOME)
+        gem_path << APPLE_GEM_HOME
+      end
     end
 
     @path = gem_path.uniq

@@ -3,7 +3,7 @@ require 'zlib'
 require 'erb'
 
 require 'rubygems'
-require 'rubygems/doc_manager'
+require 'rubygems/rdoc'
 
 ##
 # Gem::Server and allows users to serve gems for consumption by
@@ -17,9 +17,6 @@ require 'rubygems/doc_manager'
 # * "/quick/" - Individual gemspecs
 # * "/gems" - Direct access to download the installable gems
 # * "/rdoc?q=" - Search for installed rdoc documentation
-# * legacy indexes:
-#   * "/Marshal.#{Gem.marshal_version}" - Full SourceIndex dump of metadata
-#     for installed gems
 #
 # == Usage
 #
@@ -430,59 +427,44 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         options[:launch], options[:addresses]).run
   end
 
-  ##
-  # Only the first directory in gem_dirs is used for serving gems
-
   def initialize(gem_dirs, port, daemon, launch = nil, addresses = nil)
+    Gem::RDoc.load_rdoc
     Socket.do_not_reverse_lookup = true
 
-    @gem_dirs = Array gem_dirs
-    @port = port
-    @daemon = daemon
-    @launch = launch
+    @gem_dirs  = Array gem_dirs
+    @port      = port
+    @daemon    = daemon
+    @launch    = launch
     @addresses = addresses
-    logger = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
+
+    logger  = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
     @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
 
-    @spec_dirs = @gem_dirs.map do |gem_dir|
-      spec_dir = File.join gem_dir, 'specifications'
-
-      unless File.directory? spec_dir then
-        raise ArgumentError, "#{gem_dir} does not appear to be a gem repository"
-      end
-
-      spec_dir
-    end
+    @spec_dirs = @gem_dirs.map { |gem_dir| File.join gem_dir, 'specifications' }
+    @spec_dirs.reject! { |spec_dir| !File.directory? spec_dir }
 
     Gem::Specification.dirs = @gem_dirs
-  end
 
-  def Marshal(req, res)
-    Gem::Specification.reset
-
-    add_date res
-
-    index = Gem::Deprecate.skip_during { Marshal.dump Gem.source_index }
-
-    if req.request_method == 'HEAD' then
-      res['content-length'] = index.length
-      return
-    end
-
-    if req.path =~ /Z$/ then
-      res['content-type'] = 'application/x-deflate'
-      index = Gem.deflate index
-    else
-      res['content-type'] = 'application/octet-stream'
-    end
-
-    res.body << index
+    @have_rdoc_4_plus = nil
   end
 
   def add_date res
     res['date'] = @spec_dirs.map do |spec_dir|
       File.stat(spec_dir).mtime
     end.max
+  end
+
+  def doc_root gem_name
+    if have_rdoc_4_plus? then
+      "/doc_root/#{gem_name}/"
+    else
+      "/doc_root/#{gem_name}/rdoc/index.html"
+    end
+  end
+
+  def have_rdoc_4_plus?
+    @have_rdoc_4_plus ||=
+      Gem::Requirement.new('>= 4').satisfied_by? Gem::RDoc.rdoc_version
   end
 
   def latest_specs(req, res)
@@ -614,14 +596,14 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         "authors"             => spec.authors.sort.join(", "),
         "date"                => spec.date.to_s,
         "dependencies"        => deps,
-        "doc_path"            => "/doc_root/#{spec.full_name}/rdoc/index.html",
+        "doc_path"            => doc_root(spec.full_name),
         "executables"         => executables,
         "only_one_executable" => (executables && executables.size == 1),
         "full_name"           => spec.full_name,
         "has_deps"            => !deps.empty?,
         "homepage"            => spec.homepage,
         "name"                => spec.name,
-        "rdoc_installed"      => Gem::DocManager.new(spec).rdoc_installed?,
+        "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
         "summary"             => spec.summary,
         "version"             => spec.version.to_s,
       }
@@ -630,7 +612,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     specs << {
       "authors" => "Chad Fowler, Rich Kilmer, Jim Weirich, Eric Hodel and others",
       "dependencies" => [],
-      "doc_path" => "/doc_root/rubygems-#{Gem::VERSION}/rdoc/index.html",
+      "doc_path" => doc_root("rubygems-#{Gem::VERSION}"),
       "executables" => [{"executable" => 'gem', "is_last" => true}],
       "only_one_executable" => true,
       "full_name" => "rubygems-#{Gem::VERSION}",
@@ -730,15 +712,15 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     when 1
       new_path = File.basename(found_gems[0])
       res.status = 302
-      res['Location'] = "/doc_root/#{new_path}/rdoc/index.html"
+      res['Location'] = doc_root new_path
       return true
     else
       doc_items = []
       found_gems.each do |file_name|
         base_name = File.basename(file_name)
         doc_items << {
-          :name => base_name,
-          :url => "/doc_root/#{base_name}/rdoc/index.html",
+          :name    => base_name,
+          :url     => doc_root(new_path),
           :summary => ''
         }
       end
@@ -755,9 +737,6 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     listen
 
     WEBrick::Daemon.start if @daemon
-
-    @server.mount_proc "/Marshal.#{Gem.marshal_version}", method(:Marshal)
-    @server.mount_proc "/Marshal.#{Gem.marshal_version}.Z", method(:Marshal)
 
     @server.mount_proc "/specs.#{Gem.marshal_version}", method(:specs)
     @server.mount_proc "/specs.#{Gem.marshal_version}.gz", method(:specs)
@@ -779,10 +758,21 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     @server.mount_proc "/rdoc", method(:rdoc)
 
-    paths = { "/gems" => "/cache/", "/doc_root" => "/doc/" }
-    paths.each do |mount_point, mount_dir|
-      @server.mount(mount_point, WEBrick::HTTPServlet::FileHandler,
-                    File.join(@gem_dirs.first, mount_dir), true)
+    file_handlers = {
+      '/gems' => '/cache/',
+    }
+
+    if have_rdoc_4_plus? then
+      @server.mount '/doc_root', RDoc::Servlet, '/doc_root'
+    else
+      file_handlers['/doc_root'] = '/doc/'
+    end
+
+    @gem_dirs.each do |gem_dir|
+      file_handlers.each do |mount_point, mount_dir|
+        @server.mount(mount_point, WEBrick::HTTPServlet::FileHandler,
+                      File.join(gem_dir, mount_dir), true)
+      end
     end
 
     trap("INT") { @server.shutdown; exit! }

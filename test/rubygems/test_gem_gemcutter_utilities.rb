@@ -15,6 +15,25 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @cmd.extend Gem::GemcutterUtilities
   end
 
+  def test_alternate_key_alternate_host
+    keys = {
+      :rubygems_api_key => 'KEY',
+      "http://rubygems.engineyard.com" => "EYKEY"
+    }
+
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+
+    ENV["RUBYGEMS_HOST"] = "http://rubygems.engineyard.com"
+
+    Gem.configuration.load_api_keys
+
+    assert_equal 'EYKEY', @cmd.api_key
+  end
+
   def test_api_key
     keys = { :rubygems_api_key => 'KEY' }
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path

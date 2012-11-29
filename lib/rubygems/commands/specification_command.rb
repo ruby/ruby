@@ -1,7 +1,7 @@
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
-require 'rubygems/format'
+require 'rubygems/package'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
 
@@ -17,6 +17,7 @@ class Gem::Commands::SpecificationCommand < Gem::Command
 
     add_version_option('examine')
     add_platform_option
+    add_prerelease_option
 
     add_option('--all', 'Output specifications for all versions of',
                'the gem') do |value, options|
@@ -62,13 +63,13 @@ FIELD         name of gemspec field to show
             "Please specify a gem name or file on the command line"
     end
 
-    case options[:version]
+    case v = options[:version]
     when String
-      req = Gem::Requirement.parse options[:version]
+      req = Gem::Requirement.create v
     when Gem::Requirement
-      req = options[:version]
+      req = v
     else
-      raise Gem::CommandLineError, "Unsupported version type: #{options[:version]}"
+      raise Gem::CommandLineError, "Unsupported version type: '#{v}'"
     end
 
     if !req.none? and options[:all]
@@ -79,7 +80,7 @@ FIELD         name of gemspec field to show
     if options[:all]
       dep = Gem::Dependency.new gem
     else
-      dep = Gem::Dependency.new gem, options[:version]
+      dep = Gem::Dependency.new gem, req
     end
 
     field = get_one_optional_argument
@@ -89,7 +90,7 @@ FIELD         name of gemspec field to show
 
     if local? then
       if File.exist? gem then
-        specs << Gem::Format.from_file_by_path(gem).spec rescue nil
+        specs << Gem::Package.new(gem).spec rescue nil
       end
 
       if specs.empty? then
@@ -98,17 +99,14 @@ FIELD         name of gemspec field to show
     end
 
     if remote? then
-      found = Gem::SpecFetcher.fetcher.fetch dep, true
-
-      if dep.prerelease? or options[:prerelease]
-        found += Gem::SpecFetcher.fetcher.fetch dep, false, true, true
-      end
+      dep.prerelease = options[:prerelease]
+      found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
       specs.push(*found.map { |spec,| spec })
     end
 
     if specs.empty? then
-      alert_error "Unknown gem '#{gem}'"
+      alert_error "No gem matching '#{dep}' found"
       terminate_interaction 1
     end
 

@@ -1,8 +1,12 @@
 require 'rubygems'
 require 'rubygems/dependency_list'
+require 'rubygems/package'
 require 'rubygems/installer'
 require 'rubygems/spec_fetcher'
 require 'rubygems/user_interaction'
+require 'rubygems/source_local'
+require 'rubygems/source_specific_file'
+require 'rubygems/available_set'
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
@@ -14,8 +18,14 @@ class Gem::DependencyInstaller
   attr_reader :gems_to_install
   attr_reader :installed_gems
 
+  ##
+  # Documentation types.  For use by the Gem.done_installing hook
+
+  attr_reader :document
+
   DEFAULT_OPTIONS = {
     :env_shebang         => false,
+    :document            => %w[ri],
     :domain              => :both, # HACK dup
     :force               => false,
     :format_executable   => false, # HACK dup
@@ -23,7 +33,8 @@ class Gem::DependencyInstaller
     :prerelease          => false,
     :security_policy     => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
     :wrappers            => true,
-  }
+    :build_docs_in_background => false,
+  }.freeze
 
   ##
   # Creates a new installer instance.
@@ -47,6 +58,7 @@ class Gem::DependencyInstaller
     if options[:install_dir] then
       @gem_home = options[:install_dir]
 
+      # HACK shouldn't change the global settings
       Gem::Specification.dirs = @gem_home
       Gem.ensure_gem_subdirectories @gem_home
       options[:install_dir] = @gem_home # FIX: because we suck and reuse below
@@ -55,7 +67,9 @@ class Gem::DependencyInstaller
     options = DEFAULT_OPTIONS.merge options
 
     @bin_dir             = options[:bin_dir]
+    @dev_shallow         = options[:dev_shallow]
     @development         = options[:development]
+    @document            = options[:document]
     @domain              = options[:domain]
     @env_shebang         = options[:env_shebang]
     @force               = options[:force]
@@ -65,8 +79,14 @@ class Gem::DependencyInstaller
     @security_policy     = options[:security_policy]
     @user_install        = options[:user_install]
     @wrappers            = options[:wrappers]
+    @build_docs_in_background = options[:build_docs_in_background]
+
+    # Indicates that we should not try to update any deps unless
+    # we absolutely must.
+    @minimal_deps        = options[:minimal_deps]
 
     @installed_gems = []
+    @toplevel_specs = nil
 
     @install_dir = options[:install_dir] || Gem.dir
     @cache_dir = options[:cache_dir] || @install_dir
@@ -76,6 +96,24 @@ class Gem::DependencyInstaller
     @errors = nil
   end
 
+  attr_reader :errors
+
+  ##
+  # Indicated, based on the requested domain, if local
+  # gems should be considered.
+
+  def consider_local?
+    @domain == :both or @domain == :local
+  end
+
+  ##
+  # Indicated, based on the requested domain, if remote
+  # gems should be considered.
+
+  def consider_remote?
+    @domain == :both or @domain == :remote
+  end
+
   ##
   # Returns a list of pairs of gemspecs and source_uris that match
   # Gem::Dependency +dep+ from both local (Dir.pwd) and remote (Gem.sources)
@@ -83,35 +121,34 @@ class Gem::DependencyInstaller
   # local gems preferred over remote gems.
 
   def find_gems_with_sources(dep)
-    # Reset the errors
-    @errors = nil
-    gems_and_sources = []
+    set = Gem::AvailableSet.new
 
-    if @domain == :both or @domain == :local then
-      Dir[File.join(Dir.pwd, "#{dep.name}-[0-9]*.gem")].each do |gem_file|
-        spec = Gem::Format.from_file_by_path(gem_file).spec
-        gems_and_sources << [spec, gem_file] if spec.name == dep.name
+    if consider_local?
+      sl = Gem::Source::Local.new
+
+      if spec = sl.find_gem(dep.name)
+        if dep.matches_spec? spec
+          set.add spec, sl
+        end
       end
     end
 
-    if @domain == :both or @domain == :remote then
+    if consider_remote?
       begin
-        # REFACTOR: all = dep.requirement.needs_all?
-        requirements = dep.requirement.requirements.map do |req, ver|
-          req
+        found, errors = Gem::SpecFetcher.fetcher.spec_for_dependency dep
+
+        if @errors
+          @errors += errors
+        else
+          @errors = errors
         end
 
-        all = !dep.prerelease? &&
-              # we only need latest if there's one requirement and it is
-              # guaranteed to match the newest specs
-              (requirements.length > 1 or
-                (requirements.first != ">=" and requirements.first != ">"))
-
-        found, @errors = Gem::SpecFetcher.fetcher.fetch_with_errors dep, all, true, dep.prerelease?
-
-        gems_and_sources.push(*found)
+        set << found
 
       rescue Gem::RemoteFetcher::FetchError => e
+        # FIX if there is a problem talking to the network, we either need to always tell
+        # the user (no really_verbose) or fail hard, not silently tell them that we just
+        # couldn't find their requested gem.
         if Gem.configuration.really_verbose then
           say "Error fetching remote data:\t\t#{e.message}"
           say "Falling back to local-only install"
@@ -120,9 +157,7 @@ class Gem::DependencyInstaller
       end
     end
 
-    gems_and_sources.sort_by do |gem, source|
-      [gem, source =~ /^http:\/\// ? 0 : 1] # local gems win
-    end
+    set
   end
 
   ##
@@ -130,17 +165,22 @@ class Gem::DependencyInstaller
   # remote sources unless the ignore_dependencies was given.
 
   def gather_dependencies
-    specs = @specs_and_sources.map { |spec,_| spec }
+    specs = @available.all_specs
 
     # these gems were listed by the user, always install them
     keep_names = specs.map { |spec| spec.full_name }
 
+    if @dev_shallow
+      @toplevel_specs = keep_names
+    end
+
     dependency_list = Gem::DependencyList.new @development
     dependency_list.add(*specs)
     to_do = specs.dup
-
     add_found_dependencies to_do, dependency_list unless @ignore_dependencies
 
+    # REFACTOR maybe abstract away using Gem::Specification.include? so
+    # that this isn't dependent only on the currently installed gems
     dependency_list.specs.reject! { |spec|
       not keep_names.include?(spec.full_name) and
       Gem::Specification.include?(spec)
@@ -162,32 +202,43 @@ class Gem::DependencyInstaller
 
     until to_do.empty? do
       spec = to_do.shift
+
+      # HACK why is spec nil?
       next if spec.nil? or seen[spec.name]
       seen[spec.name] = true
 
       deps = spec.runtime_dependencies
-      deps |= spec.development_dependencies if @development
+
+      if @development
+        if @dev_shallow
+          if @toplevel_specs.include? spec.full_name
+            deps |= spec.development_dependencies
+          end
+        else
+          deps |= spec.development_dependencies
+        end
+      end
 
       deps.each do |dep|
         dependencies[dep.name] = dependencies[dep.name].merge dep
 
-        results = find_gems_with_sources(dep).reverse
-
-        results.reject! do |dep_spec,|
-          to_do.push dep_spec
-
-          # already locally installed
-          Gem::Specification.any? do |installed_spec|
-            dep.name == installed_spec.name and
-              dep.requirement.satisfied_by? installed_spec.version
-          end
+        if @minimal_deps
+          next if Gem::Specification.any? do |installed_spec|
+                    dep.name == installed_spec.name and
+                      dep.requirement.satisfied_by? installed_spec.version
+                  end
         end
 
-        results.each do |dep_spec, source_uri|
-          @specs_and_sources << [dep_spec, source_uri]
+        results = find_gems_with_sources(dep)
 
-          dependency_list.add dep_spec
+        results.sorted.each do |t|
+          to_do.push t.spec
         end
+
+        results.remove_installed! dep
+
+        @available << results
+        results.inject_into_list dependency_list
       end
     end
 
@@ -202,42 +253,36 @@ class Gem::DependencyInstaller
   def find_spec_by_name_and_version(gem_name,
                                     version = Gem::Requirement.default,
                                     prerelease = false)
-    spec_and_source = nil
 
-    glob = if File::ALT_SEPARATOR then
-             gem_name.gsub File::ALT_SEPARATOR, File::SEPARATOR
-           else
-             gem_name
-           end
+    set = Gem::AvailableSet.new
 
-    local_gems = Dir["#{glob}*"].sort.reverse
+    if consider_local?
+      if File.exists? gem_name
+        src = Gem::Source::SpecificFile.new(gem_name)
+        set.add src.spec, src
+      else
+        local = Gem::Source::Local.new
 
-    local_gems.each do |gem_file|
-      next unless gem_file =~ /gem$/
-      begin
-        spec = Gem::Format.from_file_by_path(gem_file).spec
-        spec_and_source = [spec, gem_file]
-        break
-      rescue SystemCallError, Gem::Package::FormatError
+        if s = local.find_gem(gem_name, version)
+          set.add s, local
+        end
       end
     end
 
-    unless spec_and_source then
+    if set.empty?
       dep = Gem::Dependency.new gem_name, version
+      # HACK Dependency objects should be immutable
       dep.prerelease = true if prerelease
-      spec_and_sources = find_gems_with_sources(dep).reverse
-      spec_and_source = spec_and_sources.find { |spec, source|
-        Gem::Platform.match spec.platform
-      }
+
+      set = find_gems_with_sources(dep)
+      set.match_platform!
     end
 
-    if spec_and_source.nil? then
-      raise Gem::GemNotFoundException.new(
-        "Could not find a valid gem '#{gem_name}' (#{version}) locally or in a repository",
-        gem_name, version, @errors)
+    if set.empty?
+      raise Gem::SpecificGemNotFoundException.new(gem_name, version, @errors)
     end
 
-    @specs_and_sources = [spec_and_source]
+    @available = set
   end
 
   ##
@@ -258,33 +303,49 @@ class Gem::DependencyInstaller
     if String === dep_or_name then
       find_spec_by_name_and_version dep_or_name, version, @prerelease
     else
-      dep_or_name.prerelease = @prerelease
-      @specs_and_sources = [find_gems_with_sources(dep_or_name).last]
+      dep = dep_or_name.dup
+      dep.prerelease = @prerelease
+      @available = find_gems_with_sources(dep).pick_best!
     end
 
     @installed_gems = []
 
     gather_dependencies
 
+    # REFACTOR is the last gem always the one that the user requested?
+    # This code assumes that but is that actually validated by the code?
+
     last = @gems_to_install.size - 1
     @gems_to_install.each_with_index do |spec, index|
+      # REFACTOR more current spec set hardcoding, should be abstracted?
       next if Gem::Specification.include?(spec) and index != last
 
       # TODO: make this sorta_verbose so other users can benefit from it
       say "Installing gem #{spec.full_name}" if Gem.configuration.really_verbose
 
-      _, source_uri = @specs_and_sources.assoc spec
+      source = @available.source_for spec
+
       begin
-        local_gem_path = Gem::RemoteFetcher.fetcher.download spec, source_uri,
-                                                             @cache_dir
+        # REFACTOR make the fetcher to use configurable
+        local_gem_path = source.download spec, @cache_dir
       rescue Gem::RemoteFetcher::FetchError
+        # TODO I doubt all fetch errors are recoverable, we should at least
+        # report the errors probably.
         next if @force
         raise
       end
 
+      if @development
+        if @dev_shallow
+          is_dev = @toplevel_specs.include? spec.full_name
+        else
+          is_dev = true
+        end
+      end
+
       inst = Gem::Installer.new local_gem_path,
                                 :bin_dir             => @bin_dir,
-                                :development         => @development,
+                                :development         => is_dev,
                                 :env_shebang         => @env_shebang,
                                 :force               => @force,
                                 :format_executable   => @format_executable,
@@ -299,6 +360,33 @@ class Gem::DependencyInstaller
       @installed_gems << spec
     end
 
+    # Since this is currently only called for docs, we can be lazy and just say
+    # it's documentation. Ideally the hook adder could decide whether to be in
+    # the background or not, and what to call it.
+    in_background "Installing documentation" do
+      start = Time.now
+      Gem.done_installing_hooks.each do |hook|
+        hook.call self, @installed_gems
+      end
+      finish = Time.now
+      say "Done installing documentation for #{@installed_gems.map(&:name).join(', ')} (#{(finish-start).to_i} sec)."
+    end unless Gem.done_installing_hooks.empty?
+
     @installed_gems
+  end
+
+  def in_background what
+    fork_happened = false
+    if @build_docs_in_background and Process.respond_to?(:fork)
+      begin
+        Process.fork do
+          yield
+        end
+        fork_happened = true
+        say "#{what} in a background process."
+      rescue NotImplementedError
+      end
+    end
+    yield unless fork_happened
   end
 end

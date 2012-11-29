@@ -78,7 +78,7 @@ You can set up a shortcut to gem server documentation using the URL:
   end
 
   def execute
-    options[:gemdir] << Gem.dir if options[:gemdir].empty?
+    options[:gemdir] = Gem.path if options[:gemdir].empty?
     Gem::Server.run options
   end
 

@@ -6,6 +6,17 @@ require 'rubygems/user_interaction'
 # retrieval during tests.
 
 class Gem::MockGemUi < Gem::StreamUI
+  ##
+  # Raised when you haven't provided enough input to your MockGemUi
+
+  class InputEOFError < RuntimeError
+
+    def initialize question
+      super "Out of input for MockGemUi on #{question.inspect}"
+    end
+
+  end
+
   class TermError < RuntimeError
     attr_reader :exit_code
 
@@ -42,6 +53,12 @@ class Gem::MockGemUi < Gem::StreamUI
     super ins, outs, errs, true
 
     @terminated = false
+  end
+
+  def ask question
+    raise InputEOFError, question if @ins.eof?
+
+    super
   end
 
   def input

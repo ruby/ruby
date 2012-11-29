@@ -10,6 +10,10 @@ require 'rubygems/deprecate'
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the
 # correct order to avoid conflicts.
+#--
+# TODO: It appears that all but topo-sort functionality is being duplicated
+# (or is planned to be duplicated) elsewhere in rubygems.  Is the majority of
+# this class necessary anymore?  Especially #ok?, #why_not_ok?
 
 class Gem::DependencyList
   attr_reader :specs
@@ -27,17 +31,8 @@ class Gem::DependencyList
 
   def self.from_specs
     list = new
-    list.add(*Gem::Specification.map)
+    list.add(*Gem::Specification.to_a)
     list
-  end
-
-  ##
-  # Creates a DependencyList from a Gem::SourceIndex +source_index+
-
-  def self.from_source_index(ignored=nil)
-    warn "NOTE: DependencyList.from_source_index ignores it's arg" if ignored
-
-    from_specs
   end
 
   ##
@@ -143,7 +138,7 @@ class Gem::DependencyList
   # If removing the gemspec creates breaks a currently ok dependency, then it
   # is NOT ok to remove the gemspec.
 
-  def ok_to_remove?(full_name)
+  def ok_to_remove?(full_name, check_dev=true)
     gem_to_remove = find_name full_name
 
     siblings = @specs.find_all { |s|
@@ -154,7 +149,9 @@ class Gem::DependencyList
     deps = []
 
     @specs.each do |spec|
-      spec.dependencies.each do |dep|
+      check = check_dev ? spec.dependencies : spec.runtime_dependencies
+
+      check.each do |dep|
         deps << dep if gem_to_remove.satisfies_requirement?(dep)
       end
     end
@@ -213,7 +210,7 @@ class Gem::DependencyList
     @specs.each(&block)
   end
 
-  def tsort_each_child(node, &block)
+  def tsort_each_child(node)
     specs = @specs.sort.reverse
 
     dependencies = node.runtime_dependencies
@@ -242,11 +239,6 @@ class Gem::DependencyList
   def active_count(specs, ignored)
     specs.count { |spec| ignored[spec.full_name].nil? }
   end
+
 end
 
-class Gem::DependencyList
-  class << self
-    extend Gem::Deprecate
-    deprecate :from_source_index, "from_specs", 2011, 11
-  end
-end

@@ -85,5 +85,24 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exists @a_1.gem_dir
   end
 
+  def test_execute_keeps_older_versions_with_deps
+    @b_1 = quick_spec 'b', 1
+    @b_2 = quick_spec 'b', 2
+
+    @c = quick_spec 'c', 1 do |s|
+      s.add_dependency 'b', '1'
+    end
+
+    install_gem @c
+    install_gem @b_1
+    install_gem @b_2
+
+    @cmd.options[:args] = []
+
+    @cmd.execute
+
+    assert_path_exists @b_1.gem_dir
+  end
+
 end
 

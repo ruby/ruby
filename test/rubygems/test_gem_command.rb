@@ -109,6 +109,16 @@ class TestGemCommand < Gem::TestCase
     assert @xopt, "Should have done xopt"
   end
 
+  def test_invoke_with_build_args
+    @cmd.when_invoked { true }
+
+    use_ui @ui do
+      @cmd.invoke_with_build_args ["-x"], ["--awesome=true"]
+    end
+
+    assert_equal ["--awesome=true"], @cmd.options[:build_args]
+  end
+
   # Returning false from the command handler invokes the usage output.
   def test_invoke_with_help
     done = false

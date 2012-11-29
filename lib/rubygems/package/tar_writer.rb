@@ -40,12 +40,12 @@ class Gem::Package::TarWriter
     # number of bytes will be more than #limit
 
     def write(data)
-      if data.size + @written > @limit
+      if data.bytesize + @written > @limit
         raise FileOverflow, "You tried to feed more data than fits in the file."
       end
       @io.write data
-      @written += data.size
-      data.size
+      @written += data.bytesize
+      data.bytesize
     end
 
   end
@@ -130,6 +130,62 @@ class Gem::Package::TarWriter
   end
 
   ##
+  # Adds +name+ with permissions +mode+ to the tar, yielding +io+ for writing
+  # the file.  The +digest_algorithm+ is written to a read-only +name+.sum
+  # file following the given file contents containing the digest name and
+  # hexdigest separated by a tab.
+  #
+  # The created digest object is returned.
+
+  def add_file_digest name, mode, digest_algorithms # :yields: io
+    digests = digest_algorithms.map do |digest_algorithm|
+      digest = digest_algorithm.new
+      [digest.name, digest]
+    end
+
+    digests = Hash[*digests.flatten]
+
+    add_file name, mode do |io|
+      Gem::Package::DigestIO.wrap io, digests do |digest_io|
+        yield digest_io
+      end
+    end
+
+    digests
+  end
+
+  ##
+  # Adds +name+ with permissions +mode+ to the tar, yielding +io+ for writing
+  # the file.  The +signer+ is used to add a digest file using its
+  # digest_algorithm per add_file_digest and a cryptographic signature in
+  # +name+.sig.  If the signer has no key only the checksum file is added.
+  #
+  # Returns the digest.
+
+  def add_file_signed name, mode, signer
+    digest_algorithms = [
+      signer.digest_algorithm,
+      OpenSSL::Digest::SHA512,
+    ].uniq
+
+    digests = add_file_digest name, mode, digest_algorithms do |io|
+      yield io
+    end
+
+    signature_digest = digests.values.find do |digest|
+      digest.name == signer.digest_name
+    end
+
+    signature = signer.sign signature_digest.digest
+
+    add_file_simple "#{name}.sig", 0444, signature.length do |io|
+      io.write signature
+    end if signature
+
+    digests
+  end
+
+  ##
   # Add file +name+ with permissions +mode+ +size+ bytes long.  Yields an IO
   # to write the file to.
 
@@ -211,9 +267,9 @@ class Gem::Package::TarWriter
   # Splits +name+ into a name and prefix that can fit in the TarHeader
 
   def split_name(name) # :nodoc:
-    raise Gem::Package::TooLongFileName if name.size > 256
+    raise Gem::Package::TooLongFileName if name.bytesize > 256
 
-    if name.size <= 100 then
+    if name.bytesize <= 100 then
       prefix = ""
     else
       parts = name.split(/\//)
@@ -222,14 +278,14 @@ class Gem::Package::TarWriter
 
       loop do
         nxt = parts.pop
-        break if newname.size + 1 + nxt.size > 100
+        break if newname.bytesize + 1 + nxt.bytesize > 100
         newname = nxt + "/" + newname
       end
 
       prefix = (parts + [nxt]).join "/"
       name = newname
 
-      if name.size > 100 or prefix.size > 155 then
+      if name.bytesize > 100 or prefix.bytesize > 155 then
         raise Gem::Package::TooLongFileName
       end
     end

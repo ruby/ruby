@@ -71,7 +71,21 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_equal '', @ui.output
-    assert_equal "ERROR:  Unknown gem 'foo'\n", @ui.error
+    assert_equal "ERROR:  No gem matching 'foo (>= 0)' found\n", @ui.error
+  end
+
+  def test_execute_bad_name_with_version
+    @cmd.options[:args] = %w[foo]
+    @cmd.options[:version] = "1.3.2"
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal '', @ui.output
+    assert_equal "ERROR:  No gem matching 'foo (= 1.3.2)' found\n", @ui.error
   end
 
   def test_execute_exact_match
@@ -101,6 +115,24 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_equal "foo", YAML.load(@ui.output)
+  end
+
+  def test_execute_file
+    foo = quick_spec 'foo' do |s|
+      s.files = %w[lib/code.rb]
+    end
+
+    util_build_gem foo
+
+    @cmd.options[:args] = [foo.cache_file]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match %r|Gem::Specification|, @ui.output
+    assert_match %r|name: foo|, @ui.output
+    assert_equal '', @ui.error
   end
 
   def test_execute_marshal

@@ -13,7 +13,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
 
   def initialize
     super 'uninstall', 'Uninstall gems from the local repository',
-          :version => Gem::Requirement.default, :user_install => true
+          :version => Gem::Requirement.default, :user_install => true,
+          :check_dev => false
 
     add_option('-a', '--[no-]all',
       'Uninstall all matching versions'
@@ -25,6 +26,12 @@ class Gem::Commands::UninstallCommand < Gem::Command
                'Ignore dependency requirements while',
                'uninstalling') do |value, options|
       options[:ignore] = value
+    end
+
+    add_option('-D', '--[no-]-check-development',
+               'Check development dependencies while uninstalling',
+               '(default: false)') do |value, options|
+      options[:check_dev] = value
     end
 
     add_option('-x', '--[no-]executables',
@@ -54,6 +61,12 @@ class Gem::Commands::UninstallCommand < Gem::Command
       options[:format_executable] = value
     end
 
+    add_option('--[no-]force',
+               'Uninstall all versions of the named gems',
+               'ignoring dependencies') do |value, options|
+      options[:force] = value
+    end
+
     add_version_option
     add_platform_option
   end
@@ -73,19 +86,23 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def execute
-    original_path = Gem.path
+    # REFACTOR: stolen from cleanup_command
+    deplist = Gem::DependencyList.new
+    get_all_gem_names.uniq.each do |name|
+      Gem::Specification.find_all_by_name(name).each do |spec|
+        deplist.add spec
+      end
+    end
 
-    get_all_gem_names.each do |gem_name|
+    deps = deplist.strongly_connected_components.flatten.reverse
+
+    deps.map(&:name).uniq.each do |gem_name|
       begin
         Gem::Uninstaller.new(gem_name, options).uninstall
-      rescue Gem::InstallError => e
-        alert e.message
       rescue Gem::GemNotInHomeException => e
         spec = e.spec
         alert("In order to remove #{spec.name}, please execute:\n" \
               "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
-      ensure
-        Gem.use_paths(*original_path)
       end
     end
   end

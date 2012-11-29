@@ -71,14 +71,9 @@ class Gem::Commands::DependencyCommand < Gem::Command
     if remote? and not options[:reverse_dependencies] then
       fetcher = Gem::SpecFetcher.fetcher
 
-      # REFACTOR: fetcher.find_specs_matching => specs
-      specs_and_sources = fetcher.find_matching(dependency,
-                                                dependency.specific?, true,
-                                                dependency.prerelease?)
+      ss, _ = fetcher.spec_for_dependency dependency
 
-      specs.concat specs_and_sources.map { |spec_tuple, source_uri|
-        fetcher.fetch_spec spec_tuple, URI.parse(source_uri)
-      }
+      ss.each { |s,o| specs << s }
     end
 
     if specs.empty? then

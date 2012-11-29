@@ -102,61 +102,24 @@ class Gem::Package::TarHeader
 
     fields = header.unpack UNPACK_FORMAT
 
-    name     = fields.shift
-    mode     = fields.shift.oct
-    uid      = fields.shift.oct
-    gid      = fields.shift.oct
-    size     = fields.shift.oct
-    mtime    = fields.shift.oct
-    checksum = fields.shift.oct
-    typeflag = fields.shift
-    linkname = fields.shift
-    magic    = fields.shift
-    version  = fields.shift.oct
-    uname    = fields.shift
-    gname    = fields.shift
-    devmajor = fields.shift.oct
-    devminor = fields.shift.oct
-    prefix   = fields.shift
+    new :name     => fields.shift,
+        :mode     => fields.shift.oct,
+        :uid      => fields.shift.oct,
+        :gid      => fields.shift.oct,
+        :size     => fields.shift.oct,
+        :mtime    => fields.shift.oct,
+        :checksum => fields.shift.oct,
+        :typeflag => fields.shift,
+        :linkname => fields.shift,
+        :magic    => fields.shift,
+        :version  => fields.shift.oct,
+        :uname    => fields.shift,
+        :gname    => fields.shift,
+        :devmajor => fields.shift.oct,
+        :devminor => fields.shift.oct,
+        :prefix   => fields.shift,
 
-    new :name     => name,
-        :mode     => mode,
-        :uid      => uid,
-        :gid      => gid,
-        :size     => size,
-        :mtime    => mtime,
-        :checksum => checksum,
-        :typeflag => typeflag,
-        :linkname => linkname,
-        :magic    => magic,
-        :version  => version,
-        :uname    => uname,
-        :gname    => gname,
-        :devmajor => devmajor,
-        :devminor => devminor,
-        :prefix   => prefix,
-
-        :empty    => empty
-
-    # HACK unfactor for Rubinius
-    #new :name     => fields.shift,
-    #    :mode     => fields.shift.oct,
-    #    :uid      => fields.shift.oct,
-    #    :gid      => fields.shift.oct,
-    #    :size     => fields.shift.oct,
-    #    :mtime    => fields.shift.oct,
-    #    :checksum => fields.shift.oct,
-    #    :typeflag => fields.shift,
-    #    :linkname => fields.shift,
-    #    :magic    => fields.shift,
-    #    :version  => fields.shift.oct,
-    #    :uname    => fields.shift,
-    #    :gname    => fields.shift,
-    #    :devmajor => fields.shift.oct,
-    #    :devminor => fields.shift.oct,
-    #    :prefix   => fields.shift,
-
-    #    :empty => empty
+        :empty => empty
   end
 
   ##

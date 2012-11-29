@@ -9,7 +9,7 @@
 
 class Gem::Package::TarReader
 
-  include Gem::Package
+  include Enumerable
 
   ##
   # Raised if the tar IO is not seekable
@@ -52,9 +52,9 @@ class Gem::Package::TarReader
   # Iterates over files in the tarball yielding each entry
 
   def each
-    loop do
-      return if @io.eof?
+    return enum_for __method__ unless block_given?
 
+    until @io.eof? do
       header = Gem::Package::TarHeader.from @io
       return if header.empty?
 
@@ -98,6 +98,23 @@ class Gem::Package::TarReader
       raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
       @io.pos = @init_pos
     end
+  end
+
+  ##
+  # Seeks through the tar file until it finds the +entry+ with +name+ and
+  # yields it.  Rewinds the tar file to the beginning when the block
+  # terminates.
+
+  def seek name # :yields: entry
+    found = find do |entry|
+      entry.full_name == name
+    end
+
+    return unless found
+
+    return yield found
+  ensure
+    rewind
   end
 
 end

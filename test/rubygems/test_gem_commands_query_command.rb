@@ -349,5 +349,56 @@ pl (1 i386-linux)
     assert_equal "WARNING:  prereleases are always shown locally\n", @ui.error
   end
 
+  def test_execute_local_details
+    @a1.platform = 'x86-linux'
+
+    @a2.summary = 'This is a lot of text. ' * 4
+    @a2.authors = ['Abraham Lincoln', 'Hirohito']
+    @a2.homepage = 'http://a.example.com/'
+    @a2.rubyforge_project = 'rubygems'
+    @a2.platform = 'universal-darwin'
+
+    util_clear_gems
+    util_setup_spec_fetcher @a1, @a2, @pl1
+
+    @cmd.handle_options %w[-l -d]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    str = @ui.output
+
+    str.gsub!(/\(\d\): [^\n]*/, "-")
+    str.gsub!(/at: [^\n]*/, "at: -")
+
+    expected = <<-EOF
+*** LOCAL GEMS ***
+
+a (2, 1)
+    Platforms:
+        1: x86-linux
+        2: universal-darwin
+    Authors: Abraham Lincoln, Hirohito
+    Rubyforge: http://rubyforge.org/projects/rubygems
+    Homepage: http://a.example.com/
+    Installed at -
+                 -
+
+    This is a lot of text. This is a lot of text. This is a lot of text.
+    This is a lot of text.
+
+pl \(1\)
+    Platform: i386-linux
+    Author: A User
+    Homepage: http://example.com
+    Installed at: -
+
+    this is a summary
+    EOF
+
+    assert_match expected, @ui.output
+  end
+
 end
 
