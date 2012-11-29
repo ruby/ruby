@@ -1006,9 +1006,18 @@ Also, a list:
     File.expand_path "../../../test/rubygems/#{key_name}_key.pem", __FILE__
   end
 
-  PRIVATE_KEY = load_key 'private'
-  PUBLIC_KEY  = PRIVATE_KEY.public_key
+  # :stopdoc:
+  # only available in RubyGems tests
 
-  PUBLIC_CERT = load_cert 'public'
+  begin
+    PRIVATE_KEY = load_key 'private'
+    PUBLIC_KEY  = PRIVATE_KEY.public_key
+
+    PUBLIC_CERT = load_cert 'public'
+  rescue Errno::ENOENT
+    PRIVATE_KEY = nil
+    PUBLIC_KEY  = nil
+    PUBLIC_CERT = nil
+  end
 
 end

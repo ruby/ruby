@@ -1,3 +1,9 @@
+Thu Nov 29 16:18:14 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/test_case.rb:  Disable loading of keys and certificates
+	  outside rubygems or ruby tests as the files are not available (or
+          necessary).
+
 Thu Nov 29 16:14:41 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (rb_debug_inspector_open): use RARRAY_LENINT() for
