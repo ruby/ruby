@@ -151,7 +151,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     reader = Gem::Package.new spec.file_name
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz data.tar.gz checksums.yaml.gz], 
+    assert_equal %w[metadata.gz data.tar.gz checksums.yaml.gz],
                  reader.files
 
     assert_equal %w[lib/code.rb], reader.contents

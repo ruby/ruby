@@ -900,7 +900,7 @@ class Gem::Specification
 
     spec.instance_eval { @specification_version ||= NONEXISTENT_SPECIFICATION_VERSION }
     spec.reset_nil_attributes_to_default
-    
+
     spec
   end
 
@@ -2527,7 +2527,7 @@ class Gem::Specification
 
   ##
   # Reset nil attributes to their default values to make the spec valid
-  
+
   def reset_nil_attributes_to_default
     nil_attributes = self.class.non_nil_attributes.find_all do |name|
       !instance_variable_defined?("@#{name}") || instance_variable_get("@#{name}").nil?

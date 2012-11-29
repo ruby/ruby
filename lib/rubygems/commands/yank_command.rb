@@ -29,7 +29,7 @@ class Gem::Commands::YankCommand < Gem::Command
     add_option('--undo') do |value, options|
       options[:undo] = true
     end
-    
+
     add_option('-k', '--key KEY_NAME',
                'Use API key from your gem credentials file') do |value, options|
       options[:key] = value

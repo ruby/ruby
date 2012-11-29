@@ -327,7 +327,7 @@ class TestGemConfigFile < Gem::TestCase
     end
 
     # Avoid writing stuff to output when running tests
-    Gem::ConfigFile.class_eval { def warn(args); end } 
+    Gem::ConfigFile.class_eval { def warn(args); end }
 
     # This should not raise exception
     util_config_file

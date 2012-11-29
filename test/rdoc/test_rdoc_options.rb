@@ -504,7 +504,7 @@ rdoc_include:
       end
 
       assert_equal 0, e.status
-    
+
       assert File.exist? '.rdoc_options'
     end
   ensure
@@ -583,7 +583,7 @@ rdoc_include:
   def test_write_options
     temp_dir do |dir|
       @options.write_options
-    
+
       assert File.exist? '.rdoc_options'
 
       assert_equal @options, YAML.load(File.read('.rdoc_options'))

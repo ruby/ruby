@@ -941,7 +941,6 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     TH_POP_TAG();
 
     /* invalidate bindings? */
-    
 
     if (state) {
 	JUMP_TAG(state);

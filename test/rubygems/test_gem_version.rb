@@ -33,7 +33,7 @@ class TestGemVersion < Gem::TestCase
     assert_same  fake, Gem::Version.create(fake)
     assert_nil   Gem::Version.create(nil)
     assert_equal v("5.1"), Gem::Version.create("5.1")
-    
+
     ver = '1.1'.freeze
     assert_equal v('1.1'), Gem::Version.create(ver)
   end

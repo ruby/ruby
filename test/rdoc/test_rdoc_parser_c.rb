@@ -491,7 +491,7 @@ void Init_File(void) {
   rb_include_module(rb_cIO, rb_mFConst);
 
   /*  Document-const: LOCK_SH
-   * 
+   *
    *  Shared lock
    */
   rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
