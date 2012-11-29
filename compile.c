@@ -2379,7 +2379,10 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 			rb_ary_push(ary, node->nd_head->nd_lit);
 			node = node->nd_next;
 		    }
-		    while (node && nd_type(node->nd_head) == NODE_LIT) {
+		    while (node && nd_type(node->nd_head) == NODE_LIT &&
+			   node->nd_next && nd_type(node->nd_next->nd_head) == NODE_LIT) {
+			rb_ary_push(ary, node->nd_head->nd_lit);
+			node = node->nd_next;
 			rb_ary_push(ary, node->nd_head->nd_lit);
 			node = node->nd_next;
 			len++;

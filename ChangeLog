@@ -1,3 +1,18 @@
+Fri Nov 30 02:27:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* compile.c (compile_array_): refix r37991 remove assertion:
+	  it is true only if type == COMPILE_ARRAY_TYPE_HASH.
+	  [ruby-dev:46658] [Bug #7466]
+
+	* vm.c (m_core_hash_from_ary): add assertion instead of above.
+
+	* vm.c (m_core_hash_merge_ary): ditto.
+
+Thu Nov 29 19:15:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_array_): hash elements must be paired even for
+	  literal elements.  [ruby-dev:46658] [Bug #7466]
+
 Thu Nov 29 22:39:35 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_encode_protocol_i): fix byte order

@@ -1986,6 +1986,7 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
 	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
     }
 
+    assert(RARRAY_LEN(ary) % 2 == 0);
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
 	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
     }
@@ -1998,6 +1999,7 @@ m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 {
     int i;
 
+    assert(RARRAY_LEN(ary) % 2 == 0);
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
 	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
     }
