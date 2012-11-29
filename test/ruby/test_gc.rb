@@ -134,4 +134,10 @@ class TestGc < Test::Unit::TestCase
   ensure
     GC::Profiler.disable
   end
+
+  def test_finalizing_main_thread
+    assert_in_out_err(%w[--disable-gems], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
+      ObjectSpace.define_finalizer(Thread.main) { p 'finalize' }
+    EOS
+  end
 end

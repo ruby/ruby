@@ -1,3 +1,12 @@
+Fri Nov 30 07:46:42 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (rb_objspace_call_finalizer): finalize_deferred may free up
+	  a object which is reachable from a part after this function,
+	  e.g. ruby_vm_destruct(). [ruby-dev:46647] [Bug #7452]
+
+	* test/ruby/test_gc.rb (test_finalizing_main_thread): add a test
+	  for above.
+
 Fri Nov 30 07:43:44 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_interrupted): avoid warning of
@@ -462,7 +471,7 @@ Wed Nov 28 16:41:04 2012  Eric Hodel  <drbrain@segment7.net>
 	* lib/rdoc/servlet.rb:  Add support for serving documentation from a
 	  subdirectory.
 	* lib/rdoc/generator/darkfish.rb:  ditto
-	* test/rdoc/test_rdoc_servlet.rb:  Test for above
+	* test/rdoc/test_rdoc_servlet.rb:  Tets for above
 	* test/rdoc/test_rdoc_servlet.rb:  ditto
 
 Wed Nov 28 15:37:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>

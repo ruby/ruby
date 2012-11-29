@@ -1504,15 +1504,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
     /* run finalizers */
-    do {
-	finalize_deferred(objspace);
-	/* mark reachable objects from finalizers */
-	/* They might be not referred from any place here */
-	mark_tbl(objspace, finalizer_table);
-	gc_mark_stacked_objects(objspace);
-	st_foreach(finalizer_table, chain_finalized_object,
-		   (st_data_t)&deferred_final_list);
-    } while (deferred_final_list);
+    finalize_deferred(objspace);
+    assert(deferred_final_list == 0);
+
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
 	struct force_finalize_list *list = 0;
