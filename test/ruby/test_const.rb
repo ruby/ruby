@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 
 class TestConst < Test::Unit::TestCase
@@ -50,7 +51,7 @@ class TestConst < Test::Unit::TestCase
     c = Class.new
     c.const_set(:X, 1)
     assert_output(nil, <<-WARNING) {c.const_set(:X, 2)}
-#{__FILE__}:#{__LINE__-1}: warning: already initialized constant X
+#{__FILE__}:#{__LINE__-1}: warning: already initialized constant #{c}::X
 #{__FILE__}:#{__LINE__-3}: warning: previous definition of X was here
 WARNING
   end

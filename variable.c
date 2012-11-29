@@ -2136,7 +2136,11 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	    else {
 		const char *name = rb_id2name(id);
 		visibility = ce->flag;
-		rb_warn("already initialized constant %s", name);
+		if (klass == rb_cObject)
+		    rb_warn("already initialized constant %s", name);
+		else
+		    rb_warn("already initialized constant %s::%s",
+			    rb_class2name(klass), name);
 		if (!NIL_P(ce->file) && ce->line) {
 		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
 				    "previous definition of %s was here", name);

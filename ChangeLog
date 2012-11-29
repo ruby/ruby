@@ -1,3 +1,8 @@
+Thu Nov 29 17:45:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_set): show namespace in warning messages.
+	  [Feature #7190]
+
 Thu Nov 29 17:31:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems.rb (Gem.load_yaml): return if Kernel#gem is not defined
