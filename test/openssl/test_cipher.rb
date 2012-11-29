@@ -69,6 +69,21 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     assert_raise(RuntimeError) {OpenSSL::Cipher.allocate.final}
   end
 
+  def test_ctr_if_exists
+    begin
+      cipher = OpenSSL::Cipher.new('aes-128-ctr')
+      cipher.encrypt
+      cipher.pkcs5_keyivgen('password')
+      c = cipher.update('hello,world') + cipher.final
+      cipher.decrypt
+      cipher.pkcs5_keyivgen('password')
+      assert_equal('hello,world', cipher.update(c) + cipher.final)
+    rescue RuntimeError => e
+      # CTR is from OpenSSL 1.0.1, and for an environment that disables CTR; No idea it exists.
+      assert_match(/unsupported cipher algorithm/, e.message)
+    end
+  end
+
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000
     def test_ciphers
       OpenSSL::Cipher.ciphers.each{|name|

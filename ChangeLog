@@ -1,3 +1,8 @@
+Thu Nov 29 22:23:31 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/openssl/test_cipher.rb (test_ctr_if_exists): add CTR mode test
+  	  if underlying OpenSSL supports it.
+
 Thu Nov 29 21:42:16 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make): add a method entry with
