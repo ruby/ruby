@@ -1017,7 +1017,7 @@ Sat Nov 24 00:00:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Nov 23 23:44:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): strip all white spaces for
-	  mingw64+MSYS pkg-config which errouneously emits extra newlines.
+	  mingw64+MSYS pkg-config which erroneously emits extra newlines.
 	  [ruby-core:47998] [Bug #7163]
 
 Fri Nov 23 17:31:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
