@@ -1,6 +1,7 @@
+# -*- coding: us-ascii -*-
 require_relative 'test_base'
 
-require 'dl/struct'
+EnvUtil.suppress_warning {require 'dl/struct'}
 
 module DL
   class TestCStructEntity < TestBase

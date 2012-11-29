@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require "open3"
 require "timeout"
 

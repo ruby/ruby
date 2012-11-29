@@ -1,6 +1,7 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
-require 'dl'
 require_relative '../ruby/envutil'
+EnvUtil.suppress_warning {require 'dl'}
 
 libc_so = libm_so = nil
 
