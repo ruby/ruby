@@ -58,7 +58,7 @@
 # ant
 # :   A little insect that is known
 # to enjoy picnics
-# 
+#
 # ```
 #
 # Produces:
@@ -186,7 +186,7 @@ class RDoc::Markdown
     attr_reader :failing_rule_offset
     attr_accessor :result, :pos
 
-    
+
     def current_column(target=pos)
       if c = string.rindex("\n", target-1)
         return target - c - 1
@@ -15511,7 +15511,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  
+      @result = begin;
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 

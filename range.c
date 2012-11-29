@@ -489,7 +489,7 @@ range_step(int argc, VALUE *argv, VALUE range)
  *  - the block returns true for any value which is greater than or
  *    equal to i.
  *
- *  If x is within the range, this method returns the value x. 
+ *  If x is within the range, this method returns the value x.
  *  Otherwise, it returns nil.
  *
  *     ary = [0, 4, 7, 10, 12]
@@ -750,7 +750,6 @@ range_bsearch(VALUE range)
 	rb_raise(rb_eTypeError, "can't do binary search for %s", rb_obj_classname(beg));
     }
     return range;
-    
 }
 
 static VALUE

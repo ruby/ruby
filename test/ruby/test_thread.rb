@@ -870,7 +870,7 @@ class TestThreadGroup < Test::Unit::TestCase
     assert_equal(:normal_end,
                  begin
                    t = Thread.new{ sleep 0.2; Process.kill(:INT, $$); :normal_end }
-                   
+
                    Signal.trap :INT do
                      t.value
                    end

@@ -34,7 +34,7 @@ class RDoc::Markup::List
 
   ##
   # Creates a new list of +type+ with +items+.  Valid list types are:
-  # +:BULLET+, +:LABEL+, +:LALPHA+, +:NOTE+, +:NUMBER+, +:UALPHA+ 
+  # +:BULLET+, +:LABEL+, +:LALPHA+, +:NOTE+, +:NUMBER+, +:UALPHA+
 
   def initialize type = nil, *items
     @type = type

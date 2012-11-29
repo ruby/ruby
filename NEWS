@@ -376,7 +376,7 @@ with all sufficient information, see the ChangeLog file.
     "each_pair", "eql?", "hash" or "to_h".
 
   * Thread#join, Thread#value
-   
+
     See above.
 
   * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize and Mutex#sleep
