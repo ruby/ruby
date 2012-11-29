@@ -1,3 +1,8 @@
+Thu Nov 29 15:53:38 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/psych/extconf.rb: added --enable-bundled-libyaml option.  this
+	  enforces using bundled libyaml.
+
 Thu Nov 29 15:51:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*:  Updated to RubyGems 2.0
