@@ -3159,6 +3159,21 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE hash;
+    static VALUE sym_count;
+    static VALUE sym_heap_used, sym_heap_length, sym_heap_increment;
+    static VALUE sym_heap_live_num, sym_heap_free_num, sym_heap_final_num;
+    static VALUE sym_total_allocated_object, sym_total_freed_object;
+    if (sym_count == 0) {
+	sym_count = ID2SYM(rb_intern_const("count"));
+	sym_heap_used = ID2SYM(rb_intern_const("heap_used"));
+	sym_heap_length = ID2SYM(rb_intern_const("heap_length"));
+	sym_heap_increment = ID2SYM(rb_intern_const("heap_increment"));
+	sym_heap_live_num = ID2SYM(rb_intern_const("heap_live_num"));
+	sym_heap_free_num = ID2SYM(rb_intern_const("heap_free_num"));
+	sym_heap_final_num = ID2SYM(rb_intern_const("heap_final_num"));
+	sym_total_allocated_object = ID2SYM(rb_intern_const("total_allocated_object"));
+	sym_total_freed_object = ID2SYM(rb_intern_const("total_freed_object"));
+    }
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
         if (!RB_TYPE_P(hash, T_HASH))
@@ -3171,17 +3186,17 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 
     rest_sweep(objspace);
 
-    rb_hash_aset(hash, ID2SYM(rb_intern("count")), SIZET2NUM(objspace->count));
-
+    rb_hash_aset(hash, sym_count, SIZET2NUM(objspace->count));
     /* implementation dependent counters */
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_used")), SIZET2NUM(objspace->heap.used));
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_length")), SIZET2NUM(objspace->heap.length));
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_increment")), SIZET2NUM(objspace->heap.increment));
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_live_num")), SIZET2NUM(objspace_live_num(objspace)));
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_free_num")), SIZET2NUM(objspace->heap.free_num));
-    rb_hash_aset(hash, ID2SYM(rb_intern("heap_final_num")), SIZET2NUM(objspace->heap.final_num));
-    rb_hash_aset(hash, ID2SYM(rb_intern("total_allocated_object")), SIZET2NUM(objspace->total_allocated_object_num));
-    rb_hash_aset(hash, ID2SYM(rb_intern("total_freed_object")), SIZET2NUM(objspace->total_freed_object_num));
+    rb_hash_aset(hash, sym_heap_used, SIZET2NUM(objspace->heap.used));
+    rb_hash_aset(hash, sym_heap_length, SIZET2NUM(objspace->heap.length));
+    rb_hash_aset(hash, sym_heap_increment, SIZET2NUM(objspace->heap.increment));
+    rb_hash_aset(hash, sym_heap_live_num, SIZET2NUM(objspace_live_num(objspace)));
+    rb_hash_aset(hash, sym_heap_free_num, SIZET2NUM(objspace->heap.free_num));
+    rb_hash_aset(hash, sym_heap_final_num, SIZET2NUM(objspace->heap.final_num));
+    rb_hash_aset(hash, sym_total_allocated_object, SIZET2NUM(objspace->total_allocated_object_num));
+    rb_hash_aset(hash, sym_total_freed_object, SIZET2NUM(objspace->total_freed_object_num));
+
     return hash;
 }
 
