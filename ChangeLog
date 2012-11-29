@@ -1,3 +1,8 @@
+Thu Nov 29 17:15:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* gc.c: Documentation for GC, GC::Profiler, ObjectSpace, and
+	  ObjectSpace::WeakMap [ruby-core:50245] [Bug #7449]
+
 Thu Nov 29 17:12:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/generic_erb.rb, tool/id2token.rb: add --path-separator option
