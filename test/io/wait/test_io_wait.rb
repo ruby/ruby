@@ -101,7 +101,7 @@ private
     buf = " " * 4096
     begin
       written += @w.write_nonblock(buf)
-    rescue Errno::EAGAIN
+    rescue Errno::EAGAIN, Errno::EWOULDBLOCK
       return written
     end while true
   end
