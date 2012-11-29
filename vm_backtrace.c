@@ -465,7 +465,7 @@ rb_vm_backtrace_object(void)
 }
 
 static VALUE
-backtrace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
+backtrace_collect(rb_backtrace_t *bt, long lev, long n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
 {
     VALUE btary;
     int i;
@@ -491,7 +491,7 @@ location_to_str_dmyarg(rb_backtrace_location_t *loc, void *dmy)
 }
 
 static VALUE
-backtrace_to_str_ary(VALUE self, int lev, int n)
+backtrace_to_str_ary(VALUE self, long lev, long n)
 {
     rb_backtrace_t *bt;
     int size;
@@ -534,7 +534,7 @@ location_create(rb_backtrace_location_t *srcloc, void *btobj)
 }
 
 static VALUE
-backtrace_to_location_ary(VALUE self, int lev, int n)
+backtrace_to_location_ary(VALUE self, long lev, long n)
 {
     rb_backtrace_t *bt;
     int size;
@@ -568,13 +568,13 @@ backtrace_load_data(VALUE self, VALUE str)
 }
 
 VALUE
-vm_backtrace_str_ary(rb_thread_t *th, int lev, int n)
+vm_backtrace_str_ary(rb_thread_t *th, long lev, long n)
 {
     return backtrace_to_str_ary(backtrace_object(th), lev, n);
 }
 
 VALUE
-vm_backtrace_location_ary(rb_thread_t *th, int lev, int n)
+vm_backtrace_location_ary(rb_thread_t *th, long lev, long n)
 {
     return backtrace_to_location_ary(backtrace_object(th), lev, n);
 }
@@ -717,7 +717,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 	      case Qfalse:
 		lev = NUM2LONG(level);
 		if (lev < 0) {
-		    rb_raise(rb_eArgError, "negative level (%d)", lev);
+		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
 		}
 		lev += lev_plus;
 		n = bt->backtrace_size - lev;
@@ -734,7 +734,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
       case 2:
 	lev = NUM2LONG(level);
 	if (lev < 0) {
-	    rb_raise(rb_eArgError, "negative level (%d)", lev);
+	    rb_raise(rb_eArgError, "negative level (%ld)", lev);
 	}
 	lev += lev_plus;
 	n = NUM2LONG(vn);

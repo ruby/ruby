@@ -1,3 +1,7 @@
+Thu Nov 29 10:29:53 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: same as a last patch.
+
 Thu Nov 29 10:24:25 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: use `long' for return values of `NUM2LONG()'.
