@@ -1029,7 +1029,7 @@ rb_thread_interrupted(VALUE thval)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
-    return RUBY_VM_INTERRUPTED(th);
+    return (int)RUBY_VM_INTERRUPTED(th);
 }
 
 void
@@ -1760,7 +1760,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    old = ATOMIC_CAS(th->interrupt_flag, interrupt, interrupt & th->interrupt_mask);
 	} while (old != interrupt);
 
-	interrupt &= ~th->interrupt_mask;
+	interrupt &= (rb_atomic_t)~th->interrupt_mask;
 	if (!interrupt)
 	    return;
 

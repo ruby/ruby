@@ -1,3 +1,10 @@
+Fri Nov 30 07:43:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_interrupted): avoid warning of
+	  implicit conversion.
+
+	* thread.c (rb_threadptr_execute_interrupts): ditto.
+
 Fri Nov 30 07:34:28 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: add GC guards.
