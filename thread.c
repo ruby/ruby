@@ -507,7 +507,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    }
 	    th->value = Qnil;
 	}
-	TH_POP_TAG();
 
 	th->status = THREAD_KILLED;
 	thread_debug("thread end: %p\n", (void *)th);
@@ -517,6 +516,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    /* treat with normal error object */
 	    rb_threadptr_raise(main_th, 1, &errinfo);
 	}
+	TH_POP_TAG();
+
+	/* locking_mutex must be Qfalse */
+	if (th->locking_mutex != Qfalse) {
+	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
+		   (void *)th, th->locking_mutex);
+	}
 
 	/* delete self other than main thread from living_threads */
 	st_delete_wrap(th->vm->living_threads, th->self);
@@ -524,14 +530,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    /* I'm last thread. wake up main thread from rb_thread_terminate_all */
 	    rb_threadptr_interrupt(main_th);
 	}
-
-	/* locking_mutex must be Qfalse */
-	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
-		   (void *)th, th->locking_mutex);
-	}
-	rb_threadptr_unlock_all_locking_mutexes(th);
-	rb_check_deadlock(th->vm);
 
 	/* wake up joining threads */
 	join_list = th->join_list;
@@ -544,6 +542,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    }
 	    join_list = join_list->next;
 	}
+
+	rb_threadptr_unlock_all_locking_mutexes(th);
+	rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
 	    rb_thread_recycle_stack_release(th->stack);
