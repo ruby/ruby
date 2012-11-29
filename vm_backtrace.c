@@ -699,33 +699,60 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 {
     VALUE level, vn;
     int lev, n;
+    VALUE btval = backtrace_object(th);
+    rb_backtrace_t *bt;
+    GetCoreDataFromValue(btval, rb_backtrace_t, bt);
 
     rb_scan_args(argc, argv, "02", &level, &vn);
 
-    lev = NIL_P(level) ? lev_default : NUM2INT(level);
-
-    if (NIL_P(vn)) {
-	n = 0;
-    }
-    else {
-	n = NUM2INT(vn);
-	if (n == 0) {
-	    return rb_ary_new();
+    switch (argc) {
+      case 0:
+	lev = lev_default + lev_plus;
+	n = bt->backtrace_size - lev;
+	break;
+      case 1:
+	{
+	    long beg, len;
+	    switch (rb_range_beg_len(level, &beg, &len, bt->backtrace_size - lev_plus, 0)) {
+	      case Qfalse:
+		lev = NUM2LONG(level);
+		if (lev < 0) {
+		    rb_raise(rb_eArgError, "negative level (%d)", lev);
+		}
+		lev += lev_plus;
+		n = bt->backtrace_size - lev;
+		break;
+	      case Qnil:
+		return Qnil;
+	      default:
+		lev = beg + lev_plus;
+		n = len;
+		break;
+	    }
+	    break;
 	}
+      case 2:
+	lev = NUM2LONG(level);
+	if (lev < 0) {
+	    rb_raise(rb_eArgError, "negative level (%d)", lev);
+	}
+	lev += lev_plus;
+	n = NUM2LONG(vn);
+	break;
+      default:
+	lev = n = 0; /* to avoid warning */
+	break;
     }
 
-    if (lev < 0) {
-	rb_raise(rb_eArgError, "negative level (%d)", lev);
-    }
-    if (n < 0) {
-	rb_raise(rb_eArgError, "negative n (%d)", n);
+    if (n == 0) {
+	return rb_ary_new();
     }
 
     if (to_str) {
-	return vm_backtrace_str_ary(th, lev+lev_plus, n);
+	return backtrace_to_str_ary(btval, lev, n);
     }
     else {
-	return vm_backtrace_location_ary(th, lev+lev_plus, n);
+	return backtrace_to_location_ary(btval, lev, n);
     }
 }
 

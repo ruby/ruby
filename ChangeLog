@@ -1,3 +1,10 @@
+Thu Nov 29 09:10:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c (vm_backtrace_to_ary): support range argument
+	  like Array#[].
+	  [ruby-core:50092] [ruby-trunk - Feature #7434]
+	  Test and document is not available. Please help us.
+
 Thu Nov 29 06:46:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): small cleanups.
