@@ -1010,10 +1010,12 @@ Also, a list:
   # only available in RubyGems tests
 
   begin
-    PRIVATE_KEY = load_key 'private'
-    PUBLIC_KEY  = PRIVATE_KEY.public_key
+    PRIVATE_KEY      = load_key 'private'
+    PRIVATE_KEY_PATH = key_path 'private'
+    PUBLIC_KEY       = PRIVATE_KEY.public_key
 
-    PUBLIC_CERT = load_cert 'public'
+    PUBLIC_CERT      = load_cert 'public'
+    PUBLIC_CERT_PATH = cert_path 'public'
   rescue Errno::ENOENT
     PRIVATE_KEY = nil
     PUBLIC_KEY  = nil

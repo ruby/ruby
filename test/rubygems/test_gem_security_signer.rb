@@ -13,12 +13,7 @@ class TestGemSecuritySigner < Gem::TestCase
   def setup
     super
 
-    @cert_file =
-      if 32 == (Time.at(2**32) rescue 32) then
-        File.expand_path 'test/rubygems/public_cert_32.pem', @current_dir
-      else
-        File.expand_path 'test/rubygems/public_cert.pem', @current_dir
-      end
+    @cert_file = PUBLIC_CERT
   end
 
   def test_initialize
@@ -68,7 +63,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_key_path
-    key_file = File.expand_path 'test/rubygems/private_key.pem', @current_dir
+    key_file = PRIVATE_KEY_PATH
 
     signer = Gem::Security::Signer.new key_file, nil
 

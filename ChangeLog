@@ -1,3 +1,10 @@
+Thu Nov 29 17:03:38 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/test_case.rb:  Determine path to certificates to avoid
+	  build-dir problems.
+	* test/rubygems/test_gem_security_signer.rb:  Use predetermined paths
+	  to avoid build-dir problems.
+
 Thu Nov 29 16:18:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/test_case.rb:  Disable loading of keys and certificates
