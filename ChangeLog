@@ -1,3 +1,10 @@
+Thu Nov 29 17:19:26 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/tracer.rb:  Updated to match removal of custom_require from
+	  RubyGems.
+	* test/test_tracer.rb:  ditto.  Improved failure message if the test
+	  fails
+
 Thu Nov 29 17:15:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* gc.c: Documentation for GC, GC::Profiler, ObjectSpace, and
