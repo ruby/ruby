@@ -569,10 +569,12 @@ static VALUE
 ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
 {
     int len = RSTRING_LENINT(cur);
+    char len_byte;
     if (len < 1 || len > 255)
 	ossl_raise(eSSLError, "Advertised protocol must have length 1..255");
     /* Encode the length byte */
-    rb_str_buf_cat(encoded, (const char *) &len, 1);
+    len_byte = len;
+    rb_str_buf_cat(encoded, &len_byte, 1);
     rb_str_buf_cat(encoded, RSTRING_PTR(cur), len);
     return Qnil;
 }
