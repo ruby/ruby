@@ -1,3 +1,7 @@
+Fri Nov 30 08:09:56 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c : remove a unused function.
+
 Fri Nov 30 07:46:42 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (rb_objspace_call_finalizer): finalize_deferred may free up

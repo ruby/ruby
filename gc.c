@@ -1452,22 +1452,6 @@ rb_gc_finalize_deferred(void)
     ATOMIC_SET(finalizing, 0);
 }
 
-static int
-chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
-{
-    RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if ((p->as.basic.flags & FL_FINALIZE) == FL_FINALIZE &&
-        !MARKED_IN_BITMAP(GET_HEAP_BITMAP(p), p)) {
-	if (BUILTIN_TYPE(p) != T_ZOMBIE) {
-	    p->as.free.flags = T_ZOMBIE;
-	    RDATA(p)->dfree = 0;
-	}
-	p->as.free.next = *final_list;
-	*final_list = p;
-    }
-    return ST_CONTINUE;
-}
-
 struct force_finalize_list {
     VALUE obj;
     VALUE table;
