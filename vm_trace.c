@@ -711,7 +711,7 @@ rb_tracepoint_attr_id(VALUE tpval)
 }
 
 VALUE
-rb_tracepoint_attr_klass(VALUE tpval)
+rb_tracepoint_attr_defined_class(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
@@ -960,7 +960,7 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "lineno", rb_tracepoint_attr_lineno, 0);
     rb_define_method(rb_cTracePoint, "path", rb_tracepoint_attr_path, 0);
     rb_define_method(rb_cTracePoint, "id", rb_tracepoint_attr_id, 0);
-    rb_define_method(rb_cTracePoint, "klass", rb_tracepoint_attr_klass, 0);
+    rb_define_method(rb_cTracePoint, "defined_class", rb_tracepoint_attr_defined_class, 0);
     rb_define_method(rb_cTracePoint, "binding", rb_tracepoint_attr_binding, 0);
     rb_define_method(rb_cTracePoint, "self", rb_tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", rb_tracepoint_attr_return_value, 0);

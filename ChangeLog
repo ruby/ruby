@@ -1,3 +1,13 @@
+Thu Nov 29 14:49:10 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_tracepoint_attr_defined_class): 
+	  rename TracePoint#klass to TracePoint#defined_class.
+	  [ruby-core:50187] Re: [ruby-trunk - Feature #6895]
+
+	* include/ruby/debug.h: ditto.
+
+	* test/ruby/test_settracefunc.rb: ditto.
+
 Thu Nov 29 14:27:57 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): prepre Symbol objects at first time
