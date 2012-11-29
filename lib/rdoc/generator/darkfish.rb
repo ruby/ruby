@@ -484,8 +484,9 @@ class RDoc::Generator::Darkfish
 
     debug_msg 'Rendering the servlet root page...'
 
-    rel_prefix = asset_rel_prefix = '.'
-    search_index_rel_prefix = rel_prefix
+    rel_prefix = '.'
+    asset_rel_prefix = rel_prefix
+    search_index_rel_prefix = asset_rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
     @title = 'Local RDoc Documentation'

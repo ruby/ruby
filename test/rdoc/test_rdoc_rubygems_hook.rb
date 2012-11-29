@@ -100,6 +100,20 @@ class TestRDocRubygemsHook < Gem::TestCase
     assert rdoc.options.hyperlink_all
   end
 
+  def test_generate_default_gem
+    skip 'RubyGems 2 required' unless @a.respond_to? :default_gem?
+    @a.loaded_from =
+      File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
+
+    FileUtils.mkdir_p @a.doc_dir
+    FileUtils.mkdir_p File.join(@a.gem_dir, 'lib')
+
+    @hook.generate
+
+    refute @hook.rdoc_installed?
+    refute @hook.ri_installed?
+  end
+
   def test_generate_disabled
     @hook.generate_rdoc = false
     @hook.generate_ri   = false

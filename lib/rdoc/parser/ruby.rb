@@ -1250,7 +1250,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when end_token then
         if end_token == TkRPAREN
           nest -= 1
-          break if @scanner.lex_state == EXPR_END and nest <= 0
+          break if nest <= 0
         else
           break unless @scanner.continue
         end

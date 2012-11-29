@@ -33,6 +33,8 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
 
     @top_level = nil
 
+    @have_encoding = Object.const_defined? :Encoding
+
     @RM = RDoc::Markup
 
     RDoc::Markup::PreProcess.reset

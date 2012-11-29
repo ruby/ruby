@@ -1684,6 +1684,16 @@ end
     assert_equal "def \317\211", omega.text
   end
 
+  def test_parse_method_or_yield_parameters_hash
+    util_parser "({})\n"
+
+    m = RDoc::AnyMethod.new nil, 'm'
+
+    result = @parser.parse_method_or_yield_parameters m
+
+    assert_equal '({})', result
+  end
+
   def test_parse_statements_class_if
     util_parser <<-CODE
 module Foo

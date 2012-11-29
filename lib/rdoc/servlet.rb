@@ -132,7 +132,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 
 <title>Error - #{ERB::Util.html_escape e.class}</title>
 
-<link type="text/css" media="screen" href="#{@mouth_path}/rdoc.css" rel="stylesheet">
+<link type="text/css" media="screen" href="#{@mount_path}/rdoc.css" rel="stylesheet">
 </head>
 <body>
 <h1>Error</h1>

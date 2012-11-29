@@ -1,3 +1,22 @@
+Fri Nov 30 08:34:03 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/generator/darkfish.rb:  Silenced warning
+	* test/rdoc/test_rdoc_rdoc.rb:  ditto
+
+	* lib/rdoc/markup/parser.rb:  Use byteslice when available for
+	  performance
+	* test/rdoc/test_rdoc_markup_parser.rb:  Test for above
+	* lib/rdoc/test_case.rb:  ditto
+
+	* lib/rdoc/parser/ruby.rb:  Fixed bug parsing yield({})
+	* test/rdoc/test_rdoc_parser_ruby.rb (end):
+
+	* lib/rdoc/rubygems_hook.rb:  Skip default gems.  Display generator
+	  name properly.
+	* test/rdoc/test_rdoc_rubygems_hook.rb:  Test for above
+
+	* lib/rdoc/servlet.rb:  Fixed typo.
+
 Fri Nov 30 08:09:56 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c : remove a unused function.

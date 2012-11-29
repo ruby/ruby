@@ -142,8 +142,6 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file
-    pwd = Dir.pwd
-
     @rdoc.store = RDoc::Store.new
 
     temp_dir do |dir|
@@ -152,8 +150,6 @@ class TestRDocRDoc < RDoc::TestCase
       open 'test.txt', 'w' do |io|
         io.puts 'hi'
       end
-
-      test_txt = File.join dir, 'test.txt'
 
       top_level = @rdoc.parse_file 'test.txt'
 
