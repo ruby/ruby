@@ -1337,7 +1337,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
 static VALUE
 rb_mod_to_s(VALUE klass)
 {
-    ID id_refined_class, id_defined_at;
+    ID id_defined_at;
     VALUE refined_class, defined_at;
 
     if (FL_TEST(klass, FL_SINGLETON)) {
@@ -1357,8 +1357,7 @@ rb_mod_to_s(VALUE klass)
 
 	return s;
     }
-    CONST_ID(id_refined_class, "__refined_class__");
-    refined_class = rb_attr_get(klass, id_refined_class);
+    refined_class = rb_refinement_module_get_refined_class(klass);
     if (!NIL_P(refined_class)) {
 	VALUE s = rb_usascii_str_new2("#<refinement:");
 
