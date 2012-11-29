@@ -5,9 +5,9 @@ require 'open3'
 class TestRakeFunctional < Rake::TestCase
 
   def setup
-    @rake_path = File.expand_path("../../../bin/rake", __FILE__)
-    lib_path = File.expand_path("../../../lib", __FILE__)
-    @ruby_options = ["-I#{lib_path}", "-I."]
+    super
+
+    @ruby_options = ["-I#{@rake_lib}", "-I."]
     @verbose = ENV['VERBOSE']
 
     if @verbose
@@ -17,8 +17,6 @@ class TestRakeFunctional < Rake::TestCase
       puts @__name__
       puts '-' * 80
     end
-
-    super
   end
 
   def test_rake_default
@@ -466,7 +464,7 @@ class TestRakeFunctional < Rake::TestCase
   # command line ruby options are included.  Output is captured in
   # @out and @err
   def rake(*rake_options)
-    run_ruby @ruby_options + [@rake_path] + rake_options
+    run_ruby @ruby_options + [@rake_exec] + rake_options
   end
 
   # Low level ruby command runner ...

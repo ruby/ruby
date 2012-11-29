@@ -142,12 +142,21 @@ class TestRakeTaskWithArguments < Rake::TestCase
     assert_equal "1.2", value
   end
 
-  def test_args_not_passed_if_no_prereq_names
+  def test_args_not_passed_if_no_prereq_names_on_task
     pre = task(:pre) { |t, args|
       assert_equal({}, args.to_hash)
       assert_equal "bill", args.name
     }
     t = task(:t, [:name, :rev] => [:pre])
+    t.invoke("bill", "1.2")
+  end
+
+  def test_args_not_passed_if_no_prereq_names_on_multitask
+    pre = task(:pre) { |t, args|
+      assert_equal({}, args.to_hash)
+      assert_equal "bill", args.name
+    }
+    t = multitask(:t, [:name, :rev] => [:pre])
     t.invoke("bill", "1.2")
   end
 
@@ -170,4 +179,3 @@ class TestRakeTaskWithArguments < Rake::TestCase
     # HACK no assertions
   end
 end
-

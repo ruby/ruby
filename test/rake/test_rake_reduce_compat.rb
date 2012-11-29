@@ -4,9 +4,9 @@ require 'open3'
 class TestRakeReduceCompat < Rake::TestCase
   # TODO: factor out similar code in test_rake_functional.rb
   def rake(*args)
-    lib =  File.expand_path('../../../lib', __FILE__)
-    bin_rake =  File.expand_path('../../../bin/rake', __FILE__)
-    Open3.popen3(RUBY, "-I", lib, bin_rake, *args) { |_, out, _, _| out.read }
+    Open3.popen3(RUBY, "-I", @rake_lib, @rake_exec, *args) { |_, out, _, _|
+      out.read
+    }
   end
 
   def invoke_normal(task_name)

@@ -1,3 +1,9 @@
+Fri Nov 30 04:16:29 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake/*:  Updated to rake 0.9.5
+	* test/rake/*:  ditto.
+	* NEWS:  ditto.
+
 Fri Nov 30 02:53:47 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* vm.c: add a return hook when a method raises an exception.

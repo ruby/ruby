@@ -309,6 +309,37 @@ class TestRakeApplication < Rake::TestCase
     assert @app.options.trace
   end
 
+  def test_handle_options_trace_default_is_stderr
+    ARGV.clear
+    ARGV << "--trace"
+
+    @app.handle_options
+
+    assert_equal STDERR, @app.options.trace_output
+    assert @app.options.trace
+  end
+
+  def test_handle_options_trace_overrides_to_stdout
+    ARGV.clear
+    ARGV << "--trace=stdout"
+
+    @app.handle_options
+
+    assert_equal STDOUT, @app.options.trace_output
+    assert @app.options.trace
+  end
+
+  def test_handle_options_trace_does_not_eat_following_task_names
+    assert !@app.options.trace
+
+    ARGV.clear
+    ARGV << "--trace" << "sometask"
+
+    @app.handle_options
+    assert ARGV.include?("sometask")
+    assert @app.options.trace
+  end
+
   def test_good_run
     ran = false
 

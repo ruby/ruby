@@ -5,6 +5,7 @@ require 'rake/task_manager'
 require 'rake/file_list'
 require 'rake/thread_pool'
 require 'rake/thread_history_display'
+require 'rake/trace_output'
 require 'rake/win32'
 
 module Rake
@@ -17,6 +18,7 @@ module Rake
   #
   class Application
     include TaskManager
+    include TraceOutput
 
     # The name of the application (typically 'rake')
     attr_reader :name
@@ -176,7 +178,7 @@ module Rake
       if options.backtrace
         trace ex.backtrace.join("\n")
       else
-        trace Backtrace.collapse(ex.backtrace)
+        trace Backtrace.collapse(ex.backtrace).join("\n")
       end
       trace "Tasks: #{ex.chain}" if has_chain?(ex)
       trace "(See full trace by running task with --trace)" unless options.backtrace
@@ -314,9 +316,9 @@ module Rake
       end
     end
 
-    def trace(*str)
+    def trace(*strings)
       options.trace_output ||= $stderr
-      options.trace_output.puts(*str)
+      trace_on(options.trace_output, *strings)
     end
 
     def sort_options(options)
@@ -336,7 +338,7 @@ module Rake
               options.show_all_tasks = value
             }
           ],
-          ['--backtrace [OUT]', "Enable full backtrace.  OUT can be stderr (default) or stdout.",
+          ['--backtrace=[OUT]', "Enable full backtrace.  OUT can be stderr (default) or stdout.",
             lambda { |value|
               options.backtrace = true
               select_trace_output(options, 'backtrace', value)
@@ -467,7 +469,7 @@ module Rake
               select_tasks_to_show(options, :tasks, value)
             }
           ],
-          ['--trace', '-t [OUT]', "Turn on invoke/execute tracing, enable full backtrace. OUT can be stderr (default) or stdout.",
+          ['--trace=[OUT]', '-t', "Turn on invoke/execute tracing, enable full backtrace. OUT can be stderr (default) or stdout.",
             lambda { |value|
               options.trace = true
               options.backtrace = true

@@ -31,6 +31,19 @@ class Rake::TestCase < MiniTest::Unit::TestCase
   def setup
     ARGV.clear
 
+    test_dir = File.basename File.dirname File.expand_path __FILE__
+
+    @rake_root = if test_dir == 'test' then
+                   # rake repository
+                   File.expand_path '../../', __FILE__
+                 else
+                   # ruby repository
+                   File.expand_path '../../../', __FILE__
+                 end
+
+    @rake_exec = File.join @rake_root, 'bin', 'rake'
+    @rake_lib  = File.join @rake_root, 'lib'
+
     @orig_PWD = Dir.pwd
     @orig_APPDATA      = ENV['APPDATA']
     @orig_HOME         = ENV['HOME']

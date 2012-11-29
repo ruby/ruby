@@ -105,7 +105,7 @@ module Rake
 
     # Argument description (nil if none).
     def arg_description # :nodoc:
-      @arg_names ? "[#{(arg_names || []).join(',')}]" : nil
+      @arg_names ? "[#{arg_names.join(',')}]" : nil
     end
 
     # Name of arguments for this task.
@@ -182,18 +182,19 @@ module Rake
       if application.options.always_multitask
         invoke_prerequisites_concurrently(task_args, invocation_chain)
       else
-        prerequisite_tasks.each { |prereq|
-          prereq_args = task_args.new_scope(prereq.arg_names)
-          prereq.invoke_with_call_chain(prereq_args, invocation_chain)
+        prerequisite_tasks.each { |p|
+          prereq_args = task_args.new_scope(p.arg_names)
+          p.invoke_with_call_chain(prereq_args, invocation_chain)
         }
       end
     end
 
     # Invoke all the prerequisites of a task in parallel.
-    def invoke_prerequisites_concurrently(args, invocation_chain) # :nodoc:
-      futures = @prerequisites.collect do |p|
+    def invoke_prerequisites_concurrently(task_args, invocation_chain) # :nodoc:
+      futures = prerequisite_tasks.collect do |p|
+        prereq_args = task_args.new_scope(p.arg_names)
         application.thread_pool.future(p) do |r|
-          application[r, @scope].invoke_with_call_chain(args, invocation_chain)
+          r.invoke_with_call_chain(prereq_args, invocation_chain)
         end
       end
       futures.each { |f| f.value }
