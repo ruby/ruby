@@ -684,6 +684,15 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
                  "expected #{@assertion_count} assertions to be fired during the test, not #{@tc._assertions}") if @tc._assertions
   end
 
+  def non_verbose
+    orig_verbose = $VERBOSE
+    $VERBOSE = false
+
+    yield
+  ensure
+    $VERBOSE = orig_verbose
+  end
+
   def test_assert
     @assertion_count = 2
 
@@ -1314,36 +1323,30 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   def test_capture_io
     @assertion_count = 0
 
-    orig_verbose = $VERBOSE
-    $VERBOSE = false
+    non_verbose do
+      out, err = capture_io do
+        puts 'hi'
+        warn 'bye!'
+      end
 
-    out, err = capture_io do
-      puts 'hi'
-      warn 'bye!'
+      assert_equal "hi\n", out
+      assert_equal "bye!\n", err
     end
-
-    assert_equal "hi\n", out
-    assert_equal "bye!\n", err
-  ensure
-    $VERBOSE = orig_verbose
   end
 
   def test_capture_subprocess_io
     @assertion_count = 0
     skip "Dunno why but the parallel run of this fails"
 
-    orig_verbose = $VERBOSE
-    $VERBOSE = false
+    non_verbose do
+      out, err = capture_subprocess_io do
+        system("echo 'hi'")
+        system("echo 'bye!' 1>&2")
+      end
 
-    out, err = capture_subprocess_io do
-      system("echo 'hi'")
-      system("echo 'bye!' 1>&2")
+      assert_equal "hi\n", out
+      assert_equal "bye!\n", err
     end
-
-    assert_equal "hi\n", out
-    assert_equal "bye!\n", err
-  ensure
-    $VERBOSE = orig_verbose unless orig_verbose.nil?
   end
 
   def test_class_asserts_match_refutes

@@ -1,3 +1,7 @@
+Fri Nov 30 06:56:30 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* test/minitest/*: Imported minitest 4.3.2 (r8027)
+
 Fri Nov 30 04:16:29 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake/*:  Updated to rake 0.9.5
