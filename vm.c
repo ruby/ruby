@@ -1353,6 +1353,9 @@ vm_exec(rb_thread_t *th)
 		RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0)
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
+	      case VM_FRAME_MAGIC_BLOCK:
+		EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+		break;
 	      case VM_FRAME_MAGIC_CLASS:
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
 		break;

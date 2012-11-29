@@ -475,31 +475,36 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	iseq_set_arguments(iseq, ret, node->nd_args);
 
 	switch (iseq->type) {
-	  case ISEQ_TYPE_BLOCK: {
-	    LABEL *start = iseq->compile_data->start_label = NEW_LABEL(0);
-	    LABEL *end = iseq->compile_data->end_label = NEW_LABEL(0);
+	  case ISEQ_TYPE_BLOCK:
+	    {
+		LABEL *start = iseq->compile_data->start_label = NEW_LABEL(0);
+		LABEL *end = iseq->compile_data->end_label = NEW_LABEL(0);
 
-	    ADD_LABEL(ret, start);
-	    COMPILE(ret, "block body", node->nd_body);
-	    ADD_LABEL(ret, end);
+		ADD_LABEL(ret, start);
+		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_B_CALL);
+		COMPILE(ret, "block body", node->nd_body);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
+		ADD_LABEL(ret, end);
 
-	    /* wide range catch handler must put at last */
-	    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
-	    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
-	    break;
-	  }
-	  case ISEQ_TYPE_CLASS: {
-	    ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CLASS);
-	    COMPILE(ret, "scoped node", node->nd_body);
-	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
-	    break;
-	  }
-	  case ISEQ_TYPE_METHOD: {
-	    ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL);
-	    COMPILE(ret, "scoped node", node->nd_body);
-	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
-	    break;
-	  }
+		/* wide range catch handler must put at last */
+		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
+		ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
+		break;
+	    }
+	  case ISEQ_TYPE_CLASS:
+	    {
+		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CLASS);
+		COMPILE(ret, "scoped node", node->nd_body);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
+		break;
+	    }
+	  case ISEQ_TYPE_METHOD:
+	    {
+		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_CALL);
+		COMPILE(ret, "scoped node", node->nd_body);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
+		break;
+	    }
 	  default: {
 	    COMPILE(ret, "scoped node", node->nd_body);
 	    break;

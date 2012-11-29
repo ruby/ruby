@@ -38,8 +38,10 @@ VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
 
 /* Old style set_trace_func APIs */
 
+/* duplicated def of include/ruby/ruby.h */
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
 int rb_remove_event_hook(rb_event_hook_func_t func);
+
 int rb_remove_event_hook_with_data(rb_event_hook_func_t func, VALUE data);
 void rb_thread_add_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
 int rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func);

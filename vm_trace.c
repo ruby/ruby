@@ -507,6 +507,10 @@ get_event_id(rb_event_flag_t event)
 	C(c_call, C_CALL);
 	C(c_return, C_RETURN);
 	C(raise, RAISE);
+	C(b_call, B_CALL);
+	C(b_return, B_RETURN);
+	C(thread_begin, THREAD_BEGIN);
+	C(thread_end, THREAD_END);
 #undef C
       default:
 	return 0;
@@ -610,6 +614,10 @@ symbol2event_flag(VALUE v)
     C(c_call, C_CALL);
     C(c_return, C_RETURN);
     C(raise, RAISE);
+    C(b_call, B_CALL);
+    C(b_return, B_RETURN);
+    C(thread_begin, THREAD_BEGIN);
+    C(thread_end, THREAD_END);
 #undef C
     rb_raise(rb_eArgError, "unknown event: %s", rb_id2name(SYM2ID(sym)));
 }
@@ -736,7 +744,7 @@ rb_tracearg_self(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN)) {
+    if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
 	/* ok */
     }
     else {
@@ -975,7 +983,7 @@ tracepoint_new_s(int argc, VALUE *argv, VALUE self)
 	}
     }
     else {
-	events = RUBY_EVENT_ALL;
+	events = RUBY_EVENT_TRACEPOINT_ALL;
     }
 
     if (!rb_block_given_p()) {

@@ -1,3 +1,28 @@
+Fri Nov 30 07:21:33 2012  Koichi Sasada  <ko1@atdot.net>
+
+	[EXPERIMENTAL: NEED DISCUSS]
+	* vm_trace.c: add events
+	  * :thread_begin - hook at thread beggining.
+	  * :thead_end - hook at thread ending.
+	  * :b_call - hook at block enter.
+	  * :b_return - hook at block leave.
+	  This change slow down block invocation.
+	  Please try and give us feedback until 2.0 code freeze.
+
+	* include/ruby/ruby.h: ditto.
+
+	* compile.c (rb_iseq_compile_node): ditto.
+
+	* insns.def: ditto.
+
+	* thread.c: ditto.
+
+	* vm.c: ditto.
+
+	* include/ruby/debug.h: add a comment.
+
+	* test/ruby/test_settracefunc.rb: add a tests.
+
 Fri Nov 30 06:56:30 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* test/minitest/*: Imported minitest 4.3.2 (r8027)

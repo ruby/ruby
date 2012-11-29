@@ -1574,6 +1574,13 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_SWITCH   0x20000
 #define RUBY_EVENT_COVERAGE 0x40000
 
+/* for TracePoint extended events */
+#define RUBY_EVENT_B_CALL          0x0100
+#define RUBY_EVENT_B_RETURN        0x0200
+#define RUBY_EVENT_THREAD_BEGIN    0x0400
+#define RUBY_EVENT_THREAD_END      0x0800
+#define RUBY_EVENT_TRACEPOINT_ALL  0xFFFF
+
 typedef unsigned int rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);
 

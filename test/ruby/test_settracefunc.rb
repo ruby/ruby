@@ -532,9 +532,14 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_tracepoint
-    events1, answer_events = *trace_by_tracepoint()
+    events1, answer_events = *trace_by_tracepoint(:line, :class, :end, :call, :return, :c_call, :c_return, :raise)
 
     mesg = events1.map{|e|
+      if false
+        p [:event, e[0]]
+        p [:line_file, e[1], e[2]]
+        p [:id, e[4]]
+      end
       "#{e[0]} - #{e[2]}:#{e[1]} id: #{e[4]}"
     }.join("\n")
     answer_events.zip(events1){|answer, event|
@@ -681,5 +686,55 @@ class TestSetTraceFunc < Test::Unit::TestCase
         raise
       end
     }
+  end
+
+  def method_for_test_tracepoint_block
+    yield
+  end
+
+  def test_tracepoint_block
+    events = []
+    TracePoint.new(:call, :return, :c_call, :b_call, :c_return, :b_return){|tp|
+      events << [
+        tp.event, tp.method_id, tp.defined_class, tp.self.class,
+        /return/ =~ tp.event ? tp.return_value : nil
+      ]
+    }.enable{
+      1.times{
+        3
+      }
+      method_for_test_tracepoint_block{
+        4
+      }
+    }
+    # pp events
+    expected_events =
+    [[:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
+     [:c_call, :times, Integer, Fixnum, nil],
+     [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
+     [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 3],
+     [:c_return, :times, Integer, Fixnum, 1],
+     [:call, :method_for_test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
+     [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
+     [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4],
+     [:return, :method_for_test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4],
+     [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4]
+    ].zip(events){|expected, actual|
+      assert_equal(expected, actual)
+    }
+  end
+
+  def test_tracepoint_thread
+    events = []
+    created_thread = nil
+    TracePoint.new(:thread_begin, :thread_end){|tp|
+      events << [Thread.current, tp.event, tp.self]
+    }.enable{
+      created_thread = Thread.new{}
+      created_thread.join
+    }
+    assert_equal([created_thread, :thread_begin, self], events[0])
+    assert_equal([created_thread, :thread_end, self], events[1])
+    assert_equal(2, events.size)
   end
 end
