@@ -1,3 +1,8 @@
+Fri Nov 30 18:24:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_trace.c: Documentation for TracePoint API
+	  [ruby-core:47243] [Feature #6895]
+
 Fri Nov 30 17:43:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): try to compare with to_str result if

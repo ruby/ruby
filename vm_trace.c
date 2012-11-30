@@ -785,6 +785,11 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
     return trace_arg->data;
 }
 
+/*
+ * Type of event
+ *
+ * See TracePoint.new for events
+ */
 static VALUE
 tracepoint_attr_event(VALUE tpval)
 {
@@ -793,6 +798,9 @@ tracepoint_attr_event(VALUE tpval)
     return rb_tracearg_event(tp->trace_arg);
 }
 
+/*
+ * Line number of the event
+ */
 static VALUE
 tracepoint_attr_lineno(VALUE tpval)
 {
@@ -801,6 +809,9 @@ tracepoint_attr_lineno(VALUE tpval)
     return rb_tracearg_lineno(tp->trace_arg);
 }
 
+/*
+ * Path of the file being run
+ */
 static VALUE
 tracepoint_attr_path(VALUE tpval)
 {
@@ -809,6 +820,9 @@ tracepoint_attr_path(VALUE tpval)
     return rb_tracearg_path(tp->trace_arg);
 }
 
+/*
+ * Return the name of the method being called
+ */
 static VALUE
 tracepoint_attr_method_id(VALUE tpval)
 {
@@ -817,6 +831,9 @@ tracepoint_attr_method_id(VALUE tpval)
     return rb_tracearg_method_id(tp->trace_arg);
 }
 
+/*
+ * Return class or id from +:class+ event
+ */
 static VALUE
 tracepoint_attr_defined_class(VALUE tpval)
 {
@@ -825,6 +842,9 @@ tracepoint_attr_defined_class(VALUE tpval)
     return rb_tracearg_defined_class(tp->trace_arg);
 }
 
+/*
+ * Return the generated binding object from event
+ */
 static VALUE
 tracepoint_attr_binding(VALUE tpval)
 {
@@ -833,6 +853,12 @@ tracepoint_attr_binding(VALUE tpval)
     return rb_tracearg_binding(tp->trace_arg);
 }
 
+/*
+ * Return the trace object during event
+ *
+ * Same as TracePoint#binding:
+ *	trace.binding.eval('self')
+ */
 static VALUE
 tracepoint_attr_self(VALUE tpval)
 {
@@ -841,6 +867,9 @@ tracepoint_attr_self(VALUE tpval)
     return rb_tracearg_self(tp->trace_arg);
 }
 
+/*
+ *  Return value from +:return+ and +c_return+ event
+ */
 static VALUE
 tracepoint_attr_return_value(VALUE tpval)
 {
@@ -849,6 +878,9 @@ tracepoint_attr_return_value(VALUE tpval)
     return rb_tracearg_return_value(tp->trace_arg);
 }
 
+/*
+ * Value from exception raised on the +:raise+ event
+ */
 static VALUE
 tracepoint_attr_raised_exception(VALUE tpval)
 {
@@ -916,6 +948,21 @@ rb_tracepoint_disable(VALUE tpval)
     return Qundef;
 }
 
+/*
+ * call-seq:
+ *	trace.enable			-> trace
+ *	trace.enable { |obj| block }	-> obj
+ *
+ * Activates the trace
+ *
+ * Will raise a RuntimeError if the trace is already activated
+ *
+ *	trace.enabled?  #=> false
+ *	trace.enable    #=> #<TracePoint:0x007fa3fad4aaa8>
+ *	trace.enabled?  #=> true
+ *	trace.enable    #=> RuntimeError
+ *
+ */
 static VALUE
 tracepoint_enable_m(VALUE tpval)
 {
@@ -934,6 +981,21 @@ tracepoint_enable_m(VALUE tpval)
     }
 }
 
+/*
+ * call-seq:
+ *	trace.disable			-> trace
+ *	trace.disable { |obj| block }	-> obj
+ *
+ * Deactivates the trace
+ *
+ * Will raise a RuntimeError if the trace is already deactivated
+ *
+ *	trace.enabled?	#=> true
+ *	trace.disable	#=> #<TracePoint:0x007fa3fad4aaa8>
+ *	trace.enabled?	#=> false
+ *	trace.disable	#=> RuntimeError
+ *
+ */
 static VALUE
 tracepoint_disable_m(VALUE tpval)
 {
@@ -952,6 +1014,12 @@ tracepoint_disable_m(VALUE tpval)
     }
 }
 
+/*
+ * call-seq:
+ *	trace.enabled?	    -> true or false
+ *
+ * The current status of the trace
+ */
 VALUE
 rb_tracepoint_enabled_p(VALUE tpval)
 {
@@ -985,6 +1053,56 @@ rb_tracepoint_new(VALUE target_thread, rb_event_flag_t events, void (*func)(VALU
     return tracepoint_new(rb_cTracePoint, target_th, events, func, data, Qundef);
 }
 
+/*
+ * call-seq:
+ *	TracePoint.new(*events) { |obj| block }	    -> obj
+ *
+ * Returns a new TracePoint object, not enabled by default.
+ *
+ * Next, in order to activate the trace, you must use TracePoint.enable
+ *
+ *	trace = TracePoint.new(:call) do |tp|
+ *	    p [tp.lineno, tp.defined_class, tp.method_id, tp.event]
+ *	end
+ *	#=> #<TracePoint:0x007f17372cdb20>
+ *
+ *	trace.enable
+ *	#=> #<TracePoint:0x007f17372cdb20>
+ *
+ *	puts "Hello, TracePoint!"
+ *	# ...
+ *	# [48, IRB::Notifier::AbstractNotifier, :printf, :call]
+ *	# ...
+ *
+ * When you want to deactivate the trace, you must use TracePoint.disable
+ *
+ *	trace.disable
+ *
+ * To filter what is traced, you can pass any of the following as +events+:
+ *
+ * +:line+:: execute code on a new line
+ * +:class+:: start a class or module definition
+ * +:end+:: finish a class or module definition
+ * +:call+:: call a Ruby method
+ * +:return+:: return from a Ruby method
+ * +:c_call+:: call a C-language routine
+ * +:c_return+:: return from a C-language routine
+ * +:raise+:: raise an exception
+ * +:b_call+:: event hook at block entry
+ * +:b_return+:: event hook at block ending
+ * +:thread_begin+:: event hook at thread beginning
+ * +:thread_end+:: event hook at thread ending
+ *
+ * A block must be given, otherwise a ThreadError is raised.
+ *
+ * If the trace method isn't included in the given events filter, a
+ * RuntimeError is raised.
+ *
+ *	TracePoint.trace(:line) do |tp|
+ *	    p tp.raised_exception
+ *	end
+ *	#=> RuntimeError: 'raised_exception' not supported by this event
+ */
 static VALUE
 tracepoint_new_s(int argc, VALUE *argv, VALUE self)
 {
@@ -1024,11 +1142,48 @@ Init_vm_trace(void)
     rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
     rb_define_method(rb_cThread, "add_trace_func", thread_add_trace_func_m, 1);
 
-    /* TracePoint */
+    /*
+     * Document-class: TracePoint
+     *
+     * A class that provides the functionality of Kernel#set_trace_func in a
+     * nice Object-Oriented API.
+     *
+     * = Example
+     *
+     * We can use TracePoint to gather information specifically for exceptions:
+     *
+     *	    trace = TracePoint.new(:raise) do |tp|
+     *		p [tp.lineno, tp.event, tp.raised_exception]
+     *	    end
+     *	    #=> #<TracePoint:0x007f786a452448>
+     *
+     *	    trace.enable
+     *	    #=> #<TracePoint:0x007f786a452448>
+     *
+     *	    0 / 0
+     *	    #=> [5, :raise, #<ZeroDivisionError: divided by 0>]
+     *
+     * See TracePoint.new for possible events.
+     *
+     */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
     rb_undef_method(CLASS_OF(rb_cTracePoint), "new");
     rb_define_singleton_method(rb_cTracePoint, "new", tracepoint_new_s, -1);
+    /*
+     * Document-method: trace
+     *
+     * call-seq:
+     *	TracePoint.trace(*events) { |obj| block }	-> obj
+     *
+     *  A convenience method for TracePoint.new, that activates the trace
+     *  automatically.
+     *
+     *	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
+     *	    #=> #<TracePoint:0x007f786a452448>
+     *
+     *	    trace.enabled? #=> true
+     */
     rb_define_singleton_method(rb_cTracePoint, "trace", tracepoint_trace_s, -1);
 
     rb_define_method(rb_cTracePoint, "enable", tracepoint_enable_m, 0);
