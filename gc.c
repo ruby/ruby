@@ -2410,7 +2410,6 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     const rb_method_definition_t *def = me->def;
 
     gc_mark(objspace, me->klass);
-  again:
     if (!def) return;
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -2423,9 +2422,6 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
       case VM_METHOD_TYPE_IVAR:
 	gc_mark(objspace, def->body.attr.location);
 	break;
-      case VM_METHOD_TYPE_REFINED:
-	def = def->body.orig_def;
-	goto again;
       default:
 	break; /* ignore */
     }

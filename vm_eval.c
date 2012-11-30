@@ -179,17 +179,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_BMETHOD:
 	return vm_call_bmethod_body(th, ci, argv);
       case VM_METHOD_TYPE_ZSUPER:
-      case VM_METHOD_TYPE_REFINED:
 	{
-	    if (ci->me->def->type == VM_METHOD_TYPE_REFINED &&
-		ci->me->def->body.orig_def) {
-		rb_method_entry_t orig_me;
-		orig_me = *ci->me;
-		orig_me.def = ci->me->def->body.orig_def;
-		ci->me = &orig_me;
-		goto again;
-	    }
-
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
@@ -284,7 +274,8 @@ stack_check(void)
 }
 
 static inline rb_method_entry_t *
-    rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr);
+    rb_search_method_entry(VALUE refinements, VALUE recv, ID mid,
+			   VALUE *defined_class_ptr);
 static inline int rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
 #define NOEX_OK NOEX_NOSUPER
 
@@ -304,11 +295,11 @@ static inline int rb_method_call_status(rb_thread_t *th, const rb_method_entry_t
  */
 static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
-	 call_type scope, VALUE self)
+	 call_type scope, VALUE self, VALUE refinements)
 {
     VALUE defined_class;
     rb_method_entry_t *me =
-	rb_search_method_entry(recv, mid, &defined_class);
+	rb_search_method_entry(refinements, recv, mid, &defined_class);
     rb_thread_t *th = GET_THREAD();
     int call_status = rb_method_call_status(th, me, scope, self);
 
@@ -372,7 +363,7 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 	}
     }
 
-    me = rb_search_method_entry(recv, mid, &defined_class);
+    me = rb_search_method_entry(Qnil, recv, mid, &defined_class);
     call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
     if (call_status != NOEX_OK) {
 	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
@@ -437,7 +428,8 @@ rb_type_str(enum ruby_value_type type)
 }
 
 static inline rb_method_entry_t *
-rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
+rb_search_method_entry(VALUE refinements, VALUE recv, ID mid,
+		       VALUE *defined_class_ptr)
 {
     VALUE klass = CLASS_OF(recv);
 
@@ -476,7 +468,8 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
                          rb_id2name(mid), type, (void *)recv, flags, klass);
         }
     }
-    return rb_method_entry(klass, mid, defined_class_ptr);
+    return rb_method_entry_get_with_refinements(refinements, klass, mid,
+						defined_class_ptr);
 }
 
 static inline int
@@ -540,7 +533,7 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
-    return rb_call0(recv, mid, argc, argv, scope, Qundef);
+    return rb_call0(recv, mid, argc, argv, scope, Qundef, Qnil);
 }
 
 NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
@@ -793,24 +786,10 @@ rb_funcall_passing_block_with_refinements(VALUE recv, ID mid, int argc,
 					  const VALUE *argv,
 					  VALUE refinements)
 {
-    VALUE defined_class;
-    rb_method_entry_t meb, *me =
-	rb_search_method_entry(recv, mid, &defined_class);
-    rb_thread_t *th;
-    int call_status;
-
-    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
-	me = rb_resolve_refined_method(refinements, me, &meb,
-				       &defined_class);
-    }
     PASS_PASSED_BLOCK_TH(GET_THREAD());
-    th = GET_THREAD();
-    call_status = rb_method_call_status(th, me, CALL_PUBLIC, Qundef);
-    if (call_status != NOEX_OK) {
-	return method_missing(recv, mid, argc, argv, call_status);
-    }
-    stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
+
+    return rb_call0(recv, mid, argc, argv, CALL_PUBLIC, Qundef,
+		    refinements);
 }
 
 static VALUE
@@ -837,7 +816,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	id = rb_to_id(vid);
     }
     PASS_PASSED_BLOCK_TH(th);
-    return rb_call0(recv, id, argc, argv, scope, self);
+    return rb_call0(recv, id, argc, argv, scope, self, Qnil);
 }
 
 /*

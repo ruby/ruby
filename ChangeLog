@@ -1,3 +1,7 @@
+Fri Nov 30 11:07:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* revert r37993 to avoid SEGV in tests.
+
 Fri Nov 30 10:38:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/driver.rb:  Relaxed matching for pages to be more
