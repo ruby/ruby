@@ -1,3 +1,13 @@
+Fri Nov 30 19:37:44 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* defs/default_gems: Add base directory column.
+
+	* tool/rbinstall.rb:
+	  - Install .gemspecs of default gem to
+	    #{GEM_HOME}/specifications/default/.
+	  - Update files parameter of .gemspecs by relative path from
+	    library directory.
+
 Fri Nov 30 19:30:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_trace.c:
