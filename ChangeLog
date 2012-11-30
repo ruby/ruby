@@ -1,3 +1,9 @@
+Fri Nov 30 16:19:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): get rid of calling methods in sigsegv
+	  handler.  based on a patch by charliesome (Charlie Somerville)
+	  [ruby-core:49573] [Bug #7402]
+
 Fri Nov 30 16:05:44 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* NEWS:  Added RubyGems 2.0.0
