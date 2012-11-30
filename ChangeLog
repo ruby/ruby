@@ -1,3 +1,10 @@
+Fri Nov 30 12:20:53 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake/backtrace.rb:  Removed duplication in
+	  Rake::Backtrace::SUPPRESSED_PATHS
+	* test/rake/test_rake_backtrace.rb:  Skip tests when tmpdir is in the
+	  suppressed pattern.
+
 Fri Nov 30 11:07:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* revert r37993 to avoid SEGV in tests.

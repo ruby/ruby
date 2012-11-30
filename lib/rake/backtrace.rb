@@ -2,7 +2,7 @@ module Rake
   module Backtrace
     SUPPRESSED_PATHS =
       RbConfig::CONFIG.values_at(*RbConfig::CONFIG.
-                                 keys.grep(/(prefix|libdir)/)) + [
+                                 keys.grep(/(prefix|libdir)/)).uniq + [
         File.join(File.dirname(__FILE__), ".."),
       ].map { |f| Regexp.quote(File.expand_path(f)) }
     SUPPRESSED_PATHS.reject! { |s| s.nil? || s =~ /^ *$/ }
