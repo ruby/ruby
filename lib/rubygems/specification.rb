@@ -2489,10 +2489,12 @@ class Gem::Specification
       alert_warning "#{file} is not world-readable"
     end
 
-    executables.each do |name|
-      exec = File.join @bindir, name
-      next if File.stat(exec).executable?
-      alert_warning "#{exec} is not executable"
+    unless Gem.win_platform?
+      executables.each do |name|
+        exec = File.join @bindir, name
+        next if File.stat(exec).executable?
+        alert_warning "#{exec} is not executable"
+      end
     end
   end
 

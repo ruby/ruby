@@ -1,3 +1,10 @@
+Fri Nov 30 23:11:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rubygems/specification.rb
+	  (Gem::Specification.validate_permissions): don't check executablity
+	  of the source on Windows.  they will be wrapped to .bat files when
+	  installing.  see [ruby-core:50388].
+
 Fri Nov 30 22:44:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (rb_vm_struct): add thread_destruct_lock field.
