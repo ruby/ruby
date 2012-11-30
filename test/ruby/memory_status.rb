@@ -15,11 +15,11 @@ module Memory
     read_status {|k, v| keys << k; vals << v}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
-    require 'dl/import'
+    require 'fiddle/import'
     require 'dl/types'
 
     module Win32
-      extend DL::Importer
+      extend Fiddle::Importer
       dlload "kernel32.dll", "psapi.dll"
       include DL::Win32Types
       typealias "SIZE_T", "size_t"
@@ -39,8 +39,8 @@ module Memory
 
       typealias "PPROCESS_MEMORY_COUNTERS", "PROCESS_MEMORY_COUNTERS*"
 
-      extern "HANDLE GetCurrentProcess()", :stdcall
-      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)", :stdcall
+      extern "HANDLE GetCurrentProcess()"
+      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)"
 
       module_function
       def memory_info
