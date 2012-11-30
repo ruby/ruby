@@ -159,11 +159,11 @@ module DL
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        out, err = capture_subprocess_io do
+        assert_in_out_err([], <<-INPUT, /\A#<DL::Handle:0x[0-9a-f]+>\z/) do
           require 'objspace'
           print DL::Handle::NEXT.inspect
+        INPUT
         end
-        assert_match(/\A#<DL::Handle:0x[0-9a-f]+>\z/, out + err)
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
