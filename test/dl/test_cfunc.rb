@@ -72,7 +72,7 @@ module DL
       Thread.new do
         f = Function.new(@cf, [TYPE_VOIDP, TYPE_VOIDP])
         assert_nil CFunc.last_error
-        str = f.call("000", "123")
+        f.call("000", "123")
         assert_not_nil CFunc.last_error
       end.join
     end

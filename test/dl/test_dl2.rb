@@ -28,7 +28,7 @@ class TestDL < TestBase
     assert_equal ptr_id, ptr.to_i
 
     cfunc  = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
-    x      = cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
+             cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
     assert_equal("abc\0", ptr[0,4])
     DL.free ptr_id
   end
@@ -51,7 +51,7 @@ class TestDL < TestBase
     assert_equal ptr_id, ptr.to_i
 
     cfunc  = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
-    x      = cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
+             cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
     assert_equal("abc\0", ptr[0,4])
     DL.free ptr_id
   end
