@@ -195,7 +195,8 @@ class Gem::SpecFetcher
                 when :released
                   tuples_for source, :released
                 when :complete
-                  tuples_for(source, :prerelease) + tuples_for(source, :released)
+                  tuples_for(source, :prerelease, true) +
+                    tuples_for(source, :released)
                 when :prerelease
                   tuples_for(source, :prerelease)
                 else
@@ -211,9 +212,18 @@ class Gem::SpecFetcher
     [list, errors]
   end
 
-  def tuples_for(source, type)
+  def tuples_for(source, type, gracefully_ignore=false)
     cache = @caches[type]
-    cache[source.uri] ||= source.load_specs(type)
+
+    if gracefully_ignore
+      begin
+        cache[source.uri] ||= source.load_specs(type)
+      rescue Gem::RemoteFetcher::FetchError
+        []
+      end
+    else
+      cache[source.uri] ||= source.load_specs(type)
+    end
   end
 end
 

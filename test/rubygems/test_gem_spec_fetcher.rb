@@ -187,6 +187,20 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal comp.sort, specs[@source].sort
   end
 
+  def test_available_specs_complete_handles_no_prerelease
+    v = Gem.marshal_version
+    @fetcher.data.delete "#{@gem_repo}prerelease_specs.#{v}.gz"
+
+    specs, _ = @sf.available_specs(:complete)
+
+    assert_equal [@source], specs.keys
+
+    comp = @released
+
+    assert_equal comp.sort, specs[@source].sort
+  end
+
+
   def test_available_specs_cache
     specs, _ = @sf.available_specs(:latest)
 
