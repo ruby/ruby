@@ -21,8 +21,8 @@
 #  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
 # endif
 #else
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
 #define RUBY_ZLIB_VERSION  "0.6.0"
@@ -588,7 +588,7 @@ zlib_mem_alloc(voidpf opaque, uInt items, uInt size)
        deflate is performing a conditional jump that depends on an
        uninitialized value.  Isn't that a bug?
        http://www.zlib.net/zlib_faq.html#faq36 */
-    VALGRIND_MAKE_MEM_DEFINED(p, items * size);
+    (void)VALGRIND_MAKE_MEM_DEFINED(p, items * size);
     return p;
 }
 
