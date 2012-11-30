@@ -5,6 +5,7 @@
 #++
 
 require 'optparse'
+require 'rubygems/requirement'
 require 'rubygems/user_interaction'
 
 ##
@@ -186,7 +187,13 @@ class Gem::Command
   # An argument in the form gem:ver is pull apart into the gen name and version,
   # respectively.
   def get_all_gem_names_and_versions
-    get_all_gem_names.map { |name| name.split(":", 2) }
+    get_all_gem_names.map do |name|
+      if /\A(.*):(#{Gem::Requirement::PATTERN_RAW})\z/ =~ name
+        [$1, $2]
+      else
+        [name]
+      end
+    end
   end
 
   ##

@@ -27,7 +27,8 @@ class Gem::Requirement
   }
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
-  PATTERN = /\A\s*(#{quoted})?\s*(#{Gem::Version::VERSION_PATTERN})\s*\z/
+  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*"
+  PATTERN = /\A#{PATTERN_RAW}\z/
 
   DefaultRequirement = [">=", Gem::Version.new(0)]
 

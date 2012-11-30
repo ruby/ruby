@@ -664,7 +664,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal 0, e.exit_code
   end
 
-  def test_execute_satisify_deps_of_local_from_sources
+  def test_execute_satisfy_deps_of_local_from_sources
     r, r_gem = util_gem 'r', '1', 'q' => '= 1'
     q, q_gem = util_gem 'q', '1'
 
