@@ -747,6 +747,40 @@ Foo::Bar#bother
     assert_match %r%README\.md%,                 out
   end
 
+  def test_display_page_ignore_directory
+    util_store
+
+    other = @store1.add_file 'doc/globals.rdoc'
+    other.parser = RDoc::Parser::Simple
+    other.comment =
+      doc(
+        head(1, 'globals.rdoc'),
+        para('Globals go here'))
+
+    @store1.save_page other
+
+    out, = capture_io do
+      @driver.display_page 'home:globals'
+    end
+
+    assert_match %r%= globals\.rdoc%, out
+  end
+
+  def test_display_page_missing
+    util_store
+
+    out, = capture_io do
+      @driver.display_page 'home:missing'
+    end
+
+    out, = capture_io do
+      @driver.display_page_list @store1
+    end
+
+    assert_match %r%= Pages in ~/\.rdoc%, out
+    assert_match %r%README\.rdoc%,        out
+  end
+
   def test_display_page_list
     util_store
 

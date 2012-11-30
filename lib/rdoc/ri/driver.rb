@@ -842,10 +842,12 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
     unless pages.include? page_name then
       found_names = pages.select do |n|
-        n =~ /^#{Regexp.escape page_name}\.[^.]+$/
+        n =~ /#{Regexp.escape page_name}\.[^.]+$/
       end
 
-      if found_names.length > 1 then
+      if found_names.length.zero? then
+        return display_page_list store, pages
+      elsif found_names.length > 1 then
         return display_page_list store, found_names, page_name
       end
 

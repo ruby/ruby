@@ -1,3 +1,9 @@
+Fri Nov 30 10:38:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/driver.rb:  Relaxed matching for pages to be more
+	  user-friendly.
+	* test/rdoc/test_rdoc_ri_driver.rb:   Test for above.
+
 Fri Nov 30 09:50:16 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markdown.rb:  Fixed warnings with -w
