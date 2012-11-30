@@ -159,7 +159,7 @@ module DL
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        assert_in_out_err(['-W0'], <<-INPUT, /\A#<DL::Handle:0x[0-9a-f]+>\z/)
+        assert_in_out_err(['RUBYOPT' => '-W0'], <<-INPUT, /\A#<DL::Handle:0x[0-9a-f]+>\z/)
           require 'dl'
           require 'objspace'
           print DL::Handle::NEXT.inspect
