@@ -84,7 +84,7 @@ class ConditionVariable
   # Wakes up the first thread in line waiting for this lock.
   #
   def signal
-    Thread.async_interrupt_timing(RuntimeError => :on_blocking) do
+    Thread.async_interrupt_timing(StandardError => :on_blocking) do
       begin
         t = @waiters_mutex.synchronize {@waiters.shift}
         t.run if t
@@ -99,7 +99,7 @@ class ConditionVariable
   # Wakes up all threads waiting for this lock.
   #
   def broadcast
-    Thread.async_interrupt_timing(RuntimeError => :on_blocking) do
+    Thread.async_interrupt_timing(StandardError => :on_blocking) do
       waiters0 = nil
       @waiters_mutex.synchronize do
         waiters0 = @waiters.dup
