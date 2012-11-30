@@ -238,6 +238,7 @@ rb_vm_gvl_destroy(rb_vm_t *vm)
 {
     gvl_release(vm);
     gvl_destroy(vm);
+    native_mutex_destroy(&vm->thread_destruct_lock);
 }
 
 void
@@ -552,6 +553,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    th->stack = 0;
 	}
     }
+    native_mutex_lock(&th->vm->thread_destruct_lock);
+    /* make sure vm->running_thread never point me after this point.*/
+    th->vm->running_thread = NULL;
+    native_mutex_unlock(&th->vm->thread_destruct_lock);
     thread_cleanup_func(th, FALSE);
     gvl_release(th->vm);
 
@@ -3632,8 +3637,16 @@ timer_thread_function(void *arg)
 {
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
 
+    /*
+     * Tricky: thread_destruct_lock doesn't close a race against
+     * vm->running_thread switch. however it guarantee th->running_thread
+     * point to valid pointer or NULL.
+     */
+    native_mutex_lock(&vm->thread_destruct_lock);
     /* for time slice */
-    RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    if (vm->running_thread)
+	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    native_mutex_unlock(&vm->thread_destruct_lock);
 
     /* check signal */
     rb_threadptr_check_signal(vm->main_thread);
@@ -4870,6 +4883,7 @@ Init_Thread(void)
 	    /* acquire global vm lock */
 	    gvl_init(th->vm);
 	    gvl_acquire(th->vm, th);
+	    native_mutex_initialize(&th->vm->thread_destruct_lock);
 	    native_mutex_initialize(&th->interrupt_lock);
 
 	    th->async_errinfo_queue = rb_ary_tmp_new(0);

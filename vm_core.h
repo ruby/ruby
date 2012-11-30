@@ -333,6 +333,7 @@ typedef struct rb_vm_struct {
     VALUE self;
 
     rb_global_vm_lock_t gvl;
+    rb_thread_lock_t    thread_destruct_lock;
 
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
@@ -850,7 +851,7 @@ GET_THREAD(void)
 #define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \
     if ((th)->vm->running_thread != (th)) { \
-	(th)->vm->running_thread->running_time_us = 0; \
+	(th)->running_time_us = 0; \
     } \
     rb_thread_set_current_raw(th); \
     (th)->vm->running_thread = (th); \

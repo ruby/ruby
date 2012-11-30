@@ -1,3 +1,18 @@
+Fri Nov 30 22:44:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (rb_vm_struct): add thread_destruct_lock field.
+	* thread.c (Init_Thread): ditto.
+	* thread.c (rb_vm_gvl_destroy): ditto.
+
+	* thread.c (thread_start_func_2): make sure vm->running_thread
+	  don't point to dead thread.
+	* thread.c (timer_thread_function): close a race against thead
+	  destruction. [Bug #4911][ruby-dev:43859]
+
+	* vm_core.h (rb_thread_set_current): reset running time of
+	  current thread instead of previous thread. We no longer
+	  assume previous running thread still live.
+
 Fri Nov 30 21:57:43 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* revert r38053 because it causes too many test failures.
