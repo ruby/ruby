@@ -1086,7 +1086,7 @@ loop:
 
     if (z->stream.avail_in > 0) {
 	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
-        guard = Qnil; /* prevent tail call to make guard effective */
+        RB_GC_GUARD(guard) = Qnil; /* prevent tail call to make guard effective */
     }
 
     if (args.jump_state)
