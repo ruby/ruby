@@ -113,7 +113,7 @@ module Test
               begin
                 require $1
               rescue LoadError
-                _report "after", Marshal.dump([$1, $!])
+                _report "after", Marshal.dump([$1, ProxyError.new($!)])
                 _report "ready"
                 next
               end
