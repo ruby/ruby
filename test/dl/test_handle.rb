@@ -159,7 +159,7 @@ module DL
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        out, err = capture_io do
+        out, err = capture_subprocess_io do
           require 'objspace'
           print DL::Handle::NEXT.inspect
         end
