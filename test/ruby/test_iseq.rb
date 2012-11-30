@@ -25,4 +25,28 @@ class TestISeq < Test::Unit::TestCase
   ensure
     Encoding.default_internal = enc
   end
+
+  def test_line_trace
+    iseq = ISeq.compile \
+  %q{ a = 1
+      b = 2
+      c = 3
+      # d = 4
+      e = 5
+      # f = 6
+      g = 7
+
+    }
+    assert_equal([1, 2, 3, 5, 7], iseq.line_trace_all)
+    iseq.line_trace_specify(1, true) # line 2
+    iseq.line_trace_specify(3, true) # line 5
+
+    result = []
+    TracePoint.new(:specified_line){|tp|
+      result << tp.lineno
+    }.enable{
+      iseq.eval
+    }
+    assert_equal([2, 5], result)
+  end
 end

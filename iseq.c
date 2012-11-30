@@ -1889,6 +1889,107 @@ rb_iseq_build_for_ruby2cext(
     return iseqval;
 }
 
+/* Experimental tracing support: trace(line) -> trace(specified_line)
+ * MRI Specific.
+ */
+
+int
+rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data)
+{
+    int trace_num = 0;
+    size_t pos, insn;
+    rb_iseq_t *iseq;
+    int cont = 1;
+    GetISeqPtr(iseqval, iseq);
+
+    for (pos = 0; cont && pos < iseq->iseq_size; pos += insn_len(insn)) {
+	insn = iseq->iseq[pos];
+
+	if (insn == BIN(trace)) {
+	    rb_event_flag_t current_events = (VALUE)iseq->iseq[pos+1];
+	    rb_event_flag_t events = current_events & RUBY_EVENT_SPECIFIED_LINE;
+	    trace_num++;
+
+	    if (func) {
+		int line = find_line_no(iseq, pos);
+		/* printf("line: %d\n", line); */
+		cont = (*func)(line, &events, data);
+		if (current_events != events) {
+		    iseq->iseq[pos+1] = iseq->iseq_encoded[pos+1] = (VALUE)(current_events | (events & RUBY_EVENT_SPECIFIED_LINE));
+		}
+	    }
+	}
+    }
+    return trace_num;
+}
+
+static int
+collect_trace(int line, rb_event_flag_t *events_ptr, void *ptr)
+{
+    VALUE result = (VALUE)ptr;
+    rb_ary_push(result, INT2NUM(line));
+    return 1;
+}
+
+VALUE
+rb_iseq_line_trace_all(VALUE iseqval)
+{
+    VALUE result = rb_ary_new();
+    rb_iseq_line_trace_each(iseqval, collect_trace, (void *)result);
+    return result;
+}
+
+struct set_specifc_data {
+    int pos;
+    int set;
+    int prev; /* 1: set, 2: unset, 0: not found */
+};
+
+static int
+line_trace_specify(int line, rb_event_flag_t *events_ptr, void *ptr)
+{
+    struct set_specifc_data *data = (struct set_specifc_data *)ptr;
+
+    if (data->pos == 0) {
+	data->prev = *events_ptr & RUBY_EVENT_SPECIFIED_LINE ? 1 : 2;
+	if (data->set) {
+	    *events_ptr = *events_ptr | RUBY_EVENT_SPECIFIED_LINE;
+	}
+	else {
+	    *events_ptr = *events_ptr & ~RUBY_EVENT_SPECIFIED_LINE;
+	}
+	return 0; /* found */
+    }
+    else {
+	data->pos--;
+	return 1;
+    }
+}
+
+VALUE
+rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set)
+{
+    struct set_specifc_data data;
+
+    data.prev = 0;
+    data.pos = NUM2INT(pos);
+    if (data.pos < 0) rb_raise(rb_eTypeError, "`pos' is negative");
+
+    switch (set) {
+      case Qtrue:  data.set = 1; break;
+      case Qfalse: data.set = 0; break;
+      default:
+	rb_raise(rb_eTypeError, "`set' should be true/false");
+    }
+
+    rb_iseq_line_trace_each(iseqval, line_trace_specify, (void *)&data);
+
+    if (data.prev == 0) {
+	rb_raise(rb_eTypeError, "`pos' is out of range.");
+    }
+    return data.prev == 1 ? Qtrue : Qfalse;
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -1917,6 +2018,10 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", rb_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
+
+    /* experimental */
+    rb_define_method(rb_cISeq, "line_trace_all", rb_iseq_line_trace_all, 0);
+    rb_define_method(rb_cISeq, "line_trace_specify", rb_iseq_line_trace_specify, 2);
 
 #if 0 /* TBD */
     rb_define_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);

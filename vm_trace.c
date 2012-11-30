@@ -525,6 +525,7 @@ get_event_id(rb_event_flag_t event)
 	C(b_return, B_RETURN);
 	C(thread_begin, THREAD_BEGIN);
 	C(thread_end, THREAD_END);
+	C(specified_line, SPECIFIED_LINE);
 #undef C
       default:
 	return 0;
@@ -632,6 +633,7 @@ symbol2event_flag(VALUE v)
     C(b_return, B_RETURN);
     C(thread_begin, THREAD_BEGIN);
     C(thread_end, THREAD_END);
+    C(specified_line, SPECIFIED_LINE);
 #undef C
     rb_raise(rb_eArgError, "unknown event: %s", rb_id2name(SYM2ID(sym)));
 }

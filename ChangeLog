@@ -1,3 +1,21 @@
+Sat Dec  1 01:51:06 2012  Koichi Sasada  <ko1@atdot.net>
+
+	[EXPERIMENTAL]
+	* iseq.c: add following two methods.
+	  * ISeq#line_trace_all returns all line traces (line numbers)
+	  * ISeq#line_trace_specify(pos, set) set `pos'th line event to
+	    specified_line event (if set is true).
+	  These features are introduced for debuggers (mainly to make
+	  breakpoint).
+
+	* iseq.h: add decl. of C APIs.
+
+	* test/ruby/test_iseq.rb: add tests.
+
+	* vm_trace.c: add `specified_line' event.
+
+	* include/ruby/ruby.h: ditto.
+
 Sat Dec  1 01:49:52 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rubygems/test_gem_dependency_installler.rb: gems are of course

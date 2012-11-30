@@ -28,6 +28,10 @@ VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
 
+int rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
+VALUE rb_iseq_line_trace_all(VALUE iseqval);
+VALUE rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
+
 /* proc.c */
 rb_iseq_t *rb_method_get_iseq(VALUE body);
 rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
