@@ -58,7 +58,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_spec_fetcher(p1a, @a1, @a1_pre)
     util_clear_gems
 
-    p1a_data = File.read(gem)
+    p1a_data = File.binread(gem)
 
     @fetcher.data['http://gems.example.com/gems/a-10.a.gem'] = p1a_data
 
@@ -76,7 +76,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_spec_fetcher(p1a)
     util_clear_gems
 
-    p1a_data = File.read(gem)
+    p1a_data = File.binread(gem)
 
     @fetcher.data['http://gems.example.com/gems/p-1.a.gem'] = p1a_data
 
@@ -94,7 +94,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_spec_fetcher(@a1, @a1_pre)
     util_clear_gems
 
-    p1a_data = File.read(@a1_gem)
+    p1a_data = File.binread(@a1_gem)
 
     @fetcher.data['http://gems.example.com/gems/a-1.gem'] = p1a_data
 
