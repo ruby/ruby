@@ -96,7 +96,8 @@ enum lex_state_e {
     EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
     EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN)
 };
-#define IS_lex_state(ls)	(lex_state & ( ls ))
+#define IS_lex_state_for(x, ls)	((x) & (ls))
+#define IS_lex_state(ls)	IS_lex_state_for(lex_state, (ls))
 
 #if PARSER_DEBUG
 static const char *lex_state_name(enum lex_state_e state);
@@ -6752,7 +6753,7 @@ parser_prepare(struct parser_params *parser)
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
 #define warn_balanced(op, syn) ((void) \
-    (!(last_state & (EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN|EXPR_ENDARG)) && \
+    (!IS_lex_state_for(last_state, EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN|EXPR_ENDARG) && \
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(op, syn), 0)))
 
@@ -7812,7 +7813,7 @@ parser_yylex(struct parser_params *parser)
 	  case '`':		/* $`: string before last match */
 	  case '\'':		/* $': string after last match */
 	  case '+':		/* $+: string matches last paren. */
-	    if (last_state == EXPR_FNAME) {
+	    if (IS_lex_state_for(last_state, EXPR_FNAME)) {
 		tokadd('$');
 		tokadd(c);
 		goto gvar;
@@ -7829,7 +7830,7 @@ parser_yylex(struct parser_params *parser)
 		c = nextc();
 	    } while (c != -1 && ISDIGIT(c));
 	    pushback(c);
-	    if (last_state == EXPR_FNAME) goto gvar;
+	    if (IS_lex_state_for(last_state, EXPR_FNAME)) goto gvar;
 	    tokfix();
 	    set_yylval_node(NEW_NTH_REF(atoi(tok()+1)));
 	    return tNTH_REF;
@@ -8018,7 +8019,8 @@ parser_yylex(struct parser_params *parser)
             ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
             set_yylval_name(ident);
-            if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
+            if (!IS_lex_state_for(last_state, EXPR_DOT) &&
+		is_local_id(ident) && lvar_defined(ident)) {
                 lex_state = EXPR_END;
             }
         }
