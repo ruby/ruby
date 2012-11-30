@@ -726,15 +726,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_thread
     events = []
+    thread_self = nil
     created_thread = nil
     TracePoint.new(:thread_begin, :thread_end){|tp|
-      events << [Thread.current, tp.event, tp.self]
+      events << [Thread.current,
+                 tp.event,
+                 tp.lineno,  #=> 0
+                 tp.path,    #=> nil
+                 tp.binding, #=> nil
+                 tp.defined_class, #=> nil,
+                 tp.self.class # tp.self return creating/ending thread
+                 ]
     }.enable{
-      created_thread = Thread.new{}
+      created_thread = Thread.new{thread_self = self}
       created_thread.join
     }
-    assert_equal([created_thread, :thread_begin, self], events[0])
-    assert_equal([created_thread, :thread_end, self], events[1])
+    assert_equal(self, thread_self)
+    assert_equal([created_thread, :thread_begin, 0, nil, nil, nil, Thread], events[0])
+    assert_equal([created_thread, :thread_end, 0, nil, nil, nil, Thread], events[1])
     assert_equal(2, events.size)
   end
 end
