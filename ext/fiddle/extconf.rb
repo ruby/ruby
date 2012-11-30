@@ -33,6 +33,8 @@ elsif have_header "windows.h"
   end
 end
 
+have_const('FFI_STDCALL', 'ffi.h') || have_const('FFI_STDCALL', 'ffi/ffi.h')
+
 config = File.read(RbConfig.expand(File.join($arch_hdrdir, "ruby/config.h")))
 types = {"SIZE_T"=>"SSIZE_T", "PTRDIFF_T"=>nil, "INTPTR_T"=>nil}
 types.each do |type, signed|

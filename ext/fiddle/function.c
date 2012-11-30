@@ -194,7 +194,7 @@ Init_fiddle_function(void)
      */
     rb_define_const(cFiddleFunction, "DEFAULT", INT2NUM(FFI_DEFAULT_ABI));
 
-#ifdef FFI_STDCALL
+#ifdef HAVE_CONST_FFI_STDCALL
     /*
      * Document-const: STDCALL
      *

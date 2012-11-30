@@ -1,3 +1,9 @@
+Sat Dec  1 00:48:19 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/extconf.rb, ext/fiddle/function.c
+	  (Fiddle::Function::STDCALL): FFI_STDCALL is not a macro, but an
+	  enumeration. [ruby-core:50398] [Bug #7483]
+
 Sat Dec  1 00:08:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rubygems/test_gem_installer.rb
