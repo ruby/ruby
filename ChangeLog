@@ -1,3 +1,8 @@
+Fri Nov 30 14:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/cgi.rb: CGI example for HTML generation
+	  Patch by Marcus Stollsteimer [ruby-core:50303] [Bug #7465]
+
 Fri Nov 30 13:52:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* time.c: Documentation improvements, grammar and formatting

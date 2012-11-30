@@ -234,22 +234,26 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 # === Print http header and html string to $DEFAULT_OUTPUT ($>)
 #
 #   require "cgi"
-#   cgi = CGI.new("html3")  # add HTML generation methods
-#   cgi.out() do
-#     cgi.html() do
-#       cgi.head{ cgi.title{"TITLE"} } +
-#       cgi.body() do
-#         cgi.form() do
-#           cgi.textarea("get_text") +
-#           cgi.br +
-#           cgi.submit
+#   cgi = CGI.new("html4")  # add HTML generation methods
+#   cgi.out do
+#     cgi.html do
+#       cgi.head do
+#         cgi.title { "TITLE" }
+#       end +
+#       cgi.body do
+#         cgi.form("ACTION" => "uri") do
+#           cgi.p do
+#             cgi.textarea("get_text") +
+#             cgi.br +
+#             cgi.submit
+#           end
 #         end +
-#         cgi.pre() do
+#         cgi.pre do
 #           CGI::escapeHTML(
-#             "params: " + cgi.params.inspect + "\n" +
-#             "cookies: " + cgi.cookies.inspect + "\n" +
-#             ENV.collect() do |key, value|
-#               key + " --> " + value + "\n"
+#             "params: #{cgi.params.inspect}\n" +
+#             "cookies: #{cgi.cookies.inspect}\n" +
+#             ENV.collect do |key, value|
+#               "#{key} --> #{value}\n"
 #             end.join("")
 #           )
 #         end
