@@ -2,7 +2,7 @@ Fri Nov 30 19:55:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/memory_status.rb (Memory::Win32): use fiddle instead of dl,
 	  but I doubt fiddle is not compatible with dl. (if you are interested,
-	  see the diff.)
+	  see the diff.)  [ruby-core:50194] [Bug #7443]
 
 Fri Nov 30 19:37:44 2012  Kouhei Sutou  <kou@cozmixng.org>
 
