@@ -8019,7 +8019,7 @@ parser_yylex(struct parser_params *parser)
             ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
             set_yylval_name(ident);
-            if (!IS_lex_state_for(last_state, EXPR_DOT) &&
+            if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
 		is_local_id(ident) && lvar_defined(ident)) {
                 lex_state = EXPR_END;
             }
