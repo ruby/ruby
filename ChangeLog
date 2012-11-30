@@ -1,3 +1,7 @@
+Fri Nov 30 15:15:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_trace.c (set_trace_func): Formatting of params and events
+
 Fri Nov 30 14:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/net/http.rb: Net::HTTP::Patch to list of HTTP Request Classes

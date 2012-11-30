@@ -369,17 +369,31 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
  *     set_trace_func(nil)     -> nil
  *
  *  Establishes _proc_ as the handler for tracing, or disables
- *  tracing if the parameter is +nil+. _proc_ takes up
- *  to six parameters: an event name, a filename, a line number, an
- *  object id, a binding, and the name of a class. _proc_ is
- *  invoked whenever an event occurs. Events are: <code>c-call</code>
- *  (call a C-language routine), <code>c-return</code> (return from a
- *  C-language routine), <code>call</code> (call a Ruby method),
- *  <code>class</code> (start a class or module definition),
- *  <code>end</code> (finish a class or module definition),
- *  <code>line</code> (execute code on a new line), <code>raise</code>
- *  (raise an exception), and <code>return</code> (return from a Ruby
- *  method). Tracing is disabled within the context of _proc_.
+ *  tracing if the parameter is +nil+.
+ *
+ *  _proc_ takes up to six parameters:
+ *
+ *  *	an event name
+ *  *	a filename
+ *  *	a line number
+ *  *	an object id
+ *  *	a binding
+ *  *	the name of a class
+ *
+ *  _proc_ is invoked whenever an event occurs.
+ *
+ *  Events are:
+ *
+ *  +c-call+:: call a C-language routine
+ *  +c-return+:: return from a C-language routine
+ *  +call+:: call a Ruby method
+ *  +class+:: start a class or module definition),
+ *  +end+:: finish a class or module definition),
+ *  +line+:: execute code on a new line
+ *  +raise+:: raise an exception
+ *  +return+:: return from a Ruby method
+ *
+ *  Tracing is disabled within the context of _proc_.
  *
  *      class Test
  *	def test
