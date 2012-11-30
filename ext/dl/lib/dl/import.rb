@@ -79,6 +79,7 @@ module DL
     end
 
     def sizeof(ty)
+      @type_alias ||= nil
       case ty
       when String
         ty = parse_ctype(ty, @type_alias).abs()
@@ -128,6 +129,7 @@ module DL
     private :parse_bind_options
 
     def extern(signature, *opts)
+      @type_alias ||= nil
       symname, ctype, argtype = parse_signature(signature, @type_alias)
       opt = parse_bind_options(opts)
       f = import_function(symname, ctype, argtype, opt[:call_type])
@@ -150,6 +152,7 @@ module DL
     end
 
     def bind(signature, *opts, &blk)
+      @type_alias ||= nil
       name, ctype, argtype = parse_signature(signature, @type_alias)
       h = parse_bind_options(opts)
       case h[:callback_type]
@@ -183,6 +186,7 @@ module DL
     #
     #   MyStruct = struct ['int i', 'char c']
     def struct(signature)
+      @type_alias ||= nil
       tys, mems = parse_struct_signature(signature, @type_alias)
       DL::CStructBuilder.create(CStruct, tys, mems)
     end
@@ -191,6 +195,7 @@ module DL
     #
     #   MyUnion = union ['int i', 'char c']
     def union(signature)
+      @type_alias ||= nil
       tys, mems = parse_struct_signature(signature, @type_alias)
       DL::CStructBuilder.create(CUnion, tys, mems)
     end
@@ -216,7 +221,8 @@ module DL
     end
 
     def handler
-      @handler or raise "call dlload before importing symbols and functions"
+      defined?(@handler) or raise "call dlload before importing symbols and functions"
+      @handler
     end
 
     def import_symbol(name)
