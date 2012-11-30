@@ -3,7 +3,7 @@ require 'abbrev'
 
 class TestAbbrev < Test::Unit::TestCase
   def test_abbrev
-    words = %w[summer winter ruby rules]
+    words = %w[summer winter win ruby rules]
 
     assert_equal({
         "rub"    => "ruby",
@@ -17,9 +17,7 @@ class TestAbbrev < Test::Unit::TestCase
         "summ"   => "summer",
         "summe"  => "summer",
         "summer" => "summer",
-        "w"      => "winter",
-        "wi"     => "winter",
-        "win"    => "winter",
+        "win"    => "win",
         "wint"   => "winter",
         "winte"  => "winter",
         "winter" => "winter",
