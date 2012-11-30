@@ -1,3 +1,9 @@
+Fri Nov 30 21:57:43 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* revert r38053 because it causes too many test failures.
+	  if you've already installed r38053 or later, remove the installed
+	  lib/ruby/gems/2.0.0 directory and reinstall this revision or later.
+
 Fri Nov 30 21:07:56 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit/parallel.rb (Test::Unit::Worker.run): wrap LoadError
