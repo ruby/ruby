@@ -181,7 +181,7 @@ class TestString < Test::Unit::TestCase
 
     class << o;remove_method :<=>;end
     def o.<=>(x); 2**100; end
-    assert_equal(-(2**100), "foo" <=> o)
+    assert_equal(-1, "foo" <=> o)
   end
 
   def test_EQUAL # '=='
