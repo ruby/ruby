@@ -1296,7 +1296,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextHeading1 = &(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { a; RDoc::Markup::Heading.new(1, a.join) }
+  # SetextHeading1 = &(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }
   def _SetextHeading1
 
     _save = self.pos
@@ -1411,7 +1411,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  a; RDoc::Markup::Heading.new(1, a.join) ; end
+      @result = begin;  RDoc::Markup::Heading.new(1, a.join) ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -2608,7 +2608,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListContinuationBlock = StartList:a < BlankLine* > { a << "\n" } (Indent ListBlock:b { a.concat b })+ { a }
+  # ListContinuationBlock = StartList:a BlankLine* { a << "\n" } (Indent ListBlock:b { a.concat b })+ { a }
   def _ListContinuationBlock
 
     _save = self.pos
@@ -2619,15 +2619,11 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _text_start = self.pos
       while true
         _tmp = apply(:_BlankLine)
         break unless _tmp
       end
       _tmp = true
-      if _tmp
-        text = get_text(_text_start)
-      end
       unless _tmp
         self.pos = _save
         break
@@ -9741,30 +9737,17 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # LineBreak = < "  " NormalEndline > { RDoc::Markup::HardBreak.new }
+  # LineBreak = "  " NormalEndline { RDoc::Markup::HardBreak.new }
   def _LineBreak
 
     _save = self.pos
     while true # sequence
-      _text_start = self.pos
-
-      _save1 = self.pos
-      while true # sequence
-        _tmp = match_string("  ")
-        unless _tmp
-          self.pos = _save1
-          break
-        end
-        _tmp = apply(:_NormalEndline)
-        unless _tmp
-          self.pos = _save1
-        end
+      _tmp = match_string("  ")
+      unless _tmp
+        self.pos = _save
         break
-      end # end sequence
-
-      if _tmp
-        text = get_text(_text_start)
       end
+      _tmp = apply(:_NormalEndline)
       unless _tmp
         self.pos = _save
         break
@@ -10890,7 +10873,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ExplicitLink = Label:l Spnl "(" Sp Source:s Spnl Title:t Sp ")" { "{#{l}}[#{s}]" }
+  # ExplicitLink = Label:l Spnl "(" Sp Source:s Spnl Title Sp ")" { "{#{l}}[#{s}]" }
   def _ExplicitLink
 
     _save = self.pos
@@ -10928,7 +10911,6 @@ class RDoc::Markdown
         break
       end
       _tmp = apply(:_Title)
-      t = @result
       unless _tmp
         self.pos = _save
         break
@@ -11143,7 +11125,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Title = (TitleSingle | TitleDouble | < "" >):a { a }
+  # Title = (TitleSingle | TitleDouble | ""):a { a }
   def _Title
 
     _save = self.pos
@@ -11157,11 +11139,7 @@ class RDoc::Markdown
         _tmp = apply(:_TitleDouble)
         break if _tmp
         self.pos = _save1
-        _text_start = self.pos
         _tmp = match_string("")
-        if _tmp
-          text = get_text(_text_start)
-        end
         break if _tmp
         self.pos = _save1
         break
@@ -11184,7 +11162,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TitleSingle = "'" < (!("'" Sp (")" | Newline)) .)* > "'"
+  # TitleSingle = "'" (!("'" Sp (")" | Newline)) .)* "'"
   def _TitleSingle
 
     _save = self.pos
@@ -11194,7 +11172,6 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _text_start = self.pos
       while true
 
         _save2 = self.pos
@@ -11247,9 +11224,6 @@ class RDoc::Markdown
         break unless _tmp
       end
       _tmp = true
-      if _tmp
-        text = get_text(_text_start)
-      end
       unless _tmp
         self.pos = _save
         break
@@ -11265,7 +11239,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TitleDouble = "\"" < (!("\"" Sp (")" | Newline)) .)* > "\""
+  # TitleDouble = "\"" (!("\"" Sp (")" | Newline)) .)* "\""
   def _TitleDouble
 
     _save = self.pos
@@ -11275,7 +11249,6 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _text_start = self.pos
       while true
 
         _save2 = self.pos
@@ -11328,9 +11301,6 @@ class RDoc::Markdown
         break unless _tmp
       end
       _tmp = true
-      if _tmp
-        text = get_text(_text_start)
-      end
       unless _tmp
         self.pos = _save
         break
@@ -11479,7 +11449,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AutoLinkEmail = "<" "mailto:"? < /[\w+_.\/!%~$-]+/i "@" (!Newline !">" .)+ > ">" { "mailto:#{text}" }
+  # AutoLinkEmail = "<" "mailto:"? < /[\w+.\/!%~$-]+/i "@" (!Newline !">" .)+ > ">" { "mailto:#{text}" }
   def _AutoLinkEmail
 
     _save = self.pos
@@ -11503,7 +11473,7 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # sequence
-        _tmp = scan(/\A(?i-mx:[\w+_.\/!%~$-]+)/)
+        _tmp = scan(/\A(?i-mx:[\w+.\/!%~$-]+)/)
         unless _tmp
           self.pos = _save2
           break
@@ -11604,7 +11574,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Reference = NonindentSpace !"[]" Label:label ":" Spnl RefSrc:link RefTitle:title BlankLine+ { # TODO use title               reference label, link               nil             }
+  # Reference = NonindentSpace !"[]" Label:label ":" Spnl RefSrc:link RefTitle BlankLine+ { # TODO use title               reference label, link               nil             }
   def _Reference
 
     _save = self.pos
@@ -11645,7 +11615,6 @@ class RDoc::Markdown
         break
       end
       _tmp = apply(:_RefTitle)
-      title = @result
       unless _tmp
         self.pos = _save
         break
@@ -11859,13 +11828,9 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # EmptyTitle = < "" >
+  # EmptyTitle = ""
   def _EmptyTitle
-    _text_start = self.pos
     _tmp = match_string("")
-    if _tmp
-      text = get_text(_text_start)
-    end
     set_failed_rule :_EmptyTitle unless _tmp
     return _tmp
   end
@@ -15328,7 +15293,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Note = &{ notes? } NonindentSpace RawNoteReference:ref ":" Sp StartList:a RawNoteBlock:l (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }
+  # Note = &{ notes? } NonindentSpace RawNoteReference:ref ":" Sp StartList:a RawNoteBlock (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }
   def _Note
 
     _save = self.pos
@@ -15368,7 +15333,6 @@ class RDoc::Markdown
         break
       end
       _tmp = apply(:_RawNoteBlock)
-      l = @result
       unless _tmp
         self.pos = _save
         break
@@ -15420,7 +15384,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # InlineNote = &{ notes? } "^[" StartList:a (!"]" Inline:l { a << l })+ "]" {                 ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
+  # InlineNote = &{ notes? } "^[" StartList:a (!"]" Inline:l { a << l })+ "]" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
   def _InlineNote
 
     _save = self.pos
@@ -15975,7 +15939,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListItem = DefinitionListLabel+:label DefinitionListDefinition+:defn { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defn.shift)                         list_items.concat defn.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }
+  # DefinitionListItem = DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }
   def _DefinitionListItem
 
     _save = self.pos
@@ -16015,16 +15979,16 @@ class RDoc::Markdown
       else
         self.pos = _save2
       end
-      defn = @result
+      defns = @result
       unless _tmp
         self.pos = _save
         break
       end
       @result = begin;  list_items = []
                        list_items <<
-                         RDoc::Markup::ListItem.new(label, defn.shift)
+                         RDoc::Markup::ListItem.new(label, defns.shift)
 
-                       list_items.concat defn.map { |defn|
+                       list_items.concat defns.map { |defn|
                          RDoc::Markup::ListItem.new nil, defn
                        } unless list_items.empty?
 
@@ -16139,7 +16103,7 @@ class RDoc::Markdown
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
   Rules[:_SetextBottom1] = rule_info("SetextBottom1", "\"===\" \"=\"* Newline")
   Rules[:_SetextBottom2] = rule_info("SetextBottom2", "\"---\" \"-\"* Newline")
-  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { a; RDoc::Markup::Heading.new(1, a.join) }")
+  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }")
   Rules[:_SetextHeading2] = rule_info("SetextHeading2", "&(RawLine SetextBottom2) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }")
   Rules[:_Heading] = rule_info("Heading", "(SetextHeading | AtxHeading)")
   Rules[:_BlockQuote] = rule_info("BlockQuote", "BlockQuoteRaw:a { RDoc::Markup::BlockQuote.new(*a) }")
@@ -16155,7 +16119,7 @@ class RDoc::Markdown
   Rules[:_ListItem] = rule_info("ListItem", "(Bullet | Enumerator) StartList:a ListBlock:b { a << b } (ListContinuationBlock:c { a.push(*c) })* { list_item_from a }")
   Rules[:_ListItemTight] = rule_info("ListItemTight", "(Bullet | Enumerator) ListBlock:a (!BlankLine ListContinuationBlock:b { a.push(*b) })* !ListContinuationBlock { list_item_from a }")
   Rules[:_ListBlock] = rule_info("ListBlock", "!BlankLine Line:a ListBlockLine*:c { [a, *c] }")
-  Rules[:_ListContinuationBlock] = rule_info("ListContinuationBlock", "StartList:a < BlankLine* > { a << \"\\n\" } (Indent ListBlock:b { a.concat b })+ { a }")
+  Rules[:_ListContinuationBlock] = rule_info("ListContinuationBlock", "StartList:a BlankLine* { a << \"\\n\" } (Indent ListBlock:b { a.concat b })+ { a }")
   Rules[:_Enumerator] = rule_info("Enumerator", "NonindentSpace [0-9]+ \".\" Spacechar+")
   Rules[:_OrderedList] = rule_info("OrderedList", "&Enumerator (ListTight | ListLoose):a { RDoc::Markup::List.new(:NUMBER, *a) }")
   Rules[:_ListBlockLine] = rule_info("ListBlockLine", "!BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine")
@@ -16278,7 +16242,7 @@ class RDoc::Markdown
   Rules[:_Endline] = rule_info("Endline", "(LineBreak | TerminalEndline | NormalEndline)")
   Rules[:_NormalEndline] = rule_info("NormalEndline", "Sp Newline !BlankLine !\">\" !AtxStart !(Line (\"===\" \"=\"* | \"---\" \"-\"*) Newline) { \"\\n\" }")
   Rules[:_TerminalEndline] = rule_info("TerminalEndline", "Sp Newline Eof")
-  Rules[:_LineBreak] = rule_info("LineBreak", "< \"  \" NormalEndline > { RDoc::Markup::HardBreak.new }")
+  Rules[:_LineBreak] = rule_info("LineBreak", "\"  \" NormalEndline { RDoc::Markup::HardBreak.new }")
   Rules[:_Symbol] = rule_info("Symbol", "< SpecialChar > { text }")
   Rules[:_UlOrStarLine] = rule_info("UlOrStarLine", "(UlLine | StarLine):a { a }")
   Rules[:_StarLine] = rule_info("StarLine", "(< \"****\" \"*\"* > { text } | < Spacechar \"*\"+ &Spacechar > { text })")
@@ -16302,20 +16266,20 @@ class RDoc::Markdown
   Rules[:_ReferenceLink] = rule_info("ReferenceLink", "(ReferenceLinkDouble | ReferenceLinkSingle)")
   Rules[:_ReferenceLinkDouble] = rule_info("ReferenceLinkDouble", "Label:content < Spnl > !\"[]\" Label:label { link_to content, label, text }")
   Rules[:_ReferenceLinkSingle] = rule_info("ReferenceLinkSingle", "Label:content < (Spnl \"[]\")? > { link_to content, content, text }")
-  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l Spnl \"(\" Sp Source:s Spnl Title:t Sp \")\" { \"{\#{l}}[\#{s}]\" }")
+  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l Spnl \"(\" Sp Source:s Spnl Title Sp \")\" { \"{\#{l}}[\#{s}]\" }")
   Rules[:_Source] = rule_info("Source", "(\"<\" < SourceContents > \">\" | < SourceContents >) { text }")
   Rules[:_SourceContents] = rule_info("SourceContents", "(((!\"(\" !\")\" !\">\" Nonspacechar)+ | \"(\" SourceContents \")\")* | \"\")")
-  Rules[:_Title] = rule_info("Title", "(TitleSingle | TitleDouble | < \"\" >):a { a }")
-  Rules[:_TitleSingle] = rule_info("TitleSingle", "\"'\" < (!(\"'\" Sp (\")\" | Newline)) .)* > \"'\"")
-  Rules[:_TitleDouble] = rule_info("TitleDouble", "\"\\\"\" < (!(\"\\\"\" Sp (\")\" | Newline)) .)* > \"\\\"\"")
+  Rules[:_Title] = rule_info("Title", "(TitleSingle | TitleDouble | \"\"):a { a }")
+  Rules[:_TitleSingle] = rule_info("TitleSingle", "\"'\" (!(\"'\" Sp (\")\" | Newline)) .)* \"'\"")
+  Rules[:_TitleDouble] = rule_info("TitleDouble", "\"\\\"\" (!(\"\\\"\" Sp (\")\" | Newline)) .)* \"\\\"\"")
   Rules[:_AutoLink] = rule_info("AutoLink", "(AutoLinkUrl | AutoLinkEmail)")
   Rules[:_AutoLinkUrl] = rule_info("AutoLinkUrl", "\"<\" < /[A-Za-z]+/ \"://\" (!Newline !\">\" .)+ > \">\" { text }")
-  Rules[:_AutoLinkEmail] = rule_info("AutoLinkEmail", "\"<\" \"mailto:\"? < /[\\w+_.\\/!%~$-]+/i \"@\" (!Newline !\">\" .)+ > \">\" { \"mailto:\#{text}\" }")
-  Rules[:_Reference] = rule_info("Reference", "NonindentSpace !\"[]\" Label:label \":\" Spnl RefSrc:link RefTitle:title BlankLine+ { \# TODO use title               reference label, link               nil             }")
+  Rules[:_AutoLinkEmail] = rule_info("AutoLinkEmail", "\"<\" \"mailto:\"? < /[\\w+.\\/!%~$-]+/i \"@\" (!Newline !\">\" .)+ > \">\" { \"mailto:\#{text}\" }")
+  Rules[:_Reference] = rule_info("Reference", "NonindentSpace !\"[]\" Label:label \":\" Spnl RefSrc:link RefTitle BlankLine+ { \# TODO use title               reference label, link               nil             }")
   Rules[:_Label] = rule_info("Label", "\"[\" (!\"^\" &{ notes? } | &. &{ !notes? }) StartList:a (!\"]\" Inline:l { a << l })* \"]\" { a.join.gsub(/\\s+/, ' ') }")
   Rules[:_RefSrc] = rule_info("RefSrc", "< Nonspacechar+ > { text }")
   Rules[:_RefTitle] = rule_info("RefTitle", "(RefTitleSingle | RefTitleDouble | RefTitleParens | EmptyTitle)")
-  Rules[:_EmptyTitle] = rule_info("EmptyTitle", "< \"\" >")
+  Rules[:_EmptyTitle] = rule_info("EmptyTitle", "\"\"")
   Rules[:_RefTitleSingle] = rule_info("RefTitleSingle", "Spnl \"'\" < (!(\"'\" Sp Newline | Newline) .)* > \"'\" { text }")
   Rules[:_RefTitleDouble] = rule_info("RefTitleDouble", "Spnl \"\\\"\" < (!(\"\\\"\" Sp Newline | Newline) .)* > \"\\\"\" { text }")
   Rules[:_RefTitleParens] = rule_info("RefTitleParens", "Spnl \"(\" < (!(\")\" Sp Newline | Newline) .)* > \")\" { text }")
@@ -16359,13 +16323,13 @@ class RDoc::Markdown
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
   Rules[:_RawNoteReference] = rule_info("RawNoteReference", "\"[^\" < (!Newline !\"]\" .)+ > \"]\" { text }")
-  Rules[:_Note] = rule_info("Note", "&{ notes? } NonindentSpace RawNoteReference:ref \":\" Sp StartList:a RawNoteBlock:l (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
-  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" StartList:a (!\"]\" Inline:l { a << l })+ \"]\" {                 ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
+  Rules[:_Note] = rule_info("Note", "&{ notes? } NonindentSpace RawNoteReference:ref \":\" Sp StartList:a RawNoteBlock (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
+  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" StartList:a (!\"]\" Inline:l { a << l })+ \"]\" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
   Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "StartList:a (!BlankLine OptionallyIndentedLine:l { a << l })+ < BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 \"`\"+ | Spacechar | Newline)+ > Ticks3 Sp Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format               verbatim             }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
-  Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defn { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defn.shift)                         list_items.concat defn.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
+  Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
   Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label Sp Newline { label }")
   Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "NonindentSpace \":\" Space Inlines:a BlankLine+ { paragraph a }")
   # :startdoc:
