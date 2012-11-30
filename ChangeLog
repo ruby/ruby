@@ -1,3 +1,8 @@
+Sat Dec  1 03:45:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (Thread.async_interrupt_timing): fix RDoc.
+	  :never is not used any more.
+
 Sat Dec  1 02:56:19 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: add RubyVM::InstructionSequence (ISeq) inspection methods.

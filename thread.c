@@ -1585,7 +1585,7 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *
  * TODO (DOC): Thread#async_interrupt_timing is stacked.
  * TODO (DOC): check ancestors.
- * TODO (DOC): to prevent all async interrupt, {Object => :never} works.
+ * TODO (DOC): to prevent all async interrupt, {Object => :defer} works.
  *
  * NOTE: Asynchronous interrupts are difficult to use.
  *       If you need to communicate between threads,
@@ -1595,7 +1595,7 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *
  *   # example: Guard from Thread#raise
  *   th = Thread.new do
- *     Thead.async_interrupt_timing(RuntimeError => :never) {
+ *     Thead.async_interrupt_timing(RuntimeError => :defer) {
  *       begin
  *         # Thread#raise doesn't async interrupt here.
  *         # You can write resource allocation code safely.
@@ -1615,7 +1615,7 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *
  *   # example: Guard from TimeoutError
  *   require 'timeout'
- *   Thread.async_interrupt_timing(TimeoutError => :never) {
+ *   Thread.async_interrupt_timing(TimeoutError => :defer) {
  *     timeout(10){
  *       # TimeoutError doesn't occur here
  *       Thread.async_interrupt_timing(TimeoutError => :on_blocking) {
@@ -1627,14 +1627,14 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *   }
  *
  *   # example: Stack control settings
- *   Thread.async_interrupt_timing(FooError => :never) {
- *     Thread.async_interrupt_timing(BarError => :never) {
+ *   Thread.async_interrupt_timing(FooError => :defer) {
+ *     Thread.async_interrupt_timing(BarError => :defer) {
  *        # FooError and BarError are prohibited.
  *     }
  *   }
  *
  *   # example: check ancestors
- *   Thread.async_interrupt_timing(Exception => :never) {
+ *   Thread.async_interrupt_timing(Exception => :defer) {
  *     # all exceptions inherited from Exception are prohibited.
  *   }
  *
