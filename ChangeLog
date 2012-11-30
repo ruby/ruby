@@ -1,3 +1,12 @@
+Fri Nov 30 09:38:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_GC_GUARD_PTR): add note.
+
+	* vm_backtrace.c (backtrace_to_str_ary): use RB_GC_GUARD() instead of
+	  RB_GC_GUARD_PTR() which has no effect.
+	  (backtrace_to_location_ary): ditto.
+	  (vm_backtrace_to_ary): ditto.
+
 Fri Nov 30 09:22:52 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/contents_command.rb:  Sort output from command.

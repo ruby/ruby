@@ -512,6 +512,8 @@ enum ruby_value_type {
 static inline int rb_type(VALUE obj);
 #define TYPE(x) rb_type((VALUE)(x))
 
+/* RB_GC_GUARD_PTR() is an intermediate macro, and has no effect by
+ * itself.  don't use it directly */
 #ifdef __GNUC__
 #define RB_GC_GUARD_PTR(ptr) \
     __extension__ ({volatile VALUE *rb_gc_guarded_ptr = (ptr); rb_gc_guarded_ptr;})

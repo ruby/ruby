@@ -512,7 +512,7 @@ backtrace_to_str_ary(VALUE self, long lev, long n)
     }
 
     r = backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
-    RB_GC_GUARD_PTR(&self);
+    RB_GC_GUARD(self);
     return r;
 }
 
@@ -559,7 +559,7 @@ backtrace_to_location_ary(VALUE self, long lev, long n)
     }
 
     r = backtrace_collect(bt, lev, n, location_create, (void *)self);
-    RB_GC_GUARD_PTR(&self);
+    RB_GC_GUARD(self);
     return r;
 }
 
@@ -770,7 +770,7 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
     else {
 	r = backtrace_to_location_ary(btval, lev, n);
     }
-    RB_GC_GUARD_PTR(&btval);
+    RB_GC_GUARD(btval);
     return r;
 }
 
