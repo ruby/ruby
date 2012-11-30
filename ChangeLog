@@ -1,3 +1,11 @@
+Sat Dec  1 02:11:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_threadptr_interrupt_mask): add argument check.
+	* thread.c (async_interrupt_timing_arg_check_i): helper function
+	  for the above.
+	* test/ruby/test_thread.rb (test_async_interrupt_timing_invalid_argument):
+	  test for the above.
+
 Sat Dec  1 01:19:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/thread.rb (ConditionVariable#broadcast): protect from

@@ -714,6 +714,18 @@ class TestThread < Test::Unit::TestCase
     # TODO: complex cases are needed.
   end
 
+  def test_async_interrupt_timing_invalid_argument
+    assert_raise(ArgumentError) {
+      Thread.async_interrupt_timing(RuntimeError => :immediate) # no block
+    }
+    assert_raise(ArgumentError) {
+      Thread.async_interrupt_timing(RuntimeError => :never) {} # never?
+    }
+    assert_raise(TypeError) {
+      Thread.async_interrupt_timing([]) {} # array
+    }
+  end
+
   def test_async_interrupted?
     q = Queue.new
     Thread.async_interrupt_timing(RuntimeError => :defer){

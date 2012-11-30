@@ -1545,12 +1545,27 @@ rb_threadptr_async_errinfo_active_p(rb_thread_t *th)
     return 1;
 }
 
+static int
+async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
+{
+    VALUE immediate = ID2SYM(rb_intern("immediate"));
+    VALUE on_blocking = ID2SYM(rb_intern("on_blocking"));
+    VALUE defer = ID2SYM(rb_intern("defer"));
+
+    if (val != immediate && val != on_blocking && val != defer) {
+	rb_raise(rb_eArgError, "unknown mask signature");
+    }
+
+    return ST_CONTINUE;
+}
+
 static VALUE
 rb_threadptr_interrupt_mask(rb_thread_t *th, VALUE mask, VALUE (*func)(rb_thread_t *th))
 {
     VALUE r = Qnil;
     int state;
 
+    rb_hash_foreach(mask, async_interrupt_timing_arg_check_i, 0);
     rb_ary_push(th->async_errinfo_mask_stack, mask);
     if (!rb_threadptr_async_errinfo_empty_p(th)) {
 	th->async_errinfo_queue_checked = 0;
