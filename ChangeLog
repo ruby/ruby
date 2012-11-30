@@ -1,3 +1,12 @@
+Fri Nov 30 09:22:52 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/contents_command.rb:  Sort output from command.
+	  Replaces r38004, r38005
+	* test/rubygems/test_gem_commands_contents_command.rb:  ditto.
+
+	* lib/rubygems/defaults.rb:  Use Gem.path_separator for jruby support.
+	* lib/rubygems/path_support.rb:  ditto
+
 Fri Nov 30 08:34:03 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/generator/darkfish.rb:  Silenced warning

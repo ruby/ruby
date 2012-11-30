@@ -75,14 +75,14 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
         if Gem.configuration.verbose then
           say "\nDirectories searched:"
-          spec_dirs.each { |dir| say dir }
+          spec_dirs.sort.each { |dir| say dir }
         end
 
         terminate_interaction 1 if gem_names.length == 1
       end
 
       if spec.default_gem?
-        files = spec.files.map do |file|
+        files = spec.files.sort.map do |file|
           case file
           when /\A#{spec.bindir}\//
             [Gem::ConfigMap[:bindir], $POSTMATCH]

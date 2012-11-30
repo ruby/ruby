@@ -58,6 +58,13 @@ module Gem
   end
 
   ##
+  # How String Gem paths should be split.  Overridable for esoteric platforms.
+
+  def self.path_separator
+    File::PATH_SEPARATOR
+  end
+
+  ##
   # Default gem load path
 
   def self.default_path

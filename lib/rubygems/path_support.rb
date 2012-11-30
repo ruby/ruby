@@ -54,7 +54,7 @@ class Gem::PathSupport
       if gpaths.kind_of?(Array)
         gem_path = gpaths.dup
       else
-        gem_path = gpaths.split(File::PATH_SEPARATOR)
+        gem_path = gpaths.split(Gem.path_separator)
       end
 
       if File::ALT_SEPARATOR then
