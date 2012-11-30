@@ -2,7 +2,7 @@ Fri Nov 30 18:52:56 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (tracepoint_disable_m, tracepoint_enable_m):
 	  fix block parameter.
-	  No arugment should be given to a block which is passed
+	  No argument should be given to a block which is passed
 	  to TracePoint#enable (and disable).
 
 Fri Nov 30 18:23:26 2012  Koichi Sasada  <ko1@atdot.net>
