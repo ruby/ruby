@@ -1,3 +1,8 @@
+Fri Nov 30 13:48:33 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb:  Set version to 4.0.0.preview2
+	* lib/rubygems.rb:  Set version to 2.0.0.preview2
+
 Fri Nov 30 13:11:53 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/setup_command.rb:  Remove old files on install
