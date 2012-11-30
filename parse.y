@@ -8545,7 +8545,7 @@ is_private_local_id(ID name)
     return RSTRING_PTR(s)[0] == '_';
 }
 
-#define LVAR_USED ((int)1 << (sizeof(int) * CHAR_BIT - 1))
+#define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
 static ID
 shadowing_lvar_gen(struct parser_params *parser, ID name)
