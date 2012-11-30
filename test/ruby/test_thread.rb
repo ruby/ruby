@@ -678,12 +678,12 @@ class TestThread < Test::Unit::TestCase
     assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
 
-  def make_control_interrupt_test_thread1 flag
+  def make_async_interrupt_timing_test_thread1 flag
     r = []
     ready_p = false
     th = Thread.new{
       begin
-        Thread.control_interrupt(RuntimeError => flag){
+        Thread.async_interrupt_timing(RuntimeError => flag){
           begin
             ready_p = true
             sleep 0.5
@@ -705,18 +705,18 @@ class TestThread < Test::Unit::TestCase
     r
   end
 
-  def test_control_interrupt
-    [[:never, :c2],
+  def test_async_interrupt_timing
+    [[:defer, :c2],
      [:immediate, :c1],
      [:on_blocking, :c1]].each{|(flag, c)|
-      assert_equal([flag, c], [flag] + make_control_interrupt_test_thread1(flag))
+      assert_equal([flag, c], [flag] + make_async_interrupt_timing_test_thread1(flag))
     }
     # TODO: complex cases are needed.
   end
 
-  def test_check_interrupt
+  def test_async_interrupted?
     q = Queue.new
-    Thread.control_interrupt(RuntimeError => :never){
+    Thread.async_interrupt_timing(RuntimeError => :defer){
       th = Thread.new{
         q.push :e
         begin
@@ -726,7 +726,7 @@ class TestThread < Test::Unit::TestCase
             q.push :ng1
           end
           begin
-            Thread.check_interrupt
+            Thread.async_interrupt_timing(Object => :immediate){} if Thread.async_interrupted?
           rescue => e
             q.push :ok
           end
