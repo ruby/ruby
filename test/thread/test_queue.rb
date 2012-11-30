@@ -69,7 +69,8 @@ class TestQueue < Test::Unit::TestCase
     t2 = Thread.start { sq.push(2) }
     sleep 0.1 until t1.stop? && t2.stop?
 
-    queue_wait = sq.instance_eval{ @queue_wait }
+    enque_cond = sq.instance_eval{ @enque_cond }
+    queue_wait = enque_cond.instance_eval { @waiters }
     assert_equal(queue_wait.uniq, queue_wait)
   end
 

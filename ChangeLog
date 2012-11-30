@@ -1,3 +1,17 @@
+Sat Dec  1 03:29:52 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (SizedQueue#pop): rewrite by using ConditionVariable.
+	* lib/thread.rb (SizedQueue#push): ditto.
+	* lib/thread.rb (SizedQueue#max): ditto.
+	* lib/thread.rb (Queue#pop): ditto.
+	* lib/thread.rb (Queue#push): ditto.
+
+	* lib/thread.rb (SizedQueue#num_waiting): adopt the above changes.
+	* lib/thread.rb (SizedQueue#initialize): ditto.
+	* lib/thread.rb (Queue#num_waiting): ditto.
+	* lib/thread.rb (Queue#initialize): ditto.
+	* test/thread/test_queue.rb (test_sized_queue_and_wakeup): ditto.
+
 Sat Dec  1 03:45:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (Thread.async_interrupt_timing): fix RDoc.
