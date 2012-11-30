@@ -2385,15 +2385,15 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
     int result;
 
     if (!RB_TYPE_P(str2, T_STRING)) {
+	VALUE tmp;
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
 	    return Qnil;
 	}
-	else if (!rb_respond_to(str2, rb_intern("<=>"))) {
+	else if ((tmp = rb_check_funcall(str2, rb_intern("<=>"), 1, &str1)) ==
+		 Qundef) {
 	    return Qnil;
 	}
 	else {
-	    VALUE tmp = rb_funcall(str2, rb_intern("<=>"), 1, str1);
-
 	    if (NIL_P(tmp)) return Qnil;
 	    result = -rb_cmpint(tmp, str1, str2);
 	}

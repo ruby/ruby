@@ -1,4 +1,7 @@
-Fri Nov 30 17:43:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 30 17:43:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): use rb_check_funcall instead of respond_to
+	  and call.
 
 	* string.c (rb_str_cmp_m): return fixed value, one of -1,0,+1 always.
 
