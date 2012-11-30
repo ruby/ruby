@@ -63,15 +63,18 @@ class ConditionVariable
   # even if no other thread doesn't signal.
   #
   def wait(mutex, timeout=nil)
-    begin
-      # TODO: mutex should not be used
-      @waiters_mutex.synchronize do
-        @waiters.push(Thread.current)
-      end
-      mutex.sleep timeout
-    ensure
-      @waiters_mutex.synchronize do
-        @waiters.delete(Thread.current)
+    Thread.async_interrupt_timing(StandardError => :defer) do
+      begin
+        Thread.async_interrupt_timing(StandardError => :on_blocking) do
+          @waiters_mutex.synchronize do
+            @waiters.push(Thread.current)
+          end
+          mutex.sleep timeout
+        end
+      ensure
+        @waiters_mutex.synchronize do
+          @waiters.delete(Thread.current)
+        end
       end
     end
     self
@@ -81,11 +84,13 @@ class ConditionVariable
   # Wakes up the first thread in line waiting for this lock.
   #
   def signal
-    begin
-      t = @waiters_mutex.synchronize {@waiters.shift}
-      t.run if t
-    rescue ThreadError
-      retry
+    Thread.async_interrupt_timing(RuntimeError => :on_blocking) do
+      begin
+        t = @waiters_mutex.synchronize {@waiters.shift}
+        t.run if t
+      rescue ThreadError
+        retry # t was alread dead?
+      end
     end
     self
   end
@@ -94,16 +99,17 @@ class ConditionVariable
   # Wakes up all threads waiting for this lock.
   #
   def broadcast
-    # TODO: incomplete
-    waiters0 = nil
-    @waiters_mutex.synchronize do
-      waiters0 = @waiters.dup
-      @waiters.clear
-    end
-    for t in waiters0
-      begin
-        t.run
-      rescue ThreadError
+    Thread.async_interrupt_timing(RuntimeError => :on_blocking) do
+      waiters0 = nil
+      @waiters_mutex.synchronize do
+        waiters0 = @waiters.dup
+        @waiters.clear
+      end
+      for t in waiters0
+        begin
+          t.run
+        rescue ThreadError
+        end
       end
     end
     self

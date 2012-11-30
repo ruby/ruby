@@ -1,3 +1,10 @@
+Sat Dec  1 01:19:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (ConditionVariable#broadcast): protect from
+	  async interrupt by using Thread.async_interrupt_timing.
+	* lib/thread.rb (ConditionVariable#signal): ditto.
+	* lib/thread.rb (ConditionVariable#wait): ditto.
+
 Sat Dec  1 02:04:23 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err):
