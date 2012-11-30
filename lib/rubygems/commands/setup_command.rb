@@ -137,6 +137,8 @@ By default, this RubyGems will install gem as:
 
     remove_old_bin_files bin_dir
 
+    remove_old_lib_files lib_dir
+
     say "RubyGems #{Gem::VERSION} installed"
 
     uninstall_old_gemcutter
@@ -280,9 +282,9 @@ TEXT
   def install_lib(lib_dir)
     say "Installing RubyGems" if @verbose
 
-    Dir.chdir 'lib' do
-      lib_files = Dir[File.join('**', '*rb')]
+    lib_files = rb_files_in 'lib'
 
+    Dir.chdir 'lib' do
       lib_files.each do |lib_file|
         dest_file = File.join lib_dir, lib_file
         dest_dir = File.dirname dest_file
@@ -379,6 +381,12 @@ TEXT
     [lib_dir, bin_dir]
   end
 
+  def rb_files_in dir
+    Dir.chdir dir do
+      Dir[File.join('**', '*rb')]
+    end
+  end
+
   def remove_old_bin_files(bin_dir)
     old_bin_files = {
       'gem_mirror' => 'gem mirror',
@@ -407,6 +415,23 @@ abort "#{deprecation_message}"
 
       File.open "#{old_bin_path}.bat", 'w' do |fp|
         fp.puts %{@ECHO.#{deprecation_message}}
+      end
+    end
+  end
+
+  def remove_old_lib_files lib_dir
+    lib_files = rb_files_in 'lib'
+
+    old_lib_files = rb_files_in lib_dir
+
+    to_remove = old_lib_files - lib_files
+
+    Dir.chdir lib_dir do
+      to_remove.each do |file|
+        FileUtils.rm_f file
+
+        warn "unable to remove old file #{file} please remove it by hand" if
+          File.exist? file
       end
     end
   end
