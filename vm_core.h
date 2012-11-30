@@ -478,7 +478,6 @@ typedef struct rb_thread_struct {
 
     /* passing state */
     int state;
-    int yielding;
 
     int waiting_fd;
 

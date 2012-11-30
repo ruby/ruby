@@ -10257,22 +10257,6 @@ Sun Apr 29 06:12:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* vm.c (m_core_hash_merge_kwd): merge keyword hash into intermediate
 	  hash.  leftward argument is prior currently.
 
-Sat Apr 28 18:39:40 2012  Koichi Sasada  <ko1@atdot.net>
-
-	* vm_core.h (rb_thread_t#yielding): add a field.
-
-	* thread.c (rb_thread_schedule_limits): set th#yielding while
-	  release GVL to yield CPU time.
-
-	* thread.c (timer_thread_function): skip timer interrupt when
-	  th#yielding is true.  This patch fixes r35480.
-
-	* thread.c (rb_threadptr_execute_interrupts_common): revert
-	  a patch of r35480.
-
-	* ChangeLog: add an extended memo of r35480.
-	  http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/R35480_ExtendedMemo
-
 Fri Apr 27 12:34:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): should convert a Bignum value to
