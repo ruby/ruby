@@ -26,7 +26,7 @@ Fri Nov 30 22:44:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): make sure vm->running_thread
 	  don't point to dead thread.
-	* thread.c (timer_thread_function): close a race against thead
+	* thread.c (timer_thread_function): close a race against thread
 	  destruction. [Bug #4911][ruby-dev:43859]
 
 	* vm_core.h (rb_thread_set_current): reset running time of
