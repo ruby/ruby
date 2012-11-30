@@ -1,3 +1,9 @@
+Sat Dec  1 03:49:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/sync.rb (Sync_m#sync_synchronize): add Thread.async_interrupt_timing
+	  for protecting from async interrupt.
+	* lib/sync.rb (Sync_m#sync_lock): ditto.
+
 Sat Dec  1 03:38:04 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/thread.rb (ConditionVariable#broadcast): s/RuntimeError/StandardError/
