@@ -1,3 +1,9 @@
+Sat Dec  1 02:33:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_threadptr_interrupt_mask, async_interrupt_timing_func):
+	  merge into them into rb_thread_s_async_interrupt_timing.
+	* thread.c (rb_thread_s_async_interrupt_timing): ditto.
+
 Sat Dec  1 02:11:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_threadptr_interrupt_mask): add argument check.

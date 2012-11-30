@@ -1559,40 +1559,6 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
     return ST_CONTINUE;
 }
 
-static VALUE
-rb_threadptr_interrupt_mask(rb_thread_t *th, VALUE mask, VALUE (*func)(rb_thread_t *th))
-{
-    VALUE r = Qnil;
-    int state;
-
-    rb_hash_foreach(mask, async_interrupt_timing_arg_check_i, 0);
-    rb_ary_push(th->async_errinfo_mask_stack, mask);
-    if (!rb_threadptr_async_errinfo_empty_p(th)) {
-	th->async_errinfo_queue_checked = 0;
-	RUBY_VM_SET_INTERRUPT(th);
-    }
-
-    TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
-	r = func(th);
-    }
-    TH_POP_TAG();
-
-    rb_ary_pop(th->async_errinfo_mask_stack);
-    if (!rb_threadptr_async_errinfo_empty_p(th)) {
-	th->async_errinfo_queue_checked = 0;
-	RUBY_VM_SET_INTERRUPT(th);
-    }
-
-    if (state) {
-	JUMP_TAG(state);
-    }
-
-    RUBY_VM_CHECK_INTS(th);
-
-    return r;
-}
-
 /*
  * call-seq:
  *   Thread.async_interrupt_timing(hash) { ... } -> result of the block
@@ -1673,23 +1639,45 @@ rb_threadptr_interrupt_mask(rb_thread_t *th, VALUE mask, VALUE (*func)(rb_thread
  *   }
  *
  */
-
-static VALUE
-async_interrupt_timing_func(rb_thread_t *th)
-{
-    return rb_yield(Qnil);
-}
-
 static VALUE
 rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
 {
+    VALUE mask;
+    rb_thread_t *th = GET_THREAD();
+    VALUE r = Qnil;
+    int state;
+
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "block is needed.");
     }
 
-    return rb_threadptr_interrupt_mask(GET_THREAD(),
-				       rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash"),
-				       async_interrupt_timing_func);
+    mask = rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash");
+    rb_hash_foreach(mask, async_interrupt_timing_arg_check_i, 0);
+    rb_ary_push(th->async_errinfo_mask_stack, mask);
+    if (!rb_threadptr_async_errinfo_empty_p(th)) {
+	th->async_errinfo_queue_checked = 0;
+	RUBY_VM_SET_INTERRUPT(th);
+    }
+
+    TH_PUSH_TAG(th);
+    if ((state = EXEC_TAG()) == 0) {
+	r = rb_yield(Qnil);
+    }
+    TH_POP_TAG();
+
+    rb_ary_pop(th->async_errinfo_mask_stack);
+    if (!rb_threadptr_async_errinfo_empty_p(th)) {
+	th->async_errinfo_queue_checked = 0;
+	RUBY_VM_SET_INTERRUPT(th);
+    }
+
+    if (state) {
+	JUMP_TAG(state);
+    }
+
+    RUBY_VM_CHECK_INTS(th);
+
+    return r;
 }
 
 /*
