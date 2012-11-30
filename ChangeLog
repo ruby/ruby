@@ -1,3 +1,9 @@
+Fri Nov 30 15:20:12 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package.rb:  Load YAML for building gems.
+	* test/rubygems/test_gem_commands_contents_command.rb:  Sort expected
+	  output of default gem contents.  Re-fixes r38004 and r38005.
+
 Fri Nov 30 15:15:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_trace.c (set_trace_func): Formatting of params and events

@@ -217,6 +217,7 @@ class Gem::Package
   # Builds this package based on the specification set by #spec=
 
   def build skip_validation = false
+    Gem.load_yaml
     require 'rubygems/security'
 
     @spec.validate unless skip_validation
