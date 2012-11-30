@@ -1,3 +1,8 @@
+Fri Nov 30 14:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/net/http.rb: Net::HTTP::Patch to list of HTTP Request Classes
+	  Patch by Ryunosuke SATO [Fixes #217 on github]
+
 Fri Nov 30 14:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/cgi.rb: CGI example for HTML generation
