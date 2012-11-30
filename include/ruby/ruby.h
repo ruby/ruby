@@ -1584,7 +1584,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_SPECIFIED_LINE  0x8000
 #define RUBY_EVENT_TRACEPOINT_ALL  0xFFFF
 
-typedef unsigned int rb_event_flag_t;
+typedef unsigned long rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);
 
 #define RB_EVENT_HOOKS_HAVE_CALLBACK_DATA 1
