@@ -1,3 +1,9 @@
+Fri Nov 30 12:47:59 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/abbrev.rb (Abbrev#abbrev): A fixed string prefix pattern
+	  should only match the beginning of each word, not the beginning
+	  of every line in it.
+
 Fri Nov 30 12:30:55 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/test_abbrev.rb: Add tests for lib/abbrev.rb.

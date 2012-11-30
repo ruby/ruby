@@ -36,12 +36,19 @@ class TestAbbrev < Test::Unit::TestCase
   end
 
   def test_abbrev_lf
+    words = ["abc", "abc\nd", "de"]
+
     assert_equal({
         "abc"     => "abc",
         "abc\n"   => "abc\nd",
         "abc\nd"  => "abc\nd",
         "d"       => "de",
         "de"      => "de",
-      }, Abbrev.abbrev(["abc", "abc\nd", "de"]))
+      }, words.abbrev)
+
+    assert_equal({
+        "d"       => "de",
+        "de"      => "de",
+      }, words.abbrev('d'))
   end
 end

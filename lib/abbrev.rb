@@ -69,7 +69,7 @@ module Abbrev
     seen = Hash.new(0)
 
     if pattern.is_a?(String)
-      pattern = /^#{Regexp.quote(pattern)}/  # regard as a prefix
+      pattern = /\A#{Regexp.quote(pattern)}/  # regard as a prefix
     end
 
     words.each do |word|
