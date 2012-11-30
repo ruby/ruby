@@ -58,7 +58,7 @@ Sat Dec  1 02:53:18 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_gem_dependency_installer.rb:  Use Gem.read_binary
 	  instead of File.binread for ruby 1.8 compatibility in the rubygems
-	  source repository.  Updates r38071
+	  source repository.  Updates r38075
 
 Sat Dec  1 02:33:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
