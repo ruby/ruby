@@ -166,6 +166,8 @@ module Test
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, opt)
         if block_given?
+          raise "test_stdout ignored, use block only or without block" if test_stdout != []
+          raise "test_stderr ignored, use block only or without block" if test_stderr != []
           yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp })
         else
           if test_stdout.is_a?(Regexp)
