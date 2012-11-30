@@ -4,6 +4,9 @@ Fri Nov 30 12:47:59 2012  Akinori MUSHA  <knu@iDaemons.org>
 	  should only match the beginning of each word, not the beginning
 	  of every line in it.
 
+	* lib/abbrev.rb (Abbrev#abbrev): Stop using a regexp that causes a
+	  false warning. [Bug #7471]
+
 Fri Nov 30 12:30:55 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/test_abbrev.rb: Add tests for lib/abbrev.rb.

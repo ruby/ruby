@@ -73,9 +73,9 @@ module Abbrev
     end
 
     words.each do |word|
-      next if (abbrev = word).empty?
-      while (len = abbrev.rindex(/[\w\W]\z/)) > 0
-        abbrev = word[0,len]
+      next if word.empty?
+      word.size.downto(1) { |len|
+        abbrev = word[0...len]
 
         next if pattern && pattern !~ abbrev
 
@@ -87,7 +87,7 @@ module Abbrev
         else
           break
         end
-      end
+      }
     end
 
     words.each do |word|
