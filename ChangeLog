@@ -1,3 +1,11 @@
+Sat Dec  1 04:07:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (parser.utf8): remove unused property.
+
+	* parse.y (UTF8_ENC): remove unused macro.
+
+	* parse.y (parser_tokadd_utf8): use rb_utf8_encoding() directly.
+
 Sat Dec  1 03:49:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/sync.rb (Sync_m#sync_synchronize): add Thread.async_interrupt_timing

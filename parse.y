@@ -267,7 +267,6 @@ struct parser_params {
     char *parser_ruby_sourcefile; /* current source file */
     int parser_ruby_sourceline;	/* current line no. */
     rb_encoding *enc;
-    rb_encoding *utf8;
 
     int parser_yydebug;
 
@@ -296,8 +295,6 @@ struct parser_params {
 #endif
 };
 
-#define UTF8_ENC() (parser->utf8 ? parser->utf8 : \
-		    (parser->utf8 = rb_utf8_encoding()))
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,parser->enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
@@ -5687,7 +5684,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
                 tokcopy((int)numlen);
             }
             else if (codepoint >= 0x80) {
-		*encp = UTF8_ENC();
+		*encp = rb_utf8_encoding();
 		if (string_literal) tokaddmbc(codepoint, *encp);
 	    }
 	    else if (string_literal) {
@@ -5714,7 +5711,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
             tokcopy(4);
         }
 	else if (codepoint >= 0x80) {
-	    *encp = UTF8_ENC();
+	    *encp = rb_utf8_encoding();
 	    if (string_literal) tokaddmbc(codepoint, *encp);
 	}
 	else if (string_literal) {
