@@ -938,7 +938,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     rb_debug_inspector_t dbg_context;
     rb_thread_t *th = GET_THREAD();
     int state;
-    VALUE result;
+    volatile VALUE UNINITIALIZED_VAR(result);
 
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->cfp;
