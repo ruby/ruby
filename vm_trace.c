@@ -868,7 +868,7 @@ tracepoint_attr_self(VALUE tpval)
 }
 
 /*
- *  Return value from +:return+ and +c_return+ event
+ *  Return value from +:return+, +c_return+, and +b_return+ event
  */
 static VALUE
 tracepoint_attr_return_value(VALUE tpval)
@@ -950,8 +950,8 @@ rb_tracepoint_disable(VALUE tpval)
 
 /*
  * call-seq:
- *	trace.enable			-> trace
- *	trace.enable { |obj| block }	-> obj
+ *	trace.enable		-> trace
+ *	trace.enable { block }	-> obj
  *
  * Activates the trace
  *
@@ -961,6 +961,23 @@ rb_tracepoint_disable(VALUE tpval)
  *	trace.enable    #=> #<TracePoint:0x007fa3fad4aaa8>
  *	trace.enabled?  #=> true
  *	trace.enable    #=> RuntimeError
+ *
+ * If a block is given, the trace will only be enabled within the scope of the
+ * block. Note: You cannot access event hooks within the block.
+ *
+ *	trace.enabled?
+ *	#=> false
+ *
+ *	trace.enable do
+ *	    trace.enabled?
+ *	    # only enabled for this block
+ *	end
+ *
+ *	trace.enabled?
+ *	#=> false
+ *
+ *	trace.enable { p tp.lineno }
+ *	#=> RuntimeError: access from outside
  *
  */
 static VALUE
@@ -983,8 +1000,8 @@ tracepoint_enable_m(VALUE tpval)
 
 /*
  * call-seq:
- *	trace.disable			-> trace
- *	trace.disable { |obj| block }	-> obj
+ *	trace.disable		-> trace
+ *	trace.disable { block } -> obj
  *
  * Deactivates the trace
  *
@@ -994,6 +1011,23 @@ tracepoint_enable_m(VALUE tpval)
  *	trace.disable	#=> #<TracePoint:0x007fa3fad4aaa8>
  *	trace.enabled?	#=> false
  *	trace.disable	#=> RuntimeError
+ *
+ * If a block is given, the trace will only be disable within the scope of the
+ * block. Note: You cannot access event hooks within the block.
+ *
+ *	trace.enabled?
+ *	#=> true
+ *
+ *	trace.disable do
+ *	    trace.enabled?
+ *	    # only disabled for this block
+ *	end
+ *
+ *	trace.enabled?
+ *	#=> true
+ *
+ *	trace.enable { p trace.lineno }
+ *	#=> RuntimeError: access from outside
  *
  */
 static VALUE

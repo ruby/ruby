@@ -1,3 +1,11 @@
+Fri Nov 30 19:30:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_trace.c:
+	  tracepoint_attr_return_value (TracePoint#return_value):
+	    include `:b_return` for method doc
+	  tracepoint_enable_m, tracepoint_disable_m (#enable/#disable):
+	    don't have block argument, document block scope
+
 Fri Nov 30 18:52:56 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (tracepoint_disable_m, tracepoint_enable_m):
