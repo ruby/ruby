@@ -202,16 +202,21 @@ class TestRDocRubygemsHook < Gem::TestCase
 
   def test_setup_unwritable
     skip 'chmod not supported' if Gem.win_platform?
-    FileUtils.mkdir_p @a.doc_dir
-    FileUtils.chmod 0, @a.doc_dir
+    begin
+      FileUtils.mkdir_p @a.doc_dir
+      FileUtils.chmod 0, @a.doc_dir
 
-    e = assert_raises Gem::FilePermissionError do
-      @hook.setup
+      e = assert_raises Gem::FilePermissionError do
+        @hook.setup
+      end
+
+      assert_equal @a.doc_dir, e.directory
+    ensure
+      if File.exist? @a.doc_dir
+        FileUtils.chmod 0755, @a.doc_dir
+        FileUtils.rm_r @a.doc_dir
+      end
     end
-
-    assert_equal @a.doc_dir, e.directory
-  ensure
-    FileUtils.chmod 0755, @a.doc_dir
   end
 
 end
