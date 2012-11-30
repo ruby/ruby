@@ -180,7 +180,7 @@ load Gem.bin_path('a', 'executable', version)
       end
 
       conflicted = File.join @gemhome, 'bin', 'executable'
-      assert_equal "\"executable\" from a conflicts with #{conflicted}",
+      assert_match /\A"executable" from a conflicts with (?:#{Regexp.quote(conflicted)}|installed executable from conflict)\z/,
                    e.message
     end
   ensure
