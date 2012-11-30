@@ -1,4 +1,7 @@
-Fri Nov 30 17:43:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 30 17:43:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): try to compare with to_str result if
+	  possible before calling <=> method.  [ruby-core:49279] [Bug #7342]
 
 	* string.c (rb_str_cmp_m): use rb_check_funcall instead of respond_to
 	  and call.
