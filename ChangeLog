@@ -1,3 +1,16 @@
+Sat Dec  1 02:56:19 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c: add RubyVM::InstructionSequence (ISeq) inspection methods.
+	  * ISeq#path returns path of this ISeq written.
+	  * ISeq#absolute_path returns absolute path.
+	  * ISeq#label returns label (method name and so on).
+	  * ISeq#base_label returns base label (see Thread::Backtrace::Location).
+	  * ISeq#first_lineno returns first line number of this ISeq.
+	  * ISeq.of(obj) returns ISeq object which obj (Proc or Method)
+	    is contains.
+
+	* test/ruby/test_iseq.rb: add tests.
+
 Sat Dec  1 02:58:51 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* include/ruby/ruby.h (rb_event_flag_t):  Maintain integer precision

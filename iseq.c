@@ -799,6 +799,46 @@ iseq_inspect(VALUE self)
 		      RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
 }
 
+static VALUE
+iseq_path(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->location.path;
+}
+
+static VALUE
+iseq_absolute_path(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->location.absolute_path;
+}
+
+static VALUE
+iseq_label(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->location.label;
+}
+
+static VALUE
+iseq_base_label(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->location.base_label;
+}
+
+static VALUE
+iseq_first_lineno(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->location.first_lineno;
+}
+
 static
 VALUE iseq_data_to_ary(rb_iseq_t *iseq);
 
@@ -1290,6 +1330,28 @@ rb_iseq_disasm(VALUE self)
     return str;
 }
 
+static VALUE
+iseq_s_of(VALUE klass, VALUE body)
+{
+    VALUE ret = Qnil;
+    rb_iseq_t *iseq;
+
+    rb_secure(1);
+
+    if (rb_obj_is_proc(body)) {
+	rb_proc_t *proc;
+	GetProcPtr(body, proc);
+	iseq = proc->block.iseq;
+	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	    ret = iseq->self;
+	}
+    }
+    else if ((iseq = rb_method_get_iseq(body)) != 0) {
+	ret = iseq->self;
+    }
+    return ret;
+}
+
 /*
  *  call-seq:
  *     InstructionSequence.disasm(body) -> str
@@ -1342,27 +1404,12 @@ rb_iseq_disasm(VALUE self)
  *    0012 leave
  *
  */
+
 static VALUE
 iseq_s_disasm(VALUE klass, VALUE body)
 {
-    VALUE ret = Qnil;
-    rb_iseq_t *iseq;
-
-    rb_secure(1);
-
-    if (rb_obj_is_proc(body)) {
-	rb_proc_t *proc;
-	GetProcPtr(body, proc);
-	iseq = proc->block.iseq;
-	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	    ret = rb_iseq_disasm(iseq->self);
-	}
-    }
-    else if ((iseq = rb_method_get_iseq(body)) != 0) {
-	ret = rb_iseq_disasm(iseq->self);
-    }
-
-    return ret;
+    VALUE iseqval = iseq_s_of(klass, body);
+    return NIL_P(iseqval) ? Qnil : rb_iseq_disasm(iseqval);
 }
 
 const char *
@@ -2019,6 +2066,13 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 
+    /* location APIs */
+    rb_define_method(rb_cISeq, "path", iseq_path, 0);
+    rb_define_method(rb_cISeq, "absolute_path", iseq_absolute_path, 0);
+    rb_define_method(rb_cISeq, "label", iseq_label, 0);
+    rb_define_method(rb_cISeq, "base_label", iseq_base_label, 0);
+    rb_define_method(rb_cISeq, "first_lineno", iseq_first_lineno, 0);
+
     /* experimental */
     rb_define_method(rb_cISeq, "line_trace_all", rb_iseq_line_trace_all, 0);
     rb_define_method(rb_cISeq, "line_trace_specify", rb_iseq_line_trace_specify, 2);
@@ -2039,4 +2093,5 @@ Init_ISeq(void)
     rb_define_singleton_method(rb_cISeq, "compile_option=", iseq_s_compile_option_set, 1);
     rb_define_singleton_method(rb_cISeq, "disasm", iseq_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "disassemble", iseq_s_disasm, 1);
+    rb_define_singleton_method(rb_cISeq, "of", iseq_s_of, 1);
 }
