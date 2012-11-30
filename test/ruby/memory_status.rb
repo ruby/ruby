@@ -15,7 +15,12 @@ module Memory
     read_status {|k, v| keys << k; vals << v}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
-    require 'fiddle/import'
+    begin
+      require 'fiddle/import'
+    rescue LoadError
+      require 'dl/import'
+      ::Fiddle = ::DL
+    end
     require 'dl/types'
 
     module Win32
