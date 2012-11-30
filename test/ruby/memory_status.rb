@@ -19,12 +19,15 @@ module Memory
       require 'fiddle/import'
     rescue LoadError
       require 'dl/import'
-      ::Fiddle = ::DL
     end
     require 'dl/types'
 
     module Win32
-      extend Fiddle::Importer
+      begin
+        extend Fiddle::Importer
+      rescue NameError
+        extend DL::Importer
+      end
       dlload "kernel32.dll", "psapi.dll"
       include DL::Win32Types
       typealias "SIZE_T", "size_t"
