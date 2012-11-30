@@ -1,3 +1,10 @@
+Sat Dec  1 07:16:17 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* compile.c (ADD_CATCH_ENTRY): add a cast to fix SEGV with x64 mingw
+	  on Windows 8. Without cast, 0 might be non zero value at higher bits
+	  in rb_ary_new3().
+	  [ruby-core:50258] [Bug #7456]
+
 Sat Dec  1 04:07:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (parser.utf8): remove unused property.

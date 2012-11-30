@@ -249,7 +249,7 @@ r_value(VALUE value)
     (rb_ary_push(iseq->compile_data->catch_table_ary,		\
 		 rb_ary_new3(5, (type),				\
 			     (VALUE)(ls) | 1, (VALUE)(le) | 1,	\
-			     (iseqv), (VALUE)(lc) | 1)))
+			     (VALUE)(iseqv), (VALUE)(lc) | 1)))
 
 /* compile node */
 #define COMPILE(anchor, desc, node) \
