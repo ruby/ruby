@@ -197,7 +197,7 @@ rdoc_include:
 
     assert_equal 1, @options.static_path.length
 
-    assert_match %r%^([A-Z]:)?/$%, @options.static_path.first
+    assert_match %r%^([A-Z]:)?/$%i, @options.static_path.first
   end
 
   def test_parse_coverage

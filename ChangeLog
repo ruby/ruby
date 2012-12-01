@@ -1,3 +1,8 @@
+Sat Dec  1 09:44:16 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rdoc/test_rdoc_options.rb:  Windows drive letters are
+	  case-insensitive.
+
 Sat Dec  1 09:42:13 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Search for gem deps file up the directory tree.
