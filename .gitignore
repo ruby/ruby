@@ -4,6 +4,7 @@
 *.dSYM
 *.dmyh
 *.dylib
+*.elc
 *.inc
 *.log
 *.o
