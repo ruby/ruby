@@ -1244,6 +1244,8 @@ class Gem::Specification
   # Adds this spec's require paths to LOAD_PATH, in the proper location.
 
   def add_self_to_load_path
+    return if default_gem?
+
     paths = require_paths.map do |path|
       File.join full_gem_path, path
     end

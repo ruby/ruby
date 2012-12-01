@@ -1,3 +1,8 @@
+Sat Dec  1 13:48:13 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/specification.rb:  Don't add default gems to $LOAD_PATH
+	  as they are already there.
+
 Sat Dec  1 12:22:17 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* re-added r38053 that is reverted by r38061. Problems by r38053
