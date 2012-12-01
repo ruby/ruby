@@ -1,3 +1,8 @@
+Sun Dec  2 06:02:00 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* gc.h (SET_MACHINE_STACK_END): add volatile for preventing
+	  harmful optimization.
+
 Sun Dec  2 05:01:58 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_line_trace_each): iterate `line' event only.
