@@ -22,5 +22,6 @@ text.gsub!(/\([^,)]+,[^,)]+,[^,)]+,[^,)]+\)/, '(arg0, arg1, arg2, arg3)')
 text.gsub!(/\([^,)]+,[^,)]+,[^,)]+,[^,)]+,[^,)]+\)/, '(arg0, arg1, arg2, arg3, arg4)')
 
 text.gsub!(/ *PROBE ([^\(]*)(\([^\)]*\));/, "#define RUBY_DTRACE_\\1_ENABLED() 0\n#define RUBY_DTRACE_\\1\\2\ do \{ \} while\(0\)")
+puts "/* -*- c -*- */"
 print text
 
