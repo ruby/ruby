@@ -59,8 +59,8 @@
 #  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
 # endif
 #else
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
 #define rb_setjmp(env) RUBY_SETJMP(env)
@@ -814,7 +814,7 @@ add_slot_local_freelist(rb_objspace_t *objspace, RVALUE *p)
 {
     struct heaps_slot *slot;
 
-    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
     p->as.free.flags = 0;
     slot = GET_HEAP_SLOT(p);
     p->as.free.next = slot->freelist;
@@ -1894,7 +1894,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
                     final_num++;
                 }
                 else {
-                    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
                     p->as.free.flags = 0;
                     p->as.free.next = sweep_slot->freelist;
                     sweep_slot->freelist = p;
@@ -2310,7 +2310,7 @@ mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n
     VALUE v;
     while (n--) {
         v = *x;
-        VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
+        (void)VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
 	if (is_pointer_to_heap(objspace, (void *)v)) {
 	    gc_mark(objspace, v);
 	}
