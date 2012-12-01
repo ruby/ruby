@@ -1954,15 +1954,19 @@ rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *ev
 
 	if (insn == BIN(trace)) {
 	    rb_event_flag_t current_events = (VALUE)iseq->iseq[pos+1];
-	    rb_event_flag_t events = current_events & RUBY_EVENT_SPECIFIED_LINE;
-	    trace_num++;
 
-	    if (func) {
-		int line = find_line_no(iseq, pos);
-		/* printf("line: %d\n", line); */
-		cont = (*func)(line, &events, data);
-		if (current_events != events) {
-		    iseq->iseq[pos+1] = iseq->iseq_encoded[pos+1] = (VALUE)(current_events | (events & RUBY_EVENT_SPECIFIED_LINE));
+	    if (current_events & RUBY_EVENT_LINE) {
+		rb_event_flag_t events = current_events & RUBY_EVENT_SPECIFIED_LINE;
+		trace_num++;
+
+		if (func) {
+		    int line = find_line_no(iseq, pos);
+		    /* printf("line: %d\n", line); */
+		    cont = (*func)(line, &events, data);
+		    if (current_events != events) {
+			iseq->iseq[pos+1] = iseq->iseq_encoded[pos+1] =
+			  (VALUE)(current_events | (events & RUBY_EVENT_SPECIFIED_LINE));
+		    }
 		}
 	    }
 	}

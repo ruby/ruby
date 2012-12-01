@@ -26,6 +26,15 @@ class TestISeq < Test::Unit::TestCase
     Encoding.default_internal = enc
   end
 
+  LINE_BEFORE_METHOD = __LINE__
+  def method_test_line_trace
+
+    a = 1
+
+    b = 2
+
+  end
+
   def test_line_trace
     iseq = ISeq.compile \
   %q{ a = 1
@@ -48,6 +57,9 @@ class TestISeq < Test::Unit::TestCase
       iseq.eval
     }
     assert_equal([2, 5], result)
+
+    iseq = ISeq.of(self.class.instance_method(:method_test_line_trace))
+    assert_equal([LINE_BEFORE_METHOD + 3, LINE_BEFORE_METHOD + 5], iseq.line_trace_all)
   end
 
   LINE_OF_HERE = __LINE__

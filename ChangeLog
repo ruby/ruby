@@ -1,3 +1,9 @@
+Sun Dec  2 05:01:58 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (rb_iseq_line_trace_each): iterate `line' event only.
+
+	* test/ruby/test_iseq.rb: add a test for this change.
+
 Sun Dec  2 02:46:04 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: add TracePoint#inspect.
