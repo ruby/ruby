@@ -767,7 +767,7 @@ load_1(int fd, long disp, const char *need_init)
 	    unsigned int mask = 0;
 #endif
 
-	    if(rel >= rel_beg)
+	    if (rel >= rel_beg)
 		address += hdr.a_text;
 
 	    if (rel->r_extern) { /* Look it up in symbol-table */
@@ -1429,7 +1429,7 @@ dln_load(const char *file)
 	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
 
 	/* lookup the initial function */
-	if(!NSIsSymbolNameDefined(buf)) {
+	if (!NSIsSymbolNameDefined(buf)) {
 	    dln_loaderror("Failed to lookup Init function %.200s",file);
 	}
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));

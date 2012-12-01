@@ -1003,7 +1003,7 @@ enumerator_size(VALUE obj)
 	return (*e->size_fn)(e->obj, e->args);
     }
     if (rb_obj_is_proc(e->size)) {
-        if(e->args)
+        if (e->args)
 	    return rb_proc_call(e->size, e->args);
         else
             return rb_proc_call_with_block(e->size, 0, 0, Qnil);

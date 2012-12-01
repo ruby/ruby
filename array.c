@@ -379,7 +379,7 @@ ary_alloc(VALUE klass)
 static VALUE
 empty_ary_alloc(VALUE klass)
 {
-    if(RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
+    if (RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
 	RUBY_DTRACE_ARRAY_CREATE(0, rb_sourcefile(), rb_sourceline());
     }
 
@@ -398,7 +398,7 @@ ary_new(VALUE klass, long capa)
 	rb_raise(rb_eArgError, "array size too big");
     }
 
-    if(RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
+    if (RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
 	RUBY_DTRACE_ARRAY_CREATE(capa, rb_sourcefile(), rb_sourceline());
     }
 
@@ -5042,7 +5042,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	}
 
 	/* put it on the result array */
-	if(NIL_P(result)) {
+	if (NIL_P(result)) {
 	    FL_SET(t0, FL_USER5);
 	    rb_yield(subarray);
 	    if (! FL_TEST(t0, FL_USER5)) {

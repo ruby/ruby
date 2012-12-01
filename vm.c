@@ -1986,7 +1986,7 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
     VALUE hash = rb_hash_new();
     int i;
 
-    if(RUBY_DTRACE_HASH_CREATE_ENABLED()) {
+    if (RUBY_DTRACE_HASH_CREATE_ENABLED()) {
 	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
     }
 

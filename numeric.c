@@ -850,7 +850,7 @@ flodivmod(double x, double y, double *divp, double *modp)
     double div, mod;
 
     if (y == 0.0) rb_num_zerodiv();
-    if((x == 0.0) || (isinf(y) && !isinf(x)))
+    if ((x == 0.0) || (isinf(y) && !isinf(x)))
         mod = x;
     else {
 #ifdef HAVE_FMOD

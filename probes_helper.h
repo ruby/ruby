@@ -23,7 +23,7 @@ VALUE rb_class_path_no_cache(VALUE _klass);
 	    else if (FL_TEST(_klass, FL_SINGLETON)) { \
 		_klass = rb_iv_get(_klass, "__attached__"); \
 	    } \
-	    switch(TYPE(_klass)) { \
+	    switch (TYPE(_klass)) { \
 		case T_CLASS: \
 		case T_ICLASS: \
 		case T_MODULE: \
@@ -31,7 +31,8 @@ VALUE rb_class_path_no_cache(VALUE _klass);
 		    VALUE _name = rb_class_path_no_cache(_klass); \
 		    if (!NIL_P(_name)) { \
 		        classname = StringValuePtr(_name); \
-		    } else { \
+		    } \
+		    else {			 \
 		        classname = "<unknown>"; \
 		    } \
 		    methodname = rb_id2name(_id); \

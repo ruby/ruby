@@ -2490,7 +2490,7 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
     VALUE initial_state;
     VALUE enumerator;
 
-    if(!rb_block_given_p())
+    if (!rb_block_given_p())
 	rb_raise(rb_eArgError, "no block given");
     rb_scan_args(argc, argv, "01", &initial_state);
 

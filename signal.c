@@ -394,7 +394,7 @@ rb_f_kill(int argc, VALUE *argv)
 	}
 	if (strncmp("SIG", s, 3) == 0)
 	    s += 3;
-	if((sig = signm2signo(s)) == 0)
+	if ((sig = signm2signo(s)) == 0)
 	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", s);
 
 	if (negative)

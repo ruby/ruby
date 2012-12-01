@@ -1487,7 +1487,7 @@ rb_locale_charmap(VALUE klass)
 # endif
     if (!codeset) {
 	UINT codepage = GetConsoleCP();
-	if(!codepage) codepage = GetACP();
+	if (!codepage) codepage = GetACP();
 	snprintf(cp, sizeof(cp), "CP%d", codepage);
 	codeset = cp;
     }

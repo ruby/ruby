@@ -385,7 +385,7 @@ str_alloc(VALUE klass)
 static inline VALUE
 empty_str_alloc(VALUE klass)
 {
-    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
 	RUBY_DTRACE_STRING_CREATE(0, rb_sourcefile(), rb_sourceline());
     }
     return str_alloc(klass);
@@ -400,7 +400,7 @@ str_new(VALUE klass, const char *ptr, long len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
 	RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
     }
 
@@ -932,9 +932,9 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
-    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	RUBY_DTRACE_STRING_CREATE(
-            RSTRING_LEN(str), rb_sourcefile(), rb_sourceline());
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
+				  rb_sourcefile(), rb_sourceline());
     }
     return str_replace(str_alloc(rb_cString), str);
 }
