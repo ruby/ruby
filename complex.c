@@ -2200,9 +2200,9 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "to_s", nucomp_to_s, 0);
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);
 
-    rb_define_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
+    rb_define_private_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
     compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject);
-    rb_define_method(compat, "marshal_load", nucomp_marshal_load, 1);
+    rb_define_private_method(compat, "marshal_load", nucomp_marshal_load, 1);
     rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 
     /* --- */

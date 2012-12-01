@@ -1,4 +1,7 @@
-Sat Dec  1 18:16:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec  1 18:17:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (Init_Complex), time.c (Init_Time): make marshal methods
+	  private.  [Feature #6539]
 
 	* object.c (Init_Object): make remove_instance_variable public.
 	  [Feature #6539]

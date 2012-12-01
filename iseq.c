@@ -2078,8 +2078,8 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "line_trace_specify", rb_iseq_line_trace_specify, 2);
 
 #if 0 /* TBD */
-    rb_define_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);
-    rb_define_method(rb_cISeq, "marshal_load", iseq_marshal_load, 1);
+    rb_define_private_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);
+    rb_define_private_method(rb_cISeq, "marshal_load", iseq_marshal_load, 1);
 #endif
 
     /* disable this feature because there is no verifier. */

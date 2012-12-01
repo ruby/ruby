@@ -5051,12 +5051,12 @@ Init_Time(void)
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
 
     /* methods for marshaling */
-    rb_define_method(rb_cTime, "_dump", time_dump, -1);
-    rb_define_singleton_method(rb_cTime, "_load", time_load, 1);
+    rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
+    rb_define_private_method(rb_singleton_class(rb_cTime), "_load", time_load, 1);
 #if 0
     /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
-    rb_define_method(rb_cTime, "marshal_dump", time_mdump, 0);
-    rb_define_method(rb_cTime, "marshal_load", time_mload, 1);
+    rb_define_private_method(rb_cTime, "marshal_dump", time_mdump, 0);
+    rb_define_private_method(rb_cTime, "marshal_load", time_mload, 1);
 #endif
 
 #ifdef DEBUG_FIND_TIME_NUMGUESS
