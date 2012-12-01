@@ -1082,7 +1082,7 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
 VALUE
 rb_tracepoint_new(VALUE target_thread, rb_event_flag_t events, void (*func)(VALUE, void *), void *data)
 {
-    rb_thread_t *target_th = GET_THREAD();
+    rb_thread_t *target_th = 0;
     if (RTEST(target_thread)) {
 	/* TODO: now unsupported */
     }
