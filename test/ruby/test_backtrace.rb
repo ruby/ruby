@@ -92,6 +92,14 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(cs, locs)
   end
 
+  def test_caller_locations_to_s_inspect
+    cs = caller(0); locs = caller_locations(0)
+    cs.zip(locs){|str, loc|
+      assert_equal(str, loc.to_s)
+      assert_equal(str.inspect, loc.inspect)
+    }
+  end
+
   def th_rec q, n=10
     if n > 1
       th_rec q, n-1

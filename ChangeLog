@@ -1,3 +1,10 @@
+Sat Dec  1 21:18:19 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_backtrace.rb: add a test for
+	  Thread::Backtrace::Location#inspect.
+	  BTW, tests for `caller_locations' are not enough.
+	  Any volunteers are welcome.
+
 Sat Dec  1 21:06:58 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (location_inspect_m): add
