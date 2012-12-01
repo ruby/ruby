@@ -3012,8 +3012,8 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "instance_variable_get", rb_obj_ivar_get, 1);
     rb_define_method(rb_mKernel, "instance_variable_set", rb_obj_ivar_set, 2);
     rb_define_method(rb_mKernel, "instance_variable_defined?", rb_obj_ivar_defined, 1);
-    rb_define_private_method(rb_mKernel, "remove_instance_variable",
-			     rb_obj_remove_instance_variable, 1); /* in variable.c */
+    rb_define_method(rb_mKernel, "remove_instance_variable",
+		     rb_obj_remove_instance_variable, 1); /* in variable.c */
 
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);

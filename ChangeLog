@@ -1,4 +1,7 @@
-Sat Dec  1 18:16:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec  1 18:16:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (Init_Object): make remove_instance_variable public.
+	  [Feature #6539]
 
 	* id.c (Init_id), template/id.h.tmpl: add initialize_{copy,clone,dup}
 	  and respond_to_missing?.

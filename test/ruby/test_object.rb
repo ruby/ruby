@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require_relative 'envutil'
 
@@ -184,7 +185,7 @@ class TestObject < Test::Unit::TestCase
   def test_remove_instance_variable
     o = Object.new
     o.instance_eval { @foo = :foo }
-    o.instance_eval { remove_instance_variable(:@foo) }
+    o.remove_instance_variable(:@foo)
     assert_equal(false, o.instance_variable_defined?(:@foo))
   end
 
