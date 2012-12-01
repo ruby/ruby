@@ -1,3 +1,9 @@
+Sat Dec  1 21:06:58 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c (location_inspect_m): add
+	  Thread::Backtrace::Location#inspect.
+	  It same as loc_obj.to_s.inspect.
+
 Sat Dec  1 19:24:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_puts): recurse for the argument itself, not converted

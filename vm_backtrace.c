@@ -300,6 +300,12 @@ location_to_str_m(VALUE self)
     return location_to_str(location_ptr(self));
 }
 
+static VALUE
+location_inspect_m(VALUE self)
+{
+    return rb_str_inspect(location_to_str(location_ptr(self)));
+}
+
 typedef struct rb_backtrace_struct {
     rb_backtrace_location_t *backtrace;
     rb_backtrace_location_t *backtrace_base;
@@ -860,6 +866,7 @@ Init_vm_backtrace(void)
     rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "absolute_path", location_absolute_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "to_s", location_to_str_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "inspect", location_inspect_m, 0);
 
     rb_define_global_function("caller", rb_f_caller, -1);
     rb_define_global_function("caller_locations", rb_f_caller_locations, -1);
