@@ -187,9 +187,28 @@ module Gem
       path = path.dup.untaint
 
       if path == "-"
-        path = GEM_DEP_FILES.find { |f| File.exists?(f) }
+        here = Dir.pwd
+        start = here
 
-        return unless path
+        begin
+          while true
+            path = GEM_DEP_FILES.find { |f| File.exists?(f) }
+
+            if path
+              path = File.join here, path
+              break
+            end
+
+            Dir.chdir ".."
+
+            # If we're at a toplevel, stop.
+            return if Dir.pwd == here
+
+            here = Dir.pwd
+          end
+        ensure
+          Dir.chdir start
+        end
       end
 
       return unless File.exists? path

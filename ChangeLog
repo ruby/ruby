@@ -1,3 +1,8 @@
+Sat Dec  1 09:42:13 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Search for gem deps file up the directory tree.
+	* test/rubygems/test_gem.rb:  Test for above.
+
 Sat Dec  1 09:33:32 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/runner.rb:  Set GEM_HOME, GEM_PATH and GEM_SKIP to empty set.
