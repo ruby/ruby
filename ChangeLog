@@ -1,3 +1,18 @@
+Sat Dec  1 12:22:17 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* re-added r38053 that is reverted by r38061. Problems by r38053
+	  are resolved by r38096. r38096 removed GEM_SKIP configuration.
+
+	  The below is ChangeLog of r38053:
+
+	* defs/default_gems: Add base directory column.
+
+	* tool/rbinstall.rb:
+	  - Install .gemspecs of default gem to
+	    #{GEM_HOME}/specifications/default/.
+	  - Update files parameter of .gemspecs by relative path from
+	    library directory.
+
 Sat Dec  1 11:09:12 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* variable.c (rb_class_path_no_cache): add a function to get the class

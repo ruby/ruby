@@ -562,24 +562,95 @@ module Gem
       src.sub!(/\A#.*/, '')
       eval(src, nil, path)
     end
+
+    def to_ruby
+        <<-GEMSPEC
+Gem::Specification.new do |s|
+  s.name = #{name.dump}
+  s.version = #{version.dump}
+  s.summary = #{summary.dump}
+  s.description = #{description.dump}
+  s.homepage = #{homepage.dump}
+  s.authors = #{authors.inspect}
+  s.email = #{email.inspect}
+  s.files = #{files.inspect}
+end
+        GEMSPEC
+    end
   end
 end
 
 module RbInstall
   module Specs
+    class FileCollector
+      def initialize(base_dir)
+        @base_dir = base_dir
+      end
+
+      def collect
+        ruby_libraries + built_libraries
+      end
+
+      private
+      def type
+        /\/(ext|lib)?\/.*?\z/ =~ @base_dir
+        $1
+      end
+
+      def ruby_libraries
+        case type
+        when "ext"
+          prefix = "#{$extout}/common/"
+          base = "#{prefix}#{relative_base}"
+        when "lib"
+          base = @base_dir
+          prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
+        end
+
+        Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+          remove_prefix(prefix, ruby_source)
+        end
+      end
+
+      def built_libraries
+        case type
+        when "ext"
+          prefix = "#{$extout}/#{CONFIG['arch']}/"
+          base = "#{prefix}#{relative_base}"
+          Dir.glob("#{base}{.so,/**/*.so}").collect do |built_library|
+            remove_prefix(prefix, built_library)
+          end
+        when "lib"
+          []
+        end
+      end
+
+      def relative_base
+        /\/#{Regexp.escape(type)}\/(.*?)\z/ =~ @base_dir
+        $1
+      end
+
+      def remove_prefix(prefix, string)
+        string.sub(/\A#{Regexp.escape(prefix)}/, "")
+      end
+    end
+
     class Reader < Struct.new(:src)
       def gemspec
         @gemspec ||= begin
-          Gem::Specification.load(src) || raise("invalid spec in #{src}")
+          spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
+          file_collector = FileCollector.new(File.dirname(src))
+          spec.files = file_collector.collect
+          spec
         end
       end
 
       def spec_source
-        File.read src
+        @gemspec.to_ruby
       end
     end
 
-    class Generator < Struct.new(:name, :src, :execs)
+    class Generator < Struct.new(:name, :base_dir, :src, :execs)
       def gemspec
         @gemspec ||= eval spec_source
       end
@@ -591,6 +662,7 @@ Gem::Specification.new do |s|
   s.version = #{version.dump}
   s.summary = "This #{name} is bundled with Ruby"
   s.executables = #{execs.inspect}
+  s.files = #{files.inspect}
 end
         GEMSPEC
       end
@@ -601,6 +673,11 @@ end
           f.find { |s| /^\s*\w*VERSION\s*=(?!=)/ =~ s }
         } or return
         version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
+      end
+
+      def files
+        file_collector = FileCollector.new(base_dir)
+        file_collector.collect
       end
     end
   end
@@ -615,6 +692,9 @@ install?(:ext, :comm, :gem) do
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
+  default_spec_dir = "#{spec_dir}/default"
+  makedirs(default_spec_dir)
+
   gems = {}
   File.foreach(File.join(srcdir, "defs/default_gems")) do |line|
     line.chomp!
@@ -624,11 +704,12 @@ install?(:ext, :comm, :gem) do
     line.scan(/\G\s*([^\[\]\s]+|\[([^\[\]]*)\])/) do
       words << ($2 ? $2.split : $1)
     end
-    name, src, execs = *words
-    next unless name and src
+    name, base_dir, src, execs = *words
+    next unless name and base_dir and src
 
     src       = File.join(srcdir, src)
-    specgen   = RbInstall::Specs::Generator.new(name, src, execs || [])
+    base_dir  = File.join(srcdir, base_dir)
+    specgen   = RbInstall::Specs::Generator.new(name, base_dir, src, execs || [])
     gems[name] ||= specgen
   end
 
@@ -639,10 +720,12 @@ install?(:ext, :comm, :gem) do
 
   gems.sort.each do |name, specgen|
     gemspec   = specgen.gemspec
+    base_dir  = specgen.src.sub(/\A#{Regexp.escape(srcdir)}\//, "")
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
     puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
-    open_for_install(File.join(spec_dir, "#{full_name}.gemspec"), $data_mode) do
+    gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
+    open_for_install(gemspec_path, $data_mode) do
       specgen.spec_source
     end
 
