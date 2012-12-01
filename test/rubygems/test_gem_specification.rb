@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'rubygems/test_case'
 require 'stringio'
 require 'rubygems/specification'
@@ -1945,10 +1946,13 @@ end
     begin
       require "yaml"
       old_engine = YAML::ENGINE.yamler
+      verbose, $VERBOSE = $VERBOSE, nil
       YAML::ENGINE.yamler = 'syck'
       load 'rubygems/syck_hack.rb'
     rescue NameError
       # probably on 1.8, ignore
+    ensure
+      $VERBOSE = verbose
     end
 
     yield
