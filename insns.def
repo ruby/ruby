@@ -843,32 +843,24 @@ trace
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
-    if (RUBY_DTRACE_METHOD_ENTRY_ENABLED()) {
-        if (flag == RUBY_EVENT_CALL || flag == RUBY_EVENT_C_CALL) {
-          VALUE klass;
-          ID called_id;
+    if (RUBY_DTRACE_METHOD_ENTRY_ENABLED() ||
+        RUBY_DTRACE_METHOD_RETURN_ENABLED() ||
+        RUBY_DTRACE_CMETHOD_ENTRY_ENABLED() ||
+        RUBY_DTRACE_CMETHOD_RETURN_ENABLED()) {
 
-          rb_thread_method_id_and_class(th, &called_id, &klass);
-
-          RUBY_DTRACE_METHOD_ENTRY(
-                  RSTRING_PTR(rb_inspect(klass)),
-                  rb_id2name(called_id),
-                  rb_sourcefile(),
-                  rb_sourceline());
-        }
-    }
-    if (RUBY_DTRACE_METHOD_RETURN_ENABLED()) {
-        if (flag == RUBY_EVENT_RETURN || flag == RUBY_EVENT_C_RETURN) {
-          VALUE klass;
-          ID called_id;
-
-          rb_thread_method_id_and_class(th, &called_id, &klass);
-
-          RUBY_DTRACE_METHOD_RETURN(
-                  RSTRING_PTR(rb_inspect(klass)),
-                  rb_id2name(called_id),
-                  rb_sourcefile(),
-                  rb_sourceline());
+        switch(flag) {
+          case RUBY_EVENT_CALL:
+            RUBY_DTRACE_METHOD_ENTRY_HOOK(th, 0, 0);
+            break;
+          case RUBY_EVENT_C_CALL:
+            RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, 0, 0);
+            break;
+          case RUBY_EVENT_RETURN:
+            RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
+            break;
+          case RUBY_EVENT_C_RETURN:
+            RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, 0, 0);
+            break;
         }
     }
 

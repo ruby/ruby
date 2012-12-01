@@ -4,6 +4,9 @@ provider ruby {
   probe method__entry(const char *, const char *, const char *, int);
   probe method__return(const char *, const char *, const char *, int);
 
+  probe cmethod__entry(const char *, const char *, const char *, int);
+  probe cmethod__return(const char *, const char *, const char *, int);
+
   probe require__entry(const char *, const char *, int);
   probe require__return(const char *);
 

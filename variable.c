@@ -211,8 +211,10 @@ rb_mod_name(VALUE mod)
     return path;
 }
 
+typedef VALUE (*path_cache_func)(VALUE obj, ID id, VALUE val);
+
 static VALUE
-rb_tmp_class_path(VALUE klass, int *permanent)
+rb_tmp_class_path(VALUE klass, int *permanent, path_cache_func cache_path)
 {
     VALUE path = classname(klass, permanent);
     st_data_t n = (st_data_t)path;
@@ -233,12 +235,17 @@ rb_tmp_class_path(VALUE klass, int *permanent)
 		s = "Module";
 	    }
 	    else {
-		s = rb_class2name(RBASIC(klass)->klass);
+		int perm;
+		VALUE path;
+
+		path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, cache_path);
+		s = RSTRING_PTR(path);
 	    }
 	}
 	path = rb_sprintf("#<%s:%p>", s, (void*)klass);
 	OBJ_FREEZE(path);
-	rb_ivar_set(klass, tmp_classpath, path);
+
+	cache_path(klass, tmp_classpath, path);
 	*permanent = 0;
 
 	return path;
@@ -249,7 +256,22 @@ VALUE
 rb_class_path(VALUE klass)
 {
     int permanent;
-    VALUE path = rb_tmp_class_path(klass, &permanent);
+    VALUE path = rb_tmp_class_path(klass, &permanent, rb_ivar_set);
+    if (!NIL_P(path)) path = rb_str_dup(path);
+    return path;
+}
+
+static VALUE
+null_cache(VALUE obj, ID id, VALUE val)
+{
+    return Qnil;
+}
+
+VALUE
+rb_class_path_no_cache(VALUE klass)
+{
+    int permanent;
+    VALUE path = rb_tmp_class_path(klass, &permanent, null_cache);
     if (!NIL_P(path)) path = rb_str_dup(path);
     return path;
 }
@@ -265,7 +287,7 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
     }
     else {
 	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent, rb_ivar_set));
 	rb_str_cat2(str, "::");
 	rb_str_append(str, name);
 	OBJ_FREEZE(str);
@@ -288,7 +310,7 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
     }
     else {
 	int permanent;
-	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent, rb_ivar_set));
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
 	if (!permanent) {

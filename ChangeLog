@@ -1,3 +1,25 @@
+Sat Dec  1 11:09:12 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* variable.c (rb_class_path_no_cache): add a function to get the class
+	  path without caching the computed path. Some classes are frozen, and
+	  will raise an exception without this.
+	
+	* probes.d (cmethod-entry, cmethod-return): separate cmethods from
+	  regular methods to match set trace func.
+	
+	* probes_helper.h: refactor macros.  Fix probes to avoid calling
+	  #inspect when profiling.
+
+	* insns.def: update for use with new macros.
+
+	* vm_eval.c: ditto
+
+	* vm_insnhelper.c: ditto
+
+	* test/dtrace/test_singleton_function.rb: fix test for new output.
+
+	* test/dtrace/test_cmethod.rb: test the cmethod probes.
+
 Sat Dec  1 09:44:16 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rdoc/test_rdoc_options.rb:  Windows drive letters are
