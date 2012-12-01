@@ -1,3 +1,8 @@
+Sat Dec  1 15:14:25 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb (test_cv_wait_deadlock): enable
+	  cv deadlock test.
+
 Sat Dec  1 14:23:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/thread.rb (ConditionVariable): use hash instead of array for

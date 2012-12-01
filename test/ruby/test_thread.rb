@@ -197,18 +197,24 @@ class TestThread < Test::Unit::TestCase
     assert_equal ["C1", "C1", "C1", "P1", "P2", "C2", "C2", "C2"], result
   end
 
-#  Hmm.. don't we have a way of catch fatal exception?
-#
-#  def test_cv_wait_deadlock
-#    mutex = Mutex.new
-#    cv = ConditionVariable.new
-#
-#    assert_raise(fatal) {
-#      mutex.lock
-#      cv.wait mutex
-#      mutex.unlock
-#    }
-#  end
+  def test_condvar_wait_deadlock
+    assert_in_out_err([], <<-INPUT, ["No live threads left. Deadlock?"], [])
+      require "thread"
+
+      mutex = Mutex.new
+      cv = ConditionVariable.new
+
+      mesg = nil
+      begin
+        mutex.lock
+        cv.wait mutex
+        mutex.unlock
+      rescue Exception => e
+        mesg = e.message
+      end
+      print mesg
+INPUT
+  end
 
   def test_condvar_wait_deadlock_2
     nr_threads = 3
