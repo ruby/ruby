@@ -6660,13 +6660,15 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
     if (recur) {
 	tmp = rb_str_new2("[...]");
 	rb_io_puts(1, &tmp, out);
-	return Qnil;
+	return Qtrue;
     }
+    ary = rb_check_array_type(ary);
+    if (NIL_P(ary)) return Qfalse;
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_PTR(ary)[i];
 	rb_io_puts(1, &tmp, out);
     }
-    return Qnil;
+    return Qtrue;
 }
 
 /*
@@ -6705,9 +6707,7 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
 	    line = argv[i];
 	    goto string;
 	}
-	line = rb_check_array_type(argv[i]);
-	if (!NIL_P(line)) {
-	    rb_exec_recursive(io_puts_ary, line, out);
+	if (rb_exec_recursive(io_puts_ary, argv[i], out)) {
 	    continue;
 	}
 	line = rb_obj_as_string(argv[i]);

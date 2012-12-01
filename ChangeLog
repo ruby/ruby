@@ -1,3 +1,8 @@
+Sat Dec  1 19:24:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_puts): recurse for the argument itself, not converted
+	  array elements.  [ruby-core:42444] [Bug #5986]
+
 Sat Dec  1 19:01:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, r_object0): call private marshal methods.

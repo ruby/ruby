@@ -2583,5 +2583,17 @@ End
       end
     end
   end
+
+  def test_puts_recursive_ary
+    bug5986 = '[ruby-core:42444]'
+    c = Class.new {
+      def to_ary
+        [self]
+      end
+    }
+    s = StringIO.new
+    s.puts(c.new)
+    assert_equal("[...]\n", s.string, bug5986)
+  end
 end
 
