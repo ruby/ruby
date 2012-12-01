@@ -1430,12 +1430,15 @@ static inline int
 basic_obj_respond_to(VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
+    VALUE args[2];
 
     switch (rb_method_boundp(klass, id, pub|NOEX_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
-	return RTEST(rb_funcall(obj, respond_to_missing, 2, ID2SYM(id), pub ? Qfalse : Qtrue));
+	args[0] = ID2SYM(id);
+	args[1] = pub ? Qfalse : Qtrue;
+	return RTEST(rb_funcall2(obj, respond_to_missing, 2, args));
       default:
 	return TRUE;
     }
