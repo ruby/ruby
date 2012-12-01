@@ -1,3 +1,11 @@
+Sat Dec  1 14:23:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (ConditionVariable): use hash instead of array for
+	  @waiters.
+	* test/thread/test_queue.rb (test_sized_queue_and_wakeup): remove
+	  a test because @waiters no longer have a chance to duplicated. Now it's
+	  a hash.
+
 Sat Dec  1 17:16:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-electric.el (ruby-electric-curlies): use kill-region

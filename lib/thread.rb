@@ -52,7 +52,7 @@ class ConditionVariable
   # Creates a new ConditionVariable
   #
   def initialize
-    @waiters = []
+    @waiters = {}
     @waiters_mutex = Mutex.new
   end
 
@@ -67,7 +67,7 @@ class ConditionVariable
       begin
         Thread.async_interrupt_timing(StandardError => :on_blocking) do
           @waiters_mutex.synchronize do
-            @waiters.push(Thread.current)
+            @waiters[Thread.current] = true
           end
           mutex.sleep timeout
         end
@@ -86,10 +86,10 @@ class ConditionVariable
   def signal
     Thread.async_interrupt_timing(StandardError => :on_blocking) do
       begin
-        t = @waiters_mutex.synchronize {@waiters.shift}
+        t, _ = @waiters_mutex.synchronize { @waiters.shift }
         t.run if t
       rescue ThreadError
-        retry # t was alread dead?
+        retry # t was already dead?
       end
     end
     self
@@ -100,12 +100,12 @@ class ConditionVariable
   #
   def broadcast
     Thread.async_interrupt_timing(StandardError => :on_blocking) do
-      waiters0 = nil
+      threads = nil
       @waiters_mutex.synchronize do
-        waiters0 = @waiters.dup
+        threads = @waiters.keys
         @waiters.clear
       end
-      for t in waiters0
+      for t in threads
         begin
           t.run
         rescue ThreadError

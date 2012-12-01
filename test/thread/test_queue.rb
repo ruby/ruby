@@ -56,24 +56,6 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(1, q.max)
   end
 
-  def test_sized_queue_and_wakeup
-    sq = SizedQueue.new(1)
-    sq.push(0)
-
-    t1 = Thread.start { sq.push(1) ; sleep }
-
-    sleep 0.1 until t1.stop?
-    t1.wakeup
-    sleep 0.1 until t1.stop?
-
-    t2 = Thread.start { sq.push(2) }
-    sleep 0.1 until t1.stop? && t2.stop?
-
-    enque_cond = sq.instance_eval{ @enque_cond }
-    queue_wait = enque_cond.instance_eval { @waiters }
-    assert_equal(queue_wait.uniq, queue_wait)
-  end
-
   def test_queue_pop_interrupt
     q = Queue.new
     t1 = Thread.new { q.pop }
