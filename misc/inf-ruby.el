@@ -220,9 +220,9 @@ to continue it."
   (use-local-map inferior-ruby-mode-map)
   (setq comint-input-filter (function ruby-input-filter))
   (setq comint-get-old-input (function ruby-get-old-input))
-  (compilation-shell-minor-mode t)
   (make-local-variable 'compilation-error-regexp-alist)
   (setq compilation-error-regexp-alist inferior-ruby-error-regexp-alist)
+  (compilation-shell-minor-mode t)
   (run-hooks 'inferior-ruby-mode-hook))
 
 (defvar inferior-ruby-filter-regexp "\\`\\s *\\S ?\\S ?\\s *\\'"
