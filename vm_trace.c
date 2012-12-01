@@ -1169,6 +1169,60 @@ tracepoint_trace_s(int argc, VALUE *argv, VALUE self)
     return trace;
 }
 
+/*
+ *  call-seq:
+ *    trace.inspect  -> string
+ *
+ *  Return a string containing a human-readable TracePoint
+ *  status.
+ */
+
+static VALUE
+tracepoint_inspect(VALUE self)
+{
+    rb_tp_t *tp = tpptr(self);
+
+    if (tp->trace_arg) {
+	switch (tp->trace_arg->event) {
+	  case RUBY_EVENT_LINE:
+	  case RUBY_EVENT_SPECIFIED_LINE:
+	    {
+		VALUE sym = rb_tracearg_method_id(tp->trace_arg);
+		if (NIL_P(sym))
+		  goto default_inspect;
+		return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d in `%"PRIsVALUE"'>",
+				  rb_tracearg_event(tp->trace_arg),
+				  rb_tracearg_path(tp->trace_arg),
+				  FIX2INT(rb_tracearg_lineno(tp->trace_arg)),
+				  sym);
+	    }
+	  case RUBY_EVENT_CALL:
+	  case RUBY_EVENT_C_CALL:
+	  case RUBY_EVENT_RETURN:
+	  case RUBY_EVENT_C_RETURN:
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"'@%"PRIsVALUE":%d>",
+			      rb_tracearg_event(tp->trace_arg),
+			      rb_tracearg_method_id(tp->trace_arg),
+			      rb_tracearg_path(tp->trace_arg),
+			      FIX2INT(rb_tracearg_lineno(tp->trace_arg)));
+	  case RUBY_EVENT_THREAD_BEGIN:
+	  case RUBY_EVENT_THREAD_END:
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE">",
+			      rb_tracearg_event(tp->trace_arg),
+			      rb_tracearg_self(tp->trace_arg));
+	  default:
+	  default_inspect:
+	    return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
+				  rb_tracearg_event(tp->trace_arg),
+				  rb_tracearg_path(tp->trace_arg),
+				  FIX2INT(rb_tracearg_lineno(tp->trace_arg)));
+	}
+    }
+    else {
+	return rb_sprintf("#<TracePoint:%s>", tp->tracing ? "enabled" : "disabled");
+    }
+}
+
 /* This function is called from inits.c */
 void
 Init_vm_trace(void)
@@ -1225,6 +1279,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "enable", tracepoint_enable_m, 0);
     rb_define_method(rb_cTracePoint, "disable", tracepoint_disable_m, 0);
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
+
+    rb_define_method(rb_cTracePoint, "inspect", tracepoint_inspect, 0);
 
     rb_define_method(rb_cTracePoint, "event", tracepoint_attr_event, 0);
     rb_define_method(rb_cTracePoint, "lineno", tracepoint_attr_lineno, 0);

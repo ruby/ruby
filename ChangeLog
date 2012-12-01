@@ -1,3 +1,9 @@
+Sun Dec  2 02:46:04 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: add TracePoint#inspect.
+
+	* test/ruby/test_settracefunc.rb: add a test for this change.
+
 Sat Dec  1 21:18:19 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_backtrace.rb: add a test for

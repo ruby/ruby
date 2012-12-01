@@ -746,4 +746,29 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([created_thread, :thread_end, 0, nil, nil, nil, Thread], events[1])
     assert_equal(2, events.size)
   end
+
+  def test_tracepoint_inspect
+    events = []
+    trace = TracePoint.new{|tp| events << [tp.event, tp.inspect]}
+    assert_equal("#<TracePoint:disabled>", trace.inspect)
+    trace.enable{
+      assert_equal("#<TracePoint:enabled>", trace.inspect)
+      Thread.new{}.join
+    }
+    assert_equal("#<TracePoint:disabled>", trace.inspect)
+    events.each{|(ev, str)|
+      case ev
+      when :line
+        assert_match(/ in /, str)
+      when :call, :c_call
+        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited'@../trunk/test.rb:11>
+      when :return, :c_return
+        assert_match(/return \`/, str) # #<TracePoint:return `m'@../trunk/test.rb:3>
+      when /thread/
+        assert_match(/\#<Thread:/, str) # #<TracePoint:thread_end of #<Thread:0x87076c0>>
+      else
+        assert_match(/\#<TracePoint:/, str)
+      end
+    }
+  end
 end
