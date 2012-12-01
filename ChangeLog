@@ -1,3 +1,8 @@
+Sat Dec  1 19:01:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, r_object0): call private marshal methods.
+	  [Feature #6539]
+
 Sat Dec  1 18:52:22 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/cleanup_command.rb:  Fix cleanup command for

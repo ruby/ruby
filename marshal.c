@@ -644,12 +644,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else {
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
-	if (rb_respond_to(obj, s_mdump)) {
+	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
 	    volatile VALUE v;
 
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
-	    v = rb_funcall(obj, s_mdump, 0, 0);
+	    v = rb_funcall2(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
 	    hasiv = has_ivars(obj, ivtbl);
 	    if (hasiv) w_byte(TYPE_IVAR, arg);
@@ -658,12 +658,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (hasiv) w_ivar(obj, ivtbl, &c_arg);
 	    return;
 	}
-	if (rb_respond_to(obj, s_dump)) {
+	if (rb_obj_respond_to(obj, s_dump, TRUE)) {
 	    VALUE v;
             st_table *ivtbl2 = 0;
             int hasiv2;
 
-	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
+	    v = INT2NUM(limit);
+	    v = rb_funcall2(obj, s_dump, 1, &v);
 	    check_dump_arg(arg, s_dump);
 	    if (!RB_TYPE_P(v, T_STRING)) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
@@ -831,12 +832,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    {
 		VALUE v;
 
-		if (!rb_respond_to(obj, s_dump_data)) {
+		if (!rb_obj_respond_to(obj, s_dump_data, TRUE)) {
 		    rb_raise(rb_eTypeError,
 			     "no _dump_data is defined for class %s",
 			     rb_obj_classname(obj));
 		}
-		v = rb_funcall(obj, s_dump_data, 0);
+		v = rb_funcall2(obj, s_dump_data, 0, 0);
 		check_dump_arg(arg, s_dump_data);
 		w_class(TYPE_DATA, obj, arg, TRUE);
 		w_object(v, arg, limit);
@@ -1716,7 +1717,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE data;
 
-	    if (!rb_respond_to(klass, s_load)) {
+	    if (!rb_obj_respond_to(klass, s_load, TRUE)) {
 		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
 			 rb_class2name(klass));
 	    }
@@ -1725,7 +1726,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		r_ivar(data, NULL, arg);
 		*ivp = FALSE;
 	    }
-	    v = rb_funcall(klass, s_load, 1, data);
+	    v = rb_funcall2(klass, s_load, 1, &data);
 	    check_load_arg(arg, s_load);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
@@ -1743,13 +1744,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		/* for the case marshal_load is overridden */
 		append_extmod(v, extmod);
             }
-	    if (!rb_respond_to(v, s_mload)) {
+	    if (!rb_obj_respond_to(v, s_mload, TRUE)) {
 		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
 			 rb_class2name(klass));
 	    }
 	    v = r_entry(v, arg);
 	    data = r_object(arg);
-	    rb_funcall(v, s_mload, 1, data);
+	    rb_funcall2(v, s_mload, 1, &data);
 	    check_load_arg(arg, s_mload);
             v = r_leave(v, arg);
 	    if (!NIL_P(extmod)) {
@@ -1776,18 +1777,20 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE oldclass = 0;
+	    VALUE r;
 
 	    v = obj_alloc_by_klass(klass, arg, &oldclass);
 	    if (!RB_TYPE_P(v, T_DATA)) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
 	    v = r_entry(v, arg);
-	    if (!rb_respond_to(v, s_load_data)) {
+	    if (!rb_obj_respond_to(v, s_load_data, TRUE)) {
 		rb_raise(rb_eTypeError,
 			 "class %s needs to have instance method `_load_data'",
 			 rb_class2name(klass));
 	    }
-	    rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
+	    r = r_object0(arg, 0, extmod);
+	    rb_funcall2(v, s_load_data, 1, &r);
 	    check_load_arg(arg, s_load_data);
 	    v = r_leave(v, arg);
 	}
