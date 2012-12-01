@@ -14892,7 +14892,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawLine = (< (!"" !"\n" .)* Newline > | < .+ > Eof) { text }
+  # RawLine = (< (!"\r" !"\n" .)* Newline > | < .+ > Eof) { text }
   def _RawLine
 
     _save = self.pos
@@ -16318,7 +16318,7 @@ class RDoc::Markdown
   Rules[:_OptionallyIndentedLine] = rule_info("OptionallyIndentedLine", "Indent? Line")
   Rules[:_StartList] = rule_info("StartList", "&. { [] }")
   Rules[:_Line] = rule_info("Line", "RawLine:a { a }")
-  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\" !\"\\n\" .)* Newline > | < .+ > Eof) { text }")
+  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\r\" !\"\\n\" .)* Newline > | < .+ > Eof) { text }")
   Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !BlankLine RawLine)+ BlankLine* | BlankLine+ | RawLine)")
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
