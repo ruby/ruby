@@ -1,3 +1,8 @@
+Sun Dec  2 07:24:23 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parser.rb:  Parse files with a -*- rdoc -*- modeline
+	* test/rdoc/test_rdoc_parser.rb:  Test for above
+
 Sun Dec  2 06:02:00 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* gc.h (SET_MACHINE_STACK_END): add volatile for preventing

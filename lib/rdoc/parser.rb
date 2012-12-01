@@ -138,10 +138,31 @@ class RDoc::Parser
     # The default parser must not parse binary files
     ext_name = File.extname file_name
     return parser if ext_name.empty?
-    return if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/
+    if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/ then
+      case check_modeline file_name
+      when 'rdoc' then # continue
+      else return nil
+      end
+    end
 
     parser
   rescue Errno::EACCES
+  end
+
+  ##
+  # Returns the file type from the modeline in +file_name+
+
+  def self.check_modeline file_name
+    line = open file_name do |io|
+      io.gets
+    end
+
+    line =~ /-\*-(.*?)-\*-/
+
+    return nil unless type = $1
+
+    type.strip.downcase
+  rescue ArgumentError # invalid byte sequence, etc.
   end
 
   ##

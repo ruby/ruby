@@ -75,12 +75,52 @@ class TestRDocParser < RDoc::TestCase
     end
   end
 
+  def test_can_parse_modeline
+    readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
+
+    open readme_ext, 'w' do |io|
+      io.puts "# README.EXT -  -*- rdoc -*- created at: Mon Aug 7 16:45:54 JST 1995"
+      io.puts
+      io.puts "This document explains how to make extension libraries for Ruby."
+    end
+
+    assert_equal RDoc::Parser::Simple, @RP.can_parse(readme_ext)
+  ensure
+    File.unlink readme_ext
+  end
+
   ##
   # Selenium hides a .jar file using a .txt extension.
 
   def test_class_can_parse_zip
     hidden_zip = File.expand_path '../hidden.zip.txt', __FILE__
     assert_nil @RP.can_parse(hidden_zip)
+  end
+
+  def test_check_modeline
+    readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
+
+    open readme_ext, 'w' do |io|
+      io.puts "# README.EXT -  -*- RDoc -*- created at: Mon Aug 7 16:45:54 JST 1995"
+      io.puts
+      io.puts "This document explains how to make extension libraries for Ruby."
+    end
+
+    assert_equal 'rdoc', @RP.check_modeline(readme_ext)
+  ensure
+    File.unlink readme_ext
+  end
+
+  def test_check_modeline_no_modeline
+    readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
+
+    open readme_ext, 'w' do |io|
+      io.puts "This document explains how to make extension libraries for Ruby."
+    end
+
+    assert_nil @RP.check_modeline(readme_ext)
+  ensure
+    File.unlink readme_ext
   end
 
   def test_class_for_binary
