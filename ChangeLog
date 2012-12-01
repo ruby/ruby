@@ -1,3 +1,8 @@
+Sat Dec  1 15:05:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): use NAMLEN() to tell the length of d_name
+	  instead of strlen(), which can access beyond the boundary.
+
 Sat Dec  1 13:48:13 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/specification.rb:  Don't add default gems to $LOAD_PATH

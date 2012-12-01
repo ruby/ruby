@@ -1132,10 +1132,9 @@ find_dirsep(const char *p, const char *pend, int flags, rb_encoding *enc)
 }
 
 /* Remove escaping backslashes */
-static void
-remove_backslashes(char *p, rb_encoding *enc)
+static char *
+remove_backslashes(char *p, register const char *pend, rb_encoding *enc)
 {
-    register const char *pend = p + strlen(p);
     char *t = p;
     char *s = p;
 
@@ -1154,6 +1153,8 @@ remove_backslashes(char *p, rb_encoding *enc)
 
     if (t != s)
 	memmove(t, s, p - s); /* move '\0' too */
+
+    return p;
 }
 
 /* Globing pattern */
@@ -1247,19 +1248,18 @@ glob_free_pattern(struct glob_pattern *list)
 }
 
 static char *
-join_path(const char *path, int dirsep, const char *name)
+join_path(const char *path, int dirsep, const char *name, size_t namlen)
 {
     long len = strlen(path);
-    long len2 = strlen(name)+(dirsep?1:0)+1;
-    char *buf = GLOB_ALLOC_N(char, len+len2);
+    char *buf = GLOB_ALLOC_N(char, len+namlen+(dirsep?1:0)+1);
 
     if (!buf) return 0;
     memcpy(buf, path, len);
     if (dirsep) {
 	buf[len++] = '/';
     }
-    buf[len] = '\0';
-    strlcat(buf+len, name, len2);
+    memcpy(buf+len, name, namlen);
+    buf[len+namlen] = '\0';
     return buf;
 }
 
@@ -1364,7 +1364,7 @@ glob_helper(
 	    if (status) return status;
 	}
 	if (match_dir && isdir == YES) {
-	    char *tmp = join_path(path, dirsep, "");
+	    char *tmp = join_path(path, dirsep, "", 0);
 	    if (!tmp) return -1;
 	    status = glob_call_func(func, tmp, arg, enc);
 	    GLOB_FREE(tmp);
@@ -1394,7 +1394,7 @@ glob_helper(
 		if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
 	    }
 
-	    buf = join_path(path, dirsep, dp->d_name);
+	    buf = join_path(path, dirsep, dp->d_name, NAMLEN(dp));
 	    if (!buf) {
 		status = -1;
 		break;
@@ -1458,7 +1458,8 @@ glob_helper(
 		    break;
 		}
 		memcpy(name, (*cur)->str, len);
-		if (escape) remove_backslashes(name, enc);
+		if (escape)
+		    len = remove_backslashes(name, name+len-1, enc) - name;
 
 		new_beg = new_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
 		if (!new_beg) {
@@ -1474,7 +1475,7 @@ glob_helper(
 		    }
 		}
 
-		buf = join_path(path, dirsep, name);
+		buf = join_path(path, dirsep, name, len);
 		GLOB_FREE(name);
 		if (!buf) {
 		    GLOB_FREE(new_beg);
