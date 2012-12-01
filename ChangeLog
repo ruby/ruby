@@ -1,3 +1,11 @@
+Sat Dec  1 16:40:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb: move ConditionVariable related test
+	  into test/thread/test_cv.rb.
+	* test/thread/test_cv.rb: new file.
+	* test/thread/test_cv.rb (test_condvar_empty_signal): new tests.
+	* test/thread/test_cv.rb (test_condvar_empty_broadcast): ditto.
+
 Sat Dec  1 15:14:25 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb (test_cv_wait_deadlock): enable
