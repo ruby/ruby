@@ -183,7 +183,7 @@ Sat Dec  1 01:51:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 Sat Dec  1 01:49:52 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* test/rubygems/test_gem_dependency_installler.rb: gems are of course
+	* test/rubygems/test_gem_dependency_installer.rb: gems are of course
 	  binary files, so use a binary reading method when reading it.
 	  see [ruby-core:50388].
 
