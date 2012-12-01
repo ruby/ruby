@@ -1,3 +1,9 @@
+Sat Dec  1 09:33:32 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* test/runner.rb:  Set GEM_HOME, GEM_PATH and GEM_SKIP to empty set.
+	  With default_gem support in RubyGems GEM_SKIP prevents loading of
+          built-in gems.
+
 Sat Dec  1 07:16:17 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* compile.c (ADD_CATCH_ENTRY): add a cast to fix SEGV with x64 mingw
