@@ -1,3 +1,11 @@
+Sat Dec  1 18:16:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id.c (Init_id), template/id.h.tmpl: add initialize_{copy,clone,dup}
+	  and respond_to_missing?.
+
+	* vm_method.c (rb_method_entry_make): make above methods private.
+	  [Feature #6539]
+
 Sat Dec  1 16:40:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb: move ConditionVariable related test

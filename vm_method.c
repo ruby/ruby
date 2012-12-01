@@ -190,7 +190,9 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
 	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
+	(mid == idInitialize || mid == idInitialize_copy ||
+	 mid == idInitialize_clone || mid == idInitialize_dup ||
+	 mid == idRespond_to_missing)) {
 	noex = NOEX_PRIVATE | noex;
     }
 

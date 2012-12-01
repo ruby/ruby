@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require_relative 'envutil'
 
@@ -31,6 +32,10 @@ class TestMethod < Test::Unit::TestCase
   end
   class T
     def initialize; end
+    def initialize_copy(*) super end
+    def initialize_clone(*) super end
+    def initialize_dup(*) super end
+    def respond_to_missing?(*) super end
     def normal_method; end
   end
   module M
@@ -329,6 +334,10 @@ class TestMethod < Test::Unit::TestCase
   def test_default_accessibility
     assert T.public_instance_methods.include?(:normal_method), 'normal methods are public by default'
     assert !T.public_instance_methods.include?(:initialize), '#initialize is private'
+    assert !T.public_instance_methods.include?(:initialize_copy), '#initialize_copy is private'
+    assert !T.public_instance_methods.include?(:initialize_clone), '#initialize_clone is private'
+    assert !T.public_instance_methods.include?(:initialize_dup), '#initialize_dup is private'
+    assert !T.public_instance_methods.include?(:respond_to_missing?), '#respond_to_missing? is private'
     assert !M.public_instance_methods.include?(:func), 'module methods are private by default'
     assert M.public_instance_methods.include?(:meth), 'normal methods are public by default'
   end

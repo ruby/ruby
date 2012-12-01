@@ -26,6 +26,7 @@ Init_id(void)
     REGISTER_SYMID(idIFUNC, "<IFUNC>");
     REGISTER_SYMID(idCFUNC, "<CFUNC>");
     REGISTER_SYMID(idRespond_to, "respond_to?");
+    REGISTER_SYMID(idRespond_to_missing, "respond_to_missing?");
 
     REGISTER_SYMID(id_core_set_method_alias,   	    "core#set_method_alias");
     REGISTER_SYMID(id_core_set_variable_alias, 	    "core#set_variable_alias");
@@ -54,5 +55,8 @@ Init_id(void)
     REGISTER_SYMID(idSend, "send");
     REGISTER_SYMID(id__send__, "__send__");
     REGISTER_SYMID(idInitialize, "initialize");
+    REGISTER_SYMID(idInitialize_copy, "initialize_copy");
+    REGISTER_SYMID(idInitialize_clone, "initialize_clone");
+    REGISTER_SYMID(idInitialize_dup, "initialize_dup");
     REGISTER_SYMID(idUScore, "_");
 }
