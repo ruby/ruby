@@ -174,7 +174,7 @@ strings. Note that you must have Font Lock enabled."
              (if (eq last-command-event ?{)
                  (save-excursion
                    (when (not (char-equal ?\# (preceding-char)))
-                       (delete-backward-char)
+                       (kill-region (point) (1- (point)))
                        (insert "#"))))
              (save-excursion
                (backward-char 1)

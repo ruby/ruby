@@ -1,3 +1,8 @@
+Sat Dec  1 17:16:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-electric.el (ruby-electric-curlies): use kill-region
+	  instead of interactive command delete-backward-char.
+
 Sat Dec  1 17:12:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/inf-ruby.el (inferior-ruby-mode): fix the
