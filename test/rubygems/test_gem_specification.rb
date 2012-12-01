@@ -436,15 +436,13 @@ dependencies: []
   end
 
   def test_emits_zulu_timestamps_properly
-    skip "bug only on 1.9.2" unless RUBY_VERSION =~ /1\.9\.2/
-
     t = Time.utc(2012, 3, 12)
     @a2.date = t
 
     yaml = with_psych { @a2.to_yaml }
 
     assert_match %r!date: 2012-03-12 00:00:00\.000000000 Z!, yaml
-  end
+  end if RUBY_VERSION =~ /1\.9\.2/
 
   def test_initialize
     spec = Gem::Specification.new do |s|
