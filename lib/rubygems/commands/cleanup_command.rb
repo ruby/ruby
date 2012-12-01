@@ -66,6 +66,7 @@ are not removed.
 
     deps = deplist.strongly_connected_components.flatten.reverse
 
+    original_home = Gem.dir
     original_path = Gem.path
 
     deps.each do |spec|
@@ -97,7 +98,7 @@ are not removed.
       end
 
       # Restore path Gem::Uninstaller may have change
-      Gem.use_paths(*original_path)
+      Gem.use_paths(original_home, *original_path)
     end
 
     say "Clean Up Complete"

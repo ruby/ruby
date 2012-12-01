@@ -1042,18 +1042,19 @@ module Gem
 
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
 
-  autoload :Version,         'rubygems/version'
-  autoload :Requirement,     'rubygems/requirement'
-  autoload :Dependency,      'rubygems/dependency'
-  autoload :DependencyList,  'rubygems/dependency_list'
-  autoload :SourceList,      'rubygems/source_list'
-  autoload :SpecFetcher,     'rubygems/spec_fetcher'
-  autoload :Specification,   'rubygems/specification'
-  autoload :PathSupport,     'rubygems/path_support'
-  autoload :Platform,        'rubygems/platform'
-  autoload :ConfigFile,      'rubygems/config_file'
+  autoload :ConfigFile,         'rubygems/config_file'
+  autoload :Dependency,         'rubygems/dependency'
+  autoload :DependencyList,     'rubygems/dependency_list'
   autoload :DependencyResolver, 'rubygems/dependency_resolver'
-  autoload :RequestSet,      'rubygems/request_set'
+  autoload :PathSupport,        'rubygems/path_support'
+  autoload :Platform,           'rubygems/platform'
+  autoload :RequestSet,         'rubygems/request_set'
+  autoload :Requirement,        'rubygems/requirement'
+  autoload :SourceList,         'rubygems/source_list'
+  autoload :SpecFetcher,        'rubygems/spec_fetcher'
+  autoload :Specification,      'rubygems/specification'
+  autoload :Version,            'rubygems/version'
+  autoload :Source,             'rubygems/source'
 
   require "rubygems/specification"
 end

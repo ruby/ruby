@@ -1,3 +1,10 @@
+Sat Dec  1 18:52:22 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/cleanup_command.rb:  Fix cleanup command for
+	  multiple gems.  [ruby-trunk - #7481] by Kouhei Sutou
+	* test/rubygems/test_gem_commands_cleanup_command.rb:  Test for above.
+	* lib/rubygems.rb:  Autoload Gem::Source to prevent test failures
+
 Sat Dec  1 18:17:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (Init_Complex), time.c (Init_Time): make marshal methods

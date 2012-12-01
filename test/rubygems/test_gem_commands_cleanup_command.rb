@@ -24,6 +24,12 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_all
+    gemhome2 = File.join @tempdir, 'gemhome2'
+
+    Gem.ensure_gem_subdirectories gemhome2
+
+    Gem.use_paths @gemhome, gemhome2
+
     @b_1 = quick_spec 'b', 1
     @b_2 = quick_spec 'b', 2
 
@@ -33,6 +39,9 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     @cmd.options[:args] = []
 
     @cmd.execute
+
+    assert_equal @gemhome, Gem.dir, 'GEM_HOME'
+    assert_equal [@gemhome, gemhome2], Gem.path.sort, 'GEM_PATH'
 
     refute_path_exists @a_1.gem_dir
     refute_path_exists @b_1.gem_dir
