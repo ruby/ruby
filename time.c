@@ -4612,10 +4612,7 @@ time_strftime(VALUE time, VALUE format)
     return str;
 }
 
-/*
- * undocumented
- */
-
+/* :nodoc: */
 static VALUE
 time_mdump(VALUE time)
 {
@@ -4713,13 +4710,7 @@ time_mdump(VALUE time)
     return str;
 }
 
-/*
- * call-seq:
- *   time._dump   -> string
- *
- * Dump _time_ for marshaling.
- */
-
+/* :nodoc: */
 static VALUE
 time_dump(int argc, VALUE *argv, VALUE time)
 {
@@ -4731,10 +4722,7 @@ time_dump(int argc, VALUE *argv, VALUE time)
     return str;
 }
 
-/*
- * undocumented
- */
-
+/* :nodoc: */
 static VALUE
 time_mload(VALUE time, VALUE str)
 {
@@ -4851,13 +4839,7 @@ end_submicro: ;
     return time;
 }
 
-/*
- * call-seq:
- *   Time._load(string)   -> time
- *
- * Unmarshal a dumped Time object.
- */
-
+/* :nodoc: */
 static VALUE
 time_load(VALUE klass, VALUE str)
 {

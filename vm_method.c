@@ -1505,6 +1505,8 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     obj.respond_to_missing?(symbol, include_all) -> true or false
  *
+ *  DO NOT USE THIS DIRECTLY.
+ *
  *  Hook method to return whether the _obj_ can respond to _id_ method
  *  or not.
  *
