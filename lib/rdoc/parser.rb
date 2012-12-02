@@ -1,3 +1,5 @@
+# -*- coding: us-ascii -*-
+
 ##
 # A parser is simple a class that subclasses RDoc::Parser and implements #scan
 # to fill in an RDoc::TopLevel with parsed data.
@@ -157,11 +159,16 @@ class RDoc::Parser
       io.gets
     end
 
-    line =~ /-\*-(.*?)-\*-/
+    /-\*-\s*(.*?\S)\s*-\*-/ =~ line
 
     return nil unless type = $1
 
-    type.strip.downcase
+    if /;/ =~ type then
+      return nil unless /(?:\s|\A)mode:\s*([^\s;]+)/i =~ type
+      type = $1
+    end
+
+    type.downcase
   rescue ArgumentError # invalid byte sequence, etc.
   end
 

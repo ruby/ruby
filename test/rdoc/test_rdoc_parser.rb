@@ -1,3 +1,5 @@
+# -*- coding: us-ascii -*-
+
 require 'rdoc/test_case'
 
 class TestRDocParser < RDoc::TestCase
@@ -102,6 +104,20 @@ class TestRDocParser < RDoc::TestCase
 
     open readme_ext, 'w' do |io|
       io.puts "# README.EXT -  -*- RDoc -*- created at: Mon Aug 7 16:45:54 JST 1995"
+      io.puts
+      io.puts "This document explains how to make extension libraries for Ruby."
+    end
+
+    assert_equal 'rdoc', @RP.check_modeline(readme_ext)
+  ensure
+    File.unlink readme_ext
+  end
+
+  def test_check_modeline_with_other
+    readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
+
+    open readme_ext, 'w' do |io|
+      io.puts "# README.EXT -  -*- mode: RDoc; indent-tabs-mode: nil -*-"
       io.puts
       io.puts "This document explains how to make extension libraries for Ruby."
     end

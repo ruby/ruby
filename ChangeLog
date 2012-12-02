@@ -1,3 +1,8 @@
+Mon Dec  3 07:52:41 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parser.rb:  Improved modeline support.  Patch by nobu.
+	* test/rdoc/test_rdoc_parser.rb:  Test for above.
+
 Sun Dec  3 00:06:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): stop checking string
