@@ -17,6 +17,7 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "probes.h"
+#include "id.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG
@@ -3045,7 +3046,7 @@ take_items(VALUE obj, long n)
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
-    if (rb_check_block_call(obj, rb_intern("each"), 0, 0, take_i, (VALUE)args) == Qundef)
+    if (rb_check_block_call(obj, idEach, 0, 0, take_i, (VALUE)args) == Qundef)
 	Check_Type(obj, T_ARRAY);
     return result;
 }

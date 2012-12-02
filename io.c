@@ -16,6 +16,7 @@
 #include "ruby/thread.h"
 #include "dln.h"
 #include "internal.h"
+#include "id.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -7579,7 +7580,7 @@ argf_getline(int argc, VALUE *argv, VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (ARGF_GENERIC_INPUT_P()) {
-	line = rb_funcall3(ARGF.current_file, rb_intern("gets"), argc, argv);
+	line = rb_funcall3(ARGF.current_file, idGets, argc, argv);
     }
     else {
 	if (argc == 0 && rb_rs == rb_default_rs) {
@@ -7657,7 +7658,7 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_gets(argc, argv, argf);
     }
-    return rb_funcall2(argf, rb_intern("gets"), argc, argv);
+    return rb_funcall2(argf, idGets, argc, argv);
 }
 
 /*

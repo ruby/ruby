@@ -2837,13 +2837,13 @@ primary		: literal
 			    m->nd_next = block_append(
 				NEW_IF(
 				    NEW_NODE(NODE_AND,
-					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("length"), 0),
-						      rb_intern("=="), one),
-					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero),
+					     NEW_CALL(NEW_CALL(NEW_DVAR(id), idLength, 0),
+						      idEq, one),
+					     NEW_CALL(NEW_CALL(NEW_DVAR(id), idAREF, zero),
 						      rb_intern("kind_of?"), NEW_LIST(NEW_LIT(rb_cArray))),
 					     0),
 				    NEW_DASGN_CURR(id,
-						   NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero)),
+						   NEW_CALL(NEW_DVAR(id), idAREF, zero)),
 				    0),
 				node_assign($2, NEW_DVAR(id)));
 

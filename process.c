@@ -2851,7 +2851,7 @@ save_env(struct rb_execarg *sargp)
         VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
-            rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
+            rb_block_call(env, idEach, 0, 0, save_env_i,
                           (VALUE)ary);
             sargp->env_modification = ary;
         }

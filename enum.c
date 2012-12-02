@@ -2498,7 +2498,7 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
     rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
     rb_ivar_set(enumerator, rb_intern("chunk_categorize"), rb_block_proc());
     rb_ivar_set(enumerator, rb_intern("chunk_initial_state"), initial_state);
-    rb_block_call(enumerator, rb_intern("initialize"), 0, 0, chunk_i, enumerator);
+    rb_block_call(enumerator, idInitialize, 0, 0, chunk_i, enumerator);
     return enumerator;
 }
 
@@ -2720,7 +2720,7 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
         rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pat"), sep_pat);
     }
     rb_ivar_set(enumerator, rb_intern("slicebefore_enumerable"), enumerable);
-    rb_block_call(enumerator, rb_intern("initialize"), 0, 0, slicebefore_i, enumerator);
+    rb_block_call(enumerator, idInitialize, 0, 0, slicebefore_i, enumerator);
     return enumerator;
 }
 

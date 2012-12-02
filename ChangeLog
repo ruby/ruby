@@ -1,3 +1,14 @@
+Sun Dec  2 18:46:24 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c, enum.c, insns.def, io.c, numeric.c, parse.y, process.c,
+	  range.c: use prepared IDs.
+	  A patch from charliesome (Charlie Somerville).
+	  [Bug #7495]
+
+	* common.mk: add dependency to id.h.
+
+	* common.mk: replace ID_H_INCLUDES with id.h.
+
 Sun Dec  2 16:48:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/weakref.rb (rdoc): Clean up usage, add example,

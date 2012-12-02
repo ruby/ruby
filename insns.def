@@ -751,7 +751,7 @@ defined
 	    VALUE r;
 
 	    args[0] = obj; args[1] = Qfalse;
-	    r = rb_check_funcall(v, rb_intern("respond_to_missing?"), 2, args);
+	    r = rb_check_funcall(v, idRespond_to_missing, 2, args);
 	    if (r != Qundef && RTEST(r))
 		expr_type = DEFINED_METHOD;
 	}
