@@ -45,7 +45,7 @@ require "delegate"
 #   c['baz'] = Object.new
 #   c['qux'] = omg
 #   puts c.inspect
-#   #=> {"foo"=>"bar", "baz"=>#<Object:0x007f4ddfc6cb48>, "qux"=>"omg"}
+#   #=> {"foo"=>"bar", "baz"=>#<Object:0x007f4ddfc6cb48>, "qux"=>"lol"}
 #
 #   # Now run the garbage collector
 #   GC.start
