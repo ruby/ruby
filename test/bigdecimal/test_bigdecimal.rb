@@ -100,6 +100,13 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_global_new_with_tainted_string
+    Thread.new {
+      $SAFE = 1
+      BigDecimal('1'.taint)
+    }.join
+  end
+
   def test_new
     assert_equal(1, BigDecimal.new("1"))
     assert_equal(1, BigDecimal.new("1", 1))
@@ -148,6 +155,13 @@ class TestBigDecimal < Test::Unit::TestCase
       assert_negative_infinite(BigDecimal.new(BigDecimal('-Infinity')))
       assert_nan(BigDecimal(BigDecimal.new('NaN')))
     end
+  end
+
+  def test_new_with_tainted_string
+    Thread.new {
+      $SAFE = 1
+      BigDecimal.new('1'.taint)
+    }.join
   end
 
   def _test_mode(type)

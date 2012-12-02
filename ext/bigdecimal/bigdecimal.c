@@ -2403,7 +2403,6 @@ BigDecimal_new(int argc, VALUE *argv)
 	break;
     }
     StringValueCStr(iniValue);
-    rb_check_safe_obj(iniValue);
     return VpAlloc(mf, RSTRING_PTR(iniValue));
 }
 
