@@ -1,3 +1,8 @@
+Sun Dec  2 17:43:04 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+        * thread.c (RB_GC_SAVE_MACHINE_CONTEXT, rb_gc_save_machine_context):
+	  Don't set machine_regs and machine_stack_end with a different scope.
+	  
 Sun Dec  2 16:48:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/weakref.rb (rdoc): Clean up usage, add example,

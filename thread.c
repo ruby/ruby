@@ -99,11 +99,7 @@ static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_regi
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-#define RB_GC_SAVE_MACHINE_CONTEXT(th) \
-  do { \
-    rb_gc_save_machine_context(th); \
-    SET_MACHINE_STACK_END(&(th)->machine_stack_end); \
-  } while (0)
+#define RB_GC_SAVE_MACHINE_CONTEXT(th) rb_gc_save_machine_context(th)
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
@@ -3619,6 +3615,7 @@ rb_gc_save_machine_context(rb_thread_t *th)
     th->machine_register_stack_end = rb_ia64_bsp();
 #endif
     setjmp(th->machine_regs);
+    SET_MACHINE_STACK_END(&th->machine_stack_end);
 }
 
 /*
