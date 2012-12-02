@@ -1,3 +1,9 @@
+Sun Dec  2 19:26:47 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+        * thread.c (RB_GC_SAVE_MACHINE_CONTEXT, rb_gc_save_machine_context): 
+	  extract rb_gc_save_machine_context to RB_GC_SAVE_MACHINE_CONTEXT.
+	  NOTE: machine_regs and machine_stack_end must be set in current scope.
+
 Sun Dec  2 18:46:24 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, enum.c, insns.def, io.c, numeric.c, parse.y, process.c,

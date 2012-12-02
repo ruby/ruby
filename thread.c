@@ -99,11 +99,19 @@ static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_regi
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
 static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region);
 
-#define RB_GC_SAVE_MACHINE_CONTEXT(th) \
-  do { \
-    rb_gc_save_machine_context(th); \
-    SET_MACHINE_STACK_END(&(th)->machine_stack_end); \
-  } while (0)
+#ifdef __ia64
+#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)          \
+    do{(th)->machine_register_stack_end = rb_ia64_bsp()}while(0)
+#else
+#define RB_GC_SAVE_MACHINE_REGISTER_STACK(th)
+#endif
+#define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
+    do {							\
+	FLUSH_REGISTER_WINDOWS;					\
+	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
+	setjmp((th)->machine_regs);				\
+	SET_MACHINE_STACK_END(&(th)->machine_stack_end);	\
+    } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
@@ -3611,15 +3619,6 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 }
 #endif
 
-void
-rb_gc_save_machine_context(rb_thread_t *th)
-{
-    FLUSH_REGISTER_WINDOWS;
-#ifdef __ia64
-    th->machine_register_stack_end = rb_ia64_bsp();
-#endif
-    setjmp(th->machine_regs);
-}
 
 /*
  *
