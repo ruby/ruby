@@ -1,3 +1,8 @@
+Sun Dec  2 22:05:54 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/generator.rb (Generator#initialize): Make an internal block
+	  return nil instead of self. [Bug #7493]
+
 Tue Oct 16 17:53:44 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_gc): Fix

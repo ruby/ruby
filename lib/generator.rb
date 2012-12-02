@@ -69,7 +69,7 @@ class Generator
   def initialize(enum = nil, &block)
     if enum
       @block = proc { |g|
-	enum.each { |x| g.yield x }
+	enum.each { |x| g.yield x; nil }
       }
     else
       @block = block
