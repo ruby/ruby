@@ -4412,7 +4412,10 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
  *  Document-class: ObjectSpace::WeakMap
  *
  *  An ObjectSpace::WeakMap object holds references to
- *  any objects, but those objects can get disposed by GC.
+ *  any objects, but those objects can get be garbage collected.
+ *
+ *  This class is mostly used internally by WeakRef, please use
+ *  +lib/weakref.rb+ for the public interface.
  */
 
 /*  Document-class: GC::Profiler

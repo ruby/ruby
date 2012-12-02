@@ -1,3 +1,7 @@
+Sun Dec  2 16:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* gc.c (WeakMap): Add doc for internal reference, use lib/weakref.rb
+
 Sun Dec  2 07:24:23 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parser.rb:  Parse files with a -*- rdoc -*- modeline
