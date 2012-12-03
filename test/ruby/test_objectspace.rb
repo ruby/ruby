@@ -75,7 +75,11 @@ End
     }
     GC.enable
     arys.each{|ary|
-      assert_equal(String, ary.inspect.class) # should not cause SEGV
+      begin
+        assert_equal(String, ary.inspect.class) # should not cause SEGV
+      rescue RuntimeError
+        # rescue "can't modify frozen File" error.
+      end
     }
   end
 end

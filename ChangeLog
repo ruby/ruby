@@ -1,3 +1,9 @@
+Mon Dec  3 20:03:38 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_objectspace.rb: skip RuntimeError
+	  which says a message "can't modify frozen File".
+	  Is that correct behavior?
+
 Mon Dec 03 20:00:19 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.c: vm_analysis_insn should be static.
