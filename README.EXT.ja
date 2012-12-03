@@ -1,8 +1,8 @@
-.\" README.EXT.ja -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
+# README.EXT.ja -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
 Rubyの拡張ライブラリの作り方を説明します．
 
-1．基礎知識
+= 基礎知識
 
 Cの変数には型があり，データには型がありません．ですから，た
 とえばポインタをintの変数に代入すると，その値は整数として取
@@ -17,47 +17,47 @@ RubyのデータはVALUEというCの型で表現されます．VALUE型のデ�
 
 VALUEからCにとって意味のあるデータを取り出すためには
 
- (1) VALUEのデータタイプを知る
- (2) VALUEをCのデータに変換する
+1. VALUEのデータタイプを知る
+2. VALUEをCのデータに変換する
 
 の両方が必要です．(1)を忘れると間違ったデータの変換が行われ
 て，最悪プログラムがcore dumpします．
 
-1.1 データタイプ
+== データタイプ
 
 Rubyにはユーザが使う可能性のある以下のタイプがあります．
 
-	T_NIL		nil
-	T_OBJECT	通常のオブジェクト
-	T_CLASS		クラス
-	T_MODULE	モジュール
-	T_FLOAT		浮動小数点数
-	T_STRING	文字列
-	T_REGEXP	正規表現
-	T_ARRAY		配列
-	T_HASH		連想配列
-	T_STRUCT	(Rubyの)構造体
-	T_BIGNUM	多倍長整数
-	T_FIXNUM	Fixnum(31bitまたは63bit長整数)
-	T_COMPLEX	複素数
-	T_RATIONAL	有理数
-	T_FILE		入出力
-	T_TRUE		真
-	T_FALSE		偽
-	T_DATA		データ
-	T_SYMBOL	シンボル
+T_NIL      :: nil
+T_OBJECT   :: 通常のオブジェクト
+T_CLASS    :: クラス
+T_MODULE   :: モジュール
+T_FLOAT    :: 浮動小数点数
+T_STRING   :: 文字列
+T_REGEXP   :: 正規表現
+T_ARRAY    :: 配列
+T_HASH     :: 連想配列
+T_STRUCT   :: (Rubyの)構造体
+T_BIGNUM   :: 多倍長整数
+T_FIXNUM   :: Fixnum(31bitまたは63bit長整数)
+T_COMPLEX  :: 複素数
+T_RATIONAL :: 有理数
+T_FILE     :: 入出力
+T_TRUE     :: 真
+T_FALSE    :: 偽
+T_DATA     :: データ
+T_SYMBOL   :: シンボル
 
 その他に内部で利用されている以下のタイプがあります．
 
-	T_ICLASS
-	T_MATCH
-	T_UNDEF
-	T_NODE
-	T_ZOMBIE
+  T_ICLASS
+  T_MATCH
+  T_UNDEF
+  T_NODE
+  T_ZOMBIE
 
 ほとんどのタイプはCの構造体で実装されています．
 
-1.2 VALUEのデータタイプをチェックする
+== VALUEのデータタイプをチェックする
 
 ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
 タイプを知ることが出来ます．TYPE()マクロは上で紹介したT_XXXX
@@ -94,7 +94,7 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されてい�
   FIXNUM_P(obj)
   NIL_P(obj)
 
-1.3 VALUEをCのデータに変換する
+== VALUEをCのデータに変換する
 
 データタイプがT_NIL，T_FALSE，T_TRUEである時，データはそれぞ
 れnil，false，trueです．このデータタイプのオブジェクトはひと
@@ -153,17 +153,17 @@ Rubyの構造体を直接アクセスする時に気をつけなければなら�
 ないことです．直接変更した場合，オブジェクトの内容の整合性が
 とれなくなって，思わぬバグの原因になります．
 
-1.4 CのデータをVALUEに変換する
+== CのデータをVALUEに変換する
 
 VALUEの実際の構造は
 
-  * FIXNUMの場合
+FIXNUMの場合 ::
 
-    1bit左シフトして，LSBを立てる．
+  1bit左シフトして，LSBを立てる．
 
-  * その他のポインタの場合
+その他のポインタの場合 ::
 
-    そのままVALUEにキャストする．
+  そのままVALUEにキャストする．
 
 となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
 うかわかるわけです(ポインタのLSBが立っていないことを仮定して
@@ -179,14 +179,14 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの�
 からVALUEに変換するマクロは以下のものがあります．必要に応じ
 て使い分けてください．
 
-  INT2FIX()	もとの整数が31bitまたは63bit以内に収まる自信
-		がある時
-  INT2NUM()	任意の整数からVALUEへ
+INT2FIX() :: もとの整数が31bitまたは63bit以内に収まる自信
+      	     がある時
+INT2NUM() :: 任意の整数からVALUEへ
 
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 してくれます(が，少し遅い)．
 
-1.5 Rubyのデータを操作する
+== Rubyのデータを操作する
 
 先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
 行うことは勧められません．で，Rubyのデータを操作する時には
@@ -195,147 +195,147 @@ Rubyが用意している関数を用いてください．
 ここではもっとも使われるであろう文字列と配列の生成/操作を行
 い関数をあげます(全部ではないです)．
 
- 文字列に対する関数
+=== 文字列に対する関数
 
-  rb_str_new(const char *ptr, long len)
+rb_str_new(const char *ptr, long len) ::
 
-    新しいRubyの文字列を生成する．
+  新しいRubyの文字列を生成する．
 
-  rb_str_new2(const char *ptr)
-  rb_str_new_cstr(const char *ptr)
+rb_str_new2(const char *ptr)
+rb_str_new_cstr(const char *ptr)
 
-    Cの文字列からRubyの文字列を生成する．この関数の機能は
-    rb_str_new(ptr, strlen(ptr))と同等である．
+  Cの文字列からRubyの文字列を生成する．この関数の機能は
+  rb_str_new(ptr, strlen(ptr))と同等である．
 
-  rb_tainted_str_new(const char *ptr, long len)
+rb_tainted_str_new(const char *ptr, long len)
 
-    汚染マークが付加された新しいRubyの文字列を生成する．外部
-    からのデータに基づく文字列には汚染マークが付加されるべき
-    である．
+  汚染マークが付加された新しいRubyの文字列を生成する．外部
+  からのデータに基づく文字列には汚染マークが付加されるべき
+  である．
 
-  rb_tainted_str_new2(const char *ptr)
-  rb_tainted_str_new_cstr(const char *ptr)
+rb_tainted_str_new2(const char *ptr)
+rb_tainted_str_new_cstr(const char *ptr)
 
-    Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
+  Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
-  rb_sprintf(const char *format, ...)
-  rb_vsprintf(const char *format, va_list ap)
+rb_sprintf(const char *format, ...)
+rb_vsprintf(const char *format, va_list ap)
 
-    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
-    整形し，Rubyの文字列を生成する．
+  Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+  整形し，Rubyの文字列を生成する．
 
-  rb_str_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, long len)
 
-    Rubyの文字列strにlenバイトの文字列ptrを追加する．
+  Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
-  rb_str_cat2(VALUE str, const char* ptr)
+rb_str_cat2(VALUE str, const char* ptr)
 
-    Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
-    rb_str_cat(str, ptr, strlen(ptr))と同等である．
+  Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
+  rb_str_cat(str, ptr, strlen(ptr))と同等である．
 
-  rb_str_catf(VALUE str, const char* format, ...)
-  rb_str_vcatf(VALUE str, const char* format, va_list ap)
+rb_str_catf(VALUE str, const char* format, ...)
+rb_str_vcatf(VALUE str, const char* format, va_list ap)
 
-    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
-    整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
-    rb_str_cat2(str, rb_sprintf(format, ...)) や
-    rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
+  Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+  整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
+  rb_str_cat2(str, rb_sprintf(format, ...)) や
+  rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
-  rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 
-    指定されたエンコーディングでRubyの文字列を生成する.
+  指定されたエンコーディングでRubyの文字列を生成する.
 
-  rb_usascii_str_new(const char *ptr, long len)
-  rb_usascii_str_new_cstr(const char *ptr)
+rb_usascii_str_new(const char *ptr, long len)
+rb_usascii_str_new_cstr(const char *ptr)
 
-    エンコーディングがUS-ASCIIのRubyの文字列を生成する.
+  エンコーディングがUS-ASCIIのRubyの文字列を生成する.
 
-  rb_str_resize(VALUE str, long len)
+rb_str_resize(VALUE str, long len)
 
-    Rubyの文字列のサイズをlenバイトに変更する．strの長さは前
-    以てセットされていなければならない．lenが元の長さよりも短
-    い時は，lenバイトを越えた部分の内容は捨てられる．lenが元
-    の長さよりも長い時は，元の長さを越えた部分の内容は保存さ
-    れないでゴミになるだろう．この関数の呼び出しによって
-    RSTRING_PTR(str)が変更されるかもしれないことに注意．
+  Rubyの文字列のサイズをlenバイトに変更する．strの長さは前
+  以てセットされていなければならない．lenが元の長さよりも短
+  い時は，lenバイトを越えた部分の内容は捨てられる．lenが元
+  の長さよりも長い時は，元の長さを越えた部分の内容は保存さ
+  れないでゴミになるだろう．この関数の呼び出しによって
+  RSTRING_PTR(str)が変更されるかもしれないことに注意．
 
-  rb_str_set_len(VALUE str, long len)
+rb_str_set_len(VALUE str, long len)
 
-    Rubyの文字列のサイズをlenバイトにセットする．strが変更可
-    能でなければ例外が発生する．RSTRING_LEN(str)とは無関係に，
-    lenバイトまでの内容は保存される．lenはstrの容量を越えてい
-    てはならない．
+  Rubyの文字列のサイズをlenバイトにセットする．strが変更可
+  能でなければ例外が発生する．RSTRING_LEN(str)とは無関係に，
+  lenバイトまでの内容は保存される．lenはstrの容量を越えてい
+  てはならない．
 
 
- 配列に対する関数
+== 配列に対する関数
 
-  rb_ary_new()
+rb_ary_new()
 
-    要素が0の配列を生成する．
+  要素が0の配列を生成する．
 
-  rb_ary_new2(long len)
+rb_ary_new2(long len)
 
-    要素が0の配列を生成する．len要素分の領域をあらかじめ割り
-    当てておく．
+  要素が0の配列を生成する．len要素分の領域をあらかじめ割り
+  当てておく．
 
-  rb_ary_new3(long n, ...)
+rb_ary_new3(long n, ...)
 
-    引数で指定したn要素を含む配列を生成する．
+  引数で指定したn要素を含む配列を生成する．
 
-  rb_ary_new4(long n, VALUE *elts)
+rb_ary_new4(long n, VALUE *elts)
 
-    配列で与えたn要素の配列を生成する．
+  配列で与えたn要素の配列を生成する．
 
-  rb_ary_to_ary(VALUE obj)
+rb_ary_to_ary(VALUE obj)
 
-    オブジェクトを配列に変換する.
-    Object#to_aryと同等である.
+  オブジェクトを配列に変換する.
+  Object#to_aryと同等である.
 
- 他にも配列を操作する関数が多数ある. これらは
- 引数aryに配列を渡さなければならない. さもないと
- コアを吐く.
+他にも配列を操作する関数が多数ある. これらは
+引数aryに配列を渡さなければならない. さもないと
+コアを吐く.
 
-  rb_ary_aref(argc, VALUE *argv, VALUE ary)
+rb_ary_aref(argc, VALUE *argv, VALUE ary)
 
-    Array#[]と同等.
+  Array#[]と同等.
 
-  rb_ary_entry(VALUE ary, long offset)
+rb_ary_entry(VALUE ary, long offset)
 
-    ary[offset]
+  ary[offset]
 
-  rb_ary_subseq(VALUE ary, long beg, long len)
+rb_ary_subseq(VALUE ary, long beg, long len)
 
-    ary[beg, len]
+  ary[beg, len]
 
-  rb_ary_push(VALUE ary, VALUE val)
-  rb_ary_pop(VALUE ary)
-  rb_ary_shift(VALUE ary)
-  rb_ary_unshift(VALUE ary, VALUE val)
+rb_ary_push(VALUE ary, VALUE val)
+rb_ary_pop(VALUE ary)
+rb_ary_shift(VALUE ary)
+rb_ary_unshift(VALUE ary, VALUE val)
 
-  rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
 
-    配列aryにptrからlen個のオブジェクトを追加する．
+  配列aryにptrからlen個のオブジェクトを追加する．
 
-2．Rubyの機能を使う
+= Rubyの機能を使う
 
 原理的にRubyで書けることはCでも書けます．RubyそのものがCで記
 述されているんですから，当然といえば当然なんですけど．ここで
 はRubyの拡張に使うことが多いだろうと予測される機能を中心に紹
 介します．
 
-2.1 Rubyに機能を追加する
+== Rubyに機能を追加する
 
 Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 を追加することができます．Rubyでは以下の機能を追加する関数が
 提供されています．
 
- * クラス，モジュール
- * メソッド，特異メソッドなど
- * 定数
+* クラス，モジュール
+* メソッド，特異メソッドなど
+* 定数
 
 では順に紹介します．
 
-2.1.1 クラス/モジュール定義
+=== クラス/モジュール定義
 
 クラスやモジュールを定義するためには，以下の関数を使います．
 
@@ -352,15 +352,15 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい
   VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super)
   VALUE rb_define_module_under(VALUE outer, const char *name)
 
-2.1.2 メソッド/特異メソッド定義
+=== メソッド/特異メソッド定義
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
   void rb_define_method(VALUE klass, const char *name,
-		        VALUE (*func)(), int argc)
+                        VALUE (*func)(), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(), int argc)
 
 
 念のため説明すると「特異メソッド」とは，その特定のオブジェク
@@ -437,7 +437,7 @@ funcはクラスを引数として受け取って，新しく割り当てられ�
 ソースなどを含まない，できるだけ「空」のままにしておいたほう
 がよいでしょう．
 
-2.1.3 定数定義
+=== 定数定義
 
 拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
 でしょう．定数を定義する関数は二つあります．
@@ -448,7 +448,7 @@ funcはクラスを引数として受け取って，新しく割り当てられ�
 前者は特定のクラス/モジュールに属する定数を定義するもの，後
 者はグローバルな定数を定義するものです．
 
-2.2 Rubyの機能をCから呼び出す
+== Rubyの機能をCから呼び出す
 
 既に『1.5 Rubyのデータを操作する』で一部紹介したような関数を
 使えば，Rubyの機能を実現している関数を直接呼び出すことが出来
@@ -459,7 +459,7 @@ funcはクラスを引数として受け取って，新しく割り当てられ�
 
 それ以外にもRubyの機能を呼び出す方法はいくつかあります．
 
-2.2.1 Rubyのプログラムをevalする
+=== Rubyのプログラムをevalする
 
 CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
 与えられたRubyのプログラムを評価する以下の関数があります．
@@ -477,8 +477,7 @@ CからRubyの機能を呼び出すもっとも簡単な方法として，文字
 この関数はエラーが発生するとnilを返します．そして，成功時には
 *stateはゼロに，さもなくば非ゼロになります．
 
-
-2.2.2 IDまたはシンボル
+=== IDまたはシンボル
 
 Cから文字列を経由せずにRubyのメソッドを呼び出すこともできま
 す．その前に，Rubyインタプリタ内でメソッドや変数名を指定する
@@ -487,7 +486,9 @@ Cから文字列を経由せずにRubyのメソッドを呼び出すこともで
 IDとは変数名，メソッド名を表す整数です．Rubyの中では
 
  :識別子
+
 または
+
  :"任意の文字列"
 
 でアクセスできます．Cからこの整数を得るためには関数
@@ -509,7 +510,7 @@ IDとは変数名，メソッド名を表す整数です．Rubyの中では
 返した場合は常に文字列です．第三の関数はRubyの文字列ではなく
 NUL終端されたCの文字列を使います．
 
-2.2.3 CからRubyのメソッドを呼び出す
+=== CからRubyのメソッドを呼び出す
 
 Cから文字列を経由せずにRubyのメソッドを呼び出すためには以下
 の関数を使います．
@@ -524,7 +525,7 @@ Cから文字列を経由せずにRubyのメソッドを呼び出すためには
 
 applyには引数としてRubyの配列を与えます．
 
-2.2.4 変数/定数を参照/更新する
+=== 変数/定数を参照/更新する
 
 Cから関数を使って参照・更新できるのは，定数，インスタンス変
 数です．大域変数は一部のものはCの大域変数としてアクセスでき
@@ -545,24 +546,24 @@ idはrb_intern()で得られるものを使ってください．
 定数を新しく定義するためには『2.1.3 定数定義』で紹介さ
 れている関数を使ってください．
 
-3．RubyとCとの情報共有
+= RubyとCとの情報共有
 
 C言語とRubyの間で情報を共有する方法について解説します．
 
-3.1 Cから参照できるRubyの定数
+== Cから参照できるRubyの定数
 
 以下のRubyの定数はCのレベルから参照できます．
 
   Qtrue
   Qfalse
 
-    真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
 
   Qnil
 
-    C言語から見た「nil」．
+C言語から見た「nil」．
 
-3.2 CとRubyで共有される大域変数
+== CとRubyで共有される大域変数
 
 CとRubyで大域変数を使って情報を共有できます．共有できる大域
 変数にはいくつかの種類があります．そのなかでもっとも良く使わ
@@ -613,7 +614,7 @@ getterとsetterの仕様は以下の通りです．
   (*getter)(ID id);
   (*setter)(VALUE val, ID id);
 
-3.3 CのデータをRubyオブジェクトにする
+== CのデータをRubyオブジェクトにする
 
 Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
 取り扱いたい場合がありえます．このような場合には，Dataという
@@ -664,13 +665,13 @@ Cの構造体へのポインタは変数svalに代入されます．
 これらのDataの使い方はちょっと分かりにくいので，後で説明する
 例題を参照してください．
 
-4．例題 - dbmパッケージを作る
+= 例題 - dbmパッケージを作る
 
 ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
 Rubyのextディレクトリにすでに含まれているdbmライブラリを例に
 して段階的に説明します．
 
-(1) ディレクトリを作る
+== ディレクトリを作る
 
   % mkdir ext/dbm
 
@@ -680,14 +681,14 @@ Ruby 1.1からは任意のディレクトリでダイナミックライブラリ
 ライブラリ用のディレクトリを作る必要があります．名前は適当に
 選んで構いません．
 
-(2) 設計する
+== 設計する
 
 まあ，当然なんですけど，どういう機能を実現するかどうかまず設
 計する必要があります．どんなクラスをつくるか，そのクラスには
 どんなメソッドがあるか，クラスが提供する定数などについて設計
 します．
 
-(3) Cコードを書く
+== Cコードを書く
 
 拡張ライブラリ本体となるC言語のソースを書きます．C言語のソー
 スがひとつの時には「ライブラリ名.c」を選ぶと良いでしょう．C
@@ -704,44 +705,40 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
 です．この関数の中でクラス，モジュール，メソッド，定数などの
 定義を行います．dbm.cから一部引用します．
 
---
-void
-Init_dbm(void)
-{
-    /* DBMクラスを定義する */
-    cDBM = rb_define_class("DBM", rb_cObject);
-    /* DBMはEnumerateモジュールをインクルードする */
-    rb_include_module(cDBM, rb_mEnumerable);
+  void
+  Init_dbm(void)
+  {
+      /* DBMクラスを定義する */
+      cDBM = rb_define_class("DBM", rb_cObject);
+      /* DBMはEnumerateモジュールをインクルードする */
+      rb_include_module(cDBM, rb_mEnumerable);
+  
+      /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
+      rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
+  
+      /* DBMクラスのメソッドclose(): 引数はなし */
+      rb_define_method(cDBM, "close", fdbm_close, 0);
+      /* DBMクラスのメソッド[]: 引数は1個 */
+      rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 
-    /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
-    rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
-
-    /* DBMクラスのメソッドclose(): 引数はなし */
-    rb_define_method(cDBM, "close", fdbm_close, 0);
-    /* DBMクラスのメソッド[]: 引数は1個 */
-    rb_define_method(cDBM, "[]", fdbm_fetch, 1);
-		:
-
-    /* DBMデータを格納するインスタンス変数名のためのID */
-    id_dbm = rb_intern("dbm");
-}
---
+      /* ... */
+  
+      /* DBMデータを格納するインスタンス変数名のためのID */
+      id_dbm = rb_intern("dbm");
+  }
 
 DBMライブラリはdbmのデータと対応するオブジェクトになるはずで
 すから，Cの世界のdbmをRubyの世界に取り込む必要があります．
 
-
 dbm.cではData_Make_Structを以下のように使っています．
 
---
-struct dbmdata {
-    int  di_size;
-    DBM *di_dbm;
-};
-
-
-obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
---
+  struct dbmdata {
+      int  di_size;
+      DBM *di_dbm;
+  };
+  
+  
+  obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 
 ここではdbmstruct構造体へのポインタをDataにカプセル化してい
 ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
@@ -750,12 +747,10 @@ obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
 に以下のマクロを使っています．
 
---
-#define GetDBM(obj, dbmp) {\
-    Data_Get_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp->di_dbm == 0) closed_dbm();\
-}
---
+  #define GetDBM(obj, dbmp) {\
+      Data_Get_Struct(obj, struct dbmdata, dbmp);\
+      if (dbmp->di_dbm == 0) closed_dbm();\
+  }
 
 ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
 の取り出しと，closeされているかどうかのチェックをまとめてい
@@ -766,13 +761,11 @@ DBMクラスにはたくさんメソッドがありますが，分類すると3�
 してはdeleteメソッドがあります．deleteメソッドを実装している
 fdbm_delete()はこのようになっています．
 
---
-static VALUE
-fdbm_delete(VALUE obj, VALUE keystr)
-{
-	:
-}
---
+  static VALUE
+  fdbm_delete(VALUE obj, VALUE keystr)
+  {
+      /* ... */
+  }
 
 引数の数が固定のタイプは第1引数がself，第2引数以降がメソッド
 の引数となります．
@@ -782,17 +775,17 @@ fdbm_delete(VALUE obj, VALUE keystr)
 はDBMのクラスメソッドであるopen()です．これを実装している関
 数fdbm_s_open()はこうなっています．
 
---
-static VALUE
-fdbm_s_open(int argc, VALUE *argv, VALUE klass)
-{
-	:
-    if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-	mode = 0666;		/* default value */
-    }
-	:
-}
---
+  static VALUE
+  fdbm_s_open(int argc, VALUE *argv, VALUE klass)
+  {
+      /* ... */
+
+      if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
+  	mode = 0666;		/* default value */
+      }
+
+      /* ... */
+  }
 
 このタイプの関数は第1引数が与えられた引数の数，第2引数が与え
 られた引数の入っている配列になります．selfは第3引数として与
@@ -807,17 +800,15 @@ fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 引数をRubyの配列として受け取るメソッドの例には
 Thread#initializeがあります．実装はこうです．
 
---
-static VALUE
-thread_initialize(VALUE thread, VALUE args)
-{
-	:
-}
---
+  static VALUE
+  thread_initialize(VALUE thread, VALUE args)
+  {
+      /* ... */
+  }
 
 第1引数はself，第2引数はRubyの配列です．
 
-** 注意事項
+*注意事項*
 
 Rubyと共有はしないがRubyのオブジェクトを格納する可能性のある
 Cの大域変数は以下の関数を使ってRubyインタプリタに変数の存在
@@ -825,7 +816,7 @@ Cの大域変数は以下の関数を使ってRubyインタプリタに変数の
 
   void rb_global_variable(VALUE *var)
 
-(4) extconf.rbを用意する
+== extconf.rbを用意する
 
 Makefileを作る場合の雛型になるextconf.rbというファイルを作り
 ます．extconf.rbはライブラリのコンパイルに必要な条件のチェッ
@@ -856,7 +847,7 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作�
 パイルしない時にはcreate_makefileを呼ばなければMakefileは生
 成されず，コンパイルも行われません．
 
-(5) dependを用意する
+== dependを用意する
 
 もし，ディレクトリにdependというファイルが存在すれば，
 Makefileが依存関係をチェックしてくれます．
@@ -865,7 +856,7 @@ Makefileが依存関係をチェックしてくれます．
 
 などで作ることが出来ます．あって損は無いでしょう．
 
-(6) Makefileを生成する
+== Makefileを生成する
 
 Makefileを実際に生成するためには
 
@@ -887,7 +878,7 @@ vendor_ruby ディレクトリにインストールする場合には
 ディレクトリをext以下に用意した場合にはRuby全体のmakeの時に
 自動的にMakefileが生成されますので，このステップは不要です．
 
-(7) makeする
+== makeする
 
 動的リンクライブラリを生成する場合にはその場でmakeしてくださ
 い．必要であれば make install でインストールされます．
@@ -905,41 +896,42 @@ extconf.rbを書き換えるなどしてMakefileの再生成が必要な時は�
 を作り，そこに 拡張子 .rb のファイルを置いておけば同時にイン
 ストールされます．
 
-(8) デバッグ
+== デバッグ
 
 まあ，デバッグしないと動かないでしょうね．ext/Setupにディレ
 クトリ名を書くと静的にリンクするのでデバッガが使えるようにな
 ります．その分コンパイルが遅くなりますけど．
 
-(9) できあがり
+== できあがり
 
 後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
 使いください．Rubyの作者は拡張ライブラリに関して一切の権利を
 主張しません．
 
-Appendix A. Rubyのソースコードの分類
+= Appendix A. Rubyのソースコードの分類
 
 Rubyのソースはいくつかに分類することが出来ます．このうちクラ
 スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
 
-Ruby言語のコア
+== Ruby言語のコア
 
-  class.c         : クラスとモジュール
-  error.c         : 例外クラスと例外機構
-  gc.c            : 記憶領域管理
-  load.c          : ライブラリのロード
-  object.c        : オブジェクト
-  variable.c      : 変数と定数
+class.c    :: クラスとモジュール
+error.c    :: 例外クラスと例外機構
+gc.c       :: 記憶領域管理
+load.c     :: ライブラリのロード
+object.c   :: オブジェクト
+variable.c :: 変数と定数
 
-Rubyの構文解析器
-  parse.y         : 字句解析器と構文定義
-    -> parse.c    : 自動生成
-  keywords        : 予約語
-    -> lex.c      : 自動生成
+== Rubyの構文解析器
 
-Rubyの評価器 (通称YARV)
+  parse.y      : 字句解析器と構文定義
+    -> parse.c : 自動生成
+  keywords     : 予約語
+    -> lex.c   : 自動生成
+
+== Rubyの評価器 (通称YARV)
   compile.c
   eval.c
   eval_error.c
@@ -964,7 +956,8 @@ Rubyの評価器 (通称YARV)
     -> opt*.inc       : 自動生成
     -> vm.inc         : 自動生成
 
-正規表現エンジン (鬼車)
+== 正規表現エンジン (鬼車)
+
   regex.c
   regcomp.c
   regenc.c
@@ -973,15 +966,15 @@ Rubyの評価器 (通称YARV)
   regparse.c
   regsyntax.c
 
-ユーティリティ関数
+== ユーティリティ関数
 
-  debug.c       : Cデバッガ用のデバッグシンボル
-  dln.c         : 動的ローディング
-  st.c          : 汎用ハッシュ表
-  strftime.c    : 時刻整形
-  util.c        : その他のユーティリティ
+debug.c    :: Cデバッガ用のデバッグシンボル
+dln.c      :: 動的ローディング
+st.c       :: 汎用ハッシュ表
+strftime.c :: 時刻整形
+util.c     :: その他のユーティリティ
 
-Rubyコマンドの実装
+== Rubyコマンドの実装
 
   dmyext.c
   dmydln.c
@@ -995,81 +988,80 @@ Rubyコマンドの実装
   gem_prelude.rb
   prelude.rb
 
-クラスライブラリ
+== クラスライブラリ
 
-  array.c       : Array
-  bignum.c      : Bignum
-  compar.c      : Comparable
-  complex.c     : Complex
-  cont.c        : Fiber, Continuation
-  dir.c         : Dir
-  enum.c        : Enumerable
-  enumerator.c  : Enumerator
-  file.c        : File
-  hash.c        : Hash
-  io.c          : IO
-  marshal.c     : Marshal
-  math.c        : Math
-  numeric.c     : Numeric, Integer, Fixnum, Float
-  pack.c        : Array#pack, String#unpack
-  proc.c        : Binding, Proc
-  process.c     : Process
-  random.c      : 乱数
-  range.c       : Range
-  rational.c    : Rational
-  re.c          : Regexp, MatchData
-  signal.c      : Signal
-  sprintf.c     :
-  string.c      : String
-  struct.c      : Struct
-  time.c        : Time
+array.c      :: Array
+bignum.c     :: Bignum
+compar.c     :: Comparable
+complex.c    :: Complex
+cont.c       :: Fiber, Continuation
+dir.c        :: Dir
+enum.c       :: Enumerable
+enumerator.c :: Enumerator
+file.c       :: File
+hash.c       :: Hash
+io.c         :: IO
+marshal.c    :: Marshal
+math.c       :: Math
+numeric.c    :: Numeric, Integer, Fixnum, Float
+pack.c       :: Array#pack, String#unpack
+proc.c       :: Binding, Proc
+process.c    :: Process
+random.c     :: 乱数
+range.c      :: Range
+rational.c   :: Rational
+re.c         :: Regexp, MatchData
+signal.c     :: Signal
+sprintf.c    :: String#sprintf
+string.c     :: String
+struct.c     :: Struct
+time.c       :: Time
+defs/known_errors.def :: 例外クラス Errno::*
+-> known_errors.inc   :: 自動生成
 
-  defs/known_errors.def  : 例外クラス Errno::*
-    -> known_errors.inc  : 自動生成
+== 多言語化
 
-多言語化
-  encoding.c    : Encoding
-  transcode.c   : Encoding::Converter
-  enc/*.c       : エンコーディングクラス群
-  enc/trans/*   : コードポイント対応表
+encoding.c  :: Encoding
+transcode.c :: Encoding::Converter
+enc/*.c     :: エンコーディングクラス群
+enc/trans/* :: コードポイント対応表
 
-gorubyコマンドの実装
+== gorubyコマンドの実装
 
   goruby.c
   golf_prelude.rb      : goruby固有のライブラリ
     -> golf_prelude.c  : 自動生成
 
-
-Appendix B. 拡張用関数リファレンス
+= Appendix B. 拡張用関数リファレンス
 
 C言語からRubyの機能を利用するAPIは以下の通りである．
 
-** 型
+== 型
 
-VALUE
+VALUE ::
 
   Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
   組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
   体である．VALUE型をこれらにキャストするためにRで始まる構造体
   名を全て大文字にした名前のマクロが用意されている．
 
-** 変数・定数
+== 変数・定数
 
-Qnil
+Qnil ::
 
   定数: nilオブジェクト
 
-Qtrue
+Qtrue ::
 
   定数: trueオブジェクト(真のデフォルト値)
 
-Qfalse
+Qfalse ::
 
   定数: falseオブジェクト
 
-** Cデータのカプセル化
+== Cデータのカプセル化
 
-Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)
+Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval) ::
 
   Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
   のポインタがRubyからアクセスされなくなった時，freeで指定した
@@ -1077,94 +1069,92 @@ Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)
   ジェクトを指している場合，markに指定する関数でマークする必要
   がある．
 
-Data_Make_Struct(klass, type, mark, free, sval)
+Data_Make_Struct(klass, type, mark, free, sval) ::
 
   type型のメモリをmallocし，変数svalに代入した後，それをカプセ
   ル化したデータを返すマクロ．
 
-Data_Get_Struct(data, type, sval)
+Data_Get_Struct(data, type, sval) ::
 
   dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
-** 型チェック
+== 型チェック
 
-TYPE(value)
-FIXNUM_P(value)
-NIL_P(value)
-void Check_Type(VALUE value, int type)
-void Check_SafeStr(VALUE value)
+  TYPE(value)
+  FIXNUM_P(value)
+  NIL_P(value)
+  void Check_Type(VALUE value, int type)
+  SafeStringValue(value)
 
-** 型変換
+== 型変換
 
-FIX2INT(value), INT2FIX(i)
-FIX2LONG(value), LONG2FIX(l)
-NUM2INT(value), INT2NUM(i)
-NUM2UINT(value), UINT2NUM(ui)
-NUM2LONG(value), LONG2NUM(l)
-NUM2ULONG(value), ULONG2NUM(ul)
-NUM2LL(value), LL2NUM(ll)
-NUM2ULL(value), ULL2NUM(ull)
-NUM2OFFT(value), OFFT2NUM(off)
-NUM2SIZET(value), SIZET2NUM(size)
-NUM2SSIZET(value), SSIZET2NUM(ssize)
-NUM2DBL(value)
-rb_float_new(f)
-StringValue(value)
-StringValuePtr(value)
-StringValueCStr(value)
-rb_str_new2(s)
+  FIX2INT(value), INT2FIX(i)
+  FIX2LONG(value), LONG2FIX(l)
+  NUM2INT(value), INT2NUM(i)
+  NUM2UINT(value), UINT2NUM(ui)
+  NUM2LONG(value), LONG2NUM(l)
+  NUM2ULONG(value), ULONG2NUM(ul)
+  NUM2LL(value), LL2NUM(ll)
+  NUM2ULL(value), ULL2NUM(ull)
+  NUM2OFFT(value), OFFT2NUM(off)
+  NUM2SIZET(value), SIZET2NUM(size)
+  NUM2SSIZET(value), SSIZET2NUM(ssize)
+  NUM2DBL(value)
+  rb_float_new(f)
+  StringValue(value)
+  StringValuePtr(value)
+  StringValueCStr(value)
+  rb_str_new2(s)
 
-** クラス/モジュール定義
+== クラス/モジュール定義
 
-VALUE rb_define_class(const char *name, VALUE super)
+VALUE rb_define_class(const char *name, VALUE super) ::
 
   superのサブクラスとして新しいRubyクラスを定義する．
 
-VALUE rb_define_class_under(VALUE module, const char *name, VALUE super)
+VALUE rb_define_class_under(VALUE module, const char *name, VALUE super) ::
 
   superのサブクラスとして新しいRubyクラスを定義し，moduleの
   定数として定義する．
 
-VALUE rb_define_module(const char *name)
+VALUE rb_define_module(const char *name) ::
 
   新しいRubyモジュールを定義する．
 
-VALUE rb_define_module_under(VALUE module, const char *name)
+VALUE rb_define_module_under(VALUE module, const char *name) ::
 
   新しいRubyモジュールを定義し，moduleの定数として定義する．
 
-void rb_include_module(VALUE klass, VALUE module)
+void rb_include_module(VALUE klass, VALUE module) ::
 
   モジュールをインクルードする．classがすでにmoduleをインク
   ルードしている時には何もしない(多重インクルードの禁止)．
 
-void rb_extend_object(VALUE object, VALUE module)
+void rb_extend_object(VALUE object, VALUE module) ::
 
   オブジェクトをモジュール(で定義されているメソッド)で拡張する．
 
-** 大域変数定義
+== 大域変数定義
 
-void rb_define_variable(const char *name, VALUE *var)
+void rb_define_variable(const char *name, VALUE *var) ::
 
   RubyとCとで共有するグローバル変数を定義する．変数名が`$'で
   始まらない時には自動的に追加される．nameとしてRubyの識別子
   として許されない文字(例えば` ')を含む場合にはRubyプログラ
   ムからは見えなくなる．
 
-void rb_define_readonly_variable(const char *name, VALUE *var)
+void rb_define_readonly_variable(const char *name, VALUE *var) ::
 
   RubyとCとで共有するread onlyのグローバル変数を定義する．
   read onlyであること以外はrb_define_variable()と同じ．
 
-void rb_define_virtual_variable(const char *name,
-				VALUE (*getter)(), void (*setter)())
+void rb_define_virtual_variable(const char *name, VALUE (*getter)(), void (*setter)()) ::
 
   関数によって実現されるRuby変数を定義する．変数が参照された
   時にはgetterが，変数に値がセットされた時にはsetterが呼ばれ
   る．
 
-void rb_define_hooked_variable(const char *name, VALUE *var,
-			       VALUE (*getter)(), void (*setter)())
+void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), void (*setter)()) ::
 
   関数によってhookのつけられたグローバル変数を定義する．変数
   が参照された時にはgetterが，関数に値がセットされた時には
@@ -1176,23 +1166,23 @@ void rb_global_variable(VALUE *var)
   GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
   ジェクトを含む大域変数をマークする．
 
-** 定数
+== 定数
 
-void rb_define_const(VALUE klass, const char *name, VALUE val)
+void rb_define_const(VALUE klass, const char *name, VALUE val) ::
 
   定数を定義する．
 
-void rb_define_global_const(const char *name, VALUE val)
+void rb_define_global_const(const char *name, VALUE val) ::
 
   大域定数を定義する．
 
-     rb_define_const(rb_cObject, name, val)
+    rb_define_const(rb_cObject, name, val)
 
   と同じ意味．
 
-** メソッド定義
+== メソッド定義
 
-rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時,
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
@@ -1200,47 +1190,48 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
 
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
+rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
   argc, argv形式で与えられた指定されたフォーマットに従って引
   数を分解し，続くVALUEへの参照にセットします．このフォーマッ
   トは，ABNFで記述すると以下の通りです．
 
---
-scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
+    scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
 
-param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec / pre-opt-post-arg-spec
-pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
-post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
-pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args num-of-trailing-mandatory-args
-option-hash-arg-spec := sym-for-option-hash-arg
-block-arg-spec := sym-for-block-arg
+    param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec /
+                      pre-opt-post-arg-spec
+    pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
+    post-arg-spec  := sym-for-variable-length-args
+                      [num-of-trailing-mandatory-args]
+    pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args
+                             num-of-trailing-mandatory-args
+    option-hash-arg-spec := sym-for-option-hash-arg
+    block-arg-spec := sym-for-block-arg
 
-num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不能な引数の数
-num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
-sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
-                                        ; Rubyの配列で取得するための指定
-num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不能な引数の数
-sym-for-option-hash-arg        := ":"   ; オプションハッシュを取得する
-                                        ; ための指定; 省略不能な引数の
-                                        ; 数よりも多くの引数が指定され，
-                                        ; 最後の引数がハッシュ（または
-                                        ; #to_hashで変換可能）の場合に
-                                        ; 取得される．最後の引数がnilの
-                                        ; 場合，可変長引数指定がなく，
-                                        ; 省略不能引数の数よりも多くの
-                                        ; 引数が指定された場合に取得される
-sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
-                                        ; 指定
---
+    num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不能な引数の数
+    num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
+    sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
+                                            ; Rubyの配列で取得するための指定
+    num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不能な引数の数
+    sym-for-option-hash-arg        := ":"   ; オプションハッシュを取得する
+                                            ; ための指定; 省略不能な引数の
+                                            ; 数よりも多くの引数が指定され，
+                                            ; 最後の引数がハッシュ（または
+                                            ; #to_hashで変換可能）の場合に
+                                            ; 取得される．最後の引数がnilの
+                                            ; 場合，可変長引数指定がなく，
+                                            ; 省略不能引数の数よりも多くの
+                                            ; 引数が指定された場合に取得される
+    sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
+                                            ; 指定
 
   フォーマットが"12"の場合，引数は最低1つで，3つ(1+2)まで許さ
   れるという意味になります．従って，フォーマット文字列に続い
@@ -1253,14 +1244,14 @@ sym-for-block-arg              := "&"   ; イテレータブロックを取得�
   返り値は与えられた引数の数です．オプションハッシュおよびイ
   テレータブロックは数えません．
 
-** Rubyメソッド呼び出し
+== Rubyメソッド呼び出し
 
-VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
   メソッド呼び出し．文字列からmidを得るためにはrb_intern()を
   使う．
 
-VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
   メソッド呼び出し．引数をargc, argv形式で渡す．
 
@@ -1268,40 +1259,39 @@ VALUE rb_eval_string(const char *str)
 
   文字列をRubyスクリプトとしてコンパイル・実行する．
 
-ID rb_intern(const char *name)
+ID rb_intern(const char *name) ::
 
   文字列に対応するIDを返す．
 
-char *rb_id2name(ID id)
+char *rb_id2name(ID id) ::
 
   IDに対応する文字列を返す(デバッグ用)．
 
-char *rb_class2name(VALUE klass)
+char *rb_class2name(VALUE klass) ::
 
   クラスの名前を返す(デバッグ用)．クラスが名前を持たない時に
   は, 祖先を遡って名前を持つクラスの名前を返す．
 
-int rb_respond_to(VALUE obj, ID id)
+int rb_respond_to(VALUE obj, ID id) ::
 
   objがidで示されるメソッドを持つかどうかを返す．
 
-** インスタンス変数
+== インスタンス変数
 
-VALUE rb_iv_get(VALUE obj, const char *name)
+VALUE rb_iv_get(VALUE obj, const char *name) ::
 
   objのインスタンス変数の値を得る．`@'で始まらないインスタン
   ス変数は Rubyプログラムからアクセスできない「隠れた」イン
   スタンス変数になる．定数は大文字の名前を持つクラス(または
   モジュール)のインスタンス変数として実装されている．
 
-VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
+VALUE rb_iv_set(VALUE obj, const char *name, VALUE val) ::
 
   objのインスタンス変数をvalにセットする．
 
-** 制御構造
+== 制御構造
 
-VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
-		    VALUE (*func) (ANYARGS), VALUE data2)
+VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv, VALUE (*func) (ANYARGS), VALUE data2) ::
 
   funcをブロックとして設定し，objをレシーバ，argcとargvを引数
   としてmidメソッドを呼び出す．funcは第一引数にyieldされた値，
@@ -1310,34 +1300,34 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
   data2はArrayとしてパックされている．第三, 第四引数のargcと
   argvによってyieldされた値を取り出すことができる．
 
-[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   func2をブロックとして設定し, func1をイテレータとして呼ぶ．
   func1には arg1が引数として渡され, func2には第1引数にイテレー
   タから与えられた値, 第2引数にarg2が渡される．
-
+  
   1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
   を呼び出さなければならない.
   1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
 
-VALUE rb_yield(VALUE val)
+VALUE rb_yield(VALUE val) ::
 
   valを値としてイテレータブロックを呼び出す．
 
-VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生
   した時には func2をarg2を引数として呼ぶ．戻り値は例外が発生
   しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
   り値である．
 
-VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
   発生しても) func2をarg2を引数として実行する．戻り値はfunc1
   の戻り値である(例外が発生した時は戻らない)．
 
-VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
+VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state) ::
 
   関数funcをargを引数として実行し, 例外が発生しなければその戻
   り値を返す．例外が発生した場合は, *stateに非0をセットして
@@ -1345,225 +1335,226 @@ VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
   rb_jump_tag()を呼ばずに捕捉した例外を無視する場合には，
   rb_set_errinfo(Qnil)でエラー情報をクリアしなければならない．
 
-void rb_jump_tag(int state)
+void rb_jump_tag(int state) ::
 
   rb_protect()やrb_eval_string_protect()で捕捉された例外を再
   送する．stateはそれらの関数から返された値でなければならない．
   この関数は直接の呼び出し元に戻らない．
 
-void rb_iter_break()
+void rb_iter_break() ::
 
   現在の最も内側のブロックを終了する．この関数は直接の呼び出
   し元に戻らない．
 
-void rb_iter_break_value(VALUE value)
+void rb_iter_break_value(VALUE value) ::
 
   現在の最も内側のブロックをvalueで終了する．ブロックは引数で
   与えられたvalueを返す．この関数は直接の呼び出し元に戻らない．
 
-** 例外・エラー
+== 例外・エラー
 
-void rb_warning(const char *fmt, ...)
+void rb_warning(const char *fmt, ...) ::
 
   rb_verbose時に標準エラー出力に警告情報を表示する．引数は
   printf()と同じ．
 
-void rb_raise(rb_eRuntimeError, const char *fmt, ...)
+void rb_raise(rb_eRuntimeError, const char *fmt, ...) ::
 
   RuntimeError例外を発生させる．引数はprintf()と同じ．
 
-void rb_raise(VALUE exception, const char *fmt, ...)
+void rb_raise(VALUE exception, const char *fmt, ...) ::
 
   exceptionで指定した例外を発生させる．fmt以下の引数は
   printf()と同じ．
 
-void rb_fatal(const char *fmt, ...)
+void rb_fatal(const char *fmt, ...) ::
 
   致命的例外を発生させる．通常の例外処理は行なわれず, インター
   プリタが終了する(ただしensureで指定されたコードは終了前に
   実行される)．
 
-void rb_bug(const char *fmt, ...)
+void rb_bug(const char *fmt, ...) ::
 
   インタープリタなどプログラムのバグでしか発生するはずのない
   状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
   例外処理は一切行なわれない．
 
-** Rubyの初期化・実行
+== Rubyの初期化・実行
 
 Rubyをアプリケーションに埋め込む場合には以下のインタフェース
 を使う．通常の拡張ライブラリには必要ない．
 
-void ruby_init()
+void ruby_init() ::
 
   Rubyインタプリタの初期化を行なう．
 
-void ruby_options(int argc, char **argv)
+void ruby_options(int argc, char **argv) ::
 
   Rubyインタプリタのコマンドライン引数の処理を行なう．
 
-void ruby_run()
+void ruby_run() ::
 
   Rubyインタプリタを実行する．
 
-void ruby_script(char *name)
+void ruby_script(char *name) ::
 
   Rubyのスクリプト名($0)を設定する．
 
-** インタプリタのイベントのフック
+== インタプリタのイベントのフック
 
- void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+  void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
+                         VALUE data)
 
 指定されたインタプリタのイベントに対するフック関数を追加します．
 eventsは以下の値のorでなければなりません:
 
-	RUBY_EVENT_LINE
-	RUBY_EVENT_CLASS
-	RUBY_EVENT_END
-	RUBY_EVENT_CALL
-	RUBY_EVENT_RETURN
-	RUBY_EVENT_C_CALL
-	RUBY_EVENT_C_RETURN
-	RUBY_EVENT_RAISE
-	RUBY_EVENT_ALL
+  RUBY_EVENT_LINE
+  RUBY_EVENT_CLASS
+  RUBY_EVENT_END
+  RUBY_EVENT_CALL
+  RUBY_EVENT_RETURN
+  RUBY_EVENT_C_CALL
+  RUBY_EVENT_C_RETURN
+  RUBY_EVENT_RAISE
+  RUBY_EVENT_ALL
 
 rb_event_hook_func_tの定義は以下の通りです:
 
- typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
- 				      VALUE self, ID id, VALUE klass)
+  typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
+                                       VALUE self, ID id, VALUE klass)
 
 rb_add_event_hook() の第3引数 data は，フック関数の第2引数と
 して渡されます．これは1.8では現在のNODEへのポインタでした．以
 下の RB_EVENT_HOOKS_HAVE_CALLBACK_DATA も参照してください．
 
- int rb_remove_event_hook(rb_event_hook_func_t func)
+  int rb_remove_event_hook(rb_event_hook_func_t func)
 
 指定されたフック関数を削除します．
 
-** 互換性のためのマクロ
+== 互換性のためのマクロ
 
 APIの互換性をチェックするために以下のマクロがデフォルトで定義されています．
 
-NORETURN_STYLE_NEW
+NORETURN_STYLE_NEW ::
 
   NORETURN マクロが関数型マクロとして定義されていることを意味する．
 
-HAVE_RB_DEFINE_ALLOC_FUNC
+HAVE_RB_DEFINE_ALLOC_FUNC ::
 
   rb_define_alloc_func() 関数が提供されていること，つまり
   allocation framework が使われることを意味する．
   have_func("rb_define_alloc_func", "ruby.h")
   の結果と同じ．
 
-HAVE_RB_REG_NEW_STR
+HAVE_RB_REG_NEW_STR ::
 
   StringオブジェクトからRegexpオブジェクトを作る
   rb_reg_new_str() 関数が提供されていることを意味する．
   have_func("rb_reg_new_str", "ruby.h").
   の結果と同じ．
 
-HAVE_RB_IO_T
+HAVE_RB_IO_T ::
 
   rb_io_t 型が提供されていることを意味する．
 
-USE_SYMBOL_AS_METHOD_NAME
+USE_SYMBOL_AS_METHOD_NAME ::
 
   メソッド名を返すメソッド，Module#methods, #singleton_methods
   などがSymbolを返すことを意味する．
 
-HAVE_RUBY_*_H
+HAVE_RUBY_*_H ::
 
   ruby.h で定義されている．対応するヘッダが提供されていること
   を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
   単なる st.h ではなく ruby/st.h を使用する．
 
-RB_EVENT_HOOKS_HAVE_CALLBACK_DATA
+RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
   rb_add_event_hook() がフック関数に渡す data を第3引数として
   受け取ることを意味する．
 
-Appendix C. extconf.rbで使える関数たち
+= Appendix C. extconf.rbで使える関数たち
 
 extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
 下の通りである．
 
-have_macro(macro, headers)
+have_macro(macro, headers) ::
 
   ヘッダファイルheaderをインクルードしてマクロmacroが定義さ
   れているかどうかチェックする．マクロが定義されている時true
   を返す．
 
-have_library(lib, func)
+have_library(lib, func) ::
 
   関数funcを定義しているライブラリlibの存在をチェックする．
   ライブラリが存在する時，trueを返す．
 
-find_library(lib, func, path...)
+find_library(lib, func, path...) ::
 
   関数funcを定義しているライブラリlibの存在を -Lpath を追加
   しながらチェックする．ライブラリが見付かった時，trueを返す．
 
-have_func(func, header)
+have_func(func, header) ::
 
   ヘッダファイルheaderをインクルードして関数funcの存在をチェ
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
   く事．関数が存在する時trueを返す．
 
-have_var(var, header)
+have_var(var, header) ::
 
   ヘッダファイルheaderをインクルードして変数varの存在をチェッ
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
   事．変数が存在する時trueを返す．
 
-have_header(header)
+have_header(header) ::
 
   ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
   る時trueを返す．
 
-find_header(header, path...)
+find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．ヘッダファイルが見付かった時，trueを返す．
 
-have_struct_member(type, member[, header[, opt]])
+have_struct_member(type, member[, header[, opt]]) ::
 
   ヘッダファイルheaderをインクルードして型typeにメンバmember
   が存在するかをチェックする．typeが定義されていて，memberを
   持つする時trueを返す．
 
-have_type(type, header, opt)
+have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
   チェックする．typeが定義されている時trueを返す．
 
-check_sizeof(type, header)
+check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
   ズを調べる．typeが定義されている時そのサイズを返す．定義さ
   れていないときはnilを返す．
 
-create_makefile(target[, target_prefix])
+create_makefile(target[, target_prefix]) ::
 
   拡張ライブラリ用のMakefileを生成する．この関数を呼ばなけれ
   ばそのライブラリはコンパイルされない．targetはモジュール名
   を表す．
 
-find_executable(command, path)
+find_executable(command, path) ::
 
   コマンドcommandをFile::PATH_SEPARATORで区切られたパス名の
   リストpathから探す．pathがnilまたは省略された場合は，環境
   変数PATHの値を使用する．実行可能なコマンドが見つかった場合
   はパスを含むファイル名，見つからなかった場合はnilを返す．
 
-with_config(withval[, default=nil])
+with_config(withval[, default=nil]) ::
 
   コマンドライン上の--with-<withval>で指定されたオプション値
   を得る．
 
-enable_config(config, *defaults)
-disable_config(config, *defaults)
+enable_config(config, *defaults) ::
+disable_config(config, *defaults) ::
 
   コマンドライン上の--enable-<config>または
   --disable-<config>で指定された真偽値を得る．
@@ -1573,8 +1564,8 @@ disable_config(config, *defaults)
   いる場合は*defaultsをyieldした結果，ブロックなしなら
   *defaultsを返す．
 
-dir_config(target[, default_dir])
-dir_config(target[, default_include, default_lib])
+dir_config(target[, default_dir]) ::
+dir_config(target[, default_include, default_lib]) ::
 
   コマンドライン上の--with-<target>-dir, --with-<target>-include,
   --with-<target>-libのいずれかで指定されるディレクトリを
@@ -1583,7 +1574,7 @@ dir_config(target[, default_include, default_lib])
   と等価である．追加された include ディレクトリと lib ディレ
   クトリの配列を返す． ([include_dir, lib_dir])
 
-pkg_config(pkg)
+pkg_config(pkg) ::
 
   pkg-configコマンドからパッケージpkgの情報を得る．
   pkg-configの実際のコマンド名は，--with-pkg-configコマンド

@@ -1,8 +1,8 @@
-.\" README.EXT -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
+# README.EXT -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
 This document explains how to make extension libraries for Ruby.
 
-1. Basic knowledge
+= Basic Knowledge
 
 In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have a static type, and data themselves have
@@ -13,47 +13,46 @@ has its data-type.
 
 To retrieve C data from a VALUE, you need to:
 
- (1) Identify the VALUE's data type
- (2) Convert the VALUE into C data
+1. Identify the VALUE's data type
+2. Convert the VALUE into C data
 
 Converting to the wrong data type may cause serious problems.
 
-
-1.1 Data-types
+== Data-Types
 
 The Ruby interpreter has the following data types:
 
-	T_NIL		nil
-	T_OBJECT	ordinary object
-	T_CLASS		class
-	T_MODULE	module
-	T_FLOAT		floating point number
-	T_STRING	string
-	T_REGEXP	regular expression
-	T_ARRAY		array
-	T_HASH		associative array
-	T_STRUCT	(Ruby) structure
-	T_BIGNUM	multi precision integer
-	T_FIXNUM	Fixnum(31bit or 63bit integer)
-	T_COMPLEX       complex number
-	T_RATIONAL      rational number
-	T_FILE		IO
-	T_TRUE		true
-	T_FALSE		false
-	T_DATA		data
-	T_SYMBOL        symbol
+T_NIL       :: nil
+T_OBJECT    :: ordinary object
+T_CLASS     :: class
+T_MODULE    :: module
+T_FLOAT     :: floating point number
+T_STRING    :: string
+T_REGEXP    :: regular expression
+T_ARRAY     :: array
+T_HASH      :: associative array
+T_STRUCT    :: (Ruby) structure
+T_BIGNUM    :: multi precision integer
+T_FIXNUM    :: Fixnum(31bit or 63bit integer)
+T_COMPLEX   :: complex number
+T_RATIONAL  :: rational number
+T_FILE      :: IO
+T_TRUE      :: true
+T_FALSE     :: false
+T_DATA      :: data
+T_SYMBOL    :: symbol
 
 In addition, there are several other types used internally:
 
-	T_ICLASS
-	T_MATCH
-	T_UNDEF
-	T_NODE
-	T_ZOMBIE
+T_ICLASS    :: included module
+T_MATCH     :: MatchData object
+T_UNDEF     :: undefined
+T_NODE      :: syntax tree node
+T_ZOMBIE    :: object awaiting finalization
 
 Most of the types are represented by C structures.
 
-1.2 Check Data Type of the VALUE
+== Check Data Type of the VALUE
 
 The macro TYPE() defined in ruby.h shows the data type of the VALUE.
 TYPE() returns the constant number T_XXXX described above.  To handle
@@ -87,7 +86,7 @@ There are also faster check macros for fixnums and nil.
   FIXNUM_P(obj)
   NIL_P(obj)
 
-1.3 Convert VALUE into C data
+== Convert VALUE into C Data
 
 The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
@@ -137,17 +136,17 @@ Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
 interesting bugs.
 
-1.4 Convert C data into VALUE
+== Convert C Data into VALUE
 
 To convert C data to Ruby values:
 
-  * FIXNUM
+FIXNUM ::
 
-    left shift 1 bit, and turn on LSB.
+  left shift 1 bit, and turn on LSB.
 
-  * Other pointer values
+Other pointer values::
 
-    cast to VALUE.
+  cast to VALUE.
 
 You can determine whether a VALUE is pointer or not by checking its LSB.
 
@@ -157,149 +156,149 @@ structures are defined in <ruby.h>.
 
 To convert C numbers to Ruby values, use these macros.
 
-  INT2FIX()	for integers within 31bits.
-  INT2NUM()	for arbitrary sized integer.
+INT2FIX() :: for integers within 31bits.
+INT2NUM() :: for arbitrary sized integer.
 
 INT2NUM() converts an integer into a Bignum if it is out of the FIXNUM
 range, but is a bit slower.
 
-1.5 Manipulating Ruby data
+== Manipulating Ruby Data
 
 As I already mentioned, it is not recommended to modify an object's
 internal structure.  To manipulate objects, use the functions supplied
 by the Ruby interpreter. Some (not all) of the useful functions are
 listed below:
 
- String functions
+=== String Functions
 
-  rb_str_new(const char *ptr, long len)
+rb_str_new(const char *ptr, long len) ::
 
-    Creates a new Ruby string.
+  Creates a new Ruby string.
 
-  rb_str_new2(const char *ptr)
-  rb_str_new_cstr(const char *ptr)
+rb_str_new2(const char *ptr) ::
+rb_str_new_cstr(const char *ptr) ::
 
-    Creates a new Ruby string from a C string.  This is equivalent to
-    rb_str_new(ptr, strlen(ptr)).
+  Creates a new Ruby string from a C string.  This is equivalent to
+  rb_str_new(ptr, strlen(ptr)).
 
-  rb_tainted_str_new(const char *ptr, long len)
+rb_tainted_str_new(const char *ptr, long len) ::
 
-    Creates a new tainted Ruby string.  Strings from external data
-    sources should be tainted.
+  Creates a new tainted Ruby string.  Strings from external data
+  sources should be tainted.
 
-  rb_tainted_str_new2(const char *ptr)
-  rb_tainted_str_new_cstr(const char *ptr)
+rb_tainted_str_new2(const char *ptr) ::
+rb_tainted_str_new_cstr(const char *ptr) ::
 
-    Creates a new tainted Ruby string from a C string.
+  Creates a new tainted Ruby string from a C string.
 
-  rb_sprintf(const char *format, ...)
-  rb_vsprintf(const char *format, va_list ap)
+rb_sprintf(const char *format, ...) ::
+rb_vsprintf(const char *format, va_list ap) ::
 
-    Creates a new Ruby string with printf(3) format.
+  Creates a new Ruby string with printf(3) format.
 
-  rb_str_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, long len) ::
 
-    Appends len bytes of data from ptr to the Ruby string.
+  Appends len bytes of data from ptr to the Ruby string.
 
-  rb_str_cat2(VALUE str, const char* ptr)
+rb_str_cat2(VALUE str, const char* ptr) ::
 
-    Appends C string ptr to Ruby string str.  This function is
-    equivalent to rb_str_cat(str, ptr, strlen(ptr)).
+  Appends C string ptr to Ruby string str.  This function is
+  equivalent to rb_str_cat(str, ptr, strlen(ptr)).
 
-  rb_str_catf(VALUE str, const char* format, ...)
-  rb_str_vcatf(VALUE str, const char* format, va_list ap)
+rb_str_catf(VALUE str, const char* format, ...) ::
+rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
-    Appends C string format and successive arguments to Ruby string
-    str according to a printf-like format.  These functions are
-    equivalent to rb_str_cat2(str, rb_sprintf(format, ...)) and
-    rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
+  Appends C string format and successive arguments to Ruby string
+  str according to a printf-like format.  These functions are
+  equivalent to rb_str_cat2(str, rb_sprintf(format, ...)) and
+  rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
 
-  rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
 
-    Creates a new Ruby string with the specified encoding.
+  Creates a new Ruby string with the specified encoding.
 
-  rb_usascii_str_new(const char *ptr, long len)
-  rb_usascii_str_new_cstr(const char *ptr)
+rb_usascii_str_new(const char *ptr, long len) ::
+rb_usascii_str_new_cstr(const char *ptr) ::
 
-    Creates a new Ruby string with encoding US-ASCII.
+  Creates a new Ruby string with encoding US-ASCII.
 
-  rb_str_resize(VALUE str, long len)
+rb_str_resize(VALUE str, long len) ::
 
-    Resizes Ruby string to len bytes.  If str is not modifiable, this
-    function raises an exception.  The length of str must be set in
-    advance.  If len is less than the old length the content beyond
-    len bytes is discarded, else if len is greater than the old length
-    the content beyond the old length bytes will not be preserved but
-    will be garbage.  Note that RSTRING_PTR(str) may change by calling
-    this function.
+  Resizes Ruby string to len bytes.  If str is not modifiable, this
+  function raises an exception.  The length of str must be set in
+  advance.  If len is less than the old length the content beyond
+  len bytes is discarded, else if len is greater than the old length
+  the content beyond the old length bytes will not be preserved but
+  will be garbage.  Note that RSTRING_PTR(str) may change by calling
+  this function.
 
-  rb_str_set_len(VALUE str, long len)
+rb_str_set_len(VALUE str, long len) ::
 
-    Sets the length of Ruby string.  If str is not modifiable, this
-    function raises an exception.  This function preserves the content
-    upto len bytes, regardless RSTRING_LEN(str).  len must not exceed
-    the capacity of str.
+  Sets the length of Ruby string.  If str is not modifiable, this
+  function raises an exception.  This function preserves the content
+  upto len bytes, regardless RSTRING_LEN(str).  len must not exceed
+  the capacity of str.
 
- Array functions
+=== Array Functions
 
-  rb_ary_new()
+rb_ary_new() ::
 
-    Creates an array with no elements.
+  Creates an array with no elements.
 
-  rb_ary_new2(long len)
+rb_ary_new2(long len) ::
 
-    Creates an array with no elements, allocating internal buffer
-    for len elements.
+  Creates an array with no elements, allocating internal buffer
+  for len elements.
 
-  rb_ary_new3(long n, ...)
+rb_ary_new3(long n, ...) ::
 
-    Creates an n-element array from the arguments.
+  Creates an n-element array from the arguments.
 
-  rb_ary_new4(long n, VALUE *elts)
+rb_ary_new4(long n, VALUE *elts) ::
 
-    Creates an n-element array from a C array.
+  Creates an n-element array from a C array.
 
-  rb_ary_to_ary(VALUE obj)
+rb_ary_to_ary(VALUE obj) ::
 
-    Converts the object into an array.
-    Equivalent to Object#to_ary.
+  Converts the object into an array.
+  Equivalent to Object#to_ary.
 
- There are many functions to operate an array.
- They may dump core if other types are given.
+There are many functions to operate an array.  They may dump core if other
+types are given.
 
-  rb_ary_aref(argc, VALUE *argv, VALUE ary)
+rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
 
-    Equivaelent to Array#[].
+  Equivaelent to Array#[].
 
-  rb_ary_entry(VALUE ary, long offset)
+rb_ary_entry(VALUE ary, long offset) ::
 
-    ary[offset]
+  ary[offset]
 
-  rb_ary_subseq(VALUE ary, long beg, long len)
+rb_ary_subseq(VALUE ary, long beg, long len) ::
 
-    ary[beg, len]
+  ary[beg, len]
 
-  rb_ary_push(VALUE ary, VALUE val)
-  rb_ary_pop(VALUE ary)
-  rb_ary_shift(VALUE ary)
-  rb_ary_unshift(VALUE ary, VALUE val)
+rb_ary_push(VALUE ary, VALUE val) ::
+rb_ary_pop(VALUE ary) ::
+rb_ary_shift(VALUE ary) ::
+rb_ary_unshift(VALUE ary, VALUE val) ::
 
-  rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+rb_ary_cat(VALUE ary, const VALUE *ptr, long len) ::
 
-    Appends len elements of objects from ptr to the array.
+  Appends len elements of objects from ptr to the array.
 
-2. Extending Ruby with C
+= Extending Ruby with C
 
-2.1 Adding new features to Ruby
+== Adding New Features to Ruby
 
 You can add new features (classes, methods, etc.) to the Ruby
 interpreter.  Ruby provides APIs for defining the following things:
 
- * Classes, Modules
- * Methods, Singleton Methods
- * Constants
+* Classes, Modules
+* Methods, Singleton Methods
+* Constants
 
-2.1.1 Class/module definition
+=== Class and Module Definition
 
 To define a class or module, use the functions below:
 
@@ -314,7 +313,7 @@ To define nested classes or modules, use the functions below:
   VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super)
   VALUE rb_define_module_under(VALUE outer, const char *name)
 
-2.1.2 Method/singleton method definition
+=== Method and Singleton Method Definition
 
 To define methods or singleton methods, use these functions:
 
@@ -346,7 +345,7 @@ where obj is the receiver, and args is the Ruby array containing
 actual arguments.
 
 There are some more functions to define methods. One takes an ID
-as the name of method to be defined. See 2.2.2 for IDs.
+as the name of method to be defined. See also ID or Symbol below.
 
   void rb_define_method_id(VALUE klass, ID name,
                            VALUE (*func)(ANYARGS), int argc)
@@ -397,7 +396,7 @@ func has to take the klass as the argument and return a newly
 allocated instance.  This instance should be as empty as possible,
 without any expensive (including external) resources.
 
-2.1.3 Constant definition
+=== Constant Definition
 
 We have 2 functions to define constants:
 
@@ -407,11 +406,11 @@ We have 2 functions to define constants:
 The former is to define a constant under specified class/module.  The
 latter is to define a global constant.
 
-2.2 Use Ruby features from C
+== Use Ruby Features from C
 
 There are several ways to invoke Ruby's features from C code.
 
-2.2.1 Evaluate Ruby Programs in a String
+=== Evaluate Ruby Programs in a String
 
 The easiest way to use Ruby's functionality from a C program is to
 evaluate the string as Ruby program.  This function will do the job:
@@ -429,8 +428,7 @@ function:
 It returns nil when an error occur. Moreover, *state is zero if str was
 successfully evaluated, or nonzero otherwise.
 
-
-2.2.2 ID or Symbol
+=== ID or Symbol
 
 You can invoke methods directly, without parsing the string.  First I
 need to explain about ID.  ID is the integer number to represent
@@ -438,9 +436,11 @@ Ruby's identifiers such as variable names.  The Ruby data type
 corresponding to ID is Symbol.  It can be accessed from Ruby in the
 form:
 
- :Identifier
+  :Identifier
+
 or
- :"any kind of string"
+
+  :"any kind of string"
 
 You can get the ID value from a string within C code by using
 
@@ -469,7 +469,7 @@ and to convert Ruby Symbol object to ID, use
 
   ID SYM2ID(VALUE symbol)
 
-2.2.3 Invoke Ruby method from C
+=== Invoke Ruby Method from C
 
 To invoke methods directly, you can use the function below
 
@@ -478,7 +478,7 @@ To invoke methods directly, you can use the function below
 This function invokes a method on the recv, with the method name
 specified by the symbol mid.
 
-2.2.4 Accessing the variables and constants
+=== Accessing the Variables and Constants
 
 You can access class variables and instance variables using access
 functions.  Also, global variables can be shared between both
@@ -495,11 +495,11 @@ To access the constants of the class/module:
 
   VALUE rb_const_get(VALUE obj, ID id)
 
-See 2.1.3 for defining new constant.
+See also Constant Definition above.
 
-3. Information sharing between Ruby and C
+= Information Sharing Between Ruby and C
 
-3.1 Ruby constants that C can be accessed from C
+=== Ruby Constants That C Can Be Accessed From C
 
 As stated in section 1.3,
 the following Ruby constants can be referred from C.
@@ -513,7 +513,7 @@ Boolean values.  Qfalse is false in C also (i.e. 0).
 
 Ruby nil in C scope.
 
-3.2 Global variables shared between C and Ruby
+== Global Variables Shared Between C and Ruby
 
 Information can be shared between the two environments using shared global
 variables.  To define them, you can use functions listed below:
@@ -557,7 +557,7 @@ The prototypes of the getter and setter functions are as follows:
   void (*setter)(VALUE val, ID id);
 
 
-3.3 Encapsulate C data into a Ruby object
+== Encapsulate C Data into a Ruby Object
 
 To wrap and objectify a C pointer as a Ruby object (so called
 DATA), use Data_Wrap_Struct().
@@ -597,23 +597,23 @@ A pointer to the structure will be assigned to the variable sval.
 
 See the example below for details.
 
-4. Example - Creating dbm extension
+= Example - Creating dbm Extension
 
 OK, here's the example of making an extension library.  This is the
 extension to access DBMs.  The full source is included in the ext/
 directory in the Ruby's source tree.
 
-(1) make the directory
+== Make the Directory
 
   % mkdir ext/dbm
 
 Make a directory for the extension library under ext directory.
 
-(2) design the library
+== Design the Library
 
 You need to design the library features, before making it.
 
-(3) write C code.
+== Write the C Code
 
 You need to write C code for your extension library.  If your library
 has only one source file, choosing ``LIBRARY.c'' as a file name is
@@ -630,41 +630,37 @@ the library.
 
 Here's the example of an initializing function.
 
---
-void
-Init_dbm(void)
-{
-    /* define DBM class */
-    cDBM = rb_define_class("DBM", rb_cObject);
-    /* DBM includes Enumerate module */
-    rb_include_module(cDBM, rb_mEnumerable);
+  void
+  Init_dbm(void)
+  {
+      /* define DBM class */
+      cDBM = rb_define_class("DBM", rb_cObject);
+      /* DBM includes Enumerate module */
+      rb_include_module(cDBM, rb_mEnumerable);
 
-    /* DBM has class method open(): arguments are received as C array */
-    rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
+      /* DBM has class method open(): arguments are received as C array */
+      rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
 
-    /* DBM instance method close(): no args */
-    rb_define_method(cDBM, "close", fdbm_close, 0);
-    /* DBM instance method []: 1 argument */
-    rb_define_method(cDBM, "[]", fdbm_fetch, 1);
-		:
+      /* DBM instance method close(): no args */
+      rb_define_method(cDBM, "close", fdbm_close, 0);
+      /* DBM instance method []: 1 argument */
+      rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 
-    /* ID for a instance variable to store DBM data */
-    id_dbm = rb_intern("dbm");
-}
---
+      /* ... */
+
+      /* ID for a instance variable to store DBM data */
+      id_dbm = rb_intern("dbm");
+  }
 
 The dbm extension wraps the dbm struct in the C environment using
 Data_Make_Struct.
 
---
-struct dbmdata {
-    int  di_size;
-    DBM *di_dbm;
-};
+  struct dbmdata {
+      int  di_size;
+      DBM *di_dbm;
+  };
 
-
-obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
---
+  obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 
 This code wraps the dbmdata structure into a Ruby object.  We avoid
 wrapping DBM* directly, because we want to cache size information.
@@ -672,12 +668,10 @@ wrapping DBM* directly, because we want to cache size information.
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
 
---
-#define GetDBM(obj, dbmp) {\
-    Data_Get_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp->di_dbm == 0) closed_dbm();\
-}
---
+  #define GetDBM(obj, dbmp) {\
+      Data_Get_Struct(obj, struct dbmdata, dbmp);\
+      if (dbmp->di_dbm == 0) closed_dbm();\
+  }
 
 This sort of complicated macro does the retrieving and close checking for
 the DBM.
@@ -685,13 +679,11 @@ the DBM.
 There are three kinds of way to receive method arguments.  First,
 methods with a fixed number of arguments receive arguments like this:
 
---
-static VALUE
-fdbm_delete(VALUE obj, VALUE keystr)
-{
-	:
-}
---
+  static VALUE
+  fdbm_delete(VALUE obj, VALUE keystr)
+  {
+        /* ... */
+  }
 
 The first argument of the C function is the self, the rest are the
 arguments to the method.
@@ -699,17 +691,15 @@ arguments to the method.
 Second, methods with an arbitrary number of arguments receive
 arguments like this:
 
---
-static VALUE
-fdbm_s_open(int argc, VALUE *argv, VALUE klass)
-{
-	:
-    if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-	mode = 0666;		/* default value */
-    }
-	:
-}
---
+  static VALUE
+  fdbm_s_open(int argc, VALUE *argv, VALUE klass)
+  {
+      /* ... */
+      if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
+          mode = 0666;		/* default value */
+      }
+      /* ... */
+  }
 
 The first argument is the number of method arguments, the second
 argument is the C array of the method arguments, and the third
@@ -724,25 +714,21 @@ references.
 The following is an example of a method that takes arguments by Ruby's
 array:
 
---
-static VALUE
-thread_initialize(VALUE thread, VALUE args)
-{
-	:
-}
---
+  static VALUE
+  thread_initialize(VALUE thread, VALUE args)
+  {
+      /* ... */
+  }
 
 The first argument is the receiver, the second one is the Ruby array
 which contains the arguments to the method.
 
-** Notice
-
-GC should know about global variables which refer to Ruby's objects, but
-are not exported to the Ruby world.  You need to protect them by
+*Notice*: GC should know about global variables which refer to Ruby's objects,
+but are not exported to the Ruby world.  You need to protect them by
 
   void rb_global_variable(VALUE *var)
 
-(4) prepare extconf.rb
+== Prepare extconf.rb
 
 If the file named extconf.rb exists, it will be executed to generate
 Makefile.
@@ -791,7 +777,7 @@ If a compilation condition is not fulfilled, you should not call
 ``create_makefile''.  The Makefile will not be generated, compilation will
 not be done.
 
-(5) prepare depend (optional)
+== Prepare Depend (Optional)
 
 If the file named depend exists, Makefile will include that file to
 check dependencies.  You can make this file by invoking
@@ -800,7 +786,7 @@ check dependencies.  You can make this file by invoking
 
 It's harmless.  Prepare it.
 
-(6) generate Makefile
+== Generate Makefile
 
 Try generating the Makefile by:
 
@@ -815,7 +801,7 @@ You don't need this step if you put the extension library under the ext
 directory of the ruby source tree.  In that case, compilation of the
 interpreter will do this step for you.
 
-(7) make
+== Run make
 
 Type
 
@@ -824,36 +810,38 @@ Type
 to compile your extension.  You don't need this step either if you have
 put the extension library under the ext directory of the ruby source tree.
 
-(8) debug
+== Debug
 
 You may need to rb_debug the extension.  Extensions can be linked
 statically by adding the directory name in the ext/Setup file so that
 you can inspect the extension with the debugger.
 
-(9) done, now you have the extension library
+== Done! Now You Have the Extension Library
 
 You can do anything you want with your library.  The author of Ruby
 will not claim any restrictions on your code depending on the Ruby API.
 Feel free to use, modify, distribute or sell your program.
 
-Appendix A. Ruby source files overview
+= Appendix A. Ruby Source Files Overview
 
-ruby language core
+== Ruby Language Core
 
-  class.c         : classes and modules
-  error.c         : exception classes and exception mechanism
-  gc.c            : memory management
-  load.c          : library loading
-  object.c        : objects
-  variable.c      : variables and constants
+class.c    :: classes and modules
+error.c    :: exception classes and exception mechanism
+gc.c       :: memory management
+load.c     :: library loading
+object.c   :: objects
+variable.c :: variables and constants
 
-ruby syntax parser
-  parse.y
-    -> parse.c    : automatically generated
-  keywords        : reserved keywords
-    -> lex.c      : automatically generated
+== Ruby Syntax Parser
 
-ruby evaluator (a.k.a. YARV)
+parse.y  :: grammar definition
+parse.c  :: automatically generated from parse.y
+keywords :: reserved keywords
+lex.c    :: automatically generated from keywords
+
+== Ruby Evaluator (a.k.a. YARV)
+
   compile.c
   eval.c
   eval_error.c
@@ -878,7 +866,8 @@ ruby evaluator (a.k.a. YARV)
     -> opt*.inc       : automatically generated
     -> vm.inc         : automatically generated
 
-regular expression engine (oniguruma)
+== Regular Expression Engine (Oniguruma)
+
   regex.c
   regcomp.c
   regenc.c
@@ -887,15 +876,15 @@ regular expression engine (oniguruma)
   regparse.c
   regsyntax.c
 
-utility functions
+== Utility Functions
 
-  debug.c       : debug symbols for C debuggger
-  dln.c         : dynamic loading
-  st.c          : general purpose hash table
-  strftime.c    : formatting times
-  util.c        : misc utilities
+debug.c    :: debug symbols for C debuggger
+dln.c      :: dynamic loading
+st.c       :: general purpose hash table
+strftime.c :: formatting times
+util.c     :: misc utilities
 
-ruby interpreter implementation
+== Ruby Interpreter Implementation
 
   dmyext.c
   dmydln.c
@@ -909,505 +898,564 @@ ruby interpreter implementation
   gem_prelude.rb
   prelude.rb
 
+== Class Library
 
-class library
+array.c      :: Array
+bignum.c     :: Bignum
+compar.c     :: Comparable
+complex.c    :: Complex
+cont.c       :: Fiber, Continuation
+dir.c        :: Dir
+enum.c       :: Enumerable
+enumerator.c :: Enumerator
+file.c       :: File
+hash.c       :: Hash
+io.c         :: IO
+marshal.c    :: Marshal
+math.c       :: Math
+numeric.c    :: Numeric, Integer, Fixnum, Float
+pack.c       :: Array#pack, String#unpack
+proc.c       :: Binding, Proc
+process.c    :: Process
+random.c     :: random number
+range.c      :: Range
+rational.c   :: Rational
+re.c         :: Regexp, MatchData
+signal.c     :: Signal
+sprintf.c    :: String#sprintf
+string.c     :: String
+struct.c     :: Struct
+time.c       :: Time
 
-  array.c       : Array
-  bignum.c      : Bignum
-  compar.c      : Comparable
-  complex.c     : Complex
-  cont.c        : Fiber, Continuation
-  dir.c         : Dir
-  enum.c        : Enumerable
-  enumerator.c  : Enumerator
-  file.c        : File
-  hash.c        : Hash
-  io.c          : IO
-  marshal.c     : Marshal
-  math.c        : Math
-  numeric.c     : Numeric, Integer, Fixnum, Float
-  pack.c        : Array#pack, String#unpack
-  proc.c        : Binding, Proc
-  process.c     : Process
-  random.c      : random number
-  range.c       : Range
-  rational.c    : Rational
-  re.c          : Regexp, MatchData
-  signal.c      : Signal
-  sprintf.c     :
-  string.c      : String
-  struct.c      : Struct
-  time.c        : Time
+defs/known_errors.def :: Errno::* exception classes
+-> known_errors.inc   :: automatically generated
 
-  defs/known_errors.def  : Errno::* exception classes
-    -> known_errors.inc  : automatically generated
+== Multilingualization
 
-multilingualization
-  encoding.c    : Encoding
-  transcode.c   : Encoding::Converter
-  enc/*.c       : encoding classes
-  enc/trans/*   : codepoint mapping tables
+encoding.c  :: Encoding
+transcode.c :: Encoding::Converter
+enc/*.c     :: encoding classes
+enc/trans/* :: codepoint mapping tables
 
-goruby interpreter implementation
+== goruby Interpreter Implementation
 
   goruby.c
   golf_prelude.rb     : goruby specific libraries.
     -> golf_prelude.c : automatically generated
 
 
-Appendix B. Ruby extension API reference
+= Appendix B. Ruby Extension API Reference
 
-** Types
+== Types
 
- VALUE
+VALUE ::
 
-The type for the Ruby object.  Actual structures are defined in ruby.h,
-such as struct RString, etc.  To refer the values in structures, use
-casting macros like RSTRING(obj).
+  The type for the Ruby object.  Actual structures are defined in ruby.h,
+  such as struct RString, etc.  To refer the values in structures, use
+  casting macros like RSTRING(obj).
 
-** Variables and constants
+== Variables and Constants
 
- Qnil
+Qnil::
+  nil object
 
-const: nil object
+Qtrue::
+  true object (default true value)
 
- Qtrue
+Qfalse::
+  false object
 
-const: true object(default true value)
+== C Pointer Wrapping
 
- Qfalse
+Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval) ::
 
-const: false object
+  Wrap a C pointer into a Ruby object.  If object has references to other
+  Ruby objects, they should be marked by using the mark function during
+  the GC process.  Otherwise, mark should be 0.  When this object is no
+  longer referred by anywhere, the pointer will be discarded by free
+  function.
 
-** C pointer wrapping
+Data_Make_Struct(klass, type, mark, free, sval) ::
 
- Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)
+  This macro allocates memory using malloc(), assigns it to the variable
+  sval, and returns the DATA encapsulating the pointer to memory region.
 
-Wrap a C pointer into a Ruby object.  If object has references to other
-Ruby objects, they should be marked by using the mark function during
-the GC process.  Otherwise, mark should be 0.  When this object is no
-longer referred by anywhere, the pointer will be discarded by free
-function.
+Data_Get_Struct(data, type, sval) ::
 
- Data_Make_Struct(klass, type, mark, free, sval)
+  This macro retrieves the pointer value from DATA, and assigns it to
+  the variable sval.
 
-This macro allocates memory using malloc(), assigns it to the variable
-sval, and returns the DATA encapsulating the pointer to memory region.
+== Checking Data Types
 
- Data_Get_Struct(data, type, sval)
+TYPE(value) ::
 
-This macro retrieves the pointer value from DATA, and assigns it to
-the variable sval.
+  Internal type (T_NIL, T_FIXNUM, etc.)
 
-** Checking data types
+FIXNUM_P(value) ::
 
-TYPE(value)
-FIXNUM_P(value)
-NIL_P(value)
-void Check_Type(VALUE value, int type)
-void Check_SafeStr(VALUE value)
+  Is +value+ a Fixnum?
 
-** Data type conversion
+NIL_P(value) ::
 
-FIX2INT(value), INT2FIX(i)
-FIX2LONG(value), LONG2FIX(l)
-NUM2INT(value), INT2NUM(i)
-NUM2UINT(value), UINT2NUM(ui)
-NUM2LONG(value), LONG2NUM(l)
-NUM2ULONG(value), ULONG2NUM(ul)
-NUM2LL(value), LL2NUM(ll)
-NUM2ULL(value), ULL2NUM(ull)
-NUM2OFFT(value), OFFT2NUM(off)
-NUM2SIZET(value), SIZET2NUM(size)
-NUM2SSIZET(value), SSIZET2NUM(ssize)
-NUM2DBL(value)
-rb_float_new(f)
-StringValue(value)
-StringValuePtr(value)
-StringValueCStr(value)
-rb_str_new2(s)
+  Is +value+ nil?
 
-** defining class/module
+void Check_Type(VALUE value, int type) ::
 
- VALUE rb_define_class(const char *name, VALUE super)
+  Ensures +value+ is of the given internal +type+ or raises a TypeError
 
-Defines a new Ruby class as a subclass of super.
+SaveStringValue(value) ::
 
- VALUE rb_define_class_under(VALUE module, const char *name, VALUE super)
+  Checks that +value+ is a String and is not tainted
 
-Creates a new Ruby class as a subclass of super, under the module's
-namespace.
+== Data Type Conversion
 
- VALUE rb_define_module(const char *name)
+FIX2INT(value), INT2FIX(i) ::
 
-Defines a new Ruby module.
+  Fixnum <-> integer
 
- VALUE rb_define_module_under(VALUE module, const char *name)
+FIX2LONG(value), LONG2FIX(l) ::
 
-Defines a new Ruby module under the module's namespace.
+  Fixnum <-> long
 
- void rb_include_module(VALUE klass, VALUE module)
+NUM2INT(value), INT2NUM(i) ::
 
-Includes module into class.  If class already includes it, just
-ignored.
+  Numeric <-> integer
 
- void rb_extend_object(VALUE object, VALUE module)
+NUM2UINT(value), UINT2NUM(ui) ::
 
-Extend the object with the module's attributes.
+  Numeric <-> unsigned integer
 
-** Defining Global Variables
+NUM2LONG(value), LONG2NUM(l) ::
 
- void rb_define_variable(const char *name, VALUE *var)
+  Numeric <-> long
 
-Defines a global variable which is shared between C and Ruby.  If name
-contains a character which is not allowed to be part of the symbol,
-it can't be seen from Ruby programs.
+NUM2ULONG(value), ULONG2NUM(ul) ::
 
- void rb_define_readonly_variable(const char *name, VALUE *var)
+  Numeric <-> unsigned long
 
-Defines a read-only global variable.  Works just like
-rb_define_variable(), except the defined variable is read-only.
+NUM2LL(value), LL2NUM(ll) ::
 
- void rb_define_virtual_variable(const char *name,
-				 VALUE (*getter)(), VALUE (*setter)())
+  Numeric <-> long long
 
-Defines a virtual variable, whose behavior is defined by a pair of C
-functions.  The getter function is called when the variable is
-referenced.  The setter function is called when the variable is set to a
-value.  The prototype for getter/setter functions are:
+NUM2ULL(value), ULL2NUM(ull) ::
 
-	VALUE getter(ID id)
-	void setter(VALUE val, ID id)
+  Numeric <-> unsigned long long
 
-The getter function must return the value for the access.
+NUM2OFFT(value), OFFT2NUM(off) ::
 
- void rb_define_hooked_variable(const char *name, VALUE *var,
-				VALUE (*getter)(), VALUE (*setter)())
+  Numeric <-> off_t
 
-Defines hooked variable.  It's a virtual variable with a C variable.
-The getter is called as
+NUM2SIZET(value), SIZET2NUM(size) ::
 
-	VALUE getter(ID id, VALUE *var)
+  Numeric <-> size_t
 
-returning a new value.  The setter is called as
+NUM2SSIZET(value), SSIZET2NUM(ssize) ::
 
-	void setter(VALUE val, ID id, VALUE *var)
+  Numeric <-> ssize_t
 
-GC requires C global variables which hold Ruby values to be marked.
+NUM2DBL(value) ::
 
- void rb_global_variable(VALUE *var)
+  Numeric -> double
 
-Tells GC to protect these variables.
+rb_float_new(f) ::
 
-** Constant Definition
+  double -> Float
 
- void rb_define_const(VALUE klass, const char *name, VALUE val)
+StringValue(value) ::
 
-Defines a new constant under the class/module.
+  Object with #to_str -> String
 
- void rb_define_global_const(const char *name, VALUE val)
+StringValuePtr(value) ::
 
-Defines a global constant.  This is just the same as
+  Object with #to_str -> pointer to String data
 
-     rb_define_const(cKernal, name, val)
+StringValueCStr(value) ::
 
-** Method Definition
+  Object with #to_str -> pointer to String data without NULL bytes
 
- rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+rb_str_new2(s) ::
 
-Defines a method for the class.  func is the function pointer.  argc
-is the number of arguments.  if argc is -1, the function will receive
-3 arguments: argc, argv, and self.  if argc is -2, the function will
-receive 2 arguments, self and args, where args is a Ruby array of
-the method arguments.
+  char * -> String
 
- rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+== Defining Class and Module
 
-Defines a private method for the class.  Arguments are same as
-rb_define_method().
+VALUE rb_define_class(const char *name, VALUE super) ::
 
- rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
+  Defines a new Ruby class as a subclass of super.
 
-Defines a singleton method.  Arguments are same as rb_define_method().
+VALUE rb_define_class_under(VALUE module, const char *name, VALUE super) ::
 
- rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
+  Creates a new Ruby class as a subclass of super, under the module's
+  namespace.
 
-Retrieve argument from argc and argv to given VALUE references
-according to the format string.  The format can be described in ABNF
-as follows:
+VALUE rb_define_module(const char *name) ::
 
---
-scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
+  Defines a new Ruby module.
 
-param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec / pre-opt-post-arg-spec
-pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
-post-arg-spec  := sym-for-variable-length-args [num-of-trailing-mandatory-args]
-pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args num-of-trailing-mandatory-args
-option-hash-arg-spec := sym-for-option-hash-arg
-block-arg-spec := sym-for-block-arg
+VALUE rb_define_module_under(VALUE module, const char *name) ::
 
-num-of-leading-mandatory-args  := DIGIT ; The number of leading
-                                        ; mandatory arguments
-num-of-optional-args           := DIGIT ; The number of optional
-                                        ; arguments
-sym-for-variable-length-args   := "*"   ; Indicates that variable
-                                        ; length arguments are
-                                        ; captured as a ruby array
-num-of-trailing-mandatory-args := DIGIT ; The number of trailing
-                                        ; mandatory arguments
-sym-for-option-hash-arg        := ":"   ; Indicates that an option
-                                        ; hash is captured if the last
-                                        ; argument is a hash or can be
-                                        ; converted to a hash with
-                                        ; #to_hash.  When the last
-                                        ; argument is nil, it is
-                                        ; captured if it is not
-                                        ; ambiguous to take it as
-                                        ; empty option hash; i.e. '*'
-                                        ; is not specified and
-                                        ; arguments are given more
-                                        ; than sufficient.
-sym-for-block-arg              := "&"   ; Indicates that an iterator
-                                        ; block should be captured if
-                                        ; given
---
+  Defines a new Ruby module under the module's namespace.
 
-For example, "12" means that the method requires at least one
-argument, and at most receives three (1+2) arguments.  So, the format
-string must be followed by three variable references, which are to be
-assigned to captured arguments.  For omitted arguments, variables are
-set to Qnil.  NULL can be put in place of a variable reference, which
-means the corresponding captured argument(s) should be just dropped.
+void rb_include_module(VALUE klass, VALUE module) ::
 
-The number of given arguments, excluding an option hash or iterator
-block, is returned.
+  Includes module into class.  If class already includes it, just ignored.
 
-** Invoking Ruby method
+void rb_extend_object(VALUE object, VALUE module) ::
 
- VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+  Extend the object with the module's attributes.
 
-Invokes a method.  To retrieve mid from a method name, use rb_intern().
+== Defining Global Variables
 
- VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+void rb_define_variable(const char *name, VALUE *var) ::
 
-Invokes a method, passing arguments by an array of values.
+  Defines a global variable which is shared between C and Ruby.  If name
+  contains a character which is not allowed to be part of the symbol,
+  it can't be seen from Ruby programs.
 
- VALUE rb_eval_string(const char *str)
+void rb_define_readonly_variable(const char *name, VALUE *var) ::
 
-Compiles and executes the string as a Ruby program.
+  Defines a read-only global variable.  Works just like
+  rb_define_variable(), except the defined variable is read-only.
 
- ID rb_intern(const char *name)
+void rb_define_virtual_variable(const char *name, VALUE (*getter)(), VALUE (*setter)()) ::
 
-Returns ID corresponding to the name.
+  Defines a virtual variable, whose behavior is defined by a pair of C
+  functions.  The getter function is called when the variable is
+  referenced.  The setter function is called when the variable is set to a
+  value.  The prototype for getter/setter functions are:
 
- char *rb_id2name(ID id)
+    VALUE getter(ID id)
+    void setter(VALUE val, ID id)
 
-Returns the name corresponding ID.
+  The getter function must return the value for the access.
 
- char *rb_class2name(VALUE klass)
+void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), VALUE (*setter)()) ::
 
-Returns the name of the class.
+  Defines hooked variable.  It's a virtual variable with a C variable.
+  The getter is called as
 
- int rb_respond_to(VALUE object, ID id)
+    VALUE getter(ID id, VALUE *var)
 
-Returns true if the object responds to the message specified by id.
+  returning a new value.  The setter is called as
 
-** Instance Variables
+    void setter(VALUE val, ID id, VALUE *var)
 
- VALUE rb_iv_get(VALUE obj, const char *name)
+  GC requires C global variables which hold Ruby values to be marked.
 
-Retrieve the value of the instance variable.  If the name is not
-prefixed by `@', that variable shall be inaccessible from Ruby.
+void rb_global_variable(VALUE *var)
 
- VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
+  Tells GC to protect these variables.
 
-Sets the value of the instance variable.
+== Constant Definition
 
-** Control Structure
+void rb_define_const(VALUE klass, const char *name, VALUE val) ::
 
- VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv,
-		     VALUE (*func) (ANYARGS), VALUE data2)
+  Defines a new constant under the class/module.
 
-Calls a method on the recv, with the method name specified by the
-symbol mid, with argc arguments in argv, supplying func as the
-block. When func is called as the block, it will receive the value
-from yield as the first argument, and data2 as the second argument.
-When yielded with multiple values (in C, rb_yield_values(),
-rb_yield_values2() and rb_yield_splat()), data2 is packed as an Array,
-whereas yielded values can be gotten via argc/argv of the third/fourth
-arguments.
+void rb_define_global_const(const char *name, VALUE val) ::
 
- [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+  Defines a global constant.  This is just the same as
 
-Calls the function func1, supplying func2 as the block.  func1 will be
-called with the argument arg1.  func2 receives the value from yield as
-the first argument, arg2 as the second argument.
+    rb_define_const(cKernal, name, val)
 
-When rb_iterate is used in 1.9, func1 has to call some Ruby-level method.
-This function is obsolete since 1.9; use rb_block_call instead.
+== Method Definition
 
- VALUE rb_yield(VALUE val)
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
-Evaluates the block with value val.
+  Defines a method for the class.  func is the function pointer.  argc
+  is the number of arguments.  if argc is -1, the function will receive
+  3 arguments: argc, argv, and self.  if argc is -2, the function will
+  receive 2 arguments, self and args, where args is a Ruby array of
+  the method arguments.
 
- VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
-Calls the function func1, with arg1 as the argument.  If an exception
-occurs during func1, it calls func2 with arg2 as the argument.  The
-return value of rb_rescue() is the return value from func1 if no
-exception occurs, from func2 otherwise.
+  Defines a private method for the class.  Arguments are same as
+  rb_define_method().
 
- VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
-Calls the function func1 with arg1 as the argument, then calls func2
-with arg2 if execution terminated.  The return value from
-rb_ensure() is that of func1 when no exception occured.
+  Defines a singleton method.  Arguments are same as rb_define_method().
 
- VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
+rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
-Calls the function func with arg as the argument.  If no exception
-occured during func, it returns the result of func and *state is zero.
-Otherwise, it returns Qnil and sets *state to nonzero.  If state is
-NULL, it is not set in both cases.
-You have to clear the error info with rb_set_errinfo(Qnil) when
-ignoring the caught exception.
+  Retrieve argument from argc and argv to given VALUE references
+  according to the format string.  The format can be described in ABNF
+  as follows:
 
- void rb_jump_tag(int state)
+    scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
 
-Continues the exception caught by rb_protect() and rb_eval_string_protect().
-state must be the returned value from those functions.  This function
-never return to the caller.
+    param-arg-spec := pre-arg-spec [post-arg-spec] / post-arg-spec /
+                      pre-opt-post-arg-spec
+    pre-arg-spec   := num-of-leading-mandatory-args [num-of-optional-args]
+    post-arg-spec  := sym-for-variable-length-args
+                      [num-of-trailing-mandatory-args]
+    pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args
+                             num-of-trailing-mandatory-args
+    option-hash-arg-spec := sym-for-option-hash-arg
+    block-arg-spec := sym-for-block-arg
 
- void rb_iter_break()
+    num-of-leading-mandatory-args  := DIGIT ; The number of leading
+                                            ; mandatory arguments
+    num-of-optional-args           := DIGIT ; The number of optional
+                                            ; arguments
+    sym-for-variable-length-args   := "*"   ; Indicates that variable
+                                            ; length arguments are
+                                            ; captured as a ruby array
+    num-of-trailing-mandatory-args := DIGIT ; The number of trailing
+                                            ; mandatory arguments
+    sym-for-option-hash-arg        := ":"   ; Indicates that an option
+                                            ; hash is captured if the last
+                                            ; argument is a hash or can be
+                                            ; converted to a hash with
+                                            ; #to_hash.  When the last
+                                            ; argument is nil, it is
+                                            ; captured if it is not
+                                            ; ambiguous to take it as
+                                            ; empty option hash; i.e. '*'
+                                            ; is not specified and
+                                            ; arguments are given more
+                                            ; than sufficient.
+    sym-for-block-arg              := "&"   ; Indicates that an iterator
+                                            ; block should be captured if
+                                            ; given
 
-Exits from the current innermost block.  This function never return to
-the caller.
+  For example, "12" means that the method requires at least one
+  argument, and at most receives three (1+2) arguments.  So, the format
+  string must be followed by three variable references, which are to be
+  assigned to captured arguments.  For omitted arguments, variables are
+  set to Qnil.  NULL can be put in place of a variable reference, which
+  means the corresponding captured argument(s) should be just dropped.
 
- void rb_iter_break_value(VALUE value)
+  The number of given arguments, excluding an option hash or iterator
+  block, is returned.
 
-Exits from the current innermost block with the value.  The block will
-return the given argument value.  This function never return to the
-caller.
+== Invoking Ruby method
 
-** Exceptions and Errors
+VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
- void rb_warn(const char *fmt, ...)
+  Invokes a method.  To retrieve mid from a method name, use rb_intern().
 
-Prints a warning message according to a printf-like format.
+VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
- void rb_warning(const char *fmt, ...)
+  Invokes a method, passing arguments by an array of values.
 
-Prints a warning message according to a printf-like format, if
-$VERBOSE is true.
+VALUE rb_eval_string(const char *str) ::
 
-void rb_raise(rb_eRuntimeError, const char *fmt, ...)
+  Compiles and executes the string as a Ruby program.
 
-Raises RuntimeError.  The fmt is a format string just like printf().
+ID rb_intern(const char *name) ::
 
- void rb_raise(VALUE exception, const char *fmt, ...)
+  Returns ID corresponding to the name.
 
-Raises a class exception.  The fmt is a format string just like printf().
+char *rb_id2name(ID id) ::
 
- void rb_fatal(const char *fmt, ...)
+  Returns the name corresponding ID.
 
-Raises a fatal error, terminates the interpreter.  No exception handling
-will be done for fatal errors, but ensure blocks will be executed.
+char *rb_class2name(VALUE klass) ::
 
- void rb_bug(const char *fmt, ...)
+  Returns the name of the class.
 
-Terminates the interpreter immediately.  This function should be
-called under the situation caused by the bug in the interpreter.  No
-exception handling nor ensure execution will be done.
+int rb_respond_to(VALUE object, ID id) ::
 
-** Initialize and Start the Interpreter
+  Returns true if the object responds to the message specified by id.
+
+== Instance Variables
+
+VALUE rb_iv_get(VALUE obj, const char *name) ::
+
+  Retrieve the value of the instance variable.  If the name is not
+  prefixed by `@', that variable shall be inaccessible from Ruby.
+
+VALUE rb_iv_set(VALUE obj, const char *name, VALUE val) ::
+
+  Sets the value of the instance variable.
+
+== Control Structure
+
+VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (ANYARGS), VALUE data2) ::
+
+  Calls a method on the recv, with the method name specified by the
+  symbol mid, with argc arguments in argv, supplying func as the
+  block. When func is called as the block, it will receive the value
+  from yield as the first argument, and data2 as the second argument.
+  When yielded with multiple values (in C, rb_yield_values(),
+  rb_yield_values2() and rb_yield_splat()), data2 is packed as an Array,
+  whereas yielded values can be gotten via argc/argv of the third/fourth
+  arguments.
+
+[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2) ::
+
+  Calls the function func1, supplying func2 as the block.  func1 will be
+  called with the argument arg1.  func2 receives the value from yield as
+  the first argument, arg2 as the second argument.
+
+  When rb_iterate is used in 1.9, func1 has to call some Ruby-level method.
+  This function is obsolete since 1.9; use rb_block_call instead.
+
+VALUE rb_yield(VALUE val) ::
+
+  Evaluates the block with value val.
+
+VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+
+  Calls the function func1, with arg1 as the argument.  If an exception
+  occurs during func1, it calls func2 with arg2 as the argument.  The
+  return value of rb_rescue() is the return value from func1 if no
+  exception occurs, from func2 otherwise.
+
+VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+
+  Calls the function func1 with arg1 as the argument, then calls func2
+  with arg2 if execution terminated.  The return value from
+  rb_ensure() is that of func1 when no exception occured.
+
+VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state) ::
+
+  Calls the function func with arg as the argument.  If no exception
+  occured during func, it returns the result of func and *state is zero.
+  Otherwise, it returns Qnil and sets *state to nonzero.  If state is
+  NULL, it is not set in both cases.
+  You have to clear the error info with rb_set_errinfo(Qnil) when
+  ignoring the caught exception.
+
+void rb_jump_tag(int state) ::
+
+  Continues the exception caught by rb_protect() and rb_eval_string_protect().
+  state must be the returned value from those functions.  This function
+  never return to the caller.
+
+void rb_iter_break() ::
+
+  Exits from the current innermost block.  This function never return to
+  the caller.
+
+void rb_iter_break_value(VALUE value) ::
+
+  Exits from the current innermost block with the value.  The block will
+  return the given argument value.  This function never return to the
+  caller.
+
+== Exceptions and Errors
+
+void rb_warn(const char *fmt, ...) ::
+
+  Prints a warning message according to a printf-like format.
+
+void rb_warning(const char *fmt, ...) ::
+
+  Prints a warning message according to a printf-like format, if
+  $VERBOSE is true.
+
+void rb_raise(rb_eRuntimeError, const char *fmt, ...) ::
+
+  Raises RuntimeError.  The fmt is a format string just like printf().
+
+void rb_raise(VALUE exception, const char *fmt, ...) ::
+
+  Raises a class exception.  The fmt is a format string just like printf().
+
+void rb_fatal(const char *fmt, ...) ::
+
+  Raises a fatal error, terminates the interpreter.  No exception handling
+  will be done for fatal errors, but ensure blocks will be executed.
+
+void rb_bug(const char *fmt, ...) ::
+
+  Terminates the interpreter immediately.  This function should be
+  called under the situation caused by the bug in the interpreter.  No
+  exception handling nor ensure execution will be done.
+
+== Initialize and Start the Interpreter
 
 The embedding API functions are below (not needed for extension libraries):
 
- void ruby_init()
+void ruby_init() ::
 
-Initializes the interpreter.
+  Initializes the interpreter.
 
- void ruby_options(int argc, char **argv)
+void ruby_options(int argc, char **argv) ::
 
-Process command line arguments for the interpreter.
+  Process command line arguments for the interpreter.
 
- void ruby_run()
+void ruby_run() ::
 
-Starts execution of the interpreter.
+  Starts execution of the interpreter.
 
- void ruby_script(char *name)
+void ruby_script(char *name) ::
 
-Specifies the name of the script ($0).
+  Specifies the name of the script ($0).
 
-** Hooks for the Interpreter Events
+== Hooks for the Interpreter Events
 
- void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+  void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
+                         VALUE data)
 
 Adds a hook function for the specified interpreter events.
-events should be Or'ed value of:
+events should be OR'ed value of:
 
-	RUBY_EVENT_LINE
-	RUBY_EVENT_CLASS
-	RUBY_EVENT_END
-	RUBY_EVENT_CALL
-	RUBY_EVENT_RETURN
-	RUBY_EVENT_C_CALL
-	RUBY_EVENT_C_RETURN
-	RUBY_EVENT_RAISE
-	RUBY_EVENT_ALL
+  RUBY_EVENT_LINE
+  RUBY_EVENT_CLASS
+  RUBY_EVENT_END
+  RUBY_EVENT_CALL
+  RUBY_EVENT_RETURN
+  RUBY_EVENT_C_CALL
+  RUBY_EVENT_C_RETURN
+  RUBY_EVENT_RAISE
+  RUBY_EVENT_ALL
 
 The definition of rb_event_hook_func_t is below:
 
- typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
- 				      VALUE self, ID id, VALUE klass)
+  typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
+                                       VALUE self, ID id, VALUE klass)
 
 The third argument `data' to rb_add_event_hook() is passed to the hook
 function as the second argument, which was the pointer to the current
 NODE in 1.8.  See RB_EVENT_HOOKS_HAVE_CALLBACK_DATA below.
 
- int rb_remove_event_hook(rb_event_hook_func_t func)
+  int rb_remove_event_hook(rb_event_hook_func_t func)
 
 Removes the specified hook function.
 
-** Macros for the Compatibilities
+== Macros for Compatibility
 
 Some macros to check API compatibilities are available by default.
 
- NORETURN_STYLE_NEW
+NORETURN_STYLE_NEW ::
 
-Means that NORETURN macro is functional style instead of prefix.
+  Means that NORETURN macro is functional style instead of prefix.
 
- HAVE_RB_DEFINE_ALLOC_FUNC
+HAVE_RB_DEFINE_ALLOC_FUNC ::
 
-Means that function rb_define_alloc_func() is provided, that means the
-allocation framework is used.  This is same as the result of
-have_func("rb_define_alloc_func", "ruby.h").
+  Means that function rb_define_alloc_func() is provided, that means the
+  allocation framework is used.  This is same as the result of
+  have_func("rb_define_alloc_func", "ruby.h").
 
- HAVE_RB_REG_NEW_STR
+HAVE_RB_REG_NEW_STR ::
 
-Means that function rb_reg_new_str() is provided, that creates Regexp
-object from String object.  This is same as the result of
-have_func("rb_reg_new_str", "ruby.h").
+  Means that function rb_reg_new_str() is provided, that creates Regexp
+  object from String object.  This is same as the result of
+  have_func("rb_reg_new_str", "ruby.h").
 
- HAVE_RB_IO_T
+HAVE_RB_IO_T ::
 
-Means that type rb_io_t is provided.
+  Means that type rb_io_t is provided.
 
- USE_SYMBOL_AS_METHOD_NAME
+USE_SYMBOL_AS_METHOD_NAME ::
 
-Means that Symbols will be returned as method names, e.g.,
-Module#methods, #singleton_methods and so on.
+  Means that Symbols will be returned as method names, e.g.,
+  Module#methods, #singleton_methods and so on.
 
- HAVE_RUBY_*_H
+HAVE_RUBY_*_H ::
 
-Defined in ruby.h and means correspoinding header is available.  For
-instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
-mere st.h.
+  Defined in ruby.h and means corresponding header is available.  For
+  instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
+  mere st.h.
 
- RB_EVENT_HOOKS_HAVE_CALLBACK_DATA
+RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
-Means that rb_add_event_hook() takes the third argument `data', to be
-passed to the given event hook function.
+  Means that rb_add_event_hook() takes the third argument `data', to be
+  passed to the given event hook function.
 
 /*
  * Local variables:

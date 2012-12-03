@@ -1,3 +1,8 @@
+Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* README.EXT:  Converted to RDoc format
+	* README.EXT.ja:  ditto
+
 Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/driver.rb:  Fixed ri page display for files with
