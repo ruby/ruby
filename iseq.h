@@ -55,12 +55,12 @@ struct iseq_line_info_entry {
 
 struct iseq_catch_table_entry {
     enum catch_type {
-	CATCH_TYPE_RESCUE,
-	CATCH_TYPE_ENSURE,
-	CATCH_TYPE_RETRY,
-	CATCH_TYPE_BREAK,
-	CATCH_TYPE_REDO,
-	CATCH_TYPE_NEXT
+	CATCH_TYPE_RESCUE = INT2FIX(1),
+	CATCH_TYPE_ENSURE = INT2FIX(2),
+	CATCH_TYPE_RETRY  = INT2FIX(3),
+	CATCH_TYPE_BREAK  = INT2FIX(4),
+	CATCH_TYPE_REDO   = INT2FIX(5),
+	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
     VALUE iseq;
     unsigned long start;

@@ -1,3 +1,11 @@
+Mon Dec  3 18:29:27 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: iseq_catch_table_entry::catch_type should be
+	  Fixnum because they are pushed into Array in a compiler.
+	  [Bug #7502]
+
+	* test/ruby/test_objectspace.rb: add a test of this issue.
+
 Mon Dec  3 18:25:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl (preserved_ids): "empty?" is not an attribute name.

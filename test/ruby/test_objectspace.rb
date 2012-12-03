@@ -65,4 +65,17 @@ End
     END
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
   end
+
+  def test_each_object
+    GC.disable
+    eval('begin; 1.times{}; rescue; ensure; end')
+    arys = []
+    ObjectSpace.each_object(Array){|ary|
+      arys << ary
+    }
+    GC.enable
+    arys.each{|ary|
+      assert_equal(String, ary.inspect.class) # should not cause SEGV
+    }
+  end
 end
