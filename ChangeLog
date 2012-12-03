@@ -3,7 +3,7 @@ Mon Dec  3 15:50:33 2012  Akinori MUSHA  <knu@iDaemons.org>
 	* misc/ruby-additional.el (ruby-mode-set-encoding): Unbreak by
 	  fixing a typo, s/set/setq/.
 
-Mon Dec 03 14:14:19 2012  Koichi Sasada  <ko1@atdot.net>
+Mon Dec  3 14:14:19 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): joke shouldn't use id.h defined ids.
 
@@ -4672,7 +4672,7 @@ Fri Oct  5 17:18:42 JST 2012  TAKANO Mitsuhiro  <tak@no32.tk>
 	  HTML_ALIGN_MEMBERS lines. They have been obsolete in
 	  Doxygen version 1.8.2.
 
-Fri Oct 05 15:26:18 2012  Koichi Sasada  <ko1@atdot.net>
+Fri Oct  5 15:26:18 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add ObjectSpace#reachable_objects_from.
 	  This method returns an array of objects referenced by given object.
@@ -6273,7 +6273,7 @@ Tue Aug  7 20:19:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  back. Without this, on FreeBSD9 and readline 6.2 irb can't catch ^C.
 	  [Bug #5423]
 
-Tue Aug 07 20:12:39 2012  Koichi Sasada  <ko1@atdot.net>
+Tue Aug  7 20:12:39 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.c, insns.def (leave): solve problems on
 	  OPT_CALL_THREADED_CODE.
@@ -8990,7 +8990,7 @@ Thu Jun  7 20:29:12 2012  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/intern.h: rb_exec_arg and related stuff moved back from
 	  internal.h
 
-Thu Jun 07 15:53:03 2012  Koichi Sasada  <ko1@atdot.net>
+Thu Jun  7 15:53:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* .gdbinit: add function `trace_machine_instructions' to trace
 	  in native machine assemble.
@@ -10414,7 +10414,7 @@ Mon May  7 21:19:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/json: Merge JSON 1.7.1.
 	  https://github.com/flori/json/commit/e5b9a9465c1159fae533bca320d950b772bcb4ac
 
-Mon May 07 22:54:22 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Mon May  7 22:54:22 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: add support for option flags
 	  OpenSSL::SSL::OP_NO_TLSv1_1
@@ -10480,7 +10480,7 @@ Mon May  7 10:16:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/rubygems/test_gem_installer.rb (TestGemInstaller#test_dir): fix
 	  argument order.  expected value must come first.
 
-Mon May 07 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Mon May  7 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.2. Add
 	  SSLContext#version to inspect the version that was negotiated for
