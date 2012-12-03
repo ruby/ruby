@@ -1,3 +1,9 @@
+Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/driver.rb:  Fixed ri page display for files with
+	  extensions.
+	* test/rdoc/test_rdoc_ri_driver.rb:  Test for above
+
 Tue Dec  4 04:11:50 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* .document:  Add NEWS for `ri ruby:NEWS`

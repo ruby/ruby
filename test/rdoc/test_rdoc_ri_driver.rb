@@ -747,6 +747,25 @@ Foo::Bar#bother
     assert_match %r%README\.md%,                 out
   end
 
+  def test_display_page_extension
+    util_store
+
+    other = @store1.add_file 'README.EXT'
+    other.parser = RDoc::Parser::Simple
+    other.comment =
+      doc(
+        head(1, 'README.EXT'),
+        para('This is the other README'))
+
+    @store1.save_page other
+
+    out, = capture_io do
+      @driver.display_page 'home:README.EXT'
+    end
+
+    assert_match 'other README', out
+  end
+
   def test_display_page_ignore_directory
     util_store
 
@@ -1145,6 +1164,14 @@ Foo::Bar#bother
     assert_equal 'ruby',   klass, 'ruby project'
     assert_equal ':',      type,  'ruby type'
     assert_equal nil,      meth,  'ruby page'
+  end
+
+  def test_parse_name_page_extenson
+    klass, type, meth = @driver.parse_name 'ruby:README.EXT'
+
+    assert_equal 'ruby',      klass, 'ruby project'
+    assert_equal ':',         type,  'ruby type'
+    assert_equal 'README.EXT', meth,  'ruby page'
   end
 
   def test_parse_name_single_class

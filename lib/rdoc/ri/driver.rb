@@ -1331,12 +1331,16 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
     elsif parts.length == 2 or parts.last =~ /::|#|\./ then
       type = parts.pop
       meth = nil
+    elsif parts[1] == ':' then
+      klass = parts.shift
+      type  = parts.shift
+      meth  = parts.join
     elsif parts[-2] != '::' or parts.last !~ /^[A-Z]/ then
       meth = parts.pop
       type = parts.pop
     end
 
-    klass = parts.join
+    klass ||= parts.join
 
     [klass, type, meth]
   end
