@@ -296,7 +296,8 @@ rb_obj_clone(VALUE obj)
     if (FL_TEST(singleton, FL_SINGLETON)) {
 	rb_singleton_class_attached(singleton, clone);
     }
-    RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT) | FL_TEST(clone, FL_UNTRUSTED)) & ~(FL_FREEZE|FL_FINALIZE);
+    RBASIC(clone)->flags &= (FL_TAINT|FL_UNTRUSTED);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_FREEZE|FL_FINALIZE);
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
