@@ -1502,9 +1502,10 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     }
     PUSH_TAG();
     if (OBJ_TAINTED(method)) {
+	const int safe_level_to_run = 4 /*SAFE_LEVEL_MAX*/;
 	safe = rb_safe_level();
-	if (rb_safe_level() < 4) {
-	    rb_set_safe_level_force(4);
+	if (rb_safe_level() < safe_level_to_run) {
+	    rb_set_safe_level_force(safe_level_to_run);
 	}
     }
     if ((state = EXEC_TAG()) == 0) {
