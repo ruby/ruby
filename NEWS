@@ -45,7 +45,7 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
 
-  * File:
+  * File
     * extended method:
       * File.fnmatch? now expands braces in the pattern if
         File::FNM_EXTGLOB option is given.
