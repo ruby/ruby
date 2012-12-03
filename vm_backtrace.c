@@ -755,11 +755,14 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 	}
       case 2:
 	lev = NUM2LONG(level);
+	n = NUM2LONG(vn);
 	if (lev < 0) {
 	    rb_raise(rb_eArgError, "negative level (%ld)", lev);
 	}
+	if (n < 0) {
+	    rb_raise(rb_eArgError, "negative size (%ld)", n);
+	}
 	lev += lev_plus;
-	n = NUM2LONG(vn);
 	break;
       default:
 	lev = n = 0; /* to avoid warning */
