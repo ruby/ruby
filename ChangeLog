@@ -1,3 +1,8 @@
+Mon Dec  3 15:50:33 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-additional.el (ruby-mode-set-encoding): Unbreak by
+	  fixing a typo, s/set/setq/.
+
 Mon Dec 03 14:14:19 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): joke shouldn't use id.h defined ids.

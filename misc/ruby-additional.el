@@ -67,9 +67,9 @@ Now encoding needs to be set always explicitly actually."
 	  (if (re-search-forward "[^\0-\177]" nil t)
 	      (progn
 		(goto-char (point-min))
-		(set coding-system
-		     (or coding-system-for-write
-			 buffer-file-coding-system))
+		(setq coding-system
+                      (or coding-system-for-write
+                          buffer-file-coding-system))
 		(if coding-system
 		    (setq coding-system
 			  (or (coding-system-get coding-system 'mime-charset)
