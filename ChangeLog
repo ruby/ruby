@@ -1,3 +1,7 @@
+Mon Dec  3 18:25:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/id.h.tmpl (preserved_ids): "empty?" is not an attribute name.
+
 Mon Dec  3 16:23:09 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (vm_backtrace_to_ary): check negative size (2nd arg).

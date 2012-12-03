@@ -15,12 +15,11 @@ require 'optparse'
 
 op_id_offset = 128
 
-method_ids = %w[
+attr_ids = %w[
   Intern
   MethodMissing
   Length
   Size
-  EmptyP
   Gets
   Succ
   Each
@@ -44,6 +43,7 @@ token_op_ids = %w[
 
 preserved_ids = %w[
   NULL
+  EmptyP
   Respond_to
   Respond_to_missing
   IFUNC
@@ -113,11 +113,11 @@ enum ruby_method_ids {
     id<%=token%>,
 % end
     tPRESERVED_ID_END,
-% method_ids.each do |token|
+% attr_ids.each do |token|
     t<%=token%>,
 % end
 #define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
-% method_ids.each do |token|
+% attr_ids.each do |token|
     TOKEN2ID(<%=token%>),
 % end
     tLAST_OP_ID = tPRESERVED_ID_END-1,
