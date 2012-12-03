@@ -13,8 +13,6 @@
 
 #include "id.h"
 
-#include "vm_opts.h" /* for SUPPORT_JOKE */
-
 static void
 Init_id(void)
 {
@@ -48,10 +46,6 @@ Init_id(void)
     REGISTER_SYMID(idGets, "gets");
     REGISTER_SYMID(idSucc, "succ");
     REGISTER_SYMID(idMethodMissing, "method_missing");
-#if SUPPORT_JOKE
-    REGISTER_SYMID(idBitblt, "bitblt");
-    REGISTER_SYMID(idAnswer, "the_answer_to_life_the_universe_and_everything");
-#endif
     REGISTER_SYMID(idSend, "send");
     REGISTER_SYMID(id__send__, "__send__");
     REGISTER_SYMID(idInitialize, "initialize");

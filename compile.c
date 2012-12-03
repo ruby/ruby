@@ -4222,11 +4222,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(args);
 #if SUPPORT_JOKE
 	if (nd_type(node) == NODE_VCALL) {
-	    if (mid == idBitblt) {
+	    ID id_bitblt;
+	    ID id_answer;
+
+	    CONST_ID(id_bitblt, "bitblt");
+	    CONST_ID(id_answer, "the_answer_to_life_the_universe_and_everything");
+
+	    if (mid == id_bitblt) {
 		ADD_INSN(ret, nd_line(node), bitblt);
 		break;
 	    }
-	    else if (mid == idAnswer) {
+	    else if (mid == id_answer) {
 		ADD_INSN(ret, nd_line(node), answer);
 		break;
 	    }

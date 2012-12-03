@@ -1,3 +1,11 @@
+Mon Dec 03 14:14:19 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): joke shouldn't use id.h defined ids.
+
+	* id.c (Init_id): ditto.
+
+	* common.mk: fix dpendency.
+
 Mon Dec  3 12:43:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-block-end-re, ruby-delimiter)
