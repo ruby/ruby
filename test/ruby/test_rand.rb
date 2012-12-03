@@ -482,7 +482,7 @@ END
   def test_marshal
     bug3656 = '[ruby-core:31622]'
     assert_raise(TypeError, bug3656) {
-      Random.new.marshal_load(0)
+      Random.new.__send__(:marshal_load, 0)
     }
   end
 
@@ -496,19 +496,19 @@ END
 
   def test_marshal_load_frozen
     r = Random.new(0)
-    d = r.marshal_dump
+    d = r.__send__(:marshal_dump)
     r.freeze
     assert_raise(RuntimeError, '[Bug #6540]') do
-      r.marshal_load(d)
+      r.__send__(:marshal_load, d)
     end
   end
 
   def test_marshal_load_insecure
     r = Random.new(0)
-    d = r.marshal_dump
+    d = r.__send__(:marshal_dump)
     l = proc do
       $SAFE = 4
-      r.marshal_load(d)
+      r.__send__(:marshal_load, d)
     end
     assert_raise(SecurityError, '[Bug #6540]') do
       l.call

@@ -1,3 +1,8 @@
+Mon Dec  3 19:10:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (Init_Random), rational.c (Init_Rational): make marshal
+	  methods private.  [Feature #6539]
+
 Mon Dec  3 18:29:27 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h: iseq_catch_table_entry::catch_type should be

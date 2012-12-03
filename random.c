@@ -1463,8 +1463,8 @@ Init_Random(void)
     rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
-    rb_define_method(rb_cRandom, "marshal_dump", random_dump, 0);
-    rb_define_method(rb_cRandom, "marshal_load", random_load, 1);
+    rb_define_private_method(rb_cRandom, "marshal_dump", random_dump, 0);
+    rb_define_private_method(rb_cRandom, "marshal_load", random_load, 1);
     rb_define_private_method(rb_cRandom, "state", random_state, 0);
     rb_define_private_method(rb_cRandom, "left", random_left, 0);
     rb_define_method(rb_cRandom, "==", random_equal, 1);
