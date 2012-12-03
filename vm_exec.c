@@ -11,7 +11,7 @@
 
 #include <math.h>
 
-void vm_analysis_insn(int insn);
+static void vm_analysis_insn(int insn);
 
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r

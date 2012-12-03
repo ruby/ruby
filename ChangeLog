@@ -1,3 +1,7 @@
+Mon Dec 03 20:00:19 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_exec.c: vm_analysis_insn should be statkc.
+
 Mon Dec  3 19:10:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (Init_Random), rational.c (Init_Rational): make marshal
