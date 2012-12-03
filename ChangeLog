@@ -1,3 +1,12 @@
+Mon Dec  3 12:43:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-block-end-re, ruby-delimiter)
+	  (ruby-mode-syntax-table, ruby-parse-partial, ruby-beginning-of-indent):
+	  merge from Emacs.
+
+	* misc/ruby-mode.el (ruby-calculate-indent): fix indentation of
+	  argument lines in parentheses.  [Bug #5140]
+
 Mon Dec  3 07:52:41 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parser.rb:  Improved modeline support.  Patch by nobu.

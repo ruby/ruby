@@ -165,5 +165,17 @@ class TestRubyMode
       |  end
       |')
     end
+
+    def test_spread_arguments
+      assert_indent('
+      |foo(1,
+      |    2,
+      |    3)
+      |', '
+      |foo(1,
+      | 2,
+      |  3)
+      |')
+    end
   end
 end if TestRubyMode::EMACS

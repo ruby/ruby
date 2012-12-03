@@ -104,7 +104,7 @@
   (regexp-opt (append ruby-modifier-beg-keywords ruby-block-op-keywords))
   "Regexp to match hanging block modifiers.")
 
-(defconst ruby-block-end-re "\\<end\\>")
+(defconst ruby-block-end-re "\\_<end\\_>")
 
 (defconst ruby-here-doc-beg-re
   "\\(<\\)<\\(-\\)?\\(\\([a-zA-Z0-9_]+\\)\\|[\"]\\([^\"]+\\)[\"]\\|[']\\([^']+\\)[']\\)")
@@ -132,9 +132,9 @@
                 (concat "-?\\([\"']\\|\\)" contents "\\1"))))))
 
 (defconst ruby-delimiter
-  (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
+  (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\_<\\("
           ruby-block-beg-re
-          "\\)\\>\\|" ruby-block-end-re
+          "\\)\\_>\\|" ruby-block-end-re
           "\\|^=begin\\|" ruby-here-doc-beg-re)
   )
 
@@ -190,6 +190,7 @@
   (modify-syntax-entry ?$ "." ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
+  (modify-syntax-entry ?: "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
   (modify-syntax-entry ?> "." ruby-mode-syntax-table)
   (modify-syntax-entry ?& "." ruby-mode-syntax-table)
@@ -601,7 +602,7 @@ Also ignores spaces after parenthesis when 'space."
               (setq nest (cons (cons nil pnt) nest))
               (setq depth (1+ depth))))
         (goto-char (match-end 0)))
-       ((looking-at (concat "\\<\\(" ruby-block-beg-re "\\)\\>"))
+       ((looking-at (concat "\\_<\\(" ruby-block-beg-re "\\)\\_>"))
         (and
          (save-match-data
            (or (not (looking-at (concat "do" ruby-keyword-end-re)))
@@ -731,6 +732,9 @@ Also ignores spaces after parenthesis when 'space."
               (cond ((and (eq deep t) (eq (car (nth 1 state)) paren))
                      (skip-syntax-backward " ")
                      (setq indent (1- (current-column))))
+		    ((eq deep 'space)
+		     (goto-char (cdr (nth 1 state)))
+		     (setq indent (1+ (current-column))))
                     ((let ((s (ruby-parse-region (point) ruby-indent-point)))
                        (and (nth 2 s) (> (nth 2 s) 0)
                             (or (goto-char (cdr (nth 1 s))) t)))
@@ -890,12 +894,12 @@ Also ignores spaces after parenthesis when 'space."
 With argument, do this that many times.
 Returns t unless search stops due to end of buffer."
   (interactive "p")
-  (and (re-search-backward (concat "^\\(" ruby-block-beg-re "\\)\\b")
+  (and (re-search-backward (concat "^\\(" ruby-block-beg-re "\\)\\_>")
                            nil 'move (or arg 1))
        (progn (beginning-of-line) t)))
 
 (defun ruby-beginning-of-indent ()
-  (and (re-search-backward (concat "^\\(" ruby-indent-beg-re "\\)\\b")
+  (and (re-search-backward (concat "^\\(" ruby-indent-beg-re "\\)\\_>")
                            nil 'move)
        (progn
          (beginning-of-line)
@@ -1373,7 +1377,7 @@ buffer position `limit' or the end of the buffer."
        1 font-lock-function-name-face)
      ;; keywords
      (cons (concat
-            "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(defined\\?\\|"
+            "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\_<\\(defined\\?\\|"
             (regexp-opt
              '("alias"
                "and"
@@ -1418,7 +1422,7 @@ buffer position `limit' or the end of the buffer."
      ;; here-doc beginnings
      (list ruby-here-doc-beg-re 0 'font-lock-string-face)
      ;; variables
-     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\>"
+     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\_<\\(nil\\|self\\|true\\|false\\)\\>"
        2 font-lock-variable-name-face)
      ;; variables
      '("\\(\\$\\([^a-zA-Z0-9 \n]\\|[0-9]\\)\\)\\W"
@@ -1434,7 +1438,7 @@ buffer position `limit' or the end of the buffer."
      '("\\(^\\|[[ \t\n<+(,=]\\)\\(%[xrqQwW]?\\([^<[{(a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\3\\)\\)"
        (2 font-lock-string-face))
      ;; constants
-     '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
+     '("\\(^\\|[^_]\\)\\_<\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)
      ;; symbols
      '("\\(^\\|[^:]\\)\\(:\\([-+~]@?\\|[/%&|^`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|![~=]?\\|\\[\\]=?\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b_*\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
