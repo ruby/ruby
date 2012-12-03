@@ -1,3 +1,9 @@
+Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_specialized_instruction):
+	  change condition of using `opt_send_simple'.
+	  More method invocations can be simple.
+
 Mon Dec  3 20:03:38 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_objectspace.rb: skip RuntimeError

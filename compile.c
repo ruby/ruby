@@ -1940,6 +1940,8 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		}
 		break;
 	    }
+	}
+	if (ci->flag & VM_CALL_ARGS_SKIP_SETUP) {
 	    iobj->insn_id = BIN(opt_send_simple);
 	}
     }
