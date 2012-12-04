@@ -147,6 +147,14 @@ module Fiddle
     end
     private :parse_bind_options
 
+    CALL_TYPE_TO_ABI = Hash.new { |h, k|
+      raise RuntimeError, "unsupported call type: #{k}"
+    }.merge({ :stdcall => (Function::STDCALL rescue Function::DEFAULT),
+              :cdecl   => Function::DEFAULT,
+              nil      => Function::DEFAULT
+            }).freeze
+    private_constant :CALL_TYPE_TO_ABI
+
     # Creates a global method from the given C +signature+.
     def extern(signature, *opts)
       symname, ctype, argtype = parse_signature(signature, @type_alias)
@@ -280,7 +288,7 @@ module Fiddle
       if( !addr )
         raise(DLError, "cannot find the function: #{name}()")
       end
-      Function.new(addr, argtype, ctype, call_type)
+      Function.new(addr, argtype, ctype, CALL_TYPE_TO_ABI[call_type])
     end
 
     # Returns a new closure wrapper for the +name+ function.
@@ -292,11 +300,12 @@ module Fiddle
     #
     # See Fiddle::Closure
     def bind_function(name, ctype, argtype, call_type = nil, &block)
+      abi = CALL_TYPE_TO_ABI[call_type]
       closure = Class.new(Fiddle::Closure) {
         define_method(:call, block)
-      }.new(ctype, argtype)
+      }.new(ctype, argtype, abi)
 
-      Function.new(closure, argtype, ctype)
+      Function.new(closure, argtype, ctype, abi)
     end
   end
 end

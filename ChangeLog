@@ -1,3 +1,9 @@
+Tue Dec  4 17:57:09 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/lib/fiddle/import.rb (import_function, bind_function):
+	  should respect call_type for migration from DL to Fiddle.
+	  [Bug #7484] [ruby-core:50405]
+
 Tue Dec  4 16:54:00 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* .document:  Added ChangeLog and doc/ChangeLog-* as documentation
