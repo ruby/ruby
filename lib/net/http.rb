@@ -984,7 +984,7 @@ module Net   #:nodoc:
     class << HTTP
       # returns true if self is a class which was created by HTTP::Proxy.
       def proxy_class?
-        @is_proxy_class
+        defined?(@is_proxy_class) ? @is_proxy_class : false
       end
 
       # Address of proxy host. If Net::HTTP does not use a proxy, nil.
