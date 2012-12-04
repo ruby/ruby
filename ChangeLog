@@ -1,3 +1,10 @@
+Tue Dec  4 16:23:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): use
+	  RB_GC_GUARD() (directly or indirectly) instead of volatile.
+
+	* variable.c (rb_path_to_class): prevent the arguemnt from GC.
+
 Tue Dec 04 13:55:07 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h: enable optimization - operand unifications.

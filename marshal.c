@@ -645,7 +645,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
-	    volatile VALUE v;
+	    VALUE v;
 
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
@@ -711,8 +711,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    }
 	    w_byte(TYPE_CLASS, arg);
 	    {
-		volatile VALUE path = class2path(obj);
+		VALUE path = class2path(obj);
 		w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+		RB_GC_GUARD(path);
 	    }
 	    break;
 
@@ -721,6 +722,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    {
 		VALUE path = class2path(obj);
 		w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+		RB_GC_GUARD(path);
 	    }
 	    break;
 
@@ -849,6 +851,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		     rb_obj_classname(obj));
 	    break;
 	}
+	RB_GC_GUARD(obj);
     }
     if (hasiv) {
 	w_ivar(obj, ivtbl, &c_arg);
@@ -918,7 +921,7 @@ marshal_dump(int argc, VALUE *argv)
     VALUE obj, port, a1, a2;
     int limit = -1;
     struct dump_arg *arg;
-    volatile VALUE wrapper;
+    VALUE wrapper;
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -1553,7 +1556,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    long len;
 	    BDIGIT *digits;
-	    volatile VALUE data;
+	    VALUE data;
 
 	    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM);
 	    RBIGNUM_SET_SIGN(big, (r_byte(arg) == '+'));
@@ -1566,6 +1569,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 #endif
             digits = RBIGNUM_DIGITS(big);
 	    MEMCPY(digits, RSTRING_PTR(data), char, len * 2);
+	    rb_str_resize(data, 0L);
 #if SIZEOF_BDIGITS > SIZEOF_SHORT
 	    MEMZERO((char *)digits + len * 2, char,
 		    RBIGNUM_LEN(big) * sizeof(BDIGIT) - len * 2);
@@ -1601,7 +1605,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_REGEXP:
 	{
-	    volatile VALUE str = r_bytes(arg);
+	    VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
 	    int has_encoding = FALSE;
 	    st_index_t idx = r_prepare(arg);
@@ -1798,7 +1802,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_MODULE_OLD:
         {
-	    volatile VALUE str = r_bytes(arg);
+	    VALUE str = r_bytes(arg);
 
 	    v = rb_path_to_class(str);
 	    v = r_entry(v, arg);
@@ -1808,7 +1812,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_CLASS:
         {
-	    volatile VALUE str = r_bytes(arg);
+	    VALUE str = r_bytes(arg);
 
 	    v = path2class(str);
 	    v = r_entry(v, arg);
@@ -1818,7 +1822,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_MODULE:
         {
-	    volatile VALUE str = r_bytes(arg);
+	    VALUE str = r_bytes(arg);
 
 	    v = path2module(str);
 	    v = r_entry(v, arg);
@@ -1890,7 +1894,7 @@ marshal_load(int argc, VALUE *argv)
     VALUE port, proc;
     int major, minor, infection = 0;
     VALUE v;
-    volatile VALUE wrapper;
+    VALUE wrapper;
     struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);

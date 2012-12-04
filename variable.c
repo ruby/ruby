@@ -354,6 +354,7 @@ rb_path_to_class(VALUE pathname)
 	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
 	}
     }
+    RB_GC_GUARD(pathname);
 
     return c;
 }
