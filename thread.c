@@ -3462,7 +3462,7 @@ int
 rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 {
     struct pollfd fds;
-    int result, lerrno;
+    int result = 0, lerrno;
     double limit = 0;
     struct timespec ts;
     struct timespec *timeout = NULL;
