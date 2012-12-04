@@ -295,12 +295,12 @@ struct parser_params {
 #endif
 };
 
-#define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
-#define STR_NEW0() rb_enc_str_new(0,0,parser->enc)
-#define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),parser->enc)
+#define STR_NEW(p,n) rb_enc_str_new((p),(n),current_enc)
+#define STR_NEW0() rb_enc_str_new(0,0,current_enc)
+#define STR_NEW2(p) rb_enc_str_new((p),strlen(p),current_enc)
+#define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),current_enc)
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
-#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), parser->enc)
+#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), current_enc)
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
@@ -5095,11 +5095,11 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 # define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
 #endif
 
-#define parser_encoding_name()  (parser->enc->name)
-#define parser_mbclen()  mbclen((lex_p-1),lex_pend,parser->enc)
-#define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,parser->enc)
+#define parser_encoding_name()  (current_enc->name)
+#define parser_mbclen()  mbclen((lex_p-1),lex_pend,current_enc)
+#define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,current_enc)
 #define is_identchar(p,e,enc) (rb_enc_isalnum(*(p),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
-#define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,parser->enc))
+#define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,current_enc))
 
 #define parser_isascii() ISASCII(*(lex_p-1))
 
@@ -5389,7 +5389,7 @@ lex_getline(struct parser_params *parser)
     must_be_ascii_compatible(line);
 #ifndef RIPPER
     if (ruby_debug_lines) {
-	rb_enc_associate(line, parser->enc);
+	rb_enc_associate(line, current_enc);
 	rb_ary_push(ruby_debug_lines, line);
     }
     if (ruby_coverage) {
@@ -5547,7 +5547,7 @@ parser_nextc(struct parser_params *parser)
 	    if (parser->tokp < lex_pend) {
 		if (NIL_P(parser->delayed)) {
 		    parser->delayed = rb_str_buf_new(1024);
-		    rb_enc_associate(parser->delayed, parser->enc);
+		    rb_enc_associate(parser->delayed, current_enc);
 		    rb_str_buf_cat(parser->delayed,
 				   parser->tokp, lex_pend - parser->tokp);
 		    parser->delayed_line = ruby_sourceline;
@@ -5650,6 +5650,7 @@ parser_tok_hex(struct parser_params *parser, size_t *numlen)
 
 #define tokcopy(n) memcpy(tokspace(n), lex_p - (n), (n))
 
+/* return value is for ?\u3042 */
 static int
 parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
                    int string_literal, int symbol_literal, int regexp_literal)
@@ -6091,7 +6092,7 @@ parser_tokadd_string(struct parser_params *parser,
 	    break;
 	}
         if (c & 0x80) {
-            has_nonascii = 1;
+	    has_nonascii = 1;
 	    if (enc != *encp) {
 		mixed_error(enc, *encp);
 		continue;
@@ -6113,7 +6114,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int term = nd_term(quote);
     int paren = nd_paren(quote);
     int c, space = 0;
-    rb_encoding *enc = parser->enc;
+    rb_encoding *enc = current_enc;
 
     if (func == -1) return tSTRING_END;
     c = nextc();
@@ -6297,7 +6298,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     const char *eos, *p, *pend;
     long len;
     VALUE str = 0;
-    rb_encoding *enc = parser->enc;
+    rb_encoding *enc = current_enc;
 
     eos = RSTRING_PTR(here->nd_lit);
     len = RSTRING_LEN(here->nd_lit) - 1;
@@ -7075,7 +7076,7 @@ parser_yylex(struct parser_params *parser)
 	    compile_error(PARSER_ARG "incomplete character syntax");
 	    return 0;
 	}
-	if (rb_enc_isspace(c, parser->enc)) {
+	if (rb_enc_isspace(c, current_enc)) {
 	    if (!IS_ARG()) {
 		int c2 = 0;
 		switch (c) {
@@ -7108,12 +7109,12 @@ parser_yylex(struct parser_params *parser)
 	    return '?';
 	}
 	newtok();
-	enc = parser->enc;
+	enc = current_enc;
 	if (!parser_isascii()) {
 	    if (tokadd_mbchar(c) == -1) return 0;
 	}
-	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
-		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
+	else if ((rb_enc_isalnum(c, current_enc) || c == '_') &&
+		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, current_enc)) {
 	    goto ternary;
 	}
         else if (c == '\\') {
@@ -7674,7 +7675,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    else {
 		term = nextc();
-		if (rb_enc_isalnum(term, parser->enc) || !parser_isascii()) {
+		if (rb_enc_isalnum(term, current_enc) || !parser_isascii()) {
 		    yyerror("unknown type of %string");
 		    return 0;
 		}
@@ -8392,7 +8393,7 @@ gettable_gen(struct parser_params *parser, ID id)
       case keyword__LINE__:
 	return NEW_LIT(INT2FIX(ruby_sourceline));
       case keyword__ENCODING__:
-	return NEW_LIT(rb_enc_from_encoding(parser->enc));
+	return NEW_LIT(rb_enc_from_encoding(current_enc));
     }
     switch (id_type(id)) {
       case ID_LOCAL:
@@ -9593,7 +9594,7 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
         }
 	rb_enc_associate(str, rb_ascii8bit_encoding());
     }
-    else if (parser->enc == rb_usascii_encoding()) {
+    else if (current_enc == rb_usascii_encoding()) {
 	if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
 	    /* raise in re.c */
 	    rb_enc_associate(str, rb_usascii_encoding());
@@ -10733,7 +10734,7 @@ rb_parser_encoding(VALUE vparser)
     struct parser_params *parser;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    return rb_enc_from_encoding(parser->enc);
+    return rb_enc_from_encoding(current_enc);
 }
 
 /*
