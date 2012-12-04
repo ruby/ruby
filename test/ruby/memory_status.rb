@@ -55,8 +55,8 @@ module Memory
 
       typealias "PPROCESS_MEMORY_COUNTERS", "PROCESS_MEMORY_COUNTERS*"
 
-      extern "HANDLE GetCurrentProcess(), :stdcall"
-      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD), :stdcall"
+      extern "HANDLE GetCurrentProcess()", :stdcall
+      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)", :stdcall
 
       module_function
       def memory_info
