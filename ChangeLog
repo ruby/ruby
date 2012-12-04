@@ -1,3 +1,8 @@
+Tue Dec  4 18:05:58 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/lib/fiddle/types.rb: copied from ext/dl/lib/dl/types.rb
+	  and modified for Fiddle, needed for migration from DL to Fiddle.
+
 Tue Dec  4 17:57:09 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/fiddle/lib/fiddle/import.rb (import_function, bind_function):
