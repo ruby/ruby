@@ -565,7 +565,7 @@ class TestThread < Test::Unit::TestCase
   end
   
   def test_async_interrupt_blocking
-    r=:ok
+    r=:ng
     e=Class.new(Exception)
     th_s = Thread.current
     begin
@@ -573,6 +573,7 @@ class TestThread < Test::Unit::TestCase
         Thread.async_interrupt_timing(Object => :on_blocking){
           begin
             Thread.current.raise RuntimeError
+            r=:ok
             sleep
           ensure
             th_s.raise e

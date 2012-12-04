@@ -1,3 +1,8 @@
+Wed Dec  5 04:04:02 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_async_interrupt_blocking): bugfix
+	  about defared check
+
 Wed Dec  5 03:35:37 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* vm_core.h (RUBY_VM_CHECK_INTS_BLOCKING): check async queue everytime.
