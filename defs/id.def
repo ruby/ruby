@@ -1,0 +1,50 @@
+# -*- ruby -*-
+predefined = %[\
+  intern
+  method_missing                                        MethodMissing
+  length
+  size
+  gets
+  succ
+  each
+  lambda
+  send
+  __send__
+  initialize
+  initialize_copy
+  initialize_clone
+  initialize_dup
+  _                                                     UScore
+  "/*NULL*/"                                            NULL
+  empty?
+  respond_to?                                           Respond_to
+  respond_to_missing?                                   Respond_to_missing
+  <IFUNC>
+  <CFUNC>
+  core#set_method_alias
+  core#set_variable_alias
+  core#undef_method
+  core#define_method
+  core#define_singleton_method
+  core#set_postexe
+  core#hash_from_ary
+  core#hash_merge_ary
+  core#hash_merge_ptr
+  core#hash_merge_kwd
+]
+
+predefined_ids = {}
+preserved_ids = []
+attr_ids = []
+predefined.each_line do |line|
+  next if /^#/ =~ line or (name, token = line.split; !name)
+  token ||= name
+  if /#/ =~ token
+    token = "_#{token.gsub(/\W+/, '_')}"
+  else
+    token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
+    token.gsub!(/\W+/, "")
+  end
+  (/\A(?!\d)\w+\z/ =~ name ? attr_ids : preserved_ids) << token
+  predefined_ids[token] = name
+end

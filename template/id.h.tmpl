@@ -15,48 +15,16 @@ require 'optparse'
 
 op_id_offset = 128
 
-attr_ids = %w[
-  Intern
-  MethodMissing
-  Length
-  Size
-  Gets
-  Succ
-  Each
-  Lambda
-  Send
-  __send__
-  Initialize
-  Initialize_copy
-  Initialize_clone
-  Initialize_dup
-  UScore
-]
-
 token_op_ids = %w[
   tDOT2 tDOT3 tUPLUS tUMINUS tPOW tDSTAR tCMP tLSHFT tRSHFT
   tLEQ tGEQ tEQ tEQQ tNEQ tMATCH tNMATCH tAREF tASET
   tCOLON2 tCOLON3
 ]
 
-preserved_ids = %w[
-  NULL
-  EmptyP
-  Respond_to
-  Respond_to_missing
-  IFUNC
-  CFUNC
-  _core_set_method_alias
-  _core_set_variable_alias
-  _core_undef_method
-  _core_define_method
-  _core_define_singleton_method
-  _core_set_postexe
-  _core_hash_from_ary
-  _core_hash_merge_ary
-  _core_hash_merge_ptr
-  _core_hash_merge_kwd
-]
+preserved_ids = nil
+attr_ids = nil
+defs = File.join(File.dirname(erb.filename), "../defs/id.def")
+eval(File.read(defs), binding, defs)
 %>
 #ifndef RUBY_ID_H
 #define RUBY_ID_H

@@ -1,3 +1,7 @@
+Wed Dec  5 02:36:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, defs/id.def, template/id.c.tmpl: generate id.c as well as id.h.
+
 Wed Dec  5 00:56:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_owned_p): new method that return current

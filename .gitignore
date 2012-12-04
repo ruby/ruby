@@ -56,7 +56,7 @@ y.tab.c
 /encdb.h
 /exts.mk
 /goruby
-/id.h
+/id.[ch]
 /largefile.h
 /lex.c
 /libruby*.*
