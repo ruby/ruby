@@ -889,11 +889,16 @@ int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
-#define RUBY_VM_CHECK_INTS_BLOCKING(th) do { \
-    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) { \
-	rb_threadptr_execute_interrupts(th, 1); \
-    } \
-} while (0)
+#define RUBY_VM_CHECK_INTS_BLOCKING(th) do {				\
+	if (UNLIKELY(!rb_threadptr_async_errinfo_empty_p(th))) {	\
+	    th->async_errinfo_queue_checked = 0;			\
+	    RUBY_VM_SET_INTERRUPT(th);					\
+	    rb_threadptr_execute_interrupts(th, 1);			\
+	}								\
+	else if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {		\
+	    rb_threadptr_execute_interrupts(th, 1);			\
+	}								\
+    } while (0)
 
 #define RUBY_VM_CHECK_INTS(th) do { \
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {	\

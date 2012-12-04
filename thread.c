@@ -69,6 +69,7 @@ static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
+static int rb_threadptr_async_errinfo_empty_p(rb_thread_t *th);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -888,7 +889,8 @@ sleep_forever(rb_thread_t *th, int deadlockable,int spurious_check)
     enum rb_thread_status status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
 
     th->status = status;
-    do {
+    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    while (th->status == status) {
 	if (deadlockable) {
 	    th->vm->sleeper++;
 	    rb_check_deadlock(th->vm);
@@ -898,7 +900,9 @@ sleep_forever(rb_thread_t *th, int deadlockable,int spurious_check)
 	    th->vm->sleeper--;
 	}
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
-    } while (spurious_check && th->status == status);
+	if(!spurious_check)
+	    break;
+    }
     th->status = prev_status;
 }
 
@@ -932,7 +936,8 @@ sleep_timeval(rb_thread_t *th, struct timeval tv,int spurious_check)
     }
 
     th->status = THREAD_STOPPED;
-    do {
+    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &tv);
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
 	getclockofday(&tvn);
@@ -946,7 +951,9 @@ sleep_timeval(rb_thread_t *th, struct timeval tv,int spurious_check)
 	    --tv.tv_sec;
 	    tv.tv_usec += 1000000;
 	}
-    } while (spurious_check && th->status == THREAD_STOPPED);
+	if(!spurious_check)
+	    break;
+    }
     th->status = prev_status;
 }
 

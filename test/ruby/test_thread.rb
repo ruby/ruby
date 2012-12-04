@@ -563,6 +563,30 @@ class TestThread < Test::Unit::TestCase
       Thread.async_interrupt_timing([]) {} # array
     }
   end
+  
+  def test_async_interrupt_blocking
+    r=:ok
+    e=Class.new(Exception)
+    th_s = Thread.current
+    begin
+      th = Thread.start{
+        Thread.async_interrupt_timing(Object => :on_blocking){
+          begin
+            Thread.current.raise RuntimeError
+            sleep
+          ensure
+            th_s.raise e
+          end
+        }
+      }
+      sleep 1
+      r=:ng
+      th.raise RuntimeError
+      th.join
+    rescue e
+    end
+    assert_equal(:ok,r)
+  end
 
   def test_async_interrupted?
     q = Queue.new
