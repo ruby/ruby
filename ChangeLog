@@ -1,3 +1,15 @@
+Tue Dec 04 13:55:07 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_opts.h: enable optimization - operand unifications.
+	  Operand unification technique enable to combine
+	  an instruction and specific operands and make new
+	  instruction.
+
+	* defs/opt_operand.def: add several configuration
+	  of operand unifications.
+
+	* insns.def: use `int' instead to suppress warning.
+
 Mon Dec  3 17:58:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y: replase parser->enc with current_enc.

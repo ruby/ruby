@@ -57,10 +57,11 @@ getlocal
 ()
 (VALUE val)
 {
-    rb_num_t i;
+    int i, lev = (int)level;
     VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
-	ep = GET_PREV_EP(ep);
+
+    for (i = 0; i < lev; i++) {
+	    ep = GET_PREV_EP(ep);
     }
     val = *(ep - idx);
 }
@@ -78,9 +79,10 @@ setlocal
 (VALUE val)
 ()
 {
-    rb_num_t i;
+    int i, lev = (int)level;
     VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
+
+    for (i = 0; i < lev; i++) {
 	ep = GET_PREV_EP(ep);
     }
     *(ep - idx) = val;
