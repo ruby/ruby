@@ -268,6 +268,7 @@ end
 # simple must come first in order to show up last in the parsers list
 require 'rdoc/parser/simple'
 require 'rdoc/parser/c'
+require 'rdoc/parser/changelog'
 require 'rdoc/parser/markdown'
 require 'rdoc/parser/rd'
 require 'rdoc/parser/ruby'
