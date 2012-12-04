@@ -1,3 +1,7 @@
+Tue Dec  4 16:54:00 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* .document:  Added ChangeLog and doc/ChangeLog-* as documentation
+
 Tue Dec  4 16:47:46 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parser/changelog.rb:  Added a ChangeLog parser to RDoc.
