@@ -18,23 +18,23 @@ Tue Dec  4 16:23:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): use
 	  RB_GC_GUARD() (directly or indirectly) instead of volatile.
 
-	* variable.c (rb_path_to_class): prevent the arguemnt from GC.
+	* variable.c (rb_path_to_class): prevent the argument from GC.
 
 Tue Dec 04 13:55:07 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_opts.h: enable optimization - operand unifications.
+	* vm_opts.h: enable optimization - operand unification.
 	  Operand unification technique enable to combine
 	  an instruction and specific operands and make new
 	  instruction.
 
 	* defs/opt_operand.def: add several configuration
-	  of operand unifications.
+	  of operand unification.
 
 	* insns.def: use `int' instead to suppress warning.
 
 Mon Dec  3 17:58:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* parse.y: replase parser->enc with current_enc.
+	* parse.y: replace parser->enc with current_enc.
 
 Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>
 
