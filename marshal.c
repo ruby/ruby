@@ -642,11 +642,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_float(RFLOAT_VALUE(obj), arg);
     }
     else {
+	VALUE v;
+
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
-	    VALUE v;
-
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
 	    v = rb_funcall2(obj, s_mdump, 0, 0);
@@ -658,13 +658,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (hasiv) w_ivar(obj, ivtbl, &c_arg);
 	    return;
 	}
-	if (rb_obj_respond_to(obj, s_dump, TRUE)) {
-	    VALUE v;
+	v = INT2NUM(limit);
+	v = rb_check_funcall(obj, s_dump, 1, &v);
+	if (v != Qundef) {
             st_table *ivtbl2 = 0;
             int hasiv2;
 
-	    v = INT2NUM(limit);
-	    v = rb_funcall2(obj, s_dump, 1, &v);
 	    check_dump_arg(arg, s_dump);
 	    if (!RB_TYPE_P(v, T_STRING)) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
@@ -834,12 +833,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    {
 		VALUE v;
 
-		if (!rb_obj_respond_to(obj, s_dump_data, TRUE)) {
+		v = rb_check_funcall(obj, s_dump_data, 0, 0);
+		if (v == Qundef) {
 		    rb_raise(rb_eTypeError,
 			     "no _dump_data is defined for class %s",
 			     rb_obj_classname(obj));
 		}
-		v = rb_funcall2(obj, s_dump_data, 0, 0);
 		check_dump_arg(arg, s_dump_data);
 		w_class(TYPE_DATA, obj, arg, TRUE);
 		w_object(v, arg, limit);
@@ -948,8 +947,7 @@ marshal_dump(int argc, VALUE *argv)
 	    io_needed();
 	}
 	arg->dest = port;
-	if (rb_respond_to(port, s_binmode)) {
-	    rb_funcall2(port, s_binmode, 0, 0);
+	if (rb_check_funcall(port, s_binmode, 0, 0) != Qundef) {
 	    check_dump_arg(arg, s_binmode);
 	}
     }
@@ -1904,9 +1902,7 @@ marshal_load(int argc, VALUE *argv)
 	port = v;
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
-	if (rb_respond_to(port, s_binmode)) {
-	    rb_funcall2(port, s_binmode, 0, 0);
-	}
+	rb_check_funcall(port, s_binmode, 0, 0);
 	infection = (int)(FL_TAINT | FL_TEST(port, FL_UNTRUSTED));
     }
     else {

@@ -1,4 +1,7 @@
-Tue Dec  4 16:23:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  4 16:23:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump, marshal_load): use
+	  rb_check_funcall if possible.
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): use
 	  RB_GC_GUARD() (directly or indirectly) instead of volatile.
