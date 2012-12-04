@@ -121,7 +121,7 @@ Sun Dec  3 00:06:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 Sun Dec  2 19:26:47 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT, rb_gc_save_machine_context): 
+	* thread.c (RB_GC_SAVE_MACHINE_CONTEXT, rb_gc_save_machine_context):
 	  extract rb_gc_save_machine_context to RB_GC_SAVE_MACHINE_CONTEXT.
 	  NOTE: machine_regs and machine_stack_end must be set in current scope.
 
