@@ -4202,7 +4202,7 @@ rb_mutex_lock(VALUE self)
 	while (mutex->th != th) {
 	    int interrupted;
 	    enum rb_thread_status prev_status = th->status;
-	    int timeout_ms = 0;
+	    volatile int timeout_ms = 0;
 	    struct rb_unblock_callback oldubf;
 
 	    set_unblock_function(th, lock_interrupt, mutex, &oldubf, FALSE);
@@ -4223,7 +4223,7 @@ rb_mutex_lock(VALUE self)
 	    }
 
 	    GVL_UNLOCK_BEGIN();
-	    interrupted = lock_func(th, mutex, timeout_ms);
+	    interrupted = lock_func(th, mutex, (int)timeout_ms);
 	    native_mutex_unlock(&mutex->lock);
 	    GVL_UNLOCK_END();
 
