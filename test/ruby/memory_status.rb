@@ -20,7 +20,11 @@ module Memory
     rescue LoadError
       require 'dl/import'
     end
-    require 'dl/types'
+    begin
+      require 'fiddle/types'
+    rescue LoadError
+      require 'dl/types'
+    end
 
     module Win32
       begin
@@ -29,7 +33,11 @@ module Memory
         extend DL::Importer
       end
       dlload "kernel32.dll", "psapi.dll"
-      include DL::Win32Types
+      begin
+        include Fiddle::Win32Types
+      rescue NameError
+        include DL::Win32Types
+      end
       typealias "SIZE_T", "size_t"
 
       PROCESS_MEMORY_COUNTERS = struct [
@@ -47,8 +55,8 @@ module Memory
 
       typealias "PPROCESS_MEMORY_COUNTERS", "PROCESS_MEMORY_COUNTERS*"
 
-      extern "HANDLE GetCurrentProcess()"
-      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)"
+      extern "HANDLE GetCurrentProcess(), :stdcall"
+      extern "BOOL GetProcessMemoryInfo(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD), :stdcall"
 
       module_function
       def memory_info
