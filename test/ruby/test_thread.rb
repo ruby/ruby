@@ -797,4 +797,33 @@ Thread.new(Thread.current) {|mth|
     sleep 0.01
     assert_equal(ary, ["run", "aborting", "aborting"])
   end
+
+  def test_mutex_owned
+    mutex = Mutex.new
+
+    assert_equal(mutex.owned?, false)
+    mutex.synchronize {
+      # Now, I have the mutex
+      assert_equal(mutex.owned?, true)
+    }
+    assert_equal(mutex.owned?, false)
+  end
+
+  def test_mutex_owned2
+    begin
+      mutex = Mutex.new
+      th = Thread.new {
+        # lock forever
+        mutex.lock
+        sleep
+      }
+
+      sleep 0.01 until th.status == "sleep"
+      # acquired another thread.
+      assert_equal(mutex.locked?, true)
+      assert_equal(mutex.owned?, false)
+    ensure
+      th.kill if th
+    end
+  end
 end

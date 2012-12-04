@@ -113,6 +113,9 @@ with all sufficient information, see the ChangeLog file.
         Object.const_get("Foo::Bar::Baz")
 
   * Mutex
+    * added method:
+      * added Mutex#owned? which returns the mutex is held by current
+        thread or not. [experimental]
     * incompatible changes:
       * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize
         and Mutex#sleep are no longer allowed to be used from trap handler

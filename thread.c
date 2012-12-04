@@ -4251,6 +4251,28 @@ rb_mutex_lock(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    mutex.owned?  -> true or false
+ *
+ * Returns +true+ if this lock is currently held by current thread.
+ * <em>This API is experimental, and subject to change.</em>
+ */
+static VALUE
+rb_mutex_owned_p(VALUE self)
+{
+    VALUE owned = Qfalse;
+    rb_thread_t *th = GET_THREAD();
+    rb_mutex_t *mutex;
+
+    GetMutexPtr(self, mutex);
+
+    if (mutex->th == th)
+	owned = Qtrue;
+
+    return owned;
+}
+
 static const char *
 rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
 {
@@ -4874,6 +4896,7 @@ Init_Thread(void)
     rb_define_method(rb_cMutex, "unlock", rb_mutex_unlock, 0);
     rb_define_method(rb_cMutex, "sleep", mutex_sleep, -1);
     rb_define_method(rb_cMutex, "synchronize", rb_mutex_synchronize_m, 0);
+    rb_define_method(rb_cMutex, "owned?", rb_mutex_owned_p, 0);
 
     recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);

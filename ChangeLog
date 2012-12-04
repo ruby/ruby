@@ -1,3 +1,11 @@
+Wed Dec  5 00:56:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_owned_p): new method that return current
+	  thread have the target mutex or not. [Feature #7505] [ruby-dev:46697]
+	* test/ruby/test_thread.rb (test_mutex_owned, test_mutex_owned2):
+	  test for the above.
+	* NEWS: new for the above.
+
 Wed Dec  5 00:05:47 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (make_compiler, add_put_cmd, add_insert_cmd): extract
