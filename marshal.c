@@ -1381,8 +1381,7 @@ path2class(VALUE path)
     VALUE v = rb_path_to_class(path);
 
     if (!RB_TYPE_P(v, T_CLASS)) {
-	rb_raise(rb_eArgError, "%.*s does not refer to class",
-		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
+	rb_raise(rb_eArgError, "%"PRIsVALUE" does not refer to class", path);
     }
     return v;
 }
@@ -1393,8 +1392,7 @@ path2module(VALUE path)
     VALUE v = rb_path_to_class(path);
 
     if (!RB_TYPE_P(v, T_MODULE)) {
-	rb_raise(rb_eArgError, "%.*s does not refer to module",
-		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
+	rb_raise(rb_eArgError, "%"PRIsVALUE" does not refer to module", path);
     }
     return v;
 }

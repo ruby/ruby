@@ -1,4 +1,6 @@
-Tue Dec  4 16:23:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec  4 16:23:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (path2class, path2module): use PRIsVALUE.
 
 	* marshal.c (w_object, marshal_dump, marshal_load): use
 	  rb_check_funcall if possible.
