@@ -1,3 +1,8 @@
+Wed Dec  5 00:05:47 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (make_compiler, add_put_cmd, add_insert_cmd): extract
+	  methods.
+
 Tue Dec  4 18:21:04 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/ruby/memory_status.rb (Memory): use fiddle/types if available.
