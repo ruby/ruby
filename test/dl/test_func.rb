@@ -9,6 +9,12 @@ module DL
       assert_equal 'strcpy', f.name
     end
 
+    def test_name_with_block
+      cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
+                        [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
+      assert_equal('<callback>qsort', cb.name)
+    end
+
     def test_to_i
       cfunc = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
       f = Function.new(cfunc, [TYPE_VOIDP, TYPE_VOIDP])

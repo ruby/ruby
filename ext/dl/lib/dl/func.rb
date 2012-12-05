@@ -11,13 +11,45 @@ module DL
     include DL
     include ValueUtil
 
+    if DL.fiddle?
+      CALL_TYPE_TO_ABI = Hash.new { |h, k|
+        raise RuntimeError, "unsupported call type: #{k}"
+      }.merge({ :stdcall => 
+                (Fiddle::Function::STDCALL rescue Fiddle::Function::DEFAULT),
+                :cdecl   => Fiddle::Function::DEFAULT,
+                nil      => Fiddle::Function::DEFAULT
+              }).freeze
+      private_constant :CALL_TYPE_TO_ABI
+
+      def self.call_type_to_abi(call_type)
+        CALL_TYPE_TO_ABI[call_type]
+      end
+      private_class_method :call_type_to_abi
+
+      class FiddleClosureCFunc < Fiddle::Closure
+        def initialize ctype, arg, abi, name
+          @name = name
+          super(ctype, arg, abi)
+        end
+        def name
+          @name
+        end
+      end
+      private_constant :FiddleClosureCFunc
+
+      def self.class_fiddle_closure_cfunc
+        FiddleClosureCFunc
+      end
+      private_class_method :class_fiddle_closure_cfunc
+    end
+
     def initialize cfunc, argtypes, abi = nil, &block
       if DL.fiddle?
-        abi ||= Fiddle::Function::DEFAULT
+        abi ||= CALL_TYPE_TO_ABI[(cfunc.calltype rescue nil)]
         if block_given?
-          @cfunc = Class.new(Fiddle::Closure) {
+          @cfunc = Class.new(FiddleClosureCFunc) {
             define_method(:call, block)
-          }.new(cfunc.ctype, argtypes)
+          }.new(cfunc.ctype, argtypes, abi, cfunc.name)
         else
           @cfunc  = cfunc
         end
@@ -76,16 +108,16 @@ module DL
 
     def bind(&block)
       if DL.fiddle?
-        @cfunc = Class.new(Fiddle::Closure) {
-          def initialize ctype, args, block
-            super(ctype, args)
+        @cfunc = Class.new(FiddleClosureCFunc) {
+          def initialize ctype, args, abi, name, block
+            super(ctype, args, abi, name)
             @block = block
           end
 
           def call *args
             @block.call(*args)
           end
-        }.new(@cfunc.ctype, @args, block)
+        }.new(@cfunc.ctype, @args, abi, name, block)
       else
         if( !block )
           raise(RuntimeError, "block must be given.")
