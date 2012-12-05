@@ -2,7 +2,7 @@ require_relative 'base'
 require 'tempfile'
 
 class TestMkmf
-  class TestMacro < TestMkmf
+  class TestHaveMacro < TestMkmf
     MACRO_NAME = "RUBY_MKMFTEST_FOOBAR"
 
     def test_have_macro_opt
