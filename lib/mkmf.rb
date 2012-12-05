@@ -757,7 +757,7 @@ SRC
 /*top*/
 #ifndef #{macro}
 # error
->>>>>> #{macro} undefined <<<<<<
+|:/ === #{macro} undefined === /:|
 #endif
 SRC
   end

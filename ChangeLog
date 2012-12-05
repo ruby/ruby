@@ -1,3 +1,8 @@
+Wed Dec  5 11:37:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#macro_defined?): use clearly different
+	  strings from conflict markers.
+
 Wed Dec  5 04:25:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/README: Add rdoc modeline directive and formatting libs
