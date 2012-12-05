@@ -1,9 +1,10 @@
 Wed Dec  5 04:50:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
 	* lib/timeout.rb (Timeout#timeout): set
-	  async_interrupt_timeing(:on_blocking) by default.
+	  async_interrupt_timing(:on_blocking) by default.
 	  [Bug #7503] [ruby-core:50524]
 
-	* test/test_timeout.rb (#test_timeout_blocking): test for the above.
+	* test/test_timeout.rb (test_timeout_blocking): test for the above.
 	* test/test_timeout.rb (test_timeout_immediate): ditto
 	* test/test_timeout.rb (test_timeout_immediate2): ditto.
 
