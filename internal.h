@@ -279,6 +279,7 @@ VALUE rb_thread_shield_wait(VALUE self);
 VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);
 void rb_mutex_allow_trap(VALUE self, int val);
+VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);

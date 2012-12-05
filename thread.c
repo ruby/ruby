@@ -5048,3 +5048,15 @@ rb_reset_coverages(void)
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }
+
+VALUE
+rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
+{
+    VALUE interrupt_mask = rb_hash_new();
+    rb_thread_t *cur_th = GET_THREAD();
+
+    rb_hash_aset(interrupt_mask, rb_cObject, ID2SYM(rb_intern("defer")));
+    rb_ary_push(cur_th->async_errinfo_mask_stack, interrupt_mask);
+
+    return rb_ensure(b_proc, data, rb_ary_pop, cur_th->async_errinfo_mask_stack);
+}

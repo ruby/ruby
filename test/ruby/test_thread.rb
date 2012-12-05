@@ -637,6 +637,26 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
+  def test_async_interrupt_and_p
+    assert_in_out_err([], <<-INPUT, %w(:ok :ok), [])
+      th_waiting = true
+
+      t = Thread.new {
+        Thread.async_interrupt_timing(RuntimeError => :on_blocking) {
+          nil while th_waiting
+          # p shouldn't provide interruptible point
+          p :ok
+          p :ok
+        }
+      }
+
+      sleep 0.1
+      t.raise RuntimeError
+      th_waiting = false
+      t.join rescue nil
+    INPUT
+  end
+
   def test_async_interrupted?
     q = Queue.new
     Thread.async_interrupt_timing(RuntimeError => :defer){

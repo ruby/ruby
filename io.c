@@ -6759,6 +6759,35 @@ rb_p(VALUE obj) /* for debug print within C code */
     }
 }
 
+struct rb_f_p_arg {
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+rb_f_p_internal(VALUE arg)
+{
+    struct rb_f_p_arg *arg1 = (struct rb_f_p_arg*)arg;
+    int argc = arg1->argc;
+    VALUE *argv = arg1->argv;
+    int i;
+    VALUE ret = Qnil;
+
+    for (i=0; i<argc; i++) {
+	rb_p(argv[i]);
+    }
+    if (argc == 1) {
+	ret = argv[0];
+    }
+    else if (argc > 1) {
+	ret = rb_ary_new4(argc, argv);
+    }
+    if (RB_TYPE_P(rb_stdout, T_FILE)) {
+	rb_io_flush(rb_stdout);
+    }
+    return ret;
+}
+
 /*
  *  call-seq:
  *     p(obj)              -> obj
@@ -6780,22 +6809,11 @@ rb_p(VALUE obj) /* for debug print within C code */
 static VALUE
 rb_f_p(int argc, VALUE *argv, VALUE self)
 {
-    int i;
-    VALUE ret = Qnil;
+    struct rb_f_p_arg arg;
+    arg.argc = argc;
+    arg.argv = argv;
 
-    for (i=0; i<argc; i++) {
-	rb_p(argv[i]);
-    }
-    if (argc == 1) {
-	ret = argv[0];
-    }
-    else if (argc > 1) {
-	ret = rb_ary_new4(argc, argv);
-    }
-    if (RB_TYPE_P(rb_stdout, T_FILE)) {
-	rb_io_flush(rb_stdout);
-    }
-    return ret;
+    return rb_uninterruptible(rb_f_p_internal, (VALUE)&arg);
 }
 
 /*
