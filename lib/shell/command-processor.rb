@@ -18,6 +18,11 @@ require "shell/system-command"
 require "shell/builtin-command"
 
 class Shell
+  # In order to execute a command on your OS, you need to define it as a
+  # Shell method.
+  #
+  # Alternatively, you can execute any command via
+  # Shell::CommandProcessor#system even if it is not defined.
   class CommandProcessor
 #    include Error
 
@@ -76,23 +81,13 @@ class Shell
       @shell.expand_path(path)
     end
 
+    # call-seq:
+    #   foreach(path, record_separator) -> Enumerator
+    #   foreach(path, record_separator) { block }
     #
-    # File related commands
-    # Shell#foreach
-    # Shell#open
-    # Shell#unlink
-    # Shell#test
+    # See IO.foreach when +path+ is a file.
     #
-    # -
-    #
-    # CommandProcessor#foreach(path, rs)
-    #     path: String
-    #     rs:   String - record separator
-    #     iterator
-    #   Same as:
-    #     File#foreach (when path is file)
-    #     Dir#foreach (when path is directory)
-    #   path is relative to pwd
+    # See Dir.foreach when +path+ is a directory.
     #
     def foreach(path = nil, *rs)
       path = "." unless path
@@ -105,15 +100,13 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   open(path, mode, permissions) -> Enumerator
+    #   open(path, mode, permissions) { block }
     #
-    # CommandProcessor#open(path, mode)
-    #     path:   String
-    #     mode:   String
-    #     return: File or Dir
-    #   Same as:
-    #     File#open (when path is file)
-    #     Dir#open  (when path is directory)
-    #   mode has an effect only when path is a file
+    # See IO.open when +path+ is a file.
+    #
+    # See Dir.open when +path+ is a directory.
     #
     def open(path, mode = nil, perm = 0666, &b)
       path = expand_path(path)
@@ -134,11 +127,12 @@ class Shell
     end
     #  public :open
 
+    # call-seq:
+    #   unlink(path)
     #
-    # CommandProcessor#unlink(path)
-    #   same as:
-    #     Dir#unlink  (when path is directory)
-    #     File#unlink (when path is file)
+    # See IO.unlink when +path+ is a file.
+    #
+    # See Dir.unlink when +path+ is a directory.
     #
     def unlink(path)
       @shell.check_point
@@ -152,24 +146,21 @@ class Shell
       Void.new(@shell)
     end
 
+    # See Shell::CommandProcessor#test
+    alias top_level_test test
+    # call-seq:
+    #   test(command, file1, file2) ->  true or false
+    #   [command, file1, file2] ->  true or false
     #
-    # CommandProcessor#test(command, file1, file2)
-    # CommandProcessor#[command, file1, file2]
-    #     command: char or String or Symbol
-    #     file1:   String
-    #     file2:   String(optional)
-    #     return: Boolean
-    #   same as:
-    #     test()           (when command is char or length 1 string or symbol)
-    #     FileTest.command (others)
-    #   example:
+    # Tests if the given +command+ exists in +file1+, or optionally +file2+.
+    #
+    # Example:
     #     sh[?e, "foo"]
     #     sh[:e, "foo"]
     #     sh["e", "foo"]
     #     sh[:exists?, "foo"]
     #     sh["exists?", "foo"]
     #
-    alias top_level_test test
     def test(command, file1, file2=nil)
       file1 = expand_path(file1)
       file2 = expand_path(file2) if file2
@@ -198,20 +189,13 @@ class Shell
         end
       end
     end
+    # See Shell::CommandProcessor#test
     alias [] test
 
+    # call-seq:
+    #   mkdir(path)
     #
-    # Dir related methods
-    #
-    # Shell#mkdir
-    # Shell#rmdir
-    #
-    #--
-    #
-    # CommandProcessor#mkdir(*path)
-    #     path: String
-    #   same as Dir.mkdir()
-    #
+    # Same as Dir.mkdir, except multiple directories are allowed.
     def mkdir(*path)
       @shell.check_point
       notify("mkdir #{path.join(' ')}")
@@ -232,11 +216,10 @@ class Shell
       Void.new(@shell)
     end
 
+    # call-seq:
+    #   rmdir(path)
     #
-    # CommandProcessor#rmdir(*path)
-    #     path: String
-    #   same as Dir.rmdir()
-    #
+    # Same as Dir.rmdir, except multiple directories are allowed.
     def rmdir(*path)
       @shell.check_point
       notify("rmdir #{path.join(' ')}")
@@ -247,13 +230,12 @@ class Shell
       Void.new(@shell)
     end
 
+    # call-seq:
+    #   system(command, *options) -> SystemCommand
     #
-    # CommandProcessor#system(command, *opts)
-    #     command: String
-    #     opts:    String
-    #     return:  SystemCommand
-    #   Same as system() function
-    #   example:
+    # Executes the given +command+ with the +options+ parameter.
+    #
+    # Example:
     #     print sh.system("ls", "-l")
     #     sh.system("ls", "-l") | sh.head > STDOUT
     #
@@ -268,22 +250,26 @@ class Shell
       SystemCommand.new(@shell, find_system_command(command), *opts)
     end
 
+    # call-seq:
+    #   rehash
     #
-    # ProcessCommand#rehash
-    #   clear command hash table.
-    #
+    # Clears the command hash table.
     def rehash
       @system_commands = {}
     end
 
-    #
-    # ProcessCommand#transact
-    #
-    def check_point
+    def check_point # :nodoc:
       @shell.process_controller.wait_all_jobs_execution
     end
-    alias finish_all_jobs check_point
+    alias finish_all_jobs check_point # :nodoc:
 
+    # call-seq:
+    #   transact { block }
+    #
+    # Executes a block as self
+    #
+    # Example:
+    #   sh.transact { system("ls", "-l") | head > STDOUT }
     def transact(&block)
       begin
         @shell.instance_eval(&block)
@@ -292,17 +278,27 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   out(device) { block }
     #
-    # internal commands
-    #
+    # Calls <code>device.print</code> on the result passing the _block_ to
+    # #transact
     def out(dev = STDOUT, &block)
       dev.print transact(&block)
     end
 
+    # call-seq:
+    #   echo(*strings) ->  Echo
+    #
+    # Returns a Echo object, for the given +strings+
     def echo(*strings)
       Echo.new(@shell, *strings)
     end
 
+    # call-seq:
+    #   cat(*filename) ->  Cat
+    #
+    # Returns a Cat object, for the given +filenames+
     def cat(*filenames)
       Cat.new(@shell, *filenames)
     end
@@ -310,7 +306,10 @@ class Shell
     #   def sort(*filenames)
     #     Sort.new(self, *filenames)
     #   end
-
+    # call-seq:
+    #   glob(pattern) ->  Glob
+    #
+    # Returns a Glob filter object, with the given +pattern+ object
     def glob(pattern)
       Glob.new(@shell, pattern)
     end
@@ -326,10 +325,18 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   tee(file) ->  Tee
+    #
+    # Returns a Tee filter object, with the given +file+ command
     def tee(file)
       Tee.new(@shell, file)
     end
 
+    # call-seq:
+    #   concat(*jobs) ->  Concat
+    #
+    # Returns a Concat object, for the given +jobs+
     def concat(*jobs)
       Concat.new(@shell, *jobs)
     end
@@ -371,11 +378,17 @@ class Shell
       Shell.Fail Error::CommandNotFound, command
     end
 
+    # call-seq:
+    #   def_system_command(command, path)  ->  Shell::SystemCommand
     #
-    # CommandProcessor.def_system_command(command, path)
-    #     command:  String
-    #     path:     String
-    #   define 'command()' method as method.
+    # Defines a command, registering +path+ as a Shell method for the given
+    # +command+.
+    #
+    #     Shell::CommandProcessor.def_system_command "ls"
+    #       #=> Defines ls.
+    #
+    #     Shell::CommandProcessor.def_system_command "sys_sort", "sort"
+    #       #=> Defines sys_sort as sort
     #
     def self.def_system_command(command, path = command)
       begin
@@ -390,6 +403,10 @@ class Shell
              Shell.debug.kind_of?(Integer) && Shell.debug > 1)
     end
 
+    # call-seq:
+    #   undef_system_command(command) ->  self
+    #
+    # Undefines a command
     def self.undef_system_command(command)
       command = command.id2name if command.kind_of?(Symbol)
       remove_method(command)
@@ -398,15 +415,20 @@ class Shell
       self
     end
 
-    # define command alias
-    # ex)
-    # def_alias_command("ls_c", "ls", "-C", "-F")
-    # def_alias_command("ls_c", "ls"){|*opts| ["-C", "-F", *opts]}
-    #
     @alias_map = {}
+    # Returns a list of aliased commands
     def self.alias_map
       @alias_map
     end
+    # call-seq:
+    #   alias_command(alias, command, *options) ->  self
+    #
+    # Creates a command alias at the given +alias+ for the given +command+,
+    # passing any +options+ along with it.
+    #
+    #     Shell::CommandProcessor.alias_command "lsC", "ls", "-CBF", "--show-control-chars"
+    #     Shell::CommandProcessor.alias_command("lsC", "ls"){|*opts| ["-CBF", "--show-control-chars", *opts]}
+    #
     def self.alias_command(ali, command, *opts)
       ali = ali.id2name if ali.kind_of?(Symbol)
       command = command.id2name if command.kind_of?(Symbol)
@@ -436,22 +458,57 @@ class Shell
       self
     end
 
+    # call-seq:
+    #   unalias_command(alias)  ->  self
+    #
+    # Unaliases the given +alias+ command.
     def self.unalias_command(ali)
       ali = ali.id2name if ali.kind_of?(Symbol)
       @alias_map.delete ali.intern
       undef_system_command(ali)
     end
 
+    # :nodoc:
     #
-    # CommandProcessor.def_builtin_commands(delegation_class, command_specs)
-    #     delegation_class: Class or Module
-    #     command_specs: [[command_name, [argument,...]],...]
-    #        command_name: String
-    #        arguments:    String
-    #           FILENAME?? -> expand_path(filename??)
-    #           *FILENAME?? -> filename??.collect{|f|expand_path(f)}.join(", ")
-    #   define command_name(argument,...) as
-    #       delegation_class.command_name(argument,...)
+    # Delegates File and FileTest methods into Shell, including the following
+    # commands:
+    #
+    # * Shell#blockdev?(file)
+    # * Shell#chardev?(file)
+    # * Shell#directory?(file)
+    # * Shell#executable?(file)
+    # * Shell#executable_real?(file)
+    # * Shell#exist?(file)/Shell#exists?(file)
+    # * Shell#file?(file)
+    # * Shell#grpowned?(file)
+    # * Shell#owned?(file)
+    # * Shell#pipe?(file)
+    # * Shell#readable?(file)
+    # * Shell#readable_real?(file)
+    # * Shell#setgid?(file)
+    # * Shell#setuid?(file)
+    # * Shell#size(file)/Shell#size?(file)
+    # * Shell#socket?(file)
+    # * Shell#sticky?(file)
+    # * Shell#symlink?(file)
+    # * Shell#writable?(file)
+    # * Shell#writable_real?(file)
+    # * Shell#zero?(file)
+    # * Shell#syscopy(filename_from, filename_to)
+    # * Shell#copy(filename_from, filename_to)
+    # * Shell#move(filename_from, filename_to)
+    # * Shell#compare(filename_from, filename_to)
+    # * Shell#safe_unlink(*filenames)
+    # * Shell#makedirs(*filenames)
+    # * Shell#install(filename_from, filename_to, mode)
+    #
+    # And also, there are some aliases for convenience:
+    #
+    # * Shell#cmp	<- Shell#compare
+    # * Shell#mv	<- Shell#move
+    # * Shell#cp	<- Shell#copy
+    # * Shell#rm_f	<- Shell#safe_unlink
+    # * Shell#mkpath	<- Shell#makedirs
     #
     def self.def_builtin_commands(delegation_class, command_specs)
       for meth, args in command_specs
@@ -478,15 +535,16 @@ class Shell
       end
     end
 
+    # call-seq:
+    #     install_system_commands(prefix = "sys_")
     #
-    # CommandProcessor.install_system_commands(pre)
-    #       pre: String - command name prefix
-    # defines every command which belongs in default_system_path via
-    # CommandProcessor.command().  It doesn't define already defined
-    # methods twice.  By default, "pre_" is prefixes to each method
-    # name.  Characters that may not be used in a method name are
-    # all converted to '_'.  Definition errors are just ignored.
+    # Defines all commands in the Shell.default_system_path as Shell method,
+    # all with given +prefix+ appended to their names.
     #
+    # Any invalid character names are converted to +_+, and errors are passed
+    # to Shell.notify.
+    #
+    # Methods already defined are skipped.
     def self.install_system_commands(pre = "sys_")
       defined_meth = {}
       for m in Shell.methods
@@ -511,12 +569,7 @@ class Shell
       end
     end
 
-    #----------------------------------------------------------------------
-    #
-    #  class initializing methods  -
-    #
-    #----------------------------------------------------------------------
-    def self.add_delegate_command_to_shell(id)
+    def self.add_delegate_command_to_shell(id) # :nodoc:
       id = id.intern if id.kind_of?(String)
       name = id.id2name
       if Shell.method_defined?(id)
@@ -552,8 +605,27 @@ class Shell
                           end], __FILE__, __LINE__)
     end
 
+    # Delegates File methods into Shell, including the following commands:
     #
-    # define default builtin commands
+    # * Shell#atime(file)
+    # * Shell#basename(file, *opt)
+    # * Shell#chmod(mode, *files)
+    # * Shell#chown(owner, group, *file)
+    # * Shell#ctime(file)
+    # * Shell#delete(*file)
+    # * Shell#dirname(file)
+    # * Shell#ftype(file)
+    # * Shell#join(*file)
+    # * Shell#link(file_from, file_to)
+    # * Shell#lstat(file)
+    # * Shell#mtime(file)
+    # * Shell#readlink(file)
+    # * Shell#rename(file_from, file_to)
+    # * Shell#split(file)
+    # * Shell#stat(file)
+    # * Shell#symlink(file_from, file_to)
+    # * Shell#truncate(file, length)
+    # * Shell#utime(atime, mtime, *file)
     #
     def self.install_builtin_commands
       # method related File.

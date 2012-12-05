@@ -9,11 +9,12 @@
 #
 #
 
-class Shell
+class Shell #:nodoc:
+  # Any result of command exection is a Filter.
   #
-  # Filter
-  # A method to require
-  #    each()
+  # This class includes Enumerable, therefore a Filter object can use all
+  # Enumerable
+  # facilities.
   #
   class Filter
     include Enumerable
@@ -29,6 +30,10 @@ class Shell
       @input = filter
     end
 
+    # call-seq:
+    #   each(record_separator=nil) { block }
+    #
+    # Iterates a block for each line.
     def each(rs = nil)
       rs = @shell.record_separator unless rs
       if @input
@@ -36,6 +41,11 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   < source
+    #
+    # Inputs from +source+, which is either a string of a file name or an IO
+    # object.
     def < (src)
       case src
       when String
@@ -49,6 +59,11 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   > source
+    #
+    # Outputs from +source+, which is either a string of a file name or an IO
+    # object.
     def > (to)
       case to
       when String
@@ -66,6 +81,11 @@ class Shell
       self
     end
 
+    # call-seq:
+    #   >> source
+    #
+    # Appends the output to +source+, which is either a string of a file name
+    # or an IO object.
     def >> (to)
       begin
         Shell.cd(@shell.pwd).append(to, self)
@@ -74,6 +94,10 @@ class Shell
       end
     end
 
+    # call-seq:
+    #   | filter
+    #
+    # Processes a pipeline.
     def | (filter)
       filter.input = self
       if active?
@@ -82,6 +106,10 @@ class Shell
       filter
     end
 
+    # call-seq:
+    #   filter1 + filter2
+    #
+    # Outputs +filter1+, and then +filter2+ using Join.new
     def + (filter)
       Join.new(@shell, self, filter)
     end
