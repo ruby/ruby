@@ -1,3 +1,9 @@
+Thu Dec  6 04:27:10 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_binwrite): check interrupt before io issue.
+	* test/ruby/test_thread.rb (test_async_interrupt_and_io):
+	  test for the above.
+
 Thu Dec  6 01:10:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_method_call_status): use Qundef as no self instead of

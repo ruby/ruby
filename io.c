@@ -1120,6 +1120,9 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
     long n, r, offset = 0;
 
+    /* don't write anything if current thread has a pending interrupt. */
+    rb_thread_check_ints();
+
     if ((n = len) <= 0) return n;
     if (fptr->wbuf.ptr == NULL && !(!nosync && (fptr->mode & FMODE_SYNC))) {
         fptr->wbuf.off = 0;

@@ -617,6 +617,26 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:ok,r)
   end
 
+  def test_async_interrupt_and_io
+    assert_in_out_err([], <<-INPUT, %w(ok), [])
+      th_waiting = true
+
+      t = Thread.new {
+        Thread.async_interrupt_timing(RuntimeError => :on_blocking) {
+          nil while th_waiting
+          # async interrupt should be raised _before_ writing puts arguments
+          puts "ng"
+        }
+      }
+
+      sleep 0.1
+      t.raise RuntimeError
+      th_waiting = false
+      t.join rescue nil
+      puts "ok"
+    INPUT
+  end
+
   def test_async_interrupted?
     q = Queue.new
     Thread.async_interrupt_timing(RuntimeError => :defer){
