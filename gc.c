@@ -3853,7 +3853,14 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *, gc_profile_record *);
 static double
 getrusage_time(void)
 {
-#ifdef RUSAGE_SELF
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_PROCESS_CPUTIME_ID)
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    }
+    return 0.0;
+#elif defined RUSAGE_SELF
     struct rusage usage;
     struct timeval time;
     getrusage(RUSAGE_SELF, &usage);
