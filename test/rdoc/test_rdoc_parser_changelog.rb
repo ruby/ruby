@@ -96,7 +96,17 @@ class TestRDocParserChangeLog < RDoc::TestCase
 
     expected.file = @top_level
 
-    assert_equal expected, parser.create_document(groups)
+    document = parser.create_document(groups)
+
+    assert_equal expected, document
+
+    assert_equal 2, document.omit_headings_below
+
+    headings = document.parts.select do |part|
+      RDoc::Markup::Heading === part and part.level == 2
+    end
+
+    refute headings.all? { |heading| heading.text.frozen? }
   end
 
   def test_create_entries
@@ -117,6 +127,26 @@ class TestRDocParserChangeLog < RDoc::TestCase
       blank_line,
       list(:NOTE, item('c', para('three')), item('d', para('four'))),
     ]
+
+    entries = parser.create_entries(entries)
+    assert_equal expected, entries
+  end
+
+  def test_create_entries_colons
+    parser = util_parser
+
+    entries = [
+      ['Wed Dec  5 12:17:11 2012  Naohisa Goto  <ngotogenome@gmail.com>',
+        ['func.rb (DL::Function#bind): log stuff [ruby-core:50562]']],
+    ]
+
+    expected = [
+      head(3,
+           'Wed Dec  5 12:17:11 2012  Naohisa Goto  <ngotogenome@gmail.com>'),
+      blank_line,
+      list(:NOTE,
+           item('func.rb (DL::Function#bind)',
+                para('log stuff [ruby-core:50562]')))]
 
     assert_equal expected, parser.create_entries(entries)
   end

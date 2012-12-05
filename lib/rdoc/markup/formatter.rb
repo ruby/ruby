@@ -42,7 +42,12 @@ class RDoc::Markup::Formatter
 
   def accept_document document
     document.parts.each do |item|
-      item.accept self
+      case item
+      when RDoc::Markup::Document then # HACK
+        accept_document item
+      else
+        item.accept self
+      end
     end
   end
 

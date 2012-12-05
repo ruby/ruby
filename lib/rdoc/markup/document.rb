@@ -12,6 +12,12 @@ class RDoc::Markup::Document
   attr_reader :file
 
   ##
+  # If a heading is below the given level it will be omitted from the
+  # table_of_contents
+
+  attr_accessor :omit_headings_below
+
+  ##
   # The parts of the Document
 
   attr_reader :parts
@@ -24,6 +30,7 @@ class RDoc::Markup::Document
     @parts.concat parts
 
     @file = nil
+    @omit_headings_from_table_of_contents_below = nil
   end
 
   ##
@@ -57,14 +64,7 @@ class RDoc::Markup::Document
   def accept visitor
     visitor.start_accepting
 
-    @parts.each do |item|
-      case item
-      when RDoc::Markup::Document then # HACK
-        visitor.accept_document item
-      else
-        item.accept visitor
-      end
-    end
+    visitor.accept_document self
 
     visitor.end_accepting
   end

@@ -23,13 +23,14 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def create_document groups
     doc = RDoc::Markup::Document.new
+    doc.omit_headings_below = 2
     doc.file = @top_level
 
     doc << RDoc::Markup::Heading.new(1, File.basename(@file_name))
     doc << RDoc::Markup::BlankLine.new
 
     groups.sort_by do |day,| day end.reverse_each do |day, entries|
-      doc << RDoc::Markup::Heading.new(2, day)
+      doc << RDoc::Markup::Heading.new(2, day.dup)
       doc << RDoc::Markup::BlankLine.new
 
       doc.concat create_entries entries
@@ -55,7 +56,11 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     list = RDoc::Markup::List.new :NOTE
 
     items.each do |item|
-      title, body = item.split(/:\s*/, 2)
+      item =~ /\A(.*?(?:\([^)]+\))?):\s*/
+
+      title = $1
+      body = $'
+
       paragraph = RDoc::Markup::Paragraph.new body
       list_item = RDoc::Markup::ListItem.new title, paragraph
       list << list_item

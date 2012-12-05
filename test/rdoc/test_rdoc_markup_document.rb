@@ -191,5 +191,24 @@ class TestRDocMarkupDocument < RDoc::TestCase
     assert_equal expected, doc.table_of_contents
   end
 
+  def test_table_of_contents_omit_headings_below
+    document = doc(
+      head(1, 'A'),
+      para('B'),
+      head(2, 'C'),
+      para('D'),
+      head(1, 'E'),
+      para('F'))
+
+    document.omit_headings_below = 1
+
+    expected = [
+      head(1, 'A'),
+      head(1, 'E'),
+    ]
+
+    assert_equal expected, document.table_of_contents
+  end
+
 end
 

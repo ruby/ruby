@@ -91,5 +91,36 @@ class TestRDocMarkupToTableOfContents < RDoc::Markup::FormatterTestCase
   alias list_verbatim                                 empty
   alias start_accepting                               empty
 
+  def test_accept_document_omit_headings_below
+    document = doc
+    document.omit_headings_below = 2
+
+    @to.accept_document document
+
+    assert_equal 2, @to.omit_headings_below
+  end
+
+  def test_accept_heading_suppressed
+    @to.start_accepting
+    @to.omit_headings_below = 4
+
+    suppressed = head 5, 'Hello'
+
+    @to.accept_heading suppressed
+
+    assert_empty @to.res
+  end
+
+  def test_suppressed_eh
+    @to.omit_headings_below = nil
+
+    refute @to.suppressed? head(1, '')
+
+    @to.omit_headings_below = 1
+
+    refute @to.suppressed? head(1, '')
+    assert @to.suppressed? head(2, '')
+  end
+
 end
 

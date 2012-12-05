@@ -1,7 +1,8 @@
 ##
 # A heading with a level (1-6) and text
 
-class RDoc::Markup::Heading < Struct.new :level, :text
+RDoc::Markup::Heading =
+  Struct.new :level, :text do
 
   @to_html = nil
   @to_label = nil
