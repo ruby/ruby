@@ -289,7 +289,8 @@ static inline int rb_method_call_status(rb_thread_t *th, const rb_method_entry_t
  * \param argc   the number of method arguments
  * \param argv   a pointer to an array of method arguments
  * \param scope
- * \param self   self in the caller. Qundef means the current control frame's self.
+ * \param self   self in the caller. Qundef means no self is considered and
+ *               protected methods cannot be called
  *
  * \note \a self is used in order to controlling access to protected methods.
  */
@@ -364,7 +365,7 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
     }
 
     me = rb_search_method_entry(Qnil, recv, mid, &defined_class);
-    call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
+    call_status = rb_method_call_status(th, me, CALL_FCALL, th->cfp->self);
     if (call_status != NOEX_OK) {
 	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
 	    return Qundef;
@@ -501,10 +502,7 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 		    defined_class = RBASIC(defined_class)->klass;
 		}
 
-		if (self == Qundef) {
-		    self = th->cfp->self;
-		}
-		if (!rb_obj_is_kind_of(self, defined_class)) {
+		if (self == Qundef || !rb_obj_is_kind_of(self, defined_class)) {
 		    return NOEX_PROTECTED;
 		}
 	    }
@@ -533,7 +531,8 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
-    return rb_call0(recv, mid, argc, argv, scope, Qundef, Qnil);
+    rb_thread_t *th = GET_THREAD();
+    return rb_call0(recv, mid, argc, argv, scope, th->cfp->self, Qnil);
 }
 
 NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
@@ -786,9 +785,10 @@ rb_funcall_passing_block_with_refinements(VALUE recv, ID mid, int argc,
 					  const VALUE *argv,
 					  VALUE refinements)
 {
-    PASS_PASSED_BLOCK_TH(GET_THREAD());
+    rb_thread_t *th = GET_THREAD();
 
-    return rb_call0(recv, mid, argc, argv, CALL_PUBLIC, Qundef,
+    PASS_PASSED_BLOCK_TH(th);
+    return rb_call0(recv, mid, argc, argv, CALL_PUBLIC, th->cfp->self,
 		    refinements);
 }
 
@@ -797,8 +797,15 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
     ID id;
     VALUE vid;
-    VALUE self = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_THREAD()->cfp)->self;
+    VALUE self;
     rb_thread_t *th = GET_THREAD();
+
+    if (scope == CALL_PUBLIC) {
+	self = Qundef;
+    }
+    else {
+	self = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp)->self;
+    }
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "no method name given");

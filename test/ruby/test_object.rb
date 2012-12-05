@@ -587,6 +587,8 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NoMethodError) {c.public_send(:priv)}
     assert_raise(NoMethodError) {c.public_send(:prot)}
     assert_raise(NoMethodError) {c.invoke(:priv)}
+    bug7499 = '[ruby-core:50489]'
+    assert_raise(NoMethodError, bug7499) {c.invoke(:prot)}
   end
 
   def test_no_superclass_method
