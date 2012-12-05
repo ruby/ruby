@@ -118,6 +118,8 @@ module DL
             @block.call(*args)
           end
         }.new(@cfunc.ctype, @args, abi, name, block)
+        @ptr = @cfunc
+        return nil
       else
         if( !block )
           raise(RuntimeError, "block must be given.")

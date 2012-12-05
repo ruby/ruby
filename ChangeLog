@@ -1,3 +1,11 @@
+Wed Dec  5 22:13:57 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#bind): When Fiddle is used,
+	  @ptr should be updated. This fixes SEGV raised in DL::Function#call
+	  after calling DL::Function#bind. [Bug #7516] [ruby-dev:46708]
+
+	* test/dl/test_func.rb (test_bind): test for the above
+
 Wed Dec  5 18:53:00 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* thread.c (rb_thread_s_async_interrupt_timing): have to check ints
