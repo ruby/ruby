@@ -139,12 +139,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
      2:   events << [event, lineno, mid, klass] if file == name
      3: })
-     4: def foo(a)
+     4: def meth_return(a)
      5:   return if a
      6:   return
      7: end
-     8: foo(true)
-     9: foo(false)
+     8: meth_return(true)
+     9: meth_return(false)
     10: set_trace_func(nil)
     EOF
     assert_equal(["c-return", 1, :set_trace_func, Kernel],
@@ -157,19 +157,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
-    assert_equal(["call", 4, :foo, self.class],
+    assert_equal(["call", 4, :meth_return, self.class],
                  events.shift)
-    assert_equal(["line", 5, :foo, self.class],
+    assert_equal(["line", 5, :meth_return, self.class],
                  events.shift)
-    assert_equal(["return", 5, :foo, self.class],
+    assert_equal(["return", 5, :meth_return, self.class],
                  events.shift)
     assert_equal(["line", 9, :test_return, self.class],
                  events.shift)
-    assert_equal(["call", 4, :foo, self.class],
+    assert_equal(["call", 4, :meth_return, self.class],
                  events.shift)
-    assert_equal(["line", 5, :foo, self.class],
+    assert_equal(["line", 5, :meth_return, self.class],
                  events.shift)
-    assert_equal(["return", 7, :foo, self.class],
+    assert_equal(["return", 7, :meth_return, self.class],
                  events.shift)
     assert_equal(["line", 10, :test_return, self.class],
                  events.shift)
@@ -185,11 +185,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
      2:   events << [event, lineno, mid, klass] if file == name
      3: })
-     4: def foo
+     4: def meth_return2
      5:   a = 5
      6:   return a
      7: end
-     8: foo
+     8: meth_return2
      9: set_trace_func(nil)
     EOF
     assert_equal(["c-return", 1, :set_trace_func, Kernel],
@@ -202,13 +202,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
-    assert_equal(["call", 4, :foo, self.class],
+    assert_equal(["call", 4, :meth_return2, self.class],
                  events.shift)
-    assert_equal(["line", 5, :foo, self.class],
+    assert_equal(["line", 5, :meth_return2, self.class],
                  events.shift)
-    assert_equal(["line", 6, :foo, self.class],
+    assert_equal(["line", 6, :meth_return2, self.class],
                  events.shift)
-    assert_equal(["return", 7, :foo, self.class],
+    assert_equal(["return", 7, :meth_return2, self.class],
                  events.shift)
     assert_equal(["line", 9, :test_return2, self.class],
                  events.shift)
@@ -303,9 +303,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
     prc = Proc.new { |event, file, lineno, mid, binding, klass|
       events[:set] << [event, lineno, mid, klass, :set]
     }
+    prc = prc # suppress warning
     prc2 = Proc.new { |event, file, lineno, mid, binding, klass|
       events[:add] << [event, lineno, mid, klass, :add]
     }
+    prc2 = prc2 # suppress warning
 
     th = Thread.new do
       th = Thread.current
@@ -315,7 +317,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
        2: th.add_trace_func(prc2)
        3: class ThreadTraceInnerClass
        4:   def foo
-       5:     x = 1 + 1
+       5:     _x = 1 + 1
        6:   end
        7: end
        8: ThreadTraceInnerClass.new.foo
@@ -402,10 +404,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     trace = nil
     xyzzy = nil
-    local_var = :outer
+    _local_var = :outer
     raised_exc = nil
     method = :trace_by_tracepoint
-    get_data = lambda{|tp|
+    _get_data = lambda{|tp|
       case tp.event
       when :return, :c_return
         tp.return_value
@@ -420,19 +422,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
-    2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.method_id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
+    2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)]
     3: }
-    4: 1.times{|;local_var| local_var = :inner
+    4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
-    8:   local_var = :XYZZY_outer
+    8:   _local_var = :XYZZY_outer
     9:   def foo
-   10:     local_var = :XYZZY_foo
+   10:     _local_var = :XYZZY_foo
    11:     bar
    12:   end
    13:   def bar
-   14:     local_var = :XYZZY_bar
+   14:     _local_var = :XYZZY_bar
    15:     tap{}
    16:   end
    17: end
@@ -507,23 +509,25 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def trace_by_set_trace_func
     events = []
     trace = nil
+    trace = trace
     xyzzy = nil
-    local_var = :outer
+    xyzzy = xyzzy
+    _local_var = :outer
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
-    2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("local_var")]
+    2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")]
     3: })
-    4: 1.times{|;local_var| local_var = :inner
+    4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
-    8:   local_var = :XYZZY_outer
+    8:   _local_var = :XYZZY_outer
     9:   def foo
-   10:     local_var = :XYZZY_foo
+   10:     _local_var = :XYZZY_foo
    11:     bar
    12:   end
    13:   def bar
-   14:     local_var = :XYZZY_bar
+   14:     _local_var = :XYZZY_bar
    15:     tap{}
    16:   end
    17: end
@@ -556,10 +560,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
       ev2[0] = ev2[0].sub('-', '_').to_sym
       assert_equal ev1[0..2], ev2[0..2], ev1.inspect
 
-      # event, line, file, klass, id, binding.eval('self'), binding.eval("local_var")
+      # event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")
       assert_equal ev1[3].nil?, ev2[3].nil? # klass
       assert_equal ev1[4].nil?, ev2[4].nil? # id
-      assert_equal ev1[6], ev2[6]           # local_var
+      assert_equal ev1[6], ev2[6]           # _local_var
     }
 
     [:line, :class, :end, :call, :return, :c_call, :c_return, :raise].each{|event|
@@ -713,7 +717,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       }
     }
     # pp events
-    expected_events =
+    # expected_events =
     [[:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:c_call, :times, Integer, Fixnum, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
