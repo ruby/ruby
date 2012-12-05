@@ -1,3 +1,8 @@
+Thu Dec  6 00:51:21 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): specify a exception
+	  more strictly at async_interrupt_timing.
+
 Wed Dec  5 04:50:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/timeout.rb (Timeout#timeout): set

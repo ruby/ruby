@@ -49,8 +49,8 @@ module Timeout
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil, immediate: false)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    Thread.async_interrupt_timing(klass ? klass : ExitException => immediate ? :immediate : :on_blocking) do
-      exception = klass || Class.new(ExitException)
+    exception = klass || Class.new(ExitException)
+    Thread.async_interrupt_timing(exception => immediate ? :immediate : :on_blocking) do
       begin
         begin
           x = Thread.current
