@@ -563,6 +563,32 @@ class TestObject < Test::Unit::TestCase
     assert_equal(:ok, x)
   end
 
+  def test_public_send
+    c = Class.new do
+      def pub
+        :ok
+      end
+
+      def invoke(m)
+        public_send(m)
+      end
+
+      protected
+      def prot
+        :ng
+      end
+
+      private
+      def priv
+        :ng
+      end
+    end.new
+    assert_equal(:ok, c.public_send(:pub))
+    assert_raise(NoMethodError) {c.public_send(:priv)}
+    assert_raise(NoMethodError) {c.public_send(:prot)}
+    assert_raise(NoMethodError) {c.invoke(:priv)}
+  end
+
   def test_no_superclass_method
     bug2312 = '[ruby-dev:39581]'
 
