@@ -416,6 +416,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     }
 
+    trace = nil
+    begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
     2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.method_id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
@@ -440,6 +442,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
    21: trace.disable
     EOF
     self.class.class_eval{remove_const(:XYZZY)}
+    ensure
+      trace.disable if trace && trace.enabled?
+    end
 
     answer_events = [
      #
