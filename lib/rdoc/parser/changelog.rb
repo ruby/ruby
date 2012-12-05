@@ -6,6 +6,21 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   parse_files_matching(/(\/|\\|\A)ChangeLog[^\/\\]*\z/)
 
+  def continue_entry_body entry_body, continuation
+    return unless last = entry_body.last
+
+    if last =~ /\)\s*\z/ and continuation =~ /\A\(/ then
+      last.sub!(/\)\s*\z/, ',')
+      continuation.sub!(/\A\(/, '')
+    end
+
+    if last =~ /\s\z/ then
+      last << continuation
+    else
+      last << ' ' << continuation
+    end
+  end
+
   def create_document groups
     doc = RDoc::Markup::Document.new
     doc.file = @top_level
@@ -13,7 +28,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     doc << RDoc::Markup::Heading.new(1, File.basename(@file_name))
     doc << RDoc::Markup::BlankLine.new
 
-    groups.each do |day, entries|
+    groups.sort_by do |day,| day end.reverse_each do |day, entries|
       doc << RDoc::Markup::Heading.new(2, day)
       doc << RDoc::Markup::BlankLine.new
 
@@ -40,7 +55,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     list = RDoc::Markup::List.new :NOTE
 
     items.each do |item|
-      title, body = item.split /:\s*/, 2
+      title, body = item.split(/:\s*/, 2)
       paragraph = RDoc::Markup::Paragraph.new body
       list_item = RDoc::Markup::ListItem.new title, paragraph
       list << list_item
@@ -56,41 +71,48 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   end
 
   def parse_entries
-    entries = {}
+    entries = []
     entry_name = nil
     entry_body = []
 
     @content.each_line do |line|
       case line
+      when /^\s*$/ then
+        next
       when /^\w.*/ then
-        entries[entry_name] = entry_body if entry_name
+        entries << [entry_name, entry_body] if entry_name
 
         entry_name = $&
 
         begin
-          Time.parse entry_name
+          time = Time.parse entry_name
+          # HACK Ruby 1.8 does not raise ArgumentError for Time.parse "Other"
+          entry_name = nil unless entry_name =~ /#{time.year}/
         rescue ArgumentError
           entry_name = nil
         end
 
         entry_body = []
-      when /^(\t| {8})\*\s*(.*)/ then
+      when /^(\t| {8})?\*\s*(.*)/ then # "\t* file.c (func): ..."
         entry_body << $2
-      when /^(\t| {8})\s*(.*)/ then
-        continuation = $2
-        next unless last = entry_body.last
+      when /^(\t| {8})?\s*(\(.*)/ then # "\t(func): ..."
+        entry = $2
 
-        if last =~ /\s\z/ then
-          last << continuation
+        if entry_body.last =~ /:/ then
+          entry_body << entry
         else
-          last << ' ' << continuation
+          continue_entry_body entry_body, entry
         end
+      when /^(\t| {8})?\s*(.*)/ then
+        continue_entry_body entry_body, $2
       end
     end
 
-    entries[entry_name] = entry_body if entry_name
+    entries << [entry_name, entry_body] if entry_name
 
-    entries.delete nil
+    entries.reject! do |(entry,_)|
+      entry == nil
+    end
 
     entries
   end

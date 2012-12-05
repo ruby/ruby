@@ -28,6 +28,38 @@ class TestRDocParserChangeLog < RDoc::TestCase
     assert_equal parser, parser.can_parse('ChangeLog')
 
     assert_equal parser, parser.can_parse(@tempfile.path)
+
+    assert_equal RDoc::Parser::Ruby, parser.can_parse('ChangeLog.rb')
+  end
+
+  def test_continue_entry_body
+    parser = util_parser
+
+    entry_body = ['a']
+
+    parser.continue_entry_body entry_body, 'b'
+
+    assert_equal ['a b'], entry_body
+  end
+
+  def test_continue_entry_body_empty
+    parser = util_parser
+
+    entry_body = []
+
+    parser.continue_entry_body entry_body, ''
+
+    assert_empty entry_body
+  end
+
+  def test_continue_entry_body_function
+    parser = util_parser
+
+    entry_body = ['file: (func1)']
+
+    parser.continue_entry_body entry_body, '(func2): blah'
+
+    assert_equal ['file: (func1, func2): blah'], entry_body
   end
 
   def test_create_document
@@ -60,8 +92,8 @@ class TestRDocParserChangeLog < RDoc::TestCase
         blank_line,
         head(3, 'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>'),
         blank_line,
-        list(:NOTE, item('e', para('five')), item('f', para('six'))),
-    )
+        list(:NOTE, item('e', para('five')), item('f', para('six'))))
+
     expected.file = @top_level
 
     assert_equal expected, parser.create_document(groups)
@@ -110,14 +142,13 @@ class TestRDocParserChangeLog < RDoc::TestCase
   def test_group_entries
     parser = util_parser
 
-    entries = {
-      'Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>' =>
-        %w[one two],
-      'Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>' =>
-        %w[three four],
-      'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>' =>
-        %w[five six],
-    }
+    entries = [
+      [ 'Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>',
+        %w[one two]],
+      [ 'Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>',
+        %w[three four]],
+      [ 'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>',
+        %w[five six]]]
 
     expected = {
       '2012-12-04' => [
@@ -150,16 +181,37 @@ Other note that will be ignored
 
     ChangeLog
 
-    expected = {
-      'Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>' => [
-        'README.EXT:  Converted to RDoc format',
-        'README.EXT.ja:  ditto',
-      ],
-      'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>' => [
-        'compile.c (iseq_specialized_instruction): change condition of ' +
-          'using `opt_send_simple\'. More method invocations can be simple.',
-      ],
-    }
+    expected = [
+      [ 'Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>',
+        [ 'README.EXT:  Converted to RDoc format',
+          'README.EXT.ja:  ditto']],
+      [ 'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>',
+        [ 'compile.c (iseq_specialized_instruction): change condition of ' +
+          'using `opt_send_simple\'. More method invocations can be simple.']]]
+
+    assert_equal expected, parser.parse_entries
+  end
+
+  def test_parse_entries_gnu
+    parser = util_parser <<-ChangeLog
+1998-08-17  Richard Stallman  <rms@gnu.org>
+
+* register.el (insert-register): Return nil.
+(jump-to-register): Likewise.
+
+* sort.el (sort-subr): Return nil.
+
+* keyboard.c (menu_bar_items, tool_bar_items)
+(Fexecute_extended_command): Deal with 'keymap' property.
+    ChangeLog
+
+    expected = [
+      [ '1998-08-17  Richard Stallman  <rms@gnu.org>',
+        [ 'register.el (insert-register): Return nil.',
+          '(jump-to-register): Likewise.',
+          'sort.el (sort-subr): Return nil.',
+          'keyboard.c (menu_bar_items, tool_bar_items, ' +
+          'Fexecute_extended_command): Deal with \'keymap\' property.']]]
 
     assert_equal expected, parser.parse_entries
   end
