@@ -575,7 +575,7 @@ class TestThread < Test::Unit::TestCase
   def test_async_interrupt_with_return
     assert_nothing_raised do
       for_test_async_interrupt_with_return
-      dummy_for_check_ints=nil
+      _dummy_for_check_ints=nil
     end
   end
 
@@ -588,7 +588,7 @@ class TestThread < Test::Unit::TestCase
         }
       rescue
       end
-      dummy_for_check_ints=nil
+      _dummy_for_check_ints=nil
     end
   end
 
