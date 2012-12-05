@@ -1,3 +1,5 @@
+require_relative "envutil"
+
 module Memory
   keys = []
   vals = []
@@ -18,12 +20,16 @@ module Memory
     begin
       require 'fiddle/import'
     rescue LoadError
-      require 'dl/import'
+      suppress_warning do
+        require 'dl/import'
+      end
     end
     begin
       require 'fiddle/types'
     rescue LoadError
-      require 'dl/types'
+      suppress_warning do
+        require 'dl/types'
+      end
     end
 
     module Win32
