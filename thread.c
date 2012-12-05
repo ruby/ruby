@@ -1686,11 +1686,11 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
 	RUBY_VM_SET_INTERRUPT(th);
     }
 
+    RUBY_VM_CHECK_INTS(th);
+
     if (state) {
 	JUMP_TAG(state);
     }
-
-    RUBY_VM_CHECK_INTS(th);
 
     return r;
 }

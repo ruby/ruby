@@ -1,3 +1,12 @@
+Wed Dec  5 18:53:00 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* thread.c (rb_thread_s_async_interrupt_timing): have to check ints
+	  before jumpping out.
+	* test/ruby/test_thread.rb (test_async_interrupt_with_return): add test
+	  rescue has to catch a queued async exception at the time of return.
+	* test/ruby/test_thread.rb (test_async_interrupt_with_break): add test
+	  rescue has to catch a queued async exception at the time of break.
+
 Wed Dec  5 16:54:28 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/memory_status.rb: suppress warning.

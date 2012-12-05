@@ -563,6 +563,34 @@ class TestThread < Test::Unit::TestCase
       Thread.async_interrupt_timing([]) {} # array
     }
   end
+
+  def for_test_async_interrupt_with_return
+    Thread.async_interrupt_timing(Object => :defer){
+      Thread.current.raise RuntimeError.new("have to be rescured")
+      return 
+    }
+  rescue
+  end
+
+  def test_async_interrupt_with_return
+    assert_nothing_raised do
+      for_test_async_interrupt_with_return
+      dummy_for_check_ints=nil
+    end
+  end
+
+  def test_async_interrupt_with_break
+    assert_nothing_raised do
+      begin
+        Thread.async_interrupt_timing(Object => :defer){
+          Thread.current.raise RuntimeError.new("have to be rescured")
+          break
+        }
+      rescue
+      end
+      dummy_for_check_ints=nil
+    end
+  end
   
   def test_async_interrupt_blocking
     r=:ng
