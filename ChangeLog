@@ -1,3 +1,8 @@
+Wed Dec  5 22:46:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_vm_make_proc): save the proc made from the given block so
+	  that it will not get collected.  [ruby-core:50545] [Bug #7507]
+
 Wed Dec  5 22:13:57 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#bind): When Fiddle is used,
