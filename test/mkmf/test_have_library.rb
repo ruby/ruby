@@ -23,23 +23,31 @@ class TestMkmf
       end
     end
 
+    def assert_have_library(*args)
+      assert_equal(true, have_library(LIBRARY_NAME, *args), MKMFLOG)
+    end
+
+    def assert_not_have_library(*args)
+      assert_equal(false, have_library(LIBRARY_NAME, *args), MKMFLOG)
+    end
+
     def test_have_library
       create_library
-      assert_equal(true, have_library(LIBRARY_NAME), MKMFLOG)
+      assert_have_library
     end
 
     def test_have_library_with_name
       create_library
-      assert_equal(true, have_library(LIBRARY_NAME, FUNC_NAME, HEADER_NAME), MKMFLOG)
+      assert_have_library(FUNC_NAME, HEADER_NAME)
     end
 
-    def test_no_have_library
-      assert_equal(false, have_library(LIBRARY_NAME), MKMFLOG)
+    def test_not_have_library
+      assert_not_have_library
     end
 
-    def test_no_have_library_with_name
+    def test_not_have_library_with_name
       create_library
-      assert_equal(false, have_library(LIBRARY_NAME, "#{FUNC_NAME}_fake", HEADER_NAME), MKMFLOG)
+      assert_not_have_library("#{FUNC_NAME}_fake", HEADER_NAME)
     end
   end
 end
