@@ -3,6 +3,7 @@ Wed Dec  5 23:50:23 2012  Narihiro Nakamura  <authornari@gmail.com>
 	* gc.c (getrusage_time): uses clock_gettime() with
 	  CLOCK_PROCESS_CPUTIME_ID when available, which provides a 1ns
 	  precision on linux. [ruby-core:50495] [Bug #7500]
+	  patched by Aman Gupta.
 
 Wed Dec  5 22:46:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
