@@ -591,7 +591,7 @@ class TestThread < Test::Unit::TestCase
       dummy_for_check_ints=nil
     end
   end
-  
+
   def test_async_interrupt_blocking
     r=:ng
     e=Class.new(Exception)
