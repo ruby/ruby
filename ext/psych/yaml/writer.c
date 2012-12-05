@@ -74,7 +74,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
         unsigned int value;
         size_t k;
 
-        /* 
+        /*
          * See the "reader.c" code for more details on UTF-8 encoding.  Note
          * that we assume that the buffer contains a valid UTF-8 sequence.
          */

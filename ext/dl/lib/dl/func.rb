@@ -14,7 +14,7 @@ module DL
     if DL.fiddle?
       CALL_TYPE_TO_ABI = Hash.new { |h, k|
         raise RuntimeError, "unsupported call type: #{k}"
-      }.merge({ :stdcall => 
+      }.merge({ :stdcall =>
                 (Fiddle::Function::STDCALL rescue Fiddle::Function::DEFAULT),
                 :cdecl   => Fiddle::Function::DEFAULT,
                 nil      => Fiddle::Function::DEFAULT

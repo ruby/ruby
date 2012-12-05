@@ -586,7 +586,7 @@ class ERB
     def add_put_cmd(out, content)
       out.push("#{@put_cmd} #{content_dump(content)}")
     end
-    
+
     def add_insert_cmd(out, content)
       out.push("#{@insert_cmd}((#{content}).to_s)")
     end

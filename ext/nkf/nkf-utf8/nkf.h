@@ -1,8 +1,8 @@
 /*
- * 
+ *
  * nkf.h - Header file for nkf
  * 
- * $Id: nkf.h,v 1.6 2008/11/07 02:43:43 naruse Exp $
+ * $Id$
  */
 
 #ifndef NKF_H
