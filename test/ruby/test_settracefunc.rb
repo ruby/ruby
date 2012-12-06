@@ -623,6 +623,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     foo
     assert_equal([:foo], ary)
+
+    trace = TracePoint.new{}
+    begin
+      assert_equal(false, trace.enable)
+      assert_equal(true, trace.enable)
+      trace.enable{}
+      assert_equal(true, trace.enable)
+    ensure
+      trace.disable
+    end
   end
 
   def test_tracepoint_disable
@@ -637,6 +647,14 @@ class TestSetTraceFunc < Test::Unit::TestCase
     foo
     trace.disable
     assert_equal([:foo, :foo], ary)
+
+    trace = TracePoint.new{}
+    trace.enable{
+      assert_equal(true, trace.disable)
+      assert_equal(false, trace.disable)
+      trace.disable{}
+      assert_equal(false, trace.disable)
+    }
   end
 
   def test_tracepoint_enabled

@@ -952,20 +952,23 @@ rb_tracepoint_disable(VALUE tpval)
 
 /*
  * call-seq:
- *	trace.enable		-> trace
+ *	trace.enable		-> true or false
  *	trace.enable { block }	-> obj
  *
  * Activates the trace
  *
- * Will raise a RuntimeError if the trace is already activated
+ * Return true if trace was enabled.
+ * Return false if trace was disabled.
  *
  *	trace.enabled?  #=> false
- *	trace.enable    #=> #<TracePoint:0x007fa3fad4aaa8>
+ *	trace.enable    #=> false (previous state)
+ *                      #   trace is enabled
  *	trace.enabled?  #=> true
- *	trace.enable    #=> RuntimeError
+ *	trace.enable    #=> true (previous state)
+ *                      #   trace is still enabled
  *
  * If a block is given, the trace will only be enabled within the scope of the
- * block. Note: You cannot access event hooks within the block.
+ * block.
  *
  *	trace.enabled?
  *	#=> false
@@ -978,6 +981,8 @@ rb_tracepoint_disable(VALUE tpval)
  *	trace.enabled?
  *	#=> false
  *
+ * Note: You cannot access event hooks within the block.
+ *
  *	trace.enable { p tp.lineno }
  *	#=> RuntimeError: access from outside
  *
@@ -986,36 +991,36 @@ static VALUE
 tracepoint_enable_m(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-
-    if (tp->tracing) {
-	rb_raise(rb_eRuntimeError, "trace is already enable");
-    }
-
+    int previous_tracing = tp->tracing;
     rb_tracepoint_enable(tpval);
+
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil, rb_tracepoint_disable, tpval);
+	return rb_ensure(rb_yield, Qnil,
+			 previous_tracing ? rb_tracepoint_enable : rb_tracepoint_disable,
+			 tpval);
     }
     else {
-	return tpval;
+	return previous_tracing ? Qtrue : Qfalse;
     }
 }
 
 /*
  * call-seq:
- *	trace.disable		-> trace
+ *	trace.disable		-> tru eo rfalse
  *	trace.disable { block } -> obj
  *
  * Deactivates the trace
  *
- * Will raise a RuntimeError if the trace is already deactivated
+ * Return true if trace was enabled.
+ * Return false if trace was disabled.
  *
  *	trace.enabled?	#=> true
- *	trace.disable	#=> #<TracePoint:0x007fa3fad4aaa8>
+ *	trace.disable	#=> false (previous status)
  *	trace.enabled?	#=> false
- *	trace.disable	#=> RuntimeError
+ *	trace.disable	#=> false
  *
  * If a block is given, the trace will only be disable within the scope of the
- * block. Note: You cannot access event hooks within the block.
+ * block.
  *
  *	trace.enabled?
  *	#=> true
@@ -1028,25 +1033,25 @@ tracepoint_enable_m(VALUE tpval)
  *	trace.enabled?
  *	#=> true
  *
- *	trace.enable { p trace.lineno }
- *	#=> RuntimeError: access from outside
+ * Note: You cannot access event hooks within the block.
  *
+ *	trace.disable { p tp.lineno }
+ *	#=> RuntimeError: access from outside
  */
 static VALUE
 tracepoint_disable_m(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-
-    if (!tp->tracing) {
-	rb_raise(rb_eRuntimeError, "trace is not enable");
-    }
-
+    int previous_tracing = tp->tracing;
     rb_tracepoint_disable(tpval);
+
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil, rb_tracepoint_enable, tpval);
+	return rb_ensure(rb_yield, Qnil,
+			 previous_tracing ? rb_tracepoint_enable : rb_tracepoint_disable,
+			 tpval);
     }
     else {
-	return tpval;
+	return previous_tracing ? Qtrue : Qfalse;
     }
 }
 

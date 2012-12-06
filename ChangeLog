@@ -1,3 +1,11 @@
+Thu Dec 06 12:07:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: TracePoint#enable should not cause an error
+	  when it is already enabled. TracePoint#disable is too.
+	  [ruby-core:50561] [ruby-trunk - Bug #7513]
+
+	* test/ruby/test_settracefunc.rb: add tests.
+
 Thu Dec  6 07:19:58 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*:  Improved display of ChangeLog files as HTML.
