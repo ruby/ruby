@@ -1,3 +1,10 @@
+Thu Dec  6 16:35:21 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rake/helper.rb:  Load envutil correctly.  Removed useless rescue
+	  for signal propagation tests
+	* lib/rake/file_utils.rb:  Prefer the built ruby.
+	* test/rake/test_rake_functional.rb:  ditto
+
 Thu Dec  6 15:20:34 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/context.rb:  Don't warn for duplicate methods while loading.

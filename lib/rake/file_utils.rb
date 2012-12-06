@@ -6,7 +6,7 @@ require 'fileutils'
 # added to the FileUtils utility functions.
 module FileUtils
   # Path to the currently running Ruby program
-  RUBY = File.join(
+  RUBY = ENV['RUBY'] || File.join(
     RbConfig::CONFIG['bindir'],
     RbConfig::CONFIG['ruby_install_name'] + RbConfig::CONFIG['EXEEXT']).
     sub(/.*\s.*/m, '"\&"')

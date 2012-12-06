@@ -12,8 +12,8 @@ require 'tmpdir'
 require File.expand_path('../file_creation', __FILE__)
 
 begin
-  require 'test/ruby/envutil'
-rescue LoadError
+  require_relative '../ruby/envutil'
+rescue NoMethodError, LoadError
   # for ruby trunk
 end
 
@@ -515,8 +515,8 @@ Rake::TestTask.new(:b) do |t|
 end
 
 task :test do
-  Rake::Task[:a].invoke rescue nil
-  Rake::Task[:b].invoke rescue nil
+  Rake::Task[:a].invoke
+  Rake::Task[:b].invoke
 end
 
 task :default => :test

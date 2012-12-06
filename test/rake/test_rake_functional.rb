@@ -471,7 +471,7 @@ class TestRakeFunctional < Rake::TestCase
   def run_ruby(option_list)
     puts "COMMAND: [#{RUBY} #{option_list.join ' '}]" if @verbose
 
-    inn, out, err, wait = Open3.popen3(Gem.ruby, *option_list)
+    inn, out, err, wait = Open3.popen3(RUBY, *option_list)
     inn.close
 
     @out = out.read
