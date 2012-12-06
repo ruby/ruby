@@ -1006,7 +1006,7 @@ tracepoint_enable_m(VALUE tpval)
 
 /*
  * call-seq:
- *	trace.disable		-> tru eo rfalse
+ *	trace.disable		-> true or false
  *	trace.disable { block } -> obj
  *
  * Deactivates the trace
