@@ -1,3 +1,8 @@
+Thu Dec  6 17:29:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): flush string content between new
+	  line and :string_embexpr.  [ruby-core:48703] [Bug #7255]
+
 Thu Dec  6 16:35:21 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rake/helper.rb:  Load envutil correctly.  Removed useless rescue
