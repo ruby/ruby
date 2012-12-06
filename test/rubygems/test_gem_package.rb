@@ -133,6 +133,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec.summary = 'build'
     spec.authors = 'build'
     spec.files = ['lib/code.rb']
+    spec.rubygems_version = :junk
 
     FileUtils.mkdir 'lib'
 

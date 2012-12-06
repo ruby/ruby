@@ -220,8 +220,8 @@ class Gem::Package
     Gem.load_yaml
     require 'rubygems/security'
 
-    @spec.validate unless skip_validation
     @spec.mark_version
+    @spec.validate unless skip_validation
 
     setup_signer
 

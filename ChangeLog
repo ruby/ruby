@@ -1,3 +1,22 @@
+Thu Dec  6 14:10:08 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package.rb:  Set rubygems_version before validation.
+	  Fixes issue with bundler.
+	* test/rubygems/test_gem_package.rb:  Test for above.
+
+	* lib/rubygems/remote_fetcher.rb:  Only update the cache when we have
+	  permission.  [ruby-trunk - Bug #7509]
+	* lib/rubygems/source.rb (class Gem):  ditto
+	* test/rubygems/test_gem_remote_fetcher.rb:  Test for above.
+	* lib/rubygems/test_utilities.rb:  ditto
+
+	* lib/rubygems/specification.rb:  Derive base_dir properly for default
+	  gems.  [ruby-trunk - Bug #7496]
+	* test/rubygems/test_gem_specification.rb:  Test for above.
+
+	* lib/rubygems.rb:  Untaint Dir.pwd when searching for gemdeps files
+	  for operation under $SAFE=1
+
 Thu Dec 06 12:07:11 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: TracePoint#enable should not cause an error

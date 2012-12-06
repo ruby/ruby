@@ -187,7 +187,7 @@ module Gem
       path = path.dup.untaint
 
       if path == "-"
-        here = Dir.pwd
+        here = Dir.pwd.untaint
         start = here
 
         begin

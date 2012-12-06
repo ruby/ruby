@@ -192,6 +192,32 @@ gems:
     dns.verify
   end
 
+  def test_cache_update_path
+    uri = URI 'http://example/file'
+    path = File.join @tempdir, 'file'
+
+    fetcher = util_fuck_with_fetcher 'hello'
+
+    data = fetcher.cache_update_path uri, path
+
+    assert_equal 'hello', data
+
+    assert_equal 'hello', File.read(path)
+  end
+
+  def test_cache_update_path_no_update
+    uri = URI 'http://example/file'
+    path = File.join @tempdir, 'file'
+
+    fetcher = util_fuck_with_fetcher 'hello'
+
+    data = fetcher.cache_update_path uri, path, false
+
+    assert_equal 'hello', data
+
+    refute_path_exists path
+  end
+
   def util_fuck_with_fetcher data, blow = false
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.instance_variable_set :@test_data, data

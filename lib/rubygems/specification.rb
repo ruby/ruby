@@ -1283,7 +1283,11 @@ class Gem::Specification
 
   def base_dir
     return Gem.dir unless loaded_from
-    @base_dir ||= File.dirname File.dirname loaded_from
+    @base_dir ||= if default_gem? then
+                    File.dirname File.dirname File.dirname loaded_from
+                  else
+                    File.dirname File.dirname loaded_from
+                  end
   end
 
   ##
@@ -2486,17 +2490,17 @@ class Gem::Specification
   # Checks to see if the files to be packaged are world-readable.
 
   def validate_permissions
+    return if Gem.win_platform?
+
     files.each do |file|
-      next if File.stat(file).world_readable?
+      next if File.stat(file).mode & 0444 == 0444
       alert_warning "#{file} is not world-readable"
     end
 
-    unless Gem.win_platform?
-      executables.each do |name|
-        exec = File.join @bindir, name
-        next if File.stat(exec).executable?
-        alert_warning "#{exec} is not executable"
-      end
+    executables.each do |name|
+      exec = File.join @bindir, name
+      next if File.stat(exec).executable?
+      alert_warning "#{exec} is not executable"
     end
   end
 
@@ -2562,7 +2566,6 @@ class Gem::Specification
   # deprecate :has_rdoc=,           :none,       2011, 10
   # deprecate :default_executable,  :none,       2011, 10
   # deprecate :default_executable=, :none,       2011, 10
-  # deprecate :spec_name,           :spec_file,  2011, 10
   # deprecate :file_name,           :cache_file, 2011, 10
   # deprecate :full_gem_path,     :cache_file, 2011, 10
 end

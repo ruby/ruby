@@ -294,7 +294,7 @@ class Gem::RemoteFetcher
   # Downloads +uri+ to +path+ if necessary. If no path is given, it just
   # passes the data.
 
-  def cache_update_path(uri, path = nil)
+  def cache_update_path uri, path = nil, update = true
     mtime = path && File.stat(path).mtime rescue nil
 
     if mtime && Net::HTTPNotModified === fetch_path(uri, mtime, true)
@@ -302,7 +302,7 @@ class Gem::RemoteFetcher
     else
       data = fetch_path(uri)
 
-      if path
+      if update and path then
         open(path, 'wb') do |io|
           io.write data
         end

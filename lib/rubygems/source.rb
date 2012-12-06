@@ -122,7 +122,7 @@ class Gem::Source
 
     FileUtils.mkdir_p cache_dir if update_cache?
 
-    spec_dump = fetcher.cache_update_path(spec_path, local_file)
+    spec_dump = fetcher.cache_update_path spec_path, local_file, update_cache?
 
     begin
       Gem::NameTuple.from_list Marshal.load(spec_dump)
