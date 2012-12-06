@@ -1067,6 +1067,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->cfp->ep = th->stack;
     *th->cfp->ep = VM_ENVVAL_BLOCK_PTR(0);
     th->cfp->self = Qnil;
+    th->cfp->klass = Qnil;
     th->cfp->flag = 0;
     th->cfp->iseq = 0;
     th->cfp->proc = 0;

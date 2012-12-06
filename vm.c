@@ -1686,6 +1686,7 @@ rb_thread_mark(void *ptr)
 		rb_iseq_t *iseq = cfp->iseq;
 		rb_gc_mark(cfp->proc);
 		rb_gc_mark(cfp->self);
+		rb_gc_mark(cfp->klass);
 		if (iseq) {
 		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
 		}
@@ -2223,6 +2224,7 @@ Init_VM(void)
 	th->cfp->iseq = iseq;
 	th->cfp->pc = iseq->iseq_encoded;
 	th->cfp->self = th->top_self;
+	th->cfp->klass = Qnil;
 
 	/*
 	 * The Binding of the top level scope

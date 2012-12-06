@@ -678,6 +678,13 @@ rb_include_module(VALUE klass, VALUE module)
 }
 
 static int
+add_refined_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_add_refined_method_entry((VALUE) data, (ID) key);
+    return ST_CONTINUE;
+}
+
+static int
 include_modules_at(VALUE klass, VALUE c, VALUE module)
 {
     VALUE p;
@@ -707,6 +714,13 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
 	    }
 	}
 	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
+	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+	    VALUE refined_class =
+		rb_refinement_module_get_refined_class(klass);
+
+	    st_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i,
+		       (st_data_t) refined_class);
+	}
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;
       skip:
@@ -738,7 +752,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SUPER(klass) = origin;
 	RCLASS_ORIGIN(klass) = origin;
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
-	RCLASS_M_TBL(klass) = 0;
+	RCLASS_M_TBL(klass) = st_init_numtable();
     }
     changed = include_modules_at(klass, klass, module);
     if (changed < 0)

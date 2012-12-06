@@ -917,7 +917,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     rb_method_flag_t flag = NOEX_UNDEF;
 
   again:
-    me = rb_method_entry(klass, id, &defined_class);
+    me = rb_method_entry_with_refinements(klass, id, &defined_class);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	ID rmiss = rb_intern("respond_to_missing?");
 	VALUE sym = ID2SYM(id);
@@ -1683,6 +1683,8 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 	  default:
 	    break;
 	}
+      case VM_METHOD_TYPE_REFINED:
+	return -1;
       }
     }
     rb_bug("rb_method_entry_arity: invalid method entry type (%d)", def->type);

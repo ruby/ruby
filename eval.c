@@ -1187,6 +1187,14 @@ rb_mod_using(VALUE self, VALUE module)
     return self;
 }
 
+VALUE rb_refinement_module_get_refined_class(VALUE module)
+{
+    ID id_refined_class;
+
+    CONST_ID(id_refined_class, "__refined_class__");
+    return rb_attr_get(module, id_refined_class);
+}
+
 static VALUE
 refinement_module_include(int argc, VALUE *argv, VALUE module)
 {
@@ -1195,11 +1203,9 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
     VALUE result = rb_mod_include(argc, argv, module);
     NODE *cref;
-    ID id_refined_class;
     VALUE klass, c;
 
-    CONST_ID(id_refined_class, "__refined_class__");
-    klass = rb_attr_get(module, id_refined_class);
+    klass = rb_refinement_module_get_refined_class(module);
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
 	    (cref = rb_vm_get_cref(cfp->iseq, cfp->ep)) &&

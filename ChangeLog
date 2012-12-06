@@ -1,3 +1,54 @@
+Thu Dec  6 18:23:05 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* revised r37993 to avoid SEGV/ILL in tests.  In r37993, a method
+	  entry with VM_METHOD_TYPE_REFINED holds only the original method
+	  definition, so ci->me is set to a method entry allocated in the
+	  stack, and it causes SEGV/ILL.  In this commit, a method entry
+	  with VM_METHOD_TYPE_REFINED holds the whole original method entry.
+	  Furthermore, rb_thread_mark() is changed to mark cfp->klass to
+	  avoid GC for iclasses created by copy_refinement_iclass().
+
+	* vm_method.c (rb_method_entry_make): add a method entry with
+	  VM_METHOD_TYPE_REFINED to the class refined by the refinement if
+	  the target module is a refinement.  When a method entry with
+	  VM_METHOD_TYPE_UNDEF is invoked by vm_call_method(), a method with
+	  the same name is searched in refinements.  If such a method is
+	  found, the method is invoked.  Otherwise, the original method in
+	  the refined class (rb_method_definition_t::body.orig_me) is
+	  invoked.  This change is made to simplify the normal method lookup
+	  and to improve the performance of normal method calls.
+
+	* vm_method.c (EXPR1, search_method, rb_method_entry),
+	  vm_eval.c (rb_call0, rb_search_method_entry): do not use
+	  refinements for method lookup.
+
+	* vm_insnhelper.c (vm_call_method): search methods in refinements if
+	  ci->me is VM_METHOD_TYPE_REFINED.  If the method is called by
+	  super (i.e., ci->call == vm_call_super_method), skip the same
+	  method entry as the current method to avoid infinite call of the
+	  same method.
+
+	* class.c (include_modules_at): add a refined method entry for each
+	  method defined in a module included in a refinement.
+
+	* class.c (rb_prepend_module): set an empty table to
+	  RCLASS_M_TBL(klass) to add refined method entries, because
+	  refinements should have priority over prepended modules.
+
+	* proc.c (mnew): use rb_method_entry_with_refinements() to get
+	  a refined method.
+
+	* vm.c (rb_thread_mark): mark cfp->klass for iclasses created by
+	  copy_refinement_iclass().
+
+	* vm.c (Init_VM), cont.c (fiber_init): initialize th->cfp->klass.
+
+	* test/ruby/test_refinement.rb (test_inline_method_cache): do not skip
+	  the test because it should pass successfully.
+
+	* test/ruby/test_refinement.rb (test_redefine_refined_method): new
+	  test for the case a refined method is redefined.
+
 Thu Dec  6 17:29:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): flush string content between new

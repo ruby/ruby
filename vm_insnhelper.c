@@ -1694,6 +1694,47 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     return vm_call_method(th, reg_cfp, &ci_entry);
 }
 
+static VALUE
+copy_refinement_iclass(VALUE iclass, VALUE superclass)
+{
+    VALUE result, c;
+
+    Check_Type(iclass, T_ICLASS);
+    c = result = rb_include_class_new(RBASIC(iclass)->klass, superclass);
+    RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
+    iclass = RCLASS_SUPER(iclass);
+    while (iclass && BUILTIN_TYPE(iclass) == T_ICLASS) {
+	c = RCLASS_SUPER(c) = rb_include_class_new(RBASIC(iclass)->klass,
+						   RCLASS_SUPER(c));
+	RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
+	iclass = RCLASS_SUPER(iclass);
+    }
+    return result;
+}
+
+static VALUE
+find_refinement(VALUE refinements, VALUE klass)
+{
+    VALUE refinement;
+
+    if (NIL_P(refinements)) {
+	return Qnil;
+    }
+    refinement = rb_hash_lookup(refinements, klass);
+    if (NIL_P(refinement) &&
+	BUILTIN_TYPE(klass) == T_ICLASS) {
+	refinement = rb_hash_lookup(refinements,
+				    RBASIC(klass)->klass);
+	if (!NIL_P(refinement)) {
+	    refinement = copy_refinement_iclass(refinement, klass);
+	}
+    }
+    return refinement;
+}
+
+static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+static VALUE vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci);
+
 static inline VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
@@ -1735,7 +1776,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_bmethod(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
-		VALUE klass = RCLASS_SUPER(ci->me->klass);
+		VALUE klass;
+
+	      zsuper_method_dispatch:
+		klass = RCLASS_SUPER(ci->me->klass);
 		ci_temp = *ci;
 		ci = &ci_temp;
 
@@ -1778,6 +1822,42 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		break;
 	      case VM_METHOD_TYPE_UNDEF:
 		break;
+	      case VM_METHOD_TYPE_REFINED:{
+		NODE *cref = rb_vm_get_cref(cfp->iseq, cfp->ep);
+		VALUE refinements = cref ? cref->nd_refinements : Qnil;
+		VALUE refinement, defined_class;
+		rb_method_entry_t *me;
+		ci_temp = *ci;
+		ci = &ci_temp;
+
+		refinement = find_refinement(refinements,
+					     ci->defined_class);
+		if (NIL_P(refinement)) {
+		    goto no_refinement_dispatch;
+		}
+		me = rb_method_entry(refinement, ci->mid, &defined_class);
+		if (me) {
+		    if (ci->call == vm_call_super_method &&
+			cfp->me &&
+			rb_method_definition_eq(me->def, cfp->me->def)) {
+			goto no_refinement_dispatch;
+		    }
+		    ci->me = me;
+		    ci->defined_class = defined_class;
+		    if (me->def->type != VM_METHOD_TYPE_REFINED) {
+			goto normal_method_dispatch;
+		    }
+		}
+
+	      no_refinement_dispatch:
+		if (ci->me->def->body.orig_me) {
+		    ci->me = ci->me->def->body.orig_me;
+		    goto normal_method_dispatch;
+		}
+		else {
+		    goto zsuper_method_dispatch;
+		}
+	      }
 	    }
 	    rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
 	}
@@ -1837,6 +1917,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 
 static VALUE
 vm_call_general(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
+{
+    return vm_call_method(th, reg_cfp, ci);
+}
+
+static VALUE
+vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     return vm_call_method(th, reg_cfp, ci);
 }
@@ -1929,7 +2015,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 
     /* TODO: use inline cache */
     ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
-    ci->call = vm_call_general;
+    ci->call = vm_call_super_method;
 
     while (iseq && !iseq->klass) {
 	iseq = iseq->parent_iseq;
@@ -1937,7 +2023,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 
     if (ci->me && ci->me->def->type == VM_METHOD_TYPE_ISEQ && ci->me->def->body.iseq == iseq) {
 	ci->klass = RCLASS_SUPER(ci->defined_class);
-	ci->me = rb_method_entry_get_with_refinements(Qnil, ci->klass, ci->mid, &ci->defined_class);
+	ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
     }
 }
 

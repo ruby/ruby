@@ -99,6 +99,9 @@ NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 
+/* eval.c */
+VALUE rb_refinement_module_get_refined_class(VALUE module);
+
 /* eval_error.c */
 void ruby_error_print(void);
 VALUE rb_get_backtrace(VALUE info);
