@@ -244,6 +244,31 @@ class TestRDocContext < XrefTestCase
     assert_equal 'first', method.comment.text
   end
 
+  def test_add_method_duplicate_loading
+    @context.store = nil
+
+    meth1 = RDoc::AnyMethod.new nil, 'name'
+    meth1.record_location @store.add_file 'first.rb'
+    meth1.visibility = nil
+    meth1.comment = comment 'first'
+
+    @context.add_method meth1
+
+    meth2 = RDoc::AnyMethod.new nil, 'name'
+    meth2.record_location @store.add_file 'second.rb'
+    meth2.comment = comment 'second'
+
+    _, err = verbose_capture_io do
+      @context.add_method meth2
+    end
+
+    assert_empty err
+
+    method = @context.method_list.first
+
+    assert_equal 'first', method.comment.text
+  end
+
   def test_add_module
     @c1.add_module RDoc::NormalModule, 'Mod'
 
