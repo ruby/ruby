@@ -60,42 +60,46 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  class FooExtClient
-    using FooExt
+  eval <<-EOF, TOPLEVEL_BINDING
+    using TestRefinement::FooExt
 
-    def self.invoke_x_on(foo)
-      return foo.x
+    class TestRefinement::FooExtClient
+      def self.invoke_x_on(foo)
+        return foo.x
+      end
+
+      def self.invoke_y_on(foo)
+        return foo.y
+      end
+
+      def self.invoke_z_on(foo)
+        return foo.z
+      end
+
+      def self.send_z_on(foo)
+        return foo.send(:z)
+      end
+
+      def self.method_z(foo)
+        return foo.method(:z)
+      end
+
+      def self.invoke_call_x_on(foo)
+        return foo.call_x
+      end
     end
+  EOF
 
-    def self.invoke_y_on(foo)
-      return foo.y
+  eval <<-EOF, TOPLEVEL_BINDING
+    using TestRefinement::FooExt
+    using TestRefinement::FooExt2
+
+    class TestRefinement::FooExtClient2
+      def self.invoke_y_on(foo)
+        return foo.y
+      end
     end
-
-    def self.invoke_z_on(foo)
-      return foo.z
-    end
-
-    def self.send_z_on(foo)
-      return foo.send(:z)
-    end
-
-    def self.method_z(foo)
-      return foo.method(:z)
-    end
-
-    def self.invoke_call_x_on(foo)
-      return foo.call_x
-    end
-  end
-
-  class FooExtClient2
-    using FooExt
-    using FooExt2
-
-    def self.invoke_y_on(foo)
-      return foo.y
-    end
-  end
+  EOF
 
   def test_override
     foo = Foo.new
@@ -175,34 +179,36 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#x", foo.x)
   end
 
-  def test_instance_eval
+  def test_instance_eval_without_refinement
     foo = Foo.new
     ext_client = FooExtClient.new
     assert_equal("Foo#x", foo.x)
-    assert_equal("FooExt#x", ext_client.instance_eval { foo.x })
+    assert_equal("Foo#x", ext_client.instance_eval { foo.x })
     assert_equal("Foo#x", foo.x)
   end
 
+  module FixnumSlashExt
+    refine Fixnum do
+      def /(other) quo(other) end
+    end
+  end
+
   def test_override_builtin_method
-    m = Module.new {
-      refine Fixnum do
-        def /(other) quo(other) end
-      end
-    }
     assert_equal(0, 1 / 2)
-    assert_equal(Rational(1, 2), m.module_eval { 1 / 2 })
+    assert_equal(Rational(1, 2), eval_using(FixnumSlashExt, "1 / 2"))
     assert_equal(0, 1 / 2)
   end
 
+  module FixnumPlusExt
+    refine Fixnum do
+      def self.method_added(*args); end
+      def +(other) "overriden" end
+    end
+  end
+
   def test_override_builtin_method_with_method_added
-    m = Module.new {
-      refine Fixnum do
-        def self.method_added(*args); end
-        def +(other) "overriden" end
-      end
-    }
     assert_equal(3, 1 + 2)
-    assert_equal("overriden", m.module_eval { 1 + 2 })
+    assert_equal("overriden", eval_using(FixnumPlusExt, "1 + 2"))
     assert_equal(3, 1 + 2)
   end
 
@@ -217,25 +223,23 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal mod, result
   end
 
-  def test_refine_same_class_twice
-    result1 = nil
-    result2 = nil
-    result3 = nil
-    m = Module.new {
-      result1 = refine(Fixnum) {
-        def foo; return "foo" end
-      }
-      result2 = refine(Fixnum) {
-        def bar; return "bar" end
-      }
-      result3 = refine(String) {
-        def baz; return "baz" end
-      }
+  module RefineSameClass
+    REFINEMENT1 = refine(Fixnum) {
+      def foo; return "foo" end
     }
-    assert_equal("foo", m.module_eval { 1.foo })
-    assert_equal("bar", m.module_eval { 1.bar })
-    assert_equal(result1, result2)
-    assert_not_equal(result1, result3)
+    REFINEMENT2 = refine(Fixnum) {
+      def bar; return "bar" end
+    }
+    REFINEMENT3 = refine(String) {
+      def baz; return "baz" end
+    }
+  end
+
+  def test_refine_same_class_twice
+    assert_equal("foo", eval_using(RefineSameClass, "1.foo"))
+    assert_equal("bar", eval_using(RefineSameClass, "1.bar"))
+    assert_equal(RefineSameClass::REFINEMENT1, RefineSameClass::REFINEMENT2)
+    assert_not_equal(RefineSameClass::REFINEMENT1, RefineSameClass::REFINEMENT3)
   end
 
   def test_respond_to?
@@ -249,25 +253,25 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(false, 1.respond_to?(:foo))
   end
 
-  def test_builtin_method_no_local_rebinding
-    m = Module.new {
-      refine String do
-        def <=>(other) return 0 end
-      end
-    }
-    assert_equal(false, m.module_eval { "1" >= "2" })
+  module StringCmpExt
+    refine String do
+      def <=>(other) return 0 end
+    end
+  end
 
-    m2 = Module.new {
-      refine Array do
-        def each
-          super do |i|
-            yield 2 * i
-          end
+  module ArrayEachExt
+    refine Array do
+      def each
+        super do |i|
+          yield 2 * i
         end
       end
-    }
-    a = [1, 2, 3]
-    assert_equal(1, m2.module_eval { a.min })
+    end
+  end
+
+  def test_builtin_method_no_local_rebinding
+    assert_equal(false, eval_using(StringCmpExt, '"1" >= "2"'))
+    assert_equal(1, eval_using(ArrayEachExt, "[1, 2, 3].min"))
   end
 
   def test_module_inclusion
@@ -858,5 +862,11 @@ class TestRefinement < Test::Unit::TestCase
   def test_redefine_refined_method
     c = RedifineRefinedMethod::C.new
     assert_equal("refined", RedifineRefinedMethod::M.module_eval { c.foo })
+  end
+
+  private
+
+  def eval_using(mod, s)
+    eval("using #{mod}; #{s}", TOPLEVEL_BINDING)
   end
 end

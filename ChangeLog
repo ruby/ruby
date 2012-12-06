@@ -1,3 +1,8 @@
+Fri Dec  7 00:11:44 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_refinement.rb: fix some tests to use neither
+	  Module#using nor Module#module_eval.
+
 Thu Dec  6 23:27:50 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (ruby_Init_refinement): a new function to enable
