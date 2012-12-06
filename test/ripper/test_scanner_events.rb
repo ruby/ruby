@@ -32,10 +32,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  Ripper.tokenize('1')
     assert_equal ['1', ';', 'def', ' ', 'm', '(', 'arg', ')', 'end'],
                  Ripper.tokenize("1;def m(arg)end")
-    assert_equal ['print', '(', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
-                 Ripper.tokenize("print(<<EOS)\nheredoc\nEOS\n")
-    assert_equal ['print', '(', ' ', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
-                 Ripper.tokenize("print( <<EOS)\nheredoc\nEOS\n")
+    assert_equal ['print', '(', '<<''EOS', ')', "\n", "heredoc\n", "EOS\n"],
+                 Ripper.tokenize("print(<<""EOS)\nheredoc\nEOS\n")
+    assert_equal ['print', '(', ' ', '<<''EOS', ')', "\n", "heredoc\n", "EOS\n"],
+                 Ripper.tokenize("print( <<""EOS)\nheredoc\nEOS\n")
     assert_equal ["\#\n", "\n", "\#\n", "\n", "nil", "\n"],
                  Ripper.tokenize("\#\n\n\#\n\nnil\n")
   end
@@ -61,15 +61,15 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[2, 1], :on_nl, "\n"],
                   [[3, 0], :on_int, "3"]],
                  Ripper.lex("1\n2\n3")
-    assert_equal [[[1, 0], :on_heredoc_beg, "<<EOS"],
+    assert_equal [[[1, 0], :on_heredoc_beg, "<<""EOS"],
                   [[1, 5], :on_nl, "\n"],
                   [[2, 0], :on_tstring_content, "heredoc\n"],
                   [[3, 0], :on_heredoc_end, "EOS"]],
-                 Ripper.lex("<<EOS\nheredoc\nEOS")
-    assert_equal [[[1, 0], :on_heredoc_beg, "<<EOS"],
+                 Ripper.lex("<<""EOS\nheredoc\nEOS")
+    assert_equal [[[1, 0], :on_heredoc_beg, "<<""EOS"],
                   [[1, 5], :on_nl, "\n"],
                   [[2, 0], :on_heredoc_end, "EOS"]],
-                 Ripper.lex("<<EOS\nEOS"),
+                 Ripper.lex("<<""EOS\nEOS"),
                  "bug#4543"
     assert_equal [[[1, 0], :on_regexp_beg, "/"],
                   [[1, 1], :on_tstring_content, "foo\nbar"],
@@ -107,7 +107,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     validate_location "BEGIN{print nil}"
     validate_location "%w(a b\nc\r\nd \ne )"
     validate_location %Q["a\nb\r\nc"]
-    validate_location "print(<<EOS)\nheredoc\nEOS\n"
+    validate_location "print(<<""EOS)\nheredoc\nEOS\n"
     validate_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
   end
 
@@ -140,7 +140,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal [],
                  scan('comma', %q[".,.,.,.,.,.,.."])
     assert_equal [],
-                 scan('comma', "<<EOS\n,,,,,,,,,,\nEOS")
+                 scan('comma', "<<""EOS\n,,,,,,,,,,\nEOS")
   end
 
   def test_period
@@ -206,7 +206,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ['#{'],
                  scan('embexpr_beg', '%Q[#{expr}]')
     assert_equal ['#{'],
-                 scan('embexpr_beg', "m(<<EOS)\n\#{expr}\nEOS")
+                 scan('embexpr_beg', "m(<<""EOS)\n\#{expr}\nEOS")
   end
 
   def test_embexpr_end
@@ -219,7 +219,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ['}'],
                  scan('embexpr_end', '%Q[#{expr}]')
     assert_equal ['}'],
-                 scan('embexpr_end', "m(<<EOS)\n\#{expr}\nEOS")
+                 scan('embexpr_end', "m(<<""EOS)\n\#{expr}\nEOS")
   end
 
   def test_embvar
@@ -480,8 +480,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('op', '1 < 1')
     assert_equal ['<='],
                  scan('op', '1 <= 1')
-    assert_equal ['<<'],
-                 scan('op', '1 << 1')
+    assert_equal ['<''<'],
+                 scan('op', '1 <''< 1')
     assert_equal ['>>'],
                  scan('op', '1 >> 1')
     assert_equal ['+'],
@@ -647,51 +647,51 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_heredoc_beg
     assert_equal [],
                  scan('heredoc_beg', '')
-    assert_equal ['<<EOS'],
-                 scan('heredoc_beg', "<<EOS\nheredoc\nEOS")
-    assert_equal ['<<EOS'],
-                 scan('heredoc_beg', "<<EOS\nheredoc\nEOS\n")
-    assert_equal ['<<EOS'],
-                 scan('heredoc_beg', "<<EOS\nheredoc\nEOS \n")
-    assert_equal ['<<-EOS'],
-                 scan('heredoc_beg', "<<-EOS\nheredoc\n\tEOS \n")
-    assert_equal ['<<"EOS"'],
-                 scan('heredoc_beg', '<<"EOS"'"\nheredoc\nEOS")
-    assert_equal ["<<'EOS'"],
-                 scan('heredoc_beg', "<<'EOS'\nheredoc\nEOS")
-    assert_equal ['<<`EOS`'],
-                 scan('heredoc_beg', "<<`EOS`\nheredoc\nEOS")
-    assert_equal ['<<" "'],
-                 scan('heredoc_beg', '<<" "'"\nheredoc\nEOS")
+    assert_equal ['<<''EOS'],
+                 scan('heredoc_beg', "<<""EOS\nheredoc\nEOS")
+    assert_equal ['<<''EOS'],
+                 scan('heredoc_beg', "<<""EOS\nheredoc\nEOS\n")
+    assert_equal ['<<''EOS'],
+                 scan('heredoc_beg', "<<""EOS\nheredoc\nEOS \n")
+    assert_equal ['<<''-EOS'],
+                 scan('heredoc_beg', "<<""-EOS\nheredoc\n\tEOS \n")
+    assert_equal ['<<''"EOS"'],
+                 scan('heredoc_beg', '<<''"EOS"'"\nheredoc\nEOS")
+    assert_equal ["<<""'EOS'"],
+                 scan('heredoc_beg', "<<""'EOS'\nheredoc\nEOS")
+    assert_equal ['<<''`EOS`'],
+                 scan('heredoc_beg', "<<""`EOS`\nheredoc\nEOS")
+    assert_equal ['<<''" "'],
+                 scan('heredoc_beg', '<<''" "'"\nheredoc\nEOS")
   end
 
   def test_tstring_content_HEREDOC
     assert_equal [],
                  scan('tstring_content', '')
     assert_equal ["heredoc\n"],
-                 scan('tstring_content', "<<EOS\nheredoc\nEOS")
+                 scan('tstring_content', "<<""EOS\nheredoc\nEOS")
     assert_equal ["heredoc\n"],
-                 scan('tstring_content', "<<EOS\nheredoc\nEOS\n")
+                 scan('tstring_content', "<<""EOS\nheredoc\nEOS\n")
     assert_equal ["here\ndoc \nEOS \n"],
-                 scan('tstring_content', "<<EOS\nhere\ndoc \nEOS \n")
+                 scan('tstring_content', "<<""EOS\nhere\ndoc \nEOS \n")
     assert_equal ["heredoc\n\tEOS \n"],
-                 scan('tstring_content', "<<-EOS\nheredoc\n\tEOS \n")
+                 scan('tstring_content', "<<""-EOS\nheredoc\n\tEOS \n")
   end
 
   def test_heredoc_end
     assert_equal [],
                  scan('heredoc_end', '')
     assert_equal ["EOS"],
-                 scan('heredoc_end', "<<EOS\nEOS"),
+                 scan('heredoc_end', "<<""EOS\nEOS"),
                  "bug#4543"
     assert_equal ["EOS"],
-                 scan('heredoc_end', "<<EOS\nheredoc\nEOS")
+                 scan('heredoc_end', "<<""EOS\nheredoc\nEOS")
     assert_equal ["EOS\n"],
-                 scan('heredoc_end', "<<EOS\nheredoc\nEOS\n")
+                 scan('heredoc_end', "<<""EOS\nheredoc\nEOS\n")
     assert_equal [],
-                 scan('heredoc_end', "<<EOS\nheredoc\nEOS \n")
+                 scan('heredoc_end', "<<""EOS\nheredoc\nEOS \n")
     assert_equal [],
-                 scan('heredoc_end', "<<-EOS\nheredoc\n\tEOS \n")
+                 scan('heredoc_end', "<<""-EOS\nheredoc\n\tEOS \n")
   end
 
   def test_semicolon
