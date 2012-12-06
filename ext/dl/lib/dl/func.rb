@@ -12,6 +12,7 @@ module DL
     include ValueUtil
 
     if DL.fiddle?
+      # :stopdoc:
       CALL_TYPE_TO_ABI = Hash.new { |h, k|
         raise RuntimeError, "unsupported call type: #{k}"
       }.merge({ :stdcall =>
@@ -20,13 +21,14 @@ module DL
                 nil      => Fiddle::Function::DEFAULT
               }).freeze
       private_constant :CALL_TYPE_TO_ABI
+      # :startdoc:
 
-      def self.call_type_to_abi(call_type)
+      def self.call_type_to_abi(call_type) # :nodoc:
         CALL_TYPE_TO_ABI[call_type]
       end
       private_class_method :call_type_to_abi
 
-      class FiddleClosureCFunc < Fiddle::Closure
+      class FiddleClosureCFunc < Fiddle::Closure # :nodoc: all
         def initialize ctype, arg, abi, name
           @name = name
           super(ctype, arg, abi)
@@ -37,7 +39,7 @@ module DL
       end
       private_constant :FiddleClosureCFunc
 
-      def self.class_fiddle_closure_cfunc
+      def self.class_fiddle_closure_cfunc # :nodoc:
         FiddleClosureCFunc
       end
       private_class_method :class_fiddle_closure_cfunc
