@@ -76,8 +76,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--version '#{Gem::Requirement.default}' --no-force " \
-    "--install-dir #{Gem.dir}\n" \
+    "--version '#{Gem::Requirement.default}' --no-force " +
+    "--install-dir #{Gem.dir}\n" +
     "--user-install"
   end
 
@@ -101,7 +101,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
         Gem::Uninstaller.new(gem_name, options).uninstall
       rescue Gem::GemNotInHomeException => e
         spec = e.spec
-        alert("In order to remove #{spec.name}, please execute:\n" \
+        alert("In order to remove #{spec.name}, please execute:\n" +
               "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
       end
     end

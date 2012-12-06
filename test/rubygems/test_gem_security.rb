@@ -129,7 +129,7 @@ class TestGemSecurity < Gem::TestCase
       Gem::Security.re_sign CHILD_CERT, CHILD_KEY
     end
 
-    assert_equal "#{ALTERNATE_CERT.subject} is not self-signed, contact " \
+    assert_equal "#{ALTERNATE_CERT.subject} is not self-signed, contact " +
                  "#{ALTERNATE_CERT.issuer} to obtain a valid certificate",
                  e.message
   end
@@ -139,7 +139,7 @@ class TestGemSecurity < Gem::TestCase
       Gem::Security.re_sign ALTERNATE_CERT, PRIVATE_KEY
     end
 
-    assert_equal "incorrect signing key for re-signing " \
+    assert_equal "incorrect signing key for re-signing " +
                  "#{ALTERNATE_CERT.subject}",
                  e.message
   end

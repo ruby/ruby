@@ -54,8 +54,8 @@ class Gem::Indexer
     require 'zlib'
 
     unless defined?(Builder::XChar) then
-      raise "Gem::Indexer requires that the XML Builder library be installed:" \
-           "\n\tgem install builder"
+      raise "Gem::Indexer requires that the XML Builder library be installed:" +
+            "\n\tgem install builder"
     end
 
     options = { :build_modern => true }.merge options

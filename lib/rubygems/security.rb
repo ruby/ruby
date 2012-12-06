@@ -463,7 +463,7 @@ module Gem::Security
   def self.re_sign expired_certificate, private_key, age = ONE_YEAR,
                    extensions = EXTENSIONS
     raise Gem::Security::Exception,
-          "incorrect signing key for re-signing " \
+          "incorrect signing key for re-signing " +
           "#{expired_certificate.subject}" unless
       expired_certificate.public_key.to_pem == private_key.public_key.to_pem
 
@@ -473,7 +473,7 @@ module Gem::Security
       issuer  = alt_name_or_x509_entry expired_certificate, :issuer
 
       raise Gem::Security::Exception,
-            "#{subject} is not self-signed, contact #{issuer} " \
+            "#{subject} is not self-signed, contact #{issuer} " +
             "to obtain a valid certificate"
     end
 

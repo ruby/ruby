@@ -112,7 +112,7 @@ class Gem::Security::Policy
     root = chain.first
 
     raise Gem::Security::Exception,
-          "root certificate #{root.subject} is not self-signed " \
+          "root certificate #{root.subject} is not self-signed " +
           "(issuer #{root.issuer})" if
       root.issuer.to_s != root.subject.to_s # HACK to_s is for ruby 1.8
 
@@ -144,7 +144,7 @@ class Gem::Security::Policy
     cert_dgst = digester.digest pkey_str
 
     raise Gem::Security::Exception,
-          "trusted root certificate #{root.subject} checksum " \
+          "trusted root certificate #{root.subject} checksum " +
           "does not match signing root certificate checksum" unless
       save_dgst == cert_dgst
 
@@ -152,7 +152,7 @@ class Gem::Security::Policy
   end
 
   def inspect # :nodoc:
-    "[Policy: %s - data: %p signer: %p chain: %p root: %p " \
+    "[Policy: %s - data: %p signer: %p chain: %p root: %p " +
       "signed-only: %p trusted-only: %p]" % [
       @name, @verify_chain, @verify_data, @verify_root, @verify_signer,
       @only_signed, @only_trusted,

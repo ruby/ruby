@@ -48,7 +48,7 @@ class Gem::Commands::InstallCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" \
+    "--both --version '#{Gem::Requirement.default}' --document --no-force\n" +
     "--install-dir #{Gem.dir}"
   end
 

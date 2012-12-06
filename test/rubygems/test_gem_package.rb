@@ -302,7 +302,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.extract_tar_gz tgz_io, @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " \
+    assert_equal("installing into parent path /absolute.rb of " +
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -325,7 +325,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.install_location '/absolute.rb', @destination
     end
 
-    assert_equal("installing into parent path /absolute.rb of " \
+    assert_equal("installing into parent path /absolute.rb of " +
                  "#{@destination} is not allowed", e.message)
   end
 
@@ -338,7 +338,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     parent = File.expand_path File.join @destination, "../relative.rb"
 
-    assert_equal("installing into parent path #{parent} of " \
+    assert_equal("installing into parent path #{parent} of " +
                  "#{@destination} is not allowed", e.message)
   end
 
