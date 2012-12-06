@@ -290,7 +290,9 @@ module Fiddle
       if( !addr )
         raise(DLError, "cannot find the function: #{name}()")
       end
-      Function.new(addr, argtype, ctype, CALL_TYPE_TO_ABI[call_type])
+      f = Function.new(addr, argtype, ctype, CALL_TYPE_TO_ABI[call_type])
+      f.instance_eval { @name = name }
+      f
     end
 
     # Returns a new closure wrapper for the +name+ function.
@@ -307,7 +309,9 @@ module Fiddle
         define_method(:call, block)
       }.new(ctype, argtype, abi)
 
-      Function.new(closure, argtype, ctype, abi)
+      f = Function.new(closure, argtype, ctype, abi)
+      f.instance_eval { @name = name }
+      f
     end
   end
 end

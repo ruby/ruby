@@ -1,3 +1,11 @@
+Fri Dec  7 01:15:07 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/lib/fiddle/function.rb (Fiddle::Function#name): new
+	  attribute needed to switch Win32::Registry from DL to Fiddle.
+
+	* ext/fiddle/lib/fiddle/import.rb (import_function, bind_function):
+	  set function name to the returned Fiddle::Function object.
+
 Fri Dec  7 00:11:44 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_refinement.rb: fix some tests to use neither
