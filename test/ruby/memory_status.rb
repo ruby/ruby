@@ -20,14 +20,14 @@ module Memory
     begin
       require 'fiddle/import'
     rescue LoadError
-      suppress_warning do
+      EnvUtil.suppress_warning do
         require 'dl/import'
       end
     end
     begin
       require 'fiddle/types'
     rescue LoadError
-      suppress_warning do
+      EnvUtil.suppress_warning do
         require 'dl/types'
       end
     end
