@@ -1616,9 +1616,6 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
-    rb_define_private_method(rb_cModule, "using", rb_mod_using, 1);
-    rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
-    rb_define_method(rb_cModule, "refinements", rb_mod_refinements, 0);
 
     rb_undef_method(rb_cClass, "module_function");
 
@@ -1629,7 +1626,6 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
     rb_define_singleton_method(rb_vm_top_self(), "include", top_include, -1);
-    rb_define_singleton_method(rb_vm_top_self(), "using", top_using, 1);
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
@@ -1641,3 +1637,20 @@ Init_eval(void)
     OBJ_TAINT(exception_error);
     OBJ_FREEZE(exception_error);
 }
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
+void
+ruby_Init_refinement(void)
+{
+    rb_define_private_method(rb_cModule, "using", rb_mod_using, 1);
+    rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_define_method(rb_cModule, "refinements", rb_mod_refinements, 0);
+    rb_define_singleton_method(rb_vm_top_self(), "using", top_using, 1);
+}
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif

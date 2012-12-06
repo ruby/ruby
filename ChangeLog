@@ -1,3 +1,11 @@
+Thu Dec  6 23:27:50 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (ruby_Init_refinement): a new function to enable
+	  Refinements with a warning "Refinements are experimental...".
+
+	* ext/refinement/refinement.c, ext/refinement/extconf.rb: a new
+	  extension library to enable Refinements.
+
 Thu Dec  6 18:23:05 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* revised r37993 to avoid SEGV/ILL in tests.  In r37993, a method

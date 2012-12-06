@@ -1,6 +1,8 @@
 require 'test/unit'
 require_relative 'envutil'
 
+require "refinement"
+
 class TestRefinement < Test::Unit::TestCase
   class Foo
     def x
@@ -480,7 +482,9 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_main_using
-    assert_in_out_err([], <<-INPUT, %w(:C :M), [])
+    assert_in_out_err([], <<-INPUT, %w(:C :M), /Refinements are experimental/)
+      require "refinement"
+
       class C
         def foo
           :C
@@ -775,7 +779,9 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("original", UsingMethodCache::M::ORIGINAL_FOO)
     assert_equal("M2", UsingMethodCache::M::M2_FOO)
 
-    assert_in_out_err([], <<-INPUT, %w(:M1 :M2), [])
+    assert_in_out_err([], <<-INPUT, %w(:M1 :M2), /Refinements are experimental/)
+      require "refinement"
+
       class C
         def foo
           "original"
