@@ -29,7 +29,7 @@
 
 #include "timev.h"
 
-static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset;
+static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_eq, id_ne, id_quo, id_div, id_cmp, id_lshift;
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
@@ -4707,6 +4707,9 @@ time_mdump(VALUE time)
 	    off = rb_Integer(div);
 	rb_ivar_set(str, id_offset, off);
     }
+    if (tobj->vtm.zone) {
+	rb_ivar_set(str, id_zone, rb_locale_str_new_cstr(tobj->vtm.zone));
+    }
     return str;
 }
 
@@ -4734,7 +4737,7 @@ time_mload(VALUE time, VALUE str)
     struct vtm vtm;
     int i, gmt;
     long nsec;
-    VALUE submicro, nano_num, nano_den, offset;
+    VALUE submicro, nano_num, nano_den, offset, zone;
     wideval_t timew;
     st_data_t data;
 
@@ -4752,6 +4755,7 @@ time_mload(VALUE time, VALUE str)
     get_attr(nano_den, {});
     get_attr(submicro, {});
     get_attr(offset, validate_utc_offset(offset));
+    get_attr(zone, {});
 #undef get_attr
 
     rb_copy_generic_ivar(time, str);
@@ -4834,6 +4838,9 @@ end_submicro: ;
     else if (!NIL_P(offset)) {
 	time_set_utc_offset(time, offset);
 	time_fixoff(time);
+    }
+    if (!NIL_P(zone)) {
+	tobj->vtm.zone = StringValueCStr(zone);
     }
 
     return time;
@@ -4955,6 +4962,7 @@ Init_Time(void)
     id_nano_num = rb_intern("nano_num");
     id_nano_den = rb_intern("nano_den");
     id_offset = rb_intern("offset");
+    id_zone = rb_intern("zone");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);

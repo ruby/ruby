@@ -290,6 +290,21 @@ class TestTime < Test::Unit::TestCase
     assert_equal(29700, t2.utc_offset, bug)
   end
 
+  def test_marshal_zone
+    orig_zone = ENV['TZ']
+
+    t = Time.utc(2013, 2, 24)
+    assert_equal('UTC', t.zone)
+    assert_equal('UTC', Marshal.load(Marshal.dump(t)).zone)
+
+    ENV['TZ'] = 'Asia/Tokyo'
+    t = Time.local(2013, 2, 24)
+    assert_equal('JST', Time.local(2013, 2, 24).zone)
+    assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
+  ensure
+    ENV['TZ'] = orig_zone
+  end
+
   def test_marshal_to_s
     t1 = Time.new(2011,11,8, 0,42,25, 9*3600)
     t2 = Time.at(Marshal.load(Marshal.dump(t1)))
