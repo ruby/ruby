@@ -1,11 +1,6 @@
+#include "ruby/ruby.h"
+
 void ruby_Init_refinement(void);
-#ifdef __GNUC__
-#define PRINTF_ARGS(decl, string_index, first_to_check) \
-  decl __attribute__((format(printf, string_index, first_to_check)))
-#else
-#define PRINTF_ARGS(decl, string_index, first_to_check) decl
-#endif
-PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 
 void
 Init_refinement(void)

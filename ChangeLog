@@ -1,3 +1,8 @@
+Fri Dec  7 23:42:11 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/refinement/refinement.c: include ruby/ruby.h instead of the
+	  declaration of rb_warn().
+
 Fri Dec  7 16:07:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/etc.rd: Removed stale documentation file
