@@ -1,3 +1,19 @@
+Fri Dec  7 14:22:29 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/to_joined_paragraph.rb:  Completed documentation
+	* lib/rdoc/parser/c.rb:  ditto
+	* lib/rdoc/parser/changelog.rb:  ditto
+	* lib/rdoc/servlet.rb:  ditto
+	* lib/rdoc/store.rb:  ditto
+
+	* lib/rdoc/store.rb:  Improved HTML error page.  Completed
+	  documentation
+
+	* lib/rdoc/parser/ruby.rb:  Fixed bug attaching a comment to A::B = 42
+	* test/rdoc/test_rdoc_parser_ruby.rb:  Test for above
+
+	* test/rdoc/test_rdoc_comment.rb:  Removed garbage
+
 Fri Dec  7 14:03:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): since async_interrupt_timing

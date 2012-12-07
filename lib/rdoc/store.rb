@@ -59,7 +59,7 @@ class RDoc::Store
       @name  = name
     end
 
-    def message
+    def message # :nodoc:
       "store at #{@store.path} missing file #{@file} for #{@name}"
     end
 

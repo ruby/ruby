@@ -446,6 +446,10 @@ class RDoc::Parser::C < RDoc::Parser
     end
   end
 
+  ##
+  # Creates classes and module that were missing were defined due to the file
+  # order being different than the declaration order.
+
   def do_missing
     return if @missing_dependencies.empty?
 

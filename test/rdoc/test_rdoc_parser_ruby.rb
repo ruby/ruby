@@ -80,21 +80,51 @@ class C; end
     assert_equal 'A', name_t.text
     assert_equal 'A', given_name
 
-    cont, name_t, given_name = util_parser('A::B') .get_class_or_module ctxt
+    cont, name_t, given_name = util_parser('B::C') .get_class_or_module ctxt
 
-    assert_equal @store.find_module_named('A'), cont
-    assert_equal 'B', name_t.text
-    assert_equal 'A::B', given_name
+    b = @store.find_module_named('B')
+    assert_equal b, cont
+    assert_equal [@top_level], b.in_files
+    assert_equal 'C', name_t.text
+    assert_equal 'B::C', given_name
 
-    cont, name_t, given_name = util_parser('A:: B').get_class_or_module ctxt
+    cont, name_t, given_name = util_parser('D:: E').get_class_or_module ctxt
 
-    assert_equal @store.find_module_named('A'), cont
-    assert_equal 'B', name_t.text
-    assert_equal 'A::B', given_name
+    assert_equal @store.find_module_named('D'), cont
+    assert_equal 'E', name_t.text
+    assert_equal 'D::E', given_name
 
     assert_raises NoMethodError do
       util_parser("A::\nB").get_class_or_module ctxt
     end
+  end
+
+  def test_get_class_or_module_document_children
+    ctxt = @top_level.add_class RDoc::NormalClass, 'A'
+    ctxt.stop_doc
+
+    util_parser('B::C').get_class_or_module ctxt
+
+    b = @store.find_module_named('A::B')
+    assert b.ignored?
+
+    d = @top_level.add_class RDoc::NormalClass, 'A::D'
+
+    util_parser('D::E').get_class_or_module ctxt
+
+    refute d.ignored?
+  end
+
+  def test_get_class_or_module_ignore_constants
+    ctxt = RDoc::Context.new
+    ctxt.store = @store
+
+    util_parser('A')   .get_class_or_module ctxt, true
+    util_parser('A::B').get_class_or_module ctxt, true
+
+    assert_empty ctxt.constants
+    assert_empty @store.modules_hash.keys
+    assert_empty @store.classes_hash.keys
   end
 
   def test_get_class_specification
@@ -1108,6 +1138,37 @@ EOF
     assert_equal 'A', bar.find_module_named('A').full_name
   end
 
+  def test_parse_constant_in_method
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser 'A::B = v'
+
+    tk = @parser.get_tk
+
+    @parser.parse_constant klass, tk, @comment, true
+
+    assert_empty klass.constants
+
+    assert_empty @store.modules_hash.keys
+    assert_equal %w[Foo], @store.classes_hash.keys
+  end
+
+  def test_parse_constant_rescue
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "A => e"
+
+    tk = @parser.get_tk
+
+    @parser.parse_constant klass, tk, @comment
+
+    assert_empty klass.constants
+    assert_empty klass.modules
+
+    assert_empty @store.modules_hash.keys
+    assert_equal %w[Foo], @store.classes_hash.keys
+  end
+
   def test_parse_constant_stopdoc
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
     klass.stop_doc
@@ -1119,6 +1180,27 @@ EOF
     @parser.parse_constant klass, tk, @comment
 
     assert_empty klass.constants
+  end
+
+  def test_parse_comment_nested
+    content = <<-CONTENT
+A::B::C = 1
+    CONTENT
+
+    util_parser content
+
+    tk = @parser.get_tk
+
+    parsed = @parser.parse_constant @top_level, tk, 'comment'
+
+    assert parsed
+
+    a = @top_level.find_module_named 'A'
+    b = a.find_module_named 'B'
+    c = b.constants.first
+
+    assert_equal 'A::B::C', c.full_name
+    assert_equal 'comment', c.comment
   end
 
   def test_parse_include
@@ -2583,6 +2665,61 @@ end
     m = foo.method_list.first
 
     assert_equal 'A nice girl', m.comment.text
+  end
+
+  def test_scan_constant_in_method
+    content = <<-CONTENT # newline is after M is important
+module M
+  def m
+    A
+    B::C
+  end
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    m = @top_level.modules.first
+
+    assert_empty m.constants
+
+    assert_empty @store.classes_hash.keys
+    assert_equal %w[M], @store.modules_hash.keys
+  end
+
+  def test_scan_constant_in_rescue
+    content = <<-CONTENT # newline is after M is important
+module M
+  def m
+  rescue A::B
+  rescue A::C => e
+  rescue A::D, A::E
+  rescue A::F,
+         A::G
+  rescue H
+  rescue I => e
+  rescue J, K
+  rescue L =>
+    e
+  rescue M;
+  rescue N,
+         O => e
+  end
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    m = @top_level.modules.first
+
+    assert_empty m.constants
+
+    assert_empty @store.classes_hash.keys
+    assert_equal %w[M], @store.modules_hash.keys
   end
 
   def test_scan_constant_nodoc

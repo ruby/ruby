@@ -1,10 +1,27 @@
 require 'time'
 
+##
+# A ChangeLog file parser.
+#
+# This parser converts a ChangeLog into an RDoc::Markup::Document.  When
+# viewed as HTML a ChangeLog page will have an entry for each day's entries in
+# the sidebar table of contents.
+#
+# This parser is meant to parse the MRI ChangeLog, but can be used to parse any
+# {GNU style Change
+# Log}[http://www.gnu.org/prep/standards/html_node/Style-of-Change-Logs.html].
+
 class RDoc::Parser::ChangeLog < RDoc::Parser
 
   include RDoc::Parser::Text
 
   parse_files_matching(/(\/|\\|\A)ChangeLog[^\/\\]*\z/)
+
+  ##
+  # Attaches the +continuation+ of the previous line to the +entry_body+.
+  #
+  # Continued function listings are joined together as a single entry.
+  # Continued descriptions are joined to make a single paragraph.
 
   def continue_entry_body entry_body, continuation
     return unless last = entry_body.last
@@ -20,6 +37,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
       last << ' ' << continuation
     end
   end
+
+  ##
+  # Creates an RDoc::Markup::Document given the +groups+ of ChangeLog entries.
 
   def create_document groups
     doc = RDoc::Markup::Document.new
@@ -39,6 +59,10 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     doc
   end
 
+  ##
+  # Returns a list of ChangeLog entries an RDoc::Markup nodes for the given
+  # +entries+.
+
   def create_entries entries
     out = []
 
@@ -51,6 +75,10 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     out
   end
+
+  ##
+  # Returns an RDoc::Markup::List containing the given +items+ in the
+  # ChangeLog
 
   def create_items items
     list = RDoc::Markup::List.new :NOTE
@@ -69,11 +97,29 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     list
   end
 
+  ##
+  # Groups +entries+ by date.
+
   def group_entries entries
-    entries.group_by do |title, body|
+    entries.group_by do |title, _|
       Time.parse(title).strftime "%Y-%m-%d"
     end
   end
+
+  ##
+  # Parses the entries in the ChangeLog.
+  #
+  # Returns an Array of each ChangeLog entry in order of parsing.
+  #
+  # A ChangeLog entry is an Array containing the ChangeLog title (date and
+  # committer) and an Array of ChangeLog items (file and function changed with
+  # description).
+  #
+  # An example result would be:
+  #
+  #    [ 'Tue Dec  4 08:33:46 2012  Eric Hodel  <drbrain@segment7.net>',
+  #      [ 'README.EXT:  Converted to RDoc format',
+  #        'README.EXT.ja:  ditto']]
 
   def parse_entries
     entries = []
@@ -121,6 +167,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     entries
   end
+
+  ##
+  # Converts the ChangeLog into an RDoc::Markup::Document
 
   def scan
     entries = parse_entries

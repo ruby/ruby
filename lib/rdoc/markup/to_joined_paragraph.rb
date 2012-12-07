@@ -12,11 +12,14 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
     super nil
   end
 
-  def start_accepting
+  def start_accepting # :nodoc:
   end
 
-  def end_accepting
+  def end_accepting # :nodoc:
   end
+
+  ##
+  # Converts the parts of +paragraph+ to a single entry.
 
   def accept_paragraph paragraph
     parts = []

@@ -2,20 +2,59 @@ require 'rdoc'
 require 'time'
 require 'webrick'
 
+##
+# This is a WEBrick servlet that allows you to browse ri documentation.
+#
+# You can show documentation through either `ri --server` or, with RubyGems
+# 2.0 or newer, `gem server`.  For ri, the server runs on port 8214 by
+# default.  For RubyGems the server runs on port 8808 by default.
+#
+# You can use this servlet in your own project by mounting it on a WEBrick
+# server:
+#
+#   require 'webrick'
+#
+#   server = WEBrick::HTTPServer.new Port: 8000
+#
+#   server.mount '/', RDoc::Servlet
+#
+# If you want to mount the servlet some other place than the root, provide the
+# base path when mounting:
+#
+#   server.mount '/rdoc', RDoc::Servlet, '/rdoc'
+
 class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 
   @server_stores = Hash.new { |hash, server| hash[server] = {} }
   @cache         = Hash.new { |hash, store|  hash[store]  = {} }
 
+  ##
+  # Maps an asset type to its path on the filesystem
+
   attr_reader :asset_dirs
+
+  ##
+  # An RDoc::Options instance used for rendering options
 
   attr_reader :options
 
-  def self.get_instance server, *options
+  ##
+  # Creates an instance of this servlet that shares cached data between
+  # requests.
+
+  def self.get_instance server, *options # :nodoc:
     stores = @server_stores[server]
 
     new server, stores, @cache, *options
   end
+
+  ##
+  # Creates a new WEBrick servlet.
+  #
+  # Use +mount_path+ when mounting the servlet somewhere other than /.
+  #
+  # +server+ is provided automatically by WEBrick when mounting.  +stores+ and
+  # +cache+ are provided automatically by the servlet.
 
   def initialize server, stores, cache, mount_path = nil
     super server
@@ -44,6 +83,9 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     }
   end
 
+  ##
+  # Serves the asset at the path in +req+ for +generator_name+ via +res+.
+
   def asset generator_name, req, res
     asset_dir = @asset_dirs[generator_name]
 
@@ -59,6 +101,9 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
                        else             'application/octet-stream'
                        end
   end
+
+  ##
+  # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
     req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
@@ -82,6 +127,13 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     error e, req, res
   end
 
+  ##
+  # Fills in +res+ with the class, module or page for +req+ from +store+.
+  #
+  # +path+ is relative to the mount_path and is used to determine the class,
+  # module or page name (/RDoc/Servlet.html becomes RDoc::Servlet).
+  # +generator+ is used to create the page.
+
   def documentation_page store, generator, path, req, res
     name = path.sub(/.html$/, '').gsub '/', '::'
 
@@ -94,6 +146,10 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     end
   end
 
+  ##
+  # Creates the JSON search index on +res+ for the given +store+.  +generator+
+  # must respond to \#json_index to build.  +req+ is ignored.
+
   def documentation_search store, generator, req, res
     json_index = @cache[store].fetch :json_index do
       @cache[store][:json_index] =
@@ -103,6 +159,10 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     res.content_type = 'application/javascript'
     res.body = "var search_data = #{json_index}"
   end
+
+  ##
+  # Returns the RDoc::Store and path relative to +mount_path+ for
+  # documentation at +path+.
 
   def documentation_source path
     _, source_name, path = path.split '/', 3
@@ -119,8 +179,11 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     return store, path
   end
 
-  def error e, req, res
-    backtrace = e.backtrace.join "\n"
+  ##
+  # Generates an error page for the +exception+ while handling +req+ on +res+.
+
+  def error exception, req, res
+    backtrace = exception.backtrace.join "\n"
 
     res.content_type = 'text/html'
     res.status = 500
@@ -130,7 +193,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 <head>
 <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
 
-<title>Error - #{ERB::Util.html_escape e.class}</title>
+<title>Error - #{ERB::Util.html_escape exception.class}</title>
 
 <link type="text/css" media="screen" href="#{@mount_path}/rdoc.css" rel="stylesheet">
 </head>
@@ -138,10 +201,17 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
 <h1>Error</h1>
 
 <p>While processing <code>#{ERB::Util.html_escape req.request_uri}</code> the
-RDoc server has encountered a <code>#{ERB::Util.html_escape e.class}</code>
+RDoc (#{ERB::Util.html_escape RDoc::VERSION}) server has encountered a
+<code>#{ERB::Util.html_escape exception.class}</code>
 exception:
 
-<pre>#{ERB::Util.html_escape e.message}</pre>
+<pre>#{ERB::Util.html_escape exception.message}</pre>
+
+<p>Please report this to the
+<a href="https://github.com/rdoc/rdoc/issues">RDoc issues tracker</a>.  Please
+include the RDoc version, the URI above and exception class, message and
+backtrace.  If you're viewing a gem's documentation, include the gem name and
+version.  If you're viewing Ruby's documentation, include the version of ruby.
 
 <p>Backtrace:
 
@@ -151,6 +221,9 @@ exception:
 </html>
     BODY
   end
+
+  ##
+  # Instantiates a Darkfish generator for +store+
 
   def generator_for store
     generator = RDoc::Generator::Darkfish.new store, @options
@@ -168,6 +241,11 @@ exception:
     generator
   end
 
+  ##
+  # Handles the If-Modified-Since HTTP header on +req+ for +path+.  If the
+  # file has not been modified a Not Modified response is returned.  If the
+  # file has been modified a Last-Modified header is added to +res+.
+
   def if_modified_since req, res, path = nil
     last_modified = File.stat(path).mtime if path
 
@@ -182,6 +260,14 @@ exception:
       raise WEBrick::HTTPStatus::NotModified
     end
   end
+
+  ##
+  # Returns an Array of installed documentation.
+  #
+  # Each entry contains the documentation name (gem name, 'Ruby
+  # Documentation', etc.), the path relative to the mount point, whether the
+  # documentation exists, the type of documentation (See RDoc::RI::Paths#each)
+  # and the filesystem to the RDoc::Store for the documentation.
 
   def installed_docs
     ri_paths.map do |path, type|
@@ -202,14 +288,23 @@ exception:
     end
   end
 
+  ##
+  # Returns a 404 page built by +generator+ for +req+ on +res+.
+
   def not_found generator, req, res
     res.body = generator.generate_servlet_not_found req.path
     res.status = 404
   end
 
+  ##
+  # Enumerates the ri paths.  See RDoc::RI::Paths#each
+
   def ri_paths &block
     RDoc::RI::Paths.each true, true, true, :all, &block
   end
+
+  ##
+  # Generates the root page on +res+.  +req+ is ignored.
 
   def root req, res
     generator = RDoc::Generator::Darkfish.new nil, @options
@@ -218,6 +313,9 @@ exception:
 
     res.content_type = 'text/html'
   end
+
+  ##
+  # Generates a search index for the root page on +res+.  +req+ is ignored.
 
   def root_search req, res
     search_index = []
@@ -259,6 +357,10 @@ exception:
     res.content_type = 'application/javascript'
   end
 
+  ##
+  # Displays documentation for +req+ on +res+, whether that be HTML or some
+  # asset.
+
   def show_documentation req, res
     store, path = documentation_source req.path
 
@@ -279,6 +381,9 @@ exception:
   ensure
     res.content_type ||= 'text/html'
   end
+
+  ##
+  # Returns an RDoc::Store for the given +source_name+ ('ruby' or a gem name).
 
   def store_for source_name
     case source_name

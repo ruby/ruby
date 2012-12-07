@@ -70,7 +70,7 @@ call-seq:
     comment = RDoc::Comment.new <<-COMMENT, @top_level
 # call-seq:
 #   bla => true or false
-#\s
+# 
 # moar comment
     COMMENT
 
