@@ -1176,34 +1176,34 @@ EOL
     element0
     element0
     element0
-    element0 
+    element0\s
     <element1>
       element1
       element1
       element1
       element1
-      element1 
+      element1\s
       <element2>
         element2
         element2
         element2
         element2
-        element2 
+        element2\s
         <element3>
           element3
           element3
           element3
           element3
-          element3 
+          element3\s
           <element4>
             element4
             element4
             element4
             element4
             element4
-            
+           \s
             <element5>
-              element5 element5 element5 element5 element5 
+              element5 element5 element5 element5 element5\s
             </element5>
           </element4>
         </element3>

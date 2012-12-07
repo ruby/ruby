@@ -240,7 +240,7 @@ end%>
 %%%
 EOS
     ans = <<EOS
-% 
+%\s
 % %%><%0
 % %%><%1
 %%
@@ -328,7 +328,7 @@ EOS
 
   def test_keep_lineno
     src = <<EOS
-Hello, 
+Hello,\s
 % x = "World"
 <%= x%>
 % raise("lineno")
@@ -344,21 +344,21 @@ EOS
 
     src = <<EOS
 %>
-Hello, 
+Hello,\s
 <% x = "World%%>
 "%>
 <%= x%>
 EOS
 
     ans = <<EOS
-%>Hello, 
+%>Hello,\s
 World%>
 EOS
     assert_equal(ans, ERB.new(src, nil, '>').result)
 
     ans = <<EOS
 %>
-Hello, 
+Hello,\s
 
 World%>
 EOS
@@ -366,7 +366,7 @@ EOS
 
     ans = <<EOS
 %>
-Hello, 
+Hello,\s
 
 World%>
 
@@ -374,7 +374,7 @@ EOS
     assert_equal(ans, ERB.new(src).result)
 
     src = <<EOS
-Hello, 
+Hello,\s
 <% x = "World%%>
 "%>
 <%= x%>
@@ -409,7 +409,7 @@ EOS
 % y = 'Hello'
 <%- x = "World%%>
 "-%>
-<%= x %><%- x = nil -%> 
+<%= x %><%- x = nil -%>\s
 <% raise("lineno") %>
 EOS
 
@@ -445,19 +445,19 @@ NotSkip <%- y = x -%> NotSkip
    <%- up = w.upcase -%>
    * <%= up %>
  <%- end -%>
-KeepNewLine <%- z = nil -%> 
+KeepNewLine <%- z = nil -%>\s
 EOS
 
    ans = <<EOS
 NotSkip  NotSkip
   * HELLO
   * WORLD
- NotSkip 
+ NotSkip\s
    * hello
    * HELLO
    * world
    * WORLD
-KeepNewLine  
+KeepNewLine \s
 EOS
    assert_equal(ans, ERB.new(src, nil, '-').result)
    assert_equal(ans, ERB.new(src, nil, '-%').result)

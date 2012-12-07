@@ -567,7 +567,7 @@ class TestThread < Test::Unit::TestCase
   def for_test_async_interrupt_with_return
     Thread.async_interrupt_timing(Object => :defer){
       Thread.current.raise RuntimeError.new("have to be rescured")
-      return 
+      return
     }
   rescue
   end

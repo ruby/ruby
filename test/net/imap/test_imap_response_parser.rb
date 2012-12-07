@@ -91,11 +91,11 @@ EOF
   def test_search_response_of_yahoo
     parser = Net::IMAP::ResponseParser.new
     response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
-* SEARCH 1 
+* SEARCH 1\s
 EOF
     assert_equal [1], response.data
     response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
-* SEARCH 1 2 3 
+* SEARCH 1 2 3\s
 EOF
     assert_equal [1, 2, 3], response.data
   end

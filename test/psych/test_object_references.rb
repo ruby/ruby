@@ -35,7 +35,7 @@ module Psych
 
     def test_float_references
       data = Psych.load <<-eoyml
---- 
+---\s
 - &name 1.2
 - *name
       eoyml
@@ -56,7 +56,7 @@ module Psych
 
     def test_regexp_references
       data = Psych.load <<-eoyml
---- 
+---\s
 - &name !ruby/regexp /pattern/i
 - *name
       eoyml
