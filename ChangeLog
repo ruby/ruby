@@ -1,3 +1,9 @@
+Fri Dec  7 16:00:57 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): no need to
+	  retry skipped test.  this fix makes 40% faster the whole test-all
+	  with -j5 on Windows.
+
 Fri Dec  7 14:22:29 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup/to_joined_paragraph.rb:  Completed documentation
