@@ -1,3 +1,9 @@
+Fri Dec  7 14:03:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): since async_interrupt_timing
+	  re-raises a deferred exception, replace the timeout exception with
+	  Timeout::Error after it.  [Bug #7503]
+
 Fri Dec  7 13:07:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/forwardable.rd: Remove stale documentation file

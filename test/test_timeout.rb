@@ -62,7 +62,8 @@ class TestTimeout < Test::Unit::TestCase
       }
       sleep 0.5
       t.raise RuntimeError
-      assert_raise(RuntimeError) {
+      assert_raise(Timeout::Error) {
+        # deferred interrupt should raise
         t.join
       }
     ensure

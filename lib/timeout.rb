@@ -50,8 +50,8 @@ module Timeout
   def timeout(sec, klass = nil, immediate: false)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     exception = klass || Class.new(ExitException)
-    Thread.async_interrupt_timing(exception => immediate ? :immediate : :on_blocking) do
-      begin
+    begin
+      Thread.async_interrupt_timing(exception => immediate ? :immediate : :on_blocking) do
         begin
           x = Thread.current
           y = Thread.start {
@@ -70,18 +70,18 @@ module Timeout
             y.join # make sure y is dead.
           end
         end
-      rescue exception => e
-        rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
-        (bt = e.backtrace).reject! {|m| rej =~ m}
-        level = -caller(CALLER_OFFSET).size
-        while THIS_FILE =~ bt[level]
-          bt.delete_at(level)
-          level += 1
-        end
-        raise if klass            # if exception class is specified, it
-                                  # would be expected outside.
-        raise Error, e.message, e.backtrace
       end
+    rescue exception => e
+      rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
+      (bt = e.backtrace).reject! {|m| rej =~ m}
+      level = -caller(CALLER_OFFSET).size
+      while THIS_FILE =~ bt[level]
+        bt.delete_at(level)
+        level += 1
+      end
+      raise if klass            # if exception class is specified, it
+      # would be expected outside.
+      raise Error, e.message, e.backtrace
     end
   end
 
