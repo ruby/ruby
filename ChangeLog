@@ -1,3 +1,9 @@
+Fri Dec  7 16:07:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/etc.rd: Removed stale documentation file
+	* ext/etc/etc.c:  Merged documentation from doc/etc.rd and updated
+	  rdoc, added documentation for Etc::Passwd and Etc::Group
+
 Fri Dec  7 16:00:57 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): no need to

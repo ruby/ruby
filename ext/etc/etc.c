@@ -40,9 +40,17 @@ char *getenv();
 #endif
 char *getlogin();
 
-/* Returns the short user name of the currently logged in user.
- * Unfortunately, it is often rather easy to fool getlogin().
- * Avoid getlogin() for security-related purposes.
+/* call-seq:
+ *	getlogin	->  String
+ *
+ * Returns the short user name of the currently logged in user.
+ * Unfortunately, it is often rather easy to fool ::getlogin.
+ *
+ * Avoid ::getlogin for security-related purposes.
+ *
+ * If ::getlogin fails, try ::getpwuid.
+ *
+ * See the unix manpage for <code>getpwuid(3)</code> for more detail.
  *
  * e.g.
  *   Etc.getlogin -> 'guest'
@@ -114,14 +122,22 @@ setup_passwd(struct passwd *pwd)
 }
 #endif
 
-/* Returns the /etc/passwd information for the user with specified integer
- * user id (uid).
+/* call-seq:
+ *	getpwuid(uid)	->  Passwd
  *
- * The information is returned as a Struct::Passwd; see getpwent above for
- * details.
+ * Returns the /etc/passwd information for the user with the given integer +uid+.
  *
- * e.g.  * Etc.getpwuid(0) -> #<struct Struct::Passwd name="root",
- * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ * The information is returned as a Passwd struct.
+ *
+ * If +uid+ is omitted, the value from <code>Passwd[:uid]</code> is returned
+ * instead.
+ *
+ * See the unix manpage for <code>getpwuid(3)</code> for more detail.
+ *
+ * === Example:
+ *
+ *	Etc.getpwuid(0)
+ *	#=> #<struct Struct::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
 etc_getpwuid(int argc, VALUE *argv, VALUE obj)
@@ -146,13 +162,20 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 #endif
 }
 
-/* Returns the /etc/passwd information for the user with specified login name.
+/* call-seq:
+ *	getpwnam(name)	->  Passwd
  *
- * The information is returned as a Struct::Passwd; see getpwent above for
- * details.
+ * Returns the /etc/passwd information for the user with specified login
+ * +name+.
  *
- * e.g.  * Etc.getpwnam('root') -> #<struct Struct::Passwd name="root",
- * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ * The information is returned as a Passwd struct.
+ *
+ * See the unix manpage for <code>getpwnam(3)</code> for more detail.
+ *
+ * === Example:
+ *
+ *	Etc.getpwnam('root')
+ *	#=> #<struct Struct::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
 etc_getpwnam(VALUE obj, VALUE nam)
@@ -202,11 +225,16 @@ each_passwd(void)
 }
 #endif
 
-/* Provides a convenient Ruby iterator which executes a block for each entry
+/* call-seq:
+ *	Etc.passwd { |struct| block }	->  Passwd
+ *	Etc.passwd			->  Passwd
+ *
+ * Provides a convenient Ruby iterator which executes a block for each entry
  * in the /etc/passwd file.
  *
- * The code block is passed an Struct::Passwd struct; see getpwent above for
- * details.
+ * The code block is passed an Passwd struct.
+ *
+ * See ::getpwent above for details.
  *
  * Example:
  *
@@ -234,11 +262,17 @@ etc_passwd(VALUE obj)
     return Qnil;
 }
 
-/* Iterates for each entry in the /etc/passwd file if a block is given.
- * If no block is given, returns the enumerator.
+/* call-seq:
+ *	Etc::Passwd.each { |struct| block }	->  Passwd
+ *	Etc::Passwd.each			->  Enumerator
  *
- * The code block is passed an Struct::Passwd struct; see getpwent above for
- * details.
+ * Iterates for each entry in the /etc/passwd file if a block is given.
+ *
+ * If no block is given, returns the Enumerator.
+ *
+ * The code block is passed an Passwd struct.
+ *
+ * See ::getpwent above for details.
  *
  * Example:
  *
@@ -263,7 +297,7 @@ etc_each_passwd(VALUE obj)
 }
 
 /* Resets the process of reading the /etc/passwd file, so that the next call
- * to getpwent will return the first entry again.
+ * to ::getpwent will return the first entry again.
  */
 static VALUE
 etc_setpwent(VALUE obj)
@@ -275,7 +309,7 @@ etc_setpwent(VALUE obj)
 }
 
 /* Ends the process of scanning through the /etc/passwd file begun with
- * getpwent, and closes the file.
+ * ::getpwent, and closes the file.
  */
 static VALUE
 etc_endpwent(VALUE obj)
@@ -286,31 +320,16 @@ etc_endpwent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the /etc/passwd file. The first time it is called it
- * opens the file and returns the first entry; each successive call returns
- * the next entry, or nil if the end of the file has been reached.
+/* Returns an entry from the /etc/passwd file.
  *
- * To close the file when processing is complete, call endpwent.
+ * The first time it is called it opens the file and returns the first entry;
+ * each successive call returns the next entry, or +nil+ if the end of the file
+ * has been reached.
  *
- * Each entry is returned as a Struct::Passwd:
+ * To close the file when processing is complete, call ::endpwent.
  *
- * - Passwd#name contains the short login name of the user as a String.
+ * Each entry is returned as a Passwd struct.
  *
- * - Passwd#passwd contains the encrypted password of the user as a String.
- *   an 'x' is returned if shadow passwords are in use. An '*' is returned
- *   if the user cannot log in using a password.
- *
- * - Passwd#uid contains the integer user ID (uid) of the user.
- *
- * - Passwd#gid contains the integer group ID (gid) of the user's primary group.
- *
- * - Passwd#gecos contains a longer String description of the user, such as
- *   a full name. Some Unix systems provide structured information in the
- *   gecos field, but this is system-dependent.
- *
- * - Passwd#dir contains the path to the home directory of the user as a String.
- *
- * - Passwd#shell contains the path to the login shell of the user as a String.
  */
 static VALUE
 etc_getpwent(VALUE obj)
@@ -348,14 +367,20 @@ setup_group(struct group *grp)
 }
 #endif
 
-/* Returns information about the group with specified integer group id (gid),
+/* call-seq:
+ *	getgrgid(group_id)  ->	Group
+ *
+ * Returns information about the group with specified integer +group_id+,
  * as found in /etc/group.
  *
- * The information is returned as a Struct::Group; see getgrent above for
- * details.
+ * The information is returned as a Group struct.
  *
- * e.g.  Etc.getgrgid(100) -> #<struct Struct::Group name="users", passwd="x",
- * gid=100, mem=["meta", "root"]>
+ * See the unix manpage for <code>getgrgid(3)</code> for more detail.
+ *
+ * === Example:
+ *
+ *	Etc.getgrgid(100)
+ *	#=> #<struct Struct::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
  *
  */
 static VALUE
@@ -381,14 +406,20 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
 #endif
 }
 
-/* Returns information about the group with specified String name, as found
- * in /etc/group.
+/* call-seq:
+ *	getgrnam(name)	->  Group
  *
- * The information is returned as a Struct::Group; see getgrent above for
- * details.
+ * Returns information about the group with specified +name+, as found in
+ * /etc/group.
  *
- * e.g.  Etc.getgrnam('users') -> #<struct Struct::Group name="users",
- * passwd="x", gid=100, mem=["meta", "root"]>
+ * The information is returned as a Group struct.
+ *
+ * See the unix manpage for <code>getgrnam(3)</code> for more detail.
+ *
+ * === Example:
+ *
+ *	Etc.getgrnam('users')
+ *	#=> #<struct Struct::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
  *
  */
 static VALUE
@@ -417,6 +448,7 @@ group_ensure(void)
     return Qnil;
 }
 
+
 static VALUE
 group_iterate(void)
 {
@@ -443,8 +475,9 @@ each_group(void)
 /* Provides a convenient Ruby iterator which executes a block for each entry
  * in the /etc/group file.
  *
- * The code block is passed an Struct::Group struct; see getgrent above for
- * details.
+ * The code block is passed an Group struct.
+ *
+ * See ::getgrent above for details.
  *
  * Example:
  *
@@ -473,11 +506,15 @@ etc_group(VALUE obj)
 }
 
 #ifdef HAVE_GETGRENT
-/* Iterates for each entry in the /etc/group file if a block is given.
- * If no block is given, returns the enumerator.
+/* call-seq:
+ *	Etc::Group.each { |group| block }   ->	obj
+ *	Etc::Group.each			    ->	Enumerator
  *
- * The code block is passed an Struct::Group struct; see getpwent above for
- * details.
+ * Iterates for each entry in the /etc/group file if a block is given.
+ *
+ * If no block is given, returns the Enumerator.
+ *
+ * The code block is passed a Group struct.
  *
  * Example:
  *
@@ -501,7 +538,7 @@ etc_each_group(VALUE obj)
 #endif
 
 /* Resets the process of reading the /etc/group file, so that the next call
- * to getgrent will return the first entry again.
+ * to ::getgrent will return the first entry again.
  */
 static VALUE
 etc_setgrent(VALUE obj)
@@ -513,7 +550,7 @@ etc_setgrent(VALUE obj)
 }
 
 /* Ends the process of scanning through the /etc/group file begun by
- * getgrent, and closes the file.
+ * ::getgrent, and closes the file.
  */
 static VALUE
 etc_endgrent(VALUE obj)
@@ -524,25 +561,15 @@ etc_endgrent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the /etc/group file. The first time it is called it
- * opens the file and returns the first entry; each successive call returns
- * the next entry, or nil if the end of the file has been reached.
+/* Returns an entry from the /etc/group file.
  *
- * To close the file when processing is complete, call endgrent.
+ * The first time it is called it opens the file and returns the first entry;
+ * each successive call returns the next entry, or +nil+ if the end of the file
+ * has been reached.
  *
- * Each entry is returned as a Struct::Group:
+ * To close the file when processing is complete, call ::endgrent.
  *
- * - Group#name contains the name of the group as a String.
- *
- * - Group#passwd contains the encrypted password as a String. An 'x' is
- *   returned if password access to the group is not available; an empty
- *   string is returned if no password is needed to obtain membership of
- *   the group.
- *
- * - Group#gid contains the group's numeric ID as an integer.
- *
- * - Group#mem is an Array of Strings containing the short login names of the
- *   members of the group.
+ * Each entry is returned as a Group struct
  */
 static VALUE
 etc_getgrent(VALUE obj)
@@ -566,9 +593,11 @@ VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 #endif
 
 /*
- * Returns system configuration directory. This is typically "/etc", but
- * is modified by the prefix used when Ruby was compiled. For example,
- * if Ruby is built and installed in /usr/local, returns "/usr/local/etc".
+ * Returns system configuration directory.
+ *
+ * This is typically "/etc", but is modified by the prefix used when Ruby was
+ * compiled. For example, if Ruby is built and installed in /usr/local, returns
+ * "/usr/local/etc".
  */
 static VALUE
 etc_sysconfdir(VALUE obj)
@@ -608,7 +637,9 @@ etc_systmpdir(void)
  * temporary directory (/tmp) and configuration directory (/etc).
  *
  * The Etc module provides a more reliable way to access information about
- * the logged in user than environment variables such as $USER. For example:
+ * the logged in user than environment variables such as +$USER+.
+ *
+ * == Example:
  *
  *     require 'etc'
  *
@@ -619,6 +650,9 @@ etc_systmpdir(void)
  *
  * Note that the methods provided by this module are not always secure.
  * It should be used for informational purposes, and not for security.
+ *
+ * All operations defined in this module are class methods, so that you can
+ * include the Etc module into your class.
  */
 void
 Init_etc(void)
@@ -669,6 +703,45 @@ Init_etc(void)
 				"expire",
 #endif
 				NULL);
+    /* Define-const: Passwd
+     *
+     * Passwd is a Struct that contains the following members:
+     *
+     * name::
+     *	    contains the short login name of the user as a String.
+     * passwd::
+     *	    contains the encrypted password of the user as a String.
+     *	    an 'x' is returned if shadow passwords are in use. An '*' is returned
+     *      if the user cannot log in using a password.
+     * uid::
+     *	    contains the integer user ID (uid) of the user.
+     * gid::
+     *	    contains the integer group ID (gid) of the user's primary group.
+     * dir::
+     *	    contains the path to the home directory of the user as a String.
+     * shell::
+     *	    contains the path to the login shell of the user as a String.
+     *
+     * === The following members below are optional, and must be compiled with special flags:
+     *
+     * gecos::
+     *     contains a longer String description of the user, such as
+     *	   a full name. Some Unix systems provide structured information in the
+     *     gecos field, but this is system-dependent.
+     *     must be compiled with +HAVE_ST_PW_GECOS+
+     * change::
+     *     password change time(integer) must be compiled with +HAVE_ST_PW_CHANGE+
+     * quota::
+     *     quota value(integer) must be compiled with +HAVE_ST_PW_QUOTA+
+     * age::
+     *     password age(integer) must be compiled with +HAVE_ST_PW_AGE+
+     * class::
+     *     user access class(string) must be compiled with +HAVE_ST_PW_CLASS+
+     * comment::
+     *     comment(string) must be compiled with +HAVE_ST_PW_COMMENT+
+     * expire::
+     *	    account expiration time(integer) must be compiled with +HAVE_ST_PW_EXPIRE+
+     */
     rb_define_const(mEtc, "Passwd", sPasswd);
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
@@ -680,6 +753,27 @@ Init_etc(void)
 #endif
 			      "gid", "mem", NULL);
 
+    /* Define-const: Group
+     *
+     * Group is a Struct that is only available when compiled with +HAVE_GETGRENT+.
+     *
+     * The struct contains the following members:
+     *
+     * name::
+     *	    contains the name of the group as a String.
+     * passwd::
+     *	    contains the encrypted password as a String. An 'x' is
+     *	    returned if password access to the group is not available; an empty
+     *	    string is returned if no password is needed to obtain membership of
+     *	    the group.
+     *
+     *	    Must be compiled with +HAVE_ST_GR_PASSWD+.
+     * gid::
+     *	    contains the group's numeric ID as an integer.
+     * mem::
+     *	    is an Array of Strings containing the short login names of the
+     *	    members of the group.
+     */
     rb_define_const(mEtc, "Group", sGroup);
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
