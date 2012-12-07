@@ -332,13 +332,6 @@ with all sufficient information, see the ChangeLog file.
     are introduced for easy detection of available constants on a
     running system.
 
-* timeout
-  * Timeout.timeout supports immediate optional keyword parameter.
-  * incompatible changes:
-    * Timeout.timeout now use async_interrupt_timing(:on_blocking) by default.
-      And then, timeout is only happen on blocking point (e.g. sleep, read,
-       write, Mutex#lock and so on).
-
 * tmpdir
   * incompatible changes:
     * Dir.mktmpdir uses FileUtils.remove_entry instead of

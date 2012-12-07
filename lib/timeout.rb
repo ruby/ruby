@@ -47,28 +47,26 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil, immediate: false)   #:yield: +sec+
+  def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     exception = klass || Class.new(ExitException)
     begin
-      Thread.async_interrupt_timing(exception => immediate ? :immediate : :on_blocking) do
-        begin
-          x = Thread.current
-          y = Thread.start {
-            begin
-              sleep sec
-            rescue => e
-              x.raise e
-            else
-              x.raise exception, "execution expired"
-            end
-          }
-          return yield(sec)
-        ensure
-          if y
-            y.kill
-            y.join # make sure y is dead.
+      begin
+        x = Thread.current
+        y = Thread.start {
+          begin
+            sleep sec
+          rescue => e
+            x.raise e
+          else
+            x.raise exception, "execution expired"
           end
+        }
+        return yield(sec)
+      ensure
+        if y
+          y.kill
+          y.join # make sure y is dead.
         end
       end
     rescue exception => e
@@ -80,7 +78,7 @@ module Timeout
         level += 1
       end
       raise if klass            # if exception class is specified, it
-      # would be expected outside.
+                                # would be expected outside.
       raise Error, e.message, e.backtrace
     end
   end
