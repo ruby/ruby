@@ -1,7 +1,7 @@
 require 'test/unit'
 require_relative 'envutil'
 
-require "refinement"
+EnvUtil.suppress_warning {require "refinement"}
 
 class TestRefinement < Test::Unit::TestCase
   class Foo
