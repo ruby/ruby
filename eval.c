@@ -1039,16 +1039,6 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
-static
-void check_class_or_module(VALUE obj)
-{
-    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
-	VALUE str = rb_inspect(obj);
-	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 StringValuePtr(str));
-    }
-}
-
 static VALUE
 hidden_identity_hash_new()
 {
@@ -1064,7 +1054,7 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
-    check_class_or_module(klass);
+    Check_Type(klass, T_CLASS);
     Check_Type(module, T_MODULE);
     if (NIL_P(cref->nd_refinements)) {
 	cref->nd_refinements = hidden_identity_hash_new();
@@ -1098,17 +1088,6 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     rb_hash_aset(cref->nd_refinements, klass, iclass);
 }
 
-void rb_using_module(NODE *cref, VALUE module);
-
-static int
-using_module_i(VALUE module, VALUE val, VALUE arg)
-{
-    NODE *cref = (NODE *) arg;
-
-    rb_using_module(cref, module);
-    return ST_CONTINUE;
-}
-
 static int
 using_refinement(VALUE klass, VALUE module, VALUE arg)
 {
@@ -1123,68 +1102,12 @@ rb_using_module(NODE *cref, VALUE module)
 {
     ID id_refinements;
     VALUE refinements;
-    ID id_using_modules;
-    VALUE using_modules;
 
-    check_class_or_module(module);
-    CONST_ID(id_using_modules, "__using_modules__");
-    using_modules = rb_attr_get(module, id_using_modules);
-    if (!NIL_P(using_modules)) {
-	rb_hash_foreach(using_modules, using_module_i, (VALUE) cref);
-    }
+    Check_Type(module, T_MODULE);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) return;
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
-}
-
-
-static int
-check_cyclic_using(VALUE mod, VALUE _, VALUE search)
-{
-    VALUE using_modules;
-    ID id_using_modules;
-    CONST_ID(id_using_modules, "__using_modules__");
-
-    if (mod == search) {
-	rb_raise(rb_eArgError, "cyclic using detected");
-    }
-
-    using_modules = rb_attr_get(mod, id_using_modules);
-    if (!NIL_P(using_modules)) {
-	rb_hash_foreach(using_modules, check_cyclic_using, search);
-    }
-
-    return ST_CONTINUE;
-}
-
-/*
- *  call-seq:
- *     using(module)    -> self
- *
- *  Import class refinements from <i>module</i> into the receiver.
- */
-
-static VALUE
-rb_mod_using(VALUE self, VALUE module)
-{
-    NODE *cref = rb_vm_cref();
-    ID id_using_modules;
-    VALUE using_modules;
-
-    Check_Type(module, T_MODULE);
-    check_cyclic_using(module, 0, self);
-    CONST_ID(id_using_modules, "__using_modules__");
-    using_modules = rb_attr_get(self, id_using_modules);
-    if (NIL_P(using_modules)) {
-	using_modules = hidden_identity_hash_new();
-	rb_ivar_set(self, id_using_modules, using_modules);
-    }
-    rb_hash_aset(using_modules, module, Qtrue);
-    rb_using_module(cref, module);
-    rb_clear_cache();
-    rb_funcall(module, rb_intern("used"), 1, self);
-    return self;
 }
 
 VALUE rb_refinement_module_get_refined_class(VALUE module)
@@ -1245,7 +1168,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     if (!rb_block_given_p()) {
         rb_raise(rb_eArgError, "no block given");
     }
-    check_class_or_module(klass);
+    Check_Type(klass, T_CLASS);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1645,10 +1568,11 @@ Init_eval(void)
 void
 ruby_Init_refinement(void)
 {
-    rb_define_private_method(rb_cModule, "using", rb_mod_using, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_undef_method(rb_cClass, "refine");
     rb_define_method(rb_cModule, "refinements", rb_mod_refinements, 0);
-    rb_define_singleton_method(rb_vm_top_self(), "using", top_using, 1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "using", top_using, 1);
 }
 
 #if defined __GNUC__ && __GNUC__ >= 4

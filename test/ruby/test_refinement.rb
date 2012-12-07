@@ -175,7 +175,8 @@ class TestRefinement < Test::Unit::TestCase
   def test_module_eval
     foo = Foo.new
     assert_equal("Foo#x", foo.x)
-    assert_equal("FooExt#x", FooExt.module_eval { foo.x })
+    assert_equal("Foo#x", FooExt.module_eval { foo.x })
+    assert_equal("Foo#x", FooExt.module_eval("foo.x"))
     assert_equal("Foo#x", foo.x)
   end
 
@@ -242,14 +243,15 @@ class TestRefinement < Test::Unit::TestCase
     assert_not_equal(RefineSameClass::REFINEMENT1, RefineSameClass::REFINEMENT3)
   end
 
+  module FixnumFooExt
+    refine Fixnum do
+      def foo; "foo"; end
+    end
+  end
+
   def test_respond_to?
-    m = Module.new {
-      refine Fixnum do
-        def foo; "foo"; end
-      end
-    }
     assert_equal(false, 1.respond_to?(:foo))
-    assert_equal(true, m.module_eval { 1.respond_to?(:foo) })
+    assert_equal(true, eval_using(FixnumFooExt, "1.respond_to?(:foo)"))
     assert_equal(false, 1.respond_to?(:foo))
   end
 
@@ -274,183 +276,47 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(1, eval_using(ArrayEachExt, "[1, 2, 3].min"))
   end
 
-  def test_module_inclusion
-    m1 = Module.new {
-      def foo
-        "m1#foo"
-      end
-
-      def bar
-        "m1#bar"
-      end
-    }
-    m2 = Module.new {
-      def bar
-        "m2#bar"
-      end
-
-      def baz
-        "m2#baz"
-      end
-    }
-    m3 = Module.new {
-      def baz
-        "m3#baz"
-      end
-    }
-    include_proc = Proc.new {
-      include m3, m2
-    }
-    m = Module.new {
-      refine String do
-        include m1
-        module_eval(&include_proc)
-
-        def call_foo
-          foo
-        end
-
-        def call_bar
-          bar
-        end
-
-        def call_baz
-          baz
-        end
-      end
-
-      def self.call_foo(s)
-        s.foo
-      end
-
-      def self.call_bar(s)
-        s.bar
-      end
-
-      def self.call_baz(s)
-        s.baz
-      end
-    }
-    assert_equal("m1#foo", m.module_eval { "abc".foo })
-    assert_equal("m2#bar", m.module_eval { "abc".bar })
-    assert_equal("m3#baz", m.module_eval { "abc".baz })
-    assert_equal("m1#foo", m.module_eval { "abc".call_foo })
-    assert_equal("m2#bar", m.module_eval { "abc".call_bar })
-    assert_equal("m3#baz", m.module_eval { "abc".call_baz })
-    assert_equal("m1#foo", m.call_foo("abc"))
-    assert_equal("m2#bar", m.call_bar("abc"))
-    assert_equal("m3#baz", m.call_baz("abc"))
-  end
-
-  def test_refine_prepended_class
-    m1 = Module.new {
+  module RefinePrependedClass
+    module M1
       def foo
         super << :m1
       end
-    }
-    c = Class.new {
-      prepend m1
+    end
+
+    class C
+      prepend M1
 
       def foo
         [:c]
       end
-    }
-    m2 = Module.new {
-      refine c do
+    end
+
+    module M2
+      refine C do
         def foo
           super << :m2
         end
       end
-    }
-    obj = c.new
-    assert_equal([:c, :m1, :m2], m2.module_eval { obj.foo })
+    end
   end
 
-  def test_refine_module_without_overriding
+  def test_refine_prepended_class
+    x = eval_using(RefinePrependedClass::M2,
+                   "TestRefinement::RefinePrependedClass::C.new.foo")
+    assert_equal([:c, :m1, :m2], x)
+  end
+
+  def test_refine_module
     m1 = Module.new
-    c = Class.new {
-      include m1
-    }
-    m2 = Module.new {
-      refine m1 do
+    assert_raise(TypeError) do
+      Module.new {
+        refine m1 do
         def foo
           :m2
         end
-      end
-    }
-    obj = c.new
-    assert_equal(:m2, m2.module_eval { obj.foo })
-  end
-
-  def test_refine_module_with_overriding
-    m1 = Module.new {
-      def foo
-        super << :m1
-      end
-    }
-    c0 = Class.new {
-      def foo
-        [:c0]
-      end
-    }
-    c = Class.new(c0) {
-      include m1
-    }
-    m2 = Module.new {
-      refine m1 do
-        def foo
-          super << :m2
         end
-      end
-    }
-    obj = c.new
-    assert_equal([:c0, :m1, :m2], m2.module_eval { obj.foo })
-  end
-
-  def test_refine_module_with_double_overriding
-    m1 = Module.new {
-      def foo
-        [:m1]
-      end
-    }
-    c = Class.new {
-      include m1
-    }
-    m2 = Module.new {
-      refine m1 do
-        def foo
-          super << :m2
-        end
-      end
-    }
-    m3 = Module.new {
-      using m2
-      refine m1 do
-        def foo
-          super << :m3
-        end
-      end
-    }
-    obj = c.new
-    assert_equal([:m1, :m2, :m3], m3.module_eval { obj.foo })
-  end
-
-  def test_refine_module_and_call_superclass_method
-    m1 = Module.new
-    c1 = Class.new {
-      def foo
-        "c1#foo"
-      end
-    }
-    c2 = Class.new(c1) {
-      include m1
-    }
-    m2 = Module.new {
-      refine m1 do
-      end
-    }
-    obj = c2.new
-    assert_equal("c1#foo", m2.module_eval { obj.foo })
+      }
+    end
   end
 
   def test_refine_neither_class_nor_module
@@ -474,15 +340,16 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_refine_in_class_and_class_eval
-    c = Class.new {
-      refine Fixnum do
-        def foo
-          "c"
+  def test_refine_in_class
+    assert_raise(NoMethodError) do
+      Class.new {
+        refine Fixnum do
+          def foo
+            "c"
+          end
         end
-      end
-    }
-    assert_equal("c", c.class_eval { 123.foo })
+      }
+    end
   end
 
   def test_main_using
@@ -510,19 +377,33 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_main_using_is_private
+    assert_raise(NoMethodError) do
+      eval("self.using Module.new", TOPLEVEL_BINDING)
+    end
+  end
+
   def test_no_kernel_using
     assert_raise(NoMethodError) do
       using Module.new
     end
   end
 
+  def test_no_module_using
+    assert_raise(NoMethodError) do
+      Module.new {
+        using Module.new
+      }
+    end
+  end
+
+  class UsingClass
+  end
+
   def test_module_using_class
     c = Class.new
-    m = Module.new
     assert_raise(TypeError) do
-      m.module_eval do
-        using c
-      end
+      eval("using TestRefinement::UsingClass", TOPLEVEL_BINDING)
     end
   end
 
@@ -572,25 +453,6 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal({c => c_ext}, m.refinements)
   end
 
-  def test_refinements_no_recursion
-    c1 = Class.new
-    c1_ext = nil
-    m1 = Module.new {
-      refine c1 do
-        c1_ext = self
-      end
-    }
-    c2 = Class.new
-    c2_ext = nil
-    m2 = Module.new {
-      using m1
-      refine c2 do
-        c2_ext = self
-      end
-    }
-    assert_equal({c2 => c2_ext}, m2.refinements)
-  end
-
   def test_refine_without_block
     c1 = Class.new
     e = assert_raise(ArgumentError) {
@@ -599,76 +461,6 @@ class TestRefinement < Test::Unit::TestCase
       end
     }
     assert_equal("no block given", e.message)
-  end
-
-  module IndirectUsing
-    class C
-    end
-
-    module M1
-      refine C do
-        def m1
-          :m1
-        end
-      end
-    end
-
-    module M2
-      refine C do
-        def m2
-          :m2
-        end
-      end
-    end
-
-    module M3
-      using M1
-      using M2
-    end
-
-    module M
-      using M3
-
-      def self.call_m1
-        C.new.m1
-      end
-
-      def self.call_m2
-        C.new.m2
-      end
-    end
-  end
-
-  def test_indirect_using
-    assert_equal(:m1, IndirectUsing::M.call_m1)
-    assert_equal(:m2, IndirectUsing::M.call_m2)
-  end
-
-  def test_indirect_using_module_eval
-    c = Class.new
-    m1 = Module.new {
-      refine c do
-        def m1
-          :m1
-        end
-      end
-    }
-    m2 = Module.new {
-      refine c do
-        def m2
-          :m2
-        end
-      end
-    }
-    m3 = Module.new {
-      using m1
-      using m2
-    }
-    m = Module.new {
-      using m3
-    }
-    assert_equal(:m1, m.module_eval { c.new.m1 })
-    assert_equal(:m2, m.module_eval { c.new.m2 })
   end
 
   module SymbolToProc
@@ -722,67 +514,7 @@ class TestRefinement < Test::Unit::TestCase
                  m.refinements[c].inspect)
   end
 
-  module InlineMethodCache
-    class C
-      def foo
-        "original"
-      end
-    end
-
-    module M
-      refine C do
-        def foo
-          "refined"
-        end
-      end
-    end
-  end
-
-  def test_inline_method_cache
-    c = InlineMethodCache::C.new
-    f = Proc.new { c.foo }
-    assert_equal("original", f.call)
-    assert_equal("refined", InlineMethodCache::M.module_eval(&f))
-    assert_equal("original", f.call)
-  end
-
-  module UsingMethodCache
-    class C
-      def foo
-        "original"
-      end
-    end
-
-    module M1
-      refine C do
-        def foo
-          "M1"
-        end
-      end
-    end
-
-    module M2
-      refine C do
-        def foo
-          "M2"
-        end
-      end
-    end
-
-    module M
-      c = C.new
-      ORIGINAL_FOO = c.foo
-      using M1
-      c.foo
-      using M2
-      M2_FOO = c.foo
-    end
-  end
-
   def test_using_method_cache
-    assert_equal("original", UsingMethodCache::M::ORIGINAL_FOO)
-    assert_equal("M2", UsingMethodCache::M::M2_FOO)
-
     assert_in_out_err([], <<-INPUT, %w(:M1 :M2), /Refinements are experimental/)
       require "refinement"
 
@@ -816,28 +548,7 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
-  def test_circular_using_is_not_allowed
-    a = Module.new
-    b = Module.new
-
-    assert_raise ArgumentError do
-      a.module_eval do
-        using a
-      end
-    end
-
-    b.module_eval do
-      using a
-    end
-
-    assert_raise ArgumentError do
-      a.module_eval do
-        using b
-      end
-    end
-  end
-
-  module RedifineRefinedMethod
+  module RedefineRefinedMethod
     class C
       def foo
         "original"
@@ -860,8 +571,17 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_redefine_refined_method
-    c = RedifineRefinedMethod::C.new
-    assert_equal("refined", RedifineRefinedMethod::M.module_eval { c.foo })
+    x = eval_using(RedefineRefinedMethod::M,
+                   "TestRefinement::RedefineRefinedMethod::C.new.foo")
+    assert_equal("refined", x)
+  end
+
+  module StringExt
+    refine String do
+      def foo
+        "foo"
+      end
+    end
   end
 
   private

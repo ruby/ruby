@@ -920,41 +920,6 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
     return Qundef;
 }
 
-void rb_using_module(NODE *cref, VALUE module);
-
-static int
-vm_using_module_i(VALUE module, VALUE value, VALUE arg)
-{
-    NODE *cref = (NODE *) arg;
-
-    rb_using_module(cref, module);
-    return ST_CONTINUE;
-}
-
-static void
-rb_vm_using_modules(NODE *cref, VALUE klass)
-{
-    ID id_using_modules;
-    VALUE using_modules;
-
-    if (NIL_P(klass)) return;
-    CONST_ID(id_using_modules, "__using_modules__");
-    using_modules = rb_attr_get(klass, id_using_modules);
-    if (NIL_P(using_modules) && BUILTIN_TYPE(klass) == T_CLASS) {
-	VALUE super = rb_class_real(RCLASS_SUPER(klass));
-	using_modules = rb_attr_get(super, id_using_modules);
-	if (!NIL_P(using_modules)) {
-	    using_modules = rb_hash_dup(using_modules);
-	    rb_ivar_set(klass, id_using_modules, using_modules);
-	}
-    }
-    if (!NIL_P(using_modules)) {
-	rb_hash_foreach(using_modules, vm_using_module_i,
-			(VALUE) cref);
-    }
-    rb_using_module(cref, klass);
-}
-
 static VALUE
 check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 {
@@ -1694,42 +1659,13 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     return vm_call_method(th, reg_cfp, &ci_entry);
 }
 
-static VALUE
-copy_refinement_iclass(VALUE iclass, VALUE superclass)
-{
-    VALUE result, c;
-
-    Check_Type(iclass, T_ICLASS);
-    c = result = rb_include_class_new(RBASIC(iclass)->klass, superclass);
-    RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
-    iclass = RCLASS_SUPER(iclass);
-    while (iclass && BUILTIN_TYPE(iclass) == T_ICLASS) {
-	c = RCLASS_SUPER(c) = rb_include_class_new(RBASIC(iclass)->klass,
-						   RCLASS_SUPER(c));
-	RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
-	iclass = RCLASS_SUPER(iclass);
-    }
-    return result;
-}
-
-static VALUE
+static inline VALUE
 find_refinement(VALUE refinements, VALUE klass)
 {
-    VALUE refinement;
-
     if (NIL_P(refinements)) {
 	return Qnil;
     }
-    refinement = rb_hash_lookup(refinements, klass);
-    if (NIL_P(refinement) &&
-	BUILTIN_TYPE(klass) == T_ICLASS) {
-	refinement = rb_hash_lookup(refinements,
-				    RBASIC(klass)->klass);
-	if (!NIL_P(refinement)) {
-	    refinement = copy_refinement_iclass(refinement, klass);
-	}
-    }
-    return refinement;
+    return rb_hash_lookup(refinements, klass);
 }
 
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);

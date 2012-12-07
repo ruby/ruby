@@ -1,3 +1,20 @@
+Sat Dec  8 00:10:34 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_eval.c (yield_under, eval_under): do not activate refinements
+	  of the receiver in module_eval and instance_eval.
+
+	* eval.c (ruby_Init_refinement): undef Class#refine.
+
+	* eval.c (ruby_Init_refinement): remove Module#using.
+
+	* eval.c (ruby_Init_refinement): main.using should be private.
+
+	* eval.c (rb_mod_refine): the argument of Module#refine should not
+	  be a module.
+
+	* insns.def (defineclass): do not activate refinements in a class or
+	  module.
+
 Fri Dec  7 23:42:11 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/refinement/refinement.c: include ruby/ruby.h instead of the
