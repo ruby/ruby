@@ -7,29 +7,49 @@
 #       Revised by Daniel J. Berger with suggestions from Florian Gross.
 #
 #       Documentation by James Edward Gray II and Gavin Sinclair
+
+
+
+# The Forwardable module provides delegation of specified
+# methods to a designated object, using the methods #def_delegator
+# and #def_delegators.
 #
-# == Introduction
+# For example, say you have a class RecordCollection which
+# contains an array <tt>@records</tt>.  You could provide the lookup method
+# #record_number(), which simply calls #[] on the <tt>@records</tt>
+# array, like this:
 #
-# This library allows you delegate method calls to an object, on a method by
-# method basis.
+#   class RecordCollection
+#     extend Forwardable
+#     def_delegator :@records, :[], :record_number
+#   end
 #
-# == Notes
+# Further, if you wish to provide the methods #size, #<<, and #map,
+# all of which delegate to @records, this is how you can do it:
 #
-# Be advised, RDoc will not detect delegated methods.
+#   class RecordCollection
+#     # extend Forwardable, but we did that above
+#     def_delegators :@records, :size, :<<, :map
+#   end
+#   f = Foo.new
+#   f.printf ...
+#   f.gets
+#   f.content_at(1)
 #
-# <b>forwardable.rb provides single-method delegation via the
-# def_delegator() and def_delegators() methods.  For full-class
-# delegation via DelegateClass(), see delegate.rb.</b>
+# If the object isn't a Module and Class, You can too extend Forwardable
+# module.
 #
-# == Examples
+#   printer = String.new
+#   printer.extend Forwardable              # prepare object for delegation
+#   printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
+#   printer.puts "Howdy!"
 #
-# === Forwardable
+# == Another example
 #
-# Forwardable makes building a new class based on existing work, with a proper
-# interface, almost trivial.  We want to rely on what has come before obviously,
-# but with delegation we can take just the methods we need and even rename them
-# as appropriate.  In many cases this is preferable to inheritance, which gives
-# us the entire old interface, even if much of it isn't needed.
+# We want to rely on what has come before obviously, but with delegation we can
+# take just the methods we need and even rename them as appropriate.  In many
+# cases this is preferable to inheritance, which gives us the entire old
+# interface, even if much of it isn't needed.
 #
 #   class Queue
 #     extend Forwardable
@@ -60,7 +80,7 @@
 #   q.clear
 #   puts q.first
 #
-# <i>Prints:</i>
+# This should output:
 #
 #   2
 #   3
@@ -70,72 +90,22 @@
 #   Ruby
 #   nil
 #
-# SingleForwardable can be used to setup delegation at the object level as well.
+# == Notes
 #
-#    printer = String.new
-#    printer.extend SingleForwardable        # prepare object for delegation
-#    printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
-#    printer.puts "Howdy!"
+# Be advised, RDoc will not detect delegated methods.
 #
-# Also, SingleForwardable can be use to Class or Module.
+# +forwardable.rb+ provides single-method delegation via the def_delegator and
+# def_delegators methods. For full-class delegation via DelegateClass, see
+# +delegate.rb+.
 #
-#    module Facade
-#      extend SingleForwardable
-#      def_delegator :Implementation, :service
-#
-#      class Implementation
-#         def service...
-#      end
-#    end
-#
-# If you want to use both Forwardable and SingleForwardable, you can
-# use methods def_instance_delegator and def_single_delegator, etc.
-#
-# If the object isn't a Module and Class, You can too extend
-# Forwardable module.
-#    printer = String.new
-#    printer.extend Forwardable              # prepare object for delegation
-#    printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
-#    printer.puts "Howdy!"
-#
-# <i>Prints:</i>
-#
-#    Howdy!
-
-#
-# The Forwardable module provides delegation of specified
-# methods to a designated object, using the methods #def_delegator
-# and #def_delegators.
-#
-# For example, say you have a class RecordCollection which
-# contains an array <tt>@records</tt>.  You could provide the lookup method
-# #record_number(), which simply calls #[] on the <tt>@records</tt>
-# array, like this:
-#
-#   class RecordCollection
-#     extend Forwardable
-#     def_delegator :@records, :[], :record_number
-#   end
-#
-# Further, if you wish to provide the methods #size, #<<, and #map,
-# all of which delegate to @records, this is how you can do it:
-#
-#   class RecordCollection
-#     # extend Forwardable, but we did that above
-#     def_delegators :@records, :size, :<<, :map
-#   end
-#   f = Foo.new
-#   f.printf ...
-#   f.gets
-#   f.content_at(1)
-#
-# Also see the example at forwardable.rb.
-
 module Forwardable
+  # Version of +forwardable.rb+
   FORWARDABLE_VERSION = "1.1.0"
 
   @debug = nil
   class << self
+    # If true, <tt>__FILE__</tt> will remain in the backtrace in the event an
+    # Exception is raised.
     attr_accessor :debug
   end
 
@@ -219,9 +189,26 @@ module Forwardable
   alias def_delegator def_instance_delegator
 end
 
+# SingleForwardable can be used to setup delegation at the object level as well.
 #
-# Usage of The SingleForwardable is like Fowadable module.
+#    printer = String.new
+#    printer.extend SingleForwardable        # prepare object for delegation
+#    printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
+#    printer.puts "Howdy!"
 #
+# Also, SingleForwardable can be use to Class or Module.
+#
+#    module Facade
+#      extend SingleForwardable
+#      def_delegator :Implementation, :service
+#
+#      class Implementation
+#         def service...
+#      end
+#    end
+#
+# If you want to use both Forwardable and SingleForwardable, you can
+# use methods def_instance_delegator and def_single_delegator, etc.
 module SingleForwardable
   # Takes a hash as its argument.  The key is a symbol or an array of
   # symbols.  These symbols correspond to method names.  The value is
