@@ -6,7 +6,7 @@ class TestTimeTZ < Test::Unit::TestCase
   case RUBY_PLATFORM
   when /linux/
     force_tz_test = true
-  when /darwin/
+  when /darwin|freebsd/
     has_right_tz = false
     force_tz_test = true
   end
