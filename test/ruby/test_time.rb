@@ -297,7 +297,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal('UTC', t.zone)
     assert_equal('UTC', Marshal.load(Marshal.dump(t)).zone)
 
-    ENV['TZ'] = 'Asia/Tokyo'
+    ENV['TZ'] = 'JST-9'
     t = Time.local(2013, 2, 24)
     assert_equal('JST', Time.local(2013, 2, 24).zone)
     assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
