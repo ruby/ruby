@@ -218,7 +218,7 @@ Init_fiddle_function(void)
 
     /*
      * Document-method: new
-     * call-seq: new(ptr, *args, ret_type, abi = DEFAULT)
+     * call-seq: new(ptr, args, ret_type, abi = DEFAULT)
      *
      * Constructs a Function object.
      * * +ptr+ is a referenced function, of a Fiddle::Handle
