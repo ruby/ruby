@@ -1,3 +1,7 @@
+Tue Dec 08 02:39:23 2012  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb: A fix for row comparison by Stephen Wattam.  [Bug #7528]
+
 Sat Dec  8 01:27:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): no need to
@@ -1308,7 +1312,7 @@ Thu Nov 29 15:10:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/minitest/test_minitest_unit.rb: restore orig_verbose only
 	  if it is set. This broke rdoc's tests.
-	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20121129T050102Z.diff.html.gz
+ http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20121129T050102Z.diff.html.gz
 
 Thu Nov 29 14:56:30 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -5370,7 +5374,7 @@ Fri Sep 28 17:26:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  fails on Windows with msys bash. It makes comparing paths
 	  case-insensitive.
 	  pick from upstream to fix a failure of test-all [ruby-core:47711]
-	  https://github.com/rubygems/rubygems/commit/c474edb2f3704206f04da1c8c6cf9fb079d84abe
+ https://github.com/rubygems/rubygems/commit/c474edb2f3704206f04da1c8c6cf9fb079d84abe
 
 Fri Sep 28 15:44:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
@@ -7248,7 +7252,7 @@ Sun Jul 22 23:58:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Sat Jul 21 06:21:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb: fixes for r36476. [Feature #6546]
-	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120720T030101Z.diff.html.gz
+ http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120720T030101Z.diff.html.gz
 
 	* lib/net/http.rb (Net::HTTP.newobj): return back for compatibility.
 
@@ -8900,7 +8904,7 @@ Wed Jun 13 10:20:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec_fillarg): use shell if the first word is reserved
 	  or special built-in name.
-	  http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html
+ http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html
 
 	* process.c (rb_exec_fillarg): treat '=' only in the first word.  if
 	  the first word does not contain '=', it is the command name and
@@ -9053,7 +9057,7 @@ Mon Jun 11 06:17:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (native_cond_initialize): fix typo in r36022.
 	  this cause a failure on FreeBSD 8.2 amd64.
-	  http://fbsd.rubyci.org/~chkbuild/ruby-trunk/log/20120610T130201Z.diff.html.gz
+ http://fbsd.rubyci.org/~chkbuild/ruby-trunk/log/20120610T130201Z.diff.html.gz
 
 Mon Jun 11 05:21:57 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -9132,7 +9136,7 @@ Sun Jun 10 15:49:47 2012  Tanaka Akira  <akr@fsij.org>
 Sun Jun 10 14:19:33 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: NetBSD 6 adds libexecinfo but it only works on amd64.
-	  http://www.mail-archive.com/source-changes-full@netbsd.org/msg38729.html
+ http://www.mail-archive.com/source-changes-full@netbsd.org/msg38729.html
 
 Sun Jun 10 12:43:23 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -10825,7 +10829,7 @@ Tue May  8 07:44:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_start_ssl): remove useless rb_sys_fail
 	  before ossl_raise. this cause a test failure on Linux.
-	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz
+ http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz
 
 Tue May  8 05:35:18 2012  Eric Hodel  <drbrain@segment7.net>
 
@@ -10860,13 +10864,13 @@ Tue May  8 02:34:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/minitest/unit.rb (assert_match): refix of r35563.
 	  r35563 breaks the intention of the original change.
-	  https://github.com/seattlerb/minitest/commit/68858105b2eb11c85105ffac5f32b662c59397f3
+ https://github.com/seattlerb/minitest/commit/68858105b2eb11c85105ffac5f32b662c59397f3
 	* lib/minitest/unit.rb (refute_match): ditto.
 
 Mon May  7 21:19:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge JSON 1.7.1.
-	  https://github.com/flori/json/commit/e5b9a9465c1159fae533bca320d950b772bcb4ac
+ https://github.com/flori/json/commit/e5b9a9465c1159fae533bca320d950b772bcb4ac
 
 Mon May  7 22:54:22 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
@@ -11158,7 +11162,7 @@ Fri Apr 27 07:15:07 2012  Tanaka Akira  <akr@fsij.org>
 	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
 	  path in sockaddr_un, really.
 	  reported by nagachika.
-	  http://d.hatena.ne.jp/nagachika/20120426/ruby_trunk_changes_35474_35476
+ http://d.hatena.ne.jp/nagachika/20120426/ruby_trunk_changes_35474_35476
 
 Thu Apr 26 12:28:06 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -11323,7 +11327,7 @@ Mon Apr 23 20:11:02 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/ssl.rb: generate 1024 bits RSA key instead of 512 bits.
 	  OpenSSL 1.0.1 rejects 512 bits RSA key for TLS1.2 with SHA512.
-	  http://rt.openssl.org/Ticket/Display.html?id=2769&user=guest&pass=guest
+ http://rt.openssl.org/Ticket/Display.html?id=2769&user=guest&pass=guest
 	  reported by Bohuslav Kabrda.
 	  [ruby-core:43844] [ruby-trunk - Bug #6221]
 
@@ -11803,7 +11807,7 @@ Sun Apr  8 22:46:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/generator.c (generate_json_bignum):
 	  add RB_GC_GUARD.
-	  http://fb.rubyci.org/~chkbuild/ruby-trunk/log/20120407T210301Z.diff.html.gz
+ http://fb.rubyci.org/~chkbuild/ruby-trunk/log/20120407T210301Z.diff.html.gz
 
 Sun Apr  8 07:26:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -18546,7 +18550,7 @@ Wed Aug 31 17:28:23 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): Move RB_GC_GUARD() to proper
 	  position based on suggestion by CHIKANAGA Tomoyuki at
-	  http://d.hatena.ne.jp/nagachika/20110826/ruby_trunk_changes_33070_33078
+ http://d.hatena.ne.jp/nagachika/20110826/ruby_trunk_changes_33070_33078
 
 	* variable.c (autoload_defined_p): Fix incompatible autoload behavior
 	  that causes Rails crash. Class definition instruction defined in
@@ -18749,8 +18753,8 @@ Sat Aug 27 11:18:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* Revert r33078. It caused a Rails application NoMethodError.
 
-	  /home/nahi/git/emptyApp/ruby/1.9.1/gems/rack-mount-0.6.14/lib/rack/mount/utils.rb:157: warning: toplevel constant ScanError referenced by Regin::Parser::ScanError
-	  /home/nahi/git/emptyApp/ruby/1.9.1/gems/rack-mount-0.6.14/lib/rack/mount/vendor/regin/regin/parser.rb:17:in `parse_regexp': undefined method `scan_str' for #<Regin::Parser:0x00000002344548> (NoMethodError)
+ /home/nahi/git/emptyApp/ruby/1.9.1/gems/rack-mount-0.6.14/lib/rack/mount/utils.rb:157: warning: toplevel constant ScanError referenced by Regin::Parser::ScanError
+ /home/nahi/git/emptyApp/ruby/1.9.1/gems/rack-mount-0.6.14/lib/rack/mount/vendor/regin/regin/parser.rb:17:in `parse_regexp': undefined method `scan_str' for #<Regin::Parser:0x00000002344548> (NoMethodError)
 
 Sat Aug 27 08:44:58 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -19344,7 +19348,7 @@ Sun Aug  7 00:42:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/tk/lib/tk/wm.rb (Tk::Wm.command): Add the missing receiver
 	  before calling epath. patched by flori
-	  https://github.com/flori/ruby/commit/aa9474d32e5f2c57f8b0e2e0c528a03f06a4d433
+ https://github.com/flori/ruby/commit/aa9474d32e5f2c57f8b0e2e0c528a03f06a4d433
 
 Sat Aug  6 07:06:34 2011  Eric Hodel  <drbrain@segment7.net>
 

@@ -256,7 +256,7 @@ class TestCSV::Row < TestCSV
     assert_equal( [["A", 1], ["A", 4], ["A", nil]],
                   @row.select { |pair| pair.first == "A" } )
 
-    assert_equal(10, @row.inject(0) { |sum, (header, n)| sum + (n || 0) })
+    assert_equal(10, @row.inject(0) { |sum, (_, n)| sum + (n || 0) })
   end
 
   def test_to_a
@@ -309,5 +309,9 @@ class TestCSV::Row < TestCSV
       assert( str.include?("#{header}:#{field.inspect}"),
               "Header field pair not found." )
     end
+  end
+
+  def test_can_be_compared_with_other_classes
+    assert(CSV::Row.new([ ], [ ]) != nil, "The row was nil")
   end
 end

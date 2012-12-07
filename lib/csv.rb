@@ -475,7 +475,8 @@ class CSV
     # same order as +other+.
     #
     def ==(other)
-      @row == other.row
+      return @row == other.row if other.is_a? CSV::Row
+      @row == other
     end
 
     #
