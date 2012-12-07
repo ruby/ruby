@@ -126,7 +126,7 @@ class TestTimeTZ < Test::Unit::TestCase
   end
 
   def test_canada_newfoundland
-    with_tz(tz="Canada/Newfoundland") {
+    with_tz(tz="America/St_Johns") {
       assert_time_constructor(tz, "2007-11-03 23:00:59 -0230", :new, [2007,11,3,23,0,59,:dst])
       assert_time_constructor(tz, "2007-11-03 23:01:00 -0230", :new, [2007,11,3,23,1,0,:dst])
       assert_time_constructor(tz, "2007-11-03 23:59:59 -0230", :new, [2007,11,3,23,59,59,:dst])
@@ -316,10 +316,10 @@ Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 
 Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Fri Sep  7 15:59:59 1951 UTC = Sat Sep  8 01:59:59 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Fri Sep  7 16:00:00 1951 UTC = Sat Sep  8 01:00:00 1951 JST isdst=0 gmtoff=32400
-Canada/Newfoundland  Sun Mar 11 03:30:59 2007 UTC = Sun Mar 11 00:00:59 2007 NST isdst=0 gmtoff=-12600
-Canada/Newfoundland  Sun Mar 11 03:31:00 2007 UTC = Sun Mar 11 01:01:00 2007 NDT isdst=1 gmtoff=-9000
-Canada/Newfoundland  Sun Nov  4 02:30:59 2007 UTC = Sun Nov  4 00:00:59 2007 NDT isdst=1 gmtoff=-9000
-Canada/Newfoundland  Sun Nov  4 02:31:00 2007 UTC = Sat Nov  3 23:01:00 2007 NST isdst=0 gmtoff=-12600
+America/St_Johns  Sun Mar 11 03:30:59 2007 UTC = Sun Mar 11 00:00:59 2007 NST isdst=0 gmtoff=-12600
+America/St_Johns  Sun Mar 11 03:31:00 2007 UTC = Sun Mar 11 01:01:00 2007 NDT isdst=1 gmtoff=-9000
+America/St_Johns  Sun Nov  4 02:30:59 2007 UTC = Sun Nov  4 00:00:59 2007 NDT isdst=1 gmtoff=-9000
+America/St_Johns  Sun Nov  4 02:31:00 2007 UTC = Sat Nov  3 23:01:00 2007 NST isdst=0 gmtoff=-12600
 Europe/Brussels  Sun Apr 30 22:59:59 1916 UTC = Sun Apr 30 23:59:59 1916 CET isdst=0 gmtoff=3600
 Europe/Brussels  Sun Apr 30 23:00:00 1916 UTC = Mon May  1 01:00:00 1916 CEST isdst=1 gmtoff=7200
 Europe/Brussels  Sat Sep 30 22:59:59 1916 UTC = Sun Oct  1 00:59:59 1916 CEST isdst=1 gmtoff=7200
