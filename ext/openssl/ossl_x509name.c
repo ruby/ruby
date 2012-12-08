@@ -111,10 +111,23 @@ ossl_x509name_init_i(VALUE i, VALUE args)
 
 /*
  * call-seq:
- *    X509::Name.new => name
- *    X509::Name.new(string) => name
- *    X509::Name.new(dn) => name
- *    X509::Name.new(dn, template) => name
+ *    X509::Name.new                               => name
+ *    X509::Name.new(der)                          => name
+ *    X509::Name.new(distinguished_name)           => name
+ *    X509::Name.new(distinguished_name, template) => name
+ *
+ * Creates a new Name.
+ *
+ * A name may be created from a DER encoded string +der+, an Array
+ * representing a +distinguished_name+ or a +distinguished_name+ along with a
+ * +template+.
+ *
+ *   name = OpenSSL::X509::Name.new [['CN', 'nobody'], ['DC', 'example']]
+ *
+ *   name = OpenSSL::X509::Name.new name.to_der
+ *
+ * See add_entry for a description of the +distinguished_name+ Array's
+ * contents
  */
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
@@ -154,6 +167,16 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *    name.add_entry(oid, value [, type]) => self
+ *
+ * Adds a new entry with the given +oid+ and +value+ to this name.  The +oid+
+ * is an object identifier defined in ASN.1.  Some common OIDs are:
+ *
+ * C::  Country Name
+ * CN:: Common Name
+ * DC:: Domain Component
+ * O::  Organization Name
+ * OU:: Organizational Unit Name
+ * ST:: State or Province Name
  */
 static
 VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
@@ -192,7 +215,14 @@ ossl_x509name_to_s_old(VALUE self)
 /*
  * call-seq:
  *    name.to_s => string
- *    name.to_s(integer) => string
+ *    name.to_s(flags) => string
+ *
+ * Returns this name as a Distinguished Name string.  +flags+ may be one of:
+ *
+ * * OpenSSL::X509::Name::COMPAT
+ * * OpenSSL::X509::Name::RFC2253
+ * * OpenSSL::X509::Name::ONELINE
+ * * OpenSSL::X509::Name::MULTILINE
  */
 static VALUE
 ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
@@ -221,6 +251,9 @@ ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *    name.to_a => [[name, data, type], ...]
+ *
+ * Returns an Array representation of the distinguished name suitable for
+ * passing to ::new
  */
 static VALUE
 ossl_x509name_to_a(VALUE self)
@@ -293,6 +326,12 @@ ossl_x509name_cmp(VALUE self, VALUE other)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   name.eql? other => boolean
+ *
+ * Returns true if +name+ and +other+ refer to the same hash key.
+ */
 static VALUE
 ossl_x509name_eql(VALUE self, VALUE other)
 {
@@ -329,7 +368,7 @@ ossl_x509name_hash(VALUE self)
  * call-seq:
  *    name.hash_old => integer
  *
- * hash_old returns MD5 based hash used in OpenSSL 0.9.X.
+ * Returns an MD5 based hash used in OpenSSL 0.9.X.
  */
 static VALUE
 ossl_x509name_hash_old(VALUE self)
@@ -348,6 +387,8 @@ ossl_x509name_hash_old(VALUE self)
 /*
  * call-seq:
  *    name.to_der => string
+ *
+ * Converts the name to DER encoding
  */
 static VALUE
 ossl_x509name_to_der(VALUE self)
@@ -370,8 +411,19 @@ ossl_x509name_to_der(VALUE self)
 }
 
 /*
- * INIT
+ * Document-class: OpenSSL::X509::Name
+ *
+ * An X.509 name represents a hostname, email address or other entity
+ * associated with a public key.
+ *
+ * You can create a Name by parsing a distinguished name String or by
+ * supplying the distinguished name as an Array.
+ *
+ *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
+ *
+ *   name = OpenSSL::X509::Name.new [['CN', 'nobody'], ['DC', 'example']]
  */
+
 void
 Init_ossl_x509name()
 {
@@ -400,6 +452,11 @@ Init_ossl_x509name()
     utf8str = INT2NUM(V_ASN1_UTF8STRING);
     ptrstr = INT2NUM(V_ASN1_PRINTABLESTRING);
     ia5str = INT2NUM(V_ASN1_IA5STRING);
+
+    /* Document-const: DEFAULT_OBJECT_TYPE
+     *
+     * The default object type for name entries.
+     */
     rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
     hash = rb_hash_new();
     RHASH(hash)->ifnone = utf8str;
@@ -410,10 +467,43 @@ Init_ossl_x509name()
     rb_hash_aset(hash, rb_str_new2("DC"), ia5str);
     rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
     rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
+
+    /* Document-const: OBJECT_TYPE_TEMPLATE
+     *
+     * The default object type template for name entries.
+     */
     rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
 
+    /* Document-const: COMPAT
+     *
+     * A flag for #to_s.
+     *
+     * Breaks the name returned into multiple lines if longer than 80
+     * characters.
+     */
     rb_define_const(cX509Name, "COMPAT", ULONG2NUM(XN_FLAG_COMPAT));
+
+    /* Document-const: RFC2253
+     *
+     * A flag for #to_s.
+     *
+     * Returns an RFC2253 format name.
+     */
     rb_define_const(cX509Name, "RFC2253", ULONG2NUM(XN_FLAG_RFC2253));
+
+    /* Document-const: ONELINE
+     *
+     * A flag for #to_s.
+     *
+     * Returns a more readable format than RFC2253.
+     */
     rb_define_const(cX509Name, "ONELINE", ULONG2NUM(XN_FLAG_ONELINE));
+
+    /* Document-const: MULTILINE
+     *
+     * A flag for #to_s.
+     *
+     * Returns a multiline format.
+     */
     rb_define_const(cX509Name, "MULTILINE", ULONG2NUM(XN_FLAG_MULTILINE));
 }

@@ -1,3 +1,8 @@
+Sat Dec  8 09:24:42 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509name.c:  Completed documentation for
+	  OpenSSL::X509::Name.
+
 Sat Dec  8 07:57:12 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (iow_size): return size of internal object
