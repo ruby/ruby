@@ -1148,6 +1148,38 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
     return result;
 }
 
+static void
+add_activated_refinement(VALUE activated_refinements,
+			 VALUE klass, VALUE refinement)
+{
+    VALUE iclass, c, superclass = klass;
+
+    if (!NIL_P(c = rb_hash_lookup(activated_refinements, klass))) {
+	superclass = c;
+	while (c && TYPE(c) == T_ICLASS) {
+	    if (RBASIC(c)->klass == refinement) {
+		/* already used refinement */
+		return;
+	    }
+	    c = RCLASS_SUPER(c);
+	}
+    }
+    FL_SET(refinement, RMODULE_IS_OVERLAID);
+    c = iclass = rb_include_class_new(refinement, superclass);
+    RCLASS_REFINED_CLASS(c) = klass;
+    refinement = RCLASS_SUPER(refinement);
+    while (refinement) {
+	FL_SET(refinement, RMODULE_IS_OVERLAID);
+	c = RCLASS_SUPER(c) =
+	    rb_include_class_new(refinement, RCLASS_SUPER(c));
+	RCLASS_REFINED_CLASS(c) = klass;
+	refinement = RCLASS_SUPER(refinement);
+    }
+    rb_hash_aset(activated_refinements, klass, iclass);
+}
+
+VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
+
 /*
  *  call-seq:
  *     refine(klass) { block }   -> module
@@ -1160,10 +1192,10 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_refine(VALUE module, VALUE klass)
 {
-    NODE *cref = rb_vm_cref();
-    VALUE mod;
-    ID id_refinements, id_refined_class, id_defined_at;
-    VALUE refinements;
+    VALUE refinement;
+    ID id_refinements, id_activated_refinements,
+       id_refined_class, id_defined_at;
+    VALUE refinements, activated_refinements;
 
     if (!rb_block_given_p()) {
         rb_raise(rb_eArgError, "no block given");
@@ -1175,21 +1207,28 @@ rb_mod_refine(VALUE module, VALUE klass)
 	refinements = hidden_identity_hash_new();
 	rb_ivar_set(module, id_refinements, refinements);
     }
-    mod = rb_hash_lookup(refinements, klass);
-    if (NIL_P(mod)) {
-	mod = rb_module_new();
-	FL_SET(mod, RMODULE_IS_REFINEMENT);
-	CONST_ID(id_refined_class, "__refined_class__");
-	rb_ivar_set(mod, id_refined_class, klass);
-	CONST_ID(id_defined_at, "__defined_at__");
-	rb_ivar_set(mod, id_defined_at, module);
-	rb_define_singleton_method(mod, "include",
-				   refinement_module_include, -1);
-	rb_using_refinement(cref, klass, mod);
-	rb_hash_aset(refinements, klass, mod);
+    CONST_ID(id_activated_refinements, "__activated_refinements__");
+    activated_refinements = rb_attr_get(module, id_activated_refinements);
+    if (NIL_P(activated_refinements)) {
+	activated_refinements = hidden_identity_hash_new();
+	rb_ivar_set(module, id_activated_refinements,
+		    activated_refinements);
     }
-    rb_mod_module_eval(0, NULL, mod);
-    return mod;
+    refinement = rb_hash_lookup(refinements, klass);
+    if (NIL_P(refinement)) {
+	refinement = rb_module_new();
+	FL_SET(refinement, RMODULE_IS_REFINEMENT);
+	CONST_ID(id_refined_class, "__refined_class__");
+	rb_ivar_set(refinement, id_refined_class, klass);
+	CONST_ID(id_defined_at, "__defined_at__");
+	rb_ivar_set(refinement, id_defined_at, module);
+	rb_define_singleton_method(refinement, "include",
+				   refinement_module_include, -1);
+	rb_hash_aset(refinements, klass, refinement);
+	add_activated_refinement(activated_refinements, klass, refinement);
+    }
+    rb_yield_refine_block(refinement, activated_refinements);
+    return refinement;
 }
 
 static int

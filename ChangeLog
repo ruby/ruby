@@ -1,3 +1,13 @@
+Sat Dec  8 11:17:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine), vm_eval.c (rb_yield_refine_block): 
+	  Module#refine activates all refinements defined in that module
+	  only in a given block.
+
+	* string.c (sym_to_proc, sym_call): don't use refinements.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Sat Dec  8 09:24:42 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_x509name.c:  Completed documentation for

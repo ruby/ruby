@@ -784,30 +784,6 @@ rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
 
-VALUE
-rb_funcall_passing_block_with_refinements(VALUE recv, ID mid, int argc,
-					  const VALUE *argv,
-					  VALUE refinements)
-{
-    VALUE defined_class;
-    rb_method_entry_t *me =
-	rb_search_method_entry(recv, mid, &defined_class);
-    rb_thread_t *th;
-    int call_status;
-
-    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
-	me = rb_resolve_refined_method(refinements, me, &defined_class);
-    }
-    PASS_PASSED_BLOCK_TH(GET_THREAD());
-    th = GET_THREAD();
-    call_status = rb_method_call_status(th, me, CALL_PUBLIC, th->cfp->self);
-    if (call_status != NOEX_OK) {
-	return method_missing(recv, mid, argc, argv, call_status);
-    }
-    stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
-}
-
 static VALUE
 send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
@@ -1460,6 +1436,25 @@ yield_under(VALUE under, VALUE self, VALUE values)
     else {
 	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);
     }
+}
+
+VALUE
+rb_yield_refine_block(VALUE refinement, VALUE refinements)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_block_t block, *blockptr;
+    NODE *cref;
+
+    if ((blockptr = VM_CF_BLOCK_PTR(th->cfp)) != 0) {
+	block = *blockptr;
+	block.self = refinement;
+	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
+    }
+    cref = vm_cref_push(th, refinement, NOEX_PUBLIC, blockptr);
+    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
+    cref->nd_refinements = refinements;
+
+    return vm_yield_with_cref(th, 0, NULL, cref);
 }
 
 /* string eval under the class/module context */

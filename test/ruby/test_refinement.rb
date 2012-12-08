@@ -463,33 +463,6 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("no block given", e.message)
   end
 
-  module SymbolToProc
-    class C
-    end
-
-    module M
-      refine C do
-        def foo
-          "foo"
-        end
-      end
-
-      def self.call_foo
-        c = C.new
-        :foo.to_proc.call(c)
-      end
-
-      def self.foo_proc
-        :foo.to_proc
-      end
-    end
-  end
-
-  def test_symbol_to_proc
-    assert_equal("foo", SymbolToProc::M.call_foo)
-    assert_equal("foo", SymbolToProc::M.foo_proc.call(SymbolToProc::C.new))
-  end
-
   module Inspect
     module M
       refine Fixnum do
@@ -582,6 +555,65 @@ class TestRefinement < Test::Unit::TestCase
         "foo"
       end
     end
+  end
+
+  module RefineScoping
+    refine String do
+      def foo
+        "foo"
+      end
+
+      def RefineScoping.call_in_refine_block
+        "".foo
+      end
+    end
+
+    def self.call_outside_refine_block
+      "".foo
+    end
+  end
+
+  def test_refine_scoping
+    assert_equal("foo", RefineScoping.call_in_refine_block)
+    assert_raise(NoMethodError) do
+      RefineScoping.call_outside_refine_block
+    end
+  end
+
+  module StringRecursiveLength
+    refine String do
+      def recursive_length
+        if empty?
+          0
+        else 
+          self[1..-1].recursive_length + 1
+        end
+      end
+    end
+  end
+
+  def test_refine_recursion
+    x = eval_using(StringRecursiveLength, "'foo'.recursive_length")
+    assert_equal(3, x)
+  end
+
+  module ToJSON
+    refine Integer do
+      def to_json; to_s; end
+    end
+
+    refine Array do
+      def to_json; "[" + map { |i| i.to_json }.join(",") + "]" end
+    end
+
+    refine Hash do
+      def to_json; "{" + map { |k, v| k.to_s.dump + ":" + v.to_json }.join(",") + "}" end
+    end
+  end
+
+  def test_refine_mutual_recursion
+    x = eval_using(ToJSON, "[{1=>2}, {3=>4}].to_json")
+    assert_equal('[{"1":2},{"3":4}]', x)
   end
 
   private
