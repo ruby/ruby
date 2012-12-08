@@ -115,10 +115,10 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#y", foo.y)
   end
 
-  def test_super_chain
+  def test_super_not_chained
     foo = Foo.new
     assert_equal("Foo#y", foo.y)
-    assert_equal("FooExt2#y FooExt#y Foo#y", FooExtClient2.invoke_y_on(foo))
+    assert_equal("FooExt2#y Foo#y", FooExtClient2.invoke_y_on(foo))
     assert_equal("Foo#y", foo.y)
   end
 

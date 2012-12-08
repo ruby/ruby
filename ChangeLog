@@ -1,3 +1,10 @@
+Sat Dec  8 12:34:01 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_normal_superclass): super in a
+	  refinement always uses the refined class as its superclass.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Sat Dec  8 11:59:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): raise an ArgumentError if a given
@@ -6,6 +13,8 @@ Sat Dec  8 11:59:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
 	* vm_insnhelper.c (vm_call_method): store refined methods in inline
 	  cache to improve performance.  It's safe now because blocks cannot
 	  be yielded with different refinements in the new specification.
+
+	* test/ruby/test_refinement.rb: related test.
 
 Sat Dec  8 11:17:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
 

@@ -1866,8 +1866,14 @@ vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_
 static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
-    klass = RCLASS_ORIGIN(klass);
-    return RCLASS_SUPER(klass);
+    if (BUILTIN_TYPE(klass) == T_ICLASS &&
+	FL_TEST(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
+	return rb_refinement_module_get_refined_class(RBASIC(klass)->klass);
+    }
+    else {
+	klass = RCLASS_ORIGIN(klass);
+	return RCLASS_SUPER(klass);
+    }
 }
 
 static void
