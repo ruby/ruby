@@ -407,52 +407,6 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_refinements_empty
-    m = Module.new
-    assert(m.refinements.empty?)
-  end
-
-  def test_refinements_one
-    c = Class.new
-    c_ext = nil
-    m = Module.new {
-      refine c do
-        c_ext = self
-      end
-    }
-    assert_equal({c => c_ext}, m.refinements)
-  end
-
-  def test_refinements_two
-    c1 = Class.new
-    c1_ext = nil
-    c2 = Class.new
-    c2_ext = nil
-    m = Module.new {
-      refine c1 do
-        c1_ext = self
-      end
-
-      refine c2 do
-        c2_ext = self
-      end
-    }
-    assert_equal({c1 => c1_ext, c2 => c2_ext}, m.refinements)
-  end
-
-  def test_refinements_duplicate_refine
-    c = Class.new
-    c_ext = nil
-    m = Module.new {
-      refine c do
-        c_ext = self
-      end
-      refine c do
-      end
-    }
-    assert_equal({c => c_ext}, m.refinements)
-  end
-
   def test_refine_without_block
     c1 = Class.new
     e = assert_raise(ArgumentError) {
@@ -465,26 +419,13 @@ class TestRefinement < Test::Unit::TestCase
 
   module Inspect
     module M
-      refine Fixnum do
-      end
+      Fixnum = refine(Fixnum) {}
     end
   end
 
   def test_inspect
     assert_equal("#<refinement:Fixnum@TestRefinement::Inspect::M>",
-                 Inspect::M.refinements[Fixnum].inspect)
-
-    c = Class.new
-    m = Module.new {
-      refine String do
-      end
-      refine c do
-      end
-    }
-    assert_equal("#<refinement:String@#{m.inspect}>",
-                 m.refinements[String].inspect)
-    assert_equal("#<refinement:#{c.inspect}@#{m.inspect}>",
-                 m.refinements[c].inspect)
+                 Inspect::M::Fixnum.inspect)
   end
 
   def test_using_method_cache

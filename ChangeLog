@@ -1,3 +1,9 @@
+Sat Dec  8 22:33:26 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c: remove Module#refinements.
+
+	* test/ruby/test_refinement.rb: remove tests for Module#refinements.
+
 Sat Dec  8 13:17:55 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (top_using): raise a RuntimeError if using is called in a
