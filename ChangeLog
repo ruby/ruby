@@ -1,3 +1,25 @@
+Sat Dec  8 15:01:35 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/cleanup_command.rb:  Skip default gems when
+	  cleaning up.
+	* test/rubygems/test_gem_commands_cleanup_command.rb:  Test for above.
+
+	* lib/rubygems/commands/query_command.rb:  Fixed listing remote gems.
+
+	* lib/rubygems/dependency_installer.rb:  Ignore non-files when looking
+	  for local gems.
+	* test/rubygems/test_gem_dependency_installer.rb:  Test for above.
+
+	* lib/rubygems/uninstaller.rb:  The user must confirm uninstalling gems
+	  that have dependencies.
+	* test/rubygems/test_gem_uninstaller.rb:  Test for above.
+
+	* lib/rubygems.rb (module Gem):  Updated version.
+
+	* test/rubygems/*.pem:  Updated to run in FIPS mode.
+	* test/rubygems/test_gem_security.rb:  ditto.
+	* test/rubygems/test_gem_security_signer.rb:  ditto.
+
 Sat Dec  8 12:34:01 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_normal_superclass): super in a

@@ -33,6 +33,7 @@ class Gem::DependencyInstaller
     :prerelease          => false,
     :security_policy     => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
     :wrappers            => true,
+    :build_args          => nil,
     :build_docs_in_background => false,
   }.freeze
 
@@ -53,6 +54,7 @@ class Gem::DependencyInstaller
   # :security_policy:: See Gem::Installer::new and Gem::Security.
   # :user_install:: See Gem::Installer.new
   # :wrappers:: See Gem::Installer::new
+  # :build_args:: See Gem::Installer::new
 
   def initialize(options = {})
     if options[:install_dir] then
@@ -79,6 +81,7 @@ class Gem::DependencyInstaller
     @security_policy     = options[:security_policy]
     @user_install        = options[:user_install]
     @wrappers            = options[:wrappers]
+    @build_args          = options[:build_args]
     @build_docs_in_background = options[:build_docs_in_background]
 
     # Indicates that we should not try to update any deps unless
@@ -257,7 +260,7 @@ class Gem::DependencyInstaller
     set = Gem::AvailableSet.new
 
     if consider_local?
-      if File.exists? gem_name
+      if File.file? gem_name then
         src = Gem::Source::SpecificFile.new(gem_name)
         set.add src.spec, src
       else
@@ -353,7 +356,8 @@ class Gem::DependencyInstaller
                                 :install_dir         => @install_dir,
                                 :security_policy     => @security_policy,
                                 :user_install        => @user_install,
-                                :wrappers            => @wrappers
+                                :wrappers            => @wrappers,
+                                :build_args          => @build_args
 
       spec = inst.install
 

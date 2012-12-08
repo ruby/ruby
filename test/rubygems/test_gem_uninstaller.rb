@@ -25,6 +25,22 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_match %r|/foo/bar$|, uninstaller.instance_variable_get(:@gem_home)
   end
 
+  def test_ask_if_ok
+    c = quick_spec 'c'
+
+    uninstaller = Gem::Uninstaller.new nil
+
+    ok = :junk
+
+    ui = Gem::MockGemUi.new "\n"
+
+    use_ui ui do
+      ok = uninstaller.ask_if_ok c
+    end
+
+    refute ok
+  end
+
   def test_remove_all
     uninstaller = Gem::Uninstaller.new nil
 

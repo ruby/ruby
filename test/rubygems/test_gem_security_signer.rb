@@ -100,8 +100,12 @@ class TestGemSecuritySigner < Gem::TestCase
     signature = signer.sign 'hello'
 
     expected = <<-EXPECTED
-oZXzQRdq0mJpAghICQvjvlB7ZyZtE4diL5jce0Fa20PkLjOvDgpuZCs6Ppu5
-LtG89EQMMBHsAyc8NMCd4oWm6Q==
+pxSf9ScaghbMNmNp8fqSJj7BiIGpbuoOVYCOM3TJNH9STLILA5z3xKp3gM6w
+VJ7aGsh9KCP485ftS3J9Kb/lKJsyoSkkRSQ5QG+LnyZwMuWlThPDR5o7q6al
+0oxE7vvbbqxFqcT4ojWIkwxJxOluFWmt2D8I6QTX2vLAn09y+Kl66AOrT7R5
+UinbXkz04VwcNvkBqJyko3yWxFKiGNpntZQg4jIw4L+h97EOaZp8H96udzQH
+Da3K0YZ6FsqLDFNnWAFhve3kmpE3CludpvDqH0piq0zKqnOiqAcvICIpPaJP
+c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
     EXPECTED
 
     assert_equal expected, [signature].pack('m')

@@ -113,5 +113,25 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exists @b_1.gem_dir
   end
 
+  def test_execute_ignore_default_gem_verbose
+    Gem.configuration.verbose = :really
+
+    @b_1 = quick_spec 'b', 1
+    @b_default = new_default_spec "b", "2"
+    @b_2 = quick_spec 'b', 3
+
+    install_gem @b_1
+    install_default_specs @b_default
+    install_gem @b_2
+
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match %r%^Skipped default gems: b-2%, @ui.output
+    assert_empty @ui.error
+  end
 end
 

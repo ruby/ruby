@@ -47,16 +47,17 @@ are not removed.
       end
     end
 
-    gems_to_cleanup = unless options[:args].empty? then
-                        options[:args].map do |gem_name|
-                          Gem::Specification.find_all_by_name gem_name
-                        end.flatten
-                      else
-                        Gem::Specification.to_a
-                      end
+    candidate_gems = unless options[:args].empty? then
+                       options[:args].map do |gem_name|
+                         Gem::Specification.find_all_by_name gem_name
+                       end.flatten
+                     else
+                       Gem::Specification.to_a
+                     end
 
-    gems_to_cleanup = gems_to_cleanup.select { |spec|
-      primary_gems[spec.name].version != spec.version
+    gems_to_cleanup = candidate_gems.select { |spec|
+      !spec.default_gem? and
+        primary_gems[spec.name].version != spec.version
     }
 
     full = Gem::DependencyList.from_specs
@@ -102,6 +103,14 @@ are not removed.
     end
 
     say "Clean Up Complete"
+
+    if Gem.configuration.really_verbose then
+      skipped = candidate_gems.
+        select { |spec| spec.default_gem? }.
+        map { |spec| spec.full_name}
+
+      say "Skipped default gems: #{skipped.join ', '}"
+    end
   end
 
 end

@@ -43,7 +43,7 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find { |ext| ext.oid == 'subjectKeyIdentifier' }
     assert_equal 59, key_ident.value.length
-    assert_equal 'B0:EB:9C:A5:E5:8E:7D:94:BB:4B:3B:D6:80:CB:A5:AD:5D:12:88:90',
+    assert_equal '5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B',
                  key_ident.value
 
     assert_equal '', cert.issuer.to_s
@@ -90,7 +90,7 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find { |ext| ext.oid == 'subjectKeyIdentifier' }
     assert_equal 59, key_ident.value.length
-    assert_equal 'B0:EB:9C:A5:E5:8E:7D:94:BB:4B:3B:D6:80:CB:A5:AD:5D:12:88:90',
+    assert_equal '5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B',
                  key_ident.value
   end
 
@@ -119,7 +119,7 @@ class TestGemSecurity < Gem::TestCase
 
     assert_in_delta Time.now,      re_signed.not_before, 10
     assert_in_delta Time.now + 60, re_signed.not_after,  10
-    assert_equal 2,                re_signed.serial
+    assert_equal EXPIRED_CERT.serial + 1, re_signed.serial
 
     assert re_signed.verify PUBLIC_KEY
   end
@@ -129,7 +129,11 @@ class TestGemSecurity < Gem::TestCase
       Gem::Security.re_sign CHILD_CERT, CHILD_KEY
     end
 
-    assert_equal "#{ALTERNATE_CERT.subject} is not self-signed, contact " +
+    child_alt_name = CHILD_CERT.extensions.find do |extension|
+      extension.oid == 'subjectAltName'
+    end
+
+    assert_equal "#{child_alt_name.value} is not self-signed, contact " +
                  "#{ALTERNATE_CERT.issuer} to obtain a valid certificate",
                  e.message
   end
@@ -188,7 +192,7 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find { |ext| ext.oid == 'subjectKeyIdentifier' }
     assert_equal 59, key_ident.value.length
-    assert_equal 'B0:EB:9C:A5:E5:8E:7D:94:BB:4B:3B:D6:80:CB:A5:AD:5D:12:88:90',
+    assert_equal '5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B',
                  key_ident.value
 
     assert signed.verify key
@@ -228,7 +232,7 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find { |ext| ext.oid == 'subjectKeyIdentifier' }
     assert_equal 59, key_ident.value.length
-    assert_equal 'B0:EB:9C:A5:E5:8E:7D:94:BB:4B:3B:D6:80:CB:A5:AD:5D:12:88:90',
+    assert_equal '5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B',
                  key_ident.value
 
     assert signed.verify PUBLIC_KEY

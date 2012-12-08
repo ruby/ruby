@@ -466,6 +466,22 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[b-1], inst.installed_gems.map { |s| s.full_name }
   end
 
+  def test_install_build_args
+    util_setup_gems
+
+    FileUtils.mv @a1_gem, @tempdir
+    inst = nil
+    build_args = %w[--a --b="c"]
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new(
+        :build_args => build_args)
+      inst.install 'a'
+    end
+
+    assert_equal build_args.join("\n"), File.read(inst.installed_gems.first.build_info_file).strip
+  end
+
   def test_install_ignore_dependencies
     util_setup_gems
 
@@ -776,6 +792,20 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal @b1, s.spec
     assert_equal Gem::Source.new(@gem_repo), s.source
+  end
+
+  def test_find_spec_by_name_and_version_directory
+    Dir.mkdir 'rdoc'
+
+    inst = Gem::DependencyInstaller.new
+
+    e = assert_raises Gem::SpecificGemNotFoundException do
+      inst.find_spec_by_name_and_version 'rdoc'
+    end
+
+    assert_equal "Could not find a valid gem 'rdoc' (>= 0) " +
+                 "locally or in a repository",
+                 e.message
   end
 
   def test_find_gems_with_sources_local
