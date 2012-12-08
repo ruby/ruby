@@ -624,6 +624,33 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def test_using_in_module
+    assert_raise(RuntimeError) do
+      eval(<<-EOF, TOPLEVEL_BINDING)
+        $main = self
+        module M
+        end
+        module M2
+          $main.send(:using, M)
+        end
+      EOF
+    end
+  end
+
+  def test_using_in_method
+    assert_raise(RuntimeError) do
+      eval(<<-EOF, TOPLEVEL_BINDING)
+        $main = self
+        module M
+        end
+        def call_using_in_method
+          $main.send(:using, M)
+        end
+        call_using_in_method
+      EOF
+    end
+  end
+
   private
 
   def eval_using(mod, s)

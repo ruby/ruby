@@ -1393,7 +1393,11 @@ static VALUE
 top_using(VALUE self, VALUE module)
 {
     NODE *cref = rb_vm_cref();
+    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
+    if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
+	rb_raise(rb_eRuntimeError, "using is permitted only at toplevel");
+    }
     Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
     rb_clear_cache();
