@@ -1,3 +1,10 @@
+Sat Dec  8 07:57:12 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (iow_size): return size of internal object
+	  for ObjectSpace.memsize_of().
+
+	* test/objspace/test_objspace.rb: add a test.
+
 Tue Dec 08 02:39:23 2012  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: A fix for row comparison by Stephen Wattam.  [Bug #7528]

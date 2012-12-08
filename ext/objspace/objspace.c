@@ -639,9 +639,16 @@ iow_mark(void *ptr)
     rb_gc_mark((VALUE)ptr);
 }
 
+static size_t
+iow_size(const void *ptr)
+{
+    VALUE obj = (VALUE)ptr;
+    return memsize_of(obj);
+}
+
 static const rb_data_type_t iow_data_type = {
     "ObjectSpace::InternalObjectWrapper",
-    {iow_mark, 0, 0,},
+    {iow_mark, 0, iow_size,},
 };
 
 static VALUE rb_mInternalObjectWrapper;

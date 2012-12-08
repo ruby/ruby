@@ -92,4 +92,14 @@ class TestObjSpace < Test::Unit::TestCase
     }
     assert_operator(max, :>=, 1_001, "1000 elems + Array class")
   end
+
+  def test_reachable_objects_size
+    ObjectSpace.each_object{|o|
+      ObjectSpace.reachable_objects_from(o).each{|reached_obj|
+        size = ObjectSpace.memsize_of(reached_obj)
+        assert_kind_of(Integer, size)
+        assert_operator(size, :>=, 0)
+      }
+    }
+  end
 end
