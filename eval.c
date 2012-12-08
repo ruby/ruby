@@ -1118,36 +1118,6 @@ VALUE rb_refinement_module_get_refined_class(VALUE module)
     return rb_attr_get(module, id_refined_class);
 }
 
-static VALUE
-refinement_module_include(int argc, VALUE *argv, VALUE module)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
-    VALUE result = rb_mod_include(argc, argv, module);
-    NODE *cref;
-    VALUE klass, c;
-
-    klass = rb_refinement_module_get_refined_class(module);
-    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
-	    (cref = rb_vm_get_cref(cfp->iseq, cfp->ep)) &&
-	    !NIL_P(cref->nd_refinements) &&
-	    !NIL_P(c = rb_hash_lookup(cref->nd_refinements, klass))) {
-	    while (argc--) {
-		VALUE mod = argv[argc];
-		if (rb_class_inherited_p(module, mod)) {
-		    RCLASS_SUPER(c) =
-			rb_include_class_new(mod, RCLASS_SUPER(c));
-		}
-	    }
-	    break;
-	}
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-    return result;
-}
-
 static void
 add_activated_refinement(VALUE activated_refinements,
 			 VALUE klass, VALUE refinement)
@@ -1228,8 +1198,6 @@ rb_mod_refine(VALUE module, VALUE klass)
 	rb_ivar_set(refinement, id_refined_class, klass);
 	CONST_ID(id_defined_at, "__defined_at__");
 	rb_ivar_set(refinement, id_defined_at, module);
-	rb_define_singleton_method(refinement, "include",
-				   refinement_module_include, -1);
 	rb_hash_aset(refinements, klass, refinement);
 	add_activated_refinement(activated_refinements, klass, refinement);
     }

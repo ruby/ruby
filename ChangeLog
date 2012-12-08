@@ -1,3 +1,9 @@
+Sat Dec  8 22:38:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine): don't override Module#include.  It's
+	  unnecessary now because refinements are activated only in refine
+	  blocks.
+
 Sat Dec  8 22:33:26 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c: remove Module#refinements.
