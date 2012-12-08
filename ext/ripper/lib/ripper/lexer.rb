@@ -13,6 +13,10 @@ require 'ripper/core'
 class Ripper
 
   # Tokenizes the Ruby program and returns an Array of String.
+  #
+  #   p Ripper.tokenize("def m(a) nil end")
+  #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+  #
   def Ripper.tokenize(src, filename = '-', lineno = 1)
     Lexer.new(src, filename, lineno).tokenize
   end
@@ -23,7 +27,7 @@ class Ripper
   #   require 'ripper'
   #   require 'pp'
   #
-  #   p Ripper.lex("def m(a) nil end")
+  #   pp Ripper.lex("def m(a) nil end")
   #     #=> [[[1,  0], :on_kw,     "def"],
   #          [[1,  3], :on_sp,     " "  ],
   #          [[1,  4], :on_ident,  "m"  ],
