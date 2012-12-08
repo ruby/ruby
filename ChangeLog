@@ -1,3 +1,12 @@
+Sat Dec  8 11:59:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine): raise an ArgumentError if a given
+	  block is of a Proc object.
+
+	* vm_insnhelper.c (vm_call_method): store refined methods in inline
+	  cache to improve performance.  It's safe now because blocks cannot
+	  be yielded with different refinements in the new specification.
+
 Sat Dec  8 11:17:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine), vm_eval.c (rb_yield_refine_block): 

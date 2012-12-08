@@ -1763,8 +1763,6 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		VALUE refinements = cref ? cref->nd_refinements : Qnil;
 		VALUE refinement, defined_class;
 		rb_method_entry_t *me;
-		ci_temp = *ci;
-		ci = &ci_temp;
 
 		refinement = find_refinement(refinements,
 					     ci->defined_class);

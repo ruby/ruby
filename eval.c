@@ -1196,9 +1196,15 @@ rb_mod_refine(VALUE module, VALUE klass)
     ID id_refinements, id_activated_refinements,
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
+    rb_thread_t *th = GET_THREAD();
+    rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 
-    if (!rb_block_given_p()) {
+    if (!block) {
         rb_raise(rb_eArgError, "no block given");
+    }
+    if (block->proc) {
+        rb_raise(rb_eArgError,
+		 "can't pass a Proc as a block to Module#refine");
     }
     Check_Type(klass, T_CLASS);
     CONST_ID(id_refinements, "__refinements__");

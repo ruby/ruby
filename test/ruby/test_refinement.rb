@@ -616,6 +616,14 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal('[{"1":2},{"3":4}]', x)
   end
 
+  def test_refine_with_proc
+    assert_raise(ArgumentError) do
+      Module.new {
+        refine(String, &Proc.new {})
+      }
+    end
+  end
+
   private
 
   def eval_using(mod, s)
