@@ -1300,16 +1300,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
   #
   # and add this as the block_params for the method
 
-  def parse_method_parameters(method)
+  def parse_method_parameters method
     res = parse_method_or_yield_parameters method
 
     res = "(#{res})" unless res =~ /\A\(/
     method.params = res unless method.params
 
-    if method.block_params.nil? then
-      skip_tkspace false
-      read_documentation_modifiers method, RDoc::METHOD_MODIFIERS
-    end
+    return if  method.block_params
+
+    skip_tkspace false
+    read_documentation_modifiers method, RDoc::METHOD_MODIFIERS
   end
 
   ##

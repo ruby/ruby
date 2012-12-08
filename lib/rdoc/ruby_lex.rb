@@ -857,7 +857,7 @@ class RDoc::RubyLex
   end
 
   IDENT_RE = if defined? Encoding then
-               /[\w\u0080-\uFFFF]/u
+               eval '/[\w\u{0080}-\u{FFFFF}]/u' # 1.8 can't parse \u{}
              else
                /[\w\x80-\xFF]/
              end

@@ -1,3 +1,6 @@
+##
+# HTML entity name map for RDoc::Markdown
+
 RDoc::Markdown::HTML_ENTITIES = {
   "AElig" => [0x000C6],
   "AMP" => [0x00026],

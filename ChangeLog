@@ -1,3 +1,12 @@
+Sun Dec  9 06:19:04 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markdown/entities.rb:  Added documentation.
+
+	* lib/rdoc/parser/ruby.rb:  Updated style
+
+	* lib/rdoc/ruby_lex.rb:  Parse characters up to \u{FFFFF}
+	* test/rdoc/test_rdoc_ruby_lex.rb:  Test for above.
+
 Sat Dec  8 22:38:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): don't override Module#include.  It's

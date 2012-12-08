@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require 'rdoc/test_case'
 
 class TestRDocRubyLex < RDoc::TestCase
@@ -131,6 +133,14 @@ U
     ]
 
     assert_equal expected, tokens
+  end
+
+  def test_class_tokenize_identifier_high_unicode
+    tokens = RDoc::RubyLex.tokenize '𝖒', nil
+
+    expected = @TK::TkIDENTIFIER.new(0, 1, 0, '𝖒')
+
+    assert_equal expected, tokens.first
   end
 
   def test_class_tokenize_percent_1
