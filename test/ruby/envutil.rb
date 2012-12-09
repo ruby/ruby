@@ -44,6 +44,7 @@ module EnvUtil
       err_p.set_encoding(enc) if err_p
     end
     timeout = opt.delete(:timeout) || 10
+    reprieve = opt.delete(:reprieve) || 1
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -70,7 +71,9 @@ module EnvUtil
         begin
           Process.kill signal, pid
         rescue Errno::ESRCH
-        end
+          break
+        else
+        end until signal == :KILL or (sleep reprieve; signal = :KILL; false)
         raise Timeout::Error
       end
       out_p.close if capture_stdout
