@@ -129,18 +129,18 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NoMethodError) { foo.z }
   end
 
-  def test_new_method_by_send
+  def test_send_should_not_use_refinements
     foo = Foo.new
     assert_raise(NoMethodError) { foo.send(:z) }
-    assert_equal("FooExt#z", FooExtClient.send_z_on(foo))
+    assert_raise(NoMethodError) { FooExtClient.send_z_on(foo) }
     assert_raise(NoMethodError) { foo.send(:z) }
   end
 
-  def test_new_method_by_method_object
+  def test_method_should_not_use_refinements
     foo = Foo.new
-    assert_raise(NoMethodError) { foo.send(:z) }
-    assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
-    assert_raise(NoMethodError) { foo.send(:z) }
+    assert_raise(NameError) { foo.method(:z) }
+    assert_raise(NameError) { FooExtClient.method_z(foo) }
+    assert_raise(NameError) { foo.method(:z) }
   end
 
   def test_no_local_rebinding
@@ -249,10 +249,9 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_respond_to?
+  def test_respond_to_should_not_use_refinements
     assert_equal(false, 1.respond_to?(:foo))
-    assert_equal(true, eval_using(FixnumFooExt, "1.respond_to?(:foo)"))
-    assert_equal(false, 1.respond_to?(:foo))
+    assert_equal(false, eval_using(FixnumFooExt, "1.respond_to?(:foo)"))
   end
 
   module StringCmpExt

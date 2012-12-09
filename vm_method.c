@@ -629,6 +629,21 @@ rb_method_entry_with_refinements(VALUE klass, ID id,
     return me;
 }
 
+rb_method_entry_t *
+rb_method_entry_without_refinements(VALUE klass, ID id,
+				    VALUE *defined_class_ptr)
+{
+    VALUE defined_class;
+    rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
+
+    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = me->def->body.orig_me;
+    }
+    if (defined_class_ptr)
+	*defined_class_ptr = defined_class;
+    return me;
+}
+
 static void
 remove_method(VALUE klass, ID mid)
 {
@@ -753,7 +768,7 @@ int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
     rb_method_entry_t *me =
-	rb_method_entry_with_refinements(klass, id, 0);
+	rb_method_entry_without_refinements(klass, id, 0);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) &&

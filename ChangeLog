@@ -1,3 +1,17 @@
+Sun Dec  9 17:36:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_opt_send): Kernel#send should not use
+	  refinements.
+
+	* proc.c (mnew): Kernel#method, Kernel#public_method,
+	  Module#instance_method, and Module#public_instance_method should
+	  not use refinements.
+
+	* vm_method.c (rb_method_boundp): Kernel#respond_to? should not use
+	  refinements.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Sun Dec  9 06:19:04 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markdown/entities.rb:  Added documentation.

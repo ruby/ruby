@@ -1597,7 +1597,9 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
     if (i > 0) {
 	MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
     }
-    ci->me = rb_method_entry(CLASS_OF(ci->recv), ci->mid, &ci->defined_class);
+    ci->me =
+	rb_method_entry_without_refinements(CLASS_OF(ci->recv),
+					    ci->mid, &ci->defined_class);
     ci->argc -= 1;
     DEC_SP(1);
 
