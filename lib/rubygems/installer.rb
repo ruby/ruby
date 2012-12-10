@@ -667,6 +667,8 @@ TEXT
                 when /rakefile/i, /mkrf_conf/i then
                   ran_rake = true
                   Gem::Ext::RakeBuilder
+                when /CMakeLists.txt/ then
+                  Gem::Ext::CmakeBuilder
                 else
                   message = "No builder for extension '#{extension}'"
                   extension_build_error extension_dir, message

@@ -1,3 +1,10 @@
+Mon Dec 10 09:40:19 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/ext/cmake_builder.rb:  Added a builder for cmake.
+	* lib/rubygems/ext.rb:  ditto.
+	* lib/rubygems/installer.rb:  ditto.
+	* test/rubygems/test_gem_ext_cmake_builder.rb:  Test for above.
+
 Mon Dec 10 09:13:08 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/package.rb:  Omit directories when packaging gems like
