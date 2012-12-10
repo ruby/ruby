@@ -3,6 +3,8 @@ require 'rubygems'
 require 'rubygems/rdoc'
 
 class TestGemRDoc < Gem::TestCase
+  Gem::RDoc.load_rdoc
+  rdoc_4 = Gem::Requirement.new('> 3').satisfied_by?(Gem::RDoc.rdoc_version)
 
   def setup
     super
@@ -67,7 +69,7 @@ class TestGemRDoc < Gem::TestCase
     @rdoc.document 'darkfish', options, @a.doc_dir('rdoc')
 
     assert @rdoc.rdoc_installed?
-  end
+  end unless rdoc_4
 
   def test_generate
     skip 'RDoc 3 required' unless rdoc_3?
@@ -83,7 +85,7 @@ class TestGemRDoc < Gem::TestCase
     rdoc = @rdoc.instance_variable_get :@rdoc
 
     refute rdoc.options.hyperlink_all
-  end
+  end unless rdoc_4
 
   def test_generate_configuration_rdoc_array
     skip 'RDoc 3 required' unless rdoc_3?
@@ -98,7 +100,7 @@ class TestGemRDoc < Gem::TestCase
     rdoc = @rdoc.instance_variable_get :@rdoc
 
     assert rdoc.options.hyperlink_all
-  end
+  end unless rdoc_4
 
   def test_generate_configuration_rdoc_string
     skip 'RDoc 3 required' unless rdoc_3?
@@ -113,7 +115,7 @@ class TestGemRDoc < Gem::TestCase
     rdoc = @rdoc.instance_variable_get :@rdoc
 
     assert rdoc.options.hyperlink_all
-  end
+  end unless rdoc_4
 
   def test_generate_disabled
     @rdoc.generate_rdoc = false
@@ -138,7 +140,7 @@ class TestGemRDoc < Gem::TestCase
 
     assert_path_exists File.join(@a.doc_dir('rdoc'), 'index.html')
     assert_path_exists File.join(@a.doc_dir('ri'),   'cache.ri')
-  end
+  end unless rdoc_4
 
   def test_generate_no_overwrite
     skip 'RDoc 3 required' unless rdoc_3?
@@ -151,7 +153,7 @@ class TestGemRDoc < Gem::TestCase
 
     refute_path_exists File.join(@a.doc_dir('rdoc'), 'index.html')
     refute_path_exists File.join(@a.doc_dir('ri'),   'cache.ri')
-  end
+  end unless rdoc_4
 
   def test_generate_legacy
     skip 'RDoc < 3.8 required' if rdoc_3_8_or_better?
@@ -163,7 +165,7 @@ class TestGemRDoc < Gem::TestCase
 
     assert @rdoc.rdoc_installed?
     assert @rdoc.ri_installed?
-  end
+  end unless rdoc_4
 
   def test_legacy_rdoc
     skip 'RDoc < 3.8 required' if rdoc_3_8_or_better?
@@ -174,7 +176,7 @@ class TestGemRDoc < Gem::TestCase
     @rdoc.legacy_rdoc '--op', @a.doc_dir('rdoc')
 
     assert @rdoc.rdoc_installed?
-  end
+  end unless rdoc_4
 
   def test_new_rdoc
     assert_kind_of RDoc::RDoc, @rdoc.new_rdoc
