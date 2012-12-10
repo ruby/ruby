@@ -637,7 +637,7 @@ rb_method_entry_without_refinements(VALUE klass, ID id,
     rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
-	me = me->def->body.orig_me;
+	me = rb_resolve_refined_method(Qnil, me, &defined_class);
     }
     if (defined_class_ptr)
 	*defined_class_ptr = defined_class;

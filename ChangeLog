@@ -1,3 +1,12 @@
+Mon Dec 10 18:35:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_without_refinements): use
+	  rb_resolve_refined_method() to search superclasses if
+	  me->def->orig_me is 0.  This change fixes make test-all
+	  TESTS="json ruby/test_refinement.rb".
+
+	* test/ruby/test_refinement.rb: related test.
+
 Mon Dec 10 17:59:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/fiddle/win32/*: library ports from DL to Fiddle.

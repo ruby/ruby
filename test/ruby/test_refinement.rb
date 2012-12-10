@@ -129,11 +129,30 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NoMethodError) { foo.z }
   end
 
+  module RespondTo
+    class Super
+      def foo
+      end
+    end
+
+    class Sub < Super
+    end
+
+    module M
+      refine Sub do
+        def foo
+        end
+      end
+    end
+  end
+
   def test_send_should_not_use_refinements
     foo = Foo.new
     assert_raise(NoMethodError) { foo.send(:z) }
     assert_raise(NoMethodError) { FooExtClient.send_z_on(foo) }
     assert_raise(NoMethodError) { foo.send(:z) }
+
+    assert_equal(true, RespondTo::Sub.new.respond_to?(:foo))
   end
 
   def test_method_should_not_use_refinements
