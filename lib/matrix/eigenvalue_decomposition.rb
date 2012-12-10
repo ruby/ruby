@@ -20,7 +20,7 @@ class Matrix
       # @v: Array for internal storage of eigenvectors.
       # @h: Array for internal storage of nonsymmetric Hessenberg form.
       raise TypeError, "Expected Matrix but got #{a.class}" unless a.is_a?(Matrix)
-      @size = a.row_size
+      @size = a.row_count
       @d = Array.new(@size, 0)
       @e = Array.new(@size, 0)
 

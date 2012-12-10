@@ -1,3 +1,9 @@
+Tue Dec 11 01:53:37 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix: alias {row|column}_size to {row|column}_count and use
+	  the latter.
+	  [Bug #7369] [ruby-core:49409]
+
 Tue Dec 11 00:26:58 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* fix the behavior when a module is included into a refinement.
