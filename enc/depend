@@ -97,7 +97,7 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 %   end
 
 % end
-% link_so = LINK_SO.gsub(/\n/, "\n\t")
+% link_so = LINK_SO.gsub(/([^\\])\n/, "\\1\n$(Q) ").gsub(/\n/, "\n\t")
 % link_so.gsub!(/(-(?:implib|pdb):\S+)-\$\(arch\)\./, '\1.')
 % dependencies.each do |e|
 %   obj = "enc/#{e}.$(OBJEXT)"
