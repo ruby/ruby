@@ -41,6 +41,9 @@ module Gem
            end
 
     @default_dir ||= File.join(*path)
+  rescue
+    p ConfigMap
+    raise
   end
 
   ##
