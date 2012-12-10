@@ -1,3 +1,9 @@
+Mon Dec 10 10:36:12 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* lib/irb/magic-file.rb: set a encoding, which is detected from
+	  the file to read, to the internal encoding.
+	  [Bug #4281][ruby-dev:43036]
+
 Mon Dec 10 09:40:19 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ext/cmake_builder.rb:  Added a builder for cmake.
