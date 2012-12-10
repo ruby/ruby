@@ -42,7 +42,9 @@ module Gem
 
     @default_dir ||= File.join(*path)
   rescue
+    p RbConfig::CONFIG
     p ConfigMap
+    p ConfigMap.default_proc
     raise
   end
 
