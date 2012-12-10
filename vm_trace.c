@@ -286,14 +286,14 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
     if (th->trace_running == 0 &&
 	targ->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	const int vm_tracing = th->vm->trace_running;
+	const VALUE errinfo = th->errinfo;
+	const int outer_state = th->state;
 	int state = 0;
-	int outer_state = th->state;
 	th->state = 0;
 
 	th->vm->trace_running = 1;
 	th->trace_running = 1;
 	{
-	    const VALUE errinfo = th->errinfo;
 	    rb_hook_list_t *list;
 
 	    /* thread local traces */
@@ -309,15 +309,11 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 		state = exec_hooks(th, list, targ, !vm_tracing);
 		if (state) goto terminate;
 	    }
-	    th->errinfo = errinfo;
 	}
       terminate:
+	th->errinfo = errinfo;
 	th->trace_running = 0;
 	th->vm->trace_running = vm_tracing;
-
-	if (state) {
-	    TH_JUMP_TAG(th, state);
-	}
 	th->state = outer_state;
     }
 }

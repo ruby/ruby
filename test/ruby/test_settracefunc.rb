@@ -798,4 +798,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     }
   end
+
+  def test_tracepoint_exception_at_line
+    assert_nothing_raised do
+      TracePoint.new(:line) {raise}.enable {
+        1
+      }
+    end
+  end
+
+  def test_tracepoint_exception_at_return
+    assert_nothing_raised(Timeout::Error, 'infinite trace') do
+      assert_normal_exit('def m; end; TracePoint.new(:return) {raise}.enable {m}', '', timeout: 3)
+    end
+  end
 end

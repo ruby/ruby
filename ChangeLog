@@ -1,3 +1,8 @@
+Mon Dec 10 15:23:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): exceptions in event
+	  hooks should not propagate outside.
+
 Mon Dec 10 15:11:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): count flip-flop state in local iseq
