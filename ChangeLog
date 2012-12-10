@@ -1,3 +1,11 @@
+Mon Dec 10 17:59:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/fiddle/win32/*: library ports from DL to Fiddle.
+
+	* ext/dl/win32/extconf.rb: check fiddle.  often case dl compiled prior
+	  to fiddle, so this change is no meaning.  in most cases, simply
+	  fiddle/win32 overwrite dl/win32.
+
 Mon Dec 10 15:23:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks): exceptions in event
