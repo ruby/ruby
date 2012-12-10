@@ -61,6 +61,7 @@ File.foreach "config.status" do |line|
     next if !continued_line
     continued_line << $1
     next if $2
+    continued_line.each {|s| s.sub!(/\\n\z/, "\n")}
     val = continued_line.join
     name = continued_name
     continued_line = nil
