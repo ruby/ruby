@@ -192,6 +192,8 @@ class Gem::Package
     @spec.files.each do |file|
       stat = File.stat file
 
+      next unless stat.file?
+
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         open file, 'rb' do |src_io|
           dst_io.write src_io.read 16384 until src_io.eof?

@@ -102,9 +102,10 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_add_files
     spec = Gem::Specification.new
-    spec.files = 'lib/code.rb'
+    spec.files = %w[lib/code.rb lib/empty]
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir_p 'lib/empty'
+
     open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
     open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
 

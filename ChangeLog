@@ -1,3 +1,9 @@
+Mon Dec 10 09:13:08 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package.rb:  Omit directories when packaging gems like
+	  RubyGems 1.8.x
+	* test/rubygems/test_gem_package.rb:  Test for above.
+
 Sun Dec  9 17:36:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_opt_send): Kernel#send should not use
