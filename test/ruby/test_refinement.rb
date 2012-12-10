@@ -13,6 +13,10 @@ class TestRefinement < Test::Unit::TestCase
       return "Foo#y"
     end
 
+    def a
+      return "Foo#a"
+    end
+
     def call_x
       return x
     end
@@ -30,6 +34,10 @@ class TestRefinement < Test::Unit::TestCase
 
       def z
         return "FooExt#z"
+      end
+
+      def a
+        return "FooExt#a"
       end
     end
   end
@@ -98,6 +106,10 @@ class TestRefinement < Test::Unit::TestCase
       def self.invoke_y_on(foo)
         return foo.y
       end
+
+      def self.invoke_a_on(foo)
+        return foo.a
+      end
     end
   EOF
 
@@ -120,6 +132,13 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#y", foo.y)
     assert_equal("FooExt2#y Foo#y", FooExtClient2.invoke_y_on(foo))
     assert_equal("Foo#y", foo.y)
+  end
+
+  def test_using_same_class_refinements
+    foo = Foo.new
+    assert_equal("Foo#a", foo.a)
+    assert_equal("FooExt#a", FooExtClient2.invoke_a_on(foo))
+    assert_equal("Foo#a", foo.a)
   end
 
   def test_new_method
@@ -608,6 +627,69 @@ class TestRefinement < Test::Unit::TestCase
         call_using_in_method
       EOF
     end
+  end
+
+  module IncludeIntoRefinement
+    class C
+      def bar
+        return "C#bar"
+      end
+
+      def baz
+        return "C#baz"
+      end
+    end
+
+    module Mixin
+      def foo
+        return "Mixin#foo"
+      end
+
+      def bar
+        return super << " Mixin#bar"
+      end
+
+      def baz
+        return super << " Mixin#baz"
+      end
+    end
+
+    module M
+      refine C do
+        include Mixin
+
+        def baz
+          return super << " M#baz"
+        end
+      end
+    end
+  end
+
+  eval <<-EOF, TOPLEVEL_BINDING
+    using TestRefinement::IncludeIntoRefinement::M
+
+    module TestRefinement::IncludeIntoRefinement::User
+      def self.invoke_foo_on(x)
+        x.foo
+      end
+
+      def self.invoke_bar_on(x)
+        x.bar
+      end
+
+      def self.invoke_baz_on(x)
+        x.baz
+      end
+    end
+  EOF
+
+  def test_include_into_refinement
+    x = IncludeIntoRefinement::C.new
+    assert_equal("Mixin#foo", IncludeIntoRefinement::User.invoke_foo_on(x))
+    assert_equal("C#bar Mixin#bar",
+                 IncludeIntoRefinement::User.invoke_bar_on(x))
+    assert_equal("C#baz Mixin#baz M#baz",
+                 IncludeIntoRefinement::User.invoke_baz_on(x))
   end
 
   private

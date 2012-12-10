@@ -737,6 +737,7 @@ struct RClass {
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
 #define RMODULE_IS_OVERLAID FL_USER2
 #define RMODULE_IS_REFINEMENT FL_USER3
+#define RMODULE_INCLUDED_INTO_REFINEMENT FL_USER4
 
 struct RFloat {
     struct RBasic basic;

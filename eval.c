@@ -1079,7 +1079,7 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
     module = RCLASS_SUPER(module);
-    while (module) {
+    while (module && module != klass) {
 	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
 	RCLASS_REFINED_CLASS(c) = klass;
@@ -1193,6 +1193,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	refinement = rb_module_new();
+	RCLASS_SUPER(refinement) = klass;
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);

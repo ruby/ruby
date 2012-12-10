@@ -1866,12 +1866,10 @@ vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
 	FL_TEST(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
-	return rb_refinement_module_get_refined_class(RBASIC(klass)->klass);
+	klass = RBASIC(klass)->klass;
     }
-    else {
-	klass = RCLASS_ORIGIN(klass);
-	return RCLASS_SUPER(klass);
-    }
+    klass = RCLASS_ORIGIN(klass);
+    return RCLASS_SUPER(klass);
 }
 
 static void
@@ -1945,7 +1943,8 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 	current_defind_class = RCLASS_REFINED_CLASS(current_defind_class);
     }
 
-    if (!rb_obj_is_kind_of(ci->recv, current_defind_class)) {
+    if (!FL_TEST(current_defind_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+	!rb_obj_is_kind_of(ci->recv, current_defind_class)) {
 	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 2.0.0 or later");
     }
 

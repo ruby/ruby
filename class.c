@@ -720,6 +720,7 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
 
 	    st_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i,
 		       (st_data_t) refined_class);
+	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;

@@ -1,3 +1,44 @@
+Tue Dec 11 00:26:58 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* fix the behavior when a module is included into a refinement.
+	  This change is a little tricky, so it might be better to prohibit
+	  module inclusion to refinements.
+
+	* include/ruby/ruby.h (RMODULE_INCLUDED_INTO_REFINEMENT): new flag
+	  to represent that a module (iclass) is included into a refinement.
+
+	* class.c (include_modules_at): set RMODULE_INCLUDED_INTO_REFINEMENT
+	  if klass is a refinement.
+
+	* eval.c (rb_mod_refine): set the superclass of a refinement to the
+	  refined class for super.
+
+	* eval.c (rb_using_refinement): skip the above superclass (the
+	  refined class) when creating iclasses for refinements.  Otherwise,
+	  `using Refinement1; using Refinement2' creates iclasses:
+	  <Refinement2> -> <RefinedClass> -> <Refinement1> -> RefinedClass,
+	  where <Module> is an iclass for Module, so RefinedClass is
+	  searched before Refinement1.  The correct iclasses should be
+	  <Refinement2> -> <Refinement1> -> RefinedClass.
+
+	* vm_insnhelper.c (vm_search_normal_superclass): if klass is an
+	  iclass for a refinement, use the refinement's superclass instead
+	  of the iclass's superclass.  Otherwise, multiple refinements are
+	  searched by super.  For example, if a refinement Refinement2
+	  includes a module M (i.e., Refinement2 -> <M> -> RefinedClass,
+	  and if refinements iclasses are <Refinement2> -> <M>' ->
+	  <Refinement1> -> RefinedClass, then super in <Refinement2> should
+	  use Refinement2's superclass <M> instead of <Refinement2>'s
+	  superclass <M>'.
+
+	* vm_insnhelper.c (vm_search_super_method): do not raise a
+	  NotImplementError if current_defind_class is a module included
+	  into a refinement.  Because of the change of
+	  vm_search_normal_superclass(), the receiver might not be an
+	  instance of the module('s iclass).
+
+	* test/ruby/test_refinement.rb: related test.
+
 Mon Dec 10 18:35:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_without_refinements): use
