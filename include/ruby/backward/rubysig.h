@@ -27,6 +27,10 @@ extern "C" {
 #endif
 #endif
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+
 struct rb_blocking_region_buffer;
 DEPRECATED(RUBY_EXTERN struct rb_blocking_region_buffer *rb_thread_blocking_region_begin(void));
 DEPRECATED(RUBY_EXTERN void rb_thread_blocking_region_end(struct rb_blocking_region_buffer *));
@@ -37,6 +41,10 @@ DEPRECATED(RUBY_EXTERN void rb_thread_blocking_region_end(struct rb_blocking_reg
 #define ENABLE_INTS (1)
 #define ALLOW_INTS do {CHECK_INTS;} while (0)
 #define CHECK_INTS rb_thread_check_ints()
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

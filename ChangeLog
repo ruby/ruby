@@ -1,3 +1,7 @@
+Tue Dec 11 17:52:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward/rubysig.h: fix visibility.  [Bug #6607]
+
 Tue Dec 11 17:49:45 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_make_env_object): make Proc object if Env is possible
