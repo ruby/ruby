@@ -276,6 +276,11 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 	return size;
     }
 
+    /* skip long name conversion if path contains wildcard characters */
+    if (wcspbrk(pos, L"*?")) {
+	return size;
+    }
+
     pos = *wfullpath + size - 1;
     while (!IS_DIR_SEPARATOR_P(*pos) && pos != *wfullpath) {
 	if (!extension_len && *pos == L'.') {
