@@ -7,6 +7,7 @@
 VALUE rb_class_path_no_cache(VALUE _klass);
 
 #define RUBY_DTRACE_HOOK(name, th, klazz, id) \
+do { \
     if (RUBY_DTRACE_##name##_ENABLED()) { \
 	VALUE _klass = (klazz); \
 	VALUE _id = (id); \
@@ -49,6 +50,7 @@ VALUE rb_class_path_no_cache(VALUE _klass);
 	    } \
 	} \
     } \
+} while (0)
 
 #define RUBY_DTRACE_METHOD_ENTRY_HOOK(th, klass, id) \
     RUBY_DTRACE_HOOK(METHOD_ENTRY, th, klass, id)
