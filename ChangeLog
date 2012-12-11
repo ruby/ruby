@@ -1,3 +1,7 @@
+Tue Dec 11 15:24:05 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/pathname/lib/pathname.rb:  Hide private methods from RDoc.
+
 Tue Dec 11 15:11:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/make-snapshot (BASERUBY): add --disable-gem to avoid load gems.

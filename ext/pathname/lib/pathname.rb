@@ -39,7 +39,7 @@ class Pathname
   # :startdoc:
 
   # chop_basename(path) -> [pre-basename, basename] or nil
-  def chop_basename(path)
+  def chop_basename(path) # :nodoc:
     base = File.basename(path)
     if /\A#{SEPARATOR_PAT}?\z/o =~ base
       return nil
@@ -50,7 +50,7 @@ class Pathname
   private :chop_basename
 
   # split_names(path) -> prefix, [name, ...]
-  def split_names(path)
+  def split_names(path) # :nodoc:
     names = []
     while r = chop_basename(path)
       path, basename = r
@@ -60,7 +60,7 @@ class Pathname
   end
   private :split_names
 
-  def prepend_prefix(prefix, relpath)
+  def prepend_prefix(prefix, relpath) # :nodoc:
     if relpath.empty?
       File.dirname(prefix)
     elsif /#{SEPARATOR_PAT}/o =~ prefix
@@ -95,7 +95,7 @@ class Pathname
   # Clean the path simply by resolving and removing excess +.+ and +..+ entries.
   # Nothing more, nothing less.
   #
-  def cleanpath_aggressive
+  def cleanpath_aggressive # :nodoc:
     path = @path
     names = []
     pre = path
@@ -121,7 +121,7 @@ class Pathname
   private :cleanpath_aggressive
 
   # has_trailing_separator?(path) -> bool
-  def has_trailing_separator?(path)
+  def has_trailing_separator?(path) # :nodoc:
     if r = chop_basename(path)
       pre, basename = r
       pre.length + basename.length < path.length
@@ -132,7 +132,7 @@ class Pathname
   private :has_trailing_separator?
 
   # add_trailing_separator(path) -> path
-  def add_trailing_separator(path)
+  def add_trailing_separator(path) # :nodoc:
     if File.basename(path + 'a') == 'a'
       path
     else
@@ -141,7 +141,7 @@ class Pathname
   end
   private :add_trailing_separator
 
-  def del_trailing_separator(path)
+  def del_trailing_separator(path) # :nodoc:
     if r = chop_basename(path)
       pre, basename = r
       pre + basename
@@ -153,7 +153,7 @@ class Pathname
   end
   private :del_trailing_separator
 
-  def cleanpath_conservative
+  def cleanpath_conservative # :nodoc:
     path = @path
     names = []
     pre = path
@@ -331,7 +331,7 @@ class Pathname
     Pathname.new(plus(@path, other.to_s))
   end
 
-  def plus(path1, path2) # -> path
+  def plus(path1, path2) # -> path # :nodoc:
     prefix2 = path2
     index_list2 = []
     basename_list2 = []
