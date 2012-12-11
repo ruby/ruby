@@ -1,3 +1,8 @@
+Tue Dec 11 19:01:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB#run, ERB#result): eval under isolated bindings for
+	  safe concurrent use.  [ruby-core:47638] [Bug #7046]
+
 Tue Dec 11 17:53:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): count flip-flop state in local iseq
