@@ -8,9 +8,10 @@ module IRB
       line = io.gets
       line = io.gets if line[0,2] == "#!"
       encoding = detect_encoding(line)
+      internal_encoding = encoding
       encoding ||= default_src_encoding
       io.rewind
-      io.set_encoding(encoding, nil)
+      io.set_encoding(encoding, internal_encoding)
 
       if block_given?
         begin

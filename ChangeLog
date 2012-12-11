@@ -1,3 +1,9 @@
+Tue Dec 11 17:47:01 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* lib/irb/magic-file.rb: set a encoding, which is detected from
+	  the file to read, to the internal encoding.
+	  [Bug #4281][ruby-dev:43036]
+
 Thu Nov 15 15:17:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (free_method_entry_i): method entry may be in
