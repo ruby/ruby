@@ -8,6 +8,7 @@ class Progress
   def initialize
     @color = nil
     @quiet = nil
+    @verbose = nil
     ARGV.each do |arg|
       case arg
       when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
@@ -15,9 +16,12 @@ class Progress
         @color = $1 ? nil : !$2
       when /\A-(q|-quiet)\z/
         @quiet = true
+      when /\A-(v|-verbose)\z/
+        @verbose = true
       end
     end
     @tty = STDERR.tty? && !STDOUT.tty? && /dumb/ !~ ENV["TERM"]
+    @eol = @tty && !@verbose ? "\r\e[K\r" : "\n"
     case @color
     when nil
       @color = @tty
@@ -44,9 +48,9 @@ class Progress
   end
   def finish_string
     if @quiet
-      "\n"
+      @eol
     else
-      "#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}\n"
+      "#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}#{@eol}"
     end
   end
   def pass

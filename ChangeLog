@@ -1,3 +1,8 @@
+Wed Dec 12 03:09:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb (Progress#initialize): add --verbose option and show
+	  messages in one line unless --verbose is given.
+
 Wed Dec 12 01:47:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_using_refinement): make the method table of an iclass

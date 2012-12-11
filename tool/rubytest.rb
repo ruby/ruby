@@ -1,6 +1,6 @@
 #! ./miniruby
 
-exit if defined?(CROSS_COMPILING)
+exit if defined?(CROSS_COMPILING) and CROSS_COMPILING
 ruby = ENV["RUBY"]
 unless ruby
   load './rbconfig.rb'
