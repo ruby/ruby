@@ -1,3 +1,10 @@
+Wed Dec 12 00:32:11 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/dl/test_func.rb (test_name_with_block, test_bind, test_qsort1):
+	  call unbind to release the callback closure because maximum number
+	  of callbacks is limited to DL::MAX_CALLBACK (== 5) with pure DL
+	  without Fiddle.
+
 Wed Dec 12 00:13:34 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#unbind, #bound?): suppress

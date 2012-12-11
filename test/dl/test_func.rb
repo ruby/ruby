@@ -10,9 +10,13 @@ module DL
     end
 
     def test_name_with_block
-      cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
-                        [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
-      assert_equal('<callback>qsort', cb.name)
+      begin
+        cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
+                          [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
+        assert_equal('<callback>qsort', cb.name)
+      ensure
+        cb.unbind if cb # max number of callbacks is limited to MAX_CALLBACK
+      end
     end
 
     def test_bound
@@ -60,10 +64,14 @@ module DL
 
     def test_bind
       f = Function.new(CFunc.new(0, TYPE_INT, 'test'), [TYPE_INT, TYPE_INT])
-      assert_nothing_raised {
-        f.bind { |x, y| x + y }
-      }
-      assert_equal 579, f.call(123, 456)
+      begin
+        assert_nothing_raised {
+          f.bind { |x, y| x + y }
+        }
+        assert_equal 579, f.call(123, 456)
+      ensure
+        f.unbind # max number of callbacks is limited to MAX_CALLBACK
+      end
     end
 
     def test_to_i
@@ -145,18 +153,22 @@ module DL
     end
 
     def test_qsort1()
-      cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
-                        [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
-      qsort = Function.new(CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort'),
-                           [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP])
-      buff = "9341"
-      qsort.call(buff, buff.size, 1, cb)
-      assert_equal("1349", buff)
+      begin
+        cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
+                          [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
+        qsort = Function.new(CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort'),
+                             [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP])
+        buff = "9341"
+        qsort.call(buff, buff.size, 1, cb)
+        assert_equal("1349", buff)
 
-      bug4929 = '[ruby-core:37395]'
-      buff = "9341"
-      EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
-      assert_equal("1349", buff, bug4929)
+        bug4929 = '[ruby-core:37395]'
+        buff = "9341"
+        EnvUtil.under_gc_stress {qsort.call(buff, buff.size, 1, cb)}
+        assert_equal("1349", buff, bug4929)
+      ensure
+        cb.unbind if cb # max number of callbacks is limited to MAX_CALLBACK
+      end
     end
 
     def test_qsort2()
