@@ -309,11 +309,15 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 		state = exec_hooks(th, list, targ, !vm_tracing);
 		if (state) goto terminate;
 	    }
+	    th->errinfo = errinfo;
 	}
       terminate:
-	th->errinfo = errinfo;
 	th->trace_running = 0;
 	th->vm->trace_running = vm_tracing;
+
+	if (state) {
+	    TH_JUMP_TAG(th, state);
+	}
 	th->state = outer_state;
     }
 }

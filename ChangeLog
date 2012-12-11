@@ -1,3 +1,10 @@
+Wed Dec 12 03:45:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_exec): pass exceptions while handling an exception.
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): propagate exceptions.
+	  revert r38293 partially.
+
 Wed Dec 12 03:09:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/test.rb (Progress#initialize): add --verbose option and show

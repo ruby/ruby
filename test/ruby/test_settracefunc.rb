@@ -801,7 +801,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_tracepoint_exception_at_line
-    assert_nothing_raised do
+    assert_raise(RuntimeError) do
       TracePoint.new(:line) {raise}.enable {
         1
       }
