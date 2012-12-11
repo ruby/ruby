@@ -79,7 +79,7 @@ setlocal
  */
 DEFINE_INSN
 getspecial
-(VALUE key, rb_num_t type)
+(rb_num_t key, rb_num_t type)
 ()
 (VALUE val)
 {
@@ -93,7 +93,7 @@ getspecial
  */
 DEFINE_INSN
 setspecial
-(VALUE key)
+(rb_num_t key)
 (VALUE obj)
 ()
 {

@@ -981,7 +981,7 @@ lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 }
 
 static VALUE
-lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
+lfp_svar_get(rb_thread_t *th, VALUE *lfp, rb_num_t key)
 {
     NODE *svar = lfp_svar_place(th, lfp);
 
@@ -991,20 +991,20 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
       case 1:
 	return svar->u2.value;
       default: {
-	const VALUE hash = svar->u3.value;
+	const VALUE ary = svar->u3.value;
 
-	if (hash == Qnil) {
+	if (NIL_P(ary)) {
 	    return Qnil;
 	}
 	else {
-	    return rb_hash_lookup(hash, key);
+	    return rb_ary_entry(ary, key - DEFAULT_SPECIAL_VAR_COUNT);
 	}
       }
     }
 }
 
 static void
-lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
+lfp_svar_set(rb_thread_t *th, VALUE *lfp, rb_num_t key, VALUE val)
 {
     NODE *svar = lfp_svar_place(th, lfp);
 
@@ -1016,27 +1016,23 @@ lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
 	svar->u2.value = val;
 	return;
       default: {
-	VALUE hash = svar->u3.value;
+	VALUE ary = svar->u3.value;
 
-	if (hash == Qnil) {
-	    svar->u3.value = hash = rb_hash_new();
+	if (NIL_P(ary)) {
+	    svar->u3.value = ary = rb_ary_new();
 	}
-	rb_hash_aset(hash, key, val);
+	rb_ary_store(ary, key - DEFAULT_SPECIAL_VAR_COUNT, val);
       }
     }
 }
 
 static inline VALUE
-vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
+vm_getspecial(rb_thread_t *th, VALUE *lfp, rb_num_t key, rb_num_t type)
 {
     VALUE val;
 
     if (type == 0) {
-	VALUE k = key;
-	if (FIXNUM_P(key)) {
-	    k = FIX2INT(key);
-	}
-	val = lfp_svar_get(th, lfp, k);
+	val = lfp_svar_get(th, lfp, key);
     }
     else {
 	VALUE backref = lfp_svar_get(th, lfp, 1);

@@ -4844,12 +4844,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *ltrue = NEW_LABEL(nd_line(node));
-	VALUE key = rb_sprintf("flipflag/%s-%p-%d",
-			       RSTRING_PTR(iseq->name), (void *)iseq,
-			       iseq->compile_data->flip_cnt++);
+	struct iseq_compile_data *data = iseq->local_iseq->compile_data;
+	rb_num_t cnt;
+	VALUE key;
 
-	hide_obj(key);
-	iseq_add_mark_object_compile_time(iseq, key);
+	if (!data) data = iseq->compile_data;
+	cnt = data->flip_cnt++ + DEFAULT_SPECIAL_VAR_COUNT;
+	key = INT2FIX(cnt);
+
 	ADD_INSN2(ret, nd_line(node), getspecial, key, INT2FIX(0));
 	ADD_INSNL(ret, nd_line(node), branchif, lend);
 

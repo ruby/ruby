@@ -1,3 +1,14 @@
+Tue Dec 11 17:53:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): count flip-flop state in local iseq
+	  not in each iseqs, so that the keys can be other than hidden
+	  strings.  [ruby-core:47253] [Bug #6899]
+
+	* vm_insnhelper.c (lep_svar_get, lep_svar_set, vm_getspecial): store
+	  flip-flop states in an array instead of a hash.
+
+	* iseq.c (set_relation): main iseq also can has local scope.
+
 Tue Dec 11 17:52:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward/rubysig.h: fix visibility.  [Bug #6607]

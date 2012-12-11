@@ -216,6 +216,10 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	GetISeqPtr(parent, piseq);
 	iseq->parent_iseq = piseq;
     }
+
+    if (type == ISEQ_TYPE_MAIN) {
+	iseq->local_iseq = iseq;
+    }
 }
 
 static VALUE

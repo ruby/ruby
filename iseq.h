@@ -118,6 +118,8 @@ enum defined_type {
     DEFINED_FUNC
 };
 
+#define DEFAULT_SPECIAL_VAR_COUNT 2
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
