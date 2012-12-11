@@ -1,3 +1,13 @@
+Tue Dec 11 19:38:37 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/function.c (Fiddle::Function.new): new keyword argument
+	  :name to set the name attribute.
+	* ext/fiddle/lib/fiddle/import.rb (import_function, bind_function):
+	  set function name by using the :name keyword argument.
+	  Re-fixes r38243. [ruby-core:50566]
+	* test/fiddle/test_function.rb (test_name): test for the :name keyword
+	  argument and Fiddle::Function#name.
+
 Tue Dec 11 16:57:33 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* common.mk:  Added --pages-dir to rdoc creation.  Now doc/ items show

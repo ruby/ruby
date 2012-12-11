@@ -15,6 +15,11 @@ module Fiddle
       assert_equal Function::DEFAULT, func.abi
     end
 
+    def test_name
+      func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE, name: 'sin')
+      assert_equal 'sin', func.name
+    end
+
     def test_argument_errors
       assert_raises(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)

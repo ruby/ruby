@@ -50,16 +50,27 @@ rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
     return rb_class_new_instance(3, argv, cFiddleFunction);
 }
 
+static int
+parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
+{
+  if (key == ID2SYM(rb_intern("name"))) {
+    rb_iv_set(self, "@name", value);
+  } else {
+    rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE, key);
+  }
+  return ST_CONTINUE;
+}
+
 static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
     ffi_type **arg_types;
     ffi_status result;
-    VALUE ptr, args, ret_type, abi;
+    VALUE ptr, args, ret_type, abi, kwds;
     int i;
 
-    rb_scan_args(argc, argv, "31", &ptr, &args, &ret_type, &abi);
+    rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
     if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
 
     Check_Type(args, T_ARRAY);
@@ -68,6 +79,8 @@ initialize(int argc, VALUE argv[], VALUE self)
     rb_iv_set(self, "@args", args);
     rb_iv_set(self, "@return_type", ret_type);
     rb_iv_set(self, "@abi", abi);
+
+    if (!NIL_P(kwds)) rb_hash_foreach(kwds, parse_keyword_arg_i, self);
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
 
