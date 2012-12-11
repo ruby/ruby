@@ -508,13 +508,6 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
       nil,
       opts)
-
-    bug7402 = '[ruby-core:49573]'
-    status = assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
-                                '-e', '$".unshift Bogus.new',
-                                '-e', 'Process.kill :SEGV, $$'],
-                               "", //, /#<Bogus:/)
-    assert_not_predicate(status, :success?, "segv but success #{bug7402}")
   end
 
   def test_DATA

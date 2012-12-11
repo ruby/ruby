@@ -675,26 +675,14 @@ rb_vm_bugreport(void)
     if (vm) {
 	int i;
 	VALUE name;
-	long len;
-	const int max_name_length = 1024;
-# define LIMITED_NAME_LENGTH(s) \
-	(((len = RSTRING_LEN(s)) > max_name_length) ? max_name_length : (int)len)
 
 	name = vm->progname;
-	fprintf(stderr, "* Loaded script: %.*s\n",
-		LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+	fprintf(stderr, "* Loaded script: %s\n", StringValueCStr(name));
 	fprintf(stderr, "\n");
 	fprintf(stderr, "* Loaded features:\n\n");
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
 	    name = RARRAY_PTR(vm->loaded_features)[i];
-	    if (RB_TYPE_P(name, T_STRING)) {
-		fprintf(stderr, " %4d %.*s\n", i,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
-	    }
-	    else {
-		fprintf(stderr, " %4d #<%s:%p>\n", i,
-			rb_class2name(CLASS_OF(name)), (void *)name);
-	    }
+	    fprintf(stderr, " %4d %s\n", i, StringValueCStr(name));
 	}
 	fprintf(stderr, "\n");
     }
