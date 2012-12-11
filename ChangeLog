@@ -1,3 +1,12 @@
+Wed Dec 12 06:43:37 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* iseq.c (rb_iseq_parameters): fix limit for optional arguments.
+
+	* test/ruby/test_keyword.rb: tests for above.
+
+	* vm_core.h (struct rb_iseq_struct): update documentation
+	  with keyword arguments. [Bug #7540] [ruby-core:50735]
+
 Wed Dec 12 03:45:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_exec): pass exceptions while handling an exception.

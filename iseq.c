@@ -1792,12 +1792,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	    rb_ary_push(args, PARAM(i, req));
 	}
     }
-    r = iseq->arg_rest != -1 ? iseq->arg_rest :
-	iseq->arg_post_len > 0 ? iseq->arg_post_start :
-	iseq->arg_block != -1 ? iseq->arg_block :
-	iseq->arg_keyword != -1 ? iseq->arg_keyword :
-	iseq->arg_size;
-    if (iseq->arg_keyword != -1) r -= iseq->arg_keywords;
+    r = iseq->argc + iseq->arg_opts - 1;
     for (; i < r; i++) {
 	PARAM_TYPE(opt);
 	if (rb_id2str(PARAM_ID(i))) {

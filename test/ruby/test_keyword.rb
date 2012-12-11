@@ -94,6 +94,27 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[1, 2, 3], "bar", 424242, {}], f7(1, 2, 3, str: "bar"))
   end
 
+  define_method(:f8) { |opt = :ion, *rest, key: :word|
+    [opt, rest, key]
+  }
+
+  def test_f8
+    assert_equal([:ion, [], :word], f8)
+    assert_equal([1, [], :word], f8(1))
+    assert_equal([1, [2], :word], f8(1, 2))
+  end
+
+  def f9(r, o=42, *args, p, k: :key, **kw, &b)
+    [r, o, args, p, k, kw, b]
+  end
+
+  def test_f9
+    assert_equal([1, 42, [], 2, :key, {}, nil], f9(1, 2))
+    assert_equal([1, 2, [], 3, :key, {}, nil], f9(1, 2, 3))
+    assert_equal([1, 2, [3], 4, :key, {}, nil], f9(1, 2, 3, 4))
+    assert_equal([1, 2, [3, 4], 5, :key, {str: "bar"}, nil], f9(1, 2, 3, 4, 5, str: "bar"))
+  end
+
   def test_method_parameters
     assert_equal([[:key, :str], [:key, :num]], method(:f1).parameters);
     assert_equal([[:req, :x], [:key, :str], [:key, :num]], method(:f2).parameters);
@@ -102,6 +123,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[:key, :str], [:key, :num], [:keyrest, :h]], method(:f5).parameters);
     assert_equal([[:key, :str], [:key, :num], [:keyrest, :h], [:block, :blk]], method(:f6).parameters);
     assert_equal([[:rest, :r], [:key, :str], [:key, :num], [:keyrest, :h]], method(:f7).parameters);
+    assert_equal([[:opt, :opt], [:rest, :rest], [:key, :key]], method(:f8).parameters) # [Bug #7540] [ruby-core:50735]
+    assert_equal([[:req, :r], [:opt, :o], [:rest, :args], [:req, :p], [:key, :k],
+                  [:keyrest, :kw], [:block, :b]], method(:f9).parameters)
   end
 
   def test_lambda

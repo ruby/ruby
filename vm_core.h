@@ -241,20 +241,24 @@ struct rb_iseq_struct {
      *        b1=(...), b2=(...), ..., bN=(...),  # optional
      *        *c,                                 # rest
      *        d1, d2, ..., dO,                    # post
-     *        &e)                                 # block
+     *        e1:(...), e2:(...), ..., eK:(...),  # keyword
+     *        **f,                                # keyword rest
+     *        &g)                                 # block
      * =>
      *
-     *  argc           = M
-     *  arg_rest       = M+N+1 // or -1 if no rest arg
-     *  arg_opts       = N+1   // or 0  if no optional arg
+     *  argc           = M                 // or  0 if no mandatory arg
+     *  arg_opts       = N+1               // or  0 if no optional arg
+     *  arg_rest       = M+N               // or -1 if no rest arg
      *  arg_opt_table  = [ (arg_opts entries) ]
-     *  arg_post_len   = O // 0 if no post arguments
-     *  arg_post_start = M+N+2
-     *  arg_block      = M+N + 1 + O + 1 // -1 if no block arg
+     *  arg_post_start = M+N+(*1)          // or 0 if no post arguments
+     *  arg_post_len   = O                 // or 0 if no post arguments
+     *  arg_keywords   = K                 // or 0 if no keyword arg
+     *  arg_block      = M+N+(*1)+O+K      // or -1 if no block arg
+     *  arg_keyword    = M+N+(*1)+O+K+(&1) // or -1 if no keyword arg/rest
      *  arg_simple     = 0 if not simple arguments.
      *                 = 1 if no opt, rest, post, block.
      *                 = 2 if ambiguous block parameter ({|a|}).
-     *  arg_size       = argument size.
+     *  arg_size       = M+N+O+(*1)+K+(&1)+(**1) argument size.
      */
 
     int argc;
