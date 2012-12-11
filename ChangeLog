@@ -1,3 +1,12 @@
+Tue Dec 11 17:49:45 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_make_env_object): make Proc object if Env is possible
+	  to point block. [ruby-core:41038] [ruby-trunk - Bug #5634]
+
+	* vm.c (rb_vm_make_proc): No need to make Proc object here.
+
+	* bootstraptest/test_proc.rb: add tests.
+
 Tue Dec 11 17:47:01 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* lib/irb/magic-file.rb: set a encoding, which is detected from

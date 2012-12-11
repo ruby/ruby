@@ -456,3 +456,27 @@ assert_equal 'ok', %q{
   end
 }
 
+assert_equal 'ok', %q{
+  def x
+    binding
+  end
+  b = x{|a| a }
+  b.eval('yield("ok")')
+}, '[Bug #5634]'
+
+assert_equal 'ok', %q{
+  def x
+    binding
+  end
+  eval("x { 'ok' }").eval "yield"
+}, '[Bug #5634]'
+
+assert_equal 'ok', %q{
+  def x
+    binding
+  end
+  def m
+    x{ 'ok' }
+  end
+  eval('yield', m)
+}, '[Bug #5634]'

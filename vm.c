@@ -467,14 +467,28 @@ vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
     }
 }
 
+static VALUE vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block);
+
 VALUE
 rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
 {
     VALUE envval;
+    VALUE *lfp;
+    rb_block_t *blockptr;
 
     if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_FINISH) {
 	/* for method_missing */
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+
+    lfp = cfp->lfp;
+    blockptr = GC_GUARDED_PTR_REF(lfp[0]);
+
+    if (blockptr && !(lfp[0] & 0x02)) {
+	VALUE blockprocval = vm_make_proc_from_block(th, blockptr);
+	rb_proc_t *p;
+	GetProcPtr(blockprocval, p);
+	lfp[0] = GC_GUARDED_PTR(&p->block);
     }
 
     envval = vm_make_env_each(th, cfp, cfp->dfp, cfp->lfp);
@@ -543,16 +557,6 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 
     if (block->proc) {
 	rb_bug("rb_vm_make_proc: Proc value is already created.");
-    }
-
-    if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	rb_proc_t *p;
-
-	blockprocval = vm_make_proc_from_block(
-	    th, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
-
-	GetProcPtr(blockprocval, p);
-	*cfp->lfp = GC_GUARDED_PTR(&p->block);
     }
 
     envval = rb_vm_make_env_object(th, cfp);
