@@ -657,6 +657,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('tstring_content', "<<EOS\nhere\ndoc \nEOS \n")
     assert_equal ["heredoc\n\tEOS \n"],
                  scan('tstring_content', "<<-EOS\nheredoc\n\tEOS \n")
+    bug7255 = '[ruby-core:48703]'
+    assert_equal ["there\n""heredoc", "\n"],
+                 scan('tstring_content', "<<""EOS\n""there\n""heredoc\#{foo}\nEOS"),
+                 bug7255
+    assert_equal ["there\n""heredoc", "\n"],
+                 scan('tstring_content', "<<""EOS\n""there\n""heredoc\#@foo\nEOS"),
+                 bug7255
   end
 
   def test_heredoc_end

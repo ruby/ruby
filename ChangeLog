@@ -1,3 +1,8 @@
+Tue Dec 11 19:15:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): flush string content between new
+	  line and :string_embexpr.  [ruby-core:48703] [Bug #7255]
+
 Tue Dec 11 19:01:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/erb.rb (ERB#run, ERB#result): eval under isolated bindings for
