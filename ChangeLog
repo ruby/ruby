@@ -4,11 +4,6 @@ Tue Dec 11 12:00:19 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  by Santiago Pastorino <santiago@wyeworks.com>
 	  https://github.com/ruby/ruby/pull/221 fix GH-221
 
-Tue Dec 11 11:36:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* common.mk ($(MINIPRELUDE_C)): -I may break make dist.
-	  patched by Vit Ondruch [Bug #7541] [ruby-core:50736]
-
 Tue Dec 11 01:53:37 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix: alias {row|column}_size to {row|column}_count and use
