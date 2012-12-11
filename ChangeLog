@@ -1,3 +1,9 @@
+Wed Dec 12 01:05:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/make-snapshot: add --disable-rubygem to both MINIRUBY and RUBY.
+	  On making miniprelude.c, it seems use MINIRUBY. this fixes #7541
+	  but rubygems also needs to be fixed for older rubies.
+
 Wed Dec 12 00:32:11 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/dl/test_func.rb (test_name_with_block, test_bind, test_qsort1):
