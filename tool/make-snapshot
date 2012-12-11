@@ -69,6 +69,11 @@ path = ENV["PATH"].split(File::PATH_SEPARATOR)
   end
 end
 
+`#{ENV["BASERUBY"]} --disable-gem -e1 2>&1`
+if $?.success?
+  ENV["BASERUBY"] += ' --disable-gems'
+end
+
 if $help or $_help
   puts usage
   exit

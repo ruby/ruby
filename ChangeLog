@@ -1,3 +1,8 @@
+Tue Dec 11 15:11:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/make-snapshot (BASERUBY): add --disable-gem to avoid load gems.
+	  [Bug #7541] [ruby-core:50736]
+
 Tue Dec 11 12:00:19 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/dl/win32/extconf.rb: Fix typo
