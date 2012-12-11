@@ -15,6 +15,49 @@ module DL
       assert_equal('<callback>qsort', cb.name)
     end
 
+    def test_bound
+      f = Function.new(CFunc.new(0, TYPE_INT, 'test'), [TYPE_INT, TYPE_INT])
+      assert_equal false, f.bound?
+      begin
+        f.bind { |x,y| x + y }
+        assert_equal true, f.bound?
+      ensure
+        f.unbind # max number of callbacks is limited to MAX_CALLBACK
+      end
+    end
+
+    def test_bound_for_callback_closure
+      begin
+        f = Function.new(CFunc.new(0, TYPE_INT, 'test'),
+                         [TYPE_INT, TYPE_INT]) { |x,y| x + y }
+        assert_equal true, f.bound?
+      ensure
+        f.unbind if f # max number of callbacks is limited to MAX_CALLBACK
+      end
+    end
+
+    def test_unbind
+      f = Function.new(CFunc.new(0, TYPE_INT, 'test'), [TYPE_INT, TYPE_INT])
+      begin
+        f.bind { |x, y| x + y }
+        assert_nothing_raised { f.unbind }
+        assert_equal false, f.bound?
+        # unbind() after unbind() should not raise error
+        assert_nothing_raised { f.unbind }
+      ensure
+        f.unbind # max number of callbacks is limited to MAX_CALLBACK
+      end
+    end
+
+    def test_unbind_normal_function
+      f = Function.new(CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy'),
+                       [TYPE_VOIDP, TYPE_VOIDP])
+      assert_nothing_raised { f.unbind }
+      assert_equal false, f.bound?
+      # unbind() after unbind() should not raise error
+      assert_nothing_raised { f.unbind }
+    end
+
     def test_bind
       f = Function.new(CFunc.new(0, TYPE_INT, 'test'), [TYPE_INT, TYPE_INT])
       assert_nothing_raised {

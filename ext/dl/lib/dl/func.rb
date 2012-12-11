@@ -36,6 +36,9 @@ module DL
         def name
           @name
         end
+        def ptr
+          to_i
+        end
       end
       private_constant :FiddleClosureCFunc
 
@@ -157,6 +160,25 @@ module DL
     end
 
     def unbind()
+      if DL.fiddle? then
+        if @cfunc.kind_of?(Fiddle::Closure) and @cfunc.ptr != 0 then
+          call_type = case abi
+                      when CALL_TYPE_TO_ABI[nil]
+                        nil
+                      when CALL_TYPE_TO_ABI[:stdcall]
+                        :stdcall
+                      else
+                        raise(RuntimeError, "unsupported abi: #{abi}")
+                      end
+          @cfunc = CFunc.new(0, @cfunc.ctype, name, call_type)
+          return 0
+        elsif @cfunc.ptr != 0 then
+          @cfunc.ptr = 0
+          return 0
+        else
+          return nil
+        end
+      end
       if( @cfunc.ptr != 0 )
         case @cfunc.calltype
         when :cdecl
