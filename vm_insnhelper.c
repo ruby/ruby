@@ -1930,21 +1930,21 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
 static void
 vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
-    VALUE current_defind_class;
+    VALUE current_defined_class;
     rb_iseq_t *iseq = GET_ISEQ();
     VALUE sigval = TOPN(ci->orig_argc);
 
-    current_defind_class = GET_CFP()->klass;
-    if (NIL_P(current_defind_class)) {
+    current_defined_class = GET_CFP()->klass;
+    if (NIL_P(current_defined_class)) {
 	vm_super_outside();
     }
 
-    if (!NIL_P(RCLASS_REFINED_CLASS(current_defind_class))) {
-	current_defind_class = RCLASS_REFINED_CLASS(current_defind_class);
+    if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
+	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
     }
 
-    if (!FL_TEST(current_defind_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
-	!rb_obj_is_kind_of(ci->recv, current_defind_class)) {
+    if (!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
+	!rb_obj_is_kind_of(ci->recv, current_defined_class)) {
 	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 2.0.0 or later");
     }
 
