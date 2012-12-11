@@ -1,3 +1,10 @@
+Tue Dec 11 16:57:33 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* common.mk:  Added --pages-dir to rdoc creation.  Now doc/ items show
+	  up at top-level.
+	* .document:  Moved doc/* entries to doc/.document
+	* doc/.document:  ditto
+
 Tue Dec 11 16:44:37 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/options.rb:  Added --page-dir option for moving pages in

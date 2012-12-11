@@ -28,7 +28,4 @@ README.EXT
 README.EXT.ja
 README.ja
 
-doc/*.rdoc
-doc/ChangeLog*
-doc/NEWS-*
-
+doc
