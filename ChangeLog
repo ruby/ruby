@@ -1,3 +1,13 @@
+Wed Dec 12 01:47:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_using_refinement): make the method table of an iclass
+	  for a refinement that of the refinement, not that of the origin of
+	  the refinement, which is set by rb_include_class_new().  This
+	  change is needed to make module prepend into a refinement work
+	  properly.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Wed Dec 12 01:05:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/make-snapshot: add --disable-rubygem to both MINIRUBY and RUBY.

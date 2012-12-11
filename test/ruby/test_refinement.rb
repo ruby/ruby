@@ -692,6 +692,69 @@ class TestRefinement < Test::Unit::TestCase
                  IncludeIntoRefinement::User.invoke_baz_on(x))
   end
 
+  module PrependIntoRefinement
+    class C
+      def bar
+        return "C#bar"
+      end
+
+      def baz
+        return "C#baz"
+      end
+    end
+
+    module Mixin
+      def foo
+        return "Mixin#foo"
+      end
+
+      def bar
+        return super << " Mixin#bar"
+      end
+
+      def baz
+        return super << " Mixin#baz"
+      end
+    end
+
+    module M
+      refine C do
+        prepend Mixin
+
+        def baz
+          return super << " M#baz"
+        end
+      end
+    end
+  end
+
+  eval <<-EOF, TOPLEVEL_BINDING
+    using TestRefinement::PrependIntoRefinement::M
+
+    module TestRefinement::PrependIntoRefinement::User
+      def self.invoke_foo_on(x)
+        x.foo
+      end
+
+      def self.invoke_bar_on(x)
+        x.bar
+      end
+
+      def self.invoke_baz_on(x)
+        x.baz
+      end
+    end
+  EOF
+
+  def test_prepend_into_refinement
+    x = PrependIntoRefinement::C.new
+    assert_equal("Mixin#foo", PrependIntoRefinement::User.invoke_foo_on(x))
+    assert_equal("C#bar Mixin#bar",
+                 PrependIntoRefinement::User.invoke_bar_on(x))
+    assert_equal("C#baz M#baz Mixin#baz",
+                 PrependIntoRefinement::User.invoke_baz_on(x))
+  end
+
   private
 
   def eval_using(mod, s)
