@@ -676,7 +676,7 @@ rb_vm_bugreport(void)
 	int i;
 	VALUE name;
 	long len;
-	const int max_name_length = 128;
+	const int max_name_length = 1024;
 # define LIMITED_NAME_LENGTH(s) \
 	(((len = RSTRING_LEN(s)) > max_name_length) ? max_name_length : (int)len)
 
@@ -688,8 +688,8 @@ rb_vm_bugreport(void)
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
 	    name = RARRAY_PTR(vm->loaded_features)[i];
 	    if (RB_TYPE_P(name, T_STRING)) {
-		fprintf(stderr, " %4d %.*s\n", i,
-			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+		fprintf(stderr, " %4d %s\n", i,
+			RSTRING_PTR(name));
 	    }
 	    else {
 		fprintf(stderr, " %4d #<%s:%p>\n", i,
