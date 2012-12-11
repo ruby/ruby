@@ -229,6 +229,12 @@ class RDoc::Options
   attr_accessor :option_parser
 
   ##
+  # Directory where guides, FAQ, and other pages not associated with a class
+  # live.  You may leave this unset if these are at the root of your project.
+
+  attr_accessor :page_dir
+
+  ##
   # Is RDoc in pipe mode?
 
   attr_accessor :pipe
@@ -317,6 +323,7 @@ class RDoc::Options
     @markup = 'rdoc'
     @coverage_report = false
     @op_dir = nil
+    @page_dir = nil
     @pipe = false
     @rdoc_include = []
     @root = Pathname(Dir.pwd)
@@ -468,6 +475,8 @@ class RDoc::Options
       @exclude = Regexp.new(@exclude.join("|"))
     end
 
+    finish_page_dir
+
     check_files
 
     # If no template was specified, use the default template for the output
@@ -479,6 +488,20 @@ class RDoc::Options
     end
 
     self
+  end
+
+  ##
+  # Fixes the page_dir to be relative to the root_dir and adds the page_dir to
+  # the files list.
+
+  def finish_page_dir
+    return unless @page_dir
+
+    @files << @page_dir.to_s
+
+    page_dir = @page_dir.expand_path.relative_path_from @root
+
+    @page_dir = page_dir
   end
 
   ##
@@ -665,7 +688,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--pipe",
+      opt.on("--pipe", "-p",
              "Convert RDoc on stdin to HTML") do
         @pipe = true
       end
@@ -706,6 +729,18 @@ Usage: #{opt.program_name} [options] [names...]
              "source directory.  Default is the",
              "current directory.") do |root|
         @root = Pathname(root)
+      end
+
+      opt.separator nil
+
+      opt.on("--page-dir=DIR", Directory,
+             "Directory where guides, your FAQ or",
+             "other pages not associated with a class",
+             "live.  Set this when you don't store",
+             "such files at your project root.",
+             "NOTE: Do not use the same file name in",
+             "the page dir and the root of your project") do |page_dir|
+        @page_dir = Pathname(page_dir)
       end
 
       opt.separator nil

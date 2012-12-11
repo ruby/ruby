@@ -76,6 +76,7 @@ class TestRDocOptions < RDoc::TestCase
       'line_numbers'   => false,
       'main_page'      => nil,
       'markup'         => 'rdoc',
+      'page_dir'       => nil,
       'rdoc_include'   => [],
       'show_hash'      => false,
       'static_path'    => [],
@@ -428,6 +429,43 @@ rdoc_include:
     assert_empty err
 
     assert_equal 'tomdoc', @options.markup
+  end
+
+  def test_parse_page_dir
+    assert_nil @options.page_dir
+
+    out, err = capture_io do
+      @options.parse %W[--page-dir #{Dir.tmpdir}]
+    end
+
+    assert_empty out
+    assert_empty err
+
+    expected =
+      Pathname(Dir.tmpdir).expand_path.relative_path_from @options.root
+
+    assert_equal expected,     @options.page_dir
+    assert_equal [Dir.tmpdir], @options.files
+  end
+
+  def test_parse_page_dir_root
+    assert_nil @options.page_dir
+
+    Dir.mktmpdir do |dir|
+      abs_root     = dir
+      abs_page_dir = File.join dir, 'pages'
+      FileUtils.mkdir abs_page_dir
+
+      out, err = capture_io do
+        @options.parse %W[--page-dir #{abs_page_dir} --root #{abs_root}]
+      end
+
+      assert_empty out
+      assert_empty err
+
+      assert_equal Pathname('pages'), @options.page_dir
+      assert_equal [abs_page_dir],    @options.files
+    end
   end
 
   def test_parse_root

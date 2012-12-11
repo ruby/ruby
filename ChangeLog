@@ -1,3 +1,11 @@
+Tue Dec 11 16:44:37 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/options.rb:  Added --page-dir option for moving pages in
+	  doc/ to the top-level.
+	* lib/rdoc/rdoc.rb:  ditto.
+	* test/rdoc/test_rdoc_options.rb:  Test for the above.
+	* test/rdoc/test_rdoc_rdoc.rb:  ditto.
+
 Tue Dec 11 15:24:05 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/pathname/lib/pathname.rb:  Hide private methods from RDoc.

@@ -349,6 +349,12 @@ option)
     filename_path = Pathname(filename).expand_path
     relative_path = filename_path.relative_path_from @options.root
 
+    if @options.page_dir and
+       relative_path.to_s.start_with? @options.page_dir.to_s then
+      relative_path =
+        relative_path.relative_path_from @options.page_dir
+    end
+
     top_level = @store.add_file filename, relative_path.to_s
 
     parser = RDoc::Parser.for top_level, filename, content, @options, @stats
