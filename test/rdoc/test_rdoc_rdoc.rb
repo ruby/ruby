@@ -123,13 +123,14 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_non_file_directory
-    skip '/dev/stdin is not a character special' unless
-      File.chardev? '/dev/stdin'
+    dev = defined?(File::NULL) ? File::NULL : '/dev/stdin'
+    skip "#{dev} is not a character special" unless
+      File.chardev? dev
 
     files = nil
 
     out, err = verbose_capture_io do
-      files = @rdoc.normalized_file_list %w[/dev/stdin]
+      files = @rdoc.normalized_file_list [dev]
     end
 
     files = files.map { |file| File.expand_path file }
@@ -137,8 +138,8 @@ class TestRDocRDoc < RDoc::TestCase
     assert_empty files
 
     assert_empty out
-    assert_match %r%^rdoc can't parse%, err
-    assert_match %r%/dev/stdin$%,       err
+    assert_match %r"^rdoc can't parse", err
+    assert_match %r"#{dev}$",           err
   end
 
   def test_parse_file

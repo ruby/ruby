@@ -1,3 +1,8 @@
+Wed Dec 12 16:08:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_rdoc.rb (TestRDocRDoc#test_normalized_file_list_non_file_directory):
+	  use File::NULL for portability if possible.
+
 Wed Dec 12 16:07:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* method.h (rb_method_flag_t): name a magic number for NOEX_SAFE and
