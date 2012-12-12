@@ -1683,9 +1683,9 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 	  default:
 	    break;
 	}
+      }
       case VM_METHOD_TYPE_REFINED:
 	return -1;
-      }
     }
     rb_bug("rb_method_entry_arity: invalid method entry type (%d)", def->type);
 
