@@ -1,4 +1,10 @@
-<% table = current.parse(current.comment).table_of_contents
+<% comment = if current.respond_to? :comment_location then
+               current.comment_location
+             else
+               current.comment
+             end
+   table = current.parse(comment).table_of_contents
+
    if table.length > 1 then %>
 <div id="table-of-contents">
   <nav class="section">

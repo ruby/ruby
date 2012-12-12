@@ -184,7 +184,7 @@ class RDoc::ClassModule < RDoc::Context
   # Appends +comment+ to the current comment, but separated by a rule.  Works
   # more like <tt>+=</tt>.
 
-  def comment= comment
+  def comment= comment # :nodoc:
     comment = case comment
               when RDoc::Comment then
                 comment.normalize
@@ -214,6 +214,14 @@ class RDoc::ClassModule < RDoc::Context
 
   def document_self_or_methods
     document_self || method_list.any?{ |m| m.document_self }
+  end
+
+  ##
+  # Does this class or module have a comment with content or is
+  # #received_nodoc true?
+
+  def documented?
+    super or !@comment_location.empty?
   end
 
   ##

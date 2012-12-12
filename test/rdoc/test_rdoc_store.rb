@@ -708,7 +708,7 @@ class TestRDocStore < XrefTestCase
 
     document = @RM::Document.new inner
 
-    assert_equal document, s.load_class('Object').comment
+    assert_equal document, s.load_class('Object').comment_location
   end
 
   # This is a functional test

@@ -1,3 +1,17 @@
+Wed Dec 12 14:16:35 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/class_module.rb:  Added RDoc::ClassModule#documented? which
+	  checks comment_location.  Hide RDoc::ClassModule#comment=.
+	* test/rdoc/test_rdoc_class_module.rb:  Test for above.
+
+	* lib/rdoc/generator/template/darkfish/_sidebar_table_of_contents.rhtml:
+	  Fix display of the table of contents in the sidebar.
+
+	* lib/rdoc/generator/template/darkfish/table_of_contents.rhtml:
+	  Use #comment_location when displaying classes or modules.
+
+	* test/rdoc/test_rdoc_store.rb:  Use comment_location.
+
 Wed Dec 12 13:40:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_getivar): no uninitialized instance variables

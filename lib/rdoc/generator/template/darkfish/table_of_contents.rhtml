@@ -30,7 +30,7 @@
   <li class="<%= klass.type %>">
     <a href="<%= klass.path %>"><%= klass.full_name %></a>
 <% table = []
-   table.concat klass.parse(klass.comment).table_of_contents
+   table.concat klass.parse(klass.comment_location).table_of_contents
    table.concat klass.section_contents
 
    unless table.empty? then %>

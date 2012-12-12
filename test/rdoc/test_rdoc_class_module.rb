@@ -95,6 +95,28 @@ class TestRDocClassModule < XrefTestCase
     refute @c1.document_self_or_methods
   end
 
+  def test_documented_eh
+    cm = RDoc::ClassModule.new 'C'
+
+    refute cm.documented?
+
+    cm.add_comment 'hi', @top_level
+
+    assert cm.documented?
+
+    cm.comment.replace ''
+
+    assert cm.documented?
+
+    cm.comment_location.clear
+
+    refute cm.documented?
+
+    cm.document_self = nil # notify :nodoc:
+
+    assert cm.documented?
+  end
+
   def test_each_ancestor
     assert_equal [@parent], @child.each_ancestor.to_a
   end
