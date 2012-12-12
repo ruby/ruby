@@ -1,3 +1,9 @@
+Wed Dec 12 21:40:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tmpdir.rb (Dir::Tmpname#create): deal with a prefix name which
+	  starts with tilde as a plain name, not expanding as home directory.
+	  [ruby-core:50793] [Bug #7547]
+
 Wed Dec 12 19:48:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: merge JSON 1.7.5.

@@ -18,4 +18,15 @@ class TestTmpdir < Test::Unit::TestCase
       end
     end
   end
+
+  def test_no_homedir
+    bug7547 = '[ruby-core:50793]'
+    home, ENV["HOME"] = ENV["HOME"], nil
+    dir = assert_nothing_raised(bug7547) do
+      break Dir.mktmpdir("~")
+    end
+    assert_match(/\A~/, File.basename(dir), bug7547)
+  ensure
+    ENV["HOME"] = home
+  end
 end
