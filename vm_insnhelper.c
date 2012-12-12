@@ -1786,6 +1786,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    goto zsuper_method_dispatch;
 		}
 	      }
+	      case VM_METHOD_TYPE__MAX:
+		break;
 	    }
 	    rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
 	}

@@ -22,11 +22,14 @@ typedef enum {
     NOEX_MODFUNC   = 0x12,
     NOEX_SUPER     = 0x20,
     NOEX_VCALL     = 0x40,
-    NOEX_RESPONDS  = 0x80
+    NOEX_RESPONDS  = 0x80,
+
+    NOEX_BIT_WIDTH = 8,
+    NOEX_SAFE_SHIFT_OFFSET = ((NOEX_BIT_WIDTH+3)/4)*4 /* round up to nibble */
 } rb_method_flag_t;
 
-#define NOEX_SAFE(n) ((int)((n) >> 8) & 0x0F)
-#define NOEX_WITH(n, s) (((s) << 8) | (n) | (ruby_running ? 0 : NOEX_BASIC))
+#define NOEX_SAFE(n) ((int)((n) >> NOEX_SAFE_SHIFT_OFFSET) & 0x0F)
+#define NOEX_WITH(n, s) (((s) << NOEX_SAFE_SHIFT_OFFSET) | (n) | (ruby_running ? 0 : NOEX_BASIC))
 #define NOEX_WITH_SAFE(n) NOEX_WITH((n), rb_safe_level())
 
 /* method data type */
@@ -44,6 +47,8 @@ typedef enum {
     VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
     VM_METHOD_TYPE_CFUNC_FRAMELESS,
     VM_METHOD_TYPE_REFINED,
+
+    VM_METHOD_TYPE__MAX
 } rb_method_type_t;
 
 struct rb_call_info_struct;
@@ -71,7 +76,9 @@ typedef struct rb_method_definition_struct {
 	VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL
+	    OPTIMIZED_METHOD_TYPE_CALL,
+
+	    OPTIMIZED_METHOD_TYPE__MAX
 	} optimize_type;
 	struct rb_method_entry_struct *orig_me;
     } body;

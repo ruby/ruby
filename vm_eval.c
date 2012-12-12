@@ -227,6 +227,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	}
       case VM_METHOD_TYPE_UNDEF:
 	break;
+      case VM_METHOD_TYPE__MAX:
+	break;
     }
     rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
     return Qundef;
