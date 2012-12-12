@@ -5,6 +5,27 @@
 #include "ruby.h"
 #include <assert.h>
 
+#ifndef RHASH_SIZE
+#define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
+#endif
+
+#ifndef RFLOAT_VALUE
+#define RFLOAT_VALUE(val) (RFLOAT(val)->value)
+#endif
+
+#ifndef RARRAY_PTR
+#define RARRAY_PTR(ARRAY) RARRAY(ARRAY)->ptr
+#endif
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
+#endif
+#ifndef RSTRING_PTR
+#define RSTRING_PTR(string) RSTRING(string)->ptr
+#endif
+#ifndef RSTRING_LEN
+#define RSTRING_LEN(string) RSTRING(string)->len
+#endif
+
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())

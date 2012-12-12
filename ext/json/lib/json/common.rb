@@ -103,7 +103,13 @@ module JSON
   MinusInfinity = -Infinity
 
   # The base exception for JSON errors.
-  class JSONError < StandardError; end
+  class JSONError < StandardError
+    def self.wrap(exception)
+      obj = new("Wrapped(#{exception.class}): #{exception.message.inspect}")
+      obj.set_backtrace exception.backtrace
+      obj
+    end
+  end
 
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError; end
@@ -399,7 +405,10 @@ module JSON
   end
 
   # Shortuct for iconv.
-  if ::String.method_defined?(:encode)
+  if ::String.method_defined?(:encode) &&
+    # XXX Rubinius doesn't support ruby 1.9 encoding yet
+    defined?(RUBY_ENGINE) && RUBY_ENGINE != 'rbx'
+  then
     # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)
       string.encode(to, from)

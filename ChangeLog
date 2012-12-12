@@ -1,3 +1,8 @@
+Wed Dec 12 19:48:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: merge JSON 1.7.5.
+	  fix tests and other fixes.
+
 Wed Dec 12 18:30:29 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* class.c (rb_prepend_module): move refined methods from the origin

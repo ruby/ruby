@@ -20,10 +20,13 @@ class Time
   # Returns a hash, that will be turned into a JSON object and represent this
   # object.
   def as_json(*)
+    nanoseconds = [ tv_usec * 1000 ]
+    respond_to?(:tv_nsec) and nanoseconds << tv_nsec
+    nanoseconds = nanoseconds.max
     {
       JSON.create_id => self.class.name,
       's'            => tv_sec,
-      'n'            => respond_to?(:tv_nsec) ? tv_nsec : tv_usec * 1000
+      'n'            => nanoseconds,
     }
   end
 

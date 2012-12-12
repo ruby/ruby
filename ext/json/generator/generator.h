@@ -16,27 +16,6 @@
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
-#ifndef RHASH_SIZE
-#define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
-#endif
-
-#ifndef RFLOAT_VALUE
-#define RFLOAT_VALUE(val) (RFLOAT(val)->value)
-#endif
-
-#ifndef RARRAY_PTR
-#define RARRAY_PTR(ARRAY) RARRAY(ARRAY)->ptr
-#endif
-#ifndef RARRAY_LEN
-#define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
-#endif
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(string) RSTRING(string)->ptr
-#endif
-#ifndef RSTRING_LEN
-#define RSTRING_LEN(string) RSTRING(string)->len
-#endif
-
 /* unicode defintions */
 
 #define UNI_STRICT_CONVERSION 1

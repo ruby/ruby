@@ -1,1 +1,1 @@
-generator.o: generator.c generator.h $(srcdir)/../fbuffer/fbuffer.h $(ruby_headers)
+generator.o: generator.c generator.h $(srcdir)/../fbuffer/fbuffer.h

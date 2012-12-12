@@ -864,7 +864,7 @@ static int isArrayOrObject(VALUE string)
     if (string_len < 2) return 0;
     for (; p < q && isspace(*p); p++);
     for (; q > p && isspace(*q); q--);
-    return *p == '[' && *q == ']' || *p == '{' && *q == '}';
+    return (*p == '[' && *q == ']') || (*p == '{' && *q == '}');
 }
 
 /*
