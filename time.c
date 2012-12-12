@@ -1023,22 +1023,28 @@ timegmw_noleapsecond(struct vtm *vtm)
 
 static st_table *zone_table;
 
+static int
+zone_str_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    const char *s = (const char *)*key;
+    const char **ret = (const char **)arg;
+
+    if (existing) {
+	*ret = (const char *)*value;
+	return ST_STOP;
+    }
+    *ret = s = strdup(s);
+    *key = *value = (st_data_t)s;
+    return ST_CONTINUE;
+}
+
 static const char *
 zone_str(const char *s)
 {
-    st_data_t k, v;
-
     if (!zone_table)
         zone_table = st_init_strtable();
 
-    k = (st_data_t)s;
-    if (st_lookup(zone_table, k, &v)) {
-        return (const char *)v;
-    }
-    s = strdup(s);
-    k = (st_data_t)s;
-    st_add_direct(zone_table, k, k);
-
+    st_update(zone_table, (st_data_t)s, zone_str_update, (st_data_t)&s);
     return s;
 }
 

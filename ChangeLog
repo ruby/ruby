@@ -1,3 +1,7 @@
+Wed Dec 12 18:27:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (zone_str): lookup or insert by using st_update() at once.
+
 Wed Dec 12 15:30:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: add -fno-omit-frame-pointer if libexecinfo is used.
