@@ -1,3 +1,11 @@
+Wed Dec 12 18:30:29 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* class.c (rb_prepend_module): move refined methods from the origin
+	  of a class to the class, because refinements should have priority
+	  over prepended modules.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Wed Dec 12 18:27:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (zone_str): lookup or insert by using st_update() at once.

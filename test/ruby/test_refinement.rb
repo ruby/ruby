@@ -755,6 +755,51 @@ class TestRefinement < Test::Unit::TestCase
                  PrependIntoRefinement::User.invoke_baz_on(x))
   end
 
+  module PrependAfterRefine
+    class C
+      def foo
+        "original"
+      end
+    end
+
+    module M
+      refine C do
+        def foo
+          "refined"
+        end
+
+        def bar
+          "refined"
+        end
+      end
+    end
+
+    module Mixin
+      def foo
+        "mixin"
+      end
+
+      def bar
+        "mixin"
+      end
+    end
+
+    class C
+      prepend Mixin
+    end
+  end
+
+  def test_prepend_after_refine
+    x = eval_using(PrependAfterRefine::M,
+                   "TestRefinement::PrependAfterRefine::C.new.foo")
+    assert_equal("refined", x)
+    assert_equal("mixin", TestRefinement::PrependAfterRefine::C.new.foo)
+    y = eval_using(PrependAfterRefine::M,
+                   "TestRefinement::PrependAfterRefine::C.new.bar")
+    assert_equal("refined", y)
+    assert_equal("mixin", TestRefinement::PrependAfterRefine::C.new.bar)
+  end
+
   private
 
   def eval_using(mod, s)

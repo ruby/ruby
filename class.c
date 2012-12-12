@@ -731,6 +731,33 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
     return changed;
 }
 
+static int
+move_refined_method(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_method_entry_t *me = (rb_method_entry_t *) value;
+    st_table *tbl = (st_table *) data;
+
+    if (me->def->type == VM_METHOD_TYPE_REFINED) {
+	if (me->def->body.orig_me) {
+	    rb_method_entry_t *orig_me = me->def->body.orig_me, *new_me;
+	    me->def->body.orig_me = NULL;
+	    new_me = ALLOC(rb_method_entry_t);
+	    *new_me = *me;
+	    st_add_direct(tbl, key, (st_data_t) new_me);
+	    *me = *orig_me;
+	    xfree(orig_me);
+	    return ST_CONTINUE;
+	}
+	else {
+	    st_add_direct(tbl, key, (st_data_t) me);
+	    return ST_DELETE;
+	}
+    }
+    else {
+	return ST_CONTINUE;
+    }
+}
+
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
@@ -754,6 +781,8 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_ORIGIN(klass) = origin;
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL(klass) = st_init_numtable();
+	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
+		   (st_data_t) RCLASS_M_TBL(klass));
     }
     changed = include_modules_at(klass, klass, module);
     if (changed < 0)
