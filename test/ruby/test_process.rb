@@ -1381,7 +1381,9 @@ class TestProcess < Test::Unit::TestCase
     bug4314 = '[ruby-core:34842]'
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
-    assert_raise(*exs, bug4314) {Process.spawn("a" * 10_000_000)}
+    EnvUtil.suppress_warning do
+      assert_raise(*exs, bug4314) {Process.spawn("a" * 10_000_000)}
+    end
   end
 
   def test_too_long_path2
