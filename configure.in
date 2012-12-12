@@ -2378,6 +2378,12 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_CHECK_HEADERS([execinfo.h])
     if test "x$ac_cv_header_execinfo_h" = xyes; then
 	AC_CHECK_LIB([execinfo], [backtrace])
+	execinfo_frame_pointer=no
+	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [execinfo_frame_pointer=yes])
+	if test "x$execinfo_frame_pointer" = xyes; then
+	    optflags="${optflags+$optflags }-fno-omit-frame-pointer"
+	    CFLAGS="$CFLAGS -fno-omit-frame-pointer"
+	fi
     fi])
 AC_CHECK_FUNCS(backtrace)
 

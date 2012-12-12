@@ -424,9 +424,6 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
-#if defined(__FreeBSD__) && defined(__OPTIMIZE__)
-#undef HAVE_BACKTRACE
-#endif
 #ifndef HAVE_BACKTRACE
 #define HAVE_BACKTRACE 0
 #endif

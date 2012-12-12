@@ -1,3 +1,11 @@
+Wed Dec 12 15:30:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -fno-omit-frame-pointer if libexecinfo is used.
+	  At least on FreeBSD ruby will crash on getting C backtrace
+	  when it is compiled with other than -O0.
+
+	* vm_dump.c: enable backtrace on FreeBSD even if with optimizations.
+
 Wed Dec 12 16:08:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rdoc/test_rdoc_rdoc.rb (TestRDocRDoc#test_normalized_file_list_non_file_directory):
