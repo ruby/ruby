@@ -537,12 +537,8 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	}
 	return val;
     }
-    else {
-	return rb_ivar_get(obj, id);
-    }
-#else
+#endif	/* USE_IC_FOR_IVAR */
     return rb_ivar_get(obj, id);
-#endif
 }
 
 static inline void
@@ -587,10 +583,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	    /* fall through */
 	}
     }
+#endif	/* USE_IC_FOR_IVAR */
     rb_ivar_set(obj, id, val);
-#else
-    rb_ivar_set(obj, id, val);
-#endif
 }
 
 static VALUE
