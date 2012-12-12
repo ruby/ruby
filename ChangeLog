@@ -1,3 +1,8 @@
+Wed Dec 12 13:40:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): no uninitialized instance variables
+	  warnings for non-object if attr method.
+
 Wed Dec 12 06:43:37 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* iseq.c (rb_iseq_parameters): fix limit for optional arguments.

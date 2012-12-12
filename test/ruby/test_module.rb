@@ -1513,4 +1513,67 @@ class TestModule < Test::Unit::TestCase
       end
     end
   end
+
+  class AttrTest
+    class << self
+      attr_accessor :cattr
+    end
+    attr_accessor :iattr
+    def ivar
+      @ivar
+    end
+  end
+
+  def test_uninitialized_instance_variable
+    a = AttrTest.new
+    stderr = EnvUtil.verbose_warning do
+      assert_nil(a.ivar)
+    end
+    assert_match(/instance variable @ivar not initialized/, stderr)
+    a.instance_variable_set(:@ivar, 42)
+    stderr = EnvUtil.verbose_warning do
+      assert_equal(42, a.ivar)
+    end
+    assert_equal("", stderr)
+  end
+
+  def test_uninitialized_attr
+    a = AttrTest.new
+    stderr = EnvUtil.verbose_warning do
+      assert_nil(a.iattr)
+    end
+    assert_equal("", stderr)
+    a.iattr = 42
+    stderr = EnvUtil.verbose_warning do
+      assert_equal(42, a.iattr)
+    end
+    assert_equal("", stderr)
+  end
+
+  def test_uninitialized_attr_class
+    stderr = EnvUtil.verbose_warning do
+      assert_nil(AttrTest.cattr)
+    end
+    assert_equal("", stderr)
+    AttrTest.cattr = 42
+    stderr = EnvUtil.verbose_warning do
+      assert_equal(42, AttrTest.cattr)
+    end
+    assert_equal("", stderr)
+  end
+
+  def test_uninitialized_attr_non_object
+    a = Class.new(Array) do
+      attr_accessor :iattr
+    end.new
+    stderr = EnvUtil.verbose_warning do
+      assert_nil(a.iattr)
+    end
+    assert_equal("", stderr)
+    a.iattr = 42
+    stderr = EnvUtil.verbose_warning do
+      assert_equal(42, a.iattr)
+    end
+    assert_equal("", stderr)
+  end
 end

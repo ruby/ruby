@@ -538,6 +538,8 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	return val;
     }
 #endif	/* USE_IC_FOR_IVAR */
+    if (is_attr)
+	return rb_attr_get(obj, id);
     return rb_ivar_get(obj, id);
 }
 
