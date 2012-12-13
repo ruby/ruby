@@ -11,6 +11,7 @@
 require "irb/cmd/nop.rb"
 require "irb/ext/multi-irb"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
     class IrbCommand<Nop
@@ -38,3 +39,4 @@ module IRB
     end
   end
 end
+# :startdoc:

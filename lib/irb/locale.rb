@@ -8,7 +8,7 @@
 #
 #
 #
-module IRB
+module IRB # :nodoc:
   class Locale
     @RCS_ID='-$Id$-'
 

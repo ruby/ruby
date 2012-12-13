@@ -13,12 +13,13 @@ require "irb/inspector"
 
 module IRB
   class Context
+    # Creates a new IRB context.
     #
-    # Arguments:
-    #   input_method: nil -- stdin or readline
-    #		      String -- File
-    #		      other -- using this as InputMethod
+    # The optional +input_method+ argument:
     #
+    # +nil+::     uses stdin or Readline
+    # +String+::  uses a File
+    # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
       @irb = irb
       if workspace
@@ -116,31 +117,69 @@ module IRB
     attr_accessor :irb_name
     attr_accessor :irb_path
 
+    # Whether +Readline+ is enabled or not.
+    #
+    # See #use_readline= for more information.
     attr_reader :use_readline
     attr_reader :inspect_mode
 
     attr_reader :prompt_mode
+    # Standard IRB prompt
+    #
+    # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_i
+    # IRB prompt for continuated strings
+    #
+    # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_s
+    # IRB prompt for continuated statement (e.g. immediately after an +if+)
+    #
+    # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_c
+    # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_n
     attr_accessor :auto_indent_mode
     attr_accessor :return_format
 
+    # Whether <code>^C</code> (+control-c+) will be ignored or not.
+    #
+    # If set to +false+, <code>^C</code> will quit irb.
+    #
+    # If set to +true+,
+    #
+    # * during input:   cancel input then return to top level.
+    # * during execute: abandon current execution.
     attr_accessor :ignore_sigint
+    # Whether <code>^D</code> (+control-d+) will be ignored or not.
+    #
+    # If set to +false+, <code>^D</code> will quit irb.
     attr_accessor :ignore_eof
     attr_accessor :echo
+    # Whether verbose messages are displayed or not.
     attr_accessor :verbose
+    # The debug level of irb
+    #
+    # See #debug_level= for more information.
     attr_reader :debug_level
 
+    # The limit of backtrace lines displayed as top +n+ and tail +n+.
+    #
+    # The default value is 16.
+    #
+    # Can also be set using the +--back-trace-limit+ command line option.
+    #
+    # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
+    # Alias for #use_readline
     alias use_readline? use_readline
+    # Alias for #rc
     alias rc? rc
     alias ignore_sigint? ignore_sigint
     alias ignore_eof? ignore_eof
     alias echo? echo
 
+    # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
 	if defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
@@ -190,6 +229,17 @@ module IRB
       @io.class == FileInputMethod
     end
 
+    # Specifies the inspect mode with +opt+:
+    #
+    # +true+::  display +inspect+
+    # +false+:: display +to_s+
+    # +nil+::   inspect mode in non-math mode,
+    #           non-inspect mode in math mode
+    #
+    # Can also be set using the +--inspect+ and +--noinspect+ command line
+    # options.
+    #
+    # See IRB@Command+line+options for more command line options.
     def inspect_mode=(opt)
 
       if i = INSPECTORS[opt]
@@ -234,11 +284,27 @@ module IRB
     end
 
 
+    # Sets whether or not to use the Readline extension
+    #
+    # +true+::  enables +Readline+
+    # +false+:: disables +Readline+
+    # +nil+::   intends to use +Readline+,
+    #           except for when +inf-ruby-mode+ is active.
+    #
+    # Can also be set using the +--noreadline+ and +--readline+ command line
+    # options.
+    #
+    # See IRB@Command+line+options for more command line options.
     def use_readline=(opt)
       @use_readline = opt
       print "use readline module\n" if @use_readline
     end
 
+    # Sets the debug level of irb
+    #
+    # Can also be set using the +--irb_debug+ command line option.
+    #
+    # See IRB@Command+line+options for more command line options.
     def debug_level=(value)
       @debug_level = value
       RubyLex.debug_level = value
@@ -261,6 +327,7 @@ module IRB
     end
 
     alias __exit__ exit
+    # Exits the current session, see IRB.irb_exit
     def exit(ret = 0)
       IRB.irb_exit(@irb, ret)
     end

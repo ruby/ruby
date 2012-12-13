@@ -9,7 +9,7 @@
 #
 #
 
-module IRB
+module IRB # :nodoc:
 
   class Context
 
@@ -29,7 +29,17 @@ module IRB
       @last_value
     end
 
+    # The command result history limit.
     attr_reader :eval_history
+    # Sets command result history limit.
+    #
+    # +no+ is an Integer or +nil+.
+    #
+    # Returns +no+ of history items if greater than 0.
+    #
+    # If +no+ is 0, the number of history items is unlimited.
+    #
+    # If +no+ is +nil+, execution result history isn't used (default).
     def eval_history=(no)
       if no
 	if defined?(@eval_history) && @eval_history

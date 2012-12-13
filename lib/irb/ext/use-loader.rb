@@ -18,6 +18,7 @@ class Object
 end
 
 module IRB
+  # :stopdoc:
   module ExtendCommandBundle
     def irb_load(*opts, &b)
       ExtendCommand::Load.execute(irb_context, *opts, &b)
@@ -26,17 +27,25 @@ module IRB
       ExtendCommand::Require.execute(irb_context, *opts, &b)
     end
   end
+  # :startdoc:
 
   class Context
 
     IRB.conf[:USE_LOADER] = false
 
+    # Returns whether +irb+'s own file reader method is used by
+    # +load+/+require+ or not.
+    #
+    # This mode is globally affected (irb-wide).
     def use_loader
       IRB.conf[:USE_LOADER]
     end
 
     alias use_loader? use_loader
 
+    # Sets IRB.conf[:USE_LOADER]
+    #
+    # See #use_loader for more information.
     def use_loader=(opt)
 
       if IRB.conf[:USE_LOADER] != opt

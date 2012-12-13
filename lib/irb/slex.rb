@@ -12,6 +12,7 @@
 require "e2mmap"
 require "irb/notifier"
 
+# :stopdoc:
 module IRB
   class SLex
     @RCS_ID='-$Id$-'
@@ -243,6 +244,7 @@ module IRB
     end
   end
 end
+# :startdoc:
 
 if $0 == __FILE__
   #    Tracer.on

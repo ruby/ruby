@@ -8,6 +8,7 @@
 #
 #
 #
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Nop
@@ -35,4 +36,4 @@ module IRB
     end
   end
 end
-
+# :startdoc:

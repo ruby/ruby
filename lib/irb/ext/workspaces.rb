@@ -9,13 +9,14 @@
 #
 #
 
-module IRB
+module IRB # :nodoc:
   class Context
 
     def irb_level
       workspace_stack.size
     end
 
+    # Workspaces in the current stack
     def workspaces
       if defined? @workspaces
 	@workspaces
@@ -24,6 +25,11 @@ module IRB
       end
     end
 
+    # Creates a new workspace with the given object or binding, and appends it
+    # onto the current #workspaces stack.
+    #
+    # See IRB::Context#change_workspace and IRB::WorkSpace.new for more
+    # information.
     def push_workspace(*_main)
       if _main.empty?
 	if workspaces.empty?
@@ -43,6 +49,10 @@ module IRB
       end
     end
 
+    # Removes the last element from the current #workspaces stack and returns
+    # it, or +nil+ if the current workspace stack is empty.
+    #
+    # Also, see #push_workspace.
     def pop_workspace
       if workspaces.empty?
 	print "workspace stack empty\n"

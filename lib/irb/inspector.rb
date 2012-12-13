@@ -10,7 +10,7 @@
 #
 #
 
-module IRB
+module IRB # :nodoc:
 
   def IRB::Inspector(inspect, init = nil)
     Inspector.new(inspect, init)

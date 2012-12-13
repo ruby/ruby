@@ -1,3 +1,9 @@
+Thu Dec 13 14:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb*: merge doc from doc/irb/ird.rd and improve overall
+	  documentation of IRB
+	* doc/irb/irb.rd: remove stale documentation
+
 Thu Dec 13 14:10:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* marshal.c (r_entry0): don't taint classes and modules because

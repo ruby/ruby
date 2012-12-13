@@ -143,7 +143,10 @@ module IRB
     IRB.JobManager.irb(Thread.current).context
   end
 
-  # invoke multi-irb
+  # Creates a new IRB session, see Irb.new.
+  #
+  # The optional +file+ argument is given to Context.new, along with the
+  # workspace created with the remaining arguments, see WorkSpace.new
   def IRB.irb(file = nil, *main)
     workspace = WorkSpace.new(*main)
     parent_thread = Thread.current

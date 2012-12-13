@@ -11,7 +11,7 @@
 
 @RCS_ID='-$Id$-'
 
-
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Fork<Nop
@@ -34,5 +34,6 @@ module IRB
     end
   end
 end
+# :startdoc:
 
 

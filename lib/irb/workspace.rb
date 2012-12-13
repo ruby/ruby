@@ -8,9 +8,11 @@
 #
 #
 #
-module IRB
+module IRB # :nodoc:
   class WorkSpace
-    # create new workspace. set self to main if specified, otherwise
+    # Creates a new workspace.
+    #
+    # set self to main if specified, otherwise
     # inherit main from TOPLEVEL_BINDING.
     def initialize(*main)
       if main[0].kind_of?(Binding)

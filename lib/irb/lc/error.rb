@@ -10,6 +10,7 @@
 #
 require "e2mmap"
 
+# :stopdoc:
 module IRB
 
   # exceptions
@@ -26,4 +27,4 @@ module IRB
   def_exception :UndefinedPromptMode, "Undefined prompt mode(%s)."
 
 end
-
+# :startdoc:

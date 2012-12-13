@@ -13,6 +13,7 @@ require "e2mmap"
 require "irb/slex"
 require "irb/ruby-token"
 
+# :stopdoc:
 class RubyLex
   @RCS_ID='-$Id$-'
 
@@ -1185,3 +1186,4 @@ class RubyLex
     end
   end
 end
+# :startdoc:

@@ -8,6 +8,7 @@
 #
 #
 #
+# :stopdoc:
 module RubyToken
   EXPR_BEG = :EXPR_BEG
   EXPR_MID = :EXPR_MID
@@ -263,3 +264,4 @@ module RubyToken
     def_token(*defs)
   end
 end
+# :startdoc:

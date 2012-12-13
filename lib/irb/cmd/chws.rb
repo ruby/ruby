@@ -12,6 +12,7 @@
 require "irb/cmd/nop.rb"
 require "irb/ext/change-ws.rb"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
 
@@ -29,4 +30,4 @@ module IRB
     end
   end
 end
-
+# :startdoc:

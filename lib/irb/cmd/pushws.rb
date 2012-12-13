@@ -12,6 +12,7 @@
 require "irb/cmd/nop.rb"
 require "irb/ext/workspaces.rb"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Workspaces<Nop
@@ -35,4 +36,5 @@ module IRB
     end
   end
 end
+# :startdoc:
 

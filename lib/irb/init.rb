@@ -9,7 +9,7 @@
 #
 #
 
-module IRB
+module IRB # :nodoc:
 
   # initialize config
   def IRB.setup(ap_path)

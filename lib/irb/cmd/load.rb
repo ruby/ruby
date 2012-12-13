@@ -12,6 +12,7 @@
 require "irb/cmd/nop.rb"
 require "irb/ext/loader"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Load<Nop
@@ -64,3 +65,4 @@ module IRB
   end
 
 end
+# :startdoc:

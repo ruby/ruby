@@ -9,7 +9,7 @@
 #
 #
 
-module IRB
+module IRB # :nodoc:
   class Context
 
     def home_workspace
@@ -20,6 +20,13 @@ module IRB
       end
     end
 
+    # Changes the current workspace to given object or binding.
+    #
+    # If the optional argument is omitted, the workspace will be
+    # #home_workspace which is inherited from +TOPLEVEL_BINDING+ or the main
+    # object, <code>IRB.conf[:MAIN_CONTEXT]</code> when irb was initialized.
+    #
+    # See IRB::WorkSpace.new for more information.
     def change_workspace(*_main)
       if _main.empty?
 	@workspace = home_workspace

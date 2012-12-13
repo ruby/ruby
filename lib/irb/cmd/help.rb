@@ -12,6 +12,7 @@ require 'rdoc/ri/driver'
 
 require "irb/cmd/nop.rb"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Help<Nop
@@ -37,3 +38,4 @@ module IRB
     end
   end
 end
+# :startdoc:

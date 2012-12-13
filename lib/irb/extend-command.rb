@@ -8,7 +8,7 @@
 #
 #
 #
-module IRB
+module IRB # :nodoc:
   #
   # IRB extended command
   #
@@ -23,6 +23,9 @@ module IRB
       irb_context.exit(ret)
     end
 
+    # Displays current configuration.
+    #
+    # Modifing the configuration is achieved by sending a message to IRB.conf.
     def irb_context
       IRB.CurrentContext
     end
