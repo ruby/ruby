@@ -1,3 +1,11 @@
+Thu Dec 13 14:10:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* marshal.c (r_entry0): don't taint classes and modules because
+	  Marshal.load just return the dumped classes and modules.
+	  [Bug #7325] [ruby-core:49198]
+
+	* test/ruby/test_marshal.rb: related test.
+
 Thu Dec 13 14:10:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_require.rb (TestRequire#test_loaded_features_encoding):

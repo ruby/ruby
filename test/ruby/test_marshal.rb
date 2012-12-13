@@ -499,4 +499,22 @@ class TestMarshal < Test::Unit::TestCase
     ary = [ [2.0, e], [e] ]
     assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug7348)
   end
+
+  class TestClass
+  end
+
+  module TestModule
+  end
+
+  def test_marshal_load_should_not_taint_classes
+    bug7325 = '[ruby-core:49198]'
+    for c in [TestClass, TestModule]
+      assert(!c.tainted?)
+      assert(!c.untrusted?)
+      c2 = Marshal.load(Marshal.dump(c).taint.untrust)
+      assert_same(c, c2)
+      assert(!c.tainted?, bug7325)
+      assert(!c.untrusted?, bug7325)
+    end
+  end
 end
