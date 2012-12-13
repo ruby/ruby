@@ -1,4 +1,3 @@
-# -*- coding: us-ascii -*-
 require 'test/unit'
 require 'erb'
 
@@ -37,15 +36,6 @@ class TestERB < Test::Unit::TestCase
       erb.result
     }
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
-  end
-
-  def test_concurrent_default_binding
-    template1 = 'one <%= ERB.new(template2).result %>'
-
-    eval 'template2 = "two"', TOPLEVEL_BINDING
-
-    bug7046 = '[ruby-core:47638]'
-    assert_equal("one two", ERB.new(template1).result, bug7046)
   end
 end
 
