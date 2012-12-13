@@ -177,7 +177,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
-    if(RB_TYPE_P(clone, T_CLASS)) {
+    if (RB_TYPE_P(clone, T_CLASS)) {
 	class_init_copy_check(clone, orig);
     }
     rb_obj_init_copy(clone, orig);
