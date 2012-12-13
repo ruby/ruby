@@ -11,6 +11,14 @@
 #ifndef METHOD_H
 #define METHOD_H
 
+#ifndef END_OF_ENUMERATION
+# ifdef __GNUC__
+#   define END_OF_ENUMERATION(key)
+# else
+#   define END_OF_ENUMERATION(key) END_OF_##key##_PLACEHOLDER = 0
+# endif
+#endif
+
 typedef enum {
     NOEX_PUBLIC    = 0x00,
     NOEX_NOSUPER   = 0x01,
@@ -46,7 +54,9 @@ typedef enum {
     VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
     VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
     VM_METHOD_TYPE_CFUNC_FRAMELESS,
-    VM_METHOD_TYPE_REFINED
+    VM_METHOD_TYPE_REFINED,
+
+    END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 
 struct rb_call_info_struct;
