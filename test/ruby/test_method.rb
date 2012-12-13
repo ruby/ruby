@@ -206,6 +206,10 @@ class TestMethod < Test::Unit::TestCase
     def o.bar; end
     m = o.method(:bar).unbind
     assert_raise(TypeError) { m.bind(Object.new) }
+
+    feature4254 = '[ruby-core:34267]'
+    m = M.instance_method(:meth)
+    assert_equal(:meth, m.bind(Object.new).call, feature4254)
   end
 
   def test_define_method

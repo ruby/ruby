@@ -1620,7 +1620,8 @@ umethod_bind(VALUE method, VALUE recv)
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
 
-    if (data->rclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, data->rclass)) {
+    if (!RB_TYPE_P(data->rclass, T_MODULE) &&
+	data->rclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, data->rclass)) {
 	if (FL_TEST(data->rclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
 		     "singleton method called for a different object");

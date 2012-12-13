@@ -1,3 +1,8 @@
+Thu Dec 13 13:06:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (umethod_bind): allow another form of method transplanting
+	  from a module via UnboundMethod.  [ruby-core:34267][Feature #4254]
+
 Thu Dec 13 12:07:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_UNUSED_VAR): new macro to suppress
