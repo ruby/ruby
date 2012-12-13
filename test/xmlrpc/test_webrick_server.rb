@@ -63,7 +63,7 @@ class Test_Webrick < Test::Unit::TestCase
     start_server(option) {|w| w.mount('/RPC2', create_servlet) }
   end
 
-  PORT = 8070
+  PORT = 8071
   def test_client_server
     # NOTE: I don't enable SSL testing as this hangs
     [false].each do |use_ssl|
