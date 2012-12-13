@@ -2,7 +2,7 @@ Thu Dec 13 12:07:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_UNUSED_VAR): new macro to suppress
 	  warnings for unused variables.
-	  
+
 	* ext/bigdecimal/bigdecimal.c (ENTER): use RB_UNUSED_VAR() to
 	  suppress annoying warnings by -Wunused-but-set-variable in gcc 4.6.
 
@@ -356,7 +356,7 @@ Sat Dec  8 11:59:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 Sat Dec  8 11:17:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* eval.c (rb_mod_refine), vm_eval.c (rb_yield_refine_block): 
+	* eval.c (rb_mod_refine), vm_eval.c (rb_yield_refine_block):
 	  Module#refine activates all refinements defined in that module
 	  only in a given block.
 
