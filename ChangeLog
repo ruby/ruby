@@ -1,3 +1,11 @@
+Thu Dec 13 12:07:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_UNUSED_VAR): new macro to suppress
+	  warnings for unused variables.
+	  
+	* ext/bigdecimal/bigdecimal.c (ENTER): use RB_UNUSED_VAR() to
+	  suppress annoying warnings by -Wunused-but-set-variable in gcc 4.6.
+
 Thu Dec 13 11:22:33 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: remove "VM_METHOD_TYPE__MAX" from rb_method_type_t.

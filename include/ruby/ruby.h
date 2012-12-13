@@ -529,6 +529,12 @@ static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr
 #endif
 #define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
 
+#ifdef __GNUC__
+#define RB_UNUSED_VAR(x) x __attribute__ ((unused)) 
+#else
+#define RB_UNUSED_VAR(x) x
+#endif
+
 void rb_check_type(VALUE,int);
 #define Check_Type(v,t) rb_check_type((VALUE)(v),(t))
 
