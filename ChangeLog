@@ -1,3 +1,8 @@
+Thu Dec 13 14:02:15 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_file_join): check encoding compatibility before joining
+	  strings.
+
 Thu Dec 13 13:06:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (umethod_bind): allow another form of method transplanting

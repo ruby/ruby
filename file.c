@@ -3940,6 +3940,7 @@ rb_file_join(VALUE ary, VALUE sep)
     VALUE result, tmp;
     const char *name, *tail;
     int checked = TRUE;
+    rb_encoding *enc;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
 
@@ -3994,10 +3995,14 @@ rb_file_join(VALUE ary, VALUE sep)
 		rb_str_set_len(result, tail - name);
 	    }
 	    else if (!*tail) {
+		enc = rb_enc_check(result, sep);
 		rb_str_buf_append(result, sep);
+		rb_enc_associate(result, enc);
 	    }
 	}
+	enc = rb_enc_check(result, tmp);
 	rb_str_buf_append(result, tmp);
+	rb_enc_associate(result, enc);
     }
     RBASIC(result)->klass = rb_cString;
 
