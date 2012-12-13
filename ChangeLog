@@ -1,3 +1,8 @@
+Thu Dec 13 14:10:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_require.rb (TestRequire#test_loaded_features_encoding):
+	  need to check compatibility, not equality of encodings.
+
 Thu Dec 13 14:02:15 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_file_join): check encoding compatibility before joining

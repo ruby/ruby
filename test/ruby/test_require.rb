@@ -429,7 +429,7 @@ class TestRequire < Test::Unit::TestCase
       $: << tmp
       open(File.join(tmp, "foo.rb"), "w") {}
       require "foo"
-      assert_equal(tmp.encoding, $"[0].encoding, bug6377)
+      assert(Encoding.compatible?(tmp, $"[0]), bug6377)
     }
   ensure
     $:.replace(loadpath)
