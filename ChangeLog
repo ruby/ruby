@@ -1,3 +1,9 @@
+Thu Dec 13 23:14:17 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_super_method): a workaround for the
+	  failure of TestRefinement#test_refine_recursion in Windows.
+	  See [ruby-core:50871] for details.
+
 Thu Dec 13 23:10:52  Charlie Somerville  <charlie@charliesomerville.com>
 	* object.c (Init_Object): use rb_mod_init_copy for Class#initialize_copy
 	* class.c (rb_class_init_copy): rename to class_init_copy_check, performs type

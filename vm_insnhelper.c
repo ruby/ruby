@@ -1852,6 +1852,11 @@ vm_call_general(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 static VALUE
 vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
+#ifdef _WIN32
+    volatile int x = 0; /* a workaround to avoid VC++ optimization which
+			   makes vm_call_super_method as an alias of
+			   vm_call_general! */
+#endif
     return vm_call_method(th, reg_cfp, ci);
 }
 
