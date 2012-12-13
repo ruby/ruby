@@ -123,6 +123,11 @@ class RDoc::Parser::C < RDoc::Parser
   include RDoc::Text
 
   ##
+  # Maps C variable names to names of ruby classes or modules
+
+  attr_reader :classes
+
+  ##
   # C file the parser is parsing
 
   attr_accessor :content
@@ -150,16 +155,23 @@ class RDoc::Parser::C < RDoc::Parser
   attr_reader :singleton_classes
 
   ##
-  # Prepare to parse a C file
+  # The TopLevel items in the parsed file belong to
 
-  def initialize(top_level, file_name, content, options, stats)
+  attr_reader :top_level
+
+  ##
+  # Prepares for parsing a C file.  See RDoc::Parser#initialize for details on
+  # the arguments.
+
+  def initialize top_level, file_name, content, options, stats
     super
 
     @known_classes = RDoc::KNOWN_CLASSES.dup
-    @content = handle_tab_width handle_ifdefs_in(@content)
-    @classes = {}
-    @singleton_classes = {}
-    @file_dir = File.dirname(@file_name)
+    @content = handle_tab_width handle_ifdefs_in @content
+    @file_dir = File.dirname @file_name
+
+    @classes           = load_variable_map :c_class_variables
+    @singleton_classes = load_variable_map :c_singleton_class_variables
 
     # missing variable => [handle_class_module arguments]
     @missing_dependencies = {}
@@ -386,13 +398,12 @@ class RDoc::Parser::C < RDoc::Parser
 
   def do_includes
     @content.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
-      if cls = @classes[c]
-        m = @known_classes[m] || m
+      next unless cls = @classes[c]
+      m = @known_classes[m] || m
 
-        comment = RDoc::Comment.new '', @top_level
-        incl = cls.add_include RDoc::Include.new(m, comment)
-        incl.record_location @top_level
-      end
+      comment = RDoc::Comment.new '', @top_level
+      incl = cls.add_include RDoc::Include.new(m, comment)
+      incl.record_location @top_level
     end
   end
 
@@ -801,7 +812,7 @@ class RDoc::Parser::C < RDoc::Parser
     parent_name = @known_classes[parent] || parent
 
     if in_module then
-      enclosure = @classes[in_module] || @store.c_enclosure_classes[in_module]
+      enclosure = @classes[in_module] || @store.find_c_enclosure(in_module)
 
       if enclosure.nil? and enclosure = @known_classes[in_module] then
         enc_type = /^rb_m/ =~ in_module ? :module : :class
@@ -848,8 +859,8 @@ class RDoc::Parser::C < RDoc::Parser
     end
 
     @classes[var_name] = cm
-    @store.c_enclosure_classes[var_name] = cm
     @known_classes[var_name] = cm.full_name
+    @store.add_c_enclosure var_name, cm
   end
 
   ##
@@ -1005,6 +1016,30 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
+  # Loads the variable map with the given +name+ from the RDoc::Store, if
+  # present.
+
+  def load_variable_map map_name
+    return {} unless files = @store.cache[map_name]
+    return {} unless name_map = files[@file_name]
+
+    class_map = {}
+
+    name_map.each do |variable, name|
+      next unless mod = @store.find_class_or_module(name)
+
+      class_map[variable] = if map_name == :c_class_variables then
+                              mod
+                            else
+                              name
+                            end
+      @known_classes[variable] = name
+    end
+
+    class_map
+  end
+
+  ##
   # Look for directives in a normal comment block:
   #
   #   /*
@@ -1136,6 +1171,9 @@ class RDoc::Parser::C < RDoc::Parser
     do_includes
     do_aliases
     do_attrs
+
+    @store.add_c_variables self
+
     @top_level
   end
 

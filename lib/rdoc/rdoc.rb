@@ -476,8 +476,11 @@ The internal error was:
     @store.dry_run  = @options.dry_run
     @store.main     = @options.main_page
     @store.title    = @options.title
+    @store.path     = @options.op_dir
 
     @start_time = Time.now
+
+    @store.load_cache
 
     file_info = parse_files @options.files
 

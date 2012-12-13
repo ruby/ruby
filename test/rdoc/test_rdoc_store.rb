@@ -18,6 +18,7 @@ class TestRDocStore < XrefTestCase
 
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
     @klass.add_comment 'original', @top_level
+    @klass.record_location @top_level
 
     @cmeth = RDoc::AnyMethod.new nil, 'cmethod'
     @cmeth.singleton = true
@@ -87,15 +88,17 @@ class TestRDocStore < XrefTestCase
     @s.clean_cache_collection ancestors
 
     expected = {
-      :ancestors        => ancestors,
-      :attributes       => attrs,
-      :class_methods    => cmethods,
-      :encoding         => nil,
-      :instance_methods => imethods,
-      :modules          => modules,
-      :pages            => pages,
-      :main             => main,
-      :title            => title,
+      :ancestors                   => ancestors,
+      :attributes                  => attrs,
+      :class_methods               => cmethods,
+      :c_class_variables           => {},
+      :c_singleton_class_variables => {},
+      :encoding                    => nil,
+      :instance_methods            => imethods,
+      :modules                     => modules,
+      :pages                       => pages,
+      :main                        => main,
+      :title                       => title,
     }
 
     @s.save_cache
@@ -113,6 +116,38 @@ class TestRDocStore < XrefTestCase
 
   def refute_file path
     refute File.exist?(path), "#{path} exists"
+  end
+
+  def test_add_c_enclosure
+    @s.add_c_enclosure 'cC1', @c1
+
+    expected = { 'cC1' => @c1 }
+
+    assert_equal expected, @s.c_enclosure_classes
+  end
+
+  def test_add_c_variables
+    options = RDoc::Options.new
+
+    c_file = @s.add_file 'ext.c'
+
+    some_ext   = c_file.add_class RDoc::NormalClass, 'SomeExt'
+                 c_file.add_class RDoc::SingleClass, 'SomeExtSingle'
+
+    c_parser = RDoc::Parser::C.new c_file, 'ext.c', '', options, nil
+
+    c_parser.classes['cSomeExt']             = some_ext
+    c_parser.singleton_classes['s_cSomeExt'] = 'SomeExtSingle'
+
+    @s.add_c_variables c_parser
+
+    expected = { 'ext.c' => { 'cSomeExt' => 'SomeExt' } }
+
+    assert_equal expected, @s.c_class_variables
+
+    expected = { 'ext.c' => { 's_cSomeExt' => 'SomeExtSingle' } }
+
+    assert_equal expected, @s.c_singleton_class_variables
   end
 
   def test_add_file
@@ -212,6 +247,31 @@ class TestRDocStore < XrefTestCase
 
     assert_equal 'C2::A1', a1.full_name
     refute_empty a1.aliases
+  end
+
+  def test_find_c_enclosure
+    assert_nil @s.find_c_enclosure 'cC1'
+
+    @s.add_c_enclosure 'cC1', @c1
+
+    assert_equal @c1, @s.find_c_enclosure('cC1')
+  end
+
+  def test_find_c_enclosure_from_cache
+    @s.save_class @klass
+    @s.classes_hash.clear
+
+    assert_nil @s.find_c_enclosure 'cObject'
+
+    @s.c_enclosure_names['cObject'] = 'Object'
+
+    klass = @s.find_c_enclosure('cObject')
+    assert_equal @klass, klass
+
+    assert_empty klass.comment_location
+    assert_equal @top_level, klass.parent
+
+    assert_includes @s.c_enclosure_classes, 'cObject'
   end
 
   def test_find_class_named
@@ -329,11 +389,15 @@ class TestRDocStore < XrefTestCase
 
   def test_load_cache
     cache = {
-      :encoding => :encoding_value,
-      :methods  => { "Object" => %w[Object#method] },
-      :main     => @page.full_name,
-      :modules  => %w[Object],
-      :pages    => [],
+      :c_class_variables           =>
+        { 'file.c' => { 'cKlass' => 'Klass' } },
+      :c_singleton_class_variables =>
+        { 'file.c' => { 'sKlass' => 'KlassSingle' } },
+      :encoding                    => :encoding_value,
+      :methods                     => { "Object" => %w[Object#method] },
+      :main                        => @page.full_name,
+      :modules                     => %w[Object],
+      :pages                       => [],
     }
 
     Dir.mkdir @tmpdir
@@ -348,17 +412,28 @@ class TestRDocStore < XrefTestCase
 
     assert_equal :encoding_value, @s.encoding
     assert_equal 'README.txt',    @s.main
+
+    expected = { 'file.c' => { 'cKlass' => 'Klass' } }
+    assert_equal expected, @s.cache[:c_class_variables]
+
+    expected = { 'file.c' => { 'sKlass' => 'KlassSingle' } }
+    assert_equal expected, @s.cache[:c_singleton_class_variables]
+
+    expected = { 'cKlass' => 'Klass' }
+    assert_equal expected, @s.c_enclosure_names
   end
 
   def test_load_cache_encoding_differs
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
     cache = {
-      :encoding => Encoding::ISO_8859_1,
-      :main     => nil,
-      :methods  => { "Object" => %w[Object#method] },
-      :modules  => %w[Object],
-      :pages    => [],
+      :c_class_variables           => {},
+      :c_singleton_class_variables => {},
+      :encoding                    => Encoding::ISO_8859_1,
+      :main                        => nil,
+      :methods                     => { "Object" => %w[Object#method] },
+      :modules                     => %w[Object],
+      :pages                       => [],
     }
 
     Dir.mkdir @tmpdir
@@ -378,15 +453,17 @@ class TestRDocStore < XrefTestCase
 
   def test_load_cache_no_cache
     cache = {
-      :ancestors        => {},
-      :attributes       => {},
-      :class_methods    => {},
-      :encoding         => nil,
-      :instance_methods => {},
-      :main             => nil,
-      :modules          => [],
-      :pages            => [],
-      :title            => nil,
+      :ancestors                   => {},
+      :attributes                  => {},
+      :class_methods               => {},
+      :c_class_variables           => {},
+      :c_singleton_class_variables => {},
+      :encoding                    => nil,
+      :instance_methods            => {},
+      :main                        => nil,
+      :modules                     => [],
+      :pages                       => [],
+      :title                       => nil,
     }
 
     @s.load_cache
@@ -404,6 +481,8 @@ class TestRDocStore < XrefTestCase
       :modules          => %w[Object],
       # no :pages
       # no :main
+      # no :c_class_variables
+      # no :c_singleton_class_variables
     }
 
     Dir.mkdir @tmpdir
@@ -415,14 +494,16 @@ class TestRDocStore < XrefTestCase
     @s.load_cache
 
     expected = {
-      :ancestors        => {},
-      :attributes       => {},
-      :class_methods    => {},
-      :encoding         => :encoding_value,
-      :instance_methods => { "Object" => %w[Object#method] },
-      :main             => nil,
-      :modules          => %w[Object],
-      :pages            => [],
+      :ancestors                   => {},
+      :attributes                  => {},
+      :class_methods               => {},
+      :c_class_variables           => {},
+      :c_singleton_class_variables => {},
+      :encoding                    => :encoding_value,
+      :instance_methods            => { "Object" => %w[Object#method] },
+      :main                        => nil,
+      :modules                     => %w[Object],
+      :pages                       => [],
     }
 
     assert_equal expected, @s.cache
@@ -534,6 +615,8 @@ class TestRDocStore < XrefTestCase
       },
       :attributes => { 'Object' => ['attr_accessor attr'] },
       :class_methods => { 'Object' => %w[cmethod] },
+      :c_class_variables => {},
+      :c_singleton_class_variables => {},
       :instance_methods => {
         'Object' => %w[attr method method! method_bang],
         'Object::SubClass' => %w[method],
@@ -564,9 +647,35 @@ class TestRDocStore < XrefTestCase
     @s.main     = @page.full_name
     @s.title    = 'title'
 
+    options = RDoc::Options.new
+
+    c_file = @s.add_file 'ext.c'
+
+    some_ext   = c_file.add_class RDoc::NormalClass, 'SomeExt'
+                 c_file.add_class RDoc::SingleClass, 'SomeExtSingle'
+
+    c_parser = RDoc::Parser::C.new c_file, 'ext.c', '', options, nil
+
+    c_parser.classes['cSomeExt']             = some_ext
+    c_parser.singleton_classes['s_cSomeExt'] = 'SomeExtSingle'
+
+    @s.add_c_variables c_parser
+
     @s.save_cache
 
     assert_file File.join(@tmpdir, 'cache.ri')
+
+    c_class_variables = {
+      'ext.c' => {
+        'cSomeExt' => 'SomeExt'
+      }
+    }
+
+    c_singleton_class_variables = {
+      'ext.c' => {
+        's_cSomeExt' => 'SomeExtSingle'
+      }
+    }
 
     expected = {
       :ancestors => {
@@ -574,6 +683,8 @@ class TestRDocStore < XrefTestCase
       },
       :attributes => { 'Object' => ['attr_accessor attr'] },
       :class_methods => { 'Object' => %w[cmethod] },
+      :c_class_variables => c_class_variables,
+      :c_singleton_class_variables => c_singleton_class_variables,
       :instance_methods => {
         'Object' => %w[method method! method_bang],
         'Object::SubClass' => %w[method],

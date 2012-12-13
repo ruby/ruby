@@ -69,7 +69,19 @@ class RDoc::Store
   # Stores the name of the C variable a class belongs to.  This helps wire up
   # classes defined from C across files.
 
-  attr_reader :c_enclosure_classes
+  attr_reader :c_enclosure_classes # :nodoc:
+
+  attr_reader :c_enclosure_names # :nodoc:
+
+  ##
+  # Maps C variables to class or module names for each parsed C file.
+
+  attr_reader :c_class_variables
+
+  ##
+  # Maps C variables to singleton class names for each parsed C file.
+
+  attr_reader :c_singleton_class_variables
 
   ##
   # If true this Store will not write any files
@@ -114,15 +126,17 @@ class RDoc::Store
     @type     = type
 
     @cache = {
-      :ancestors        => {},
-      :attributes       => {},
-      :class_methods    => {},
-      :encoding         => @encoding,
-      :instance_methods => {},
-      :main             => nil,
-      :modules          => [],
-      :pages            => [],
-      :title            => nil,
+      :ancestors                   => {},
+      :attributes                  => {},
+      :class_methods               => {},
+      :c_class_variables           => {},
+      :c_singleton_class_variables => {},
+      :encoding                    => @encoding,
+      :instance_methods            => {},
+      :main                        => nil,
+      :modules                     => [],
+      :pages                       => [],
+      :title                       => nil,
     }
 
     @classes_hash = {}
@@ -130,9 +144,32 @@ class RDoc::Store
     @files_hash   = {}
 
     @c_enclosure_classes = {}
+    @c_enclosure_names   = {}
+
+    @c_class_variables           = {}
+    @c_singleton_class_variables = {}
 
     @unique_classes = nil
     @unique_modules = nil
+  end
+
+  ##
+  # Adds +module+ as an enclosure (namespace) for the given +variable+ for C
+  # files.
+
+  def add_c_enclosure variable, namespace
+    @c_enclosure_classes[variable] = namespace
+  end
+
+  ##
+  # Adds C variables from an RDoc::Parser::C
+
+  def add_c_variables c_parser
+    filename = c_parser.top_level.relative_name
+
+    @c_class_variables[filename] = make_variable_map c_parser.classes
+
+    @c_singleton_class_variables[filename] = c_parser.singleton_classes
   end
 
   ##
@@ -302,6 +339,28 @@ class RDoc::Store
 
   def files_hash
     @files_hash
+  end
+
+  ##
+  # Finds the enclosure (namespace) for the given C +variable+.
+
+  def find_c_enclosure variable
+    @c_enclosure_classes.fetch variable do
+      break unless name = @c_enclosure_names[variable]
+
+      mod = find_class_or_module name
+
+      unless mod then
+        loaded_mod = load_class_data name
+
+        file = loaded_mod.in_files.first
+        file.store = self
+
+        mod = file.add_module RDoc::NormalModule, name
+      end
+
+      @c_enclosure_classes[variable] = mod
+    end
   end
 
   ##
@@ -500,22 +559,26 @@ class RDoc::Store
 
     @encoding = load_enc unless @encoding
 
-    @cache[:pages] ||= []
-    @cache[:main]  ||= nil
+    @cache[:pages]                       ||= []
+    @cache[:main]                        ||= nil
+    @cache[:c_class_variables]           ||= {}
+    @cache[:c_singleton_class_variables] ||= {}
+
+    @cache[:c_class_variables].each do |_, map|
+      map.each do |variable, name|
+        @c_enclosure_names[variable] = name
+      end
+    end
 
     @cache
   rescue Errno::ENOENT
   end
 
   ##
-  # Loads ri data for +klass_name+
+  # Loads ri data for +klass_name+ and hooks it up to this store.
 
   def load_class klass_name
-    file = class_file klass_name
-
-    obj = open file, 'rb' do |io|
-      Marshal.load io.read
-    end
+    obj = load_class_data klass_name
 
     obj.store = self
 
@@ -524,6 +587,17 @@ class RDoc::Store
       @classes_hash[klass_name] = obj
     when RDoc::NormalModule then
       @modules_hash[klass_name] = obj
+    end
+  end
+
+  ##
+  # Loads ri data for +klass_name+
+
+  def load_class_data klass_name
+    file = class_file klass_name
+
+    obj = open file, 'rb' do |io|
+      Marshal.load io.read
     end
   rescue Errno::ENOENT => e
     error = MissingFileError.new(self, file, klass_name)
@@ -581,6 +655,20 @@ class RDoc::Store
 
   def main= page
     @cache[:main] = page
+  end
+
+  ##
+  # Converts the variable => ClassModule map +variables+ from a C parser into 
+  # a variable => class name map.
+
+  def make_variable_map variables
+    map = {}
+
+    variables.each { |variable, class_module|
+      map[variable] = class_module.full_name
+    }
+
+    map
   end
 
   ##
@@ -687,6 +775,9 @@ class RDoc::Store
     @cache[:pages].sort!
 
     @cache[:encoding] = @encoding # this gets set twice due to assert_cache
+
+    @cache[:c_class_variables].merge!           @c_class_variables
+    @cache[:c_singleton_class_variables].merge! @c_singleton_class_variables
 
     return if @dry_run
 

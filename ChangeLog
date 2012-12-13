@@ -1,3 +1,16 @@
+Thu Dec 13 16:53:10 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/class_module.rb:  Fixed duplicate comments for classes and
+	  modules from C.
+	* test/rdoc/test_rdoc_class_module.rb:  Test for the above.
+
+	* lib/rdoc/parser/c.rb:  Reload C variable names to allow proper
+	  updates of an ri store for C files.
+	* lib/rdoc/rdoc.rb:  ditto.
+	* lib/rdoc/store.rb:  ditto.
+	* test/rdoc/test_rdoc_parser_c.rb:  Test for the above.
+	* test/rdoc/test_rdoc_store.rb:  ditto.
+
 Thu Dec 13 14:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb*: merge doc from doc/irb/ird.rd and improve overall
