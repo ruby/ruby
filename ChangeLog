@@ -1,3 +1,14 @@
+Thu Dec 13 11:22:33 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: remove "VM_METHOD_TYPE__MAX" from rb_method_type_t.
+	  rb_method_type_t is not a number and "_MAX" causes misunderstanding.
+
+	* proc.c (rb_method_entry_arity): ditto.
+
+	* vm_eval.c (vm_call0_body): ditto.
+
+	* vm_insnhelper.c (vm_call_method): ditto.
+
 Wed Dec 12 21:40:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (Dir::Tmpname#create): deal with a prefix name which

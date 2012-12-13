@@ -46,9 +46,7 @@ typedef enum {
     VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
     VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
     VM_METHOD_TYPE_CFUNC_FRAMELESS,
-    VM_METHOD_TYPE_REFINED,
-
-    VM_METHOD_TYPE__MAX
+    VM_METHOD_TYPE_REFINED
 } rb_method_type_t;
 
 struct rb_call_info_struct;
