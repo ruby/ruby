@@ -242,6 +242,9 @@ module Psych
         elsif o =~ /\n/
           quote = true
           style = Nodes::Scalar::LITERAL
+        elsif o =~ /^\W/
+          quote = true
+          style = Nodes::Scalar::DOUBLE_QUOTED
         else
           quote = !(String === @ss.tokenize(o))
           plain = !quote
