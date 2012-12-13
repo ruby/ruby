@@ -1,3 +1,11 @@
+Thu Dec 13 23:10:52  Charlie Somerville  <charlie@charliesomerville.com>
+	* object.c (Init_Object): use rb_mod_init_copy for Class#initialize_copy
+	* class.c (rb_class_init_copy): rename to class_init_copy_check, performs type
+	  checks on arguments to prevent reinitialization of initialized class
+	  [ruby-core:50869] [Bug #7557]
+	* class.c (rb_mod_init_copy): use class_init_copy_check if receiver is T_CLASS
+	* test/ruby/test_class.rb (class TestClass): related test
+
 Thu Dec 13 16:53:10 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/class_module.rb:  Fixed duplicate comments for classes and

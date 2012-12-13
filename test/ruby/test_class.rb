@@ -270,4 +270,19 @@ class TestClass < Test::Unit::TestCase
     bug5274 = StrClone.new("[ruby-dev:44460]")
     assert_equal(bug5274, Marshal.load(Marshal.dump(bug5274)))
   end
+
+  def test_cannot_reinitialize_class_with_initialize_copy # [ruby-core:50869]
+    assert_in_out_err([], <<-RUBY, ["Object"], [])
+      class Class
+        def initialize_copy(*); super; end
+      end
+
+      class A; end
+      class B; end
+
+      A.send(:initialize_copy, Class.new(B)) rescue nil
+
+      p A.superclass
+    RUBY
+  end
 end
