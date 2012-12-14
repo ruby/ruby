@@ -1,3 +1,9 @@
+Fri Dec 14 10:36:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_trace.c (exec_hooks): add volatile to avoid segv.
+	  On test-all with -j, it may crash in TH_POP_TAG.
+	  Detailed mechanism is not known but this fixes it.
+
 Fri Dec 14 04:08:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil::Unit::Assertionsassert_separately):
