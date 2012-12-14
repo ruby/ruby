@@ -1,3 +1,12 @@
+Fri Dec 14 16:56:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_super_method): remove volatile introduced
+	  in r38365.
+
+	* vm_insnhelper.c (vm_call_method): use __forceinline to prevent
+	  VC++ to make vm_call_general and vm_call_super_method as the same
+	  method.  Thanks, Heesob Park.  [Bug #7556] [ruby-core:50867]
+
 Fri Dec 14 14:59:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):

@@ -1556,7 +1556,13 @@ vm_call_bmethod(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     return vm_call_bmethod_body(th, ci, argv);
 }
 
-static inline VALUE vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static
+#ifdef _MSC_VER
+__forceinline
+#else
+inline
+#endif
+VALUE vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
 
 static VALUE
 vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
@@ -1665,7 +1671,13 @@ find_refinement(VALUE refinements, VALUE klass)
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 static VALUE vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci);
 
-static inline VALUE
+static
+#ifdef _MSC_VER
+__forceinline
+#else
+inline
+#endif
+VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     int enable_fastpath = 1;
@@ -1852,11 +1864,6 @@ vm_call_general(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 static VALUE
 vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
-#ifdef _WIN32
-    volatile int x = 0; /* a workaround to avoid VC++ optimization which
-			   makes vm_call_super_method as an alias of
-			   vm_call_general! */
-#endif
     return vm_call_method(th, reg_cfp, ci);
 }
 
