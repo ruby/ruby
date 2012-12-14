@@ -120,6 +120,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC::Profiler.enable
 
     GC.start
@@ -131,8 +132,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal(200, GC::Profiler.raw_data.size)
     GC::Profiler.clear
     assert_equal(0, GC::Profiler.raw_data.size)
-  ensure
-    GC::Profiler.disable
+    eom
   end
 
   def test_finalizing_main_thread

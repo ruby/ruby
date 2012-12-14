@@ -70,6 +70,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_from
+    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
     assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
 
@@ -91,9 +92,11 @@ class TestObjSpace < Test::Unit::TestCase
       end
     }
     assert_operator(max, :>=, 1_001, "1000 elems + Array class")
+    eom
   end
 
   def test_reachable_objects_size
+    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     ObjectSpace.each_object{|o|
       ObjectSpace.reachable_objects_from(o).each{|reached_obj|
         size = ObjectSpace.memsize_of(reached_obj)
@@ -101,5 +104,6 @@ class TestObjSpace < Test::Unit::TestCase
         assert_operator(size, :>=, 0)
       }
     }
+    eom
   end
 end
