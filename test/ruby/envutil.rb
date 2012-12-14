@@ -193,6 +193,23 @@ module Test
         assert(status.success?, m)
       end
 
+      def assert_separately(args, file, line, src)
+        opt = {}
+        src = <<eom
+  require 'test/unit';include Test::Unit::Assertions;begin;#{src}
+  ensure
+    print [Marshal.dump($!)].pack('m')
+  end
+eom
+        stdout, _stderr, _status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        res = Marshal.load(stdout.unpack("m")[0])
+        return unless res
+        res.backtrace.each do |l|
+          l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+        end
+        raise res
+      end
+
       def assert_warning(pat, message = nil)
         stderr = EnvUtil.verbose_warning { yield }
         message = ' "' + message + '"' if message
