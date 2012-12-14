@@ -1,3 +1,19 @@
+Sat Dec 15 08:05:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb (test_uninitialized, test_backtrace,
+	test_thread_timer_and_interrupt, test_thread_join_in_trap,
+	test_thread_join_current, test_thread_join_main_thread,
+	test_main_thread_status_at_exit, test_thread_status_in_trap,
+	test_thread_status_raise_after_kill, test_mutex_owned,
+	test_mutex_owned2): move these tests from TestThreadGroup class
+	  to TestThread becuase they are not thread group tests.
+
+	* test/ruby/test_thread.rb (test_thread_status_raise_after_kill):
+	  add t.join.
+
+	* test/ruby/test_threadgroup.rb: new file. moved ThreadGroup test
+	  form test_thread.rb.
+
 Sat Dec 15 08:02:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb (TestThread::Thread::new.): remove

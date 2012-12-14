@@ -704,58 +704,6 @@ class TestThread < Test::Unit::TestCase
     t.join
 _eom
   end
-end
-
-class TestThreadGroup < Test::Unit::TestCase
-  def test_thread_init
-    thgrp = ThreadGroup.new
-    Thread.new{
-      thgrp.add(Thread.current)
-      assert_equal(thgrp, Thread.new{sleep 1}.group)
-    }.join
-  end
-
-  def test_frozen_thgroup
-    thgrp = ThreadGroup.new
-
-    t = Thread.new{1}
-    Thread.new{
-      thgrp.add(Thread.current)
-      thgrp.freeze
-      assert_raise(ThreadError) do
-        Thread.new{1}.join
-      end
-      assert_raise(ThreadError) do
-        thgrp.add(t)
-      end
-      assert_raise(ThreadError) do
-        ThreadGroup.new.add Thread.current
-      end
-    }.join
-    t.join
-  end
-
-  def test_enclosed_thgroup
-    thgrp = ThreadGroup.new
-    assert_equal(false, thgrp.enclosed?)
-
-    t = Thread.new{1}
-    Thread.new{
-      thgrp.add(Thread.current)
-      thgrp.enclose
-      assert_equal(true, thgrp.enclosed?)
-      assert_nothing_raised do
-        Thread.new{1}.join
-      end
-      assert_raise(ThreadError) do
-        thgrp.add t
-      end
-      assert_raise(ThreadError) do
-        ThreadGroup.new.add Thread.current
-      end
-    }.join
-    t.join
-  end
 
   def test_uninitialized
     c = Class.new(Thread)
@@ -871,23 +819,27 @@ Thread.new(Thread.current) {|mth|
     t = Thread.new {
       begin
         ary << Thread.current.status
-        sleep
+        sleep #1
       ensure
         begin
           ary << Thread.current.status
-          sleep
+          sleep #2
         ensure
           ary << Thread.current.status
         end
       end
     }
 
-    sleep 0.01
-    t.kill
-    sleep 0.01
-    t.raise
-    sleep 0.01
-    assert_equal(ary, ["run", "aborting", "aborting"])
+    begin
+      sleep 0.01
+      t.kill  # wake up sleep #1
+      sleep 0.01
+      t.raise "wakeup" # wake up sleep #2
+      sleep 0.01
+      assert_equal(ary, ["run", "aborting", "aborting"])
+    ensure
+      t.join rescue nil
+    end
   end
 
   def test_mutex_owned
