@@ -1,3 +1,10 @@
+Sat Dec 15 03:06:40 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (rb_file_flock): use rb_thread_wait_for() instead of
+	  rb_thread_polling(). When getting EAGAIN, we need to wait a
+	  while even if no multi threading.
+	* thread.c (sleep_for_polling, rb_thread_polling) removed.
+
 Sat Dec 15 00:03:31 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_f_kill): remove rb_thread_polling() because this

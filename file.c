@@ -4200,6 +4200,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 {
     rb_io_t *fptr;
     int op[2], op1;
+    struct timeval time;
 
     rb_secure(2);
     op[1] = op1 = NUM2INT(operation);
@@ -4217,7 +4218,10 @@ rb_file_flock(VALUE obj, VALUE operation)
 	  case EWOULDBLOCK:
 #endif
 	    if (op1 & LOCK_NB) return Qfalse;
-	    rb_thread_polling();
+
+	    time.tv_sec = 0;
+	    time.tv_usec = 100 * 1000;	/* 0.1 sec */
+	    rb_thread_wait_for(time);
 	    rb_io_check_closed(fptr);
 	    continue;
 
