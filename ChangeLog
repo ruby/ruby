@@ -1,3 +1,8 @@
+Fri Dec 14 14:58:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
+	  count assertions in separated tests.
+
 Fri Dec 14 14:16:42 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/rubygems_hook.rb:  Fixed generation of documentation.

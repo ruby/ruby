@@ -198,10 +198,11 @@ module Test
         src = <<eom
   require 'test/unit';include Test::Unit::Assertions;begin;#{src}
   ensure
-    print [Marshal.dump($!)].pack('m')
+    puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   end
 eom
         stdout, _stderr, _status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         res = Marshal.load(stdout.unpack("m")[0])
         return unless res
         res.backtrace.each do |l|
