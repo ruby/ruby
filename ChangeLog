@@ -35,7 +35,7 @@ Fri Dec 14 10:36:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Fri Dec 14 04:08:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* test/ruby/envutil.rb (EnvUtil::Unit::Assertionsassert_separately):
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
 	  added to execute given test source on separate process,
 	  catch its resulted exception and raise it on main process.
 
