@@ -425,7 +425,6 @@ rb_f_kill(int argc, VALUE *argv)
 		rb_sys_fail(0);
 	}
     }
-    rb_thread_polling();
     return INT2FIX(i-1);
 }
 

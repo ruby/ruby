@@ -1,3 +1,14 @@
+Sat Dec 15 00:03:31 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_f_kill): remove rb_thread_polling() because this
+	  has no good effect and makes meaningless 100ms delay. 1)
+	  when sending signal to another process, waiting has just silly.
+	  2) when sending signal to current process, 100ms is often not
+	  enough time to wait. It depend on kernel behavior. And,
+	  rb_thread_polling() doesn't make sense anyway. When rb_thread_alone()
+	  is true, it doesn't wait at all and Process.kill() users don't
+	  expect threading changes Process.kill() behavior. [Bug #7560]
+
 Fri Dec 14 17:10:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_params): parser_tokline to track the line number at
