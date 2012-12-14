@@ -1,3 +1,9 @@
+Sat Dec 15 06:15:14 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* configure.in (HAVE_GCC_ATOMIC_BUILTINS):  Set -march=i486 to enable
+	  __sync_val_compare_and_swap.  Patch by KOSAKI Motohiro.
+	  [ruby-trunk - Bug #7485]
+
 Sat Dec 15 04:25:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h: remove rb_thread_polling() declaration.
