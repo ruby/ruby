@@ -36,7 +36,7 @@ install (FILES test.txt DESTINATION bin)
     assert_equal "cmake . -DCMAKE_INSTALL_PREFIX=#{@dest_path}", output.shift
     assert_match(/#{@ext}/, output.shift)
     assert_equal make_command, output.shift
-    assert_equal "", output.shift
+    assert_equal "", output.shift.gsub(/^make\[1\]: (?:Entering|Leaving) directory .*\n/,"")
     assert_equal make_command + " install", output.shift
     assert_match(/test\.txt/, output.shift)
   end

@@ -1,3 +1,8 @@
+Sat Dec 15 08:37:01 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* test/rubygems/test_gem_ext_cmake_builder.rb(test_self_build):
+	  get rid of false positive.
+
 Sat Dec 15 08:05:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb (test_uninitialized, test_backtrace,
