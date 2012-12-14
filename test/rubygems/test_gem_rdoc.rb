@@ -43,7 +43,7 @@ class TestGemRDoc < Gem::TestCase
   end
 
   def test_initialize
-    assert @hook.generate_rdoc
+    refute @hook.generate_rdoc
     assert @hook.generate_ri
 
     rdoc = Gem::RDoc.new @a, false, false

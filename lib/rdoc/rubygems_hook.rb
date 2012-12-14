@@ -68,10 +68,12 @@ class RDoc::RubygemsHook
 
   ##
   # Creates a new documentation generator for +spec+.  RDoc and ri data
-  # generation can be disabled through +generate_rdoc+ and +generate_ri+
-  # respectively.
+  # generation can be enabled or disabled through +generate_rdoc+ and
+  # +generate_ri+ respectively.
+  #
+  # Only +generate_ri+ is enabled by default.
 
-  def initialize spec, generate_rdoc = true, generate_ri = true
+  def initialize spec, generate_rdoc = false, generate_ri = true
     @doc_dir   = spec.doc_dir
     @force     = false
     @rdoc      = nil
@@ -139,13 +141,11 @@ class RDoc::RubygemsHook
 
     setup
 
-    options = ::RDoc::Options.new
-    options.default_title = "#{@spec.full_name} Documentation"
-    options.files = []
-    options.files.concat @spec.require_paths
-    options.files.concat @spec.extra_rdoc_files
+    options = nil
 
     args = @spec.rdoc_options
+    args.concat @spec.require_paths
+    args.concat @spec.extra_rdoc_files
 
     case config_args = Gem.configuration[:rdoc]
     when String then
@@ -155,7 +155,13 @@ class RDoc::RubygemsHook
     end
 
     delete_legacy_args args
-    options.parse args
+
+    Dir.chdir @spec.full_gem_path do
+      options = ::RDoc::Options.new
+      options.default_title = "#{@spec.full_name} Documentation"
+      options.parse args
+    end
+
     options.quiet = !Gem.configuration.really_verbose
 
     @rdoc = new_rdoc
@@ -167,7 +173,7 @@ class RDoc::RubygemsHook
     store.main     = options.main_page
     store.title    = options.title
 
-    @rdoc.store = RDoc::Store.new
+    @rdoc.store = store
 
     say "Parsing documentation for #{@spec.full_name}"
 

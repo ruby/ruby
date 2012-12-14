@@ -596,7 +596,7 @@ class RDoc::Store
   def load_class_data klass_name
     file = class_file klass_name
 
-    obj = open file, 'rb' do |io|
+    open file, 'rb' do |io|
       Marshal.load io.read
     end
   rescue Errno::ENOENT => e
