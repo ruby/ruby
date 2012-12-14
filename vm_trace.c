@@ -276,7 +276,8 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 	rb_threadptr_set_raised(th);
     }
     {
-	rb_thread_t volatile *tmp = th;
+	/* maybe rb_thread_t *volatile? */
+	rb_thread_t volatile *RB_UNUSED_VAR(tmp) = th;
     }
 
     return state;
