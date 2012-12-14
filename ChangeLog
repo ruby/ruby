@@ -1,3 +1,7 @@
+Sat Dec 15 04:25:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h: remove rb_thread_polling() declaration.
+
 Sat Dec 15 03:42:34 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/.document: add fiddle/pointer.c, fiddle/handle.c, and
