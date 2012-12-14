@@ -1,4 +1,4 @@
-Fri Dec 14 17:10:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 14 17:10:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_params): parser_tokline to track the line number at
 	  which token started.  [ruby-dev:46737] [Bug #7559]
