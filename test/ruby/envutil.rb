@@ -193,8 +193,12 @@ module Test
         assert(status.success?, m)
       end
 
-      def assert_separately(args, file, line, src)
-        opt = {}
+      def assert_separately(args, file = nil, line = nil, src, **opt)
+        unless file and line
+          loc, = caller_locations(1,1)
+          file ||= loc.path
+          line ||= loc.lineno
+        end
         src = <<eom
   require 'test/unit';include Test::Unit::Assertions;begin;#{src}
   ensure

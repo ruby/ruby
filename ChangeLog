@@ -1,4 +1,7 @@
-Fri Dec 14 14:58:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 14 14:59:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
+	  take file and line by using caller_locations if not given.
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_separately):
 	  count assertions in separated tests.
