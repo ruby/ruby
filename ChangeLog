@@ -1,3 +1,14 @@
+Fri Dec 14 13:58:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/rdoc_command.rb:  When overwriting
+	  documentation, remove existing documentation first.
+
+	* lib/rubygems/server.rb:  Fixed documentation links.
+	* test/rubygems/test_gem_server.rb:  Test for the above.
+
+	* lib/rubygems/rdoc.rb:  Reduced diff with RDoc::RubyGemsHook
+	* test/rubygems/test_gem_rdoc.rb:  ditto
+
 Fri Dec 14 10:36:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_trace.c (exec_hooks): add volatile to avoid segv.

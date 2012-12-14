@@ -40,7 +40,7 @@ class TestGemServer < Gem::TestCase
 
   def test_have_rdoc_4_plus_eh
     orig_rdoc_version = Gem::RDoc.rdoc_version
-    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('4.0')
+    Gem::RDoc.instance_variable_set(:@rdoc_version, Gem::Version.new('4.0'))
 
     server = Gem::Server.new Gem.dir, 0, false
     assert server.have_rdoc_4_plus?
@@ -49,6 +49,12 @@ class TestGemServer < Gem::TestCase
 
     server = Gem::Server.new Gem.dir, 0, false
     refute server.have_rdoc_4_plus?
+
+    Gem::RDoc.instance_variable_set(:@rdoc_version,
+                                    Gem::Version.new('4.0.0.preview2'))
+
+    server = Gem::Server.new Gem.dir, 0, false
+    assert server.have_rdoc_4_plus?
   ensure
     Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
   end

@@ -1,6 +1,7 @@
 require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/rdoc'
+require 'fileutils'
 
 class Gem::Commands::RdocCommand < Gem::Command
   include Gem::VersionOption
@@ -71,6 +72,11 @@ The rdoc command builds RDoc and RI documentation for installed gems.  Use
       doc = Gem::RDoc.new spec, options[:include_rdoc], options[:include_ri]
 
       doc.force = options[:overwrite]
+
+      if options[:overwrite] then
+        FileUtils.rm_rf File.join(spec.doc_dir, 'ri')
+        FileUtils.rm_rf File.join(spec.doc_dir, 'rdoc')
+      end
 
       begin
         doc.generate

@@ -79,7 +79,9 @@ class Gem::Server
 
     <b><%=spec["name"]%> <%=spec["version"]%></b>
 
-    <% if spec["rdoc_installed"] then %>
+    <% if spec["ri_installed"] then %>
+      <a href="<%=spec["doc_path"]%>">[rdoc]</a>
+    <% elsif spec["rdoc_installed"] then %>
       <a href="<%=spec["doc_path"]%>">[rdoc]</a>
     <% else %>
       <span title="rdoc not installed">[rdoc]</span>
@@ -464,7 +466,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
   def have_rdoc_4_plus?
     @have_rdoc_4_plus ||=
-      Gem::Requirement.new('>= 4').satisfied_by? Gem::RDoc.rdoc_version
+      Gem::Requirement.new('>= 4.0.0.preview2').satisfied_by? Gem::RDoc.rdoc_version
   end
 
   def latest_specs(req, res)
@@ -604,6 +606,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         "homepage"            => spec.homepage,
         "name"                => spec.name,
         "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
+        "ri_installed"        => Gem::RDoc.new(spec).ri_installed?,
         "summary"             => spec.summary,
         "version"             => spec.version.to_s,
       }
@@ -619,7 +622,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       "has_deps" => false,
       "homepage" => "http://docs.rubygems.org/",
       "name" => 'rubygems',
-      "rdoc_installed" => true,
+      "ri_installed" => true,
       "summary" => "RubyGems itself",
       "version" => Gem::VERSION,
     }
