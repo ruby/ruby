@@ -7,7 +7,6 @@ class TestThread < Test::Unit::TestCase
     Threads = []
     def self.new(*)
       th = super
-      th.abort_on_exception = true
       Threads << th
       th
     end

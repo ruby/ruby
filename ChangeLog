@@ -1,3 +1,9 @@
+Sat Dec 15 08:02:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb (TestThread::Thread::new.): remove
+	  th.abort_on_exception change. Test template shouldn't change
+	  global flag. It prevent to test a normal case.
+
 Sat Dec 15 06:15:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* configure.in (HAVE_GCC_ATOMIC_BUILTINS):  Set -march=i486 to enable
