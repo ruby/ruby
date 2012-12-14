@@ -1,3 +1,8 @@
+Sat Dec 15 03:42:34 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/.document: add fiddle/pointer.c, fiddle/handle.c, and
+	  fiddle/win32/lib as documentation.
+
 Sat Dec 15 03:06:40 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (rb_file_flock): use rb_thread_wait_for() instead of
