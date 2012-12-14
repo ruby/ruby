@@ -194,6 +194,36 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  Bug7559 = '[ruby-dev:46737]'
+
+  def test_lineno_command_call_quote
+    expected = __LINE__ + 1
+    actual = caller_lineno "a
+b
+c
+d
+e"
+    assert_equal(expected, actual, "#{Bug7559}: ")
+  end
+
+  def test_lineno_after_heredoc
+    bug7559 = '[ruby-dev:46737]'
+    expected, _, actual = __LINE__, <<eom, __LINE__
+    a
+    b
+    c
+    d
+eom
+    assert_equal(expected, actual, bug7559)
+  end
+
+  def test_lineno_operation_brace_block
+    expected = __LINE__ + 1
+    actual = caller_lineno\
+    {}
+    assert_equal(expected, actual)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
@@ -226,5 +256,9 @@ class TestSyntax < Test::Unit::TestCase
       remove_const :SCRIPT_LINES__
       const_set(:SCRIPT_LINES__, script_lines) if script_lines
     end
+  end
+
+  def caller_lineno(*)
+    caller_locations(1, 1)[0].lineno
   end
 end

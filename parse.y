@@ -249,6 +249,7 @@ struct parser_params {
     char *parser_tokenbuf;
     int parser_tokidx;
     int parser_toksiz;
+    int parser_tokline;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
     VALUE parser_lex_nextline;
@@ -323,6 +324,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define tokenbuf		(parser->parser_tokenbuf)
 #define tokidx			(parser->parser_tokidx)
 #define toksiz			(parser->parser_toksiz)
+#define tokline			(parser->parser_tokline)
 #define lex_input		(parser->parser_lex_input)
 #define lex_lastline		(parser->parser_lex_lastline)
 #define lex_nextline		(parser->parser_lex_nextline)
@@ -753,7 +755,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> literal numeric dsym cpath
 %type <node> top_compstmt top_stmts top_stmt
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value arg_value primary_value
+%type <node> expr_value arg_value primary_value fcall
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -1358,22 +1360,33 @@ cmd_brace_block	: tLBRACE_ARG
 		    }
 		;
 
-command		: operation command_args       %prec tLOWEST
+fcall		: operation
 		    {
 		    /*%%%*/
-			$$ = NEW_FCALL($1, $2);
-			fixpos($$, $2);
+			$$ = NEW_FCALL($1, 0);
+			nd_set_line($$, tokline);
+		    /*%
+		    %*/
+		    }
+		;
+
+command		: fcall command_args       %prec tLOWEST
+		    {
+		    /*%%%*/
+			$$ = $1;
+			$$->nd_args = $2;
 		    /*%
 			$$ = dispatch2(command, $1, $2);
 		    %*/
 		    }
-		| operation command_args cmd_brace_block
+		| fcall command_args cmd_brace_block
 		    {
 		    /*%%%*/
 			block_dup_check($2,$3);
-		        $3->nd_iter = NEW_FCALL($1, $2);
+			$1->nd_args = $2;
+		        $3->nd_iter = $1;
 			$$ = $3;
-			fixpos($$, $2);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(command, $1, $2);
 			$$ = method_add_block($$, $3);
@@ -2715,10 +2728,10 @@ primary		: literal
 			$$ = dispatch2(unary, ripper_intern("not"), Qnil);
 		    %*/
 		    }
-		| operation brace_block
+		| fcall brace_block
 		    {
 		    /*%%%*/
-			$2->nd_iter = NEW_FCALL($1, 0);
+			$2->nd_iter = $1;
 			$$ = $2;
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
@@ -3559,19 +3572,13 @@ block_call	: command do_block
 		    }
 		;
 
-method_call	: operation
+method_call	: fcall paren_args
 		    {
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
-		    }
-		  paren_args
-		    {
-		    /*%%%*/
-			$$ = NEW_FCALL($1, $3);
-			nd_set_line($$, $<num>2);
+			$$ = $1;
+			$$->nd_args = $2;
 		    /*%
-			$$ = method_arg(dispatch1(fcall, $1), $3);
+			$$ = method_arg(dispatch1(fcall, $1), $2);
 		    %*/
 		    }
 		| primary_value '.' operation2
@@ -5601,6 +5608,7 @@ static char*
 parser_newtok(struct parser_params *parser)
 {
     tokidx = 0;
+    tokline = ruby_sourceline;
     if (!tokenbuf) {
 	toksiz = 60;
 	tokenbuf = ALLOC_N(char, 60);
@@ -8401,7 +8409,7 @@ gettable_gen(struct parser_params *parser, ID id)
 	return NEW_STR(rb_external_str_new_with_enc(ruby_sourcefile, strlen(ruby_sourcefile),
 						    rb_filesystem_encoding()));
       case keyword__LINE__:
-	return NEW_LIT(INT2FIX(ruby_sourceline));
+	return NEW_LIT(INT2FIX(tokline));
       case keyword__ENCODING__:
 	return NEW_LIT(rb_enc_from_encoding(current_enc));
     }
