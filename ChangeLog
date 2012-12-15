@@ -1,3 +1,13 @@
+Sat Dec 15 13:38:30 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_flush_buffer): uses io_flush_buffer_async2 instead of
+	  io_flush_buffer_async.
+	* io.c (io_flush_buffer_async2): new helper function for
+	  io_flush_buffer. It uses rb_thread_call_without_gvl2() instead
+	  of rb_thread_io_blocking_region.
+	* io.c (io_flush_buffer_sync2): new helper function for
+	  io_flush_buffer_async2.
+
 Sat Dec 15 13:04:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (internal_write_func2): new helper function for rb_write_internal2().

@@ -972,6 +972,12 @@ io_flush_buffer_sync(void *arg)
     return (VALUE)-1;
 }
 
+static void*
+io_flush_buffer_sync2(void *arg)
+{
+    return (void*)io_flush_buffer_sync(arg);
+}
+
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
@@ -979,11 +985,28 @@ io_flush_buffer_async(VALUE arg)
     return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
 }
 
+static VALUE
+io_flush_buffer_async2(VALUE arg)
+{
+    rb_io_t *fptr = (rb_io_t *)arg;
+    void *ret;
+
+    ret = rb_thread_call_without_gvl2(io_flush_buffer_sync2, fptr,
+				      RUBY_UBF_IO, NULL);
+
+    /* pending async interrupt is there. */
+    if (!ret) {
+	errno = EAGAIN;
+	return (VALUE)-1;
+    }
+    return (VALUE) ret;
+}
+
 static inline int
 io_flush_buffer(rb_io_t *fptr)
 {
     if (fptr->write_lock) {
-	return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async, (VALUE)fptr);
+	return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async2, (VALUE)fptr);
     }
     else {
 	return (int)io_flush_buffer_async((VALUE)fptr);
