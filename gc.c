@@ -574,7 +574,7 @@ init_heap(rb_objspace_t *objspace)
 	/* altstack of another threads are allocated in another place */
 	rb_thread_t *th = GET_THREAD();
 	void *tmp = th->altstack;
-	th->altstack = malloc(ALT_STACK_SIZE);
+	th->altstack = malloc(rb_sigaltstack_size());
 	free(tmp); /* free previously allocated area */
     }
 #endif

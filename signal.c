@@ -447,6 +447,27 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #endif
 
 #ifdef USE_SIGALTSTACK
+int rb_sigaltstack_size(void)
+{
+    /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
+    int size = 8192;
+
+#ifdef MINSIGSTKSZ
+    if (size < MINSIGSTKSZ)
+	size = MINSIGSTKSZ;
+#endif
+#if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+    {
+	int pagesize;
+	pagesize = sysconf(_SC_PAGE_SIZE);
+	if (size < pagesize)
+	    size = pagesize;
+    }
+#endif
+
+    return size;
+}
+
 /* alternate stack for SIGSEGV */
 void
 rb_register_sigaltstack(rb_thread_t *th)
@@ -457,7 +478,7 @@ rb_register_sigaltstack(rb_thread_t *th)
 	rb_bug("rb_register_sigaltstack: th->altstack not initialized\n");
 
     newSS.ss_sp = th->altstack;
-    newSS.ss_size = ALT_STACK_SIZE;
+    newSS.ss_size = rb_sigaltstack_size();
     newSS.ss_flags = 0;
 
     sigaltstack(&newSS, &oldSS); /* ignore error. */

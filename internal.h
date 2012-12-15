@@ -252,6 +252,7 @@ VALUE rb_reg_check_preprocess(VALUE);
 
 /* signal.c */
 int rb_get_next_signal(void);
+int rb_sigaltstack_size(void);
 
 /* strftime.c */
 #ifdef RUBY_ENCODING_H

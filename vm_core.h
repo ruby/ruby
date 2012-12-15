@@ -456,12 +456,6 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-#ifdef MINSIGSTKSZ
-#define ALT_STACK_SIZE (MINSIGSTKSZ*2)
-#else
-#define ALT_STACK_SIZE (4*1024)
-#endif
-
 struct rb_thread_struct;
 typedef struct rb_thread_list_struct{
     struct rb_thread_list_struct *next;

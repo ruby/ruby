@@ -1,3 +1,17 @@
+Sat Dec 15 23:08:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_sigaltstack_size): new. calculate stack size for
+	  sigsegv handler. enlarge value when x86 or x86_64 on Linux.
+	  Linux has very small MINSIGSTKSZ size (2048 bytes) and
+	  our sigsegv routine need 5KiB at least. [Bug #7141]
+	* internal.h: add declaration of rb_sigaltstack_size().
+	* vm_core.h: remove ALT_STACK_SIZE definition.
+
+	* signal.c (rb_register_sigaltstack): replace ALT_STACK_SIZE with
+	  rb_sigaltstack_size();
+	* gc.c (Init_heap): ditto.
+	* vm.c (th_init): ditto.
+
 Sat Dec 15 18:24:21 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (f_round_common): should check overflow.
