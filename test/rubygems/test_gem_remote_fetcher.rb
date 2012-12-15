@@ -78,18 +78,14 @@ gems:
   DIR = File.expand_path(File.dirname(__FILE__))
 
   def setup
+    @proxies = %w[http_proxy HTTP_PROXY http_proxy_user HTTP_PROXY_USER http_proxy_pass HTTP_PROXY_PASS no_proxy NO_PROXY]
+    @old_proxies = @proxies.map {|k| ENV[k] }
+    @proxies.each {|k| ENV[k] = nil }
+
     super
     self.class.start_servers
     self.class.enable_yaml = true
     self.class.enable_zip = false
-    ENV.delete 'http_proxy'
-    ENV.delete 'HTTP_PROXY'
-    ENV.delete 'http_proxy_user'
-    ENV.delete 'HTTP_PROXY_USER'
-    ENV.delete 'http_proxy_pass'
-    ENV.delete 'HTTP_PROXY_PASS'
-    ENV.delete 'no_proxy'
-    ENV.delete 'NO_PROXY'
 
     base_server_uri = "http://localhost:#{SERVER_PORT}"
     @proxy_uri = "http://localhost:#{PROXY_PORT}"
@@ -114,6 +110,7 @@ gems:
   def teardown
     super
     Gem.configuration[:http_proxy] = nil
+    @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
   def test_self_fetcher
@@ -571,21 +568,12 @@ gems:
   end
 
   def test_get_proxy_from_env_empty
-    orig_env_HTTP_PROXY = ENV['HTTP_PROXY']
-    orig_env_http_proxy = ENV['http_proxy']
-
     ENV['HTTP_PROXY'] = ''
     ENV.delete 'http_proxy'
 
     fetcher = Gem::RemoteFetcher.new nil
 
     assert_equal nil, fetcher.send(:get_proxy_from_env)
-
-  ensure
-    orig_env_HTTP_PROXY.nil? ? ENV.delete('HTTP_PROXY') :
-                               ENV['HTTP_PROXY'] = orig_env_HTTP_PROXY
-    orig_env_http_proxy.nil? ? ENV.delete('http_proxy') :
-                               ENV['http_proxy'] = orig_env_http_proxy
   end
 
   def test_implicit_no_proxy
