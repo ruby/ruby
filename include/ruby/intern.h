@@ -394,7 +394,7 @@ void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
 void rb_thread_fd_close(int);
 int rb_thread_alone(void);
-void rb_thread_polling(void);
+DEPRECATED(void rb_thread_polling(void));
 void rb_thread_sleep(int);
 void rb_thread_sleep_forever(void);
 VALUE rb_thread_stop(void);

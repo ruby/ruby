@@ -1,3 +1,9 @@
+Sat Dec 15 10:22:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_polling): revert but deprecate.
+
+	* include/ruby/intern.h (rb_thread_polling): deprecate.
+
 Sat Dec 15 08:37:01 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* test/rubygems/test_gem_ext_cmake_builder.rb(test_self_build):
@@ -30,10 +36,6 @@ Sat Dec 15 06:15:14 2012  Eric Hodel  <drbrain@segment7.net>
 	* configure.in (HAVE_GCC_ATOMIC_BUILTINS):  Set -march=i486 to enable
 	  __sync_val_compare_and_swap.  Patch by KOSAKI Motohiro.
 	  [ruby-trunk - Bug #7485]
-
-Sat Dec 15 04:25:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* include/ruby/intern.h: remove rb_thread_polling() declaration.
 
 Sat Dec 15 03:42:34 2012  Naohisa Goto  <ngotogenome@gmail.com>
 

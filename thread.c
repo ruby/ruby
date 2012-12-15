@@ -994,11 +994,30 @@ sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec,int spurious_check)
     sleep_timeval(th, double2timeval(sleepsec),spurious_check);
 }
 
+static void
+sleep_for_polling(rb_thread_t *th)
+{
+    struct timeval time;
+    time.tv_sec = 0;
+    time.tv_usec = 100 * 1000;	/* 0.1 sec */
+    sleep_timeval(th, time, 1);
+}
+
 void
 rb_thread_wait_for(struct timeval time)
 {
     rb_thread_t *th = GET_THREAD();
     sleep_timeval(th, time, 1);
+}
+
+void
+rb_thread_polling(void)
+{
+    if (!rb_thread_alone()) {
+	rb_thread_t *th = GET_THREAD();
+	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	sleep_for_polling(th);
+    }
 }
 
 /*
