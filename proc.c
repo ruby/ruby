@@ -313,13 +313,14 @@ VALUE
 rb_binding_new_with_cfp(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 {
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
-    VALUE bindval = binding_alloc(rb_cBinding);
+    VALUE bindval;
     rb_binding_t *bind;
 
     if (cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
 
+    bindval = binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = rb_vm_make_env_object(th, cfp);
     bind->path = cfp->iseq->location.path;
