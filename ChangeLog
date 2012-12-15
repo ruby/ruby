@@ -1,3 +1,8 @@
+Sat Dec 15 12:55:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_wait_writable): add to call rb_thread_wait_fd()
+	  likes rb_io_wait_readable.
+
 Sat Dec 15 11:54:50 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_wait_writable): don't call rb_thread_fd_writable()

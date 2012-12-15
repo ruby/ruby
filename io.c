@@ -1023,6 +1023,7 @@ rb_io_wait_writable(int f)
 #if defined(ERESTART)
       case ERESTART:
 #endif
+	rb_thread_wait_fd(f);
 	return TRUE;
 
       case EAGAIN:
