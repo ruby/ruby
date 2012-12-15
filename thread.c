@@ -3320,7 +3320,6 @@ rb_thread_wait_fd_rw(int fd, int read)
     if (fd < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
-    if (rb_thread_alone()) return;
     while (result <= 0) {
 	result = rb_wait_for_single_fd(fd, events, NULL);
 

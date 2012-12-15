@@ -1,3 +1,8 @@
+Sat Dec 15 11:53:36 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_wait_fd_rw): remove silly rb_thread_alone()
+	  check.
+
 Sat Dec 15 10:22:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_polling): revert but deprecate.
