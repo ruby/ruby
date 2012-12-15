@@ -6,7 +6,7 @@ Sat Dec 15 10:22:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Dec 15 08:37:01 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* test/rubygems/test_gem_ext_cmake_builder.rb(test_self_build):
+	* test/rubygems/test_gem_ext_cmake_builder.rb (test_self_build):
 	  get rid of false positive.
 
 Sat Dec 15 08:05:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -23,7 +23,7 @@ Sat Dec 15 08:05:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  add t.join.
 
 	* test/ruby/test_threadgroup.rb: new file. moved ThreadGroup test
-	  form test_thread.rb.
+	  from test_thread.rb.
 
 Sat Dec 15 08:02:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
