@@ -1,3 +1,8 @@
+Sat Dec 15 23:56:51 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/pointer.c (rb_fiddle_ptr2cptr): fix error message
+	  forgotten to be changed from DL to Fiddle.
+
 Sat Dec 15 23:14:32 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (default_handler): remove rb_register_sigaltstack()

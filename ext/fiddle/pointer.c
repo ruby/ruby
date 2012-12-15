@@ -117,7 +117,7 @@ rb_fiddle_ptr2cptr(VALUE val)
 	ptr = NULL;
     }
     else{
-	rb_raise(rb_eTypeError, "DL::PtrData was expected");
+	rb_raise(rb_eTypeError, "Fiddle::Pointer was expected");
     }
 
     return ptr;
