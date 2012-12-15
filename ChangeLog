@@ -1,3 +1,7 @@
+Sat Dec 15 18:00:00 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ratioanl.c (float_rationalize): reduced.
+
 Sat Dec 15 14:18:44 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (finish_writeconv): uses rb_write_internal2 if

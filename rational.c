@@ -1935,17 +1935,25 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
 	    return rb_rational_new1(f_lshift(f, n));
 
 #if FLT_RADIX == 2
-	a = rb_rational_new2(f_sub(f_mul(TWO, f), ONE),
-			     f_lshift(ONE, f_sub(ONE, n)));
-	b = rb_rational_new2(f_add(f_mul(TWO, f), ONE),
-			     f_lshift(ONE, f_sub(ONE, n)));
+	{
+	    VALUE two_times_f, den;
+
+	    two_times_f = f_mul(TWO, f);
+	    den = f_lshift(ONE, f_sub(ONE, n));
+
+	    a = rb_rational_new2(f_sub(two_times_f, ONE), den);
+	    b = rb_rational_new2(f_add(two_times_f, ONE), den);
+	}
 #else
-	a = rb_rational_new2(f_sub(f_mul(INT2FIX(FLT_RADIX), f),
-				   INT2FIX(FLT_RADIX - 1)),
-			     f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n)));
-	b = rb_rational_new2(f_add(f_mul(INT2FIX(FLT_RADIX), f),
-				   INT2FIX(FLT_RADIX - 1)),
-			     f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n)));
+	{
+	    VALUE radix_times_f, den;
+
+	    radix_times_f = f_mul(INT2FIX(FLT_RADIX), f);
+	    den = f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n));
+
+	    a = rb_rational_new2(f_sub(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
+	    b = rb_rational_new2(f_add(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
+	}
 #endif
     }
 
