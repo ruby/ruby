@@ -1,3 +1,8 @@
+Sun Dec 16 02:04:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_sigaltstack_size): cast sysconf() return value
+	  explicitly. Fix compile error on Mac OS X.
+
 Sun Dec 16 00:39:43 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* cont.c (rb_fiber_start): don't enqueue Qnil to async_errinfo_queue.

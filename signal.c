@@ -459,7 +459,7 @@ int rb_sigaltstack_size(void)
 #if defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
     {
 	int pagesize;
-	pagesize = sysconf(_SC_PAGE_SIZE);
+	pagesize = (int)sysconf(_SC_PAGE_SIZE);
 	if (size < pagesize)
 	    size = pagesize;
     }
