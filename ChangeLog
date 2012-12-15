@@ -1,3 +1,7 @@
+Sat Dec 15 18:24:21 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (f_round_common): should check overflow.
+
 Sat Dec 15 18:00:00 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ratioanl.c (float_rationalize): reduced.

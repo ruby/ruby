@@ -1210,6 +1210,12 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
     b = f_expt10(n);
     s = f_mul(self, b);
 
+    if (k_float_p(s)) {
+	if (f_lt_p(n, ZERO))
+	    return ZERO;
+	return self;
+    }
+
     s = (*func)(s);
 
     s = f_div(f_rational_new_bang1(CLASS_OF(self), s), b);
