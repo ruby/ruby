@@ -1006,7 +1006,10 @@ static inline int
 io_flush_buffer(rb_io_t *fptr)
 {
     if (fptr->write_lock) {
-	return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async2, (VALUE)fptr);
+	if (rb_mutex_owned_p(fptr->write_lock))
+	    return (int)io_flush_buffer_async2((VALUE)fptr);
+	else
+	    return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async2, (VALUE)fptr);
     }
     else {
 	return (int)io_flush_buffer_async((VALUE)fptr);

@@ -4264,7 +4264,7 @@ rb_mutex_lock(VALUE self)
  * Returns +true+ if this lock is currently held by current thread.
  * <em>This API is experimental, and subject to change.</em>
  */
-static VALUE
+VALUE
 rb_mutex_owned_p(VALUE self)
 {
     VALUE owned = Qfalse;

@@ -1,3 +1,11 @@
+Sat Dec 15 13:57:08 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_owned_p): remove static.
+	* io.c (io_flush_buffer): don't hold mutex if already have.
+	  Now recursive lock may occur when following scenario.
+	  fptr_finalize -> finish_writeconv_sync -> finish_writeconv
+	  -> io_fflush.
+
 Sat Dec 15 13:38:30 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_flush_buffer): uses io_flush_buffer_async2 instead of
