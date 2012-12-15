@@ -1,3 +1,11 @@
+Sun Dec 16 00:39:43 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* cont.c (rb_fiber_start): don't enqueue Qnil to async_errinfo_queue.
+	  rb_vm_make_jump_tag_but_local_jump() could return Qnil (ex. when
+	  finished by Thread.exit). [ruby-dev:45218] [Bug #5993]
+
+	* test/ruby/test_fiber.rb (test_exit_in_fiber): add test for it.
+
 Sat Dec 15 23:56:51 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/fiddle/pointer.c (rb_fiddle_ptr2cptr): fix error message

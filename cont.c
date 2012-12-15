@@ -1174,7 +1174,8 @@ rb_fiber_start(void)
 	}
 	else {
 	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
-	    rb_threadptr_async_errinfo_enque(th, err);
+	    if (!NIL_P(err))
+		rb_threadptr_async_errinfo_enque(th, err);
 	}
 	RUBY_VM_SET_INTERRUPT(th);
     }

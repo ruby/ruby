@@ -262,5 +262,12 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(0, status.exitstatus, bug5700)
     assert_equal(false, status.signaled?, bug5700)
   end
+
+  def test_exit_in_fiber
+    bug5993 = '[ruby-dev:45218]'
+    assert_nothing_raised(bug5993) do
+      Thread.new{ Fiber.new{ Thread.exit }.resume }.join
+    end
+  end
 end
 
