@@ -1,3 +1,11 @@
+Sat Dec 15 13:04:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (internal_write_func2): new helper function for rb_write_internal2().
+	* io.c (rb_write_internal2): new function. it uses
+	  rb_thread_call_without_gvl2() instaed of rb_thread_io_blocking_region().
+	* io.c (rb_binwrite_string): uses rb_write_internal2 instead of
+	  rb_write_internal. [Bug #7134]
+
 Sat Dec 15 12:55:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_wait_writable): add to call rb_thread_wait_fd()

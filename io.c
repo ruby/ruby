@@ -900,6 +900,13 @@ internal_write_func(void *ptr)
     return write(iis->fd, iis->buf, iis->capa);
 }
 
+static void*
+internal_write_func2(void *ptr)
+{
+    struct io_internal_write_struct *iis = ptr;
+    return (void*)(intptr_t)write(iis->fd, iis->buf, iis->capa);
+}
+
 static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
@@ -920,6 +927,18 @@ rb_write_internal(int fd, const void *buf, size_t count)
     iis.capa = count;
 
     return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fd);
+}
+
+static ssize_t
+rb_write_internal2(int fd, const void *buf, size_t count)
+{
+    struct io_internal_write_struct iis;
+    iis.fd = fd;
+    iis.buf = buf;
+    iis.capa = count;
+
+    return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis,
+						RUBY_UBF_IO, NULL);
 }
 
 static long
@@ -1112,7 +1131,7 @@ io_binwrite_string(VALUE arg)
 {
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
     long l = io_writable_length(p->fptr, p->length);
-    return rb_write_internal(p->fptr->fd, p->ptr, l);
+    return rb_write_internal2(p->fptr->fd, p->ptr, l);
 }
 
 static long
