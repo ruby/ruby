@@ -762,9 +762,6 @@ default_handler(int sig)
 #ifdef SIGSEGV
       case SIGSEGV:
         func = (sighandler_t)sigsegv;
-# ifdef USE_SIGALTSTACK
-        rb_register_sigaltstack(GET_THREAD());
-# endif
         break;
 #endif
 #ifdef SIGPIPE

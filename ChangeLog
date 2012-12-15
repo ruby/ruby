@@ -1,3 +1,8 @@
+Sat Dec 15 23:14:32 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (default_handler): remove rb_register_sigaltstack()
+	  call. sigaltstack was already registered when creating threads.
+
 Sat Dec 15 23:08:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_sigaltstack_size): new. calculate stack size for
