@@ -5317,16 +5317,16 @@ yycompile0(VALUE arg)
     parser->parser_token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 #endif
 #ifndef RIPPER
-    if(RUBY_DTRACE_PARSE_BEGIN_ENABLED()) {
+    if (RUBY_DTRACE_PARSE_BEGIN_ENABLED()) {
 	RUBY_DTRACE_PARSE_BEGIN(parser->parser_ruby_sourcefile,
-		parser->parser_ruby_sourceline);
+				parser->parser_ruby_sourceline);
     }
 #endif
     n = yyparse((void*)parser);
 #ifndef RIPPER
-    if(RUBY_DTRACE_PARSE_END_ENABLED()) {
+    if (RUBY_DTRACE_PARSE_END_ENABLED()) {
 	RUBY_DTRACE_PARSE_END(parser->parser_ruby_sourcefile,
-		parser->parser_ruby_sourceline);
+			      parser->parser_ruby_sourceline);
     }
 #endif
     ruby_debug_lines = 0;

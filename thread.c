@@ -883,7 +883,7 @@ double2timeval(double d)
 }
 
 static void
-sleep_forever(rb_thread_t *th, int deadlockable,int spurious_check)
+sleep_forever(rb_thread_t *th, int deadlockable, int spurious_check)
 {
     enum rb_thread_status prev_status = th->status;
     enum rb_thread_status status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
@@ -900,7 +900,7 @@ sleep_forever(rb_thread_t *th, int deadlockable,int spurious_check)
 	    th->vm->sleeper--;
 	}
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
-	if(!spurious_check)
+	if (!spurious_check)
 	    break;
     }
     th->status = prev_status;
@@ -923,7 +923,7 @@ getclockofday(struct timeval *tp)
 }
 
 static void
-sleep_timeval(rb_thread_t *th, struct timeval tv,int spurious_check)
+sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
 {
     struct timeval to, tvn;
     enum rb_thread_status prev_status = th->status;
@@ -951,7 +951,7 @@ sleep_timeval(rb_thread_t *th, struct timeval tv,int spurious_check)
 	    --tv.tv_sec;
 	    tv.tv_usec += 1000000;
 	}
-	if(!spurious_check)
+	if (!spurious_check)
 	    break;
     }
     th->status = prev_status;
@@ -989,9 +989,9 @@ timeofday(void)
 }
 
 static void
-sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec,int spurious_check)
+sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check)
 {
-    sleep_timeval(th, double2timeval(sleepsec),spurious_check);
+    sleep_timeval(th, double2timeval(sleepsec), spurious_check);
 }
 
 static void
