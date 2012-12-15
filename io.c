@@ -3858,7 +3858,10 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
               retry:
-                r = rb_write_internal(fptr->fd, ds, dp-ds);
+		if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
+		    r = rb_write_internal2(fptr->fd, ds, dp-ds);
+		else
+		    r = rb_write_internal(fptr->fd, ds, dp-ds);
                 if (r == dp-ds)
                     break;
                 if (0 <= r) {
