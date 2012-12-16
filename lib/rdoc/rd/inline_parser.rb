@@ -1104,7 +1104,7 @@ def _reduce_101(val, _values, result)
 end
 
 def _reduce_102(val, _values, result)
-      result = "<tt>#{val[1]}</tt>"
+      result = inline "<tt>#{val[1]}</tt>", val[1]
 
     result
 end

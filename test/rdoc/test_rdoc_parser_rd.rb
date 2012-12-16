@@ -22,6 +22,13 @@ class TestRDocParserRd < RDoc::TestCase
     @tempfile.close
   end
 
+  def mu_pp obj
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s.chomp
+  end
+
   def test_file
     assert_kind_of RDoc::Parser::Text, util_parser('')
   end
@@ -34,9 +41,7 @@ class TestRDocParserRd < RDoc::TestCase
   def test_scan
     parser = util_parser 'it ((*really*)) works'
 
-    expected =
-      @RM::Document.new(
-        @RM::Paragraph.new('it <em>really</em> works'))
+    expected = doc(para('it <em>really</em> works'))
     expected.file = @top_level
 
     parser.scan

@@ -394,11 +394,12 @@ end
 # Adds footnote +content+ to the document
 
 def add_footnote content
-  index = @footnotes.length + 1
+  index = @footnotes.length / 2 + 1
 
   footmark_link = "{^#{index}}[rdoc-label:footmark-#{index}:foottext-#{index}]"
 
-  @footnotes << RDoc::Markup::Paragraph.new(footmark_link, *content)
+  @footnotes << RDoc::Markup::Paragraph.new(footmark_link, ' ', *content)
+  @footnotes << RDoc::Markup::BlankLine.new
 
   index
 end

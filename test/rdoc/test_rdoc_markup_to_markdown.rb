@@ -348,5 +348,36 @@ words words words words
     assert_equal expected, @to.end_accepting
   end
 
+  def test_convert_RDOCLINK
+    result = @to.convert 'rdoc-garbage:C'
+
+    assert_equal "C\n", result
+  end
+
+  def test_convert_TIDYLINK
+    result = @to.convert \
+      '{DSL}[http://en.wikipedia.org/wiki/Domain-specific_language]'
+
+    expected = "[DSL](http://en.wikipedia.org/wiki/Domain-specific_language)\n"
+
+    assert_equal expected, result
+  end
+
+  def test_handle_rdoc_link_label_footmark
+    assert_equal '[^1]:', @to.handle_rdoc_link('rdoc-label:footmark-1:x')
+  end
+
+  def test_handle_rdoc_link_label_foottext
+    assert_equal '[^1]',   @to.handle_rdoc_link('rdoc-label:foottext-1:x')
+  end
+
+  def test_handle_rdoc_link_label_label
+    assert_equal '[x](#label-x)', @to.handle_rdoc_link('rdoc-label:label-x')
+  end
+
+  def test_handle_rdoc_link_ref
+    assert_equal 'x', @to.handle_rdoc_link('rdoc-ref:x')
+  end
+
 end
 

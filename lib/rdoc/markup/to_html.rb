@@ -36,30 +36,6 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   attr_accessor :from_path
 
-  ##
-  # Converts a target url to one that is relative to a given path
-
-  def self.gen_relative_url(path, target)
-    from        = File.dirname path
-    to, to_file = File.split target
-
-    from = from.split "/"
-    to   = to.split "/"
-
-    from.delete '.'
-    to.delete '.'
-
-    while from.size > 0 and to.size > 0 and from[0] == to[0] do
-      from.shift
-      to.shift
-    end
-
-    from.fill ".."
-    from.concat to
-    from << to_file
-    File.join(*from)
-  end
-
   # :section:
 
   ##
@@ -79,17 +55,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @markup.add_special(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
                         :HYPERLINK)
 
-    # internal links
-    @markup.add_special(/rdoc-[a-z]+:\S+/, :RDOCLINK)
-
-    # and links of the form  <text>[<url>]
-    @markup.add_special(/(?:
-                          \{.*?\} |   # multi-word label
-                          \b[^\s{}]+? # single-word label
-                         )
-
-                         \[\S+?\]     # link target
-                        /x, :TIDYLINK)
+    add_special_RDOCLINK
+    add_special_TIDYLINK
 
     init_tags
   end
@@ -325,32 +292,13 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # for img: and link: described under handle_special_HYPERLINK
 
   def gen_url url, text
-    if url =~ /^rdoc-label:([^:]*)(?::(.*))?/ then
-      type = "link"
-      path = "##{$1}"
-      id   = " id=\"#{$2}\"" if $2
-    elsif url =~ /([A-Za-z]+):(.*)/ then
-      type = $1
-      path = $2
-    else
-      type = "http"
-      path = url
-      url  = "http://#{url}"
-    end
+    scheme, url, id = parse_url url
 
-    if type == "link" then
-      url = if path[0, 1] == '#' then # is this meaningful?
-              path
-            else
-              self.class.gen_relative_url @from_path, path
-            end
-    end
-
-    if (type == "http" or type == "https" or type == "link") and
+    if %w[http https link].include?(scheme) and
        url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
       "<img src=\"#{url}\" />"
     else
-      "<a#{id} href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
+      "<a#{id} href=\"#{url}\">#{text.sub(%r{^#{scheme}:/*}i, '')}</a>"
     end
   end
 

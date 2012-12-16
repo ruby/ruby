@@ -168,15 +168,13 @@ class RDoc::Markup::AttributeManager
   # Converts special sequences to RDoc attributes
 
   def convert_specials str, attrs
-    unless @special.empty?
-      @special.each do |regexp, attribute|
-        str.scan(regexp) do
-          capture = $~.size == 1 ? 0 : 1
+    @special.each do |regexp, attribute|
+      str.scan(regexp) do
+        capture = $~.size == 1 ? 0 : 1
 
-          s, e = $~.offset capture
+        s, e = $~.offset capture
 
-          attrs.set_attrs s, e - s, attribute | @attributes.special
-        end
+        attrs.set_attrs s, e - s, attribute | @attributes.special
       end
     end
   end

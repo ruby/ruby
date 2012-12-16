@@ -10,19 +10,6 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to = RDoc::Markup::ToHtml.new @options
   end
 
-  def test_class_gen_relative_url
-    def gen(from, to)
-      RDoc::Markup::ToHtml.gen_relative_url from, to
-    end
-
-    assert_equal 'a.html',    gen('a.html',   'a.html')
-    assert_equal 'b.html',    gen('a.html',   'b.html')
-
-    assert_equal 'd.html',    gen('a/c.html', 'a/d.html')
-    assert_equal '../a.html', gen('a/c.html', 'a.html')
-    assert_equal 'a/c.html',  gen('a.html',   'a/c.html')
-  end
-
   def accept_blank_line
     assert_empty @to.res.join
   end
