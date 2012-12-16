@@ -34,6 +34,11 @@ class TestGemRDoc < Gem::TestCase
   # RDoc 4 ships with its own Gem::RDoc which overrides this one which is
   # shipped for backwards compatibility.
 
+  def rdoc_4?
+    Gem::Requirement.new('>= 4.0.0.preview2').satisfied_by? \
+      @hook.class.rdoc_version
+  end
+
   def rdoc_3?
     Gem::Requirement.new('~> 3.0').satisfied_by? @hook.class.rdoc_version
   end
@@ -43,7 +48,11 @@ class TestGemRDoc < Gem::TestCase
   end
 
   def test_initialize
-    refute @hook.generate_rdoc
+    if rdoc_4? then
+      refute @hook.generate_rdoc
+    else
+      assert @hook.generate_rdoc
+    end
     assert @hook.generate_ri
 
     rdoc = Gem::RDoc.new @a, false, false

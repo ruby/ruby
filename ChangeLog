@@ -1,3 +1,13 @@
+Mon Dec 17 07:59:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Updated VERSION
+
+	* test/rubygems/test_gem_installer.rb:  Fixed ambiguous first argument
+	  warning.
+
+	* test/rubygems/test_gem_rdoc.rb:  RDoc generation depends on installed
+	  version of RDoc.
+
 Sun Dec 16 02:04:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_sigaltstack_size): cast sysconf() return value
