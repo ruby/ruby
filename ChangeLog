@@ -35,8 +35,9 @@ Tue Dec 18 06:36:12 2012  Koichi Sasada  <ko1@atdot.net>
 	  We need to learn primitive method in Smalltalk more.
 	  (I heard this name at RubyConf Taiwan this month. Thanks!)
 	  [Conclusion]
-	  Nobody may use this feature and there is no compatibility issue.
+	  I remove this feature and consider again.
 	  This feature goes to next minor (2.1?).
+	  Nobody may use this feature and there is no compatibility issue.
 
 	* proc.c (rb_method_entry_arity): ditto.
 
