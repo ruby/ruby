@@ -1,3 +1,8 @@
+Tue Dec 18 03:03:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: speed up node mapping so
+	  common cases are evaluated first.  Thanks Kevin Menard!
+
 Tue Dec 18 02:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/optparse.rb: Remove 'developer documentation' section from rdoc

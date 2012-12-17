@@ -141,28 +141,6 @@ module Psych
         return revive_hash({}, o) unless o.tag
 
         case o.tag
-        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
-          klass = resolve_class($1)
-          members = Hash[*o.children.map { |c| accept c }]
-          string = members.delete 'str'
-
-          if klass
-            string = klass.allocate.replace string
-            register(o, string)
-          end
-
-          init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
-        when /^!ruby\/array:(.*)$/
-          klass = resolve_class($1)
-          list  = register(o, klass.allocate)
-
-          members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
-          list.replace members['internal']
-
-          members['ivars'].each do |ivar, v|
-            list.instance_variable_set ivar, v
-          end
-          list
         when /^!ruby\/struct:?(.*)?$/
           klass = resolve_class($1)
 
@@ -187,6 +165,43 @@ module Psych
             Struct.new(*h.map { |k,v| k.to_sym }).new(*h.map { |k,v| v })
           end
 
+        when /^!ruby\/object:?(.*)?$/
+          name = $1 || 'Object'
+
+          if name == 'Complex'
+            h = Hash[*o.children.map { |c| accept c }]
+            register o, Complex(h['real'], h['image'])
+          elsif name == 'Rational'
+            h = Hash[*o.children.map { |c| accept c }]
+            register o, Rational(h['numerator'], h['denominator'])
+          else
+            obj = revive((resolve_class(name) || Object), o)
+            obj
+          end
+
+        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+          klass = resolve_class($1)
+          members = Hash[*o.children.map { |c| accept c }]
+          string = members.delete 'str'
+
+          if klass
+            string = klass.allocate.replace string
+            register(o, string)
+          end
+
+          init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
+        when /^!ruby\/array:(.*)$/
+          klass = resolve_class($1)
+          list  = register(o, klass.allocate)
+
+          members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
+          list.replace members['internal']
+
+          members['ivars'].each do |ivar, v|
+            list.instance_variable_set ivar, v
+          end
+          list
+
         when '!ruby/range'
           h = Hash[*o.children.map { |c| accept c }]
           register o, Range.new(h['begin'], h['end'], h['excl'])
@@ -205,19 +220,6 @@ module Psych
             set[accept(k)] = accept(v)
           end
           set
-
-        when '!ruby/object:Complex'
-          h = Hash[*o.children.map { |c| accept c }]
-          register o, Complex(h['real'], h['image'])
-
-        when '!ruby/object:Rational'
-          h = Hash[*o.children.map { |c| accept c }]
-          register o, Rational(h['numerator'], h['denominator'])
-
-        when /^!ruby\/object:?(.*)?$/
-          name = $1 || 'Object'
-          obj = revive((resolve_class(name) || Object), o)
-          obj
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
           revive_hash resolve_class($1).new, o
