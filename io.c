@@ -975,7 +975,13 @@ io_flush_buffer_sync(void *arg)
 static void*
 io_flush_buffer_sync2(void *arg)
 {
-    return (void*)io_flush_buffer_sync(arg);
+    VALUE result = io_flush_buffer_sync(arg);
+
+    /*
+     * rb_thread_call_without_gvl2 uses 0 as interrupted.
+     * So, we need to avoid to use 0.
+     */
+    return !result ? (void*)1 : (void*)result;
 }
 
 static VALUE
@@ -989,17 +995,19 @@ static VALUE
 io_flush_buffer_async2(VALUE arg)
 {
     rb_io_t *fptr = (rb_io_t *)arg;
-    void *ret;
+    VALUE ret;
 
-    ret = rb_thread_call_without_gvl2(io_flush_buffer_sync2, fptr,
-				      RUBY_UBF_IO, NULL);
+    ret = (VALUE)rb_thread_call_without_gvl2(io_flush_buffer_sync2, fptr,
+					     RUBY_UBF_IO, NULL);
 
-    /* pending async interrupt is there. */
     if (!ret) {
+	/* pending async interrupt is there. */
 	errno = EAGAIN;
-	return (VALUE)-1;
-    }
-    return (VALUE) ret;
+	return -1;
+    } else if (ret == 1) {
+	return 0;
+    } else
+	return ret;
 }
 
 static inline int

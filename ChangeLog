@@ -1,3 +1,9 @@
+Mon Dec 17 13:56:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_flush_buffer_sync2): avoid to return 0. because
+	  rb_thread_call_without_gvl2 uses 0 internally.
+	* io.c (io_flush_buffer_async2): adapt the above.
+
 Mon Dec 17 12:05:32 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/methods.rdoc:  Added a description of singleton methods.
