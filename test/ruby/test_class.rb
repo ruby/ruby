@@ -285,4 +285,18 @@ class TestClass < Test::Unit::TestCase
       p A.superclass
     RUBY
   end
+
+  module M
+    C = 1
+
+    def self.m
+      C
+    end
+  end
+
+  def test_constant_access_from_method_in_cloned_module # [ruby-core:47834]
+    m = M.dup
+    assert_equal 1, m::C
+    assert_equal 1, m.m
+  end
 end

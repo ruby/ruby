@@ -121,6 +121,23 @@ rb_class_new(VALUE super)
     return rb_class_boot(super);
 }
 
+static NODE*
+rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass)
+{
+    NODE *new_node;
+    if (!node) {
+	return NULL;
+    }
+    if (node->nd_clss == old_klass) {
+	new_node = NEW_CREF(new_klass);
+	new_node->nd_next = node->nd_next;
+    } else {
+	new_node = NEW_CREF(node->nd_clss);
+	new_node->nd_next = rewrite_cref_stack(node->nd_next, old_klass, new_klass);
+    }
+    return new_node;
+}
+
 static void
 clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 {
@@ -129,6 +146,7 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 	rb_iseq_t *iseq;
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
+	iseq->cref_stack = rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass);
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
     }

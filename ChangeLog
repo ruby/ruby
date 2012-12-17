@@ -1,3 +1,10 @@
+Mon Dec 17 18:03:34 2012  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* class.c (rewrite_cref_stack, clone_method): rewrite a method's cref
+	  stack when cloning into a new class to allow lexical const lookup to
+	  work as expected [ruby-core:47834] [Bug #7107]
+	* test/ruby/test_class.rb (class TestClass): related test
+
 Mon Dec 17 13:56:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_flush_buffer_sync2): avoid to return 0. because
