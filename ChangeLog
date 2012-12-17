@@ -1,3 +1,21 @@
+Tue Dec 18 04:58:22 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (fill_id_and_klass): TracePoint#defined_class returns
+	  singleton class. `set_trace_func' passed attached class (which is
+	  attached/modified by singleton class) by 6th block parameter if it
+	  is singleton class. Previous behavior follows this spec.
+	  However, this method named `defined_class' should return singleton
+	  class directly because singleton methods are defined in singleton
+	  class. There are no compatible issue because TracePoint is introduced
+	  after 2.0.
+	  But compatiblity with `set_trace_func' is brokne. This means that
+	  you can not replace all `set_trace_func' code with TracePoint
+	  without consideration of this behavior.
+	  [Bug #7554]
+
+	* test/ruby/test_settracefunc.rb: change a test to catch up
+	  an above chagne.
+
 Tue Dec 18 03:03:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: speed up node mapping so

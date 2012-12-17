@@ -716,9 +716,6 @@ fill_id_and_klass(rb_trace_arg_t *trace_arg)
 	    if (RB_TYPE_P(trace_arg->klass, T_ICLASS)) {
 		trace_arg->klass = RBASIC(trace_arg->klass)->klass;
 	    }
-	    else if (FL_TEST(trace_arg->klass, FL_SINGLETON)) {
-		trace_arg->klass = rb_iv_get(trace_arg->klass, "__attached__");
-	    }
 	}
 	else {
 	    trace_arg->klass = Qnil;
@@ -838,7 +835,36 @@ tracepoint_attr_method_id(VALUE tpval)
 }
 
 /*
- * Return class or id from +:class+ event
+ * Return class or module the method being called.
+ *
+ *          class C; def foo; end; end
+ *	    trace = TracePoint.new(:call) do |tp|
+ *            tp.defined_class #=> C
+ *          end.enable do
+ *            C.new.foo
+ *          end
+ *
+ * If method is defined by a module, then returns that module.
+ *
+ *          module M; def foo; end; end
+ *          class C; include M; end;
+ *	    trace = TracePoint.new(:call) do |tp|
+ *            tp.defined_class #=> M
+ *          end.enable do
+ *            C.new.foo
+ *          end
+ *
+ * Note that TracePont#defined_class returns singleton class.
+ * 6th block parameter of `set_trace_func' passes original class
+ * of attached by singleton class. This is a difference between
+ * `set_trace_func' and TracePoint.
+ * 
+ *          class C; def self.foo; end; end
+ *	    trace = TracePoint.new(:call) do |tp|
+ *            tp.defined_class #=> #<Class:C>
+ *          end.enable do
+ *            C.foo
+ *          end
  */
 static VALUE
 tracepoint_attr_defined_class(VALUE tpval)

@@ -418,12 +418,28 @@ class TestSetTraceFunc < Test::Unit::TestCase
         :nothing
       end
     }
+    _defined_class = lambda{|tp|
+      klass = tp.defined_class
+      begin
+        # If it is singleton method, then return original class
+        # to make compatible with set_trace_func().
+        # This is very ad-hoc hack. I hope I can make more clean test on it.
+        case klass.inspect
+        when /Class:TracePoint/; return TracePoint
+        when /Class:Exception/; return Exception
+        else klass
+          klass
+        end
+      rescue Exception => e
+        e
+      end if klass
+    }
 
     trace = nil
     begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
-    2:   events << [tp.event, tp.lineno, tp.path, tp.defined_class, tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)]
+    2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)]
     3: }
     4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
