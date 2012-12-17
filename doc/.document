@@ -1,3 +1,4 @@
 *.rdoc
 ChangeLog*
 NEWS-*
+syntax
