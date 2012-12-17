@@ -1,6 +1,7 @@
 # -*- coding: us-ascii -*-
 require 'minitest/autorun'
 require 'tempfile'
+require_relative '../ruby/envutil'
 
 if Process.euid == 0
   ok = true
@@ -26,7 +27,7 @@ module DTrace
       d_path  = d.path
       rb_path = rb.path
 
-      cmd = ["dtrace", "-q", "-s", d_path, "-c", "#{Gem.ruby} -I#{INCLUDE} #{rb_path}"]
+      cmd = ["dtrace", "-q", "-s", d_path, "-c", "#{EnvUtil.rubybin} -I#{INCLUDE} #{rb_path}"]
       sudo = ENV["SUDO"] and cmd.unshift(sudo)
       probes = IO.popen(cmd) do |io|
         io.readlines
