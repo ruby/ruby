@@ -1,3 +1,10 @@
+Mon Dec 17 11:25:32 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax.rdoc:  Added syntax guide table of contents
+	* doc/syntax/exceptions.rdoc:  Syntax guide for exceptions
+	* doc/syntax/literals.rdoc:  Syntax guide for literals
+	* doc/syntax/methods.rdoc:  Syntax guide for methods
+
 Mon Dec 17 07:59:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Updated VERSION

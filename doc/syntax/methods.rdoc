@@ -1,0 +1,130 @@
+= Methods
+
+Methods implement the functionality of your program.  Here is a simple method
+definition:
+
+  def one_plus_one
+    1 + 1
+  end
+
+A method definition consists of the +def+ keyword, a method name, the body of
+the method, then the +end+ keyword.  When called the method will execute the
+body of the method.  This method returns <tt>2</tt>.
+
+== Arguments
+
+A method may accept arguments.  The argument list follows the method name:
+
+  def add_one(value)
+    value + 1
+  end
+
+When called, the user of the +add_one+ method must provide an argument.  The
+argument is a local variable in the method body.  The method will then add one
+to this argument and return the value.  If given <tt>1</tt> this method will
+return <tt>2</tt>.
+
+The parentheses around the arguments are optional:
+
+  def add_one value
+    value + 1
+  end
+
+Multiple arguments are separated by a comma:
+
+  def add_values(a, b)
+    a + b
+  end
+
+When called, the arguments must be provided in the exact order.  In other
+words, the arguments are positional.
+
+=== Default Values
+
+Arguments may have default values:
+
+  def add_values(a, b = 1)
+    a + b
+  end
+
+The default value does not need to appear first, but the must be grouped
+together.  This is ok:
+
+  def add_values(a = 1, b = 2, c)
+    a + b + c
+  end
+
+This will raise a SyntaxError:
+
+  def add_values(a = 1, b, c = 1)
+    a + b + c
+  end
+
+=== Keyword Arguments
+
+Keyword arguments are similar to positional arguments with default values:
+
+  def add_values first: 1, second: 2
+    first + second
+  end
+
+When calling a method with keyword arguments the arguments may appear in any
+order.  If an unknown keyword argument is sent by the caller an ArgumentError
+is raised.
+
+When mixing keyword arguments and positional arguments, all positional
+arguments must appear before any keyword arguments.
+
+=== Array/Hash Argument
+
+Prefixing an argument with "*" causes any remaining arguments to be converted
+to an Array:
+
+  def gather_arguments(*arguments)
+    p arguments
+  end
+
+  gather_arguments 1, 2, 3 # prints [1, 2, 3]
+
+The array argument must be the last positional argument, it must appear before
+any keyword arguments.
+
+The array argument will capture a Hash as the last entry if a hash was sent by
+the caller after all positional arguments.
+
+  gather_arguments 1, a: 2 # prints [1, {:a=>2}]
+
+However, this only occurs if the method does not declare any keyword arguments.
+
+  def gather_arguments_keyword(*positional, keyword: nil)
+   p positinal: positional, keyword: keyword
+  end
+
+  gather_arguments_keyword 1, 2, three: 3
+  #=> raises: unknown keyword: three (ArgumentError)
+
+== Exception Handling
+
+Methods have an implied exception handling block so you do not need to use
++begin+ or +end+ to handle exceptions.  This:
+
+  def my_method
+    begin
+      # code that may raise an exception
+    rescue
+      # handle exception
+    end
+  end
+
+May be written as:
+
+  def my_method
+    # code that may raise an exception
+  rescue
+    # handle exception
+  end
+
+If you wish to rescue an exception for only part of your method use +begin+ and
++end+.  For more details see the page on {Exception
+Handling}[rdoc-ref:doc/syntax/exceptions.rdoc].
+

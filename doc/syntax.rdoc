@@ -1,0 +1,13 @@
+= Ruby Syntax
+
+The Ruby syntax is large and is split up into the following sections:
+
+Literals[rdoc-ref:doc/syntax/literals.rdoc] ::
+  Numbers, Strings, Arrays, Hashes, etc.
+
+Methods[rdoc-ref:doc/syntax/methods.rdoc] ::
+  Method and method argument syntax
+
+Exceptions[rdoc-ref:doc/syntax/exceptions.rdoc] ::
+  Exception handling syntax
+
