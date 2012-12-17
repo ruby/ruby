@@ -8,6 +8,7 @@
 #
 
 
+#--
 # == Developer Documentation (not for RDoc output)
 #
 # === Class tree
@@ -41,6 +42,8 @@
 #                reject   |(shared between|      +----------+
 #                         | all instances)|
 #                         +---------------+
+#
+#++
 #
 # == OptionParser
 #
