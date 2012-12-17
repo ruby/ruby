@@ -1200,7 +1200,7 @@ class Matrix
   #   l.lower_triangular? # => true
   #   u.upper_triangular? # => true
   #   p.permutation?      # => true
-  #   l * u == a * p      # => true
+  #   l * u == p * a      # => true
   #   a.lup.solve([2, 5]) # => Vector[(1/1), (1/2)]
   #
   def lup

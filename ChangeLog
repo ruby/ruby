@@ -1,3 +1,7 @@
+Tue Dec 18 02:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/matrix.rb (#dup): typo in example [ruby-core:50946][Bug #7582]
+
 Mon Dec 17 18:03:34 2012  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* class.c (rewrite_cref_stack, clone_method): rewrite a method's cref
