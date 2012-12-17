@@ -219,12 +219,6 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", ci->me->def->body.optimize_type);
 	}
 	break;
-      case VM_METHOD_TYPE_CFUNC_FRAMELESS:
-	{
-	    /* TODO: can optimize it */
-	    const rb_method_cfunc_t *cfunc = &ci->me->def->body.cfunc;
-	    return cfunc->invoker(cfunc->func, ci->recv, ci->argc, argv);
-	}
       case VM_METHOD_TYPE_UNDEF:
 	break;
     }

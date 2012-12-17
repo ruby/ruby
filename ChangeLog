@@ -1,3 +1,47 @@
+Tue Dec 18 06:36:12 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: remove `VM_METHOD_TYPE_CFUNC_FRAMELESS' method type.
+	  This method type is for optimized CFUNC such as Fixnum#+ and so on.
+	  This feature is half-baked and no way to use them.
+	  [Background]
+	  Now, VM has opt_plus instructions to optimize `+' methods for
+	  some Classes (such as Fixnum, Float (flonum)). We call this
+	  type of instructions as `specialized instructions'.
+	  This simple technique improve simple program dramatically.
+	  However, we can make specialized instructions for only several
+	  types (classes) and selectors (method names) because a large
+	  instruction will be slow. In other words, this technique has no
+	  extensibility.
+	  To overcome this problem, VM_METHOD_TYPE_CFUNC_FRAMELESS was
+	  introduced (r37198). This type is a variant of CFUNC, but called
+	  their functiions directly without building a method frame.
+	  Any CFUNC method can be defined as frameless methods if a method
+	  is not needed to make method frame. Frameless methods are faster
+	  as specialized instructions (a bit slower, but no need to care).
+	  No problem described at
+	  http://charlie.bz/blog/why-do-singleton-methods-make-ruby-slow
+	  because this technique doesn't see class, but see method body
+	  itself. Alias is also no problem.
+	  [Problem]
+	  However, we can't set frameless method type for polymorphic methods
+	  such as Array#[]. Necessity for method frame depends on which
+	  parameter type. For example, Fixnum#+ needs method frame if
+	  coerce is needed. Current VM_METHOD_TYPE_CFUNC_FRAMELESS is not
+	  flexible and need more tuning to introduce it.
+	  Expected behavior of frameless method type may be:
+	    result = optimized_cfunc(params); /* call optimized cfunc */
+	    if (result == Qundef) { result = normal_cfunc(); }
+	  This is why I say this feature is half-baked.
+	  We need to learn primitive method in Smalltalk more.
+	  (I heard this name at RubyConf Taiwan this month. Thanks!)
+	  [Conclusion]
+	  Nobody may use this feature and there is no compatibility issue.
+	  This feature goes to next minor (2.1?).
+
+	* proc.c (rb_method_entry_arity): ditto.
+
+	* vm_eval.c, vm_insnhelper.c, vm_method.c: ditto.
+
 Tue Dec 18 04:58:22 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (fill_id_and_klass): TracePoint#defined_class returns

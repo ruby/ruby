@@ -420,7 +420,6 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	def->body.iseq = (rb_iseq_t *)opts;
 	break;
       case VM_METHOD_TYPE_CFUNC:
-      case VM_METHOD_TYPE_CFUNC_FRAMELESS:
 	{
 	    rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
 	    setup_method_cfunc_struct(&def->body.cfunc, cfunc->func, cfunc->argc);
