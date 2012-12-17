@@ -11,6 +11,27 @@ A method definition consists of the +def+ keyword, a method name, the body of
 the method, then the +end+ keyword.  When called the method will execute the
 body of the method.  This method returns <tt>2</tt>.
 
+A method may be defined on another object.  You may define a "class
+method" (a method that is called on the class, not an instance of the class)
+like this:
+
+  class C
+    def self.my_method
+      # ...
+    end
+  end
+
+You may also define methods this way on any object:
+
+  string = "my string"
+  def string.my_method
+    # ...
+  end
+
+This is called a "singleton method".  +my_method+ will only exist on this
+string instance.  Other strings will not have +my_method+.  You may also
+override existing methods on just one object this way.
+
 == Arguments
 
 A method may accept arguments.  The argument list follows the method name:

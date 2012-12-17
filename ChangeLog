@@ -1,3 +1,7 @@
+Mon Dec 17 12:05:32 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Added a description of singleton methods.
+
 Mon Dec 17 11:35:57 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/.document:  Added doc/syntax
