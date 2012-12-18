@@ -1,3 +1,10 @@
+Tue Dec 18 12:15:59 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/specification.rb:  Fixed ruby output of requirements
+	  with multiple version specifiers.
+	* test/rubygems/test_gem_ext_cmake_builder.rb:  Only look for specific
+	  lines in cmake output.  Should fix [ruby-trunk - Bug #7579]
+
 Tue Dec 18 11:45:26 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/literals.rdoc:  Added 0o octal integers.

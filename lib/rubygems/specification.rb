@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -2048,7 +2049,9 @@ class Gem::Specification
     when Numeric           then obj.inspect
     when true, false, nil  then obj.inspect
     when Gem::Platform     then "Gem::Platform.new(#{obj.to_a.inspect})"
-    when Gem::Requirement  then "Gem::Requirement.new(#{obj.to_s.inspect})"
+    when Gem::Requirement  then
+      list = obj.as_list
+      "Gem::Requirement.new(#{ruby_code(list.size == 1 ? obj.to_s : list)})"
     else raise Gem::Exception, "ruby_code case not handled: #{obj.class}"
     end
   end

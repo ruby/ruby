@@ -24,8 +24,8 @@ cmake_minimum_required(VERSION 2.8)
 install (FILES test.txt DESTINATION bin)
       eo_cmake
     end
-    File.open File.join(@ext, 'test.txt'), 'w' do |testfile|
-    end
+
+    FileUtils.touch File.join(@ext, 'test.txt')
 
     output = []
 
@@ -33,12 +33,14 @@ install (FILES test.txt DESTINATION bin)
       Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
     end
 
-    assert_equal "cmake . -DCMAKE_INSTALL_PREFIX=#{@dest_path}", output.shift
-    assert_match(/#{@ext}/, output.shift)
-    assert_equal make_command, output.shift
-    assert_equal "", output.shift.gsub(/^make\[1\]: (?:Entering|Leaving) directory .*\n/,"")
-    assert_equal make_command + " install", output.shift
-    assert_match(/test\.txt/, output.shift)
+    output = output.join "\n"
+
+    assert_match \
+      %r%^cmake \. -DCMAKE_INSTALL_PREFIX=#{Regexp.escape @dest_path}%, output
+    assert_match %r%#{Regexp.escape @ext}%, output
+    assert_match %r%^#{Regexp.escape make_command}$%, output
+    assert_match %r%^#{Regexp.escape make_command} install$%, output
+    assert_match %r%test\.txt%, output
   end
 
   def test_self_build_fail
@@ -49,6 +51,8 @@ install (FILES test.txt DESTINATION bin)
         Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
       end
     end
+
+    output = output.join "\n"
 
     shell_error_msg = %r{(CMake Error: .*)}
     sh_prefix_cmake = "cmake . -DCMAKE_INSTALL_PREFIX="
@@ -61,9 +65,8 @@ install (FILES test.txt DESTINATION bin)
 
     assert_match expected, error.message
 
-    assert_equal "#{sh_prefix_cmake}#{@dest_path}", output.shift
-    assert_match %r(#{shell_error_msg}), output.shift
-    assert_equal true, output.empty?
+    assert_match %r%^#{sh_prefix_cmake}#{Regexp.escape @dest_path}%, output
+    assert_match %r%#{shell_error_msg}%, output
   end
 
   def test_self_build_has_makefile
@@ -72,12 +75,15 @@ install (FILES test.txt DESTINATION bin)
     end
 
     output = []
+
     Dir.chdir @ext do
       Gem::Ext::CmakeBuilder.build nil, nil, @dest_path, output
     end
 
-    assert_equal make_command, output[0]
-    assert_equal "#{make_command} install", output[2]
+    output = output.join "\n"
+
+    assert_match %r%^#{make_command}%,         output
+    assert_match %r%^#{make_command} install%, output
   end
 
 end
