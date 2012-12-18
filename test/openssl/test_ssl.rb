@@ -416,9 +416,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  # different OpenSSL versions react differently when being faced with a
-  # SSL/TLS version that has been marked as forbidden, therefore either of
-  # these may be raised
+  # different OpenSSL versions react differently when facing a SSL/TLS version
+  # that has been marked as forbidden, therefore either of these may be raised
   HANDSHAKE_ERRORS = [OpenSSL::SSL::SSLError, Errno::ECONNRESET]
 
 if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
