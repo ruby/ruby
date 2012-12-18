@@ -256,7 +256,11 @@ with all sufficient information, see the ChangeLog file.
     with OpenSSL 1.0.1 and higher.
   * OpenSSL::OPENSSL_FIPS allows client applications to detect whether OpenSSL
     is running in FIPS mode and to react to the special requirements this
-    might impy.
+    might imply.
+  * The default options for OpenSSL::SSL::SSLContext have changed to
+    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+    instead of OpenSSL::SSL::OP_ALL only. This enables the countermeasure for
+    the BEAST attack by default.
 
 * ostruct
   * new methods:

@@ -1,3 +1,15 @@
+Tue Dec 18 11:52:34 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/lib/ssl.rb: Enable insertion of empty fragments as a
+	  countermeasure for the BEAST attack by default. The default options
+	  of OpenSSL::SSL:SSLContext are now:
+	  OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+	  [Bug #5353] [ruby-core:39673]
+
+	* test/openssl/test_ssl.rb: Adapt tests to new SSLContext default.
+
+	* NEWS: Announce the new default.
+
 Tue Dec 18 06:36:12 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: remove `VM_METHOD_TYPE_CFUNC_FRAMELESS' method type.

@@ -24,7 +24,9 @@ module OpenSSL
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
-        :options => OpenSSL::SSL::OP_ALL,
+        :options => defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS) ?
+          OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS :
+          OpenSSL::SSL::OP_ALL,
       }
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new

@@ -3,6 +3,11 @@ require_relative "utils"
 if defined?(OpenSSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
+
+  TLS_DEFAULT_OPS = defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS) ?
+                    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS :
+                    OpenSSL::SSL::OP_ALL
+
   def test_ctx_setup
     ctx = OpenSSL::SSL::SSLContext.new
     assert_equal(ctx.setup, true)
@@ -257,7 +262,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.set_params
       assert_equal(OpenSSL::SSL::VERIFY_PEER, ctx.verify_mode)
-      assert_equal(OpenSSL::SSL::OP_ALL, ctx.options)
+      assert_equal(TLS_DEFAULT_OPS, ctx.options)
       ciphers = ctx.ciphers
       ciphers_versions = ciphers.collect{|_, v, _, _| v }
       ciphers_names = ciphers.collect{|v, _, _, _| v }
@@ -398,7 +403,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_unset_OP_ALL
     ctx_proc = Proc.new { |ctx|
-      ctx.options = OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+      # If OP_DONT_INSERT_EMPTY_FRAGMENTS is not defined, this test is
+      # redundant because the default options already are equal to OP_ALL.
+      # But it also degrades gracefully, so keep it
+      ctx.options = OpenSSL::SSL::OP_ALL
     }
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc){|server, port|
       server_connect(port) { |ssl|
