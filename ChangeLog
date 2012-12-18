@@ -1,3 +1,14 @@
+Tue Dec 18 18:57:58 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+
+	* io.c (rb_io_wait_writable): don't use rb_thread_wait_fd()
+	  because it is for waiting until io readable.
+
+	* io.c (rb_io_wait_writable): always use rb_thread_fd_writable()
+	  instaed of bare rb_wait_for_single_fd(). we shouldn't ignore
+	  return value.
+	* io.c (rb_io_wait_readable): ditto. always use rb_thread_wait_fd().
+
 Tue Dec 18 18:55:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_wait_fd_rw): fix infinite loop bug.

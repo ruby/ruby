@@ -1050,14 +1050,11 @@ rb_io_wait_readable(int f)
 #if defined(ERESTART)
       case ERESTART:
 #endif
-	rb_thread_wait_fd(f);
-	return TRUE;
-
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_wait_for_single_fd(f, RB_WAITFD_IN, NULL);
+	rb_thread_wait_fd(f);
 	return TRUE;
 
       default:
@@ -1076,14 +1073,11 @@ rb_io_wait_writable(int f)
 #if defined(ERESTART)
       case ERESTART:
 #endif
-	rb_thread_wait_fd(f);
-	return TRUE;
-
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	rb_wait_for_single_fd(f, RB_WAITFD_OUT, NULL);
+	rb_thread_fd_writable(f);
 	return TRUE;
 
       default:
