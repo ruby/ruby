@@ -1,11 +1,10 @@
 Tue Dec 18 18:57:58 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-
 	* io.c (rb_io_wait_writable): don't use rb_thread_wait_fd()
 	  because it is for waiting until io readable.
 
 	* io.c (rb_io_wait_writable): always use rb_thread_fd_writable()
-	  instaed of bare rb_wait_for_single_fd(). we shouldn't ignore
+	  instead of bare rb_wait_for_single_fd(). we shouldn't ignore
 	  return value.
 	* io.c (rb_io_wait_readable): ditto. always use rb_thread_wait_fd().
 
@@ -40,7 +39,7 @@ Tue Dec 18 16:31:20 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ruby_lex.rb:  Return a TkHEREDOC instead of a TkSTRING when
 	  the heredoc identifier is followed by a line-end.  This allows proper
-          display of some HEREDOCs in source view.
+	  display of some HEREDOCs in source view.
 	* lib/rdoc/ruby_token.rb:  Added TkHEREDOC
 	* test/rdoc/test_rdoc_ruby_lex.rb:  Test for above.
 
@@ -143,13 +142,13 @@ Tue Dec 18 04:58:22 2012  Koichi Sasada  <ko1@atdot.net>
 	  class directly because singleton methods are defined in singleton
 	  class. There are no compatible issue because TracePoint is introduced
 	  after 2.0.
-	  But compatiblity with `set_trace_func' is broken. This means that
+	  But compatibility with `set_trace_func' is broken. This means that
 	  you can not replace all `set_trace_func' code with TracePoint
 	  without consideration of this behavior.
 	  [Bug #7554]
 
 	* test/ruby/test_settracefunc.rb: change a test to catch up
-	  an above chagne.
+	  an above change.
 
 Tue Dec 18 03:03:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
