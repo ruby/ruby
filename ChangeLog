@@ -43,7 +43,7 @@ Tue Dec 18 06:36:12 2012  Koichi Sasada  <ko1@atdot.net>
 	  extensibility.
 	  To overcome this problem, VM_METHOD_TYPE_CFUNC_FRAMELESS was
 	  introduced (r37198). This type is a variant of CFUNC, but called
-	  their functiions directly without building a method frame.
+	  their functions directly without building a method frame.
 	  Any CFUNC method can be defined as frameless methods if a method
 	  is not needed to make method frame. Frameless methods are faster
 	  as specialized instructions (a bit slower, but no need to care).
@@ -82,7 +82,7 @@ Tue Dec 18 04:58:22 2012  Koichi Sasada  <ko1@atdot.net>
 	  class directly because singleton methods are defined in singleton
 	  class. There are no compatible issue because TracePoint is introduced
 	  after 2.0.
-	  But compatiblity with `set_trace_func' is brokne. This means that
+	  But compatiblity with `set_trace_func' is broken. This means that
 	  you can not replace all `set_trace_func' code with TracePoint
 	  without consideration of this behavior.
 	  [Bug #7554]
