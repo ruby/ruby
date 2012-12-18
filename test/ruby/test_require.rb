@@ -509,7 +509,7 @@ class TestRequire < Test::Unit::TestCase
           $: << a
           begin
             require "foo"
-            p :ng
+            p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
           rescue LoadError
           end
           def a.to_path
@@ -534,7 +534,7 @@ class TestRequire < Test::Unit::TestCase
           $: << a
           begin
             require "foo"
-            p :ng
+            p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
           rescue LoadError
           end
           def a.to_str
