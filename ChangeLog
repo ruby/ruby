@@ -1,3 +1,9 @@
+Tue Dec 18 16:38:51 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/store.rb:  Work around RDoc stores from older versions of
+	  RDoc.
+	* test/rdoc/test_rdoc_store.rb:  Test for above.
+
 Tue Dec 18 16:31:20 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ruby_lex.rb:  Return a TkHEREDOC instead of a TkSTRING when

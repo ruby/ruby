@@ -274,6 +274,18 @@ class TestRDocStore < XrefTestCase
     assert_includes @s.c_enclosure_classes, 'cObject'
   end
 
+  def test_find_c_enclosure_from_cache_legacy
+    @klass.in_files.clear
+    @s.save_class @klass
+    @s.classes_hash.clear
+
+    assert_nil @s.find_c_enclosure 'cObject'
+
+    @s.c_enclosure_names['cObject'] = 'Object'
+
+    assert_nil @s.find_c_enclosure('cObject')
+  end
+
   def test_find_class_named
     assert_equal @c1, @store.find_class_named('C1')
 

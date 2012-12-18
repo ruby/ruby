@@ -354,6 +354,9 @@ class RDoc::Store
         loaded_mod = load_class_data name
 
         file = loaded_mod.in_files.first
+
+        return unless file # legacy data source
+
         file.store = self
 
         mod = file.add_module RDoc::NormalModule, name
