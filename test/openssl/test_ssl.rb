@@ -472,7 +472,9 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
 
   def test_tls_v1_2
     start_server_version(:TLSv1_2) { |server, port|
-      server_connect(port) { |ssl| assert_equal("TLSv1.2", ssl.ssl_version) }
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ssl_version = :TLSv1_2_client
+      server_connect(port, ctx) { |ssl| assert_equal("TLSv1.2", ssl.ssl_version) }
     }
   end if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
 

@@ -1,3 +1,9 @@
+Tue Dec 18 12:28:52 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* test/openssl/test_ssl.rb: Use :TLSv1_2_client explicitly in
+	  test_tls_v1_2 to prevent upstream bug.
+	  [Bug #7197] [ruby-dev:46240]
+
 Tue Dec 18 11:52:34 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/lib/ssl.rb: Enable insertion of empty fragments as a
