@@ -184,7 +184,7 @@ NORETURN(void rb_fiber_start(void));
 NORETURN(void rb_print_undef(VALUE, ID, int));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-NORETURN(void rb_vm_jump_tag_but_local_jump(int, VALUE));
+NORETURN(void rb_vm_jump_tag_but_local_jump(int));
 NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
 				      VALUE obj, int call_status));
 

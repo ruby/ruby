@@ -571,7 +571,7 @@ rb_load_internal(VALUE fname, int wrap)
 	rb_exc_raise(GET_THREAD()->errinfo);
     }
     if (state) {
-	rb_vm_jump_tag_but_local_jump(state, Qundef);
+	rb_vm_jump_tag_but_local_jump(state);
     }
 
     if (!NIL_P(GET_THREAD()->errinfo)) {
