@@ -1,3 +1,11 @@
+Tue Dec 18 16:31:20 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ruby_lex.rb:  Return a TkHEREDOC instead of a TkSTRING when
+	  the heredoc identifier is followed by a line-end.  This allows proper
+          display of some HEREDOCs in source view.
+	* lib/rdoc/ruby_token.rb:  Added TkHEREDOC
+	* test/rdoc/test_rdoc_ruby_lex.rb:  Test for above.
+
 Tue Dec 18 09:45:14 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* vm.c (rb_vm_make_jump_tag_but_local_jump): take care of the case

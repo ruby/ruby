@@ -331,6 +331,7 @@ module RDoc::RubyToken
     [:TkINTEGER,    TkVal],
     [:TkFLOAT,      TkVal],
     [:TkSTRING,     TkVal],
+    [:TkHEREDOC,    TkVal],
     [:TkXSTRING,    TkVal],
     [:TkREGEXP,     TkVal],
     [:TkSYMBOL,     TkVal],

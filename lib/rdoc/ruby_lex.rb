@@ -982,12 +982,13 @@ class RDoc::RubyLex
       indent = true
     end
     if /['"`]/ =~ ch
-      lt = ch
+      user_quote = lt = ch
       quoted = ""
       while (c = getc) && c != lt
         quoted.concat c
       end
     else
+      user_quote = nil
       lt = '"'
       quoted = ch.dup
       while (c = getc) && c =~ /\w/
@@ -1007,8 +1008,17 @@ class RDoc::RubyLex
       end
     end
 
+    output_heredoc = reserve.join =~ /\A\r?\n\z/
+
+    if output_heredoc then
+      doc = '<<'
+      doc << '-' if indent
+      doc << "#{user_quote}#{quoted}#{user_quote}\n"
+    else
+      doc = '"'
+    end
+
     @here_header = false
-    doc = '"'
     while l = gets
       l = l.sub(/(:?\r)?\n\z/, "\n")
       if (indent ? l.strip : l.chomp) == quoted
@@ -1016,7 +1026,12 @@ class RDoc::RubyLex
       end
       doc << l
     end
-    doc << '"'
+
+    if output_heredoc then
+      doc << l.chomp
+    else
+      doc << '"'
+    end
 
     @here_header = true
     @here_readed.concat reserve
@@ -1024,9 +1039,10 @@ class RDoc::RubyLex
       ungetc ch
     end
 
+    token_class = output_heredoc ? RDoc::RubyLex::TkHEREDOC : Ltype2Token[lt]
     @ltype = ltback
     @lex_state = EXPR_END
-    Token(Ltype2Token[lt], doc)
+    Token(token_class, doc)
   end
 
   def identify_quotation
