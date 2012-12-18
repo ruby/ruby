@@ -835,36 +835,38 @@ tracepoint_attr_method_id(VALUE tpval)
 }
 
 /*
- * Return class or module the method being called.
+ * Return class or module of the method being called.
  *
- *          class C; def foo; end; end
- *	    trace = TracePoint.new(:call) do |tp|
- *            tp.defined_class #=> C
- *          end.enable do
- *            C.new.foo
- *          end
+ *	class C; def foo; end; end
+ * 	trace = TracePoint.new(:call) do |tp|
+ * 	  p tp.defined_class #=> C
+ * 	end.enable do
+ * 	  C.new.foo
+ * 	end
  *
- * If method is defined by a module, then returns that module.
+ * If method is defined by a module, then that module is returned.
  *
- *          module M; def foo; end; end
- *          class C; include M; end;
- *	    trace = TracePoint.new(:call) do |tp|
- *            tp.defined_class #=> M
- *          end.enable do
- *            C.new.foo
- *          end
+ *	module M; def foo; end; end
+ * 	class C; include M; end;
+ * 	trace = TracePoint.new(:call) do |tp|
+ * 	  p tp.defined_class #=> M
+ * 	end.enable do
+ * 	  C.new.foo
+ * 	end
  *
- * Note that TracePont#defined_class returns singleton class.
- * 6th block parameter of `set_trace_func' passes original class
- * of attached by singleton class. This is a difference between
- * `set_trace_func' and TracePoint.
- * 
- *          class C; def self.foo; end; end
- *	    trace = TracePoint.new(:call) do |tp|
- *            tp.defined_class #=> #<Class:C>
- *          end.enable do
- *            C.foo
- *          end
+ * <b>Note:</b> #defined_class returns singleton class.
+ *
+ * 6th block parameter of Kernel#set_trace_func passes original class
+ * of attached by singleton class.
+ *
+ * <b>This is a difference between Kernel#set_trace_func and TracePoint.</b>
+ *
+ *	class C; def self.foo; end; end
+ * 	trace = TracePoint.new(:call) do |tp|
+ * 	  p tp.defined_class #=> #<Class:C>
+ * 	end.enable do
+ * 	  C.foo
+ * 	end
  */
 static VALUE
 tracepoint_attr_defined_class(VALUE tpval)

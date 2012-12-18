@@ -1,3 +1,8 @@
+Tue Dec 18 13:17:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_trace.c (tracepoint_attr_defined_class): Clean up rdoc for
+	  TracePoint#defined_class
+
 Tue Dec 18 12:15:59 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/specification.rb:  Fixed ruby output of requirements
