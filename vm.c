@@ -917,6 +917,11 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
       case TAG_RETRY:
 	result = make_localjump_error("retry outside of rescue clause", Qnil, state);
 	break;
+      case TAG_FATAL:
+	/* internal exception or Thread.exit */
+	/* Thread.exit set th->errinfo to INT2FIX(TAG_FATAL) */
+	if (!FIXNUM_P(val))
+	    result = val;
       default:
 	break;
     }

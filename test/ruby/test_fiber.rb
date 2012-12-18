@@ -269,5 +269,14 @@ class TestFiber < Test::Unit::TestCase
       Thread.new{ Fiber.new{ Thread.exit }.resume }.join
     end
   end
+
+  def test_fatal_in_fiber
+    assert_in_out_err(["-r-test-/fatal/rb_fatal", "-e", <<-EOS], "", [], /ok/)
+      Fiber.new{
+        rb_fatal "ok"
+      }.resume
+      puts :ng # unreachable.
+    EOS
+  end
 end
 

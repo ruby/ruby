@@ -1,3 +1,12 @@
+Tue Dec 18 09:45:14 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* vm.c (rb_vm_make_jump_tag_but_local_jump): take care of the case
+	  TAG_JUMP() with TAG_FATAL (ex. rb_fatal()).
+
+	* test/ruby/test_fiber.rb (test_fatal_in_fiber): add a test for above.
+
+	* ext/-test-/fatal/extconf.rb, ext/-test-/fatal/rb_fatal.c: ditto.
+
 Tue Dec 18 13:17:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_trace.c (tracepoint_attr_defined_class): Clean up rdoc for
