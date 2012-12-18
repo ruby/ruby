@@ -1,3 +1,8 @@
+Tue Dec 18 16:46:15 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/literals.rdoc:  Used simplified heredoc example that
+	  doesn't include method definition.  Added heredoc with backticks.
+
 Tue Dec 18 16:38:51 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/store.rb:  Work around RDoc stores from older versions of

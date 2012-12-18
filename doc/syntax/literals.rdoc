@@ -127,15 +127,11 @@ typically used.
 
 You may indent the ending identifier if you place a "-" after <tt><<</tt>:
 
-  def test_something
     expected_result = <<-INDENTED_HEREDOC
   This would contain specially formatted text.
 
   That might span many lines
     INDENTED_HEREDOC
-
-    # ...
-  end
 
 Note that the while the closing identifier may be indented, the content is
 always treated as if it is flush left.  If you indent the content those spaces
@@ -150,6 +146,14 @@ quotes:
   EXPECTED
 
   p expected_result # prints: "One plus one is \#{1 + 1}\n"
+
+The identifier may also be surrounded with double quotes (which is the same as
+no quotes) or with backticks.  When surrounded by backticks the HEREDOC
+behaves like Kernel#`:
+
+  puts <<-`HEREDOC`
+  cat #{__FILE__}
+  HEREDOC
 
 To call a method on a heredoc place it after the opening identifier:
 
