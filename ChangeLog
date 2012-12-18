@@ -1,3 +1,8 @@
+Tue Dec 18 18:55:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_wait_fd_rw): fix infinite loop bug.
+	  rb_wait_for_single_fd() never return positive number.
+
 Tue Dec 18 17:24:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/encoding.rb:  Do not remove #! line from document when

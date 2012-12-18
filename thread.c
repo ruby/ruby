@@ -3320,12 +3320,10 @@ rb_thread_wait_fd_rw(int fd, int read)
     if (fd < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
-    while (result <= 0) {
-	result = rb_wait_for_single_fd(fd, events, NULL);
 
-	if (result < 0) {
-	    rb_sys_fail(0);
-	}
+    result = rb_wait_for_single_fd(fd, events, NULL);
+    if (result < 0) {
+	rb_sys_fail(0);
     }
 
     thread_debug("rb_thread_wait_fd_rw(%d, %s): done\n", fd, read ? "read" : "write");
