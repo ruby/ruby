@@ -1,6 +1,6 @@
 Wed Dec 19 01:51:24 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
-	* vm.c (rb_vm_jump_tag_but_local_jump): remove unnessesary 2nd
+	* vm.c (rb_vm_jump_tag_but_local_jump): remove unnessecary 2nd
 	  argument.
 
 	* load.c (rb_load_internal): ditto.
