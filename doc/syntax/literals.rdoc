@@ -45,8 +45,10 @@ point numbers as well.
 
 You can also write numbers in hexadecimal, octal or binary formats.  For
 hexadecimal numbers use a prefix of <tt>0x</tt>, for octal numbers use a
-prefix of <tt>0</tt>, for binary numbers use a prefix of <tt>0b</tt>.  The
-alphabetic component of the number is not case-sensitive.  Examples:
+prefix of <tt>0</tt> or <tt>0o</tt>, for binary numbers use a prefix of
+<tt>0b</tt>.  The alphabetic component of the number is not case-sensitive.
+
+Examples:
 
   0xaa
   0xAa
@@ -56,6 +58,8 @@ alphabetic component of the number is not case-sensitive.  Examples:
   0XaA
 
   0252
+  0o252
+  0O252
 
   0b10101010
   0B10101010
