@@ -47,7 +47,8 @@ Tue Dec 18 16:31:20 2012  Eric Hodel  <drbrain@segment7.net>
 Tue Dec 18 09:45:14 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* vm.c (rb_vm_make_jump_tag_but_local_jump): take care of the case
-	  TAG_JUMP() with TAG_FATAL (ex. rb_fatal()).
+	  TAG_JUMP() with TAG_FATAL (ex. rb_fatal()). [ruby-core:50917]
+	  [Bug #7570]
 
 	* test/ruby/test_fiber.rb (test_fatal_in_fiber): add a test for above.
 
