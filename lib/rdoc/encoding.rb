@@ -75,7 +75,9 @@ module RDoc::Encoding
   # Sets the encoding of +string+ based on the magic comment
 
   def self.set_encoding string
-    first_line = string[/\A(?:#!.*\n)?.*\n/]
+    string =~ /\A(?:#!.*\n)?(.*\n)/
+
+    first_line = $1
 
     name = case first_line
            when /^<\?xml[^?]*encoding=(["'])(.*?)\1/ then $2

@@ -46,6 +46,11 @@ class RDoc::Parser
   end
 
   ##
+  # The name of the file being parsed
+
+  attr_reader :file_name
+
+  ##
   # Alias an extension to another extension. After this call, files ending
   # "new_ext" will be parsed using the same parser as "old_ext"
 
@@ -182,16 +187,18 @@ class RDoc::Parser
     parser = use_markup content
 
     unless parser then
+      parse_name = file_name
+
       # If no extension, look for shebang
       if file_name !~ /\.\w+$/ && content =~ %r{\A#!(.+)} then
         shebang = $1
         case shebang
         when %r{env\s+ruby}, %r{/ruby}
-          file_name = "dummy.rb"
+          parse_name = 'dummy.rb'
         end
       end
 
-      parser = can_parse file_name
+      parser = can_parse parse_name
     end
 
     return unless parser

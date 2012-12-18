@@ -77,6 +77,19 @@ class TestRDocParser < RDoc::TestCase
     end
   end
 
+  def test_class_for_executable
+    temp_dir do
+      content = "#!/usr/bin/env ruby -w\n"
+      open 'app', 'w' do |io| io.write content end
+      app = @store.add_file 'app'
+      parser = @RP.for app, 'app', content, @options, :stats
+
+      assert_kind_of RDoc::Parser::Ruby, parser
+
+      assert_equal 'app', parser.file_name
+    end
+  end
+
   def test_can_parse_modeline
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 

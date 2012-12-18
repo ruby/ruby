@@ -1,3 +1,14 @@
+Tue Dec 18 17:24:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/encoding.rb:  Do not remove #! line from document when
+	  setting encoding.  This allows ruby executables to be parsed as ruby
+	  files.
+	* test/rdoc/test_rdoc_encoding.rb:  Test for above.
+
+	* lib/rdoc/parser.rb:  Set the parser file name of ruby executables
+	  correctly.
+	* test/rdoc/test_rdoc_parser.rb:  Test for above.
+
 Tue Dec 18 16:46:15 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/literals.rdoc:  Used simplified heredoc example that

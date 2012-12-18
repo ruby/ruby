@@ -164,7 +164,7 @@ class TestRDocEncoding < RDoc::TestCase
 
     RDoc::Encoding.set_encoding s
 
-    assert_equal "# more comments", s
+    assert_equal "#!/bin/ruby\n# more comments", s
   end
 
   def test_class_set_encoding_bad
