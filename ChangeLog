@@ -1,3 +1,9 @@
+Wed Dec 19 21:14:28 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: return true or false. Patch by Dirkjan Bussink. [Bug #6821]
+
+	* test/ruby/test_gc.rb: add test-case for this bug.
+
 Wed Dec 19 21:12:49 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* marshal.c (r_entry0): don't taint classes and modules because
