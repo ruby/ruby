@@ -1,3 +1,10 @@
+Wed Dec 19 23:52:16 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (load_file_internal): use original C string as the filename
+	  for parser.
+	  reported by whiteleaf at [ruby-list:49085] [ruby-dev:46738]
+	  [Bug #7562]
+
 Wed Dec 19 23:36:12 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* marshal.c (marshal_dump, marshal_load): fix SEGV during make rdoc

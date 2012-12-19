@@ -1569,6 +1569,7 @@ load_file_internal(VALUE arg)
     VALUE parser = argp->parser;
     VALUE fname_v = rb_str_encode_ospath(argp->fname);
     const char *fname = StringValueCStr(fname_v);
+    const char *orig_fname = StringValueCStr(argp->fname);
     int script = argp->script;
     struct cmdline_options *opt = argp->opt;
     VALUE f;
@@ -1702,10 +1703,10 @@ load_file_internal(VALUE arg)
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
-	return (VALUE)rb_parser_compile_string(parser, fname, f, line_start);
+	return (VALUE)rb_parser_compile_string(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    tree = rb_parser_compile_file(parser, fname, f, line_start);
+    tree = rb_parser_compile_file(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && tree && rb_parser_end_seen_p(parser)) {
 	/*
