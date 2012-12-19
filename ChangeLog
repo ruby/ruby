@@ -1,3 +1,8 @@
+Thu Dec 20 06:25:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_fiber.rb: remove a strange single quote character.
+	  With this character, this script exits by SyntaxError.
+
 Thu Dec 20 01:03:00 2012  Zachary Scott  <zachary@zacharyscott>
 
 	* ext/.document: Add missing ext modules to .document

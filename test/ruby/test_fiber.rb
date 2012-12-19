@@ -192,7 +192,7 @@ class TestFiber < Test::Unit::TestCase
     assert_normal_exit %q{
       require 'fiber'
       Fiber.new{}.resume
-      1.times{Fiber.current.transfer}'
+      1.times{Fiber.current.transfer}
     }
   end
 
