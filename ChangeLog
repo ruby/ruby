@@ -1,3 +1,8 @@
+Wed Dec 19 17:54:18 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): get rid of race
+	  condition. [Bug #7589] [ruby-dev:46763]
+
 Wed Dec 19 16:30:28 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/literals.rdoc:  Added 0d decimal format.  Thanks Nobu!

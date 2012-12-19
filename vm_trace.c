@@ -291,7 +291,7 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 	int state = 0;
 	th->state = 0;
 
-	th->vm->trace_running = 1;
+	th->vm->trace_running++;
 	th->trace_running = 1;
 	{
 	    rb_hook_list_t *list;
@@ -313,7 +313,7 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 	}
       terminate:
 	th->trace_running = 0;
-	th->vm->trace_running = vm_tracing;
+	th->vm->trace_running--;
 
 	if (state) {
 	    TH_JUMP_TAG(th, state);
