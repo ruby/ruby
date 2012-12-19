@@ -934,7 +934,7 @@ marshal_dump(int argc, VALUE *argv)
 	else if (NIL_P(a1)) io_needed();
 	else port = a1;
     }
-    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = st_init_numtable();
@@ -1907,7 +1907,7 @@ marshal_load(int argc, VALUE *argv)
     else {
 	io_needed();
     }
-    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    RB_GC_GUARD(wrapper) = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
