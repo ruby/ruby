@@ -1,3 +1,11 @@
+Wed Dec 19 21:12:49 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* marshal.c (r_entry0): don't taint classes and modules because
+	  Marshal.load just returns the dumped classes and modules.
+	  [Bug #7325] [ruby-core:49198]
+
+	* test/ruby/test_marshal.rb: related test.
+
 Tue Dec 11 19:19:33 2012  Luis Lavena <luislavena@gmail.com>
 
 	* win32/file.c (replace_to_long_name): correct logic around wildcard

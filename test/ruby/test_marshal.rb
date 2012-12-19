@@ -483,4 +483,22 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Rational(1, 2), Marshal.load("\x04\bU:\rRational[\ai\x06i\a"))
     assert_raise(ArgumentError){Marshal.load("\x04\bU:\rRational[\bi\x00i\x00i\x00")}
   end
+
+  class TestClass
+  end
+
+  module TestModule
+  end
+
+  def test_marshal_load_should_not_taint_classes
+    bug7325 = '[ruby-core:49198]'
+    for c in [TestClass, TestModule]
+      assert(!c.tainted?)
+      assert(!c.untrusted?)
+      c2 = Marshal.load(Marshal.dump(c).taint.untrust)
+      assert_same(c, c2)
+      assert(!c.tainted?, bug7325)
+      assert(!c.untrusted?, bug7325)
+    end
+  end
 end
