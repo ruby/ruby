@@ -7923,7 +7923,8 @@ parser_yylex(struct parser_params *parser)
             ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
             set_yylval_name(ident);
-            if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
+            if (last_state != EXPR_DOT && last_state != EXPR_FNAME &&
+		is_local_id(ident) && lvar_defined(ident)) {
                 lex_state = EXPR_END;
             }
         }

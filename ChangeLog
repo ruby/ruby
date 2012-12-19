@@ -1,3 +1,8 @@
+Wed Dec 19 21:15:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fix false usage of local variable, it cannot
+	  appear in fname state [ruby-core:49659] [Bug #7408]
+
 Wed Dec 19 21:14:28 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: return true or false. Patch by Dirkjan Bussink. [Bug #6821]
