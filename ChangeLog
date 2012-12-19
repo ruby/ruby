@@ -1,3 +1,7 @@
+Wed Dec 19 21:20:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): use wcscasecmp().
+
 Wed Dec 19 21:15:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix false usage of local variable, it cannot

@@ -17,6 +17,7 @@
 #ifdef __CYGWIN__
 #include <windows.h>
 #include <sys/cygwin.h>
+#include <wchar.h>
 #endif
 
 #include "ruby/ruby.h"
@@ -3190,7 +3191,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    len = lstrlenW(wfd.cFileName);
 #ifdef __CYGWIN__
 	    if (lnk_added && len > 4 &&
-		wcsicmp(wfd.cFileName + len - 4, L".lnk") == 0) {
+		wcscasecmp(wfd.cFileName + len - 4, L".lnk") == 0) {
 		wfd.cFileName[len -= 4] = L'\0';
 	    }
 #else
