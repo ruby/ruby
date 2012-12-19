@@ -694,7 +694,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_return_value
     trace = TracePoint.new(:call, :return){|tp|
-      break if tp.path != __FILE__
+      next if tp.path != __FILE__
       case tp.event
       when :call
         assert_raise(RuntimeError) {tp.return_value}
