@@ -1816,8 +1816,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	finalizer_interrupt = interrupt & FINALIZER_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
-
-
 	/* signal handling */
 	if (trap_interrupt && (th == th->vm->main_thread)) {
 	    enum rb_thread_status prev_status = th->status;
