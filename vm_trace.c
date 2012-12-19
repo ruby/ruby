@@ -244,7 +244,7 @@ clean_hooks(rb_hook_list_t *list)
 static int
 exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg, int can_clean_hooks)
 {
-    volatile int state;
+    int state;
     volatile int raised;
 
     if (UNLIKELY(list->need_clean > 0) && can_clean_hooks) {
@@ -274,10 +274,6 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 
     if (raised) {
 	rb_threadptr_set_raised(th);
-    }
-    {
-	/* maybe rb_thread_t *volatile? */
-	rb_thread_t volatile *RB_UNUSED_VAR(tmp) = th;
     }
 
     return state;
