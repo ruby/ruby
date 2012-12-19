@@ -68,8 +68,8 @@ Arguments may have default values:
     a + b
   end
 
-The default value does not need to appear first, but the must be grouped
-together.  This is ok:
+The default value does not need to appear first, but arguments with defaults
+must be grouped together.  This is ok:
 
   def add_values(a = 1, b = 2, c)
     a + b + c
