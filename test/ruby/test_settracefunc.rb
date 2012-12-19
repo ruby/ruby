@@ -439,7 +439,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
-    2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)]
+    2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
     3: }
     4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
@@ -532,7 +532,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     _local_var = :outer
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
-    2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")]
+    2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("_local_var")] if file == 'xyzzy'
     3: })
     4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
