@@ -175,23 +175,5 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert Gem::Specification.find_all_by_name('x').length == 0
   end
 
-  def test_execute_default_gem
-    default_gem_spec = new_default_spec("default", "2.0.0.0",
-                                        nil, "default/gem.rb")
-    install_default_specs(default_gem_spec)
-
-    ui = Gem::MockGemUi.new
-
-    @cmd.options[:args] = %w[default]
-    @cmd.options[:executables] = true
-
-    use_ui ui do
-      e = assert_raises Gem::InstallError do
-        @cmd.execute
-      end
-      assert_equal "gem \"default\" cannot be uninstalled because it is a default gem",
-                   e.message
-    end
-  end
 end
 

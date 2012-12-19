@@ -106,7 +106,6 @@ pl (1 i386-linux)
     @a2.summary = 'This is a lot of text. ' * 4
     @a2.authors = ['Abraham Lincoln', 'Hirohito']
     @a2.homepage = 'http://a.example.com/'
-    @a2.rubyforge_project = 'rubygems'
 
     util_clear_gems
     util_setup_spec_fetcher @a1, @a2, @pl1
@@ -123,7 +122,6 @@ pl (1 i386-linux)
 
 a (2)
     Authors: Abraham Lincoln, Hirohito
-    Rubyforge: http://rubyforge.org/projects/rubygems
     Homepage: http://a.example.com/
 
     This is a lot of text. This is a lot of text. This is a lot of text.
@@ -147,7 +145,6 @@ pl (1)
     @a2.summary = 'This is a lot of text. ' * 4
     @a2.authors = ['Abraham Lincoln', 'Hirohito']
     @a2.homepage = 'http://a.example.com/'
-    @a2.rubyforge_project = 'rubygems'
     @a2.platform = 'universal-darwin'
 
     util_clear_gems
@@ -168,7 +165,6 @@ a (2, 1)
         1: x86-linux
         2: universal-darwin
     Authors: Abraham Lincoln, Hirohito
-    Rubyforge: http://rubyforge.org/projects/rubygems
     Homepage: http://a.example.com/
 
     This is a lot of text. This is a lot of text. This is a lot of text.
@@ -355,7 +351,6 @@ pl (1 i386-linux)
     @a2.summary = 'This is a lot of text. ' * 4
     @a2.authors = ['Abraham Lincoln', 'Hirohito']
     @a2.homepage = 'http://a.example.com/'
-    @a2.rubyforge_project = 'rubygems'
     @a2.platform = 'universal-darwin'
 
     util_clear_gems
@@ -380,7 +375,6 @@ a (2, 1)
         1: x86-linux
         2: universal-darwin
     Authors: Abraham Lincoln, Hirohito
-    Rubyforge: http://rubyforge.org/projects/rubygems
     Homepage: http://a.example.com/
     Installed at -
                  -
@@ -398,6 +392,44 @@ pl \(1\)
     EOF
 
     assert_match expected, @ui.output
+  end
+
+  def test_execute_default_details
+    default_gem_dir = Gem::Specification.default_specifications_dir
+    @a1.loaded_from =
+      File.join default_gem_dir, @a1.spec_name
+
+    @cmd.handle_options %w[-l -d]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    str = @ui.output
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (3.a, 2, 1)
+    Author: A User
+    Homepage: http://example.com
+    Installed at (3.a): #{@gemhome}
+                 (2): #{@gemhome}
+                 (1, default): #{@a1.base_dir}
+
+    this is a summary
+
+pl \(1\)
+    Platform: i386-linux
+    Author: A User
+    Homepage: http://example.com
+    Installed at: #{@gemhome}
+
+    this is a summary
+    EOF
+
+    assert_equal expected, @ui.output
   end
 
 end

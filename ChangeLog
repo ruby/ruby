@@ -1,3 +1,19 @@
+Wed Dec 19 16:18:22 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/query_command.rb:  Refactored to improve
+	  maintainability.
+	* test/rubygems/test_gem_commands_query_command.rb:  Note default gems
+	  in gem list details.
+
+	* lib/rubygems/uninstaller.rb:  Detect all gems for uninstallation.
+	  This allows duplicate installs of default gems to be removed.
+	* lib/rubygems/specification.rb:  Allow use of ::each_spec.
+	* lib/rubygems/test_case.rb:  Added install_default_gems.
+	* test/rubygems/test_gem_commands_uninstall_command.rb:  Moved test
+	  down to the uninstaller tests.
+	* test/rubygems/test_gem_uninstaller.rb:  Test for uninstallation of
+	  default gems and duplicate default gems.
+
 Wed Dec 19 15:23:50 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/methods.rdoc:  Add () around keyword arguments example for

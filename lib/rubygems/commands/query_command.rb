@@ -162,12 +162,18 @@ class Gem::Commands::QueryCommand < Gem::Command
       n.downcase
     end
 
+    output_versions output, versions
+
+    say output.join(options[:details] ? "\n\n" : "\n")
+  end
+
+  def output_versions output, versions
     versions.each do |gem_name, matching_tuples|
       matching_tuples = matching_tuples.sort_by { |n,_| n.version }.reverse
 
       platforms = Hash.new { |h,version| h[version] = [] }
 
-      matching_tuples.map do |n,_|
+      matching_tuples.each do |n, _|
         platforms[n.version] << n.platform if n.platform
       end
 
@@ -182,97 +188,125 @@ class Gem::Commands::QueryCommand < Gem::Command
         end
       end
 
-      entry = gem_name.dup
+      output << make_entry(matching_tuples, platforms)
+    end
+  end
 
-      if options[:versions] then
-        list = if platforms.empty? or options[:details] then
-                 matching_tuples.map { |n,_| n.version }.uniq
-               else
-                 platforms.sort.reverse.map do |version, pls|
-                   if pls == [Gem::Platform::RUBY] then
-                     version
-                   else
-                     ruby = pls.delete Gem::Platform::RUBY
-                     platform_list = [ruby, *pls.sort].compact
-                     "#{version} #{platform_list.join ' '}"
-                   end
-                 end
-               end.join ', '
+  def entry_details entry, spec, specs, platforms
+    return unless options[:details]
 
-        entry << " (#{list})"
-      end
+    entry << "\n"
 
-      if options[:details] then
-        detail_tuple = matching_tuples.first
+    spec_platforms   entry, platforms
+    spec_authors     entry, spec
+    spec_homepage    entry, spec
+    spec_license     entry, spec
+    spec_loaded_from entry, spec, specs
+    spec_summary     entry, spec
+  end
 
-        spec = detail_tuple.last
+  def entry_versions entry, name_tuples, platforms
+    return unless options[:versions]
 
-        unless spec.kind_of? Gem::Specification
-          spec = spec.fetch_spec detail_tuple.first
-        end
-
-        entry << "\n"
-
-        non_ruby = platforms.any? do |_, pls|
-          pls.any? { |pl| pl != Gem::Platform::RUBY }
-        end
-
-        if non_ruby then
-          if platforms.length == 1 then
-            title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
-            entry << "    #{title}: #{platforms.values.sort.join ', '}\n"
+    list =
+      if platforms.empty? or options[:details] then
+        name_tuples.map { |n| n.version }.uniq
+      else
+        platforms.sort.reverse.map do |version, pls|
+          if pls == [Gem::Platform::RUBY] then
+            version
           else
-            entry << "    Platforms:\n"
-            platforms.sort_by do |version,|
-              version
-            end.each do |version, pls|
-              label = "        #{version}: "
-              data = format_text pls.sort.join(', '), 68, label.length
-              data[0, label.length] = label
-              entry << data << "\n"
-            end
+            ruby = pls.delete Gem::Platform::RUBY
+            platform_list = [ruby, *pls.sort].compact
+            "#{version} #{platform_list.join ' '}"
           end
         end
-
-        authors = "Author#{spec.authors.length > 1 ? 's' : ''}: "
-        authors << spec.authors.join(', ')
-        entry << format_text(authors, 68, 4)
-
-        if spec.rubyforge_project and not spec.rubyforge_project.empty? then
-          rubyforge = "Rubyforge: http://rubyforge.org/projects/#{spec.rubyforge_project}"
-          entry << "\n" << format_text(rubyforge, 68, 4)
-        end
-
-        if spec.homepage and not spec.homepage.empty? then
-          entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
-        end
-
-        if spec.license and not spec.license.empty? then
-          licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: "
-          licenses << spec.licenses.join(', ')
-          entry << "\n" << format_text(licenses, 68, 4)
-        end
-
-        if spec.loaded_from then
-          if matching_tuples.length == 1 then
-            loaded_from = File.dirname File.dirname(spec.loaded_from)
-            entry << "\n" << "    Installed at: #{loaded_from}"
-          else
-            label = 'Installed at'
-            matching_tuples.each do |n,s|
-              loaded_from = File.dirname File.dirname(s.loaded_from)
-              entry << "\n" << "    #{label} (#{n.version}): #{loaded_from}"
-              label = ' ' * label.length
-            end
-          end
-        end
-
-        entry << "\n\n" << format_text(spec.summary, 68, 4)
       end
-      output << entry
+
+    entry << " (#{list.join ', '})"
+  end
+
+  def make_entry entry_tuples, platforms
+    detail_tuple = entry_tuples.first
+    name_tuple, latest_spec = detail_tuple
+
+    latest_spec = latest_spec.fetch_spec name_tuple unless
+      Gem::Specification === latest_spec
+
+    name_tuples, specs = entry_tuples.flatten.partition do |item|
+      Gem::NameTuple === item
     end
 
-    say output.join(options[:details] ? "\n\n" : "\n")
+    entry = [latest_spec.name]
+
+    entry_versions entry, name_tuples, platforms
+    entry_details  entry, latest_spec, specs, platforms
+
+    entry.join
+  end
+
+  def spec_authors entry, spec
+    authors = "Author#{spec.authors.length > 1 ? 's' : ''}: "
+    authors << spec.authors.join(', ')
+    entry << format_text(authors, 68, 4)
+  end
+
+  def spec_homepage entry, spec
+    return if spec.homepage.nil? or spec.homepage.empty?
+
+    entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
+  end
+
+  def spec_license entry, spec
+    return if spec.license.nil? or spec.license.empty?
+
+    licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: "
+    licenses << spec.licenses.join(', ')
+    entry << "\n" << format_text(licenses, 68, 4)
+  end
+
+  def spec_loaded_from entry, spec, specs
+    return unless spec.loaded_from
+
+    if specs.length == 1 then
+      default = spec.default_gem? ? ' (default)' : nil
+      entry << "\n" << "    Installed at#{default}: #{spec.base_dir}"
+    else
+      label = 'Installed at'
+      specs.each do |s|
+        version = s.version.to_s
+        version << ', default' if s.default_gem?
+        entry << "\n" << "    #{label} (#{version}): #{s.base_dir}"
+        label = ' ' * label.length
+      end
+    end
+  end
+
+  def spec_platforms entry, platforms
+    non_ruby = platforms.any? do |_, pls|
+      pls.any? { |pl| pl != Gem::Platform::RUBY }
+    end
+
+    return unless non_ruby
+
+    if platforms.length == 1 then
+      title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
+      entry << "    #{title}: #{platforms.values.sort.join ', '}\n"
+    else
+      entry << "    Platforms:\n"
+      platforms.sort_by do |version,|
+        version
+      end.each do |version, pls|
+        label = "        #{version}: "
+        data = format_text pls.sort.join(', '), 68, label.length
+        data[0, label.length] = label
+        entry << data << "\n"
+      end
+    end
+  end
+
+  def spec_summary entry, spec
+    entry << "\n\n" << format_text(spec.summary, 68, 4)
   end
 
 end
