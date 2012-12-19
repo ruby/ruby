@@ -1,3 +1,7 @@
+Wed Dec 19 16:30:28 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/literals.rdoc:  Added 0d decimal format.  Thanks Nobu!
+
 Wed Dec 19 16:19:36 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/methods.rdoc:  Fixed typo.  Thanks to Josh Susser.

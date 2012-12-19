@@ -43,12 +43,16 @@ Floating point numbers may be written as follows:
 These numbers have the same value, 12.34.  You may use underscores in floating
 point numbers as well.
 
-You can also write numbers in hexadecimal, octal or binary formats.  For
+You can use a special prefix to write numbers in decimal, hexadecimal, octal
+or binary formats.  For decimal numbers use a prefix of <tt>0d</tt>, for
 hexadecimal numbers use a prefix of <tt>0x</tt>, for octal numbers use a
 prefix of <tt>0</tt> or <tt>0o</tt>, for binary numbers use a prefix of
 <tt>0b</tt>.  The alphabetic component of the number is not case-sensitive.
 
 Examples:
+
+  0d170
+  0D170
 
   0xaa
   0xAa
