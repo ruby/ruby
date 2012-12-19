@@ -1,3 +1,7 @@
+Wed Dec 19 16:19:36 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Fixed typo.  Thanks to Josh Susser.
+
 Wed Dec 19 16:18:22 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/query_command.rb:  Refactored to improve

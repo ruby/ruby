@@ -118,7 +118,7 @@ the caller after all positional arguments.
 However, this only occurs if the method does not declare any keyword arguments.
 
   def gather_arguments_keyword(*positional, keyword: nil)
-   p positinal: positional, keyword: keyword
+   p positional: positional, keyword: keyword
   end
 
   gather_arguments_keyword 1, 2, three: 3
