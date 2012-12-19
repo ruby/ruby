@@ -1,3 +1,7 @@
+Wed Dec 19 19:34:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): nul byte is invalid as constant name.
+
 Wed Dec 19 17:54:18 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks): get rid of race
