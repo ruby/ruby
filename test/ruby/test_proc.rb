@@ -35,9 +35,9 @@ class TestProc < Test::Unit::TestCase
     }.call
     assert(!defined?(iii))		# out of scope
 
-    loop{iii=5; assert(eval("defined? iii")); break}
+    loop{iii=iii=5; assert(eval("defined? iii")); break}
     loop {
-      iii = 10
+      iii=iii = 10
       def self.dyna_var_check
         loop {
           assert(!defined?(iii))
@@ -73,8 +73,8 @@ class TestProc < Test::Unit::TestCase
     assert_equal(-1, proc{|*|}.arity)
     assert_equal(-3, proc{|x, *y, z|}.arity)
     assert_equal(-2, proc{|x=0, *y, z|}.arity)
-    assert_equal(2, proc{|(x, y), z|}.arity)
-    assert_equal(1, proc{|(x, y), z=0|}.arity)
+    assert_equal(2, proc{|(x, y), z|[x,y]}.arity)
+    assert_equal(1, proc{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, proc{|x, *y, z, a|}.arity)
 
     assert_equal(0, lambda{}.arity)
@@ -91,8 +91,8 @@ class TestProc < Test::Unit::TestCase
     assert_equal(-1, lambda{|*|}.arity)
     assert_equal(-3, lambda{|x, *y, z|}.arity)
     assert_equal(-2, lambda{|x=0, *y, z|}.arity)
-    assert_equal(2, lambda{|(x, y), z|}.arity)
-    assert_equal(-2, lambda{|(x, y), z=0|}.arity)
+    assert_equal(2, lambda{|(x, y), z|[x,y]}.arity)
+    assert_equal(-2, lambda{|(x, y), z=0|[x,y]}.arity)
     assert_equal(-4, lambda{|x, *y, z, a|}.arity)
 
     assert_arity(0) {}
@@ -300,7 +300,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(:foo, bc.foo)
 
     b = nil
-    1.times { x, y, z = 1, 2, 3; b = binding }
+    1.times { x, y, z = 1, 2, 3; [x,y,z]; b = binding }
     assert_equal([1, 2, 3], b.eval("[x, y, z]"))
   end
 
@@ -345,7 +345,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_localjump_error
-    o = Object.new
+    o = o = Object.new
     def foo; yield; end
     exc = foo rescue $!
     assert_nil(exc.exit_value)
@@ -1005,7 +1005,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c]], proc {|a, *b, c|}.parameters)
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
-    assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|}.parameters)
+    assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|a}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
 
     assert_equal([[:req]], method(:putc).parameters)
@@ -1022,7 +1022,7 @@ class TestProc < Test::Unit::TestCase
   def pmo5(a, *b, c) end
   def pmo6(a, *b, c, &d) end
   def pmo7(a, b = :b, *c, d, &e) end
-  def pma1((a), &b) end
+  def pma1((a), &b) a; end
 
 
   def test_bound_parameters
@@ -1110,7 +1110,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_curry_with_trace
-    bug3751 = '[ruby-core:31871]'
+    # bug3751 = '[ruby-core:31871]'
     set_trace_func(proc {})
     test_curry
   ensure
