@@ -10565,6 +10565,36 @@ argf_each_char(VALUE argf)
 
 /*
  *  call-seq:
+ *     ARGF.codepoints      {|codepoint| block }  -> ARGF
+ *     ARGF.codepoints                       -> an_enumerator
+ *
+ *     ARGF.each_codepoint  {|codepoint| block }  -> ARGF
+ *     ARGF.each_codepoint                   -> an_enumerator
+ *
+ *  Iterates over each codepoint of each file in +ARGF+.
+ *
+ *  This method allows you to treat the files supplied on the command line as
+ *  a single file consisting of the concatenation of each named file. After
+ *  the last codepoint of the first file has been returned, the first
+ *  codepoint of the second file is returned. The +ARGF.filename+ method can
+ *  be used to determine the name of the file in which the current codepoint
+ *  appears.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
+static VALUE
+argf_each_codepoint(VALUE argf)
+{
+    RETURN_ENUMERATOR(argf, 0, 0);
+    for (;;) {
+	if (!next_argv()) return argf;
+	rb_block_call(ARGF.current_file, rb_intern("each_codepoint"), 0, 0, 0, 0);
+	ARGF.next_p = 1;
+    }
+}
+
+/*
+ *  call-seq:
  *     ARGF.filename  -> String
  *     ARGF.path      -> String
  *
@@ -11291,9 +11321,11 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each_line",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
     rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
+    rb_define_method(rb_cARGF, "each_codepoint",  argf_each_codepoint, 0);
     rb_define_method(rb_cARGF, "lines", argf_each_line, -1);
     rb_define_method(rb_cARGF, "bytes", argf_each_byte, 0);
     rb_define_method(rb_cARGF, "chars", argf_each_char, 0);
+    rb_define_method(rb_cARGF, "codepoints", argf_each_codepoint, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
