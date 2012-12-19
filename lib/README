@@ -43,7 +43,6 @@ open-uri.rb::		easy-to-use network interface using URI and Net
 open3.rb::		opens subprocess connection stdin/stdout/stderr
 optparse.rb::		command line option analysis
 ostruct.rb::		python style object
-pathname.rb::		Object-Oriented Pathname Class
 pp.rb::			pretty print objects
 prettyprint.rb::	pretty printing algorithm
 prime.rb		prime numbers and factorization
