@@ -1,3 +1,45 @@
+Thu Dec 20 06:59:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: support variable VM/Machine stack sizes.
+	  Specified by the following environment variaables:
+	    - RUBY_THREAD_VM_STACK_SIZE: vm stack size used at thread creation.
+	      default: 128KB (32bit CPU) or 256KB (64bit CPU).
+	    - RUBY_THREAD_MACHINE_STACK_SIZE: machine stack size used at thread
+	      creation. default: 512KB or 1024KB.
+	    - RUBY_FIBER_VM_STACK_SIZE: vm stack size used at fiber creation.
+	      default: 64KB or 128KB.
+	    - RUBY_FIBER_MACHINE_STACK_SIZE: machine stack size used at fiber
+	      creation. default: 256KB or 256KB.
+	  This values are specified at launched timing. You can not change
+	  these values at running time.
+	  Environ variables are only *hints* because:
+	    - They are aligned to 4KB.
+	    - They have minimum values (depend on OSs).
+	    - Machine stack settings are ignored by some OSs.
+	  Default values especially fiber stack sizes are increased.
+	  This change affect Fiber's behavior:
+	    (1) You can run more complex program on a Fiber.
+	    (2) You can not make many (thousands) Fibers because of
+	        lack of address space (on 32bit CPU).
+	  If (2) bothers you, 
+            (a) Use 64bit CPU with big memory, or
+	    (b) Specify RUBY_FIBER_(VM|MACHINE)_STACK_SIZE correctly.
+	  You need to choose correct stack size carefully. These values
+	  are completely rely on systems (OS/compiler and so on).
+
+	* vm_core.h (rb_vm_t::default_params): add to record above settings.
+
+	* vm.c (RubyVM::DEFAULT_PARAMS): add new constant to see
+	  above setting.
+
+	* thread_pthread.c: support RUBY_THREAD_MACHINE_STACK_SIZE.
+
+	* cont.c: support RUBY_FIBER_(VM|MACHINE)_STACK_SIZE.
+
+	* test/ruby/test_fiber.rb: add tests for above.
+
+	* test/ruby/test_thread.rb: ditto.
+
 Thu Dec 20 06:25:44 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_fiber.rb: remove a strange single quote character.

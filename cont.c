@@ -47,12 +47,6 @@
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
-
- #if SIZEOF_VOIDP==8
-  #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x20000)
- #else
-  #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000)
- #endif
 #endif /*FIBER_USE_NATIVE*/
 
 #define CAPTURE_JUST_VALID_VM_STACK 1
@@ -631,7 +625,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
 
     if (newfib->status != RUNNING) {
-	fiber_initialize_machine_stack_context(newfib, FIBER_MACHINE_STACK_ALLOCATION_SIZE);
+	fiber_initialize_machine_stack_context(newfib, th->vm->default_params.fiber_machine_stack_size);
     }
 
     /* restore thread context */
@@ -1002,8 +996,6 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *
  */
 
-#define FIBER_VM_STACK_SIZE (4 * 1024)
-
 static const rb_data_type_t fiber_data_type = {
     "fiber",
     {fiber_mark, fiber_free, fiber_memsize,},
@@ -1054,7 +1046,7 @@ fiber_init(VALUE fibval, VALUE proc)
 
     fiber_link_join(fib);
 
-    th->stack_size = FIBER_VM_STACK_SIZE;
+    th->stack_size = th->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
     th->stack = ALLOC_N(VALUE, th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
