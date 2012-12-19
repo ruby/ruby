@@ -1,3 +1,8 @@
+Wed Dec 19 15:23:50 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Add () around keyword arguments example for
+	  consistency.  Thanks to Josh Susser.
+
 Wed Dec 19 01:51:24 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* vm.c (rb_vm_jump_tag_but_local_jump): remove unnecessary 2nd
