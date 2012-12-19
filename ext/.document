@@ -2,6 +2,7 @@
 
 bigdecimal/bigdecimal.c
 bigdecimal/lib
+continuation/continuation.c
 coverage/coverage.c
 curses/curses.c
 date/date_core.c
@@ -21,6 +22,7 @@ dl/lib
 dl/win32/lib
 etc/etc.c
 fcntl/fcntl.c
+fiber/fiber.c
 fiddle/closure.c
 fiddle/conversions.c
 fiddle/fiddle.c
@@ -37,12 +39,15 @@ io/wait/wait.c
 json/ext/generator/generator.c
 json/ext/parser/parser.c
 json/lib
+mathn/complex/complex.c
+mathn/rational/rational.c
 nkf/lib
 nkf/nkf.c
 objspace/objspace.c
 openssl/lib
 openssl/ossl.c
 openssl/ossl_asn1.c
+openssl/ossl_bio.c
 openssl/ossl_bn.c
 openssl/ossl_cipher.c
 openssl/ossl_config.c
@@ -81,7 +86,9 @@ psych/to_ruby.c
 psych/yaml_tree.c
 pty/lib
 pty/pty.c
+racc/cparse/cparse.c
 readline/readline.c
+refinement/refinement.c
 ripper/lib
 ripper/ripper.c
 sdbm/init.c
