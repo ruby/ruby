@@ -428,7 +428,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
         when /Class:TracePoint/; return TracePoint
         when /Class:Exception/; return Exception
         else klass
-          klass
         end
       rescue Exception => e
         e
@@ -695,6 +694,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_return_value
     trace = TracePoint.new(:call, :return){|tp|
+      break if tp.path != __FILE__
       case tp.event
       when :call
         assert_raise(RuntimeError) {tp.return_value}
