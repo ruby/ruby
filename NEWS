@@ -262,6 +262,9 @@ with all sufficient information, see the ChangeLog file.
     is FIPS-enabled. OpenSSL.fips_mode= allows turning on and off FIPS mode
     manually in order to adapt to situations where FIPS mode would be an
     explicit requirement.
+  * Authenticated Encryption with Associated Data (AEAD) is supported via
+    Cipher#auth_data= and Cipher#auth_tag/Cipher#auth_tag=. 
+    Currently (OpenSSL 1.0.1c), only GCM mode is supported.
 
 * ostruct
   * new methods:

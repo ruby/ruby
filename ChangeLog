@@ -1,3 +1,7 @@
+Thu Dec 20 16:52:37 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS: announce AEAD encryption support in the OpenSSL extension.
+
 Thu Dec 20 16:40:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (nonspecial_obj_id): VALUE is not compatible with Fixnum on
