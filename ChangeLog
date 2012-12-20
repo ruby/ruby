@@ -1,3 +1,21 @@
+Thu Dec 20 16:53:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_core.h (rb_vm_defineclass_type_t),
+	  compile.c (iseq_compile_each), insns.def (defineclass): change the
+	  meaning of the third operand of defineclass as follows:
+	    lower 3bits: the type of the defineclass
+	                   0 = class, 1 = singleton class, 2 = module
+	    4th bit: a flag represents whether the defineclass is scoped
+	               0 = not scoped (e.g., class Foo)
+		       1 = scoped (e.g., class Bar::Baz)
+	    5th bit: a flag represents whether the superclass is specified
+	               0 = not specified (e.g., class Foo)
+	               1 = specified (e.g., class Bar < Foo)
+	  If the superclass is specified and is not a class, a TypeError
+	  should be raised.  [ruby-dev:46747] [Bug #7572]
+
+	* test/ruby/test_class.rb: related test.
+
 Thu Dec 20 16:52:37 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: announce AEAD encryption support in the OpenSSL extension.

@@ -299,4 +299,41 @@ class TestClass < Test::Unit::TestCase
     assert_equal 1, m::C
     assert_equal 1, m.m
   end
+
+  def test_invalid_superclass
+    assert_raise(TypeError) do
+      eval <<-EOF
+        class C < nil
+        end
+      EOF
+    end
+
+    assert_raise(TypeError) do
+      eval <<-EOF
+        class C < false
+        end
+      EOF
+    end
+
+    assert_raise(TypeError) do
+      eval <<-EOF
+        class C < true
+        end
+      EOF
+    end
+
+    assert_raise(TypeError) do
+      eval <<-EOF
+        class C < 0
+        end
+      EOF
+    end
+
+    assert_raise(TypeError) do
+      eval <<-EOF
+        class C < ""
+        end
+      EOF
+    end
+  end
 end

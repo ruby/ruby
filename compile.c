@@ -4848,9 +4848,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		rb_sprintf("<class:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 		ISEQ_TYPE_CLASS, nd_line(node));
 	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
+	int flags = VM_DEFINECLASS_TYPE_CLASS;
+	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
+	if (node->nd_super) flags |= VM_DEFINECLASS_FLAG_HAS_SUPERCLASS;
 	COMPILE(ret, "super", node->nd_super);
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(noscope ? 3 : 0));
+		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(flags));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4864,9 +4867,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ISEQ_TYPE_CLASS, nd_line(node));
 
 	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
+	int flags = VM_DEFINECLASS_TYPE_MODULE;
+	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
 	ADD_INSN (ret, nd_line(node), putnil); /* dummy */
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(noscope ? 5 : 2));
+		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(flags));
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
@@ -4882,7 +4887,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSN (ret, nd_line(node), putnil);
 	CONST_ID(singletonclass, "singletonclass");
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(singletonclass), iseqval, INT2FIX(1));
+		  ID2SYM(singletonclass), iseqval,
+		  INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);

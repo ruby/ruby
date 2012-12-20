@@ -612,6 +612,21 @@ typedef struct rb_thread_struct {
     unsigned long running_time_us;
 } rb_thread_t;
 
+typedef enum {
+    VM_DEFINECLASS_TYPE_CLASS           = 0x00,
+    VM_DEFINECLASS_TYPE_SINGLETON_CLASS = 0x01,
+    VM_DEFINECLASS_TYPE_MODULE          = 0x02,
+    /* 0x03..0x06 is reserved */
+    VM_DEFINECLASS_TYPE_MASK            = 0x07,
+} rb_vm_defineclass_type_t;
+
+#define VM_DEFINECLASS_TYPE(x) ((x) & VM_DEFINECLASS_TYPE_MASK)
+#define VM_DEFINECLASS_FLAG_SCOPED         0x08
+#define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
+#define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
+#define VM_DEFINECLASS_HAS_SUPERCLASS_P(x) \
+    ((x) & VM_DEFINECLASS_FLAG_HAS_SUPERCLASS)
+
 /* iseq.c */
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
