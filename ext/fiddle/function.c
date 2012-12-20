@@ -179,7 +179,7 @@ Init_fiddle_function(void)
      */
     rb_define_const(cFiddleFunction, "DEFAULT", INT2NUM(FFI_DEFAULT_ABI));
 
-#ifdef FFI_STDCALL
+#ifdef HAVE_CONST_FFI_STDCALL
     /*
      * Document-const: STDCALL
      *
@@ -203,7 +203,7 @@ Init_fiddle_function(void)
 
     /*
      * Document-method: new
-     * call-seq: new(ptr, *args, ret_type, abi = DEFAULT)
+     * call-seq: new(ptr, args, ret_type, abi = DEFAULT)
      *
      * Constructs a Function object.
      * * +ptr+ is a referenced function, of a DL::Handle

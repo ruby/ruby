@@ -284,7 +284,7 @@ Init_fiddle_closure()
     /*
      * Document-method: new
      *
-     * call-seq: new(ret, *args, abi = Fiddle::DEFAULT)
+     * call-seq: new(ret, args, abi = Fiddle::DEFAULT)
      *
      * Construct a new Closure object.
      *
