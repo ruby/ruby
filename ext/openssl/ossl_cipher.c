@@ -482,6 +482,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     return iv;
 }
 
+#ifdef HAVE_AUTHENTICATED_ENCRYPTION
 /*
  *  call-seq:
  *     cipher.auth_data = string -> string
@@ -644,6 +645,12 @@ ossl_cipher_is_authenticated(VALUE self)
 	return Qfalse;
     }
 }
+#else
+#define ossl_cipher_set_auth_data rb_f_notimplement
+#define ossl_cipher_get_auth_tag rb_f_notimplement
+#define ossl_cipher_set_auth_tag rb_f_notimplement
+#define ossl_cipher_is_authenticated rb_f_notimplement
+#endif
 
 /*
  *  call-seq:
