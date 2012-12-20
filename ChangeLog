@@ -1,3 +1,7 @@
+Thu Dec 20 17:29:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: fix the description for Refinements.
+
 Thu Dec 20 16:53:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_core.h (rb_vm_defineclass_type_t),
