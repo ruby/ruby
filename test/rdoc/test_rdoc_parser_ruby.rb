@@ -1525,6 +1525,21 @@ end
     assert            ampersand.singleton
   end
 
+  def test_parse_method_constant
+    c = RDoc::Constant.new 'CONST', nil, ''
+    m = @top_level.add_class RDoc::NormalModule, 'M'
+    m.add_constant c
+
+    util_parser "def CONST.m() end"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method m, RDoc::Parser::Ruby::NORMAL, tk, @comment
+
+    assert_empty @store.modules_hash.keys
+    assert_equal %w[M], @store.classes_hash.keys
+  end
+
   def test_parse_method_false
     util_parser "def false.foo() :bar end"
 
@@ -1764,6 +1779,14 @@ end
 
     omega = klass.method_list.first
     assert_equal "def \317\211", omega.text
+  end
+
+  def test_parse_method_dummy
+    util_parser ".method() end"
+
+    @parser.parse_method_dummy @top_level
+
+    assert_nil @parser.get_tk
   end
 
   def test_parse_method_or_yield_parameters_hash
