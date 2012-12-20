@@ -1,3 +1,13 @@
+Thu Dec 20 12:56:53 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/to_html.rb (class RDoc):  Added current heading and
+	  top links to headings.
+	* lib/rdoc/generator/template/darkfish/rdoc.css:  ditto
+	* test/rdoc/test_rdoc_generator_markup.rb:  Test for above
+	* test/rdoc/test_rdoc_markup_to_html.rb:  ditto
+
+	* test/rdoc/test_rdoc_comment.rb:  Removed trailing whitespace.
+
 Thu Dec 20 11:05:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_valid_syntax): move from

@@ -23,32 +23,55 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_heading
-    assert_equal "\n<h5 id=\"label-Hello\">Hello</h5>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+    expected = "\n<h5 id=\"label-Hello\">Hello#{links}</h5>\n"
+
+    assert_equal expected, @to.res.join
   end
 
   def accept_heading_1
-    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n", @to.res.join
   end
 
   def accept_heading_2
-    assert_equal "\n<h2 id=\"label-Hello\">Hello</h2>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h2 id=\"label-Hello\">Hello#{links}</h2>\n", @to.res.join
   end
 
   def accept_heading_3
-    assert_equal "\n<h3 id=\"label-Hello\">Hello</h3>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h3 id=\"label-Hello\">Hello#{links}</h3>\n", @to.res.join
   end
 
   def accept_heading_4
-    assert_equal "\n<h4 id=\"label-Hello\">Hello</h4>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h4 id=\"label-Hello\">Hello#{links}</h4>\n", @to.res.join
   end
 
   def accept_heading_b
-    assert_equal "\n<h1 id=\"label-Hello\"><strong>Hello</strong></h1>\n",
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+    inner = "<strong>Hello</strong>"
+
+    assert_equal "\n<h1 id=\"label-Hello\">#{inner}#{links}</h1>\n",
                  @to.res.join
   end
 
   def accept_heading_suppressed_crossref
-    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n", @to.res.join
   end
 
   def accept_list_end_bullet
@@ -324,7 +347,10 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_heading @RM::Heading.new(7, 'Hello')
 
-    assert_equal "\n<h6 id=\"label-Hello\">Hello</h6>\n", @to.res.join
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h6 id=\"label-Hello\">Hello#{links}</h6>\n", @to.res.join
   end
 
   def test_accept_heading_aref_class
@@ -333,7 +359,10 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_heading @RM::Heading.new(1, 'Hello')
 
-    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n",
+    links = '<span><a href="#label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h1 id=\"label-Hello\">Hello#{links}</h1>\n",
                  @to.res.join
   end
 
@@ -343,8 +372,21 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
     @to.accept_heading @RM::Heading.new(1, 'Hello')
 
-    assert_equal "\n<h1 id=\"method-i-foo-label-Hello\">Hello</h1>\n",
+    links = '<span><a href="#method-i-foo-label-Hello">&para;</a> ' +
+            '<a href="#documentation">&uarr;</a></span>'
+
+    assert_equal "\n<h1 id=\"method-i-foo-label-Hello\">Hello#{links}</h1>\n",
                  @to.res.join
+  end
+
+  def test_accept_heading_pipe
+    @options.pipe = true
+
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(1, 'Hello')
+
+    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
   end
 
   def test_accept_verbatim_parseable

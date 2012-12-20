@@ -28,6 +28,27 @@ h1 {
 }
 h2,h3,h4 { margin-top: 1.5em; }
 
+h1 span,
+h2 span,
+h3 span,
+h4 span,
+h5 span,
+h6 span {
+  display: none;
+  padding-left: 1em;
+  font-size: 50%;
+  vertical-align: super;
+}
+
+h1:hover span,
+h2:hover span,
+h3:hover span,
+h4:hover span,
+h5:hover span,
+h6:hover span {
+  display: inline;
+}
+
 :link,
 :visited {
   color: #6C8C22;
