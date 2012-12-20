@@ -4138,16 +4138,25 @@ set_threads_event_flags(int flag)
 static inline int
 exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
-    int removed = 0;
+    volatile int removed = 0;
+    const rb_event_hook_t *volatile hnext = 0;
+    int state;
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) != 0) {
+	hook = hnext;
+    }
     for (; hook; hook = hook->next) {
 	if (hook->flag & RUBY_EVENT_REMOVED) {
 	    removed++;
 	    continue;
 	}
 	if (flag & hook->flag) {
+	    hnext = hook->next;
 	    (*hook->func)(flag, hook->data, self, id, klass);
 	}
     }
+    POP_TAG();
     return removed;
 }
 
