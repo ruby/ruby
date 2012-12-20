@@ -1,5 +1,9 @@
 begin
   require "openssl"
+
+  # disable FIPS mode for tests for installations
+  # where FIPS mode would be enabled by default
+  OpenSSL.fips_mode=false
 rescue LoadError
 end
 require "test/unit"

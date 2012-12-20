@@ -1,3 +1,14 @@
+Thu Dec 20 10:23:12 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl.c: add OpenSSL.fips_mode= to allow enabling FIPS
+	  mode manually.
+	* test/openssl/utils.rb: turn off FIPS mode for tests. This prevents
+	  OpenSSL installations with FIPS mode enabled by default from raising
+	  FIPS-related errors during the tests.
+	* test/openssl/test_fips.rb: add tests for FIPS-capable OpenSSL
+	  installations.
+	  [Feature #6946] [ruby-core:47345]
+
 Thu Dec 20 06:59:52 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: support variable VM/Machine stack sizes.

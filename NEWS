@@ -245,6 +245,10 @@ with all sufficient information, see the ChangeLog file.
     also allows to programmatically decline (client) renegotiation attempts.
   * Support for "0/n" splitting of records as BEAST mitigation via
     OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS.
+  * The default options for OpenSSL::SSL::SSLContext have changed to
+    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+    instead of OpenSSL::SSL::OP_ALL only. This enables the countermeasure for
+    the BEAST attack by default.
   * OpenSSL requires passwords for decrypting PEM-encoded files to be at least
     four characters long. This led to awkward situations where an export with
     a password with fewer than four characters was possible, but accessing the
@@ -255,13 +259,10 @@ with all sufficient information, see the ChangeLog file.
   * SSL/TLS support for the Next Protocol Negotiation extension. Supported
     with OpenSSL 1.0.1 and higher.
   * OpenSSL::OPENSSL_FIPS allows client applications to detect whether OpenSSL
-    is running in FIPS mode and to react to the special requirements this
-    might imply.
-  * The default options for OpenSSL::SSL::SSLContext have changed to
-    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
-    instead of OpenSSL::SSL::OP_ALL only. This enables the countermeasure for
-    the BEAST attack by default.
-
+    is FIPS-enabled. OpenSSL.fips_mode= allows turning on and off FIPS mode
+    manually in order to adapt to situations where FIPS mode would be an
+    explicit requirement.
+  
 * ostruct
   * new methods:
     * OpenStruct#[], []=
