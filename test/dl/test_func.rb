@@ -9,6 +9,14 @@ module DL
       assert_equal 'strcpy', f.name
     end
 
+    def test_bind
+      f = Function.new(CFunc.new(0, TYPE_INT, 'test'), [TYPE_INT, TYPE_INT])
+      assert_nothing_raised {
+        f.bind { |x, y| x + y }
+      }
+      assert_equal 579, f.call(123, 456)
+    end
+
     def test_to_i
       cfunc = CFunc.new(@libc['strcpy'], TYPE_VOIDP, 'strcpy')
       f = Function.new(cfunc, [TYPE_VOIDP, TYPE_VOIDP])

@@ -1,3 +1,11 @@
+Thu Dec 20 18:36:19 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#bind): When Fiddle is used,
+	  @ptr should be updated. This fixes SEGV raised in DL::Function#call
+	  after calling DL::Function#bind. [Bug #7516] [ruby-dev:46708]
+
+	* test/dl/test_func.rb (test_bind): test for the above
+
 Thu Dec 20 18:35:36 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* gc.h (SET_MACHINE_STACK_END): add volatile for preventing
