@@ -233,14 +233,14 @@ $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
 install-all: docs pre-install-all do-install-all post-install-all
 pre-install-all:: pre-install-local pre-install-ext pre-install-doc
-do-install-all: $(PROGRAM)
+do-install-all: all
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --rdoc-output="$(RDOCOUT)"
 post-install-all:: post-install-local post-install-ext post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
-do-install-nodoc: $(PREP)
+do-install-nodoc: main
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS)
 post-install-nodoc:: post-install-local post-install-ext
 
@@ -258,7 +258,7 @@ post-install-ext:: post-install-ext-arch post-install-ext-comm
 
 install-arch: pre-install-arch do-install-arch post-install-arch
 pre-install-arch:: pre-install-bin pre-install-ext-arch
-do-install-arch: $(PREP)
+do-install-arch: main
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin --install=ext-arch
 post-install-arch:: post-install-bin post-install-ext-arch
 
