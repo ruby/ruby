@@ -262,7 +262,7 @@ with all sufficient information, see the ChangeLog file.
     is FIPS-enabled. OpenSSL.fips_mode= allows turning on and off FIPS mode
     manually in order to adapt to situations where FIPS mode would be an
     explicit requirement.
-  
+
 * ostruct
   * new methods:
     * OpenStruct#[], []=

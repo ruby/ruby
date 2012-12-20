@@ -3,7 +3,7 @@ require_relative 'utils'
 if defined?(OpenSSL) && OpenSSL::OPENSSL_FIPS
 
 class OpenSSL::TestFIPS < Test::Unit::TestCase
-  
+
   def test_reject_md5
     data = "test"
     assert_not_nil(OpenSSL::Digest.new("MD5").digest(data))
@@ -36,7 +36,7 @@ class OpenSSL::TestFIPS < Test::Unit::TestCase
   end
 
   private
-  
+
   def in_fips_mode
     OpenSSL.fips_mode = true
     yield

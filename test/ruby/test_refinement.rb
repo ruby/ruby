@@ -563,7 +563,7 @@ class TestRefinement < Test::Unit::TestCase
       def recursive_length
         if empty?
           0
-        else 
+        else
           self[1..-1].recursive_length + 1
         end
       end

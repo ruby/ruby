@@ -38,7 +38,7 @@ Thu Dec 20 06:59:52 2012  Koichi Sasada  <ko1@atdot.net>
 	    (1) You can run more complex program on a Fiber.
 	    (2) You can not make many (thousands) Fibers because of
 	        lack of address space (on 32bit CPU).
-	  If (2) bothers you, 
+	  If (2) bothers you,
             (a) Use 64bit CPU with big memory, or
 	    (b) Specify RUBY_FIBER_(VM|MACHINE)_STACK_SIZE correctly.
 	  You need to choose correct stack size carefully. These values
