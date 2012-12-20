@@ -14,7 +14,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
         ciphers.include?(name)
       end
       has_cipher?(name)
-    end 
+    end
 
     def has_ciphers?(list)
       list.all? { |name| has_cipher?(name) }

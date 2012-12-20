@@ -639,7 +639,7 @@ ossl_cipher_is_authenticated(VALUE self)
     nid = EVP_CIPHER_CTX_nid(ctx);
 
     if (ossl_is_gcm(nid)) {
-	return Qtrue;	
+	return Qtrue;
     } else {
 	return Qfalse;
     }
