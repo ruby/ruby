@@ -1116,6 +1116,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
           name = name_t2.name
           prev_container = container
           container = container.find_module_named(name_t.name)
+
+          unless container then
+            constant = prev_container.constants.find do |const|
+              const.name == name_t.name
+            end
+
+            if constant then
+              parse_method_dummy prev_container
+              return
+            end
+          end
+
           unless container then
             added_container = true
             obj = name_t.name.split("::").inject(Object) do |state, item|
@@ -1138,10 +1150,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
             container.record_location @top_level
           end
         when TkIDENTIFIER, TkIVAR, TkGVAR then
-          dummy = RDoc::Context.new
-          dummy.parent = container
-          dummy.store  = container.store
-          skip_method dummy
+          parse_method_dummy container
           return
         when TkTRUE, TkFALSE, TkNIL then
           klass_name = "#{name_t.name.capitalize}Class"
@@ -1226,6 +1235,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.comment = comment
 
     @stats.add_method meth
+  end
+
+  ##
+  # Parses a method that needs to be ignored.
+
+  def parse_method_dummy container
+    dummy = RDoc::Context.new
+    dummy.parent = container
+    dummy.store  = container.store
+    skip_method dummy
   end
 
   ##

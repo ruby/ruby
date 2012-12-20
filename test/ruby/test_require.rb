@@ -19,6 +19,7 @@ class TestRequire < Test::Unit::TestCase
     t.close
 
     assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      $:.replace([IO::NULL])
       begin
         require \"#{ t.path }\"
       rescue LoadError
@@ -29,6 +30,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_too_long_filename
     assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [])
+      $:.replace([IO::NULL])
       begin
         require '#{ "foo/" * 10000 }foo'
       rescue LoadError
@@ -447,6 +449,7 @@ class TestRequire < Test::Unit::TestCase
           f.puts "p :ok"
         }
         assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          $:.replace([IO::NULL])
           $: << "."
           Dir.chdir("a")
           require "foo"
@@ -465,6 +468,7 @@ class TestRequire < Test::Unit::TestCase
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
         assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
             "#{tmp}"
@@ -486,6 +490,7 @@ class TestRequire < Test::Unit::TestCase
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
         assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          $:.replace([IO::NULL])
           $: << '~'
           ENV['HOME'] = "#{tmp}"
           require "foo"
@@ -502,6 +507,7 @@ class TestRequire < Test::Unit::TestCase
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
         assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+          $:.replace([IO::NULL])
           a = Object.new
           def a.to_path
             "bar"
@@ -527,6 +533,7 @@ class TestRequire < Test::Unit::TestCase
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
         assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+          $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
             "foo"
@@ -554,6 +561,7 @@ class TestRequire < Test::Unit::TestCase
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
         assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7383)
+          $:.replace([IO::NULL])
           $:.#{add} "#{tmp}"
           $:.#{add} "#{tmp}/a"
           require "foo"

@@ -152,9 +152,10 @@ module IRB
 
 	gv = eval("global_variables", bind).collect{|m| m.to_s}
 	lv = eval("local_variables", bind).collect{|m| m.to_s}
+	iv = eval("instance_variables", bind).collect{|m| m.to_s}
 	cv = eval("self.class.constants", bind).collect{|m| m.to_s}
 
-	if (gv | lv | cv).include?(receiver) or /^[A-Z]/ =~ receiver && /\./ !~ receiver
+	if (gv | lv | iv | cv).include?(receiver) or /^[A-Z]/ =~ receiver && /\./ !~ receiver
 	  # foo.func and foo is var. OR
 	  # foo::func and foo is var. OR
 	  # foo::Const and foo is var. OR
@@ -201,7 +202,7 @@ module IRB
 	select_message(receiver, message, candidates)
 
       else
-	candidates = eval("methods | private_methods | local_variables | self.class.constants", bind).collect{|m| m.to_s}
+	candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
 
 	(candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
       end

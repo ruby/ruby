@@ -1920,7 +1920,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 {
     VALUE name, recur;
     rb_encoding *enc;
-    const char *pbeg, *p, *path;
+    const char *pbeg, *p, *path, *pend;
     ID id;
 
     if (argc == 1) {
@@ -1946,6 +1946,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     pbeg = p = path;
+    pend = path + RSTRING_LEN(name);
 
     if (!*p) {
 	rb_raise(rb_eNameError, "wrong constant name %s", path);
@@ -1957,10 +1958,10 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	pbeg = p;
     }
 
-    while (*p) {
+    while (p < pend) {
 	VALUE part;
 
-	while (*p && *p != ':') p++;
+	while (p < pend && *p != ':') p++;
 
 	if (pbeg == p) {
 	    rb_raise(rb_eNameError, "wrong constant name %s", path);

@@ -2,21 +2,6 @@ require 'test/unit'
 require_relative 'envutil'
 
 class TestSyntax < Test::Unit::TestCase
-  def assert_valid_syntax(code, fname, mesg = fname)
-    code = code.dup.force_encoding("ascii-8bit")
-    code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-      "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-    }
-    code.force_encoding("us-ascii")
-    verbose, $VERBOSE = $VERBOSE, nil
-    yield if defined?(yield)
-    assert_nothing_raised(SyntaxError, mesg) do
-      assert_equal(:ok, catch {|tag| eval(code, binding, fname, 0)}, mesg)
-    end
-  ensure
-    $VERBOSE = verbose
-  end
-
   def test_syntax
     assert_nothing_raised(Exception) do
       for script in Dir[File.expand_path("../../../{lib,sample,ext,test}/**/*.rb", __FILE__)].sort

@@ -4,8 +4,7 @@ if defined?(OpenSSL)
 
 class OpenSSL::TestPKeyDH < Test::Unit::TestCase
 
-  # improve test performance for non-FIPS installations
-  NEW_KEYLEN = OpenSSL::OPENSSL_FIPS ? 1024 : 256
+  NEW_KEYLEN = 256
 
   def test_new
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)

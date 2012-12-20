@@ -277,7 +277,7 @@ tk_symbolkey2str(self, keys)
 {
     volatile VALUE new_keys = rb_hash_new();
 
-    if NIL_P(keys) return new_keys;
+    if (NIL_P(keys)) return new_keys;
     keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
     st_foreach_check(RHASH_TBL(keys), to_strkey, new_keys, Qundef);
     return new_keys;
@@ -309,7 +309,7 @@ ary2list(ary, enc_flag, self)
       sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
     }
 
-    if NIL_P(enc_flag) {
+    if (NIL_P(enc_flag)) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
     } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {
@@ -458,12 +458,12 @@ ary2list2(ary, enc_flag, self)
     volatile VALUE sys_enc, dst_enc, str_enc;
 
     sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
-    if NIL_P(sys_enc) {
+    if (NIL_P(sys_enc)) {
       sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
       sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
     }
 
-    if NIL_P(enc_flag) {
+    if (NIL_P(enc_flag)) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
     } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {

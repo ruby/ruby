@@ -584,26 +584,6 @@ static struct {
 #endif
 } native_main_thread;
 
-
-enum {
-#ifdef __SYMBIAN32__
-    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
-#else
-    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
-#endif
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024,
-    RUBY_STACK_SPACE_RATIO = 5
-};
-#ifdef PTHREAD_STACK_MIN
-#define RUBY_STACK_MIN ((RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ? \
-			PTHREAD_STACK_MIN * 2 : RUBY_STACK_MIN_LIMIT)
-#else
-#define RUBY_STACK_MIN (RUBY_STACK_MIN_LIMIT)
-#endif
-#define RUBY_STACK_MIN_SPACE RUBY_STACK_MIN/RUBY_STACK_SPACE_RATIO
-#define RUBY_STACK_SPACE ((RUBY_STACK_MIN_SPACE > RUBY_STACK_SPACE_LIMIT) ? \
-			  RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN_SPACE)
-
 #ifdef STACK_END_ADDRESS
 extern void *STACK_END_ADDRESS;
 #endif
@@ -830,6 +810,23 @@ use_cached_thread(rb_thread_t *th)
     return result;
 }
 
+enum {
+    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
+    RUBY_STACK_SPACE_RATIO = 5
+};
+
+static size_t
+space_size(size_t stack_size)
+{
+    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
+    if (space_size > RUBY_STACK_SPACE_LIMIT) {
+	return RUBY_STACK_SPACE_LIMIT;
+    }
+    else {
+	return space_size;
+    }
+}
+
 static int
 native_thread_create(rb_thread_t *th)
 {
@@ -840,8 +837,8 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
-	const size_t stack_size = RUBY_STACK_MIN;
-	const size_t space = RUBY_STACK_SPACE;
+	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
+	const size_t space = space_size(stack_size);
 
         th->machine_stack_maxsize = stack_size - space;
 #ifdef __ia64

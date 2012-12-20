@@ -85,7 +85,7 @@ This will raise a SyntaxError:
 
 Keyword arguments are similar to positional arguments with default values:
 
-  def add_values first: 1, second: 2
+  def add_values(first: 1, second: 2)
     first + second
   end
 
@@ -118,7 +118,7 @@ the caller after all positional arguments.
 However, this only occurs if the method does not declare any keyword arguments.
 
   def gather_arguments_keyword(*positional, keyword: nil)
-   p positinal: positional, keyword: keyword
+   p positional: positional, keyword: keyword
   end
 
   gather_arguments_keyword 1, 2, three: 3

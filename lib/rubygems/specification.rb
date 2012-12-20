@@ -622,7 +622,6 @@ class Gem::Specification
       File.join(Gem.default_dir, "specifications", "default")
     end
 
-    private
     def each_spec(search_dirs) # :nodoc:
       search_dirs.each { |dir|
         Dir[File.join(dir, "*.gemspec")].each { |path|

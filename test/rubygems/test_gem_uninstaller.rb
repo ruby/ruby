@@ -172,6 +172,38 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_default_gem
+    spec = new_default_spec 'default', '2'
+
+    install_default_gems spec
+
+    uninstaller = Gem::Uninstaller.new spec.name, :executables => true
+
+    e = assert_raises Gem::InstallError do
+      uninstaller.uninstall
+    end
+
+    assert_equal 'gem "default" cannot be uninstalled ' +
+                 'because it is a default gem',
+                 e.message
+  end
+
+  def test_uninstall_default_gem_with_same_version
+    default_spec = new_default_spec 'default', '2'
+    install_default_gems default_spec
+
+    spec = new_spec 'default', '2'
+    install_gem spec
+
+    Gem::Specification.reset
+
+    uninstaller = Gem::Uninstaller.new spec.name, :executables => true
+
+    uninstaller.uninstall
+
+    refute_path_exists spec.gem_dir
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
 
@@ -265,8 +297,8 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_uninstall_prompts_about_broken_deps
-    util_gem 'r', '1', 'q' => '= 1'
-    util_gem 'q', '1'
+    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q')
     ui = Gem::MockGemUi.new("y\n")
@@ -287,10 +319,10 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_uninstall_only_lists_unsatified_deps
-    util_gem 'r', '1', 'q' => '~> 1.0'
-    util_gem 'x', '1', 'q' => '= 1.0'
-    util_gem 'q', '1.0'
-    util_gem 'q', '1.1'
+    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
+    quick_gem 'x', '1' do |s| s.add_dependency 'q', '= 1.0'  end
+    quick_gem 'q', '1.0'
+    quick_gem 'q', '1.1'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
     ui = Gem::MockGemUi.new("y\n")
@@ -311,9 +343,9 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_uninstall_doesnt_prompt_when_other_gem_satifies_requirement
-    util_gem 'r', '1', 'q' => '~> 1.0'
-    util_gem 'q', '1.0'
-    util_gem 'q', '1.1'
+    quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
+    quick_gem 'q', '1.0'
+    quick_gem 'q', '1.1'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
     ui = Gem::MockGemUi.new("y\n")
@@ -328,11 +360,8 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_uninstall_doesnt_prompt_when_removing_a_dev_dep
-    util_gem('r', '1') do |s|
-      s.add_development_dependency "q", "= 1.0"
-    end
-
-    util_gem 'q', '1.0'
+    quick_gem 'r', '1' do |s| s.add_development_dependency 'q', '= 1.0' end
+    quick_gem 'q', '1.0'
 
     un = Gem::Uninstaller.new('q', :version => "1.0")
     ui = Gem::MockGemUi.new("y\n")
@@ -348,11 +377,11 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
 
   def test_uninstall_prompt_includes_dep_type
-    util_gem 'r', '1' do |s|
+    quick_gem 'r', '1' do |s|
       s.add_development_dependency 'q', '= 1'
     end
 
-    util_gem 'q', '1'
+    quick_gem 'q', '1'
 
     un = Gem::Uninstaller.new('q', :check_dev => true)
     ui = Gem::MockGemUi.new("y\n")

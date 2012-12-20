@@ -870,4 +870,44 @@ Thread.new(Thread.current) {|mth|
       th.kill if th
     end
   end
+
+  def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true
+    env = {}
+    env['RUBY_THREAD_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
+    env['RUBY_THREAD_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
+    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    use_length ? out.length : out
+  end
+
+  def test_stack_size
+    h_default = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', nil, nil, false))
+    h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
+    h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 10, 1024 * 1024 * 10, false))
+
+    assert(h_default[:thread_vm_stack_size] > h_0[:thread_vm_stack_size])
+    assert(h_default[:thread_vm_stack_size] < h_large[:thread_vm_stack_size])
+    assert(h_default[:thread_machine_stack_size] >= h_0[:thread_machine_stack_size])
+    assert(h_default[:thread_machine_stack_size] <= h_large[:thread_machine_stack_size])
+
+    # check VM machine stack size
+    script = 'def rec; print "."; rec; end; rec'
+    size_default = invoke_rec script, nil, nil
+    assert(size_default > 0, size_default.to_s)
+    size_0 = invoke_rec script, 0, nil
+    assert(size_default > size_0, [size_default, size_0].inspect)
+    size_large = invoke_rec script, 1024 * 1024 * 10, nil
+    assert(size_default < size_large, [size_default, size_large].inspect)
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    # check machine stack size
+    # Note that machine stack size may not change size (depend on OSs)
+    script = 'def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Thread.new{rec}.join'
+    vm_stack_size = 1024 * 1024
+    size_default = invoke_rec script, vm_stack_size, nil
+    size_0 = invoke_rec script, vm_stack_size, 0
+    assert(size_default >= size_0, [size_default, size_0].inspect)
+    size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
+    assert(size_default <= size_large, [size_default, size_large].inspect)
+  end
 end

@@ -583,9 +583,18 @@ class TestModule < Test::Unit::TestCase
 
   def test_const_get_invalid_name
     c1 = Class.new
+    assert_raise(NameError) { c1.const_get(:foo) }
+    bug5084 = '[ruby-dev:44200]'
+    assert_raise(TypeError, bug5084) { c1.const_get(1) }
+    assert_raise(NameError) { Object.const_get("String\0") }
+  end
+
+  def test_const_defined_invalid_name
+    c1 = Class.new
     assert_raise(NameError) { c1.const_defined?(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
+    assert_raise(NameError) { Object.const_defined?("String\0") }
   end
 
   def test_const_get_no_inherited

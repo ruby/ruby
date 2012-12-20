@@ -885,16 +885,22 @@ trace
  */
 DEFINE_INSN
 defineclass
-(ID id, ISEQ class_iseq, rb_num_t define_type)
+(ID id, ISEQ class_iseq, rb_num_t flags)
 (VALUE cbase, VALUE super)
 (VALUE val)
 {
     VALUE klass;
+    rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
 
-    switch ((int)define_type) {
-      case 0: /* scoped:   class Foo::Bar */
-      case 3: /* no scope: class Bar */
+    switch (type) {
+      case VM_DEFINECLASS_TYPE_CLASS:
 	/* val is dummy.  classdef returns class scope value */
+
+	if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) &&
+	    !RB_TYPE_P(super, T_CLASS)) {
+	    rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
+		     rb_obj_classname(super));
+	}
 
 	if (super == Qnil) {
 	    super = rb_cObject;
@@ -906,7 +912,8 @@ defineclass
 	rb_autoload_load(cbase, id);
 	if ((klass = vm_search_const_defined_class(cbase, id)) != 0) {
 	    /* already exist */
-	    klass = define_type == 0 ? rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
+	    klass = VM_DEFINECLASS_SCOPED_P(flags) ?
+		rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
 	    if (!RB_TYPE_P(klass, T_CLASS)) {
 		rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
 	    }
@@ -929,13 +936,12 @@ defineclass
 	    rb_class_inherited(super, klass);
 	}
 	break;
-      case 1:
+      case VM_DEFINECLASS_TYPE_SINGLETON_CLASS:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
 	klass = rb_singleton_class(cbase);
 	break;
-      case 2: /* scoped:   module Foo::Bar  or  module ::Bar */
-      case 5: /* no scope: module Bar */
+      case VM_DEFINECLASS_TYPE_MODULE:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
 
@@ -943,7 +949,8 @@ defineclass
 
 	/* find klass */
 	if ((klass = vm_search_const_defined_class(cbase, id)) != 0) {
-	    klass = define_type == 2 ? rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
+	    klass = VM_DEFINECLASS_SCOPED_P(flags) ?
+		rb_const_get_at(klass, id) : rb_public_const_get_at(klass, id);
 	    /* already exist */
 	    if (!RB_TYPE_P(klass, T_MODULE)) {
 		rb_raise(rb_eTypeError, "%s is not a module", rb_id2name(id));
@@ -957,7 +964,7 @@ defineclass
 	}
 	break;
       default:
-	rb_bug("unknown defineclass type: %d", (int)define_type);
+	rb_bug("unknown defineclass type: %d", (int)type);
     }
 
     COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));

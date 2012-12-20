@@ -466,6 +466,19 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   end
 
   ##
+  # Installs the provided default specs including writing the spec file
+
+  def install_default_gems(*specs)
+    install_default_specs(*specs)
+
+    specs.each do |spec|
+      open spec.loaded_from, 'w' do |io|
+        io.write spec.to_ruby_for_cache
+      end
+    end
+  end
+
+  ##
   # Install the provided default specs
 
   def install_default_specs(*specs)
@@ -572,7 +585,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       block = proc do |s|
         # Since Hash#each is unordered in 1.8, sort
         # the keys and iterate that way so the tests are
-        # deteriminstic on all implementations.
+        # deterministic on all implementations.
         deps.keys.sort.each do |n|
           s.add_dependency n, (deps[n] || '>= 0')
         end

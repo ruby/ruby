@@ -72,7 +72,19 @@ class Gem::Uninstaller
   # directory, and the cached .gem file.
 
   def uninstall
-    list = Gem::Specification.find_all_by_name(@gem, @version)
+    dependency = Gem::Dependency.new @gem, @version
+
+    list = []
+
+    dirs =
+      Gem::Specification.dirs +
+      [Gem::Specification.default_specifications_dir]
+
+    Gem::Specification.each_spec dirs do |spec|
+      next unless dependency.matches_spec? spec
+
+      list << spec
+    end
 
     default_specs, list = list.partition do |spec|
       spec.default_gem?
@@ -80,7 +92,7 @@ class Gem::Uninstaller
 
     list, other_repo_specs = list.partition do |spec|
       @gem_home == spec.base_dir or
-      (@user_install and spec.base_dir == Gem.user_dir)
+        (@user_install and spec.base_dir == Gem.user_dir)
     end
 
     if list.empty? then

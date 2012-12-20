@@ -1,3 +1,228 @@
+Fri Dec 21 01:01:45 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* lib/irb/completion.rb (CompletionProc): support completion of
+	  instance variables. [ruby-dev:46710] [Bug #7520]
+
+Thu Dec 20 20:58:25 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* vm_trace.c (rb_suppress_tracing): bugfix for vm->trace_running
+	  counter. And if tracing is already true, vm_trace_running ops is
+	  skipped to control overflow.
+
+Thu Dec 20 18:29:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RTEST, NIL_P): make bare expressions without
+	  outermost parentheses.
+
+Thu Dec 20 17:29:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: fix the description for Refinements.
+
+Thu Dec 20 16:53:59 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_core.h (rb_vm_defineclass_type_t),
+	  compile.c (iseq_compile_each), insns.def (defineclass): change the
+	  meaning of the third operand of defineclass as follows:
+	    lower 3bits: the type of the defineclass
+	                   0 = class, 1 = singleton class, 2 = module
+	    4th bit: a flag represents whether the defineclass is scoped
+	               0 = not scoped (e.g., class Foo)
+		       1 = scoped (e.g., class Bar::Baz)
+	    5th bit: a flag represents whether the superclass is specified
+	               0 = not specified (e.g., class Foo)
+	               1 = specified (e.g., class Bar < Foo)
+	  If the superclass is specified and is not a class, a TypeError
+	  should be raised.  [ruby-dev:46747] [Bug #7572]
+
+	* test/ruby/test_class.rb: related test.
+
+Thu Dec 20 16:52:37 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS: announce AEAD encryption support in the OpenSSL extension.
+
+Thu Dec 20 16:40:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (nonspecial_obj_id): VALUE is not compatible with Fixnum on
+	  LLP64 platform, such as 64bit Windows.
+	  reported by Heesob Park at [ruby-core:50255] [Bug #7454], and the
+	  fix is suggested by akr.
+
+Thu Dec 20 16:39:04 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_cipher.c: fix errors for installations that do not
+	  feature Authenticated Encryption.
+	* ext/openssl/extconf.rb: detect presence of EVP_CTRL_GCM_GET_TAG to
+	  determine whether Authenticated Encryption can be used.
+	  [Feature #6980] [ruby-core:47426]
+
+Thu Dec 20 15:55:46 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl.c: do not use FIPS_mode_set if not available.
+	* test/openssl/utils.rb: revise comment about setting FIPS mode to
+	  false.
+	* test/openssl/test_fips.rb: remove tests that cause errors on
+	  ruby-ci.
+	  [Feature #6946] [ruby-core:47345]
+
+Thu Dec 20 15:22:59 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parser/ruby.rb:  Ignore methods defined on constants to
+	  prevent modules with the names of constants from appearing in the
+	  documentation.
+	* test/rdoc/test_rdoc_parser_ruby.rb:  Test for the above.
+
+Thu Dec 20 15:00:33 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_cipher.c: add support for Authenticated Encryption
+	  with Associated Data (AEAD) for OpenSSL versions that support the
+	  GCM encryption mode. It's the only mode supported for now by OpenSSL
+	  itself. Add Cipher#authenticated? to detect whether a chosen mode
+	  does support Authenticated Encryption.
+	* test/openssl/test_cipher.rb: add tests for Authenticated Encryption.
+	  [Feature #6980] [ruby-core:47426] Thank you, Stephen Touset for
+	  providing a patch!
+
+Thu Dec 20 12:56:53 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/to_html.rb (class RDoc):  Added current heading and
+	  top links to headings.
+	* lib/rdoc/generator/template/darkfish/rdoc.css:  ditto
+	* test/rdoc/test_rdoc_generator_markup.rb:  Test for above
+	* test/rdoc/test_rdoc_markup_to_html.rb:  ditto
+
+	* test/rdoc/test_rdoc_comment.rb:  Removed trailing whitespace.
+
+Thu Dec 20 11:05:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_valid_syntax): move from
+	  test_syntax.rb.
+
+	* test/ruby/envutil.rb (assert_normal_exit): validate syntax before
+	  running because this assertion passes even if the code fails by
+	  SyntaxError.
+
+Thu Dec 20 10:29:58 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dh.rb: revert special treatment of
+	  FIPS-capable installations since FIPS mode is now disabled for the
+	  tests.
+
+Thu Dec 20 10:23:12 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl.c: add OpenSSL.fips_mode= to allow enabling FIPS
+	  mode manually.
+	* test/openssl/utils.rb: turn off FIPS mode for tests. This prevents
+	  OpenSSL installations with FIPS mode enabled by default from raising
+	  FIPS-related errors during the tests.
+	* test/openssl/test_fips.rb: add tests for FIPS-capable OpenSSL
+	  installations.
+	  [Feature #6946] [ruby-core:47345]
+
+Thu Dec 20 06:59:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: support variable VM/Machine stack sizes.
+	  Specified by the following environment variables:
+	    - RUBY_THREAD_VM_STACK_SIZE: vm stack size used at thread creation.
+	      default: 128KB (32bit CPU) or 256KB (64bit CPU).
+	    - RUBY_THREAD_MACHINE_STACK_SIZE: machine stack size used at thread
+	      creation. default: 512KB or 1024KB.
+	    - RUBY_FIBER_VM_STACK_SIZE: vm stack size used at fiber creation.
+	      default: 64KB or 128KB.
+	    - RUBY_FIBER_MACHINE_STACK_SIZE: machine stack size used at fiber
+	      creation. default: 256KB or 256KB.
+	  This values are specified at launched timing. You can not change
+	  these values at running time.
+	  Environ variables are only *hints* because:
+	    - They are aligned to 4KB.
+	    - They have minimum values (depend on OSs).
+	    - Machine stack settings are ignored by some OSs.
+	  Default values especially fiber stack sizes are increased.
+	  This change affect Fiber's behavior:
+	    (1) You can run more complex program on a Fiber.
+	    (2) You can not make many (thousands) Fibers because of
+	        lack of address space (on 32bit CPU).
+	  If (2) bothers you,
+	    (a) Use 64bit CPU with big memory, or
+	    (b) Specify RUBY_FIBER_(VM|MACHINE)_STACK_SIZE correctly.
+	  You need to choose correct stack size carefully. These values
+	  are completely rely on systems (OS/compiler and so on).
+	  [Feature #4614], [Bug #7212]
+
+	* vm_core.h (rb_vm_t::default_params): add to record above settings.
+
+	* vm.c (RubyVM::DEFAULT_PARAMS): add new constant to see
+	  above setting.
+
+	* thread_pthread.c: support RUBY_THREAD_MACHINE_STACK_SIZE.
+
+	* cont.c: support RUBY_FIBER_(VM|MACHINE)_STACK_SIZE.
+
+	* test/ruby/test_fiber.rb: add tests for above.
+
+	* test/ruby/test_thread.rb: ditto.
+
+Thu Dec 20 06:25:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_fiber.rb: remove a strange single quote character.
+	  With this character, this script exits by SyntaxError.
+
+Thu Dec 20 01:03:00 2012  Zachary Scott  <zachary@zacharyscott>
+
+	* ext/.document: Add missing ext modules to .document
+	  Patch by Ryunosuke SATO [Fixes Github #224]
+
+Wed Dec 19 23:52:16 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (load_file_internal): use original C string as the filename
+	  for parser.
+	  reported by whiteleaf at [ruby-list:49085] [ruby-dev:46738]
+	  [Bug #7562]
+
+Wed Dec 19 23:36:12 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* marshal.c (marshal_dump, marshal_load): fix SEGV during make rdoc
+	  and test failure in TestMarshal#test_gc and test_context_switch
+	  on SPARC Solaris 10 compiled with Oracle Solaris Studio 12.3.
+	  [Bug #7591] [ruby-dev:46772]
+
+Wed Dec 19 19:34:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): nul byte is invalid as constant name.
+
+Wed Dec 19 17:54:18 2012  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): get rid of race
+	  condition. [Bug #7589] [ruby-dev:46763]
+
+Wed Dec 19 16:30:28 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/literals.rdoc:  Added 0d decimal format.  Thanks Nobu!
+
+Wed Dec 19 16:19:36 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Fixed typo.  Thanks to Josh Susser.
+
+Wed Dec 19 16:18:22 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/query_command.rb:  Refactored to improve
+	  maintainability.
+	* test/rubygems/test_gem_commands_query_command.rb:  Note default gems
+	  in gem list details.
+
+	* lib/rubygems/uninstaller.rb:  Detect all gems for uninstallation.
+	  This allows duplicate installs of default gems to be removed.
+	* lib/rubygems/specification.rb:  Allow use of ::each_spec.
+	* lib/rubygems/test_case.rb:  Added install_default_gems.
+	* test/rubygems/test_gem_commands_uninstall_command.rb:  Moved test
+	  down to the uninstaller tests.
+	* test/rubygems/test_gem_uninstaller.rb:  Test for uninstallation of
+	  default gems and duplicate default gems.
+
+Wed Dec 19 15:23:50 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Add () around keyword arguments example for
+	  consistency.  Thanks to Josh Susser.
+
 Wed Dec 19 01:51:24 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* vm.c (rb_vm_jump_tag_but_local_jump): remove unnecessary 2nd

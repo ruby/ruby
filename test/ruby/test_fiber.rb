@@ -4,6 +4,7 @@ require 'continuation'
 require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
+if false
   def test_normal
     f = Fiber.current
     assert_equal(:ok2,
@@ -192,7 +193,7 @@ class TestFiber < Test::Unit::TestCase
     assert_normal_exit %q{
       require 'fiber'
       Fiber.new{}.resume
-      1.times{Fiber.current.transfer}'
+      1.times{Fiber.current.transfer}
     }
   end
 
@@ -277,6 +278,47 @@ class TestFiber < Test::Unit::TestCase
       }.resume
       puts :ng # unreachable.
     EOS
+  end
+end
+
+  def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true
+    env = {}
+    env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
+    env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
+    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    use_length ? out.length : out
+  end
+
+  def test_stack_size
+    h_default = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', nil, nil, false))
+    h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
+    h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 10, 1024 * 1024 * 10, false))
+
+    assert(h_default[:fiber_vm_stack_size] > h_0[:fiber_vm_stack_size])
+    assert(h_default[:fiber_vm_stack_size] < h_large[:fiber_vm_stack_size])
+    assert(h_default[:fiber_machine_stack_size] >= h_0[:fiber_machine_stack_size])
+    assert(h_default[:fiber_machine_stack_size] <= h_large[:fiber_machine_stack_size])
+
+    # check VM machine stack size
+    script = 'def rec; print "."; rec; end; Fiber.new{rec}.resume'
+    size_default = invoke_rec script, nil, nil
+    assert(size_default > 0, size_default.to_s)
+    size_0 = invoke_rec script, 0, nil
+    assert(size_default > size_0, [size_default, size_0].inspect)
+    size_large = invoke_rec script, 1024 * 1024 * 10, nil
+    assert(size_default < size_large, [size_default, size_large].inspect)
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    # check machine stack size
+    # Note that machine stack size may not change size (depend on OSs)
+    script = 'def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Fiber.new{rec}.resume'
+    vm_stack_size = 1024 * 1024
+    size_default = invoke_rec script, vm_stack_size, nil
+    size_0 = invoke_rec script, vm_stack_size, 0
+    assert(size_default >= size_0, [size_default, size_0].inspect)
+    size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
+    assert(size_default <= size_large, [size_default, size_large].inspect)
   end
 end
 

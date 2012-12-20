@@ -1613,6 +1613,82 @@ static const rb_data_type_t vm_data_type = {
     {rb_vm_mark, vm_free, vm_memsize,},
 };
 
+
+static VALUE
+vm_default_params(void)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE result = rb_hash_new();
+#define SET(name) rb_hash_aset(result, ID2SYM(rb_intern(#name)), SIZET2NUM(vm->default_params.name));
+    SET(thread_vm_stack_size);
+    SET(thread_machine_stack_size);
+    SET(fiber_vm_stack_size);
+    SET(fiber_machine_stack_size);
+#undef SET
+    rb_obj_freeze(result);
+    return result;
+}
+
+static size_t
+get_param(const char *name, size_t default_value, size_t min_value)
+{
+    const char *envval;
+    size_t result = default_value;
+    if ((envval = getenv(name)) != 0) {
+	long val = atol(envval);
+	if (val < (long)min_value) {
+	    val = (long)min_value;
+	}
+	result = (size_t)(((val -1 + RUBY_VM_SIZE_ALIGN) / RUBY_VM_SIZE_ALIGN) * RUBY_VM_SIZE_ALIGN);
+    }
+    if (0) fprintf(stderr, "%s: %"PRIdSIZE"\n", name, result); /* debug print */
+
+    return result;
+}
+
+static void
+check_machine_stack_size(size_t *sizep)
+{
+    size_t size = *sizep;
+#ifdef __SYMBIAN32__
+    *sizep = 64 * 1024; /* 64KB: Let's be slightly more frugal on mobile platform */
+#endif
+
+#ifdef PTHREAD_STACK_MIN
+    if (size < PTHREAD_STACK_MIN) {
+	*sizep = PTHREAD_STACK_MIN * 2;
+    }
+#endif
+}
+
+static void
+vm_default_params_setup(rb_vm_t *vm)
+{
+    vm->default_params.thread_vm_stack_size =
+      get_param("RUBY_THREAD_VM_STACK_SIZE",
+		RUBY_VM_THREAD_VM_STACK_SIZE,
+		RUBY_VM_THREAD_VM_STACK_SIZE_MIN);
+
+    vm->default_params.thread_machine_stack_size =
+      get_param("RUBY_THREAD_MACHINE_STACK_SIZE",
+		RUBY_VM_THREAD_MACHINE_STACK_SIZE,
+		RUBY_VM_THREAD_MACHINE_STACK_SIZE_MIN);
+
+    vm->default_params.fiber_vm_stack_size =
+      get_param("RUBY_FIBER_VM_STACK_SIZE",
+		RUBY_VM_FIBER_VM_STACK_SIZE,
+		RUBY_VM_FIBER_VM_STACK_SIZE_MIN);
+
+    vm->default_params.fiber_machine_stack_size =
+      get_param("RUBY_FIBER_MACHINE_STACK_SIZE",
+		RUBY_VM_FIBER_MACHINE_STACK_SIZE,
+		RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN);
+
+    /* environment dependent check */
+    check_machine_stack_size(&vm->default_params.thread_machine_stack_size);
+    check_machine_stack_size(&vm->default_params.fiber_machine_stack_size);
+}
+
 static void
 vm_init2(rb_vm_t *vm)
 {
@@ -1620,6 +1696,8 @@ vm_init2(rb_vm_t *vm)
     vm->src_encoding_index = -1;
     vm->at_exit.basic.flags = (T_ARRAY | RARRAY_EMBED_FLAG) & ~RARRAY_EMBED_LEN_MASK; /* len set 0 */
     vm->at_exit.basic.klass = 0;
+
+    vm_default_params_setup(vm);
 }
 
 /* Thread */
@@ -1635,6 +1713,7 @@ static VALUE *
 thread_recycle_stack(size_t size)
 {
     if (thread_recycle_stack_count) {
+	/* TODO: check stack size if stack sizes are variable */
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
     }
     else {
@@ -1839,7 +1918,10 @@ th_init(rb_thread_t *th, VALUE self)
     /* altstack of main thread is reallocated in another place */
     th->altstack = malloc(rb_sigaltstack_size());
 #endif
-    th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
+    /* th->stack_size is word number.
+     * th->vm->default_params.thread_vm_stack_size is byte size.
+     */
+    th->stack_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
     th->stack = thread_recycle_stack(th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
@@ -1864,9 +1946,9 @@ ruby_thread_init(VALUE self)
     rb_vm_t *vm = GET_THREAD()->vm;
     GetThreadPtr(self, th);
 
+    th->vm = vm;
     th_init(th, self);
     rb_iv_set(self, "locals", rb_hash_new());
-    th->vm = vm;
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();
@@ -2189,6 +2271,14 @@ Init_VM(void)
     /* ::RubyVM::INSTRUCTION_NAMES */
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
+    /* ::RubyVM::DEFAULT_PARAMS
+     * This constant variable shows VM's default parameters.
+     * Note that changing these values does not affect VM exection.
+     * Specification is not stable and you should not depend on this value.
+     * Of course, this constant is MRI specific.
+     */
+    rb_define_const(rb_cRubyVM, "DEFAULT_PARAMS", vm_default_params());
+
     /* debug functions ::RubyVM::SDR(), ::RubyVM::NSDR() */
 #if VMDEBUG
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
@@ -2266,7 +2356,6 @@ Init_BareVM(void)
 	exit(EXIT_FAILURE);
     }
     MEMZERO(th, rb_thread_t, 1);
-
     rb_thread_set_current_raw(th);
 
     vm_init2(vm);
@@ -2276,8 +2365,8 @@ Init_BareVM(void)
     ruby_current_vm = vm;
 
     Init_native_thread();
-    th_init(th, 0);
     th->vm = vm;
+    th_init(th, 0);
     ruby_thread_init_stack(th);
 }
 

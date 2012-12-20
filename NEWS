@@ -70,8 +70,6 @@ with all sufficient information, see the ChangeLog file.
   * Kernel
     * added method:
       * added Kernel#Hash conversion method like Array() or Float().
-      * added Kernel#using, which imports refinements into the current scope.
-        [experimental]
       * added Kernel#__dir__ which returns a current dirname.
       * added Kernel#caller_locations which returns an array of
         frame information objects.
@@ -102,11 +100,7 @@ with all sufficient information, see the ChangeLog file.
         however a method in the prepended module overrides the
         corresponding method in the prepending module.
       * added Module#refine, which extends a class or module locally.
-        [experimental]
-      * added Module#refinements, which returns refinements defined in the
-        receiver. [experimental]
-      * added Module#using, which imports refinements into the receiver.
-        [experimental]
+        require "refinement" is necessary to use it. [experimental]
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
       * Module#const_get accepts a qualified constant string, e.g.
@@ -184,6 +178,9 @@ with all sufficient information, see the ChangeLog file.
   * toplevel
     * added method:
       * added main.define_method which defines a global function.
+      * added main.using, which imports refinements into the current file or
+        eval string. require "refinement" is necessary to use it.
+        [experimental]
 
 * cgi
   * Add HTML5 tag maker.
@@ -245,6 +242,10 @@ with all sufficient information, see the ChangeLog file.
     also allows to programmatically decline (client) renegotiation attempts.
   * Support for "0/n" splitting of records as BEAST mitigation via
     OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS.
+  * The default options for OpenSSL::SSL::SSLContext have changed to
+    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+    instead of OpenSSL::SSL::OP_ALL only. This enables the countermeasure for
+    the BEAST attack by default.
   * OpenSSL requires passwords for decrypting PEM-encoded files to be at least
     four characters long. This led to awkward situations where an export with
     a password with fewer than four characters was possible, but accessing the
@@ -255,12 +256,12 @@ with all sufficient information, see the ChangeLog file.
   * SSL/TLS support for the Next Protocol Negotiation extension. Supported
     with OpenSSL 1.0.1 and higher.
   * OpenSSL::OPENSSL_FIPS allows client applications to detect whether OpenSSL
-    is running in FIPS mode and to react to the special requirements this
-    might imply.
-  * The default options for OpenSSL::SSL::SSLContext have changed to
-    OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
-    instead of OpenSSL::SSL::OP_ALL only. This enables the countermeasure for
-    the BEAST attack by default.
+    is FIPS-enabled. OpenSSL.fips_mode= allows turning on and off FIPS mode
+    manually in order to adapt to situations where FIPS mode would be an
+    explicit requirement.
+  * Authenticated Encryption with Associated Data (AEAD) is supported via
+    Cipher#auth_data= and Cipher#auth_tag/Cipher#auth_tag=. 
+    Currently (OpenSSL 1.0.1c), only GCM mode is supported.
 
 * ostruct
   * new methods:

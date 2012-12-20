@@ -393,7 +393,29 @@ typedef struct rb_vm_struct {
     struct RArray at_exit;
 
     VALUE *defined_strings;
+
+    /* params */
+    struct { /* size in byte */
+	size_t thread_vm_stack_size;
+	size_t thread_machine_stack_size;
+	size_t fiber_vm_stack_size;
+	size_t fiber_machine_stack_size;
+    } default_params;
 } rb_vm_t;
+
+/* default values */
+
+#define RUBY_VM_SIZE_ALIGN 4096
+
+#define RUBY_VM_THREAD_VM_STACK_SIZE          (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
+#define RUBY_VM_THREAD_VM_STACK_SIZE_MIN      (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
+#define RUBY_VM_THREAD_MACHINE_STACK_SIZE     ( 128 * 1024 * sizeof(VALUE)) /*  512 KB or 1024 KB */
+#define RUBY_VM_THREAD_MACHINE_STACK_SIZE_MIN (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
+
+#define RUBY_VM_FIBER_VM_STACK_SIZE           (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
+#define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
+#define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
+#define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 
 #ifndef VM_DEBUG_BP_CHECK
 #define VM_DEBUG_BP_CHECK 1
@@ -469,7 +491,7 @@ typedef struct rb_thread_struct {
 
     /* execution information */
     VALUE *stack;		/* must free, must mark */
-    unsigned long stack_size;
+    size_t stack_size;          /* size in word (byte size / sizeof(VALUE)) */
     rb_control_frame_t *cfp;
     int safe_level;
     int raised_flag;
@@ -590,6 +612,21 @@ typedef struct rb_thread_struct {
     unsigned long running_time_us;
 } rb_thread_t;
 
+typedef enum {
+    VM_DEFINECLASS_TYPE_CLASS           = 0x00,
+    VM_DEFINECLASS_TYPE_SINGLETON_CLASS = 0x01,
+    VM_DEFINECLASS_TYPE_MODULE          = 0x02,
+    /* 0x03..0x06 is reserved */
+    VM_DEFINECLASS_TYPE_MASK            = 0x07,
+} rb_vm_defineclass_type_t;
+
+#define VM_DEFINECLASS_TYPE(x) ((x) & VM_DEFINECLASS_TYPE_MASK)
+#define VM_DEFINECLASS_FLAG_SCOPED         0x08
+#define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
+#define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
+#define VM_DEFINECLASS_HAS_SUPERCLASS_P(x) \
+    ((x) & VM_DEFINECLASS_FLAG_HAS_SUPERCLASS)
+
 /* iseq.c */
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
@@ -619,9 +656,6 @@ RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
-
-/* each thread has this size stack : 128KB */
-#define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)
 
 #define GetProcPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_proc_t, (ptr))
