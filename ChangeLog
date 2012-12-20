@@ -1,3 +1,12 @@
+Thu Dec 20 11:05:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_valid_syntax): move from
+	  test_syntax.rb.
+
+	* test/ruby/envutil.rb (assert_normal_exit): validate syntax before
+	  running because this assertion passes even if the code fails by
+	  SyntaxError.
+
 Thu Dec 20 10:29:58 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_dh.rb: revert special treatment of

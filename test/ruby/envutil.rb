@@ -133,7 +133,23 @@ module Test
   module Unit
     module Assertions
       public
+      def assert_valid_syntax(code, fname, mesg = fname)
+        code = code.dup.force_encoding("ascii-8bit")
+        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
+        }
+        code.force_encoding("us-ascii")
+        verbose, $VERBOSE = $VERBOSE, nil
+        yield if defined?(yield)
+        assert_nothing_raised(SyntaxError, mesg) do
+          assert_equal(:ok, catch {|tag| eval(code, binding, fname, 0)}, mesg)
+        end
+      ensure
+        $VERBOSE = verbose
+      end
+
       def assert_normal_exit(testsrc, message = '', opt = {})
+        assert_valid_syntax(testsrc, caller_locations(1, 1)[0].path)
         if opt.include?(:child_env)
           opt = opt.dup
           child_env = [opt.delete(:child_env)] || []
