@@ -159,10 +159,27 @@ clone_const_i(st_data_t key, st_data_t value, st_data_t data)
     return clone_const((ID)key, (const rb_const_entry_t *)value, (st_table *)data);
 }
 
+static void
+class_init_copy_check(VALUE clone, VALUE orig)
+{
+    if (orig == rb_cBasicObject) {
+	rb_raise(rb_eTypeError, "can't copy the root class");
+    }
+    if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
+	rb_raise(rb_eTypeError, "already initialized class");
+    }
+    if (FL_TEST(orig, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't copy singleton class");
+    }
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    if (RB_TYPE_P(clone, T_CLASS)) {
+	class_init_copy_check(clone, orig);
+    }
     rb_obj_init_copy(clone, orig);
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
 	RBASIC(clone)->klass = rb_singleton_class_clone(orig);
@@ -201,22 +218,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     }
 
     return clone;
-}
-
-/* :nodoc: */
-VALUE
-rb_class_init_copy(VALUE clone, VALUE orig)
-{
-    if (orig == rb_cBasicObject) {
-	rb_raise(rb_eTypeError, "can't copy the root class");
-    }
-    if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
-	rb_raise(rb_eTypeError, "already initialized class");
-    }
-    if (FL_TEST(orig, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't copy singleton class");
-    }
-    return rb_mod_init_copy(clone, orig);
 }
 
 VALUE

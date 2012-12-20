@@ -258,4 +258,19 @@ class TestClass < Test::Unit::TestCase
     END
     assert_equal(42, PrivateClass.new.foo)
   end
+
+  def test_cannot_reinitialize_class_with_initialize_copy # [ruby-core:50869]
+    assert_in_out_err([], <<-RUBY, ["Object"], [])
+      class Class
+        def initialize_copy(*); super; end
+      end
+
+      class A; end
+      class B; end
+
+      A.send(:initialize_copy, Class.new(B)) rescue nil
+
+      p A.superclass
+    RUBY
+  end
 end
