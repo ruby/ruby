@@ -290,7 +290,13 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
-#define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+#if SIZEOF_LONG == SIZEOF_VOIDP
+# define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+# define nonspecial_obj_id(obj) LL2NUM((SIGNED_VALUE)(obj) / 2)
+#else
+# error not supported
+#endif
 
 #define RANY(o) ((RVALUE*)(o))
 #define has_free_object (objspace->heap.free_slots && objspace->heap.free_slots->freelist)
