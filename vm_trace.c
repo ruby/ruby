@@ -333,7 +333,8 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     const int vm_tracing = th->vm->trace_running;
     const int tracing = th->trace_running;
 
-    th->vm->trace_running = 1;
+    if(!tracing)
+	th->vm->trace_running++;
     th->trace_running = 1;
     raised = rb_threadptr_reset_raised(th);
     outer_state = th->state;
@@ -349,7 +350,8 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	rb_threadptr_set_raised(th);
     }
     th->trace_running = tracing;
-    th->vm->trace_running = vm_tracing;
+    if(!tracing)
+	th->vm->trace_running--;
 
     if (state) {
 	JUMP_TAG(state);
