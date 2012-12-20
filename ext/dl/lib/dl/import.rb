@@ -231,11 +231,13 @@ module DL
 
     def bind_function(name, ctype, argtype, call_type = nil, &block)
       if DL.fiddle?
-        closure = Class.new(Fiddle::Closure) {
+        klass = Function.instance_eval { class_fiddle_closure_cfunc }
+        abi = Function.instance_eval { call_type_to_abi(call_type) }
+        closure = Class.new(klass) {
           define_method(:call, block)
-        }.new(ctype, argtype)
+        }.new(ctype, argtype, abi, name)
 
-        Function.new(closure, argtype)
+        Function.new(closure, argtype, abi)
       else
         f = Function.new(CFunc.new(0, ctype, name, call_type || :cdecl), argtype)
         f.bind(&block)
