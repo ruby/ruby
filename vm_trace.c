@@ -330,7 +330,6 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     int state;
-    const int vm_tracing = th->vm->trace_running;
     const int tracing = th->trace_running;
 
     if(!tracing)
