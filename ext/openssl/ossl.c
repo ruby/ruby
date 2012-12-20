@@ -440,6 +440,8 @@ ossl_debug_set(VALUE self, VALUE val)
 static VALUE
 ossl_fips_mode_set(VALUE self, VALUE enabled)
 {
+
+#ifdef HAVE_OPENSSL_FIPS
     if RTEST(enabled) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -449,6 +451,11 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 	    ossl_raise(eOSSLError, "Turning off FIPS mode failed");
     }
     return enabled;
+#else
+    if RTEST(enabled)
+	ossl_raise(eOSSLError, "This version of OpenSSL does not support FIPS mode");
+    return enabled;
+#endif
 }
 
 /*

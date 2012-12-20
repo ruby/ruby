@@ -1,8 +1,9 @@
 begin
   require "openssl"
 
-  # disable FIPS mode for tests for installations
-  # where FIPS mode would be enabled by default
+  # Disable FIPS mode for tests for installations
+  # where FIPS mode would be enabled by default.
+  # Has no effect on all other installations.
   OpenSSL.fips_mode=false
 rescue LoadError
 end
