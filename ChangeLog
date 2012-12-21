@@ -1,3 +1,11 @@
+Fri Dec 21 23:12:05 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/fiddle/lib/fiddle/struct.rb (Fiddle::CStructEntity#set_ctypes):
+	  CPtr -> Pointer.
+	* test/fiddle/test_c_struct_entry.rb
+	  (Fiddle::TestCStructEntity#test_aref_pointer_array):
+	  Added the test for the above.
+
 Fri Dec 21 22:43:36 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof):

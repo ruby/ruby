@@ -165,7 +165,7 @@ module Fiddle
       when Array
         case ty[0]
         when TYPE_VOIDP
-          val = val.collect{|v| CPtr.new(v)}
+          val = val.collect{|v| Pointer.new(v)}
         end
       when TYPE_VOIDP
         val = CPtr.new(val[0])

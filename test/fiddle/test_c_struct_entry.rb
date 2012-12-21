@@ -50,5 +50,16 @@ module Fiddle
       assert_equal 1, union['long']
       assert_equal 2, union['int']
     end
+
+    def test_aref_pointer_array
+      team = CStructEntity.malloc([[TYPE_VOIDP, 2]])
+      team.assign_names(["names"])
+      alice = Fiddle::Pointer.malloc(6)
+      alice[0, 6] = "Alice\0"
+      bob = Fiddle::Pointer.malloc(4)
+      bob[0, 4] = "Bob\0"
+      team["names"] = [alice, bob]
+      assert_equal(["Alice", "Bob"], team["names"].map(&:to_s))
+    end
   end
 end
