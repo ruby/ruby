@@ -1,3 +1,9 @@
+Fri Dec 21 18:46:50 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h: define rb_trace_arg_t.
+
+	* vm_core.h: catch up above changes.
+
 Fri Dec 21 17:48:15 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm_trace.c: fix multi-threading bug for tracing.

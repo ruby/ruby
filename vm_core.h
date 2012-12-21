@@ -939,7 +939,7 @@ void rb_thread_lock_destroy(rb_thread_lock_t *);
 } while (0)
 
 /* tracer */
-typedef struct rb_trace_arg_struct {
+struct rb_trace_arg_struct {
     rb_event_flag_t event;
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -953,14 +953,14 @@ typedef struct rb_trace_arg_struct {
     /* calc from cfp */
     int lineno;
     VALUE path;
-} rb_trace_arg_t;
+};
 
-void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
+void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
 
 #define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) do { \
     if (UNLIKELY(ruby_vm_event_flags & (flag_))) { \
 	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag_)) { \
-	    rb_trace_arg_t trace_arg; \
+	    struct rb_trace_arg_struct trace_arg; \
 	    trace_arg.event = (flag_); \
 	    trace_arg.th = (th_); \
 	    trace_arg.cfp = (trace_arg.th)->cfp; \

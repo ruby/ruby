@@ -54,18 +54,18 @@ VALUE rb_tracepoint_enable(VALUE tpval);
 VALUE rb_tracepoint_disable(VALUE tpval);
 VALUE rb_tracepoint_enabled_p(VALUE tpval);
 
-struct rb_trace_arg_struct;
-struct rb_trace_arg_struct *rb_tracearg_from_tracepoint(VALUE tpval);
+typedef struct rb_trace_arg_struct rb_trace_arg_t;
+rb_trace_arg_t *rb_tracearg_from_tracepoint(VALUE tpval);
 
-VALUE rb_tracearg_event(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_lineno(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_path(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_method_id(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_defined_class(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_binding(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_self(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_return_value(struct rb_trace_arg_struct *trace_arg);
-VALUE rb_tracearg_raised_exception(struct rb_trace_arg_struct *trace_arg);
+VALUE rb_tracearg_event(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_lineno(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_method_id(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_defined_class(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_binding(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_self(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_return_value(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg);
 
 /* undocumented advanced tracing APIs */
 
