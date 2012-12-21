@@ -1,3 +1,8 @@
+Sat Dec 22 02:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb/inspector.rb, lib/irb/context.rb: Move IRB::INSPECTORS and
+	  class methods to IRB::Inspector [ruby-core:51067][Bug #7598]
+
 Sat Dec 22 00:28:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* object.c (rb_obj_hash): shouldn't assume object_id can be long.

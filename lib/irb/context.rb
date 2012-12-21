@@ -286,7 +286,7 @@ module IRB
     # +nil+::   inspect mode in non-math mode,
     #           non-inspect mode in math mode
     #
-    # See IRB::INSPECTORS for more information.
+    # See IRB::Inspector for more information.
     #
     # Can also be set using the +--inspect+ and +--noinspect+ command line
     # options.
@@ -294,16 +294,16 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     def inspect_mode=(opt)
 
-      if i = INSPECTORS[opt]
+      if i = Inspector::INSPECTORS[opt]
 	@inspect_mode = opt
 	@inspect_method = i
 	i.init
       else
 	case opt
 	when nil
-	  if INSPECTORS.keys_with_inspector(INSPECTORS[true]).include?(@inspect_mode)
+	  if Inspector.keys_with_inspector(Inspector::INSPECTORS[true]).include?(@inspect_mode)
 	    self.inspect_mode = false
-	  elsif INSPECTORS.keys_with_inspector(INSPECTORS[false]).include?(@inspect_mode)
+	  elsif Inspector.keys_with_inspector(Inspector::INSPECTORS[false]).include?(@inspect_mode)
 	    self.inspect_mode = true
 	  else
 	    puts "Can't switch inspect mode."
@@ -322,10 +322,10 @@ module IRB
 	when Inspector
 	  prefix = "usr%d"
 	  i = 1
-	  while INSPECTORS[format(prefix, i)]; i += 1; end
+	  while Inspector::INSPECTORS[format(prefix, i)]; i += 1; end
 	  @inspect_mode = format(prefix, i)
 	  @inspect_method = opt
-	  INSPECTORS.def_inspector(format(prefix, i), @inspect_method)
+	  Inspector.def_inspector(format(prefix, i), @inspect_method)
 	else
 	  puts "Can't switch inspect mode(#{opt})."
 	  return
