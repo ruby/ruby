@@ -1,8 +1,7 @@
 Fri Dec 21 18:46:50 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* include/ruby/debug.h: define rb_trace_arg_t.
-
-	* vm_core.h: catch up above changes.
+	* include/ruby/debug.h, vm_core.h: define rb_trace_arg_t at
+	  include/ruby/debug.h (move from vm_core.h).
 
 Fri Dec 21 17:48:15 2012  Koichi Sasada  <ko1@atdot.net>
 
