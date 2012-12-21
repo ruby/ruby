@@ -459,7 +459,7 @@ module IRB
           if l = @context.io.gets
             print l if @context.verbose?
           else
-            if @context.ignore_eof? and @context.io.readable_atfer_eof?
+            if @context.ignore_eof? and @context.io.readable_after_eof?
               l = "\n"
               if @context.verbose?
                 printf "Use \"exit\" to leave %s\n", @context.ap_name

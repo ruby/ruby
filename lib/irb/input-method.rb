@@ -38,7 +38,7 @@ module IRB
     # read.
     #
     # See IO#eof for more information.
-    def readable_atfer_eof?
+    def readable_after_eof?
       false
     end
   end
@@ -74,7 +74,7 @@ module IRB
     # read.
     #
     # See IO#eof for more information.
-    def readable_atfer_eof?
+    def readable_after_eof?
       true
     end
 
@@ -170,7 +170,7 @@ module IRB
       # read.
       #
       # See IO#eof for more information.
-      def readable_atfer_eof?
+      def readable_after_eof?
 	true
       end
 
