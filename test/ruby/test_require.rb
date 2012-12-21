@@ -584,4 +584,17 @@ class TestRequire < Test::Unit::TestCase
   def test_require_with_array_shift
     assert_require_with_shared_array_modified("unshift", "shift")
   end
+
+  def test_require_local_var_on_toplevel
+    bug7536 = '[ruby-core:50701]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("bar.rb", "w") {|f| f.puts 'TOPLEVEL_BINDING.eval("lib = 2")' }
+        assert_in_out_err(%w[-r./bar.rb], <<-INPUT, %w([:lib] 2), [], bug7536)
+          puts TOPLEVEL_BINDING.eval("local_variables").inspect
+          puts TOPLEVEL_BINDING.eval("lib").inspect
+        INPUT
+      }
+    }
+  end
 end
