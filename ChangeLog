@@ -1,3 +1,8 @@
+Fri Dec 21 20:21:04 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (tracepoint_new): add code to support specified thread.
+	  But not tested and this feature is not supported officially.
+
 Fri Dec 21 19:37:15 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.c (process_options): need to acquire env from TOPLEVEL_BINDING
