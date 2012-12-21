@@ -72,6 +72,8 @@ predefined.lines.each_with_index do |line, num|
   when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
   when /\A@@(?!\d)\w+\z/; class_ids
   when /\A@(?!\d)\w+\z/; instance_ids
+  when /\A((?!\d)\w+)=\z/
+    KeywordError.raise("use ID2ATTRSET(#{$1}) instead of ATTRSET #{name}", firstline+num)
   else preserved_ids
   end << token
   predefined_ids[token] = name

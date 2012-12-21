@@ -1,4 +1,7 @@
-Fri Dec 21 16:38:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 21 16:38:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/id.h.tmpl (ID2ATTRSET): compile time constant macro for
+	  ID_ATTRSET.
 
 	* defs/id.def (KeywordError): check duplication.
 

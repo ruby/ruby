@@ -39,6 +39,8 @@ types = ids.keys.grep(/^[A-Z]/)
 #define ID_JUNK       0x07
 #define ID_INTERNAL   ID_JUNK
 
+#define ID2ATTRSET(id) (((id)&~ID_SCOPE_MASK)|ID_ATTRSET)
+
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
