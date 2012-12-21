@@ -76,7 +76,7 @@ module IRB
 	return @head.match_io(token)
       end
       ret = @head.match(token)
-      D_DETAIL.exec_if{D_DEATIL.printf "match end: %s:%s\n", ret, token.inspect}
+      D_DETAIL.exec_if{D_DETAIL.printf "match end: %s:%s\n", ret, token.inspect}
       ret
     end
 

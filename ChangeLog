@@ -1,3 +1,8 @@
+Sat Dec 22 02:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb/slex.rb(#match): Typo, should be D_DETAIL
+	  [ruby-core:51071] [Bug#7600]
+
 Sat Dec 22 02:29:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/input-method.rb, lib/irb.rb: Typo in
