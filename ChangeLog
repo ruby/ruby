@@ -1,3 +1,11 @@
+Fri Dec 21 22:02:00 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{dir.h,win32.c} (rb_w32_readdir): removed old rb_w32_readdir()
+	  and renamed from rb_w32_readdir_with_enc().
+	  [ruby-core:24864] [Feature #1927]
+
+	* dir.c (READDIR): follow above change.
+
 Fri Dec 21 21:12:54 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): commentout addr2line call temporarily
