@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require 'thread'
 require_relative 'envutil'
@@ -890,7 +891,7 @@ Thread.new(Thread.current) {|mth|
     assert(h_default[:thread_machine_stack_size] <= h_large[:thread_machine_stack_size])
 
     # check VM machine stack size
-    script = 'def rec; print "."; rec; end; rec'
+    script = 'def rec; print "."; STDOUT.flush; rec; end; rec'
     size_default = invoke_rec script, nil, nil
     assert(size_default > 0, size_default.to_s)
     size_0 = invoke_rec script, 0, nil
@@ -902,7 +903,7 @@ Thread.new(Thread.current) {|mth|
 
     # check machine stack size
     # Note that machine stack size may not change size (depend on OSs)
-    script = 'def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Thread.new{rec}.join'
+    script = 'def rec; print "."; STDOUT.flush; 1.times{1.times{1.times{rec}}}; end; Thread.new{rec}.join'
     vm_stack_size = 1024 * 1024
     size_default = invoke_rec script, vm_stack_size, nil
     size_0 = invoke_rec script, vm_stack_size, 0
