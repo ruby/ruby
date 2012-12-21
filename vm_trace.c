@@ -332,7 +332,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     int state;
     const int tracing = th->trace_running;
 
-    if(!tracing)
+    if (!tracing)
 	th->vm->trace_running++;
     th->trace_running = 1;
     raised = rb_threadptr_reset_raised(th);
@@ -349,7 +349,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	rb_threadptr_set_raised(th);
     }
     th->trace_running = tracing;
-    if(!tracing)
+    if (!tracing)
 	th->vm->trace_running--;
 
     if (state) {
