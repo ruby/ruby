@@ -99,6 +99,14 @@ ruby_gc_params_t initial_params = {
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
+#if SIZEOF_LONG == SIZEOF_VOIDP
+# define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+# define nonspecial_obj_id(obj) LL2NUM((SIGNED_VALUE)(obj) / 2)
+#else
+# error not supported
+#endif
+
 int ruby_gc_debug_indent = 0;
 
 /* for GC profile */
@@ -3283,7 +3291,7 @@ rb_obj_id(VALUE obj)
     if (SPECIAL_CONST_P(obj)) {
         return LONG2NUM((SIGNED_VALUE)obj);
     }
-    return (VALUE)((SIGNED_VALUE)obj|FIXNUM_FLAG);
+    return nonspecial_obj_id(obj);
 }
 
 static int
