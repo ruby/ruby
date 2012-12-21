@@ -59,6 +59,7 @@ module Fiddle
     def test_sizeof()
       assert_equal(SIZEOF_VOIDP, LIBC.sizeof("FILE*"))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct))
+      assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct.malloc()))
     end
 
     def test_unsigned_result()

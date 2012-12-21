@@ -1,3 +1,10 @@
+Fri Dec 21 22:43:36 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/fiddle/lib/fiddle/import.rb (Fiddle::Importer#sizeof):
+	  CPtr -> Pointer.
+	* test/fiddle/test_import.rb (Fiddle::TestImport#test_sizeof):
+	  Added the test for the above.
+
 Fri Dec 21 22:34:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_iseq.rb: disable a test which checks features

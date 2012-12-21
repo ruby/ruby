@@ -127,7 +127,7 @@ module Fiddle
           return ty.size()
         end
       end
-      return CPtr[ty].size()
+      return Pointer[ty].size()
     end
 
     def parse_bind_options(opts)
