@@ -128,7 +128,7 @@ class TestThread < Test::Unit::TestCase
     $:.shift
     3.times {
       `#{EnvUtil.rubybin} #{lbtest}`
-      assert(!$?.coredump?, '[ruby-dev:30653]')
+      assert_not_predicate($?, :coredump?, '[ruby-dev:30653]')
     }
   end
 
@@ -339,14 +339,14 @@ class TestThread < Test::Unit::TestCase
     sleep 0.5
 
     assert_equal(nil, a.status)
-    assert(a.stop?)
+    assert_predicate(a, :stop?)
 
     assert_equal("sleep", b.status)
-    assert(b.stop?)
+    assert_predicate(b, :stop?)
 
     assert_equal(false, c.status)
     assert_match(/^#<TestThread::Thread:.* dead>$/, c.inspect)
-    assert(c.stop?)
+    assert_predicate(c, :stop?)
 
     es1 = e.status
     es2 = e.stop?
@@ -494,7 +494,7 @@ class TestThread < Test::Unit::TestCase
       raise "recursive_outer should short circuit intermediate calls"
     end
     assert_nothing_raised {arr.hash}
-    assert(obj[:visited])
+    assert(obj[:visited], "obj.hash was not called")
   end
 
   def test_thread_instance_variable
@@ -885,19 +885,23 @@ Thread.new(Thread.current) {|mth|
     h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
     h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 10, 1024 * 1024 * 10, false))
 
-    assert(h_default[:thread_vm_stack_size] > h_0[:thread_vm_stack_size])
-    assert(h_default[:thread_vm_stack_size] < h_large[:thread_vm_stack_size])
-    assert(h_default[:thread_machine_stack_size] >= h_0[:thread_machine_stack_size])
-    assert(h_default[:thread_machine_stack_size] <= h_large[:thread_machine_stack_size])
+    assert_operator(h_default[:thread_vm_stack_size], :>, h_0[:thread_vm_stack_size],
+                    "0 thread_vm_stack_size")
+    assert_operator(h_default[:thread_vm_stack_size], :<, h_large[:thread_vm_stack_size],
+                    "large thread_vm_stack_size")
+    assert_operator(h_default[:thread_machine_stack_size], :>=, h_0[:thread_machine_stack_size],
+                    "0 thread_machine_stack_size")
+    assert_operator(h_default[:thread_machine_stack_size], :<=, h_large[:thread_machine_stack_size],
+                    "large thread_machine_stack_size")
 
     # check VM machine stack size
     script = 'def rec; print "."; STDOUT.flush; rec; end; rec'
     size_default = invoke_rec script, nil, nil
-    assert(size_default > 0, size_default.to_s)
+    assert_operator(size_default, :>, 0, "default size")
     size_0 = invoke_rec script, 0, nil
-    assert(size_default > size_0, [size_default, size_0].inspect)
+    assert_operator(size_default, :>, size_0, "0 size")
     size_large = invoke_rec script, 1024 * 1024 * 10, nil
-    assert(size_default < size_large, [size_default, size_large].inspect)
+    assert_operator(size_default, :<, size_large, "large size")
 
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
@@ -907,8 +911,8 @@ Thread.new(Thread.current) {|mth|
     vm_stack_size = 1024 * 1024
     size_default = invoke_rec script, vm_stack_size, nil
     size_0 = invoke_rec script, vm_stack_size, 0
-    assert(size_default >= size_0, [size_default, size_0].inspect)
+    assert_operator(size_default, :>=, size_0, "0 size")
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
-    assert(size_default <= size_large, [size_default, size_large].inspect)
+    assert_operator(size_default, :<=, size_large, "large size")
   end
 end
