@@ -37,9 +37,9 @@
 	not needed.  This may change in the future.
 
 [<b>prerequisites</b>]
-	Every task has a set (possiblity empty) of prerequisites.  A
+	Every task has a set (possibly empty) of prerequisites.  A
 	prerequisite P to Task T is itself a task that must be invoked
-	before Task T.  
+	before Task T.
 
 [<b>rule</b>]
 	A rule is a recipe for synthesizing a task when no task is

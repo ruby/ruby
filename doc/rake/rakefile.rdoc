@@ -1,4 +1,4 @@
-= Rakefile Format (as of version 0.8.3)
+= Rakefile Format (as of version 0.8.7)
 
 First of all, there is no special format for a Rakefile.  A Rakefile
 contains executable Ruby code.  Anything legal in a ruby script is
@@ -27,7 +27,7 @@ parameter that is the name of the task.
 
 === Tasks with Prerequisites
 
-Any prerequisites are given as a list (inclosed in square brackets)
+Any prerequisites are given as a list (enclosed in square brackets)
 following the name and an arrow (=>).
 
   task :name => [:prereq1, :prereq2]
@@ -45,7 +45,7 @@ following ...
 
 Actions are defined by passing a block to the +task+ method.  Any Ruby
 code can be placed in the block.  The block may reference the task
-object via the block paramter..
+object via the block parameter.
 
   task :name => [:prereq1, :prereq2] do |t|
     # actions (may reference t)
@@ -119,14 +119,14 @@ Rake allows parallel execution of prerequisites using the following syntax:
   end
 
 In this example, +copy_files+ is a normal rake task.  Its actions are
-executed whereever all of its prerequisites are done.  The big
+executed whenever all of its prerequisites are done.  The big
 difference is that the prerequisites (+copy_src+, +copy_bin+ and
 +copy_doc+) are executed in parallel.  Each of the prerequisites are
 run in their own Ruby thread, possibly allowing faster overall runtime.
 
 === Secondary Prerequisites
 
-If any of the primary prerequites of a multitask have common secondary
+If any of the primary prerequisites of a multitask have common secondary
 prerequisites, all of the primary/parallel prerequisites will wait
 until the common prerequisites have been run.
 
@@ -183,6 +183,22 @@ argument string should be quoted.  Something like this:
 (Quoting rules vary between operating systems and shells, so make sure
 you consult the proper docs for your OS/shell).
 
+=== Tasks Arguments and the Environment
+
+Task argument values can also be picked up from the environment.  For
+example, if the "release" task expected a parameter named
+"release_version", then either
+
+   rake release[0.8.2]
+
+or
+
+   RELEASE_VERSION rake release
+
+will work.  Environment variable names must either match the task
+parameter exactly, or match an all-uppercase version of the task
+parameter.
+
 === Tasks that Expect Parameters
 
 Parameters are only given to tasks that are setup to expect them.  In
@@ -195,10 +211,10 @@ declared as:
    task :name, [:first_name, :last_name]
 
 The first argument is still the name of the task (:name in this case).
-The next to argumements are the names of the parameters expected by
+The next two arguments are the names of the parameters expected by
 :name in an array (:first_name and :last_name in the example).
 
-To access the values of the paramters, the block defining the task
+To access the values of the parameters, the block defining the task
 behaviour can now accept a second parameter:
 
    task :name, [:first_name, :last_name] do |t, args|
@@ -210,7 +226,8 @@ The first argument of the block "t" is always bound to the current
 task object.  The second argument "args" is an open-struct like object
 that allows access to the task arguments.  Extra command line
 arguments to a task are ignored.  Missing command line arguments are
-given the nil value.
+picked up from matching environment variables.  If there are no
+matching environment variables, they are given the nil value.
 
 If you wish to specify default values for the arguments, you can use
 the with_defaults method in the task body.  Here is the above example
@@ -239,11 +256,12 @@ for tasks with arguments.  For example:
 There is an older format for declaring task parameters that omitted
 the task argument array and used the :needs keyword to introduce the
 dependencies.  That format is still supported for compatibility, but
-is not recommended for use.
+is not recommended for use.  The older format may be dropped in future
+versions of rake.
 
-== Accessing Task Programatically
+== Accessing Task Programmatically
 
-Sometimes it is useful to manipulate tasks programatically in a
+Sometimes it is useful to manipulate tasks programmatically in a
 Rakefile. To find a task object, use the <tt>:[]</tt> operator on the
 <tt>Rake::Task</tt>.
 
@@ -260,7 +278,7 @@ actions.
 
    task :dont do
      Rake::Task[:doit].clear
-   end        
+   end
 
 Running this example:
 
@@ -269,7 +287,7 @@ Running this example:
   DONE
   $ rake dont doit
   (in /Users/jim/working/git/rake/x)
-  $ 
+  $
 
 The ability to programmatically manipulate tasks gives rake very
 powerful meta-programming capabilities w.r.t. task execution, but
@@ -294,7 +312,7 @@ Rake is able to find a file named "mycode.c", it will automatically
 create a task that builds "mycode.o" from "mycode.c".
 
 If the file "mycode.c" does not exist, rake will attempt
-to recursively synthesize a rule for it. 
+to recursively synthesize a rule for it.
 
 When a task is synthesized from a rule, the +source+ attribute of the
 task is set to the matching source file.  This allows us to write
@@ -312,7 +330,7 @@ The following rule is equivalent to the example above.
     proc {|task_name| task_name.sub(/\.[^.]+$/, '.c') }
   ]) do |t|
     sh "cc #{t.source} -c -o #{t.name}"
-  end    
+  end
 
 <b>NOTE:</b> Because of a _quirk_ in Ruby syntax, parenthesis are
 required on *rule* when the first argument is a regular expression.
@@ -322,7 +340,7 @@ The following rule might be used for Java files ...
   rule '.java' => [
     proc { |tn| tn.sub(/\.class$/, '.java').sub(/^classes\//, 'src/') }
   ] do |t|
-    java_compile(t.source, t.name)  
+    java_compile(t.source, t.name)
   end
 
 <b>NOTE:</b> +java_compile+ is a hypothetical method that invokes the
@@ -340,12 +358,17 @@ invoked.  This make generated dependency files difficult to use.  By
 the time rake gets around to updating the dependencies file, it is too
 late to load it.
 
-The +import+ command addresses this by specifying a file to be loaded
-_after_ the main rakefile is loaded, but _before_ any targets on the
-command line are specified.  In addition, if the file name matches an
-explicit task, that task is invoked before loading the file.  This
-allows dependency files to be generated and used in a single rake
-command invocation.
+The +Rake.import+ command addresses this by specifying a file to be
+loaded _after_ the main rakefile is loaded, but _before_ any targets
+on the command line are invoked.  In addition, if the file name
+matches an explicit task, that task is invoked before loading the
+file.  This allows dependency files to be generated and used in a
+single rake command invocation.
+
+<b>NOTE:</b> Starting in Rake version 0.9.0, the top level +import+
+command is deprecated and we recommend using the scoped
+"+Rake.import+" command mentioned above.  Future versions of Rake will
+drop support for the top level +import+ command.
 
 === Example:
 
@@ -355,7 +378,7 @@ command invocation.
     sh "makedepend -f- -- #{CFLAGS} -- #{t.prerequisites} > #{t.name}"
   end
 
-  import ".depends.mf"
+  Rake.import ".depends.mf"
 
 If ".depends" does not exist, or is out of date w.r.t. the source
 files, a new ".depends" file is generated using +makedepend+ before
@@ -374,9 +397,9 @@ then you need to use the +desc+ command to describe the task.
   task :package => [ ... ] do ... end
 
 The "-T" switch (or "--tasks" if you like to spell things out) will
-display a list of tasks that have a defined comment.  If you use
-+desc+ to describe your major tasks, you have a semi-automatic way of
-generating a summary of your Rake file.
+display a list of tasks that have a description.  If you use +desc+ to
+describe your major tasks, you have a semi-automatic way of generating
+a summary of your Rake file.
 
   traken$ rake -T
   (in /home/.../rake)
@@ -403,12 +426,12 @@ common for task names to begin to clash.  For example, if you might
 have a main program and a set of sample programs built by a single
 Rakefile.  By placing the tasks related to the main program in one
 namespace, and the tasks for building the sample programs in a
-different namespace, the task names will not will not interfer with
+different namespace, the task names will not will not interfere with
 each other.
 
 For example:
 
-  namespace "main"
+  namespace "main" do
     task :build do
       # Build the main program
     end
@@ -429,7 +452,7 @@ Nested namespaces are supported, so
 
 Note that the name given in the +task+ command is always the unadorned
 task name without any namespace prefixes.  The +task+ command always
-defines a task in the current namespace.  
+defines a task in the current namespace.
 
 === FileTasks
 
@@ -499,17 +522,17 @@ Or give it a glob pattern:
 
 == Odds and Ends
 
-=== do/end verses { }
+=== do/end versus { }
 
 Blocks may be specified with either a +do+/+end+ pair, or with curly
 braces in Ruby.  We _strongly_ recommend using +do+/+end+ to specify the
 actions for tasks and rules.  Because the rakefile idiom tends to
-leave off parenthesis on the task/file/rule methods, unusual
+leave off parentheses on the task/file/rule methods, unusual
 ambiguities can arise when using curly braces.
 
 For example, suppose that the method +object_files+ returns a list of
 object files in a project.  Now we use +object_files+ as the
-prerequistes in a rule specified with actions in curly braces.
+prerequisites in a rule specified with actions in curly braces.
 
   # DON'T DO THIS!
   file "prog" => object_files {
@@ -531,4 +554,4 @@ This is the proper way to specify the task ...
 
 == See
 
-* README -- Main documentation for Rake.
+* README.rdoc -- Main documentation for Rake.

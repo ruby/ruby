@@ -43,7 +43,7 @@ class TestRakeDirectoryTask < Rake::TestCase
     runlist = []
 
     t1 = directory("a/b/c" => :t2) { |t| runlist << t.name }
-    t2 = task(:t2) { |t| runlist << t.name }
+    task(:t2) { |t| runlist << t.name }
 
     verbose(false) {
       t1.invoke

@@ -1,3 +1,9 @@
+Fri Dec 21 11:31:02 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake/*:  Updated to rake 0.9.6
+	* doc/rake/*:  ditto
+	* test/rake/*:  ditto
+
 Fri Dec 21 08:56:34 2012  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* vm_trace.c (rb_suppress_tracing): remove unused variable 'vm_tracing'

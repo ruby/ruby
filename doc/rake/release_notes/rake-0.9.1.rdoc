@@ -1,29 +1,14 @@
-= Rake 0.8.7 Released
+= Rake 0.9.1 Released
 
-Rake version 0.8.5 introduced greatly improved support for executing
-commands on Windows.  The "sh" command now has the same semantics on
-Windows that it has on Unix based platforms.
-
-Rake version 0.8.6 includes minor fixes the the RDoc generation.
-Rake version 0.8.7 includes a minor fix for JRuby running on windows.
+Rake version 0.9.1 has a number of bug fixes and enhancments (see
+below for more details).  Additionally, the internals have be slightly
+restructured and improved.
 
 == Changes
 
-=== New Features / Enhancements in Version 0.8.5
-
-* Improved implementation of the Rake system command for Windows.
-  (patch from James M. Lawrence/quix)
-
-* Support for Ruby 1.9's improved system command.  (patch from James
-  M. Lawrence/quix)
-
-* Rake now includes the configured extension when invoking an
-  executable (Config::CONFIG['EXEEXT])
-
-=== Bug Fixes in Version 0.8.5
-
-* Environment variable keys are now correctly cased (it matters in
-  some implementations).
+Rake 0.9.1 adds back the global DSL methods, but with deprecation
+messages.  This allows Rake 0.9.1 to be used with older rakefiles with
+warning messages.
 
 == What is Rake
 
@@ -50,6 +35,18 @@ As usual, it was input from users that drove a alot of these changes. The
 following people either contributed patches, made suggestions or made
 otherwise helpful comments.  Thanks to ...
 
-* Charles Nutter
+* James M. Lawrence (quix)
+* Roger Pack
+* Cezary Baginski
+* Sean Scot August Moon
+* R.T. Lechow
+* Alex Chaffee
+* James Tucker
+* Matthias Lüdtke
+* Santiago Pastorino
+
+Also, bit thanks to Eric Hodel for assisting with getting this release
+out the door (where "assisting" includes, but is not by any means
+limited to, "pushing" me to get it done).
 
 -- Jim Weirich
