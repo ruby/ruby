@@ -767,9 +767,9 @@ class TestArgf < Test::Unit::TestCase
 
   def test_chars
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
-      print Marshal.dump(ARGF.chars.to_a)
+      print [Marshal.dump(ARGF.chars.to_a)].pack('m')
     SRC
-      assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read))
+    assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
     end
   end
 

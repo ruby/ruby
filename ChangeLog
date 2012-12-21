@@ -1,3 +1,8 @@
+Fri Dec 21 16:03:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_argf.rb (TestArgf#test_chars): since marshal data is
+	  binary, shouldn't pass via text mode.  use base64 encoded data.
+
 Thu Dec 13 23:10:52  Charlie Somerville  <charlie@charliesomerville.com>
 	* object.c (Init_Object): use rb_mod_init_copy for Class#initialize_copy
 	* class.c (rb_class_init_copy): rename to class_init_copy_check, performs type
