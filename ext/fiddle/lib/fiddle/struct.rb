@@ -168,7 +168,7 @@ module Fiddle
           val = val.collect{|v| Pointer.new(v)}
         end
       when TYPE_VOIDP
-        val = CPtr.new(val[0])
+        val = Pointer.new(val[0])
       else
         val = val[0]
       end

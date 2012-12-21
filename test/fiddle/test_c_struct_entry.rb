@@ -61,5 +61,14 @@ module Fiddle
       team["names"] = [alice, bob]
       assert_equal(["Alice", "Bob"], team["names"].map(&:to_s))
     end
+
+    def test_aref_pointer
+      user = CStructEntity.malloc([TYPE_VOIDP])
+      user.assign_names(["name"])
+      alice = Fiddle::Pointer.malloc(6)
+      alice[0, 6] = "Alice\0"
+      user["name"] = alice
+      assert_equal("Alice", user["name"].to_s)
+    end
   end
 end
