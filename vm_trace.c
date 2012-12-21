@@ -280,11 +280,11 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 }
 
 void
-rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
+rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg)
 {
-    rb_thread_t *th = targ->th;
-    if (th->trace_running == 0 &&
-	targ->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
+    rb_thread_t *th = trace_arg->th;
+    if (th->trace_arg == 0 &&
+	trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	const int vm_tracing = th->vm->trace_running;
 	const VALUE errinfo = th->errinfo;
 	const int outer_state = th->state;
@@ -292,27 +292,27 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 	th->state = 0;
 
 	th->vm->trace_running++;
-	th->trace_running = 1;
+	th->trace_arg = trace_arg;
 	{
 	    rb_hook_list_t *list;
 
 	    /* thread local traces */
 	    list = &th->event_hooks;
-	    if (list->events & targ->event) {
-		state = exec_hooks(th, list, targ, TRUE);
+	    if (list->events & trace_arg->event) {
+		state = exec_hooks(th, list, trace_arg, TRUE);
 		if (state) goto terminate;
 	    }
 
 	    /* vm global traces */
 	    list = &th->vm->event_hooks;
-	    if (list->events & targ->event) {
-		state = exec_hooks(th, list, targ, !vm_tracing);
+	    if (list->events & trace_arg->event) {
+		state = exec_hooks(th, list, trace_arg, !vm_tracing);
 		if (state) goto terminate;
 	    }
 	    th->errinfo = errinfo;
 	}
       terminate:
-	th->trace_running = 0;
+	th->trace_arg = 0;
 	th->vm->trace_running--;
 
 	if (state) {
@@ -330,11 +330,12 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     int state;
-    const int tracing = th->trace_running;
+    const int tracing = th->trace_arg ? 1 : 0;
+    rb_trace_arg_t dummy_trace_arg;
 
-    if (!tracing)
-	th->vm->trace_running++;
-    th->trace_running = 1;
+    if (!tracing) th->vm->trace_running++;
+    if (!th->trace_arg) th->trace_arg = &dummy_trace_arg;
+
     raised = rb_threadptr_reset_raised(th);
     outer_state = th->state;
     th->state = 0;
@@ -348,9 +349,9 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     if (raised) {
 	rb_threadptr_set_raised(th);
     }
-    th->trace_running = tracing;
-    if (!tracing)
-	th->vm->trace_running--;
+
+    if (th->trace_arg == &dummy_trace_arg) th->trace_arg = 0;
+    if (!tracing) th->vm->trace_running--;
 
     if (state) {
 	JUMP_TAG(state);
@@ -576,7 +577,6 @@ typedef struct rb_tp_struct {
     void (*func)(VALUE tpval, void *data);
     void *data;
     VALUE proc;
-    rb_trace_arg_t *trace_arg;
     int tracing;
     VALUE self;
 } rb_tp_t;
@@ -647,20 +647,20 @@ tpptr(VALUE tpval)
     return tp;
 }
 
-static void
-tp_attr_check_active(rb_tp_t *tp)
+static rb_trace_arg_t *
+get_trace_arg(void)
 {
-    if (tp->trace_arg == 0) {
+    rb_trace_arg_t *trace_arg = GET_THREAD()->trace_arg;
+    if (trace_arg == 0) {
 	rb_raise(rb_eRuntimeError, "access from outside");
     }
+    return trace_arg;
 }
 
 struct rb_trace_arg_struct *
 rb_tracearg_from_tracepoint(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return tp->trace_arg;
+    return get_trace_arg();
 }
 
 VALUE
@@ -793,9 +793,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 static VALUE
 tracepoint_attr_event(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_event(tp->trace_arg);
+    return rb_tracearg_event(get_trace_arg());
 }
 
 /*
@@ -804,9 +802,7 @@ tracepoint_attr_event(VALUE tpval)
 static VALUE
 tracepoint_attr_lineno(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_lineno(tp->trace_arg);
+    return rb_tracearg_lineno(get_trace_arg());
 }
 
 /*
@@ -815,9 +811,7 @@ tracepoint_attr_lineno(VALUE tpval)
 static VALUE
 tracepoint_attr_path(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_path(tp->trace_arg);
+    return rb_tracearg_path(get_trace_arg());
 }
 
 /*
@@ -826,9 +820,7 @@ tracepoint_attr_path(VALUE tpval)
 static VALUE
 tracepoint_attr_method_id(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_method_id(tp->trace_arg);
+    return rb_tracearg_method_id(get_trace_arg());
 }
 
 /*
@@ -868,9 +860,7 @@ tracepoint_attr_method_id(VALUE tpval)
 static VALUE
 tracepoint_attr_defined_class(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_defined_class(tp->trace_arg);
+    return rb_tracearg_defined_class(get_trace_arg());
 }
 
 /*
@@ -879,9 +869,7 @@ tracepoint_attr_defined_class(VALUE tpval)
 static VALUE
 tracepoint_attr_binding(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_binding(tp->trace_arg);
+    return rb_tracearg_binding(get_trace_arg());
 }
 
 /*
@@ -893,9 +881,7 @@ tracepoint_attr_binding(VALUE tpval)
 static VALUE
 tracepoint_attr_self(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_self(tp->trace_arg);
+    return rb_tracearg_self(get_trace_arg());
 }
 
 /*
@@ -904,9 +890,7 @@ tracepoint_attr_self(VALUE tpval)
 static VALUE
 tracepoint_attr_return_value(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_return_value(tp->trace_arg);
+    return rb_tracearg_return_value(get_trace_arg());
 }
 
 /*
@@ -915,35 +899,19 @@ tracepoint_attr_return_value(VALUE tpval)
 static VALUE
 tracepoint_attr_raised_exception(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
-    tp_attr_check_active(tp);
-    return rb_tracearg_raised_exception(tp->trace_arg);
+    return rb_tracearg_raised_exception(get_trace_arg());
 }
 
 static void
 tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 {
     rb_tp_t *tp = tpptr(tpval);
-    rb_thread_t *th = GET_THREAD();
-    int state;
 
-    tp->trace_arg = trace_arg;
-
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
-	if (tp->func) {
-	    (*tp->func)(tpval, tp->data);
-	}
-	else {
-	    rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
-	}
+    if (tp->func) {
+	(*tp->func)(tpval, tp->data);
     }
-    TH_POP_TAG();
-
-    tp->trace_arg = 0;
-
-    if (state) {
-	TH_JUMP_TAG(th, state);
+    else {
+	rb_proc_call_with_block((VALUE)tp->proc, 1, &tpval, Qnil);
     }
 }
 
@@ -1172,6 +1140,16 @@ rb_tracepoint_new(VALUE target_thread, rb_event_flag_t events, void (*func)(VALU
  *	    p tp.raised_exception
  *	end
  *	#=> RuntimeError: 'raised_exception' not supported by this event
+ *
+ * If the trace method is called outside block, a RuntimeError is raised.
+ *
+ *      TracePoint.trace(:line) do |tp|
+ *        $tp = tp
+ *      end
+ *      $tp.line #=> access from outside (RuntimeError)
+ *
+ * Access from other threads is also forbidden.
+ *
  */
 static VALUE
 tracepoint_new_s(int argc, VALUE *argv, VALUE self)
@@ -1215,19 +1193,20 @@ static VALUE
 tracepoint_inspect(VALUE self)
 {
     rb_tp_t *tp = tpptr(self);
+    rb_trace_arg_t *trace_arg = GET_THREAD()->trace_arg;
 
-    if (tp->trace_arg) {
-	switch (tp->trace_arg->event) {
+    if (trace_arg) {
+	switch (trace_arg->event) {
 	  case RUBY_EVENT_LINE:
 	  case RUBY_EVENT_SPECIFIED_LINE:
 	    {
-		VALUE sym = rb_tracearg_method_id(tp->trace_arg);
+		VALUE sym = rb_tracearg_method_id(trace_arg);
 		if (NIL_P(sym))
 		  goto default_inspect;
 		return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d in `%"PRIsVALUE"'>",
-				  rb_tracearg_event(tp->trace_arg),
-				  rb_tracearg_path(tp->trace_arg),
-				  FIX2INT(rb_tracearg_lineno(tp->trace_arg)),
+				  rb_tracearg_event(trace_arg),
+				  rb_tracearg_path(trace_arg),
+				  FIX2INT(rb_tracearg_lineno(trace_arg)),
 				  sym);
 	    }
 	  case RUBY_EVENT_CALL:
@@ -1235,21 +1214,21 @@ tracepoint_inspect(VALUE self)
 	  case RUBY_EVENT_RETURN:
 	  case RUBY_EVENT_C_RETURN:
 	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" `%"PRIsVALUE"'@%"PRIsVALUE":%d>",
-			      rb_tracearg_event(tp->trace_arg),
-			      rb_tracearg_method_id(tp->trace_arg),
-			      rb_tracearg_path(tp->trace_arg),
-			      FIX2INT(rb_tracearg_lineno(tp->trace_arg)));
+			      rb_tracearg_event(trace_arg),
+			      rb_tracearg_method_id(trace_arg),
+			      rb_tracearg_path(trace_arg),
+			      FIX2INT(rb_tracearg_lineno(trace_arg)));
 	  case RUBY_EVENT_THREAD_BEGIN:
 	  case RUBY_EVENT_THREAD_END:
 	    return rb_sprintf("#<TracePoint:%"PRIsVALUE" %"PRIsVALUE">",
-			      rb_tracearg_event(tp->trace_arg),
-			      rb_tracearg_self(tp->trace_arg));
+			      rb_tracearg_event(trace_arg),
+			      rb_tracearg_self(trace_arg));
 	  default:
 	  default_inspect:
 	    return rb_sprintf("#<TracePoint:%"PRIsVALUE"@%"PRIsVALUE":%d>",
-				  rb_tracearg_event(tp->trace_arg),
-				  rb_tracearg_path(tp->trace_arg),
-				  FIX2INT(rb_tracearg_lineno(tp->trace_arg)));
+			      rb_tracearg_event(trace_arg),
+			      rb_tracearg_path(trace_arg),
+			      FIX2INT(rb_tracearg_lineno(trace_arg)));
 	}
     }
     else {

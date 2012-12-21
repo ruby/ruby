@@ -829,4 +829,23 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_normal_exit('def m; end; TracePoint.new(:return) {raise}.enable {m}', '', timeout: 3)
     end
   end
+
+  def test_tracepoint_with_multithreads
+    assert_nothing_raised do
+      TracePoint.new{
+        10.times{
+          Thread.pass
+        }
+      }.enable do
+        (1..10).map{
+          Thread.new{
+            1000.times{
+            }
+          }
+        }.each{|th|
+          th.join
+        }
+      end
+    end
+  end
 end

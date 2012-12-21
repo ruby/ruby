@@ -924,7 +924,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     cont->value = make_passing_arg(argc, argv);
 
     /* restore `tracing' context. see [Feature #4347] */
-    th->trace_running = cont->saved_thread.trace_running;
+    th->trace_arg = cont->saved_thread.trace_arg;
 
     cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
@@ -1318,7 +1318,7 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
     }
     else {
 	/* restore `tracing' context. see [Feature #4347] */
-	th->trace_running = cont->saved_thread.trace_running;
+	th->trace_arg = cont->saved_thread.trace_arg;
     }
 
     cont->argc = argc;

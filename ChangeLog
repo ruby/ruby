@@ -1,3 +1,26 @@
+Fri Dec 21 17:48:15 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, vm_trace.c: fix multi-threading bug for tracing.
+	  Move `trace_arg' from rb_tp_t::trace_arg to rb_thread_t::trace_arg.
+	  `trace_arg' may changed by multiple threads.
+	  rb_thread_t::trace_arg can represent rb_thread_t::trace_running
+	  (null or non-null) and rb_thread_t::trace_running is removed.
+	  After that, `rb_tp_t' is not needed to check tracing or not
+	  (A running thread knows tracing or not). This is why I remove
+	  tp_attr_check_active() and make new function get_trace_arg().
+
+	  And this modification disable to work the following code:
+	    TracePoint.trace{|tp|
+	      Thread.new{p tp.event} # access `tp' from other threads.
+	    }
+	  I believe nobody mix threads at trace procedure.
+	  This is current limitation.
+
+	* cont.c (fiber_switch, rb_cont_call): use rb_thread_t::trace_arg
+	  instead of rb_thread_t::trace_running.
+
+	* test/ruby/test_settracefunc.rb: add a multi-threading test.
+
 Fri Dec 21 16:38:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl (ID2ATTRSET): compile time constant macro for

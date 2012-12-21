@@ -596,7 +596,7 @@ typedef struct rb_thread_struct {
 
     /* tracer */
     rb_hook_list_t event_hooks;
-    int trace_running;
+    struct rb_trace_arg_struct *trace_arg; /* trace information */
 
     /* fiber */
     VALUE fiber;
