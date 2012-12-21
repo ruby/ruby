@@ -60,7 +60,7 @@ class TestISeq < Test::Unit::TestCase
 
     iseq = ISeq.of(self.class.instance_method(:method_test_line_trace))
     assert_equal([LINE_BEFORE_METHOD + 3, LINE_BEFORE_METHOD + 5], iseq.line_trace_all)
-  end
+  end if false # TODO: now, it is only for C APIs.
 
   LINE_OF_HERE = __LINE__
   def test_location

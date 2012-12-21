@@ -1,3 +1,8 @@
+Fri Dec 21 22:34:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_iseq.rb: disable a test which checks features
+	  removed at r38532.
+
 Fri Dec 21 22:02:00 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{dir.h,win32.c} (rb_w32_readdir): removed old rb_w32_readdir()
