@@ -2076,9 +2076,15 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "base_label", iseq_base_label, 0);
     rb_define_method(rb_cISeq, "first_lineno", iseq_first_lineno, 0);
 
-    /* experimental */
+#if 0
+    /* Now, it is experimental. No discussions, no tests. */
+    /* They can be used from C level. Please give us feedback. */
     rb_define_method(rb_cISeq, "line_trace_all", rb_iseq_line_trace_all, 0);
     rb_define_method(rb_cISeq, "line_trace_specify", rb_iseq_line_trace_specify, 2);
+#else
+    (void)rb_iseq_line_trace_all;
+    (void)rb_iseq_line_trace_specify;
+#endif
 
 #if 0 /* TBD */
     rb_define_private_method(rb_cISeq, "marshal_dump", iseq_marshal_dump, 0);
