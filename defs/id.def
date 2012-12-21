@@ -33,6 +33,12 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_kwd
 ]
 
+class KeywordError < RuntimeError
+  def self.raise(mesg, line)
+    super(self, mesg, ["#{__FILE__}:#{line}", *caller])
+  end
+end
+
 predefined_ids = {}
 preserved_ids = []
 local_ids = []
@@ -53,6 +59,13 @@ predefined.lines.each_with_index do |line, num|
     token.sub!(/\A@/, "_I_")
     token.gsub!(/\W+/, "")
   end
+  if prev = names[name]
+    KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
+  end
+  if prev = predefined_ids[token]
+    KeywordError.raise("#{token} is already used for #{prev} at line #{names[prev]+firstline}", firstline+num)
+  end
+  names[name] = num
   case name
   when /\A[A-Z]\w*\z/; const_ids
   when /\A(?!\d)\w+\z/; local_ids

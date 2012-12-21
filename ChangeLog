@@ -1,4 +1,6 @@
-Fri Dec 21 16:38:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 21 16:38:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (KeywordError): check duplication.
 
 	* defs/id.def: support for other scope IDs,
 	  ID_{INSTANCE,GLOBAL,CONST,CLASS}.

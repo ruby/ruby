@@ -21,7 +21,7 @@ token_op_ids = %w[
   tCOLON2 tCOLON3
 ]
 
-defs = File.join(File.dirname(erb.filename), "../defs/id.def")
+defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
 ids = eval(File.read(defs), binding, defs)
 types = ids.keys.grep(/^[A-Z]/)
 %>

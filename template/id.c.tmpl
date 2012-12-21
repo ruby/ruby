@@ -11,7 +11,7 @@
 
 **********************************************************************/
 <%
-defs = File.join(File.dirname(erb.filename), "../defs/id.def")
+defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
 ids = eval(File.read(defs), binding, defs)
 %>
 static void
