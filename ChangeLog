@@ -1,3 +1,9 @@
+Sat Dec 22 00:28:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* object.c (rb_obj_hash): shouldn't assume object_id can be long.
+	  based on a patch by Heesob Park at [ruby-core:51060].
+	  cf. [Backport #7454]
+
 Fri Dec 21 23:15:25 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/fiddle/lib/fiddle/struct.rb (Fiddle::CStructEntity#set_ctypes):
