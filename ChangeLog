@@ -1,3 +1,15 @@
+Sat Dec 22 05:34:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Requests may be created with a URI which sets the
+	  Host header.  Responses contain the requested URI for easier redirect
+	  following.  [ruby-trunk - Feature #6482]
+	* lib/net/http/generic_request.rb:  ditto.
+	* lib/net/http/response.rb:  ditto.
+	* NEWS (net/http):  Updated for above.
+	* test/net/http/test_http.rb:  Tests for above.
+	* test/net/http/test_http.rb:  ditto.
+	* test/net/http/test_httpresponse.rb:  ditto.
+
 Sat Dec 22 02:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/slex.rb(#match): Typo, should be D_DETAIL

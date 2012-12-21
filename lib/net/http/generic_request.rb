@@ -7,10 +7,22 @@ class Net::HTTPGenericRequest
 
   include Net::HTTPHeader
 
-  def initialize(m, reqbody, resbody, path, initheader = nil)
+  def initialize(m, reqbody, resbody, uri_or_path, initheader = nil)
     @method = m
     @request_has_body = reqbody
     @response_has_body = resbody
+
+    if URI === uri_or_path then
+      @uri = uri_or_path.dup
+      host = @uri.hostname
+      host += ":#{@uri.port}" if @uri.port != @uri.class::DEFAULT_PORT
+      path = uri_or_path.request_uri
+    else
+      @uri = nil
+      host = nil
+      path = uri_or_path
+    end
+
     raise ArgumentError, "no HTTP request path given" unless path
     raise ArgumentError, "HTTP request path is empty" if path.empty?
     @path = path
@@ -29,6 +41,7 @@ class Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
+    self['Host'] ||= host
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -36,6 +49,7 @@ class Net::HTTPGenericRequest
 
   attr_reader :method
   attr_reader :path
+  attr_reader :uri
 
   def inspect
     "\#<#{self.class} #{@method}>"
@@ -82,6 +96,8 @@ class Net::HTTPGenericRequest
   #
 
   def exec(sock, ver, path)   #:nodoc: internal use only
+    self['host'] = "#{@uri.host}:#{@uri.port}" if @uri
+
     if @body
       send_request_with_body sock, ver, path, @body
     elsif @body_stream
@@ -91,6 +107,23 @@ class Net::HTTPGenericRequest
     else
       write_header sock, ver, path
     end
+  end
+
+  def update_uri(host, port, ssl) # :nodoc: internal use only
+    return unless @uri
+
+    @uri.host ||= host
+    @uri.port = port
+
+    scheme = ssl ? 'https' : 'http'
+
+    # convert the class of the URI
+    unless scheme == @uri.scheme then
+      new_uri = @uri.to_s.sub(/^https?/, scheme)
+      @uri = URI new_uri
+    end
+
+    @uri
   end
 
   private

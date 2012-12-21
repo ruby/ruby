@@ -205,6 +205,10 @@ with all sufficient information, see the ChangeLog file.
       default.  See Net::HTTP for details.
     * SSL sessions are now reused across connections for a single instance.
       This speeds up connection by using a previously negotiated session.
+    * Requests may be created from a URI which sets the request_uri and host
+      header of the request (but does not change the host connected to).
+    * Responses contain the URI requested which allows easier implementation of
+      redirect following.
   * new methods:
     * Net::HTTP#local_host
     * Net::HTTP#local_host=
