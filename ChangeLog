@@ -1,3 +1,9 @@
+Sat Dec 22 02:19:38 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_dump.c (rb_vm_bugreport): revert r38533.
+	* addr2line.c (fill_lines): add ELF sanity check.
+	  [Bug #7597] [ruby-dev:46786]
+
 Sat Dec 22 02:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/inspector.rb, lib/irb/context.rb: Move IRB::INSPECTORS and

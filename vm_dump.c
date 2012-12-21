@@ -644,15 +644,14 @@ rb_vm_bugreport(void)
 	char **syms = backtrace_symbols(trace, n);
 
 	if (syms) {
-/* commentout temporarily. we have to fix addr2line. see [Bug #7597] */
-/* #ifdef USE_ELF */
-/* 	    rb_dump_backtrace_with_lines(n, trace, syms); */
-/* #else */
+#ifdef USE_ELF
+	    rb_dump_backtrace_with_lines(n, trace, syms);
+#else
 	    int i;
 	    for (i=0; i<n; i++) {
 		fprintf(stderr, "%s\n", syms[i]);
 	    }
-/* #endif */
+#endif
 	    free(syms);
 	}
 #elif defined(_WIN32)
