@@ -149,6 +149,52 @@ STDOUT.sync = true
 #       :RETURN => "%s\n" # used to printf
 #     }
 #
+# irb comes with a number of available modes:
+#
+#   # :NULL:
+#   #   :PROMPT_I:
+#   #   :PROMPT_N:
+#   #   :PROMPT_S:
+#   #   :PROMPT_C:
+#   #   :RETURN: |
+#   #     %s
+#   # :DEFAULT:
+#   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
+#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
+#   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
+#   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
+#   #   :RETURN: |
+#   #     => %s
+#   # :CLASSIC:
+#   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
+#   #   :PROMPT_N: ! '%N(%m):%03n:%i> '
+#   #   :PROMPT_S: ! '%N(%m):%03n:%i%l '
+#   #   :PROMPT_C: ! '%N(%m):%03n:%i* '
+#   #   :RETURN: |
+#   #     %s
+#   # :SIMPLE:
+#   #   :PROMPT_I: ! '>> '
+#   #   :PROMPT_N: ! '>> '
+#   #   :PROMPT_S:
+#   #   :PROMPT_C: ! '?> '
+#   #   :RETURN: |
+#   #     => %s
+#   # :INF_RUBY:
+#   #   :PROMPT_I: ! '%N(%m):%03n:%i> '
+#   #   :PROMPT_N:
+#   #   :PROMPT_S:
+#   #   :PROMPT_C:
+#   #   :RETURN: |
+#   #     %s
+#   #   :AUTO_INDENT: true
+#   # :XMP:
+#   #   :PROMPT_I:
+#   #   :PROMPT_N:
+#   #   :PROMPT_S:
+#   #   :PROMPT_C:
+#   #   :RETURN: |2
+#   #         ==>%s
+#
 # == Restrictions
 #
 # Because irb evaluates input immediately after it is syntactically complete,
@@ -185,7 +231,8 @@ STDOUT.sync = true
 # A few commands for loading files within the session are also available:
 #
 # +source+::
-#   Loads a given file in the current session, see IrbLoader#source_file
+#   Loads a given file in the current session and displays the source lines,
+#   see IrbLoader#source_file
 # +irb_load+::
 #   Loads the given file similarly to Kernel#load, see IrbLoader#irb_load
 # +irb_require+::
@@ -279,6 +326,7 @@ STDOUT.sync = true
 module IRB
   @RCS_ID='-$Id$-'
 
+  # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
   @CONF = {}
@@ -287,11 +335,14 @@ module IRB
   # Displays current configuration.
   #
   # Modifing the configuration is achieved by sending a message to IRB.conf.
+  #
+  # See IRB@Configuration for more information.
   def IRB.conf
     @CONF
   end
 
-  # IRB version method
+  # Returns the current version of IRB, including release version and last
+  # updated date.
   def IRB.version
     if v = @CONF[:VERSION] then return v end
 
@@ -300,11 +351,16 @@ module IRB
     @CONF[:VERSION] = format("irb %s(%s)", rv, @LAST_UPDATE_DATE)
   end
 
+  # The current IRB::Context of the session, see IRB.conf
+  #
+  #   irb
+  #   irb(main):001:0> IRB.CurrentContext.irb_name = "foo"
+  #   foo(main):002:0> IRB.conf[:MAIN_CONTEXT].irb_name #=> "foo"
   def IRB.CurrentContext
     IRB.conf[:MAIN_CONTEXT]
   end
 
-  # initialize IRB and start TOP_LEVEL irb
+  # Initializes IRB and creates a new Irb.irb object at the +TOPLEVEL_BINDING+
   def IRB.start(ap_path = nil)
     $0 = File::basename(ap_path, ".rb") if ap_path
 
@@ -333,7 +389,7 @@ module IRB
 #    print "\n"
   end
 
-  # Calls each of the IRB.conf[:AT_EXIT] hooks when the current session quits.
+  # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
   def IRB.irb_at_exit
     @CONF[:AT_EXIT].each{|hook| hook.call}
   end
@@ -343,6 +399,9 @@ module IRB
     throw :IRB_EXIT, ret
   end
 
+  # Aborts then interrupts irb.
+  #
+  # Will raise an Abort exception, or the given +exception+.
   def IRB.irb_abort(irb, exception = Abort)
     if defined? Thread
       irb.context.thread.raise exception, "abort then interrupt!"
@@ -351,8 +410,8 @@ module IRB
     end
   end
 
-  # irb interpreter main routine
   class Irb
+    # Creates a new irb session
     def initialize(workspace = nil, input_method = nil, output_method = nil)
       @context = Context.new(self, workspace, input_method, output_method)
       @context.main.extend ExtendCommandBundle
@@ -361,9 +420,12 @@ module IRB
       @scanner = RubyLex.new
       @scanner.exception_on_syntax_error = false
     end
+    # Returns the current context of this irb session
     attr_reader :context
+    # The lexer used by this irb session
     attr_accessor :scanner
 
+    # Evaluates input for this session.
     def eval_input
       @scanner.set_prompt do
         |ltype, indent, continue, line_no|
@@ -462,6 +524,11 @@ module IRB
       end
     end
 
+    # Evaluates the given block using the given +path+ as the Context#irb_path
+    # and +name+ as the Context#irb_name.
+    #
+    # Used by the irb command +source+, see IRB@IRB+Sessions for more
+    # information.
     def suspend_name(path = nil, name = nil)
       @context.irb_path, back_path = path, @context.irb_path if path
       @context.irb_name, back_name = name, @context.irb_name if name
@@ -473,6 +540,11 @@ module IRB
       end
     end
 
+    # Evaluates the given block using the given +workspace+ as the
+    # Context#workspace.
+    #
+    # Used by the irb command +irb_load+, see IRB@IRB+Sessions for more
+    # information.
     def suspend_workspace(workspace)
       @context.workspace, back_workspace = workspace, @context.workspace
       begin
@@ -482,6 +554,11 @@ module IRB
       end
     end
 
+    # Evaluates the given block using the given +input_method+ as the
+    # Context#io.
+    #
+    # Used by the irb commands +source+ and +irb_load+, see IRB@IRB+Sessions
+    # for more information.
     def suspend_input_method(input_method)
       back_io = @context.io
       @context.instance_eval{@io = input_method}
@@ -492,6 +569,7 @@ module IRB
       end
     end
 
+    # Evaluates the given block using the given +context+ as the Context.
     def suspend_context(context)
       @context, back_context = context, @context
       begin
@@ -501,6 +579,7 @@ module IRB
       end
     end
 
+    # Handler for the signal SIGINT, see Kernel#trap for more information.
     def signal_handle
       unless @context.ignore_sigint?
         print "\nabort!\n" if @context.verbose?
@@ -522,6 +601,7 @@ module IRB
       end
     end
 
+    # Evaluates the given block using the given +status+.
     def signal_status(status)
       return yield if @signal_status == :IN_LOAD
 
@@ -534,7 +614,7 @@ module IRB
       end
     end
 
-    def prompt(prompt, ltype, indent, line_no)
+    def prompt(prompt, ltype, indent, line_no) # :nodoc:
       p = prompt.dup
       p.gsub!(/%([0-9]+)?([a-zA-Z])/) do
         case $2
@@ -565,10 +645,12 @@ module IRB
       p
     end
 
-    def output_value
+    def output_value # :nodoc:
       printf @context.return_format, @context.inspect_last_value
     end
 
+    # Outputs the local variables to this current session, including
+    # #signal_status and #context, using IRB::Locale.
     def inspect
       ary = []
       for iv in instance_variables
@@ -585,7 +667,6 @@ module IRB
     end
   end
 
-  # Singleton method
   def @CONF.inspect
     IRB.version unless self[:VERSION]
 

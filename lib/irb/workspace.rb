@@ -75,9 +75,13 @@ EOF
       eval("_=nil", @binding)
     end
 
+    # The Binding of this workspace
     attr_reader :binding
+    # The top-level workspace of this context, also available as
+    # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
+    # Evaluate the given +statements+ within the  context of this workspace.
     def evaluate(context, statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
     end

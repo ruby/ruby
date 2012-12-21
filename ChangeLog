@@ -1,3 +1,7 @@
+Fri Dec 21 14:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb.rb, lib/irb/*: Documentation for IRB
+
 Fri Dec 21 11:31:02 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake/*:  Updated to rake 0.9.6

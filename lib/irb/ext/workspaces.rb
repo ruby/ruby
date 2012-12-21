@@ -12,11 +12,12 @@
 module IRB # :nodoc:
   class Context
 
+    # Size of the current WorkSpace stack
     def irb_level
       workspace_stack.size
     end
 
-    # Workspaces in the current stack
+    # WorkSpaces in the current stack
     def workspaces
       if defined? @workspaces
 	@workspaces

@@ -12,6 +12,8 @@ require "irb/workspace"
 require "irb/inspector"
 
 module IRB
+  # A class that wraps the current state of the irb session, including the
+  # configuration of IRB.conf.
   class Context
     # Creates a new IRB context.
     #
@@ -101,28 +103,49 @@ module IRB
       @debug_level = IRB.conf[:DEBUG_LEVEL]
     end
 
+    # The top-level workspace, see WorkSpace#main
     def main
       @workspace.main
     end
 
+    # The toplevel workspace, see #home_workspace
     attr_reader :workspace_home
+    # WorkSpace in the current context
     attr_accessor :workspace
+    # The current thread in this context
     attr_reader :thread
+    # The current input method
+    #
+    # Can be either StdioInputMethod, ReadlineInputMethod, FileInputMethod or
+    # other specified when the context is created. See ::new for more
+    # information on +input_method+.
     attr_accessor :io
 
+    # Current irb session
     attr_accessor :irb
+    # A copy of the default <code>IRB.conf[:AP_NAME]</code>
     attr_accessor :ap_name
+    # A copy of the default <code>IRB.conf[:RC]</code>
     attr_accessor :rc
+    # A copy of the default <code>IRB.conf[:LOAD_MODULES]</code>
     attr_accessor :load_modules
+    # Can be either name from <code>IRB.conf[:IRB_NAME]</code>, or the number of
+    # the current job set by JobManager, such as <code>irb#2</code>
     attr_accessor :irb_name
+    # Can be either the #irb_name surrounded by parenthesis, or the
+    # +input_method+ passed to Context.new
     attr_accessor :irb_path
 
     # Whether +Readline+ is enabled or not.
     #
+    # A copy of the default <code>IRB.conf[:USE_READLINE]</code>
+    #
     # See #use_readline= for more information.
     attr_reader :use_readline
+    # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
 
+    # A copy of the default <code>IRB.conf[:PROMPT_MODE]</code>
     attr_reader :prompt_mode
     # Standard IRB prompt
     #
@@ -138,7 +161,11 @@ module IRB
     attr_accessor :prompt_c
     # See IRB@Customizing+the+IRB+Prompt for more information.
     attr_accessor :prompt_n
+    # Can be either the deafult <code>IRB.conf[:AUTO_INDENT]</code>, or the
+    # mode set by #prompt_mode=
     attr_accessor :auto_indent_mode
+    # The format of the return statement, set by #prompt_mode= using the
+    # +:RETURN+ of the +mode+ passed to set the current #prompt_mode.
     attr_accessor :return_format
 
     # Whether <code>^C</code> (+control-c+) will be ignored or not.
@@ -154,8 +181,20 @@ module IRB
     #
     # If set to +false+, <code>^D</code> will quit irb.
     attr_accessor :ignore_eof
+    # Whether to echo the return value to output or not.
+    #
+    # Uses IRB.conf[:ECHO] if available, or defaults to +true+.
+    #
+    #     puts "hello"
+    #     # hello
+    #     #=> nil
+    #     IRB.CurrentContext.echo = false
+    #     puts "omg"
+    #     # omg
     attr_accessor :echo
     # Whether verbose messages are displayed or not.
+    #
+    # A copy of the default <code>IRB.conf[:VERBOSE]</code>
     attr_accessor :verbose
     # The debug level of irb
     #
@@ -194,18 +233,26 @@ module IRB
       end
     end
 
+    # Whether #verbose? is +true+, and +input_method+ is either
+    # StdioInputMethod or ReadlineInputMethod, see #io for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
 		(defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
+    # The return value of the last statement evaluated.
     attr_reader :last_value
 
+    # Sets the return value from the last statement evaluated in this context
+    # to #last_value.
     def set_last_value(value)
       @last_value = value
       @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
     end
 
+    # Sets the +mode+ of the prompt in this context.
+    #
+    # See IRB@Customizing+the+IRB+Prompt for more information.
     def prompt_mode=(mode)
       @prompt_mode = mode
       pconf = IRB.conf[:PROMPT][mode]
@@ -221,10 +268,13 @@ module IRB
       end
     end
 
+    # Whether #inspect_mode is set or not, see #inspect_mode= for more detail.
     def inspect?
       @inspect_mode.nil? or @inspect_mode
     end
 
+    # Whether #io uses a File for the +input_method+ passed when creating the
+    # current context, see ::new
     def file_input?
       @io.class == FileInputMethod
     end
@@ -235,6 +285,8 @@ module IRB
     # +false+:: display +to_s+
     # +nil+::   inspect mode in non-math mode,
     #           non-inspect mode in math mode
+    #
+    # See IRB::INSPECTORS for more information.
     #
     # Can also be set using the +--inspect+ and +--noinspect+ command line
     # options.
@@ -311,18 +363,19 @@ module IRB
       SLex.debug_level = value
     end
 
+    # Whether or not debug mode is enabled, see #debug_level=.
     def debug?
       @debug_level > 0
     end
 
-    def evaluate(line, line_no)
+    def evaluate(line, line_no) # :nodoc:
       @line_no = line_no
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
 #      @workspace.evaluate("_ = IRB.conf[:MAIN_CONTEXT]._")
 #      @_ = @workspace.evaluate(line, irb_path, line_no)
     end
 
-    def inspect_last_value
+    def inspect_last_value # :nodoc:
       @inspect_method.inspect_value(@last_value)
     end
 
@@ -332,12 +385,12 @@ module IRB
       IRB.irb_exit(@irb, ret)
     end
 
-    NOPRINTING_IVARS = ["@last_value"]
-    NO_INSPECTING_IVARS = ["@irb", "@io"]
-    IDNAME_IVARS = ["@prompt_mode"]
+    NOPRINTING_IVARS = ["@last_value"] # :nodoc:
+    NO_INSPECTING_IVARS = ["@irb", "@io"] # :nodoc:
+    IDNAME_IVARS = ["@prompt_mode"] # :nodoc:
 
     alias __inspect__ inspect
-    def inspect
+    def inspect # :nodoc:
       array = []
       for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
 	ivar = ivar.to_s

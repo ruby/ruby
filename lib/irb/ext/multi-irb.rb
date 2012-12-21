@@ -12,44 +12,61 @@ IRB.fail CantShiftToMultiIrbMode unless defined?(Thread)
 require "thread"
 
 module IRB
-  # job management class
   class JobManager
     @RCS_ID='-$Id$-'
 
+    # Creates a new JobManager object
     def initialize
       # @jobs = [[thread, irb],...]
       @jobs = []
       @current_job = nil
     end
 
+    # The active irb session
     attr_accessor :current_job
 
+    # The total number of irb sessions, used to set +irb_name+ of the current
+    # Context.
     def n_jobs
       @jobs.size
     end
 
+    # Returns the thread for the given +key+ object, see #search for more
+    # information.
     def thread(key)
       th, = search(key)
       th
     end
 
+    # Returns the irb session for the given +key+ object, see #search for more
+    # information.
     def irb(key)
       _, irb = search(key)
       irb
     end
 
+    # Returns the top level thread.
     def main_thread
       @jobs[0][0]
     end
 
+    # Returns the top level irb session.
     def main_irb
       @jobs[0][1]
     end
 
+    # Add the given +irb+ session to the jobs Array.
     def insert(irb)
       @jobs.push [Thread.current, irb]
     end
 
+    # Changes the current active irb session to the given +key+ in the jobs
+    # Array.
+    #
+    # Raises an IrbAlreadyDead exception if the given +key+ is no longer alive.
+    #
+    # If the given irb session is already active, an IrbSwitchedToCurrentThread
+    # exception is raised.
     def switch(key)
       th, irb = search(key)
       IRB.fail IrbAlreadyDead unless th.alive?
@@ -60,6 +77,12 @@ module IRB
       @current_job = irb(Thread.current)
     end
 
+    # Terminates the irb sessions specified by the given +keys+.
+    #
+    # Raises an IrbAlreadyDead exception if one of the given +keys+ is already
+    # terminated.
+    #
+    # See Thread#exit for more information.
     def kill(*keys)
       for key in keys
 	th, _ = search(key)
@@ -68,6 +91,20 @@ module IRB
       end
     end
 
+    # Returns the associated job for the given +key+.
+    #
+    # If given an Integer, it will return the +key+ index for the jobs Array.
+    #
+    # When an instance of Irb is given, it will return the irb session
+    # associated with +key+.
+    #
+    # If given an instance of Thread, it will return the associated thread
+    # +key+ using Object#=== on the jobs Array.
+    #
+    # Otherwise returns the irb session with the same top-level binding as the
+    # given +key+.
+    #
+    # Raises a NoSuchJob exception if no job can be found with the given +key+.
     def search(key)
       job = case key
       when Integer
@@ -83,6 +120,7 @@ module IRB
       job
     end
 
+    # Deletes the job at the given +key+.
     def delete(key)
       case key
       when Integer
@@ -106,6 +144,7 @@ module IRB
       @jobs.push assoc
     end
 
+    # Outputs a list of jobs, see the irb command +irb_jobs+, or +jobs+.
     def inspect
       ary = []
       @jobs.each_index do
@@ -135,10 +174,12 @@ module IRB
 
   @JobManager = JobManager.new
 
+  # The current JobManager in the session
   def IRB.JobManager
     @JobManager
   end
 
+  # The current Context in this session
   def IRB.CurrentContext
     IRB.JobManager.irb(Thread.current).context
   end

@@ -12,6 +12,7 @@
 module IRB # :nodoc:
   class Context
 
+    # Inherited from +TOPLEVEL_BINDING+.
     def home_workspace
       if defined? @home_workspace
 	@home_workspace

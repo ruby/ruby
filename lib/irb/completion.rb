@@ -9,10 +9,12 @@
 require "readline"
 
 module IRB
-  module InputCompletor
+  module InputCompletor # :nodoc:
 
     @RCS_ID='-$Id$-'
 
+    # Set of reserved words used by Ruby, you should not use these for
+    # constants or variables
     ReservedWords = [
       "BEGIN", "END",
       "alias", "and",
@@ -208,6 +210,7 @@ module IRB
       end
     }
 
+    # Set of available operators in Ruby
     Operators = ["%", "&", "*", "**", "+",  "-",  "/",
       "<", "<<", "<=", "<=>", "==", "===", "=~", ">", ">=", ">>",
       "[]", "[]=", "^", "!", "!=", "!~"]
