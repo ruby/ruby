@@ -11,9 +11,8 @@
 
 **********************************************************************/
 <%
-predefined_ids = nil
 defs = File.join(File.dirname(erb.filename), "../defs/id.def")
-eval(File.read(defs), binding, defs)
+ids = eval(File.read(defs), binding, defs)
 %>
 static void
 Init_id(void)
@@ -22,7 +21,7 @@ Init_id(void)
 #define rb_intern(str) rb_intern_const(str)
     rb_encoding *enc = rb_usascii_encoding();
 
-% predefined_ids.each_pair do |token, name|
+% ids[:predefined].each do |token, name|
     REGISTER_SYMID(id<%=token%>, "<%=name%>");
 % end
 }

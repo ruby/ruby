@@ -21,10 +21,9 @@ token_op_ids = %w[
   tCOLON2 tCOLON3
 ]
 
-preserved_ids = nil
-attr_ids = nil
 defs = File.join(File.dirname(erb.filename), "../defs/id.def")
-eval(File.read(defs), binding, defs)
+ids = eval(File.read(defs), binding, defs)
+types = ids.keys.grep(/^[A-Z]/)
 %>
 #ifndef RUBY_ID_H
 #define RUBY_ID_H
@@ -75,16 +74,20 @@ enum ruby_method_ids {
     idAREF = RUBY_TOKEN(AREF),
     idASET = RUBY_TOKEN(ASET),
     tPRESERVED_ID_BEGIN = <%=op_id_offset + token_op_ids.size - 1%>,
-% preserved_ids.each do |token|
+% ids[:preserved].each do |token|
     id<%=token%>,
 % end
     tPRESERVED_ID_END,
-% attr_ids.each do |token|
+% ids.values_at(*types).flatten.each do |token|
     t<%=token%>,
 % end
-#define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
-% attr_ids.each do |token|
-    TOKEN2ID(<%=token%>),
+% types.each do |type|
+%   types = ids[type] or next
+%   types.empty? and next
+#define TOKEN2<%=type%>ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_<%=type%>)
+%   types.each do |token|
+    TOKEN2<%=type%>ID(<%=token%>),
+%   end
 % end
     tLAST_OP_ID = tPRESERVED_ID_END-1,
     idLAST_OP_ID = tLAST_OP_ID >> ID_SCOPE_SHIFT
