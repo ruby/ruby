@@ -15,6 +15,7 @@ Fri Dec 21 17:48:15 2012  Koichi Sasada  <ko1@atdot.net>
 	    }
 	  I believe nobody mix threads at trace procedure.
 	  This is current limitation.
+	  [Bug #7590]
 
 	* cont.c (fiber_switch, rb_cont_call): use rb_thread_t::trace_arg
 	  instead of rb_thread_t::trace_running.
