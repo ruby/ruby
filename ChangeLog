@@ -1,3 +1,16 @@
+Sun Dec 23 01:52:01 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* io.c (rb_io_lines, rb_io_bytes, rb_io_chars, rb_io_codepoints):
+	  Deprecate IO#{lines,bytes,chars,codepoints} and those of ARGF.
+	  [Feature #6670]
+
+	* ext/stringio/stringio.c (strio_lines, strio_bytes, strio_chars)
+	  (strio_codepoints): Deprecate
+	  StringIO#{lines,bytes,chars,codepoints}. [Feature #6670]
+
+	* ext/zlib/zlib.c (rb_gzreader_lines, rb_gzreader_bytes):
+	  Deprecate Zlib::GzipReader#{lines,bytes}. [Feature #6670]
+
 Sat Dec 23 01:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/optparse.rb: Documentation for OptionParser to remove 'shadowed

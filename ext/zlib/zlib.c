@@ -3880,6 +3880,20 @@ rb_gzreader_each_byte(VALUE obj)
 }
 
 /*
+ * Document-method: Zlib::GzipReader#bytes
+ *
+ *  This is a deprecated alias for <code>each_byte</code>.
+ */
+static VALUE
+rb_gzreader_bytes(VALUE obj)
+{
+    rb_warn("Zlib::GzipReader#bytes is deprecated; use #each_byte instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(obj, ID2SYM(rb_intern("each_byte")), 0, 0);
+    return rb_gzreader_each_byte(obj);
+}
+
+/*
  * Document-method: Zlib::GzipReader#ungetc
  *
  * See Zlib::GzipReader documentation for a description.
@@ -4143,6 +4157,20 @@ rb_gzreader_each(int argc, VALUE *argv, VALUE obj)
 	rb_yield(str);
     }
     return obj;
+}
+
+/*
+ * Document-method: Zlib::GzipReader#lines
+ *
+ *  This is a deprecated alias for <code>each_line</code>.
+ */
+static VALUE
+rb_gzreader_lines(int argc, VALUE *argv, VALUE obj)
+{
+    rb_warn("Zlib::GzipReader#lines is deprecated; use #each_line instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(obj, ID2SYM(rb_intern("each_line")), argc, argv);
+    return rb_gzreader_each_line(argc, argv, obj);
 }
 
 /*
@@ -4420,14 +4448,14 @@ Init_zlib()
     rb_define_method(cGzipReader, "readbyte", rb_gzreader_readbyte, 0);
     rb_define_method(cGzipReader, "each_byte", rb_gzreader_each_byte, 0);
     rb_define_method(cGzipReader, "each_char", rb_gzreader_each_char, 0);
-    rb_define_method(cGzipReader, "bytes", rb_gzreader_each_byte, 0);
+    rb_define_method(cGzipReader, "bytes", rb_gzreader_bytes, 0);
     rb_define_method(cGzipReader, "ungetc", rb_gzreader_ungetc, 1);
     rb_define_method(cGzipReader, "ungetbyte", rb_gzreader_ungetbyte, 1);
     rb_define_method(cGzipReader, "gets", rb_gzreader_gets, -1);
     rb_define_method(cGzipReader, "readline", rb_gzreader_readline, -1);
     rb_define_method(cGzipReader, "each", rb_gzreader_each, -1);
     rb_define_method(cGzipReader, "each_line", rb_gzreader_each, -1);
-    rb_define_method(cGzipReader, "lines", rb_gzreader_each, -1);
+    rb_define_method(cGzipReader, "lines", rb_gzreader_lines, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
 
     /* The OS code of current host */

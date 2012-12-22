@@ -630,9 +630,6 @@ strio_get_sync(VALUE self)
 
 /*
  * call-seq:
- *   strio.bytes {|byte| block }      -> strio
- *   strio.bytes                      -> anEnumerator
- *
  *   strio.each_byte {|byte| block }  -> strio
  *   strio.each_byte                  -> anEnumerator
  *
@@ -650,6 +647,18 @@ strio_each_byte(VALUE self)
 	rb_yield(CHR2FIX(c));
     }
     return self;
+}
+
+/*
+ *  This is a deprecated alias for <code>each_byte</code>.
+ */
+static VALUE
+strio_bytes(VALUE self)
+{
+    rb_warn("StringIO#bytes is deprecated; use #each_byte instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(self, ID2SYM(rb_intern("each_byte")), 0, 0);
+    return strio_each_byte(self);
 }
 
 /*
@@ -840,9 +849,6 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
- *   strio.chars {|char| block }      -> strio
- *   strio.chars                      -> anEnumerator
- *
  *   strio.each_char {|char| block }  -> strio
  *   strio.each_char                  -> anEnumerator
  *
@@ -862,10 +868,19 @@ strio_each_char(VALUE self)
 }
 
 /*
+ *  This is a deprecated alias for <code>each_char</code>.
+ */
+static VALUE
+strio_chars(VALUE self)
+{
+    rb_warn("StringIO#chars is deprecated; use #each_char instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(self, ID2SYM(rb_intern("each_char")), 0, 0);
+    return strio_each_char(self);
+}
+
+/*
  * call-seq:
- *   strio.codepoints {|c| block }      -> strio
- *   strio.codepoints                   -> anEnumerator
- *
  *   strio.each_codepoint {|c| block }  -> strio
  *   strio.each_codepoint               -> anEnumerator
  *
@@ -894,6 +909,18 @@ strio_each_codepoint(VALUE self)
 	ptr->pos += n;
     }
     return self;
+}
+
+/*
+ *  This is a deprecated alias for <code>each_codepoint</code>.
+ */
+static VALUE
+strio_codepoints(VALUE self)
+{
+    rb_warn("StringIO#codepoints is deprecated; use #each_codepoint instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(self, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+    return strio_each_codepoint(self);
 }
 
 /* Boyer-Moore search: copied from regex.c */
@@ -1067,11 +1094,6 @@ strio_readline(int argc, VALUE *argv, VALUE self)
  *   strio.each_line(sep,limit) {|line| block } -> strio
  *   strio.each_line(...)                       -> anEnumerator
  *
- *   strio.lines(sep=$/) {|line| block }        -> strio
- *   strio.lines(limit) {|line| block }         -> strio
- *   strio.lines(sep,limit) {|line| block }     -> strio
- *   strio.lines(...)                           -> anEnumerator
- *
  * See IO#each.
  */
 static VALUE
@@ -1091,6 +1113,18 @@ strio_each(int argc, VALUE *argv, VALUE self)
 	rb_yield(line);
     }
     return self;
+}
+
+/*
+ *  This is a deprecated alias for <code>each_line</code>.
+ */
+static VALUE
+strio_lines(int argc, VALUE *argv, VALUE self)
+{
+    rb_warn("StringIO#lines is deprecated; use #each_line instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(self, ID2SYM(rb_intern("each_line")), argc, argv);
+    return strio_each(argc, argv, self);
 }
 
 /*
@@ -1463,13 +1497,13 @@ Init_stringio()
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
-    rb_define_method(StringIO, "lines", strio_each, -1);
+    rb_define_method(StringIO, "lines", strio_lines, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
-    rb_define_method(StringIO, "bytes", strio_each_byte, 0);
+    rb_define_method(StringIO, "bytes", strio_bytes, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
-    rb_define_method(StringIO, "chars", strio_each_char, 0);
+    rb_define_method(StringIO, "chars", strio_chars, 0);
     rb_define_method(StringIO, "each_codepoint", strio_each_codepoint, 0);
-    rb_define_method(StringIO, "codepoints", strio_each_codepoint, 0);
+    rb_define_method(StringIO, "codepoints", strio_codepoints, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "ungetbyte", strio_ungetbyte, 1);

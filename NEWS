@@ -67,6 +67,10 @@ with all sufficient information, see the ChangeLog file.
     * extended method:
       * Hash#default_proc= can be passed nil to clear the default proc.
 
+  * IO
+    * deprecated methods:
+      * IO#lines, #bytes, #chars and #codepoints are deprecated.
+
   * Kernel
     * added method:
       * added Kernel#Hash conversion method like Array() or Float().
@@ -335,6 +339,10 @@ with all sufficient information, see the ChangeLog file.
     * Shellwords#shelljoin() accepts non-string objects in the given
       array, each of which is stringified using to_s.
 
+* stringio
+  * deprecated methods:
+    * StringIO#lines, #bytes, #chars and #codepoints are deprecated.
+
 * syslog
   * Added Syslog::Logger which provides a Logger API atop Syslog.
   * Syslog::Priority, Syslog::Level, Syslog::Option and Syslog::Macros
@@ -358,6 +366,8 @@ with all sufficient information, see the ChangeLog file.
   * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
   * Zlib streams are now processed without the GVL.  This allows gzip, zlib and
     deflate streams to be processed in parallel.
+  * deprecated methods:
+    * Zlib::GzipReader#lines and #bytes are deprecated.
 
 === Language changes
 
@@ -382,6 +392,24 @@ with all sufficient information, see the ChangeLog file.
     Code like str.lines.with_index(1) { |line, lineno| ... } no longer
     works because str.lines returns an array.  Replace lines with
     each_line in such cases.
+
+  * IO#lines
+  * IO#chars
+  * IO#codepoints
+  * IO#bytes
+  * ARGF#lines
+  * ARGF#chars
+  * ARGF#codepoints
+  * ARGF#bytes
+  * StringIO#lines
+  * StringIO#chars
+  * StringIO#codepoints
+  * StringIO#bytes
+  * Zlib::GzipReader#lines
+  * Zlib::GzipReader#bytes
+
+    These methods are deprecated in favor of each_line, each_byte,
+    each_char and each_codepoint.
 
   * Signal.trap
 
