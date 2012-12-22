@@ -246,8 +246,9 @@ class TestModule < Test::Unit::TestCase
       ":Object",
       "",
       ":",
-    ].each do |name|
-      e = assert_raises(NameError) {
+      ["String::", "[Bug #7573]"],
+    ].each do |name, msg|
+      e = assert_raises(NameError, "#{msg}#{': ' if msg}wrong constant name #{name.dump}") {
         Object.const_get name
       }
       assert_equal("wrong constant name %s" % name, e.message)

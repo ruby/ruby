@@ -1959,7 +1959,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	rb_raise(rb_eNameError, "wrong constant name %s", path);
     }
 
-    if (p[0] == ':' && p[1] == ':') {
+    if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
 	mod = rb_cObject;
 	p += 2;
 	pbeg = p;
@@ -1981,8 +1981,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	else {
 	    part = rb_str_subseq(name, pbeg-path, p-pbeg);
 	}
-	if (p[0] == ':') {
-	    if (p[1] != ':') {
+	if (p < pend && p[0] == ':') {
+	    if (p + 2 >= pend || p[1] != ':') {
 		rb_raise(rb_eNameError, "wrong constant name %s", path);
             }
 	    p += 2;

@@ -1,3 +1,8 @@
+Sat Dec 22 19:26:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): check more strictly.  [ruby-dev:46748]
+	  [Bug #7573]
+
 Wed Dec 19 02:34:48 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* cont.c (rb_fiber_start): in case of jump with TAG_FATAL,
