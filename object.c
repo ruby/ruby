@@ -1860,34 +1860,6 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     return Qnil;
 }
 
-static VALUE
-rb_mod_single_const_get(VALUE mod, VALUE name, VALUE recur)
-{
-    ID id;
-
-    id = rb_check_id(&name);
-    if (!id) {
-	if (!rb_is_const_name(name)) {
-	    rb_name_error_str(name, "wrong constant name %s", RSTRING_PTR(name));
-	}
-	else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
-	    id = rb_to_id(name);
-	}
-	else if (mod && rb_class_real(mod) != rb_cObject) {
-	    rb_name_error_str(name, "uninitialized constant %s::%s",
-			      rb_class2name(mod),
-			      RSTRING_PTR(name));
-	}
-	else {
-	    rb_name_error_str(name, "uninitialized constant %s", RSTRING_PTR(name));
-	}
-    }
-    if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
-    }
-    return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
-}
-
 /*
  *  call-seq:
  *     mod.const_get(sym, inherit=true)    -> obj
@@ -1955,7 +1927,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     pbeg = p = path;
     pend = path + RSTRING_LEN(name);
 
-    if (!*p) {
+    if (p >= pend || !*p) {
+      wrong_name:
 	rb_raise(rb_eNameError, "wrong constant name %s", path);
     }
 
@@ -1967,24 +1940,16 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
 	VALUE part;
+	long len;
 
 	while (p < pend && *p != ':') p++;
 
-	if (pbeg == p) {
-	    rb_raise(rb_eNameError, "wrong constant name %s", path);
-	}
+	if (pbeg == p) goto wrong_name;
 
-	id = rb_check_id_cstr(pbeg, p-pbeg, enc);
-	if (id) {
-	    part = ID2SYM(id);
-	}
-	else {
-	    part = rb_str_subseq(name, pbeg-path, p-pbeg);
-	}
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+
 	if (p < pend && p[0] == ':') {
-	    if (p + 2 >= pend || p[1] != ':') {
-		rb_raise(rb_eNameError, "wrong constant name %s", path);
-            }
+	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
 	    p += 2;
 	    pbeg = p;
 	}
@@ -1993,7 +1958,25 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
 	}
 
-        mod = rb_mod_single_const_get(mod, part, recur);
+	if (!id) {
+	    if (!ISUPPER(*pbeg) || !rb_enc_symname2_p(pbeg, len, enc)) {
+		part = rb_str_subseq(name, pbeg-path, len);
+		rb_name_error_str(part, "wrong constant name %s", RSTRING_PTR(part));
+	    }
+	    else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
+		id = rb_intern3(pbeg, len, enc);
+	    }
+	    else {
+		part = rb_str_subseq(name, pbeg-path, len);
+		rb_name_error_str(part, "uninitialized constant %.*s%s",
+				  rb_long2int(pbeg-path), path,
+				  RSTRING_PTR(part));
+	    }
+	}
+	if (!rb_is_const_id(id)) {
+	    rb_name_error(id, "wrong constant name %s", rb_id2name(id));
+	}
+	mod = RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
 
     return mod;
