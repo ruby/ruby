@@ -3201,18 +3201,6 @@ rb_big_pow(VALUE x, VALUE y)
     return DBL2NUM(pow(rb_big2dbl(x), d));
 }
 
-static inline VALUE
-bit_coerce(VALUE x)
-{
-    while (!FIXNUM_P(x) && !RB_TYPE_P(x, T_BIGNUM)) {
-	rb_raise(rb_eTypeError,
-		 "can't convert %s into Integer for bitwise arithmetic",
-		 rb_obj_classname(x));
-	x = rb_to_int(x);
-    }
-    return x;
-}
-
 static VALUE
 bigand_int(VALUE x, long y)
 {
@@ -3272,8 +3260,13 @@ rb_big_and(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '&');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
+
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);
 	get2comp(x);
@@ -3363,8 +3356,12 @@ rb_big_or(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '|');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
 
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);
@@ -3455,8 +3452,12 @@ rb_big_xor(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '^');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
 
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);

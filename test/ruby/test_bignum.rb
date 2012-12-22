@@ -654,4 +654,40 @@ class TestBignum < Test::Unit::TestCase
   def test_frozen
     assert_equal(true, (2**100).frozen?)
   end
+
+  def test_bitwise_and_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { T1024 & obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(T1024 & 10, T1024 & obj)
+  end
+
+  def test_bitwise_or_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { T1024 | obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(T1024 | 10, T1024 | obj)
+  end
+
+  def test_bitwise_xor_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { T1024 ^ obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(T1024 ^ 10, T1024 ^ obj)
+  end
 end
