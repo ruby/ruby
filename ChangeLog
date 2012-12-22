@@ -1,3 +1,9 @@
+Sat Dec 22 21:47:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_wait_writable): use rb_thread_check_ints() instead
+	  of rb_thread_fd_writable().
+	* io.c (rb_io_wait_readable): ditto.
+
 Sat Dec 22 20:31:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_get): symbol cannot be nested constant name.
