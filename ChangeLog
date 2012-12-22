@@ -1,3 +1,10 @@
+Sat Dec 23 01:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/optparse.rb: Documentation for OptionParser to remove 'shadowed
+	  outer local variable' from example and make obvious ARGV with
+	  non-option arguments.
+	  Patch by Marcus Stollsteimer [ruby-core:47460] [Bug #6997]
+
 Sat Dec 23 00:08:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* include/ruby/intern.h: add the prototype declaration of
