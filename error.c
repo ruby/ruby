@@ -73,36 +73,23 @@ err_position_0(char *buf, long len, const char *file, int line)
     }
 }
 
-static int
-err_position(char *buf, long len)
+static VALUE
+compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
 {
-    return err_position_0(buf, len, rb_sourcefile(), rb_sourceline());
-}
+    VALUE str = rb_enc_str_new(0, 0, enc);
 
-static void
-err_snprintf(char *buf, long len, const char *fmt, va_list args)
-{
-    long n;
-
-    n = err_position(buf, len);
-    if (len > n) {
-	vsnprintf((char*)buf+n, len-n, fmt, args);
+    if (file) {
+	rb_str_cat2(str, file);
+	if (line) rb_str_catf(str, ":%d", line);
+	rb_str_cat2(str, ": ");
     }
+    if (pre) rb_str_cat2(str, pre);
+    rb_str_vcatf(str, fmt, args);
+    return str;
 }
 
 static void
-compile_snprintf(char *buf, long len, const char *file, int line, const char *fmt, va_list args)
-{
-    long n;
-
-    n = err_position_0(buf, len, file, line);
-    if (len > n) {
-	vsnprintf((char*)buf+n, len-n, fmt, args);
-    }
-}
-
-static void
-compile_err_append(const char *s, rb_encoding *enc)
+compile_err_append(VALUE mesg)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE err = th->errinfo;
@@ -112,26 +99,23 @@ compile_err_append(const char *s, rb_encoding *enc)
     /* after this line, any Ruby code *can* run */
 
     if (th->mild_compile_error) {
-	if (!RTEST(err)) {
-	    err = rb_exc_new3(rb_eSyntaxError,
-			      rb_enc_str_new(s, strlen(s), enc));
-	    th->errinfo = err;
-	}
-	else {
+	if (RTEST(err)) {
 	    VALUE str = rb_obj_as_string(err);
 
 	    rb_str_cat2(str, "\n");
-	    rb_str_cat2(str, s);
-	    th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	    rb_str_append(str, mesg);
+	    mesg = str;
 	}
+	err = rb_exc_new3(rb_eSyntaxError, mesg);
+	th->errinfo = err;
     }
     else {
 	if (!RTEST(err)) {
 	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
 	    th->errinfo = err;
 	}
-	rb_write_error(s);
-	rb_write_error("\n");
+	rb_str_cat2(mesg, "\n");
+	rb_io_write(rb_stderr, mesg);
     }
 
     /* returned to the parser world */
@@ -142,62 +126,57 @@ void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE str;
 
     va_start(args, fmt);
-    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
+    str = compile_snprintf(enc, NULL, file, line, fmt, args);
     va_end(args);
-    compile_err_append(buf, (rb_encoding *)enc);
+    compile_err_append(str);
 }
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE str;
 
     va_start(args, fmt);
-    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
+    str = compile_snprintf(NULL, NULL, file, line, fmt, args);
     va_end(args);
-    compile_err_append(buf, NULL);
+    compile_err_append(str);
 }
 
 void
 rb_compile_error_append(const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE str;
 
     va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    str = rb_sprintf(fmt, args);
     va_end(args);
-    compile_err_append(buf, NULL);
+    compile_err_append(str);
 }
 
 static void
 compile_warn_print(const char *file, int line, const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
-    int len;
+    VALUE str;
 
-    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
-    len = (int)strlen(buf);
-    buf[len++] = '\n';
-    rb_write_error2(buf, len);
+    str = compile_snprintf(NULL, "warning: ", file, line, fmt, args);
+    rb_str_cat2(str, "\n");
+    rb_io_write(rb_stderr, str);
 }
 
 void
 rb_compile_warn(const char *file, int line, const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    compile_warn_print(file, line, buf, args);
+    compile_warn_print(file, line, fmt, args);
     va_end(args);
 }
 
@@ -205,42 +184,43 @@ rb_compile_warn(const char *file, int line, const char *fmt, ...)
 void
 rb_compile_warning(const char *file, int line, const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    compile_warn_print(file, line, buf, args);
+    compile_warn_print(file, line, fmt, args);
     va_end(args);
 }
 
 static void
 warn_print(const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
-    int len;
+    VALUE str = rb_str_new(0, 0);
+    VALUE file = rb_sourcefilename();
 
-    err_snprintf(buf, BUFSIZ, fmt, args);
-    len = (int)strlen(buf);
-    buf[len++] = '\n';
-    rb_write_error2(buf, len);
+    if (!NIL_P(file)) {
+	int line = rb_sourceline();
+	str = rb_str_append(str, file);
+	if (line) rb_str_catf(str, ":%d", line);
+	rb_str_cat2(str, ": ");
+    }
+
+    rb_str_cat2(str, "warning: ");
+    rb_str_vcatf(str, fmt, args);
+    rb_str_cat2(str, "\n");
+    rb_io_write(rb_stderr, str);
 }
 
 void
 rb_warn(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    warn_print(buf, args);
+    warn_print(fmt, args);
     va_end(args);
 }
 
@@ -248,15 +228,12 @@ rb_warn(const char *fmt, ...)
 void
 rb_warning(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    warn_print(buf, args);
+    warn_print(fmt, args);
     va_end(args);
 }
 

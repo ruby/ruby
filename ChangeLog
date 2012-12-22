@@ -1,3 +1,8 @@
+Sat Dec 22 23:59:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_compile_error, rb_compile_warn, rb_compile_warning),
+	  (rb_warn, rb_warning): support PRIsVALUE.
+
 Sat Dec 22 22:04:58 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* cont.c (rb_fiber_start): unify conditions.
