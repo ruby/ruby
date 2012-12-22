@@ -271,9 +271,10 @@ class TestModule < Test::Unit::TestCase
 
   def test_nested_get_symbol
     const = [self.class, Other].join('::').to_sym
+    assert_raise(NameError) {Object.const_get(const)}
 
-    assert_equal Other, Object.const_get(const)
-    assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+    const = [User, 'USER'].join('::').to_sym
+    assert_raise(NameError) {self.class.const_get(const)}
   end
 
   def test_nested_get_const_missing

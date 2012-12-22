@@ -1,3 +1,7 @@
+Sat Dec 22 20:31:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): symbol cannot be nested constant name.
+
 Sat Dec 22 19:26:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_get): check more strictly.  [ruby-dev:46748]

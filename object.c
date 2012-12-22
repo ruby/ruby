@@ -1901,6 +1901,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     rb_encoding *enc;
     const char *pbeg, *p, *path, *pend;
     ID id;
+    int nestable = 1;
 
     if (argc == 1) {
 	name = argv[0];
@@ -1912,6 +1913,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     if (SYMBOL_P(name)) {
 	name = rb_sym_to_s(name);
+	nestable = 0;
     }
 
     name = rb_check_string_type(name);
@@ -1933,6 +1935,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
+	if (!nestable) goto wrong_name;
 	mod = rb_cObject;
 	p += 2;
 	pbeg = p;
@@ -1949,6 +1952,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
 
 	if (p < pend && p[0] == ':') {
+	    if (!nestable) goto wrong_name;
 	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
 	    p += 2;
 	    pbeg = p;
