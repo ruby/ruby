@@ -1,3 +1,10 @@
+Sat Dec 22 11:30:21 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* struct.c (make_struct): remove junk ID check to allow members who
+	  have junk name like "foo\000".
+	* test/ruby/test_struct.rb: Test for above.
+	  [Bug #7575] [ruby-dev:46750]
+
 Sat Dec 22 05:34:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Requests may be created with a URI which sets the

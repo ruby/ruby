@@ -207,15 +207,13 @@ make_struct(VALUE name, VALUE members, VALUE klass)
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
 	ID id = SYM2ID(ptr_members[i]);
-	if (rb_is_local_id(id) || rb_is_const_id(id)) {
-	    if (i < N_REF_FUNC) {
-		rb_define_method_id(nstr, id, ref_func[i], 0);
-	    }
-	    else {
-		rb_define_method_id(nstr, id, rb_struct_ref, 0);
-	    }
-	    rb_define_method_id(nstr, rb_id_attrset(id), rb_struct_set, 1);
+	if (i < N_REF_FUNC) {
+	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
+	else {
+	    rb_define_method_id(nstr, id, rb_struct_ref, 0);
+	}
+	rb_define_method_id(nstr, rb_id_attrset(id), rb_struct_set, 1);
     }
 
     return nstr;
