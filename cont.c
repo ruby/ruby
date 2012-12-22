@@ -1161,10 +1161,7 @@ rb_fiber_start(void)
     TH_POP_TAG();
 
     if (state) {
-	if (state == TAG_RAISE) {
-	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
-	}
-	else if (state == TAG_FATAL) {
+	if (state == TAG_RAISE || state == TAG_FATAL) {
 	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
 	}
 	else {
