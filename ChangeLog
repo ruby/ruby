@@ -1,3 +1,12 @@
+Sat Dec 22 13:15:08 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* gc.c (obj_id_to_ref): add a macro to treat Bignum object id.
+	  This follows the change r38493.
+
+	* gc.c (id2ref): fix for working fine with Bignum object id on x64
+	  Windows.
+	* gc.c (wmap_finalize): ditto.
+
 Sat Dec 22 11:30:21 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* struct.c (make_struct): remove junk ID check to allow members who
