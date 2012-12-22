@@ -335,23 +335,26 @@ rb_path_to_class(VALUE pathname)
     }
     pbeg = p = path;
     if (path[0] == '#') {
-	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
+	rb_raise(rb_eArgError, "can't retrieve anonymous class %"PRIsVALUE,
+		 QUOTE(pathname));
     }
     while (*p) {
 	while (*p && *p != ':') p++;
-	id = rb_intern3(pbeg, p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, p-pbeg, enc);
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
 	    p += 2;
 	    pbeg = p;
 	}
-	if (!rb_const_defined_at(c, id)) {
+	if (!id || !rb_const_defined_at(c, id)) {
 	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
+	    rb_raise(rb_eArgError, "undefined class/module %.*"PRIsVALUE,
+		     (int)(p-path), pathname);
 	}
 	c = rb_const_get_at(c, id);
 	if (!RB_TYPE_P(c, T_MODULE) && !RB_TYPE_P(c, T_CLASS)) {
-	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+		     pathname);
 	}
     }
     RB_GC_GUARD(pathname);
@@ -459,7 +462,7 @@ rb_global_entry(ID id)
 VALUE
 undef_getter(ID id, void *data, struct global_variable *var)
 {
-    rb_warning("global variable `%s' not initialized", rb_id2name(id));
+    rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
     return Qnil;
 }
@@ -521,7 +524,7 @@ var_marker(VALUE *var)
 void
 readonly_setter(VALUE val, ID id, void *data, struct global_variable *gvar)
 {
-    rb_name_error(id, "%s is a read-only variable", rb_id2name(id));
+    rb_name_error(id, "%"PRIsVALUE" is a read-only variable", QUOTE_ID(id));
 }
 
 static int
@@ -707,10 +710,10 @@ rb_f_untrace_var(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_check_id(&var);
     if (!id) {
-	rb_name_error_str(var, "undefined global variable %s", RSTRING_PTR(var));
+	rb_name_error_str(var, "undefined global variable %"PRIsVALUE"", QUOTE(var));
     }
     if (!st_lookup(rb_global_tbl, (st_data_t)id, &data)) {
-	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
+	rb_name_error(id, "undefined global variable %"PRIsVALUE"", QUOTE_ID(id));
     }
 
     trace = (entry = (struct global_entry *)data)->var->trace;
@@ -916,7 +919,7 @@ generic_ivar_get(VALUE obj, ID id, int warn)
 	}
     }
     if (warn) {
-	rb_warning("instance variable %s not initialized", rb_id2name(id));
+	rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
     }
     return Qnil;
 }
@@ -1099,7 +1102,7 @@ ivar_get(VALUE obj, ID id, int warn)
 	break;
     }
     if (warn) {
-	rb_warning("instance variable %s not initialized", rb_id2name(id));
+	rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
     }
     return Qnil;
 }
@@ -1402,14 +1405,17 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     rb_check_frozen(obj);
     if (!id) {
 	if (rb_is_instance_name(name)) {
-	    rb_name_error_str(name, "instance variable %s not defined", RSTRING_PTR(name));
+	    rb_name_error_str(name, "instance variable %"PRIsVALUE" not defined",
+			      name);
 	}
 	else {
-	    rb_name_error_str(name, "`%s' is not allowed as an instance variable name", RSTRING_PTR(name));
+	    rb_name_error_str(name, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+			      QUOTE(name));
 	}
     }
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
 
     if (SPECIAL_CONST_P(obj)) goto generic;
@@ -1442,7 +1448,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	}
 	break;
     }
-    rb_name_error(id, "instance variable %s not defined", rb_id2name(id));
+    rb_name_error(id, "instance variable %"PRIsVALUE" not defined", QUOTE_ID(id));
 
     UNREACHABLE;
 }
@@ -1452,11 +1458,11 @@ static void
 uninitialized_constant(VALUE klass, ID id)
 {
     if (klass && rb_class_real(klass) != rb_cObject)
-	rb_name_error(id, "uninitialized constant %s::%s",
-		      rb_class2name(klass),
-		      rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %"PRIsVALUE"::%"PRIsVALUE"",
+		      rb_class_name(klass),
+		      QUOTE_ID(id));
     else {
-	rb_name_error(id, "uninitialized constant %s", rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %"PRIsVALUE"", QUOTE_ID(id));
     }
 }
 
@@ -1598,7 +1604,8 @@ rb_autoload(VALUE mod, ID id, const char *file)
     struct autoload_data_i *ele;
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "autoload must be constant name: %s", rb_id2name(id));
+	rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"",
+		 QUOTE_ID(id));
     }
     if (!file || !*file) {
 	rb_raise(rb_eArgError, "empty file name");
@@ -1823,7 +1830,8 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	while (RCLASS_CONST_TBL(tmp) && st_lookup(RCLASS_CONST_TBL(tmp), (st_data_t)id, &data)) {
 	    rb_const_entry_t *ce = (rb_const_entry_t *)data;
 	    if (visibility && ce->flag == CONST_PRIVATE) {
-		rb_name_error(id, "private constant %s::%s referenced", rb_class2name(klass), rb_id2name(id));
+		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
+			      rb_class_name(klass), QUOTE_ID(id));
 	    }
 	    value = ce->value;
 	    if (value == Qundef) {
@@ -1834,8 +1842,8 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
-		rb_warn("toplevel constant %s referenced by %s::%s",
-			rb_id2name(id), rb_class2name(klass), rb_id2name(id));
+		rb_warn("toplevel constant %"PRIsVALUE" referenced by %"PRIsVALUE"::%"PRIsVALUE"",
+			QUOTE_ID(id), rb_class_name(klass), QUOTE_ID(id));
 	    }
 	    return value;
 	}
@@ -1906,15 +1914,17 @@ rb_mod_remove_const(VALUE mod, VALUE name)
 
     if (!id) {
 	if (rb_is_const_name(name)) {
-	    rb_name_error_str(name, "constant %s::%s not defined",
-			      rb_class2name(mod), RSTRING_PTR(name));
+	    rb_name_error_str(name, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
+			      rb_class_name(mod), name);
 	}
 	else {
-	    rb_name_error_str(name, "`%s' is not allowed as a constant name", RSTRING_PTR(name));
+	    rb_name_error_str(name, "`%"PRIsVALUE"' is not allowed as a constant name",
+			      QUOTE_ID(name));
 	}
     }
     if (!rb_is_const_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a constant name",
+		      QUOTE_ID(id));
     }
     return rb_const_remove(mod, id);
 }
@@ -1930,11 +1940,11 @@ rb_const_remove(VALUE mod, ID id)
     rb_check_frozen(mod);
     if (!RCLASS_CONST_TBL(mod) || !st_delete(RCLASS_CONST_TBL(mod), &n, &v)) {
 	if (rb_const_defined_at(mod, id)) {
-	    rb_name_error(id, "cannot remove %s::%s",
-			  rb_class2name(mod), rb_id2name(id));
+	    rb_name_error(id, "cannot remove %"PRIsVALUE"::%"PRIsVALUE"",
+			  rb_class_name(mod), QUOTE_ID(id));
 	}
-	rb_name_error(id, "constant %s::%s not defined",
-		      rb_class2name(mod), rb_id2name(id));
+	rb_name_error(id, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
+		      rb_class_name(mod), QUOTE_ID(id));
     }
 
     rb_vm_change_state();
@@ -2129,8 +2139,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     VALUE visibility = CONST_PUBLIC;
 
     if (NIL_P(klass)) {
-	rb_raise(rb_eTypeError, "no class/module to define constant %s",
-		 rb_id2name(id));
+	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
+		 QUOTE_ID(id));
     }
 
     check_before_mod_set(klass, id, val, "constant");
@@ -2157,16 +2167,16 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		autoload_delete(klass, id);
 	    }
 	    else {
-		const char *name = rb_id2name(id);
+		VALUE name = QUOTE_ID(id);
 		visibility = ce->flag;
 		if (klass == rb_cObject)
-		    rb_warn("already initialized constant %s", name);
+		    rb_warn("already initialized constant %"PRIsVALUE"", name);
 		else
-		    rb_warn("already initialized constant %s::%s",
-			    rb_class2name(klass), name);
+		    rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
+			    rb_class_name(klass), name);
 		if (!NIL_P(ce->file) && ce->line) {
 		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
-				    "previous definition of %s was here", name);
+				    "previous definition of %"PRIsVALUE" was here", name);
 		}
 	    }
 	}
@@ -2216,25 +2226,28 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     }
 
     if (argc == 0) {
-	rb_warning("%s with no argument is just ignored", rb_id2name(rb_frame_callee()));
+	rb_warning("%"PRIsVALUE" with no argument is just ignored",
+		   QUOTE_ID(rb_frame_callee()));
     }
 
     for (i = 0; i < argc; i++) {
 	VALUE val = argv[i];
 	id = rb_check_id(&val);
 	if (!id) {
-	    if ( i > 0 )
+	    if (i > 0)
 		rb_clear_cache_by_class(mod);
-	    rb_name_error_str(val, "constant %s::%s not defined", rb_class2name(mod), RSTRING_PTR(val));
+	    rb_name_error_str(val, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
+			      rb_class_name(mod), QUOTE(val));
 	}
 	if (RCLASS_CONST_TBL(mod) &&
 	    st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
 	    ((rb_const_entry_t*)v)->flag = flag;
 	}
 	else {
-	    if ( i > 0 )
+	    if (i > 0)
 		rb_clear_cache_by_class(mod);
-	    rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
+	    rb_name_error(id, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
+			  rb_class_name(mod), QUOTE_ID(id));
 	}
     }
     rb_clear_cache_by_class(mod);
@@ -2319,9 +2332,9 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	    st_data_t did = id;
 
 	    if (RTEST(ruby_verbose)) {
-		rb_warning("class variable %s of %s is overtaken by %s",
-			   rb_id2name(id), rb_class2name(original_module(front)),
-			   rb_class2name(original_module(target)));
+		rb_warning("class variable %"PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
+			   QUOTE_ID(id), rb_class_name(original_module(front)),
+			   rb_class_name(original_module(target)));
 	    }
 	    if (BUILTIN_TYPE(front) == T_CLASS) {
 		st_delete(RCLASS_IV_TBL(front),&did,0);
@@ -2349,16 +2362,16 @@ rb_cvar_get(VALUE klass, ID id)
     tmp = klass;
     CVAR_LOOKUP(&value, {if (!front) front = klass; target = klass;});
     if (!target) {
-	rb_name_error(id,"uninitialized class variable %s in %s",
-		      rb_id2name(id), rb_class2name(tmp));
+	rb_name_error(id, "uninitialized class variable %"PRIsVALUE" in %"PRIsVALUE"",
+		      QUOTE_ID(id), rb_class_name(tmp));
     }
     if (front && target != front) {
 	st_data_t did = id;
 
 	if (RTEST(ruby_verbose)) {
-	    rb_warning("class variable %s of %s is overtaken by %s",
-		       rb_id2name(id), rb_class2name(original_module(front)),
-		       rb_class2name(original_module(target)));
+	    rb_warning("class variable %"PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
+		       QUOTE_ID(id), rb_class_name(original_module(front)),
+		       rb_class_name(original_module(target)));
 	}
 	if (BUILTIN_TYPE(front) == T_CLASS) {
 	    st_delete(RCLASS_IV_TBL(front),&did,0);
@@ -2535,15 +2548,15 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
 
     if (!id) {
 	if (rb_is_class_name(name)) {
-	    rb_name_error_str(name, "class variable %s not defined for %s",
-			      RSTRING_PTR(name), rb_class2name(mod));
+	    rb_name_error_str(name, "class variable %"PRIsVALUE" not defined for %"PRIsVALUE"",
+			      name, rb_class_name(mod));
 	}
 	else {
-	    rb_name_error_str(name, "wrong class variable name %s", RSTRING_PTR(name));
+	    rb_name_error_str(name, "wrong class variable name %"PRIsVALUE"", QUOTE(name));
 	}
     }
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
+	rb_name_error(id, "wrong class variable name %"PRIsVALUE"", QUOTE_ID(id));
     }
     if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
@@ -2552,11 +2565,11 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
 	return (VALUE)val;
     }
     if (rb_cvar_defined(mod, id)) {
-	rb_name_error(id, "cannot remove %s for %s",
-		 rb_id2name(id), rb_class2name(mod));
+	rb_name_error(id, "cannot remove %"PRIsVALUE" for %"PRIsVALUE"",
+		 QUOTE_ID(id), rb_class_name(mod));
     }
-    rb_name_error(id, "class variable %s not defined for %s",
-		  rb_id2name(id), rb_class2name(mod));
+    rb_name_error(id, "class variable %"PRIsVALUE" not defined for %"PRIsVALUE"",
+		  QUOTE_ID(id), rb_class_name(mod));
 
     UNREACHABLE;
 }

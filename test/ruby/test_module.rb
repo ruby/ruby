@@ -588,7 +588,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_get(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_get(1) }
-    assert_raise(NameError) { Object.const_get("String\0") }
+    bug7574 = '[ruby-dev:46749]'
+    e = assert_raise(NameError) { Object.const_get("String\0") }
+    assert_equal("wrong constant name \"String\\0\"", e.message, bug7574)
   end
 
   def test_const_defined_invalid_name
@@ -596,7 +598,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_defined?(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
-    assert_raise(NameError) { Object.const_defined?("String\0") }
+    bug7574 = '[ruby-dev:46749]'
+    e = assert_raise(NameError) { Object.const_defined?("String\0") }
+    assert_equal("wrong constant name \"String\\0\"", e.message, bug7574)
   end
 
   def test_const_get_no_inherited

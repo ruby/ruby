@@ -865,8 +865,8 @@ rb_undef(VALUE klass, ID id)
 	else if (RB_TYPE_P(c, T_MODULE)) {
 	    s0 = " module";
 	}
-	rb_name_error(id, "undefined method `%s' for%s `%s'",
-		      rb_id2name(id), s0, rb_class2name(c));
+	rb_name_error(id, "undefined method `%"PRIsVALUE"' for%s `%"PRIsVALUE"'",
+		      QUOTE_ID(id), s0, rb_class_name(c));
     }
 
     rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);

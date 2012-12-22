@@ -1,3 +1,10 @@
+Sun Dec 23 00:04:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (QUOTE, QUOTE_ID): quote unprintable chars in strings and
+	  IDs. [Bug #7574] [ruby-dev:46749]
+
+	* string.c (rb_str_quote_unprintable): ditto.
+
 Sat Dec 22 23:59:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_compile_error, rb_compile_warn, rb_compile_warning),

@@ -4534,6 +4534,7 @@ rb_str_inspect(VALUE str)
 	    }
 	}
 	switch (c) {
+	  case '\0': cc = '0'; break;
 	  case '\n': cc = 'n'; break;
 	  case '\r': cc = 'r'; break;
 	  case '\t': cc = 't'; break;
@@ -7782,6 +7783,31 @@ rb_str_symname_p(VALUE sym)
 	return FALSE;
     }
     return TRUE;
+}
+
+VALUE
+rb_str_quote_unprintable(VALUE str)
+{
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
+    rb_encoding *resenc = rb_default_internal_encoding();
+
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    enc = STR_ENC_GET(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    if ((resenc != enc && !rb_str_is_ascii_only_p(str)) ||
+	!sym_printable(ptr, ptr + len, enc)) {
+	return rb_str_inspect(str);
+    }
+    return str;
+}
+
+VALUE
+rb_id_quote_unprintable(ID id)
+{
+    return rb_str_quote_unprintable(rb_id2str(id));
 }
 
 /*

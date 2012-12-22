@@ -265,6 +265,10 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 /* string.c */
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
+VALUE rb_str_quote_unprintable(VALUE);
+VALUE rb_id_quote_unprintable(ID);
+#define QUOTE(str) rb_str_quote_unprintable(str)
+#define QUOTE_ID(id) rb_id_quote_unprintable(id)
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

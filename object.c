@@ -1931,7 +1931,8 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     if (p >= pend || !*p) {
       wrong_name:
-	rb_raise(rb_eNameError, "wrong constant name %s", path);
+	rb_raise(rb_eNameError, "wrong constant name %"PRIsVALUE,
+		 QUOTE(name));
     }
 
     if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
@@ -1943,13 +1944,14 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
 	VALUE part;
-	long len;
+	long len, beglen;
 
 	while (p < pend && *p != ':') p++;
 
 	if (pbeg == p) goto wrong_name;
 
 	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+	beglen = pbeg-path;
 
 	if (p < pend && p[0] == ':') {
 	    if (!nestable) goto wrong_name;
@@ -1959,26 +1961,29 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	}
 
 	if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
-	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+		     QUOTE(name));
 	}
 
 	if (!id) {
 	    if (!ISUPPER(*pbeg) || !rb_enc_symname2_p(pbeg, len, enc)) {
-		part = rb_str_subseq(name, pbeg-path, len);
-		rb_name_error_str(part, "wrong constant name %s", RSTRING_PTR(part));
+		part = rb_str_subseq(name, beglen, len);
+		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
+				  QUOTE(part));
 	    }
 	    else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
 		id = rb_intern3(pbeg, len, enc);
 	    }
 	    else {
-		part = rb_str_subseq(name, pbeg-path, len);
-		rb_name_error_str(part, "uninitialized constant %.*s%s",
-				  rb_long2int(pbeg-path), path,
-				  RSTRING_PTR(part));
+		part = rb_str_subseq(name, beglen, len);
+		rb_name_error_str(part, "uninitialized constant %"PRIsVALUE"%"PRIsVALUE,
+				  rb_str_subseq(name, 0, beglen),
+				  QUOTE(part));
 	    }
 	}
 	if (!rb_is_const_id(id)) {
-	    rb_name_error(id, "wrong constant name %s", rb_id2name(id));
+	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
+			  QUOTE_ID(id));
 	}
 	mod = RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
@@ -2004,7 +2009,8 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
+	rb_name_error(id, "wrong constant name %"PRIsVALUE,
+		      QUOTE_ID(id));
     }
     rb_const_set(mod, id, value);
     return value;
@@ -2043,11 +2049,13 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	    return Qfalse;
 	}
 	else {
-	    rb_name_error_str(name, "wrong constant name %s", RSTRING_PTR(name));
+	    rb_name_error_str(name, "wrong constant name %"PRIsVALUE,
+			      QUOTE(name));
 	}
     }
     if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
+	rb_name_error(id, "wrong constant name %"PRIsVALUE,
+		      QUOTE_ID(id));
     }
     return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
 }
@@ -2082,11 +2090,13 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 	    return Qnil;
 	}
 	else {
-	    rb_name_error_str(iv, "`%s' is not allowed as an instance variable name", RSTRING_PTR(iv));
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+			      QUOTE(iv));
 	}
     }
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
     return rb_ivar_get(obj, id);
 }
@@ -2117,7 +2127,8 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
     ID id = rb_to_id(iv);
 
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
     return rb_ivar_set(obj, id, val);
 }
@@ -2150,11 +2161,13 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 	    return Qfalse;
 	}
 	else {
-	    rb_name_error_str(iv, "`%s' is not allowed as an instance variable name", RSTRING_PTR(iv));
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+			      QUOTE(iv));
 	}
     }
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
     return rb_ivar_defined(obj, id);
 }
@@ -2180,15 +2193,17 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 
     if (!id) {
 	if (rb_is_class_name(iv)) {
-	    rb_name_error_str(iv, "uninitialized class variable %s in %s",
-			      RSTRING_PTR(iv), rb_class2name(obj));
+	    rb_name_error_str(iv, "uninitialized class variable %"PRIsVALUE" in %"PRIsVALUE"",
+			      iv, rb_class_name(obj));
 	}
 	else {
-	    rb_name_error_str(iv, "`%s' is not allowed as a class variable name", RSTRING_PTR(iv));
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
+			      QUOTE(iv));
 	}
     }
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     return rb_cvar_get(obj, id);
 }
@@ -2216,7 +2231,8 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
     ID id = rb_to_id(iv);
 
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     rb_cvar_set(obj, id, val);
     return val;
@@ -2246,11 +2262,13 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 	    return Qfalse;
 	}
 	else {
-	    rb_name_error_str(iv, "`%s' is not allowed as a class variable name", RSTRING_PTR(iv));
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
+			      QUOTE(iv));
 	}
     }
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     return rb_cvar_defined(obj, id);
 }
