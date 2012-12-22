@@ -1164,6 +1164,9 @@ rb_fiber_start(void)
 	if (state == TAG_RAISE) {
 	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
 	}
+	else if (state == TAG_FATAL) {
+	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
+	}
 	else {
 	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	    if (!NIL_P(err))

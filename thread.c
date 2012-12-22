@@ -1834,8 +1834,9 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (err == Qundef) {
 		/* no error */
 	    }
-	    else if (err == eKillSignal      /* Thread#kill receieved */  ||
-		     err == eTerminateSignal /* Terminate thread */ ) {
+	    else if (err == eKillSignal        /* Thread#kill receieved */  ||
+		     err == eTerminateSignal   /* Terminate thread */       ||
+		     err == INT2FIX(TAG_FATAL) /* Thread.exit etc. */         ) {
 		rb_threadptr_to_kill(th);
 	    }
 	    else {

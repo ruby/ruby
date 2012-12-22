@@ -267,7 +267,7 @@ if false
   def test_exit_in_fiber
     bug5993 = '[ruby-dev:45218]'
     assert_nothing_raised(bug5993) do
-      Thread.new{ Fiber.new{ Thread.exit }.resume }.join
+      Thread.new{ Fiber.new{ Thread.exit }.resume; raise "unreachable" }.join
     end
   end
 
