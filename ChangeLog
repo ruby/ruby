@@ -34,7 +34,7 @@ Sat Dec 22 02:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 Sat Dec 22 02:29:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/input-method.rb, lib/irb.rb: Typo in
-	  InputMethod#readable_atfer_eof? to #readable_after_eof?
+	  InputMethod#readable_after_eof? to #readable_after_eof?
 	  [ruby-core:51069] [Bug #7599]
 
 Sat Dec 22 02:19:38 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
