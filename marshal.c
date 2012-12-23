@@ -1324,7 +1324,7 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         st_insert(arg->data, num, (st_data_t)v);
     }
     if (arg->infection &&
-	TYPE(v) != T_CLASS && TYPE(v) != T_MODULE) {
+	!RB_TYPE_P(v, T_CLASS) && !RB_TYPE_P(v, T_MODULE)) {
 	FL_SET(v, arg->infection);
 	if ((VALUE)real_obj != Qundef)
 	    FL_SET((VALUE)real_obj, arg->infection);
