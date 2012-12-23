@@ -1162,12 +1162,12 @@ rb_fiber_start(void)
 
     if (state) {
 	if (state == TAG_RAISE || state == TAG_FATAL) {
-	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
+	    rb_threadptr_pending_interrupt_enque(th, th->errinfo);
 	}
 	else {
 	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	    if (!NIL_P(err))
-		rb_threadptr_async_errinfo_enque(th, err);
+		rb_threadptr_pending_interrupt_enque(th, err);
 	}
 	RUBY_VM_SET_INTERRUPT(th);
     }

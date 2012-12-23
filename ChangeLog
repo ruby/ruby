@@ -1,3 +1,23 @@
+Sun Dec 23 19:09:16 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: rename methods:
+	    from Thread.async_interrupt_timing to Thread.handle_interrupt,
+	    from Thread.async_interrupted? to Thread.pending_interrupt?.
+	  Also rename option from `defer' to `never'.
+	  [ruby-core:51074] [ruby-trunk - Feature #6762]
+
+	* vm_core.c, thread.c: rename functions and data structure
+	  `async_errinfo' to `pending_interrupt'.
+
+	* thread.c: add global variables sym_immediate, sym_on_blocking and
+	  sym_never.
+
+	* cont.c, process.c, vm.c, signal.c: ditto.
+
+	* lib/sync.rb, lib/thread.rb: catch up this renaming.
+
+	* test/ruby/test_thread.rb: ditto.
+
 Sun Dec 23 17:57:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/profiler.rb (Profiler__::PROFILE_PROC, print_profile): store

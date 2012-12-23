@@ -63,9 +63,9 @@ class ConditionVariable
   # even if no other thread doesn't signal.
   #
   def wait(mutex, timeout=nil)
-    Thread.async_interrupt_timing(StandardError => :defer) do
+    Thread.handle_interrupt(StandardError => :never) do
       begin
-        Thread.async_interrupt_timing(StandardError => :on_blocking) do
+        Thread.handle_interrupt(StandardError => :on_blocking) do
           @waiters_mutex.synchronize do
             @waiters[Thread.current] = true
           end
@@ -84,7 +84,7 @@ class ConditionVariable
   # Wakes up the first thread in line waiting for this lock.
   #
   def signal
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       begin
         t, _ = @waiters_mutex.synchronize { @waiters.shift }
         t.run if t
@@ -99,7 +99,7 @@ class ConditionVariable
   # Wakes up all threads waiting for this lock.
   #
   def broadcast
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       threads = nil
       @waiters_mutex.synchronize do
         threads = @waiters.keys
@@ -160,7 +160,7 @@ class Queue
   # Pushes +obj+ to the queue.
   #
   def push(obj)
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       @mutex.synchronize do
         @que.push obj
         @cond.signal
@@ -184,7 +184,7 @@ class Queue
   # thread isn't suspended, and an exception is raised.
   #
   def pop(non_block=false)
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       @mutex.synchronize do
         while true
           if @que.empty?
@@ -300,7 +300,7 @@ class SizedQueue < Queue
   # until space becomes available.
   #
   def push(obj)
-    Thread.async_interrupt_timing(RuntimeError => :on_blocking) do
+    Thread.handle_interrupt(RuntimeError => :on_blocking) do
       @mutex.synchronize do
         while true
           break if @que.length < @max

@@ -63,13 +63,17 @@
 VALUE rb_cMutex;
 VALUE rb_cThreadShield;
 
+static VALUE sym_immediate;
+static VALUE sym_on_blocking;
+static VALUE sym_never;
+
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
-static int rb_threadptr_async_errinfo_empty_p(rb_thread_t *th);
+static int rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -344,7 +348,7 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
 
     if (th != main_thread) {
 	thread_debug("terminate_i: %p\n", (void *)th);
-	rb_threadptr_async_errinfo_enque(th, eTerminateSignal);
+	rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
 	rb_threadptr_interrupt(th);
     }
     else {
@@ -599,10 +603,10 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
 
-    th->async_errinfo_queue = rb_ary_tmp_new(0);
-    th->async_errinfo_queue_checked = 0;
-    th->async_errinfo_mask_stack = rb_ary_dup(current_th->async_errinfo_mask_stack);
-    RBASIC(th->async_errinfo_mask_stack)->klass = 0;
+    th->pending_interrupt_queue = rb_ary_tmp_new(0);
+    th->pending_interrupt_queue_checked = 0;
+    th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
+    RBASIC(th->pending_interrupt_mask_stack)->klass = 0;
 
     th->interrupt_mask = 0;
 
@@ -1418,47 +1422,47 @@ thread_s_pass(VALUE klass)
 /*****************************************************/
 
 /*
- * rb_threadptr_async_errinfo_* - manage async errors queue
+ * rb_threadptr_pending_interrupt_* - manage asynchronous error queue
  *
  * Async events such as an exception throwed by Thread#raise,
  * Thread#kill and thread termination (after main thread termination)
- * will be queued to th->async_errinfo_queue.
+ * will be queued to th->pending_interrupt_queue.
  * - clear: clear the queue.
  * - enque: enque err object into queue.
  * - deque: deque err object from queue.
  * - active_p: return 1 if the queue should be checked.
  *
- * All rb_threadptr_async_errinfo_* functions are called by
+ * All rb_threadptr_pending_interrupt_* functions are called by
  * a GVL acquired thread, of course.
  * Note that all "rb_" prefix APIs need GVL to call.
  */
 
 void
-rb_threadptr_async_errinfo_clear(rb_thread_t *th)
+rb_threadptr_pending_interrupt_clear(rb_thread_t *th)
 {
-    rb_ary_clear(th->async_errinfo_queue);
+    rb_ary_clear(th->pending_interrupt_queue);
 }
 
 void
-rb_threadptr_async_errinfo_enque(rb_thread_t *th, VALUE v)
+rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v)
 {
-    rb_ary_push(th->async_errinfo_queue, v);
-    th->async_errinfo_queue_checked = 0;
+    rb_ary_push(th->pending_interrupt_queue, v);
+    th->pending_interrupt_queue_checked = 0;
 }
 
-enum async_interrupt_timing {
+enum handle_interrupt_timing {
     INTERRUPT_NONE,
     INTERRUPT_IMMEDIATE,
     INTERRUPT_ON_BLOCKING,
-    INTERRUPT_DEFER
+    INTERRUPT_NEVER
 };
 
-static enum async_interrupt_timing
-rb_threadptr_async_errinfo_check_mask(rb_thread_t *th, VALUE err)
+static enum handle_interrupt_timing
+rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 {
     VALUE mask;
-    long mask_stack_len = RARRAY_LEN(th->async_errinfo_mask_stack);
-    VALUE *mask_stack = RARRAY_PTR(th->async_errinfo_mask_stack);
+    long mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
+    VALUE *mask_stack = RARRAY_PTR(th->pending_interrupt_mask_stack);
     VALUE ancestors = rb_mod_ancestors(err); /* TODO: GC guard */
     long ancestors_len = RARRAY_LEN(ancestors);
     VALUE *ancestors_ptr = RARRAY_PTR(ancestors);
@@ -1473,14 +1477,14 @@ rb_threadptr_async_errinfo_check_mask(rb_thread_t *th, VALUE err)
 
 	    /* TODO: remove rb_intern() */
 	    if ((sym = rb_hash_aref(mask, klass)) != Qnil) {
-		if (sym == ID2SYM(rb_intern("immediate"))) {
+		if (sym == sym_immediate) {
 		    return INTERRUPT_IMMEDIATE;
 		}
-		else if (sym == ID2SYM(rb_intern("on_blocking"))) {
+		else if (sym == sym_on_blocking) {
 		    return INTERRUPT_ON_BLOCKING;
 		}
-		else if (sym == ID2SYM(rb_intern("defer"))) {
-		    return INTERRUPT_DEFER;
+		else if (sym == sym_never) {
+		    return INTERRUPT_NEVER;
 		}
 		else {
 		    rb_raise(rb_eThreadError, "unknown mask signature");
@@ -1493,17 +1497,17 @@ rb_threadptr_async_errinfo_check_mask(rb_thread_t *th, VALUE err)
 }
 
 static int
-rb_threadptr_async_errinfo_empty_p(rb_thread_t *th)
+rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th)
 {
-    return RARRAY_LEN(th->async_errinfo_queue) == 0;
+    return RARRAY_LEN(th->pending_interrupt_queue) == 0;
 }
 
 static int
-rb_threadptr_async_errinfo_include_p(rb_thread_t *th, VALUE err)
+rb_threadptr_pending_interrupt_include_p(rb_thread_t *th, VALUE err)
 {
     int i;
-    for (i=0; i<RARRAY_LEN(th->async_errinfo_queue); i++) {
-	VALUE e = RARRAY_PTR(th->async_errinfo_queue)[i];
+    for (i=0; i<RARRAY_LEN(th->pending_interrupt_queue); i++) {
+	VALUE e = RARRAY_PTR(th->pending_interrupt_queue)[i];
 	if (rb_class_inherited_p(e, err)) {
 	    return TRUE;
 	}
@@ -1512,15 +1516,15 @@ rb_threadptr_async_errinfo_include_p(rb_thread_t *th, VALUE err)
 }
 
 static VALUE
-rb_threadptr_async_errinfo_deque(rb_thread_t *th, enum async_interrupt_timing timing)
+rb_threadptr_pending_interrupt_deque(rb_thread_t *th, enum handle_interrupt_timing timing)
 {
-#if 1 /* 1 to enable Thread#async_interrupt_timing, 0 to ignore it */
+#if 1 /* 1 to enable Thread#handle_interrupt, 0 to ignore it */
     int i;
 
-    for (i=0; i<RARRAY_LEN(th->async_errinfo_queue); i++) {
-	VALUE err = RARRAY_PTR(th->async_errinfo_queue)[i];
+    for (i=0; i<RARRAY_LEN(th->pending_interrupt_queue); i++) {
+	VALUE err = RARRAY_PTR(th->pending_interrupt_queue)[i];
 
-	enum async_interrupt_timing mask_timing = rb_threadptr_async_errinfo_check_mask(th, CLASS_OF(err));
+	enum handle_interrupt_timing mask_timing = rb_threadptr_pending_interrupt_check_mask(th, CLASS_OF(err));
 
 	switch (mask_timing) {
 	  case INTERRUPT_ON_BLOCKING:
@@ -1530,37 +1534,37 @@ rb_threadptr_async_errinfo_deque(rb_thread_t *th, enum async_interrupt_timing ti
 	    /* fall through */
 	  case INTERRUPT_NONE: /* default: IMMEDIATE */
 	  case INTERRUPT_IMMEDIATE:
-	    rb_ary_delete_at(th->async_errinfo_queue, i);
+	    rb_ary_delete_at(th->pending_interrupt_queue, i);
 	    return err;
-	  case INTERRUPT_DEFER:
+	  case INTERRUPT_NEVER:
 	    break;
 	}
     }
 
-    th->async_errinfo_queue_checked = 1;
+    th->pending_interrupt_queue_checked = 1;
     return Qundef;
 #else
-    VALUE err = rb_ary_shift(th->async_errinfo_queue);
-    if (rb_threadptr_async_errinfo_empty_p(th)) {
-	th->async_errinfo_queue_checked = 1;
+    VALUE err = rb_ary_shift(th->pending_interrupt_queue);
+    if (rb_threadptr_pending_interrupt_empty_p(th)) {
+	th->pending_interrupt_queue_checked = 1;
     }
     return err;
 #endif
 }
 
 int
-rb_threadptr_async_errinfo_active_p(rb_thread_t *th)
+rb_threadptr_pending_interrupt_active_p(rb_thread_t *th)
 {
     /*
      * For optimization, we don't check async errinfo queue
      * if it nor a thread interrupt mask were not changed
      * since last check.
      */
-    if (th->async_errinfo_queue_checked) {
+    if (th->pending_interrupt_queue_checked) {
 	return 0;
     }
 
-    if (rb_threadptr_async_errinfo_empty_p(th)) {
+    if (rb_threadptr_pending_interrupt_empty_p(th)) {
 	return 0;
     }
 
@@ -1568,13 +1572,9 @@ rb_threadptr_async_errinfo_active_p(rb_thread_t *th)
 }
 
 static int
-async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
+handle_interrupt_arg_check_i(VALUE key, VALUE val)
 {
-    VALUE immediate = ID2SYM(rb_intern("immediate"));
-    VALUE on_blocking = ID2SYM(rb_intern("on_blocking"));
-    VALUE defer = ID2SYM(rb_intern("defer"));
-
-    if (val != immediate && val != on_blocking && val != defer) {
+    if (val != sym_immediate && val != sym_on_blocking && val != sym_never) {
 	rb_raise(rb_eArgError, "unknown mask signature");
     }
 
@@ -1583,20 +1583,20 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
 
 /*
  * call-seq:
- *   Thread.async_interrupt_timing(hash) { ... } -> result of the block
+ *   Thread.handle_interrupt(hash) { ... } -> result of the block
  *
- * Thread.Thread#async_interrupt_timing controls async interrupt timing.
+ * Thread.Thread#handle_interrupt changes async interrupt timing.
  *
- * _async_interrupt_ means asynchronous event and corresponding procedure
+ * _interrupt_ means asynchronous event and corresponding procedure
  * by Thread#raise, Thread#kill, signal trap (not supported yet)
  * and main thread termination (if main thread terminates, then all
  * other thread will be killed).
  *
  * _hash_ has pairs of ExceptionClass and TimingSymbol.  TimingSymbol
  * is one of them:
- * - :immediate   Invoke async interrupt immediately.
- * - :on_blocking Invoke async interrupt while _BlockingOperation_.
- * - :defer       Defer all async interrupt.
+ * - :immediate   Invoke interrupts immediately.
+ * - :on_blocking Invoke interrupts while _BlockingOperation_.
+ * - :never       Never invoke all interrupts.
  *
  * _BlockingOperation_ means that the operation will block the calling thread,
  * such as read and write.  On CRuby implementation, _BlockingOperation_ is
@@ -1605,9 +1605,9 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  * Masked async interrupts are delayed until they are enabled.
  * This method is similar to sigprocmask(3).
  *
- * TODO (DOC): Thread#async_interrupt_timing is stacked.
+ * TODO (DOC): Thread#handle_interrupt is stacked.
  * TODO (DOC): check ancestors.
- * TODO (DOC): to prevent all async interrupt, {Object => :defer} works.
+ * TODO (DOC): to prevent all async interrupt, {Object => :never} works.
  *
  * NOTE: Asynchronous interrupts are difficult to use.
  *       If you need to communicate between threads,
@@ -1617,16 +1617,16 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *
  *   # example: Guard from Thread#raise
  *   th = Thread.new do
- *     Thead.async_interrupt_timing(RuntimeError => :defer) {
+ *     Thead.handle_interrupt(RuntimeError => :never) {
  *       begin
  *         # Thread#raise doesn't async interrupt here.
  *         # You can write resource allocation code safely.
- *         Thread.async_interrupt_timing(RuntimeError => :immediate) {
+ *         Thread.handle_interrupt(RuntimeError => :immediate) {
  *           # ...
  *           # It is possible to be interrupted by Thread#raise.
  *         }
  *       ensure
- *         # Thread#raise doesn't async interrupt here.
+ *         # Thread#raise doesn't interrupt here.
  *         # You can write resource dealocation code safely.
  *       end
  *     }
@@ -1637,10 +1637,10 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *
  *   # example: Guard from TimeoutError
  *   require 'timeout'
- *   Thread.async_interrupt_timing(TimeoutError => :defer) {
+ *   Thread.handle_interrupt(TimeoutError => :never) {
  *     timeout(10){
  *       # TimeoutError doesn't occur here
- *       Thread.async_interrupt_timing(TimeoutError => :on_blocking) {
+ *       Thread.handle_interrupt(TimeoutError => :on_blocking) {
  *         # possible to be killed by TimeoutError
  *         # while blocking operation
  *       }
@@ -1649,20 +1649,20 @@ async_interrupt_timing_arg_check_i(VALUE key, VALUE val)
  *   }
  *
  *   # example: Stack control settings
- *   Thread.async_interrupt_timing(FooError => :defer) {
- *     Thread.async_interrupt_timing(BarError => :defer) {
+ *   Thread.handle_interrupt(FooError => :never) {
+ *     Thread.handle_interrupt(BarError => :never) {
  *        # FooError and BarError are prohibited.
  *     }
  *   }
  *
  *   # example: check ancestors
- *   Thread.async_interrupt_timing(Exception => :defer) {
+ *   Thread.handle_interrupt(Exception => :never) {
  *     # all exceptions inherited from Exception are prohibited.
  *   }
  *
  */
 static VALUE
-rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
+rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
     VALUE mask;
     rb_thread_t *th = GET_THREAD();
@@ -1674,10 +1674,10 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
     }
 
     mask = rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash");
-    rb_hash_foreach(mask, async_interrupt_timing_arg_check_i, 0);
-    rb_ary_push(th->async_errinfo_mask_stack, mask);
-    if (!rb_threadptr_async_errinfo_empty_p(th)) {
-	th->async_errinfo_queue_checked = 0;
+    rb_hash_foreach(mask, handle_interrupt_arg_check_i, 0);
+    rb_ary_push(th->pending_interrupt_mask_stack, mask);
+    if (!rb_threadptr_pending_interrupt_empty_p(th)) {
+	th->pending_interrupt_queue_checked = 0;
 	RUBY_VM_SET_INTERRUPT(th);
     }
 
@@ -1687,9 +1687,9 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
     }
     TH_POP_TAG();
 
-    rb_ary_pop(th->async_errinfo_mask_stack);
-    if (!rb_threadptr_async_errinfo_empty_p(th)) {
-	th->async_errinfo_queue_checked = 0;
+    rb_ary_pop(th->pending_interrupt_mask_stack);
+    if (!rb_threadptr_pending_interrupt_empty_p(th)) {
+	th->pending_interrupt_queue_checked = 0;
 	RUBY_VM_SET_INTERRUPT(th);
     }
 
@@ -1701,23 +1701,56 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
 
     return r;
 }
+/*
+ * call-seq:
+ *   target_thread.pending_interrupt?(err = nil) -> true/false
+ *
+ *   Check async queue is empty or not.
+ */
+static VALUE
+rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
+{
+    rb_thread_t *target_th;
+
+    GetThreadPtr(target_thread, target_th);
+
+    if (rb_threadptr_pending_interrupt_empty_p(target_th)) {
+	return Qfalse;
+    }
+    else {
+	if (argc == 1) {
+	    VALUE err;
+	    rb_scan_args(argc, argv, "01", &err);
+	    if (!rb_obj_is_kind_of(err, rb_cModule)) {
+		rb_raise(rb_eTypeError, "class or module required for rescue clause");
+	    }
+	    if (rb_threadptr_pending_interrupt_include_p(target_th, err)) {
+		return Qtrue;
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	return Qtrue;
+    }
+}
 
 /*
  * call-seq:
- *   Thread.async_interrupted?(err = nil) -> true/false
+ *   Thread.pending_interrupt?(err = nil) -> true/false
  *
  *   Check async queue is empty or not.
  *
- *   Thread.async_interrupt_timing can defer asynchronous events.
+ *   Thread.handle_interrupt can defer asynchronous events.
  *   This method returns deferred event are there.
  *   If you find this method return true, then you may finish
- *   defer block.
+ *   never block.
  *
  *   For example, the following method processes defferred async event
  *   immediately.
  *
- *   def Thread.kick_async_interrupt_immediately
- *     Thread.async_interrupt_timing(Object => :immediate) {
+ *   def Thread.kick_interrupt_immediately
+ *     Thread.handle_interrupt(Object => :immediate) {
  *       Thread.pass
  *     }
  *   end
@@ -1727,12 +1760,12 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
  * Examples:
  *
  *   th = Thread.new{
- *     Thread.async_interrupt_timing(RuntimeError => :on_blocking){
+ *     Thread.handle_interrupt(RuntimeError => :on_blocking){
  *       while true
  *         ...
  *         # reach safe point to invoke interrupt
- *         if Thread.async_interrupted?
- *           Thread.async_interrupt_timing(Object => :immediate){}
+ *         if Thread.pending_interrupt?
+ *           Thread.handle_interrupt(Object => :immediate){}
  *         end
  *         ...
  *       end
@@ -1746,7 +1779,7 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
  *
  *   flag = true
  *   th = Thread.new{
- *     Thread.async_interrupt_timing(RuntimeError => :on_blocking){
+ *     Thread.handle_interrupt(RuntimeError => :on_blocking){
  *       while true
  *         ...
  *         # reach safe point to invoke interrupt
@@ -1760,35 +1793,15 @@ rb_thread_s_async_interrupt_timing(VALUE self, VALUE mask_arg)
  */
 
 static VALUE
-rb_thread_s_async_interrupt_p(int argc, VALUE *argv, VALUE self)
+rb_thread_s_pending_interrupt_p(int argc, VALUE *argv, VALUE self)
 {
-    rb_thread_t *cur_th = GET_THREAD();
-
-    if (rb_threadptr_async_errinfo_empty_p(cur_th)) {
-	return Qfalse;
-    }
-    else {
-	if (argc == 1) {
-	    VALUE err;
-	    rb_scan_args(argc, argv, "01", &err);
-	    if (!rb_obj_is_kind_of(err, rb_cModule)) {
-		rb_raise(rb_eTypeError, "class or module required for rescue clause");
-	    }
-	    if (rb_threadptr_async_errinfo_include_p(cur_th, err)) {
-		return Qtrue;
-	    }
-	    else {
-		return Qfalse;
-	    }
-	}
-	return Qtrue;
-    }
+    return rb_thread_pending_interrupt_p(argc, argv, GET_THREAD()->self);
 }
 
 static void
 rb_threadptr_to_kill(rb_thread_t *th)
 {
-    rb_threadptr_async_errinfo_clear(th);
+    rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
     th->errinfo = INT2FIX(TAG_FATAL);
@@ -1805,7 +1818,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	rb_atomic_t old;
 	int sig;
 	int timer_interrupt;
-	int async_errinfo_interrupt;
+	int pending_interrupt;
 	int finalizer_interrupt;
 	int trap_interrupt;
 
@@ -1819,7 +1832,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    return;
 
 	timer_interrupt = interrupt & TIMER_INTERRUPT_MASK;
-	async_errinfo_interrupt = interrupt & ASYNC_ERRINFO_INTERRUPT_MASK;
+	pending_interrupt = interrupt & PENDING_INTERRUPT_MASK;
 	finalizer_interrupt = interrupt & FINALIZER_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
@@ -1834,8 +1847,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	}
 
 	/* exception from another thread */
-	if (async_errinfo_interrupt && rb_threadptr_async_errinfo_active_p(th)) {
-	    VALUE err = rb_threadptr_async_errinfo_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
+	if (pending_interrupt && rb_threadptr_pending_interrupt_active_p(th)) {
+	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
 	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
 
 	    if (err == Qundef) {
@@ -1906,7 +1919,7 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
-    rb_threadptr_async_errinfo_enque(th, exc);
+    rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
     return Qnil;
 }
@@ -1976,7 +1989,7 @@ thread_fd_close_i(st_data_t key, st_data_t val, st_data_t data)
 
     if (th->waiting_fd == fd) {
 	VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
-	rb_threadptr_async_errinfo_enque(th, err);
+	rb_threadptr_pending_interrupt_enque(th, err);
 	rb_threadptr_interrupt(th);
     }
     return ST_CONTINUE;
@@ -2061,7 +2074,7 @@ rb_thread_kill(VALUE thread)
 	rb_threadptr_to_kill(th);
     }
     else {
-	rb_threadptr_async_errinfo_enque(th, eKillSignal);
+	rb_threadptr_pending_interrupt_enque(th, eKillSignal);
 	rb_threadptr_interrupt(th);
     }
     return thread;
@@ -4831,6 +4844,10 @@ Init_Thread(void)
     VALUE cThGroup;
     rb_thread_t *th = GET_THREAD();
 
+    sym_never = ID2SYM(rb_intern("never"));
+    sym_immediate = ID2SYM(rb_intern("immediate"));
+    sym_on_blocking = ID2SYM(rb_intern("on_blocking"));
+
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
     rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
     rb_define_singleton_method(rb_cThread, "fork", thread_start, -2);
@@ -4847,8 +4864,9 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
 #endif
-    rb_define_singleton_method(rb_cThread, "async_interrupt_timing", rb_thread_s_async_interrupt_timing, 1);
-    rb_define_singleton_method(rb_cThread, "async_interrupted?", rb_thread_s_async_interrupt_p, -1);
+    rb_define_singleton_method(rb_cThread, "handle_interrupt", rb_thread_s_handle_interrupt, 1);
+    rb_define_singleton_method(rb_cThread, "pending_interrupt?", rb_thread_s_pending_interrupt_p, -1);
+    rb_define_method(rb_cThread, "pending_interrupt?", rb_thread_pending_interrupt_p, -1);
 
     rb_define_method(rb_cThread, "initialize", thread_initialize, -2);
     rb_define_method(rb_cThread, "raise", thread_raise_m, -1);
@@ -4921,9 +4939,9 @@ Init_Thread(void)
 	    native_mutex_initialize(&th->vm->thread_destruct_lock);
 	    native_mutex_initialize(&th->interrupt_lock);
 
-	    th->async_errinfo_queue = rb_ary_tmp_new(0);
-	    th->async_errinfo_queue_checked = 0;
-	    th->async_errinfo_mask_stack = rb_ary_tmp_new(0);
+	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
+	    th->pending_interrupt_queue_checked = 0;
+	    th->pending_interrupt_mask_stack = rb_ary_tmp_new(0);
 
 	    th->interrupt_mask = 0;
 	}
@@ -5058,8 +5076,8 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
     VALUE interrupt_mask = rb_hash_new();
     rb_thread_t *cur_th = GET_THREAD();
 
-    rb_hash_aset(interrupt_mask, rb_cObject, ID2SYM(rb_intern("defer")));
-    rb_ary_push(cur_th->async_errinfo_mask_stack, interrupt_mask);
+    rb_hash_aset(interrupt_mask, rb_cObject, sym_never);
+    rb_ary_push(cur_th->pending_interrupt_mask_stack, interrupt_mask);
 
-    return rb_ensure(b_proc, data, rb_ary_pop, cur_th->async_errinfo_mask_stack);
+    return rb_ensure(b_proc, data, rb_ary_pop, cur_th->pending_interrupt_mask_stack);
 }

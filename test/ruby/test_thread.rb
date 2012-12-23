@@ -516,12 +516,12 @@ class TestThread < Test::Unit::TestCase
     assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
 
-  def make_async_interrupt_timing_test_thread1 flag
+  def make_handle_interrupt_test_thread1 flag
     r = []
     ready_p = false
     th = Thread.new{
       begin
-        Thread.async_interrupt_timing(RuntimeError => flag){
+        Thread.handle_interrupt(RuntimeError => flag){
           begin
             ready_p = true
             sleep 0.5
@@ -543,46 +543,46 @@ class TestThread < Test::Unit::TestCase
     r
   end
 
-  def test_async_interrupt_timing
-    [[:defer, :c2],
+  def test_handle_interrupt
+    [[:never, :c2],
      [:immediate, :c1],
      [:on_blocking, :c1]].each{|(flag, c)|
-      assert_equal([flag, c], [flag] + make_async_interrupt_timing_test_thread1(flag))
+      assert_equal([flag, c], [flag] + make_handle_interrupt_test_thread1(flag))
     }
     # TODO: complex cases are needed.
   end
 
-  def test_async_interrupt_timing_invalid_argument
+  def test_handle_interrupt_invalid_argument
     assert_raise(ArgumentError) {
-      Thread.async_interrupt_timing(RuntimeError => :immediate) # no block
+      Thread.handle_interrupt(RuntimeError => :immediate) # no block
     }
     assert_raise(ArgumentError) {
-      Thread.async_interrupt_timing(RuntimeError => :never) {} # never?
+      Thread.handle_interrupt(RuntimeError => :xyzzy) {}
     }
     assert_raise(TypeError) {
-      Thread.async_interrupt_timing([]) {} # array
+      Thread.handle_interrupt([]) {} # array
     }
   end
 
-  def for_test_async_interrupt_with_return
-    Thread.async_interrupt_timing(Object => :defer){
+  def for_test_handle_interrupt_with_return
+    Thread.handle_interrupt(Object => :never){
       Thread.current.raise RuntimeError.new("have to be rescured")
       return
     }
   rescue
   end
 
-  def test_async_interrupt_with_return
+  def test_handle_interrupt_with_return
     assert_nothing_raised do
-      for_test_async_interrupt_with_return
+      for_test_handle_interrupt_with_return
       _dummy_for_check_ints=nil
     end
   end
 
-  def test_async_interrupt_with_break
+  def test_handle_interrupt_with_break
     assert_nothing_raised do
       begin
-        Thread.async_interrupt_timing(Object => :defer){
+        Thread.handle_interrupt(Object => :never){
           Thread.current.raise RuntimeError.new("have to be rescured")
           break
         }
@@ -592,13 +592,13 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
-  def test_async_interrupt_blocking
+  def test_handle_interrupt_blocking
     r=:ng
     e=Class.new(Exception)
     th_s = Thread.current
     begin
       th = Thread.start{
-        Thread.async_interrupt_timing(Object => :on_blocking){
+        Thread.handle_interrupt(Object => :on_blocking){
           begin
             Thread.current.raise RuntimeError
             r=:ok
@@ -617,12 +617,12 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:ok,r)
   end
 
-  def test_async_interrupt_and_io
+  def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
 
       t = Thread.new {
-        Thread.async_interrupt_timing(RuntimeError => :on_blocking) {
+        Thread.handle_interrupt(RuntimeError => :on_blocking) {
           nil while th_waiting
           # async interrupt should be raised _before_ writing puts arguments
           puts "ng"
@@ -637,12 +637,12 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
-  def test_async_interrupt_and_p
+  def test_handle_interrupt_and_p
     assert_in_out_err([], <<-INPUT, %w(:ok :ok), [])
       th_waiting = true
 
       t = Thread.new {
-        Thread.async_interrupt_timing(RuntimeError => :on_blocking) {
+        Thread.handle_interrupt(RuntimeError => :on_blocking) {
           nil while th_waiting
           # p shouldn't provide interruptible point
           p :ok
@@ -657,9 +657,9 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
-  def test_async_interrupted?
+  def test_handle_interrupted?
     q = Queue.new
-    Thread.async_interrupt_timing(RuntimeError => :defer){
+    Thread.handle_interrupt(RuntimeError => :never){
       th = Thread.new{
         q.push :e
         begin
@@ -669,7 +669,7 @@ class TestThread < Test::Unit::TestCase
             q.push :ng1
           end
           begin
-            Thread.async_interrupt_timing(Object => :immediate){} if Thread.async_interrupted?
+            Thread.handle_interrupthandle_interrupt(Object => :immediate){} if Thread.pending_interrupt?
           rescue => e
             q.push :ok
           end

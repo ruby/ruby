@@ -542,9 +542,9 @@ typedef struct rb_thread_struct {
 #endif
 
     /* async errinfo queue */
-    VALUE async_errinfo_queue;
-    int async_errinfo_queue_checked;
-    VALUE async_errinfo_mask_stack;
+    VALUE pending_interrupt_queue;
+    int pending_interrupt_queue_checked;
+    VALUE pending_interrupt_mask_stack;
 
     rb_atomic_t interrupt_flag;
     unsigned long interrupt_mask;
@@ -894,16 +894,16 @@ GET_THREAD(void)
 
 enum {
     TIMER_INTERRUPT_MASK	 = 0x01,
-    ASYNC_ERRINFO_INTERRUPT_MASK = 0x02,
+    PENDING_INTERRUPT_MASK = 0x02,
     FINALIZER_INTERRUPT_MASK     = 0x04,
     TRAP_INTERRUPT_MASK		 = 0x08
 };
 
 #define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TIMER_INTERRUPT_MASK)
-#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, ASYNC_ERRINFO_INTERRUPT_MASK)
+#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, PENDING_INTERRUPT_MASK)
 #define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, FINALIZER_INTERRUPT_MASK)
 #define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TRAP_INTERRUPT_MASK)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (ASYNC_ERRINFO_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
+#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
 #define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
 
 int rb_signal_buff_size(void);
@@ -914,16 +914,16 @@ void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
-void rb_threadptr_async_errinfo_clear(rb_thread_t *th);
-void rb_threadptr_async_errinfo_enque(rb_thread_t *th, VALUE v);
-int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
+void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
+void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
+int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_BLOCKING(th) do {				\
-	if (UNLIKELY(!rb_threadptr_async_errinfo_empty_p(th))) {	\
-	    th->async_errinfo_queue_checked = 0;			\
+	if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {	\
+	    th->pending_interrupt_queue_checked = 0;			\
 	    RUBY_VM_SET_INTERRUPT(th);					\
 	    rb_threadptr_execute_interrupts(th, 1);			\
 	}								\

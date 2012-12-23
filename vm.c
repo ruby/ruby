@@ -1780,8 +1780,8 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->thgroup);
 	RUBY_MARK_UNLESS_NULL(th->value);
 	RUBY_MARK_UNLESS_NULL(th->errinfo);
-	RUBY_MARK_UNLESS_NULL(th->async_errinfo_queue);
-	RUBY_MARK_UNLESS_NULL(th->async_errinfo_mask_stack);
+	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
+	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
 	RUBY_MARK_UNLESS_NULL(th->root_svar);
 	RUBY_MARK_UNLESS_NULL(th->top_self);
 	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
