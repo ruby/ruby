@@ -27,7 +27,7 @@ init_golf(VALUE arg)
 void *
 goruby_options(int argc, char **argv)
 {
-    static const char cmd[] = "require 'irb'\nIRB.start";
+    static const char cmd[] = "END{require 'irb';IRB.start}";
     int rw[2], infd;
     void *ret;
 
