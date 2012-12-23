@@ -153,7 +153,7 @@ rb_compile_error_append(const char *fmt, ...)
     VALUE str;
 
     va_start(args, fmt);
-    str = rb_sprintf(fmt, args);
+    str = rb_vsprintf(fmt, args);
     va_end(args);
     compile_err_append(str);
 }
