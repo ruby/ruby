@@ -1,3 +1,7 @@
+Sun Dec 23 17:57:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/profiler.rb (Profiler__::PROFILE_PROC): use TracePoint.
+
 Sun Dec 23 16:13:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/erb.rb: typos for ERB::new link

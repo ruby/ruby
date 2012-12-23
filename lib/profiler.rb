@@ -60,14 +60,14 @@
 module Profiler__
   # internal values
   @@start = @@stack = @@map = @@array = nil
-  PROFILE_PROC = proc{|event, file, line, id, binding, klass|
-    case event
-    when "call", "c-call"
+  PROFILE_PROC = TracePoint.new(:call, :c_call, :return, :c_return) {|tp|
+    case tp.event
+    when :call, :c_call
       now = Process.times[0]
       @@stack.push [now, 0.0]
-    when "return", "c-return"
+    when :return, :c_return
       now = Process.times[0]
-      key = [klass, id]
+      key = [tp.defined_class, tp.method_id]
       if tick = @@stack.pop
         data = begin
                  @@map[key] ||= [0, 0.0, 0.0, key]
@@ -88,10 +88,10 @@ module_function
     @@stack = []
     @@map = {}
     @@array = []
-    set_trace_func PROFILE_PROC
+    PROFILE_PROC.enable
   end
   def stop_profile
-    set_trace_func nil
+    PROFILE_PROC.disable
   end
   def print_profile(f)
     stop_profile
