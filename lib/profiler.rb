@@ -58,8 +58,22 @@
 #     0.00     0.19      0.00        1     0.00   190.00  #toplevel
 
 module Profiler__
+  class Wrapper < Struct.new(:defined_class, :method_id, :hash) # :nodoc:
+    private :defined_class=, :method_id=, :hash=
+
+    def initialize(klass, mid)
+      super(klass, mid, nil)
+      self.hash = Struct.instance_method(:hash).bind(self).call
+    end
+
+    def to_s
+      "#{defined_class.inspect}#".sub(/\A\#<Class:(.*)>#\z/, '\1.') << method_id.to_s
+    end
+    alias inspect to_s
+  end
+
   # internal values
-  @@start = @@stack = @@map = @@array = nil
+  @@start = @@stack = @@map = nil
   PROFILE_PROC = TracePoint.new(:call, :c_call, :return, :c_return) {|tp|
     case tp.event
     when :call, :c_call
@@ -67,13 +81,9 @@ module Profiler__
       @@stack.push [now, 0.0]
     when :return, :c_return
       now = Process.times[0]
-      key = [tp.defined_class, tp.method_id]
+      key = Wrapper.new(tp.defined_class, tp.method_id)
       if tick = @@stack.pop
-        data = begin
-                 @@map[key] ||= [0, 0.0, 0.0, key]
-               rescue NoMethodError
-                 @@array.find{|i| i[3] == key} || (@@array << [0, 0.0, 0.0, key])[-1]
-               end
+        data = (@@map[key] ||= [0, 0.0, 0.0, key])
         data[0] += 1
         cost = now - tick[0]
         data[1] += cost
@@ -87,7 +97,6 @@ module_function
     @@start = Process.times[0]
     @@stack = []
     @@map = {}
-    @@array = []
     PROFILE_PROC.enable
   end
   def stop_profile
@@ -97,7 +106,7 @@ module_function
     stop_profile
     total = Process.times[0] - @@start
     if total == 0 then total = 0.01 end
-    data = @@map.values + @@array
+    data = @@map.values
     data = data.sort_by{|x| -x[2]}
     sum = 0
     f.printf "  %%   cumulative   self              self     total\n"
@@ -105,22 +114,9 @@ module_function
     for d in data
       sum += d[2]
       f.printf "%6.2f %8.2f  %8.2f %8d ", d[2]/total*100, sum, d[2], d[0]
-      f.printf "%8.2f %8.2f  %s\n", d[2]*1000/d[0], d[1]*1000/d[0], get_name(*d[3])
+      f.printf "%8.2f %8.2f  %s\n", d[2]*1000/d[0], d[1]*1000/d[0], d[3]
     end
     f.printf "%6.2f %8.2f  %8.2f %8d ", 0.0, total, 0.0, 1     # ???
     f.printf "%8.2f %8.2f  %s\n", 0.0, total*1000, "#toplevel" # ???
   end
-  def get_name(klass, id)
-    name = klass.to_s || ""
-    if klass.kind_of? Class
-      name += "#"
-    else
-      name += "."
-    end
-    name + id.id2name
-  rescue NoMethodError => e
-    name = e.message.slice(/#<.*?:0x[0-9a-f]+>/) || ""
-    name + "." + id.id2name
-  end
-  private :get_name
 end
