@@ -4170,7 +4170,7 @@ rb_gzreader_lines(int argc, VALUE *argv, VALUE obj)
     rb_warn("Zlib::GzipReader#lines is deprecated; use #each_line instead");
     if (!rb_block_given_p())
 	return rb_enumeratorize(obj, ID2SYM(rb_intern("each_line")), argc, argv);
-    return rb_gzreader_each_line(argc, argv, obj);
+    return rb_gzreader_each(argc, argv, obj);
 }
 
 /*
