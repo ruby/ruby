@@ -58,13 +58,11 @@ class Gem::Validator
   public
 
   ErrorData = Struct.new :path, :problem do
-
     def <=> other
       return nil unless self.class === other
 
       [path, problem] <=> [other.path, other.problem]
     end
-
   end
 
   ##
@@ -121,7 +119,6 @@ class Gem::Validator
             File.readable? File.join(gem_directory, file_name)
           }
 
-          unreadable.map! { |entry, _| entry['path'] }
           unreadable.sort.each do |path|
             errors[gem_name][path] = "Unreadable file"
           end
@@ -153,7 +150,9 @@ class Gem::Validator
     end
 
     errors.each do |name, subhash|
-      errors[name] = subhash.map { |path, msg| ErrorData.new(path, msg) }.sort
+      errors[name] = subhash.map do |path, msg|
+        ErrorData.new path, msg
+      end.sort
     end
 
     errors

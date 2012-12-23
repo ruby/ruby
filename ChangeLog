@@ -1,3 +1,28 @@
+Sun Dec 23 09:34:07 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/check_command.rb:  Added --doctor and --dry-run
+	  options to clean up after failed uninstallation.
+	* test/rubygems/test_gem_commands_check_command.rb:  Test for above.
+
+	* lib/rubygems/commands/push_command.rb:  Allow pushes from RubyGems
+	  2.0.0.preview3
+
+	* lib/rubygems/commands/update_command.rb:  Use Gem.ruby_version
+
+	* lib/rubygems/dependency.rb:  Update style.
+
+	* lib/rubygems/installer.rb:  Ensure installed gem specifications will
+	  be useable.  Refactor.
+	* test/rubygems/test_gem_installer.rb:  ditto.
+
+	* lib/rubygems/validator.rb:  Fixed bug with unreadable files.
+
+	* lib/rubygems.rb:  Fixed broken methods.
+	* test/rubygems/test_gem.rb:  Test for above.
+
+	* test/rubygems/test_gem_commands_push_command.rb:  Fixed overridden
+	  Gem.latest_rubygems_version
+
 Sun Dec 23 01:52:01 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* io.c (rb_io_lines, rb_io_bytes, rb_io_chars, rb_io_codepoints):
