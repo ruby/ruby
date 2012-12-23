@@ -2760,7 +2760,7 @@ rb_reg_match(VALUE re, VALUE str)
  *  call-seq:
  *     rxp === str   -> true or false
  *
- *  Case Equality---Synonym for <code>Regexp#=~</code> used in case statements.
+ *  Case Equality---Used in case statements.
  *
  *     a = "HELLO"
  *     case a
@@ -2768,10 +2768,13 @@ rb_reg_match(VALUE re, VALUE str)
  *     when /^[A-Z]*$/; print "Upper case\n"
  *     else;            print "Mixed case\n"
  *     end
+ *     #=> "Upper case"
  *
- *  <em>produces:</em>
+ *  Following a regular expression literal with the #=== operator allows you to
+ *  compare against a String.
  *
- *     Upper case
+ *	/^[a-z]*$/ === "HELLO" #=> false
+ *	/^[A-Z]*$/ === "HELLO" #=> true
  */
 
 VALUE

@@ -1,3 +1,8 @@
+Sun Dec 23 14:52:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* re.c (rb_reg_eqq): doc: #=== is not a synonym for #=~, added example
+	  [ruby-dev:46746] [Bug #7571]
+
 Sun Dec 23 14:35:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (BLOCKING_REGION): if fail_if_interrupted is false ignore
