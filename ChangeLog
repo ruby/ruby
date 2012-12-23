@@ -1,3 +1,7 @@
+Sun Dec 23 16:13:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/erb.rb: typos for ERB::new link
+
 Sun Dec 23 16:06:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/erb.rb: Document ERB::new trim_mode '-' for lines ending in -%>

@@ -686,7 +686,7 @@ class ERB
       Scanner.make_scanner(src, @trim_mode, @percent)
     end
 
-    # Construct a new compiler using the trim_mode. See ERB#new for available
+    # Construct a new compiler using the trim_mode. See ERB::new for available
     # trim modes.
     def initialize(trim_mode)
       @percent, @trim_mode = prepare_trim_mode(trim_mode)
@@ -812,9 +812,9 @@ class ERB
   attr_accessor :filename
 
   #
-  # Can be used to set _eoutvar_ as described in ERB#new.  It's probably easier
-  # to just use the constructor though, since calling this method requires the
-  # setup of an ERB _compiler_ object.
+  # Can be used to set _eoutvar_ as described in ERB::new.  It's probably
+  # easier to just use the constructor though, since calling this method
+  # requires the setup of an ERB _compiler_ object.
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.concat"
@@ -830,8 +830,8 @@ class ERB
 
   #
   # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.  (See ERB#new for details on how this process can
-  # be affected by _safe_level_.)
+  # the results of that code.  (See ERB::new for details on how this process
+  # can be affected by _safe_level_.)
   #
   # _b_ accepts a Binding or Proc object which is used to set the context of
   # code evaluation.
