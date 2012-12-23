@@ -338,16 +338,12 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
     return Qundef;
 }
 
-static VALUE
-check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+static int
+check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 {
-    VALUE klass = CLASS_OF(recv);
-    const rb_method_entry_t *me;
-    rb_thread_t *th = GET_THREAD();
-    int call_status;
     VALUE defined_class;
+    const rb_method_entry_t *me = rb_method_entry(klass, idRespond_to, &defined_class);
 
-    me = rb_method_entry(klass, idRespond_to, &defined_class);
     if (me && !(me->flag & NOEX_BASIC)) {
 	VALUE args[2];
 	int arity = rb_method_entry_arity(me);
@@ -360,37 +356,77 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
 	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me, defined_class))) {
-	    return Qundef;
+	    return FALSE;
 	}
     }
+    return TRUE;
+}
+
+static int
+check_funcall_callable(rb_thread_t *th, const rb_method_entry_t *me)
+{
+    return rb_method_call_status(th, me, CALL_FCALL, th->cfp->self) == NOEX_OK;
+}
+
+static VALUE
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, VALUE *argv)
+{
+    if (rb_method_basic_definition_p(klass, idMethodMissing)) {
+	return Qundef;
+    }
+    else {
+	struct rescue_funcall_args args;
+
+	th->method_missing_reason = 0;
+	args.recv = recv;
+	args.sym = ID2SYM(mid);
+	args.argc = argc;
+	args.argv = argv;
+	return rb_rescue2(check_funcall_exec, (VALUE)&args,
+			  check_funcall_failed, (VALUE)&args,
+			  rb_eNoMethodError, (VALUE)0);
+    }
+}
+
+VALUE
+rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+{
+    VALUE klass = CLASS_OF(recv);
+    const rb_method_entry_t *me;
+    rb_thread_t *th = GET_THREAD();
+    VALUE defined_class;
+
+    if (!check_funcall_respond_to(th, klass, recv, mid))
+	return Qundef;
 
     me = rb_search_method_entry(recv, mid, &defined_class);
-    call_status = rb_method_call_status(th, me, CALL_FCALL, th->cfp->self);
-    if (call_status != NOEX_OK) {
-	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
-	    return Qundef;
-	}
-	else {
-	    struct rescue_funcall_args args;
-
-	    th->method_missing_reason = 0;
-	    args.recv = recv;
-	    args.sym = ID2SYM(mid);
-	    args.argc = argc;
-	    args.argv = argv;
-	    return rb_rescue2(check_funcall_exec, (VALUE)&args,
-			      check_funcall_failed, (VALUE)&args,
-			      rb_eNoMethodError, (VALUE)0);
-	}
+    if (check_funcall_callable(th, me) != NOEX_OK) {
+	return check_funcall_missing(th, klass, recv, mid, argc, argv);
     }
     stack_check();
     return vm_call0(th, recv, mid, argc, argv, me, defined_class);
 }
 
 VALUE
-rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+			   rb_check_funcall_hook *hook, VALUE arg)
 {
-    return check_funcall(recv, mid, argc, argv);
+    VALUE klass = CLASS_OF(recv);
+    const rb_method_entry_t *me;
+    rb_thread_t *th = GET_THREAD();
+    VALUE defined_class;
+
+    if (!check_funcall_respond_to(th, klass, recv, mid))
+	return Qundef;
+
+    me = rb_search_method_entry(recv, mid, &defined_class);
+    if (check_funcall_callable(th, me) != NOEX_OK) {
+	(*hook)(FALSE, recv, mid, argc, argv, arg);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv);
+    }
+    stack_check();
+    (*hook)(TRUE, recv, mid, argc, argv, arg);
+    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
 }
 
 static const char *

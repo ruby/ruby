@@ -312,6 +312,9 @@ void rb_vm_bugreport(void);
 void Init_vm_eval(void);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, VALUE *, VALUE (*)(ANYARGS), VALUE);
+typedef void rb_check_funcall_hook(int, VALUE, ID, int, VALUE *, VALUE);
+VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+				 rb_check_funcall_hook *hook, VALUE arg);
 
 /* vm_method.c */
 void Init_eval_method(void);
