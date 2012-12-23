@@ -1,3 +1,8 @@
+Sun Dec 23 16:06:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/erb.rb: Document ERB::new trim_mode '-' for lines ending in -%>
+	  [ruby-core:51084] [Bug #7608]
+
 Sun Dec 23 15:25:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/ruby-lex.rb: Add handling for %i and %I quoting to irb

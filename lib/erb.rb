@@ -740,6 +740,7 @@ class ERB
   #     %  enables Ruby code processing for lines beginning with %
   #     <> omit newline for lines starting with <% and ending in %>
   #     >  omit newline for lines ending in %>
+  #     -  omit blank lines ending in -%>
   #
   # _eoutvar_ can be used to set the name of the variable ERB will build up
   # its output in.  This is useful when you need to run multiple ERB
