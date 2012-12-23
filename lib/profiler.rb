@@ -73,30 +73,35 @@ module Profiler__
   end
 
   # internal values
-  @@start = @@stack = @@map = nil
+  @@start = nil # the start time that profiling began
+  @@stacks = nil # the map of stacks keyed by thread
+  @@maps = nil # the map of call data keyed by thread, class and id. Call data contains the call count, total time,
   PROFILE_PROC = TracePoint.new(:call, :c_call, :return, :c_return) {|tp|
     case tp.event
     when :call, :c_call
       now = Process.times[0]
-      @@stack.push [now, 0.0]
+      stack = (@@stacks[Thread.current] ||= [])
+      stack.push [now, 0.0]
     when :return, :c_return
       now = Process.times[0]
       key = Wrapper.new(tp.defined_class, tp.method_id)
-      if tick = @@stack.pop
-        data = (@@map[key] ||= [0, 0.0, 0.0, key])
+      stack = (@@stacks[Thread.current] ||= [])
+      if tick = stack.pop
+        threadmap = (@@maps[Thread.current] ||= {})
+        data = (threadmap[key] ||= [0, 0.0, 0.0, key])
         data[0] += 1
         cost = now - tick[0]
         data[1] += cost
         data[2] += cost - tick[1]
-        @@stack[-1][1] += cost if @@stack[-1]
+        stack[-1][1] += cost if stack[-1]
       end
     end
   }
 module_function
   def start_profile
     @@start = Process.times[0]
-    @@stack = []
-    @@map = {}
+    @@stacks = {}
+    @@maps = {}
     PROFILE_PROC.enable
   end
   def stop_profile
@@ -106,7 +111,19 @@ module_function
     stop_profile
     total = Process.times[0] - @@start
     if total == 0 then total = 0.01 end
-    data = @@map.values
+    totals = {}
+    @@maps.values.each do |threadmap|
+      threadmap.each do |key, data|
+        total_data = (totals[key] ||= [0, 0.0, 0.0, key])
+        total_data[0] += data[0]
+        total_data[1] += data[1]
+        total_data[2] += data[2]
+      end
+    end
+
+    # Maybe we should show a per thread output and a totals view?
+
+    data = totals.values
     data = data.sort_by{|x| -x[2]}
     sum = 0
     f.printf "  %%   cumulative   self              self     total\n"

@@ -1,4 +1,8 @@
-Sun Dec 23 17:57:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 23 17:57:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/profiler.rb (Profiler__::PROFILE_PROC, print_profile): store
+	  profile data per threads for concurrent-execution.
+	  [ruby-core:22046] [Bug #1152]
 
 	* lib/profiler.rb (Profiler__::Wrapper): support calling singleton
 	  methods of an instance of BasicObject.
