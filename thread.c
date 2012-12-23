@@ -124,10 +124,17 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
   rb_thread_set_current(_th_stored); \
 } while(0)
 
+#ifdef __GNUC__
+#define only_if_constant(expr, notconst) (__builtin_constant_p(expr) ? (expr) : (notconst))
+#else
+#define only_if_constant(expr, notconst) notconst
+#endif
 #define BLOCKING_REGION(exec, ubf, ubfarg, fail_if_interrupted) do { \
     rb_thread_t *__th = GET_THREAD(); \
     struct rb_blocking_region_buffer __region; \
-    if (blocking_region_begin(__th, &__region, (ubf), (ubfarg), fail_if_interrupted)) { \
+    if (blocking_region_begin(__th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
+	/* always return true unless fail_if_interrupted */ \
+	!only_if_constant(fail_if_interrupted, TRUE)) { \
 	exec; \
 	blocking_region_end(__th, &__region); \
     }; \

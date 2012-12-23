@@ -1,3 +1,9 @@
+Sun Dec 23 14:35:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (BLOCKING_REGION): if fail_if_interrupted is false ignore
+	  the result of blocking_region_begin(), since it always is true in
+	  that case.  suppress "uninitialized" warnings.
+
 Sun Dec 23 09:34:07 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/check_command.rb:  Added --doctor and --dry-run
