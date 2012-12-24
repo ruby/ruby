@@ -1109,6 +1109,13 @@ name_err_mesg_to_str(VALUE obj)
 
 /* :nodoc: */
 static VALUE
+name_err_mesg_dump(VALUE obj, VALUE limit)
+{
+    return name_err_mesg_to_str(obj);
+}
+
+/* :nodoc: */
+static VALUE
 name_err_mesg_load(VALUE klass, VALUE str)
 {
     return str;
@@ -1732,7 +1739,7 @@ Init_Exception(void)
     rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
-    rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
+    rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
