@@ -783,16 +783,6 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
-  def test_lines
-    ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
-      $stderr = $stdout
-      print Marshal.dump(ARGF.bytes.to_a)
-    SRC
-      assert_match(/deprecated/, f.gets)
-      assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
-    end
-  end
-
   def test_bytes
     ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       $stderr = $stdout
