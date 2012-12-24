@@ -1097,7 +1097,7 @@ name_err_mesg_to_str(VALUE obj)
 	if (desc && desc[0] != '#') {
 	    d = d ? rb_str_dup(d) : rb_str_new2(desc);
 	    rb_str_cat2(d, ":");
-	    rb_str_cat2(d, rb_obj_classname(obj));
+	    rb_str_append(d, rb_class_name(CLASS_OF(obj)));
 	}
 	args[0] = mesg;
 	args[1] = ptr[2];
@@ -1246,8 +1246,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	VALUE str = StringValue(mesg);
 	rb_encoding *me = rb_enc_get(mesg);
 
-	mesg = rb_sprintf("%s - %.*s", err,
-			  (int)RSTRING_LEN(str), RSTRING_PTR(str));
+	mesg = rb_sprintf("%s - %"PRIsVALUE, err, mesg);
 	if (le != me && rb_enc_asciicompat(me)) {
 	    le = me;
 	}/* else assume err is non ASCII string. */
