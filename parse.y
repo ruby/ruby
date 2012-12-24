@@ -435,6 +435,8 @@ static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
 static NODE *new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
 static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, NODE *rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (attr), (op), (rhs))
+static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
+#define new_const_op_assign(lhs, op, rhs) new_const_op_assign_gen(parser, (lhs), (op), (rhs))
 
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
@@ -1200,12 +1202,11 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
 		    {
 		    /*%%%*/
-			yyerror("constant re-assignment");
-			$$ = 0;
+			$$ = NEW_COLON2($1, $3);
+			$$ = new_const_op_assign($$, $4, $5);
 		    /*%
 			$$ = dispatch2(const_path_field, $1, $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
-			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
@@ -2007,23 +2008,21 @@ arg		: lhs '=' arg
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
 		    {
 		    /*%%%*/
-			yyerror("constant re-assignment");
-			$$ = NEW_BEGIN(0);
+			$$ = NEW_COLON2($1, $3);
+			$$ = new_const_op_assign($$, $4, $5);
 		    /*%
 			$$ = dispatch2(const_path_field, $1, $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
-			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg
 		    {
 		    /*%%%*/
-			yyerror("constant re-assignment");
-			$$ = NEW_BEGIN(0);
+			$$ = NEW_COLON3($2);
+			$$ = new_const_op_assign($$, $3, $4);
 		    /*%
 			$$ = dispatch1(top_const_field, $2);
 			$$ = dispatch3(opassign, $$, $3, $4);
-			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| backref tOP_ASGN arg
@@ -9361,6 +9360,27 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, 
 	op = 1;
     }
     asgn = NEW_OP_ASGN2(lhs, attr, op, rhs);
+    fixpos(asgn, lhs);
+    return asgn;
+}
+
+static NODE *
+new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs)
+{
+    NODE *asgn;
+
+    if (op == tOROP) {
+	op = 0;
+    }
+    else if (op == tANDOP) {
+	op = 1;
+    }
+    if (lhs) {
+	asgn = NEW_OP_CDECL(lhs, op, rhs);
+    }
+    else {
+	asgn = NEW_BEGIN(0);
+    }
     fixpos(asgn, lhs);
     return asgn;
 }

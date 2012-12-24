@@ -1,3 +1,9 @@
+Tue Dec 25 00:59:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (NODE_OP_CDECL), compile.c (iseq_compile_each),
+	  parse.y (stmt, arg): allow scoped constant op-assignment.
+	  [ruby-core:40154] [Bug #5449]
+
 Mon Dec 24 04:56:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/generic_request.rb (Net::HTTPGenericRequest):
