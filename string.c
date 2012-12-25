@@ -6389,6 +6389,7 @@ static VALUE
 rb_str_enumerate_chars(VALUE str, int wantarray)
 {
     VALUE orig = str;
+    VALUE substr;
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
@@ -6421,21 +6422,24 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
       case ENC_CODERANGE_7BIT:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
 	    if (wantarray)
-		rb_ary_push(ary, rb_str_subseq(str, i, n));
+		rb_ary_push(ary, substr);
 	    else
-		rb_yield(rb_str_subseq(str, i, n));
+		rb_yield(substr);
 	}
 	break;
       default:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
 	    if (wantarray)
-		rb_ary_push(ary, rb_str_subseq(str, i, n));
+		rb_ary_push(ary, substr);
 	    else
-		rb_yield(rb_str_subseq(str, i, n));
+		rb_yield(substr);
 	}
     }
+    RB_GC_GUARD(str);
     if (wantarray)
 	return ary;
     else
