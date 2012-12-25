@@ -1701,6 +1701,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 
     return r;
 }
+
 /*
  * call-seq:
  *   target_thread.pending_interrupt?(err = nil) -> true/false
