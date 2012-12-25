@@ -1,3 +1,20 @@
+Tue Dec 25 22:06:33 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_and_pop_frame):
+	  pop a frame before JUMP_TAG() if exception occurred.
+	  This change fix bug of Ruby 1.9.
+	  [ruby-core:51128] [ruby-trunk - Bug #7624]
+
+	* vm_core.h (EXEC_EVENT_HOOK_AND_POP_FRAME): add to use
+	  `rb_threadptr_exec_event_hooks_and_pop_frame()'.
+
+	* vm.c (vm_exec): use EXEC_EVENT_HOOK_AND_POP_FRAME() while
+	  exception handling. While exception hadnling, if an exception
+	  is raised in hooks, need to pop current frame and raise this
+	  raised exception by hook.
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Tue Dec 25 21:08:53 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/init.rb, lib/irb/lc/ja/error.rb, lib/irb/lc/error.rb:

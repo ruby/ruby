@@ -962,8 +962,9 @@ struct rb_trace_arg_struct {
 };
 
 void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
+void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *trace_arg);
 
-#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) do { \
+#define EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, pop_p_) do { \
     if (UNLIKELY(ruby_vm_event_flags & (flag_))) { \
 	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag_)) { \
 	    struct rb_trace_arg_struct trace_arg; \
@@ -976,10 +977,17 @@ void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
 	    trace_arg.data = (data_); \
 	    trace_arg.path = Qundef; \
 	    trace_arg.klass_solved = 0; \
-	    rb_threadptr_exec_event_hooks(&trace_arg); \
+	    if (pop_p_) rb_threadptr_exec_event_hooks_and_pop_frame(&trace_arg); \
+	    else rb_threadptr_exec_event_hooks(&trace_arg); \
 	} \
     } \
 } while (0)
+
+#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 0)
+
+#define EXEC_EVENT_HOOK_AND_POP_FRAME(th_, flag_, self_, id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 1)
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

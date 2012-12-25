@@ -279,8 +279,8 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
     return state;
 }
 
-void
-rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg)
+static void
+rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 {
     rb_thread_t *th = trace_arg->th;
     if (th->trace_arg == 0 &&
@@ -316,10 +316,23 @@ rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg)
 	th->vm->trace_running--;
 
 	if (state) {
+	    if (pop_p) th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	    TH_JUMP_TAG(th, state);
 	}
 	th->state = outer_state;
     }
+}
+
+void
+rb_threadptr_exec_event_hooks_and_pop_frame(rb_trace_arg_t *trace_arg)
+{
+    rb_threadptr_exec_event_hooks_orig(trace_arg, 1);
+}
+
+void
+rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg)
+{
+    rb_threadptr_exec_event_hooks_orig(trace_arg, 0);
 }
 
 VALUE

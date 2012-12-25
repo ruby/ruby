@@ -848,4 +848,27 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     end
   end
+
+  class FOO_ERROR < RuntimeError; end
+  class BAR_ERROR < RuntimeError; end
+  def m1_test_trace_point_at_return_when_exception
+    m2_test_trace_point_at_return_when_exception
+  end
+  def m2_test_trace_point_at_return_when_exception
+    raise BAR_ERROR
+  end
+
+  def test_trace_point_at_return_when_exception
+    bug_7624 = '[ruby-core:51128] [ruby-trunk - Bug #7624]'
+    TracePoint.new{|tp|
+      if tp.event == :return &&
+        tp.method_id == :m2_test_trace_point_at_return_when_exception
+        raise FOO_ERROR
+      end
+    }.enable do
+      assert_raise(FOO_ERROR, bug_7624) do
+        m1_test_trace_point_at_return_when_exception
+      end
+    end
+  end
 end

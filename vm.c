@@ -1160,7 +1160,6 @@ vm_exec(rb_thread_t *th)
     _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == 0) {
       vm_loop_start:
-	_th->tag = &_tag;
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
 	    err = result;
@@ -1179,7 +1178,6 @@ vm_exec(rb_thread_t *th)
 	err = th->errinfo;
 
       exception_handler:
-	TH_POP_TAG2();
 	cont_pc = cont_sp = catch_iseqval = 0;
 
 	while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
@@ -1360,19 +1358,20 @@ vm_exec(rb_thread_t *th)
 	    switch (VM_FRAME_TYPE(th->cfp)) {
 	      case VM_FRAME_MAGIC_METHOD:
 		RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_BLOCK:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_CLASS:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
 		break;
 	    }
 
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 		vm_pop_frame(th);
 		th->errinfo = err;
+		TH_POP_TAG2();
 		JUMP_TAG(state);
 	    }
 	    else {
