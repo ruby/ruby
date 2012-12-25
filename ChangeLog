@@ -1,3 +1,7 @@
+Tue Dec 25 23:35:09 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb: fix for if config["libdir"] is nil.
+
 Tue Dec 25 20:40:47 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c, include/ruby/intern.h (rb_big_eql): exported.
