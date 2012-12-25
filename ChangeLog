@@ -1,3 +1,8 @@
+Tue Dec 25 19:22:17 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/workspace.rb: define method to private on top-level irb
+	  [Bug #5776]. Patch by davidbalbert.
+
 Tue Dec 25 19:09:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c, include/ruby/intern.h (rb_big_eql): exported.
