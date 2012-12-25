@@ -1,3 +1,8 @@
+Wed Dec 26 00:59:18 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: improve RubyLex performance for large files
+	  [Bug #5202]. Patch by ryanmelt.
+
 Tue Dec 25 22:21:06 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/output-method.rb: raise right exception when
