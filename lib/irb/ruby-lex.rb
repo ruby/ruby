@@ -153,7 +153,7 @@ class RubyLex
     if c == "\n"
       @line_no -= 1
       if idx = @readed.rindex("\n")
-	@char_no = idx + 1 
+	@char_no = idx + 1
       else
 	@char_no = @base_char_no + @readed.size
       end

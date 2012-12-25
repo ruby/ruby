@@ -1,7 +1,7 @@
 Wed Dec 26 01:31:16 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/irb/init.rb, lib/irb/context.rb: fix conf.debug_level= 
-	  [Bug #6301] and fix irb command option: -- irb_debug_level for irb. 
+	* lib/irb/init.rb, lib/irb/context.rb: fix conf.debug_level=
+	  [Bug #6301] and fix irb command option: -- irb_debug_level for irb.
 
 Wed Dec 26 00:59:18 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
