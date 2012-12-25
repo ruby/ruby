@@ -4599,7 +4599,7 @@ recursive_list_access(void)
 }
 
 /*
- * Returns Qtrue if obj_id (or the pair <obj, paired_obj>) is already
+ * Returns Qtrue iff obj_id (or the pair <obj, paired_obj>) is already
  * in the recursion list.
  * Assumes the recursion list is valid.
  */
