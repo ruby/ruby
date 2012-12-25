@@ -25,6 +25,7 @@ module IRB
   def_exception :CantShiftToMultiIrbMode, "Can't shift to multi irb mode."
   def_exception :CantChangeBinding, "Can't change binding to (%s)."
   def_exception :UndefinedPromptMode, "Undefined prompt mode(%s)."
+  def_exception :IllegalRCGenerator, 'Define illegal RC_NAME_GENERATOR.'
 
 end
 # :startdoc:

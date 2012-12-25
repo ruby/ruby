@@ -256,7 +256,12 @@ module IRB # :nodoc:
 	end
       end
     end
-    @CONF[:RC_NAME_GENERATOR].call ext
+    case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
+    when String
+      return rc_file
+    else
+      IRB.fail IllegalRCNameGenerator
+    end
   end
 
   # enumerate possible rc-file base name generators
