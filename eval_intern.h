@@ -153,12 +153,6 @@ enum ruby_tag_type {
 #define SCOPE_CHECK(f) (rb_vm_cref()->nd_visi == (f))
 #define SCOPE_SET(f)   (rb_vm_cref()->nd_visi = (f))
 
-#define CHECK_STACK_OVERFLOW(cfp, margin) do \
-  if ((VALUE *)((char *)(((VALUE *)(cfp)->sp) + (margin)) + sizeof(rb_control_frame_t)) >= ((VALUE *)(cfp))) { \
-      rb_exc_raise(sysstack_error); \
-  } \
-while (0)
-
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
 

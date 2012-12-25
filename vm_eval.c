@@ -156,7 +156,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    int i;
 
-	    CHECK_STACK_OVERFLOW(reg_cfp, ci->argc + 1);
+	    CHECK_VM_STACK_OVERFLOW(reg_cfp, ci->argc + 1);
 
 	    *reg_cfp->sp++ = ci->recv;
 	    for (i = 0; i < ci->argc; i++) {
@@ -1212,7 +1212,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	}
 
 	/* kick */
-	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
+	CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 	result = vm_exec(th);
     }
     TH_POP_TAG();

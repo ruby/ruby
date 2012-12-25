@@ -24,6 +24,12 @@
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
+static void
+vm_stackoverflow(void)
+{
+    rb_exc_raise(sysstack_error);
+}
+
 static inline rb_control_frame_t *
 vm_push_frame(rb_thread_t *th,
 	      const rb_iseq_t *iseq,
@@ -41,7 +47,7 @@ vm_push_frame(rb_thread_t *th,
 
     /* check stack overflow */
     if ((void *)(sp + local_size) >= (void *)cfp) {
-	rb_exc_raise(sysstack_error);
+	vm_stackoverflow();
     }
     th->cfp = cfp;
 
@@ -1048,7 +1054,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	    ptr = RARRAY_PTR(tmp);
 	    cfp->sp -= 1;
 
-	    CHECK_STACK_OVERFLOW(cfp, len);
+	    CHECK_VM_STACK_OVERFLOW(cfp, len);
 
 	    for (i = 0; i < len; i++) {
 		*cfp->sp++ = ptr[i];
@@ -1209,7 +1215,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     rb_iseq_t *iseq = ci->me->def->body.iseq;
     VALUE *sp = argv + iseq->arg_size;
 
-    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
 
     /* clear local variables */
     for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
@@ -1236,7 +1242,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 
     cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
-    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
     RUBY_VM_CHECK_INTS(th);
 
     sp_orig = sp = cfp->sp;
@@ -1633,7 +1639,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     ci_entry.me = rb_method_entry(CLASS_OF(ci_entry.recv), idMethodMissing, &ci_entry.defined_class);
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
-    CHECK_STACK_OVERFLOW(reg_cfp, 1);
+    CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
     if (ci->argc > 0) {
 	MEMMOVE(argv+1, argv, VALUE, ci->argc);
     }
@@ -2090,7 +2096,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
 	th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
-	CHECK_STACK_OVERFLOW(th->cfp, argc);
+	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
@@ -2208,7 +2214,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 	VALUE * const rsp = GET_SP() - ci->argc;
 	SET_SP(rsp);
 
-	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
+	CHECK_VM_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 	opt_pc = vm_yield_setup_args(th, iseq, ci->argc, rsp, 0, block_proc_is_lambda(block->proc));
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_BLOCK, block->self,

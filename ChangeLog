@@ -1,3 +1,17 @@
+Tue Dec 25 18:53:35 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, eval_intern.h (CHECK_STACK_OVERFLOW): move
+	  CHECK_STACK_OVERFLOW() to vm_core.h and rename to
+	  CHECK_VM_STACK_OVERFLOW().
+	  This change is only move and rename.
+
+	* tool/instruction.rb: catch up above changes.
+
+	* vm.c, vm_insnhelper.c: ditto.
+
+	* vm_insnhelper.c (vm_stackoverflow): add a function to unify
+	  raising vm stackoverflow exception.
+
 Tue Dec 25 16:16:54 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (RUBY_VM_THREAD_VM_STACK_SIZE): change default

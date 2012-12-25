@@ -853,6 +853,12 @@ int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
+#define CHECK_VM_STACK_OVERFLOW(cfp, margin) do \
+  if ((VALUE *)((char *)(((VALUE *)(cfp)->sp) + (margin)) + sizeof(rb_control_frame_t)) >= ((VALUE *)(cfp))) { \
+      vm_stackoverflow(); \
+  } \
+while (0)
+
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
