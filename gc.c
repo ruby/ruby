@@ -101,8 +101,11 @@ ruby_gc_params_t initial_params = {
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 # define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+# define obj_id_to_ref(objid) ((objid) ^ FIXNUM_FLAG) /* unset FIXNUM_FLAG */
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 # define nonspecial_obj_id(obj) LL2NUM((SIGNED_VALUE)(obj) / 2)
+# define obj_id_to_ref(objid) (FIXNUM_P(objid) ? \
+   ((objid) ^ FIXNUM_FLAG) : (NUM2PTR(objid) << 1))
 #else
 # error not supported
 #endif
@@ -3208,7 +3211,7 @@ id2ref(VALUE obj, VALUE objid)
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
-    ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
+    ptr = obj_id_to_ref(objid);
 
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
         ID symid = ptr / sizeof(RVALUE);

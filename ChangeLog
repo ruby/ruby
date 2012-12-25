@@ -1,3 +1,12 @@
+Tue Dec 25 09:54:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* gc.c (obj_id_to_ref): add a macro to treat Bignum object id.
+	  This follows the change r38493.
+
+	* gc.c (id2ref): fix for working fine with Bignum object id on x64
+	  Windows.
+	* gc.c (wmap_finalize): ditto.
+
 Sat Dec 22 00:33:28 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* object.c (rb_obj_hash): shouldn't assume object_id can be long.
