@@ -61,7 +61,7 @@ Removed file specifications/c-2.gemspec
 
     OUTPUT
 
-    assert_equal expected, @ui.output
+    assert_equal expected.lines.sort, @ui.output.lines.sort
 
     assert_equal Gem.dir,  @userhome
     assert_equal Gem.path, [@gemhome, @userhome]
@@ -114,7 +114,7 @@ Extra file specifications/c-2.gemspec
 
     OUTPUT
 
-    assert_equal expected, @ui.output
+    assert_equal expected.lines.sort, @ui.output.lines.sort
 
     assert_equal Gem.dir,  @userhome
     assert_equal Gem.path, [@gemhome, @userhome]
