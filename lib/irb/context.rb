@@ -100,7 +100,7 @@ module IRB
       if @echo.nil?
 	@echo = true
       end
-      @debug_level = IRB.conf[:DEBUG_LEVEL]
+      self.debug_level = IRB.conf[:DEBUG_LEVEL]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -360,7 +360,6 @@ module IRB
     def debug_level=(value)
       @debug_level = value
       RubyLex.debug_level = value
-      SLex.debug_level = value
     end
 
     # Whether or not debug mode is enabled, see #debug_level=.

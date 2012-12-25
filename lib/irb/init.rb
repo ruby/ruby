@@ -197,7 +197,7 @@ module IRB # :nodoc:
 	@CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
       when "--single-irb"
 	@CONF[:SINGLE_IRB] = true
-      when /^--irb_debug=(?:=(.+))?/
+      when /^--irb_debug(?:=(.+))?/
 	@CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
       when "-v", "--version"
 	print IRB.version, "\n"
