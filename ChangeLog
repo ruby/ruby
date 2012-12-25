@@ -1,3 +1,12 @@
+Tue Dec 25 20:40:47 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c, include/ruby/intern.h (rb_big_eql): exported.
+
+	* thread.c (recursive_check): object_id maybe a Bignum, not Fixnum on
+	  LLP64.  see also r38493 and r38548.
+	  reported by Heesob Park at [ruby-core:51083] [Bug #7607], and patched
+	  by shirosaki at [ruby-core:51095]
+
 Tue Dec 25 09:54:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* gc.c (obj_id_to_ref): add a macro to treat Bignum object id.

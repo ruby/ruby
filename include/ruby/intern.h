@@ -122,6 +122,7 @@ VALUE rb_dbl2big(double);
 double rb_big2dbl(VALUE);
 VALUE rb_big_cmp(VALUE, VALUE);
 VALUE rb_big_eq(VALUE, VALUE);
+VALUE rb_big_eql(VALUE, VALUE);
 VALUE rb_big_plus(VALUE, VALUE);
 VALUE rb_big_minus(VALUE, VALUE);
 VALUE rb_big_mul(VALUE, VALUE);

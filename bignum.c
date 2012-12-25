@@ -1628,7 +1628,7 @@ rb_big_eq(VALUE x, VALUE y)
  *     68719476736.eql?(68719476736.0)   #=> false
  */
 
-static VALUE
+VALUE
 rb_big_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) != T_BIGNUM) return Qfalse;
