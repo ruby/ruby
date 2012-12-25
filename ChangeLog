@@ -1,3 +1,8 @@
+Tue Dec 25 22:21:06 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/output-method.rb: raise right exception when
+	  IRB::OutputMethod#print don't defined [Bug #6657].
+
 Tue Dec 25 22:06:33 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks_and_pop_frame):

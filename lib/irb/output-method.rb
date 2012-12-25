@@ -16,12 +16,14 @@ module IRB
   # IRB::Notifier. You can define your own output method to use with Irb.new,
   # or Context.new
   class OutputMethod
-    @RCS_ID='-$Id$-'
+    extend Exception2MessageMapper
+    def_exception :NotImplementedError, "Need to define `%s'"
+
 
     # Open this method to implement your own output method, raises a
     # NotImplementedError if you don't define #print in your own class.
     def print(*opts)
-      IRB.fail NotImplementedError, "print"
+      OutputMethod.Raise NotImplementedError, "print"
     end
 
     # Prints the given +opts+, with a newline delimiter.
