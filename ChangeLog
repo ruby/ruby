@@ -1,4 +1,7 @@
-Wed Dec 26 07:31:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 26 07:31:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_enumerate_lines, rb_str_chop): reduce duplicated
+	  code.
 
 	* string.c (rb_str_enumerate_chars): prevent shared copy from GC.
 

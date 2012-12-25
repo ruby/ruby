@@ -6161,9 +6161,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 		continue;
 	    }
 	    p = p0 + rb_enc_mbclen(p0, pend, enc);
-	    line = rb_str_new5(str, s, p - s);
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
+	    line = rb_str_subseq(str, s - ptr, p - s);
 	    if (wantarray)
 		rb_ary_push(ary, line);
 	    else
@@ -6200,24 +6198,21 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	if (c == newline &&
 	    (rslen <= 1 ||
 	     (pend - p >= rslen && memcmp(RSTRING_PTR(rs), p, rslen) == 0))) {
-	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
+	    p += (rslen ? rslen : n);
+	    line = rb_str_subseq(str, s - ptr, p - s);
 	    if (wantarray)
 		rb_ary_push(ary, line);
 	    else
 		rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = p + (rslen ? rslen : n);
+	    s = p;
 	}
 	p += n;
     }
 
   finish:
     if (s != pend) {
-	line = rb_str_new5(str, s, pend - s);
-	OBJ_INFECT(line, str);
-	rb_enc_cr_str_copy_for_substr(line, str);
+	line = rb_str_subseq(str, s - ptr, pend - s);
 	if (wantarray)
 	    rb_ary_push(ary, line);
 	else
@@ -6643,10 +6638,7 @@ rb_str_chop_bang(VALUE str)
 static VALUE
 rb_str_chop(VALUE str)
 {
-    VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
-    rb_enc_cr_str_copy_for_substr(str2, str);
-    OBJ_INFECT(str2, str);
-    return str2;
+    return rb_str_subseq(str, 0, chopped_length(str));
 }
 
 
