@@ -115,7 +115,7 @@ compile_err_append(VALUE mesg)
 	    th->errinfo = err;
 	}
 	rb_str_cat2(mesg, "\n");
-	rb_io_write(rb_stderr, mesg);
+	rb_write_error_str(mesg);
     }
 
     /* returned to the parser world */
@@ -165,7 +165,7 @@ compile_warn_print(const char *file, int line, const char *fmt, va_list args)
 
     str = compile_snprintf(NULL, "warning: ", file, line, fmt, args);
     rb_str_cat2(str, "\n");
-    rb_io_write(rb_stderr, str);
+    rb_write_error_str(str);
 }
 
 void
@@ -209,7 +209,7 @@ warn_print(const char *fmt, va_list args)
     rb_str_cat2(str, "warning: ");
     rb_str_vcatf(str, fmt, args);
     rb_str_cat2(str, "\n");
-    rb_io_write(rb_stderr, str);
+    rb_write_error_str(str);
 }
 
 void

@@ -6980,6 +6980,23 @@ rb_write_error(const char *mesg)
     rb_write_error2(mesg, strlen(mesg));
 }
 
+void
+rb_write_error_str(VALUE mesg)
+{
+    /* a stopgap measure for the time being */
+    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
+	size_t len = (size_t)RSTRING_LEN(mesg);
+	if (fwrite(RSTRING_PTR(mesg), sizeof(char), len, stderr) < len) {
+	    RB_GC_GUARD(mesg);
+	    return;
+	}
+    }
+    else {
+	/* may unlock GVL, and  */
+	rb_io_write(rb_stderr, mesg);
+    }
+}
+
 static void
 must_respond_to(ID mid, VALUE val, ID id)
 {

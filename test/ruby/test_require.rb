@@ -384,6 +384,12 @@ class TestRequire < Test::Unit::TestCase
     }
     tmp.close
 
+    # "circular require" warnings to $stderr, but backtraces to stderr
+    # in C-level.  And redirecting stderr to a pipe seems to change
+    # some blocking timings and causes a deadlock, so run in a
+    # separated process for the time being.
+    assert_separately(["-w", "-", path, bug5754], <<-'end;')
+    path, bug5754 = *ARGV
     start = false
 
     scratch = []
@@ -416,6 +422,7 @@ class TestRequire < Test::Unit::TestCase
 
     assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
     assert_equal([:pre, :post], scratch, bug5754)
+    end;
   ensure
     $".delete(path)
     tmp.close(true) if tmp
