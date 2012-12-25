@@ -1,3 +1,11 @@
+Tue Dec 25 16:16:54 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (RUBY_VM_THREAD_VM_STACK_SIZE): change default
+	  VM stack size (128 KB or  256 KB -> 512 KB or 1024 KB).
+	  This re-sizing corrects smaller value introduced at r38478.
+	  Newer value is same VM stack size of Ruby 1.9.
+	  [ruby-dev:46797] [ruby-trunk - Bug #7603]
+
 Tue Dec 25 13:38:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (compile_err_append, compile_warn_print, warn_print): use
