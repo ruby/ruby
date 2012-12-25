@@ -699,12 +699,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_opassign = false
     parse('a ||= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+    thru_opassign = false
+    parse('a::X ||= c 1', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
   end
 
   def test_opassign_error
     thru_opassign = []
     events = [:on_opassign]
-    parse('a::X ||= c 1', events) {|a,*b|
+    parse('$~ ||= 1', events) {|a,*b|
       thru_opassign << a
     }
     assert_equal events, thru_opassign
