@@ -1,3 +1,9 @@
+Wed Dec 26 11:54:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: enable -fPIE when checking -pie for fixing
+	  OpenBSD build error. Patch by George Koehler. Thank you!
+	  [Bug #7606] [ruby-core:51082]
+
 Wed Dec 26 07:31:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_copy_for_substr): empty string is always
