@@ -335,7 +335,7 @@ module IRB
       @inspect_mode
     end
 
-    # Obsolate method.
+    # Obsolete method.
     #
     # Can be set using the +--noreadline+ and +--readline+ command line
     # options.
