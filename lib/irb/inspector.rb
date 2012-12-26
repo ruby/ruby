@@ -51,7 +51,7 @@ module IRB # :nodoc:
     # Determines the inspector to use where +inspector+ is one of the keys passed
     # during inspector definition.
     def self.keys_with_inspector(inspector)
-      select{|k,v| v == inspector}.collect{|k, v| k}
+      INSPECTORS.select{|k,v| v == inspector}.collect{|k, v| k}
     end
 
     # Example

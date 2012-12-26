@@ -1,3 +1,7 @@
+Wed Dec 26 23:55:18 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/context.rb: fix IRB::Inspector#keys_with_inspector [Bug #7598]
+
 Wed Dec 26 23:26:15 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/context.rb: IRB::Context#use_readline= has been obsolete
