@@ -521,7 +521,8 @@ class TestRubyOptions < Test::Unit::TestCase
     t = Tempfile.new(["test_ruby_test_bug7597", ".rb"])
     t.write "f" * 100
     t.flush
-    assert_in_out_err(["-e", "$0=ARGF.read; Process.kill :SEGV, $$"], t.path, [], expected_stderr, bug7597)
+    assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
+                      "", [], expected_stderr, bug7597, opts)
     t.close
   end
 
