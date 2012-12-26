@@ -1,3 +1,8 @@
+Wed Dec 26 21:09:19 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ext/math-mode.rb: make not able to change math-mode
+	  after irb starting [Bug #6302]. Patched by sho-h.
+
 Wed Dec 26 12:52:36 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/init.rb: change default debug level for

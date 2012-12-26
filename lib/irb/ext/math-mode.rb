@@ -27,7 +27,7 @@ module IRB
     # See IRB@Command+line+options and the unix manpage <code>bc(1)</code> for
     # more information.
     def math_mode=(opt)
-      if @math_mode == true && opt == false
+      if @math_mode == true && !opt
 	IRB.fail CantReturnToNormalMode
 	return
       end
