@@ -1,3 +1,8 @@
+Wed Dec 26 23:26:15 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/context.rb: IRB::Context#use_readline= has been obsolate
+	  [Bug #6339].
+
 Wed Dec 26 21:32:46 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/context.rb: make a correct prompt from

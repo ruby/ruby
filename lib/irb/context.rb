@@ -335,21 +335,15 @@ module IRB
       @inspect_mode
     end
 
-
-    # Sets whether or not to use the Readline extension
+    # Obsolate method.
     #
-    # +true+::  enables +Readline+
-    # +false+:: disables +Readline+
-    # +nil+::   intends to use +Readline+,
-    #           except for when +inf-ruby-mode+ is active.
-    #
-    # Can also be set using the +--noreadline+ and +--readline+ command line
+    # Can be set using the +--noreadline+ and +--readline+ command line
     # options.
     #
     # See IRB@Command+line+options for more command line options.
     def use_readline=(opt)
-      @use_readline = opt
-      print "use readline module\n" if @use_readline
+      print "This method is obsolete."
+      print "Do nothing."
     end
 
     # Sets the debug level of irb
