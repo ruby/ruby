@@ -115,7 +115,7 @@ module IRB # :nodoc:
 
     @CONF[:AT_EXIT] = []
 
-    @CONF[:DEBUG_LEVEL] = 1
+    @CONF[:DEBUG_LEVEL] = 0
   end
 
   def IRB.init_error

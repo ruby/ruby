@@ -1,3 +1,8 @@
+Wed Dec 26 12:52:36 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/init.rb: change default debug level for
+	  irb[ruby-dev:46805], [Bug #6301].
+
 Wed Dec 26 11:54:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: enable -fPIE when checking -pie for fixing
