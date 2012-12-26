@@ -57,7 +57,7 @@ module IRB
       if IRB.conf[:SINGLE_IRB] or !defined?(JobManager)
 	@irb_name = IRB.conf[:IRB_NAME]
       else
-	@irb_name = "irb#"+IRB.JobManager.n_jobs.to_s
+	@irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
       end
       @irb_path = "(" + @irb_name + ")"
 
