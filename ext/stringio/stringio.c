@@ -737,6 +737,7 @@ strio_ungetc(VALUE self, VALUE c)
     rb_encoding *enc, *enc2;
 
     if (NIL_P(c)) return Qnil;
+    check_modifiable(ptr);
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
 	char buf[16];
@@ -801,6 +802,7 @@ strio_ungetbyte(VALUE self, VALUE c)
 	cl = RSTRING_LEN(c);
 	if (cl == 0) return Qnil;
     }
+    check_modifiable(ptr);
     rb_str_modify(str);
     if (cl > pos) {
 	char *s;

@@ -504,6 +504,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(RuntimeError, bug) {s.reopen("")}
   end
 
+  def test_frozen_string
+    s = StringIO.new("".freeze)
+    bug = '[ruby-core:48530]'
+    assert_raise(IOError, bug) {s.write("foo")}
+    assert_raise(IOError, bug) {s.ungetc("a")}
+    assert_raise(IOError, bug) {s.ungetbyte("a")}
+  end
+
   def test_readlines_limit_0
     assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.readlines(0) }
   end
