@@ -620,7 +620,7 @@ typedef enum {
     VM_DEFINECLASS_TYPE_MASK            = 0x07,
 } rb_vm_defineclass_type_t;
 
-#define VM_DEFINECLASS_TYPE(x) ((x) & VM_DEFINECLASS_TYPE_MASK)
+#define VM_DEFINECLASS_TYPE(x) ((rb_vm_defineclass_type_t)(x) & VM_DEFINECLASS_TYPE_MASK)
 #define VM_DEFINECLASS_FLAG_SCOPED         0x08
 #define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
 #define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)

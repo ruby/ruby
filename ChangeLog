@@ -1,3 +1,8 @@
+Thu Dec 27 21:08:23 2012  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* vm_core.h (VM_DEFINECLASS_TYPE): explicit cast to enum type to avoid 64->32
+	  shorten warning
+
 Thu Dec 27 20:11:29 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ext/stringio/stringio.c (strio_ungetc): raise IOError instead of RuntimeError
