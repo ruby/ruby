@@ -1,3 +1,8 @@
+Fri Dec 28 07:07:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* def/id.def: use split(/^/) instead of String#lines to support
+	  Ruby 1.8.5 as BASERUBY.
+
 Thu Dec 27 21:56:56 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* variable.c (rb_mod_remove_const): fix segv caused by r38558.

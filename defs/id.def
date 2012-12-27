@@ -47,7 +47,7 @@ global_ids = []
 const_ids = []
 class_ids = []
 names = {}
-predefined.lines.each_with_index do |line, num|
+predefined.split(/^/).each_with_index do |line, num|
   next if /^#/ =~ line or (name, token = line.split; !name)
   token ||= name
   if /#/ =~ token
