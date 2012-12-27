@@ -1,3 +1,11 @@
+Thu Dec 27 20:45:29 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ext/stringio/stringio.c (strio_getline): fix not to raise TypeError
+	  when limit is nil.
+	  [Bug #7232] [ruby-core:48531]
+
+	* test/stringio/test_stringio.rb: a test for above.
+
 Thu Dec 27 21:08:23 2012  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* vm_core.h (VM_DEFINECLASS_TYPE): explicit cast to enum type to avoid 64->32

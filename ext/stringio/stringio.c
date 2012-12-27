@@ -987,7 +987,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 
       case 2:
 	if (!NIL_P(str)) StringValue(str);
-	limit = NUM2LONG(lim);
+	if (!NIL_P(lim)) limit = NUM2LONG(lim);
 	break;
     }
 
