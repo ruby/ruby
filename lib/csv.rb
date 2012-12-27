@@ -274,7 +274,7 @@ class CSV
     #   field( header, offset )
     #   field( index )
     #
-    # This method will fetch the field value by +header+ or +index+.  If a field
+    # This method will return the field value by +header+ or +index+.  If a field
     # is not found, +nil+ is returned.
     #
     # When provided, +offset+ ensures that a header match occurrs on or later
@@ -290,6 +290,42 @@ class CSV
       pair.nil? ? nil : pair.last
     end
     alias_method :[], :field
+
+    #
+    # :call-seq:
+    #   fetch( header )
+    #   fetch( header ) { |row| ... }
+    #   fetch( header, default )
+    #
+    # This method will fetch the field value by +header+. It has the same
+    # behavior as Hash#fetch: if there is a field with the given +header+, its
+    # value is returned. Otherwise, if a block is given, it is yielded the
+    # +header+ and its result is returned; if a +default+ is given as the
+    # second argument, it is returned; otherwise a KeyError is raised.
+    #
+    def fetch(header, *varargs)
+      raise ArgumentError, "Too many arguments" if varargs.length > 1
+      pair = @row.assoc(header)
+      if pair
+        pair.last
+      else
+        if block_given?
+          yield header
+        elsif varargs.empty?
+          raise KeyError, "key not found: #{header}"
+        else
+          varargs.first
+        end
+      end
+    end
+
+    # Returns +true+ if there is a field with the given +header+.
+    def has_key?(header)
+      !!@row.assoc(header)
+    end
+    alias_method :include?, :has_key?
+    alias_method :key?,     :has_key?
+    alias_method :member?,  :has_key?
 
     #
     # :call-seq:

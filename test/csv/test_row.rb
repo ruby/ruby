@@ -78,6 +78,33 @@ class TestCSV::Row < TestCSV
     assert_equal(nil, @row.field("A", 5))
   end
 
+  def test_fetch
+    # only by name
+    assert_equal(2, @row.fetch('B'))
+
+    # missing header raises KeyError
+    assert_raise KeyError do
+      @row.fetch('foo')
+    end
+
+    # missing header yields itself to block
+    assert_equal 'bar', @row.fetch('foo') { |header|
+      header == 'foo' ? 'bar' : false }
+
+    # missing header returns the given default value
+    assert_equal 'bar', @row.fetch('foo', 'bar')
+
+    # more than one vararg raises ArgumentError
+    assert_raise ArgumentError do
+      @row.fetch('foo', 'bar', 'baz')
+    end
+  end
+
+  def test_has_key?
+    assert_equal(true, @row.has_key?('B'))
+    assert_equal(false, @row.has_key?('foo'))
+  end
+
   def test_set_field
     # set field by name
     assert_equal(100, @row["A"] = 100)
