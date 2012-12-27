@@ -1591,4 +1591,9 @@ class TestModule < Test::Unit::TestCase
     end
     assert_equal("", stderr)
   end
+
+  def test_remove_const
+    m = Module.new
+    assert_raise(NameError){ m.instance_eval { remove_const(:__FOO__) } }
+  end
 end

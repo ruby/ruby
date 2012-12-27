@@ -1919,7 +1919,7 @@ rb_mod_remove_const(VALUE mod, VALUE name)
 	}
 	else {
 	    rb_name_error_str(name, "`%"PRIsVALUE"' is not allowed as a constant name",
-			      QUOTE_ID(name));
+			      QUOTE(name));
 	}
     }
     if (!rb_is_const_id(id)) {
