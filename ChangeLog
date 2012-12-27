@@ -1,3 +1,8 @@
+Thu Dec 27 23:27:15 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: make lex_state to EXPR_END when next token
+	  is an operator after SYMBEG [Bug #6378].
+
 Thu Dec 27 21:30:21 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: allow to handle recursive heredocs on

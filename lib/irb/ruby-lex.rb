@@ -54,6 +54,7 @@ class RubyLex
     @lex_state = EXPR_BEG
     @space_seen = false
     @here_header = false
+    @post_symbeg = false
 
     @continue = false
     @line = ""
@@ -218,6 +219,8 @@ class RubyLex
     @here_header = false
 
     @continue = false
+    @post_symbeg = false
+
     prompt
 
     @line = ""
@@ -286,6 +289,8 @@ class RubyLex
       begin
 	tk = @OP.match(self)
 	@space_seen = tk.kind_of?(TkSPACE)
+	@lex_state = EXPR_END if @post_symbeg && tk.kind_of?(TkOp)
+	@post_symbeg = tk.kind_of?(TkSYMBEG)
       rescue SyntaxError
 	raise if @exception_on_syntax_error
 	tk = TkError.new(@seek, @line_no, @char_no)
@@ -542,7 +547,7 @@ class RubyLex
 	@lex_state = EXPR_BEG
 	Token(TkCOLON)
       else
-	@lex_state = EXPR_FNAME;
+	@lex_state = EXPR_FNAME
 	Token(TkSYMBEG)
       end
     end
