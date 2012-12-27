@@ -1,3 +1,8 @@
+Thu Dec 27 21:30:21 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: allow to handle recursive heredocs on
+	  irb[Bug #5648].
+
 Thu Dec 27 20:45:29 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ext/stringio/stringio.c (strio_getline): fix not to raise TypeError

@@ -907,10 +907,25 @@ class RubyLex
     end
 
     @here_header = false
-    while l = gets
-      l = l.sub(/(:?\r)?\n\z/, '')
-      if (indent ? l.strip : l) == quoted
- 	break
+#     while l = gets
+#       l = l.sub(/(:?\r)?\n\z/, '')
+#       if (indent ? l.strip : l) == quoted
+#  	break
+#       end
+#     end
+
+    line = ""
+    while ch = getc
+      if ch == "\n"
+	if line == quoted
+	  break
+	end
+	line = ""
+      else
+	line.concat ch unless indent && line == "" && /\s/ =~ ch
+	if @ltype != "'" && ch == "#" && peek(0) == "{"
+	  identify_string_dvar
+	end
       end
     end
 
