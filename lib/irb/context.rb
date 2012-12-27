@@ -54,7 +54,7 @@ module IRB
 
       self.prompt_mode = IRB.conf[:PROMPT_MODE]
 
-      if IRB.conf[:SINGLE_IRB] or !defined?(JobManager)
+      if IRB.conf[:SINGLE_IRB] or !defined?(IRB::JobManager)
 	@irb_name = IRB.conf[:IRB_NAME]
       else
 	@irb_name = "irb#"+IRB.JobManager.n_jobs.to_s
