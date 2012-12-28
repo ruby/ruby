@@ -1643,7 +1643,10 @@ get_param(const char *name, size_t default_value, size_t min_value)
 static void
 check_machine_stack_size(size_t *sizep)
 {
+#ifdef PTHREAD_STACK_MIN
     size_t size = *sizep;
+#endif
+
 #ifdef __SYMBIAN32__
     *sizep = 64 * 1024; /* 64KB: Let's be slightly more frugal on mobile platform */
 #endif
