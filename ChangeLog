@@ -1,3 +1,9 @@
+Fri Dec 28 11:50:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): pass single argument to
+	  single optional parameter unchanged without splatting.  [Bug #7621]
+	  [ruby-dev:46801]
+
 Fri Dec 28 11:17:47 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* proc.c (method_eq): fix the documentation to refer to owner.
