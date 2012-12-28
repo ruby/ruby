@@ -507,4 +507,19 @@ class TestMethod < Test::Unit::TestCase
     assert_instance_of String, __dir__
     assert_equal(File.dirname(__FILE__), __dir__)
   end
+
+  def test_alias_owner
+    bug7613 = '[ruby-core:51105]'
+    c = Class.new {
+      def foo
+      end
+    }
+    x = c.new
+    class << x
+      alias bar foo
+    end
+    assert_equal(c, x.method(:foo).owner)
+    assert_equal(x.singleton_class, x.method(:bar).owner)
+    assert(x.method(:foo) != x.method(:bar), bug7613)
+  end
 end

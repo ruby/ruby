@@ -1,3 +1,11 @@
+Fri Dec 28 11:17:47 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* proc.c (method_eq): fix the documentation to refer to owner.
+	  [ruby-core:51105] [Bug #7613]
+
+	* test/ruby/test_method.rb (test_alias_onwer): new test to confirm
+	  that `a == b' returns false if owners of a and b are different.
+
 Fri Dec 28 07:07:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* def/id.def: use split(/^/) instead of String#lines to support
