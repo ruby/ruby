@@ -49,9 +49,13 @@
 #include <string.h>
 
 #if defined(__APPLE__)
-#include <crt_externs.h>
-#undef environ
-#define environ (*_NSGetEnviron())
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+#  undef environ
+#  define environ (*_NSGetEnviron())
+# else
+#  include "crt_externs.h"
+# endif
 #endif
 
 #define SPT_NONE	0	/* don't use it at all */

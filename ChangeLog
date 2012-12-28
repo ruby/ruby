@@ -1,3 +1,14 @@
+Fri Dec 28 23:12:44 2012  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* configure.in: check for the whether crt_externs.h is present when compiling
+	  for darwin (this header is missing in the iOS SDK)
+	* eval_intern.h: check HAVE_CRT_EXTERNS_H before including crt_externs.h, if
+	  not defined, include missing/crt_externs.h instead
+	* hash.c: ditto
+	* missing/setproctitle.c: ditto
+	* missing/crt_externs.h: declare _NSGetEnviron() function and define environ
+	  for iOS
+
 Fri Dec 28 21:40:36 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/context.rb: IRB::Context#new: Check from JobManager

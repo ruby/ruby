@@ -20,7 +20,11 @@
 #include "probes.h"
 
 #ifdef __APPLE__
-#include <crt_externs.h>
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+# else
+#  include "missing/crt_externs.h"
+# endif
 #endif
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);

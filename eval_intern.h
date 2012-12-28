@@ -28,7 +28,11 @@
 #include <setjmp.h>
 
 #ifdef __APPLE__
-#include <crt_externs.h>
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+# else
+#  include "missing/crt_externs.h"
+# endif
 #endif
 
 #ifndef HAVE_STRING_H

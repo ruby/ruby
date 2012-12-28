@@ -1220,6 +1220,12 @@ main()
 		    LINK_SO="$LINK_SO
 $POSTLINK"
 		fi
+		AC_CACHE_CHECK(whether crt_externs.h is present for extern macro, rb_cv_crt_externs,
+		    [AC_TRY_COMPILE([ #include <crt_externs.h> ], [return 0;],
+		    rb_cv_crt_externs=yes, rb_cv_crt_externs=no)])
+		if test "$rb_cv_crt_externs" = yes; then
+		    AC_DEFINE(HAVE_CRT_EXTERNS_H)
+		fi
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
