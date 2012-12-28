@@ -1,3 +1,9 @@
+Fri Dec 28 17:06:17 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-curlies): Automatically
+	  indent closing curly brackets when
+	  ruby-electric-newline-before-closing-bracket is true.
+
 Fri Dec 28 11:50:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_block_args): pass single argument to
