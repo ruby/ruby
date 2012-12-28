@@ -124,7 +124,7 @@ Tue Dec 25 22:06:33 2012  Koichi Sasada  <ko1@atdot.net>
 	  `rb_threadptr_exec_event_hooks_and_pop_frame()'.
 
 	* vm.c (vm_exec): use EXEC_EVENT_HOOK_AND_POP_FRAME() while
-	  exception handling. While exception hadnling, if an exception
+	  exception handling. While exception handling, if an exception
 	  is raised in hooks, need to pop current frame and raise this
 	  raised exception by hook.
 
@@ -133,7 +133,7 @@ Tue Dec 25 22:06:33 2012  Koichi Sasada  <ko1@atdot.net>
 Tue Dec 25 21:08:53 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/init.rb, lib/irb/lc/ja/error.rb, lib/irb/lc/error.rb:
-	  raise exception when illegal RC_NAME_GENARATOR defined [Bug #6455].
+	  raise exception when illegal RC_NAME_GENERATOR defined [Bug #6455].
 
 Tue Dec 25 19:22:17 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
