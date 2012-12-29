@@ -240,6 +240,12 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 VALUE
 rb_singleton_class_clone(VALUE obj)
 {
+    return rb_singleton_class_clone_and_attach(obj, Qundef);
+}
+
+VALUE
+rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
+{
     VALUE klass = RBASIC(obj)->klass;
 
     if (!FL_TEST(klass, FL_SINGLETON))
@@ -263,6 +269,9 @@ rb_singleton_class_clone(VALUE obj)
 	if (RCLASS_CONST_TBL(klass)) {
 	    RCLASS_CONST_TBL(clone) = st_init_numtable();
 	    st_foreach(RCLASS_CONST_TBL(klass), clone_const_i, (st_data_t)RCLASS_CONST_TBL(clone));
+	}
+	if (attach != Qundef) {
+	    rb_singleton_class_attached(clone, attach);
 	}
 	RCLASS_M_TBL(clone) = st_init_numtable();
 	st_foreach(RCLASS_M_TBL(klass), clone_method_i, (st_data_t)clone);

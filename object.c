@@ -298,7 +298,7 @@ rb_obj_clone(VALUE obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    singleton = rb_singleton_class_clone(obj);
+    singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC(clone)->klass = singleton;
     if (FL_TEST(singleton, FL_SINGLETON)) {
 	rb_singleton_class_attached(singleton, clone);

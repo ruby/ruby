@@ -336,4 +336,18 @@ class TestClass < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_cloned_singleton_method_added
+    bug5283 = '[ruby-dev:44477]'
+    added = []
+    c = Class.new
+    c.singleton_class.class_eval do
+      define_method(:singleton_method_added) {|mid| added << [self, mid]}
+      def foo; :foo; end
+    end
+    added.clear
+    d = c.clone
+    assert_empty(added.grep(->(k) {c == k[0]}), bug5283)
+    assert_equal(:foo, d.foo)
+  end
 end
