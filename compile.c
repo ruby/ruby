@@ -230,7 +230,7 @@ r_value(VALUE value)
       if (iseq->compile_data->option->trace_instruction) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
-  }while(0);
+  } while (0)
 
 /* add label */
 #define ADD_LABEL(seq, label) \
