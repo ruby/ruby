@@ -787,7 +787,8 @@ iseq_eval(VALUE self)
 }
 
 /*
- *  :nodoc:
+ *  Returns a human-readable string representation of this instruction
+ *  sequence, including the #label and #path.
  */
 static VALUE
 iseq_inspect(VALUE self)
@@ -803,6 +804,27 @@ iseq_inspect(VALUE self)
 		      RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
 }
 
+/*
+ *  Returns the path of this instruction sequence.
+ *
+ *  For example, using irb:
+ *
+ *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *	ins.path
+ *	#=> "<compiled>"
+ *
+ *  Using ::compile_file:
+ *
+ *	# /tmp/method.rb
+ *	def hello
+ *	  puts "hello, world"
+ *	end
+ *
+ *	# in irb
+ *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> ins.path #=> /tmp/method.rb
+ */
 static VALUE
 iseq_path(VALUE self)
 {
@@ -811,6 +833,20 @@ iseq_path(VALUE self)
     return iseq->location.path;
 }
 
+/*
+ *  Returns the absolute path of this instruction sequence.
+ *
+ *  For example, using ::compile_file:
+ *
+ *	# /tmp/method.rb
+ *	def hello
+ *	  puts "hello, world"
+ *	end
+ *
+ *	# in irb
+ *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> ins.absolute_path #=> /tmp/method.rb
+ */
 static VALUE
 iseq_absolute_path(VALUE self)
 {
@@ -819,6 +855,26 @@ iseq_absolute_path(VALUE self)
     return iseq->location.absolute_path;
 }
 
+/*  Returns the label of this instruction sequence.
+ *
+ *  For example, using irb:
+ *
+ *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *	ins.label
+ *	#=> "<compiled>"
+ *
+ *  Using ::compile_file:
+ *
+ *	# /tmp/method.rb
+ *	def hello
+ *	  puts "hello, world"
+ *	end
+ *
+ *	# in irb
+ *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> ins.label #=> <main>
+ */
 static VALUE
 iseq_label(VALUE self)
 {
@@ -827,6 +883,26 @@ iseq_label(VALUE self)
     return iseq->location.label;
 }
 
+/*  Returns the base label of this instruction sequence.
+ *
+ *  For example, using irb:
+ *
+ *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *	ins.base_label
+ *	#=> "<compiled>"
+ *
+ *  Using ::compile_file:
+ *
+ *	# /tmp/method.rb
+ *	def hello
+ *	  puts "hello, world"
+ *	end
+ *
+ *	# in irb
+ *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> ins.base_label #=> <main>
+ */
 static VALUE
 iseq_base_label(VALUE self)
 {
@@ -835,6 +911,15 @@ iseq_base_label(VALUE self)
     return iseq->location.base_label;
 }
 
+/*  Returns the first line number of this instruction sequence.
+ *
+ *  For example, using irb:
+ *
+ *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *	ins.first_lineno
+ *	#=> 1
+ */
 static VALUE
 iseq_first_lineno(VALUE self)
 {
@@ -1334,6 +1419,41 @@ rb_iseq_disasm(VALUE self)
     return str;
 }
 
+/*
+ *  Returns the instruction sequence containing the given proc or method.
+ *
+ *  For example, using irb:
+ *
+ *	# a proc
+ *	> p = proc { num = 1 + 2 }
+ *	> RubyVM::InstructionSequence.of(p)
+ *	> #=> <RubyVM::InstructionSequence:block in irb_binding@(irb)>
+ *
+ *	# for a method
+ *	> def foo(bar); puts bar; end
+ *	> RubyVM::InstructionSequence.of(method(:foo))
+ *	> #=> <RubyVM::InstructionSequence:foo@(irb)>
+ *
+ *  Using ::compile_file:
+ *
+ *	# /tmp/iseq_of.rb
+ *	def hello
+ *	  puts "hello, world"
+ *	end
+ *
+ *	$a_global_proc = proc { str = 'a' + 'b' }
+ *
+ *	# in irb
+ *	> require '/tmp/iseq_of.rb'
+ *
+ *	# first the method hello
+ *	> RubyVM::InstructionSequence.of(method(:hello))
+ *	> #=> #<RubyVM::InstructionSequence:0x007fb73d7cb1d0>
+ *
+ *	# then the global proc
+ *	> RubyVM::InstructionSequence.of($a_global_proc)
+ *	> #=> #<RubyVM::InstructionSequence:0x007fb73d7caf78>
+ */
 static VALUE
 iseq_s_of(VALUE klass, VALUE body)
 {

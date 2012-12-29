@@ -1,3 +1,9 @@
+Sat Dec 29 15:28:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* iseq.c (RubyVM::InstructionSequence):	Add rdoc for new iseq features
+	  added from r38085, this includes ::of, #path, #absolute_path,
+	  #label, #base_label, #first_lineno, and #inspect
+
 Sat Dec 29 14:06:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* iseq.c (rb_iseq_line_trace_all, rb_iseq_line_trace_specify): Add
