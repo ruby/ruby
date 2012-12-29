@@ -643,8 +643,9 @@ rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_bloc
  *  metadata attached to the returned +iseq+.
  *
  *  +options+, which can be +true+, +false+ or a +Hash+, is used to
- *  modify the default behavior of the Ruby iseq compiler.  For details
- *  regarding valid compile options see InstructionSequence.compile_option=.
+ *  modify the default behavior of the Ruby iseq compiler.
+ *
+ *  For details regarding valid compile options see ::compile_option=.
  *
  *     RubyVM::InstructionSequence.compile("a = 1 + 2")
  *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
@@ -673,8 +674,9 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
  *  InstructionSequence with source location metadata set.
  *
  *  Optionally takes +options+, which can be +true+, +false+ or a +Hash+, to
- *  modify the default behavior of the Ruby iseq compiler (for details see
- *  InstructionSequence.compile_option=).
+ *  modify the default behavior of the Ruby iseq compiler.
+ *
+ *  For details regarding valid compile options see ::compile_option=.
  *
  *      # /tmp/hello.rb
  *      puts "Hello, world!"
@@ -713,10 +715,14 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
  *     InstructionSequence.compile_option = options
  *
  *  Sets the default values for various optimizations in the Ruby iseq
- *  compiler.  Possible values for +options+ include +true+, which enables all
- *  options, +false+ which disables all options, a +Hash+ of options that you
- *  want to change (options not present in the hash will be left unchanged),
- *  and +nil+ which leaves all options unchanged.
+ *  compiler.
+ *
+ *  Possible values for +options+ include +true+, which enables all options,
+ *  +false+ which disables all options, and +nil+ which leaves all options
+ *  unchanged.
+ *
+ *  You can also pass a +Hash+ of +options+ that you want to change, any
+ *  options not present in the hash will be left unchanged.
  *
  *  Possible option names (which are keys in +options+) which can be set to
  *  +true+ or +false+ include:
@@ -734,8 +740,7 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
  *
  *  These default options can be overwritten for a single run of the iseq
  *  compiler by passing any of the above values as the +options+ parameter to
- *  InstructionSequence.new, InstructionSequence.compile and
- *  InstructionSequence.compile_file.
+ *  ::new, ::compile and ::compile_file.
  */
 static VALUE
 iseq_s_compile_option_set(VALUE self, VALUE opt)
@@ -752,6 +757,7 @@ iseq_s_compile_option_set(VALUE self, VALUE opt)
  *     InstructionSequence.compile_option -> options
  *
  *  Returns a hash of default options used by the Ruby iseq compiler.
+ *
  *  For details, see InstructionSequence.compile_option=.
  */
 static VALUE
@@ -807,11 +813,13 @@ iseq_inspect(VALUE self)
 /*
  *  Returns the path of this instruction sequence.
  *
+ *  <code><compiled></code> if the iseq was evaluated from a string.
+ *
  *  For example, using irb:
  *
- *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	iseq = RubyVM::InstructionSequence.compile('num = 1 + 2')
  *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
- *	ins.path
+ *	iseq.path
  *	#=> "<compiled>"
  *
  *  Using ::compile_file:
@@ -822,8 +830,8 @@ iseq_inspect(VALUE self)
  *	end
  *
  *	# in irb
- *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
- *	> ins.path #=> /tmp/method.rb
+ *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> iseq.path #=> /tmp/method.rb
  */
 static VALUE
 iseq_path(VALUE self)
@@ -836,6 +844,8 @@ iseq_path(VALUE self)
 /*
  *  Returns the absolute path of this instruction sequence.
  *
+ *  +nil+ if the iseq was evaluated from a string.
+ *
  *  For example, using ::compile_file:
  *
  *	# /tmp/method.rb
@@ -844,8 +854,8 @@ iseq_path(VALUE self)
  *	end
  *
  *	# in irb
- *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
- *	> ins.absolute_path #=> /tmp/method.rb
+ *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> iseq.absolute_path #=> /tmp/method.rb
  */
 static VALUE
 iseq_absolute_path(VALUE self)
@@ -857,11 +867,14 @@ iseq_absolute_path(VALUE self)
 
 /*  Returns the label of this instruction sequence.
  *
+ *  <code><main></code> if it's at the top level, <code><compiled></code> if it
+ *  was evaluated from a string.
+ *
  *  For example, using irb:
  *
- *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	iseq = RubyVM::InstructionSequence.compile('num = 1 + 2')
  *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
- *	ins.label
+ *	iseq.label
  *	#=> "<compiled>"
  *
  *  Using ::compile_file:
@@ -872,8 +885,8 @@ iseq_absolute_path(VALUE self)
  *	end
  *
  *	# in irb
- *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
- *	> ins.label #=> <main>
+ *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> iseq.label #=> <main>
  */
 static VALUE
 iseq_label(VALUE self)
@@ -887,9 +900,9 @@ iseq_label(VALUE self)
  *
  *  For example, using irb:
  *
- *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	iseq = RubyVM::InstructionSequence.compile('num = 1 + 2')
  *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
- *	ins.base_label
+ *	iseq.base_label
  *	#=> "<compiled>"
  *
  *  Using ::compile_file:
@@ -900,8 +913,8 @@ iseq_label(VALUE self)
  *	end
  *
  *	# in irb
- *	> ins = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
- *	> ins.base_label #=> <main>
+ *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
+ *	> iseq.base_label #=> <main>
  */
 static VALUE
 iseq_base_label(VALUE self)
@@ -911,13 +924,14 @@ iseq_base_label(VALUE self)
     return iseq->location.base_label;
 }
 
-/*  Returns the first line number of this instruction sequence.
+/*  Returns the number of the first source line where the instruction sequence
+ *  was loaded from.
  *
  *  For example, using irb:
  *
- *	ins = RubyVM::InstructionSequence.compile('num = 1 + 2')
+ *	iseq = RubyVM::InstructionSequence.compile('num = 1 + 2')
  *	#=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
- *	ins.first_lineno
+ *	iseq.first_lineno
  *	#=> 1
  */
 static VALUE
@@ -935,12 +949,12 @@ VALUE iseq_data_to_ary(rb_iseq_t *iseq);
  *  call-seq:
  *     iseq.to_a -> ary
  *
- *  Returns an Array of size 14 representing the instruction sequence with
- *  the following data:
+ *  Returns an Array with 14 elements representing the instruction sequence
+ *  with the following data:
  *
  *  [magic]
- *    A string identifying the data format. Always
- *    "YARVInstructionSequence/SimpleDataFormat".
+ *    A string identifying the data format. <b>Always
+ *    +YARVInstructionSequence/SimpleDataFormat+.</b>
  *
  *  [major_version]
  *    The major version of the instruction sequence.
@@ -949,45 +963,57 @@ VALUE iseq_data_to_ary(rb_iseq_t *iseq);
  *    The minor version of the instruction sequence.
  *
  *  [format_type]
- *    A number identifying the data format. Always 1.
+ *    A number identifying the data format. <b>Always 1</b>.
  *
  *  [misc]
- *    A hash containing +:arg_size+, the total number of arguments taken by
- *    the method or the block (0 if _iseq_ doesn't represent a method or
- *    block), +:local_size+, the number of local variables + 1, and
- *    +:stack_max+, used in calculating the stack depth at which a
- *    +SystemStackError+ is thrown.
+ *    A hash containing:
  *
- *  [name]
+ *    [+:arg_size+]
+ *	the total number of arguments taken by the method or the block (0 if
+ *	_iseq_ doesn't represent a method or block)
+ *    [+:local_size+]
+ *	the number of local variables + 1
+ *    [+:stack_max+]
+ *	used in calculating the stack depth at which a SystemStackError is
+ *	thrown.
+ *
+ *  [#label]
  *    The name of the context (block, method, class, module, etc.) that this
- *    instruction sequence belongs to. <code><main></code> if it's at the top
- *    level, <code><compiled></code> if it was evaluated from a string.
+ *    instruction sequence belongs to.
  *
- *  [path]
+ *    <code><main></code> if it's at the top level, <code><compiled></code> if
+ *    it was evaluated from a string.
+ *
+ *  [#path]
  *    The relative path to the Ruby file where the instruction sequence was
- *    loaded from. <code><compiled></code> if the iseq was evaluated from a
- *    string.
+ *    loaded from.
  *
- *  [absolute_path]
+ *    <code><compiled></code> if the iseq was evaluated from a string.
+ *
+ *  [#absolute_path]
  *    The absolute path to the Ruby file where the instruction sequence was
- *    loaded from. +nil+ if the iseq was evaluated from a string.
+ *    loaded from.
  *
- *  [start_lineno]
+ *    +nil+ if the iseq was evaluated from a string.
+ *
+ *  [#first_lineno]
  *    The number of the first source line where the instruction sequence was
  *    loaded from.
  *
  *  [type]
- *    The type of the instruction sequence. Valid values are +:top+,
- *    +:method+, +:block+, +:class+, +:rescue+, +:ensure+, +:eval+, +:main+,
- *    and +:defined_guard+.
+ *    The type of the instruction sequence.
+ *
+ *    Valid values are +:top+, +:method+, +:block+, +:class+, +:rescue+,
+ *    +:ensure+, +:eval+, +:main+, and +:defined_guard+.
  *
  *  [locals]
  *    An array containing the names of all arguments and local variables as
  *    symbols.
  *
  *  [args]
- *    The arity if the method or block only has required arguments.  Otherwise
- *    an array of:
+ *    The arity if the method or block only has required arguments.
+ *
+ *    Otherwise an array of:
  *
  *      [required_argc, [optional_arg_labels, ...],
  *       splat_index, post_splat_argc, post_splat_index,
@@ -2181,17 +2207,20 @@ rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set)
  *  Document-class: RubyVM::InstructionSequence
  *
  *  The InstructionSequence class represents a compiled sequence of
- *  instructions for the Ruby Virtual Machine. With it, you can get a handle
- *  to the instructions that make up a method or a proc, compile strings of
- *  Ruby code down to VM instructions, and disassemble instruction sequences
- *  to strings for easy inspection. It is mostly useful if you want to learn
- *  how the Ruby VM works, but it also lets you control various settings for
- *  the Ruby iseq compiler. You can find the source for the VM instructions in
- *  +insns.def+ in the Ruby source.
+ *  instructions for the Ruby Virtual Machine.
  *
- *  The instruction sequence that results from a given piece of Ruby code will
- *  almost certainly change as Ruby changes, so example output in this
- *  documentation may be different from what you see.
+ *  With it, you can get a handle to the instructions that make up a method or
+ *  a proc, compile strings of Ruby code down to VM instructions, and
+ *  disassemble instruction sequences to strings for easy inspection. It is
+ *  mostly useful if you want to learn how the Ruby VM works, but it also lets
+ *  you control various settings for the Ruby iseq compiler.
+ *
+ *  You can find the source for the VM instructions in +insns.def+ in the Ruby
+ *  source.
+ *
+ *  The instruction sequence results will almost certainly change as Ruby
+ *  changes, so example output in this documentation may be different from what
+ *  you see.
  */
 
 void
