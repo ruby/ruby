@@ -1,3 +1,8 @@
+Sat Dec 29 14:06:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* iseq.c (rb_iseq_line_trace_all, rb_iseq_line_trace_specify): Add
+	  rdoc for experimental C level api of iseq, from r38076
+
 Sat Dec 29 11:37:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_clone): attach clone to its singleton class during

@@ -1981,6 +1981,11 @@ collect_trace(int line, rb_event_flag_t *events_ptr, void *ptr)
     return 1;
 }
 
+/*
+ * <b>Experimental MRI specific feature, only available as C level api.</b>
+ *
+ * Returns all +specified_line+ events.
+ */
 VALUE
 rb_iseq_line_trace_all(VALUE iseqval)
 {
@@ -2016,6 +2021,18 @@ line_trace_specify(int line, rb_event_flag_t *events_ptr, void *ptr)
     }
 }
 
+/*
+ * <b>Experimental MRI specific feature, only available as C level api.</b>
+ *
+ * Set a +specified_line+ event at the given line position, if the +set+
+ * parameter is +true+.
+ *
+ * This method is useful for building a debugger breakpoint at a specific line.
+ *
+ * A TypeError is raised if +set+ is not boolean.
+ *
+ * If +pos+ is a negative integer a TypeError exception is raised.
+ */
 VALUE
 rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set)
 {
