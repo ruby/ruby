@@ -1,3 +1,8 @@
+Sat Dec 29 21:57:11 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/completion.rb: treat rightly comletion for symbol on irb
+	  [Bug #7632].
+
 Sat Dec 29 21:51:30 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_cury, window_curx, window_maxy,
