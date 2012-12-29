@@ -1663,11 +1663,10 @@ static VALUE
 window_cury(VALUE obj)
 {
     struct windata *winp;
-    int x, y;
+    int RB_UNUSED_VAR(x), y;
 
     GetWINDOW(obj, winp);
     getyx(winp->window, y, x);
-    (void)x;
     return INT2FIX(y);
 }
 
@@ -1680,11 +1679,10 @@ static VALUE
 window_curx(VALUE obj)
 {
     struct windata *winp;
-    int x, y;
+    int x, RB_UNUSED_VAR(y);
 
     GetWINDOW(obj, winp);
     getyx(winp->window, y, x);
-    (void)y;
     return INT2FIX(x);
 }
 
@@ -1705,7 +1703,6 @@ window_maxy(VALUE obj)
     {
 	int x, y;
 	getmaxyx(winp->window, y, x);
-	(void)x;
 	return INT2FIX(y);
     }
 #else
@@ -1730,7 +1727,6 @@ window_maxx(VALUE obj)
     {
 	int x, y;
 	getmaxyx(winp->window, y, x);
-	(void)y;
 	return INT2FIX(x);
     }
 #else
@@ -1747,12 +1743,11 @@ static VALUE
 window_begy(VALUE obj)
 {
     struct windata *winp;
-    int x, y;
+    int RB_UNUSED_VAR(x), y;
 
     GetWINDOW(obj, winp);
 #ifdef getbegyx
     getbegyx(winp->window, y, x);
-    (void)x;
 #else
     y = winp->window->_begy;
 #endif
@@ -1768,12 +1763,11 @@ static VALUE
 window_begx(VALUE obj)
 {
     struct windata *winp;
-    int x, y;
+    int x, RB_UNUSED_VAR(y);
 
     GetWINDOW(obj, winp);
 #ifdef getbegyx
     getbegyx(winp->window, y, x);
-    (void)y;
 #else
     x = winp->window->_begx;
 #endif

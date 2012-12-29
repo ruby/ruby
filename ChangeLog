@@ -1,3 +1,9 @@
+Sat Dec 29 21:51:30 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/curses.c (window_cury, window_curx, window_maxy,
+	  window_maxx, window_begy, window_begx): use RB_UNUSED_VAR()
+	  to suppress unused-but-set-variable warnings.
+
 Sat Dec 29 16:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* iseq.c (RubyVM::InstructionSequence): rdoc formatting
