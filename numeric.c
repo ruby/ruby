@@ -1800,7 +1800,7 @@ num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	result = delta / diff;
 	return LONG2FIX(result >= 0 ? result + 1 : 0);
     }
-    else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+    else if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
 
 	if (isinf(n)) return DBL2NUM(n);

@@ -580,7 +580,7 @@ range_bsearch(VALUE range)
 	if (!satisfied) return Qnil;
 	return INT2FIX(low);
     }
-    else if (TYPE(beg) == T_FLOAT || TYPE(end) == T_FLOAT) {
+    else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
 	double low  = RFLOAT_VALUE(rb_Float(beg));
 	double high = RFLOAT_VALUE(rb_Float(end));
 	double mid, org_high;

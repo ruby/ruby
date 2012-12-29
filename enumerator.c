@@ -374,7 +374,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
 	if (argc) {
             if (NIL_P(argv[0]) || rb_obj_is_proc(argv[0]) ||
-                (TYPE(argv[0]) == T_FLOAT && RFLOAT_VALUE(argv[0]) == INFINITY)) {
+                (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == INFINITY)) {
                 size = argv[0];
             } else {
                 size = rb_to_int(argv[0]);

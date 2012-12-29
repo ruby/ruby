@@ -2238,7 +2238,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			$$ = match_op($1, $3);
-                        if (nd_type($1) == NODE_LIT && TYPE($1->nd_lit) == T_REGEXP) {
+                        if (nd_type($1) == NODE_LIT && RB_TYPE_P($1->nd_lit, T_REGEXP)) {
                             $$ = reg_named_capture_assign($1->nd_lit, $$);
                         }
 		    /*%
@@ -8370,7 +8370,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 	    return NEW_MATCH2(node1, node2);
 
 	  case NODE_LIT:
-	    if (TYPE(node1->nd_lit) == T_REGEXP) {
+	    if (RB_TYPE_P(node1->nd_lit, T_REGEXP)) {
 		return NEW_MATCH2(node1, node2);
 	    }
 	}
@@ -8383,7 +8383,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 	    return NEW_MATCH3(node2, node1);
 
 	  case NODE_LIT:
-	    if (TYPE(node2->nd_lit) == T_REGEXP) {
+	    if (RB_TYPE_P(node2->nd_lit, T_REGEXP)) {
 		return NEW_MATCH3(node2, node1);
 	    }
 	}
@@ -9138,7 +9138,7 @@ cond0(struct parser_params *parser, NODE *node)
 	break;
 
       case NODE_LIT:
-	if (TYPE(node->nd_lit) == T_REGEXP) {
+	if (RB_TYPE_P(node->nd_lit, T_REGEXP)) {
 	    warn_unless_e_option(parser, node, "regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	}

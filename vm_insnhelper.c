@@ -363,9 +363,9 @@ vm_check_if_namespace(VALUE klass)
 static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
-    if (TYPE(klass) == T_MODULE &&
+    if (RB_TYPE_P(klass, T_MODULE) &&
 	FL_TEST(klass, RMODULE_IS_OVERLAID) &&
-	TYPE(cfp->klass) == T_ICLASS &&
+	RB_TYPE_P(cfp->klass, T_ICLASS) &&
 	RBASIC(cfp->klass)->klass == klass) {
 	return cfp->klass;
     }
