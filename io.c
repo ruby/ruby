@@ -4062,7 +4062,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     }
 
     if (!NIL_P(err) && !noraise) {
-        switch(TYPE(err)) {
+        switch (TYPE(err)) {
           case T_FIXNUM:
           case T_BIGNUM:
             errno = NUM2INT(err);

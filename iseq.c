@@ -1595,7 +1595,7 @@ static VALUE
 exception_type2symbol(VALUE type)
 {
     ID id;
-    switch(type) {
+    switch (type) {
       case CATCH_TYPE_RESCUE: CONST_ID(id, "rescue"); break;
       case CATCH_TYPE_ENSURE: CONST_ID(id, "ensure"); break;
       case CATCH_TYPE_RETRY:  CONST_ID(id, "retry");  break;
@@ -1664,7 +1664,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     }
 
     /* type */
-    switch(iseq->type) {
+    switch (iseq->type) {
       case ISEQ_TYPE_TOP:    type = sym_top;    break;
       case ISEQ_TYPE_METHOD: type = sym_method; break;
       case ISEQ_TYPE_BLOCK:  type = sym_block;  break;

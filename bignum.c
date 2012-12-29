@@ -1557,7 +1557,7 @@ rb_big_cmp(VALUE x, VALUE y)
     xds = BDIGITS(x);
     yds = BDIGITS(y);
 
-    while(xlen-- && (xds[xlen]==yds[xlen]));
+    while (xlen-- && (xds[xlen]==yds[xlen]));
     if (-1 == xlen) return INT2FIX(0);
     return (xds[xlen] > yds[xlen]) ?
 	(RBIGNUM_SIGN(x) ? INT2FIX(1) : INT2FIX(-1)) :
@@ -2825,7 +2825,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	while (ny > 1 && !zds[ny-1]) --ny;
 	if (dd) {
 	    t2 = 0; i = ny;
-	    while(i--) {
+	    while (i--) {
 		t2 = (t2 | zds[i]) >> dd;
 		q = zds[i];
 		zds[i] = BIGLO(t2);

@@ -4674,7 +4674,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(val);
-	switch(nd_type(node)) {
+	switch (nd_type(node)) {
 	  case NODE_MATCH:
 	    ADD_INSN1(recv, nd_line(node), putobject, node->nd_lit);
 	    ADD_INSN2(val, nd_line(node), getspecial, INT2FIX(0),

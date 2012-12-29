@@ -2976,7 +2976,7 @@ env_size(void)
 
     rb_secure(4);
     env = GET_ENVIRON(environ);
-    for(i=0; env[i]; i++)
+    for (i=0; env[i]; i++)
 	;
     FREE_ENVIRON(environ);
     return INT2FIX(i);

@@ -128,7 +128,7 @@ static VALUE rb_eFiberError;
 #define GetFiberPtr(obj, ptr)  do {\
     TypedData_Get_Struct((obj), rb_fiber_t, &fiber_data_type, (ptr)); \
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
-} while(0)
+} while (0)
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
@@ -872,7 +872,7 @@ rb_callcc(VALUE self)
 static VALUE
 make_passing_arg(int argc, VALUE *argv)
 {
-    switch(argc) {
+    switch (argc) {
       case 0:
 	return Qnil;
       case 1:

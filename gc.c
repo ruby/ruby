@@ -2231,7 +2231,7 @@ init_mark_stack(mark_stack_t *stack)
     push_mark_stack_chunk(stack);
     stack->limit = STACK_CHUNK_SIZE;
 
-    for(i=0; i < 4; i++) {
+    for (i=0; i < 4; i++) {
         add_stack_chunk_cache(stack, stack_chunk_alloc());
     }
     stack->unused_cache_size = stack->cache_size;

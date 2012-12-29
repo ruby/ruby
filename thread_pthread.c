@@ -1006,7 +1006,7 @@ print_signal_list(char *str)
     struct signal_thread_list *list =
       signal_thread_list_anchor.next;
     thread_debug("list (%s)> ", str);
-    while(list){
+    while (list) {
 	thread_debug("%p (%p), ", list->th, list->th->thread_id);
 	list = list->next;
     }

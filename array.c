@@ -4582,7 +4582,7 @@ static VALUE
 descending_factorial(long from, long how_many)
 {
     VALUE cnt = LONG2FIX(how_many >= 0);
-    while(how_many-- > 0) {
+    while (how_many-- > 0) {
         cnt = rb_funcall(cnt, '*', 1, LONG2FIX(from--));
     }
     return cnt;
