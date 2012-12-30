@@ -13,7 +13,7 @@
 
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
-static ID object_id, respond_to_missing;
+static ID object_id;
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
 
@@ -1506,7 +1506,7 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
       case 0:
 	args[0] = ID2SYM(id);
 	args[1] = pub ? Qfalse : Qtrue;
-	return RTEST(rb_funcall2(obj, respond_to_missing, 2, args));
+	return RTEST(rb_funcall2(obj, idRespond_to_missing, 2, args));
       default:
 	return TRUE;
     }
@@ -1556,11 +1556,11 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     if (!(id = rb_check_id(&mid))) {
-	if (!rb_method_basic_definition_p(CLASS_OF(obj), respond_to_missing)) {
+	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
 	    VALUE args[2];
 	    args[0] = ID2SYM(rb_to_id(mid));
 	    args[1] = priv;
-	    return rb_funcall2(obj, respond_to_missing, 2, args);
+	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
 	}
 	return Qfalse;
     }
@@ -1621,7 +1621,6 @@ Init_eval_method(void)
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
     attached = rb_intern("__attached__");
-    respond_to_missing = rb_intern("respond_to_missing?");
 
     {
 #define REPLICATE_METHOD(klass, id, noex) \
@@ -1630,6 +1629,6 @@ Init_eval_method(void)
 			    (rb_method_flag_t)(noex | NOEX_BASIC | NOEX_NOREDEF))
 	REPLICATE_METHOD(rb_eException, idMethodMissing, NOEX_PRIVATE);
 	REPLICATE_METHOD(rb_eException, idRespond_to, NOEX_PUBLIC);
-	REPLICATE_METHOD(rb_eException, respond_to_missing, NOEX_PUBLIC);
+	REPLICATE_METHOD(rb_eException, idRespond_to_missing, NOEX_PUBLIC);
     }
 }
