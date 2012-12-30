@@ -5971,6 +5971,7 @@ simple_re_meta(int c)
     switch (c) {
       case '$': case '*': case '+': case '.':
       case '?': case '^': case '|':
+      case ')':
 	return TRUE;
       default:
 	return FALSE;

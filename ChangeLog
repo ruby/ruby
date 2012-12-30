@@ -1,3 +1,8 @@
+Sun Dec 30 23:33:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (simple_re_meta): escaped closing parenthsis has different
+	  meaning.  [Bug #7610] [ruby-core:51088]
+
 Sun Dec 30 12:09:47 2012  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* configure.in: use 4 argument form of AC_CHECK_HEADERS to force
