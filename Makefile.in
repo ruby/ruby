@@ -3,6 +3,7 @@ NULLCMD = @NULLCMD@
 n=$(NULLCMD)
 ECHO1 = $(V:1=@$n)
 RUNCMD = $(SHELL)
+CDPATH = .
 CHDIR = @CHDIR@
 exec = exec
 NULL = /dev/null
