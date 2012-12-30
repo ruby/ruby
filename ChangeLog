@@ -1,3 +1,8 @@
+Sun Dec 30 12:09:47 2012  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* configure.in: use 4 argument form of AC_CHECK_HEADERS to force
+	  autoconf to use compiler's result
+
 Sun Dec 30 10:58:04 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/ruby/test_keyword.rb: add a test for passing hash

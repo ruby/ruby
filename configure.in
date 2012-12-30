@@ -1220,7 +1220,9 @@ main()
 		    LINK_SO="$LINK_SO
 $POSTLINK"
 		fi
-		AC_CHECK_HEADERS(crt_externs.h)
+		AC_CHECK_HEADERS(crt_externs.h, [], [], [
+		    #include <crt_externs.h>
+		])
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
