@@ -1,3 +1,10 @@
+Sun Dec 30 10:51:29 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c: set keyword hash on Proc/block calls.
+	  [ruby-core:51172] [Bug #7630]
+
+	* test/ruby/test_keyword.rb: add tests for above.
+
 Sat Dec 29 21:57:11 2012  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/completion.rb: treat rightly comletion for symbol on irb

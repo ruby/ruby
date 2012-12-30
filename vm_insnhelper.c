@@ -1065,6 +1065,34 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 }
 
 static inline int
+vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv)
+{
+    VALUE keyword_hash = Qnil;
+    int i, j;
+
+    if (argc > 0) keyword_hash = rb_check_hash_type(orig_argv[argc-1]);
+    if (!NIL_P(keyword_hash)) {
+	argc--;
+	keyword_hash = rb_hash_dup(keyword_hash);
+	if (iseq->arg_keyword_check) {
+	    for (i = j = 0; i < iseq->arg_keywords; i++) {
+		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
+	    }
+	    if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
+		unknown_keyword_error(iseq, keyword_hash);
+	    }
+	}
+    }
+    else {
+	keyword_hash = rb_hash_new();
+    }
+
+    orig_argv[iseq->arg_keyword] = keyword_hash;
+
+    return argc;
+}
+
+static inline int
 vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *orig_argv)
 {
     const int m = iseq->argc;
@@ -1074,29 +1102,13 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
     const int orig_argc = ci->argc;
     int argc = orig_argc;
     VALUE *argv = orig_argv;
-    VALUE keyword_hash = Qnil;
     rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc + iseq->arg_size;
 
+    /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	int i, j;
-	if (argc > 0) keyword_hash = rb_check_hash_type(argv[argc-1]);
-	if (!NIL_P(keyword_hash)) {
-	    argc--;
-	    keyword_hash = rb_hash_dup(keyword_hash);
-	    if (iseq->arg_keyword_check) {
-		for (i = j = 0; i < iseq->arg_keywords; i++) {
-		    if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
-		}
-		if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
-		    unknown_keyword_error(iseq, keyword_hash);
-		}
-	    }
-	}
-	else {
-	    keyword_hash = rb_hash_new();
-	}
+	argc = vm_callee_setup_keyword_arg(iseq, argc, orig_argv);
     }
 
     /* mandatory */
@@ -1140,11 +1152,6 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
     if (iseq->arg_rest != -1) {
 	orig_argv[iseq->arg_rest] = rb_ary_new4(argc, argv);
 	argc = 0;
-    }
-
-    /* keyword argument */
-    if (iseq->arg_keyword != -1) {
-	orig_argv[iseq->arg_keyword] = keyword_hash;
     }
 
     /* block arguments */
@@ -2084,6 +2091,11 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     int opt_pc = 0;
 
     th->mark_stack_len = argc;
+
+    /* keyword argument */
+    if (iseq->arg_keyword != -1) {
+	argc = vm_callee_setup_keyword_arg(iseq, argc, argv);
+    }
 
     /*
      * yield [1, 2]
