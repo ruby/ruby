@@ -21,6 +21,7 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_f2
     assert_equal([:xyz, "foo", 424242], f2(:xyz))
+    assert_raise(ArgumentError) { f2({}) } # [ruby-dev:46712] [Bug #7529]
   end
 
 
