@@ -1,3 +1,7 @@
+Mon Dec 31 13:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* test/ruby/test_backtrace.rb: Add test for r37957 [Feature #7434]
+
 Sun Dec 30 23:33:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (simple_re_meta): escaped closing parenthsis has different

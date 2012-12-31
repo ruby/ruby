@@ -92,6 +92,13 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(cs, locs)
   end
 
+  def test_caller_locations_with_range
+    cs = caller(0,2); locs = caller_locations(0..1).map { |loc|
+      loc.to_s
+    }
+    assert_equal(cs, locs)
+  end
+
   def test_caller_locations_to_s_inspect
     cs = caller(0); locs = caller_locations(0)
     cs.zip(locs){|str, loc|
