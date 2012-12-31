@@ -142,6 +142,14 @@ location_lineno(rb_backtrace_location_t *loc)
     }
 }
 
+/*
+ * Returns the line number of this frame.
+ *
+ * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
+ *
+ *	loc = c(0..1).first
+ *	loc.lineno #=> 2
+ */
 static VALUE
 location_lineno_m(VALUE self)
 {
@@ -164,6 +172,16 @@ location_label(rb_backtrace_location_t *loc)
     }
 }
 
+/*
+ * Returns the label of this frame.
+ *
+ * Usually consists of method, class, module, etc names with decoration.
+ *
+ * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
+ *
+ *	loc = c(0..1).first
+ *	loc.label #=> a
+ */
 static VALUE
 location_label_m(VALUE self)
 {
@@ -186,6 +204,11 @@ location_base_label(rb_backtrace_location_t *loc)
     }
 }
 
+/*
+ * Returns the base label of this frame.
+ *
+ * Usually same as #label, without decoration.
+ */
 static VALUE
 location_base_label_m(VALUE self)
 {
@@ -211,6 +234,14 @@ location_path(rb_backtrace_location_t *loc)
     }
 }
 
+/*
+ * Returns the file name of this frame.
+ *
+ * For example, using +caller_locations.rb+ from Thread::Backtrace::Location
+ *
+ *	loc = c(0..1).first
+ *	loc.path #=> caller_locations.rb
+ */
 static VALUE
 location_path_m(VALUE self)
 {
@@ -236,6 +267,11 @@ location_absolute_path(rb_backtrace_location_t *loc)
     }
 }
 
+/*
+ * Returns the full file path of this frame.
+ *
+ * Same as #path, but includes the absolute path.
+ */
 static VALUE
 location_absolute_path_m(VALUE self)
 {
@@ -294,12 +330,19 @@ location_to_str(rb_backtrace_location_t *loc)
     return location_format(file, lineno, name);
 }
 
+/*
+ * Returns a Kernel#caller style string representing this frame.
+ */
 static VALUE
 location_to_str_m(VALUE self)
 {
     return location_to_str(location_ptr(self));
 }
 
+/*
+ * Returns the same as calling +inspect+ on the string representation of
+ * #to_str
+ */
 static VALUE
 location_inspect_m(VALUE self)
 {
@@ -809,16 +852,24 @@ vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval)
 
 /*
  *  call-seq:
- *     caller(start=1)    -> array or nil
+ *     caller(start=1, length=nil)  -> array or nil
+ *     caller(range)		    -> array or nil
  *
  *  Returns the current execution stack---an array containing strings in
- *  the form ``<em>file:line</em>'' or ``<em>file:line: in
- *  `method'</em>''. The optional _start_ parameter
- *  determines the number of initial stack entries to omit from the
- *  result.
+ *  the form <code>file:line</code> or <code>file:line: in
+ *  `method'</code>.
+ *
+ *  The optional _start_ parameter determines the number of initial stack
+ *  entries to omit from the top of the stack.
+ *
+ *  A second optional +length+ parameter can be used to limit how many entries
+ *  are returned from the stack.
  *
  *  Returns +nil+ if _start_ is greater than the size of
  *  current execution stack.
+ *
+ *  Optionally you can pass a range, which will return an array containing the
+ *  entries within the specified range.
  *
  *     def a(skip)
  *       caller(skip)
@@ -843,6 +894,28 @@ rb_f_caller(int argc, VALUE *argv)
     return vm_backtrace_to_ary(GET_THREAD(), argc, argv, 1, 1, 1);
 }
 
+/*
+ *  call-seq:
+ *     caller_locations(start=1, length=nil)	-> array or nil
+ *     caller_locations(range)			-> array or nil
+ *
+ *  Returns the current execution stack---an array containing
+ *  backtrace location objects.
+ *
+ *  See Thread::Backtrace::Location for more information.
+ *
+ *  The optional _start_ parameter determines the number of initial stack
+ *  entries to omit from the top of the stack.
+ *
+ *  A second optional +length+ parameter can be used to limit how many entries
+ *  are returned from the stack.
+ *
+ *  Returns +nil+ if _start_ is greater than the size of
+ *  current execution stack.
+ *
+ *  Optionally you can pass a range, which will return an array containing the
+ *  entries within the specified range.
+ */
 static VALUE
 rb_f_caller_locations(int argc, VALUE *argv)
 {
@@ -853,13 +926,59 @@ rb_f_caller_locations(int argc, VALUE *argv)
 void
 Init_vm_backtrace(void)
 {
-    /* ::RubyVM::Backtrace */
+    /* :nodoc: */
     rb_cBacktrace = rb_define_class_under(rb_cThread, "Backtrace", rb_cObject);
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
 
-    /* ::RubyVM::Backtrace::Location */
+    /*
+     *	An object representation of a stack frame, initialized by
+     *	Kernel#caller_locations.
+     *
+     *	For example:
+     *
+     *		# caller_locations.rb
+     *		def a(skip)
+     *		  caller_locations(skip)
+     *		end
+     *		def b(skip)
+     *		  a(skip)
+     *		end
+     *		def c(skip)
+     *		  b(skip)
+     *		end
+     *
+     *		c(0..2).map do |call|
+     *		  puts call.to_s
+     *		end
+     *
+     *	Running <code>ruby caller_locations.rb</code> will produce:
+     *
+     *		caller_locations.rb:2:in `a'
+     *		caller_locations.rb:5:in `b'
+     *		caller_locations.rb:8:in `c'
+     *
+     *	Here's another example with a slightly different result:
+     *
+     *		# foo.rb
+     *		class Foo
+     *		  attr_accessor :locations
+     *		  def initialize(skip)
+     *		    @locations = caller_locations(skip)
+     *		  end
+     *		end
+     *
+     *		Foo.new(0..2).locations.map do |call|
+     *		  puts call.to_s
+     *		end
+     *
+     *	Now run <code>ruby foo.rb</code> and you should see:
+     *
+     *		init.rb:4:in `initialize'
+     *		init.rb:8:in `new'
+     *		init.rb:8:in `<main>'
+     */
     rb_cBacktraceLocation = rb_define_class_under(rb_cBacktrace, "Location", rb_cObject);
     rb_undef_alloc_func(rb_cBacktraceLocation);
     rb_undef_method(CLASS_OF(rb_cBacktraceLocation), "new");

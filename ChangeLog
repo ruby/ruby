@@ -1,3 +1,8 @@
+Mon Dec 31 15:10:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_backtrace.c: Add documentation for Kernel#caller_locations,
+	  Kernel#caller, and Thread::Backtrace::Location
+
 Mon Dec 31 13:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* test/ruby/test_backtrace.rb: Add test for r37957 [Feature #7434]
