@@ -1,6 +1,6 @@
 Wed Jan 02 03:09:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
-	* ext/zlib/zlib.c (Zlib::GzipFile): Fix typo by zed_0xff
+	* ext/zlib/zlib.c (Zlib::GzipReader): Fix typo by zed_0xff
 	  [Fixes Github #229]
 
 Wed Jan 02 02:29:00 2012  Zachary Scott  <zachary@zacharyscott.net>
