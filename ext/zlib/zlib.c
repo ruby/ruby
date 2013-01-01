@@ -3584,7 +3584,7 @@ rb_gzwriter_putc(VALUE obj, VALUE ch)
  * Document-class: Zlib::GzipReader
  *
  * Zlib::GzipReader is the class for reading a gzipped file.  GzipReader should
- * be used an IO, or -IO-lie, object.
+ * be used an IO, or -IO-like, object.
  *
  *   Zlib::GzipReader.open('hoge.gz') {|gz|
  *     print gz.read
