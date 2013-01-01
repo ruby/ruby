@@ -1893,19 +1893,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2) { |key, v1, v2| v1 }
  *                     #=> {"a"=>100, "b"=>200, "c"=>300}
- *
- *  Note that this method creates a shallow copy of the value in _other_hash_.
- *  This means that when for example Array#select! is used on one of the values
- *  in _other_hash_ both the original object as well as the copy will be
- *  modified. This is illustrated in the following example:
- *
- *    original = { "numbers" => [10, 20, 30] }
- *    copy     = {}.merge(original)
- *
- *    copy["numbers"].select! { |number| number <= 20 }
- *
- *    puts copy     # => { "numbers" => [10, 20] }
- *    puts original # => { "numbers" => [10, 20] }
  */
 
 static VALUE
