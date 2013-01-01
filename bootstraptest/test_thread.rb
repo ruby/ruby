@@ -267,7 +267,7 @@ assert_normal_exit %q{
 
 assert_equal 'ok', %q{
   def m
-    t = Thread.new { while true do // =~ "" end }
+    t = Thread.new { while true; // =~ "" end }
     sleep 0.1
     10.times {
       if /((ab)*(ab)*)*(b)/ =~ "ab"*7
