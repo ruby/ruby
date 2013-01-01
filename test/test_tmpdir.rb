@@ -28,5 +28,6 @@ class TestTmpdir < Test::Unit::TestCase
     assert_match(/\A~/, File.basename(dir), bug7547)
   ensure
     ENV["HOME"] = home
+    Dir.rmdir(dir) if dir
   end
 end
