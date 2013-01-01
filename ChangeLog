@@ -1,3 +1,8 @@
+Wed Jan 02 02:16:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* hash.c (rb_hash_update): Documentation for Hash#merge and shallow
+	  copies Patch by Yorick Peterse [Fixes Github #228]
+
 Mon Dec 31 15:10:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_backtrace.c: Add documentation for Kernel#caller_locations,
