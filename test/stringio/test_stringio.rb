@@ -52,7 +52,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil))
     assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
     assert_raise(TypeError){StringIO.new("").gets(1, 1)}
-    assert_raise(TypeError){StringIO.new("").gets(nil, nil)}
+    assert_nothing_raised {StringIO.new("").gets(nil, nil)}
   end
 
   def test_readlines
@@ -502,6 +502,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(RuntimeError, bug) {s.puts("foo")}
     assert_raise(RuntimeError, bug) {s.string = "foo"}
     assert_raise(RuntimeError, bug) {s.reopen("")}
+  end
+
+  def test_frozen_string
+    s = StringIO.new("".freeze)
+    bug = '[ruby-core:48530]'
+    assert_raise(IOError, bug) {s.write("foo")}
+    assert_raise(IOError, bug) {s.ungetc("a")}
+    assert_raise(IOError, bug) {s.ungetbyte("a")}
   end
 
   def test_readlines_limit_0

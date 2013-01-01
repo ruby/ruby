@@ -227,6 +227,13 @@ class TestStruct < Test::Unit::TestCase
     assert_equal("#<struct Struct::R\u{e9}sum\u{e9} r\u{e9}sum\u{e9}=42>", a.inspect, '[ruby-core:24849]')
   end
 
+  def test_junk
+    struct_test = Struct.new("Foo", "a\000")
+    o = struct_test.new(1)
+    assert_equal(1, o.send("a\000"))
+    Struct.instance_eval { remove_const(:Foo) }
+  end
+
   def test_comparison_when_recursive
     klass1 = Struct.new(:a, :b, :c)
 

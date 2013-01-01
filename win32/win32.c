@@ -2025,16 +2025,9 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, struct direct *, rb_enco
 
 /* License: Ruby's */
 struct direct  *
-rb_w32_readdir(DIR *dirp)
+rb_w32_readdir(DIR *dirp, rb_encoding *enc)
 {
-    return readdir_internal(dirp, win32_direct_conv, NULL);
-}
-
-/* License: Ruby's */
-struct direct  *
-rb_w32_readdir_with_enc(DIR *dirp, rb_encoding *enc)
-{
-    if (enc == rb_ascii8bit_encoding())
+    if (!enc || enc == rb_ascii8bit_encoding())
 	return readdir_internal(dirp, win32_direct_conv, NULL);
     else
 	return readdir_internal(dirp, ruby_direct_conv, enc);

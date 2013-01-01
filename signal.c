@@ -669,7 +669,7 @@ signal_exec(VALUE cmd, int safe, int sig)
     cur_th->interrupt_mask = old_interrupt_mask;
 
     if (state) {
-	/* XXX: should be replaced with rb_threadptr_async_errinfo_enque() */
+	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
 	JUMP_TAG(state);
     }
 }

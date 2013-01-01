@@ -1023,7 +1023,8 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
  *   meth == other_meth  -> true or false
  *
  * Two method objects are equal if they are bound to the same
- * object and refer to the same method definition.
+ * object and refer to the same method definition and their owners are the
+ * same class or module.
  */
 
 static VALUE
@@ -1169,8 +1170,8 @@ rb_method_name_error(VALUE klass, VALUE str)
     else if (RB_TYPE_P(c, T_MODULE)) {
 	s0 = " module";
     }
-    rb_name_error_str(str, "undefined method `%s' for%s `%s'",
-		      RSTRING_PTR(str), s0, rb_class2name(c));
+    rb_name_error_str(str, "undefined method `%"PRIsVALUE"' for%s `%"PRIsVALUE"'",
+		      QUOTE(str), s0, rb_class_name(c));
 }
 
 /*

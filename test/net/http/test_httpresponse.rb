@@ -203,6 +203,21 @@ EOS
     assert_equal 'hello', body
   end
 
+  def test_uri_equals
+    uri = URI 'http://example'
+
+    response = Net::HTTPResponse.new '1.1', 200, 'OK'
+
+    response.uri = nil
+
+    assert_nil response.uri
+
+    response.uri = uri
+
+    assert_equal uri, response.uri
+    refute_same  uri, response.uri
+  end
+
 private
 
   def dummy_io(str)

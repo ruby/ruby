@@ -10,14 +10,14 @@ class Gem::Dependency
   #--
   # When this list is updated, be sure to change
   # Gem::Specification::CURRENT_SPECIFICATION_VERSION as well.
-
+  #
   # REFACTOR: This type of constant, TYPES, indicates we might want
-  # two classes, used via inheretance or duck typing.
+  # two classes, used via inheritance or duck typing.
 
   TYPES = [
-           :development,
-           :runtime,
-          ]
+    :development,
+    :runtime,
+  ]
 
   ##
   # Dependency name or regular expression.

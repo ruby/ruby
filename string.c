@@ -293,6 +293,13 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
      * from src to new string "dest" which is made from the part of src.
      */
     str_enc_copy(dest, src);
+    if (RSTRING_LEN(dest) == 0) {
+	if (!rb_enc_asciicompat(STR_ENC_GET(src)))
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
+	else
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
+	return;
+    }
     switch (ENC_CODERANGE(src)) {
       case ENC_CODERANGE_7BIT:
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
@@ -305,12 +312,6 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
       default:
-	if (RSTRING_LEN(dest) == 0) {
-	    if (!rb_enc_asciicompat(STR_ENC_GET(src)))
-		ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
-	    else
-		ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
-	}
 	break;
     }
 }
@@ -4534,6 +4535,7 @@ rb_str_inspect(VALUE str)
 	    }
 	}
 	switch (c) {
+	  case '\0': cc = '0'; break;
 	  case '\n': cc = 'n'; break;
 	  case '\r': cc = 'r'; break;
 	  case '\t': cc = 't'; break;
@@ -6160,9 +6162,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 		continue;
 	    }
 	    p = p0 + rb_enc_mbclen(p0, pend, enc);
-	    line = rb_str_new5(str, s, p - s);
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
+	    line = rb_str_subseq(str, s - ptr, p - s);
 	    if (wantarray)
 		rb_ary_push(ary, line);
 	    else
@@ -6199,24 +6199,21 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	if (c == newline &&
 	    (rslen <= 1 ||
 	     (pend - p >= rslen && memcmp(RSTRING_PTR(rs), p, rslen) == 0))) {
-	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
+	    p += (rslen ? rslen : n);
+	    line = rb_str_subseq(str, s - ptr, p - s);
 	    if (wantarray)
 		rb_ary_push(ary, line);
 	    else
 		rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = p + (rslen ? rslen : n);
+	    s = p;
 	}
 	p += n;
     }
 
   finish:
     if (s != pend) {
-	line = rb_str_new5(str, s, pend - s);
-	OBJ_INFECT(line, str);
-	rb_enc_cr_str_copy_for_substr(line, str);
+	line = rb_str_subseq(str, s - ptr, pend - s);
 	if (wantarray)
 	    rb_ary_push(ary, line);
 	else
@@ -6388,6 +6385,7 @@ static VALUE
 rb_str_enumerate_chars(VALUE str, int wantarray)
 {
     VALUE orig = str;
+    VALUE substr;
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
@@ -6420,21 +6418,24 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
       case ENC_CODERANGE_7BIT:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
 	    if (wantarray)
-		rb_ary_push(ary, rb_str_subseq(str, i, n));
+		rb_ary_push(ary, substr);
 	    else
-		rb_yield(rb_str_subseq(str, i, n));
+		rb_yield(substr);
 	}
 	break;
       default:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
 	    if (wantarray)
-		rb_ary_push(ary, rb_str_subseq(str, i, n));
+		rb_ary_push(ary, substr);
 	    else
-		rb_yield(rb_str_subseq(str, i, n));
+		rb_yield(substr);
 	}
     }
+    RB_GC_GUARD(str);
     if (wantarray)
 	return ary;
     else
@@ -6638,10 +6639,7 @@ rb_str_chop_bang(VALUE str)
 static VALUE
 rb_str_chop(VALUE str)
 {
-    VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
-    rb_enc_cr_str_copy_for_substr(str2, str);
-    OBJ_INFECT(str2, str);
-    return str2;
+    return rb_str_subseq(str, 0, chopped_length(str));
 }
 
 
@@ -7782,6 +7780,31 @@ rb_str_symname_p(VALUE sym)
 	return FALSE;
     }
     return TRUE;
+}
+
+VALUE
+rb_str_quote_unprintable(VALUE str)
+{
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
+    rb_encoding *resenc = rb_default_internal_encoding();
+
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    enc = STR_ENC_GET(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    if ((resenc != enc && !rb_str_is_ascii_only_p(str)) ||
+	!sym_printable(ptr, ptr + len, enc)) {
+	return rb_str_inspect(str);
+    }
+    return str;
+}
+
+VALUE
+rb_id_quote_unprintable(ID id)
+{
+    return rb_str_quote_unprintable(rb_id2str(id));
 }
 
 /*

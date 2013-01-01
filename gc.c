@@ -292,8 +292,11 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 # define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+# define obj_id_to_ref(objid) ((objid) ^ FIXNUM_FLAG) /* unset FIXNUM_FLAG */
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 # define nonspecial_obj_id(obj) LL2NUM((SIGNED_VALUE)(obj) / 2)
+# define obj_id_to_ref(objid) (FIXNUM_P(objid) ? \
+   ((objid) ^ FIXNUM_FLAG) : (NUM2PTR(objid) << 1))
 #else
 # error not supported
 #endif
@@ -1630,7 +1633,7 @@ id2ref(VALUE obj, VALUE objid)
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
     if (FLONUM_P(ptr)) return (VALUE)ptr;
-    ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
+    ptr = obj_id_to_ref(objid);
 
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
         ID symid = ptr / sizeof(RVALUE);
@@ -2228,7 +2231,7 @@ init_mark_stack(mark_stack_t *stack)
     push_mark_stack_chunk(stack);
     stack->limit = STACK_CHUNK_SIZE;
 
-    for(i=0; i < 4; i++) {
+    for (i=0; i < 4; i++) {
         add_stack_chunk_cache(stack, stack_chunk_alloc());
     }
     stack->unused_cache_size = stack->cache_size;
@@ -3795,7 +3798,7 @@ wmap_finalize(VALUE self, VALUE objid)
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    obj = objid ^ FIXNUM_FLAG; /* unset FIXNUM_FLAG */
+    obj = obj_id_to_ref(objid);
 
     /* obj is original referenced object and/or weak reference. */
     orig = (st_data_t)obj;

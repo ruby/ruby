@@ -115,7 +115,7 @@ module IRB # :nodoc:
 
     @CONF[:AT_EXIT] = []
 
-    @CONF[:DEBUG_LEVEL] = 1
+    @CONF[:DEBUG_LEVEL] = 0
   end
 
   def IRB.init_error
@@ -197,7 +197,7 @@ module IRB # :nodoc:
 	@CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
       when "--single-irb"
 	@CONF[:SINGLE_IRB] = true
-      when /^--irb_debug=(?:=(.+))?/
+      when /^--irb_debug(?:=(.+))?/
 	@CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
       when "-v", "--version"
 	print IRB.version, "\n"
@@ -256,7 +256,12 @@ module IRB # :nodoc:
 	end
       end
     end
-    @CONF[:RC_NAME_GENERATOR].call ext
+    case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
+    when String
+      return rc_file
+    else
+      IRB.fail IllegalRCNameGenerator
+    end
   end
 
   # enumerate possible rc-file base name generators

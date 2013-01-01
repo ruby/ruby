@@ -522,7 +522,7 @@ dir_path(VALUE dir)
 #if defined HAVE_READDIR_R
 # define READDIR(dir, enc, entry, dp) (readdir_r((dir), (entry), &(dp)) == 0 && (dp) != 0)
 #elif defined _WIN32
-# define READDIR(dir, enc, entry, dp) (((dp) = rb_w32_readdir_with_enc((dir), (enc))) != 0)
+# define READDIR(dir, enc, entry, dp) (((dp) = rb_w32_readdir((dir), (enc))) != 0)
 #else
 # define READDIR(dir, enc, entry, dp) (((dp) = readdir(dir)) != 0)
 #endif

@@ -230,7 +230,7 @@ r_value(VALUE value)
       if (iseq->compile_data->option->trace_instruction) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
-  }while(0);
+  } while (0)
 
 /* add label */
 #define ADD_LABEL(seq, label) \
@@ -4163,6 +4163,74 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
+      case NODE_OP_CDECL: {
+	LABEL *lfin = 0;
+	LABEL *lassign = 0;
+	ID mid;
+
+	switch (nd_type(node->nd_head)) {
+	  case NODE_COLON3:
+	    ADD_INSN1(ret, nd_line(node), putobject, rb_cObject);
+	    break;
+	  case NODE_COLON2:
+	    COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", node->nd_head->nd_head);
+	    break;
+	  default:
+	    do {
+		COMPILE_ERROR((ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
+			       ruby_node_name(nd_type(node->nd_head))));
+	    } while (0);
+	    return COMPILE_NG;
+	}
+	mid = node->nd_head->nd_mid;
+	/* cref */
+	if (node->nd_aid == 0) {
+	    lassign = NEW_LABEL(nd_line(node));
+	    ADD_INSN(ret, nd_line(node), dup); /* cref cref */
+	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_CONST),
+		      ID2SYM(mid), Qfalse); /* cref bool */
+	    ADD_INSNL(ret, nd_line(node), branchunless, lassign); /* cref */
+	}
+	ADD_INSN(ret, nd_line(node), dup); /* cref cref */
+	ADD_INSN1(ret, nd_line(node), getconstant, ID2SYM(mid)); /* cref obj */
+
+	if (node->nd_aid == 0 || node->nd_aid == 1) {
+	    lfin = NEW_LABEL(nd_line(node));
+	    if (!poped) ADD_INSN(ret, nd_line(node), dup); /* cref [obj] obj */
+	    if (node->nd_aid == 0)
+		ADD_INSNL(ret, nd_line(node), branchif, lfin);
+	    else
+		ADD_INSNL(ret, nd_line(node), branchunless, lfin);
+	    /* cref [obj] */
+	    if (!poped) ADD_INSN(ret, nd_line(node), pop); /* cref */
+	    if (lassign) ADD_LABEL(ret, lassign);
+	    COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value);
+	    /* cref value */
+	    if (poped)
+		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1)); /* cref value cref */
+	    else {
+		ADD_INSN1(ret, nd_line(node), dupn, INT2FIX(2)); /* cref value cref value */
+		ADD_INSN(ret, nd_line(node), swap); /* cref value value cref */
+	    }
+	    ADD_INSN1(ret, nd_line(node), setconstant, ID2SYM(mid)); /* cref [value] */
+	    ADD_LABEL(ret, lfin);			    /* cref [value] */
+	    if (!poped) ADD_INSN(ret, nd_line(node), swap); /* [value] cref */
+	    ADD_INSN(ret, nd_line(node), pop); /* [value] */
+	}
+	else {
+	    COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value);
+	    /* cref obj value */
+	    ADD_CALL(ret, nd_line(node), ID2SYM(node->nd_aid), INT2FIX(1));
+	    /* cref value */
+	    ADD_INSN(ret, nd_line(node), swap); /* value cref */
+	    if (!poped) {
+		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1)); /* value cref value */
+		ADD_INSN(ret, nd_line(node), swap); /* value value cref */
+	    }
+	    ADD_INSN1(ret, nd_line(node), setconstant, ID2SYM(mid));
+	}
+	break;
+      }
       case NODE_OP_ASGN_AND:
       case NODE_OP_ASGN_OR:{
 	LABEL *lfin = NEW_LABEL(nd_line(node));
@@ -4606,7 +4674,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(val);
-	switch(nd_type(node)) {
+	switch (nd_type(node)) {
 	  case NODE_MATCH:
 	    ADD_INSN1(recv, nd_line(node), putobject, node->nd_lit);
 	    ADD_INSN2(val, nd_line(node), getspecial, INT2FIX(0),

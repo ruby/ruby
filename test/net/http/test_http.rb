@@ -310,6 +310,7 @@ module TestNetHTTP_version_1_1_methods
     start {|http|
       _test_post__base http
       _test_post__file http
+      _test_post__no_data http
     }
   end
 
@@ -330,6 +331,14 @@ module TestNetHTTP_version_1_1_methods
     f = StringIO.new
     http.post('/', data, {'content-type' => 'application/x-www-form-urlencoded'}, f)
     assert_equal data, f.string
+  end
+
+  def _test_post__no_data(http)
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      data = nil
+      res = http.post('/', data)
+      assert_not_equal '411', res.code
+    end
   end
 
   def test_s_post_form
@@ -409,6 +418,8 @@ module TestNetHTTP_version_1_2_methods
       _test_request__HEAD http
       _test_request__POST http
       _test_request__stream_body http
+      _test_request__uri http
+      _test_request__uri_host http
     }
   end
 
@@ -486,6 +497,51 @@ module TestNetHTTP_version_1_2_methods
     assert_kind_of String, res.body
     assert_equal data.size, res.body.size
     assert_equal data, res.body
+  end
+
+  def _test_request__path(http)
+    uri = URI 'https://example/'
+    req = Net::HTTP::Get.new('/')
+
+    res = http.request(req)
+
+    assert_kind_of URI::Generic, req.uri
+
+    refute_equal uri, req.uri
+
+    assert_equal uri, res.uri
+
+    refute_same uri,     req.uri
+    refute_same req.uri, res.uri
+  end
+
+  def _test_request__uri(http)
+    uri = URI 'https://example/'
+    req = Net::HTTP::Get.new(uri)
+
+    res = http.request(req)
+
+    assert_kind_of URI::Generic, req.uri
+
+    refute_equal uri, req.uri
+
+    assert_equal req.uri, res.uri
+
+    refute_same uri,     req.uri
+    refute_same req.uri, res.uri
+  end
+
+  def _test_request__uri_host(http)
+    uri = URI 'http://example/'
+
+    req = Net::HTTP::Get.new(uri)
+    req['host'] = 'other.example'
+
+    res = http.request(req)
+
+    assert_kind_of URI::Generic, req.uri
+
+    assert_equal URI("http://example:#{http.port}"), res.uri
   end
 
   def test_send_request
@@ -837,3 +893,4 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
     assert_equal(http.local_port, res.body)
   end
 end
+

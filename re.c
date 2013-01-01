@@ -739,7 +739,7 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
     VALUE ary = rb_ary_new2(back_num);
     int i;
 
-    for(i = 0; i < back_num; i++)
+    for (i = 0; i < back_num; i++)
         rb_ary_store(ary, i, INT2NUM(back_refs[i]));
 
     rb_hash_aset(hash, rb_str_new((const char*)name, name_end-name),ary);
@@ -1046,7 +1046,7 @@ match_backref_number(VALUE match, VALUE backref)
     VALUE regexp = RMATCH(match)->regexp;
 
     match_check(match);
-    switch(TYPE(backref)) {
+    switch (TYPE(backref)) {
       default:
         return NUM2INT(backref);
 
@@ -2760,7 +2760,7 @@ rb_reg_match(VALUE re, VALUE str)
  *  call-seq:
  *     rxp === str   -> true or false
  *
- *  Case Equality---Synonym for <code>Regexp#=~</code> used in case statements.
+ *  Case Equality---Used in case statements.
  *
  *     a = "HELLO"
  *     case a
@@ -2768,10 +2768,13 @@ rb_reg_match(VALUE re, VALUE str)
  *     when /^[A-Z]*$/; print "Upper case\n"
  *     else;            print "Mixed case\n"
  *     end
+ *     #=> "Upper case"
  *
- *  <em>produces:</em>
+ *  Following a regular expression literal with the #=== operator allows you to
+ *  compare against a String.
  *
- *     Upper case
+ *	/^[a-z]*$/ === "HELLO" #=> false
+ *	/^[A-Z]*$/ === "HELLO" #=> true
  */
 
 VALUE

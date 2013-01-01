@@ -111,7 +111,7 @@
 #       options.transfer_type = :auto
 #       options.verbose = false
 #
-#       opts = OptionParser.new do |opts|
+#       opt_parser = OptionParser.new do |opts|
 #         opts.banner = "Usage: example.rb [options]"
 #
 #         opts.separator ""
@@ -190,7 +190,7 @@
 #         end
 #       end
 #
-#       opts.parse!(args)
+#       opt_parser.parse!(args)
 #       options
 #     end  # parse()
 #
@@ -198,6 +198,7 @@
 #
 #   options = OptparseExample.parse(ARGV)
 #   pp options
+#   pp ARGV
 #
 # === Shell Completion
 #
@@ -1338,6 +1339,7 @@ XXX
 
   #
   # Same as #order, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def order!(argv = default_argv, &nonopt)
     parse_in_order(argv, &nonopt)
@@ -1428,6 +1430,7 @@ XXX
 
   #
   # Same as #permute, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def permute!(argv = default_argv)
     nonopts = []
@@ -1447,6 +1450,7 @@ XXX
 
   #
   # Same as #parse, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def parse!(argv = default_argv)
     if ENV.include?('POSIXLY_CORRECT')

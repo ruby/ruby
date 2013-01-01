@@ -20,7 +20,11 @@
 #include "probes.h"
 
 #ifdef __APPLE__
-#include <crt_externs.h>
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+# else
+#  include "missing/crt_externs.h"
+# endif
 #endif
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
@@ -2972,7 +2976,7 @@ env_size(void)
 
     rb_secure(4);
     env = GET_ENVIRON(environ);
-    for(i=0; env[i]; i++)
+    for (i=0; env[i]; i++)
 	;
     FREE_ENVIRON(environ);
     return INT2FIX(i);

@@ -272,7 +272,7 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_cannot_reinitialize_class_with_initialize_copy # [ruby-core:50869]
-    assert_in_out_err([], <<-RUBY, ["Object"], [])
+    assert_in_out_err([], <<-'end;', ["Object"], [])
       class Class
         def initialize_copy(*); super; end
       end
@@ -283,7 +283,7 @@ class TestClass < Test::Unit::TestCase
       A.send(:initialize_copy, Class.new(B)) rescue nil
 
       p A.superclass
-    RUBY
+    end;
   end
 
   module M
@@ -302,38 +302,52 @@ class TestClass < Test::Unit::TestCase
 
   def test_invalid_superclass
     assert_raise(TypeError) do
-      eval <<-EOF
+      eval <<-'end;'
         class C < nil
         end
-      EOF
+      end;
     end
 
     assert_raise(TypeError) do
-      eval <<-EOF
+      eval <<-'end;'
         class C < false
         end
-      EOF
+      end;
     end
 
     assert_raise(TypeError) do
-      eval <<-EOF
+      eval <<-'end;'
         class C < true
         end
-      EOF
+      end;
     end
 
     assert_raise(TypeError) do
-      eval <<-EOF
+      eval <<-'end;'
         class C < 0
         end
-      EOF
+      end;
     end
 
     assert_raise(TypeError) do
-      eval <<-EOF
+      eval <<-'end;'
         class C < ""
         end
-      EOF
+      end;
     end
+  end
+
+  def test_cloned_singleton_method_added
+    bug5283 = '[ruby-dev:44477]'
+    added = []
+    c = Class.new
+    c.singleton_class.class_eval do
+      define_method(:singleton_method_added) {|mid| added << [self, mid]}
+      def foo; :foo; end
+    end
+    added.clear
+    d = c.clone
+    assert_empty(added.grep(->(k) {c == k[0]}), bug5283)
+    assert_equal(:foo, d.foo)
   end
 end

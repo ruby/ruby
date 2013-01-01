@@ -2278,7 +2278,7 @@ onig_reduce_nested_quantifier(Node* pnode, Node* cnode)
   cnum = popular_quantifier_num(c);
   if (pnum < 0 || cnum < 0) return ;
 
-  switch(ReduceTypeTable[cnum][pnum]) {
+  switch (ReduceTypeTable[cnum][pnum]) {
   case RQ_DEL:
     *pnode = *cnode;
     break;
@@ -5284,7 +5284,7 @@ set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env)
 	  IS_SYNTAX_BV(env->syntax, ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT)) {
         UChar buf[WARN_BUFSIZE];
 
-        switch(ReduceTypeTable[targetq_num][nestq_num]) {
+        switch (ReduceTypeTable[targetq_num][nestq_num]) {
         case RQ_ASIS:
           break;
 

@@ -88,6 +88,8 @@ enum node_type {
 #define NODE_OP_ASGN_AND NODE_OP_ASGN_AND
     NODE_OP_ASGN_OR,
 #define NODE_OP_ASGN_OR  NODE_OP_ASGN_OR
+    NODE_OP_CDECL,
+#define NODE_OP_CDECL    NODE_OP_CDECL
     NODE_CALL,
 #define NODE_CALL        NODE_CALL
     NODE_FCALL,
@@ -399,6 +401,7 @@ typedef struct RNode {
 #define NEW_OP_ASGN22(i,o) NEW_NODE(NODE_OP_ASGN2,i,o,rb_id_attrset(i))
 #define NEW_OP_ASGN_OR(i,val) NEW_NODE(NODE_OP_ASGN_OR,i,val,0)
 #define NEW_OP_ASGN_AND(i,val) NEW_NODE(NODE_OP_ASGN_AND,i,val,0)
+#define NEW_OP_CDECL(v,op,val) NEW_NODE(NODE_OP_CDECL,v,val,op)
 #define NEW_GVAR(v) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v))
 #define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,0)
 #define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0)

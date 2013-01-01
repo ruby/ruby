@@ -205,4 +205,40 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
     assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
   end
+
+  def test_bitwise_and_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { 3 & obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(3 & 10, 3 & obj)
+  end
+
+  def test_bitwise_or_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { 3 | obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(3 | 10, 3 | obj)
+  end
+
+  def test_bitwise_xor_with_integer_mimic_object
+    def (obj = Object.new).to_int
+      10
+    end
+    assert_raise(TypeError, '[ruby-core:39491]') { 3 ^ obj }
+
+    def obj.coerce(other)
+      [other, 10]
+    end
+    assert_equal(3 ^ 10, 3 ^ obj)
+  end
 end

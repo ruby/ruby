@@ -63,6 +63,7 @@ VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
 int rb_obj_basic_to_s_p(VALUE);
 VALUE rb_special_singleton_class(VALUE);
+VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 void Init_class_hierarchy(void);
 
 /* compile.c */
@@ -138,6 +139,7 @@ const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
+void rb_write_error_str(VALUE mesg);
 
 /* iseq.c */
 VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
@@ -265,6 +267,10 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 /* string.c */
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
+VALUE rb_str_quote_unprintable(VALUE);
+VALUE rb_id_quote_unprintable(ID);
+#define QUOTE(str) rb_str_quote_unprintable(str)
+#define QUOTE_ID(id) rb_id_quote_unprintable(id)
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
@@ -308,6 +314,9 @@ void rb_vm_bugreport(void);
 void Init_vm_eval(void);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, VALUE *, VALUE (*)(ANYARGS), VALUE);
+typedef void rb_check_funcall_hook(int, VALUE, ID, int, VALUE *, VALUE);
+VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+				 rb_check_funcall_hook *hook, VALUE arg);
 
 /* vm_method.c */
 void Init_eval_method(void);

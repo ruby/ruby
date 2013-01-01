@@ -493,6 +493,16 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	return;
     }
 
+    ehdr = (ElfW(Ehdr) *)file;
+    if (memcmp(ehdr->e_ident, "\177ELF", 4) != 0) {
+	/*
+	 * Huh? Maybe filename was overridden by setproctitle() and
+	 * it match non-elf file.
+	 */
+	close(fd);
+	return;
+    }
+
     current_line->fd = fd;
     current_line->mapped = file;
     current_line->mapped_size = (size_t)filesize;
@@ -506,7 +516,6 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	}
     }
 
-    ehdr = (ElfW(Ehdr) *)file;
     shdr = (ElfW(Shdr) *)(file + ehdr->e_shoff);
 
     shstr_shdr = shdr + ehdr->e_shstrndx;

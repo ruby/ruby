@@ -384,6 +384,12 @@ class TestRequire < Test::Unit::TestCase
     }
     tmp.close
 
+    # "circular require" warnings to $stderr, but backtraces to stderr
+    # in C-level.  And redirecting stderr to a pipe seems to change
+    # some blocking timings and causes a deadlock, so run in a
+    # separated process for the time being.
+    assert_separately(["-w", "-", path, bug5754], <<-'end;')
+    path, bug5754 = *ARGV
     start = false
 
     scratch = []
@@ -416,6 +422,7 @@ class TestRequire < Test::Unit::TestCase
 
     assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
     assert_equal([:pre, :post], scratch, bug5754)
+    end;
   ensure
     $".delete(path)
     tmp.close(true) if tmp
@@ -583,5 +590,18 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_array_shift
     assert_require_with_shared_array_modified("unshift", "shift")
+  end
+
+  def test_require_local_var_on_toplevel
+    bug7536 = '[ruby-core:50701]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("bar.rb", "w") {|f| f.puts 'TOPLEVEL_BINDING.eval("lib = 2")' }
+        assert_in_out_err(%w[-r./bar.rb], <<-INPUT, %w([:lib] 2), [], bug7536)
+          puts TOPLEVEL_BINDING.eval("local_variables").inspect
+          puts TOPLEVEL_BINDING.eval("lib").inspect
+        INPUT
+      }
+    }
   end
 end

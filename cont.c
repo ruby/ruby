@@ -128,7 +128,7 @@ static VALUE rb_eFiberError;
 #define GetFiberPtr(obj, ptr)  do {\
     TypedData_Get_Struct((obj), rb_fiber_t, &fiber_data_type, (ptr)); \
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
-} while(0)
+} while (0)
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
@@ -872,7 +872,7 @@ rb_callcc(VALUE self)
 static VALUE
 make_passing_arg(int argc, VALUE *argv)
 {
-    switch(argc) {
+    switch (argc) {
       case 0:
 	return Qnil;
       case 1:
@@ -924,7 +924,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     cont->value = make_passing_arg(argc, argv);
 
     /* restore `tracing' context. see [Feature #4347] */
-    th->trace_running = cont->saved_thread.trace_running;
+    th->trace_arg = cont->saved_thread.trace_arg;
 
     cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
@@ -1161,13 +1161,13 @@ rb_fiber_start(void)
     TH_POP_TAG();
 
     if (state) {
-	if (state == TAG_RAISE) {
-	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
+	if (state == TAG_RAISE || state == TAG_FATAL) {
+	    rb_threadptr_pending_interrupt_enque(th, th->errinfo);
 	}
 	else {
 	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	    if (!NIL_P(err))
-		rb_threadptr_async_errinfo_enque(th, err);
+		rb_threadptr_pending_interrupt_enque(th, err);
 	}
 	RUBY_VM_SET_INTERRUPT(th);
     }
@@ -1318,7 +1318,7 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
     }
     else {
 	/* restore `tracing' context. see [Feature #4347] */
-	th->trace_running = cont->saved_thread.trace_running;
+	th->trace_arg = cont->saved_thread.trace_arg;
     }
 
     cont->argc = argc;

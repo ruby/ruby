@@ -771,26 +771,44 @@ class TestArgf < Test::Unit::TestCase
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
 
+  def test_lines
+    ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      $stderr = $stdout
+      s = []
+      ARGF.lines {|l| s << l }
+      p s
+    SRC
+      assert_match(/deprecated/, f.gets)
+      assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
+    end
+  end
+
   def test_bytes
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      $stderr = $stdout
       print Marshal.dump(ARGF.bytes.to_a)
     SRC
+      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
 
   def test_chars
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      $stderr = $stdout
       print [Marshal.dump(ARGF.chars.to_a)].pack('m')
     SRC
+    assert_match(/deprecated/, f.gets)
     assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
     end
   end
 
   def test_codepoints
-    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+    ruby('-W1', '-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      $stderr = $stdout
       print Marshal.dump(ARGF.codepoints.to_a)
     SRC
+      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end

@@ -28,7 +28,11 @@
 #include <setjmp.h>
 
 #ifdef __APPLE__
-#include <crt_externs.h>
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+# else
+#  include "missing/crt_externs.h"
+# endif
 #endif
 
 #ifndef HAVE_STRING_H
@@ -152,12 +156,6 @@ enum ruby_tag_type {
 #define SCOPE_TEST(f)  (rb_vm_cref()->nd_visi & (f))
 #define SCOPE_CHECK(f) (rb_vm_cref()->nd_visi == (f))
 #define SCOPE_SET(f)   (rb_vm_cref()->nd_visi = (f))
-
-#define CHECK_STACK_OVERFLOW(cfp, margin) do \
-  if ((VALUE *)((char *)(((VALUE *)(cfp)->sp) + (margin)) + sizeof(rb_control_frame_t)) >= ((VALUE *)(cfp))) { \
-      rb_exc_raise(sysstack_error); \
-  } \
-while (0)
 
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);

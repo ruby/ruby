@@ -12,6 +12,7 @@
 require 'irb/magic-file'
 
 module IRB
+  # Outputs the irb help message, see IRB@Command+line+options.
   def IRB.print_usage
     lc = IRB.conf[:LC_MESSAGES]
     path = lc.find("irb/help-message")

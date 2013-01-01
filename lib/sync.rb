@@ -135,7 +135,7 @@ module Sync_m
 
   def sync_lock(m = EX)
     return unlock if m == UN
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       while true
         @sync_mutex.synchronize do
           begin
@@ -227,7 +227,7 @@ module Sync_m
   end
 
   def sync_synchronize(mode = EX)
-    Thread.async_interrupt_timing(StandardError => :on_blocking) do
+    Thread.handle_interrupt(StandardError => :on_blocking) do
       sync_lock(mode)
       begin
         yield

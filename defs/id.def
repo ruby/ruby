@@ -1,5 +1,5 @@
-# -*- ruby -*-
-predefined = %[\
+# -*- mode: ruby; coding: us-ascii -*-
+firstline, predefined = __LINE__+1, %[\
   intern
   method_missing                                        MethodMissing
   length
@@ -33,18 +33,57 @@ predefined = %[\
   core#hash_merge_kwd
 ]
 
+class KeywordError < RuntimeError
+  def self.raise(mesg, line)
+    super(self, mesg, ["#{__FILE__}:#{line}", *caller])
+  end
+end
+
 predefined_ids = {}
 preserved_ids = []
-attr_ids = []
-predefined.each_line do |line|
+local_ids = []
+instance_ids = []
+global_ids = []
+const_ids = []
+class_ids = []
+names = {}
+predefined.split(/^/).each_with_index do |line, num|
   next if /^#/ =~ line or (name, token = line.split; !name)
   token ||= name
   if /#/ =~ token
     token = "_#{token.gsub(/\W+/, '_')}"
   else
     token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
+    token.sub!(/\A\$/, "_G_")
+    token.sub!(/\A@@/, "_C_")
+    token.sub!(/\A@/, "_I_")
     token.gsub!(/\W+/, "")
   end
-  (/\A(?!\d)\w+\z/ =~ name ? attr_ids : preserved_ids) << token
+  if prev = names[name]
+    KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
+  end
+  if prev = predefined_ids[token]
+    KeywordError.raise("#{token} is already used for #{prev} at line #{names[prev]+firstline}", firstline+num)
+  end
+  names[name] = num
+  case name
+  when /\A[A-Z]\w*\z/; const_ids
+  when /\A(?!\d)\w+\z/; local_ids
+  when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
+  when /\A@@(?!\d)\w+\z/; class_ids
+  when /\A@(?!\d)\w+\z/; instance_ids
+  when /\A((?!\d)\w+)=\z/
+    KeywordError.raise("use ID2ATTRSET(#{$1}) instead of ATTRSET #{name}", firstline+num)
+  else preserved_ids
+  end << token
   predefined_ids[token] = name
 end
+{
+  "LOCAL" => local_ids,
+  "INSTANCE" => instance_ids,
+  "GLOBAL" => global_ids,
+  "CONST" => const_ids,
+  "CLASS" => class_ids,
+  :preserved => preserved_ids,
+  :predefined => predefined_ids,
+}

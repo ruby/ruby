@@ -168,8 +168,11 @@ strings. Note that you must have Font Lock enabled."
              (insert " ")
              (save-excursion
                (if ruby-electric-newline-before-closing-bracket
-                   (newline))
-               (insert "}")))
+                   (progn
+                     (newline)
+                     (insert "}")
+                     (ruby-indent-line t))
+                 (insert "}"))))
             ((ruby-electric-string-at-point-p)
              (if (eq last-command-event ?{)
                  (save-excursion

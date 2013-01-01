@@ -79,6 +79,7 @@ class Net::HTTPResponse
     initialize_http_header nil
     @body = nil
     @read = false
+    @uri  = nil
   end
 
   # The HTTP version supported by the server.
@@ -92,6 +93,10 @@ class Net::HTTPResponse
   # The HTTP result message sent by the server. For example, 'Not Found'.
   attr_reader :message
   alias msg message   # :nodoc: obsolete
+
+  # The URI used to fetch this response.  The response URI is only available
+  # if a URI was used to create the request.
+  attr_reader :uri
 
   def inspect
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
@@ -116,6 +121,10 @@ class Net::HTTPResponse
   # Raises an HTTP error if the response is not 2xx (success).
   def value
     error! unless self.kind_of?(Net::HTTPSuccess)
+  end
+
+  def uri= uri # :nodoc:
+    @uri = uri.dup if uri
   end
 
   #

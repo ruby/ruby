@@ -50,7 +50,7 @@ EOF
 	  @binding = BINDING_QUEUE.pop
 
 	when 3	# binging in function on TOPLEVEL_BINDING(default)
-	  @binding = eval("def irb_binding; binding; end; irb_binding",
+	  @binding = eval("def irb_binding; private; binding; end; irb_binding",
 		      TOPLEVEL_BINDING,
 		      __FILE__,
 		      __LINE__ - 3)
@@ -75,9 +75,13 @@ EOF
       eval("_=nil", @binding)
     end
 
+    # The Binding of this workspace
     attr_reader :binding
+    # The top-level workspace of this context, also available as
+    # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
+    # Evaluate the given +statements+ within the  context of this workspace.
     def evaluate(context, statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
     end

@@ -559,10 +559,9 @@ require_libraries(VALUE *req_list)
 }
 
 static rb_env_t*
-toplevel_context(void)
+toplevel_context(VALUE toplevel_binding)
 {
     rb_env_t *env;
-    VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
     rb_binding_t *bind;
 
     GetBindingPtr(toplevel_binding, bind);
@@ -1308,7 +1307,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     rb_thread_t *th = GET_THREAD();
-    rb_env_t *env = 0;
+    VALUE toplevel_binding = Qundef;
 
     argc -= i;
     argv += i;
@@ -1438,9 +1437,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    env = toplevel_context();
+    toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
 
 #define PREPARE_PARSE_MAIN(expr) do { \
+    rb_env_t *env = toplevel_context(toplevel_binding); \
     th->parse_in_eval--; \
     th->base_block = &env->block; \
     expr; \
@@ -1533,8 +1533,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     PREPARE_PARSE_MAIN({
 	VALUE path = Qnil;
-	if (!opt->e_script && strcmp(opt->script, "-"))
+	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
+	}
 	iseq = rb_iseq_new_main(tree, opt->script_name, path);
     });
 

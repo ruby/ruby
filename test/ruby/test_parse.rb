@@ -173,10 +173,12 @@ class TestParse < Test::Unit::TestCase
     end
 
     c = Class.new
-    assert_raise(SyntaxError) do
+    assert_nothing_raised(SyntaxError) do
       eval <<-END, nil, __FILE__, __LINE__+1
+      if false
         c::FOO &= 1
         ::FOO &= 1
+      end
       END
     end
 

@@ -1800,7 +1800,7 @@ num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	result = delta / diff;
 	return LONG2FIX(result >= 0 ? result + 1 : 0);
     }
-    else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+    else if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
 	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
 
 	if (isinf(n)) return DBL2NUM(n);
@@ -3165,15 +3165,29 @@ fix_rev(VALUE num)
     return ~num | FIXNUM_FLAG;
 }
 
-static VALUE
-bit_coerce(VALUE x)
+static int
+bit_coerce(VALUE *x, VALUE *y, int err)
 {
-    while (!FIXNUM_P(x) && !RB_TYPE_P(x, T_BIGNUM)) {
-	rb_raise(rb_eTypeError,
-		 "can't convert %s into Integer for bitwise arithmetic",
-		 rb_obj_classname(x));
+    if (!FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
+	do_coerce(x, y, err);
+	if (!FIXNUM_P(*x) && !RB_TYPE_P(*x, T_BIGNUM)
+	    && !FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
+	    if (!err) return FALSE;
+	    rb_raise(rb_eTypeError,
+		     "%s can't be coerced into %s for bitwise arithmetic",
+		     rb_special_const_p(*y) ?
+			RSTRING_PTR(rb_inspect(*y)) : rb_obj_classname(*y),
+		     rb_obj_classname(*x));
+	}
     }
-    return x;
+    return TRUE;
+}
+
+VALUE
+rb_num_coerce_bit(VALUE x, VALUE y, ID func)
+{
+    bit_coerce(&x, &y, TRUE);
+    return rb_funcall(x, func, 1, y);
 }
 
 /*
@@ -3186,13 +3200,17 @@ bit_coerce(VALUE x)
 static VALUE
 fix_and(VALUE x, VALUE y)
 {
-    long val;
+    if (FIXNUM_P(y)) {
+	long val = FIX2LONG(x) & FIX2LONG(y);
+	return LONG2NUM(val);
+    }
 
-    if (!FIXNUM_P(y = bit_coerce(y))) {
+    if (RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_big_and(y, x);
     }
-    val = FIX2LONG(x) & FIX2LONG(y);
-    return LONG2NUM(val);
+
+    bit_coerce(&x, &y, TRUE);
+    return rb_funcall(x, rb_intern("&"), 1, y);
 }
 
 /*
@@ -3205,13 +3223,17 @@ fix_and(VALUE x, VALUE y)
 static VALUE
 fix_or(VALUE x, VALUE y)
 {
-    long val;
+    if (FIXNUM_P(y)) {
+	long val = FIX2LONG(x) | FIX2LONG(y);
+	return LONG2NUM(val);
+    }
 
-    if (!FIXNUM_P(y = bit_coerce(y))) {
+    if (RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_big_or(y, x);
     }
-    val = FIX2LONG(x) | FIX2LONG(y);
-    return LONG2NUM(val);
+
+    bit_coerce(&x, &y, TRUE);
+    return rb_funcall(x, rb_intern("|"), 1, y);
 }
 
 /*
@@ -3224,13 +3246,17 @@ fix_or(VALUE x, VALUE y)
 static VALUE
 fix_xor(VALUE x, VALUE y)
 {
-    long val;
+    if (FIXNUM_P(y)) {
+	long val = FIX2LONG(x) ^ FIX2LONG(y);
+	return LONG2NUM(val);
+    }
 
-    if (!FIXNUM_P(y = bit_coerce(y))) {
+    if (RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_big_xor(y, x);
     }
-    val = FIX2LONG(x) ^ FIX2LONG(y);
-    return LONG2NUM(val);
+
+    bit_coerce(&x, &y, TRUE);
+    return rb_funcall(x, rb_intern("^"), 1, y);
 }
 
 static VALUE fix_lshift(long, unsigned long);

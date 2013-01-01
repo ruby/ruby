@@ -1,0 +1,55 @@
+= Rake 0.9.3 Released
+
+Rake version 0.9.3 is mainly bug fixes.
+
+== Changes
+
+* The rake test loader now removes arguments it has processed.  Issue #51
+* Rake::TaskArguments now responds to #values_at
+* RakeFileUtils.verbose_flag = nil silences output the same as 0.8.7
+* Rake tests are now directory-independent
+* Rake tests are no longer require flexmock
+* Commands constant is no longer polluting top level namespace.
+* Show only the interesting portion of the backtrace by default (James M. Lawrence).
+* Added --reduce-compat option to remove backward compatible DSL hacks (James M. Lawrence).
+
+== What is Rake
+
+Rake is a build tool similar to the make program in many ways. But
+instead of cryptic make recipes, Rake uses standard Ruby code to
+declare tasks and dependencies. You have the full power of a modern
+scripting language built right into your build tool.
+
+== Availability
+
+The easiest way to get and install rake is via RubyGems ...
+
+  gem install rake    (you may need root/admin privileges)
+
+Otherwise, you can get it from the more traditional places:
+
+Home Page:: http://rake.rubyforge.org/
+Download::  http://rubyforge.org/project/showfiles.php?group_id=50
+GitHub::    git://github.com/jimweirich/rake.git
+
+== Thanks
+
+As usual, it was input from users that drove a alot of these changes. The
+following people either contributed patches, made suggestions or made
+otherwise helpful comments.  Thanks to ...
+
+* James M. Lawrence (quix)
+* Roger Pack
+* Cezary Baginski
+* Sean Scot August Moon
+* R.T. Lechow
+* Alex Chaffee
+* James Tucker
+* Matthias Lüdtke
+* Santiago Pastorino
+
+Also, bit thanks to Eric Hodel for assisting with getting this release
+out the door (where "assisting" includes, but is not by any means
+limited to, "pushing" me to get it done).
+
+-- Jim Weirich

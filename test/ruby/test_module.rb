@@ -246,8 +246,9 @@ class TestModule < Test::Unit::TestCase
       ":Object",
       "",
       ":",
-    ].each do |name|
-      e = assert_raises(NameError) {
+      ["String::", "[Bug #7573]"],
+    ].each do |name, msg|
+      e = assert_raises(NameError, "#{msg}#{': ' if msg}wrong constant name #{name.dump}") {
         Object.const_get name
       }
       assert_equal("wrong constant name %s" % name, e.message)
@@ -270,9 +271,10 @@ class TestModule < Test::Unit::TestCase
 
   def test_nested_get_symbol
     const = [self.class, Other].join('::').to_sym
+    assert_raise(NameError) {Object.const_get(const)}
 
-    assert_equal Other, Object.const_get(const)
-    assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+    const = [User, 'USER'].join('::').to_sym
+    assert_raise(NameError) {self.class.const_get(const)}
   end
 
   def test_nested_get_const_missing
@@ -586,7 +588,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_get(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_get(1) }
-    assert_raise(NameError) { Object.const_get("String\0") }
+    bug7574 = '[ruby-dev:46749]'
+    e = assert_raise(NameError) { Object.const_get("String\0") }
+    assert_equal("wrong constant name \"String\\0\"", e.message, bug7574)
   end
 
   def test_const_defined_invalid_name
@@ -594,7 +598,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_defined?(:foo) }
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
-    assert_raise(NameError) { Object.const_defined?("String\0") }
+    bug7574 = '[ruby-dev:46749]'
+    e = assert_raise(NameError) { Object.const_defined?("String\0") }
+    assert_equal("wrong constant name \"String\\0\"", e.message, bug7574)
   end
 
   def test_const_get_no_inherited
@@ -1584,5 +1590,10 @@ class TestModule < Test::Unit::TestCase
       assert_equal(42, a.iattr)
     end
     assert_equal("", stderr)
+  end
+
+  def test_remove_const
+    m = Module.new
+    assert_raise(NameError){ m.instance_eval { remove_const(:__FOO__) } }
   end
 end

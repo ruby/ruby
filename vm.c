@@ -143,7 +143,7 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
     }
 
     /* for return */
-    CHECK_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
 		  th->top_self, rb_cObject, VM_ENVVAL_BLOCK_PTR(0),
 		  iseq->iseq_encoded, th->cfp->sp, iseq->local_size, 0);
@@ -155,7 +155,7 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t 
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
 
-    CHECK_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
 		  base_block->self, base_block->klass,
 		  VM_ENVVAL_PREV_EP_PTR(base_block->ep), iseq->iseq_encoded,
@@ -612,7 +612,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 
 	cfp = th->cfp;
-	CHECK_STACK_OVERFLOW(cfp, argc + iseq->stack_max);
+	CHECK_VM_STACK_OVERFLOW(cfp, argc + iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
 	    cfp->sp[i] = argv[i];
@@ -917,11 +917,6 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
       case TAG_RETRY:
 	result = make_localjump_error("retry outside of rescue clause", Qnil, state);
 	break;
-      case TAG_FATAL:
-	/* internal exception or Thread.exit */
-	/* Thread.exit set th->errinfo to INT2FIX(TAG_FATAL) */
-	if (!FIXNUM_P(val))
-	    result = val;
       default:
 	break;
     }
@@ -1165,7 +1160,6 @@ vm_exec(rb_thread_t *th)
     _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == 0) {
       vm_loop_start:
-	_th->tag = &_tag;
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
 	    err = result;
@@ -1184,7 +1178,6 @@ vm_exec(rb_thread_t *th)
 	err = th->errinfo;
 
       exception_handler:
-	TH_POP_TAG2();
 	cont_pc = cont_sp = catch_iseqval = 0;
 
 	while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
@@ -1365,19 +1358,20 @@ vm_exec(rb_thread_t *th)
 	    switch (VM_FRAME_TYPE(th->cfp)) {
 	      case VM_FRAME_MAGIC_METHOD:
 		RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_BLOCK:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_CLASS:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
 		break;
 	    }
 
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 		vm_pop_frame(th);
 		th->errinfo = err;
+		TH_POP_TAG2();
 		JUMP_TAG(state);
 	    }
 	    else {
@@ -1649,7 +1643,10 @@ get_param(const char *name, size_t default_value, size_t min_value)
 static void
 check_machine_stack_size(size_t *sizep)
 {
+#ifdef PTHREAD_STACK_MIN
     size_t size = *sizep;
+#endif
+
 #ifdef __SYMBIAN32__
     *sizep = 64 * 1024; /* 64KB: Let's be slightly more frugal on mobile platform */
 #endif
@@ -1785,8 +1782,8 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->thgroup);
 	RUBY_MARK_UNLESS_NULL(th->value);
 	RUBY_MARK_UNLESS_NULL(th->errinfo);
-	RUBY_MARK_UNLESS_NULL(th->async_errinfo_queue);
-	RUBY_MARK_UNLESS_NULL(th->async_errinfo_mask_stack);
+	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
+	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
 	RUBY_MARK_UNLESS_NULL(th->root_svar);
 	RUBY_MARK_UNLESS_NULL(th->top_self);
 	RUBY_MARK_UNLESS_NULL(th->top_wrapper);

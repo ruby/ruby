@@ -213,19 +213,19 @@ rb_print_undef(VALUE klass, ID id, int scope)
       case NOEX_PRIVATE: v = " private"; break;
       case NOEX_PROTECTED: v = " protected"; break;
     }
-    rb_name_error(id, "undefined%s method `%s' for %s `%s'", v,
-		  rb_id2name(id),
+    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'", v,
+		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		  rb_class2name(klass));
+		  rb_class_name(klass));
 }
 
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%s' for %s `%s'",
-		      RSTRING_PTR(name),
+    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `%"PRIsVALUE"'",
+		      QUOTE(name),
 		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		      rb_class2name(klass));
+		      rb_class_name(klass));
 }
 
 static int

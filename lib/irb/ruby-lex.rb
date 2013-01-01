@@ -54,6 +54,7 @@ class RubyLex
     @lex_state = EXPR_BEG
     @space_seen = false
     @here_header = false
+    @post_symbeg = false
 
     @continue = false
     @line = ""
@@ -87,8 +88,8 @@ class RubyLex
   end
 
   def get_readed
-    if idx = @readed.reverse.index("\n")
-      @base_char_no = idx
+    if idx = @readed.rindex("\n")
+      @base_char_no = @readed.size - (idx + 1)
     else
       @base_char_no += @readed.size
     end
@@ -152,8 +153,8 @@ class RubyLex
     @seek -= 1
     if c == "\n"
       @line_no -= 1
-      if idx = @readed.reverse.index("\n")
-	@char_no = @readed.size - idx
+      if idx = @readed.rindex("\n")
+	@char_no = idx + 1
       else
 	@char_no = @base_char_no + @readed.size
       end
@@ -218,6 +219,8 @@ class RubyLex
     @here_header = false
 
     @continue = false
+    @post_symbeg = false
+
     prompt
 
     @line = ""
@@ -286,6 +289,8 @@ class RubyLex
       begin
 	tk = @OP.match(self)
 	@space_seen = tk.kind_of?(TkSPACE)
+	@lex_state = EXPR_END if @post_symbeg && tk.kind_of?(TkOp)
+	@post_symbeg = tk.kind_of?(TkSYMBEG)
       rescue SyntaxError
 	raise if @exception_on_syntax_error
 	tk = TkError.new(@seek, @line_no, @char_no)
@@ -312,6 +317,8 @@ class RubyLex
     "r" => "/",
     "w" => "]",
     "W" => "]",
+    "i" => "]",
+    "I" => "]",
     "s" => ":"
   }
 
@@ -540,7 +547,7 @@ class RubyLex
 	@lex_state = EXPR_BEG
 	Token(TkCOLON)
       else
-	@lex_state = EXPR_FNAME;
+	@lex_state = EXPR_FNAME
 	Token(TkSYMBEG)
       end
     end
@@ -905,10 +912,25 @@ class RubyLex
     end
 
     @here_header = false
-    while l = gets
-      l = l.sub(/(:?\r)?\n\z/, '')
-      if (indent ? l.strip : l) == quoted
- 	break
+#     while l = gets
+#       l = l.sub(/(:?\r)?\n\z/, '')
+#       if (indent ? l.strip : l) == quoted
+#  	break
+#       end
+#     end
+
+    line = ""
+    while ch = getc
+      if ch == "\n"
+	if line == quoted
+	  break
+	end
+	line = ""
+      else
+	line.concat ch unless indent && line == "" && /\s/ =~ ch
+	if @ltype != "'" && ch == "#" && peek(0) == "{"
+	  identify_string_dvar
+	end
       end
     end
 

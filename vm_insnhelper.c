@@ -24,6 +24,12 @@
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
+static void
+vm_stackoverflow(void)
+{
+    rb_exc_raise(sysstack_error);
+}
+
 static inline rb_control_frame_t *
 vm_push_frame(rb_thread_t *th,
 	      const rb_iseq_t *iseq,
@@ -41,7 +47,7 @@ vm_push_frame(rb_thread_t *th,
 
     /* check stack overflow */
     if ((void *)(sp + local_size) >= (void *)cfp) {
-	rb_exc_raise(sysstack_error);
+	vm_stackoverflow();
     }
     th->cfp = cfp;
 
@@ -357,9 +363,9 @@ vm_check_if_namespace(VALUE klass)
 static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
-    if (TYPE(klass) == T_MODULE &&
+    if (RB_TYPE_P(klass, T_MODULE) &&
 	FL_TEST(klass, RMODULE_IS_OVERLAID) &&
-	TYPE(cfp->klass) == T_ICLASS &&
+	RB_TYPE_P(cfp->klass, T_ICLASS) &&
 	RBASIC(cfp->klass)->klass == klass) {
 	return cfp->klass;
     }
@@ -1048,7 +1054,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	    ptr = RARRAY_PTR(tmp);
 	    cfp->sp -= 1;
 
-	    CHECK_STACK_OVERFLOW(cfp, len);
+	    CHECK_VM_STACK_OVERFLOW(cfp, len);
 
 	    for (i = 0; i < len; i++) {
 		*cfp->sp++ = ptr[i];
@@ -1056,6 +1062,34 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	    ci->argc += i-1;
 	}
     }
+}
+
+static inline int
+vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv)
+{
+    VALUE keyword_hash = Qnil;
+    int i, j;
+
+    if (argc > 0) keyword_hash = rb_check_hash_type(orig_argv[argc-1]);
+    if (!NIL_P(keyword_hash)) {
+	argc--;
+	keyword_hash = rb_hash_dup(keyword_hash);
+	if (iseq->arg_keyword_check) {
+	    for (i = j = 0; i < iseq->arg_keywords; i++) {
+		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
+	    }
+	    if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
+		unknown_keyword_error(iseq, keyword_hash);
+	    }
+	}
+    }
+    else {
+	keyword_hash = rb_hash_new();
+    }
+
+    orig_argv[iseq->arg_keyword] = keyword_hash;
+
+    return argc;
 }
 
 static inline int
@@ -1068,29 +1102,13 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
     const int orig_argc = ci->argc;
     int argc = orig_argc;
     VALUE *argv = orig_argv;
-    VALUE keyword_hash = Qnil;
     rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc + iseq->arg_size;
 
+    /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	int i, j;
-	if (argc > 0) keyword_hash = rb_check_hash_type(argv[argc-1]);
-	if (!NIL_P(keyword_hash)) {
-	    argc--;
-	    keyword_hash = rb_hash_dup(keyword_hash);
-	    if (iseq->arg_keyword_check) {
-		for (i = j = 0; i < iseq->arg_keywords; i++) {
-		    if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
-		}
-		if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
-		    unknown_keyword_error(iseq, keyword_hash);
-		}
-	    }
-	}
-	else {
-	    keyword_hash = rb_hash_new();
-	}
+	argc = vm_callee_setup_keyword_arg(iseq, argc, orig_argv);
     }
 
     /* mandatory */
@@ -1134,11 +1152,6 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
     if (iseq->arg_rest != -1) {
 	orig_argv[iseq->arg_rest] = rb_ary_new4(argc, argv);
 	argc = 0;
-    }
-
-    /* keyword argument */
-    if (iseq->arg_keyword != -1) {
-	orig_argv[iseq->arg_keyword] = keyword_hash;
     }
 
     /* block arguments */
@@ -1209,7 +1222,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     rb_iseq_t *iseq = ci->me->def->body.iseq;
     VALUE *sp = argv + iseq->arg_size;
 
-    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
 
     /* clear local variables */
     for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
@@ -1236,7 +1249,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 
     cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
-    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
     RUBY_VM_CHECK_INTS(th);
 
     sp_orig = sp = cfp->sp;
@@ -1633,7 +1646,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     ci_entry.me = rb_method_entry(CLASS_OF(ci_entry.recv), idMethodMissing, &ci_entry.defined_class);
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
-    CHECK_STACK_OVERFLOW(reg_cfp, 1);
+    CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
     if (ci->argc > 0) {
 	MEMMOVE(argv+1, argv, VALUE, ci->argc);
     }
@@ -2079,6 +2092,11 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     th->mark_stack_len = argc;
 
+    /* keyword argument */
+    if (iseq->arg_keyword != -1) {
+	argc = vm_callee_setup_keyword_arg(iseq, argc, argv);
+    }
+
     /*
      * yield [1, 2]
      *  => {|a|} => a = [1, 2]
@@ -2086,11 +2104,11 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      */
     arg0 = argv[0];
     if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
-	(m + iseq->arg_opts + iseq->arg_post_len) > 0 &&        /* this process is meaningful */
+	((m + iseq->arg_post_len) > 0 || iseq->arg_opts > 2) &&        /* this process is meaningful */
 	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
 	th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
-	CHECK_STACK_OVERFLOW(th->cfp, argc);
+	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
@@ -2208,7 +2226,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 	VALUE * const rsp = GET_SP() - ci->argc;
 	SET_SP(rsp);
 
-	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
+	CHECK_VM_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 	opt_pc = vm_yield_setup_args(th, iseq, ci->argc, rsp, 0, block_proc_is_lambda(block->proc));
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_BLOCK, block->self,

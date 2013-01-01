@@ -499,6 +499,22 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
   end
 
+  def test_proc_args_opt_signle
+    bug7621 = '[ruby-dev:46801]'
+    pr = proc {|a=:a|
+      a
+    }
+    assert_equal :a, pr.call()
+    assert_equal 1, pr.call(1)
+    assert_equal 1, pr.call(1,2)
+
+    assert_equal [], pr.call([]), bug7621
+    assert_equal [1], pr.call([1]), bug7621
+    assert_equal [1, 2], pr.call([1,2]), bug7621
+    assert_equal [1, 2, 3], pr.call([1,2,3]), bug7621
+    assert_equal [1, 2, 3, 4], pr.call([1,2,3,4]), bug7621
+  end
+
   def test_proc_args_pos_opt_post
     pr = proc {|a,b,c=:c,d,e|
       [a,b,c,d,e]

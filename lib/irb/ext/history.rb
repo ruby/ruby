@@ -15,6 +15,7 @@ module IRB # :nodoc:
 
     NOPRINTING_IVARS.push "@eval_history_values"
 
+    # See #set_last_value
     alias _set_last_value set_last_value
 
     def set_last_value(value)
@@ -57,7 +58,7 @@ module IRB # :nodoc:
     end
   end
 
-  class History
+  class History # :nodoc:
     @RCS_ID='-$Id$-'
 
     def initialize(size = 16)

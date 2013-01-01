@@ -11,21 +11,24 @@
 require "readline"
 
 module IRB
-  module HistorySavingAbility
+  module HistorySavingAbility # :nodoc:
     @RCS_ID='-$Id$-'
   end
 
   class Context
-    def init_save_history
+    def init_save_history# :nodoc:
       unless (class<<@io;self;end).include?(HistorySavingAbility)
 	@io.extend(HistorySavingAbility)
       end
     end
 
+    # A copy of the default <code>IRB.conf[:SAVE_HISTORY]</code>
     def save_history
       IRB.conf[:SAVE_HISTORY]
     end
 
+    # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
+    # #init_save_history with this context.
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
       if val
@@ -35,16 +38,18 @@ module IRB
       end
     end
 
+    # A copy of the default <code>IRB.conf[:HISTORY_FILE]</code>
     def history_file
       IRB.conf[:HISTORY_FILE]
     end
 
+    # Set <code>IRB.conf[:HISTORY_FILE]</code> to the given +hist+.
     def history_file=(hist)
       IRB.conf[:HISTORY_FILE] = hist
     end
   end
 
-  module HistorySavingAbility
+  module HistorySavingAbility # :nodoc:
     include Readline
 
 #     def HistorySavingAbility.create_finalizer

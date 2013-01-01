@@ -143,8 +143,8 @@ case BIN(insn):
 
 
 #define INSN_DISPATCH()         \
-  while(1){                     \
-    switch(GET_CURRENT_INSN()){
+  while (1) {			\
+    switch (GET_CURRENT_INSN()) {
 
 #define END_INSNS_DISPATCH()    \
 default:                        \

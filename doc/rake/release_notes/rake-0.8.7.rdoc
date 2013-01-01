@@ -42,7 +42,7 @@ Otherwise, you can get it from the more traditional places:
 
 Home Page:: http://rake.rubyforge.org/
 Download::  http://rubyforge.org/project/showfiles.php?group_id=50
-GitHub::    git://github.com/jimweirich/rake.git 
+GitHub::    git://github.com/jimweirich/rake.git
 
 == Thanks
 

@@ -481,7 +481,7 @@ class TestRubyOptions < Test::Unit::TestCase
       opts[:rlimit_core] = 0
       additional = ""
     end
-    assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [],
+    expected_stderr =
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
@@ -505,9 +505,8 @@ class TestRubyOptions < Test::Unit::TestCase
       \n
       (?:#{additional})
       \z
-      )x,
-      nil,
-      opts)
+      )x
+    assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [], expected_stderr, nil, opts)
 
     bug7402 = '[ruby-core:49573]'
     status = assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
@@ -517,6 +516,14 @@ class TestRubyOptions < Test::Unit::TestCase
                                nil,
                                opts)
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")
+
+    bug7597 = '[ruby-dev:46786]'
+    t = Tempfile.new(["test_ruby_test_bug7597", ".rb"])
+    t.write "f" * 100
+    t.flush
+    assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
+                      "", [], expected_stderr, bug7597, opts)
+    t.close
   end
 
   def test_DATA

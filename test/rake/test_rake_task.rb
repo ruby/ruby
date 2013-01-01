@@ -40,8 +40,8 @@ class TestRakeTask < Rake::TestCase
   def test_invoke
     runlist = []
     t1 = task(:t1 => [:t2, :t3]) { |t| runlist << t.name; 3321 }
-    t2 = task(:t2) { |t| runlist << t.name }
-    t3 = task(:t3) { |t| runlist << t.name }
+    task(:t2) { |t| runlist << t.name }
+    task(:t3) { |t| runlist << t.name }
     assert_equal ["t2", "t3"], t1.prerequisites
     t1.invoke
     assert_equal ["t2", "t3", "t1"], runlist
@@ -88,8 +88,8 @@ class TestRakeTask < Rake::TestCase
   def test_no_double_invoke
     runlist = []
     t1 = task(:t1 => [:t2, :t3]) { |t| runlist << t.name; 3321 }
-    t2 = task(:t2 => [:t3]) { |t| runlist << t.name }
-    t3 = task(:t3) { |t| runlist << t.name }
+    task(:t2 => [:t3]) { |t| runlist << t.name }
+    task(:t3) { |t| runlist << t.name }
     t1.invoke
     assert_equal ["t3", "t2", "t1"], runlist
   end
@@ -204,7 +204,7 @@ class TestRakeTask < Rake::TestCase
 
   def test_prerequiste_tasks_fails_if_prerequisites_are_undefined
     a = task :a => ["b", "c"]
-    b = task :b
+    task :b
     assert_raises(RuntimeError) do
       a.prerequisite_tasks
     end
@@ -223,8 +223,8 @@ class TestRakeTask < Rake::TestCase
 
   def test_timestamp_returns_now_if_all_prereqs_have_no_times
     a = task :a => ["b", "c"]
-    b = task :b
-    c = task :c
+    task :b
+    task :c
 
     assert_in_delta Time.now, a.timestamp, 0.1, 'computer too slow?'
   end

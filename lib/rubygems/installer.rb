@@ -202,47 +202,24 @@ class Gem::Installer
   #     specifications/<gem-version>.gemspec #=> the Gem::Specification
 
   def install
-    verify_gem_home(options[:unpack])
-
-    # If we're forcing the install then disable security unless the security
-    # policy says that we only install signed gems.
-    @security_policy = nil if @force and @security_policy and
-                              not @security_policy.only_signed
-
-    unless @force
-      ensure_required_ruby_version_met
-      ensure_required_rubygems_version_met
-      ensure_dependencies_met unless @ignore_dependencies
-    end
+    pre_install_checks
 
     run_pre_install_hooks
 
-    Gem.ensure_gem_subdirectories gem_home
-
     # Completely remove any previous gem files
-    FileUtils.rm_rf(gem_dir)
+    FileUtils.rm_rf gem_dir
 
     FileUtils.mkdir_p gem_dir
 
     extract_files
-    build_extensions
 
+    build_extensions
+    write_build_info_file
     run_post_build_hooks
 
     generate_bin
     write_spec
-
-    unless @build_args.empty?
-      File.open spec.build_info_file, "w" do |f|
-        @build_args.each { |a| f.puts a }
-      end
-    end
-
-    # TODO should be always cache the file? Other classes have options
-    # to controls if caching is done.
-    cache_file = File.join(gem_home, "cache", "#{spec.full_name}.gem")
-
-    FileUtils.cp gem, cache_file unless File.exist? cache_file
+    write_cache_file
 
     say spec.post_install_message unless spec.post_install_message.nil?
 
@@ -255,7 +232,7 @@ class Gem::Installer
     spec
 
   # TODO This rescue is in the wrong place. What is raising this exception?
-  # move this rescue to arround the code that actually might raise it.
+  # move this rescue to around the code that actually might raise it.
   rescue Zlib::GzipFile::Error
     raise Gem::InstallError, "gzip error installing #{gem}"
   end
@@ -506,6 +483,21 @@ class Gem::Installer
     end
   end
 
+  ##
+  # Ensures the Gem::Specification written out for this gem is loadable upon
+  # installation.
+
+  def ensure_loadable_spec
+    ruby = spec.to_ruby_for_cache
+
+    begin
+      eval ruby
+    rescue StandardError, SyntaxError => e
+      raise Gem::InstallError,
+            "The specification for #{spec.full_name} is corrupt (#{e.class})"
+    end
+  end
+
   # DOC: Missing docs or :nodoc:.
   def ensure_required_ruby_version_met
     if rrv = spec.required_ruby_version then
@@ -736,5 +728,59 @@ EOF
   def dir
     gem_dir.to_s
   end
+
+  ##
+  # Performs various checks before installing the gem such as the install
+  # repository is writable and its directories exist, required ruby and
+  # rubygems versions are met and that dependencies are installed.
+  #
+  # Version and dependency checks are skipped if this install is forced.
+  #
+  # The dependent check will be skipped this install is ignoring dependencies.
+
+  def pre_install_checks
+    verify_gem_home options[:unpack]
+
+    # If we're forcing the install then disable security unless the security
+    # policy says that we only install signed gems.
+    @security_policy = nil if
+      @force and @security_policy and not @security_policy.only_signed
+
+    ensure_loadable_spec
+
+    Gem.ensure_gem_subdirectories gem_home
+
+    return true if @force
+
+    ensure_required_ruby_version_met
+    ensure_required_rubygems_version_met
+    ensure_dependencies_met unless @ignore_dependencies
+
+    true
+  end
+
+  ##
+  # Writes the file containing the arguments for building this gem's
+  # extensions.
+
+  def write_build_info_file
+    return if @build_args.empty?
+
+    open spec.build_info_file, 'w' do |io|
+      @build_args.each do |arg|
+        io.puts arg
+      end
+    end
+  end
+
+  ##
+  # Writes the .gem file to the cache directory
+
+  def write_cache_file
+    cache_file = File.join gem_home, 'cache', spec.file_name
+
+    FileUtils.cp @gem, cache_file unless File.exist? cache_file
+  end
+
 end
 

@@ -29,18 +29,17 @@ typedef struct {
 
 DIR*           rb_w32_opendir(const char*);
 DIR*           rb_w32_uopendir(const char*);
-struct direct* rb_w32_readdir(DIR *);
-struct direct* rb_w32_readdir_with_enc(DIR *, rb_encoding *);
+struct direct* rb_w32_readdir(DIR *, rb_encoding *);
 long           rb_w32_telldir(DIR *);
 void           rb_w32_seekdir(DIR *, long);
 void           rb_w32_rewinddir(DIR *);
 void           rb_w32_closedir(DIR *);
 
-#define opendir   rb_w32_opendir
-#define readdir   rb_w32_readdir
-#define telldir   rb_w32_telldir
-#define seekdir   rb_w32_seekdir
-#define rewinddir rb_w32_rewinddir
-#define closedir  rb_w32_closedir
+#define opendir(s)   rb_w32_opendir((s))
+#define readdir(d)   rb_w32_readdir((d), 0)
+#define telldir(d)   rb_w32_telldir((d))
+#define seekdir(d, l)   rb_w32_seekdir((d), (l))
+#define rewinddir(d) rb_w32_rewinddir((d))
+#define closedir(d)  rb_w32_closedir((d))
 
 #endif /* RUBY_WIN32_DIR_H */

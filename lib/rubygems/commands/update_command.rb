@@ -142,7 +142,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
     gems_to_update = which_to_update hig, options[:args], :system
     name, up_ver   = gems_to_update.first
-    current_ver    = Gem::Version.new Gem::VERSION
+    current_ver    = Gem.rubygems_version
 
     target = if options[:system] == true then
                up_ver

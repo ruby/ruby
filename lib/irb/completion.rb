@@ -9,10 +9,12 @@
 require "readline"
 
 module IRB
-  module InputCompletor
+  module InputCompletor # :nodoc:
 
     @RCS_ID='-$Id$-'
 
+    # Set of reserved words used by Ruby, you should not use these for
+    # constants or variables
     ReservedWords = [
       "BEGIN", "END",
       "alias", "and",
@@ -42,7 +44,7 @@ module IRB
       when /^((["'`]).*\2)\.([^.]*)$/
 	# String
 	receiver = $1
-	message = $3
+	message = Regexp.quote($3)
 
 	candidates = String.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
@@ -77,7 +79,7 @@ module IRB
 	if Symbol.respond_to?(:all_symbols)
 	  sym = $1
 	  candidates = Symbol.all_symbols.collect{|s| ":" + s.id2name}
-	  candidates.grep(/^#{sym}/)
+	  candidates.grep(/^#{Regexp.quote(sym)}/)
 	else
 	  []
 	end
@@ -208,6 +210,7 @@ module IRB
       end
     }
 
+    # Set of available operators in Ruby
     Operators = ["%", "&", "*", "**", "+",  "-",  "/",
       "<", "<<", "<=", "<=>", "==", "===", "=~", ">", ">=", ">>",
       "[]", "[]=", "^", "!", "!=", "!~"]

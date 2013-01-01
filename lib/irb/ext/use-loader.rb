@@ -18,16 +18,16 @@ class Object
 end
 
 module IRB
-  # :stopdoc:
   module ExtendCommandBundle
+    # Loads the given file similarly to Kernel#load, see IrbLoader#irb_load
     def irb_load(*opts, &b)
       ExtendCommand::Load.execute(irb_context, *opts, &b)
     end
+    # Loads the given file similarly to Kernel#require
     def irb_require(*opts, &b)
       ExtendCommand::Require.execute(irb_context, *opts, &b)
     end
   end
-  # :startdoc:
 
   class Context
 

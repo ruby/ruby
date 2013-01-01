@@ -93,7 +93,7 @@ module Net   #:nodoc:
   #   uri = URI('http://example.com/some_path?query=string')
   #
   #   Net::HTTP.start(uri.host, uri.port) do |http|
-  #     request = Net::HTTP::Get.new uri.request_uri
+  #     request = Net::HTTP::Get.new uri
   #
   #     response = http.request request # Net::HTTPResponse object
   #   end
@@ -110,6 +110,10 @@ module Net   #:nodoc:
   # automatically closing it you can use ::new instead of ::start.  #request
   # will automatically open a connection to the server if one is not currently
   # open.  You can manually close the connection with #finish.
+  #
+  # For all the Net::HTTP request objects and shortcut request methods you may
+  # supply either a String for the request path or a URI from which Net::HTTP
+  # will extract the request path.
   #
   # === Response Data
   #
@@ -168,7 +172,7 @@ module Net   #:nodoc:
   # creates a urlencoded POST body:
   #
   #   uri = URI('http://www.example.com/todo.cgi')
-  #   req = Net::HTTP::Post.new(uri.path)
+  #   req = Net::HTTP::Post.new(uri)
   #   req.set_form_data('from' => '2005-01-01', 'to' => '2005-03-31')
   #
   #   res = Net::HTTP.start(uri.hostname, uri.port) do |http|
@@ -186,7 +190,7 @@ module Net   #:nodoc:
   # multipart/form-data use Net::HTTPRequest#body= and
   # Net::HTTPRequest#content_type=:
   #
-  #   req = Net::HTTP::Post.new(uri.path)
+  #   req = Net::HTTP::Post.new(uri)
   #   req.body = multipart_data
   #   req.content_type = 'multipart/form-data'
   #
@@ -203,7 +207,7 @@ module Net   #:nodoc:
   #   uri = URI('http://example.com/cached_response')
   #   file = File.stat 'cached_response'
   #
-  #   req = Net::HTTP::Get.new(uri.request_uri)
+  #   req = Net::HTTP::Get.new(uri)
   #   req['If-Modified-Since'] = file.mtime.rfc2822
   #
   #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
@@ -221,7 +225,7 @@ module Net   #:nodoc:
   #
   #   uri = URI('http://example.com/index.html?key=value')
   #
-  #   req = Net::HTTP::Get.new(uri.request_uri)
+  #   req = Net::HTTP::Get.new(uri)
   #   req.basic_auth 'user', 'pass'
   #
   #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
@@ -238,7 +242,7 @@ module Net   #:nodoc:
   #   uri = URI('http://example.com/large_file')
   #
   #   Net::HTTP.start(uri.host, uri.port) do |http|
-  #     request = Net::HTTP::Get.new uri.request_uri
+  #     request = Net::HTTP::Get.new uri
   #
   #     http.request request do |response|
   #       open 'large_file', 'w' do |io|
@@ -257,7 +261,7 @@ module Net   #:nodoc:
   #
   #   Net::HTTP.start(uri.host, uri.port,
   #     :use_ssl => uri.scheme == 'https') do |http|
-  #     request = Net::HTTP::Get.new uri.request_uri
+  #     request = Net::HTTP::Get.new uri
   #
   #     response = http.request request # Net::HTTPResponse object
   #   end
@@ -472,7 +476,7 @@ module Net   #:nodoc:
         uri = uri_or_host
         start(uri.hostname, uri.port,
               :use_ssl => uri.scheme == 'https') {|http|
-          return http.request_get(uri.request_uri, &block)
+          return http.request_get(uri, &block)
         }
       end
     end
@@ -496,7 +500,7 @@ module Net   #:nodoc:
     #                  { "q" => "ruby", "max" => "50" }
     #
     def HTTP.post_form(url, params)
-      req = Post.new(url.request_uri)
+      req = Post.new(url)
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
       start(url.hostname, url.port,
@@ -868,7 +872,7 @@ module Net   #:nodoc:
         conn_port    = port
       end
 
-      D "opening connection to #{conn_address}..."
+      D "opening connection to #{conn_address}:#{conn_port}..."
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
         TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
       }
@@ -884,8 +888,10 @@ module Net   #:nodoc:
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
         @ssl_context.set_params(ssl_parameters)
+        D "starting SSL for #{conn_address}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
+        D "SSL established"
       end
       @socket = BufferedIO.new(s)
       @socket.read_timeout = @read_timeout
@@ -1077,7 +1083,9 @@ module Net   #:nodoc:
 
     public
 
-    # Gets data from +path+ on the connected-to host.
+    # Retrieves data from +path+ on the connected-to host which may be an
+    # absolute path String or a URI to extract the path from.
+    #
     # +initheader+ must be a Hash like { 'Accept' => '*/*', ... },
     # and it defaults to an empty hash.
     # If +initheader+ doesn't have the key 'accept-encoding', then
@@ -1403,6 +1411,9 @@ module Net   #:nodoc:
           begin
             res = HTTPResponse.read_new(@socket)
           end while res.kind_of?(HTTPContinue)
+
+          res.uri = req.uri
+
           res.reading_body(@socket, req.response_body_permitted?) {
             yield res if block_given?
           }
@@ -1444,6 +1455,11 @@ module Net   #:nodoc:
       if not req.response_body_permitted? and @close_on_empty_response
         req['connection'] ||= 'close'
       end
+
+      host = req['host'] || address
+      host = $1 if host =~ /(.*):\d+$/
+      req.update_uri host, port, use_ssl?
+
       req['host'] ||= addr_port()
     end
 

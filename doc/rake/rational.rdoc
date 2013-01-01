@@ -38,13 +38,13 @@ too much work.  And that was the end of that!
 ... Except I couldn't get the thought out of my head.  What exactly
 would be needed to make the about syntax work as a make file?  Hmmm, you
 would need to register the tasks, you need some way of specifying
-dependencies between tasks, and some way of kicking off the process. 
+dependencies between tasks, and some way of kicking off the process.
 Hey!  What if we did ... and fifteen minutes later I had a working
 prototype of Ruby make, complete with dependencies and actions.
 
 I showed the code to my coworker and we had a good laugh.  It was just
 about a page worth of code that reproduced an amazing amount of the
-functionality of make.  We were both truely stunned with the power of
+functionality of make.  We were both truly stunned with the power of
 Ruby.
 
 But it didn't do everything make did.  In particular, it didn't have
@@ -53,7 +53,7 @@ prerequisite files have a later timestamp).  Obviously THAT would be a
 pain to add and so Ruby Make would remain an interesting experiment.
 
 ... Except as I walked back to my desk, I started thinking about what
-file based dependecies would really need.  Rats!  I was hooked again,
+file based dependencies would really need.  Rats!  I was hooked again,
 and by adding a new class and two new methods, file/timestamp
 dependencies were implemented.
 
@@ -97,7 +97,7 @@ Here's another task with dependencies ...
    end
 
 Task :clobber depends upon task :clean, so :clean will be run before
-:clobber is executed. 
+:clobber is executed.
 
 Files are specified by using the "file" command.  It is similar to the
 task command, except that the task name represents a file, and the task
@@ -115,7 +115,7 @@ Here is a file based dependency that will compile "hello.cc" to
 
 I normally specify file tasks with string (rather than symbols).  Some
 file names can't be represented by symbols.  Plus it makes the
-distinction between them more clear to the casual reader.  
+distinction between them more clear to the casual reader.
 
 Currently writing a task for each and every file in the project would be
 tedious at best.  I envision a set of libraries to make this job
@@ -133,7 +133,7 @@ created for rake.
 That's it.  There's no documentation (other than whats in this
 message).  Does this sound interesting to anyone?  If so, I'll continue
 to clean it up and write it up and publish it on RAA.  Otherwise, I'll
-leave it as an interesting excerise and a tribute to the power of Ruby.
+leave it as an interesting exercise and a tribute to the power of Ruby.
 
 Why /might/ rake be interesting to Ruby programmers.  I don't know,
 perhaps ...

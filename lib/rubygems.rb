@@ -98,7 +98,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.0.0.preview2.2'
+  VERSION = '2.0.0.preview3'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -123,7 +123,22 @@ module Gem
     /wince/i,
   ]
 
-  GEM_DEP_FILES = %w!gem.deps.rb Gemfile Isolate!
+  GEM_DEP_FILES = %w[
+    gem.deps.rb
+    Gemfile
+    Isolate
+  ]
+
+  ##
+  # Subdirectories in a gem repository
+
+  REPOSITORY_SUBDIRECTORIES = %w[
+    build_info
+    cache
+    doc
+    gems
+    specifications
+  ]
 
   @@win_platform = nil
 
@@ -388,7 +403,7 @@ module Gem
 
     require 'fileutils'
 
-    %w[cache build_info doc gems specifications].each do |name|
+    REPOSITORY_SUBDIRECTORIES.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
       FileUtils.mkdir_p subdir rescue nil # in case of perms issues -- lame
@@ -750,31 +765,33 @@ module Gem
     @ruby
   end
 
-  # DOC: needs doc'd or :nodoc'd
+  ##
+  # Returns the latest release-version specification for the gem +name+.
+
   def self.latest_spec_for name
-    dependency  = Gem::Dependency.new name
-    fetcher     = Gem::SpecFetcher.fetcher
-    spec_tuples = fetcher.find_matching dependency
+    dependency   = Gem::Dependency.new name
+    fetcher      = Gem::SpecFetcher.fetcher
+    spec_tuples, = fetcher.spec_for_dependency dependency
 
-    match = spec_tuples.select { |(n, _, p), _|
-      n == name and Gem::Platform.match p
-    }.sort_by { |(_, version, _), _|
-      version
-    }.last
+    spec, = spec_tuples.first
 
-    match and fetcher.fetch_spec(*match)
+    spec
   end
 
-  # DOC: needs doc'd or :nodoc'd
+  ##
+  # Returns the latest release version of RubyGems.
+
+  def self.latest_rubygems_version
+    latest_version_for('rubygems-update') or
+      raise "Can't find 'rubygems-update' in any repo. Check `gem source list`."
+  end
+
+  ##
+  # Returns the version of the latest release-version of gem +name+
+
   def self.latest_version_for name
     spec = latest_spec_for name
     spec and spec.version
-  end
-
-  # DOC: needs doc'd or :nodoc'd
-  def self.latest_rubygems_version
-    latest_version_for("rubygems-update") or
-      raise "Can't find 'rubygems-update' in any repo. Check `gem source list`."
   end
 
   ##

@@ -1557,7 +1557,7 @@ rb_big_cmp(VALUE x, VALUE y)
     xds = BDIGITS(x);
     yds = BDIGITS(y);
 
-    while(xlen-- && (xds[xlen]==yds[xlen]));
+    while (xlen-- && (xds[xlen]==yds[xlen]));
     if (-1 == xlen) return INT2FIX(0);
     return (xds[xlen] > yds[xlen]) ?
 	(RBIGNUM_SIGN(x) ? INT2FIX(1) : INT2FIX(-1)) :
@@ -1710,7 +1710,7 @@ rb_big_eq(VALUE x, VALUE y)
  *     68719476736.eql?(68719476736.0)   #=> false
  */
 
-static VALUE
+VALUE
 rb_big_eql(VALUE x, VALUE y)
 {
     if (!RB_TYPE_P(y, T_BIGNUM)) return Qfalse;
@@ -2825,7 +2825,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	while (ny > 1 && !zds[ny-1]) --ny;
 	if (dd) {
 	    t2 = 0; i = ny;
-	    while(i--) {
+	    while (i--) {
 		t2 = (t2 | zds[i]) >> dd;
 		q = zds[i];
 		zds[i] = BIGLO(t2);
@@ -3201,18 +3201,6 @@ rb_big_pow(VALUE x, VALUE y)
     return DBL2NUM(pow(rb_big2dbl(x), d));
 }
 
-static inline VALUE
-bit_coerce(VALUE x)
-{
-    while (!FIXNUM_P(x) && !RB_TYPE_P(x, T_BIGNUM)) {
-	rb_raise(rb_eTypeError,
-		 "can't convert %s into Integer for bitwise arithmetic",
-		 rb_obj_classname(x));
-	x = rb_to_int(x);
-    }
-    return x;
-}
-
 static VALUE
 bigand_int(VALUE x, long y)
 {
@@ -3272,8 +3260,13 @@ rb_big_and(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '&');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
+
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);
 	get2comp(x);
@@ -3363,8 +3356,12 @@ rb_big_or(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '|');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
 
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);
@@ -3455,8 +3452,12 @@ rb_big_xor(VALUE xx, VALUE yy)
     long i, l1, l2;
     char sign;
 
+    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
+	return rb_num_coerce_bit(xx, yy, '^');
+    }
+
     x = xx;
-    y = bit_coerce(yy);
+    y = yy;
 
     if (!RBIGNUM_SIGN(x)) {
 	x = rb_big_clone(x);

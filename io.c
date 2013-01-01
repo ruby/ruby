@@ -1050,6 +1050,9 @@ rb_io_wait_readable(int f)
 #if defined(ERESTART)
       case ERESTART:
 #endif
+	rb_thread_check_ints();
+	return TRUE;
+
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
@@ -1073,6 +1076,18 @@ rb_io_wait_writable(int f)
 #if defined(ERESTART)
       case ERESTART:
 #endif
+	/*
+	 * In old Linux, several special files under /proc and /sys don't handle
+	 * select properly. Thus we need avoid to call if don't use O_NONBLOCK.
+	 * Otherwise, we face nasty hang up. Sigh.
+	 * e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+	 * http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+	 * In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
+	 * Then rb_thread_check_ints() is enough.
+	 */
+	rb_thread_check_ints();
+	return TRUE;
+
       case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
@@ -3201,11 +3216,6 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
  *     ios.each_line(sep,limit) {|line| block } -> ios
  *     ios.each_line(...)                       -> an_enumerator
  *
- *     ios.lines(sep=$/) {|line| block }        -> ios
- *     ios.lines(limit) {|line| block }         -> ios
- *     ios.lines(sep,limit) {|line| block }     -> ios
- *     ios.lines(...)                           -> an_enumerator
- *
  *  Executes the block for every line in <em>ios</em>, where lines are
  *  separated by <i>sep</i>. <em>ios</em> must be opened for
  *  reading or an <code>IOError</code> will be raised.
@@ -3240,10 +3250,20 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 }
 
 /*
+ *  This is a deprecated alias for <code>each_line</code>.
+ */
+
+static VALUE
+rb_io_lines(int argc, VALUE *argv, VALUE io)
+{
+    rb_warn("IO#lines is deprecated; use #each_line instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
+    return rb_io_each_line(argc, argv, io);
+}
+
+/*
  *  call-seq:
- *     ios.bytes {|byte| block }      -> ios
- *     ios.bytes                      -> an_enumerator
- *
  *     ios.each_byte {|byte| block }  -> ios
  *     ios.each_byte                  -> an_enumerator
  *
@@ -3281,6 +3301,19 @@ rb_io_each_byte(VALUE io)
 	}
     }
     return io;
+}
+
+/*
+ *  This is a deprecated alias for <code>each_byte</code>.
+ */
+
+static VALUE
+rb_io_bytes(VALUE io)
+{
+    rb_warn("IO#bytes is deprecated; use #each_byte instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
+    return rb_io_each_byte(io);
 }
 
 static VALUE
@@ -3388,9 +3421,6 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     ios.chars {|c| block }      -> ios
- *     ios.chars                   -> an_enumerator
- *
  *     ios.each_char {|c| block }  -> ios
  *     ios.each_char               -> an_enumerator
  *
@@ -3421,6 +3451,19 @@ rb_io_each_char(VALUE io)
         rb_yield(c);
     }
     return io;
+}
+
+/*
+ *  This is a deprecated alias for <code>each_char</code>.
+ */
+
+static VALUE
+rb_io_chars(VALUE io)
+{
+    rb_warn("IO#chars is deprecated; use #each_char instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
+    return rb_io_each_char(io);
 }
 
 
@@ -3520,6 +3563,18 @@ rb_io_each_codepoint(VALUE io)
     return io;
 }
 
+/*
+ *  This is a deprecated alias for <code>each_codepoint</code>.
+ */
+
+static VALUE
+rb_io_codepoints(VALUE io)
+{
+    rb_warn("IO#codepoints is deprecated; use #each_codepoint instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+    return rb_io_each_codepoint(io);
+}
 
 
 /*
@@ -4007,7 +4062,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     }
 
     if (!NIL_P(err) && !noraise) {
-        switch(TYPE(err)) {
+        switch (TYPE(err)) {
           case T_FIXNUM:
           case T_BIGNUM:
             errno = NUM2INT(err);
@@ -6923,6 +6978,23 @@ void
 rb_write_error(const char *mesg)
 {
     rb_write_error2(mesg, strlen(mesg));
+}
+
+void
+rb_write_error_str(VALUE mesg)
+{
+    /* a stopgap measure for the time being */
+    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
+	size_t len = (size_t)RSTRING_LEN(mesg);
+	if (fwrite(RSTRING_PTR(mesg), sizeof(char), len, stderr) < len) {
+	    RB_GC_GUARD(mesg);
+	    return;
+	}
+    }
+    else {
+	/* may unlock GVL, and  */
+	rb_io_write(rb_stderr, mesg);
+    }
 }
 
 static void
@@ -10829,10 +10901,6 @@ argf_readbyte(VALUE argf)
  *     ARGF.each_line(sep=$/,limit) {|line| block }  -> ARGF
  *     ARGF.each_line(...)                           -> an_enumerator
  *
- *     ARGF.lines(sep=$/)           {|line| block }   -> ARGF
- *     ARGF.lines(sep=$/,limit)     {|line| block }   -> ARGF
- *     ARGF.lines(...)                                -> an_enumerator
- *
  *  Returns an enumerator which iterates over each line (separated by _sep_,
  *  which defaults to your platform's newline character) of each file in
  *  +ARGV+. If a block is supplied, each line in turn will be yielded to the
@@ -10864,6 +10932,19 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 	rb_block_call(ARGF.current_file, rb_intern("each_line"), argc, argv, 0, 0);
 	ARGF.next_p = 1;
     }
+}
+
+/*
+ *  This is a deprecated alias for <code>each_line</code>.
+ */
+
+static VALUE
+argf_lines(int argc, VALUE *argv, VALUE argf)
+{
+    rb_warn("ARGF#lines is deprecated; use #each_line instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
+    return argf_each_line(argc, argv, argf);
 }
 
 /*
@@ -10902,10 +10983,20 @@ argf_each_byte(VALUE argf)
 }
 
 /*
+ *  This is a deprecated alias for <code>each_byte</code>.
+ */
+
+static VALUE
+argf_bytes(VALUE argf)
+{
+    rb_warn("ARGF#bytes is deprecated; use #each_byte instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
+    return argf_each_byte(argf);
+}
+
+/*
  *  call-seq:
- *     ARGF.chars      {|char| block }  -> ARGF
- *     ARGF.chars                       -> an_enumerator
- *
  *     ARGF.each_char  {|char| block }  -> ARGF
  *     ARGF.each_char                   -> an_enumerator
  *
@@ -10932,10 +11023,20 @@ argf_each_char(VALUE argf)
 }
 
 /*
+ *  This is a deprecated alias for <code>each_char</code>.
+ */
+
+static VALUE
+argf_chars(VALUE argf)
+{
+    rb_warn("ARGF#chars is deprecated; use #each_char instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
+    return argf_each_char(argf);
+}
+
+/*
  *  call-seq:
- *     ARGF.codepoints      {|codepoint| block }  -> ARGF
- *     ARGF.codepoints                       -> an_enumerator
- *
  *     ARGF.each_codepoint  {|codepoint| block }  -> ARGF
  *     ARGF.each_codepoint                   -> an_enumerator
  *
@@ -10959,6 +11060,19 @@ argf_each_codepoint(VALUE argf)
 	rb_block_call(ARGF.current_file, rb_intern("each_codepoint"), 0, 0, 0, 0);
 	ARGF.next_p = 1;
     }
+}
+
+/*
+ *  This is a deprecated alias for <code>each_codepoint</code>.
+ */
+
+static VALUE
+argf_codepoints(VALUE argf)
+{
+    rb_warn("ARGF#codepoints is deprecated; use #each_codepoint instead");
+    if (!rb_block_given_p())
+	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+    return argf_each_codepoint(argf);
 }
 
 /*
@@ -11541,10 +11655,10 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
     rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "each_codepoint",  rb_io_each_codepoint, 0);
-    rb_define_method(rb_cIO, "lines",  rb_io_each_line, -1);
-    rb_define_method(rb_cIO, "bytes",  rb_io_each_byte, 0);
-    rb_define_method(rb_cIO, "chars",  rb_io_each_char, 0);
-    rb_define_method(rb_cIO, "codepoints",  rb_io_each_codepoint, 0);
+    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
+    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
+    rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
+    rb_define_method(rb_cIO, "codepoints",  rb_io_codepoints, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -11659,10 +11773,10 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
     rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
     rb_define_method(rb_cARGF, "each_codepoint",  argf_each_codepoint, 0);
-    rb_define_method(rb_cARGF, "lines", argf_each_line, -1);
-    rb_define_method(rb_cARGF, "bytes", argf_each_byte, 0);
-    rb_define_method(rb_cARGF, "chars", argf_each_char, 0);
-    rb_define_method(rb_cARGF, "codepoints", argf_each_codepoint, 0);
+    rb_define_method(rb_cARGF, "lines", argf_lines, -1);
+    rb_define_method(rb_cARGF, "bytes", argf_bytes, 0);
+    rb_define_method(rb_cARGF, "chars", argf_chars, 0);
+    rb_define_method(rb_cARGF, "codepoints", argf_codepoints, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);

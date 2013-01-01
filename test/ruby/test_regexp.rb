@@ -179,6 +179,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 
+  def test_source_escaped_paren
+    bug7610 = '[ruby-core:51088]'
+    s = '\(a\)'
+    assert_equal(/#{s}/, eval("%r(#{s})"), bug7610)
+  end
+
   def test_source_unescaped
     expected, result = "!\"#%&',-/:;=@_`~".each_char.map {|c|
       [

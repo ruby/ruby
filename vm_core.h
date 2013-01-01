@@ -407,7 +407,7 @@ typedef struct rb_vm_struct {
 
 #define RUBY_VM_SIZE_ALIGN 4096
 
-#define RUBY_VM_THREAD_VM_STACK_SIZE          (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
+#define RUBY_VM_THREAD_VM_STACK_SIZE          ( 128 * 1024 * sizeof(VALUE)) /*  512 KB or 1024 KB */
 #define RUBY_VM_THREAD_VM_STACK_SIZE_MIN      (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_THREAD_MACHINE_STACK_SIZE     ( 128 * 1024 * sizeof(VALUE)) /*  512 KB or 1024 KB */
 #define RUBY_VM_THREAD_MACHINE_STACK_SIZE_MIN (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
@@ -542,9 +542,9 @@ typedef struct rb_thread_struct {
 #endif
 
     /* async errinfo queue */
-    VALUE async_errinfo_queue;
-    int async_errinfo_queue_checked;
-    VALUE async_errinfo_mask_stack;
+    VALUE pending_interrupt_queue;
+    int pending_interrupt_queue_checked;
+    VALUE pending_interrupt_mask_stack;
 
     rb_atomic_t interrupt_flag;
     unsigned long interrupt_mask;
@@ -596,7 +596,7 @@ typedef struct rb_thread_struct {
 
     /* tracer */
     rb_hook_list_t event_hooks;
-    int trace_running;
+    struct rb_trace_arg_struct *trace_arg; /* trace information */
 
     /* fiber */
     VALUE fiber;
@@ -620,7 +620,7 @@ typedef enum {
     VM_DEFINECLASS_TYPE_MASK            = 0x07,
 } rb_vm_defineclass_type_t;
 
-#define VM_DEFINECLASS_TYPE(x) ((x) & VM_DEFINECLASS_TYPE_MASK)
+#define VM_DEFINECLASS_TYPE(x) ((rb_vm_defineclass_type_t)(x) & VM_DEFINECLASS_TYPE_MASK)
 #define VM_DEFINECLASS_FLAG_SCOPED         0x08
 #define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
 #define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
@@ -853,6 +853,12 @@ int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
+#define CHECK_VM_STACK_OVERFLOW(cfp, margin) do \
+  if ((VALUE *)((char *)(((VALUE *)(cfp)->sp) + (margin)) + sizeof(rb_control_frame_t)) >= ((VALUE *)(cfp))) { \
+      vm_stackoverflow(); \
+  } \
+while (0)
+
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
@@ -894,16 +900,16 @@ GET_THREAD(void)
 
 enum {
     TIMER_INTERRUPT_MASK	 = 0x01,
-    ASYNC_ERRINFO_INTERRUPT_MASK = 0x02,
+    PENDING_INTERRUPT_MASK = 0x02,
     FINALIZER_INTERRUPT_MASK     = 0x04,
     TRAP_INTERRUPT_MASK		 = 0x08
 };
 
 #define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TIMER_INTERRUPT_MASK)
-#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, ASYNC_ERRINFO_INTERRUPT_MASK)
+#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, PENDING_INTERRUPT_MASK)
 #define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, FINALIZER_INTERRUPT_MASK)
 #define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TRAP_INTERRUPT_MASK)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (ASYNC_ERRINFO_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
+#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
 #define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
 
 int rb_signal_buff_size(void);
@@ -914,16 +920,16 @@ void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
-void rb_threadptr_async_errinfo_clear(rb_thread_t *th);
-void rb_threadptr_async_errinfo_enque(rb_thread_t *th, VALUE v);
-int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
+void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
+void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
+int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_BLOCKING(th) do {				\
-	if (UNLIKELY(!rb_threadptr_async_errinfo_empty_p(th))) {	\
-	    th->async_errinfo_queue_checked = 0;			\
+	if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {	\
+	    th->pending_interrupt_queue_checked = 0;			\
 	    RUBY_VM_SET_INTERRUPT(th);					\
 	    rb_threadptr_execute_interrupts(th, 1);			\
 	}								\
@@ -939,7 +945,7 @@ void rb_thread_lock_destroy(rb_thread_lock_t *);
 } while (0)
 
 /* tracer */
-typedef struct rb_trace_arg_struct {
+struct rb_trace_arg_struct {
     rb_event_flag_t event;
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -953,14 +959,15 @@ typedef struct rb_trace_arg_struct {
     /* calc from cfp */
     int lineno;
     VALUE path;
-} rb_trace_arg_t;
+};
 
-void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
+void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
+void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *trace_arg);
 
-#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) do { \
+#define EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, pop_p_) do { \
     if (UNLIKELY(ruby_vm_event_flags & (flag_))) { \
 	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag_)) { \
-	    rb_trace_arg_t trace_arg; \
+	    struct rb_trace_arg_struct trace_arg; \
 	    trace_arg.event = (flag_); \
 	    trace_arg.th = (th_); \
 	    trace_arg.cfp = (trace_arg.th)->cfp; \
@@ -970,10 +977,17 @@ void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
 	    trace_arg.data = (data_); \
 	    trace_arg.path = Qundef; \
 	    trace_arg.klass_solved = 0; \
-	    rb_threadptr_exec_event_hooks(&trace_arg); \
+	    if (pop_p_) rb_threadptr_exec_event_hooks_and_pop_frame(&trace_arg); \
+	    else rb_threadptr_exec_event_hooks(&trace_arg); \
 	} \
     } \
 } while (0)
+
+#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 0)
+
+#define EXEC_EVENT_HOOK_AND_POP_FRAME(th_, flag_, self_, id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 1)
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

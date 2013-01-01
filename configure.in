@@ -1220,6 +1220,9 @@ main()
 		    LINK_SO="$LINK_SO
 $POSTLINK"
 		fi
+		AC_CHECK_HEADERS(crt_externs.h, [], [], [
+		    #include <crt_externs.h>
+		])
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
@@ -2708,14 +2711,21 @@ AS_CASE("$enable_shared", [yes], [
   if test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno; then
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     if test "$pie" = yes; then
-      RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
+      # Use -fPIE when testing -pie.  RUBY_TRY_LDFLAGS sets
+      # $save_CFLAGS internally, so set other name here.
+      save_CFLAGS_before_pie="$CFLAGS"
+      CFLAGS="$CFLAGS -fPIE"
+
+      # gcc need -pie but clang need -Wl,-pie.
       for pie in -pie -Wl,-pie; do
 	RUBY_TRY_LDFLAGS([$pie], [], [pie=])
 	if test "x$pie" != x; then
+	  RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
 	  RUBY_APPEND_OPTION(XLDFLAGS, $pie)
 	  break
 	fi
       done
+      CFLAGS="$save_CFLAGS_before_pie"
     fi
   fi
 ])
