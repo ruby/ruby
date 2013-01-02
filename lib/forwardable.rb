@@ -247,8 +247,8 @@ module SingleForwardable
   end
 
   #
-  # Defines a method _method_ which delegates to _obj_ (i.e. it calls
-  # the method of the same name in _obj_).  If _new_name_ is
+  # Defines a method _method_ which delegates to _accessor_ (i.e. it calls
+  # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
   #
   def def_single_delegator(accessor, method, ali = method)
