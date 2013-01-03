@@ -123,7 +123,7 @@ module Psych
   #     Psych.load("--- `", "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
-  #     ex.message # => "(foo.txt): found character that cannot start any token"
+  #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
   def self.load yaml, filename = nil
     result = parse(yaml, filename)
@@ -145,7 +145,7 @@ module Psych
   #     Psych.parse("--- `", "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
-  #     ex.message # => "(foo.txt): found character that cannot start any token"
+  #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
@@ -195,7 +195,7 @@ module Psych
   #     Psych.parse_stream("--- `", "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
-  #     ex.message # => "(foo.txt): found character that cannot start any token"
+  #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.

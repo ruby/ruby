@@ -1,3 +1,9 @@
+Thu Jan  3 15:13:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/psych/lib/psych.rb (Psych.load): Return value of
+	  Psych::SyntaxError.message should be same as example.
+	  Patch by Ippei Obayashi [ruby-core:51193] [Bug #7636]
+
 Thu Jan  3 14:58:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/forwardable.rb (SingleForwardable): Fix example in overview
