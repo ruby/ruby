@@ -1,3 +1,9 @@
+Fri Jan  4 00:29:40 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* io.c (rb_cloexec_fcntl_dupfd): Fix failures in
+	  bootstrap_test/test_io.rb.  NativeClient does not support F_DUPFD
+	  but supports dup2(2).
+
 Thu Jan  3 17:46:50 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/element.rb (REXML::Elements#add): Remove too much

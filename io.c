@@ -298,7 +298,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
     int ret;
 
-#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC) && !defined(__native_client__)
     static int try_dupfd_cloexec = 1;
     if (try_dupfd_cloexec) {
         ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
@@ -318,8 +318,10 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     else {
         ret = fcntl(fd, F_DUPFD, minfd);
     }
-#else
+#elif defined(HAVE_FCNTL) && !defined(__native_client__)
     ret = fcntl(fd, F_DUPFD, minfd);
+#else
+    ret = dup2(fd, minfd);
 #endif
     if (ret == -1) return -1;
     rb_maygvl_fd_fix_cloexec(ret);
