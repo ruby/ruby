@@ -698,7 +698,7 @@ if test "$GCC" = yes; then
     else
 	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
     fi
-    test "$visibility_option" = no || OBJCOPY=:
+    test "$visibility_option" = no -o "$host_os" = nacl || OBJCOPY=:
 fi
 
 if test "$GCC" = yes; then

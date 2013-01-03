@@ -1,3 +1,11 @@
+Thu Jan  3 14:32:47 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* configure.in (OBJCOPY):  Fixes build error for NativeClient.
+	  Avoid disabling OBJCOPY for NativeClient.
+
+	* thread_pthread.c (rb_reserved_fd_p): USE_SLEEPY_TIMER_THREAD is
+	  always defined.  Fixes compilation error for NativeClient.
+
 Wed Jan 02 03:09:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/zlib/zlib.c (Zlib::GzipReader): Fix typo by zed_0xff
