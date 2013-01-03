@@ -1,3 +1,13 @@
+Fri Jan  4 00:35:11 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	Fix failures on btest for NativeClient.
+	* bootstraptest/runner.rb (nacl?): New method to distinguish NaCl
+	  corss build. 
+
+	* bootstraptest/test_io.rb: Skip unsupported operations.
+
+	* bootstraptest/test_literal.rb: ditto.
+
 Fri Jan  4 00:29:40 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* io.c (rb_cloexec_fcntl_dupfd): Fix failures in

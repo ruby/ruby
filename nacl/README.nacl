@@ -6,7 +6,7 @@
 You need to install the following things before building NaCl port of Ruby.
 * Ruby 1.9.3 or later
 * Python 2.6 or later
-* NativeClient SDK pepper 18 or later
+* NativeClient SDK pepper 22 or later
 * GNU make
 
 == Steps

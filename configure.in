@@ -1294,9 +1294,10 @@ $POSTLINK"
 [superux*], [	ac_cv_func_setitimer=no
 		],
 [nacl], [
-  LIBS="-lm -lnosys $LIBS"
+  LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
     RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
+    RUBY_APPEND_OPTION(LIBS, '-lnosys')
   else
     RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
   fi
@@ -2706,6 +2707,10 @@ AS_CASE("$enable_shared", [yes], [
   AS_CASE(["$target_os"],
   [haiku], [
     # gcc supports PIE, but doesn't work correctly in Haiku
+    pie=no
+  ],
+  [nacl], [
+    # -pie implies -shared for NaCl.
     pie=no
   ])
   if test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno; then

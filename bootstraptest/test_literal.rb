@@ -65,8 +65,10 @@ assert_equal ':a3c',            ':"a#{1+2}c".inspect'
 assert_equal 'Symbol',          ':"a#{1+2}c".class'
 
 # xstring
-assert_equal "foo\n",           %q(`echo foo`)
-assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
+unless nacl?
+  assert_equal "foo\n",           %q(`echo foo`)
+  assert_equal "foo\n",           %q(s = "foo"; `echo #{s}`)
+end
 
 # regexp
 assert_equal '',                '//.source'

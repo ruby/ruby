@@ -53,7 +53,7 @@ assert_equal 'ok', %q{
   STDIN.reopen(rw)
   STDIN.reopen(save)
   rw.close
-  File.unlink(tmpname)
+  File.unlink(tmpname) unless RUBY_PLATFORM['nacl']
   :ok
 }
 
@@ -70,7 +70,7 @@ assert_equal 'ok', %q{
   STDIN.print "a"
   STDIN.reopen(save)
   rw.close
-  File.unlink(tmpname)
+  File.unlink(tmpname) unless RUBY_PLATFORM['nacl']
   :ok
 }
 
