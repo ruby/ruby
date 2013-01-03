@@ -899,7 +899,7 @@ module REXML
     #  doc.root.elements.each('b') {|e|p e}  #-> Yields b, b elements
     #  doc.root.elements.each('child::node()')  {|e|p e}
     #  #-> Yields <b/>, <c/>, <d/>, <b/>, <c/>, <d/>
-    #  XPath.elements.each(doc.root, 'child::node()', &block)
+    #  XPath.each(doc.root, 'child::node()', &block)
     #  #-> Yields <b/>, <c/>, <d/>, sean, <b/>, <c/>, <d/>
     def each( xpath=nil )
       XPath::each( @element, xpath ) {|e| yield e if e.kind_of? Element }
