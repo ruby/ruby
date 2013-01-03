@@ -895,11 +895,11 @@ module REXML
     #   that XPaths are automatically filtered for Elements, so that
     #   non-Element children will not be yielded
     #  doc = Document.new '<a><b/><c/><d/>sean<b/><c/><d/></a>'
-    #  doc.root.each {|e|p e}       #-> Yields b, c, d, b, c, d elements
-    #  doc.root.each('b') {|e|p e}  #-> Yields b, b elements
-    #  doc.root.each('child::node()')  {|e|p e}
+    #  doc.root.elements.each {|e|p e}       #-> Yields b, c, d, b, c, d elements
+    #  doc.root.elements.each('b') {|e|p e}  #-> Yields b, b elements
+    #  doc.root.elements.each('child::node()')  {|e|p e}
     #  #-> Yields <b/>, <c/>, <d/>, <b/>, <c/>, <d/>
-    #  XPath.each(doc.root, 'child::node()', &block)
+    #  XPath.elements.each(doc.root, 'child::node()', &block)
     #  #-> Yields <b/>, <c/>, <d/>, sean, <b/>, <c/>, <d/>
     def each( xpath=nil )
       XPath::each( @element, xpath ) {|e| yield e if e.kind_of? Element }
