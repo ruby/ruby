@@ -1,3 +1,8 @@
+Thu Jan  3 14:58:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/forwardable.rb (SingleForwardable): Fix example in overview
+	  Patch by Vladimir Andrijevik [Github Fixes #231]
+
 Thu Jan  3 14:32:47 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* configure.in (OBJCOPY):  Fixes build error for NativeClient.
