@@ -3,7 +3,7 @@ Fri Jan  4 20:17:06 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 	* Makefile.in (RBCONFIG): Moved from common.mk in order to use the
 	  variable in Makefile.in.
 
-	* win32/Makefie.sub (RBCONFIG): Ditto.
+	* win32/Makefile.sub (RBCONFIG): Ditto.
 
 Fri Jan  4 19:45:50 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
