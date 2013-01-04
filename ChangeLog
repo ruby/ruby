@@ -1,3 +1,7 @@
+Sat Jan  5 05:04:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* gc.c (vm_xrealloc): add a few comment why we avoid realloc(ptr,0).
+
 Fri Jan  4 20:17:06 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* Makefile.in (RBCONFIG): Moved from common.mk in order to use the
