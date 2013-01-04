@@ -55,13 +55,13 @@ class TestGemDoctor < Gem::TestCase
 
     expected = <<-OUTPUT
 Checking #{@gemhome}
+Removed file specifications/c-2.gemspec
 Removed directory gems/b-2
 Removed directory gems/c-2
-Removed file specifications/c-2.gemspec
 
     OUTPUT
 
-    assert_equal expected.lines.sort, @ui.output.lines.sort
+    assert_equal expected, @ui.output
 
     assert_equal Gem.dir,  @userhome
     assert_equal Gem.path, [@gemhome, @userhome]
@@ -108,13 +108,13 @@ Removed file specifications/c-2.gemspec
 
     expected = <<-OUTPUT
 Checking #{@gemhome}
+Extra file specifications/c-2.gemspec
 Extra directory gems/b-2
 Extra directory gems/c-2
-Extra file specifications/c-2.gemspec
 
     OUTPUT
 
-    assert_equal expected.lines.sort, @ui.output.lines.sort
+    assert_equal expected, @ui.output
 
     assert_equal Gem.dir,  @userhome
     assert_equal Gem.path, [@gemhome, @userhome]

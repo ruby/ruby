@@ -19,16 +19,17 @@ class Gem::Doctor
   # Maps a gem subdirectory to the files that are expected to exist in the
   # subdirectory.
 
-  REPOSITORY_EXTENSION_MAP = { # :nodoc:
-    'build_info' =>     '.info',
-    'cache'      =>     '.gem',
-    'doc'        =>     '',
-    'gems'       =>     '',
-    'specifications' => '.gemspec'
-  }
+  REPOSITORY_EXTENSION_MAP = [ # :nodoc:
+    ['specifications', '.gemspec'],
+    ['build_info',     '.info'],
+    ['cache',          '.gem'],
+    ['doc',            ''],
+    ['gems',           ''],
+  ]
 
   raise 'Update REPOSITORY_EXTENSION_MAP' unless
-    Gem::REPOSITORY_SUBDIRECTORIES == REPOSITORY_EXTENSION_MAP.keys.sort
+    Gem::REPOSITORY_SUBDIRECTORIES.sort ==
+      REPOSITORY_EXTENSION_MAP.map { |(k,_)| k }.sort
 
   ##
   # Creates a new Gem::Doctor that will clean up +gem_repository+.  Only one
@@ -97,7 +98,7 @@ class Gem::Doctor
   def doctor_child sub_directory, extension # :nodoc:
     directory = @gem_repository + sub_directory
 
-    directory.each_child do |child|
+    directory.children.sort.each do |child|
       next unless child.exist?
 
       basename = child.basename(extension).to_s

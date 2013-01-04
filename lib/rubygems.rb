@@ -98,7 +98,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.0.0.preview3'
+  VERSION = '2.0.0.preview3.1'
 end
 
 # Must be first since it unloads the prelude from 1.9.2

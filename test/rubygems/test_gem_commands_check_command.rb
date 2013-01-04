@@ -45,7 +45,7 @@ class TestGemCommandsCheckCommand < Gem::TestCase
   end
 
   def test_doctor
-    a = gem 'a'
+    gem 'a'
     b = gem 'b'
 
     FileUtils.rm b.spec_file

@@ -261,7 +261,7 @@ load Gem.bin_path('a', 'executable', version)
   end
 
   def test_ensure_loadable_spec_security_policy
-    a, a_gem = util_gem 'a', 2 do |s|
+    _, a_gem = util_gem 'a', 2 do |s|
       s.add_dependency 'garbage ~> 5'
     end
 
@@ -1014,8 +1014,6 @@ load Gem.bin_path('a', 'executable', version)
     Gem::Specification.reset
 
     installer = Gem::Installer.new gem, :install_dir => gemhome2
-
-    gem_home = Gem.dir
 
     build_rake_in do
       use_ui @ui do

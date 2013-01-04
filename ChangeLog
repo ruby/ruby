@@ -1,3 +1,21 @@
+Fri Jan  4 16:26:45 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/doctor.rb:  Process directories in order in case the
+	  filesystem doesn't.  [ruby-trunk - Bug #7618]
+
+	  Process specifications before other directories in case of bugs.
+	* test/rubygems/test_gem_doctor.rb:  Test for above.
+
+	* lib/rubygems.rb:  Updated version.
+
+	* test/rubygems/test_require.rb:  Fixed double require of
+	  benchmark.rb.  RubyGems bug #420.
+
+	* test/rubygems/test_gem_commands_check_command.rb:  Fixed unused
+	  variable warnings.
+	* test/rubygems/test_gem_commands_query_command.rb:  ditto
+	* test/rubygems/test_gem_installer.rb:  ditto
+
 Fri Jan  4 15:05:25 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/cross_reference.rb:  Fixed matching of C#=== or #===.  RDoc

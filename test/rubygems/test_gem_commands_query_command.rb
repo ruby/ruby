@@ -405,8 +405,6 @@ pl \(1\)
       @cmd.execute
     end
 
-    str = @ui.output
-
     expected = <<-EOF
 
 *** LOCAL GEMS ***
