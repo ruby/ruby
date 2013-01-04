@@ -1,3 +1,13 @@
+Fri Jan  4 17:58:16 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* common.mk (yes-btest): btest depends on also $(arch)-fake.rb and
+	  rbconfig.rb on building for NativeClient.
+
+	* Makefile.in (fake): Avoid generating $(arch)-fake.rb unless cross
+	  compiling.
+
+	* configure.in (CROSS_COMPILING): New substitution.
+
 Fri Jan  4 16:26:45 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/doctor.rb:  Process directories in order in case the

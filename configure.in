@@ -2525,6 +2525,7 @@ if test x"$cross_compiling" = xyes; then
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
+  CROSS_COMPILING=yes
 
   if test "$host_os" = "nacl"; then
       if test "$build_cpu" = "$host_cpu" || test "${nacl_cv_cpu_nick}" = "x86" -a "$host_cpu" = "i686"; then
@@ -2546,8 +2547,10 @@ else
   RUNRUBY='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT)'
   XRUBY='$(RUNRUBY)'
   TEST_RUNNABLE=yes
+  CROSS_COMPILING=no
 fi
 AC_SUBST(TEST_RUNNABLE)
+AC_SUBST(CROSS_COMPILING)
 AC_SUBST(MINIRUBY)
 AC_SUBST(BTESTRUBY)
 AC_SUBST(PREP)
