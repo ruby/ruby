@@ -1,3 +1,8 @@
+Fri Jan  4 19:45:50 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* common.mk (run, parse): Use BTESTRUBY instead of MINIRUBY to handle
+	  cross-compiling cases, e.g. NativeClient.
+
 Fri Jan  4 17:58:16 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* common.mk (yes-btest): btest depends on also $(arch)-fake.rb and

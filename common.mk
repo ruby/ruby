@@ -935,14 +935,14 @@ $(srcdir)/ext/dl/callback/callback.c: $(srcdir)/ext/dl/callback/mkcallback.rb $(
 
 ##
 
-run: miniruby$(EXEEXT) PHONY
-	$(MINIRUBY) $(TESTRUN_SCRIPT) $(RUNOPT)
+run: fake miniruby$(EXEEXT) PHONY
+	$(BTESTRUBY) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
 	$(RUNRUBY) $(TESTRUN_SCRIPT)
 
-parse: miniruby$(EXEEXT) PHONY
-	$(MINIRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
+parse: fake miniruby$(EXEEXT) PHONY
+	$(BTESTRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
 
 COMPARE_RUBY = $(BASERUBY)
 ITEM =
