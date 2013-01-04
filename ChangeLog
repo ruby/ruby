@@ -1,3 +1,8 @@
+Sat Jan  5 08:21:41 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_cloexec_fcntl_dupfd): improve #ifdef condition.
+	* io.c (rb_maygvl_fd_fix_cloexec): ditto.
+
 Sat Jan  5 07:54:59 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/cleanup_command.rb:  Clean all possible gems
