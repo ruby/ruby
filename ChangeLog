@@ -1,3 +1,9 @@
+Sat Jan  5 08:38:27 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Added return values and scope sections,
+	  slightly modified from the original patch.  Fixes #227 from github by
+	  Dave Brown.
+
 Sat Jan  5 08:21:41 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_cloexec_fcntl_dupfd): improve #ifdef condition.
