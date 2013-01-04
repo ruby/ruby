@@ -23,6 +23,21 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     refute_path_exists @a_1.gem_dir
   end
 
+  def test_execute_all_dependencies
+    @b_1 = quick_spec 'b', 1 do |s| s.add_dependency 'a', '1' end
+    @b_2 = quick_spec 'b', 2 do |s| s.add_dependency 'a', '2' end
+
+    install_gem @b_1
+    install_gem @b_2
+
+    @cmd.options[:args] = []
+
+    @cmd.execute
+
+    refute_path_exists @a_1.gem_dir
+    refute_path_exists @b_1.gem_dir
+  end
+
   def test_execute_all
     gemhome2 = File.join @tempdir, 'gemhome2'
 
