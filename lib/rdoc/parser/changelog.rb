@@ -102,7 +102,12 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   def group_entries entries
     entries.group_by do |title, _|
-      Time.parse(title).strftime "%Y-%m-%d"
+      begin
+        Time.parse(title).strftime '%Y-%m-%d'
+      rescue NoMethodError, ArgumentError
+        time, = title.split '  ', 2
+        Time.parse(time).strftime '%Y-%m-%d'
+      end
     end
   end
 
@@ -139,6 +144,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
           time = Time.parse entry_name
           # HACK Ruby 1.8 does not raise ArgumentError for Time.parse "Other"
           entry_name = nil unless entry_name =~ /#{time.year}/
+        rescue NoMethodError
+          time, = entry_name.split '  ', 2
+          time = Time.parse time
         rescue ArgumentError
           entry_name = nil
         end

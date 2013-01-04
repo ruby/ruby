@@ -64,17 +64,40 @@ class TestRDocParserC < RDoc::TestCase
   def test_class_can_parse
     c_parser = RDoc::Parser::C
 
-    assert_equal c_parser, c_parser.can_parse('file.C')
-    assert_equal c_parser, c_parser.can_parse('file.CC')
-    assert_equal c_parser, c_parser.can_parse('file.H')
-    assert_equal c_parser, c_parser.can_parse('file.HH')
-    assert_equal c_parser, c_parser.can_parse('file.c')
-    assert_equal c_parser, c_parser.can_parse('file.cc')
-    assert_equal c_parser, c_parser.can_parse('file.cpp')
-    assert_equal c_parser, c_parser.can_parse('file.cxx')
-    assert_equal c_parser, c_parser.can_parse('file.h')
-    assert_equal c_parser, c_parser.can_parse('file.hh')
-    assert_equal c_parser, c_parser.can_parse('file.y')
+    temp_dir do
+      FileUtils.touch 'file.C'
+      assert_equal c_parser, c_parser.can_parse('file.C')
+
+      FileUtils.touch 'file.CC'
+      assert_equal c_parser, c_parser.can_parse('file.CC')
+
+      FileUtils.touch 'file.H'
+      assert_equal c_parser, c_parser.can_parse('file.H')
+
+      FileUtils.touch 'file.HH'
+      assert_equal c_parser, c_parser.can_parse('file.HH')
+
+      FileUtils.touch 'file.c'
+      assert_equal c_parser, c_parser.can_parse('file.c')
+
+      FileUtils.touch 'file.cc'
+      assert_equal c_parser, c_parser.can_parse('file.cc')
+
+      FileUtils.touch 'file.cpp'
+      assert_equal c_parser, c_parser.can_parse('file.cpp')
+
+      FileUtils.touch 'file.cxx'
+      assert_equal c_parser, c_parser.can_parse('file.cxx')
+
+      FileUtils.touch 'file.h'
+      assert_equal c_parser, c_parser.can_parse('file.h')
+
+      FileUtils.touch 'file.hh'
+      assert_equal c_parser, c_parser.can_parse('file.hh')
+
+      FileUtils.touch 'file.y'
+      assert_equal c_parser, c_parser.can_parse('file.y')
+    end
   end
 
   def test_initialize

@@ -218,7 +218,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
                    @tokens << [:HEADER, 3, *token_pos(pos)]
 
                    [:TEXT, @s[1], *token_pos(pos)]
-                 when @s.scan(/([:\w]\w*)[ ]+- /) then
+                 when @s.scan(/([:\w][\w\[\]]*)[ ]+- /) then
                    [:NOTE, @s[1], *token_pos(pos)]
                  else
                    @s.scan(/.*/)

@@ -156,6 +156,24 @@ description - arguments description
     assert_equal expected, @TD.parse(text)
   end
 
+  def test_parse_arguments_array
+    text = <<-TEXT
+Create new Arg object.
+
+names[] - names of arguments
+    TEXT
+
+    expected =
+      doc(
+        para('Create new Arg object.'),
+        blank_line,
+        list(:NOTE,
+          item(%w[names[]],
+            para('names of arguments'))))
+
+    assert_equal expected, @TD.parse(text)
+  end
+
   def test_parse_arguments_multiline
     text = <<-TEXT
 Do some stuff
@@ -338,6 +356,25 @@ description - arguments description
       [:NOTE,    "description",             0, 3],
       [:TEXT,    "arguments description",  14, 3],
       [:NEWLINE, "\n",                     35, 3],
+    ]
+
+    assert_equal expected, @td.tokens
+  end
+
+  def test_tokenize_arguments_array
+    @td.tokenize <<-TEXT
+Create new Arg object.
+
+names[stuff] - names of arguments
+    TEXT
+
+    expected = [
+      [:TEXT,    "Create new Arg object.",  0, 0],
+      [:NEWLINE, "\n",                     22, 0],
+      [:NEWLINE, "\n",                      0, 1],
+      [:NOTE,    "names[stuff]",            0, 2],
+      [:TEXT,    "names of arguments",     15, 2],
+      [:NEWLINE, "\n",                     33, 2],
     ]
 
     assert_equal expected, @td.tokens

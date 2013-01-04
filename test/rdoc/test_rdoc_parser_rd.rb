@@ -34,8 +34,13 @@ class TestRDocParserRd < RDoc::TestCase
   end
 
   def test_class_can_parse
-    assert_equal @RP::RD, @RP.can_parse('foo.rd')
-    assert_equal @RP::RD, @RP.can_parse('foo.rd.ja')
+    temp_dir do
+      FileUtils.touch 'foo.rd'
+      assert_equal @RP::RD, @RP.can_parse('foo.rd')
+
+      FileUtils.touch 'foo.rd.ja'
+      assert_equal @RP::RD, @RP.can_parse('foo.rd.ja')
+    end
   end
 
   def test_scan

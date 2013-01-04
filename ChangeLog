@@ -1,3 +1,29 @@
+Fri Jan  4 15:05:25 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/cross_reference.rb:  Fixed matching of C#=== or #===.  RDoc
+	  bug #164
+	* test/rdoc/test_rdoc_cross_reference.rb:  Test for above.
+
+	* lib/rdoc/parser/changelog.rb:  Fixed parsing of dates.  RDoc bug #165
+	* test/rdoc/test_rdoc_parser_changelog.rb:  Test for above.
+
+	* lib/rdoc/parser.rb:  Fixed parsing multibyte files with incomplete
+	  characters at byte 1024.  [ruby-trunk - Bug #6393]
+	  Fixed handling of -E.  [ruby-trunk - Bug #6392]
+	* test/rdoc/test_rdoc_options.rb:  Test for above.
+	* test/rdoc/test_rdoc_parser.rb:  ditto.
+	* test/rdoc/test_rdoc_parser_c.rb:  ditto.
+	* test/rdoc/test_rdoc_parser_changelog.rb:  ditto.
+	* test/rdoc/test_rdoc_parser_markdown.rb:  ditto.
+	* test/rdoc/test_rdoc_parser_rd.rb:  ditto.
+	* test/rdoc/test_rdoc_rdoc.rb:  ditto.
+
+	* lib/rdoc/tom_doc.rb:  Fixed parsing of [] in TomDoc arguments list.
+	  RDoc bug #167
+	* test/rdoc/test_rdoc_tom_doc.rb:  Test for above.
+
+	* lib/rdoc.rb:  Update version.
+
 Fri Jan  4 11:51:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/forwardable.rb: Fix rdoc parameters for ::def_single_delegator.

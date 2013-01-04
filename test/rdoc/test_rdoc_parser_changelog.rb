@@ -25,11 +25,15 @@ class TestRDocParserChangeLog < RDoc::TestCase
   def test_class_can_parse
     parser = RDoc::Parser::ChangeLog
 
-    assert_equal parser, parser.can_parse('ChangeLog')
+    temp_dir do
+      FileUtils.touch 'ChangeLog'
+      assert_equal parser, parser.can_parse('ChangeLog')
 
-    assert_equal parser, parser.can_parse(@tempfile.path)
+      assert_equal parser, parser.can_parse(@tempfile.path)
 
-    assert_equal RDoc::Parser::Ruby, parser.can_parse('ChangeLog.rb')
+      FileUtils.touch 'ChangeLog.rb'
+      assert_equal RDoc::Parser::Ruby, parser.can_parse('ChangeLog.rb')
+    end
   end
 
   def test_continue_entry_body
@@ -178,7 +182,9 @@ class TestRDocParserChangeLog < RDoc::TestCase
       [ 'Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>',
         %w[three four]],
       [ 'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>',
-        %w[five six]]]
+        %w[five six]],
+      [ '2008-01-30  H.J. Lu  <hongjiu.lu@intel.com>',
+        %w[seven eight]]]
 
     expected = {
       '2012-12-04' => [
@@ -189,6 +195,9 @@ class TestRDocParserChangeLog < RDoc::TestCase
       '2012-12-03' => [
         ['Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>',
           %w[five six]]],
+      '2008-01-30' => [
+        ['2008-01-30  H.J. Lu  <hongjiu.lu@intel.com>',
+          %w[seven eight]]],
     }
 
     assert_equal expected, parser.group_entries(entries)
@@ -218,6 +227,25 @@ Other note that will be ignored
       [ 'Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>',
         [ 'compile.c (iseq_specialized_instruction): change condition of ' +
           'using `opt_send_simple\'. More method invocations can be simple.']]]
+
+    assert_equal expected, parser.parse_entries
+  end
+
+  def test_parse_entries_bad_time
+    parser = util_parser <<-ChangeLog
+2008-01-30  H.J. Lu  <hongjiu.lu@intel.com>
+
+        PR libffi/34612
+        * src/x86/sysv.S (ffi_closure_SYSV): Pop 4 byte from stack when
+        returning struct.
+
+    ChangeLog
+
+    expected = [
+      [ '2008-01-30  H.J. Lu  <hongjiu.lu@intel.com>',
+        [ 'src/x86/sysv.S (ffi_closure_SYSV): Pop 4 byte from stack when ' +
+          'returning struct.']]
+    ]
 
     assert_equal expected, parser.parse_entries
   end

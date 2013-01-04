@@ -33,8 +33,18 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_large_japanese_rdoc
-    file_name = File.expand_path '../test.ja.large.rdoc', __FILE__
-    assert !@RP.binary?(file_name)
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    capture_io do
+      begin
+        extenc, Encoding.default_external =
+          Encoding.default_external, Encoding::US_ASCII
+        file_name = File.expand_path '../test.ja.largedoc', __FILE__
+        assert !@RP.binary?(file_name)
+      ensure
+        Encoding.default_external = extenc
+      end
+    end
   end
 
   def test_class_binary_japanese_rdoc
@@ -51,7 +61,7 @@ class TestRDocParser < RDoc::TestCase
 
     assert_equal @RP::Simple, @RP.can_parse(readme_file_name)
 
-    assert_nil @RP.can_parse(@binary_dat)
+    assert_equal @RP::Simple, @RP.can_parse(@binary_dat)
 
     jtest_file_name = File.expand_path '../test.ja.txt', __FILE__
     assert_equal @RP::Simple, @RP.can_parse(jtest_file_name)
@@ -61,20 +71,12 @@ class TestRDocParser < RDoc::TestCase
 
     readme_file_name = File.expand_path '../README', __FILE__
     assert_equal @RP::Simple, @RP.can_parse(readme_file_name)
-  end
 
-  def test_class_can_parse_forbidden
-    skip 'chmod not supported' if Gem.win_platform?
+    jtest_largerdoc_file_name = File.expand_path '../test.ja.largedoc', __FILE__
+    assert_equal @RP::Simple, @RP.can_parse(jtest_largerdoc_file_name)
 
-    Tempfile.open 'forbidden' do |io|
-      begin
-        File.chmod 0000, io.path
-
-        assert_nil @RP.can_parse io.path
-      ensure
-        File.chmod 0400, io.path
-      end
-    end
+    @RP.alias_extension 'rdoc', 'largedoc'
+    assert_equal @RP::Simple, @RP.can_parse(jtest_largerdoc_file_name)
   end
 
   def test_class_for_executable
@@ -82,11 +84,29 @@ class TestRDocParser < RDoc::TestCase
       content = "#!/usr/bin/env ruby -w\n"
       open 'app', 'w' do |io| io.write content end
       app = @store.add_file 'app'
+
       parser = @RP.for app, 'app', content, @options, :stats
 
       assert_kind_of RDoc::Parser::Ruby, parser
 
       assert_equal 'app', parser.file_name
+    end
+  end
+
+  def test_class_for_forbidden
+    skip 'chmod not supported' if Gem.win_platform?
+
+    Tempfile.open 'forbidden' do |io|
+      begin
+        File.chmod 0000, io.path
+        forbidden = @store.add_file io.path
+
+        parser = @RP.for forbidden, 'forbidden', '', @options, :stats
+
+        assert_nil parser
+      ensure
+        File.chmod 0400, io.path
+      end
     end
   end
 
@@ -122,6 +142,18 @@ class TestRDocParser < RDoc::TestCase
     end
 
     assert_equal 'rdoc', @RP.check_modeline(readme_ext)
+  ensure
+    File.unlink readme_ext
+  end
+
+  def test_check_modeline_coding
+    readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
+
+    open readme_ext, 'w' do |io|
+      io.puts "# -*- coding: utf-8 -*-"
+    end
+
+    assert_nil @RP.check_modeline readme_ext
   ensure
     File.unlink readme_ext
   end
