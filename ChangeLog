@@ -2,7 +2,7 @@ Fri Jan  4 00:35:11 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	Fix failures on btest for NativeClient.
 	* bootstraptest/runner.rb (nacl?): New method to distinguish NaCl
-	  corss build. 
+	  cross build.
 
 	* bootstraptest/test_io.rb: Skip unsupported operations.
 
