@@ -169,6 +169,7 @@ MKMAIN_CMD    = mkmain.sh
 
 NEWLINE_C     = newline.c
 MINIPRELUDE_C = miniprelude.c
+RBCONFIG      = .rbconfig.time
 
 SRC_FILE      = $<
 OS_SRC_FILE   = $<

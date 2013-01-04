@@ -390,6 +390,7 @@ MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
 !endif
+RBCONFIG      = .rbconfig.time
 
 !include $(srcdir)/common.mk
 

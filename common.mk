@@ -21,7 +21,6 @@ RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/rubyspec.git
 STATIC_RUBY   = static-ruby
 
 EXTCONF       = extconf.rb
-RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
