@@ -1,3 +1,8 @@
+Sat Jan  5 13:58:59 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/modules_and_classes.rdoc:  Improved description of methods
+	  on a module or class as suggested by Tobias Buhlmann
+
 Sat Jan  5 13:38:07 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_enumerate_lines): fix invalid byte sequence error

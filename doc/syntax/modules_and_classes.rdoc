@@ -120,8 +120,13 @@ If a constant is defined at the top-level you may preceded it with
 
 === Methods
 
-Class methods (also known as module functions, see Module#module_function) may
-be called directly.
+For method definition documentation see the {syntax documentation for
+methods}[rdoc-ref:doc/syntax/methods.rdoc].
+
+Class methods may be called directly.  (This is slightly confusing, but a
+method on a module is often called a "class method" instead of a "module
+method".  See also Module#module_function which can convert an instance method
+into a class method.)
 
 When a class method references a constant it uses the same rules as referencing
 it outside the method as the scope is the same.
