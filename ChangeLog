@@ -12,7 +12,7 @@ Sat Jan  5 21:15:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/generic_request.rb:
 	  Amazon ECA API and GTE/1.3 disallow requests whose host has port
-	  number if its port number equlas to default port number of the
+	  number if its port number equals to default port number of the
 	  scheme. [Bug #7650]
 
 Sat Jan  5 13:58:59 2013  Eric Hodel  <drbrain@segment7.net>
