@@ -3,6 +3,7 @@ require 'test/unit'
 require 'net/http'
 require 'stringio'
 require_relative 'utils'
+require_relative '../../ruby/envutil'
 
 class TestNetHTTP < Test::Unit::TestCase
 
@@ -291,8 +292,11 @@ module TestNetHTTP_version_1_1_methods
   def test_get2
     start {|http|
       http.get2('/') {|res|
-        assert_kind_of Net::HTTPResponse, res
-        assert_kind_of Net::HTTPResponse, res.header
+        EnvUtil.suppress_warning do
+          assert_kind_of Net::HTTPResponse, res
+          assert_kind_of Net::HTTPResponse, res.header
+        end
+
         unless self.is_a?(TestNetHTTP_v1_2_chunked)
           assert_not_nil res['content-length']
         end
@@ -335,9 +339,11 @@ module TestNetHTTP_version_1_1_methods
 
   def _test_post__no_data(http)
     unless self.is_a?(TestNetHTTP_v1_2_chunked)
-      data = nil
-      res = http.post('/', data)
-      assert_not_equal '411', res.code
+      EnvUtil.suppress_warning do
+        data = nil
+        res = http.post('/', data)
+        assert_not_equal '411', res.code
+      end
     end
   end
 
