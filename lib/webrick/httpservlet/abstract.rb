@@ -54,7 +54,7 @@ module WEBrick
     # Servlets can be configured via initialize.  The first argument is the
     # HTTP server the servlet is being initialized for.
     #
-    #  class Configureable < Simple
+    #  class Configurable < Simple
     #    def initialize server, color, size
     #      super server
     #      @color = color

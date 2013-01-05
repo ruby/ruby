@@ -1,3 +1,8 @@
+Sun Jan  6 02:22:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/webrick/httpservlet/abstract.rb (WEBrick::HTTPServlet): Typo in
+	  example. Patch by shlensky [Fixes #232 on github]
+
 Sat Jan  5 21:15:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/generic_request.rb:
