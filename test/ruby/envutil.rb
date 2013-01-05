@@ -187,18 +187,22 @@ module Test
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
           raise "test_stderr ignored, use block only or without block" if test_stderr != []
-          yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp })
+          yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp }, status)
         else
-          if test_stdout.is_a?(Regexp)
-            assert_match(test_stdout, stdout, message)
-          else
-            assert_equal(test_stdout, stdout.lines.map {|l| l.chomp }, message)
+          errs = []
+          [[test_stdout, stdout], [test_stderr, stderr]].each do |exp, act|
+            begin
+              if exp.is_a?(Regexp)
+                assert_match(exp, act, message)
+              else
+                assert_equal(exp, act.lines.map {|l| l.chomp }, message)
+              end
+            rescue MiniTest::Assertion => e
+              errs << e.message
+              message = nil
+            end
           end
-          if test_stderr.is_a?(Regexp)
-            assert_match(test_stderr, stderr, message)
-          else
-            assert_equal(test_stderr, stderr.lines.map {|l| l.chomp }, message)
-          end
+          raise MiniTest::Assertion, errs.join("\n---\n") unless errs.empty?
           status
         end
       end

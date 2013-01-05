@@ -1,3 +1,8 @@
+Sat Jan  5 12:25:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err):
+	  check stdout and stderr both.
+
 Sat Jan  5 10:21:54 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/modules_and_classes.rdoc:  Added documentation of syntax
