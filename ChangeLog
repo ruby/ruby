@@ -1,3 +1,12 @@
+Sat Jan  5 13:38:07 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_enumerate_lines): fix invalid byte sequence error
+	  when a separator is passed. The patch is from yoshidam (Yoshida
+	  Masato).
+	  [Bug #7646] [ruby-dev:46827]
+
+	* test/ruby/test_string.rb: a test for above.
+
 Sat Jan  5 12:25:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err):

@@ -6199,14 +6199,14 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	if (c == newline &&
 	    (rslen <= 1 ||
 	     (pend - p >= rslen && memcmp(RSTRING_PTR(rs), p, rslen) == 0))) {
-	    p += (rslen ? rslen : n);
-	    line = rb_str_subseq(str, s - ptr, p - s);
+	    const char *pp = p + (rslen ? rslen : n);
+	    line = rb_str_subseq(str, s - ptr, pp - s);
 	    if (wantarray)
 		rb_ary_push(ary, line);
 	    else
 		rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = p;
+	    s = pp;
 	}
 	p += n;
     }

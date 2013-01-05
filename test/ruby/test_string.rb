@@ -760,6 +760,11 @@ class TestString < Test::Unit::TestCase
 
     assert_equal "hello\n", S("hello\nworld").each_line.next
     assert_equal "hello\nworld", S("hello\nworld").each_line(nil).next
+
+    bug7646 = "[ruby-dev:46827]"
+    assert_nothing_raised(bug7646) do
+      "\n\u0100".each_line("\n") {}
+    end
   end
 
   def test_lines
