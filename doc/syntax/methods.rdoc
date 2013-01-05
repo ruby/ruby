@@ -38,7 +38,7 @@ The standard syntax to define a method:
     # ...
   end
 
-add the method to a class.  You can define an instance method on a specific
+adds the method to a class.  You can define an instance method on a specific
 class with the +class+ keyword:
 
   class C
@@ -46,24 +46,6 @@ class with the +class+ keyword:
       # ...
     end
   end
-
-In many languages, the +class+ keyword lets the compiler know that you're
-creating a class.  This is true in Ruby, too, the first time you use the
-_class_ keyword: when it sees that you're _opening_ a class for
-the first time, it creates it.  When you open a class that already exists, Ruby
-enables to you _extend_ it with new methods.  You can even extend core
-classes:
-
-  class String
-    def hello
-      "Hello, world!"
-    end
-  end
-
-  "".hello # returns "Hello, world!"
-
-However, This is somewhat risky due to namespace pollution so this ability is
-best used sparingly.
 
 A method may be defined on another object.  You may define a "class method" (a
 method that is defined on the class, not an instance of the class) like this:
@@ -73,16 +55,6 @@ method that is defined on the class, not an instance of the class) like this:
       # ...
     end
   end
-
-or a more concrete example:
-
-  class String
-    def self.hello
-      "Hello, world!"
-    end
-  end
-
-  String.hello # returns "Hello, world!"
 
 However, this is simply a special case of a greater syntactical power in Ruby,
 the ability to add methods to any object.  Classes are objects, so adding
@@ -98,7 +70,7 @@ The syntax for adding a method to an object is as follows:
 
   greeting.broaden # returns "Hello, world!"
 
-_self_ is a keyword referring to the current object under consideration
++self+ is a keyword referring to the current object under consideration
 by the compiler, which might make the use of +self+ in defining a class
 method above a little clearer.  Indeed, the example of adding a +hello+
 method to the class +String+ can be rewritten thus:
