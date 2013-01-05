@@ -291,3 +291,48 @@ provide them manually like <code>super(2)</code>.
 
 +super+ may be called as many times as you like in the subclass method.
 
+= Singleton Classes
+
+The singleton class (also known as the metaclass or eigenclass) of an object is
+a class that holds methods for only that instance.  You can access the
+singleton class of an object using <code>class << object</code> like this:
+
+  class C
+  end
+
+  class << C
+    # self is the singleton class here
+  end
+
+Most frequently you'll see the singleton class accessed like this:
+
+  class C
+    class << self
+      # ...
+    end
+  end
+
+This allows definition of methods and attributes on a class (or module) without
+needing to write <code>def self.my_method</code>.
+
+Since you can open the singleton class of any object this means that this code
+block:
+
+  o = Object.new
+
+  def o.my_method
+    1 + 1
+  end
+
+is equivalent to this code block:
+
+  o = Object.new
+
+  class << o
+    def my_method
+      1 + 1
+    end
+  end
+
+Both objects with have a +my_method+ that returns +2+.
+
