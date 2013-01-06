@@ -334,5 +334,5 @@ is equivalent to this code block:
     end
   end
 
-Both objects with have a +my_method+ that returns +2+.
+Both objects will have a +my_method+ that returns +2+.
 
