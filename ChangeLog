@@ -1,3 +1,8 @@
+Sun Jan  6 19:06:57 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* win32/Makefie.sub: Fix build with VC.
+	  Patch by Charlie Savage. Fixes [ruby-core:51261]
+
 Sun Jan  6 18:43:48 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* bootstraptest/test_io.c: add a test for [ruby-dev:46834].
