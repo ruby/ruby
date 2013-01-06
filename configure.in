@@ -1302,6 +1302,7 @@ $POSTLINK"
     RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
   fi
   ac_cv_func_shutdown=no
+  ac_cv_func_fcntl=no
   ],
 [	LIBS="-lm $LIBS"])
 AC_CHECK_LIB(crypt, crypt)
@@ -1576,7 +1577,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday poll ppoll\
               pread sendfile shutdown sigaltstack dl_iterate_phdr\
-              dup3 pipe2 posix_memalign memalign ioctl)
+              dup dup3 pipe2 posix_memalign memalign ioctl)
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([

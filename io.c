@@ -168,7 +168,7 @@ void
 rb_maygvl_fd_fix_cloexec(int fd)
 {
   /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
-#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(__native_client__)
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
@@ -298,7 +298,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
     int ret;
 
-#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC) && defined(F_DUPFD) && !defined(__native_client__)
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC) && defined(F_DUPFD)
     static int try_dupfd_cloexec = 1;
     if (try_dupfd_cloexec) {
         ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
@@ -318,10 +318,18 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     else {
         ret = fcntl(fd, F_DUPFD, minfd);
     }
-#elif defined(HAVE_FCNTL) && defined(F_DUPFD) && !defined(__native_client__)
+#elif defined(HAVE_FCNTL) && defined(F_DUPFD)
     ret = fcntl(fd, F_DUPFD, minfd);
+#elif defined(HAVE_DUP)
+    ret = dup(fd);
+    if (ret != -1 && ret < minfd) {
+        const int prev_fd = ret;
+        ret = rb_cloexec_fcntl_dupfd(fd, minfd);
+        close(prev_fd);
+    }
+    return ret;
 #else
-    ret = dup2(fd, minfd);
+# error "dup() or fcntl(F_DUPFD) must be supported."
 #endif
     if (ret == -1) return -1;
     rb_maygvl_fd_fix_cloexec(ret);

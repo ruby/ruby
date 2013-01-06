@@ -1,3 +1,13 @@
+Sun Jan  6 18:43:48 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* bootstraptest/test_io.c: add a test for [ruby-dev:46834].
+
+	* io.c (rb_cloexec_fcntl_dupfd) Use an emulation with dup(2) when
+	  fcntl(2) and/or F_DUPFD is unavailable.
+	  Suggested by akr.
+
+	* configure.in (HAVE_FCNTL): NativeClient does not provide fcntl(2).
+
 Sun Jan  6 11:11:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/modules_and_classes.rdoc:  Fixed typo.

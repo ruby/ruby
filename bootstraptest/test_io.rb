@@ -74,6 +74,12 @@ assert_equal 'ok', %q{
   :ok
 }
 
+assert_equal 'ok', %q{
+  dup = STDIN.dup
+  dupfd = dup.fileno
+  dupfd == STDIN.dup.fileno ? :ng : :ok
+}, '[ruby-dev:46834]'
+
 assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
