@@ -1,11 +1,11 @@
 Sun Jan  6 19:06:57 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
-	* win32/Makefie.sub: Fix build with VC.
+	* win32/Makefile.sub: Fix build with VC.
 	  Patch by Charlie Savage. Fixes [ruby-core:51261]
 
 Sun Jan  6 18:43:48 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
-	* bootstraptest/test_io.c: add a test for [ruby-dev:46834].
+	* bootstraptest/test_io.rb: add a test for [ruby-dev:46834].
 
 	* io.c (rb_cloexec_fcntl_dupfd) Use an emulation with dup(2) when
 	  fcntl(2) and/or F_DUPFD is unavailable.
