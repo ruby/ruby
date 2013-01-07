@@ -1551,7 +1551,8 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
-    rb_define_singleton_method(rb_vm_top_self(), "include", top_include, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "include", top_include, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "using", top_using, 1);
 

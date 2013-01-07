@@ -1,3 +1,11 @@
+Mon Jan  7 20:48:47 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (Init_eval): main.include should be private.
+	  [ruby-core:51293] [Bug #7670]
+
+	* test/ruby/test_module.rb (test_top_include_is_private): a new test
+	  for the above change.
+
 Mon Jan  7 20:29:50 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: remove description about `require "refinement"'.
