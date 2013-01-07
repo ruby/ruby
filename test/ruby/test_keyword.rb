@@ -255,4 +255,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["foo", 111111], m1(num: 111111, &blk))
     assert_equal(["bar", 111111], m1(str: "bar", num: 111111, &blk))
   end
+
+  def rest_keyrest(*args, **opt)
+    return *args, opt
+  end
+
+  def test_rest_keyrest
+    bug7665 = '[ruby-core:51278]'
+    expect = [*%w[foo bar], {zzz: 42}]
+    assert_equal(expect, rest_keyrest(*expect), bug7665)
+    assert_equal(expect, proc {|*args, **opt| next *args, opt}.call(*expect), bug7665)
+  end
 end

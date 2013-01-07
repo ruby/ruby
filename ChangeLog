@@ -1,3 +1,9 @@
+Mon Jan  7 12:09:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg_complex, vm_yield_setup_block_args):
+	  set keyrest hash after making rest array, so that the last element
+	  will not be overwritten.  [ruby-core:51278] [Bug #7665]
+
 Mon Jan  7 09:37:24 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: add a NEWS entry about RubyVM.
