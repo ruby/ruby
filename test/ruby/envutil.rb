@@ -133,7 +133,7 @@ module Test
   module Unit
     module Assertions
       public
-      def assert_valid_syntax(code, fname, mesg = fname)
+      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
         code = code.dup.force_encoding("ascii-8bit")
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
           "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
@@ -141,15 +141,23 @@ module Test
         code.force_encoding("us-ascii")
         verbose, $VERBOSE = $VERBOSE, nil
         yield if defined?(yield)
+        case
+        when Array === fname
+          fname, line = *fname
+        when defined?(fname.path) && defined?(fname.lineno)
+          fname, line = fname.path, fname.lineno
+        else
+          line = 0
+        end
         assert_nothing_raised(SyntaxError, mesg) do
-          assert_equal(:ok, catch {|tag| eval(code, binding, fname, 0)}, mesg)
+          assert_equal(:ok, catch {|tag| eval(code, binding, fname, line)}, mesg)
         end
       ensure
         $VERBOSE = verbose
       end
 
       def assert_normal_exit(testsrc, message = '', opt = {})
-        assert_valid_syntax(testsrc, caller_locations(1, 1)[0].path)
+        assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
         if opt.include?(:child_env)
           opt = opt.dup
           child_env = [opt.delete(:child_env)] || []

@@ -278,7 +278,7 @@ eom
   def not_label(x) @result = x; @not_label ||= nil end
   def assert_not_label(expected, src, message = nil)
     @result = nil
-    assert_nothing_raised(SyntaxError, message) {eval(src)}
+    assert_valid_syntax(src, message)
     assert_equal(expected, @result, message)
   end
 
