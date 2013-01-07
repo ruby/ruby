@@ -133,6 +133,19 @@ with all sufficient information, see the ChangeLog file.
       * added Range#size for lazy size evaluation.
       * added Range#bsearch for binary search.
 
+  * RubyVM (MRI specific)
+      * added Environment variables to specify stack usage:
+        * RUBY_THREAD_VM_STACK_SIZE: vm stack size used at thread creation.
+          default: 128KB (32bit CPU) or 256KB (64bit CPU).
+        * RUBY_THREAD_MACHINE_STACK_SIZE: machine stack size used at thread
+          creation. default: 512KB or 1024KB.
+        * RUBY_FIBER_VM_STACK_SIZE: vm stack size used at fiber creation.
+          default: 64KB or 128KB.
+        * RUBY_FIBER_MACHINE_STACK_SIZE: machine stack size used at fiber
+          creation. default: 256KB or 256KB.
+        These variables are checked only at launched time.
+      * added constant DEFAULT_PARAMS to get above default parameters.
+
   * Signal
     * added method:
       * added Signal.signame which returns signal name
@@ -166,7 +179,7 @@ with all sufficient information, see the ChangeLog file.
         variable has been set.
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
-    * incompatible changes:
+     * incompatible changes:
       * Thread#join and Thread#value now raises a ThreadError if target thread
         is the current or main thread.
 

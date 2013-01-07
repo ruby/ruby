@@ -1,3 +1,7 @@
+Mon Jan  7 09:37:24 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add a NEWS entry about RubyVM.
+
 Sun Jan  6 19:06:57 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* win32/Makefile.sub: Fix build with VC.
