@@ -156,6 +156,30 @@ module Test
         $VERBOSE = verbose
       end
 
+      def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
+        code = code.dup.force_encoding("ascii-8bit")
+        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ng}\n"
+        }
+        code.force_encoding("us-ascii")
+        verbose, $VERBOSE = $VERBOSE, nil
+        yield if defined?(yield)
+        case
+        when Array === fname
+          fname, line = *fname
+        when defined?(fname.path) && defined?(fname.lineno)
+          fname, line = fname.path, fname.lineno
+        else
+          line = 0
+        end
+        e = assert_raise(SyntaxError, mesg) do
+          catch {|tag| eval(code, binding, fname, line)}
+        end
+        assert_match(error, e.message, mesg)
+      ensure
+        $VERBOSE = verbose
+      end
+
       def assert_normal_exit(testsrc, message = '', opt = {})
         assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
         if opt.include?(:child_env)
