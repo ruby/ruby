@@ -4682,6 +4682,7 @@ kwrest_mark	: tPOW
 
 f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
+			shadowing_lvar(get_id($2));
 			$$ = $2;
 		    }
 		;

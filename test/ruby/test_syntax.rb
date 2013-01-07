@@ -133,6 +133,58 @@ class TestSyntax < Test::Unit::TestCase
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
+  def test_duplicated_arg
+    assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_rest
+    assert_syntax_error("def foo(a, *a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_opt
+    assert_syntax_error("def foo(a, a=1) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_opt_rest
+    assert_syntax_error("def foo(a=1, *a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_rest_opt
+    assert_syntax_error("def foo(*a, a=1) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_rest_post
+    assert_syntax_error("def foo(*a, a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_opt_post
+    assert_syntax_error("def foo(a=1, a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_kw
+    assert_syntax_error("def foo(a, a: 1) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_rest_kw
+    assert_syntax_error("def foo(*a, a: 1) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_opt_kw
+    assert_syntax_error("def foo(a=1, a: 1) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_kw_kwrest
+    assert_syntax_error("def foo(a: 1, **a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_rest_kwrest
+    assert_syntax_error("def foo(*a, **a) end", /duplicated argument name/)
+  end
+
+  def test_duplicated_opt_kwrest
+    assert_syntax_error("def foo(a=1, **a) end", /duplicated argument name/)
+  end
+
   def test_duplicated_when
     w = 'warning: duplicated when clause is ignored'
     assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
