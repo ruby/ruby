@@ -1568,6 +1568,7 @@ static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #define HAVE_NATIVETHREAD
 int ruby_native_thread_p(void);
 
+/* traditional set_trace_func events */
 #define RUBY_EVENT_NONE      0x0000
 #define RUBY_EVENT_LINE      0x0001
 #define RUBY_EVENT_CLASS     0x0002
@@ -1578,16 +1579,18 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_C_RETURN  0x0040
 #define RUBY_EVENT_RAISE     0x0080
 #define RUBY_EVENT_ALL       0x00ff
-#define RUBY_EVENT_SWITCH   0x20000
-#define RUBY_EVENT_COVERAGE 0x40000
 
 /* for TracePoint extended events */
 #define RUBY_EVENT_B_CALL          0x0100
 #define RUBY_EVENT_B_RETURN        0x0200
 #define RUBY_EVENT_THREAD_BEGIN    0x0400
 #define RUBY_EVENT_THREAD_END      0x0800
-#define RUBY_EVENT_SPECIFIED_LINE  0x8000
 #define RUBY_EVENT_TRACEPOINT_ALL  0xFFFF
+
+/* special events */
+#define RUBY_EVENT_SPECIFIED_LINE 0x10000
+#define RUBY_EVENT_SWITCH         0x20000
+#define RUBY_EVENT_COVERAGE       0x40000
 
 typedef unsigned long rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);

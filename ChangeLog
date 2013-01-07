@@ -1,3 +1,13 @@
+Mon Jan  7 17:34:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (RUBY_EVENT_SPECIFIED_LINE): make it special.
+	  This flag is not contained by RUBY_EVENT_TRACEPOINT_ALL.
+	  This event is experimental one. It is possible to remove/rename
+	  flag name after 2.0.1.
+
+	* vm_trace.c (get_event_id): return :line if SPECIFIED_LINE was
+	  occurred. `:specified_line' never been returned.
+
 Mon Jan  7 15:42:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_kwrest): allow bare kwrest_mark as valid syntax.  its
