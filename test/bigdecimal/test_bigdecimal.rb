@@ -874,6 +874,12 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_match(/^#<BigDecimal:[0-9a-f]+,'0.12345678E4',#{prec}\(#{maxprec}\)>$/, x.inspect)
   end
 
+  def test_power
+    assert_nothing_raised(TypeError, '[ruby-core:47632]') do
+      1000.times { BigDecimal.new('1001.10')**0.75 }
+    end
+  end
+
   def test_power_with_nil
     assert_raise(TypeError) do
       BigDecimal(3) ** nil

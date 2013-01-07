@@ -2046,6 +2046,7 @@ static VALUE
 rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
 {
     VALUE log_x, multiplied, y;
+    volatile VALUE obj = exp->obj;
 
     if (VpIsZero(exp)) {
 	return ToValue(VpCreateRbObject(n, "1"));
@@ -2054,6 +2055,7 @@ rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
     log_x = BigMath_log(x->obj, SSIZET2NUM(n+1));
     multiplied = BigDecimal_mult2(exp->obj, log_x, SSIZET2NUM(n+1));
     y = BigMath_exp(multiplied, SSIZET2NUM(n));
+    RB_GC_GUARD(obj);
 
     return y;
 }
