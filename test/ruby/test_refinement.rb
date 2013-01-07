@@ -1,7 +1,12 @@
 require 'test/unit'
 require_relative 'envutil'
 
-EnvUtil.suppress_warning {require "refinement"}
+# to supress warnings for future calls of Module#refine
+EnvUtil.suppress_warning do
+  Module.new {
+    refine(Object) {}
+  }
+end
 
 class TestRefinement < Test::Unit::TestCase
   class Foo
@@ -391,8 +396,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_main_using
     assert_in_out_err([], <<-INPUT, %w(:C :M), /Refinements are experimental/)
-      require "refinement"
-
       class C
         def foo
           :C
@@ -467,8 +470,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_using_method_cache
     assert_in_out_err([], <<-INPUT, %w(:M1 :M2), /Refinements are experimental/)
-      require "refinement"
-
       class C
         def foo
           "original"

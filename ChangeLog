@@ -1,3 +1,15 @@
+Mon Jan  7 20:15:49 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (Init_eval): enable Refinements by default.
+	  [ruby-core:51286] [Bug #7667]
+
+	* eval.c (rb_mod_refine, top_using): show a warning when
+	  Module#refine or main.using is called at the first time.
+
+	* ext/refinement/*: removed the extension library "refinement".
+
+	* test/ruby/test_refinement.rb: fix for the above changes.
+
 Mon Jan  7 17:34:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h (RUBY_EVENT_SPECIFIED_LINE): make it special.

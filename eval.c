@@ -1039,6 +1039,17 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+static void
+warn_refinements_once()
+{
+    static int warned = 0;
+
+    if (warned)
+	return;
+    rb_warn("Refinements are experimental, and the behavior may change in future versions of Ruby!");
+    warned = 1;
+}
+
 static VALUE
 hidden_identity_hash_new()
 {
@@ -1170,6 +1181,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     rb_thread_t *th = GET_THREAD();
     rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 
+    warn_refinements_once();
     if (!block) {
         rb_raise(rb_eArgError, "no block given");
     }
@@ -1334,6 +1346,7 @@ top_using(VALUE self, VALUE module)
     NODE *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
+    warn_refinements_once();
     if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
 	rb_raise(rb_eRuntimeError, "using is permitted only at toplevel");
     }
@@ -1527,6 +1540,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
+    rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");
 
@@ -1537,6 +1552,8 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
     rb_define_singleton_method(rb_vm_top_self(), "include", top_include, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "using", top_using, 1);
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
@@ -1548,20 +1565,3 @@ Init_eval(void)
     OBJ_TAINT(exception_error);
     OBJ_FREEZE(exception_error);
 }
-
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
-
-void
-ruby_Init_refinement(void)
-{
-    rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
-    rb_undef_method(rb_cClass, "refine");
-    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
-			     "using", top_using, 1);
-}
-
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
