@@ -71,7 +71,7 @@ Mon Jan  7 15:24:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 Mon Jan  7 15:21:48 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* Makefile.in, common.mk (fake, yes-fake, no-make): these dependecies
+	* Makefile.in, common.mk (fake, yes-fake, no-make): these dependencies
 	  are not platform dependent.
 
 	* win32/Makefile.sub ($(arch)-fake.rb): workaround.
