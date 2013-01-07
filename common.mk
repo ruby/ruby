@@ -474,6 +474,10 @@ check: main test test-all
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
+fake: $(CROSS_COMPILING)-fake
+yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
+no-fake: PHONY
+
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
 yes-btest: fake miniruby$(EXEEXT) PHONY

@@ -13,7 +13,7 @@ MFLAGS=-l
 !endif
 
 !ifndef CROSS_COMPILING
-CROSS_COMPILING = 0
+CROSS_COMPILING = no
 !endif
 !ifndef LARGEFILE_SUPPORT
 LARGEFILE_SUPPORT = 1
@@ -269,8 +269,8 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 !endif
 RUBYDEF = $(RUBY_SO_NAME).def
-!if $(CROSS_COMPILING)
-MINIRUBY = $(RUBY) -I$(MAKEDIR) -rfake
+!if "$(CROSS_COMPILING)" == "yes"
+MINIRUBY = $(RUBY) -I$(MAKEDIR) -r$(arch)-fake
 RUNRUBY = $(MINIRUBY)
 !else
 MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib -I.
@@ -278,7 +278,7 @@ RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
-!if $(CROSS_COMPILING)
+!if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 !else
 XRUBY = $(RUNRUBY)
@@ -317,8 +317,8 @@ LIBRUBY_RELATIVE = yes
 
 THREAD_MODEL  = win32
 
-!if $(CROSS_COMPILING)
-PREP          = fake.rb
+!if "$(CROSS_COMPILING)" == "yes"
+PREP          = $(arch)-fake.rb
 !else
 PREP          = miniruby$(EXEEXT)
 !endif
@@ -984,7 +984,7 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
-fake.rb: $(MKFILES)
+$(arch)-fake.rb: $(MKFILES)
 	@echo Creating <<$@
 class Object
   CROSS_COMPILING = RUBY_PLATFORM

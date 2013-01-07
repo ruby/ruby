@@ -223,9 +223,6 @@ $(LIBRUBY_SO):
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
-fake: $(CROSS_COMPILING)-fake
-yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
-no-fake: PHONY
 $(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
 		@./config.status --file=$@:$(srcdir)/template/fake.rb.in
 		@chmod +x $@
