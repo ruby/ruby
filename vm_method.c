@@ -1610,8 +1610,10 @@ Init_eval_method(void)
     rb_define_method(rb_cModule, "public_class_method", rb_mod_public_method, -1);
     rb_define_method(rb_cModule, "private_class_method", rb_mod_private_method, -1);
 
-    rb_define_singleton_method(rb_vm_top_self(), "public", top_public, -1);
-    rb_define_singleton_method(rb_vm_top_self(), "private", top_private, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "public", top_public, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "private", top_private, -1);
 
     object_id = rb_intern("object_id");
     added = rb_intern("method_added");

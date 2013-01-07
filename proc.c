@@ -2286,7 +2286,8 @@ Init_Proc(void)
     /* Kernel */
     rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);
 
-    rb_define_singleton_method(rb_vm_top_self(), "define_method", top_define_method, -1);
+    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
+			     "define_method", top_define_method, -1);
 }
 
 /*

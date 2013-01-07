@@ -1597,22 +1597,22 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError){ m.instance_eval { remove_const(:__FOO__) } }
   end
 
-  def test_top_include_is_private
-    main = eval("self", TOPLEVEL_BINDING)
-    methods = main.singleton_class.private_instance_methods(false)
-    assert(methods.include?(:include))
+  def test_private_top_methods
+    assert_top_method_is_private(:include)
+    assert_top_method_is_private(:public)
+    assert_top_method_is_private(:private)
+    assert_top_method_is_private(:define_method)
+  end
 
-    assert_in_out_err([], <<-INPUT, ["true"], [])
-      module M
-      end
-      include M
-      p singleton_class < M
-    INPUT
+  private
 
-    assert_in_out_err([], <<-INPUT, [], /private method `include' called for main:Object \(NoMethodError\)/)
-      module M
-      end
-      self.include M
+  def assert_top_method_is_private(method)
+    top = eval("self", TOPLEVEL_BINDING)
+    methods = top.singleton_class.private_instance_methods(false)
+    assert(methods.include?(method), "#{method} should be private")
+
+    assert_in_out_err([], <<-INPUT, [], /private method `#{method}' called for main:Object \(NoMethodError\)/)
+      self.#{method}
     INPUT
   end
 end
