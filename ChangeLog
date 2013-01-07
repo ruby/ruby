@@ -1,3 +1,7 @@
+Mon Jan  7 20:29:50 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: remove description about `require "refinement"'.
+
 Mon Jan  7 20:15:49 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (Init_eval): enable Refinements by default.

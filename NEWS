@@ -104,7 +104,7 @@ with all sufficient information, see the ChangeLog file.
         however a method in the prepended module overrides the
         corresponding method in the prepending module.
       * added Module#refine, which extends a class or module locally.
-        require "refinement" is necessary to use it. [experimental]
+        [experimental]
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
       * Module#const_get accepts a qualified constant string, e.g.
@@ -196,8 +196,7 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added main.define_method which defines a global function.
       * added main.using, which imports refinements into the current file or
-        eval string. require "refinement" is necessary to use it.
-        [experimental]
+        eval string. [experimental]
 
 * cgi
   * Add HTML5 tag maker.
