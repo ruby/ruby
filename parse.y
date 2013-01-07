@@ -4685,6 +4685,10 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 			shadowing_lvar(get_id($2));
 			$$ = $2;
 		    }
+		| kwrest_mark
+		    {
+			$$ = internal_id();
+		    }
 		;
 
 f_opt		: tIDENTIFIER '=' arg_value

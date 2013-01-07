@@ -1,3 +1,8 @@
+Mon Jan  7 15:42:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_kwrest): allow bare kwrest_mark as valid syntax.  its
+	  semantics is still undefined.  [Bug #7662] [ruby-core:51269]
+
 Mon Jan  7 15:31:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_kwrest): reject duplicated kwrest argument name.

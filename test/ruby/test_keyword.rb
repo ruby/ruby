@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestKeywordArguments < Test::Unit::TestCase
   def f1(str: "foo", num: 424242)
@@ -265,5 +266,12 @@ class TestKeywordArguments < Test::Unit::TestCase
     expect = [*%w[foo bar], {zzz: 42}]
     assert_equal(expect, rest_keyrest(*expect), bug7665)
     assert_equal(expect, proc {|*args, **opt| next *args, opt}.call(*expect), bug7665)
+  end
+
+  def test_bare_kwrest
+    # valid syntax, but its semantics is undefined
+    assert_valid_syntax("def bug7662(**) end")
+    assert_valid_syntax("def bug7662(*, **) end")
+    assert_valid_syntax("def bug7662(a, **) end")
   end
 end
