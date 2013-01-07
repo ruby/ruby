@@ -870,5 +870,21 @@ class TestSetTraceFunc < Test::Unit::TestCase
         m1_test_trace_point_at_return_when_exception
       end
     end
+
+    bug_7668 = '[Bug #7668]'
+    ary = []
+    trace = TracePoint.new{|tp|
+      ary << tp.event
+      raise
+    }
+    begin
+      trace.enable{
+        1.times{
+          raise
+        }
+      }
+    rescue
+      assert_equal([:b_call, :b_return], ary, bug_7668)
+    end
   end
 end

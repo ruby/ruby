@@ -1,3 +1,13 @@
+Mon Jan  7 15:24:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): pop tag before
+	  JUMP_TAG() if frame is `finish' frame.
+	  Without this patch, there is an inconsistency between control
+	  frame stack and tags stack.
+	  [Bug #7668]
+
+	* test/ruby/test_settracefunc.rb: add a test for above.
+
 Mon Jan  7 15:21:48 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* Makefile.in, common.mk (fake, yes-fake, no-make): these dependecies
