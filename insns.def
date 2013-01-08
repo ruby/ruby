@@ -61,7 +61,7 @@ getlocal
     VALUE *ep = GET_EP();
 
     for (i = 0; i < lev; i++) {
-	    ep = GET_PREV_EP(ep);
+	ep = GET_PREV_EP(ep);
     }
     val = *(ep - idx);
 }
@@ -714,15 +714,14 @@ defined
 	    expr_type = DEFINED_GVAR;
 	}
 	break;
-      case DEFINED_CVAR:
-	{
+      case DEFINED_CVAR: {
 	NODE *cref = rb_vm_get_cref(GET_ISEQ(), GET_EP());
 	klass = vm_get_cvar_base(cref, GET_CFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = DEFINED_CVAR;
 	}
 	break;
-	}
+      }
       case DEFINED_CONST:
 	klass = v;
 	if (vm_get_ev_const(th, GET_ISEQ(), klass, SYM2ID(obj), 1)) {
