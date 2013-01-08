@@ -1,3 +1,9 @@
+Tue Jan  8 14:41:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_iseq_t): move flip_cnt from struct iseq_compile_data,
+	  because it has same life span as enclosing iseq.  [Bug #7671]
+	  [ruby-core:51296]
+
 Mon Jan  7 23:43:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (rmpd_power_by_big_decimal):

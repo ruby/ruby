@@ -98,7 +98,6 @@ struct iseq_compile_data {
     struct iseq_compile_data_storage *storage_current;
     int last_line;
     int last_coverable_line;
-    int flip_cnt;
     int label_no;
     int node_level;
     const rb_compile_option_t *option;
