@@ -132,6 +132,10 @@ This is what you need to do to compile and install Ruby:
 If you fail to compile ruby, please send the detailed error report with
 the error log and machine/OS type, to help others.
 
+Some extension libraries may not get compiled because of lack of
+necessary external libraries and/or headers, then you will need to run
+'<tt>make distclean-ext</tt>' to remove old configuration after
+installing them in such case.
 
 == Copying
 
