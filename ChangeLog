@@ -1,7 +1,7 @@
 Mon Jan  7 23:43:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (rmpd_power_by_big_decimal):
-	  add RB_GC_GUARD to prevent the immediate object is GCed too early.
+	  add RB_GC_GUARD to prevent the intermediate object is GCed too early.
 	  This patch was made by Yusuke Endoh.  [Bug #7044] [ruby-core:47632]
 
 	* test/bigdecimal/test_bigdecimal.rb: add a reproduction test for
