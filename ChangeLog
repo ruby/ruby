@@ -1,3 +1,8 @@
+Wed Jan  9 02:13:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RBasic): to be aligned on a VALUE size
+	  boundary.  [Bug #7647]
+
 Tue Jan  8 14:41:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_iseq_t): move flip_cnt from struct iseq_compile_data,

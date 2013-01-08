@@ -699,7 +699,11 @@ VALUE rb_newobj_of(VALUE, VALUE);
 struct RBasic {
     VALUE flags;
     VALUE klass;
-};
+}
+#ifdef __GNUC__
+    __attribute__((aligned(sizeof(VALUE))))
+#endif
+;
 
 #define ROBJECT_EMBED_LEN_MAX 3
 struct RObject {
