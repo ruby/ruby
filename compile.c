@@ -5011,7 +5011,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	int ic_index = iseq->ic_size++;
 
-	  debugi("colon3#nd_mid", node->nd_mid);
+	debugi("colon3#nd_mid", node->nd_mid);
 
 	/* add cache insn */
 	if (iseq->compile_data->option->inline_const_cache) {
