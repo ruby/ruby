@@ -607,22 +607,26 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_with_loaded_features_pop
     bug7530 = '[ruby-core:50645]'
-    assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7530)
+    script = Tempfile.new(%w'bug-7530- .rb')
+    script.close
+    dir, base = File.split(script.path)
+    assert_in_out_err(["-C", dir, "-", base], <<-INPUT, %w(:ok), [], bug7530)
+      PATH = ARGV.shift
       THREADS = 2
       ITERATIONS_PER_THREAD = 1000
 
       $: << '.'
-      system 'touch __load_path_bench_script__.rb'
       THREADS.times.map {
         Thread.new do
           ITERATIONS_PER_THREAD.times do
-            require '__load_path_bench_script__'
+            require PATH
             $".pop
           end
         end
       }.each(&:join)
-      system 'rm __load_path_bench_script__.rb'
       p :ok
     INPUT
+  ensure
+    script.close(true) if script
   end
 end
