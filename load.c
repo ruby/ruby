@@ -668,9 +668,6 @@ load_lock(const char *ftptr)
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
-	data = (st_data_t)ftptr;
-	st_delete(loading_tbl, &data, 0);
-	return 0;
       case Qnil:
 	return 0;
     }

@@ -1,3 +1,11 @@
+Wed Jan  9 09:53:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* load.c (load_lock): fix not to delete thread shield twice.
+	  it may break the shield locked by another thread.
+	  [Bug #7530] [ruby-core:50645]
+
+	* test/ruby/test_require.rb: a test for above.
+
 Wed Jan  9 02:13:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RBasic): to be aligned on a VALUE size
