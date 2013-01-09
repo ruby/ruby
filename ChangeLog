@@ -1,3 +1,8 @@
+Wed Jan  9 21:43:32 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* load.c (load_lock): revert r38744. it should acquire new thread
+	  shield.
+
 Wed Jan  9 15:40:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (th_init, ruby_thread_init): initialize root_svar with Qnil,
