@@ -609,13 +609,11 @@ class TestRequire < Test::Unit::TestCase
     bug7530 = '[ruby-core:50645]'
     script = Tempfile.new(%w'bug-7530- .rb')
     script.close
-    dir, base = File.split(script.path)
-    assert_in_out_err(["-C", dir, "-", base], <<-INPUT, %w(:ok), [], bug7530)
+    assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530)
       PATH = ARGV.shift
       THREADS = 2
       ITERATIONS_PER_THREAD = 1000
 
-      $: << '.'
       THREADS.times.map {
         Thread.new do
           ITERATIONS_PER_THREAD.times do
