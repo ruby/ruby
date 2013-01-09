@@ -16,6 +16,10 @@ module Psych
       $DEBUG = @old_debug
     end
 
+    def test_load_float_with_dot
+      assert_equal 1.0, Psych.load('--- 1.')
+    end
+
     def test_non_float_with_0
       str = Psych.load('--- 090')
       assert_equal '090', str

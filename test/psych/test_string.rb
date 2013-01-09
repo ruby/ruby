@@ -102,6 +102,10 @@ module Psych
       assert_cycle string
     end
 
+    def test_float_confusion
+      assert_cycle '1.'
+    end
+
     def binary_string percentage = 0.31, length = 100
       string = ''
       (percentage * length).to_i.times do |i|

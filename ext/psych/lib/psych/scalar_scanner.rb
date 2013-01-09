@@ -96,7 +96,7 @@ module Psych
           @string_cache[string] = true
           string
         else
-          Float(string.gsub(/[,_]/, ''))
+          Float(string.gsub(/[,_]|\.$/, ''))
         end
       else
         int = parse_int string.gsub(/[,_]/, '')
