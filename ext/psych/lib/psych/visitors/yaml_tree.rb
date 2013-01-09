@@ -221,9 +221,10 @@ module Psych
       end
 
       def binary? string
-        string.encoding == Encoding::ASCII_8BIT ||
+        (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
           string.index("\x00") ||
-          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3
+          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3 ||
+          string.class != String
       end
       private :binary?
 

@@ -1,3 +1,10 @@
+Thu Jan 10 03:38:40 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ascii only binary strings
+	  will be dumped as unicode.  Thanks Paul Kunysch!
+
+	* test/psych/test_string.rb: appropriate test
+
 Thu Jan 10 03:29:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (compile_array_): modify wrong optimization.
