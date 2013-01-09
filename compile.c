@@ -2435,6 +2435,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 			else {
 			    ADD_INSN(anchor, line, concatarray);
 			}
+
 			APPEND_LIST(ret, anchor);
 			break;
 		      case COMPILE_ARRAY_TYPE_HASH:
@@ -2460,6 +2461,10 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 			APPEND_LIST(ret, anchor);
 			break;
 		    }
+		}
+		else {
+		    /* poped */
+		    APPEND_LIST(ret, anchor);
 		}
 	    }
 	}

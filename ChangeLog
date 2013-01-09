@@ -1,3 +1,14 @@
+Thu Jan 10 03:29:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (compile_array_): modify wrong optimization.
+	  A script "[print(1)]; print(2)" should output "12".
+	  However, the compiler had eliminted "[print(1)]" expression
+	  because it is void expression (unused array).
+	  Of course, side-effect should be remained.
+	  This issue is reported by Masaya Tarui.
+
+	* bootstraptest/test_literal.rb: add a test.
+
 Wed Jan  9 22:07:42 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* load.c (load_lock): if thread shield is destroyed and there is no
