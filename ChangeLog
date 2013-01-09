@@ -1,3 +1,9 @@
+Wed Jan  9 22:07:42 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* load.c (load_lock): if thread shield is destroyed and there is no
+	  waiting thread, insert new thread shield into load_table.
+	  [Bug #7530] [ruby-core:50645]
+
 Wed Jan  9 21:43:32 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* load.c (load_lock): revert r38744. it should acquire new thread
