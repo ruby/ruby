@@ -1,3 +1,8 @@
+Wed Jan  9 15:40:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (th_init, ruby_thread_init): initialize root_svar with Qnil,
+	  since lep_svar_place() expects uninitialized svar to be nil, not 0.
+
 Wed Jan  9 13:20:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* test/ruby/test_require.rb: improve test for r38744.

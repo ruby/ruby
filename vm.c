@@ -1930,6 +1930,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->errinfo = Qnil;
     th->last_status = Qnil;
     th->waiting_fd = -1;
+    th->root_svar = Qnil;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
@@ -1949,6 +1950,7 @@ ruby_thread_init(VALUE self)
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();
+    th->root_svar = Qnil;
     return self;
 }
 
