@@ -1,3 +1,10 @@
+Thu Jan 10 11:15:04 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* numeric.c (do_coerce): speed optimization by using rb_check_funcall
+	  instead of rb_rescue + rb_funcall.
+	  This fix is based on the patch by Benoit Daloze.
+	  [Bug #7645] [ruby-core:51213]
+
 Thu Jan 10 11:15:04 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* probes.d: updating probes to be more symmetrical, adding
