@@ -1358,10 +1358,15 @@ def find_tcltk_header(tclver, tkver)
     print(".") # progress
     if major && minor
       # version check on tcl.h
-      have_tcl_h = try_cpp("#include <tcl.h>\n#if TCL_MAJOR_VERSION != #{major} || TCL_MINOR_VERSION != #{minor}\n#error VERSION does not match\n#endif")
+      version_check = proc {|code|
+        code << ("#if TCL_MAJOR_VERSION != #{major} || TCL_MINOR_VERSION != #{minor}\n" \
+                 "#error VERSION does not match\n" \
+                 "#endif")
+      }
     else
-      have_tcl_h = have_header('tcl.h')
+      version_check = nil
     end
+    have_tcl_h = have_header('tcl.h', &version_check)
     unless have_tcl_h
       if tclver && ! tclver.empty?
         versions = [tclver]
@@ -1383,13 +1388,19 @@ def find_tcltk_header(tclver, tkver)
         (File.directory?(dir))? File.expand_path(dir): nil
       }.compact.uniq
 
-      code = "#include <tcl.h>\n"
-      code << "#if TCL_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
-      code << "#if TCL_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+      if major || minor
+        version_check = proc {|code|
+          code << "#if TCL_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
+          code << "#if TCL_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+          code
+        }
+      else
+        version_check = nil
+      end
       have_tcl_h = paths.find{|path|
         print(".") # progress
         inc_opt = " -I#{path.quote}"
-        if try_cpp(code, inc_opt)
+        if try_header("tcl", inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
           true
         else
@@ -1414,10 +1425,15 @@ def find_tcltk_header(tclver, tkver)
     print(".") # progress
     if major && minor
       # version check on tk.h
-      have_tk_h = try_cpp("#include <tk.h>\n#if TK_MAJOR_VERSION != #{major} || TK_MINOR_VERSION != #{minor}\n#error VERSION does not match\n#endif")
+      version_check = proc {|code|
+        code << ("#if TK_MAJOR_VERSION != #{major} || TK_MINOR_VERSION != #{minor}\n" \
+                 "#error VERSION does not match\n" \
+                 "#endif")
+      }
     else
-      have_tk_h = have_header('tk.h')
+      version_check = nil
     end
+    have_tk_h = have_header('tk.h')
     unless have_tk_h
       if tkver && ! tkver.empty?
         versions = [tkver]
@@ -1439,13 +1455,19 @@ def find_tcltk_header(tclver, tkver)
         (File.directory?(dir))? File.expand_path(dir): nil
       }.compact.uniq
 
-      code = "#include <tcl.h>\n#include <tk.h>\n"
-      code << "#if TK_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
-      code << "#if TK_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+      if major || minor
+        version_check = proc {|code|
+          code << "#if TK_MAJOR_VERSION != #{major}\n#error MAJOR_VERSION does not match\n#endif\n" if major
+          code << "#if TK_MINOR_VERSION != #{minor}\n#error MINOR_VERSION does not match\n#endif\n" if minor
+          code
+        }
+      else
+        version_check = nil
+      end
       have_tk_h = paths.find{|path|
         print(".") # progress
         inc_opt = " -I#{path.quote}"
-        if try_cpp(code, inc_opt)
+        if try_header(%w'tcl.h tk.h', inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
           true
         else

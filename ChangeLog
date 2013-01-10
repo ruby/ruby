@@ -1,3 +1,8 @@
+Thu Jan 10 16:47:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/extconf.rb (find_tcltk_header): use have_header instead of
+	  try_cpp, which is incredibly slow with VC.
+
 Thu Jan 10 15:55:28 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* numeric.c (do_coerce): remove an unused variable.
