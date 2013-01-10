@@ -419,7 +419,7 @@ typedef struct rb_vm_struct {
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 
 #ifndef VM_DEBUG_BP_CHECK
-#define VM_DEBUG_BP_CHECK 1
+#define VM_DEBUG_BP_CHECK 0
 #endif
 
 typedef struct rb_control_frame_struct {

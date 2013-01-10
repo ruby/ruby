@@ -1,3 +1,10 @@
+Thu Jan 10 22:00:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (VM_DEBUG_BP_CHECK): set 0 as default.
+	  This flag specifies checking BP consistency on each frame popping.
+	  Now, we don't have any trouble on it, so I remove it.
+	  If you feel any bugs about VM execution, then set it to 1.
+
 Thu Jan 10 21:03:05 2013 TAKANO `takano32' Mitsuhiro <tak@no32.tk>
 
 	* cont.c: define FIBER_USE_NATIVE as 0 in ia64.
