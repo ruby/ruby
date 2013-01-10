@@ -638,7 +638,9 @@ rb_f_load(int argc, VALUE *argv)
     rb_load_internal(path, RTEST(wrap));
 
     if (RUBY_DTRACE_LOAD_RETURN_ENABLED()) {
-	RUBY_DTRACE_LOAD_RETURN(StringValuePtr(fname));
+	RUBY_DTRACE_LOAD_RETURN(StringValuePtr(fname),
+			       rb_sourcefile(),
+			       rb_sourceline());
     }
 
     return Qtrue;
@@ -941,7 +943,9 @@ rb_require_safe(VALUE fname, int safe)
     th->errinfo = errinfo;
 
     if (RUBY_DTRACE_REQUIRE_RETURN_ENABLED()) {
-	RUBY_DTRACE_REQUIRE_RETURN(StringValuePtr(fname));
+	RUBY_DTRACE_REQUIRE_RETURN(StringValuePtr(fname),
+				  rb_sourcefile(),
+				  rb_sourceline());
     }
 
     return result;
