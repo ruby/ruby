@@ -265,7 +265,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo
     end
   end
@@ -285,7 +285,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo
     end
   end
@@ -321,7 +321,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NotImplementedError) do
+    assert_raise(TypeError) do
       obj.foo.call
     end
   end

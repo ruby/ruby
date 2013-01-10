@@ -1,3 +1,9 @@
+Thu Jan 10 16:31:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_super_method): raise a TypeError
+	  instead of a NotImplementError if self is not an instance of the
+	  current class.  [ruby-dev:39772] [Bug #2402]
+
 Thu Jan 10 16:47:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/extconf.rb (find_tcltk_header): use have_header instead of

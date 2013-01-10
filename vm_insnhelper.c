@@ -1943,7 +1943,13 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 
     if (!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
 	!rb_obj_is_kind_of(ci->recv, current_defined_class)) {
-	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 2.0.0 or later");
+	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
+	    RBASIC(current_defined_class)->klass : current_defined_class;
+
+	rb_raise(rb_eTypeError,
+		 "self has wrong type to call super in this context: "
+		 "%s (expected %s)",
+		 rb_obj_classname(ci->recv), rb_class2name(m));
     }
 
     vm_search_superclass(GET_CFP(), iseq, sigval, ci);
