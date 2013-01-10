@@ -37,7 +37,7 @@ Thu Jan 10 03:29:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (compile_array_): modify wrong optimization.
 	  A script "[print(1)]; print(2)" should output "12".
-	  However, the compiler had eliminted "[print(1)]" expression
+	  However, the compiler had eliminated "[print(1)]" expression
 	  because it is void expression (unused array).
 	  Of course, side-effect should be remained.
 	  This issue is reported by Masaya Tarui.
