@@ -225,8 +225,8 @@ do_coerce(VALUE *x, VALUE *y, int err)
 		     RSTRING_PTR(v):
 		     rb_obj_classname(*y),
 		     rb_obj_classname(*x));
-        }
-	return FALSE;	/* dummy */
+	}
+	return FALSE;
     }
 
     if (!RB_TYPE_P(ary, T_ARRAY) || RARRAY_LEN(ary) != 2) {
