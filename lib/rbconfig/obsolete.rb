@@ -24,7 +24,7 @@ module ::RbConfig
 
     def respond_to_missing?(*args, &block)
       _warn_
-      ::RbConfig.respond_to_missing?(*args, &block)
+      ::RbConfig.send(:respond_to_missing?, *args, &block)
     end
   end
 end
