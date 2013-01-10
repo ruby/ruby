@@ -215,9 +215,6 @@ static int
 do_coerce(VALUE *x, VALUE *y, int err)
 {
     VALUE ary;
-    VALUE a[2];
-
-    a[0] = *x; a[1] = *y;
 
     ary = rb_check_funcall(*y, id_coerce, 1, x);
     if (ary == Qundef) {
