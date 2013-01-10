@@ -4,6 +4,9 @@
 text = ARGF.read
 text.gsub!(/^(?!#)(.*)/){$1.upcase}
 
+# remove comments
+text.gsub!(%r'/\*.*?\*/'m, '')
+
 # remove the pragma declarations
 text.gsub!(/^#pragma.*$/, '')
 

@@ -1,3 +1,8 @@
+Thu Jan 10 15:35:55 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* tool/gen_dummy_probes.rb: remove comments in probes.d to fix the
+	  compilation error introduced by r38755.
+
 Thu Jan 10 11:15:04 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* numeric.c (do_coerce): speed optimization by using rb_check_funcall
