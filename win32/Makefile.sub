@@ -448,8 +448,8 @@ test-rubyspec-precheck:
 
 $(MKFILES): $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/common.mk $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
-	@echo $(MKFILES) should be updated, re-run $(MAKE).
-	@exit 1
+	@fc Makefile Makefile.old > nul && echo Makefile unchanged || \
+	(echo $(MKFILES) was updated, re-run $(MAKE). & exit 1)
 
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time

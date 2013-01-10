@@ -1,3 +1,8 @@
+Thu Jan 10 17:45:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub ($(MKFILES)): continue if Makefile
+	  unchanged.
+
 Thu Jan 10 16:31:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_super_method): raise a TypeError
