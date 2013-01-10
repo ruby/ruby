@@ -1,3 +1,7 @@
+Thu Jan 10 19:39:05 2013  TAKANO `takano32' Mitsuhiro <tak@no32.tk>
+
+	* thread.c: fix RB_GC_SAVE_MACHINE_REGISTER_STACK define for ia64.
+
 Thu Jan 10 17:45:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub ($(MKFILES)): continue if Makefile
