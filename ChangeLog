@@ -1,3 +1,8 @@
+Fri Jan 11 17:11:26 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb: add dummy clean-static target to prevent errors for the
+	  case real clean-static target doesn't exist.
+
 Fri Jan 11 17:02:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.h (GENTRY): GENTRY should be pointer size.
