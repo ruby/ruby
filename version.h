@@ -42,11 +42,11 @@
 
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
-    RUBY_PATCHLEVEL_STR             \
+    RUBY_PATCHLEVEL_STR		    \
     " ("RUBY_RELEASE_DATE	    \
     RUBY_REVISION_STR") "	    \
     "["RUBY_PLATFORM"]"
-# define RUBY_COPYRIGHT 	    \
+# define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \
     STRINGIZE(RUBY_BIRTH_YEAR)"-"   \
     STRINGIZE(RUBY_RELEASE_YEAR)" " \
