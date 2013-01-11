@@ -1,7 +1,7 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 
-require 'mkmf'
+require 'fileutils'
 
 case ARGV[0]
 when "-n"
@@ -12,6 +12,15 @@ when "-v"
   include FileUtils::Verbose
 else
   include FileUtils
+end
+
+def relative_from(path, base)
+  dir = File.join(path, "")
+  if File.expand_path(dir) == File.expand_path(dir, base)
+    path
+  else
+    File.join(base, path)
+  end
 end
 
 module Mswin
@@ -35,11 +44,13 @@ end
 
 alias ln_dir_safe ln_safe
 
-if /mingw|mswin/ =~ RbConfig::CONFIG["build_os"]
+if /mingw|mswin/ =~ CROSS_COMPILING
   extend Mswin
 end
 
 config = RbConfig::CONFIG
+srcdir = config["srcdir"] ||= File.dirname(__FILE__)
+top_srcdir = config["top_srcdir"] ||= File.dirname(srcdir)
 extout = ARGV[0] || config["EXTOUT"]
 version = config["ruby_version"]
 arch = config["arch"]
@@ -82,4 +93,4 @@ else
 end
 ln_dir_safe("common", File.join(extout, version))
 ln_dir_safe(File.join("..", arch), File.join(extout, "common", arch))
-ln_dir_safe(relative_from(File.join(File.dirname(config["srcdir"]), "lib"), ".."), File.join(extout, "vendor_ruby"))
+ln_dir_safe(relative_from(File.join(top_srcdir, "lib"), ".."), File.join(extout, "vendor_ruby"))
