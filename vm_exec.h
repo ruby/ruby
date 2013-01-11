@@ -15,7 +15,7 @@
 typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef unsigned long dindex_t;
-typedef rb_num_t GENTRY;
+typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
 #ifdef  COLLECT_USAGE_ANALYSIS
