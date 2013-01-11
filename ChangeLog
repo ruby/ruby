@@ -1,3 +1,9 @@
+Fri Jan 11 11:59:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (dispose_string): use rb_str_free for freeing string in
+	  parse.y. by Sokolov Yura <funny.falcon@gmail.com>
+	  https://github.com/ruby/ruby/pull/87 fix GH-87
+
 Fri Jan 11 09:56:22 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insns.def (defineclass): private constants should not be accessed
