@@ -4844,12 +4844,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *ltrue = NEW_LABEL(nd_line(node));
-	struct iseq_compile_data *data = iseq->local_iseq->compile_data;
+	rb_iseq_t *local_iseq = iseq->local_iseq;
 	rb_num_t cnt;
 	VALUE key;
 
-	if (!data) data = iseq->compile_data;
-	cnt = data->flip_cnt++ + DEFAULT_SPECIAL_VAR_COUNT;
+	cnt = local_iseq->flip_cnt++ + DEFAULT_SPECIAL_VAR_COUNT;
 	key = INT2FIX(cnt);
 
 	ADD_INSN2(ret, nd_line(node), getspecial, key, INT2FIX(0));

@@ -1,3 +1,9 @@
+Fri Jan 11 17:12:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_iseq_t): move flip_cnt from struct iseq_compile_data,
+	  because it has same life span as enclosing iseq.  [Bug #7671]
+	  [ruby-core:51296]
+
 Fri Jan 11 17:11:26 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb: add dummy clean-static target to prevent errors for the
