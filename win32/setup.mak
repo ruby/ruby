@@ -70,7 +70,7 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 	@echo !endif>> $(MAKEFILE)
 !endif
 
--system-vars-: -runtime-
+-system-vars-: -osname- -runtime-
 
 -system-vars32-: -osname32- -runtime-
 
@@ -81,6 +81,16 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 
 -osname64-: nul
 	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
+
+-osname-: nul
+	@echo !ifndef TARGET_OS>>$(MAKEFILE)
+	@($(CC) -c <<conftest.c > nul && (echo TARGET_OS = mswin32) || (echo TARGET_OS = mswin64)) >>$(MAKEFILE)
+#ifdef _WIN64
+#error
+#endif
+<<
+	@echo !endif>>$(MAKEFILE)
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
 -runtime-: nul
 	@$(CC) -MD <<rtname.c user32.lib -link > nul
@@ -126,13 +136,6 @@ runtime_name()
 	    ver = p;
 	}
     }
-    printf("!ifndef TARGET_OS\n");
-#ifdef _WIN64
-    printf("TARGET_OS = mswin64\n");
-#else
-    printf("TARGET_OS = mswin32\n");
-#endif
-    printf("!endif\n");
     if (ver) {
 	printf("PLATFORM = $$(TARGET_OS)_%s\n", ver);
     }
