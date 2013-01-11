@@ -255,28 +255,16 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(WIN32OLE::VARIANT::VT_UINT|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
-    # This test is failed in cygwin.
-    # The tagVARIANT definition has no union member pllVal in cygwin.
     def test_s_new_with_i8_byref
-      if defined?(WIN32OLE::VARIANT::VT_I8) && /mswin/ =~ RUBY_PLATFORM
-        obj = WIN32OLE_VARIANT.new(-123456789012345, WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF)
-        assert_equal(-123456789012345, obj.value)
-        assert_equal(WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
-      else
-        skip("WIN32OLE::VARIANT::VT_I8 is not available")
-      end
+      obj = WIN32OLE_VARIANT.new(-123456789012345, WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF)
+      assert_equal(-123456789012345, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
-    # This test is failed in cygwin.
-    # The tagVARIANT definition has no union member pullVal in cygwin.
     def test_s_new_with_ui8_byref
-      if defined?(WIN32OLE::VARIANT::VT_UI8) && /mswin/ =~ RUBY_PLATFORM
-        obj = WIN32OLE_VARIANT.new(123456789012345, WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF)
-        assert_equal(123456789012345, obj.value)
-        assert_equal(WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
-      else
-        skip("WIN32OLE::VARIANT::VT_UI8 is not available")
-      end
+      obj = WIN32OLE_VARIANT.new(123456789012345, WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF)
+      assert_equal(123456789012345, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
     def test_value

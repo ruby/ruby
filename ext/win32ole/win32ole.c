@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.3"
+#define WIN32OLE_VERSION "1.5.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1816,13 +1816,17 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
             V_R8REF(var) = &V_R8(realvar);
             break;
 
-#if (_MSC_VER >= 1300)
+#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#ifdef V_I8REF            
         case VT_I8:
             V_I8REF(var) = &V_I8(realvar);
             break;
+#endif
+#ifdef V_UI8REF            
         case VT_UI8:
             V_UI8REF(var) = &V_UI8(realvar);
             break;
+#endif
 #endif
         case VT_INT:
             V_INTREF(var) = &V_INT(realvar);
@@ -2179,8 +2183,10 @@ ole_variant2val(VARIANT *pvar)
 #if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300)
+#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#ifdef V_I8REF
             obj = I8_2_NUM(*V_I8REF(pvar));
+#endif
 #else
             obj = Qnil;
 #endif
@@ -2189,8 +2195,10 @@ ole_variant2val(VARIANT *pvar)
         break;
     case VT_UI8:
         if(V_ISBYREF(pvar))
-#if (_MSC_VER >= 1300)
+#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#ifdef V_UI8REF
             obj = UI8_2_NUM(*V_UI8REF(pvar));
+#endif
 #else
             obj = Qnil;
 #endif
