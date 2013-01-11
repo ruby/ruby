@@ -1,3 +1,10 @@
+Fri Jan 11 09:56:22 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* insns.def (defineclass): private constants should not be accessed
+	  by scoped module definitions.  The bug was introduced in r38495.
+
+	* test/ruby/test_module.rb: related test.
+
 Fri Jan 11 02:11:59 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rbconfig/obsolete.rb (respond_to_missing?): use send because

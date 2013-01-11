@@ -1604,6 +1604,26 @@ class TestModule < Test::Unit::TestCase
     assert_top_method_is_private(:define_method)
   end
 
+  module PrivateConstantReopen
+    PRIVATE_CONSTANT = true
+    private_constant :PRIVATE_CONSTANT
+  end
+
+  def test_private_constant_reopen
+    assert_raise(NameError) do
+      eval <<-EOS, TOPLEVEL_BINDING
+        module TestModule::PrivateConstantReopen::PRIVATE_CONSTANT
+        end
+      EOS
+    end
+    assert_raise(NameError) do
+      eval <<-EOS, TOPLEVEL_BINDING
+        class TestModule::PrivateConstantReopen::PRIVATE_CONSTANT
+        end
+      EOS
+    end
+  end
+
   private
 
   def assert_top_method_is_private(method)

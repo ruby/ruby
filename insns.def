@@ -949,7 +949,7 @@ defineclass
 	/* find klass */
 	if ((klass = vm_search_const_defined_class(cbase, id)) != 0) {
 	    klass = VM_DEFINECLASS_SCOPED_P(flags) ?
-		rb_const_get_at(klass, id) : rb_public_const_get_at(klass, id);
+		rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
 	    /* already exist */
 	    if (!RB_TYPE_P(klass, T_MODULE)) {
 		rb_raise(rb_eTypeError, "%s is not a module", rb_id2name(id));
