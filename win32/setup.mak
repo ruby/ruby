@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 }
 <<
 	@.\rtname >>$(MAKEFILE)
-	@del rtname.*
+	@for %I in (rtname.*) do @del %I
 
 -version-: nul
 	@$(APPEND)
