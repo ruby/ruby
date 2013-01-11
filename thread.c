@@ -4060,7 +4060,7 @@ enum {
     EVENT_RUNNING_EVENT_MASK = EVENT_RUNNING_VM|EVENT_RUNNING_THREAD
 };
 
-static VALUE thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always);
+static VALUE thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always, int pop_p);
 
 struct event_call_args {
     rb_thread_t *th;
@@ -4145,25 +4145,16 @@ set_threads_event_flags(int flag)
 static inline int
 exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
-    volatile int removed = 0;
-    const rb_event_hook_t *volatile hnext = 0;
-    int state;
-
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) != 0) {
-	hook = hnext;
-    }
+    int removed = 0;
     for (; hook; hook = hook->next) {
 	if (hook->flag & RUBY_EVENT_REMOVED) {
 	    removed++;
 	    continue;
 	}
 	if (flag & hook->flag) {
-	    hnext = hook->next;
 	    (*hook->func)(flag, hook->data, self, id, klass);
 	}
     }
-    POP_TAG();
     return removed;
 }
 
@@ -4208,7 +4199,7 @@ thread_exec_event_hooks(VALUE args, int running)
 }
 
 void
-rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass, int pop_p)
 {
     const VALUE errinfo = th->errinfo;
     struct event_call_args args;
@@ -4218,7 +4209,7 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self,
     args.id = id;
     args.klass = klass;
     args.proc = 0;
-    thread_suppress_tracing(th, EVENT_RUNNING_EVENT_MASK, thread_exec_event_hooks, (VALUE)&args, FALSE);
+    thread_suppress_tracing(th, EVENT_RUNNING_EVENT_MASK, thread_exec_event_hooks, (VALUE)&args, FALSE, pop_p);
     th->errinfo = errinfo;
 }
 
@@ -4567,11 +4558,11 @@ VALUE
 ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 {
     rb_thread_t *th = GET_THREAD();
-    return thread_suppress_tracing(th, EVENT_RUNNING_TRACE, func, arg, always);
+    return thread_suppress_tracing(th, EVENT_RUNNING_TRACE, func, arg, always, 0);
 }
 
 static VALUE
-thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always)
+thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always, int pop_p)
 {
     int state, tracing = th->tracing, running = tracing & ev;
     volatile int raised;
@@ -4601,6 +4592,9 @@ thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALU
 
     th->tracing = tracing;
     if (state) {
+	if (pop_p) {
+	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+	}
 	JUMP_TAG(state);
     }
     th->state = outer_state;

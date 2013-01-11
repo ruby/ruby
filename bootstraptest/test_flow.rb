@@ -562,3 +562,17 @@ assert_equal %Q{ENSURE\n}, %q{
   assert_equal "false", src + %q{e.all? {false}}, bug
   assert_equal "true", src + %q{e.include?(:foo)}, bug
 end
+
+assert_equal('ok', %q{
+  class FOO < RuntimeError; end
+  class BAR < RuntimeError; end
+  def m
+    raise FOO
+  end
+  set_trace_func(proc{|t,| raise BAR if t == 'return'})
+  begin
+    m
+  rescue BAR
+    'ok'
+  end
+}, '[ruby-core:51128] [ruby-trunk - Bug #7624]')

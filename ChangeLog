@@ -1,3 +1,19 @@
+Fri Jan 11 16:57:31 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): added a parameter to pop
+	  a frame before JUMP_TAG() if exception occurred. This change fix bug
+	  of Ruby 1.9. [ruby-core:51128] [ruby-trunk - Bug #7624]
+
+	* vm_core.h (EXEC_EVENT_HOOK_AND_POP_FRAME): add to use
+	  `rb_threadptr_exec_event_hooks()' with the pop flag.
+
+	* vm.c (vm_exec): use EXEC_EVENT_HOOK_AND_POP_FRAME() while exception
+	  handling. While exception hadnling, if an exception is raised in
+	  hooks, need to pop current frame and raise this raised exception by
+	  hook.
+
+	* bootstraptest/test_flow.rb: add a test.
+
 Mon Jan  7 15:50:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_make_proc): save the proc made from the given block so

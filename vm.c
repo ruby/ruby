@@ -1424,10 +1424,10 @@ vm_exec(rb_thread_t *th)
 
 	    switch (VM_FRAME_TYPE(th->cfp)) {
 	      case VM_FRAME_MAGIC_METHOD:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0);
 		break;
 	      case VM_FRAME_MAGIC_CLASS:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_END, th->cfp->self, 0, 0);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_END, th->cfp->self, 0, 0);
 		break;
 	    }
 
