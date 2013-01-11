@@ -1,3 +1,7 @@
+Sat Jan 12 02:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* man/ruby.1 (options): include --*-encoding from r38784
+
 Fri Jan 11 23:34:48 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ruby.c (usage): sort --*-encoding in help. (same order of -E)
