@@ -178,7 +178,7 @@ def exec_test(pathes)
         $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
       end
     end
-    $stderr.puts unless @quiet
+    $stderr.puts unless @quiet and @tty
   end
   if @error == 0
     if @count == 0
