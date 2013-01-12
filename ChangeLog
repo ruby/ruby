@@ -1,3 +1,9 @@
+Sat Jan 12 17:42:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* numeric.c (do_coerce): fix for the exceptions which the coerce
+	  method raises.  The optimization done by r38756 is preserved.
+	  [Bug #7645] [ruby-core:51213]
+
 Sat Jan 12 16:12:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/setup.mak (-runtime-): see msvcrt from link header on mswin
