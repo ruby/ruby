@@ -77,10 +77,10 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 -system-vars64-: -osname64- -runtime-
 
 -osname32-: nul
-	@echo TARGET_OS = mswin32 >>$(MAKEFILE)
+	@echo TARGET_OS = mswin32>>$(MAKEFILE)
 
 -osname64-: nul
-	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
+	@echo TARGET_OS = mswin64>>$(MAKEFILE)
 
 -osname-: nul
 	@echo !ifndef TARGET_OS>>$(MAKEFILE)
@@ -93,69 +93,12 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
 -runtime-: nul
-	@$(CC) -MD <<rtname.c user32.lib -link > nul
-#include <windows.h>
-#include <memory.h>
-#include <string.h>
-#include <stddef.h>
+	@$(CC) -MD <<conftest.c user32.lib -link > nul
 #include <stdio.h>
-#include <stdlib.h>
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
-int
-runtime_name()
-{
-    char libpath[MAXPATHLEN+1];
-    char *p, *base = NULL, *ver = NULL;
-    HMODULE msvcrt = NULL;
-    MEMORY_BASIC_INFORMATION m;
-
-    memset(&m, 0, sizeof(m));
-    if (VirtualQuery(stdin, &m, sizeof(m)) && m.State == MEM_COMMIT)
-	msvcrt = (HMODULE)m.AllocationBase;
-    GetModuleFileName(msvcrt, libpath, sizeof libpath);
-
-    libpath[sizeof(libpath) - 1] = '\0';
-    for (p = libpath; *p; p = CharNext(p)) {
-	if (*p == '\\') {
-	    base = ++p;
-	}
-    }
-    if (!base) return 0;
-    if (p = strchr(base, '.')) *p = '\0';
-    for (p = base; *p; p = CharNext(p)) {
-	if (!isascii(*p)) continue;
-	if (isupper(*p)) {
-	    *p = tolower(*p);
-	}
-	if (!isdigit(*p)) {
-	    ver = NULL;
-	} else if (!ver) {
-	    ver = p;
-	}
-    }
-    if (ver) {
-	printf("PLATFORM = $$(TARGET_OS)_%s\n", ver);
-    }
-    else {
-	printf("PLATFORM = $$(TARGET_OS)\n");
-	ver = "60";
-    }
-    printf("RT = %s\n", base);
-    printf("RT_VER = %s\n", ver);
-    return 1;
-}
-
-int main(int argc, char **argv)
-{
-    if (!runtime_name()) return EXIT_FAILURE;
-    return EXIT_SUCCESS;
-}
+int main(void) {FILE *volatile f = stdin; return 0;}
 <<
-	@.\rtname >>$(MAKEFILE)
-	@for %I in (rtname.*) do @del %I
+	@$(WIN32DIR:/=\)\rtname conftest.exe >>$(MAKEFILE)
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
 -version-: nul
 	@$(APPEND)

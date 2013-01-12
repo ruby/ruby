@@ -1,3 +1,8 @@
+Sat Jan 12 16:12:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/setup.mak (-runtime-): see msvcrt from link header on mswin
+	  instead of running testing executable file, for cross compiling.
+
 Sat Jan 12 08:58:47 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: merge key values that
