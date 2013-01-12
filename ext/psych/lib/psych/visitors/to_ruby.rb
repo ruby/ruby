@@ -263,26 +263,40 @@ module Psych
       def revive_hash hash, o
         @st[o.anchor] = hash if o.anchor
 
-          o.children.each_slice(2) { |k,v|
+        o.children.each_slice(2) { |k,v|
           key = accept(k)
+          val = accept(v)
 
           if key == '<<'
             case v
             when Nodes::Alias
-              hash.merge! accept(v)
+              begin
+                hash.merge! val
+              rescue TypeError
+                hash[key] = val
+              end
             when Nodes::Sequence
-              accept(v).reverse_each do |value|
-                hash.merge! value
+              begin
+                h = {}
+                val.reverse_each do |value|
+                  h.merge! value
+                end
+                hash.merge! h
+              rescue TypeError
+                hash[key] = val
               end
             else
-              hash[key] = accept(v)
+              hash[key] = val
             end
           else
-            hash[key] = accept(v)
+            hash[key] = val
           end
 
         }
         hash
+      end
+
+      def merge_key hash, key, val
       end
 
       def revive klass, node

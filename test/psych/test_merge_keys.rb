@@ -2,6 +2,57 @@ require 'psych/helper'
 
 module Psych
   class TestMergeKeys < TestCase
+    def test_merge_nil
+      yaml = <<-eoyml
+defaults: &defaults
+development:
+  <<: *defaults
+      eoyml
+      assert_equal({'<<' => nil }, Psych.load(yaml)['development'])
+    end
+
+    def test_merge_array
+      yaml = <<-eoyml
+foo: &hello
+- 1
+baz:
+  <<: *hello
+      eoyml
+      assert_equal({'<<' => [1]}, Psych.load(yaml)['baz'])
+    end
+
+    def test_merge_is_not_partial
+      yaml = <<-eoyml
+default: &default
+  hello: world
+foo: &hello
+- 1
+baz:
+  <<: [*hello, *default]
+      eoyml
+      doc = Psych.load yaml
+      refute doc['baz'].key? 'hello'
+      assert_equal({'<<' => [[1], {"hello"=>"world"}]}, Psych.load(yaml)['baz'])
+    end
+
+    def test_merge_seq_nil
+      yaml = <<-eoyml
+foo: &hello
+baz:
+  <<: [*hello]
+      eoyml
+      assert_equal({'<<' => [nil]}, Psych.load(yaml)['baz'])
+    end
+
+    def test_bad_seq_merge
+      yaml = <<-eoyml
+defaults: &defaults [1, 2, 3]
+development:
+  <<: *defaults
+      eoyml
+      assert_equal({'<<' => [1,2,3]}, Psych.load(yaml)['development'])
+    end
+
     def test_missing_merge_key
       yaml = <<-eoyml
 bar:
