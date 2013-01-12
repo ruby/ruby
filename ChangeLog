@@ -9,7 +9,7 @@ Sat Jan 12 07:52:47 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_set_byref): support VT_UI8|VT_BYREF,
 	  VT_I8|VT_BYREF in cygwin and mingw.
-	  
+
 	* ext/win32ole/win32ole.c (ole_variant2val): ditto.
 
 	* test/win32ole/test_win32ole_variant.rb (test_s_new_with_i8_byref):

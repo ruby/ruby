@@ -1817,12 +1817,12 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
             break;
 
 #if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_I8REF            
+#ifdef V_I8REF
         case VT_I8:
             V_I8REF(var) = &V_I8(realvar);
             break;
 #endif
-#ifdef V_UI8REF            
+#ifdef V_UI8REF
         case VT_UI8:
             V_UI8REF(var) = &V_UI8(realvar);
             break;
