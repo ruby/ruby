@@ -1,3 +1,8 @@
+Sun Jan 13 16:45:00 2013  Zachary Scott <zachary@zacharyscott.net>
+
+	* ext/psych/yaml/scanner.c: Fix typos, patch by James Dabbs
+	  [Github tenderlove/psych#118]
+
 Sun Jan 13 15:00:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_sub):
