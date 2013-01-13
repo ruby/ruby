@@ -4,6 +4,9 @@ Sun Jan 13 14:48:55 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 	  eigenvectors. Patch by pypypy567.
 	  [Bug #7208] [ruby-dev:46251] [rubyspec:242f8e55bd]
 
+    * lib/matrix/lup_decomposition.rb: Fix error for rectangular matrices
+      [bug#7620] [ruby-core:51118] [rubyspec:41f833ee2]
+
 Sun Jan 13 14:06:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb.rb, lib/prime.rb: Typos in overview
