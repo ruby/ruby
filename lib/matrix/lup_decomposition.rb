@@ -77,7 +77,7 @@ class Matrix
 
     def det
       if (@row_count != @column_count)
-        Matrix.Raise Matrix::ErrDimensionMismatch unless square?
+        Matrix.Raise Matrix::ErrDimensionMismatch
       end
       d = @pivot_sign
       @column_count.times do |j|
