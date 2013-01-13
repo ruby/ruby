@@ -1,3 +1,8 @@
+Sun Jan 13 13:40:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/open3.rb : Typo in Open3 overview. Patch by zed_0xff
+	  [Github Fixes #233]
+
 Sat Jan 12 17:42:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* numeric.c (do_coerce): fix for the exceptions which the coerce
