@@ -1,3 +1,8 @@
+Mon Jan 14 06:46:53 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (add_ctype_to_cc): don't check dup warn on adding
+	  negative ctype to cclass. [Bug #7471] [ruby-core:50344]
+
 Mon Jan 14 06:06:03 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix/eigenvalue_decomposition: Backport bugfix of Jama 1.0.3

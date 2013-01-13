@@ -906,6 +906,11 @@ class TestRegexp < Test::Unit::TestCase
     assert_warning(/duplicated/) { Regexp.new('[\u1000-\u2000\u3042-\u3046\u3044]') }
     assert_warning(/duplicated/) { Regexp.new('[\u3044\u3041-\u3047]') }
     assert_warning(/duplicated/) { Regexp.new('[\u3042\u3044\u3046\u3041-\u3047]') }
+
+    bug7471 = '[ruby-core:50344]'
+    EnvUtil.verbose_warning do
+      assert_warning(/\A\z/, bug7471) { Regexp.new('[\D]') =~ "\u3042" }
+    end
   end
 
   def test_property_warn

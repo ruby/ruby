@@ -4127,7 +4127,7 @@ add_ctype_to_cc(CClassNode* cc, int ctype, int not, int char_prop, ScanEnv* env)
     r = add_ctype_to_cc_by_range(cc, ctype, not, env, sb_out, ranges);
     if ((r == 0) && ascii_range) {
       if (not != 0) {
-	r = add_code_range_to_buf(&(cc->mbuf), env, 0x80, ONIG_LAST_CODE_POINT);
+	r = add_code_range_to_buf0(&(cc->mbuf), env, 0x80, ONIG_LAST_CODE_POINT, FALSE);
       }
       else {
 	CClassNode ccascii;
