@@ -1,3 +1,19 @@
+Sun Jan 13 15:00:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_sub):
+	  need to specify precision for converting Rational and Float.
+	  [ruby-dev:46544] [Bug #7404]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mult): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divremain): ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for the above fixes.
+
 Sun Jan 13 14:48:55 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix/eigenvalue_decomposition: Fix eigensystem with complex

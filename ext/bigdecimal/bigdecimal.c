@@ -894,7 +894,16 @@ BigDecimal_sub(VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (TYPE(r) == T_FLOAT) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (TYPE(r) == T_RATIONAL) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'-');
     SAVE(b);
 
@@ -1146,7 +1155,16 @@ BigDecimal_mult(VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (TYPE(r) == T_FLOAT) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (TYPE(r) == T_RATIONAL) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'*');
     SAVE(b);
 
@@ -1165,9 +1183,19 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (TYPE(r) == T_FLOAT) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (TYPE(r) == T_RATIONAL) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'/');
     SAVE(b);
+
     *div = b;
     mx = a->Prec + vabs(a->exponent);
     if(mx<b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
@@ -1230,7 +1258,16 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (TYPE(r) == T_FLOAT) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (TYPE(r) == T_RATIONAL) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return Qfalse;
     SAVE(b);
 
@@ -1322,7 +1359,16 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
     Real *f=NULL;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (TYPE(r) == T_FLOAT) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (TYPE(r) == T_RATIONAL) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,rb_intern("remainder"));
     SAVE(b);
 
