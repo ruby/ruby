@@ -198,7 +198,7 @@ enumerator_ptr(VALUE obj)
  *          must not exceed the number expected by +method+
  *
  *  If a block is given, it will be used to calculate the size of
- *  the enumerator (see Enumerator#size=).
+ *  the enumerator (see Enumerator#size).
  *
  * === Example
  *
