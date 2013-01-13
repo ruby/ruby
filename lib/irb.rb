@@ -128,7 +128,7 @@ STDOUT.sync = true
 #
 #     IRB.conf[:PROMPT_MODE] = :MY_PROMPT
 #
-# Contants +PROMPT_I+, +PROMPT_S+ and +PROMPT_C+ specify the format. In the
+# Constants +PROMPT_I+, +PROMPT_S+ and +PROMPT_C+ specify the format. In the
 # prompt specification, some special strings are available:
 #
 #     %N    # command name which is running

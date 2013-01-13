@@ -1,3 +1,8 @@
+Sun Jan 13 14:06:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb.rb, lib/prime.rb: Typos in overview
+	  Patch by Ershad K [Github Fixes #234]
+
 Sun Jan 13 13:40:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/open3.rb : Typo in Open3 overview. Patch by zed_0xff
