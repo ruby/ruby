@@ -659,14 +659,10 @@ class Matrix
               q = @h[k+1][k-1]
               r = (notlast ? @h[k+2][k-1] : 0.0)
               x = p.abs + q.abs + r.abs
-              if (x != 0.0)
-                p /= x
-                q /= x
-                r /= x
-              end
-            end
-            if (x == 0.0)
-              break
+              next if x == 0
+              p /= x
+              q /= x
+              r /= x
             end
             s = Math.sqrt(p * p + q * q + r * r)
             if (p < 0)

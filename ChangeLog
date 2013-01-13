@@ -1,3 +1,8 @@
+Mon Jan 14 06:06:03 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix/eigenvalue_decomposition: Backport bugfix of Jama 1.0.3
+	  [rubyspec:df87040be371]
+
 Sun Jan 13 16:45:00 2013  Zachary Scott <zachary@zacharyscott.net>
 
 	* ext/psych/yaml/scanner.c: Fix typos, patch by James Dabbs
