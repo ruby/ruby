@@ -1,3 +1,8 @@
+Mon Jan 14 07:12:52 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix/lup_decomposition: Fix bugs with LUP Decomposition of
+	  rectangular matrices. [rubyspec:ba849801a85]
+
 Mon Jan 14 06:46:53 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (add_ctype_to_cc): don't check dup warn on adding
