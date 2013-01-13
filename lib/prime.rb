@@ -71,7 +71,7 @@ end
 #
 # A "generator" provides an implementation of enumerating pseudo-prime
 # numbers and it remembers the position of enumeration and upper bound.
-# Futhermore, it is a external iterator of prime enumeration which is
+# Furthermore, it is a external iterator of prime enumeration which is
 # compatible to an Enumerator.
 #
 # +Prime+::+PseudoPrimeGenerator+ is the base class for generators.
