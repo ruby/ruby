@@ -84,14 +84,14 @@ class Matrix
   private
     def build_eigenvectors
       # JAMA stores complex eigenvectors in a strange way
-      # See http://cio.nist.gov/esd/emaildir/lists/jama/msg01021.html
+      # See http://web.archive.org/web/20111016032731/http://cio.nist.gov/esd/emaildir/lists/jama/msg01021.html
       @e.each_with_index.map do |imag, i|
         if imag == 0
           Array.new(@size){|j| @v[j][i]}
         elsif imag > 0
           Array.new(@size){|j| Complex(@v[j][i], @v[j][i+1])}
         else
-          Array.new(@size){|j| Complex(@v[j][i], -@v[j][i-1])}
+          Array.new(@size){|j| Complex(@v[j][i-1], -@v[j][i])}
         end
       end
     end

@@ -1,3 +1,9 @@
+Sun Jan 13 14:48:55 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix/eigenvalue_decomposition: Fix eigensystem with complex
+	  eigenvectors. Patch by pypypy567.
+	  [Bug #7208] [ruby-dev:46251] [rubyspec:242f8e55bd]
+
 Sun Jan 13 14:06:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb.rb, lib/prime.rb: Typos in overview
