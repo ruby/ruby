@@ -1486,7 +1486,7 @@ lazy_flat_map(VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_flat_map_func, 0),
-			   Qnil, lazy_receiver_size);
+			   Qnil, 0);
 }
 
 static VALUE
