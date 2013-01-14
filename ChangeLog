@@ -1,3 +1,8 @@
+Tue Jan 15 08:56:37 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/calling_methods.rdoc:  Added document describing method
+	  calls.
+
 Tue Jan 15 07:39:21 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/top_level.rb:  Fixed extension trimming for page names in

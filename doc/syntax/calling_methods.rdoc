@@ -1,0 +1,148 @@
+= Calling Methods
+
+Calling a method sends a message to an object so it can perform some work.
+
+In ruby you send a message to an object like this:
+
+  my_method()
+
+Note that the parenthesis are optional:
+
+  my_method
+
+Except when there is difference between using and omitting parentheses, this
+document uses parenthesis when arguments are present to avoid confusion.
+
+== Receiver
+
++self+ is the default receiver.  If you don't specify any receiver +self+ will
+be used.  To specify a receiver use <code>.</code>:
+
+  my_object.my_method
+
+This sends the +my_method+ message to +my_object+.  Any object can be a
+receiver but depending on the method's visibility sending a message may raise a
+NoMethodError.
+
+== Positional Arguments
+
+The positional arguments for the message follow the method name:
+
+  my_method(argument1)
+
+Multiple arguments are separated by a <code>,</code>:
+
+  my_method(argument1, argument2)
+
+In many cases parenthesis are not necessary when sending a message:
+
+  my_method argument1, argument2
+
+However, parenthesis are necessary to avoid ambiguity.  This will raise a
+SyntaxError because ruby does not know which method argument3 should be sent
+to:
+
+  method_one argument1, method_two argument2, argument3
+
+== Keyword Arguments
+
+Keyword arguments follow any positional arguments and are separated by commas
+like positional arguments:
+
+  my_method(positional1, keyword1: value1, keyword2: value2)
+
+Any keyword arguments not given will use the default value from the method
+definition.  If a keyword argument is given that the method did not list an
+ArgumentError will be raised.
+
+== Block Argument
+
+The block argument is always last when sending a message to a method.  A block
+is sent to a method using <code>do ... end</code> or <code>{ ... }</code>:
+
+  my_method do
+    # ...
+  end
+
+or:
+
+  my_method {
+    # ...
+  end
+
+<code>do end</code> has lower precedence than <code>{ }</code> so:
+
+  method_1 method_2 {
+    # ...
+  end
+
+Sends the block to +method_2+ while:
+
+  method_1 method_2 do
+    # ...
+  end
+
+Sends the block to +method_1+.  Note that in the first case if parentheses are
+used the block is sent to +method_1+.
+
+A block will accept arguments from the method it was sent to.  Arguments are
+defined similar to the way a method defines arguments.  The block's arguments
+go in <code>| ... |</code> following the opening <code>do</code> or
+<code>{</code>:
+
+  my_method do |argument1, argument2|
+    # ...
+  end
+
+== Array to Arguments Conversion
+
+Given the following method:
+
+  def my_method(argument1, argument2)
+  end
+
+You can turn an Array into an Argument list with <code>*</code> (or splat)
+operator:
+
+  arguments = [1, 2, 3]
+  my_method(*arguments)
+
+or:
+
+  arguments = [2, 3]
+  my_method(1, *arguments)
+
+Both are equivalent to:
+
+  my_method(1, 2, 3)
+
+If the method accepts keyword arguments the splat operator will convert a hash
+at the end of the array into keyword arguments.
+
+If the number of objects in the Array do not match the number of arguments for
+the method an ArgumentError will be raised.
+
+If the splat operator comes first in the call, parentheses must be used to
+avoid a warning.
+
+== Proc to Block Conversion
+
+Given a method that use a block:
+
+  def my_method
+    yield self
+  end
+
+You can convert a proc or lambda to a block argument with the <code>&</code>
+operator:
+
+  argument = proc { |a| puts "#{a.inspect} was yielded" }
+
+  my_method(&argument)
+
+If the splat operator comes first in the call, parenthesis must be used to
+avoid a warning.
+
+Unlike the splat operator described above the <code>&</code> has no commonly
+recognized name.
+
