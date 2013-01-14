@@ -1,3 +1,9 @@
+Tue Jan 15 07:39:21 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/top_level.rb:  Fixed extension trimming for page names in
+	  RDoc HTML output.  [ruby-trunk - Bug #7673]
+	* test/rdoc/test_rdoc_top_level.rb:  Test for above.
+
 Mon Jan 14 23:06:41 2013  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ext/save-history.rb: outputs its history to

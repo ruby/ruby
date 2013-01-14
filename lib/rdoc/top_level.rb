@@ -226,7 +226,7 @@ class RDoc::TopLevel < RDoc::Context
 
   def page_name
     basename = File.basename @relative_name
-    basename =~ /\.[^.]*$/
+    basename =~ /\.(rb|rdoc|txt|md)$/i
 
     $` || basename
   end
