@@ -1,3 +1,9 @@
+Mon Jan 14 23:06:41 2013  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ext/save-history.rb: outputs its history to
+	  owner-only-readable file and change the permission of a file that
+	  already exists [Bug #7694]. Thanks Nobuhiro IMAI for bug reports.
+
 Mon Jan 14 17:12:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_flat_map_func): flat_map should call each only
