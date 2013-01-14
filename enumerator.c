@@ -1678,6 +1678,9 @@ lazy_take_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
 static VALUE
 lazy_take_while(VALUE obj)
 {
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy take_while without a block");
+    }
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_take_while_func, 0),
 			   Qnil, 0);
@@ -1745,6 +1748,9 @@ lazy_drop_while(VALUE obj)
 {
     NODE *memo;
 
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy drop_while without a block");
+    }
     memo = NEW_MEMO(0, 0, FALSE);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_drop_while_func, (VALUE) memo),
