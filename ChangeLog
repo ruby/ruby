@@ -1,3 +1,13 @@
+Mon Jan 14 17:12:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_flat_map_func): flat_map should call each only
+	  when the value of a block returns a forcable object.
+	  [ruby-core:51401] [Bug #7690]
+
+	* enumerator.c (lazy_flat_map): add documentation.
+
+	* test/ruby/test_lazy_enumerator.rb: related test.
+
 Mon Jan 14 16:42:28 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Require block for Lazy#{take|drop}_while [Bug #7692]

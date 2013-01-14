@@ -105,7 +105,7 @@
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
 static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_size;
-static ID id_eqq, id_next, id_result, id_lazy, id_receiver, id_arguments, id_method;
+static ID id_eqq, id_next, id_result, id_lazy, id_receiver, id_arguments, id_method, id_force;
 static VALUE sym_each, sym_cycle;
 
 VALUE rb_eStopIteration;
@@ -1432,26 +1432,23 @@ lazy_flat_map_i(VALUE i, VALUE yielder, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_flat_map_each(VALUE obj)
+lazy_flat_map_each(VALUE obj, VALUE yielder)
 {
-    NODE *memo = RNODE(obj);
-    rb_block_call(memo->u1.value, id_each, 0, 0, lazy_flat_map_i,
-		  memo->u2.value);
+    rb_block_call(obj, id_each, 0, 0, lazy_flat_map_i, yielder);
     return Qnil;
 }
 
 static VALUE
-lazy_flat_map_to_ary(VALUE obj)
+lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
 {
-    NODE *memo = RNODE(obj);
-    VALUE ary = rb_check_array_type(memo->u1.value);
+    VALUE ary = rb_check_array_type(obj);
     if (NIL_P(ary)) {
-	rb_funcall(memo->u2.value, id_yield, 1, memo->u1.value);
+	rb_funcall(yielder, id_yield, 1, obj);
     }
     else {
 	long i;
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(memo->u2.value, id_yield, 1, RARRAY_PTR(ary)[i]);
+	    rb_funcall(yielder, id_yield, 1, RARRAY_PTR(ary)[i]);
 	}
     }
     return Qnil;
@@ -1468,15 +1465,38 @@ lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 	}
     }
     else {
-	NODE *memo;
-	memo = NEW_MEMO(result, argv[0], 0);
-	rb_rescue2(lazy_flat_map_each, (VALUE) memo,
-		   lazy_flat_map_to_ary, (VALUE) memo,
-		   rb_eNoMethodError, (VALUE)0);
+	if (rb_respond_to(result, id_force) && rb_respond_to(result, id_each)) {
+	    lazy_flat_map_each(result, argv[0]);
+	}
+	else {
+	    lazy_flat_map_to_ary(result, argv[0]);
+	}
     }
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     lazy.flat_map       { |obj| block } -> a_lazy_enumerator
+ *
+ *  Returns a new lazy enumerator with the concatenated results of running
+ *  <i>block</i> once for every element in <i>lazy</i>.
+ *
+ *    ["foo", "bar"].lazy.flat_map {|i| i.each_char.lazy}.force
+ *    #=> ["f", "o", "o", "b", "a", "r"]
+ *
+ *  A value <i>x</i> returned by <i>block</i> is decomposed if either of
+ *  the following conditions is true:
+ *
+ *    a) <i>x</i> responds to both each and force, which means that
+ *       <i>x</i> is a lazy enumerator.
+ *    b) <i>x</i> is an array or responds to to_ary.
+ *
+ *  Otherwise, <i>x</i> is contained as-is in the return value.
+ *
+ *    [{a:1}, {b:2}].lazy.flat_map {|i| i}.force
+ *    #=> [{:a=>1}, {:b=>2}]
+ */
 static VALUE
 lazy_flat_map(VALUE obj)
 {
@@ -1936,6 +1956,7 @@ Init_Enumerator(void)
     id_receiver = rb_intern("receiver");
     id_arguments = rb_intern("arguments");
     id_method = rb_intern("method");
+    id_force = rb_intern("force");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
 
