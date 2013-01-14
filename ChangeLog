@@ -1,3 +1,7 @@
+Mon Jan 14 14:41:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_s): use CRuby style.
+
 Mon Jan 14 14:39:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: use `RB_TYPE_P(x, t)` instead of

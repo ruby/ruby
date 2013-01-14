@@ -1840,8 +1840,8 @@ static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
-    int   fmt=0;   /* 0:E format */
-    int   fPlus=0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
+    int   fmt = 0;   /* 0:E format */
+    int   fPlus = 0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
     Real  *vp;
     volatile VALUE str;
     char  *psz;
@@ -1851,42 +1851,53 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 
     GUARD_OBJ(vp,GetVpValue(self,1));
 
-    if(rb_scan_args(argc,argv,"01",&f)==1) {
+    if (rb_scan_args(argc,argv,"01",&f)==1) {
 	if (RB_TYPE_P(f, T_STRING)) {
-            SafeStringValue(f);
-            psz = RSTRING_PTR(f);
-            if(*psz==' ') {
-                fPlus = 1; psz++;
-            } else if(*psz=='+') {
-                fPlus = 2; psz++;
-            }
-            while((ch=*psz++)!=0) {
-                if(ISSPACE(ch)) continue;
-                if(!ISDIGIT(ch)) {
-                    if(ch=='F' || ch=='f') fmt = 1; /* F format */
-                    break;
-                }
-                mc = mc * 10 + ch - '0';
-            }
-        }
+	    SafeStringValue(f);
+	    psz = RSTRING_PTR(f);
+	    if (*psz == ' ') {
+		fPlus = 1;
+		psz++;
+	    }
+	    else if (*psz == '+') {
+		fPlus = 2;
+		psz++;
+	    }
+	    while ((ch = *psz++) != 0) {
+		if (ISSPACE(ch)) {
+		    continue;
+		}
+		if (!ISDIGIT(ch)) {
+		    if (ch == 'F' || ch == 'f') {
+			fmt = 1; /* F format */
+		    }
+		    break;
+		}
+		mc = mc * 10 + ch - '0';
+	    }
+	}
 	else {
-            mc = (size_t)GetPositiveInt(f);
-        }
+	    mc = (size_t)GetPositiveInt(f);
+	}
     }
-    if(fmt) {
-        nc = VpNumOfChars(vp,"F");
-    } else {
-        nc = VpNumOfChars(vp,"E");
+    if (fmt) {
+	nc = VpNumOfChars(vp, "F");
     }
-    if(mc>0) nc += (nc + mc - 1) / mc + 1;
+    else {
+	nc = VpNumOfChars(vp, "E");
+    }
+    if (mc > 0) {
+	nc += (nc + mc - 1) / mc + 1;
+    }
 
     str = rb_str_new(0, nc);
     psz = RSTRING_PTR(str);
 
-    if(fmt) {
-        VpToFString(vp, psz, mc, fPlus);
-    } else {
-        VpToString (vp, psz, mc, fPlus);
+    if (fmt) {
+	VpToFString(vp, psz, mc, fPlus);
+    }
+    else {
+	VpToString (vp, psz, mc, fPlus);
     }
     rb_str_resize(str, strlen(psz));
     return str;
