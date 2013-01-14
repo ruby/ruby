@@ -1,3 +1,8 @@
+Mon Jan 14 14:39:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: use `RB_TYPE_P(x, t)` instead of
+	  `TYPE(x) == t`.
+
 Mon Jan 14 10:18:56 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Fix size for Enumerator::Lazy#flat_map
