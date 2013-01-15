@@ -7,6 +7,7 @@ $failed = 0
 class Progress
   def initialize
     @color = nil
+    @tty = nil
     @quiet = nil
     @verbose = nil
     ARGV.each do |arg|
@@ -14,13 +15,17 @@ class Progress
       when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
         warn "unknown --color argument: #$3" if $3
         @color = $1 ? nil : !$2
+      when /\A--tty(=(?:yes|(no)|(.*)))?\z/
+        warn "unknown --tty argument: #$3" if $3
+        @tty = !$1 || !$2
+        true
       when /\A-(q|-quiet)\z/
         @quiet = true
       when /\A-(v|-verbose)\z/
         @verbose = true
       end
     end
-    @tty = STDERR.tty? && !STDOUT.tty? && /dumb/ !~ ENV["TERM"]
+    @tty = STDERR.tty? && !STDOUT.tty? && /dumb/ !~ ENV["TERM"] if @tty.nil?
     @eol = @tty && !@verbose ? "\r\e[K\r" : "\n"
     case @color
     when nil

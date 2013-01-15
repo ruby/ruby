@@ -129,6 +129,12 @@ module Test
                 "colorize the output.  WHEN defaults to 'always'", "or can be 'never' or 'auto'." do |c|
           options[:color] = c || :always
         end
+
+        opts.on '--tty[=WHEN]',
+                [:yes, :no],
+                "force to output tty control.  WHEN defaults to 'yes'", "or can be 'no'." do |c|
+          @tty = c != :no
+        end
       end
 
       def non_options(files, options)

@@ -62,6 +62,7 @@ def main
   @verbose = false
   $stress = false
   @color = nil
+  @tty = nil
   @quiet = false
   dir = nil
   quiet = false
@@ -86,6 +87,10 @@ def main
     when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
       warn "unknown --color argument: #$3" if $3
       @color = $1 ? nil : !$2
+      true
+    when /\A--tty(=(?:yes|(no)|(.*)))?\z/
+      warn "unknown --tty argument: #$3" if $3
+      @tty = !$1 || !$2
       true
     when /\A(-q|--q(uiet))\z/
       quiet = true
@@ -123,7 +128,7 @@ End
 
   @progress = %w[- \\ | /]
   @progress_bs = "\b" * @progress[0].size
-  @tty = $stderr.tty?
+  @tty = $stderr.tty? if @tty.nil?
   case @color
   when nil
     @color = @tty && /dumb/ !~ ENV["TERM"]
