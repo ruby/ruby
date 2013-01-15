@@ -11,6 +11,9 @@ A method definition consists of the +def+ keyword, a method name, the body of
 the method, then the +end+ keyword.  When called the method will execute the
 body of the method.  This method returns +2+.
 
+This section only covers defining methods.  See also the {syntax documentation
+on calling methods}[rdoc-ref:syntax/calling_methods.rdoc].
+
 == Method Names
 
 Method names may be one of the operators or must start a letter or a character
@@ -69,7 +72,7 @@ operators.
 <code>>=</code>  :: greater-than or equal
 
 To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
-operator with an <code>@</code> as in <code>+@</code> or <code>!@<code>:
+operator with an <code>@</code> as in <code>+@</code> or <code>!@</code>:
 
   class C
     def -@

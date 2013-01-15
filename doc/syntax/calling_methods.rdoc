@@ -13,6 +13,9 @@ Note that the parenthesis are optional:
 Except when there is difference between using and omitting parentheses, this
 document uses parenthesis when arguments are present to avoid confusion.
 
+This section only covers calling methods.  See also the {syntax documentation
+on defining methods}[rdoc-ref:syntax/methods.rdoc].
+
 == Receiver
 
 +self+ is the default receiver.  If you don't specify any receiver +self+ will
