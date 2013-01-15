@@ -1349,10 +1349,9 @@ rb_mod_to_s(VALUE klass)
     VALUE refined_class, defined_at;
 
     if (FL_TEST(klass, FL_SINGLETON)) {
-	VALUE s = rb_usascii_str_new2("#<");
+	VALUE s = rb_usascii_str_new2("#<Class:");
 	VALUE v = rb_iv_get(klass, "__attached__");
 
-	rb_str_cat2(s, "Class:");
 	switch (TYPE(v)) {
 	  case T_CLASS: case T_MODULE:
 	    rb_str_append(s, rb_inspect(v));
