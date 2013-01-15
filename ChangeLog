@@ -1,3 +1,9 @@
+Tue Jan 15 09:22:47 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (gvl_init): Reset gvl.wait_yield explicitly when
+	  fork()ing. Patch by Apollon Oikonomopoulos. Thanks!
+	  [Bug #7693][ruby-core:51424]
+
 Tue Jan 15 09:27:56 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/calling_methods.rdoc (Receiver):  Added :: as pointed out
