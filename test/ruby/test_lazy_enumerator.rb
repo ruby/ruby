@@ -370,7 +370,7 @@ EOS
   end
 
   def test_require_block
-    %i[select reject drop_while take_while].each do |method|
+    %i[select reject drop_while take_while map flat_map].each do |method|
       assert_raise(ArgumentError){ [].lazy.send(method) }
     end
   end

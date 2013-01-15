@@ -1,3 +1,7 @@
+Tue Jan 15 10:40:18 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* test_lazy_enumerator: Test that map & flat_map also require a block
+
 Tue Jan 15 09:22:47 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_init): Reset gvl.wait_yield explicitly when
