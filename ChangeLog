@@ -1,3 +1,9 @@
+Wed Jan 16 03:15:00 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Fixed link
+	* doc/syntax/modules_and_classes.rdoc:  Fixed link
+	* doc/syntax.rdoc:  Updated with links to the recently added pages
+
 Wed Jan 16 03:05:50 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc (redo Statement):  Added note

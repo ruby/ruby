@@ -346,5 +346,5 @@ May be written as:
 
 If you wish to rescue an exception for only part of your method use +begin+ and
 +end+.  For more details see the page on {Exception
-Handling}[rdoc-ref:doc/syntax/exceptions.rdoc].
+Handling}[rdoc-ref:syntax/exceptions.rdoc].
 
