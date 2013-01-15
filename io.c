@@ -5663,7 +5663,9 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 # endif
 # if !defined(HAVE_FORK)
     char **args = NULL;
+#   if defined(HAVE_SPAWNVE)
     char **envp = NULL;
+#   endif
 # endif
 #endif
 #if !defined(HAVE_FORK)
@@ -5731,7 +5733,9 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
+#   if defined(HAVE_SPAWNVE)
 	if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
+#   endif
 	while ((pid = DO_SPAWN(cmd, args, envp)) == -1) {
 	    /* exec failed */
 	    switch (e = errno) {
