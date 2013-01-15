@@ -24,6 +24,9 @@ This sends the +my_method+ message to +my_object+.  Any object can be a
 receiver but depending on the method's visibility sending a message may raise a
 NoMethodError.
 
+You may also use <code>::</code> to designate a receiver, but this is rarely
+used due to the potential for confusion with <code>::</code> for namespaces.
+
 == Positional Arguments
 
 The positional arguments for the message follow the method name:
@@ -68,13 +71,13 @@ or:
 
   my_method {
     # ...
-  end
+  }
 
 <code>do end</code> has lower precedence than <code>{ }</code> so:
 
   method_1 method_2 {
     # ...
-  end
+  }
 
 Sends the block to +method_2+ while:
 

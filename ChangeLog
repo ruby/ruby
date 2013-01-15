@@ -1,3 +1,10 @@
+Tue Jan 15 09:27:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/calling_methods.rdoc (Receiver):  Added :: as pointed out
+	  by Tony Arcieri
+	* doc/syntax/calling_methods.rdoc (Block Argument):  Fixed { } block
+	  examples as pointed out by David Copeland.
+
 Tue Jan 15 09:10:29 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/methods.rdoc (Array/Hash Argument):  Moved above Keyword
