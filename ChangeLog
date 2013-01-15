@@ -1,3 +1,8 @@
+Tue Jan 15 15:55:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc:  Added description of control
+	  expressions in ruby.
+
 Tue Jan 15 13:33:00 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/methods.rdoc (Method Names):  Added method names including
