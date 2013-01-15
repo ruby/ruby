@@ -1,3 +1,8 @@
+Tue Jan 15 23:12:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/vpath.rb (VPath#list): default separator to PATH_SEPARATOR from
+	  configure.in for make, not same name constant of File for use in ruby.
+
 Tue Jan 15 22:30:04 2013  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ext/save-history.rb: identify rightly a status of a

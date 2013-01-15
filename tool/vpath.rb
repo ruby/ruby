@@ -6,7 +6,7 @@ class VPath
   def initialize(*list)
     @list = list
     @additional = []
-    @separator = File::PATH_SEPARATOR
+    @separator = nil
   end
 
   def inspect
@@ -65,6 +65,7 @@ class VPath
   end
 
   def list
+    @separator ||= (require 'rbconfig'; RbConfig::CONFIG["PATH_SEPARATOR"])
     @additional.reject! do |dirs|
       case dirs
       when String
