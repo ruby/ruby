@@ -39,6 +39,10 @@ static ID id_eq, id_eql, id_match, id_inspect;
 static ID id_init_copy, id_init_clone, id_init_dup;
 static ID id_const_missing;
 
+#define CLASS_OR_MODULE_P(obj) \
+    (!SPECIAL_CONST_P(obj) && \
+     (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
+
 /*
  *  call-seq:
  *     obj === other   -> true or false
@@ -1352,13 +1356,11 @@ rb_mod_to_s(VALUE klass)
 	VALUE s = rb_usascii_str_new2("#<Class:");
 	VALUE v = rb_iv_get(klass, "__attached__");
 
-	switch (TYPE(v)) {
-	  case T_CLASS: case T_MODULE:
+	if (CLASS_OR_MODULE_P(v)) {
 	    rb_str_append(s, rb_inspect(v));
-	    break;
-	  default:
+	}
+	else {
 	    rb_str_append(s, rb_any_to_s(v));
-	    break;
 	}
 	rb_str_cat2(s, ">");
 
@@ -1429,11 +1431,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
     VALUE start = mod;
 
     if (mod == arg) return Qtrue;
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
     while (mod) {
@@ -1484,11 +1482,7 @@ rb_mod_lt(VALUE mod, VALUE arg)
 static VALUE
 rb_mod_ge(VALUE mod, VALUE arg)
 {
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
@@ -1530,11 +1524,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
     VALUE cmp;
 
     if (mod == arg) return INT2FIX(0);
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg)) {
 	return Qnil;
     }
 
