@@ -1,3 +1,12 @@
+Tue Jan 15 16:25:35 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (rb_objspace_call_finalizer): finalize_deferred may free up
+	  a object which is reachable from a part after this function,
+	  e.g. ruby_vm_destruct(). [ruby-dev:46647] [Bug #7452]
+
+	* test/ruby/test_gc.rb (test_finalizing_main_thread): add a test
+	  for above.
+
 Tue Jan 15 16:23:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
