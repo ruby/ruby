@@ -95,7 +95,7 @@ module IRB
 
 	# Change the permission of a file that already exists[BUG #7694]
 	begin
-	  if File.stat(history_file).mode & 066
+	  if File.stat(history_file).mode & 066 != 0
 	    File.chmod(0600, history_file)
 	  end
 	rescue Errno::ENOENT

@@ -1,3 +1,9 @@
+Tue Jan 15 22:30:04 2013  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ext/save-history.rb: identify rightly a status of a
+	  history file that already exists [Bug #7694]. Thanks Nobuhiro IMAI
+	  for this patch.
+
 Tue Jan 15 15:55:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc:  Added description of control
