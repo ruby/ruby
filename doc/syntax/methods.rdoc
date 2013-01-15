@@ -11,7 +11,79 @@ A method definition consists of the +def+ keyword, a method name, the body of
 the method, then the +end+ keyword.  When called the method will execute the
 body of the method.  This method returns +2+.
 
-== Return values
+== Method Names
+
+Method names may be one of the operators or must start a letter or a character
+with the eight bit set.  Typically method names are US-ASCII compatible since
+the keys to type them exist on all keyboards.
+
+(Ruby programs must be written in a US-ASCII-compatible character set.  In
+such character sets if the eight bit is set it indicates an extended
+character.  Ruby allows method names and other identifiers to contain such
+characters.)
+
+Method names may contain letters, numbers, an <code>_</code> (underscore or
+low line) or a character with the eight bit set.
+
+Method names may end with a <code>!</code> (bang or exclamation mark), a
+<code>?</code> (question mark) or <code>=</code> equals sign.
+
+In the ruby core library when a method ends with a bang it indicates there is
+a non-bang method that has does not modify the receiver.  This is typically
+true for the standard library but does not hold true for other ruby libraries.
+
+Methods that end with a question mark do not always return just +true+ or
++false+.  Often they will may return an object to indicate a true value (or
+"truthy" value).
+
+Methods that end with an equals sign indicate an assignment method.  For
+assignment methods the return value is ignored, the arguments are returned
+instead.
+
+These are method names for the various ruby operators.  Each of these
+operators accept only one argument.  Following the operator is the typical
+use or name of the operator.  Creating an alternate meaning for the operator
+may lead to confusion as the user expects plus to add things, minus to
+subtract things, etc.  Additionally, you cannot alter the precedence of the
+operators.
+
+<code>+</code>   :: add
+<code>-</code>   :: subtract
+<code>*</code>   :: multiply
+<code>**</code>  :: power
+<code>/</code>   :: divide
+<code>%</code>   :: modulus division, String#%
+<code>&</code>   :: AND
+<code>^</code>   :: XOR (exclusive OR)
+<code>>></code>  :: right-shift
+<code><<</code>  :: left-shift, append
+<code>==</code>  :: equal
+<code>!=</code>  :: not equal
+<code>===</code> :: case equality.  See Object#===
+<code>=~</code>  :: pattern match.  (Not just for regular expressions)
+<code>!~</code>  :: does not match
+<code><=></code> :: comparison aka spaceship operator.  See Comparable
+<code><</code>   :: less-than
+<code><=</code>  :: less-than or equal
+<code>></code>   :: greater-than
+<code>>=</code>  :: greater-than or equal
+
+To define unary methods minus, plus, tilde and not (<code>!</code>) follow the
+operator with an <code>@</code> as in <code>+@</code> or <code>!@<code>:
+
+  class C
+    def -@
+      puts "you inverted this object"
+    end
+  end
+
+  obj = C.new
+
+  -obj # prints "you inverted this object"
+
+Unary methods accept zero arguments.
+
+== Return Values
 
 By default, a method returns the last expression that was evaluated in the body
 of the method.  In the example above, the last (and only) expression evaluated
@@ -29,6 +101,15 @@ evaluated.
     return 2 + 2
     1 + 1  # this expression is never evaluated
   end
+
+Note that for assignment methods the return value will always be ignored.
+Instead the argument will be returned:
+
+  def a=(value)
+    return 1 + value
+  end
+
+  p(a = 5) # prints 5
 
 == Scope
 
