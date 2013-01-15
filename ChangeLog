@@ -1,3 +1,17 @@
+Tue Jan 15 10:54:59 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/calling_methods.rdoc (Arguments):  Added improved
+	  introduction to arguments including passing style and lazy
+	  evaluation.  Thanks to Matt Aimonetti.
+	* doc/syntax/calling_methods.rdoc (Positional Arguments):  Added
+	  description for sending a message to a method with *arguments
+	* doc/syntax/calling_methods.rdoc (Default Positional Arguments):
+	  Added description.  Thanks to Andy Lindeman.
+	* doc/syntax/calling_methods.rdoc (Block Local Arguments):
+	  Added description of block locals.  Thanks to Justin Collins.
+	* doc/syntax/calling_methods.rdoc (Hash to Keyword Arguments):  Added
+	  section describing ** operator.  Thanks  to Justin Collins.
+
 Tue Jan 15 10:40:18 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* test_lazy_enumerator: Test that map & flat_map also require a block
