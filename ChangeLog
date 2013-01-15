@@ -1,3 +1,9 @@
+Tue Jan 15 16:03:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb: use configured libdir value to fix
+	  --enable-load-relative on systems where libdir is not default value,
+	  overridden in config.site files.  [ruby-core:47267] [Bug #6903]
+
 Tue Jan 15 15:55:09 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (Init_Object):  Added RDoc location pointers for
