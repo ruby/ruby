@@ -1,3 +1,10 @@
+Tue Jan 15 09:10:29 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc (Array/Hash Argument):  Moved above Keyword
+	  Arguments
+	* doc/syntax/methods.rdoc (Keyword Arguments):  Described ** for
+	  gathering arbitrary keyword arguments.
+
 Tue Jan 15 08:56:37 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/calling_methods.rdoc:  Added document describing method

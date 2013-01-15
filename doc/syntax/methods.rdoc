@@ -153,25 +153,10 @@ This will raise a SyntaxError:
     a + b + c
   end
 
-=== Keyword Arguments
-
-Keyword arguments are similar to positional arguments with default values:
-
-  def add_values(first: 1, second: 2)
-    first + second
-  end
-
-When calling a method with keyword arguments the arguments may appear in any
-order.  If an unknown keyword argument is sent by the caller an ArgumentError
-is raised.
-
-When mixing keyword arguments and positional arguments, all positional
-arguments must appear before any keyword arguments.
-
 === Array/Hash Argument
 
-Prefixing an argument with "*" causes any remaining arguments to be converted
-to an Array:
+Prefixing an argument with <code>*</code> causes any remaining arguments to be
+converted to an Array:
 
   def gather_arguments(*arguments)
     p arguments
@@ -195,6 +180,35 @@ However, this only occurs if the method does not declare any keyword arguments.
 
   gather_arguments_keyword 1, 2, three: 3
   #=> raises: unknown keyword: three (ArgumentError)
+
+Also, note that a bare <code>*</code> can be used to ignore arguments:
+
+  def ignore_arguments(*)
+  end
+
+=== Keyword Arguments
+
+Keyword arguments are similar to positional arguments with default values:
+
+  def add_values(first: 1, second: 2)
+    first + second
+  end
+
+Arbitrary keyword arguments will be accepted with <code>**</code>:
+
+  def gather_arguments(first: nil, **rest)
+    p first, rest
+  end
+
+  gather_arguments first: 1, second: 2, third: 3
+  # prints 1 then {:second=>2, :third=>3}
+
+When calling a method with keyword arguments the arguments may appear in any
+order.  If an unknown keyword argument is sent by the caller an ArgumentError
+is raised.
+
+When mixing keyword arguments and positional arguments, all positional
+arguments must appear before any keyword arguments.
 
 == Exception Handling
 
