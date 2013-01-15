@@ -1,3 +1,4 @@
+# coding: utf-8
 require "test/unit"
 require "net/protocol"
 require "stringio"
