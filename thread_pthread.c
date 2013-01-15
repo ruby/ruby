@@ -140,6 +140,7 @@ gvl_init(rb_vm_t *vm)
     vm->gvl.acquired = 0;
     vm->gvl.waiting = 0;
     vm->gvl.need_yield = 0;
+    vm->gvl.wait_yield = 0;
 }
 
 static void
