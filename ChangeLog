@@ -1,3 +1,9 @@
+Wed Jan 16 03:05:50 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc (redo Statement):  Added note
+	  about retry.
+	* doc/syntax/exceptions.rdoc:  Added retry statement
+
 Tue Jan 15 23:12:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/vpath.rb (VPath#list): default separator to PATH_SEPARATOR from
