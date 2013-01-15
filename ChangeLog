@@ -1,3 +1,9 @@
+Wed Jan 16 03:54:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc:  Omit optional "then" for if and
+	  unless expressions.  Improved description of "a if a = 0.zero?"
+	  NameError.  Note that "do" for for loop is optional.
+
 Wed Jan 16 03:28:47 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/calling_methods.rdoc:  Link to defining methods.

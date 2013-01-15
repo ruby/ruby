@@ -27,13 +27,13 @@ The +then+ is optional:
     puts "the test resulted in a true-value"
   end
 
-This document will include the optional +then+ for all expressions.  Many
-people omit the +then+ part of the if and other expressions.
+This document will omit the optional +then+ for all expressions as that is the
+most common usage of +if+.
 
 You may also add an +else+ expression.  If the test does not evaluate to true
 the +else+ expression will be executed:
 
-  if false then
+  if false
     puts "the test resulted in a true-value"
   else
     puts "the test resulted in a false-value"
@@ -46,9 +46,9 @@ You may add an arbitrary number of extra tests to an if expression using
 
   a = 1
 
-  if a == 0 then
+  if a == 0
     puts "a is zero"
-  elsif a == 1 then
+  elsif a == 1
     puts "a is one"
   else
     puts "a is some other value"
@@ -60,15 +60,17 @@ Since +else+ is only executed when there are no matching conditions.
 Once a condition matches, either the +if+ condition or any +elsif+ condition,
 the +if+ expression is complete and no further tests will be performed.
 
+Like an +if+, an +elsif+ condition may be followed by a +then+.
+
 In this example only "a is one" is printed:
 
   a = 1
 
-  if a == 0 then
+  if a == 0
     puts "a is zero"
-  elsif a == 1 then
+  elsif a == 1
     puts "a is one"
-  elsif a >= 1 then
+  elsif a >= 1
     puts "a is greater than or equal to one"
   else
     puts "a is some other value"
@@ -77,7 +79,7 @@ In this example only "a is one" is printed:
 The tests for +if+ and +elsif+ may have side-effects.  The most common use of
 side-effect is to cache a value into a local variable:
 
-  if a = object.some_value then
+  if a = object.some_value
     # do something to a
   end
 
@@ -89,21 +91,23 @@ expression.
 The +unless+ expression is the opposite of the +if+ expression.  If the value
 is false the "then" expression is executed:
 
-  unless true then
+  unless true
     puts "the value is a false-value"
   end
 
 This prints nothing as true is not a false-value.
 
+You may use an optional +then+ with +unless+ just like +if+.
+
 Note that the above +unless+ expression is the same as:
 
-  if not true then
+  if not true
     puts "the value is a false-value"
   end
 
 Like an +if+ expression you may use an +else+ condition with +unless+:
 
-  unless true then
+  unless true
     puts "the value is false"
   else
     puts "the value is true"
@@ -146,17 +150,18 @@ parse order.  Here is an example that shows the difference:
 
 This raises the NameError "undefined local variable or method `a'".
 
-When ruby parses this it first encounters +a+ as a method call in the "then"
-expression, then later sees +a+ as a local variable in the "test" expression.
+When ruby parses this expression it first encounters +a+ as a method call in
+the "then" expression, then later it sees the assignment to +a+ in the "test"
+expression and marks +a+ as a local variable.
 
 When running this line it first executes the "test" expression, <code>a =
 0.zero?</code>.
 
-Since the test is true it then executes the "then" expression, <code>p
-a</code>.  Since the +a+ in the body was recorded as a method which does not
-exist the NameError is raised.
+Since the test is true it executes the "then" expression, <code>p a</code>.
+Since the +a+ in the body was recorded as a method which does not exist the
+NameError is raised.
 
-The same as true for +unless+.
+The same is true for +unless+.
 
 == +case+ Expression
 
@@ -170,7 +175,7 @@ Module#=== and Regexp#=== for examples.
 Here is an example of using +case+ to compare a String against a pattern:
 
   case "12345"
-  when /^1/ then
+  when /^1/
     puts "the string starts with one"
   else
     puts "I don't know what the string starts with"
@@ -194,7 +199,7 @@ result as the one above:
 You may place multiple conditions on the same +when+:
 
   case "2"
-  when /^1/, "2" then
+  when /^1/, "2"
     puts "the string starts with one or is '2'"
   end
 
@@ -202,14 +207,23 @@ Ruby will try each condition in turn, so first <code>/^1/ === "2"</code>
 returns +false+, then <code>"2" === "2"</code> returns +true+, so "the string
 starts with one or is '2'" is printed.
 
+You may use +then+ after the +when+ condition.  This is most frequently used
+to place the body of the +when+ on a single line.
+
+  case a
+  when 1, 2 then puts "a is one or two
+  when 3    then puts "a is three"
+  else           puts "I don't know what a is"
+  end
+
 The other way to use a +case+ expression is like an if-elsif expression:
 
   a = 2
 
   case
-  when a == 1, a == 2 then
+  when a == 1, a == 2
     puts "a is one or two"
-  when a == 3 then
+  when a == 3
     puts "a is three"
   else
     puts "I don't know what a is"
@@ -281,6 +295,8 @@ The +do+ is optional:
   end
 
 Prints 1, 2 and 3.
+
+Like +while+ and +until+, the +do+ is optional.
 
 The +for+ loop is similar to using #each, but does not create a new variable
 scope.
