@@ -1,3 +1,8 @@
+Tue Jan 15 11:49:31 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc (Block Argument):  Added section on block
+	  argument.  Thanks to Andy Lindeman.
+
 Tue Jan 15 10:54:59 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/calling_methods.rdoc (Arguments):  Added improved

@@ -210,6 +210,38 @@ is raised.
 When mixing keyword arguments and positional arguments, all positional
 arguments must appear before any keyword arguments.
 
+== Block Argument
+
+The block argument is indicated by <code>&</code> and must come last:
+
+  def my_method(&my_block)
+    my_method.call(self)
+  end
+
+Most frequently the block argument is used to pass a block to another method:
+
+  def each_item(&block)
+    @items.each(&block)
+  end
+
+If you are only going to call the block and will not otherwise manipulate it
+or send it to another method using <code>yield</code> without an explicit
+block parameter is preferred.  This method is equivalent to the first method
+in this section:
+
+  def my_method
+    yield self
+  end
+
+There is also a performance benefit to using yield over a calling a block
+parameter.  When a block argument is assigned to a variable a Proc object is
+created which holds the block.  When using yield this Proc object is not
+created.
+
+If you only need to use the block sometimes you can use Proc.new to create a
+proc from the block that was passed to your method.  See Proc.new for further
+details.
+
 == Exception Handling
 
 Methods have an implied exception handling block so you do not need to use
