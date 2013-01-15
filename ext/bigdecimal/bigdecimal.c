@@ -660,7 +660,7 @@ BigDecimal_to_i(VALUE self)
 	    ret = rb_funcall(numerator, '*', 1,
 			     rb_funcall(INT2FIX(10), rb_intern("**"), 1,
 					INT2FIX(dpower)));
-	if (TYPE(ret) == T_FLOAT)
+	if (RB_TYPE_P(ret, T_FLOAT))
 	    rb_raise(rb_eFloatDomainError, "Infinity");
 	return ret;
     }
@@ -768,11 +768,11 @@ BigDecimal_coerce(VALUE self, VALUE other)
     VALUE obj;
     Real *b;
 
-    if (TYPE(other) == T_FLOAT) {
+    if (RB_TYPE_P(other, T_FLOAT)) {
 	obj = rb_assoc_new(other, BigDecimal_to_f(self));
     }
     else {
-	if (TYPE(other) == T_RATIONAL) {
+	if (RB_TYPE_P(other, T_RATIONAL)) {
 	    Real* pv = DATA_PTR(self);
 	    GUARD_OBJ(b, GetVpValueWithPrec(other, pv->Prec*VpBaseFig(), 1));
 	}
@@ -810,10 +810,10 @@ BigDecimal_add(VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a, GetVpValue(self, 1));
-    if (TYPE(r) == T_FLOAT) {
+    if (RB_TYPE_P(r, T_FLOAT)) {
 	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
     }
-    else if (TYPE(r) == T_RATIONAL) {
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
 	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
     }
     else {
@@ -862,7 +862,16 @@ BigDecimal_sub(VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (RB_TYPE_P(r, T_FLOAT)) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'-');
     SAVE(b);
 
@@ -1095,7 +1104,16 @@ BigDecimal_mult(VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (RB_TYPE_P(r, T_FLOAT)) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'*');
     SAVE(b);
 
@@ -1114,9 +1132,19 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (RB_TYPE_P(r, T_FLOAT)) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,'/');
     SAVE(b);
+
     *div = b;
     mx = a->Prec + vabs(a->exponent);
     if(mx<b->Prec + vabs(b->exponent)) mx = b->Prec + vabs(b->exponent);
@@ -1177,7 +1205,16 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     size_t mx;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (RB_TYPE_P(r, T_FLOAT)) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return Qfalse;
     SAVE(b);
 
@@ -1267,7 +1304,16 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
     Real *f=NULL;
 
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
+    if (RB_TYPE_P(r, T_FLOAT)) {
+	b = GetVpValueWithPrec(r, DBL_DIG+1, 1);
+    }
+    else if (RB_TYPE_P(r, T_RATIONAL)) {
+	b = GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 1);
+    }
+    else {
+	b = GetVpValue(r,0);
+    }
+
     if(!b) return DoSomeOne(self,r,rb_intern("remainder"));
     SAVE(b);
 
@@ -1741,8 +1787,8 @@ static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
-    int   fmt=0;   /* 0:E format */
-    int   fPlus=0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
+    int   fmt = 0;   /* 0:E format */
+    int   fPlus = 0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
     Real  *vp;
     volatile VALUE str;
     char  *psz;
@@ -1752,42 +1798,53 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 
     GUARD_OBJ(vp,GetVpValue(self,1));
 
-    if(rb_scan_args(argc,argv,"01",&f)==1) {
-        if(TYPE(f)==T_STRING) {
-            SafeStringValue(f);
-            psz = RSTRING_PTR(f);
-            if(*psz==' ') {
-                fPlus = 1; psz++;
-            } else if(*psz=='+') {
-                fPlus = 2; psz++;
-            }
-            while((ch=*psz++)!=0) {
-                if(ISSPACE(ch)) continue;
-                if(!ISDIGIT(ch)) {
-                    if(ch=='F' || ch=='f') fmt = 1; /* F format */
-                    break;
-                }
-                mc = mc * 10 + ch - '0';
-            }
-        }
+    if (rb_scan_args(argc,argv,"01",&f)==1) {
+	if (RB_TYPE_P(f, T_STRING)) {
+	    SafeStringValue(f);
+	    psz = RSTRING_PTR(f);
+	    if (*psz == ' ') {
+		fPlus = 1;
+		psz++;
+	    }
+	    else if (*psz == '+') {
+		fPlus = 2;
+		psz++;
+	    }
+	    while ((ch = *psz++) != 0) {
+		if (ISSPACE(ch)) {
+		    continue;
+		}
+		if (!ISDIGIT(ch)) {
+		    if (ch == 'F' || ch == 'f') {
+			fmt = 1; /* F format */
+		    }
+		    break;
+		}
+		mc = mc * 10 + ch - '0';
+	    }
+	}
 	else {
-            mc = (size_t)GetPositiveInt(f);
-        }
+	    mc = (size_t)GetPositiveInt(f);
+	}
     }
-    if(fmt) {
-        nc = VpNumOfChars(vp,"F");
-    } else {
-        nc = VpNumOfChars(vp,"E");
+    if (fmt) {
+	nc = VpNumOfChars(vp, "F");
     }
-    if(mc>0) nc += (nc + mc - 1) / mc + 1;
+    else {
+	nc = VpNumOfChars(vp, "E");
+    }
+    if (mc > 0) {
+	nc += (nc + mc - 1) / mc + 1;
+    }
 
     str = rb_str_new(0, nc);
     psz = RSTRING_PTR(str);
 
-    if(fmt) {
-        VpToFString(vp, psz, mc, fPlus);
-    } else {
-        VpToString (vp, psz, mc, fPlus);
+    if (fmt) {
+	VpToFString(vp, psz, mc, fPlus);
+    }
+    else {
+	VpToString (vp, psz, mc, fPlus);
     }
     rb_str_resize(str, strlen(psz));
     return str;
@@ -1904,7 +1961,7 @@ static VALUE BigMath_s_log(VALUE, VALUE, VALUE);
 inline static int
 is_integer(VALUE x)
 {
-    return (TYPE(x) == T_FIXNUM || TYPE(x) == T_BIGNUM);
+    return (RB_TYPE_P(x, T_FIXNUM) || RB_TYPE_P(x, T_BIGNUM));
 }
 
 inline static int
@@ -1913,10 +1970,10 @@ is_negative(VALUE x)
     if (FIXNUM_P(x)) {
 	return FIX2LONG(x) < 0;
     }
-    else if (TYPE(x) == T_BIGNUM) {
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return RBIGNUM_NEGATIVE_P(x);
     }
-    else if (TYPE(x) == T_FLOAT) {
+    else if (RB_TYPE_P(x, T_FLOAT)) {
 	return RFLOAT_VALUE(x) < 0.0;
     }
     return RTEST(rb_funcall(x, '<', 1, INT2FIX(0)));
@@ -2175,7 +2232,7 @@ retry:
     if (exp != NULL) {
 	return rmpd_power_by_big_decimal(x, exp, n);
     }
-    else if (TYPE(vexp) == T_BIGNUM) {
+    else if (RB_TYPE_P(vexp, T_BIGNUM)) {
 	VALUE abs_value = BigDecimal_abs(self);
 	if (is_one(abs_value)) {
 	    return ToValue(VpCreateRbObject(n, "1"));
@@ -2571,7 +2628,7 @@ BigMath_s_log(VALUE klass, VALUE x, VALUE vprec)
     double flo;
     long fix;
 
-    if (TYPE(vprec) != T_FIXNUM && TYPE(vprec) != T_BIGNUM) {
+    if (!is_integer(vprec)) {
 	rb_raise(rb_eArgError, "precision must be an Integer");
     }
 

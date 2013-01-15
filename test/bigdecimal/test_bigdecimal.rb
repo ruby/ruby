@@ -597,12 +597,28 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal.new((2**100-1).to_s), x - 1)
   end
 
+  def test_sub_with_float
+    assert_kind_of(BigDecimal, BigDecimal.new("3") - 1.0)
+  end
+
+  def test_sub_with_rational
+    assert_kind_of(BigDecimal, BigDecimal.new("3") - 1.quo(3))
+  end
+
   def test_mult
     x = BigDecimal.new((2**100).to_s)
     assert_equal(BigDecimal.new((2**100 * 3).to_s), (x * 3).to_i)
     assert_equal(x, (x * 1).to_i)
     assert_equal(x, (BigDecimal("1") * x).to_i)
     assert_equal(BigDecimal.new((2**200).to_s), (x * x).to_i)
+  end
+
+  def test_mult_with_float
+    assert_kind_of(BigDecimal, BigDecimal.new("3") * 1.5)
+  end
+
+  def test_mult_with_rational
+    assert_kind_of(BigDecimal, BigDecimal.new("3") * 1.quo(3))
   end
 
   def test_div
@@ -614,6 +630,14 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(-2, BigDecimal.new("2") / -1)
   end
 
+  def test_div_with_float
+    assert_kind_of(BigDecimal, BigDecimal.new("3") / 1.5)
+  end
+
+  def test_div_with_rational
+    assert_kind_of(BigDecimal, BigDecimal.new("3") / 1.quo(3))
+  end
+
   def test_mod
     x = BigDecimal.new((2**100).to_s)
     assert_equal(1, x % 3)
@@ -622,12 +646,28 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(-1, (-x) % -3)
   end
 
+  def test_mod_with_float
+    assert_kind_of(BigDecimal, BigDecimal.new("3") % 1.5)
+  end
+
+  def test_mod_with_rational
+    assert_kind_of(BigDecimal, BigDecimal.new("3") % 1.quo(3))
+  end
+
   def test_remainder
     x = BigDecimal.new((2**100).to_s)
     assert_equal(1, x.remainder(3))
     assert_equal(-1, (-x).remainder(3))
     assert_equal(1, x.remainder(-3))
     assert_equal(-1, (-x).remainder(-3))
+  end
+
+  def test_remainder_with_float
+    assert_kind_of(BigDecimal, BigDecimal.new("3").remainder(1.5))
+  end
+
+  def test_remainder_with_rational
+    assert_kind_of(BigDecimal, BigDecimal.new("3").remainder(1.quo(3)))
   end
 
   def test_divmod

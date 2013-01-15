@@ -1,3 +1,28 @@
+Tue Jan 15 16:13:47 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_s): use CRuby style.
+
+Tue Jan 15 16:13:47 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: use `RB_TYPE_P(x, t)` instead of
+	  `TYPE(x) == t`.
+
+Tue Jan 15 16:13:47 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_sub):
+	  need to specify precision for converting Rational and Float.
+	  [ruby-dev:46544] [Bug #7404]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mult): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_DoDivmod): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divremain): ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for the above fixes.
+
 Tue Jan 15 16:03:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: use configured libdir value to fix
