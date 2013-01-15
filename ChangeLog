@@ -1,3 +1,13 @@
+Tue Jan 15 16:23:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
+	  treat \r as newline as mame pointed. [ruby-dev:46425] [Bug #7278]
+
+Tue Jan 15 16:23:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
+	  don't use /n in universal regexp. [ruby-dev:46394] [Bug #7278]
+
 Tue Jan 15 16:13:47 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_s): use CRuby style.
