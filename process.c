@@ -5106,6 +5106,7 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 	    SAVED_USER_ID = uid;
 	}
 #else
+	(void)uid;
 	rb_notimplement();
 #endif
     }
@@ -5896,6 +5897,7 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 	    rb_sys_fail(0);
 	}
 #else
+	(void)gid;
 	rb_notimplement();
 #endif
     }
