@@ -1,3 +1,8 @@
+Thu Jan 17 07:50:26 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc (Flip-Flop):  Added a section on
+	  the flip-flop.
+
 Thu Jan 17 06:59:51 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc (if Expressions):  Fixed markup
