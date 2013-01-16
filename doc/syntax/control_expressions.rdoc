@@ -54,7 +54,7 @@ You may add an arbitrary number of extra tests to an if expression using
     puts "a is some other value"
   end
 
-This will print "a is one" as <code>1<code> is not equal to <code>0</code>.
+This will print "a is one" as <code>1</code> is not equal to <code>0</code>.
 Since +else+ is only executed when there are no matching conditions.
 
 Once a condition matches, either the +if+ condition or any +elsif+ condition,
