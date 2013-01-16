@@ -93,8 +93,9 @@ nesting:
     end
   end
 
-However, if you use <code>::</code> to define <code>A::B</code> without nesting
-it inside +A+ a NameError exception will be raised because the nesting does not include +A+: 
+However, if you use <code>::</code> to define <code>A::B</code> without
+nesting it inside +A+ a NameError exception will be raised because the nesting
+does not include +A+:
 
   module A
     Z = 1
@@ -192,6 +193,12 @@ Here is an example:
 The third visibility is +private+.  A private method may not be called with a
 receiver, not even +self+.  If a private method is called with a receiver a
 NoMethodError will be raised.
+
+=== +alias+ and +undef+
+
+You may also alias or undefine methods, but these operations are not
+restricted to modules or classes.  See the {miscellaneous syntax
+section}[rdoc-ref:syntax/miscellaneous.rdoc] for documentation.
 
 = Classes
 

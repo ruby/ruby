@@ -23,3 +23,6 @@ Exceptions[rdoc-ref:syntax/exceptions.rdoc] ::
 Precedence[rdoc-ref:syntax/precedence.rdoc] ::
   Precedence of ruby operators
 
+Miscellaneous[rdoc-ref:syntax/miscellaneous.rdoc] ::
+  +alias+, +undef+, +BEGIN+, +END+
+

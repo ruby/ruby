@@ -1,3 +1,13 @@
+Thu Jan 17 08:36:04 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/miscellaneous.rdoc:  Added documentation for alias, undef,
+	  BEGIN, END.
+	* doc/syntax/modules_and_classes.rdoc (Constants):  Fixed unwrapped
+	  paragraph with trailing whitespace.
+	* doc/syntax/modules_and_classes.rdoc (Scope):  Added section pointing
+	  to alias and undef documentation.
+	* doc/syntax.rdoc:  Added link to miscellaneous section.
+
 Thu Jan 17 07:50:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc (Flip-Flop):  Added a section on
