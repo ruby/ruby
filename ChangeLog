@@ -1,3 +1,9 @@
+Wed Jan 16 18:45:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/lib/win32ole.rb: use TracePoint to hook all thread
+	  creation not only by Thread.new and to get rid of interference with
+	  svar scope.  [Bug #7681] [ruby-core:51365]
+
 Wed Jan 16 09:35:53 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* .document:  Removed extra space
