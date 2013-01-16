@@ -75,7 +75,7 @@ you may use an underscore for readability.
 
 The most common way of writing strings is using <tt>"</tt>:
 
-  "This is a string".
+  "This is a string."
 
 The string may be many lines long.
 

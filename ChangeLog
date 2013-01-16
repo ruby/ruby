@@ -1,3 +1,8 @@
+Thu Jan 17 06:53:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/literals.rdoc (Strings):  Fixed typo.  Fixes #236 on
+	  github by Doug Yun.
+
 Wed Jan 16 18:45:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/lib/win32ole.rb: use TracePoint to hook all thread
