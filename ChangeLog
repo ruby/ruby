@@ -1,3 +1,8 @@
+Thu Jan 17 06:59:51 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc (if Expressions):  Fixed markup
+	  error.  Fixes #235 on github by FlyingFoX.
+
 Thu Jan 17 06:53:58 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/literals.rdoc (Strings):  Fixed typo.  Fixes #236 on
