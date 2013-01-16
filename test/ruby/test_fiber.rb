@@ -4,9 +4,7 @@ require 'continuation'
 require_relative './envutil'
 
 class TestFiber < Test::Unit::TestCase
-if false
   def test_normal
-    f = Fiber.current
     assert_equal(:ok2,
       Fiber.new{|e|
         assert_equal(:ok1, e)
@@ -79,7 +77,7 @@ if false
       f.resume
     }
     assert_raise(RuntimeError){
-      f = Fiber.new{
+      Fiber.new{
         @c = callcc{|c| @c = c}
       }.resume
       @c.call # cross fiber callcc
@@ -279,7 +277,6 @@ if false
       puts :ng # unreachable.
     EOS
   end
-end
 
   def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true
     env = {}
