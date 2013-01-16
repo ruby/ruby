@@ -1,3 +1,13 @@
+Wed Jan 16 09:35:53 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* .document:  Removed extra space
+	* lib/irb/lc/.document:  Hide help-message
+	* lib/minitest/.document:  Hide README.txt
+	* lib/rake/lib/.document:  Hide project.rake
+	* lib/rdoc/generator/template/json_index/.document:  Hide JavaScript
+	  files
+	* lib/rubygems/ssl_certs/.document:  Hide PEM files.
+
 Wed Jan 16 03:54:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc:  Omit optional "then" for if and
