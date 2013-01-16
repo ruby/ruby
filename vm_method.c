@@ -367,24 +367,24 @@ static VALUE
 (*call_cfunc_invoker_func(int argc))(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *)
 {
     switch (argc) {
-      case -2: return call_cfunc_m2;
-      case -1: return call_cfunc_m1;
-      case 0: return call_cfunc_0;
-      case 1: return call_cfunc_1;
-      case 2: return call_cfunc_2;
-      case 3: return call_cfunc_3;
-      case 4: return call_cfunc_4;
-      case 5: return call_cfunc_5;
-      case 6: return call_cfunc_6;
-      case 7: return call_cfunc_7;
-      case 8: return call_cfunc_8;
-      case 9: return call_cfunc_9;
-      case 10: return call_cfunc_10;
-      case 11: return call_cfunc_11;
-      case 12: return call_cfunc_12;
-      case 13: return call_cfunc_13;
-      case 14: return call_cfunc_14;
-      case 15: return call_cfunc_15;
+      case -2: return &call_cfunc_m2;
+      case -1: return &call_cfunc_m1;
+      case 0: return &call_cfunc_0;
+      case 1: return &call_cfunc_1;
+      case 2: return &call_cfunc_2;
+      case 3: return &call_cfunc_3;
+      case 4: return &call_cfunc_4;
+      case 5: return &call_cfunc_5;
+      case 6: return &call_cfunc_6;
+      case 7: return &call_cfunc_7;
+      case 8: return &call_cfunc_8;
+      case 9: return &call_cfunc_9;
+      case 10: return &call_cfunc_10;
+      case 11: return &call_cfunc_11;
+      case 12: return &call_cfunc_12;
+      case 13: return &call_cfunc_13;
+      case 14: return &call_cfunc_14;
+      case 15: return &call_cfunc_15;
       default:
 	rb_bug("call_cfunc_func: unsupported length: %d", argc);
     }
