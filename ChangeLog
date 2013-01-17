@@ -1,3 +1,13 @@
+Thu Jan 17 22:10:35 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make): Remove
+	  .time dependency from *.rb install target. It causes needless
+	  *.rb install. [Bug #7698] [ruby-core:51437]
+	  Reported by Tadashi Saito. Thanks!!!
+	* test/rubygems/test_gem_installer.rb
+	  (TestGemInstaller#test_install_extension_and_script): Add a test
+	  for the above change.
+
 Thu Jan 17 21:08:20 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* eval.c: Fix a typo in ruby_finalize() documentation.

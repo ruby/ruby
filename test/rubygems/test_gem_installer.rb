@@ -964,6 +964,33 @@ load Gem.bin_path('a', 'executable', version)
     assert_match %r|I am a shiny gem!|, @ui.output
   end
 
+  def test_install_extension_and_script
+    @spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+        require "mkmf"
+        create_makefile("#{@spec.name}")
+      RUBY
+    end
+
+    rb = File.join("lib", "#{@spec.name}.rb")
+    @spec.files += [rb]
+    write_file File.join(@tempdir, rb) do |io|
+      io.write <<-RUBY
+        # #{@spec.name}.rb
+      RUBY
+    end
+
+    assert !File.exist?(File.join(@spec.gem_dir, rb))
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      @installer = Gem::Installer.new path
+      @installer.install
+    end
+    assert File.exist?(File.join(@spec.gem_dir, rb))
+  end
+
   def test_installation_satisfies_dependency_eh
     quick_spec 'a'
 

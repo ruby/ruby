@@ -19,6 +19,7 @@ class Gem::Ext::Builder
     mf = Gem.read_binary 'Makefile'
     mf = mf.gsub(/^RUBYARCHDIR\s*=\s*\$[^$]*/, "RUBYARCHDIR = #{dest_path}")
     mf = mf.gsub(/^RUBYLIBDIR\s*=\s*\$[^$]*/, "RUBYLIBDIR = #{dest_path}")
+    mf = mf.gsub(/\s*\S+\.time$/, "")
 
     File.open('Makefile', 'wb') {|f| f.print mf}
 
