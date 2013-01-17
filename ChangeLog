@@ -1,3 +1,8 @@
+Thu Jan 17 10:48:56 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: use constants rather than
+	  calculating Inf and NaN.
+
 Thu Jan 17 10:21:05 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/miscellaneous.rdoc:  Added Ending an Expression and

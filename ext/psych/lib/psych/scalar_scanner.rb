@@ -68,11 +68,11 @@ module Psych
           string
         end
       when /^\.inf$/i
-        1 / 0.0
+        Float::INFINITY
       when /^-\.inf$/i
-        -1 / 0.0
+        -Float::INFINITY
       when /^\.nan$/i
-        0.0 / 0.0
+        Float::NAN
       when /^:./
         if string =~ /^:(["'])(.*)\1/
           @symbol_cache[string] = $2.sub(/^:/, '').to_sym
