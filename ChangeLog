@@ -1,3 +1,7 @@
+Thu Jan 17 21:08:20 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* eval.c: Fix a typo in ruby_finalize() documentation.
+
 Thu Jan 17 20:28:18 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* object.c: Typo in Kernel#hash documentation.

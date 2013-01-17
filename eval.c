@@ -129,7 +129,7 @@ ruby_finalize_1(void)
 
 /** Runs the VM finalization processes.
  *
- * <code>END{}</code> and procs registered by <code>Kernel.#at_ext</code> are
+ * <code>END{}</code> and procs registered by <code>Kernel.#at_exit</code> are
  * executed here. See the Ruby language spec for more details.
  *
  * @note This function is allowed to raise an exception if an error occurred.
