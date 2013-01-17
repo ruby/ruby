@@ -114,7 +114,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 
 /*
  * Generates a Fixnum hash value for this object.  This function must have the
- * property that <code>a.eql?(b)<code> implies <code>a.hash == b.hash</code>.
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
  *
  * The hash value is used along with #eql? by the Hash class to determine if
  * two objects reference the same hash key.  Any hash value that exceeds the

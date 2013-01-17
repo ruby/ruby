@@ -1,3 +1,8 @@
+Thu Jan 17 20:28:18 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* object.c: Typo in Kernel#hash documentation.
+	  Patch by zed_0xff [Github Fixes #237]
+
 Thu Jan 17 10:48:56 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: use constants rather than
