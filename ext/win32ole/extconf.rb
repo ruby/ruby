@@ -30,6 +30,7 @@ end
 
 case RUBY_PLATFORM
 when /mswin/
-  $CFLAGS += ' /W3'
+  $CFLAGS.sub!(/((?:\A|\s)[-\/])W\d(?=\z|\s)/, '\1W3') or
+    $CFLAGS += ' -W3'
 end
 create_win32ole_makefile
