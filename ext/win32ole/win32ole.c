@@ -4170,7 +4170,6 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
     HRESULT hr;
     TYPEATTR *pTypeAttr;
     BSTR bstr;
-    char *pstr;
     FUNCDESC *pFuncDesc;
     VALUE method;
     WORD i;
@@ -4179,7 +4178,6 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
-        pstr = NULL;
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
         if (FAILED(hr))
              continue;
@@ -6129,7 +6127,6 @@ ole_variables(ITypeInfo *pTypeInfo)
     WORD i;
     UINT len;
     BSTR bstr;
-    char *pstr;
     VARDESC *pVarDesc;
     struct olevariabledata *pvar;
     VALUE var;
@@ -6144,7 +6141,6 @@ ole_variables(ITypeInfo *pTypeInfo)
         if(FAILED(hr))
             continue;
         len = 0;
-        pstr = NULL;
         hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, pVarDesc->memid, &bstr,
                                          1, &len);
         if(FAILED(hr) || len == 0 || !bstr)
@@ -7663,11 +7659,9 @@ static long
 ole_search_event_at(VALUE ary, VALUE ev)
 {
     VALUE event;
-    VALUE def_event;
     VALUE event_name;
     long i, len;
     long ret = -1;
-    def_event = Qnil;
     len = RARRAY_LEN(ary);
     for(i = 0; i < len; i++) {
         event = rb_ary_entry(ary, i);
