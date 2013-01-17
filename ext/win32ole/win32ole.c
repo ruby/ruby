@@ -309,8 +309,8 @@ static VALUE ole_hresult2msg(HRESULT hr);
 static void ole_freeexceptinfo(EXCEPINFO *pExInfo);
 static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
 static void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...);
-static void ole_initialize();
-static void ole_msg_loop();
+static void ole_initialize(void);
+static void ole_msg_loop(void);
 static void ole_free(struct oledata *pole);
 static void oletypelib_free(struct oletypelibdata *poletypelib);
 static void oletype_free(struct oletypedata *poletype);
@@ -370,9 +370,9 @@ static BOOL CALLBACK installed_lcid_proc(LPTSTR str);
 static BOOL lcid_installed(LCID lcid);
 static VALUE fole_s_set_locale(VALUE self, VALUE vlcid);
 static VALUE fole_s_create_guid(VALUE self);
-static void  ole_pure_initialize();
+static void  ole_pure_initialize(void);
 static VALUE fole_s_ole_initialize(VALUE self);
-static void  ole_pure_uninitialize();
+static void  ole_pure_uninitialize(void);
 static VALUE fole_s_ole_uninitialize(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
@@ -572,7 +572,7 @@ static VALUE fev_get_handler(VALUE self);
 static VALUE evs_push(VALUE ev);
 static VALUE evs_delete(long i);
 static VALUE evs_entry(long i);
-static VALUE evs_length();
+static VALUE evs_length(void);
 static void  olevariant_free(struct olevariantdata *pvar);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
@@ -586,8 +586,8 @@ static VALUE folevariant_ary_aset(int argc, VALUE *argv, VALUE self);
 static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
-static void init_enc2cp();
-static void free_enc2cp();
+static void init_enc2cp(void);
+static void free_enc2cp(void);
 
 static HRESULT (STDMETHODCALLTYPE mf_QueryInterface)(
     IMessageFilter __RPC_FAR * This,
@@ -1201,14 +1201,14 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
 }
 
 void
-ole_uninitialize()
+ole_uninitialize(void)
 {
     OleUninitialize();
     g_ole_initialized = FALSE;
 }
 
 static void
-ole_initialize()
+ole_initialize(void)
 {
     HRESULT hr;
 
@@ -3141,7 +3141,8 @@ fole_s_create_guid(VALUE self)
  * You must not use thease method.
  */
 
-static void  ole_pure_initialize()
+static void
+ole_pure_initialize(void)
 {
     HRESULT hr;
     hr = OleInitialize(NULL);
@@ -3150,7 +3151,8 @@ static void  ole_pure_initialize()
     }
 }
 
-static void  ole_pure_uninitialize()
+static void
+ole_pure_uninitialize(void)
 {
     OleUninitialize();
 }
@@ -8578,7 +8580,7 @@ evs_entry(long i)
 }
 
 static VALUE
-evs_length()
+evs_length(void)
 {
     return rb_funcall(ary_ole_event, rb_intern("length"), 0);
 }
@@ -9070,19 +9072,19 @@ folevariant_set_value(VALUE self, VALUE val)
 }
 
 static void
-init_enc2cp()
+init_enc2cp(void)
 {
     enc2cp_table = st_init_numtable();
 }
 
 static void
-free_enc2cp()
+free_enc2cp(void)
 {
     st_free_table(enc2cp_table);
 }
 
 void
-Init_win32ole()
+Init_win32ole(void)
 {
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
