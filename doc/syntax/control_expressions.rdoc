@@ -86,6 +86,27 @@ side-effect is to cache a value into a local variable:
 The result value of an +if+ expression is the last value executed in the
 expression.
 
+== Ternary if
+
+You may also write a if-then-else expression using <code>?</code> and
+<code>:</code>.  This ternary if:
+
+  input_type = gets =~ /hello/i ? "greeting" : "other"
+
+Is the same as this +if+ expression:
+
+  input_type =
+    if gets =~ /hello/i
+      "greeting"
+    else
+      "other"
+    end
+
+While the ternary if is much shorter to write than the more verbose form, for
+readability it is recommended that the ternary if is only used for simple
+conditionals.  Also, avoid using multiple ternary conditions in the same
+expression as this can be confusing.
+
 == +unless+ Expression
 
 The +unless+ expression is the opposite of the +if+ expression.  If the value

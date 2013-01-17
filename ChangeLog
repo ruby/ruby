@@ -1,3 +1,7 @@
+Thu Jan 17 09:08:37 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/control_expressions.rdoc:  Added ? : ternary if
+
 Thu Jan 17 08:36:04 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/miscellaneous.rdoc:  Added documentation for alias, undef,
