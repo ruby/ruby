@@ -1,5 +1,21 @@
 = Miscellaneous Syntax
 
+== Ending an Expression
+
+Ruby uses a newline as the end of an expression.  When ending a line with an
+operator, open parentheses, comma, etc. the expression will continue.
+
+You can end an expression with a <code>;</code> (semicolon).  Semicolons are
+most frequently used with <code>ruby -e</code>.
+
+== Indentation
+
+Ruby does not require any indentation.  Typically ruby programs are indented
+two spaces.
+
+If you run ruby with warnings enabled and have an indentation mis-match you
+will receive a warning.
+
 == +alias+
 
 The +alias+ keyword is most frequently used to alias methods.  When aliasing a
