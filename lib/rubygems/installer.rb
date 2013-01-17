@@ -489,6 +489,7 @@ class Gem::Installer
 
   def ensure_loadable_spec
     ruby = spec.to_ruby_for_cache
+    ruby.untaint
 
     begin
       eval ruby

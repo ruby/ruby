@@ -1,3 +1,14 @@
+Thu Jan 17 09:30:21 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/installer.rb:  Untaint string when checking output
+	  for $SAFE=1
+
+	* lib/rubygems/specification.rb:  Keep previously loaded specs as
+	  active.  This prevents double loading when refreshing the gem list.
+	* test/rubygems/test_gem.rb:  Test for above
+
+	* lib/rubygems.rb:  Bump version to 2.0.0.rc.2
+
 Thu Jan 17 09:08:37 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/control_expressions.rdoc:  Added ? : ternary if

@@ -959,6 +959,27 @@ class TestGem < Gem::TestCase
     assert_includes Gem::Specification.all_names, @a1.full_name
   end
 
+  def test_self_refresh_keeps_loaded_specs_activated
+    util_make_gems
+
+    a1_spec = @a1.spec_file
+    moved_path = File.join @tempdir, File.basename(a1_spec)
+
+    FileUtils.mv a1_spec, moved_path
+
+    Gem.refresh
+
+    s = Gem::Specification.first
+    s.activate
+
+    Gem.refresh
+
+    Gem::Specification.each{|spec| assert spec.activated? if spec == s}
+
+    Gem.loaded_specs.delete(s)
+    Gem.refresh
+  end
+
   def test_self_ruby_escaping_spaces_in_path
     orig_ruby = Gem.ruby
     orig_bindir = Gem::ConfigMap[:bindir]

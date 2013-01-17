@@ -656,6 +656,12 @@ class Gem::Specification
 
       @@all = specs.values
 
+      # After a reset, make sure already loaded specs
+      # are still marked as activated.
+      specs = {}
+      Gem.loaded_specs.each_value{|s| specs[s] = true}
+      @@all.each{|s| s.activated = true if specs[s]}
+
       _resort!
     end
     @@all
