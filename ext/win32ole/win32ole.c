@@ -214,7 +214,16 @@ VALUE cWIN32OLE_PROPERTY;
 
 static VALUE ary_ole_event;
 static ID id_events;
-static BOOL g_ole_initialized = FALSE;
+#ifdef RB_THREAD_SPECIFIC
+static RB_THREAD_SPECIFIC BOOL g_ole_initialized;
+# define g_ole_initialized_init() ((void)0)
+# define g_ole_initialized_set(val) (g_ole_initialized = (val))
+#else
+static volatile DWORD g_ole_initialized_key = TLS_OUT_OF_INDEXES;
+# define g_ole_initialized (BOOL)TlsGetValue(g_ole_initialized_key)
+# define g_ole_initialized_init() (g_ole_initialized_key = TlsAlloc())
+# define g_ole_initialized_set(val) TlsSetValue(g_ole_initialized_key, (void*)(val))
+#endif
 static BOOL g_cp_installed = FALSE;
 static BOOL g_lcid_installed = FALSE;
 static HINSTANCE ghhctrl = NULL;
@@ -370,9 +379,7 @@ static BOOL CALLBACK installed_lcid_proc(LPTSTR str);
 static BOOL lcid_installed(LCID lcid);
 static VALUE fole_s_set_locale(VALUE self, VALUE vlcid);
 static VALUE fole_s_create_guid(VALUE self);
-static void  ole_pure_initialize(void);
 static VALUE fole_s_ole_initialize(VALUE self);
-static void  ole_pure_uninitialize(void);
 static VALUE fole_s_ole_uninitialize(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
@@ -1204,7 +1211,7 @@ void
 ole_uninitialize(void)
 {
     OleUninitialize();
-    g_ole_initialized = FALSE;
+    g_ole_initialized_set(FALSE);
 }
 
 static void
@@ -1217,13 +1224,8 @@ ole_initialize(void)
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
-        g_ole_initialized = TRUE;
-        /*
-         * In some situation, OleUninitialize does not work fine. ;-<
-         */
-        /*
-        atexit((void (*)(void))ole_uninitialize);
-        */
+        g_ole_initialized_set(TRUE);
+
         hr = CoRegisterMessageFilter(&imessage_filter, &previous_filter);
         if(FAILED(hr)) {
             previous_filter = NULL;
@@ -3141,27 +3143,11 @@ fole_s_create_guid(VALUE self)
  * You must not use thease method.
  */
 
-static void
-ole_pure_initialize(void)
-{
-    HRESULT hr;
-    hr = OleInitialize(NULL);
-    if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
-    }
-}
-
-static void
-ole_pure_uninitialize(void)
-{
-    OleUninitialize();
-}
-
 /* :nodoc */
 static VALUE
 fole_s_ole_initialize(VALUE self)
 {
-    ole_pure_initialize();
+    ole_initialize();
     return Qnil;
 }
 
@@ -3169,7 +3155,7 @@ fole_s_ole_initialize(VALUE self)
 static VALUE
 fole_s_ole_uninitialize(VALUE self)
 {
-    ole_pure_uninitialize();
+    ole_uninitialize();
     return Qnil;
 }
 
@@ -9080,6 +9066,7 @@ free_enc2cp(void)
 void
 Init_win32ole(void)
 {
+    g_ole_initialized_init();
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");

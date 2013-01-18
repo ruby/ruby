@@ -1,3 +1,8 @@
+Fri Jan 18 11:23:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_initialize): initialize OLE for each
+	  threads.  [Bug #2618] [ruby-core:27634]
+
 Thu Jan 17 22:10:35 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make): Remove
