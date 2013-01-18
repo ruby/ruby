@@ -1,3 +1,7 @@
+Fri Jan 18 14:11:01 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/methods.rdoc:  Added Array Decomposition.
+
 Fri Jan 18 12:54:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (gem): Gem.ensure_gem_subdirectories makes

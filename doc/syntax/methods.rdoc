@@ -237,6 +237,67 @@ This will raise a SyntaxError:
     a + b + c
   end
 
+=== Array Decomposition
+
+You can decompose (unpack or extract values from) an Array using extra
+parentheses in the arguments:
+
+  def my_method((a, b))
+    p a: a, b: b
+  end
+
+  my_method([1, 2])
+
+This prints:
+
+  {:a=>1, :b=>2}
+
+If the argument has extra elements in the Array they will be ignored:
+
+  def my_method((a, b))
+    p a: a, b: b
+  end
+
+  my_method([1, 2, 3])
+
+This has the same output as above.
+
+You can use a <code>*</code> to collect the remaining arguments.  This splits
+an Array into a first element and the rest:
+
+  def my_method((a, *b))
+    p a: a, b: b
+  end
+
+  my_method([1, 2, 3])
+
+This prints:
+
+  {:a=>1, :b=>[2, 3]}
+
+The argument will be decomposed if it responds to #to_ary.  You should only
+define #to_ary if you can use your object in place of an Array.
+
+Use of the inner parentheses only uses one of the sent arguments.  If the
+argument is not an Array it will be assigned to the first argument in the
+decomposition and the remaining arguments in the decomposition will be +nil+:
+
+  def my_method(a, (b, c), d)
+    p a: a, b: b, c: c, d: d
+  end
+
+  my_method(1, 2, 3)
+
+This prints:
+
+  {:a=>1, :b=>2, :c=>nil, :d=>3}
+
+You can nest decomposition arbitrarily:
+
+  def my_method(((a, b), c))
+    # ...
+  end
+
 === Array/Hash Argument
 
 Prefixing an argument with <code>*</code> causes any remaining arguments to be
