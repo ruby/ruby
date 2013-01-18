@@ -405,6 +405,13 @@ do-install-doc: $(PROGRAM)
 post-install-doc::
 	@$(NULLCMD)
 
+install-gem: pre-install-gem do-install-gem post-install-gem
+pre-install-gem:: pre-install-bin pre-install-lib pre-install-man
+do-install-gem: $(PROGRAM)
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=gem
+post-install-gem::
+	@$(NULLCMD)
+
 rdoc: PHONY main
 	@echo Generating RDoc documentation
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri --op "$(RDOCOUT)" --debug $(RDOCFLAGS) "$(srcdir)"
