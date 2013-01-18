@@ -1,3 +1,8 @@
+Fri Jan 18 12:54:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): Gem.ensure_gem_subdirectories makes
+	  subdirectories group-writable, so make them with $dir_mode.
+
 Fri Jan 18 11:24:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (ole_initialize): uninitialize OLE at thread
