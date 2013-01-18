@@ -224,6 +224,7 @@ static volatile DWORD g_ole_initialized_key = TLS_OUT_OF_INDEXES;
 # define g_ole_initialized_init() (g_ole_initialized_key = TlsAlloc())
 # define g_ole_initialized_set(val) TlsSetValue(g_ole_initialized_key, (void*)(val))
 #endif
+static BOOL g_uninitialize_hooked = FALSE;
 static BOOL g_cp_installed = FALSE;
 static BOOL g_lcid_installed = FALSE;
 static HINSTANCE ghhctrl = NULL;
@@ -1210,14 +1211,26 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
 void
 ole_uninitialize(void)
 {
+    if (!g_ole_initialized) return;
     OleUninitialize();
     g_ole_initialized_set(FALSE);
+}
+
+static void
+ole_uninitialize_hook(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass)
+{
+    ole_uninitialize();
 }
 
 static void
 ole_initialize(void)
 {
     HRESULT hr;
+
+    if(!g_uninitialize_hooked) {
+	rb_add_event_hook(ole_uninitialize_hook, RUBY_EVENT_THREAD_END, Qnil);
+	g_uninitialize_hooked = TRUE;
+    }
 
     if(g_ole_initialized == FALSE) {
         hr = OleInitialize(NULL);

@@ -1,4 +1,7 @@
-Fri Jan 18 11:23:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 18 11:24:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_initialize): uninitialize OLE at thread
+	  ends.  [Bug #2618] [ruby-core:27634]
 
 	* ext/win32ole/win32ole.c (ole_initialize): initialize OLE for each
 	  threads.  [Bug #2618] [ruby-core:27634]
