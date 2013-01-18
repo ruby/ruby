@@ -690,7 +690,6 @@ install?(:ext, :comm, :gem) do
   gem_dir = Gem.default_dir
   # Gem.ensure_gem_subdirectories makes subdirectories group-writable.
   directories = Gem::REPOSITORY_SUBDIRECTORIES
-  makedirs([gem_dir, *directories.map {|name| File.join(gem_dir, name)}])
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
