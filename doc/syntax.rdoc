@@ -5,6 +5,9 @@ The Ruby syntax is large and is split up into the following sections:
 Literals[rdoc-ref:syntax/literals.rdoc] ::
   Numbers, Strings, Arrays, Hashes, etc.
 
+Assignment[rdoc-ref:syntax/assignment.rdoc] ::
+  Assignment and variables
+
 {Control Expressions}[rdoc-ref:syntax/control_expressions.rdoc] ::
   +if+, +unless+, +while+, +until+, +for+, +break+, +next+, +redo+
 

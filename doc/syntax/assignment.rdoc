@@ -57,7 +57,8 @@ This prints:
 
 You may isolate variables in a block from the outer scope by listing them
 following a <code>;</code> in the block's arguments.  See the documentation
-for {calling methods}[rdoc-ref:syntax/calling_methods.rdoc] for an example.
+for block local variables in the {calling
+methods}[rdoc-ref:syntax/calling_methods.rdoc] documentation for an example.
 
 See also Kernel#local_variables, but note that a +for+ loop does not create a
 new scope like a block does.
@@ -416,8 +417,8 @@ But you may only use one <code>*</code> in an assignment.
 
 == Array Decomposition
 
-As with {method arguments}[rdoc-ref:syntax/methods.rdoc] you can decompose an
-Array using parenthesis:
+Like Array decomposition in {method arguments}[rdoc-ref:syntax/methods.rdoc]
+you can decompose an Array during assignment using parenthesis:
 
   (a, b) = [1, 2]
 

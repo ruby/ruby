@@ -1,3 +1,10 @@
+Sat Jan 19 09:15:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/assignment.rdoc:  Improved links
+	* doc/syntax/methods.rdoc:  ditto.
+
+	* doc/syntax.rdoc:  Added link to assignment document
+
 Sat Jan 19 08:47:33 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/assignment.rdoc:  Added a syntax document on assignment.
