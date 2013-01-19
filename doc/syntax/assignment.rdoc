@@ -70,7 +70,17 @@ have not assigned to one of these ambiguous names ruby will assume you wish to
 call a method.  Once you have assigned to the name ruby will assume you wish
 to reference a local variable.
 
-This leads to some potentially confusing code, for example:
+The local variable is created when the parser encounters the assignment, not
+when the assignment occurs:
+
+  a = 0 if false # does not assign to a
+
+  p local_variables # prints [:a]
+
+  p a # prints nil
+
+The similarity between method and local variable names can lead to confusing
+code, for example:
 
   def big_calculation
     42 # pretend this takes a long time
