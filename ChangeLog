@@ -1,3 +1,7 @@
+Sat Jan 19 09:52:46 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/miscellaneous.rdoc:  Added section on defined?
+
 Sat Jan 19 09:27:31 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/assignment.rdoc (Local Variables and Methods):  Made it

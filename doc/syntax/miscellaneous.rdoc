@@ -53,6 +53,36 @@ You may undef multiple methods:
 
 You may use +undef+ in any scope.  See also Module#undef_method
 
+== +defined?+
+
++defined?+ is a keyword that returns a string describing its argument:
+
+  p defined?(UNDEFINED_CONSTANT) # prints nil
+  p defined?(RUBY_VERSION)       # prints "constant"
+  p defined?(1 + 1)              # prints "method"
+
+You don't need to use parenthesis with +defined?+ but they are recommended due
+to the {low precedence}[rdoc-ref:syntax/precedence.rdoc] of +defined?+.
+
+For example, if you wish to check if an instance variable exists and that the
+instance variable is zero:
+
+  defined? @instance_variable && @instance_variable.zero?
+
+This returns <code>"expression"</code> which is not what you want if the
+instance variable is not defined.
+
+  @instance_variable = 1
+  defined?(@instance_variable) && @instance_variable.zero?
+
+Adding parentheses when checking if the instance variable is defined is a
+better check.  This correctly returns +nil+ when the instance variable is not
+defined and +false+ when the instance variable is not zero.
+
+Using the specific reflection methods such as instance_variable_defined? for
+instance variables or const_defined? for constants is less error prone than
+using +defined?+.
+
 == +BEGIN+ and +END+
 
 +BEGIN+ defines a block that is run before any other code in the current file.
