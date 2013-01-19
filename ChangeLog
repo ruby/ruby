@@ -1,3 +1,8 @@
+Sat Jan 19 11:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* struct.c (Struct.new): Document Struct.new with block
+	  Patch by Hiroyuki Iwatsuki [Bug #7674]
+
 Sat Jan 19 09:52:46 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/miscellaneous.rdoc:  Added section on defined?

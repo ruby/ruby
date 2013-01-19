@@ -283,9 +283,10 @@ rb_struct_define(const char *name, ...)
 
 /*
  *  call-seq:
- *     Struct.new( [aString] [, aSym]+> )    -> StructClass
- *     StructClass.new(arg, ...)             -> obj
- *     StructClass[arg, ...]                 -> obj
+ *     Struct.new( [aString] [, aSym]+> )                         -> StructClass
+ *     Struct.new( [aString] [, aSym]+> ) {|StructClass| block }  -> StructClass
+ *     StructClass.new(arg, ...)                                  -> obj
+ *     StructClass[arg, ...]                                      -> obj
  *
  *  Creates a new class, named by <i>aString</i>, containing accessor
  *  methods for the given symbols. If the name <i>aString</i> is
@@ -295,6 +296,16 @@ rb_struct_define(const char *name, ...)
  *  <code>Struct</code>s in the system and should start with a capital
  *  letter. Assigning a structure class to a constant effectively gives
  *  the class the name of the constant.
+ *
+ *  If a block is given, it will be evaluated in the context of
+ *  <i>StructClass</i>, passing <i>StructClass</i> as a parameter.
+ *
+ *     Customer = Struct.new(:name, :address) do
+ *       def greeting
+ *         "Hello #{name}!"
+ *       end
+ *     end
+ *     Customer.new("Dave", "123 Main").greeting  # => "Hello Dave!"
  *
  *  <code>Struct::new</code> returns a new <code>Class</code> object,
  *  which can then be used to create specific instances of the new
