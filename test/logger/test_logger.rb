@@ -126,7 +126,7 @@ class TestLogger < Test::Unit::TestCase
     end
     logger.formatter = o
     line = log_raw(logger, :info, "foo")
-    assert_equal("<<INFO-foo>>\n", line)
+    assert_equal("<""<INFO-foo>>\n", line)
   end
 
   def test_initialize
@@ -354,11 +354,13 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def test_shifting_size
-    logfile = File.basename(__FILE__) + '_1.log'
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
     logfile0 = logfile + '.0'
     logfile1 = logfile + '.1'
     logfile2 = logfile + '.2'
     logfile3 = logfile + '.3'
+    tmpfile.close(true)
     File.unlink(logfile) if File.exist?(logfile)
     File.unlink(logfile0) if File.exist?(logfile0)
     File.unlink(logfile1) if File.exist?(logfile1)
@@ -386,11 +388,13 @@ class TestLogDevice < Test::Unit::TestCase
     File.unlink(logfile1)
     File.unlink(logfile2)
 
-    logfile = File.basename(__FILE__) + '_2.log'
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_2.log'])
+    logfile = tmpfile.path
     logfile0 = logfile + '.0'
     logfile1 = logfile + '.1'
     logfile2 = logfile + '.2'
     logfile3 = logfile + '.3'
+    tmpfile.close(true)
     logger = Logger.new(logfile, 4, 150)
     logger.error("0" * 15)
     assert(File.exist?(logfile))
