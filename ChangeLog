@@ -1,3 +1,8 @@
+Sun Jan 20 23:55:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, r_object0): separate respond_to checks and
+	  calling, and get back to the old behavior for 2.0.  [Bug #7564]
+
 Sun Jan 20 22:24:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/vpath.rb (VPath#def_options): hack for msys make, which
