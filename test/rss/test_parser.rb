@@ -1,4 +1,4 @@
-require "fileutils"
+require "tempfile"
 
 require "rss-testcase"
 
@@ -15,13 +15,15 @@ module RSS
 #{make_textinput}
 #{make_image}
 EOR
-      @rss_file = "rss10.rdf"
-      File.open(@rss_file, "w") {|f| f.print(@rss10)}
+      @rss_tmp = Tempfile.new(%w"rss10- .rdf")
+      @rss_tmp.print(@rss10)
+      @rss_tmp.close
+      @rss_file = @rss_tmp.path.untaint.trust
     end
 
     def teardown
       Parser.default_parser = @_default_parser
-      FileUtils.rm_f(@rss_file)
+      @rss_tmp.close(true)
     end
 
     def test_default_parser
