@@ -124,7 +124,7 @@ module Observable
   #          <tt>*arg</tt> is the value passed to #notify_observers by this
   #          Observable
   def add_observer(observer, func=:update)
-    @observer_peers = {} unless defined? @observer_peers
+    @observer_peers = {}.compare_by_identity unless defined? @observer_peers
     unless observer.respond_to? func
       raise NoMethodError, "observer does not respond to `#{func.to_s}'"
     end
