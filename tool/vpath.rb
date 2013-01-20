@@ -59,8 +59,9 @@ class VPath
     opt.on("-L", "--vpath=PATH LIST", "add directories to search path") {|dirs|
       @additional << [dirs]
     }
-    opt.on("--path-separator=SEP", /\A\W\z/, "separator for vpath") {|sep|
-      @separator = sep
+    opt.on("--path-separator=SEP", /\A(?:\W\z|\.(\W).+)/, "separator for vpath") {|sep, vsep|
+      # hack for msys make.
+      @separator = vsep || sep
     }
   end
 

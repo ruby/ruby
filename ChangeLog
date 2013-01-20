@@ -1,3 +1,9 @@
+Sun Jan 20 22:24:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/vpath.rb (VPath#def_options): hack for msys make, which
+	  converts a command line argument to non-msys command seems like a
+	  path list automagically.  [Bug #7710] [ruby-core:51489]
+
 Sat Jan 19 11:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* struct.c (Struct.new): Document Struct.new with block

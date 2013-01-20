@@ -1759,6 +1759,7 @@ srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2
 topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).unspace}
 hdrdir = #{mkintpath(CONFIG["hdrdir"]).unspace}
 arch_hdrdir = #{$arch_hdrdir.quote}
+PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
     if $extmk
