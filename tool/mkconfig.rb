@@ -73,7 +73,7 @@ File.foreach "config.status" do |line|
   if name
     case name
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
-    when /^(?:X|(?:MINI|RUN)RUBY$)/; next
+    when /^(?:X|(?:MINI|RUN|BASE)RUBY$)/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; next
     when /^RUBY_INSTALL_NAME$/; next if $install_name
     when /^RUBY_SO_NAME$/; next if $so_name
@@ -132,7 +132,7 @@ File.foreach "config.status" do |line|
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
     end
-    v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n" +' : '='} #{val}\n"
+    v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n"' : '='} #{val}\n"
     vars[name] = true
     if fast[name]
       v_fast << v
