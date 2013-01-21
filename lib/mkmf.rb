@@ -199,9 +199,14 @@ module MakeMakefile
 
   topdir = File.dirname(File.dirname(__FILE__))
   path = File.expand_path($0)
-  $extmk = path[0, topdir.size+1] == topdir+"/"
-  $extmk &&= %r"\A(?:ext|enc|tool|test(?:/.+)?)\z" =~ File.dirname(path[topdir.size+1..-1])
-  $extmk &&= true
+  until (dir = File.dirname(path)) == path
+    if File.identical?(dir, topdir)
+      $extmk = true if %r"\A(?:ext|enc|tool|test)\z" =~ File.basename(path)
+      break
+    end
+    path = dir
+  end
+  $extmk ||= false
   if not $extmk and File.exist?(RbConfig::CONFIG["rubyhdrdir"] + "/ruby/ruby.h")
     $hdrdir = CONFIG["rubyhdrdir"]
     $topdir = $hdrdir
