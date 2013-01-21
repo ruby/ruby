@@ -14,7 +14,7 @@ class TestMkmf
         tmp.puts("#undef #{MACRO_NAME}")
         tmp.puts("#define #{MACRO_NAME} 1")
         tmp.close
-        dir, base = File.split(tmp.path)
+        base = File.basename(tmp.path)
         assert_equal(true, have_macro(MACRO_NAME, base, "-I."), MKMFLOG)
       end
     end
@@ -27,7 +27,7 @@ class TestMkmf
       Tempfile.open(%w"test_mkmf .h", ".") do |tmp|
         tmp.puts("#undef #{MACRO_NAME}")
         tmp.close
-        dir, base = File.split(tmp.path)
+        base = File.basename(tmp.path)
         assert_equal(false, have_macro(MACRO_NAME, base, "-I."), MKMFLOG)
       end
     end
