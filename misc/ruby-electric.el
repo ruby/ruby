@@ -176,14 +176,11 @@ strings. Note that you must have Font Lock enabled."
             ((ruby-electric-string-at-point-p)
              (if (eq last-command-event ?{)
                  (save-excursion
-                   (when (not (char-equal ?\# (preceding-char)))
-                       (kill-region (point) (1- (point)))
-                       (insert "#"))))
-             (save-excursion
-               (backward-char 1)
-               (when (char-equal ?\# (preceding-char))
-                 (forward-char 1)
-                 (insert "}")))))))
+                   (backward-char 1)
+                   (or (char-equal ?\# (preceding-char))
+                       (insert "#"))
+                   (forward-char 1)
+                   (insert "}")))))))
 
 (defun ruby-electric-matching-char(arg)
   (interactive "P")
