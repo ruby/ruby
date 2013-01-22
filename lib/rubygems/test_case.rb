@@ -118,8 +118,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @current_dir = Dir.pwd
     @ui = Gem::MockGemUi.new
 
-    # Need to do this in the project because $SAFE fucks up _everything_
-    tmpdir = File.expand_path("tmp/test")
+    tmpdir = File.expand_path Dir.tmpdir
+    tmpdir.untaint
 
     if ENV['KEEP_FILES'] then
       @tempdir = File.join(tmpdir, "test_rubygems_#{$$}.#{Time.now.to_i}")
@@ -127,6 +127,17 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       @tempdir = File.join(tmpdir, "test_rubygems_#{$$}")
     end
     @tempdir.untaint
+
+    FileUtils.mkdir_p @tempdir
+
+    # This makes the tempdir consistent on OS X.
+    # File.expand_path Dir.tmpdir                      #=> "/var/..."
+    # Dir.chdir Dir.tmpdir do File.expand_path '.' end #=> "/private/var/..."
+    Dir.chdir @tempdir do
+      @tempdir = File.expand_path '.'
+      @tempdir.untaint
+    end
+
     @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
 
