@@ -49,7 +49,7 @@ prettyprint.rb::	pretty printing algorithm
 prime.rb		prime numbers and factorization
 profile.rb::		runs ruby profiler
 profiler.rb::		ruby profiler module
-pstore.rb::		persistent object strage using marshal
+pstore.rb::		persistent object storage using marshal
 racc/parser.rb::	racc (Ruby yACC) runtime
 rake.rb::		Ruby Make
 rational.rb::		rational number support (obsolete)
