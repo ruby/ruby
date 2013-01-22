@@ -282,7 +282,7 @@ class TestFiber < Test::Unit::TestCase
     env = {}
     env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    out, err = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
     use_length ? out.length : out
   end
 
@@ -297,25 +297,25 @@ class TestFiber < Test::Unit::TestCase
     assert(h_default[:fiber_machine_stack_size] <= h_large[:fiber_machine_stack_size])
 
     # check VM machine stack size
-    script = 'def rec; print "."; rec; end; Fiber.new{rec}.resume'
+    script = '$stdout.sync=true; def rec; print "."; rec; end; Fiber.new{rec}.resume'
     size_default = invoke_rec script, nil, nil
-    assert(size_default > 0, size_default.to_s)
+    assert_operator(size_default, :>, 0)
     size_0 = invoke_rec script, 0, nil
-    assert(size_default > size_0, [size_default, size_0].inspect)
+    assert_operator(size_default, :>, size_0)
     size_large = invoke_rec script, 1024 * 1024 * 10, nil
-    assert(size_default < size_large, [size_default, size_large].inspect)
+    assert_operator(size_default, :<, size_large)
 
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
     # check machine stack size
     # Note that machine stack size may not change size (depend on OSs)
-    script = 'def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Fiber.new{rec}.resume'
+    script = '$stdout.sync=true; def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Fiber.new{rec}.resume'
     vm_stack_size = 1024 * 1024
     size_default = invoke_rec script, vm_stack_size, nil
     size_0 = invoke_rec script, vm_stack_size, 0
-    assert(size_default >= size_0, [size_default, size_0].inspect)
+    assert_operator(size_default, :>=, size_0)
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
-    assert(size_default <= size_large, [size_default, size_large].inspect)
+    assert_operator(size_default, :<=, size_large)
   end
 end
 
