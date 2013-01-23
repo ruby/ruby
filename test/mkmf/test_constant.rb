@@ -29,5 +29,9 @@ class TestMkmf
       decl = "#define CONFTEST_VALUE (unsigned #{type})(((unsigned #{type})1)<<(CHAR_BIT*sizeof(int)))"
       assert_operator(mkmf {try_constant("CONFTEST_VALUE", [[decl]])}, :>, 0, MKMFLOG)
     end
+
+    def test_large_unsigned
+      assert_operator(mkmf {try_constant("1U<<(CHAR_BIT*sizeof(int)-1)")}, :>, 0, MKMFLOG)
+    end
   end
 end

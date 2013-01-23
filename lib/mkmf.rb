@@ -613,12 +613,12 @@ SRC
 
   def try_constant(const, headers = nil, opt = "", &b)
     includes = cpp_include(headers)
+    neg = try_static_assert("#{const} < 0", headers, opt)
     if CROSS_COMPILING
-      if try_static_assert("#{const} > 0", headers, opt)
-        # positive constant
-      elsif try_static_assert("#{const} < 0", headers, opt)
-        neg = true
+      if neg
         const = "-(#{const})"
+      elsif try_static_assert("#{const} > 0", headers, opt)
+        # positive constant
       elsif try_static_assert("#{const} == 0", headers, opt)
         return 0
       else
@@ -646,7 +646,7 @@ SRC
       src = %{#{includes}
 #include <stdio.h>
 /*top*/
-typedef
+typedef#{neg ? '' : ' unsigned'}
 #ifdef PRI_LL_PREFIX
 #define PRI_CONFTEST_PREFIX PRI_LL_PREFIX
 LONG_LONG
@@ -656,7 +656,7 @@ long
 #endif
 conftest_type;
 conftest_type conftest_const = (conftest_type)(#{const});
-int main() {printf("%"PRI_CONFTEST_PREFIX"d\\n", conftest_const); return 0;}
+int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const); return 0;}
 }
       begin
         if try_link0(src, opt, &b)
