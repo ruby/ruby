@@ -1,3 +1,24 @@
+Wed Jan 23 09:53:39 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/servlet.rb:  Fixed display of site and home documentation.
+	  Fixes rdoc issue #170 by Thomas Leitner.
+	* test/rdoc/test_rdoc_servlet.rb:  Test for above.
+
+	* lib/rdoc/code_object.rb:  Split #initialize_visibility from
+	  #initialize for reuse when loading a stored object.
+	  Fixes rdoc issue #171 by Thomas Leitner.
+
+	* lib/rdoc/any_method.rb:  Initialize visibility for #display?  For
+	  rdoc issue #171
+	* lib/rdoc/attr.rb:  ditto.
+	* lib/rdoc/class_module.rb:  ditto.
+	* lib/rdoc/top_level.rb:  ditto.
+	* test/rdoc/test_rdoc_any_method.rb:  Test for above.
+	* test/rdoc/test_rdoc_attr.rb:  ditto.
+	* test/rdoc/test_rdoc_class_module.rb:  ditto.
+	* test/rdoc/test_rdoc_constant.rb:  ditto.
+	* test/rdoc/test_rdoc_top_level.rb:  ditto.
+
 Wed Jan 23 06:43:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/test_case.rb:  Use Dir.tmpdir for rubygems tests instead

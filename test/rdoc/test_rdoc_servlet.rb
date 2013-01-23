@@ -12,7 +12,7 @@ class TestRDocServlet < RDoc::TestCase
     Gem.ensure_gem_subdirectories @tempdir
 
     @spec = Gem::Specification.new 'spec', '1.0'
-    @spec.loaded_from = File.join @tempdir, @spec.spec_file
+    @spec.loaded_from = @spec.spec_file
 
     Gem::Specification.reset
     Gem::Specification.all = [@spec]
@@ -34,13 +34,15 @@ class TestRDocServlet < RDoc::TestCase
 
     @req.instance_variable_set :@header, Hash.new { |h, k| h[k] = [] }
 
-    @base       = File.join @tempdir, 'base'
-    @system_dir = File.join @tempdir, 'base', 'system'
+    @base        = File.join @tempdir, 'base'
+    @system_dir  = File.join @tempdir, 'base', 'system'
+    @home_dir    = File.join @tempdir, 'home'
+    @gem_doc_dir = File.join @tempdir, 'doc' 
 
     @orig_base = RDoc::RI::Paths::BASE
     RDoc::RI::Paths::BASE.replace @base
     @orig_ri_path_homedir = RDoc::RI::Paths::HOMEDIR
-    RDoc::RI::Paths::HOMEDIR.replace File.join @tempdir, 'home'
+    RDoc::RI::Paths::HOMEDIR.replace @home_dir
 
     RDoc::RI::Paths.instance_variable_set \
       :@gemdirs, %w[/nonexistent/gems/example-1.0/ri]
@@ -414,6 +416,42 @@ class TestRDocServlet < RDoc::TestCase
 
     assert_equal 'application/javascript', @res.content_type
     assert_match %r%\Avar search_data =%,  @res.body
+  end
+
+  def test_store_for_gem
+    store = @s.store_for 'spec-1.0'
+
+    assert_equal File.join(@gem_doc_dir, 'spec-1.0', 'ri'), store.path
+    assert_equal :gem, store.type
+  end
+
+  def test_store_for_home
+    store = @s.store_for 'home'
+
+    assert_equal @home_dir, store.path
+    assert_equal :home, store.type
+  end
+
+  def test_store_for_missing
+    e = assert_raises RDoc::Error do
+      @s.store_for 'missing'
+    end
+
+    assert_equal 'could not find ri documentation for missing', e.message
+  end
+
+  def test_store_for_ruby
+    store = @s.store_for 'ruby'
+
+    assert_equal @system_dir, store.path
+    assert_equal :system, store.type
+  end
+
+  def test_store_for_site
+    store = @s.store_for 'site'
+
+    assert_equal File.join(@base, 'site'), store.path
+    assert_equal :site, store.type
   end
 
   def touch_system_cache_path

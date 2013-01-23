@@ -205,6 +205,8 @@ class TestRDocTopLevel < XrefTestCase
     assert_equal RDoc::Parser::Simple, loaded.parser
 
     assert_equal comment, loaded.comment
+
+    assert loaded.display?
   end
 
   def test_name

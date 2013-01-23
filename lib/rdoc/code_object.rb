@@ -116,6 +116,13 @@ class RDoc::CodeObject
     @full_name     = nil
     @store         = nil
 
+    initialize_visibility
+  end
+
+  ##
+  # Initializes state for visibility of this CodeObject and its children.
+
+  def initialize_visibility # :nodoc:
     @document_children   = true
     @document_self       = true
     @done_documenting    = false

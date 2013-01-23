@@ -187,6 +187,7 @@ class RDoc::TopLevel < RDoc::Context
 
   ##
   # Dumps this TopLevel for use by ri.  See also #marshal_load
+
   def marshal_dump
     [
       MARSHAL_VERSION,

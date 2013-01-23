@@ -323,6 +323,7 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   def marshal_load array # :nodoc:
+    initialize_visibility
     initialize_methods_etc
     @current_section   = nil
     @document_self     = true

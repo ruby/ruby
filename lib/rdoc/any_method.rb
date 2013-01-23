@@ -123,6 +123,8 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   # * #parent_name
 
   def marshal_load array
+    initialize_visibility
+
     @dont_rename_initialize = nil
     @is_alias_for           = nil
     @token_stream           = nil

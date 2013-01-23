@@ -100,24 +100,31 @@ method(a, b) { |c, d| ... }
     assert_equal section,        loaded.section
   end
 
-  def test_marshal_load
-    instance_method = Marshal.load Marshal.dump(@c1.method_list.last)
-
-    assert_equal 'C1#m',  instance_method.full_name
-    assert_equal 'C1',    instance_method.parent_name
-    assert_equal '(foo)', instance_method.params
-
+  def test_marshal_load_aliased_method
     aliased_method = Marshal.load Marshal.dump(@c2.method_list.last)
 
     assert_equal 'C2#a',  aliased_method.full_name
     assert_equal 'C2',    aliased_method.parent_name
     assert_equal '()',    aliased_method.params
+    assert                aliased_method.display?
+  end
 
+  def test_marshal_load_class_method
     class_method = Marshal.load Marshal.dump(@c1.method_list.first)
 
     assert_equal 'C1::m', class_method.full_name
     assert_equal 'C1',    class_method.parent_name
     assert_equal '()',    class_method.params
+    assert                class_method.display?
+  end
+
+  def test_marshal_load_instance_method
+    instance_method = Marshal.load Marshal.dump(@c1.method_list.last)
+
+    assert_equal 'C1#m',  instance_method.full_name
+    assert_equal 'C1',    instance_method.parent_name
+    assert_equal '(foo)', instance_method.params
+    assert                instance_method.display?
   end
 
   def test_marshal_load_version_0
@@ -163,6 +170,8 @@ method(a, b) { |c, d| ... }
     assert_equal nil,            loaded.file
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
+
+    assert loaded.display?
   end
 
   def test_name

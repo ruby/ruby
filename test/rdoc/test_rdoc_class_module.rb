@@ -289,6 +289,8 @@ class TestRDocClassModule < XrefTestCase
 
     expected = { nil => s0 }
     assert_equal expected, loaded.sections_hash
+
+    assert loaded.display?
   end
 
   def test_marshal_load_version_1

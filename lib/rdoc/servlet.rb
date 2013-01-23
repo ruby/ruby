@@ -387,8 +387,12 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
 
   def store_for source_name
     case source_name
+    when 'home' then
+      RDoc::Store.new RDoc::RI::Paths.home_dir, :home
     when 'ruby' then
       RDoc::Store.new RDoc::RI::Paths.system_dir, :system
+    when 'site' then
+      RDoc::Store.new RDoc::RI::Paths.site_dir, :site
     else
       ri_dir, type = ri_paths.find do |dir, dir_type|
         next unless dir_type == :gem
@@ -396,7 +400,8 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
         source_name == dir[%r%/([^/]*)/ri$%, 1]
       end
 
-      raise "could not find ri documentation for #{source_name}" unless
+      raise RDoc::Error,
+            "could not find ri documentation for #{source_name}" unless
         ri_dir
 
       RDoc::Store.new ri_dir, type
