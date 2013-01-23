@@ -1182,7 +1182,8 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     char fbuf[MAXPATHLEN];
     char *p = NULL;
     const char *shell = NULL;
-    WCHAR *wcmd, *wshell;
+    WCHAR *wcmd = NULL, *wshell = NULL;
+    int e = 0;
     rb_pid_t ret;
     VALUE v = 0;
     VALUE v2 = 0;
@@ -1267,14 +1268,17 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     }
 
     /* assume ACP */
-    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    if (!e && cmd && !(wcmd = acp_to_wstr(cmd, NULL))) e = E2BIG;
     if (v) ALLOCV_END(v);
-    wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
+    if (!e && shell && !(wshell = acp_to_wstr(shell, NULL))) e = E2BIG;
     if (v2) ALLOCV_END(v2);
 
-    ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+    if (!e) {
+	ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+    }
     free(wshell);
     free(wcmd);
+    if (e) errno = e;
     return ret;
 }
 
@@ -1287,7 +1291,8 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[MAXPATHLEN];
-    WCHAR *wcmd, *wprog;
+    WCHAR *wcmd = NULL, *wprog = NULL;
+    int e = 0;
     rb_pid_t ret;
     VALUE v = 0;
 
@@ -1335,13 +1340,16 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
     }
 
     /* assume ACP */
-    wcmd = cmd ? acp_to_wstr(cmd, NULL) : NULL;
+    if (!e && cmd && !(wcmd = acp_to_wstr(cmd, NULL))) e = E2BIG;
     if (v) ALLOCV_END(v);
-    wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
+    if (!e && prog && !(wprog = acp_to_wstr(prog, NULL))) e = E2BIG;
 
-    ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+    if (!e) {
+	ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+    }
     free(wprog);
     free(wcmd);
+    if (e) errno = e;
     return ret;
 }
 
