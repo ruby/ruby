@@ -1,3 +1,8 @@
+Wed Jan 23 10:20:08 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/README:  Fixed typo.  Patch by Pradeep Sahoo.
+	  Fixes #240 on github
+
 Wed Jan 23 09:53:39 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/servlet.rb:  Fixed display of site and home documentation.
