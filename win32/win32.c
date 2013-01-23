@@ -1184,7 +1184,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     const char *shell = NULL;
     WCHAR *wcmd = NULL, *wshell = NULL;
     int e = 0;
-    rb_pid_t ret;
+    rb_pid_t ret = -1;
     VALUE v = 0;
     VALUE v2 = 0;
 
@@ -1293,7 +1293,7 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
     char *cmd, fbuf[MAXPATHLEN];
     WCHAR *wcmd = NULL, *wprog = NULL;
     int e = 0;
-    rb_pid_t ret;
+    rb_pid_t ret = -1;
     VALUE v = 0;
 
     if (check_spawn_mode(mode)) return -1;

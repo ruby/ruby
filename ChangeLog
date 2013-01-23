@@ -1,3 +1,9 @@
+Wed Jan 23 16:29:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn_flags): fix missing
+	  initialization.  pointed out by phasis68 (Heesob Park) at
+	  [ruby-core:51579].  [Bug #7721]
+
 Wed Jan 23 16:18:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#try_constant): fix for large unsigned.
