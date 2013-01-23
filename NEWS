@@ -124,6 +124,11 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added nil.to_h which returns {}
 
+  * Proc
+    * incompatible change:
+      * removed Proc#== so two procs are == only when they are
+        the same object.
+
   * Process
     * added method:
       * added getsid for getting session id (unix only).
@@ -422,6 +427,11 @@ with all sufficient information, see the ChangeLog file.
 
     These methods are deprecated in favor of each_line, each_byte,
     each_char and each_codepoint.
+
+  * Proc#==
+
+    This method was removed. Two procs are == only when they are
+    the same object.
 
   * Signal.trap
 
