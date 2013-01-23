@@ -1,3 +1,10 @@
+Wed Jan 23 10:40:49 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/assignment.rdoc (Implicit Array Assignment):  Clarify
+	  that "left-hand side" means "of the assignment".  Suggested by Jorge
+	  Dias.
+	* doc/syntax/assignment.rdoc (Multiple Assignment):  ditto.
+
 Wed Jan 23 10:34:47 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/assignment.rdoc (Local Variables and Methods):  Fixed

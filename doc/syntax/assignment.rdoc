@@ -374,7 +374,7 @@ assigning.  This is similar to multiple assignment:
 
   p a # prints [1, 2, 3]
 
-You can splat anywhere in the left-hand side:
+You can splat anywhere in the left-hand side of the assignment:
 
   a = 1, *[2, 3]
 
@@ -408,14 +408,15 @@ You can use multiple assignment to swap two values in-place:
   p new_value: new_value, old_value: old_value
   # prints {:new_value=>1, :old_value=>2}
 
-If you have more values on the left hand side than variables on the right hand
-side the extra values are ignored:
+If you have more values on the left hand side of the assignment than variables
+on the right hand side the extra values are ignored:
 
   a, b = 1, 2, 3
 
   p a: a, b: b # prints {:a=>1, :b=>2}
 
-You can use <code>*</code> to gather extra values on the right-hand side.
+You can use <code>*</code> to gather extra values on the right-hand side of
+the assignment.
 
   a, *b = 1, 2, 3
 
