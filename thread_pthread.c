@@ -643,6 +643,27 @@ ruby_init_stack(volatile VALUE *addr
 	native_main_thread.stack_maxsize = space;
 #endif
     }
+
+    /* If addr is out of range of main-thread stack range estimation,  */
+    /* it should be on co-routine (alternative stack). [Feature #2294] */
+    {
+	void *start, *end;
+
+	if (IS_STACK_DIR_UPPER()) {
+	    start = native_main_thread.stack_start;
+	    end = (char *)native_main_thread.stack_start + native_main_thread.stack_maxsize;
+	}
+	else {
+	    start = (char *)native_main_thread.stack_start - native_main_thread.stack_maxsize;
+	    end = native_main_thread.stack_start;
+	}
+
+	if ((void *)addr < start || (void *)addr > end) {
+	    /* out of range */
+	    native_main_thread.stack_start = (VALUE *)addr;
+	    native_main_thread.stack_maxsize = 0; /* unknown */
+	}
+    }
 }
 
 #define CHECK_ERR(expr) \

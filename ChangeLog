@@ -1,3 +1,10 @@
+Wed Jan 23 13:35:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (ruby_init_stack): ignore `STACK_END_ADDRESS'
+	  if Ruby interpreter is running on co-routine.
+	  [Feature #2294]
+	  https://bugs.ruby-lang.org/issues/2294#note-18
+
 Wed Jan 23 12:28:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn_flags): check the results
