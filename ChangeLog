@@ -1,4 +1,6 @@
-Wed Jan 23 16:16:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 23 16:17:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#try_constant): fix for larger constants.
 
 	* test/mkmf/test_constant.rb: tests for try_constant.
 	  TODO: define check_constant and use it.

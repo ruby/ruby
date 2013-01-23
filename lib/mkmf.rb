@@ -646,8 +646,17 @@ SRC
       src = %{#{includes}
 #include <stdio.h>
 /*top*/
-int conftest_const = (int)(#{const});
-int main() {printf("%d\\n", conftest_const); return 0;}
+typedef
+#ifdef PRI_LL_PREFIX
+#define PRI_CONFTEST_PREFIX PRI_LL_PREFIX
+LONG_LONG
+#else
+#define PRI_CONFTEST_PREFIX "l"
+long
+#endif
+conftest_type;
+conftest_type conftest_const = (conftest_type)(#{const});
+int main() {printf("%"PRI_CONFTEST_PREFIX"d\\n", conftest_const); return 0;}
 }
       begin
         if try_link0(src, opt, &b)
