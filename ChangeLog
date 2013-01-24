@@ -1,3 +1,8 @@
+Thu Jan 24 16:05:08 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Optimize Lazy#zip when passed only arrays
+	  [Bug #7706]
+
 Thu Jan 24 15:21:17 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Fix state handling for Lazy#zip,{drop_take}{_while}

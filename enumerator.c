@@ -1602,6 +1602,26 @@ next_stopped(VALUE obj)
 }
 
 static VALUE
+lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv)
+{
+    VALUE yielder, ary, memo;
+    long i, count;
+
+    yielder = argv[0];
+    memo = rb_ivar_get(yielder, id_memo);
+    count = NIL_P(memo) ? 0 : NUM2LONG(memo);
+
+    ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
+    rb_ary_push(ary, argv[1]);
+    for (i = 0; i < RARRAY_LEN(arrays); i++) {
+	rb_ary_push(ary, rb_ary_entry(RARRAY_PTR(arrays)[i], count));
+    }
+    rb_funcall(yielder, id_yield, 1, ary);
+    rb_ivar_set(yielder, id_memo, LONG2NUM(++count));
+    return Qnil;
+}
+
+static VALUE
 lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
 {
     VALUE yielder, ary, arg, v;
@@ -1631,15 +1651,27 @@ lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
 static VALUE
 lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE ary;
+    VALUE ary, v;
+    long i;
+    rb_block_call_func *func = lazy_zip_arrays_func;
 
     if (rb_block_given_p()) {
 	return rb_call_super(argc, argv);
     }
-    ary = rb_ary_new4(argc, argv);
+
+    ary = rb_ary_new2(argc);
+    for (i = 0; i < argc; i++) {
+	v = rb_check_array_type(argv[i]);
+	if (NIL_P(v)) {
+	    ary = rb_ary_new4(argc, argv);
+	    func = lazy_zip_func;
+	    break;
+	}
+	rb_ary_push(ary, v);
+    }
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_zip_func, ary),
+					 func, ary),
 			   ary, lazy_receiver_size);
 }
 

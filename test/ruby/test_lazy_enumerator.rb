@@ -272,6 +272,20 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([[1, 'a', 'a'], [2, 'b', 'b'], [3, 'c', 'c']]*3, zip.flat_map{zip}.force, bug7696)
   end
 
+  def test_zip_lazy_on_args
+    zip = Step.new(1..2).lazy.zip(42..Float::INFINITY)
+    assert_equal [[1, 42], [2, 43]], zip.force
+  end
+
+  def test_zip_efficient_on_array_args
+    ary = [42, :foo]
+    %i[to_enum enum_for lazy each].each do |forbid|
+      ary.define_singleton_method(forbid){ fail "#{forbid} was called"}
+    end
+    zip = Step.new(1..2).lazy.zip(ary)
+    assert_equal [[1, 42], [2, :foo]], zip.force
+  end
+
   def test_take_rewound
     bug7696 = '[ruby-core:51470]'
     e=(1..42).lazy.take(2)
