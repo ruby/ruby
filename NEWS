@@ -74,7 +74,8 @@ with all sufficient information, see the ChangeLog file.
   * Kernel
     * added method:
       * added Kernel#Hash conversion method like Array() or Float().
-      * added Kernel#__dir__ which returns a current dirname.
+      * added Kernel#__dir__ which returns the absolute path of the
+        directory of the file from which this method is called.
       * added Kernel#caller_locations which returns an array of
         frame information objects.
     * extended method:
