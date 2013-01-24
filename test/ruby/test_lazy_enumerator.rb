@@ -250,6 +250,13 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([*(1..5)]*5, take5.flat_map{take5}.force, bug7696)
   end
 
+  def test_drop_while_nested
+    bug7696 = '[ruby-core:51470]'
+    a = Step.new(1..10)
+    drop5 = a.lazy.drop_while{|x| x < 6}
+    assert_equal([*(6..10)]*5, drop5.flat_map{drop5}.force, bug7696)
+  end
+
   def test_take_rewound
     bug7696 = '[ruby-core:51470]'
     e=(1..42).lazy.take(2)

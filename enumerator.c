@@ -1754,12 +1754,11 @@ lazy_drop(VALUE obj, VALUE n)
 static VALUE
 lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
-    NODE *memo = RNODE(args);
-
-    if (!memo->u3.state && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {
-	memo->u3.state = TRUE;
+    VALUE memo = rb_ivar_get(argv[0], id_memo);
+    if (NIL_P(memo) && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {
+	rb_ivar_set(argv[0], id_memo, memo = Qtrue);
     }
-    if (memo->u3.state) {
+    if (memo == Qtrue) {
 	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
     }
     return Qnil;
@@ -1768,14 +1767,11 @@ lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
 static VALUE
 lazy_drop_while(VALUE obj)
 {
-    NODE *memo;
-
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to call lazy drop_while without a block");
     }
-    memo = NEW_MEMO(0, 0, FALSE);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_drop_while_func, (VALUE) memo),
+					 lazy_drop_while_func, 0),
 			   Qnil, 0);
 }
 
