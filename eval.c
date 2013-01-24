@@ -1508,7 +1508,7 @@ rb_f_callee_name(void)
  *  Returns the canonicalized absolute path of the directory of the file from
  *  which this method is called. It means symlinks in the path is resolved.
  *  If <code>__FILE__</code> is <code>nil</code>, it returns <code>nil</code>.
- *  The return value equals to <code>File.dirname(File.realpath(__FILE__))</code>.
+ *  The return value equals to <code>File.realdirpath(__FILE__)</code>.
  *
  */
 static VALUE
