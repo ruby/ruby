@@ -2051,7 +2051,10 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     if (!allary) {
 	CONST_ID(conv, "to_enum");
 	for (i=0; i<argc; i++) {
-	    if (!rb_respond_to(argv[i], id_each)) Check_Type(argv[i], T_ARRAY);
+	    if (!rb_respond_to(argv[i], id_each)) {
+                rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
+                    rb_obj_classname(argv[i]));
+            }
 	    argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
 	}
     }

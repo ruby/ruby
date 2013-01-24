@@ -1,3 +1,9 @@
+Thu Jan 24 16:49:17 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enum.c (enum_zip): Fix error message
+
+	* array.c (take_items): Same, for Array#zip
+
 Thu Jan 24 16:47:26 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c (lazy_zip): raise error for bad arguments
