@@ -1725,13 +1725,16 @@ lazy_drop_size(VALUE lazy)
 static VALUE
 lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
-    NODE *memo = RNODE(args);
-
-    if (memo->u3.cnt == 0) {
+    long remain;
+    VALUE memo = rb_ivar_get(argv[0], id_memo);
+    if (NIL_P(memo)) {
+	memo = args;
+    }
+    if ((remain = NUM2LONG(memo)) == 0) {
 	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
     }
     else {
-	memo->u3.cnt--;
+	rb_ivar_set(argv[0], id_memo, LONG2NUM(--remain));
     }
     return Qnil;
 }
@@ -1739,15 +1742,13 @@ lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
 static VALUE
 lazy_drop(VALUE obj, VALUE n)
 {
-    NODE *memo;
     long len = NUM2LONG(n);
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to drop negative size");
     }
-    memo = NEW_MEMO(0, 0, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_drop_func, (VALUE) memo),
+					 lazy_drop_func, n),
 			   rb_ary_new3(1, n), lazy_drop_size);
 }
 
