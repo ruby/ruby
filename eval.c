@@ -1505,9 +1505,10 @@ rb_f_callee_name(void)
  *  call-seq:
  *     __dir__         -> string
  *
- *  Returns the value of <code>File.dirname(__FILE__)</code>
+ *  Returns the absolute path of the directory of the file from which this
+ *  method is called.
  *  If <code>__FILE__</code> is <code>nil</code>, it returns <code>nil</code>.
- *  And it returns always an absolute path.
+ *  The return value equals to <code>File.dirname(File.expand_path(__FILE__))</code>.
  *
  */
 static VALUE
