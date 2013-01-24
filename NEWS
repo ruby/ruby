@@ -312,16 +312,25 @@ with all sufficient information, see the ChangeLog file.
     http://rake.rubyforge.org/doc/release_notes/rake-0_9_5_rdoc.html for a list
     of changes in rake 0.9.3, 0.9.4 and 0.9.5.
 
-* rdoc
-  * rdoc has been updated to version 4.0
+* RDoc
+  * RDoc has been updated to version 4.0
 
     This version is largely backwards-compatible with previous rdoc versions.
     The most notable change is an update to the ri data format (ri data must
     be regenerated for gems shared across rdoc versions).  Further API changes
     are internal and won't affect most users.
 
-    See https://github.com/rdoc/rdoc/blob/master/History.rdoc for a list of
-    changes in rdoc 4.0.
+    Notable changes include:
+
+    * Page support for ri.  Try `ri ruby:` for a list of pages in ruby or
+      `ri ruby:syntax/literals` for the syntax documentation for literals.
+
+      This also works for gems such as `ri rspec:README` for the rspec gem's
+      README file.
+    * Markdown support.  See ri RDoc::Markdown for details.
+
+    See https://github.com/rdoc/rdoc/blob/master/History.rdoc for a full list
+    of changes in rdoc 4.0.
 
 * resolv
   * new methods:

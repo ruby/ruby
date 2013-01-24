@@ -1,3 +1,7 @@
+Thu Jan 24 10:28:30 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS (RDoc):  Added mention of page support and markdown support.
+
 Thu Jan 24 09:40:13 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/refinements.rdoc:  Added refinements document based on
