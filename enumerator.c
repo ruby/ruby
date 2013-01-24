@@ -104,7 +104,7 @@
  */
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
-static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_size;
+static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_size, id_to_enum;
 static ID id_eqq, id_next, id_result, id_lazy, id_receiver, id_arguments, id_memo, id_method, id_force;
 static VALUE sym_each, sym_cycle;
 
@@ -1602,12 +1602,21 @@ next_stopped(VALUE obj)
 }
 
 static VALUE
-lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
+lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
 {
-    VALUE yielder, ary, v;
+    VALUE yielder, ary, arg, v;
     long i;
 
     yielder = argv[0];
+    arg = rb_ivar_get(yielder, id_memo);
+    if (NIL_P(arg)) {
+	arg = rb_ary_new2(RARRAY_LEN(zip_args));
+	for (i = 0; i < RARRAY_LEN(zip_args); i++) {
+	    rb_ary_push(arg, rb_funcall(RARRAY_PTR(zip_args)[i], id_to_enum, 0));
+	}
+	rb_ivar_set(yielder, id_memo, arg);
+    }
+
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
@@ -1623,19 +1632,15 @@ static VALUE
 lazy_zip(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-    int i;
 
     if (rb_block_given_p()) {
 	return rb_call_super(argc, argv);
     }
-    ary = rb_ary_new2(argc);
-    for (i = 0; i < argc; i++) {
-	rb_ary_push(ary, rb_funcall(argv[i], id_lazy, 0));
-    }
+    ary = rb_ary_new4(argc, argv);
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_zip_func, ary),
-			   rb_ary_new4(argc, argv), lazy_receiver_size);
+			   ary, lazy_receiver_size);
 }
 
 static VALUE
@@ -1957,6 +1962,7 @@ Init_Enumerator(void)
     id_memo = rb_intern("memo");
     id_method = rb_intern("method");
     id_force = rb_intern("force");
+    id_to_enum = rb_intern("to_enum");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
 

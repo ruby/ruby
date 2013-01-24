@@ -1,3 +1,8 @@
+Thu Jan 24 15:21:17 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Fix state handling for Lazy#zip,{drop_take}{_while}
+	  [bug #7696] [bug #7691]
+
 Thu Jan 24 11:43:47 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* eval.c (f_current_dirname): Add documentation about "__dir__

@@ -264,6 +264,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([*(6..10)]*5, drop5.flat_map{drop5}.force, bug7696)
   end
 
+  def test_zip_nested
+    bug7696 = '[ruby-core:51470]'
+    enum = ('a'..'z').each
+    enum.next
+    zip = (1..3).lazy.zip(enum, enum)
+    assert_equal([[1, 'a', 'a'], [2, 'b', 'b'], [3, 'c', 'c']]*3, zip.flat_map{zip}.force, bug7696)
+  end
+
   def test_take_rewound
     bug7696 = '[ruby-core:51470]'
     e=(1..42).lazy.take(2)
