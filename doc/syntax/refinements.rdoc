@@ -188,7 +188,7 @@ called:
 
 == Method Lookup
 
-When looking up a method for a class +C+ Ruby checks:
+When looking up a method for an instance of class +C+ Ruby checks:
 
 * If refinements are active for +C+, in the reverse order they were activated:
   * The prepended modules from the refinement for +C+
