@@ -1507,6 +1507,7 @@ rb_f_callee_name(void)
  *
  *  Returns the value of <code>File.dirname(__FILE__)</code>
  *  If <code>__FILE__</code> is <code>nil</code>, it returns <code>nil</code>.
+ *  And it returns always an absolute path.
  *
  */
 static VALUE
