@@ -1,3 +1,9 @@
+Thu Jan 24 09:40:13 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/refinements.rdoc:  Added refinements document based on
+	  the specification from the wiki.
+	* doc/syntax.rdoc:  Added link to refinements document.
+
 Wed Jan 23 16:29:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn, rb_w32_aspawn_flags): fix missing
