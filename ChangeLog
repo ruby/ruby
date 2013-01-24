@@ -1,3 +1,7 @@
+Thu Jan 24 19:55:25 2013  Shota Fukumori  <her@sorah.jp>
+
+	* NEWS (yaml): Write about bundled libyaml.
+
 Thu Jan 24 16:54:34 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/calling_methods.rdoc:  Added a Method Lookup section.
