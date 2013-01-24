@@ -1663,6 +1663,12 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
     for (i = 0; i < argc; i++) {
 	v = rb_check_array_type(argv[i]);
 	if (NIL_P(v)) {
+	    for (; i < argc; i++) {
+		if (!rb_respond_to(argv[i], id_each)) {
+		    rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
+			rb_obj_classname(argv[i]));
+		}
+	    }
 	    ary = rb_ary_new4(argc, argv);
 	    func = lazy_zip_func;
 	    break;

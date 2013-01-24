@@ -213,6 +213,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_zip_bad_arg
+    a = Step.new(1..3)
+    assert_raise(TypeError){ a.lazy.zip(42) }
+  end
+
   def test_zip_with_block
     # zip should be eager when a block is given
     a = Step.new(1..3)

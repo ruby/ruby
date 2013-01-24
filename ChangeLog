@@ -1,3 +1,8 @@
+Thu Jan 24 16:47:26 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c (lazy_zip): raise error for bad arguments
+	  [Bug #7706]
+
 Thu Jan 24 16:05:08 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Optimize Lazy#zip when passed only arrays
