@@ -531,4 +531,34 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
   end
 
+  def test_abstract_unix_server
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    UNIXServer.open(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      UNIXSocket.open(name) {|c|
+        sock = s.accept
+        assert_equal(name, c.remote_address.unix_path)
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_abstract_unix_server_socket
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    Socket.unix_server_socket(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        assert_equal(name, c.remote_address.unix_path)
+      }
+    }
+    assert(s0.closed?)
+  end
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM

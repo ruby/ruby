@@ -441,6 +441,23 @@ rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
                         rsock_unixpath_str(sockaddr, len));
 }
+
+socklen_t
+rsock_unixpath_len(VALUE path)
+{
+#ifdef __linux__
+    if (RSTRING_PTR(path)[0] == '\0') {
+	/* abstract namespace; see unix(7) for details. */
+	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
+	    RSTRING_LEN(path);
+    }
+    else {
+#endif
+	return (socklen_t) sizeof(struct sockaddr_un);
+#ifdef __linux__
+    }
+#endif
+}
 #endif
 
 struct hostent_arg {
@@ -769,6 +786,7 @@ static void
 init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
+    socklen_t len;
 
     StringValue(path);
 
@@ -782,7 +800,8 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
-    init_addrinfo(rai, (struct sockaddr *)&un, (socklen_t)sizeof(un),
+    len = rsock_unixpath_len(path);
+    init_addrinfo(rai, (struct sockaddr *)&un, len,
 		  PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif

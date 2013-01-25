@@ -1,3 +1,19 @@
+Fri Jan 25 16:47:31 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (rsock_unixpath_len, init_unix_addrinfo),
+	  ext/socket/unixsocket.c (unixsock_connect_internal,
+	  rsock_init_unixsock): calculate the correct address length of
+	  an abstract socket.  Without this fix, sizeof(struct sockaddr_un)
+	  is specified as the length of an abstract socket for bind(2) or
+	  connect(2), so the address of the socket is filled with extra NUL
+	  characters.  See unix(7) for details.
+
+	* ext/socket/lib/socket.rb (unix_server_socket): don't access the
+	  file system if the platform is Linux and path starts with NUL,
+	  which means that the socket is an abstract socket.
+
+	* test/socket/test_unix.rb: related test.
+
 Fri Jan 25 13:02:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/drb/drb.rb:  Updated documentation based on patch from Vincent
