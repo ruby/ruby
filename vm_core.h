@@ -225,7 +225,7 @@ struct rb_iseq_struct {
     ID *local_table;		/* must free */
     int local_table_size;
 
-    /* method, class frame: sizeof(vars) + 1, block frame: sizeof(vars) */
+    /* sizeof(vars) + 1 */
     int local_size;
 
     struct iseq_inline_cache_entry *ic_entries;

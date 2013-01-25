@@ -1,3 +1,8 @@
+Fri Jan 25 12:01:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: modify a comment about rb_iseq_t::local_size.
+	  A patch by davidbalbert (David Albert) [Bug #6750]
+
 Fri Jan 25 10:36:31 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Documented MakeMakefile constants.  Hide implementation
