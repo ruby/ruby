@@ -240,7 +240,7 @@ int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 #ifdef HAVE_SYS_UN_H
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
-socklen_t rsock_unixpath_len(VALUE path);
+socklen_t rsock_unix_sockaddr_len(VALUE path);
 #endif
 
 int rsock_socket(int domain, int type, int proto);

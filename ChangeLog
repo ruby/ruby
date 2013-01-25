@@ -1,3 +1,9 @@
+Sat Jan 26 08:29:33 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/raddrinfo (rsock_unix_sockaddr_len): renamed from
+	  rsock_unixpath_len, because it returns not the length of the path,
+	  but the length of a socket address for the path.
+
 Sat Jan 26 01:12:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (test_ioctl_linux): skip if a platform is

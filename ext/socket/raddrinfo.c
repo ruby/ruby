@@ -443,7 +443,7 @@ rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
 }
 
 socklen_t
-rsock_unixpath_len(VALUE path)
+rsock_unix_sockaddr_len(VALUE path)
 {
 #ifdef __linux__
     if (RSTRING_PTR(path)[0] == '\0') {
@@ -800,7 +800,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
-    len = rsock_unixpath_len(path);
+    len = rsock_unix_sockaddr_len(path);
     init_addrinfo(rai, (struct sockaddr *)&un, len,
 		  PF_UNIX, socktype, 0, Qnil, Qnil);
 }

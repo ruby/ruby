@@ -46,7 +46,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
             RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path));
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
-    sockaddrlen = rsock_unixpath_len(path);
+    sockaddrlen = rsock_unix_sockaddr_len(path);
 
     if (server) {
         status = bind(fd, (struct sockaddr*)&sockaddr, sockaddrlen);
