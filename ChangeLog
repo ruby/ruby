@@ -1,3 +1,12 @@
+Fri Jan 25 10:04:07 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/compatibility.rb:  Hide compatibility shims from RDoc
+
+	* lib/rubygems/config_file.rb:  Hide RbConfig use from RDoc
+
+	* lib/rubygems/test_case.rb:  Added note to use realpath when 1.8
+	  support is dropped.
+
 Fri Jan 25 09:14:43 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/generator/darkfish.rb:  Fixed debug message.  RDoc bug #174

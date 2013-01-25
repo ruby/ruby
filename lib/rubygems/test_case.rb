@@ -133,6 +133,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     # This makes the tempdir consistent on OS X.
     # File.expand_path Dir.tmpdir                      #=> "/var/..."
     # Dir.chdir Dir.tmpdir do File.expand_path '.' end #=> "/private/var/..."
+    # TODO use File#realpath above instead of #expand_path once 1.8 support is
+    # dropped.
     Dir.chdir @tempdir do
       @tempdir = File.expand_path '.'
       @tempdir.untaint

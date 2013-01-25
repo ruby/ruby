@@ -50,6 +50,8 @@ class Gem::ConfigFile
 
   PLATFORM_DEFAULTS = {}
 
+  # :stopdoc:
+
   system_config_path =
     begin
       require "etc"
@@ -76,6 +78,8 @@ class Gem::ConfigFile
         RbConfig::CONFIG["sysconfdir"] || "/etc"
       end
     end
+
+  # :startdoc:
 
   SYSTEM_WIDE_CONFIG_FILE = File.join system_config_path, 'gemrc'
 
