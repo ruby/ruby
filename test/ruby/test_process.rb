@@ -1377,20 +1377,30 @@ class TestProcess < Test::Unit::TestCase
     end
   end if File.executable?("/bin/sh")
 
-  def test_too_long_path
+  def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
+    assert_fail_too_long_path(bug4314)
+  end
+
+  def test_aspawn_too_long_path
+    bug4315 = '[ruby-core:34833]'
+    assert_fail_too_long_path(bug4315)
+  end
+
+  def assert_fail_too_long_path(cmd, mesg = nil)
+    size = 1_000_000 / cmd.size
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     EnvUtil.suppress_warning do
-      assert_raise(*exs, bug4314) {Process.spawn("a" * 10_000_000)}
+      assert_raise(*exs, mesg) do
+        begin
+          Process.spawn(cmd * size)
+        rescue NoMemoryError
+          raise if (size /= 2) < 250
+          retry
+        end
+      end
     end
-  end
-
-  def test_too_long_path2
-    bug4315 = '[ruby-core:34833]'
-    exs = [Errno::ENOENT]
-    exs << Errno::E2BIG if defined?(Errno::E2BIG)
-    assert_raise(*exs, bug4315) {Process.spawn('"a"|'*10_000_000)}
   end
 
   def test_system_sigpipe
