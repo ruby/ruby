@@ -2439,11 +2439,14 @@ End
 
   def test_ioctl_linux
     return if /linux/ !~ RUBY_PLATFORM
+    # Alpha, mips, sparc and ppc have an another ioctl request number scheme.
+    # So, hardcoded 0x80045200 may fail.
+    return if /^i.?86|^x86_64/ !~ RUBY_PLATFORM
 
     assert_nothing_raised do
       File.open('/dev/urandom'){|f1|
         entropy_count = ""
-        # get entropy count
+        # RNDGETENTCNT(0x80045200) mean "get entropy count".
         f1.ioctl(0x80045200, entropy_count)
       }
     end

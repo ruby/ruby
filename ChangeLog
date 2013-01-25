@@ -1,3 +1,10 @@
+Sat Jan 26 01:12:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (test_ioctl_linux): skip if a platform is
+	  not x86 because linux ioctl request number depend on cpu arch.
+	  At least, alpha, mips, sparc and ppc have a different number.
+	  [Bug #7718] [ruby-core:51544]
+
 Fri Jan 25 19:14:24 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: use TlsAlloc instead of __declspec(thread)
