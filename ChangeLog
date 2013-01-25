@@ -1,3 +1,9 @@
+Fri Jan 25 13:02:27 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/drb/drb.rb:  Updated documentation based on patch from Vincent
+	  Batts.  [ruby-trunk - Bug #7714]
+	* lib/drb/ssl.rb:  ditto.
+
 Fri Jan 25 12:23:29 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/drb/drb.rb:  Improved documentation by adding or hiding methods.
