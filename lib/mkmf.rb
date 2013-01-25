@@ -46,15 +46,33 @@ end
 # library.
 module MakeMakefile
 
+  ##
+  # The makefile configuration using the defaults from when ruby was built.
+
   CONFIG = RbConfig::MAKEFILE_CONFIG
   ORIG_LIBPATH = ENV['LIB']
 
+  ##
+  # Extensions for files compiled with a C compiler
+
   C_EXT = %w[c m]
+
+  ##
+  # Extensions for files complied with a C++ compiler
+
   CXX_EXT = %w[cc mm cxx cpp]
   if File::FNM_SYSCASE.zero?
     CXX_EXT.concat(%w[C])
   end
+
+  ##
+  # Extensions for source files
+
   SRC_EXT = C_EXT + CXX_EXT
+
+  ##
+  # Extensions for header files
+
   HDR_EXT = %w[h hpp]
   $static = nil
   $config_h = '$(arch_hdrdir)/ruby/config.h'
@@ -1216,7 +1234,7 @@ SRC
 
   # :stopdoc:
   STRING_OR_FAILED_FORMAT = "%s"
-  def STRING_OR_FAILED_FORMAT.%(x)
+  def STRING_OR_FAILED_FORMAT.%(x) # :nodoc:
     x ? super : "failed"
   end
 
@@ -1894,7 +1912,7 @@ all install static install-so install-rb: Makefile
 RULES
   end
 
-  def each_compile_rules
+  def each_compile_rules # :nodoc:
     vpath_splat = /\$\(\*VPATH\*\)/
     COMPILE_RULES.each do |rule|
       if vpath_splat =~ rule
@@ -2417,16 +2435,43 @@ MESSAGE
   config_string('COMMON_HEADERS') do |s|
     Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
   end
+
+  ##
+  # Common headers for ruby C extensions
+
   COMMON_HEADERS = hdr.join("\n")
+
+  ##
+  # Common libraries for ruby C extensions
+
   COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
+
+  ##
+  # make compile rules
 
   COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
   RULE_SUBST = config_string('RULE_SUBST')
+
+  ##
+  # Command which will compile C files in the generated Makefile
+
   COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
+
+  ##
+  # Command which will compile C++ files in the generated Makefile
+
   COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+
+  ##
+  # Command which will compile a program in order to test linking a library
+
   TRY_LINK = config_string('TRY_LINK') ||
     "$(CC) #{OUTFLAG}conftest#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
     "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+
+  ##
+  # Command which will link a shared library
+
   LINK_SO = (config_string('LINK_SO') || "").sub(/^$/) do
     if CONFIG["DLEXT"] == $OBJEXT
       "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
@@ -2435,14 +2480,30 @@ MESSAGE
       "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
     end
   end
+
+  ##
+  # Argument which will add a library path to the linker
+
   LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
   RPATHFLAG = config_string('RPATHFLAG') || ''
+
+  ##
+  # Argument which will add a library to the linker
+
   LIBARG = config_string('LIBARG') || '-l%s'
+
+  ##
+  # A C main function which does no work
+
   MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 
   sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
+
+  ##
+  # Makefile rules that will clean the extension build directory
+
   CLEANINGS = "
 clean-static::
 clean-rb-default::

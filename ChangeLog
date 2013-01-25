@@ -1,3 +1,8 @@
+Fri Jan 25 10:36:31 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Documented MakeMakefile constants.  Hid implementation
+	  details from RDoc 
+
 Fri Jan 25 10:04:07 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/compatibility.rb:  Hide compatibility shims from RDoc
