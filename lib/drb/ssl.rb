@@ -5,8 +5,13 @@ require 'singleton'
 
 module DRb
 
+  # The protocol for DRb over an SSL socket
+  #
+  # The URI for a DRb socket over SSL is:
+  # <code>drbssl://<host>:<port>?<option></code>.  The option is optional
   class DRbSSLSocket < DRbTCPSocket
 
+    # :stopdoc:
     class SSLConfig
 
       DEFAULT = {
@@ -190,6 +195,8 @@ module DRb
         retry
       end
     end
+
+    # :stopdoc:
   end
 
   DRbProtocol.add_protocol(DRbSSLSocket)

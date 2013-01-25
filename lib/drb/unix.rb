@@ -6,7 +6,13 @@ raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)
 
 module DRb
 
+  # Implements DRb over a UNIX socket
+  #
+  # DRb UNIX socket URIs look like <code>drbunix:<path>?<option></code>.  The
+  # option is optional.
+
   class DRbUNIXSocket < DRbTCPSocket
+    # :stopdoc:
     def self.parse_uri(uri)
       if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
         filename = $1
@@ -105,4 +111,5 @@ module DRb
   end
 
   DRbProtocol.add_protocol(DRbUNIXSocket)
+  # :startdoc:
 end

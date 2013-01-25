@@ -1,3 +1,17 @@
+Fri Jan 25 12:23:29 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/drb/drb.rb:  Improved documentation by adding or hiding methods.
+	* lib/drb/eq.rb:  ditto.
+	* lib/drb/extserv.rb:  ditto.
+	* lib/drb/gw.rb:  ditto.
+	* lib/drb/invokemethod.rb:  ditto.
+	* lib/drb/observer.rb:  ditto.
+	* lib/drb/ssl.rb:  ditto.
+	* lib/drb/timeridconv.rb:  ditto.
+	* lib/drb/unix.rb:  ditto.
+
+	* sample/drb/gw_cu.rb:  Fixed bug in DRb gateway sample.
+
 Fri Jan 25 12:01:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: modify a comment about rb_iseq_t::local_size.
