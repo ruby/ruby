@@ -214,7 +214,7 @@ VALUE cWIN32OLE_PROPERTY;
 
 static VALUE ary_ole_event;
 static ID id_events;
-#ifdef RB_THREAD_SPECIFIC
+#if defined(RB_THREAD_SPECIFIC) && (defined(__CYGWIN__) || defined(__MINGW32__))
 static RB_THREAD_SPECIFIC BOOL g_ole_initialized;
 # define g_ole_initialized_init() ((void)0)
 # define g_ole_initialized_set(val) (g_ole_initialized = (val))
