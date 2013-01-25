@@ -1,3 +1,12 @@
+Fri Jan 25 09:14:43 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/generator/darkfish.rb:  Fixed debug message.  RDoc bug #174
+	  by Thomas Leitner.
+
+	* lib/rdoc/store.rb:  Fixed deletion of ri attribute data when a class
+	  was loaded then saved.  RDoc bug #171 by Thomas Leitner.
+	* test/rdoc/test_rdoc_store.rb:  Test for above.
+
 Thu Jan 24 19:55:25 2013  Shota Fukumori  <her@sorah.jp>
 
 	* NEWS (yaml): Write about bundled libyaml.

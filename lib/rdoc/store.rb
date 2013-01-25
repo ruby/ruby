@@ -819,13 +819,13 @@ class RDoc::Store
     @cache[:ancestors][full_name] ||= []
     @cache[:ancestors][full_name].concat ancestors
 
-    attributes = klass.attributes.map do |attribute|
+    attribute_definitions = klass.attributes.map do |attribute|
       "#{attribute.definition} #{attribute.name}"
     end
 
-    unless attributes.empty? then
+    unless attribute_definitions.empty? then
       @cache[:attributes][full_name] ||= []
-      @cache[:attributes][full_name].concat attributes
+      @cache[:attributes][full_name].concat attribute_definitions
     end
 
     to_delete = []
@@ -839,13 +839,15 @@ class RDoc::Store
 
       class_methods    = class_methods.   map { |method| method.name }
       instance_methods = instance_methods.map { |method| method.name }
+      attribute_names  = klass.attributes.map { |attr|   attr.name }
 
       old = @cache[:class_methods][full_name] - class_methods
       to_delete.concat old.map { |method|
         method_file full_name, "#{full_name}::#{method}"
       }
 
-      old = @cache[:instance_methods][full_name] - instance_methods
+      old = @cache[:instance_methods][full_name] -
+        instance_methods - attribute_names
       to_delete.concat old.map { |method|
         method_file full_name, "#{full_name}##{method}"
       }

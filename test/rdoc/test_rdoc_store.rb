@@ -778,6 +778,7 @@ class TestRDocStore < XrefTestCase
     @s.save_method @klass, @meth
     @s.save_method @klass, @meth_bang
     @s.save_method @klass, @cmeth
+    @s.save_method @klass, @attr
     @s.save_cache
 
     klass = RDoc::NormalClass.new 'Object'
@@ -799,11 +800,15 @@ class TestRDocStore < XrefTestCase
 
     assert_cache({ 'Object' => %w[replace] }, {},
                  { 'Object' => %w[attr_accessor\ attr] }, %w[Object],
-                 'Object' => OBJECT_ANCESTORS)
+                   'Object' => OBJECT_ANCESTORS)
 
-    refute File.exist? @s.method_file(@klass.full_name, @meth.full_name)
-    refute File.exist? @s.method_file(@klass.full_name, @meth_bang.full_name)
-    refute File.exist? @s.method_file(@klass.full_name, @cmeth.full_name)
+    # assert these files were deleted
+    refute_file @s.method_file(@klass.full_name, @meth.full_name)
+    refute_file @s.method_file(@klass.full_name, @meth_bang.full_name)
+    refute_file @s.method_file(@klass.full_name, @cmeth.full_name)
+
+    # assert these files were not deleted
+    assert_file @s.method_file(@klass.full_name, @attr.full_name)
   end
 
   def test_save_class_dry_run
@@ -813,6 +818,40 @@ class TestRDocStore < XrefTestCase
 
     refute_file File.join(@tmpdir, 'Object')
     refute_file File.join(@tmpdir, 'Object', 'cdesc-Object.ri')
+  end
+
+  def test_save_class_loaded
+    @s.save
+
+    assert_directory File.join(@tmpdir, 'Object')
+    assert_file      File.join(@tmpdir, 'Object', 'cdesc-Object.ri')
+
+    assert_file @s.method_file(@klass.full_name, @attr.full_name)
+    assert_file @s.method_file(@klass.full_name, @cmeth.full_name)
+    assert_file @s.method_file(@klass.full_name, @meth.full_name)
+    assert_file @s.method_file(@klass.full_name, @meth_bang.full_name)
+
+    s = RDoc::Store.new @s.path
+    s.load_cache
+
+    loaded = s.load_class 'Object'
+
+    assert_equal @klass, loaded
+
+    s.save_class loaded
+
+    s = RDoc::Store.new @s.path
+    s.load_cache
+
+    reloaded = s.load_class 'Object'
+
+    assert_equal @klass, reloaded
+
+    # assert these files were not deleted.  Bug #171
+    assert_file s.method_file(@klass.full_name, @attr.full_name)
+    assert_file s.method_file(@klass.full_name, @cmeth.full_name)
+    assert_file s.method_file(@klass.full_name, @meth.full_name)
+    assert_file s.method_file(@klass.full_name, @meth_bang.full_name)
   end
 
   def test_save_class_merge

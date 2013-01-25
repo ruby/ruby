@@ -453,7 +453,7 @@ class RDoc::Generator::Darkfish
     template_file = @template_dir + 'servlet_not_found.rhtml'
     return unless template_file.exist?
 
-    debug_msg "Rendering the servlet root page..."
+    debug_msg "Rendering the servlet 404 Not Found page..."
 
     rel_prefix = rel_prefix = ''
     search_index_rel_prefix = rel_prefix
