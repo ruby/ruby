@@ -191,8 +191,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Time
     * change return value:
-      * Time#to_s returned encoding defaults to US-ASCII but automatically
-        transcodes to Encoding.default_internal if it is set.
+      * Time#to_s now returns US-ASCII encoding instead of BINARY.
 
   * TracePoint
     * new class. This class is replacement of set_trace_func.
