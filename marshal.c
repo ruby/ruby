@@ -651,11 +651,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall2(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
-	    hasiv = has_ivars(obj, ivtbl);
+	    hasiv = has_ivars(v, ivtbl);
 	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);
-	    if (hasiv) w_ivar(obj, ivtbl, &c_arg);
+	    if (hasiv) w_ivar(v, ivtbl, &c_arg);
 	    return;
 	}
 	if (rb_obj_respond_to(obj, s_dump, TRUE)) {

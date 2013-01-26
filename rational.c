@@ -1583,6 +1583,7 @@ nurat_marshal_dump(VALUE self)
     get_dat1(self);
 
     a = rb_assoc_new(dat->num, dat->den);
+    rb_copy_generic_ivar(a, self);
     return a;
 }
 

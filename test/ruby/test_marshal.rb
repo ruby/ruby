@@ -517,4 +517,23 @@ class TestMarshal < Test::Unit::TestCase
       assert(!c.untrusted?, bug7325)
     end
   end
+
+  class Bug7627 < Struct.new(:bar)
+    attr_accessor :foo
+
+    def marshal_dump; 'dump'; end  # fake dump data
+    def marshal_load(*); end       # do nothing
+  end
+
+  def test_marshal_dump_struct_ivar
+    bug7627 = '[ruby-core:51163]'
+    obj = Bug7627.new
+    obj.foo = '[Bug #7627]'
+
+    dump   = Marshal.dump(obj)
+    loaded = Marshal.load(dump)
+
+    assert_equal(obj, loaded, bug7627)
+    assert_nil(loaded.foo, bug7627)
+  end
 end
