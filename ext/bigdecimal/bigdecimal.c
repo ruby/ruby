@@ -3728,25 +3728,22 @@ VpOne(void)
     return VpConstOne;
 }
 
+#define SIGNED_VALUE_MAX (SIGNED_VALUE)((~(VALUE)0) >> 1)
+#define SIGNED_VALUE_MIN (SIGNED_VALUE)(~((~(VALUE)0) >> 1))
+
 /* If exponent overflows,then raise exception or returns 0 */
 static int
 AddExponent(Real *a, SIGNED_VALUE n)
 {
     SIGNED_VALUE e = a->exponent;
-    SIGNED_VALUE m = e+n;
-    SIGNED_VALUE eb, mb;
-    if(e>0) {
-        if(n>0) {
-            mb = m*(SIGNED_VALUE)BASE_FIG;
-            eb = e*(SIGNED_VALUE)BASE_FIG;
-            if(mb<eb) goto overflow;
-        }
-    } else if(n<0) {
-        mb = m*(SIGNED_VALUE)BASE_FIG;
-        eb = e*(SIGNED_VALUE)BASE_FIG;
-        if(mb>eb) goto underflow;
+    if (n > 0) {
+        if (e > SIGNED_VALUE_MAX / BASE_FIG - n)
+            goto overflow;
+    } else {
+        if (e < SIGNED_VALUE_MIN / BASE_FIG - n)
+            goto underflow;
     }
-    a->exponent = m;
+    a->exponent = e + n;
     return 1;
 
 /* Overflow/Underflow ==> Raise exception or returns 0 */
