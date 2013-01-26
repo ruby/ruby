@@ -497,5 +497,29 @@ if have_func(test_func)
       $defs << "-DSOCKS"
     end
   end
+  hdr = "netinet6/in6.h"
+  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+#include <netinet/in.h>
+int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
+SRC
+    print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
+    in6 = File.read("/usr/include/#{hdr}")
+    if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
+        i, r = $2.to_i.divmod(4)
+        if r.zero?
+          "#$1->__u6_addr.__u6_addr32[#{i}]"
+        else
+          $&
+        end
+      end
+      FileUtils.mkdir_p(File.dirname(hdr))
+      open(hdr, "w") {|f| f.write(in6)}
+      $distcleanfiles << hdr
+      $distcleandirs << File.dirname(hdr)
+      puts "done"
+    else
+      puts "not needed"
+    end
+  end
   create_makefile("socket")
 end
