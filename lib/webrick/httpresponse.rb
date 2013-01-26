@@ -16,11 +16,34 @@ require 'webrick/httpstatus'
 
 module WEBrick
   ##
-  # An HTTP response.
+  # An HTTP response.  This is filled in by the service or do_* methods of a
+  # WEBrick HTTP Servlet.
 
   class HTTPResponse
-    attr_reader :http_version, :status, :header
+
+    ##
+    # HTTP Response version
+
+    attr_reader :http_version
+
+    ##
+    # Response status code (200)
+
+    attr_reader :status
+
+    ##
+    # Response header
+
+    attr_reader :header
+
+    ##
+    # Response cookies
+
     attr_reader :cookies
+
+    ##
+    # Response reason phrase ("OK")
+
     attr_accessor :reason_phrase
 
     ##
@@ -28,13 +51,45 @@ module WEBrick
 
     attr_accessor :body
 
-    attr_accessor :request_method, :request_uri, :request_http_version
-    attr_accessor :filename
-    attr_accessor :keep_alive
-    attr_reader :config, :sent_size
+    ##
+    # Request method for this response
+
+    attr_accessor :request_method
 
     ##
-    # Creates a new HTTP response object
+    # Request URI for this response
+
+    attr_accessor :request_uri
+
+    ##
+    # Request HTTP version for this response
+
+    attr_accessor :request_http_version
+
+    ##
+    # Filename of the static file in this response.  Only used by the
+    # FileHandler servlet.
+
+    attr_accessor :filename
+
+    ##
+    # Is this a keep-alive response?
+
+    attr_accessor :keep_alive
+
+    ##
+    # Configuration for this response
+
+    attr_reader :config
+
+    ##
+    # Bytes sent in this response
+
+    attr_reader :sent_size
+
+    ##
+    # Creates a new HTTP response object.  WEBrick::Config::HTTP is the
+    # default configuration.
 
     def initialize(config)
       @config = config
@@ -145,7 +200,7 @@ module WEBrick
     ##
     # Sends the response on +socket+
 
-    def send_response(socket)
+    def send_response(socket) # :nodoc:
       begin
         setup_header()
         send_header(socket)
@@ -162,7 +217,7 @@ module WEBrick
     ##
     # Sets up the headers for sending
 
-    def setup_header()
+    def setup_header() # :nodoc:
       @reason_phrase    ||= HTTPStatus::reason_phrase(@status)
       @header['server'] ||= @config[:ServerSoftware]
       @header['date']   ||= Time.now.httpdate
@@ -225,7 +280,7 @@ module WEBrick
     ##
     # Sends the headers on +socket+
 
-    def send_header(socket)
+    def send_header(socket) # :nodoc:
       if @http_version.major > 0
         data = status_line()
         @header.each{|key, value|
@@ -243,7 +298,7 @@ module WEBrick
     ##
     # Sends the body on +socket+
 
-    def send_body(socket)
+    def send_body(socket) # :nodoc:
       case @body
       when IO then send_body_io(socket)
       else send_body_string(socket)
@@ -325,6 +380,8 @@ module WEBrick
 
     private
 
+    # :stopdoc:
+
     def send_body_io(socket)
       begin
         if @request_method == "HEAD"
@@ -400,5 +457,8 @@ module WEBrick
     def _write_data(socket, data)
       socket << data
     end
+
+    # :startdoc:
   end
+
 end

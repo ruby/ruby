@@ -16,7 +16,7 @@ require 'webrick/log'
 
 module WEBrick
   module Config
-    LIBDIR = File::dirname(__FILE__)
+    LIBDIR = File::dirname(__FILE__) # :nodoc:
 
     # for GenericServer
     General = {
@@ -67,6 +67,30 @@ module WEBrick
       :Escape8bitURI  => false
     )
 
+    ##
+    # Default configuration for WEBrick::HTTPServlet::FileHandler
+    #
+    # :AcceptableLanguages::
+    #   Array of languages allowed for accept-language.  There is no default
+    # :DirectoryCallback::
+    #   Allows preprocessing of directory requests.  There is no default
+    #   callback.
+    # :FancyIndexing::
+    #   If true, show an index for directories.  The default is true.
+    # :FileCallback::
+    #   Allows preprocessing of file requests.  There is no default callback.
+    # :HandlerCallback::
+    #   Allows preprocessing of requests.  There is no default callback.
+    # :HandlerTable::
+    #   Maps file suffixes to file handlers.  DefaultFileHandler is used by
+    #   default but any servlet can be used.
+    # :NondisclosureName::
+    #   Do not show files matching this array of globs.  .ht* and *~ are
+    #   excluded by default.
+    # :UserDir::
+    #   Directory inside ~user to serve content from for /~user requests.
+    #   Only works if mounted on /.  Disabled by default.
+
     FileHandler = {
       :NondisclosureName => [".ht*", "*~"],
       :FancyIndexing     => false,
@@ -77,6 +101,12 @@ module WEBrick
       :UserDir           => nil,  # e.g. "public_html"
       :AcceptableLanguages => []  # ["en", "ja", ... ]
     }
+
+    ##
+    # Default configuration for WEBrick::HTTPAuth::BasicAuth
+    #
+    # :AutoReloadUserDB:: Reload the user database provided by :UserDB
+    #                     automatically?
 
     BasicAuth = {
       :AutoReloadUserDB     => true,

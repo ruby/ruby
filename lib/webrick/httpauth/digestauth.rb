@@ -45,9 +45,22 @@ module WEBrick
     class DigestAuth
       include Authenticator
 
-      AuthScheme = "Digest"
-      OpaqueInfo = Struct.new(:time, :nonce, :nc)
-      attr_reader :algorithm, :qop
+      AuthScheme = "Digest" # :nodoc:
+
+      ##
+      # Struct containing the opaque portion of the digest authentication
+
+      OpaqueInfo = Struct.new(:time, :nonce, :nc) # :nodoc:
+
+      ##
+      # Digest authentication algorithm
+
+      attr_reader :algorithm
+
+      ##
+      # Quality of protection.  RFC 2617 defines "auth" and "auth-int"
+
+      attr_reader :qop
 
       ##
       # Used by UserDB to create a digest password entry
@@ -141,6 +154,8 @@ module WEBrick
       end
 
       private
+
+      # :stopdoc:
 
       MustParams = ['username','realm','nonce','uri','response']
       MustParamsAuth = ['cnonce','nc']
@@ -375,6 +390,7 @@ module WEBrick
         @h.hexdigest(args.join(":"))
       end
 
+      # :startdoc:
     end
 
     ##
@@ -384,7 +400,7 @@ module WEBrick
       include ProxyAuthenticator
 
       private
-      def check_uri(req, auth_req)
+      def check_uri(req, auth_req) # :nodoc:
         return true
       end
     end

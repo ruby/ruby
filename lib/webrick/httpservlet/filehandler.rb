@@ -18,11 +18,28 @@ require 'webrick/httpstatus'
 module WEBrick
   module HTTPServlet
 
+    ##
+    # Servlet for serving a single file.  You probably want to use the
+    # FileHandler servlet instead as it handles directories and fancy indexes.
+    #
+    # Example:
+    #
+    #   server.mount('/my_page.txt', WEBrick::HTTPServlet::DefaultFileHandler,
+    #                '/path/to/my_page.txt')
+    #
+    # This servlet handles If-Modified-Since and Range requests.
+
     class DefaultFileHandler < AbstractServlet
+
+      ##
+      # Creates a DefaultFileHandler instance for the file at +local_path+.
+
       def initialize(server, local_path)
         super(server, local_path)
         @local_path = local_path
       end
+
+      # :stopdoc:
 
       def do_GET(req, res)
         st = File::stat(@local_path)
@@ -123,13 +140,20 @@ module WEBrick
         last = filesize - 1 if last >= filesize
         return first, last
       end
+
+      # :startdoc:
     end
 
     ##
-    # Serves files from a directory
+    # Serves a directory including fancy indexing and a variety of other
+    # options.
+    #
+    # Example:
+    #
+    #   server.mount '/assets', WEBrick::FileHandler, '/path/to/assets'
 
     class FileHandler < AbstractServlet
-      HandlerTable = Hash.new
+      HandlerTable = Hash.new # :nodoc:
 
       ##
       # Allow custom handling of requests for files with +suffix+ by class
@@ -150,19 +174,8 @@ module WEBrick
       # Creates a FileHandler servlet on +server+ that serves files starting
       # at directory +root+
       #
-      # If +options+ is a Hash the following keys are allowed:
-      #
-      # :AcceptableLanguages:: Array of languages allowed for accept-language
-      # :DirectoryCallback:: Allows preprocessing of directory requests
-      # :FancyIndexing:: If true, show an index for directories
-      # :FileCallback:: Allows preprocessing of file requests
-      # :HandlerCallback:: Allows preprocessing of requests
-      # :HandlerTable:: Maps file suffixes to file handlers.
-      #                 DefaultFileHandler is used by default but any servlet
-      #                 can be used.
-      # :NondisclosureName:: Do not show files matching this array of globs
-      # :UserDir:: Directory inside ~user to serve content from for /~user
-      #            requests.  Only works if mounted on /
+      # +options+ may be a Hash containing keys from
+      # WEBrick::Config::FileHandler or +true+ or +false+.
       #
       # If +options+ is true or false then +:FancyIndexing+ is enabled or
       # disabled respectively.
@@ -176,6 +189,8 @@ module WEBrick
         end
         @options = default.dup.update(options)
       end
+
+      # :stopdoc:
 
       def service(req, res)
         # if this class is mounted on "/" and /~username is requested.
@@ -465,6 +480,7 @@ module WEBrick
         _end_of_html_
       end
 
+      # :startdoc:
     end
   end
 end

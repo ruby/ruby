@@ -17,30 +17,136 @@ require 'webrick/cookie'
 module WEBrick
 
   ##
-  # An HTTP request.
+  # An HTTP request.  This is consumed by service and do_* methods in
+  # WEBrick servlets
+
   class HTTPRequest
 
-    BODY_CONTAINABLE_METHODS = [ "POST", "PUT" ]
+    BODY_CONTAINABLE_METHODS = [ "POST", "PUT" ] # :nodoc:
 
     # :section: Request line
+
+    ##
+    # The complete request line such as:
+    #
+    #   GET / HTTP/1.1
+
     attr_reader :request_line
-    attr_reader :request_method, :unparsed_uri, :http_version
+
+    ##
+    # The request method, GET, POST, PUT, etc.
+
+    attr_reader :request_method
+
+    ##
+    # The unparsed URI of the request
+
+    attr_reader :unparsed_uri
+
+    ##
+    # The HTTP version of the request
+
+    attr_reader :http_version
 
     # :section: Request-URI
-    attr_reader :request_uri, :path
-    attr_accessor :script_name, :path_info, :query_string
+
+    ##
+    # The parsed URI of the request
+
+    attr_reader :request_uri
+
+    ##
+    # The request path
+
+    attr_reader :path
+
+    ##
+    # The script name (CGI variable)
+
+    attr_accessor :script_name
+
+    ##
+    # The path info (CGI variable)
+
+    attr_accessor :path_info
+
+    ##
+    # The query from the URI of the request
+
+    attr_accessor :query_string
 
     # :section: Header and entity body
-    attr_reader :raw_header, :header, :cookies
-    attr_reader :accept, :accept_charset
-    attr_reader :accept_encoding, :accept_language
+
+    ##
+    # The raw header of the request
+
+    attr_reader :raw_header
+
+    ##
+    # The parsed header of the request
+
+    attr_reader :header
+
+    ##
+    # The parsed request cookies
+
+    attr_reader :cookies
+
+    ##
+    # The Accept header value
+
+    attr_reader :accept
+
+    ##
+    # The Accept-Charset header value
+
+    attr_reader :accept_charset
+
+    ##
+    # The Accept-Encoding header value
+
+    attr_reader :accept_encoding
+
+    ##
+    # The Accept-Language header value
+
+    attr_reader :accept_language
 
     # :section:
+
+    ##
+    # The remote user (CGI variable)
+
     attr_accessor :user
-    attr_reader :addr, :peeraddr
+
+    ##
+    # The socket address of the server
+
+    attr_reader :addr
+
+    ##
+    # The socket address of the client
+
+    attr_reader :peeraddr
+
+    ##
+    # Hash of request attributes
+
     attr_reader :attributes
+
+    ##
+    # Is this a keep-alive connection?
+
     attr_reader :keep_alive
+
+    ##
+    # The local time this request was received
+
     attr_reader :request_time
+
+    ##
+    # Creates a new HTTP request.  WEBrick::Config::HTTP is the default
+    # configuration.
 
     def initialize(config)
       @config = config
@@ -77,6 +183,10 @@ module WEBrick
       @forwarded_proto = @forwarded_host = @forwarded_port =
         @forwarded_server = @forwarded_for = nil
     end
+
+    ##
+    # Parses a request from +socket+.  This is called internally by
+    # WEBrick::HTTPServer.
 
     def parse(socket=nil)
       @socket = socket
@@ -126,16 +236,21 @@ module WEBrick
       end
     end
 
+    ##
     # Generate HTTP/1.1 100 continue response if the client expects it,
     # otherwise does nothing.
-    def continue
+
+    def continue # :nodoc:
       if self['expect'] == '100-continue' && @config[:HTTPVersion] >= "1.1"
         @socket << "HTTP/#{@config[:HTTPVersion]} 100 continue#{CRLF}#{CRLF}"
         @header.delete('expect')
       end
     end
 
-    def body(&block)
+    ##
+    # Returns the request body.
+
+    def body(&block) # :yields: body_chunk
       block ||= Proc.new{|chunk| @body << chunk }
       read_body(@socket, block)
       @body.empty? ? nil : @body
@@ -237,7 +352,10 @@ module WEBrick
       ret
     end
 
-    def fixup()
+    ##
+    # Consumes any remaining body and updates keep-alive status
+
+    def fixup() # :nodoc:
       begin
         body{|chunk| }   # read remaining body
       rescue HTTPStatus::Error => ex
@@ -289,6 +407,8 @@ module WEBrick
     end
 
     private
+
+    # :stopdoc:
 
     MAX_URI_LENGTH = 2083 # :nodoc:
 
@@ -457,5 +577,7 @@ module WEBrick
         @forwarded_for = addrs.first
       end
     end
+
+    # :startdoc:
   end
 end

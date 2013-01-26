@@ -15,9 +15,19 @@ require 'webrick/log'
 
 module WEBrick
 
+  ##
+  # Server error exception
+
   class ServerError < StandardError; end
 
+  ##
+  # Base server class
+
   class SimpleServer
+
+    ##
+    # A SimpleServer only yields when you start it
+
     def SimpleServer.start
       yield
     end
@@ -45,8 +55,41 @@ module WEBrick
     end
   end
 
+  ##
+  # Base TCP server class.  You must subclass GenericServer and provide a #run
+  # method.
+
   class GenericServer
-    attr_reader :status, :config, :logger, :tokens, :listeners
+
+    ##
+    # The server status.  One of :Stop, :Running or :Shutdown
+
+    attr_reader :status
+
+    ##
+    # The server configuration
+
+    attr_reader :config
+
+    ##
+    # The server logger.  This is independent from the HTTP access log.
+
+    attr_reader :logger
+
+    ##
+    # Tokens control the number of outstanding clients.  The
+    # <code>:MaxClients</code> configuration sets this.
+
+    attr_reader :tokens
+
+    ##
+    # Sockets listening for connections.
+
+    attr_reader :listeners
+
+    ##
+    # Creates a new generic server from +config+.  The default configuration
+    # comes from +default+.
 
     def initialize(config={}, default=Config::General)
       @config = default.dup.update(config)
@@ -74,9 +117,16 @@ module WEBrick
       end
     end
 
+    ##
+    # Retrieves +key+ from the configuration
+
     def [](key)
       @config[key]
     end
+
+    ##
+    # Adds listeners from +address+ and +port+ to the server.  See
+    # WEBrick::Utils::create_listeners for details.
 
     def listen(address, port)
       @listeners += Utils::create_listeners(address, port, @logger)
@@ -189,11 +239,21 @@ module WEBrick
       @listeners.clear
     end
 
+    ##
+    # You must subclass GenericServer and implement \#run which accepts a TCP
+    # client socket
+
     def run(sock)
       @logger.fatal "run() must be provided by user."
     end
 
     private
+
+    # :stopdoc:
+
+    ##
+    # Accepts a TCP client socket from the TCP server socket +svr+ and returns
+    # the client socket.
 
     def accept_client(svr)
       sock = nil
@@ -210,6 +270,15 @@ module WEBrick
       end
       return sock
     end
+
+    ##
+    # Starts a server thread for the client socket +sock+ that runs the given
+    # +block+.
+    #
+    # Sets the socket to the <code>:WEBrickSocket</code> thread local variable
+    # in the thread.
+    #
+    # If any errors occur in the block they are logged and handled.
 
     def start_thread(sock, &block)
       Thread.start{
@@ -243,6 +312,9 @@ module WEBrick
         end
       }
     end
+
+    ##
+    # Calls the callback +callback_name+ from the configuration with +args+
 
     def call_callback(callback_name, *args)
       if cb = @config[callback_name]

@@ -15,16 +15,17 @@ require "net/http"
 Net::HTTP::version_1_2 if RUBY_VERSION < "1.7"
 
 module WEBrick
-  NullReader = Object.new
-  class << NullReader
+
+  NullReader = Object.new # :nodoc:
+  class << NullReader # :nodoc:
     def read(*args)
       nil
     end
     alias gets read
   end
 
-  FakeProxyURI = Object.new
-  class << FakeProxyURI
+  FakeProxyURI = Object.new # :nodoc:
+  class << FakeProxyURI # :nodoc:
     def method_missing(meth, *args)
       if %w(scheme host port path query userinfo).member?(meth.to_s)
         return nil
@@ -32,6 +33,8 @@ module WEBrick
       super
     end
   end
+
+  # :startdoc:
 
   ##
   # An HTTP Proxy server which proxies GET, HEAD and POST requests.
@@ -85,6 +88,7 @@ module WEBrick
       @via = "#{c[:HTTPVersion]} #{c[:ServerName]}:#{c[:Port]}"
     end
 
+    # :stopdoc:
     def service(req, res)
       if req.request_method == "CONNECT"
         do_CONNECT(req, res)
@@ -329,5 +333,7 @@ module WEBrick
       set_via(res)
       res.body = response.body
     end
+
+    # :stopdoc:
   end
 end

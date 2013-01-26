@@ -138,6 +138,10 @@ module WEBrick
       si.service(req, res)
     end
 
+    ##
+    # The default OPTIONS request handler says GET, HEAD, POST and OPTIONS
+    # requests are allowed.
+
     def do_OPTIONS(req, res)
       res["allow"] = "GET,HEAD,POST,OPTIONS"
     end
@@ -207,6 +211,10 @@ module WEBrick
       }
     end
 
+    ##
+    # Logs +req+ and +res+ in the access logs.  +config+ is used for the
+    # server name.
+
     def access_log(config, req, res)
       param = AccessLog::setup_params(config, req, res)
       @config[:AccessLog].each{|logger, fmt|
@@ -214,7 +222,13 @@ module WEBrick
       }
     end
 
-    class MountTable
+    ##
+    # Mount table for the path a servlet is mounted on in the directory space
+    # of the server.  Users of WEBrick can only access this indirectly via
+    # WEBrick::HTTPServer#mount, WEBrick::HTTPServer#unmount and
+    # WEBrick::HTTPServer#search_servlet
+
+    class MountTable # :nodoc:
       def initialize
         @tab = Hash.new
         compile

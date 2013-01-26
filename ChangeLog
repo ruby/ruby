@@ -1,3 +1,28 @@
+Sat Jan 26 10:09:57 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/accesslog.rb:  Improved WEBrick documentation.
+	* lib/webrick/cgi.rb:  ditto.
+	* lib/webrick/config.rb:  ditto.
+	* lib/webrick/cookie.rb:  ditto.
+	* lib/webrick/httpauth/authenticator.rb:  ditto.
+	* lib/webrick/httpauth/basicauth.rb:  ditto.
+	* lib/webrick/httpauth/digestauth.rb:  ditto.
+	* lib/webrick/httpproxy.rb:  ditto.
+	* lib/webrick/httprequest.rb:  ditto.
+	* lib/webrick/httpresponse.rb:  ditto.
+	* lib/webrick/https.rb:  ditto.
+	* lib/webrick/httpserver.rb:  ditto.
+	* lib/webrick/httpservlet/cgihandler.rb:  ditto.
+	* lib/webrick/httpservlet/filehandler.rb:  ditto.
+	* lib/webrick/httpservlet/prochandler.rb:  ditto.
+	* lib/webrick/httputils.rb:  ditto.
+	* lib/webrick/httpversion.rb:  ditto.
+	* lib/webrick/log.rb:  ditto.
+	* lib/webrick/server.rb:  ditto.
+	* lib/webrick/ssl.rb:  ditto.
+	* lib/webrick/utils.rb:  ditto.
+	* lib/webrick/version.rb:  ditto.
+
 Sat Jan 26 08:29:33 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/raddrinfo (rsock_unix_sockaddr_len): renamed from

@@ -170,6 +170,9 @@ module WEBrick
         }
       end
 
+      ##
+      # Creates a new TimeoutHandler.  You should use ::register and ::cancel
+      # instead of creating the timeout handler directly.
       def initialize
         @timeout_info = Hash.new
         Thread.start{

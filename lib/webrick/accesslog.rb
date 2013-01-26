@@ -115,6 +115,10 @@ module WEBrick
       params
     end
 
+    ##
+    # Formats +params+ according to +format_string+ which is described in
+    # setup_params.
+
     def format(format_string, params)
       format_string.gsub(/\%(?:\{(.*?)\})?>?([a-zA-Z%])/){
          param, spec = $1, $2
@@ -139,6 +143,9 @@ module WEBrick
          end
       }
     end
+
+    ##
+    # Escapes control characters in +data+
 
     def escape(data)
       if data.tainted?
