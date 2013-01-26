@@ -44,7 +44,7 @@ module WEBrick
 
     ##
     # Is this a secure cookie?
-    
+
     attr_accessor :secure
 
     ##
