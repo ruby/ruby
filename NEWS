@@ -385,8 +385,8 @@ with all sufficient information, see the ChangeLog file.
 * yaml
   * Syck has been removed.  YAML now completely depends on libyaml being
     installed.
-  * libyaml has now bundled in ruby, so you don't need to install libyaml
-    for ruby basically.
+  * libyaml is now bundled with ruby, for cases where the library is not
+    installed locally.
 
 * zlib
   * Added streaming support for Zlib::Inflate and Zlib::Deflate.  This allows
