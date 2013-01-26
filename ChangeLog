@@ -54,7 +54,7 @@ Fri Jan 25 19:14:24 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: use TlsAlloc instead of __declspec(thread)
 	  to avoid SEGV if win32ole.so loaded with LoadLibrary in Windows
-	  Vista or earlier.
+	  XP or earlier.
 
 Fri Jan 25 16:47:31 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
