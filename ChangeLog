@@ -1,6 +1,6 @@
 Sat Jan 26 22:39:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* marshal.c (w_object): dump instance varialbes of the result of
+	* marshal.c (w_object): dump instance variables of the result of
 	  marshal_dump not the original object.  [ruby-core:51163] [Bug #7627]
 
 	* complex.c (nucomp_marshal_dump): need to copy instance variables.
