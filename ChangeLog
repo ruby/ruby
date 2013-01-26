@@ -1,3 +1,7 @@
+Sat Jan 26 13:35:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/fcntl/fcntl.c:  Document Fcntl constants
+
 Sat Jan 26 12:54:40 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* hash.c (rb_env_size):  Restored documentation for ENV.size
