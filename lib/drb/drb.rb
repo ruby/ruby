@@ -1453,6 +1453,10 @@ module DRb
     end
 
     private
+
+    ##
+    # Starts the DRb main loop in a new thread.
+
     def run
       Thread.start do
         begin

@@ -257,7 +257,7 @@ require "cgi/util"
 # Rails, the web application framework, uses ERB to create views.
 #
 class ERB
-  Revision = '$Date::                           $'      #'
+  Revision = '$Date::                           $' # :nodoc: #'
 
   # Returns revision information for the erb.rb module.
   def self.version
@@ -800,6 +800,9 @@ class ERB
     @filename = nil
   end
 
+  ##
+  # Creates a new compiler for ERB.  See ERB::Compiler.new for details
+
   def make_compiler(trim_mode)
     ERB::Compiler.new(trim_mode)
   end
@@ -847,8 +850,11 @@ class ERB
     end
   end
 
+  ##
+  # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
+  # not specify a binding.
+
   def new_toplevel
-    # New binding each time *near* toplevel for unspecified runs
     TOPLEVEL_BINDING.dup
   end
   private :new_toplevel

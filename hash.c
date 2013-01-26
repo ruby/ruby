@@ -2566,15 +2566,6 @@ env_keys(void)
     return ary;
 }
 
-/*
- * call-seq:
- *   ENV.each_key { |name| } -> Hash
- *   ENV.each_key            -> Enumerator
- *
- * Yields each environment variable name.
- *
- * An Enumerator is returned if no block is given.
- */
 static VALUE
 rb_env_size(VALUE ehash)
 {
@@ -2593,6 +2584,15 @@ rb_env_size(VALUE ehash)
     return LONG2FIX(cnt);
 }
 
+/*
+ * call-seq:
+ *   ENV.each_key { |name| } -> Hash
+ *   ENV.each_key            -> Enumerator
+ *
+ * Yields each environment variable name.
+ *
+ * An Enumerator is returned if no block is given.
+ */
 static VALUE
 env_each_key(VALUE ehash)
 {

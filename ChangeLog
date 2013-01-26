@@ -1,3 +1,13 @@
+Sat Jan 26 12:54:40 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* hash.c (rb_env_size):  Restored documentation for ENV.size
+
+	* lib/drb/drb.rb:  Documented DRb::DRb#run.
+
+	* lib/erb.rb (class ERB):  Improved documentation of ERb.
+
+	* transcode.c:  Documented Encoding::Converter constants.
+
 Sat Jan 26 10:09:57 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/accesslog.rb:  Improved WEBrick documentation.
