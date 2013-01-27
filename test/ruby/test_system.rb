@@ -119,11 +119,31 @@ class TestSystem < Test::Unit::TestCase
       return
     end
 
-    cmd = "%WINDIR%/system32/ping.exe \"BFI3CHL671\" > out.txt 2>NUL"
-    assert_equal(false, system(cmd), '[ruby-talk:258939]');
-
-    cmd = "\"%WINDIR%/system32/ping.exe BFI3CHL671\" > out.txt 2>NUL"
-    assert_equal(false, system(cmd), '[ruby-talk:258939]');
+    Dir.mktmpdir("ruby_script_tmp") do |tmpdir|
+      cmd = nil
+      message = proc do
+        [
+         '[ruby-talk:258939]',
+         "out.txt:",
+         *File.readlines("out.txt").map{|s|"  "+s.inspect},
+         "err.txt:",
+         *File.readlines("err.txt").map{|s|"  "+s.inspect},
+         "system(#{cmd.inspect})"
+        ].join("\n")
+      end
+      class << message
+        alias to_s call
+      end
+      Dir.chdir(tmpdir) do
+        open("input.txt", "w") {|f| f.puts "BFI3CHL671"}
+        cmd = "%WINDIR%/system32/find.exe \"BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(true, system(cmd), message)
+        cmd = "\"%WINDIR%/system32/find.exe\" \"BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(true, system(cmd), message)
+        cmd = "\"%WINDIR%/system32/find.exe BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(true, system(cmd), message)
+      end
+    end
   end
 
   def test_empty_evstr
