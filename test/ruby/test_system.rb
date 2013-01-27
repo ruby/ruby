@@ -93,25 +93,25 @@ class TestSystem < Test::Unit::TestCase
   end
 
   def test_system_at
-      if /mswin|mingw/ =~ RUBY_PLATFORM
-        bug4393 = '[ruby-core:35218]'
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      bug4393 = '[ruby-core:35218]'
 
-        # @ + builtin command
-        assert_equal("foo\n", `@echo foo`, bug4393);
-        assert_equal("foo\n", `@@echo foo`, bug4393);
-        assert_equal("@@foo\n", `@@echo @@foo`, bug4393);
+      # @ + builtin command
+      assert_equal("foo\n", `@echo foo`, bug4393);
+      assert_equal("foo\n", `@@echo foo`, bug4393);
+      assert_equal("@@foo\n", `@@echo @@foo`, bug4393);
 
-        # @ + non builtin command
-        Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
-          tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+      # @ + non builtin command
+      Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+        tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
 
-          tmp = open(tmpfilename, "w")
-          tmp.print "foo\nbar\nbaz\n@foo";
-          tmp.close
+        tmp = open(tmpfilename, "w")
+        tmp.print "foo\nbar\nbaz\n@foo";
+        tmp.close
 
-          assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, bug4393);
-        }
-      end
+        assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, bug4393);
+      }
+    end
   end
 
   def test_system_redirect_win
