@@ -2277,24 +2277,22 @@ time_init(int argc, VALUE *argv, VALUE time)
 static void
 time_overflow_p(time_t *secp, long *nsecp)
 {
-    time_t tmp, sec = *secp;
+    time_t sec = *secp;
     long nsec = *nsecp;
 
     if (nsec >= 1000000000) {	/* nsec positive overflow */
-	tmp = sec + nsec / 1000000000;
-	nsec %= 1000000000;
-	if (sec > 0 && tmp < 0) {
+	if (sec > TIMET_MAX - nsec / 1000000000) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	sec = tmp;
+	sec += nsec / 1000000000;
+	nsec %= 1000000000;
     }
     if (nsec < 0) {		/* nsec negative overflow */
-	tmp = sec + NDIV(nsec,1000000000); /* negative div */
-	nsec = NMOD(nsec,1000000000);      /* negative mod */
-	if (sec < 0 && tmp > 0) {
+	if (sec < TIMET_MIN - NDIV(nsec,1000000000)) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	sec = tmp;
+	sec += NDIV(nsec,1000000000); /* negative div */
+	nsec = NMOD(nsec,1000000000); /* negative mod */
     }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0)
