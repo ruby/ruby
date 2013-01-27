@@ -141,7 +141,7 @@ class TestSystem < Test::Unit::TestCase
         cmd = "\"%WINDIR%/system32/find.exe\" \"BFI3CHL671\" input.txt > out.txt 2>err.txt"
         assert_equal(true, system(cmd), message)
         cmd = "\"%WINDIR%/system32/find.exe BFI3CHL671\" input.txt > out.txt 2>err.txt"
-        assert_equal(true, system(cmd), message)
+        assert_equal(false, system(cmd), message)
       end
     end
   end
