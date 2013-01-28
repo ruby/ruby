@@ -1009,7 +1009,7 @@ struct rb_debug_inspector_struct {
     rb_control_frame_t *cfp;
     VALUE backtrace;
     VALUE contexts; /* [[klass, binding, iseq, cfp], ...] */
-    int backtrace_size;
+    long backtrace_size;
 };
 
 struct collect_caller_bindings_data {
@@ -1072,7 +1072,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->cfp;
     dbg_context.backtrace = vm_backtrace_location_ary(th, 0, 0);
-    dbg_context.backtrace_size = RARRAY_LENINT(dbg_context.backtrace);
+    dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(th);
 
     TH_PUSH_TAG(th);
@@ -1091,7 +1091,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 }
 
 static VALUE
-frame_get(const rb_debug_inspector_t *dc, int index)
+frame_get(const rb_debug_inspector_t *dc, long index)
 {
     if (index < 0 || index >= dc->backtrace_size) {
 	rb_raise(rb_eArgError, "no such frame");
@@ -1100,21 +1100,21 @@ frame_get(const rb_debug_inspector_t *dc, int index)
 }
 
 VALUE
-rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, int index)
+rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, 0);
 }
 
 VALUE
-rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, int index)
+rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, 1);
 }
 
 VALUE
-rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, int index)
+rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, 2);

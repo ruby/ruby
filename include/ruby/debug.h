@@ -31,9 +31,9 @@ typedef struct rb_debug_inspector_struct rb_debug_inspector_t;
 typedef VALUE (*rb_debug_inspector_func_t)(const rb_debug_inspector_t *, void *);
 
 VALUE rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data);
-VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, int index);
-VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, int index);
-VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, int index);
+VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index);
 VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
 
 /* Old style set_trace_func APIs */
