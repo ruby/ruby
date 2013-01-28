@@ -1,3 +1,10 @@
+Mon Jan 28 12:32:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/fcntl/fcntl.c: update document.  use "file descriptor" instead
+	  of "file handle" because it is not used other Ruby documents and
+	  it is confusing with Windows file handle.
+	  correct F_DUPFD behavior.
+
 Sat Jan 26 22:39:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): dump instance variables of the result of

@@ -68,15 +68,19 @@ Init_fcntl()
 #ifdef F_DUPFD
     /* Document-const: F_DUPFD
      *
-     * Duplicate a close-on-exec file handle to a non-close-on-exec file
-     * handle.
+     * Duplicate a file descriptor to the mimimum unused file descriptor
+     * greater than or equal to the argument.
+     *
+     * The close-on-exec flag of the duplicated file descriptor is set.
+     * (Ruby uses F_DUPFD_CLOEXEC internally if available to avoid race
+     * condition.  F_SETFD is used if F_DUPFD_CLOEXEC is not available.)
      */
     rb_define_const(mFcntl, "F_DUPFD", INT2NUM(F_DUPFD));
 #endif
 #ifdef F_GETFD
     /* Document-const: F_GETFD
      *
-     * Read the close-on-exec flag of a file handle.
+     * Read the close-on-exec flag of a file descriptor.
      */
     rb_define_const(mFcntl, "F_GETFD", INT2NUM(F_GETFD));
 #endif
@@ -91,7 +95,7 @@ Init_fcntl()
 #ifdef F_SETFD
     /* Document-const: F_SETFD
      *
-     * Set the close-on-exec flag of a file handle.
+     * Set the close-on-exec flag of a file descriptor.
      */
     rb_define_const(mFcntl, "F_SETFD", INT2NUM(F_SETFD));
 #endif
@@ -128,7 +132,7 @@ Init_fcntl()
     rb_define_const(mFcntl, "F_SETLKW", INT2NUM(F_SETLKW));
 #endif
 #ifdef FD_CLOEXEC
-    /* Document-const: F_CLOEXEC
+    /* Document-const: FD_CLOEXEC
      *
      * the value of the close-on-exec flag.
      */
