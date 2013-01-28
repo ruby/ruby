@@ -1,3 +1,7 @@
+Mon Jan 28 17:51:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_separately): imply no core dump.
+
 Mon Jan 28 12:32:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/fcntl/fcntl.c: update document.  use "file descriptor" instead

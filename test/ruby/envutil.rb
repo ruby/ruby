@@ -189,6 +189,10 @@ module Test
           child_env = []
         end
         out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, opt)
+        assert !status.signaled?, FailDesc[status, message, out]
+      end
+
+      FailDesc = proc do |status, message = "", out = ""|
         pid = status.pid
         faildesc = proc do
           signo = status.termsig
@@ -201,17 +205,17 @@ module Test
             sigdesc << " (core dumped)"
           end
           full_message = ''
-          if !message.empty?
+          if message and !message.empty?
             full_message << message << "\n"
           end
           full_message << "pid #{pid} killed by #{sigdesc}"
-          if !out.empty?
-            out << "\n" if /\n\z/ !~ out
+          if out and !out.empty?
             full_message << "\n#{out.gsub(/^/, '| ')}"
+            full_message << "\n" if /\n\z/ !~ full_message
           end
           full_message
         end
-        assert !status.signaled?, faildesc
+        faildesc
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
@@ -257,7 +261,8 @@ module Test
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   end
 eom
-        stdout, _stderr, _status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        stdout, _stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        assert(!status.coredump?, FailDesc[status])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         res = Marshal.load(stdout.unpack("m")[0])
         return unless res
