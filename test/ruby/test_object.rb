@@ -885,4 +885,12 @@ class TestObject < Test::Unit::TestCase
     assert_not_initialize_copy {st.new}
     assert_not_initialize_copy {Time.now}
   end
+
+  def test_type_error_message
+    issue = "Bug #7539"
+    err = assert_raise(TypeError){ Integer([42]) }
+    assert_equal "can't convert Array into Integer", err.message, issue
+    err = assert_raise(TypeError){ [].first([42]) }
+    assert_equal 'no implicit conversion of Array into Integer', err.message, issue
+  end
 end

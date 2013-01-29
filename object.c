@@ -2277,6 +2277,7 @@ static struct conv_method_tbl {
     {"to_s", 0},
     {NULL, 0}
 };
+#define IMPLICIT_CONVERSIONS 7
 
 static VALUE
 convert_type(VALUE val, const char *tname, const char *method, int raise)
@@ -2296,7 +2297,9 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     r = rb_check_funcall(val, m, 0, 0);
     if (r == Qundef) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, "can't convert %s into %s",
+	    rb_raise(rb_eTypeError, i < IMPLICIT_CONVERSIONS
+                ? "no implicit conversion of %s into %s"
+                : "can't convert %s into %s",
 		     NIL_P(val) ? "nil" :
 		     val == Qtrue ? "true" :
 		     val == Qfalse ? "false" :

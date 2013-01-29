@@ -1390,7 +1390,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     TypeError: can't convert String into Integer
+ *     TypeError: no implicit conversion of String into Integer
  *
  */
 
