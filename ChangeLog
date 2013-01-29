@@ -1,3 +1,8 @@
+Tue Jan 29 21:40:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/http/generic_request.rb (encode_multipart_form_data): remove
+	  tempfile explicitly.
+
 Tue Jan 29 19:27:18 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* array.c: Improve documentation about

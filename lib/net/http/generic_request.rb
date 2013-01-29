@@ -207,6 +207,7 @@ class Net::HTTPGenericRequest
       self.content_length = file.size
       write_header sock, ver, path
       IO.copy_stream(file, sock)
+      file.close(true)
     end
   end
 
