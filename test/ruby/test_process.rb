@@ -815,6 +815,7 @@ class TestProcess < Test::Unit::TestCase
       Process.wait(pid)
       tmp.rewind
       assert_equal(pid.to_s, tmp.read)
+      tmp.close(true)
     end
   end
 

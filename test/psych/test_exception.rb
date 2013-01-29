@@ -138,6 +138,7 @@ module Psych
         rescue StandardError
           assert true # count assertion
         ensure
+          t.close(true)
           return unless $!
 
           ancestors = $!.class.ancestors.inspect

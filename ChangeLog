@@ -1,3 +1,11 @@
+Tue Jan 29 12:05:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_marshal.rb: remove temporally files early.
+
+	* test/ruby/test_process.rb: ditto.
+
+	* test/psych/test_exception.rb: ditto.
+
 Tue Jan 29 09:26:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_pack_sockaddr_un): calculate the

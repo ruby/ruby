@@ -336,7 +336,9 @@ class TestMarshal < Test::Unit::TestCase
       re = Tempfile.open("marshal_regexp") do |f|
         f.binmode.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
         f.close
-        Marshal.load(f.open.binmode)
+        re2 = Marshal.load(f.open.binmode)
+        f.close(true)
+        re2
       end
       assert_equal(//, re)
     end
