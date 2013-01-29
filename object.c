@@ -1809,7 +1809,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
  *      attr_writer(symbol, ...)    -> nil
  *
  *  Creates an accessor method to allow assignment to the attribute
- *  <i>aSymbol</i><code>.id2name</code>.
+ *  <i>symbol</i><code>.id2name</code>.
  */
 
 static VALUE
