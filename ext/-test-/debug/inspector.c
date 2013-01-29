@@ -5,7 +5,7 @@ static VALUE
 callback(const rb_debug_inspector_t *dbg_context, void *data)
 {
     VALUE locs = rb_debug_inspector_backtrace_locations(dbg_context);
-    int i, len = RARRAY_LENINT(locs);
+    long i, len = RARRAY_LEN(locs);
     VALUE binds = rb_ary_new();
     for (i = 0; i < len; ++i) {
 	VALUE entry = rb_ary_new();

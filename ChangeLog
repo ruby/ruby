@@ -16,7 +16,7 @@ Tue Jan 29 17:03:28 2013  Koichi Sasada  <ko1@atdot.net>
 	* vm_backtrace.c, include/ruby/debug.h: add new C api (experimental)
 	  rb_debug_inspector_frame_self_get().
 
-	* vm.c, vm_core.h, vm_trace.c: move decl. of 
+	* vm.c, vm_core.h, vm_trace.c: move decl. of
 	  rb_vm_control_frame_id_and_class() and constify first parameter.
 
 Tue Jan 29 16:50:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>

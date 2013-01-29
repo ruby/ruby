@@ -6,6 +6,6 @@ void
 Init_debug(void)
 {
     VALUE mBug = rb_define_module("Bug");
-    VALUE klass = rb_define_class_under(mBug, "Debug", rb_cModule);
+    VALUE klass = rb_define_module_under(mBug, "Debug");
     TEST_INIT_FUNCS(init);
 }
