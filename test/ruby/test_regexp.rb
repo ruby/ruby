@@ -929,4 +929,11 @@ class TestRegexp < Test::Unit::TestCase
     # use Regexp.new instead of literal to ignore a parser warning.
     check(Regexp.new('[0-1-\\s]'), [' ', '-'], ['2', 'a'], bug6853)
   end
+
+  def test_error_message_on_failed_conversion
+    bug7539 = '[ruby-core:50733]'
+    assert_equal false, /x/=== 42
+    err = assert_raise(TypeError){ Regexp.quote(42) }
+    assert_equal 'no implicit conversion of Fixnum into String', err.message, bug7539
+  end
 end

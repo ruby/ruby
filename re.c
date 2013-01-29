@@ -2667,12 +2667,7 @@ reg_operand(VALUE s, int check)
 	return rb_sym_to_s(s);
     }
     else {
-	VALUE tmp = rb_check_string_type(s);
-	if (check && NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "can't convert %s to String",
-		     rb_obj_classname(s));
-	}
-	return tmp;
+	return (check ? rb_str_to_str : rb_check_string_type)(s);
     }
 }
 

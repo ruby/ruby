@@ -1,3 +1,9 @@
+Wed Jan 30 07:15:04 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* re.c (reg_operand): Simplify and reuse error handling [Bug #7539]
+
+	* test/ruby/test_regexp.rb: Test for above
+
 Wed Jan 30 07:00:16 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* object.c: Improve error for failed implicit conversions [Bug #7539]
