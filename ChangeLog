@@ -1,3 +1,8 @@
+Tue Jan 29 19:27:18 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* array.c: Improve documentation about
+	  comparison by hash for concerned methods. [ruby-core:51266]
+
 Tue Jan 29 17:03:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: fix issue of rb_debug_inspector_open().
