@@ -471,6 +471,32 @@ range_step(int argc, VALUE *argv, VALUE range)
     return range;
 }
 
+#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
+union int64_double {
+	int64_t i;
+	double d;
+};
+
+static VALUE
+int64_as_double_to_num(int64_t i) {
+    union int64_double convert;
+    if (i < 0) {
+	convert.i = -i;
+	return DBL2NUM(-convert.d);
+    } else {
+	convert.i = i;
+	return DBL2NUM(convert.d);
+    }
+}
+
+static int64_t
+double_as_int64(double d) {
+    union int64_double convert;
+    convert.d = fabs(d);
+    return d < 0 ? -convert.i : convert.i;
+}
+#endif
+
 /*
  *  call-seq:
  *     rng.bsearch {|obj| block }  -> value
@@ -529,6 +555,20 @@ range_bsearch(VALUE range)
     VALUE beg, end;
     int smaller, satisfied = 0;
 
+    /* Implementation notes:
+     * Floats are handled by mapping them to 64 bits integers.
+     * Apart from sign issues, floats and their 64 bits integer have the
+     * same order, assuming they are represented as exponent followed
+     * by the mantissa. This is true with or without implicit bit.
+     *
+     * Finding the average of two ints needs to be careful about
+     * potential overflow (since float to long can use 64 bits)
+     * as well as the fact that -1/2 can be 0 or -1 in C89.
+     *
+     * Note that -0.0 is mapped to the same int as 0.0 as we don't want
+     * (-1...0.0).bsearch to yield -0.0.
+     */
+
 #define BSEARCH_CHECK(val) \
     do { \
 	VALUE v = rb_yield(val); \
@@ -553,6 +593,30 @@ range_bsearch(VALUE range)
 	} \
     } while (0)
 
+#define BSEARCH(conv) \
+    do { \
+	if (EXCL(range)) high--; \
+	org_high = high; \
+	while (low < high) { \
+	    mid = ((high < 0) == (low < 0)) ? low + ((high - low) / 2) \
+		: (low < -high) ? -((-1 - low - high)/2 + 1) : (low + high) / 2; \
+	    BSEARCH_CHECK(conv(mid)); \
+	    if (smaller) { \
+		high = mid; \
+	    } \
+	    else { \
+		low = mid + 1; \
+	    } \
+	} \
+	if (low == org_high) { \
+	    BSEARCH_CHECK(conv(low)); \
+	    if (!smaller) return Qnil; \
+	} \
+	if (!satisfied) return Qnil; \
+	return conv(low); \
+    } while (0)
+
+
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
@@ -560,168 +624,16 @@ range_bsearch(VALUE range)
 	long low = FIX2LONG(beg);
 	long high = FIX2LONG(end);
 	long mid, org_high;
-	if (EXCL(range)) high--;
-	org_high = high;
-
-	while (low < high) {
-	    mid = low + ((high - low) / 2);
-	    BSEARCH_CHECK(INT2FIX(mid));
-	    if (smaller) {
-		high = mid;
-	    }
-	    else {
-		low = mid + 1;
-	    }
-	}
-	if (low == org_high) {
-	    BSEARCH_CHECK(INT2FIX(low));
-	    if (!smaller) return Qnil;
-	}
-	if (!satisfied) return Qnil;
-	return INT2FIX(low);
+	BSEARCH(INT2FIX);
     }
+#if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
-	double low  = RFLOAT_VALUE(rb_Float(beg));
-	double high = RFLOAT_VALUE(rb_Float(end));
-	double mid, org_high;
-	int count;
-	org_high = high;
-#ifdef FLT_RADIX
-#ifdef DBL_MANT_DIG
-#define BSEARCH_MAXCOUNT (((FLT_RADIX) - 1) * (DBL_MANT_DIG + DBL_MAX_EXP) + 100)
-#else
-#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
-#endif
-#else
-#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
-#endif
-	if (isinf(high) && high > 0) {
-	    /* the range is (low..INFINITY) */
-	    double nhigh = 1.0, inc;
-	    if (nhigh < low) nhigh = low;
-	    count = BSEARCH_MAXCOUNT;
-	    /* find upper bound by checking low, low*2, low*4, ... */
-	    while (count >= 0 && !isinf(nhigh)) {
-		BSEARCH_CHECK(DBL2NUM(nhigh));
-		if (smaller) break;
-		high = nhigh;
-		nhigh *= 2;
-		count--;
-	    }
-	    if (isinf(nhigh) || count < 0) {
-		/* upper bound not found; then, search in very near INFINITY */
-		/* (x..INFINITY where x is not INFINITY but x*2 is INFINITY) */
-		inc = high / 2;
-		count = BSEARCH_MAXCOUNT;
-		while (count >= 0 && inc > 0) {
-		    nhigh = high + inc;
-		    if (!isinf(nhigh)) {
-			BSEARCH_CHECK(DBL2NUM(nhigh));
-			if (smaller) {
-			    /* upper bound found; */
-			    /* the desired value is within high..nhigh */
-			    low = high;
-			    high = nhigh;
-			    goto binsearch;
-			}
-			else {
-			    high = nhigh;
-			}
-		    }
-		    inc /= 2;
-		    count--;
-		}
-		/* lower bound not found; */
-		/* there is no candidate except INFINITY itself */
-		high *= 2; /* generate INFINITY */
-		if (isinf(high) && !EXCL(range)) {
-		    BSEARCH_CHECK(DBL2NUM(high));
-		    if (!satisfied) return Qnil;
-		    if (smaller) return DBL2NUM(high);
-		}
-		return Qnil;
-	    }
-	    /* upper bound found; the desired value is within low..nhigh */
-	    high = nhigh;
-	}
-	if (isinf(low) && low < 0) {
-	    /* the range is (-INFINITY..high) */
-	    volatile double nlow = -1.0, dec;
-	    if (nlow > high) nlow = high;
-	    count = BSEARCH_MAXCOUNT;
-	    /* find lower bound by checking low, low*2, low*4, ... */
-	    while (count >= 0 && !isinf(nlow)) {
-		BSEARCH_CHECK(DBL2NUM(nlow));
-		if (!smaller) break;
-		low = nlow;
-		nlow *= 2;
-		count--;
-	    }
-	    if (isinf(nlow) || count < 0) {
-		/* lower bound not found; then, search in very near -INFINITY */
-		/* (-INFINITY..x where x is not -INFINITY but x*2 is -INFINITY) */
-		dec = low / 2;
-		count = BSEARCH_MAXCOUNT;
-		while (count >= 0 && dec < 0) {
-		    nlow = low + dec;
-		    if (!isinf(nlow)) {
-			BSEARCH_CHECK(DBL2NUM(nlow));
-			if (!smaller) {
-			    /* lower bound found; */
-			    /* the desired value is within nlow..low */
-			    high = low;
-			    low = nlow;
-			    goto binsearch;
-			}
-			else {
-			    low = nlow;
-			}
-		    }
-		    dec /= 2;
-		    count--;
-		}
-		/* lower bound not found; */
-		/* there is no candidate except -INFINITY itself */
-		nlow = low * 2; /* generate -INFINITY */
-		if (isinf(nlow)) {
-		    BSEARCH_CHECK(DBL2NUM(nlow));
-		    if (!satisfied) return Qnil;
-		    if (smaller) return DBL2NUM(nlow);
-		}
-		if (!satisfied) return Qnil;
-		return DBL2NUM(low);
-	    }
-	    low = nlow;
-	}
-
-    binsearch:
-	/* find the desired value within low..high */
-	/* where low is not -INFINITY and high is not INFINITY */
-	count = BSEARCH_MAXCOUNT;
-	while (low < high && count >= 0) {
-	    mid = low + ((high - low) / 2);
-	    BSEARCH_CHECK(DBL2NUM(mid));
-	    if (smaller) {
-		high = mid;
-	    }
-	    else {
-		low = mid;
-	    }
-	    count--;
-	}
-	BSEARCH_CHECK(DBL2NUM(low));
-	if (!smaller) {
-	    BSEARCH_CHECK(DBL2NUM(high));
-	    if (!smaller) {
-		return Qnil;
-	    }
-	    low = high;
-	}
-	if (!satisfied) return Qnil;
-	if (EXCL(range) && low >= org_high) return Qnil;
-	return DBL2NUM(low);
-#undef BSEARCH_MAXCOUNT
+	int64_t low  = double_as_int64(RFLOAT_VALUE(rb_Float(beg)));
+	int64_t high = double_as_int64(RFLOAT_VALUE(rb_Float(end)));
+	int64_t mid, org_high;
+	BSEARCH(int64_as_double_to_num);
     }
+#endif
     else if (!NIL_P(rb_check_to_integer(beg, "to_int")) &&
 	     !NIL_P(rb_check_to_integer(end, "to_int"))) {
 	VALUE low = beg;
