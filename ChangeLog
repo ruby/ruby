@@ -10,11 +10,6 @@ Mon Jan 28 18:02:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* vm_backtrace.c (rb_debug_inspector_frame_{class,binding,iseq}_get):
 	  use long as index as well as RARRAY_LEN().
 
-Mon Jan 28 17:58:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* vm_backtrace.c (rb_debug_inspector_frame_{class,binding,iseq}_get):
-	  use long as index as well as RARRAY_LEN().
-
 Mon Jan 28 17:51:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_separately): imply no core dump.
