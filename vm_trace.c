@@ -943,7 +943,10 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracepoint_enable(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
+    rb_tp_t *tp;
+
+    rb_secure(4);
+    tp = tpptr(tpval);
 
     if (tp->target_th) {
 	rb_thread_add_event_hook2(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
@@ -960,7 +963,10 @@ rb_tracepoint_enable(VALUE tpval)
 VALUE
 rb_tracepoint_disable(VALUE tpval)
 {
-    rb_tp_t *tp = tpptr(tpval);
+    rb_tp_t *tp;
+
+    rb_secure(4);
+    tp = tpptr(tpval);
 
     if (tp->target_th) {
 	rb_thread_remove_event_hook_with_data(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tpval);

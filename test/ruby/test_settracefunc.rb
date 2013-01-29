@@ -919,4 +919,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal([:b_call, :b_return], ary, bug_7668)
     end
   end
+
+  def test_trace_point_enable_safe4
+    tp = TracePoint.new {}
+    assert_security_error_safe4 do
+      tp.enable
+    end
+  end
+
+  def test_trace_point_disable_safe4
+    tp = TracePoint.new {}
+    assert_security_error_safe4 do
+      tp.disable
+    end
+  end
 end

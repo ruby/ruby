@@ -1,4 +1,7 @@
-Tue Jan 29 16:50:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 29 16:50:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_tracepoint_enable, rb_tracepoint_disable): check safe
+	  level as well as set_trace_func.
 
 	* vm_trace.c (set_trace_func, thread_{add,set}_trace_func_m): check
 	  safe level as well as 1.8.
