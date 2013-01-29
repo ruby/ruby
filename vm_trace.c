@@ -443,6 +443,8 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 static VALUE
 set_trace_func(VALUE obj, VALUE trace)
 {
+    rb_secure(4);
+
     rb_remove_event_hook(call_trace_func);
 
     if (NIL_P(trace)) {
@@ -479,6 +481,8 @@ static VALUE
 thread_add_trace_func_m(VALUE obj, VALUE trace)
 {
     rb_thread_t *th;
+
+    rb_secure(4);
     GetThreadPtr(obj, th);
     thread_add_trace_func(th, trace);
     return trace;
@@ -498,6 +502,8 @@ static VALUE
 thread_set_trace_func_m(VALUE obj, VALUE trace)
 {
     rb_thread_t *th;
+
+    rb_secure(4);
     GetThreadPtr(obj, th);
     rb_threadptr_remove_event_hook(th, call_trace_func, Qundef);
 

@@ -1,3 +1,8 @@
+Tue Jan 29 16:50:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (set_trace_func, thread_{add,set}_trace_func_m): check
+	  safe level as well as 1.8.
+
 Tue Jan 29 16:49:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_method_arity): return original arity of the method if

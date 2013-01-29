@@ -397,6 +397,38 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(self, ok, bug3921)
   end
 
+  def assert_security_error_safe4
+    func = lambda {
+      $SAFE = 4
+      proc {yield}
+    }.call
+    assert_raise(SecurityError, &func)
+  end
+
+  def test_set_safe4
+    assert_security_error_safe4 do
+      set_trace_func(lambda {|*|})
+    end
+  end
+
+  def test_thread_set_safe4
+    th = Thread.start {sleep}
+    assert_security_error_safe4 do
+      th.set_trace_func(lambda {|*|})
+    end
+  ensure
+    th.kill
+  end
+
+  def test_thread_add_safe4
+    th = Thread.start {sleep}
+    assert_security_error_safe4 do
+      th.add_trace_func(lambda {|*|})
+    end
+  ensure
+    th.kill
+  end
+
   class << self
     define_method(:method_added, Module.method(:method_added))
   end
