@@ -397,34 +397,38 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(self, ok, bug3921)
   end
 
-  def assert_security_error_safe4
-    func = lambda {
-      $SAFE = 4
-      proc {yield}
-    }.call
-    assert_raise(SecurityError, &func)
+  def assert_security_error_safe4(block)
+    assert_raise(SecurityError) do
+      block.call
+    end
   end
 
   def test_set_safe4
-    assert_security_error_safe4 do
+    func = proc do
+      $SAFE = 4
       set_trace_func(lambda {|*|})
     end
+    assert_security_error_safe4(func)
   end
 
   def test_thread_set_safe4
     th = Thread.start {sleep}
-    assert_security_error_safe4 do
+    func = proc do
+      $SAFE = 4
       th.set_trace_func(lambda {|*|})
     end
+    assert_security_error_safe4(func)
   ensure
     th.kill
   end
 
   def test_thread_add_safe4
     th = Thread.start {sleep}
-    assert_security_error_safe4 do
+    func = proc do
+      $SAFE = 4
       th.add_trace_func(lambda {|*|})
     end
+    assert_security_error_safe4(func)
   ensure
     th.kill
   end
@@ -922,15 +926,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_trace_point_enable_safe4
     tp = TracePoint.new {}
-    assert_security_error_safe4 do
+    func = proc do
+      $SAFE = 4
       tp.enable
     end
+    assert_security_error_safe4(func)
   end
 
   def test_trace_point_disable_safe4
     tp = TracePoint.new {}
-    assert_security_error_safe4 do
+    func = proc do
+      $SAFE = 4
       tp.disable
     end
+    assert_security_error_safe4(func)
   end
 end
