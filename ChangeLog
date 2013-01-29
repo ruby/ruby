@@ -1,3 +1,10 @@
+Tue Jan 29 09:26:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): calculate the
+	  correct address length of an abstract socket.
+
+	* test/socket/test_unix.rb: related test.
+
 Mon Jan 28 18:02:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_backtrace.c (rb_debug_inspector_frame_{class,binding,iseq}_get):

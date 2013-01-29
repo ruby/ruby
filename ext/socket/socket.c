@@ -1430,7 +1430,7 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
             (size_t)RSTRING_LEN(path), sizeof(sockaddr.sun_path));
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
-    addr = rb_str_new((char*)&sockaddr, sizeof(sockaddr));
+    addr = rb_str_new((char*)&sockaddr, rsock_unix_sockaddr_len(path));
     OBJ_INFECT(addr, path);
 
     return addr;
