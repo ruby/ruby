@@ -1743,10 +1743,26 @@ method_arity(VALUE method)
     return rb_method_entry_arity(data->me);
 }
 
+static rb_method_entry_t *
+original_method_entry(VALUE mod, ID id)
+{
+    VALUE rclass;
+    rb_method_entry_t *me;
+    while ((me = rb_method_entry(mod, id, &rclass)) != 0) {
+	rb_method_definition_t *def = me->def;
+	if (!def) break;
+	if (def->type != VM_METHOD_TYPE_ZSUPER) break;
+	mod = RCLASS_SUPER(rclass);
+	id = def->original_id;
+    }
+    return me;
+}
+
 int
 rb_mod_method_arity(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = rb_method_entry(mod, id, 0);
+    rb_method_entry_t *me = original_method_entry(mod, id);
+    if (!me) return 0;		/* should raise? */
     return rb_method_entry_arity(me);
 }
 

@@ -1,3 +1,8 @@
+Tue Jan 29 16:49:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_method_arity): return original arity of the method if
+	  aliased because of visibility change, like as Method#arity.
+
 Tue Jan 29 12:05:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_marshal.rb: remove temporally files early.
