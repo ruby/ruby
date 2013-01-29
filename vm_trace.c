@@ -694,8 +694,6 @@ rb_tracearg_event(rb_trace_arg_t *trace_arg)
     return ID2SYM(get_event_id(trace_arg->event));
 }
 
-int rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
-
 static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {

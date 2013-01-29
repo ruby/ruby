@@ -1,3 +1,24 @@
+Tue Jan 29 17:03:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: fix issue of rb_debug_inspector_open().
+	  The order of making binding should be stack (frame) top to bottom.
+	  [Bug #7635]
+	  And also fix issue of collecting klass. Collecting klass is same
+	  as TracePoint#defined_class.
+	  (previous version, it returns T_ICLASS (internal objects).
+
+	* test/-ext-/debug/test_debug.rb: add a test.
+
+	* ext/-test-/debug/extconf.rb, init.c, inspector.c: ditto.
+
+	* vm_backtrace.c: remove magic number and add enum CALLER_BINDING_*.
+
+	* vm_backtrace.c, include/ruby/debug.h: add new C api (experimental)
+	  rb_debug_inspector_frame_self_get().
+
+	* vm.c, vm_core.h, vm_trace.c: move decl. of 
+	  rb_vm_control_frame_id_and_class() and constify first parameter.
+
 Tue Jan 29 16:50:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (rb_tracepoint_enable, rb_tracepoint_disable): check safe

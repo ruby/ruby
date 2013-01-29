@@ -1012,8 +1012,15 @@ struct rb_debug_inspector_struct {
     long backtrace_size;
 };
 
+enum {
+    CALLER_BINDING_SELF,
+    CALLER_BINDING_CLASS,
+    CALLER_BINDING_BINDING,
+    CALLER_BINDING_ISEQ,
+    CALLER_BINDING_CFP
+};
+
 struct collect_caller_bindings_data {
-    rb_thread_t *th;
     VALUE ary;
 };
 
@@ -1023,37 +1030,82 @@ collect_caller_bindings_init(void *arg, size_t size)
     /* */
 }
 
+static VALUE
+get_klass(const rb_control_frame_t *cfp)
+{
+    VALUE klass;
+    if (rb_vm_control_frame_id_and_class(cfp, 0, &klass)) {
+	if (RB_TYPE_P(klass, T_ICLASS)) {
+	    return RBASIC(klass)->klass;
+	}
+	else {
+	    return klass;
+	}
+    }
+    else {
+	return Qnil;
+    }
+}
+
 static void
 collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
-    rb_ary_push(data->ary,
-		rb_ary_new3(4,
-			    cfp->klass,
-			    rb_binding_new_with_cfp(data->th, cfp),
-			    cfp->iseq ? cfp->iseq->self : Qnil,
-			    GC_GUARDED_PTR(cfp)));
+    VALUE frame = rb_ary_new2(5);
+
+    rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
+    rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
+    rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
+    rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? cfp->iseq->self : Qnil);
+    rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_ary_push(data->ary, frame);
 }
 
 static void
 collect_caller_bindings_cfunc(void *arg, const rb_control_frame_t *cfp, ID mid)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
-    rb_ary_push(data->ary, rb_ary_new3(2, cfp->klass, Qnil));
+    VALUE frame = rb_ary_new2(5);
+
+    rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
+    rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
+    rb_ary_store(frame, CALLER_BINDING_BINDING, Qnil); /* not available */
+    rb_ary_store(frame, CALLER_BINDING_ISEQ, Qnil); /* not available */
+    rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_ary_push(data->ary, frame);
 }
 
 static VALUE
 collect_caller_bindings(rb_thread_t *th)
 {
     struct collect_caller_bindings_data data;
+    VALUE result;
+    int i;
+
     data.ary = rb_ary_new();
-    data.th = th;
+
     backtrace_each(th,
 		   collect_caller_bindings_init,
 		   collect_caller_bindings_iseq,
 		   collect_caller_bindings_cfunc,
 		   &data);
-    return rb_ary_reverse(data.ary);
+
+    result = rb_ary_reverse(data.ary);
+
+    /* bindings should be created from top of frame */
+    for (i=0; i<RARRAY_LEN(result); i++) {
+	VALUE entry = rb_ary_entry(result, i);
+	VALUE cfp_val = rb_ary_entry(entry, CALLER_BINDING_BINDING);
+
+	if (!NIL_P(cfp_val)) {
+	    rb_control_frame_t *cfp = GC_GUARDED_PTR_REF(cfp_val);
+	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_binding_new_with_cfp(th, cfp));
+	}
+    }
+
+    return result;
 }
 
 /*
@@ -1100,24 +1152,31 @@ frame_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
+rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long index)
+{
+    VALUE frame = frame_get(dc, index);
+    return rb_ary_entry(frame, CALLER_BINDING_SELF);
+}
+
+VALUE
 rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
-    return rb_ary_entry(frame, 0);
+    return rb_ary_entry(frame, CALLER_BINDING_CLASS);
 }
 
 VALUE
 rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
-    return rb_ary_entry(frame, 1);
+    return rb_ary_entry(frame, CALLER_BINDING_BINDING);
 }
 
 VALUE
 rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
-    return rb_ary_entry(frame, 2);
+    return rb_ary_entry(frame, CALLER_BINDING_ISEQ);
 }
 
 VALUE

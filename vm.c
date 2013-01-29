@@ -1414,7 +1414,7 @@ rb_iseq_eval_main(VALUE iseqval)
 }
 
 int
-rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *klassp)
+rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp)
 {
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq && cfp->me) {
