@@ -2438,6 +2438,7 @@ rb_ary_bsearch(VALUE ary)
     int smaller = 0, satisfied = 0;
     VALUE v, val;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     while (low < high) {
 	mid = low + ((high - low) / 2);
 	val = rb_ary_entry(ary, mid);

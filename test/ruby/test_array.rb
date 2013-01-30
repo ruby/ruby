@@ -2249,6 +2249,12 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
 
+  def test_bsearch_with_no_block
+    enum = [1, 2, 42, 100, 666].bsearch
+    assert_nil enum.size
+    assert_equal 42, enum.each{|x| x >= 33 }
+  end
+
   def test_bsearch_in_find_minimum_mode
     a = [0, 4, 7, 10, 12]
     assert_equal(4, a.bsearch {|x| x >=   4 })

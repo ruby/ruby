@@ -595,6 +595,7 @@ range_bsearch(VALUE range)
 
 #define BSEARCH(conv) \
     do { \
+	RETURN_ENUMERATOR(range, 0, 0); \
 	if (EXCL(range)) high--; \
 	org_high = high; \
 	while (low < high) { \
@@ -639,6 +640,7 @@ range_bsearch(VALUE range)
 	VALUE low = beg;
 	VALUE high = end;
 	VALUE mid, org_high;
+	RETURN_ENUMERATOR(range, 0, 0);
 	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
 	org_high = high;
 

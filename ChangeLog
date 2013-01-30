@@ -1,3 +1,13 @@
+Wed Jan 30 14:10:52 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_bsearch): Return enumerator if no block [#7725]
+
+	* range.c (range_bsearch): ditto
+
+	* test/ruby/test_array.rb: Test for above
+
+	* test/ruby/test_range.rb: ditto
+
 Wed Jan 30 13:53:43 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Take conjugate for inner product

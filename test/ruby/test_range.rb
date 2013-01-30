@@ -356,6 +356,12 @@ class TestRange < Test::Unit::TestCase
     assert_equal 42, (1..42).each.size
   end
 
+  def test_bsearch_with_no_block
+    enum = (42...666).bsearch
+    assert_nil enum.size
+    assert_equal 200, enum.each{|x| x >= 200 }
+  end
+
   def test_bsearch_for_fixnum
     ary = [3, 4, 7, 9, 12]
     assert_equal(0, (0...ary.size).bsearch {|i| ary[i] >= 2 })
