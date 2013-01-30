@@ -596,7 +596,7 @@ range_bsearch(VALUE range)
 	} \
 	else { \
 	    rb_raise(rb_eTypeError, "wrong argument type %s" \
-		" (must respond be numeric, true, false or nil)", \
+		" (must be numeric, true, false or nil)", \
 		rb_obj_classname(v)); \
 	} \
     } while (0)
