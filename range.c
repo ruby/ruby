@@ -473,24 +473,27 @@ range_step(int argc, VALUE *argv, VALUE range)
 
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
 union int64_double {
-	int64_t i;
-	double d;
+    int64_t i;
+    double d;
 };
 
 static VALUE
-int64_as_double_to_num(int64_t i) {
+int64_as_double_to_num(int64_t i)
+{
     union int64_double convert;
     if (i < 0) {
 	convert.i = -i;
 	return DBL2NUM(-convert.d);
-    } else {
+    }
+    else {
 	convert.i = i;
 	return DBL2NUM(convert.d);
     }
 }
 
 static int64_t
-double_as_int64(double d) {
+double_as_int64(double d)
+{
     union int64_double convert;
     convert.d = fabs(d);
     return d < 0 ? -convert.i : convert.i;
@@ -498,7 +501,8 @@ double_as_int64(double d) {
 #endif
 
 static int
-is_integer_p(VALUE v) {
+is_integer_p(VALUE v)
+{
     VALUE is_int = rb_check_funcall(v, id_integer_p, 0, 0);
     return RTEST(is_int) && is_int != Qundef;
 }

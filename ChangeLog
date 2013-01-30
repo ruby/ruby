@@ -27,7 +27,7 @@ Wed Jan 30 14:10:52 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 Wed Jan 30 13:53:43 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Take conjugate for inner product
-	[rubyspec:5a01ad5719f2] [ruby-dev:46101]
+	  [rubyspec:5a01ad5719f2] [ruby-dev:46101]
 
 Wed Jan 30 13:22:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
