@@ -1,3 +1,17 @@
+Wed Jan 30 20:58:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_getsockname): ignore truncated
+	  part of socket address.
+	  (bsock_getpeername): ditto.
+	  (bsock_local_address): ditto.
+	  (bsock_remote_address): ditto.
+
+	* ext/socket/unixsocket.c (unix_path): ditto.
+	  (unix_addr): ditto.
+	  (unix_peeraddr): ditto.
+
+	* ext/socket/init.c (cloexec_accept): ditto.
+
 Wed Jan 30 17:08:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (fstat): revert r37337, which uses _fstati64()

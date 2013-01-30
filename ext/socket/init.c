@@ -481,6 +481,8 @@ static int
 cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 {
     int ret;
+    socklen_t len0 = 0;
+    if (address_len) len0 = *address_len;
 #ifdef HAVE_ACCEPT4
     static int try_accept4 = 1;
     if (try_accept4) {
@@ -489,6 +491,7 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
         if (ret != -1) {
             if (ret <= 2)
                 rb_maygvl_fd_fix_cloexec(ret);
+            if (address_len && len0 < *address_len) *address_len = len0;
             return ret;
         }
         if (errno == ENOSYS) {
@@ -503,6 +506,7 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
     ret = accept(socket, address, address_len);
 #endif
     if (ret == -1) return -1;
+    if (address_len && len0 < *address_len) *address_len = len0;
     rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
