@@ -617,6 +617,19 @@ rb_vm_bugreport(void)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
+
+#if defined __APPLE__
+    fputs("-- Crash Report log information "
+	  "--------------------------------------------\n"
+	  "   See Crash Report log file under the one of following:\n"
+	  "     * ~/Library/Logs/CrashReporter\n"
+	  "     * /Library/Logs/CrashReporter\n"
+	  "     * ~/Library/Logs/DiagnosticReports\n"
+	  "     * /Library/Logs/DiagnosticReports\n"
+	  "   the more detail of.\n"
+	  "\n",
+	  stderr);
+#endif
     if (vm) {
 	SDR();
 	rb_backtrace_print_as_bugreport();
@@ -628,16 +641,7 @@ rb_vm_bugreport(void)
 	    "-------------------------------------------\n");
 
     {
-#if defined __APPLE__
-	fprintf(stderr, "\n");
-	fprintf(stderr,
-		"   See Crash Report log file under the one of following:\n"
-		"     * ~/Library/Logs/CrashReporter\n"
-		"     * /Library/Logs/CrashReporter\n"
-		"     * ~/Library/Logs/DiagnosticReports\n"
-		"     * /Library/Logs/DiagnosticReports\n"
-		"   the more detail of.\n");
-#elif HAVE_BACKTRACE
+#if HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
 	static void *trace[MAX_NATIVE_TRACE];
 	int n = backtrace(trace, MAX_NATIVE_TRACE);

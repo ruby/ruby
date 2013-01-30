@@ -485,6 +485,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
+      (?:--\s(?:.+\n)*\n)?
       --\sControl\sframe\sinformation\s-+\n
       (?:c:.*\n)*
       (?:

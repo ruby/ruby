@@ -1,3 +1,8 @@
+Wed Jan 30 15:21:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_dump.c (rb_vm_bugreport): show the most important message, Crash
+	  Report log information, first.
+
 Wed Jan 30 15:00:05 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_bsearch): Raise TypeError on bad return from block
