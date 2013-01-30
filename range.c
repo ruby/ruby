@@ -20,7 +20,7 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_cmp, id_succ, id_beg, id_end, id_excl;
+static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p;
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
@@ -497,6 +497,12 @@ double_as_int64(double d) {
 }
 #endif
 
+static int
+is_integer_p(VALUE v) {
+    VALUE is_int = rb_check_funcall(v, id_integer_p, 0, 0);
+    return RTEST(is_int) && is_int != Qundef;
+}
+
 /*
  *  call-seq:
  *     rng.bsearch {|obj| block }  -> value
@@ -635,10 +641,9 @@ range_bsearch(VALUE range)
 	BSEARCH(int64_as_double_to_num);
     }
 #endif
-    else if (!NIL_P(rb_check_to_integer(beg, "to_int")) &&
-	     !NIL_P(rb_check_to_integer(end, "to_int"))) {
-	VALUE low = beg;
-	VALUE high = end;
+    else if (is_integer_p(beg) && is_integer_p(end)) {
+	VALUE low = rb_to_int(beg);
+	VALUE high = rb_to_int(end);
 	VALUE mid, org_high;
 	RETURN_ENUMERATOR(range, 0, 0);
 	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
@@ -1299,6 +1304,7 @@ Init_Range(void)
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
+    id_integer_p = rb_intern("integer?");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,

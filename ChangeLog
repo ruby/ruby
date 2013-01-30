@@ -1,3 +1,9 @@
+Wed Jan 30 14:46:28 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* range.c: Restrict bsearch to integers [#7728]
+
+	* test/ruby/test_range.rb: Test for above
+
 Wed Jan 30 14:10:52 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c (rb_ary_bsearch): Return enumerator if no block [#7725]
