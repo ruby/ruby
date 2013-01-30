@@ -1,3 +1,8 @@
+Wed Jan 30 13:17:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (cont_restore_thread): svar should be separate per fibers.
+	  [ruby-core:51331] [Bug #7678]
+
 Wed Jan 30 07:15:04 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* re.c (reg_operand): Simplify and reuse error handling [Bug #7539]

@@ -512,6 +512,8 @@ cont_restore_thread(rb_context_t *cont)
     th->protect_tag = sth->protect_tag;
     th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
+    th->root_lep = sth->root_lep;
+    th->root_svar = sth->root_svar;
 }
 
 #if FIBER_USE_NATIVE

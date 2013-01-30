@@ -317,5 +317,29 @@ class TestFiber < Test::Unit::TestCase
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large)
   end
+
+  def test_separate_lastmatch
+    bug7678 = '[ruby-core:51331]'
+    /a/ =~ "a"
+    m1 = $~
+    m2 = nil
+    Fiber.new do
+      /b/ =~ "b"
+      m2 = $~
+    end.resume
+    assert_equal("b", m2[0])
+    assert_equal(m1, $~, bug7678)
+  end
+
+  def test_separate_lastline
+    bug7678 = '[ruby-core:51331]'
+    $_ = s1 = "outer"
+    s2 = nil
+    Fiber.new do
+      s2 = "inner"
+    end.resume
+    assert_equal("inner", s2)
+    assert_equal(s1, $_, bug7678)
+  end
 end
 
