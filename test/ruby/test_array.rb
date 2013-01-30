@@ -2249,6 +2249,13 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
 
+  def test_bsearch_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch{ "not ok" }
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch{}, [1, 2, 42, 100, 666].bsearch{false}
+  end
+
   def test_bsearch_with_no_block
     enum = [1, 2, 42, 100, 666].bsearch
     assert_nil enum.size
@@ -2275,10 +2282,5 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
 
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
-  end
-
-  def test_bsearch_undefined
-    a = [0, 4, 7, 10, 12]
-    assert_equal(nil, a.bsearch {|x| "foo" }) # undefined behavior
   end
 end

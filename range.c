@@ -595,7 +595,9 @@ range_bsearch(VALUE range)
 	    smaller = cmp < 0; \
 	} \
 	else { \
-	    smaller = RTEST(v); \
+	    rb_raise(rb_eTypeError, "wrong argument type %s" \
+		"(must respond be numeric, true, false or nil)", \
+		rb_obj_classname(v)); \
 	} \
     } while (0)
 

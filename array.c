@@ -2462,7 +2462,9 @@ rb_ary_bsearch(VALUE ary)
 	    }
 	}
 	else {
-	    smaller = RTEST(v);
+	    rb_raise(rb_eTypeError, "wrong argument type %s"
+		"(must respond be numeric, true, false or nil)",
+		rb_obj_classname(v));
 	}
 	if (smaller) {
 	    high = mid;

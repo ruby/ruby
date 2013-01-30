@@ -357,6 +357,13 @@ class TestRange < Test::Unit::TestCase
     assert_equal 42, (1..42).each.size
   end
 
+  def test_bsearch_typechecks_return_values
+    assert_raise(TypeError) do
+      (1..42).bsearch{ "not ok" }
+    end
+    assert_equal (1..42).bsearch{}, (1..42).bsearch{false}
+  end
+
   def test_bsearch_with_no_block
     enum = (42...666).bsearch
     assert_nil enum.size

@@ -1,3 +1,13 @@
+Wed Jan 30 15:00:05 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c (rb_ary_bsearch): Raise TypeError on bad return from block
+
+	* range.c (range_bsearch): ditto
+
+	* test/ruby/test_array.rb (class): Test for above
+
+	* test/ruby/test_range.rb (class): ditto
+
 Wed Jan 30 14:46:28 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* range.c: Restrict bsearch to integers [#7728]
