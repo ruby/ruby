@@ -548,6 +548,14 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert(s0.closed?)
   end
 
+  def test_abstract_unix_socket_econnrefused
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    assert_raise(Errno::ECONNREFUSED) do
+      UNIXSocket.open(name) {}
+    end
+  end
+
   def test_abstract_unix_server_socket
     return if /linux/ !~ RUBY_PLATFORM
     name = "\0ruby-test_unix"

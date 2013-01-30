@@ -1,3 +1,10 @@
+Wed Jan 30 15:26:37 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): use rb_inspect()
+	  because rb_sys_fail_str() fails if its argument contains NUL.
+
+	* test/socket/test_unix.rb: related test.
+
 Wed Jan 30 15:21:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): show the most important message, Crash
