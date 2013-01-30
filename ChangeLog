@@ -1,3 +1,8 @@
+Wed Jan 30 13:22:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen): warn assigned but unused variables also in
+	  toplevel, except for -e option.  [Feature #7730] [ruby-core:51580]
+
 Wed Jan 30 13:17:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_restore_thread): svar should be separate per fibers.
