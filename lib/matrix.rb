@@ -1752,7 +1752,7 @@ class Vector
 
     p = 0
     each2(v) {|v1, v2|
-      p += v1 * v2
+      p += v1 * v2.conj
     }
     p
   end
