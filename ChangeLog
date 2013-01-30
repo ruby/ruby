@@ -1,3 +1,8 @@
+Wed Jan 30 17:08:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (fstat): revert r37337, which uses _fstati64()
+	  instead of fstati64() on mingw32.  [Bug #7276]
+
 Wed Jan 30 15:26:37 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/unixsocket.c (rsock_init_unixsock): use rb_inspect()
