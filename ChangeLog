@@ -1,3 +1,8 @@
+Thu Jan 31 16:33:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_push_gen): no assigned but unused variable warnings
+	  in eval as well as -e.  [Feature #7730] [ruby-core:51580]
+
 Wed Jan 30 12:30:08 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_signal.rb (test_trap_puts): Fix typo. "sync"

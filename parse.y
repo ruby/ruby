@@ -9432,7 +9432,8 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->prev = lvtbl;
     local->args = vtable_alloc(0);
     local->vars = vtable_alloc(inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE);
-    local->used = !(inherit_dvars && ifndef_ripper(e_option_supplied(parser))+0) &&
+    local->used = !(inherit_dvars &&
+		    (ifndef_ripper(compile_for_eval || e_option_supplied(parser))+0)) &&
 	RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
     lvtbl = local;
 }

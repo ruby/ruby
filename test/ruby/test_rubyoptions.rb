@@ -554,6 +554,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(["-we", "def foo\n  a=1\n :a\nend"], "", [], ["-e:2: warning: assigned but unused variable - a"], bug7408)
     feature7730 = '[ruby-core:51580]'
     assert_in_out_err(["-w", "-"], "a=1", [], ["-:1: warning: assigned but unused variable - a"], feature7730)
+    assert_in_out_err(["-w", "-"], "eval('a=1')", [], [], feature7730)
   end
 
   def test_shadowing_variable
