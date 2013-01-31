@@ -265,7 +265,7 @@ EOS
     assert_in_out_err([], <<-INPUT, ["a"*10000], [])
       Signal.trap(:INT) {
           # for enable internal io mutex
-          sync = false
+          STDOUT.sync = false
           # larger than internal io buffer
           print "a"*10000
       }

@@ -1,3 +1,8 @@
+Wed Jan 30 12:30:08 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_signal.rb (test_trap_puts): Fix typo. "sync"
+	  should be "STDOUT.sync".
+
 Thu Jan 31 15:39:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* string.c (rb_str_aset_m): Documentation for String#[]= fix
