@@ -1,3 +1,8 @@
+Thu Jan 31 21:55:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* marshal.c (marshal_load): Add documentation warning against using
+	  Marshal.load on untrusted data [Bug #7759] [ruby-core:51765]
+
 Thu Jan 31 16:33:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_push_gen): no assigned but unused variable warnings

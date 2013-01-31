@@ -1884,6 +1884,11 @@ clear_load_arg(struct load_arg *arg)
  * may be either an instance of IO or an object that responds to
  * to_str. If proc is specified, it will be passed each object as it
  * is deserialized.
+ *
+ * Never pass untrusted data (including user input) to this method. Doing
+ * so is highly dangerous and can lead to remote code execution. If you
+ * need to deserialize untrusted data, use JSON and only rely on simple
+ * 'primitive' types, such as String, Array, Hash, etc.
  */
 static VALUE
 marshal_load(int argc, VALUE *argv)
