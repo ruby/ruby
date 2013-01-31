@@ -3531,7 +3531,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *  <code>Fixnum</code> will raise an <code>IndexError</code> if the value is
  *  out of range; the <code>Range</code> form will raise a
  *  <code>RangeError</code>, and the <code>Regexp</code> and <code>String</code>
- *  forms will silently ignore the assignment.
+ *  will raise an <code>IndexError</code> on negative match.
  */
 
 static VALUE

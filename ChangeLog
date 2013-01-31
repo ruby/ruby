@@ -1,3 +1,9 @@
+Thu Jan 31 15:39:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* string.c (rb_str_aset_m): Documentation for String#[]= fix
+	  Raises an IndexError if Regexp match is out of range.
+	  Github fixes #243 Patch by Dmtiriy Budnik
+
 Thu Jan 31 13:54:44 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (rsock_unix_sockaddr_len): return
