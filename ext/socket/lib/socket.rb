@@ -819,7 +819,7 @@ class Socket < BasicSocket
     private
 
     def unix_socket_abstract_name?(path)
-      /linux/ =~ RUBY_PLATFORM && /\A\0/ =~ path
+      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
     end
   end
 

@@ -1,3 +1,14 @@
+Thu Jan 31 13:54:44 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (rsock_unix_sockaddr_len): return
+	  sizeof(sa_familiy_t) if path is empty.  see "Autobind Feature" in
+	  unix(7) for details.
+
+	* ext/socket/lib/socket.rb (unix_socket_abstract_name?): treat an
+	  empty path as an abstract name.
+
+	* test/socket/test_unix.rb: related test.
+
 Wed Jan 30 20:58:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/basicsocket.c (bsock_getsockname): ignore truncated

@@ -542,7 +542,11 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s0 = s
       UNIXSocket.open(name) {|c|
         sock = s.accept
-        assert_equal(name, c.remote_address.unix_path)
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
       }
     }
     assert(s0.closed?)
@@ -565,7 +569,30 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s0 = s
       Socket.unix(name) {|c|
         sock, = s.accept
-        assert_equal(name, c.remote_address.unix_path)
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_autobind
+    return if /linux/ !~ RUBY_PLATFORM
+    s0 = nil
+    Socket.unix_server_socket("") {|s|
+      name = s.local_address.unix_path
+      assert_match(/\A\0[0-9a-f]{5}\z/, name)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
       }
     }
     assert(s0.closed?)

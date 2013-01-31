@@ -446,7 +446,11 @@ socklen_t
 rsock_unix_sockaddr_len(VALUE path)
 {
 #ifdef __linux__
-    if (RSTRING_PTR(path)[0] == '\0') {
+    if (RSTRING_LEN(path) == 0) {
+	/* autobind; see unix(7) for details. */
+	return (socklen_t) sizeof(sa_family_t);
+    }
+    else if (RSTRING_PTR(path)[0] == '\0') {
 	/* abstract namespace; see unix(7) for details. */
 	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
 	    RSTRING_LEN(path);
