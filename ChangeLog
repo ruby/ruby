@@ -1,3 +1,9 @@
+Fri Feb  1 23:04:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* array.c (rb_ary_dup): make returned array the same class as the original
+	  array [Bug #7768] [ruby-core:51792]
+	* test/ruby/test_array.rb (class TestArray): add test
+
 Fri Feb  1 16:35:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): prohibit setting instance variables of

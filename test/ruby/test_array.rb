@@ -2283,4 +2283,11 @@ class TestArray < Test::Unit::TestCase
 
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
+
+  def test_array_uniq_returns_same_class # [ruby-core:51792]
+    klass = Class.new(Array)
+    assert_equal klass, klass.new(2).uniq.class
+    assert_equal klass, klass.new(1).uniq.class
+    assert_equal klass, klass.new(0).uniq.class
+  end
 end
