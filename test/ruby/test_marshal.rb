@@ -62,8 +62,8 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_struct_invalid_members
     TestMarshal.const_set :StructInvalidMembers, Struct.new(:a)
-    Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
     assert_raise(TypeError, "[ruby-dev:31759]") {
+      Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
       TestMarshal::StructInvalidMembers.members
     }
   end
@@ -537,5 +537,17 @@ class TestMarshal < Test::Unit::TestCase
 
     assert_equal(obj, loaded, bug7627)
     assert_nil(loaded.foo, bug7627)
+  end
+
+  def test_class_ivar
+    assert_raise(TypeError) {Marshal.load("\x04\x08Ic\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestClass, :instance_variable_defined?, :@bug)
+  end
+
+  def test_module_ivar
+    assert_raise(TypeError) {Marshal.load("\x04\x08Im\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestModule, :instance_variable_defined?, :@bug)
   end
 end

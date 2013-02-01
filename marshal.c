@@ -1434,6 +1434,13 @@ append_extmod(VALUE obj, VALUE extmod)
     return obj;
 }
 
+#define prohibit_ivar(type, str) do { \
+	if (!ivp || !*ivp) break; \
+	rb_raise(rb_eTypeError, \
+		 "can't override instance variable of "type" `%"PRIsVALUE"'", \
+		 (str)); \
+    } while (0)
+
 static VALUE
 r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 {
@@ -1802,6 +1809,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE str = r_bytes(arg);
 
 	    v = rb_path_to_class(str);
+	    prohibit_ivar("class/module", str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
@@ -1812,6 +1820,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE str = r_bytes(arg);
 
 	    v = path2class(str);
+	    prohibit_ivar("class", str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
@@ -1822,6 +1831,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE str = r_bytes(arg);
 
 	    v = path2module(str);
+	    prohibit_ivar("module", str);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
