@@ -64,7 +64,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(1, proc{|x|}.arity)
     assert_equal(0, proc{|x=1|}.arity)
     assert_equal(2, proc{|x, y|}.arity)
-    assert_equal(0, proc{|x=0, y|}.arity)
+    assert_equal(1, proc{|x=0, y|}.arity)
     assert_equal(0, proc{|x=0, y=0|}.arity)
     assert_equal(1, proc{|x, y=0|}.arity)
     assert_equal(-2, proc{|x, *y|}.arity)

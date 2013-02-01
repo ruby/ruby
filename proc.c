@@ -30,6 +30,7 @@ VALUE rb_cProc;
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
+static int method_min_max_arity(VALUE, int *max);
 static ID attached;
 
 /* Proc */
@@ -655,8 +656,23 @@ proc_arity(VALUE self)
     return INT2FIX(arity);
 }
 
-int
-rb_proc_arity(VALUE self)
+static inline int
+rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
+{
+    *max = iseq->arg_rest == -1 ?
+        iseq->argc + iseq->arg_post_len + iseq->arg_opts - (iseq->arg_opts > 0)
+      : UNLIMITED_ARGUMENTS;
+    return iseq->argc + iseq->arg_post_len;
+}
+
+/*
+ * Returns the number of required parameters and stores the maximum
+ * number of parameters in max, or UNLIMITED_ARGUMENTS if no max.
+ * For non-lambda procs, the maximum is the number of non-ignored
+ * parameters even though there is no actual limit to the number of parameters
+ */
+static int
+rb_proc_min_max_arity(VALUE self, int *max)
 {
     rb_proc_t *proc;
     rb_iseq_t *iseq;
@@ -664,22 +680,27 @@ rb_proc_arity(VALUE self)
     iseq = proc->block.iseq;
     if (iseq) {
 	if (BUILTIN_TYPE(iseq) != T_NODE) {
-	    if (iseq->arg_rest < 0 && (!proc->is_lambda || iseq->arg_opts == 0)) {
-		return iseq->argc;
-	    }
-	    else {
-		return -(iseq->argc + 1 + iseq->arg_post_len);
-	    }
+	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
 	    NODE *node = (NODE *)iseq;
 	    if (IS_METHOD_PROC_NODE(node)) {
-		/* method(:foo).to_proc.arity */
-		return method_arity(node->nd_tval);
+		/* e.g. method(:foo).to_proc.arity */
+		return method_min_max_arity(node->nd_tval, max);
 	    }
 	}
     }
-    return -1;
+    *max = UNLIMITED_ARGUMENTS;
+    return 0;
+}
+
+int
+rb_proc_arity(VALUE self)
+{
+    rb_proc_t *proc;
+    int max, min = rb_proc_min_max_arity(self, &max);
+    GetProcPtr(self, proc);
+    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
 
 #define get_proc_iseq rb_proc_get_iseq
@@ -1646,52 +1667,64 @@ umethod_bind(VALUE method, VALUE recv)
     return method;
 }
 
-int
-rb_method_entry_arity(const rb_method_entry_t *me)
+/*
+ * Returns the number of required parameters and stores the maximum
+ * number of parameters in max, or UNLIMITED_ARGUMENTS
+ * if there is no maximum.
+ */
+static int
+rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 {
     const rb_method_definition_t *def = me->def;
-    if (!def) return 0;
+    if (!def) return *max = 0;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
-	if (def->body.cfunc.argc < 0)
-	    return -1;
-	return check_argc(def->body.cfunc.argc);
+	if (def->body.cfunc.argc < 0) {
+	    *max = UNLIMITED_ARGUMENTS;
+	    return 0;
+	}
+	return *max = check_argc(def->body.cfunc.argc);
       case VM_METHOD_TYPE_ZSUPER:
-	return -1;
-      case VM_METHOD_TYPE_ATTRSET:
-	return 1;
-      case VM_METHOD_TYPE_IVAR:
+	*max = UNLIMITED_ARGUMENTS;
 	return 0;
+      case VM_METHOD_TYPE_ATTRSET:
+	return *max = 1;
+      case VM_METHOD_TYPE_IVAR:
+	return *max = 0;
       case VM_METHOD_TYPE_BMETHOD:
-	return rb_proc_arity(def->body.proc);
+	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
 	rb_iseq_t *iseq = def->body.iseq;
-	if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
-	    return iseq->argc;
-	}
-	else {
-	    return -(iseq->argc + 1 + iseq->arg_post_len);
-	}
+	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	return 0;
+	return *max = 0;
       case VM_METHOD_TYPE_MISSING:
-	return -1;
+	*max = UNLIMITED_ARGUMENTS;
+	return 0;
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    return -1;
+	    *max = UNLIMITED_ARGUMENTS;
+	    return 0;
 	  default:
 	    break;
 	}
       }
       case VM_METHOD_TYPE_REFINED:
-	return -1;
+	*max = UNLIMITED_ARGUMENTS;
+	return 0;
     }
-    rb_bug("rb_method_entry_arity: invalid method entry type (%d)", def->type);
-
+    rb_bug("rb_method_entry_min_max_arity: invalid method entry type (%d)", def->type);
     UNREACHABLE;
+}
+
+int
+rb_method_entry_arity(const rb_method_entry_t *me)
+{
+    int max, min = rb_method_entry_min_max_arity(me, &max);
+    return min == max ? min : -min-1;
 }
 
 /*
@@ -1756,6 +1789,15 @@ original_method_entry(VALUE mod, ID id)
 	id = def->original_id;
     }
     return me;
+}
+
+static int
+method_min_max_arity(VALUE method, int *max)
+{
+    struct METHOD *data;
+
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return rb_method_entry_min_max_arity(data->me, max);
 }
 
 int
