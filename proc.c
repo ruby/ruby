@@ -2163,22 +2163,17 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
 static VALUE
 proc_curry(int argc, VALUE *argv, VALUE self)
 {
-    int sarity, marity = rb_proc_arity(self);
-    VALUE arity, opt = Qfalse;
-
-    if (marity < 0) {
-	marity = -marity - 1;
-	opt = Qtrue;
-    }
+    int sarity, max_arity, min_arity = rb_proc_min_max_arity(self, &max_arity);
+    VALUE arity;
 
     rb_scan_args(argc, argv, "01", &arity);
     if (NIL_P(arity)) {
-	arity = INT2FIX(marity);
+	arity = INT2FIX(min_arity);
     }
     else {
 	sarity = FIX2INT(arity);
-	if (rb_proc_lambda_p(self) && (sarity < marity || (sarity > marity && !opt))) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", sarity, marity);
+	if (rb_proc_lambda_p(self)) {
+	    rb_check_arity(sarity, min_arity, max_arity);
 	}
     }
 

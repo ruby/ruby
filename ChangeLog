@@ -1,3 +1,9 @@
+Sat Feb  2 07:45:44 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c (proc_curry): Fix arity check [Bug #5747]
+
+	* test/ruby/test_proc.rb: Test for above
+
 Sat Feb  2 07:44:15 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c: Add {*}_min_max_arity and refactor.

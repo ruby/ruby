@@ -270,6 +270,13 @@ class TestProc < Test::Unit::TestCase
     assert_equal(self, result[1])
   end
 
+  def test_curry_optional_params
+    obj = Object.new
+    def obj.foo(a, b=42); end
+    assert_raise(ArgumentError) { obj.method(:foo).to_proc.curry(3) }
+    assert_raise(ArgumentError) { ->(a, b=42){}.curry(3) }
+  end
+
   def test_dup_clone
     b = proc {|x| x + "bar" }
     class << b; attr_accessor :foo; end
