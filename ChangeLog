@@ -1,3 +1,9 @@
+Fri Feb  1 14:34:29 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/extconf.rb, ext/readline/readline.c: check
+	  RL_PROMPT_START_IGNORE and RL_PROMPT_END_IGNORE directly in
+	  readline.c.  Patch by Zachary Scott.  [Bug #7397] [ruby-core:49561]
+
 Thu Jan 31 21:55:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* marshal.c (marshal_load): Add documentation warning against using
