@@ -1,3 +1,8 @@
+Fri Feb  2 00:46:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* marshal.c: add security considerations to marshal overview, refer to
+	  overview from Marshal.load documentation [#7759]
+
 Fri Feb  1 23:04:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* array.c (rb_ary_dup): make returned array the same class as the original

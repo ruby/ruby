@@ -1895,10 +1895,8 @@ clear_load_arg(struct load_arg *arg)
  * to_str. If proc is specified, it will be passed each object as it
  * is deserialized.
  *
- * Never pass untrusted data (including user input) to this method. Doing
- * so is highly dangerous and can lead to remote code execution. If you
- * need to deserialize untrusted data, use JSON and only rely on simple
- * 'primitive' types, such as String, Array, Hash, etc.
+ * Never pass untrusted data (including user supplied input) to this method.
+ * Please see the overview for further details.
  */
 static VALUE
 marshal_load(int argc, VALUE *argv)
@@ -1992,6 +1990,21 @@ marshal_load(int argc, VALUE *argv)
  * marshal_dump and marshal_load or _dump and _load.  marshal_dump will take
  * precedence over _dump if both are defined.  marshal_dump may result in
  * smaller Marshal strings.
+ *
+ * == Security considerations
+ *
+ * By design, Marshal.load can deserialize almost any class loaded into the
+ * Ruby process. In many cases this can lead to remote code execution if the
+ * Marshal data is loaded from an untrusted source.
+ *
+ * As a result, Marshal.load is not suitable as a general purpose serialization
+ * format and you should never unmarshal user supplied input or other untrusted
+ * data.
+ *
+ * If you need to deserialize untrusted data, use JSON or another serialization
+ * format that is only able to load simple, 'primitive' types such as String,
+ * Array, Hash, etc. Never allow user input to specify arbitrary types to
+ * deserialize into.
  *
  * == marshal_dump and marshal_load
  *
