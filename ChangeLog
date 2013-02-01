@@ -22,7 +22,7 @@ Thu Jan 31 15:39:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 Thu Jan 31 13:54:44 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (rsock_unix_sockaddr_len): return
-	  sizeof(sa_familiy_t) if path is empty.  see "Autobind Feature" in
+	  sizeof(sa_family_t) if path is empty.  see "Autobind Feature" in
 	  unix(7) for details.
 
 	* ext/socket/lib/socket.rb (unix_socket_abstract_name?): treat an
