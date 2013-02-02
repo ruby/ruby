@@ -891,22 +891,34 @@ EOHELP
   @stdout = STDOUT
 
   class << DEBUGGER__
+    # Returns the IO used as stdout. Defaults to STDOUT
     def stdout
       @stdout
     end
 
+    # Sets the IO used as stdout. Defaults to STDOUT
     def stdout=(s)
       @stdout = s
     end
 
+    # Returns the display expression list
+    #
+    # See DEBUGGER__ for more usage
     def display
       @display
     end
 
+    # Returns the list of break points where execution will be stopped.
+    #
+    # See DEBUGGER__ for more useage
     def break_points
       @break_points
     end
 
+    # Returns the list of waiting threads.
+    #
+    # When stepping through the traces of a function, thread gets suspended, to
+    # be resumed later.
     def waiting
       @waiting
     end

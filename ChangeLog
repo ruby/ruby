@@ -1,3 +1,8 @@
+Sat Feb  2 14:05:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/debug.rb: Documentation for DEBUGGER__ class methods based on
+	  patch by Vincent Batts [ruby-core:51253]
+
 Sat Feb  2 13:37:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/net/smtp.rb: Fix rdoc title for Net::SMTP
