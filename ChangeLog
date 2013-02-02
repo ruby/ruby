@@ -1,3 +1,8 @@
+Sat Feb  2 13:00:11 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/gserver.rb (GServer#start): fix a timing issue.  patch from
+	  Charles Nutter.  [Bug #7081]
+
 Sat Feb  2 12:36:54 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/fileutils.rb (copy_entry, wrap_traverse): preserve attributes of

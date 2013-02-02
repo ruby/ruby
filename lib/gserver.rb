@@ -261,7 +261,8 @@ class GServer
              end
           }
           client = @tcpServer.accept
-          @connections << Thread.new(client)  { |myClient|
+          Thread.new(client)  { |myClient|
+            @connections << Thread.current
             begin
               myPort = myClient.peeraddr[1]
               serve(myClient) if !@audit or connecting(myClient)
