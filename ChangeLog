@@ -1,3 +1,8 @@
+Sat Feb  2 12:15:36 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/uri/ftp.rb (URI::FTP.new2): remove the rdoc because it is not
+	  well tested yet.  [Bug #7301]
+
 Sat Feb  2 12:07:41 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ChangeLog: Forgot to add a reference to the ChangeLog of the

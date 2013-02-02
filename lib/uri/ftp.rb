@@ -45,16 +45,11 @@ module URI
     #  ';type='
     TYPECODE_PREFIX = ';type='.freeze
 
-    # alternate initialization
-    # Creates a new URI::FTP object.
-    #
-    # Unlike build(), this method does not escape the path component as
-    # required by RFC1738; instead it is treated as per RFC2396.
-    #
-    # Arguments are user, password, host, port, path, typecode,
-    # and arg_check, in that order.
     def self.new2(user, password, host, port, path,
                   typecode = nil, arg_check = true)
+      # Do not use this method!  Not tested.  [Bug #7301]
+      # This methods remains just for compatibility,
+      # Keep it undocumented until the active maintainer is assigned.
       typecode = nil if typecode.size == 0
       if typecode && !TYPECODE.include?(typecode)
         raise ArgumentError,
