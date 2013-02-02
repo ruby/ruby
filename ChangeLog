@@ -1,7 +1,12 @@
+Sat Feb  2 12:07:41 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ChangeLog: Forgot to add a reference to the ChangeLog of the
+	  previous commit.
+
 Sat Feb  2 12:05:18 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/fileutils.rb: chmod/chmod_R with a string mode (e.g., "+x")
-	  caused error in verbose mode.
+	  caused error in verbose mode.  [Bug #7373]
 
 	* test/fileutils/test_fileutils.rb: add a test for above.
 
