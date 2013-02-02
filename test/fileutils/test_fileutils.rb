@@ -972,6 +972,27 @@ class TestFileUtils
     chmod_R 0700, 'tmp/dir'   # to remove
   end if have_file_perm?
 
+  def test_chmod_verbose
+    check_singleton :chmod
+
+    r, w = IO.pipe
+    stderr_back = $stderr
+    read, $stderr = IO.pipe
+    th = Thread.new { read.read }
+
+    touch 'tmp/a'
+    chmod 0700, 'tmp/a', verbose: true
+    assert_equal 0700, File.stat('tmp/a').mode & 0777
+    chmod 0500, 'tmp/a', verbose: true
+    assert_equal 0500, File.stat('tmp/a').mode & 0777
+
+    $stderr.close
+    lines = th.value.lines.map {|l| l.chomp }
+    assert_equal(["chmod 700 tmp/a", "chmod 500 tmp/a"], lines)
+  ensure
+    $stderr = stderr_back if stderr_back
+  end if have_file_perm?
+
   # FIXME: How can I test this method?
   def test_chown
     check_singleton :chown

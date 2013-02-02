@@ -1,3 +1,10 @@
+Sat Feb  2 12:05:18 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/fileutils.rb: chmod/chmod_R with a string mode (e.g., "+x")
+	  caused error in verbose mode.
+
+	* test/fileutils/test_fileutils.rb: add a test for above.
+
 Sat Feb  2 11:44:42 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/English.rb: Remove some confusing words from rdoc.  [Bug #7406]
