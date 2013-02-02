@@ -1,3 +1,7 @@
+Sat Feb  2 11:44:42 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/English.rb: Remove some confusing words from rdoc.  [Bug #7406]
+
 Sat Feb  2 10:17:12 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* NEWS: add keyword arguments.
