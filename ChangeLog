@@ -1,3 +1,7 @@
+Sat Feb  2 13:32:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/net/pop.rb: Fix rdoc title for Net::POP3
+
 Sat Feb  2 13:00:11 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/gserver.rb (GServer#start): fix a timing issue.  patch from

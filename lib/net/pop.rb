@@ -42,8 +42,6 @@ module Net
   class POPBadResponse < POPError; end
 
   #
-  # = Net::POP3
-  #
   # == What is This Library?
   #
   # This library provides functionality for retrieving
@@ -717,9 +715,9 @@ module Net
   end   # class POP3
 
   # class aliases
-  POP = POP3
-  POPSession  = POP3
-  POP3Session = POP3
+  POP = POP3 # :nodoc:
+  POPSession  = POP3 # :nodoc:
+  POP3Session = POP3 # :nodoc:
 
   #
   # This class is equivalent to POP3, except that it uses APOP authentication.
