@@ -46,7 +46,7 @@ module URI
     TYPECODE_PREFIX = ';type='.freeze
 
     def self.new2(user, password, host, port, path,
-                  typecode = nil, arg_check = true)
+                  typecode = nil, arg_check = true) # :nodoc:
       # Do not use this method!  Not tested.  [Bug #7301]
       # This methods remains just for compatibility,
       # Keep it undocumented until the active maintainer is assigned.
