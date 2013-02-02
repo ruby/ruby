@@ -1,3 +1,11 @@
+Sat Feb  2 12:36:54 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/fileutils.rb (copy_entry, wrap_traverse): preserve attributes of
+	  directories on FileUtils.cp_r.  The fix was proposed by Jan
+	  Wedekind.  [Bug #7246]
+
+	* test/fileutils/test_fileutils.rb: add a test for above.
+
 Sat Feb  2 12:30:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/uri/ftp.rb (URI::FTP.new2): nodoc method from r39013 [Bug #7301]

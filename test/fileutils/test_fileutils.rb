@@ -239,6 +239,22 @@ class TestFileUtils
                  bug4507)
   end
 
+  def test_cp_preserve_permissions_dir
+    bug7246 = '[ruby-core:48603]'
+    mkdir 'tmp/cptmp'
+    mkdir 'tmp/cptmp/d1'
+    chmod 0745, 'tmp/cptmp/d1'
+    mkdir 'tmp/cptmp/d2'
+    chmod 0700, 'tmp/cptmp/d2'
+    cp_r 'tmp/cptmp', 'tmp/cptmp2', :preserve => true
+    assert_equal(File.stat('tmp/cptmp/d1').mode,
+                 File.stat('tmp/cptmp2/d1').mode,
+                 bug7246)
+    assert_equal(File.stat('tmp/cptmp/d2').mode,
+                 File.stat('tmp/cptmp2/d2').mode,
+                 bug7246)
+  end
+
   def test_cp_symlink
     touch 'tmp/cptmp'
     # src==dest (2) symlink and its target

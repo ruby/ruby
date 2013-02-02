@@ -526,12 +526,14 @@ public
   # If +remove_destination+ is true, this method removes each destination file before copy.
   #
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
-    Entry_.new(src, nil, dereference_root).traverse do |ent|
+    Entry_.new(src, nil, dereference_root).wrap_traverse(proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
       File.unlink destent.path if remove_destination && File.file?(destent.path)
       ent.copy destent.path
+    end, proc do |ent|
+      destent = Entry_.new(dest, ent.rel, false)
       ent.copy_metadata destent.path if preserve
-    end
+    end)
   end
 
   define_command(:copy_entry)
@@ -1538,6 +1540,16 @@ private
         end
       end
       yield self
+    end
+
+    def wrap_traverse(pre, post)
+      pre.call self
+      if directory?
+        entries.each do |ent|
+          ent.wrap_traverse pre, post
+        end
+      end
+      post.call self
     end
 
   private
