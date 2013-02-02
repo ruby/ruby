@@ -66,8 +66,6 @@ module Net
   end
 
   #
-  # = Net::SMTP
-  #
   # == What is This Library?
   #
   # This library provides functionality to send internet
@@ -1056,6 +1054,6 @@ module Net
 
   end   # class SMTP
 
-  SMTPSession = SMTP
+  SMTPSession = SMTP # :nodoc:
 
 end

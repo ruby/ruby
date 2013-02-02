@@ -1,3 +1,7 @@
+Sat Feb  2 13:37:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/net/smtp.rb: Fix rdoc title for Net::SMTP
+
 Sat Feb  2 13:32:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/net/pop.rb: Fix rdoc title for Net::POP3
