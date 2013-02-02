@@ -11,7 +11,7 @@ end # omg... worst bug ever. rdoc doesn't allow 1-liners
 ##
 # A simple and clean mock object framework.
 
-module MiniTest
+module MiniTest # :nodoc:
 
   ##
   # All mock objects are an instance of Mock
