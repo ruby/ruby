@@ -399,6 +399,8 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+  * Added keyword arguments.
+
   * Added %i and %I for symbol list creation (similar to %w and %W).
 
   * Default source encoding is changed to UTF-8. (was US-ASCII)

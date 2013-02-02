@@ -1,3 +1,7 @@
+Sat Feb  2 10:17:12 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* NEWS: add keyword arguments.
+
 Sat Feb  2 07:45:44 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (proc_curry): Fix arity check [Bug #5747]
