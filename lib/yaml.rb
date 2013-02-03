@@ -13,17 +13,31 @@ rescue LoadError
 end
 
 module Psych
-  class EngineManager # :nodoc:
+  class EngineManager
+    # Returns the YAML engine in use.
+    #
+    # By default Psych is used but the old and unmaintained Syck may be chosen.
+    #
+    # See #yamler= for more information.
     attr_reader :yamler
 
-    def initialize
+    def initialize # :nodoc:
       @yamler = 'psych'
     end
 
-    def syck?
+    def syck? # :nodoc:
       false
     end
 
+    # By default Psych is used but the old and unmaintained Syck may be chosen.
+    #
+    # After installing the 'syck' gem, you can set the YAML engine to syck:
+    #
+    #   YAML::ENGINE.yamler = 'syck'
+    #
+    # To set the YAML engine back to psych:
+    #
+    #   YAML::ENGINE.yamler = 'psych'
     def yamler= engine
       case engine
       when 'syck' then warn "syck has been removed"
