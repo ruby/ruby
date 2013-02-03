@@ -1,3 +1,7 @@
+Sun Feb  3 10:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* numeric.c: Document Float constants [ruby-core:51484] [Bug #7709]
+
 Sun Feb  3 09:38:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/profiler.rb (PROFILE_CALL_PROC, PROFILE_RETURN_PROC): add b_call

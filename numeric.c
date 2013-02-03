@@ -3830,18 +3830,93 @@ Init_Numeric(void)
     rb_undef_alloc_func(rb_cFloat);
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
+    /*
+     *  Represents the rounding mode for floating point addition.
+     *
+     *  Usually defaults to 1, rounding to the nearest number.
+     *
+     *  Other modes include:
+     *
+     *  -1::	Indeterminable
+     *	0::	Rounding towards zero
+     *	1::	Rounding to the nearest number
+     *	2::	Rounding towards positive infinity
+     *	3::	Rounding towards negative infinity
+     */
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
+    /*
+     *	The base of the floating point, or number of unique digits used to
+     *	represent the number.
+     *
+     *  Usually defaults to 2 on most systems, which would represent a base-10 decimal.
+     */
     rb_define_const(rb_cFloat, "RADIX", INT2FIX(FLT_RADIX));
+    /*
+     * The number of base digits for the +double+ data type.
+     *
+     * Usually defaults to 53.
+     */
     rb_define_const(rb_cFloat, "MANT_DIG", INT2FIX(DBL_MANT_DIG));
+    /*
+     *	The number of decimal digits in a double-precision floating point.
+     *
+     *	Usually defaults to 15.
+     */
     rb_define_const(rb_cFloat, "DIG", INT2FIX(DBL_DIG));
+    /*
+     *	The smallest posable exponent value in a double-precision floating
+     *	point.
+     *
+     *	Usually defaults to -1021.
+     */
     rb_define_const(rb_cFloat, "MIN_EXP", INT2FIX(DBL_MIN_EXP));
+    /*
+     *	The largest possible exponent value in a double-precision floating
+     *	point.
+     *
+     *	Usually defaults to 1024.
+     */
     rb_define_const(rb_cFloat, "MAX_EXP", INT2FIX(DBL_MAX_EXP));
+    /*
+     *	The smallest negative exponent in a double-precision floating point
+     *	where 10 raised to this power minus 1.
+     *
+     *	Usually defaults to -307.
+     */
     rb_define_const(rb_cFloat, "MIN_10_EXP", INT2FIX(DBL_MIN_10_EXP));
+    /*
+     *	The largest positive exponent in a double-precision floating point where
+     *	10 raised to this power minus 1.
+     *
+     *	Usually defaults to 308.
+     */
     rb_define_const(rb_cFloat, "MAX_10_EXP", INT2FIX(DBL_MAX_10_EXP));
+    /*
+     *	The smallest positive integer in a double-precision floating point.
+     *
+     *	Usually defaults to 2.2250738585072014e-308.
+     */
     rb_define_const(rb_cFloat, "MIN", DBL2NUM(DBL_MIN));
+    /*
+     *	The largest possible integer in a double-precision floating point number.
+     *
+     *	Usually defaults to 1.7976931348623157e+308.
+     */
     rb_define_const(rb_cFloat, "MAX", DBL2NUM(DBL_MAX));
+    /*
+     *	The difference between 1 and the smallest double-precision floating
+     *	point number.
+     *
+     *	Usually defaults to 2.2204460492503131e-16.
+     */
     rb_define_const(rb_cFloat, "EPSILON", DBL2NUM(DBL_EPSILON));
+    /*
+     *	An expression representing positive infinity.
+     */
     rb_define_const(rb_cFloat, "INFINITY", DBL2NUM(INFINITY));
+    /*
+     *	An expression representing a value which is "not a number".
+     */
     rb_define_const(rb_cFloat, "NAN", DBL2NUM(NAN));
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
