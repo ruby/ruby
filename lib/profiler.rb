@@ -76,12 +76,12 @@ module Profiler__
   @@start = nil # the start time that profiling began
   @@stacks = nil # the map of stacks keyed by thread
   @@maps = nil # the map of call data keyed by thread, class and id. Call data contains the call count, total time,
-  PROFILE_CALL_PROC = TracePoint.new(:call, :c_call) {|tp| # :nodoc:
+  PROFILE_CALL_PROC = TracePoint.new(*%i[call c_call b_call]) {|tp| # :nodoc:
     now = Process.times[0]
     stack = (@@stacks[Thread.current] ||= [])
     stack.push [now, 0.0]
   }
-  PROFILE_RETURN_PROC = TracePoint.new(:return, :c_return) {|tp| # :nodoc:
+  PROFILE_RETURN_PROC = TracePoint.new(*%i[return c_return b_return]) {|tp| # :nodoc:
     now = Process.times[0]
     key = Wrapper.new(tp.defined_class, tp.method_id)
     stack = (@@stacks[Thread.current] ||= [])

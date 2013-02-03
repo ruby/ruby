@@ -1,4 +1,7 @@
-Sun Feb  3 09:37:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb  3 09:38:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/profiler.rb (PROFILE_CALL_PROC, PROFILE_RETURN_PROC): add b_call
+	  and b_return to profile block calls.
 
 	* lib/profiler.rb (PROFILE_CALL_PROC, PROFILE_RETURN_PROC): split
 	  PROFILE_PROC for call and return events.
