@@ -1273,11 +1273,13 @@ random_equal(VALUE self, VALUE other)
  *
  *   rand        #=> 0.2725926052826416
  *
- * When <tt>max.abs</tt> is greater than or equal to 1, +rand+ returns a
- * pseudo-random integer greater than or equal to 0 and less than
- * <tt>max.to_i.abs</tt>.
+ * When +max.abs+ is greater than or equal to 1, +rand+ returns a pseudo-random
+ * integer greater than or equal to 0 and less than +max.to_i.abs+.
  *
  *   rand(100)   #=> 12
+ *
+ * When +max+ is a Range, +rand+ returns a random number where
+ * range.member?(number) == true.
  *
  * Negative or floating point values for +max+ are allowed, but may give
  * surprising results.
