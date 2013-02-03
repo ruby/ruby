@@ -271,8 +271,14 @@ end if defined?(IO.console)
 
 class TestIO_Console < Test::Unit::TestCase
   def test_stringio_getch
-    assert_ruby_status(%w"--disable=gems -rstringio -rio/console", "exit(StringIO.method_defined?(:getch))")
-    assert_ruby_status(%w"--disable=gems -rio/console -rstringio", "exit(StringIO.method_defined?(:getch))")
-    assert_ruby_status(%w"--disable=gems -rstringio", "exit(!StringIO.method_defined?(:getch))")
+    assert_separately %w"--disable=gems -rstringio -rio/console", %q{
+      assert_operator(StringIO, :method_defined?, :getch)
+    }
+    assert_separately %w"--disable=gems -rio/console -rstringio", %q{
+      assert_operator(StringIO, :method_defined?, :getch)
+    }
+    assert_separately %w"--disable=gems -rstringio", %q{
+      assert_not_operator(StringIO, :method_defined?, :getch)
+    }
   end
 end

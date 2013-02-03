@@ -1,4 +1,7 @@
-Sun Feb  3 16:54:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb  3 16:54:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/console/test_io_console.rb (test_stringio_getch): use more
+	  descriptive assertions.
 
 	* ext/io/console/console.c (rawmode_opt): min is minimum characters,
 	  not tenths.
