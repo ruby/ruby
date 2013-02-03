@@ -25,6 +25,38 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_raw_minchar
+    len = 0
+    th = nil
+    helper {|m, s|
+      th = Thread.start {
+        m.print("a")
+        len += 1
+        sleep 2
+        m.print("1234567890")
+        len += 10
+      }
+      assert_equal(["a", 1], [s.getch(min: 1), len])
+    }
+  ensure
+    th.kill if th and th.alive?
+  end
+
+  def test_raw_timeout
+    len = 0
+    th = nil
+    helper {|m, s|
+      th = Thread.start {
+        sleep 2
+        m.print("a")
+        len += 1
+      }
+      assert_equal([nil, 0], [s.getch(time: 0.1), len])
+    }
+  ensure
+    th.kill if th and th.alive?
+  end
+
   def test_cooked
     helper {|m, s|
       assert_send([s, :echo?])

@@ -1,3 +1,8 @@
+Sun Feb  3 16:54:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rawmode_opt): min is minimum characters,
+	  not tenths.
+
 Sun Feb  3 16:13:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* doc/security.rdoc: add first cut at a Ruby security document

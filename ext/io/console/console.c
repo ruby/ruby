@@ -105,13 +105,12 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
-	VALUE v10 = INT2FIX(10);
 	if (!NIL_P(vmin)) {
-	    vmin = rb_funcall3(vmin, '*', 1, &v10);
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
 	}
 	if (!NIL_P(vtime)) {
+	    VALUE v10 = INT2FIX(10);
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
 	    optp = opts;
