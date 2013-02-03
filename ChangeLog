@@ -1,4 +1,6 @@
-Sun Feb  3 16:54:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb  3 16:54:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/io-console.gemspec: bump.  [Bug #7762]
 
 	* test/io/console/test_io_console.rb (test_stringio_getch): use more
 	  descriptive assertions.

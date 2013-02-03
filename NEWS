@@ -213,6 +213,13 @@ with all sufficient information, see the ChangeLog file.
 * iconv
   * Iconv has been removed. Use String#encode instead.
 
+* io/console
+  * new methods:
+    * added IO#cooked which sets the terminal to cooked mode within the given block.
+    * added IO#cooked! which sets the terminal to cooked.
+  * extended method:
+    * IO#raw, IO#raw!, and IO#getch accept keyword arguments, :min and :time.
+
 * io/wait
   * new features:
     * added IO#wait_writable method.
