@@ -207,18 +207,7 @@ end
 print(*v_fast)
 print(*v_others)
 print <<EOS
-  CONFIG["rubylibdir"] = "$(rubylibprefix)/$(ruby_version)"
-  CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
-EOS
-print <<EOS unless v_disabled["sitedir"]
-  CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
-  CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
-EOS
-print <<EOS unless v_disabled["vendordir"]
-  CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
-  CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
-EOS
-print <<EOS
+  CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
