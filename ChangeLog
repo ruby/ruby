@@ -1,3 +1,9 @@
+Mon Feb  4 04:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/English.rb: Add English module for RDoc to parse, then
+	  remove_const to avoid confusion. Include full list of aliases and
+	  their associated global variable.
+
 Mon Feb  4 02:40:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/yaml.rb (YAML::EngineManager): Documentation for #yamler and
