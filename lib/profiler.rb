@@ -76,25 +76,23 @@ module Profiler__
   @@start = nil # the start time that profiling began
   @@stacks = nil # the map of stacks keyed by thread
   @@maps = nil # the map of call data keyed by thread, class and id. Call data contains the call count, total time,
-  PROFILE_PROC = TracePoint.new(:call, :c_call, :return, :c_return) {|tp|
-    case tp.event
-    when :call, :c_call
-      now = Process.times[0]
-      stack = (@@stacks[Thread.current] ||= [])
-      stack.push [now, 0.0]
-    when :return, :c_return
-      now = Process.times[0]
-      key = Wrapper.new(tp.defined_class, tp.method_id)
-      stack = (@@stacks[Thread.current] ||= [])
-      if tick = stack.pop
-        threadmap = (@@maps[Thread.current] ||= {})
-        data = (threadmap[key] ||= [0, 0.0, 0.0, key])
-        data[0] += 1
-        cost = now - tick[0]
-        data[1] += cost
-        data[2] += cost - tick[1]
-        stack[-1][1] += cost if stack[-1]
-      end
+  PROFILE_CALL_PROC = TracePoint.new(:call, :c_call) {|tp| # :nodoc:
+    now = Process.times[0]
+    stack = (@@stacks[Thread.current] ||= [])
+    stack.push [now, 0.0]
+  }
+  PROFILE_RETURN_PROC = TracePoint.new(:return, :c_return) {|tp| # :nodoc:
+    now = Process.times[0]
+    key = Wrapper.new(tp.defined_class, tp.method_id)
+    stack = (@@stacks[Thread.current] ||= [])
+    if tick = stack.pop
+      threadmap = (@@maps[Thread.current] ||= {})
+      data = (threadmap[key] ||= [0, 0.0, 0.0, key])
+      data[0] += 1
+      cost = now - tick[0]
+      data[1] += cost
+      data[2] += cost - tick[1]
+      stack[-1][1] += cost if stack[-1]
     end
   }
 module_function
@@ -102,10 +100,12 @@ module_function
     @@start = Process.times[0]
     @@stacks = {}
     @@maps = {}
-    PROFILE_PROC.enable
+    PROFILE_CALL_PROC.enable
+    PROFILE_RETURN_PROC.enable
   end
   def stop_profile
-    PROFILE_PROC.disable
+    PROFILE_CALL_PROC.disable
+    PROFILE_RETURN_PROC.disable
   end
   def print_profile(f)
     stop_profile
