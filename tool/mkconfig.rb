@@ -113,11 +113,10 @@ File.foreach "config.status" do |line|
         end
       end
     end
+    vars[name] = val
     if name == "configure_args"
       val.gsub!(/ +(?!-)/, "=") if win32
       val.gsub!(/--with-out-ext/, "--without-ext")
-    elsif name == "libdir"
-      v_runtime[:libdir] = val[/\$(\(exec_prefix\)|\{exec_prefix\})\/(.*)/, 2]
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
     case name
@@ -133,7 +132,6 @@ File.foreach "config.status" do |line|
       end
     end
     v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n"' : '='} #{val}\n"
-    vars[name] = true
     if fast[name]
       v_fast << v
     else
@@ -149,7 +147,26 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = "/#{v_runtime[:libdir] || 'lib'}/ruby/#{version}/#{arch}"
+def vars.expand(val, config = self)
+  newval = val.gsub(/\$\$|\$\(([^()]+)\)|\$\{([^{}]+)\}/) {
+    var = $&
+    if !(v = $1 || $2)
+      '$'
+    elsif key = config[v = v[/\A[^:]+(?=(?::(.*?)=(.*))?\z)/]]
+      pat, sub = $1, $2
+      config[v] = false
+      config[v] = expand(key, config)
+      key = key.gsub(/#{Regexp.quote(pat)}(?=\s|\z)/n) {sub} if pat
+      key
+    else
+      var
+    end
+  }
+  val.replace(newval) unless newval == val
+  val
+end
+vars["prefix"] = ""
+prefix = vars.expand(vars["rubyarchdir"])
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
