@@ -1,3 +1,7 @@
+Sun Feb  3 16:13:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* doc/security.rdoc: add first cut at a Ruby security document
+
 Sun Feb  3 10:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* random.c: Document range argument for Kernel#rand.

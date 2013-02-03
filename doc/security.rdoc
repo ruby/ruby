@@ -1,0 +1,64 @@
+= Ruby Security
+
+The Ruby programming language is large and complex and there are many security pitfalls often encountered by newcomers and experienced Rubyists alike.
+
+This document aims to discuss many of these pitfalls and provide more secure alternatives where applicable.
+
+== <code>$SAFE</code>
+
+Ruby provides a mechanism to restrict what operations can be performed by Ruby code in the form of the <code>$SAFE</code> variable.
+
+However, <code>$SAFE</code> does not provide a secure environment for executing untrusted code even at its maximum level of +4+. <code>$SAFE</code> is inherently flawed as a security mechanism, as it relies on every unsafe operation performed by any C method to be guarded by a <code>$SAFE</code> check. If this check is ever missed, the entire security of the system is compromised. <code>$SAFE</code> also does not offer any protection against denial of service attacks.
+
+If you need to execute untrusted code, you should use an operating system level sandboxing mechanism. On Linux, ptrace or LXC can be used to sandbox potentially malicious code. Other similar mechanisms exist on every major operating system.
+
+== +Marshal.load+
+
+Ruby's +Marshal+ module provides methods for serializing and deserializing Ruby object trees to and from a binary data format.
+
+Never use +Marshal.load+ to deserialize untrusted or user supplied data. Because +Marshal+ can deserialize to almost any Ruby object and has full control over instance variables, it is possible to craft a malicious payload that executes code shortly after deserialization.
+
+If you need to deserialize untrusted data, you should use JSON as it is only capable of returning 'primitive' types such as strings, arrays, hashes, numbers and nil. If you need to deserialize other classes, you should do handle this manually. Never deserialize to a user specified class.
+
+== +YAML+
+
++YAML+ is a popular human readable data serialization format used by many Ruby programs for configuration and database persistance of Ruby object trees.
+
+Similar to +Marshal+, it is able to deserialize into arbitrary Ruby classes. For example, the following YAML data will create an +ERB+ object when deserialized:
+
+  !ruby/object:ERB
+  src: puts `uname`
+
+Because of this, many of the security considerations applying to +Marshal+ are also applicable to +YAML+. Do not use +YAML+ to deserialize untrusted data.
+
+== Symbols
+
+Symbols are often seen as syntax sugar for simple strings, but they play a much more crucial role. The MRI Ruby implementation uses Symbols internally for method, variable and constant names. The reason for this is that symbols are simply integers with names attached to them, so they are faster to look up in hashtables.
+
+Once a symbol is created, the memory used by it is never freed. If you convert user input to symbols with +to_sym+ or +intern+, it is possible for an attacker to mount a denial of service attack against your application by flooding it with unique strings. Because each string is kept in memory until the Ruby process exits, this will cause memory consumption to grow and grow until Ruby runs out of memory and crashes.
+
+Be careful with passing user input to methods such as +send+, +instance_variable_get+ or +_set+, +const_get+ or +_set+, etc. as these methods will convert string parameters to symbols internally and pose the same DoS potential as direct conversion through +to_sym+/+intern+.
+
+The workaround to this is simple - don't convert user input to symbols. You should attempt to leave user input in string form instead.
+
+== +send+
+
+'Global functions' in Ruby (+puts+, +exit+, etc.) are actually private instance methods on +Object+. This means it is possible to invoke these methods with +send+, even if the call to +send+ has an explicit receiver.
+
+For example, the following code snippet writes "Hello world" to the terminal:
+
+  1.send(:puts, "Hello world")
+
+You should never call +send+ with user supplied input as the first parameter. Doing so can introduce a denial of service vulnerability:
+
+  foo.send(params[:bar]) # params[:bar] is "exit!"
+
+If an attacker can control the first two arguments to +send+, remote code execution is possible:
+
+  foo.send(params[:a], params[:b]) # params is { :a => "eval", :b => "...ruby code to be executed..." }
+
+When dispatching a method call based on user input, carefully verify that the method name. If possible, check it against a whitelist of safe method names.
+
+Note that the use of +public_send+ is also dangerous, as +send+ itself is public:
+
+  1.public_send("send", "eval", "...ruby code to be executed...")
