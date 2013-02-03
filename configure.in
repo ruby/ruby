@@ -3138,11 +3138,24 @@ AS_CASE(["$target_os"],
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
 
+AC_ARG_ENABLE(multiarch,
+	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
+	      [multiarch=], [unset multiarch])
+
+archlibdir=${multiarch+'${libdir}/${arch}'}
+sitearchlibdir=${multiarch+'${libdir}/${sitearch}'}
+archincludedir=${multiarch+'${includedir}/${arch}'}
+sitearchincludedir=${multiarch+'${includedir}/${sitearch}'}
+
 shvar_to_cpp() {
     local var="$1" val="$2"
     val="`echo '"'"${val}"'"' |
 	sed \
 	    -e 's/\${\([[A-Z][A-Z_]]*\)}/"\1"/g' \
+	    -e 's|\${sitearchlibdir}|'"${sitearchlibdir}|g" \
+	    -e 's|\${sitearchincludedir}|'"${sitearchincludedir}|g" \
+	    -e 's|\${archlibdir}|'"${archlibdir}|g" \
+	    -e 's|\${archincludedir}|'"${archincludedir}|g" \
 	    -e 's|\${libdir}|'"${libdir}|g" \
 	    -e 's/\${ruby_version}/"RUBY_LIB_VERSION"/g' \
 	    -e 's/\${arch}/"arch"/g' \
@@ -3173,9 +3186,9 @@ AC_ARG_WITH(rubylibprefix,
 	    rubylibprefix="$withval"])
 AC_SUBST(rubylibprefix)
 rubylibdir='${rubylibprefix}/${ruby_version}'
-rubyarchdir='${rubylibdir}/${arch}'
+rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
 
-rubyarchprefix='${rubylibprefix}/${arch}'
+rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
 AC_ARG_WITH(rubyarchprefix,
 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
 			   [prefix for architecture dependent ruby libraries [[RUBYLIBPREFIX/ARCH]]]),
@@ -3225,7 +3238,7 @@ AC_ARG_WITH(sitearchdir,
 	    AS_HELP_STRING([--with-arch-sitedir=DIR],
 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
             [sitearchdir=$withval],
-            [sitearchdir='${sitelibdir}/${sitearch}'])
+            [sitearchdir=${multiarch+'${rubyarchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
 
 AC_ARG_WITH(vendordir,
 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
@@ -3237,7 +3250,7 @@ AC_ARG_WITH(vendorarchdir,
 	    AS_HELP_STRING([--with-arch-vendordir=DIR],
 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
             [vendorarchdir=$withval],
-            [vendorarchdir='${vendorlibdir}/${sitearch}'])
+            [vendorarchdir=${multiarch+'${rubyarchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
 
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
@@ -3279,6 +3292,10 @@ else
     AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), ${RUBY_VENDOR_ARCH_LIB_FOR} !<verconf>!)
 fi
 
+AC_SUBST(archlibdir)dnl
+AC_SUBST(sitearchlibdir)dnl
+AC_SUBST(archincludedir)dnl
+AC_SUBST(sitearchincludedir)dnl
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
 AC_SUBST(ruby_version)dnl
@@ -3341,7 +3358,7 @@ AC_ARG_WITH(rubyarchhdrdir,
 	    AS_HELP_STRING([--with-arch-rubyhdrdir=DIR],
 			   [architecture dependent core headers in DIR [[$(rubyhdrdir)/$(arch)]]]),
 	    [rubyarchhdrdir=$withval],
-	    [rubyarchhdrdir='${rubyhdrdir}/${arch}'])
+	    [rubyarchhdrdir=${multiarch+'${archincludedir}/${RUBY_VERSION_NAME}'}${multiarch-'${rubyhdrdir}/${arch}'}])
 
 AC_ARG_WITH(sitehdrdir,
 	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
@@ -3352,7 +3369,7 @@ AC_ARG_WITH(sitearchhdrdir,
 	    AS_HELP_STRING([--with-arch-sitehdrdir=DIR],
 			   [architecture dependent core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
 	    [sitearchhdrdir=$withval],
-	    [sitearchhdrdir='${sitehdrdir}/${sitearch}'])
+	    [sitearchhdrdir=${multiarch+'${sitearchincludedir}/${RUBY_VERSION_NAME}/site_ruby'}${multiarch-'${sitehdrdir}/${sitearch}'}])
 
 AC_ARG_WITH(vendorhdrdir,
 	    AS_HELP_STRING([--with-vendorhdrdir=DIR], [core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
@@ -3363,7 +3380,7 @@ AC_ARG_WITH(vendorarchhdrdir,
 	    AS_HELP_STRING([--with-arch-vendorhdrdir=DIR],
 			   [architecture dependent core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
 	    [vendorarchhdrdir=$withval],
-	    [vendorarchhdrdir='${vendorhdrdir}/${sitearch}'])
+	    [vendorarchhdrdir=${multiarch+'${sitearchincludedir}/${RUBY_VERSION_NAME}/vendor_ruby'}${multiarch-'${vendorhdrdir}/${sitearch}'}])
 
 AC_SUBST(rubyhdrdir)dnl
 AC_SUBST(sitehdrdir)dnl
