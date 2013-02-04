@@ -1,3 +1,9 @@
+Tue Feb  5 07:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb.rb, lib/irb/context.rb: Add documentation on how to enable
+	  auto-indentation and autocompletion using irbrc and irb_context
+	  [ruby-core:51209] [Bug #7642] and [ruby-core:51348] [Bug #7680]
+
 Tue Feb  5 05:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/standard_library.rdoc: Document list of libraries and extensions
