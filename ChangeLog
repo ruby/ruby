@@ -1,3 +1,9 @@
+Tue Feb  5 05:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/standard_library.rdoc: Document list of libraries and extensions
+	  and their purpose or short description
+	* lib/README: Remove lib/README in favor of doc/standard_library.rdoc
+
 Tue Feb  5 04:40:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/json/lib/json.rb: Move module overview definition for rdoc
