@@ -1,10 +1,14 @@
+#--
+# $Release Version: 0.3$
+# $Revision: 1.12 $
+require "thread"
+
 ##
-# = Tracer
+# Outputs a source level execution trace of a Ruby program.
 #
-# Tracer outputs a source level execution trace of a Ruby program. It does
-# this by registering an event handler with <code>Kernel#set_trace_func</code>
-# for processing incoming events.  It also provides methods for filtering
-# unwanted trace output (see Tracer.add_filter, Tracer.on, and Tracer.off).
+# It does this by registering an event handler with Kernel#set_trace_func for
+# processing incoming events.  It also provides methods for filtering unwanted
+# trace output (see Tracer.add_filter, Tracer.on, and Tracer.off).
 #
 # == Example
 #
@@ -42,26 +46,18 @@
 #
 # Symbol table used for displaying incoming events:
 #
-# <tt>}</tt>:: call a C-language routine
-# <tt>{</tt>:: return from a C-language routine
-# <tt>></tt>:: call a Ruby method
-# <tt>C</tt>:: start a class or module definition
-# <tt>E</tt>:: finish a class or module definition
-# <tt>-</tt>:: execute code on a new line
-# <tt>^</tt>:: raise an exception
-# <tt><</tt>:: return from a Ruby method
+# +}+:: call a C-language routine
+# +{+:: return from a C-language routine
+# +>+:: call a Ruby method
+# +C+:: start a class or module definition
+# +E+:: finish a class or module definition
+# +-+:: execute code on a new line
+# +^+:: raise an exception
+# +<+:: return from a Ruby method
 #
 # == Copyright
 #
 # by Keiju ISHITSUKA(keiju@ishitsuka.com)
-#
-#--
-# $Release Version: 0.3$
-# $Revision: 1.12 $
-require "thread"
-
-#
-# tracer main class
 #
 class Tracer
   class << self

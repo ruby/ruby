@@ -1,3 +1,7 @@
+Tue Feb  5 03:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/tracer.rb: Move class overview definition and reformat
+
 Mon Feb  4 15:10:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (rawmode_opt): initialize options for the
