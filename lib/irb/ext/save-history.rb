@@ -29,6 +29,13 @@ module IRB
 
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
+    #
+    # Will store the number of +val+ entries of history in the #history_file
+    #
+    # Add the following to your +.irbrc+ to change the number of history
+    # entries stored to 1000:
+    #
+    #     IRB.conf[:SAVE_HISTORY] = 1000
     def save_history=(val)
       IRB.conf[:SAVE_HISTORY] = val
       if val

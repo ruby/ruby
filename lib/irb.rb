@@ -117,6 +117,18 @@ STDOUT.sync = true
 #
 #     require 'irb/completion'
 #
+# === History
+#
+# By default, irb disables history and will not store any commands you used.
+#
+# If you want to enable history, add the following to your +.irbrc+:
+#
+#     IRB.conf[:SAVE_HISTORY] = 1000
+#
+# This will now store the last 1000 commands in <code>~/.irb_history</code>.
+#
+# See IRB::Context#save_history= for more information.
+#
 # == Customizing the IRB Prompt
 #
 # In order to customize the prompt, you can change the following Hash:

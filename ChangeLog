@@ -1,3 +1,8 @@
+Tue Feb  5 08:03:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb.rb, lib/irb/ext/save-history.rb: Add documentation on how to
+	  enabled irb history [ruby-core:51347] [Bug #7679]
+
 Tue Feb  5 07:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb.rb, lib/irb/context.rb: Add documentation on how to enable
