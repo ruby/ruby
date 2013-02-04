@@ -305,10 +305,10 @@ goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
 libdir = CONFIG["libdir", true]
-archhdrdir = rubyhdrdir = CONFIG["rubyhdrdir", true]
-archhdrdir += "/" + CONFIG["arch", true]
+rubyhdrdir = CONFIG["rubyhdrdir", true]
+archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + $arch)
 rubylibdir = CONFIG["rubylibdir", true]
-archlibdir = CONFIG["archdir", true]
+archlibdir = CONFIG["rubyarchdir", true]
 sitelibdir = CONFIG["sitelibdir"]
 sitearchlibdir = CONFIG["sitearchdir"]
 vendorlibdir = CONFIG["vendorlibdir"]
