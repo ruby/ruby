@@ -482,9 +482,11 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 {
     int ret;
     socklen_t len0 = 0;
-    if (address_len) len0 = *address_len;
 #ifdef HAVE_ACCEPT4
     static int try_accept4 = 1;
+#endif
+    if (address_len) len0 = *address_len;
+#ifdef HAVE_ACCEPT4
     if (try_accept4) {
         ret = accept4(socket, address, address_len, SOCK_CLOEXEC);
         /* accept4 is available since Linux 2.6.28, glibc 2.10. */
@@ -494,17 +496,13 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
             if (address_len && len0 < *address_len) *address_len = len0;
             return ret;
         }
-        if (errno == ENOSYS) {
-            try_accept4 = 0;
-            ret = accept(socket, address, address_len);
+        if (errno != ENOSYS) {
+            return -1;
         }
+        try_accept4 = 0;
     }
-    else {
-        ret = accept(socket, address, address_len);
-    }
-#else
-    ret = accept(socket, address, address_len);
 #endif
+    ret = accept(socket, address, address_len);
     if (ret == -1) return -1;
     if (address_len && len0 < *address_len) *address_len = len0;
     rb_maygvl_fd_fix_cloexec(ret);
