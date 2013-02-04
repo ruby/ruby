@@ -18,7 +18,7 @@ Ruby's +Marshal+ module provides methods for serializing and deserializing Ruby 
 
 Never use +Marshal.load+ to deserialize untrusted or user supplied data. Because +Marshal+ can deserialize to almost any Ruby object and has full control over instance variables, it is possible to craft a malicious payload that executes code shortly after deserialization.
 
-If you need to deserialize untrusted data, you should use JSON as it is only capable of returning 'primitive' types such as strings, arrays, hashes, numbers and nil. If you need to deserialize other classes, you should do handle this manually. Never deserialize to a user specified class.
+If you need to deserialize untrusted data, you should use JSON as it is only capable of returning 'primitive' types such as strings, arrays, hashes, numbers and nil. If you need to deserialize other classes, you should handle this manually. Never deserialize to a user specified class.
 
 == +YAML+
 
