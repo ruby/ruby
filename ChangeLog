@@ -126,7 +126,7 @@ Fri Feb  1 23:04:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 Fri Feb  1 16:35:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): prohibit setting instance variables of
-	  exising class/module.
+	  existing class/module.
 
 Fri Feb  1 14:34:29 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
