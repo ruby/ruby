@@ -117,7 +117,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
     fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->stack);
-    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "e:%06"PRIxPTRDIFF" ", ep % 10000);
+    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line) {
 	fprintf(stderr, " %s", posbuf);
