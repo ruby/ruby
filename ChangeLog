@@ -1,3 +1,8 @@
+Mon Feb  4 15:10:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rawmode_opt): initialize options for the
+	  case all options are not given.
+
 Mon Feb  4 12:44:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c (control_frame_dump): capitalize prefix of `ep'
