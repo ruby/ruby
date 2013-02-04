@@ -45,8 +45,7 @@
 #  $POSTMATCH::               $'
 #  $LAST_PAREN_MATCH::        $+
 #
-module English; end
-Object.send(:remove_const, :English)
+module English end if false
 
 # The exception object passed to +raise+.
 alias $ERROR_INFO              $!
