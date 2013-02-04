@@ -1,3 +1,5 @@
+require 'json/common'
+
 ##
 # = JavaScript Object Notation (JSON)
 #
@@ -49,8 +51,6 @@
 #
 #   1.to_json => "1"
 #
-
-require 'json/common'
 module JSON
   require 'json/version'
 
