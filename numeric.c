@@ -2939,7 +2939,7 @@ int_pow(long x, unsigned long y)
  *  be negative or fractional.
  *
  *    2 ** 3      #=> 8
- *    2 ** -1     #=> 0.5
+ *    2 ** -1     #=> (1/2)
  *    2 ** 0.5    #=> 1.4142135623731
  */
 
