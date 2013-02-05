@@ -143,8 +143,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
 
-    @orig_ruby = if ruby = ENV['RUBY'] then
-                   Gem.class_eval { ruby, @ruby = @ruby, ruby.dup }
+    @orig_ruby = if ENV['RUBY'] then
+                   ruby = Gem.instance_variable_get :@ruby
+                   Gem.instance_variable_set :@ruby, ENV['RUBY']
                    ruby
                  end
 
@@ -264,7 +265,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     ENV['GEM_PATH'] = @orig_gem_path
 
     _ = @orig_ruby
-    Gem.class_eval { @ruby = _ } if _
+    Gem.instance_variable_set :@ruby, @orig_ruby if @orig_ruby
 
     if @orig_ENV_HOME then
       ENV['HOME'] = @orig_ENV_HOME

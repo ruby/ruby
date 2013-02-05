@@ -27,17 +27,25 @@ module Gem::GemcutterUtilities
     end
   end
 
-  def sign_in
+  def sign_in sign_in_host = self.host
     return if Gem.configuration.rubygems_api_key
 
-    say "Enter your RubyGems.org credentials."
-    say "Don't have an account yet? Create one at http://rubygems.org/sign_up"
+    pretty_host = if Gem::DEFAULT_HOST == sign_in_host then
+                    'RubyGems.org'
+                  else
+                    sign_in_host
+                  end
+
+    say "Enter your #{pretty_host} credentials."
+    say "Don't have an account yet? " +
+        "Create one at https://#{sign_in_host}/sign_up"
 
     email    =              ask "   Email: "
     password = ask_for_password "Password: "
     say "\n"
 
-    response = rubygems_api_request :get, "api/v1/api_key" do |request|
+    response = rubygems_api_request(:get, "api/v1/api_key",
+                                    sign_in_host) do |request|
       request.basic_auth email, password
     end
 

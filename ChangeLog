@@ -1,3 +1,33 @@
+Tue Feb  5 11:35:35 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/push_command.rb:  Fixed credential download for
+	  `gem push --host`
+	* lib/rubygems/gemcutter_utilities.rb:  ditto.
+	* test/rubygems/test_gem_commands_push_command.rb:  Test for the above.
+	* test/rubygems/test_gem_gemcutter_utilities.rb:  ditto.
+
+	* lib/rubygems/config_file.rb:  Abort if the `gem push` credentials
+	  file has insecure permissions.
+	* test/rubygems/test_gem_config_file.rb:  Test for the above.
+
+	* lib/rubygems/ext/builder.rb:  Do not look for Gemfile, Isolate, etc.
+	  while building gem extensions.
+
+	* lib/rubygems/package.rb:  Unset spec and files list if a gem's
+	  signatures cannot be verified.
+	* test/rubygems/test_gem_package.rb:  Test for the above.
+
+	* lib/rubygems/specification.rb:  Reduce use of eval.
+	* lib/rubygems/test_case.rb:  ditto.
+
+	* test/rubygems/test_gem_specification.rb:  Test setting
+	  specification_version for legacy gems.  Dup Gem.ruby before
+	  untainting in case it's frozen.
+
+	* lib/rubygems.rb:  Reduce use of eval.  Only read files when looking
+	  for Gemfile, Isolate, etc.
+	* test/rubygems/test_gem.rb:  Test for the above.
+
 Tue Feb  5 10:15:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/security.rdoc: Wrap security guide at 80 columns

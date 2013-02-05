@@ -207,7 +207,7 @@ module Gem
 
         begin
           while true
-            path = GEM_DEP_FILES.find { |f| File.exists?(f) }
+            path = GEM_DEP_FILES.find { |f| File.file?(f) }
 
             if path
               path = File.join here, path
@@ -226,7 +226,9 @@ module Gem
         end
       end
 
-      return unless File.exists? path
+      path.untaint
+
+      return unless File.file? path
 
       rs = Gem::RequestSet.new
       rs.load_gemdeps path
@@ -368,29 +370,6 @@ module Gem
     # TODO: raise "no"
     paths.path
   end
-
-  ##
-  # Expand each partial gem path with each of the required paths specified
-  # in the Gem spec.  Each expanded path is yielded.
-
-  def self.each_load_path(partials)
-    partials.each do |gp|
-      base = File.basename gp
-      specfn = File.join(dir, "specifications", "#{base}.gemspec")
-      if File.exists? specfn
-        spec = eval(File.read(specfn))
-        spec.require_paths.each do |rp|
-          yield File.join(gp,rp)
-        end
-      else
-        filename = File.join(gp, 'lib')
-        yield(filename) if File.exists? filename
-      end
-    end
-  end
-
-  private_class_method :each_load_path
-
 
   ##
   # Quietly ensure the named Gem directory contains all the proper

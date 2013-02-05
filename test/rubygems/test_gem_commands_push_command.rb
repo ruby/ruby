@@ -46,6 +46,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def send_battery
     use_ui @ui do
+      @cmd.instance_variable_set :@host, @host
       @cmd.send_gem(@path)
     end
 
@@ -133,7 +134,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_raises_error_with_no_arguments
-    def @cmd.sign_in; end
+    def @cmd.sign_in(*); end
     assert_raises Gem::CommandLineError do
       @cmd.execute
     end

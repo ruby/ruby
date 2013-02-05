@@ -473,6 +473,10 @@ EOM
       @security_policy
 
     true
+  rescue Gem::Security::Exception
+    @spec = nil
+    @files = []
+    raise
   rescue Errno::ENOENT => e
     raise Gem::Package::FormatError.new e.message
   rescue Gem::Package::TarInvalidError => e

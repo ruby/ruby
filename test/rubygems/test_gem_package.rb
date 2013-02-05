@@ -499,6 +499,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal 'unsigned gems are not allowed by the High Security policy',
                  e.message
+
+    refute package.instance_variable_get(:@spec), '@spec must not be loaded'
+    assert_empty package.instance_variable_get(:@files), '@files must empty'
   end
 
   def test_verify_truncate

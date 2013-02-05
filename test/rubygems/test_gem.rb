@@ -667,6 +667,25 @@ class TestGem < Gem::TestCase
     assert_equal %w[http://rubygems.org/], Gem.default_sources
   end
 
+  def test_self_detect_gemdeps
+    rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
+
+    FileUtils.mkdir_p 'detect/a/b'
+    FileUtils.mkdir_p 'detect/a/Isolate'
+
+    FileUtils.touch 'detect/Isolate'
+
+    begin
+      Dir.chdir 'detect/a/b'
+
+      assert_empty Gem.detect_gemdeps
+    ensure
+      Dir.chdir @tempdir
+    end
+  ensure
+    ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
   def test_self_dir
     assert_equal @gemhome, Gem.dir
   end
@@ -1457,7 +1476,7 @@ class TestGem < Gem::TestCase
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
-    out = `#{Gem.ruby.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
+    out = `#{Gem.ruby.dup.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
 
     assert_equal '["a-1", "b-1", "c-1"]', out.strip
   end
@@ -1489,7 +1508,7 @@ class TestGem < Gem::TestCase
 
     Dir.mkdir "sub1"
     out = Dir.chdir "sub1" do
-      `#{Gem.ruby.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
+      `#{Gem.ruby.dup.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
     end
 
     Dir.rmdir "sub1"

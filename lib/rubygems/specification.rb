@@ -904,7 +904,7 @@ class Gem::Specification
       raise Gem::Exception, "YAML data doesn't evaluate to gem specification"
     end
 
-    spec.instance_eval { @specification_version ||= NONEXISTENT_SPECIFICATION_VERSION }
+    spec.specification_version ||= NONEXISTENT_SPECIFICATION_VERSION
     spec.reset_nil_attributes_to_default
 
     spec

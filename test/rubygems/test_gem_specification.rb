@@ -118,6 +118,15 @@ end
     assert_equal @current_version, new_spec.specification_version
   end
 
+  def test_self_from_yaml
+    @a1.instance_variable_set :@specification_version, nil
+
+    spec = Gem::Specification.from_yaml @a1.to_yaml
+
+    assert_equal Gem::Specification::NONEXISTENT_SPECIFICATION_VERSION,
+                 spec.specification_version
+  end
+
   def test_self_from_yaml_syck_date_bug
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.

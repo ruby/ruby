@@ -77,9 +77,24 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in_with_host
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+
+    util_sign_in [api_key, 200, 'OK'], 'http://example.com', :param
+
+    assert_match "Enter your http://example.com credentials.",
+                 @sign_in_ui.output
+    assert @fetcher.last_request["authorization"]
+    assert_match %r{Signed in.}, @sign_in_ui.output
+
+    credentials = YAML.load_file Gem.configuration.credentials_path
+    assert_equal api_key, credentials[:rubygems_api_key]
+  end
+
+  def test_sign_in_with_host_ENV
+    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     util_sign_in [api_key, 200, 'OK'], 'http://example.com'
 
-    assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
+    assert_match "Enter your http://example.com credentials.",
+                 @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
     assert_match %r{Signed in.}, @sign_in_ui.output
 
@@ -125,14 +140,14 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Access Denied.}, @sign_in_ui.output
   end
 
-  def util_sign_in response, host = nil
+  def util_sign_in response, host = nil, style = :ENV
     skip 'Always uses $stdin on windows' if Gem.win_platform?
 
     email    = 'you@example.com'
     password = 'secret'
 
     if host
-      ENV['RUBYGEMS_HOST'] = host
+      ENV['RUBYGEMS_HOST'] = host if style == :ENV
     else
       host = Gem.host
     end
@@ -144,7 +159,11 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @sign_in_ui = Gem::MockGemUi.new "#{email}\n#{password}\n"
 
     use_ui @sign_in_ui do
-      @cmd.sign_in
+      if style == :param then
+        @cmd.sign_in host
+      else
+        @cmd.sign_in
+      end
     end
   end
 
