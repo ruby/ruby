@@ -1,3 +1,8 @@
+Tue Feb  5 10:15:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/security.rdoc: Grammatical error on security guide
+	  Patch by Josh Bassett [Github fixes #245]
+
 Tue Feb  5 10:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/racc/parser.rb: Update #do_parse and #yyparse from upstream
