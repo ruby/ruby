@@ -218,19 +218,6 @@ STDOUT.sync = true
 #   #   :RETURN: |2
 #   #         ==>%s
 #
-# == Restrictions
-#
-# Because irb evaluates input immediately after it is syntactically complete,
-# the results may be slightly different than directly using ruby.
-#
-# One of the obvious differences is how irb handles symbols as continuated
-# statements:
-#
-#   ruby -e 'p :+' #=> :+
-#   irb
-#   irb(main):001:0> p :+
-#   irb(main):002:0*
-#
 # irb tries to contiue the statement 'p :+' on the next line.
 #
 # == IRB Sessions
