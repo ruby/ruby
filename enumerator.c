@@ -184,23 +184,18 @@ enumerator_ptr(VALUE obj)
 
 /*
  * call-seq:
- *   obj.to_enum(method = :each, *args)
- *   obj.enum_for(method = :each, *args)
- *   obj.to_enum(method = :each, *args) {|obj, *args| block}
- *   obj.enum_for(method = :each, *args){|obj, *args| block}
+ *   obj.to_enum(method = :each, *args)                 -> enum
+ *   obj.enum_for(method = :each, *args)                -> enum
+ *   obj.to_enum(method = :each, *args) {|*args| block} -> enum
+ *   obj.enum_for(method = :each, *args){|*args| block} -> enum
  *
- * Creates a new Enumerator which will enumerate by on calling +method+ on
- * +obj+.
+ * Creates a new Enumerator which will enumerate by calling +method+ on
+ * +obj+, passing +args+ if any.
  *
- * +method+:: the method to call on +obj+ to generate the enumeration
- * +args+:: arguments that will be passed in +method+ <i>in addition</i>
- *          to the item itself.  Note that the number of args
- *          must not exceed the number expected by +method+
+ * If a block is given, it will be used to calculate the size of
+ * the enumerator without the need to iterate it (see Enumerator#size).
  *
- *  If a block is given, it will be used to calculate the size of
- *  the enumerator (see Enumerator#size).
- *
- * === Example
+ * === Examples
  *
  *   str = "xyz"
  *
@@ -214,6 +209,33 @@ enumerator_ptr(VALUE obj)
  *   a = [1, 2, 3]
  *   some_method(a.to_enum)
  *
+ * It is typical to call to_enum when defining methods for
+ * a generic Enumerable, in case no block is passed.
+ *
+ * Here is such an example, with parameter passing and a sizing block:
+ *
+ *   module Enumerable
+ *     # a generic method to repeat the values of any enumerable
+ *     def repeat(n)
+ *       raise ArgumentError, "#{n} is negative!" if n < 0
+ *       unless block_given?
+ *         return to_enum(__method__, n) do # __method__ is :repeat here
+ *           sz = size     # Call size and multiply by n...
+ *           sz * n if sz  # but return nil if size itself is nil
+ *         end
+ *       end
+ *       each do |*val|
+ *         n.times { yield *val }
+ *       end
+ *     end
+ *   end
+ *
+ *   %i[hello world].repeat(2) { |w| puts w }
+ *     # => Prints 'hello', 'hello', 'world', 'world'
+ *   enum = (1..14).repeat(3)
+ *     # => returns an Enumerator when called without a block
+ *   enum.first(4) # => [1, 1, 1, 2]
+ *   enum.size # => 42
  */
 static VALUE
 obj_to_enum(int argc, VALUE *argv, VALUE obj)
