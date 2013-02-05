@@ -2,6 +2,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
+require_relative 'envutil'
 
 class TestRange < Test::Unit::TestCase
   def test_range_string
@@ -534,5 +535,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
+  end
+
+  def test_bsearch_with_mathn
+    assert_in_out_err ['-r', 'mathn', '-e', 'puts (1..(1<<100)).bsearch{|x| raise "#{x} should be integer" unless x.integer?; x >= 42}'], "", ["42"], [], '[ruby-core:25740]'
   end
 end

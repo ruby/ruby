@@ -20,7 +20,7 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p;
+static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
@@ -656,7 +656,7 @@ range_bsearch(VALUE range)
 	org_high = high;
 
 	while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-	    mid = rb_funcall(rb_funcall(high, '+', 1, low), '/', 1, INT2FIX(2));
+	    mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
 	    BSEARCH_CHECK(mid);
 	    if (smaller) {
 		high = mid;
@@ -1311,6 +1311,7 @@ Init_Range(void)
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
     id_integer_p = rb_intern("integer?");
+    id_div = rb_intern("div");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
