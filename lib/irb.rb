@@ -223,15 +223,15 @@ STDOUT.sync = true
 # Because irb evaluates input immediately after it is syntactically complete,
 # the results may be slightly different than directly using ruby.
 #
-# One of the obvious differences is how irb handles symbols as continuated
+# One of the obvious differences is how irb handles '%' as continuated
 # statements:
 #
-#   ruby -e 'p :+' #=> :+
+#   ruby -e 'p=i=1; p(p %i)'#=> 0
 #   irb
-#   irb(main):001:0> p :+
-#   irb(main):002:0*
+#   irb(main):001:0> p=i=1; p(p %i)
+#   irb(main):002:1]
 #
-# irb tries to contiue the statement 'p :+' on the next line.
+# irb tries to contiue the statement 'p=i=1; p(p %i)' on the next line.
 #
 # == IRB Sessions
 #
