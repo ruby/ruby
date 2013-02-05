@@ -763,7 +763,8 @@ VALUE
 rb_tracearg_binding(rb_trace_arg_t *trace_arg)
 {
     rb_control_frame_t *cfp;
-    cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th, trace_arg->cfp);
+    cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->th, trace_arg->cfp);
+
     if (cfp) {
 	return rb_binding_new_with_cfp(trace_arg->th, cfp);
     }

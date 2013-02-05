@@ -1,3 +1,23 @@
+Tue Feb 05 15:04:34 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_binding_new_with_cfp): permit to create binding object
+	  of IFUNC frame.
+	  When `rb_binding_new_with_cfp()' is called, VM finds out the first
+	  normal (has iseq) frame and create a binding object of this frame
+	  and create Env objects. `ep's of related frames are updated
+	  (`ep's point Env object managed spaces).
+	  However, `ep' of skipped IFUNC frame was not updated and
+	  old invalid `ep' was remained. It causes serious problems.
+	  To solve this issue, permit IFUNC to create binding.
+	  (Maybe there is no problem on it)
+	  [ruby-dev:46908] [ruby-trunk - Bug #7774]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
+	* vm.c (rb_vm_get_binding_creatable_next_cfp), vm_core.h: added.
+
+	* vm_trace.c: fix to use `rb_vm_get_binding_creatable_next_cfp()'.
+
 Tue Feb  5 14:43:15 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Fix error message, patch by pypypy [Bug #7777]

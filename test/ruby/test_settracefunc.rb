@@ -941,4 +941,22 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_security_error_safe4(func)
   end
+
+  def test_trace_point_binding_in_ifunc
+    assert_normal_exit %q{
+      tp = TracePoint.new(:raise) do |tp|
+        tp.binding
+      end
+      tp.enable do
+        obj = Object.new
+        class << obj
+          include Enumerable
+          def each
+            yield 1
+          end
+        end
+        obj.zip({}) {}
+      end
+    }, '[ruby-dev:46908] [ruby-trunk - Bug #7774]'
+  end
 end

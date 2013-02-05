@@ -186,6 +186,18 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
 }
 
 rb_control_frame_t *
+rb_vm_get_binding_creatable_next_cfp(rb_thread_t *th, const rb_control_frame_t *cfp)
+{
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	if (cfp->iseq) {
+	    return (rb_control_frame_t *)cfp;
+	}
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    return 0;
+}
+
+rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
