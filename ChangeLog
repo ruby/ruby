@@ -1,3 +1,8 @@
+Tue Feb  5 16:25:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_obj_respond_to): drop optional include_all flag if
+	  respond_to? method is defined in old style.  [Bug #7722]
+
 Tue Feb 05 15:04:34 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_binding_new_with_cfp): permit to create binding object

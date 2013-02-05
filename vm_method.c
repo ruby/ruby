@@ -1521,7 +1521,24 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 	return basic_obj_respond_to(obj, id, !RTEST(priv));
     }
     else {
-	return RTEST(rb_funcall(obj, idRespond_to, priv ? 2 : 1, ID2SYM(id), Qtrue));
+	int argc = 1;
+	VALUE args[2];
+	args[0] = ID2SYM(id);
+	args[1] = Qtrue;
+	if (priv) {
+	    if (rb_obj_method_arity(obj, idRespond_to) != 1) {
+		argc = 2;
+	    }
+	    else {
+		VALUE klass = CLASS_OF(obj);
+		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") is"
+			" old fashion which takes only one parameter",
+			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
+			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
+			QUOTE_ID(id));
+	    }
+	}
+	return RTEST(rb_funcall2(obj, idRespond_to, argc,  args));
     }
 }
 

@@ -550,4 +550,16 @@ class TestMarshal < Test::Unit::TestCase
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
     assert_not_operator(TestModule, :instance_variable_defined?, :@bug)
   end
+
+  class TestForRespondToFalse
+    def respond_to?(a)
+      false
+    end
+  end
+
+  def test_marshal_respond_to_arity
+    assert_nothing_raised(ArgumentError, '[Bug #7722]') do
+      Marshal.dump(TestForRespondToFalse.new)
+    end
+  end
 end
