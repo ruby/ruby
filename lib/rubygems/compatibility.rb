@@ -4,7 +4,7 @@
 # This file contains all sorts of little compatibility hacks that we've
 # had to introduce over the years. Quarantining them into one file helps
 # us know when we can get rid of them.
-
+#
 # Ruby 1.9.x has introduced some things that are awkward, and we need to
 # support them, so we define some constants to use later.
 #++
