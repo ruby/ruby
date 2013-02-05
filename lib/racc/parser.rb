@@ -239,15 +239,24 @@ module Racc
       @racc_error_status = 0
     end
 
-    ###
-    ### do_parse
-    ###
-
-    class_eval %{
+    # The entry point of the parser. This method is used with #next_token.
+    # If Racc wants to get token (and its value), calls next_token.
+    #
+    # Example:
+    #     def parse
+    #       @q = [[1,1],
+    #             [2,2],
+    #             [3,3],
+    #             [false, '$']]
+    #       do_parse
+    #     end
+    #
+    #     def next_token
+    #       @q.shift
+    #     end
     def do_parse
-      #{Racc_Main_Parsing_Routine}(_racc_setup(), false)
+      __send__(Racc_Main_Parsing_Routine, _racc_setup(), false)
     end
-    }
 
     # The method to fetch next token.
     # If you use #do_parse method, you must implement #next_token.
@@ -301,15 +310,14 @@ module Racc
       }
     end
 
-    ###
-    ### yyparse
-    ###
-
-    class_eval %{
+    # Another entry point for the parser.
+    # If you use this method, you must implement RECEIVER#METHOD_ID method.
+    #
+    # RECEIVER#METHOD_ID is a method to get next token.
+    # It must 'yield' the token, which format is [TOKEN-SYMBOL, VALUE].
     def yyparse(recv, mid)
-      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), true)
+      __send__(Racc_YY_Parse_Method, recv, mid, _racc_setup(), true)
     end
-    }
 
     def _racc_yyparse_rb(recv, mid, arg, c_debug)
       action_table, action_check, action_default, action_pointer,

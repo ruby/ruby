@@ -1,3 +1,8 @@
+Tue Feb  5 10:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/racc/parser.rb: Update #do_parse and #yyparse from upstream
+	  See [Github tenderlove/racc@7d954b5]
+
 Tue Feb  5 09:55:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/racc: Merge Racc documentation downstream, add grammar ref file
