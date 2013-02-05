@@ -463,7 +463,13 @@ lazy_to_enum_i(VALUE self, VALUE meth, int argc, VALUE *argv, VALUE (*size_fn)(A
 VALUE
 rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, VALUE *argv, VALUE (*size_fn)(ANYARGS))
 {
-    return enumerator_init(enumerator_allocate(rb_cEnumerator), obj, meth, argc, argv, size_fn, Qnil);
+    /* Similar effect as calling obj.to_enum, i.e. dispatching to either
+       Kernel#to_enum vs Lazy#to_enum */
+    if (RTEST(rb_obj_is_kind_of(obj, rb_cLazy)))
+	return lazy_to_enum_i(obj, meth, argc, argv, size_fn);
+    else
+	return enumerator_init(enumerator_allocate(rb_cEnumerator),
+	    obj, meth, argc, argv, size_fn, Qnil);
 }
 
 static VALUE
@@ -1893,12 +1899,9 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
-lazy_cycle(int argc, VALUE *argv, VALUE obj)
+lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
-    if (rb_block_given_p()) {
-	return rb_call_super(argc, argv);
-    }
-    return lazy_to_enum_i(obj, sym_cycle, argc, argv, rb_enum_cycle_size);
+    return enumerable_lazy(rb_call_super(argc, argv));
 }
 
 static VALUE
@@ -2005,8 +2008,9 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "take_while", lazy_take_while, 0);
     rb_define_method(rb_cLazy, "drop", lazy_drop, 1);
     rb_define_method(rb_cLazy, "drop_while", lazy_drop_while, 0);
-    rb_define_method(rb_cLazy, "cycle", lazy_cycle, -1);
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
+    rb_define_method(rb_cLazy, "chunk", lazy_super, -1);
+    rb_define_method(rb_cLazy, "slice_before", lazy_super, -1);
 
     rb_define_alias(rb_cLazy, "force", "to_a");
 

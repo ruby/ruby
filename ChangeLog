@@ -1,3 +1,17 @@
+Tue Feb  5 12:48:38 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Use to_enum for Enumerable methods returning
+	  Enumerators.
+	  This makes Lazy#cycle no longer needed, so it was removed.
+	  Make Enumerator#chunk and slice_before return lazy Enumerators.
+	  [Bug #7715]
+
+	* internal.h: Remove ref to rb_enum_cycle_size; no longer needed
+
+	* enum.c: Make enum_cycle_size static.
+
+	* test/ruby/test_lazy_enumerator.rb: Test for above
+
 Tue Feb  5 12:48:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Finalize and document Lazy.new. [Bug #7248]

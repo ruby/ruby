@@ -90,9 +90,6 @@ ID rb_id_encoding(void);
 /* encoding.c */
 void rb_gc_mark_encodings(void);
 
-/* enum.c */
-VALUE rb_enum_cycle_size(VALUE self, VALUE args);
-
 /* error.c */
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 VALUE rb_check_backtrace(VALUE);

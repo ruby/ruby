@@ -447,4 +447,20 @@ EOS
       assert_raise(ArgumentError){ [].lazy.send(method) }
     end
   end
+
+  def test_laziness_conservation
+    bug7507 = '[ruby-core:51510]'
+    {
+      slice_before: //,
+      with_index: nil,
+      cycle: nil,
+      each_with_object: 42,
+      each_slice: 42,
+      each_entry: nil,
+      each_cons: 42,
+    }.each do |method, arg|
+      assert_equal Enumerator::Lazy, [].lazy.send(method, *arg).class, bug7507
+    end
+    assert_equal Enumerator::Lazy, [].lazy.chunk{}.class, bug7507
+  end
 end
