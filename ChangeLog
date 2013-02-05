@@ -1,3 +1,10 @@
+Tue Feb  5 12:48:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Finalize and document Lazy.new. [Bug #7248]
+	  Add Lazy#to_enum and simplify Lazy#size.
+
+	* test/ruby/test_lazy_enumerator.rb: tests for above
+
 Tue Feb  5 11:35:35 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/push_command.rb:  Fixed credential download for

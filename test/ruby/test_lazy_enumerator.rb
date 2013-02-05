@@ -20,7 +20,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], [1, 2, 3].lazy.to_a)
-    assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]).to_a)
+    assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]){|y, v| y << v}.to_a)
+    assert_raise(ArgumentError) { Enumerator::Lazy.new([1, 2, 3]) }
   end
 
   def test_each_args
@@ -361,10 +362,6 @@ class TestLazyEnumerator < Test::Unit::TestCase
   end
 
   def test_inspect
-    assert_equal("#<Enumerator::Lazy: 1..10:each>",
-                 Enumerator::Lazy.new(1..10).inspect)
-    assert_equal("#<Enumerator::Lazy: 1..10:cycle(2)>",
-                 Enumerator::Lazy.new(1..10, :cycle, 2).inspect)
     assert_equal("#<Enumerator::Lazy: 1..10>", (1..10).lazy.inspect)
     assert_equal('#<Enumerator::Lazy: #<Enumerator: "foo":each_char>>',
                  "foo".each_char.lazy.inspect)
@@ -388,10 +385,28 @@ class TestLazyEnumerator < Test::Unit::TestCase
 EOS
   end
 
+  def test_lazy_to_enum
+    lazy = [1, 2, 3].lazy
+    def lazy.foo(*args)
+      yield args
+      yield args
+    end
+    enum = lazy.to_enum(:foo, :hello, :world)
+    assert_equal Enumerator::Lazy, enum.class
+    assert_equal nil, enum.size
+    assert_equal [[:hello, :world], [:hello, :world]], enum.to_a
+
+    assert_equal [1, 2, 3], lazy.to_enum.to_a
+  end
+
   def test_size
     lazy = [1, 2, 3].lazy
     assert_equal 3, lazy.size
-    assert_equal 42, Enumerator.new(42){}.lazy.size
+    assert_equal 42, Enumerator::Lazy.new([],->{42}){}.size
+    assert_equal 42, Enumerator::Lazy.new([],42){}.size
+    assert_equal 42, Enumerator::Lazy.new([],42){}.lazy.size
+    assert_equal 42, lazy.to_enum{ 42 }.size
+
     %i[map collect].each do |m|
       assert_equal 3, lazy.send(m){}.size
     end
