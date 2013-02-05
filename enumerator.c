@@ -316,63 +316,6 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv, VA
  * in a lazy fashion (see Enumerable#size). It can either be a value or
  * a callable object.
  *
- * The block form can be used to create a lazy enumeration that only processes
- * elements as-needed.  The generic pattern for this is:
- *
- *    Enumerator.new do |yielder|
- *      source.each do |source_item|
- *        # process source_item and append the yielder
- *      end
- *    end
- *
- * This can be used with infinite streams to support multiple chains:
- *
- *   class Fib
- *     def initialize(a = 1, b = 1)
- *       @a, @b = a, b
- *     end
- *
- *     def each
- *       a, b = @a, @b
- *       yield a
- *       while true
- *         yield b
- *         a, b = b, a+b
- *       end
- *     end
- *   end
- *
- *   def lazy_select enum
- *     Enumerator.new do |y|
- *       enum.each do |e|
- *         y << e if yield e
- *       end
- *     end
- *   end
- *
- *   def lazy_map enum
- *     Enumerator.new do |y|
- *       enum.each do |e|
- *         y << yield(e)
- *       end
- *     end
- *   end
- *
- *   even_fibs   = lazy_select(Fibs.new) { |x| x % 2 == 0 }
- *   string_fibs = lazy_map(even_fibs)   { |x| "<#{x}>" }
- *   string_fibs.each_with_index do |fib, i|
- *     puts "#{i}: #{fib}"
- *     break if i >= 3
- *   end
- *
- * This allows output even though the Fib produces an infinite sequence of
- * Fibonacci numbers:
- *
- *   0: <2>
- *   1: <8>
- *   2: <34>
- *   3: <144>
- *
  * In the second, deprecated, form, a generated Enumerator iterates over the
  * given object using the given method with the given arguments passed.
  *
