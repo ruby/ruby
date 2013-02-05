@@ -1,3 +1,8 @@
+Wed Feb  6 03:45:19 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/security.rdoc: Remove documentation for unsafe CSV.load which
+	  was deleted in r39077
+
 Wed Feb  6 03:27:19 2013  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb: Remove the dangerous serialization feature.

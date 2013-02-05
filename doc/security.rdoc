@@ -54,26 +54,6 @@ deserialized:
 Because of this, many of the security considerations applying to Marshal are
 also applicable to YAML. Do not use YAML to deserialize untrusted data.
 
-== CSV
-
-Never use +CSV.load+ to parse untrusted CSV data. +CSV.load+ shares many of the
-same issues as YAML and Marshal in that it will deserialize to arbitrary
-classes:
-
-  class,ERB
-  @src
-  puts `uname`
-
-However, CSV's +load+ method is significantly more dangerous than Marshal and
-YAML as it will call arbitrary methods with attacker controlled arguments in
-some cases:
-
-  class,Object
-  eval
-  puts `uname`
-
-If you need to parse user supplied CSV data, use +CSV.parse+ instead.
-
 == Symbols
 
 Symbols are often seen as syntax sugar for simple strings, but they play a much
