@@ -538,6 +538,13 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_bsearch_with_mathn
-    assert_in_out_err ['-r', 'mathn', '-e', 'puts (1..(1<<100)).bsearch{|x| raise "#{x} should be integer" unless x.integer?; x >= 42}'], "", ["42"], [], '[ruby-core:25740]'
+    assert_separately ['-r', 'mathn'], %q{
+      msg = '[ruby-core:25740]'
+      answer = (1..(1 << 100)).bsearch{|x|
+        assert_predicate(x, :integer?, msg)
+        x >= 42
+      }
+      assert_equal(42, answer, msg)
+    }
   end
 end
