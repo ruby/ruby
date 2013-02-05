@@ -39,9 +39,9 @@ capable of returning 'primitive' types such as strings, arrays, hashes, numbers
 and nil. If you need to deserialize other classes, you should handle this
 manually. Never deserialize to a user specified class.
 
-== +YAML+
+== YAML
 
-+YAML+ is a popular human readable data serialization format used by many Ruby
+YAML is a popular human readable data serialization format used by many Ruby
 programs for configuration and database persistance of Ruby object trees.
 
 Similar to +Marshal+, it is able to deserialize into arbitrary Ruby classes.
@@ -51,8 +51,28 @@ deserialized:
   !ruby/object:ERB
   src: puts `uname`
 
-Because of this, many of the security considerations applying to +Marshal+ are
-also applicable to +YAML+. Do not use +YAML+ to deserialize untrusted data.
+Because of this, many of the security considerations applying to Marshal are
+also applicable to YAML. Do not use YAML to deserialize untrusted data.
+
+== CSV
+
+Never use +CSV.load+ to parse untrusted CSV data. +CSV.load+ shares many of the
+same issues as YAML and Marshal in that it will deserialize to arbitrary
+classes:
+
+  class,ERB
+  @src
+  puts `uname`
+
+However, CSV's +load+ method is significantly more dangerous than Marshal and
+YAML as it will call arbitrary methods with attacker controlled arguments in
+some cases:
+
+  class,Object
+  eval
+  puts `uname`
+
+If you need to parse user supplied CSV data, use +CSV.parse+ instead.
 
 == Symbols
 
@@ -77,6 +97,30 @@ potential as direct conversion through +to_sym+/+intern+.
 The workaround to this is simple - don't convert user input to symbols. You
 should attempt to leave user input in string form instead.
 
+== Regular expressions
+
+Ruby's regular expression syntax has some minor differences when compared to
+other languages. In Ruby, the <code>^</code> and <code>$</code> anchors do not
+refer to the beginning and end of the string, rather the beginning and end of a
+*line*.
+
+This means that if you're using a regular expression like
+<code>/^[a-z]+$/</code> to restrict a string to only letters, an attacker can
+bypass this check by passing a string containing a letter, then a newline, then
+any string of their choosing.
+
+If you want to match the beginning and end of the entire string in Ruby, use
+the anchors +\A+ and +\z+.
+
+== +eval+
+
+Never pass untrusted or user controlled input to +eval+.
+
+Unless you are implementing a REPL like +irb+ or +pry+, +eval+ is almost
+certainly not what you want. Do not attempt to filter user input before passing
+it to +eval+ - this approach is fraught with danger and will most likely open
+your application up to a serious remote code execution vulnerability.
+
 == +send+
 
 'Global functions' in Ruby (+puts+, +exit+, etc.) are actually private instance
@@ -95,7 +139,8 @@ Doing so can introduce a denial of service vulnerability:
 If an attacker can control the first two arguments to +send+, remote code
 execution is possible:
 
-  foo.send(params[:a], params[:b]) # params is { :a => "eval", :b => "...ruby code to be executed..." }
+  # params is { :a => "eval", :b => "...ruby code to be executed..." }
+  foo.send(params[:a], params[:b])
 
 When dispatching a method call based on user input, carefully verify that the
 method name. If possible, check it against a whitelist of safe method names.
@@ -104,3 +149,12 @@ Note that the use of +public_send+ is also dangerous, as +send+ itself is
 public:
 
   1.public_send("send", "eval", "...ruby code to be executed...")
+
+== DRb
+
+As DRb allows remote clients to invoke arbitrary methods, it is not suitable to
+expose to untrusted clients.
+
+When using DRb, try to avoid exposing it over the network if possible. If this
+isn't possible and you need to expose DRb to the world, you *must* configure an
+appropriate security policy with <code>DRb::ACL</code>.
