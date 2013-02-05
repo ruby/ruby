@@ -1143,6 +1143,26 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
   end
 
+  def test_power_of_1_and_minus_1
+    bug5715 = '[ruby-core:41498]'
+    big = 1 << 66
+    one = Rational( 1, 1)
+    assert_eql  one,   one  ** -big     , bug5715
+    assert_eql  one, (-one) ** -big     , bug5715
+    assert_eql -one, (-one) ** -(big+1) , bug5715
+    assert_equal Complex, ((-one) ** Rational(1,3)).class
+  end
+
+  def test_power_of_0
+    bug5713 = '[ruby-core:41494]'
+    big = 1 << 66
+    zero = Rational(0, 1)
+    assert_eql zero, zero ** big
+    assert_eql zero, zero ** Rational(2, 3)
+    assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
+    assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
+  end
+
   def test_known_bug
   end
 

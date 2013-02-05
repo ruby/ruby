@@ -221,6 +221,26 @@ f_one_p(VALUE x)
 }
 
 inline static VALUE
+f_minus_one_p(VALUE x)
+{
+    switch (TYPE(x)) {
+      case T_FIXNUM:
+	return f_boolcast(FIX2LONG(x) == -1);
+      case T_BIGNUM:
+	return Qfalse;
+      case T_RATIONAL:
+      {
+	  VALUE num = RRATIONAL(x)->num;
+	  VALUE den = RRATIONAL(x)->den;
+
+	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == -1 &&
+			    FIXNUM_P(den) && FIX2LONG(den) == 1);
+      }
+    }
+    return rb_funcall(x, id_eqeq_p, 1, INT2FIX(-1));
+}
+
+inline static VALUE
 f_kind_of_p(VALUE x, VALUE c)
 {
     return rb_obj_is_kind_of(x, c);
@@ -916,6 +936,16 @@ nurat_fdiv(VALUE self, VALUE other)
     return f_to_f(f_div(self, other));
 }
 
+inline static VALUE
+f_odd_p(VALUE integer)
+{
+    if (rb_funcall(integer, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
+	return Qtrue;
+    }
+    return Qfalse;
+
+}
+
 /*
  * call-seq:
  *    rat ** numeric  ->  numeric
@@ -942,6 +972,22 @@ nurat_expt(VALUE self, VALUE other)
 	    other = dat->num; /* c14n */
     }
 
+    /* Deal with special cases of 0**n and 1**n */
+    if (k_numeric_p(other) && k_exact_p(other)) {
+	get_dat1(self);
+	if (f_one_p(dat->den))
+	    if (f_one_p(dat->num))
+		return f_rational_new_bang1(CLASS_OF(self), ONE);
+	    else if (f_minus_one_p(dat->num) && k_integer_p(other))
+		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(f_odd_p(other) ? -1 : 1));
+	    else if (f_zero_p(dat->num))
+		if (FIX2INT(f_cmp(other, ZERO)) == -1)
+		    rb_raise_zerodiv();
+		else
+		    return f_rational_new_bang1(CLASS_OF(self), ZERO);
+    }
+
+    /* General case */
     switch (TYPE(other)) {
       case T_FIXNUM:
 	{
