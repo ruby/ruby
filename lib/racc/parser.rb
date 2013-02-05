@@ -1,4 +1,4 @@
-#
+#--
 # $originalId: parser.rb,v 1.8 2006/07/06 11:42:07 aamine Exp $
 #
 # Copyright (c) 1999-2006 Minero Aoki
@@ -9,7 +9,7 @@
 # As a special exception, when this code is copied by Racc
 # into a Racc output file, you may use that output file
 # without restriction.
-#
+#++
 
 module Racc
   class ParseError < StandardError; end
