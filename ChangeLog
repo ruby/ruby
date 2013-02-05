@@ -1,3 +1,9 @@
+Tue Feb  5 16:37:00 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/config_file.rb:  Ignore permissions check on windows.
+	  Windows writes 0600 file as 0644 permissions making the check
+	  useless.
+
 Tue Feb  5 16:25:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_obj_respond_to): drop optional include_all flag if

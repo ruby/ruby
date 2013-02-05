@@ -230,6 +230,7 @@ class Gem::ConfigFile
   # error message is displayed and RubyGems aborts.
 
   def check_credentials_permissions
+    return if Gem.win_platform? # windows doesn't write 0600 as 0600
     return unless File.exist? credentials_path
 
     existing_permissions = File.stat(credentials_path).mode & 0777
