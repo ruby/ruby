@@ -1,5 +1,9 @@
 Tue Feb  5 10:15:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
+	* doc/security.rdoc: Wrap security guide at 80 columns
+
+Tue Feb  5 10:15:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
 	* doc/security.rdoc: Grammatical error on security guide
 	  Patch by Josh Bassett [Github fixes #245]
 
