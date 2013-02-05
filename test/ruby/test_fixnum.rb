@@ -279,4 +279,23 @@ class TestFixnum < Test::Unit::TestCase
   def test_frozen
     assert_equal(true, 1.frozen?)
   end
+
+  def assert_eql(a, b, mess)
+    assert a.eql?(b), "expected #{a} & #{b} to be eql? #{mess}"
+  end
+
+  def test_power_of_1_and_minus_1
+    bug5715 = '[ruby-core:41498]'
+    big = 1 << 66
+    assert_eql  1, 1 ** -big        , bug5715
+    assert_eql  1, (-1) ** -big     , bug5715
+    assert_eql -1, (-1) ** -(big+1) , bug5715
+  end
+
+  def test_power_of_0
+    bug5713 = '[ruby-core:41494]'
+    big = 1 << 66
+    assert_raise(ZeroDivisionError, bug5713) { 0 ** -big }
+    assert_raise(ZeroDivisionError, bug5713) { 0 ** Rational(-2,3) }
+  end
 end
