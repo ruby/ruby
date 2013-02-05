@@ -1,8 +1,9 @@
-##
+#--
 # This file contains all the various exceptions and other errors that are used
 # inside of RubyGems.
 #
 # DOC: Confirm _all_
+#++
 
 module Gem
   ##

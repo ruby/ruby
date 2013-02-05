@@ -1,9 +1,22 @@
 # -*- ruby -*-
-#--
+#
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
-#++
+#
+
+require 'rbconfig'
+
+module Gem
+  VERSION = '2.0.0.rc.2'
+end
+
+# Must be first since it unloads the prelude from 1.9.2
+require 'rubygems/compatibility'
+
+require 'rubygems/defaults'
+require 'rubygems/deprecate'
+require 'rubygems/errors'
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -91,23 +104,11 @@
 #
 # (If your name is missing, PLEASE let us know!)
 #
+# See {LICENSE.txt}[rdoc-ref:lib/rubygems/LICENSE.txt] for permissions.
+#
 # Thanks!
 #
 # -The RubyGems Team
-
-require 'rbconfig'
-
-module Gem
-  VERSION = '2.0.0.rc.2'
-end
-
-# Must be first since it unloads the prelude from 1.9.2
-require 'rubygems/compatibility'
-
-require 'rubygems/defaults'
-require 'rubygems/deprecate'
-require 'rubygems/errors'
-
 module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 
