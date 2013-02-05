@@ -1,6 +1,7 @@
 Wed Feb  6 00:56:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb.rb: Remove example from restrictions, it works [Github #246]
+	  Based on patch by Ryunosuke SATO
 
 Wed Feb  6 00:46:53 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
