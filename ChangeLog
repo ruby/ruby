@@ -1,3 +1,8 @@
+Tue Feb  5 13:27:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rawmode_opt): use default values by `stty
+	  raw`.
+
 Tue Feb  5 12:50:47 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* range.c: Use div instead of / for bsearch

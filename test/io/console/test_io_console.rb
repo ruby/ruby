@@ -29,14 +29,21 @@ class TestIO_Console < Test::Unit::TestCase
     len = 0
     th = nil
     helper {|m, s|
+      assert_equal([nil, 0], [s.getch(min: 0), len])
+      main = Thread.current
+      go = false
       th = Thread.start {
-        m.print("a")
         len += 1
-        sleep 2
-        m.print("1234567890")
+        m.print("a")
+        m.flush
+        sleep 0.01 until go and main.stop?
         len += 10
+        m.print("1234567890")
+        m.flush
       }
       assert_equal(["a", 1], [s.getch(min: 1), len])
+      go = true
+      assert_equal(["1", 11], [s.getch, len])
     }
   ensure
     th.kill if th and th.alive?
@@ -46,12 +53,15 @@ class TestIO_Console < Test::Unit::TestCase
     len = 0
     th = nil
     helper {|m, s|
+      assert_equal([nil, 0], [s.getch(min: 0, time: 0.1), len])
+      main = Thread.current
       th = Thread.start {
-        sleep 2
-        m.print("a")
-        len += 1
+        sleep 0.01 until main.stop?
+        len += 2
+        m.print("ab")
       }
-      assert_equal([nil, 0], [s.getch(time: 0.1), len])
+      assert_equal(["a", 2], [s.getch(min: 1, time: 1), len])
+      assert_equal(["b", 2], [s.getch(time: 1), len])
     }
   ensure
     th.kill if th and th.alive?
