@@ -1,3 +1,7 @@
+Tue Feb  5 14:43:15 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Fix error message, patch by pypypy [Bug #7777]
+
 Tue Feb  5 14:36:04 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (fix_pow): Handle special cases when base is 0, -1 or +1
