@@ -1,3 +1,12 @@
+Wed Feb  6 00:46:53 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (rb_vm_stack_to_heap): call rb_vm_get_binding_creatable_next_cfp
+	  instead of rb_vm_get_ruby_level_next_cfp to prevent a segfault by
+	  calling Kernel#callcc. See r39067 for more details.
+	  [ruby-dev:46908] [ruby-trunk - Bug #7774]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Tue Feb  5 18:48:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* doc/security.rdoc: add regex, eval and drb sections

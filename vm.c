@@ -553,7 +553,7 @@ void
 rb_vm_stack_to_heap(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
-    while ((cfp = rb_vm_get_ruby_level_next_cfp(th, cfp)) != 0) {
+    while ((cfp = rb_vm_get_binding_creatable_next_cfp(th, cfp)) != 0) {
 	rb_vm_make_env_object(th, cfp);
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }

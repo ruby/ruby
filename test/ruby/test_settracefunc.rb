@@ -943,7 +943,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_trace_point_binding_in_ifunc
-    assert_normal_exit %q{
+    bug7774 = '[ruby-dev:46908]'
+    src = %q{
       tp = TracePoint.new(:raise) do |tp|
         tp.binding
       end
@@ -955,8 +956,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
             yield 1
           end
         end
-        obj.zip({}) {}
+        %s
       end
-    }, '[ruby-dev:46908] [ruby-trunk - Bug #7774]'
+    }
+    assert_normal_exit src % %q{obj.zip({}) {}}, bug7774
+    assert_normal_exit src % %q{
+      require 'continuation'
+      begin
+        c = nil
+        obj.sort_by {|x| callcc {|c2| c ||= c2 }; x }
+        c.call
+      rescue RuntimeError
+      end
+    }, bug7774
   end
 end
