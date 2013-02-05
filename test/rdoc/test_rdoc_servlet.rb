@@ -365,7 +365,7 @@ class TestRDocServlet < RDoc::TestCase
           Ruby\ Documentation
         ],
         'info' => [
-          ['Ruby Documentation', '', @system_dir, '',
+          ['Ruby Documentation', '', 'ruby', '',
             'Documentation for the Ruby standard library'],
         ],
       }

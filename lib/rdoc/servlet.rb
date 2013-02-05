@@ -326,21 +326,25 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
 
       search_index << name
 
-      comment = case type
-                when :gem
-                  gemspec = path.gsub(%r%/doc/([^/]*?)/ri$%,
-                                      '/specifications/\1.gemspec')
+      case type
+      when :gem
+        gemspec = path.gsub(%r%/doc/([^/]*?)/ri$%,
+                            '/specifications/\1.gemspec')
 
-                  spec = Gem::Specification.load gemspec
+        spec = Gem::Specification.load gemspec
 
-                  spec.summary
-                when :system then
-                  'Documentation for the Ruby standard library'
-                when :site then
-                  'Documentation for non-gem libraries'
-                when :home then
-                  'Documentation from your home directory'
-                end
+        path    = spec.full_name
+        comment = spec.summary
+      when :system then
+        path    = 'ruby'
+        comment = 'Documentation for the Ruby standard library'
+      when :site then
+        path    = 'site'
+        comment = 'Documentation for non-gem libraries'
+      when :home then
+        path    = 'home'
+        comment = 'Documentation from your home directory'
+      end
 
       info << [name, '', path, '', comment]
     end
