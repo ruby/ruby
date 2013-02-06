@@ -116,8 +116,10 @@ unix_path(VALUE sock)
     if (NIL_P(fptr->pathv)) {
 	struct sockaddr_un addr;
 	socklen_t len = (socklen_t)sizeof(addr);
+	socklen_t len0 = len;
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
+        if (len0 < len) len = len0;
 	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(rsock_unixpath(&addr, len)));
     }
     return rb_str_dup(fptr->pathv);
@@ -445,11 +447,13 @@ unix_peeraddr(VALUE sock)
     rb_io_t *fptr;
     struct sockaddr_un addr;
     socklen_t len = (socklen_t)sizeof addr;
+    socklen_t len0 = len;
 
     GetOpenFile(sock, fptr);
 
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
+    if (len0 < len) len = len0;
     return rsock_unixaddr(&addr, len);
 }
 

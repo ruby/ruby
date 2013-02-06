@@ -1,3 +1,17 @@
+Wed Feb  6 14:20:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/basicsocket.c (bsock_getsockname): ignore truncated
+	  part of socket address.
+	  (bsock_getpeername): ditto.
+	  (bsock_local_address): ditto.
+	  (bsock_remote_address): ditto.
+
+	* ext/socket/unixsocket.c (unix_path): ditto.
+	  (unix_addr): ditto.
+	  (unix_peeraddr): ditto.
+
+	* ext/socket/init.c (cloexec_accept): ditto.
+
 Wed Feb  6 14:19:07 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb, test/rexml/test_comment.rb:

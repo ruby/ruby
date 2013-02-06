@@ -448,6 +448,7 @@ VALUE
 rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
+    socklen_t len0 = len ? *len : 0;
 
     rb_secure(3);
     rb_io_set_nonblock(fptr);
@@ -466,6 +467,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 	}
         rb_sys_fail("accept(2)");
     }
+    if (len && len0 < *len) *len = len0;
     rb_update_max_fd(fd2);
     make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
@@ -481,7 +483,12 @@ static VALUE
 accept_blocking(void *data)
 {
     struct accept_arg *arg = data;
-    return (VALUE)accept(arg->fd, arg->sockaddr, arg->len);
+    int ret;
+    socklen_t len0 = 0;
+    if (arg->len) len0 = *arg->len;
+    ret = accept(arg->fd, arg->sockaddr, arg->len);
+    if (arg->len && len0 < *arg->len) *arg->len = len0;
+    return (VALUE)ret;
 }
 
 VALUE
