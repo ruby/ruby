@@ -1,4 +1,9 @@
-Wed Feb  6 17:32:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  6 17:33:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (multiarch): add option to move architecture dependent
+	  directories.  [Feature #6111]
+
+	* template/ruby.pc.in: add arch dependent paths.
 
 	* configure.in (rubyarchhdrdir, sitearchhdrdir, vendorarchhdrdir): add
 	  options to customize architecture dependent header directories.
