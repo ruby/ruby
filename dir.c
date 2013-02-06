@@ -1175,6 +1175,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 {
     struct glob_pattern *list, *tmp, **tail = &list;
     int dirsep = 0; /* pattern is terminated with '/' */
+    int recursive = 0;
 
     while (p < e && *p) {
 	tmp = GLOB_ALLOC(struct glob_pattern);
@@ -1185,13 +1186,14 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	    tmp->type = RECURSIVE;
 	    tmp->str = 0;
 	    dirsep = 1;
+	    recursive = 1;
 	}
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
 	    int magic = has_magic(p, m, flags, enc);
 	    char *buf;
 
-	    if (!magic && *m) {
+	    if (!magic && !recursive && *m) {
 		const char *m2;
 		while (!has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) &&
 		       *m2) {

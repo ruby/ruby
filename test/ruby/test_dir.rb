@@ -171,6 +171,20 @@ class TestDir < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {Dir.glob(m.new)}
   end
 
+  def test_glob_recursive
+    bug6977 = '[ruby-core:47418]'
+    Dir.chdir(@root) do
+      FileUtils.mkdir_p("a/b/c/d/e/f")
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/d/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/d/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/b/c/d/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/?/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
+      assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
+    end
+  end
+
   def test_foreach
     assert_equal(Dir.foreach(@root).to_a.sort, %w(. ..) + (?a..?z).to_a)
   end

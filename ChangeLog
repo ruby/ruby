@@ -1,3 +1,8 @@
+Wed Feb  6 14:05:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_make_pattern): names under recursive need to be single
+	  basenames to match for each name.  [ruby-core:47418] [Bug #6977]
+
 Tue Jan 15 16:30:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_init): Reset gvl.wait_yield explicitly when
