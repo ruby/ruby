@@ -1,4 +1,12 @@
-Wed Feb  6 17:32:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  6 17:32:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubyarchprefix, sitearchdir, vendorarchdir): add
+	  options to customize architecture dependent library directories.
+
+	* template/ruby.pc.in, tool/mkconfig.rb, tool/rbinstall.rb: use
+	  configured values.
+
+	* tool/mkconfig.rb: expand rubyarchdir to extract prefix.
 
 	* configure.in (RUBY_VERSION_NAME), template/ruby.pc.in: add
 	  substitution and define.

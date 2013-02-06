@@ -3155,6 +3155,7 @@ shvar_to_cpp() {
 	    -e 's/\${sitedir}/"RUBY_SITE_LIB"/g' \
 	    -e 's/\${rubylibdir}/"RUBY_LIB"/g' \
 	    -e 's/\${rubylibprefix}/"RUBY_LIB_PREFIX"/g' \
+	    -e 's/\${rubyarchprefix}/"RUBY_ARCH_PREFIX_FOR(arch)"/g' \
 	    -e 's/\${exec_prefix}/"RUBY_EXEC_PREFIX"/g' \
 	    -e 's|^\"NONE/|RUBY_EXEC_PREFIX\"/|' \
 	    -e 's|^\"NONE\"|\"'"${prefix}"'\"|' \
@@ -3173,6 +3174,13 @@ AC_ARG_WITH(rubylibprefix,
 AC_SUBST(rubylibprefix)
 rubylibdir='${rubylibprefix}/${ruby_version}'
 rubyarchdir='${rubylibdir}/${arch}'
+
+rubyarchprefix='${rubylibprefix}/${arch}'
+AC_ARG_WITH(rubyarchprefix,
+	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
+			   [prefix for architecture dependent ruby libraries [[RUBYLIBPREFIX/ARCH]]]),
+	    [rubyarchprefix="$withval"])
+AC_SUBST(rubyarchprefix)
 
 RI_BASE_NAME=`echo ${RUBY_BASE_NAME} | sed 's/ruby/ri/'`
 ridir='${datarootdir}/${RI_BASE_NAME}'
@@ -3212,14 +3220,24 @@ AC_ARG_WITH(sitedir,
             [sitedir=$withval],
             [sitedir='${rubylibprefix}/site_ruby'])
 sitelibdir='${sitedir}/${ruby_version}'
-sitearchdir='${sitelibdir}/${sitearch}'
+
+AC_ARG_WITH(sitearchdir,
+	    AS_HELP_STRING([--with-arch-sitedir=DIR],
+			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
+            [sitearchdir=$withval],
+            [sitearchdir='${sitelibdir}/${sitearch}'])
 
 AC_ARG_WITH(vendordir,
 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
             [vendordir=$withval],
             [vendordir='${rubylibprefix}/vendor_ruby'])
 vendorlibdir='${vendordir}/${ruby_version}'
-vendorarchdir='${vendorlibdir}/${sitearch}'
+
+AC_ARG_WITH(vendorarchdir,
+	    AS_HELP_STRING([--with-arch-vendordir=DIR],
+			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
+            [vendorarchdir=$withval],
+            [vendorarchdir='${vendorlibdir}/${sitearch}'])
 
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
@@ -3228,6 +3246,7 @@ else
     shvar_to_cpp RUBY_EXEC_PREFIX "${exec_prefix}"
 fi
 shvar_to_cpp RUBY_LIB_PREFIX "${rubylibprefix}"
+shvar_to_cpp RUBY_ARCH_PREFIX_FOR "${rubyarchprefix}"
 shvar_to_cpp RIDIR "${ridir}"
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
@@ -3237,6 +3256,7 @@ else
 fi
 AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, ${RUBY_EXEC_PREFIX})
 AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX} !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_ARCH_PREFIX_FOR(arch), ${RUBY_ARCH_PREFIX_FOR} !<verconf>!)
 
 shvar_to_cpp RUBY_LIB "${rubylibdir}"
 if test "x${RUBY_LIB}" != 'xRUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'; then
@@ -3264,8 +3284,14 @@ fi
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
 AC_SUBST(ruby_version)dnl
+AC_SUBST(rubylibdir)dnl
+AC_SUBST(rubyarchdir)dnl
 AC_SUBST(sitedir)dnl
+AC_SUBST(sitelibdir)dnl
+AC_SUBST(sitearchdir)dnl
 AC_SUBST(vendordir)dnl
+AC_SUBST(vendorlibdir)dnl
+AC_SUBST(vendorarchdir)dnl
 
 configure_args=$ac_configure_args
 AC_SUBST(configure_args)dnl
