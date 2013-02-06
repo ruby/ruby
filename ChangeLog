@@ -1,3 +1,9 @@
+Thu Feb  7 02:31:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* vm_insnhelper.c: attr_writer should return its argument [Bug #7773]
+
+	* test/ruby/test_basicinstructions.rb: Test for above
+
 Thu Feb  7 01:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/security.rdoc: Link to japanese version of CVE page patch by

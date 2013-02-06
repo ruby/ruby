@@ -549,7 +549,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
     return rb_ivar_get(obj, id);
 }
 
-static inline void
+static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 {
 #if USE_IC_FOR_IVAR
@@ -572,7 +572,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 
 	    if (index < len) {
 		ptr[index] = val;
-		return; /* inline cache hit */
+		return val; /* inline cache hit */
 	    }
 	}
 	else {
@@ -592,7 +592,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	}
     }
 #endif	/* USE_IC_FOR_IVAR */
-    rb_ivar_set(obj, id, val);
+    return rb_ivar_set(obj, id, val);
 }
 
 static VALUE
@@ -1540,9 +1540,9 @@ vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_attrset(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    vm_setivar(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1), 0, ci, 1);
+    VALUE val = vm_setivar(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1), 0, ci, 1);
     cfp->sp -= 2;
-    return Qnil;
+    return val;
 }
 
 static inline VALUE
