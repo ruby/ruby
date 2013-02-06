@@ -37,7 +37,7 @@ class TestRDocServlet < RDoc::TestCase
     @base        = File.join @tempdir, 'base'
     @system_dir  = File.join @tempdir, 'base', 'system'
     @home_dir    = File.join @tempdir, 'home'
-    @gem_doc_dir = File.join @tempdir, 'doc' 
+    @gem_doc_dir = File.join @tempdir, 'doc'
 
     @orig_base = RDoc::RI::Paths::BASE
     RDoc::RI::Paths::BASE.replace @base
