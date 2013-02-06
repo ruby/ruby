@@ -1,3 +1,8 @@
+Thu Feb  7 05:52:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/pty/README: Remove static documentation file
+	* ext/pty/pty.c: Add License to PTY module overview
+
 Thu Feb  7 02:31:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* vm_insnhelper.c: attr_writer should return its argument [Bug #7773]
