@@ -6,6 +6,9 @@ pitfalls often encountered by newcomers and experienced Rubyists alike.
 This document aims to discuss many of these pitfalls and provide more secure
 alternatives where applicable.
 
+Please check the full list of publicly known CVEs and how to correctly report a
+security vulnerability, at: http://www.ruby-lang.org/en/security/
+
 == <code>$SAFE</code>
 
 Ruby provides a mechanism to restrict what operations can be performed by Ruby
