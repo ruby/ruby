@@ -324,8 +324,11 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) { UNIXServer.new("a" * 300) }
   end
 
-  def test_nul
-    assert_raise(ArgumentError) { Socket.sockaddr_un("a\0b") }
+  def test_abstract_namespace
+    return if /linux/ !~ RUBY_PLATFORM
+    addr = Socket.pack_sockaddr_un("\0foo")
+    assert_match(/\0foo\z/, addr)
+    assert_equal("\0foo", Socket.unpack_sockaddr_un(addr))
   end
 
   def test_dgram_pair
@@ -505,6 +508,71 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       rescue NotImplementedError
       end
     }
+  end
+
+  def test_abstract_unix_server
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    UNIXServer.open(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      UNIXSocket.open(name) {|c|
+        sock = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_abstract_unix_socket_econnrefused
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    assert_raise(Errno::ECONNREFUSED) do
+      UNIXSocket.open(name) {}
+    end
+  end
+
+  def test_abstract_unix_server_socket
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    Socket.unix_server_socket(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_autobind
+    return if /linux/ !~ RUBY_PLATFORM
+    s0 = nil
+    Socket.unix_server_socket("") {|s|
+      name = s.local_address.unix_path
+      assert_match(/\A\0[0-9a-f]{5}\z/, name)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
   end
 
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM

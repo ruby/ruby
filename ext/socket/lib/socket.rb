@@ -716,12 +716,14 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    begin
-      st = File.lstat(path)
-    rescue Errno::ENOENT
-    end
-    if st && st.socket? && st.owned?
-      File.unlink path
+    if !unix_socket_abstract_name?(path)
+      begin
+        st = File.lstat(path)
+      rescue Errno::ENOENT
+      end
+      if st && st.socket? && st.owned?
+        File.unlink path
+      end
     end
     s = Addrinfo.unix(path).listen
     if block_given?
@@ -729,10 +731,20 @@ class Socket < BasicSocket
         yield s
       ensure
         s.close if !s.closed?
-        File.unlink path
+        if !unix_socket_abstract_name?(path)
+          File.unlink path
+        end
       end
     else
       s
+    end
+  end
+
+  class << self
+    private
+
+    def unix_socket_abstract_name?(path)
+      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
     end
   end
 

@@ -421,20 +421,46 @@ rsock_ipaddr(struct sockaddr *sockaddr, int norevlookup)
 }
 
 #ifdef HAVE_SYS_UN_H
-const char*
-rsock_unixpath(struct sockaddr_un *sockaddr, socklen_t len)
+VALUE
+rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len)
 {
-    if (sockaddr->sun_path < (char*)sockaddr + len)
-        return sockaddr->sun_path;
+    char *s, *e;
+    s = sockaddr->sun_path;
+    e = (char *)sockaddr + len;
+    while (s < e && *(e-1) == '\0')
+        e--;
+    if (s <= e)
+        return rb_str_new(s, e-s);
     else
-        return "";
+        return rb_str_new2("");
 }
 
 VALUE
 rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
-                        rb_str_new2(rsock_unixpath(sockaddr, len)));
+                        rsock_unixpath_str(sockaddr, len));
+}
+
+socklen_t
+rsock_unix_sockaddr_len(VALUE path)
+{
+#ifdef __linux__
+    if (RSTRING_LEN(path) == 0) {
+	/* autobind; see unix(7) for details. */
+	return (socklen_t) sizeof(sa_family_t);
+    }
+    else if (RSTRING_PTR(path)[0] == '\0') {
+	/* abstract namespace; see unix(7) for details. */
+	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
+	    RSTRING_LEN(path);
+    }
+    else {
+#endif
+	return (socklen_t) sizeof(struct sockaddr_un);
+#ifdef __linux__
+    }
+#endif
 }
 #endif
 
@@ -763,19 +789,22 @@ static void
 init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
+    socklen_t len;
 
     StringValue(path);
 
-    if (sizeof(un.sun_path) <= (size_t)RSTRING_LEN(path))
-        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
-            (int)sizeof(un.sun_path)-1);
+    if (sizeof(un.sun_path) < (size_t)RSTRING_LEN(path))
+        rb_raise(rb_eArgError,
+            "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+            (size_t)RSTRING_LEN(path), sizeof(un.sun_path));
 
     MEMZERO(&un, struct sockaddr_un, 1);
 
     un.sun_family = AF_UNIX;
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
-    init_addrinfo(rai, (struct sockaddr *)&un, (socklen_t)sizeof(un),
+    len = rsock_unix_sockaddr_len(path);
+    init_addrinfo(rai, (struct sockaddr *)&un, len,
 		  PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 #endif
@@ -996,9 +1025,11 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
           case AF_UNIX:
           {
             struct sockaddr_un *addr = (struct sockaddr_un *)&rai->addr;
-            char *p, *s, *t, *e;
+            char *p, *s, *e;
             s = addr->sun_path;
             e = (char*)addr + rai->sockaddr_len;
+            while (s < e && *(e-1) == '\0')
+                e--;
             if (e < s)
                 rb_str_cat2(ret, "too-short-AF_UNIX-sockaddr");
             else if (s == e)
@@ -1006,28 +1037,17 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
             else {
                 int printable_only = 1;
                 p = s;
-                while (p < e && *p != '\0') {
+                while (p < e) {
                     printable_only = printable_only && ISPRINT(*p) && !ISSPACE(*p);
                     p++;
                 }
-                t = p;
-                while (p < e && *p == '\0')
-                    p++;
-                if (printable_only && /* only printable, no space */
-                    t < e && /* NUL terminated */
-                    p == e) { /* no data after NUL */
-		    if (s == t)
-			rb_str_cat2(ret, "empty-path-AF_UNIX-sockaddr");
-		    else if (s[0] == '/') /* absolute path */
-			rb_str_cat2(ret, s);
-		    else
-                        rb_str_catf(ret, "AF_UNIX %s", s);
+                if (printable_only) { /* only printable, no space */
+                    if (s[0] != '/') /* relative path */
+                        rb_str_cat2(ret, "AF_UNIX ");
+                    rb_str_cat(ret, s, p - s);
                 }
                 else {
                     rb_str_cat2(ret, "AF_UNIX");
-                    e = (char *)addr->sun_path + sizeof(addr->sun_path);
-                    while (s < e && *(e-1) == '\0')
-                        e--;
                     while (s < e)
                         rb_str_catf(ret, ":%02x", (unsigned char)*s++);
                 }
@@ -1201,7 +1221,7 @@ addrinfo_mdump(VALUE self)
         struct sockaddr_un *su = (struct sockaddr_un *)&rai->addr;
         char *s, *e;
         s = su->sun_path;
-        e = (char*)s + sizeof(su->sun_path);
+        e = (char*)su + rai->sockaddr_len;
         while (s < e && *(e-1) == '\0')
             e--;
         sockaddr = rb_str_new(s, e-s);
@@ -1298,12 +1318,14 @@ addrinfo_mload(VALUE self, VALUE ary)
       case AF_UNIX:
       {
         struct sockaddr_un uaddr;
-        memset(&uaddr, 0, sizeof(uaddr));
+        MEMZERO(&uaddr, struct sockaddr_un, 1);
         uaddr.sun_family = AF_UNIX;
 
         StringValue(v);
-        if (sizeof(uaddr.sun_path) <= (size_t)RSTRING_LEN(v))
-            rb_raise(rb_eSocket, "too long AF_UNIX path");
+        if (sizeof(uaddr.sun_path) < (size_t)RSTRING_LEN(v))
+            rb_raise(rb_eSocket,
+                "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+                (size_t)RSTRING_LEN(v), sizeof(uaddr.sun_path));
         memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
         len = (socklen_t)sizeof(uaddr);
         memcpy(&ss, &uaddr, len);

@@ -954,13 +954,12 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
 {
     VALUE addr, family;
     struct hostent *h;
-    struct sockaddr *sa;
     char **pch;
     VALUE ary, names;
     int t = AF_INET;
 
     rb_scan_args(argc, argv, "11", &addr, &family);
-    sa = (struct sockaddr*)StringValuePtr(addr);
+    StringValue(addr);
     if (!NIL_P(family)) {
 	t = rsock_family_arg(family);
     }
@@ -1371,18 +1370,17 @@ static VALUE
 sock_s_pack_sockaddr_un(VALUE self, VALUE path)
 {
     struct sockaddr_un sockaddr;
-    char *sun_path;
     VALUE addr;
 
+    StringValue(path);
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    sun_path = StringValueCStr(path);
-    if (sizeof(sockaddr.sun_path) <= strlen(sun_path)) {
-        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
-            (int)sizeof(sockaddr.sun_path)-1);
+    if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
+        rb_raise(rb_eArgError, "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+            (size_t)RSTRING_LEN(path), sizeof(sockaddr.sun_path));
     }
-    strncpy(sockaddr.sun_path, sun_path, sizeof(sockaddr.sun_path)-1);
-    addr = rb_str_new((char*)&sockaddr, sizeof(sockaddr));
+    memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
+    addr = rb_str_new((char*)&sockaddr, rsock_unix_sockaddr_len(path));
     OBJ_INFECT(addr, path);
 
     return addr;
@@ -1404,7 +1402,6 @@ static VALUE
 sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 {
     struct sockaddr_un * sockaddr;
-    const char *sun_path;
     VALUE path;
 
     sockaddr = (struct sockaddr_un*)SockAddrStringValuePtr(addr);
@@ -1420,13 +1417,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
-    sun_path = rsock_unixpath(sockaddr, RSTRING_LENINT(addr));
-    if (sizeof(struct sockaddr_un) == RSTRING_LEN(addr) &&
-        sun_path == sockaddr->sun_path &&
-        sun_path + strlen(sun_path) == RSTRING_PTR(addr) + RSTRING_LEN(addr)) {
-        rb_raise(rb_eArgError, "sockaddr_un.sun_path not NUL terminated");
-    }
-    path = rb_str_new2(sun_path);
+    path = rsock_unixpath_str(sockaddr, RSTRING_LENINT(addr));
     OBJ_INFECT(path, addr);
     return path;
 }

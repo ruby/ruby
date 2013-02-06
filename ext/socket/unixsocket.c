@@ -13,6 +13,7 @@
 #ifdef HAVE_SYS_UN_H
 struct unixsock_arg {
     struct sockaddr_un *sockaddr;
+    socklen_t sockaddrlen;
     int fd;
 };
 
@@ -21,13 +22,14 @@ unixsock_connect_internal(VALUE a)
 {
     struct unixsock_arg *arg = (struct unixsock_arg *)a;
     return (VALUE)rsock_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
-			        (socklen_t)sizeof(*arg->sockaddr), 0);
+			        arg->sockaddrlen, 0);
 }
 
 VALUE
 rsock_init_unixsock(VALUE sock, VALUE path, int server)
 {
     struct sockaddr_un sockaddr;
+    socklen_t sockaddrlen;
     int fd, status;
     rb_io_t *fptr;
 
@@ -39,19 +41,21 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    if (sizeof(sockaddr.sun_path) <= (size_t)RSTRING_LEN(path)) {
-        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
-            (int)sizeof(sockaddr.sun_path)-1);
+    if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
+        rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
+            RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path));
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
+    sockaddrlen = rsock_unix_sockaddr_len(path);
 
     if (server) {
-        status = bind(fd, (struct sockaddr*)&sockaddr, (socklen_t)sizeof(sockaddr));
+        status = bind(fd, (struct sockaddr*)&sockaddr, sockaddrlen);
     }
     else {
 	int prot;
 	struct unixsock_arg arg;
 	arg.sockaddr = &sockaddr;
+	arg.sockaddrlen = sockaddrlen;
 	arg.fd = fd;
         status = (int)rb_protect(unixsock_connect_internal, (VALUE)&arg, &prot);
 	if (prot) {
@@ -62,7 +66,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     if (status < 0) {
 	close(fd);
-	rb_sys_fail(sockaddr.sun_path);
+	rb_sys_fail_str(rb_inspect(path));
     }
 
     if (server) {
