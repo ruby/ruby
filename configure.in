@@ -3143,8 +3143,8 @@ shvar_to_cpp() {
 	    -e 's/\${\([[A-Z][A-Z_]]*\)}/"\1"/g' \
 	    -e 's|\${libdir}|'"${libdir}|g" \
 	    -e 's/\${ruby_version}/"RUBY_LIB_VERSION"/g' \
-	    -e 's/\${arch}/"RUBY_ARCH"/g' \
-	    -e 's/\${sitearch}/"RUBY_SITEARCH"/g' \
+	    -e 's/\${arch}/"arch"/g' \
+	    -e 's/\${sitearch}/"arch"/g' \
 	    -e 's/\${vendorarchdir}/"RUBY_VENDOR_ARCH_LIB"/g' \
 	    -e 's/\${sitearchdir}/"RUBY_SITE_ARCH_LIB"/g' \
 	    -e 's/\${vendorlibdir}/"RUBY_VENDOR_LIB2"/g' \
@@ -3240,17 +3240,23 @@ shvar_to_cpp RUBY_LIB "${rubylibdir}"
 if test "x${RUBY_LIB}" != 'xRUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'; then
     AC_DEFINE_UNQUOTED(RUBY_LIB, ${RUBY_LIB} !<verconf>!)
 fi
+shvar_to_cpp RUBY_ARCH_LIB_FOR "${rubyarchdir}"
+AC_DEFINE_UNQUOTED(RUBY_ARCH_LIB_FOR(arch), ${RUBY_ARCH_LIB_FOR} !<verconf>!)
 if test "x$sitedir" = xno; then
     AC_DEFINE(NO_RUBY_SITE_LIB, [] !<verconf>!)
 else
     shvar_to_cpp RUBY_SITE_LIB "${sitedir}"
     AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB} !<verconf>!)
+    shvar_to_cpp RUBY_SITE_ARCH_LIB_FOR "${sitearchdir}"
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCH_LIB_FOR(arch), ${RUBY_SITE_ARCH_LIB_FOR} !<verconf>!)
 fi
 if test "x$vendordir" = xno; then
     AC_DEFINE(NO_RUBY_VENDOR_LIB, [] !<verconf>!)
 else
     shvar_to_cpp RUBY_VENDOR_LIB "${vendordir}"
     AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB} !<verconf>!)
+    shvar_to_cpp RUBY_VENDOR_ARCH_LIB_FOR "${vendorarchdir}"
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), ${RUBY_VENDOR_ARCH_LIB_FOR} !<verconf>!)
 fi
 
 AC_SUBST(arch)dnl

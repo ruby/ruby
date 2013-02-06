@@ -1,4 +1,6 @@
-Wed Feb  6 17:32:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  6 17:32:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, version.c: parametric architecture name for paths.
 
 	* configure.in (shvar_to_cpp): convert sh variable references
 	  by replacing with string literal forms in cpp.

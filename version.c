@@ -42,13 +42,14 @@
 #define RUBY_LIB                    RUBY_LIB_PREFIX  "/"RUBY_LIB_VERSION
 #define RUBY_SITE_LIB2              RUBY_SITE_LIB    "/"RUBY_LIB_VERSION
 #define RUBY_VENDOR_LIB2            RUBY_VENDOR_LIB  "/"RUBY_LIB_VERSION
-#define RUBY_ARCHLIB                RUBY_LIB         "/"RUBY_ARCH
-#define RUBY_SITE_ARCHLIB           RUBY_SITE_LIB2   "/"RUBY_SITEARCH
-#define RUBY_VENDOR_ARCHLIB         RUBY_VENDOR_LIB2 "/"RUBY_SITEARCH
-#ifdef  RUBY_THINARCH
-#define RUBY_THIN_ARCHLIB           RUBY_LIB         "/"RUBY_THINARCH
-#define RUBY_SITE_THIN_ARCHLIB      RUBY_SITE_LIB2   "/"RUBY_THINARCH
-#define RUBY_VENDOR_THIN_ARCHLIB    RUBY_VENDOR_LIB2 "/"RUBY_THINARCH
+#ifndef RUBY_ARCH_LIB_FOR
+#define RUBY_ARCH_LIB_FOR(arch)        RUBY_LIB         "/"arch
+#endif
+#ifndef RUBY_SITE_ARCH_LIB_FOR
+#define RUBY_SITE_ARCH_LIB_FOR(arch)   RUBY_SITE_LIB2   "/"arch
+#endif
+#ifndef RUBY_VENDOR_ARCH_LIB_FOR
+#define RUBY_VENDOR_ARCH_LIB_FOR(arch) RUBY_VENDOR_LIB2 "/"arch
 #endif
 
 const int ruby_api_version[] = {
@@ -72,27 +73,27 @@ const char ruby_initial_load_paths[] =
 #endif
 #ifndef NO_RUBY_SITE_LIB
     RUBY_SITE_LIB2 "\0"
-#ifdef RUBY_SITE_THIN_ARCHLIB
-    RUBY_SITE_THIN_ARCHLIB "\0"
+#ifdef RUBY_THINARCH
+    RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
 #endif
-    RUBY_SITE_ARCHLIB "\0"
+    RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
     RUBY_SITE_LIB "\0"
 #endif
 
 #ifndef NO_RUBY_VENDOR_LIB
     RUBY_VENDOR_LIB2 "\0"
-#ifdef RUBY_VENDOR_THIN_ARCHLIB
-    RUBY_VENDOR_THIN_ARCHLIB "\0"
+#ifdef RUBY_THINARCH
+    RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
 #endif
-    RUBY_VENDOR_ARCHLIB "\0"
+    RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
     RUBY_VENDOR_LIB "\0"
 #endif
 
     RUBY_LIB "\0"
-#ifdef RUBY_THIN_ARCHLIB
-    RUBY_THIN_ARCHLIB "\0"
+#ifdef RUBY_THINARCH
+    RUBY_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
 #endif
-    RUBY_ARCHLIB "\0"
+    RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
 #endif
     "";
 
