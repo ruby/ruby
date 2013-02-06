@@ -1,4 +1,7 @@
-Wed Feb  6 17:32:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  6 17:32:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_VERSION_NAME), template/ruby.pc.in: add
+	  substitution and define.
 
 	* configure.in, version.c: parametric architecture name for paths.
 
