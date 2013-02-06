@@ -23,6 +23,11 @@ Perl).  It is simple, straight-forward, and extensible.
 
 == How to get Ruby
 
+For a complete list of ways to install Ruby, including using third party
+tools like rvm, see:
+
+http://www.ruby-lang.org/en/downloads/
+
 The Ruby distribution files can be found in the following FTP site:
 
 ftp://ftp.ruby-lang.org/pub/ruby/
@@ -141,16 +146,20 @@ installing them in such case.
 
 See the file +COPYING+.
 
+== Feedback
+
+Questions about the Ruby language can be asked on the Ruby-Talk mailing list
+(http://www.ruby-lang.org/en/community/mailing-lists) or on websites like
+(http://stackoverflow.com).
+
+Bug reports should be filed at http://bugs.ruby-lang.org
 
 == The Author
 
-Feel free to send comments and bug reports to the author.  Here is the
-author's latest mail address:
+Ruby was originally designed and developped by Yukihiro Matsumoto (Matz) in 1995.
 
 <mailto:matz@ruby-lang.org>
 
--------------------------------------------------------
-created at: Thu Aug  3 11:57:36 JST 1995
 --
 Local variables:
 mode: rdoc
