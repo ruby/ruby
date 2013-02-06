@@ -1,3 +1,9 @@
+Wed Feb  6 14:13:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/setproctitle.c (environ): use (*_NSGetEnviron()) instead of
+	  environ on Darwin for namespace cleanness, same as [ruby-core:00537].
+	  [ruby-core:45615] [Bug #6576]
+
 Wed Feb  6 14:05:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): names under recursive need to be single
