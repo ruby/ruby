@@ -1,3 +1,8 @@
+Wed Feb  6 23:30:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/pty/README.expect: Removed static documentation file
+	* ext/pty/lib/expect.rb: Documentation for IO#expect
+
 Wed Feb  6 22:25:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* hash.c (env_reject_bang): hide keys array from ObjectSpace

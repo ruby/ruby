@@ -1,9 +1,29 @@
 $expect_verbose = false
 
+# Expect library adds the IO instance method #expect, which does similar act to
+# tcl's expect extension.
+#
+# In order to use this method, you must require expect:
+#
+#   require 'expect'
+#
+# Please see #expect for usage.
 class IO
-  # Reads from the IO until pattern +pat+ matches or the +timeout+ is over.
+  # call-seq:
+  #   IO#expect(pattern,timeout=9999999)                  ->  Array
+  #   IO#expect(pattern,timeout=9999999) { |result| ... } ->  nil
+  #
+  # Reads from the IO until the given +pattern+ matches or the +timeout+ is over.
+  #
   # It returns an array with the read buffer, followed by the matches.
   # If a block is given, the result is yielded to the block and returns nil.
+  #
+  # When called without a block, it waits until the input that matches the
+  # given +pattern+ is obtained from the IO or the time specified as the
+  # timeout passes. An array is returned when the pattern is obtained from the
+  # IO. The first element of the array is the entire string obtained from the
+  # IO until the pattern matches, followed by elements indicating which the
+  # pattern which matched to the anchor in the regular expression.
   #
   # The optional timeout parameter defines, in seconds, the total time to wait
   # for the pattern.  If the timeout expires or eof is found, nil is returned
