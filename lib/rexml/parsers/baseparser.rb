@@ -342,7 +342,7 @@ module REXML
                 md = @source.match( COMMENT_PATTERN, true )
 
                 case md[1]
-                when /--/, /-$/
+                when /--/, /-\z/
                   raise REXML::ParseException.new("Malformed comment", @source)
                 end
 
