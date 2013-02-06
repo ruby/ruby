@@ -104,7 +104,13 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_with_unc
-    assert(system(File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/'), "-rabbrev", "-e0"))
+    ruby = File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/')
+    skip "local drive #$1: is not shared" unless File.exist?(ruby)
+    pid = nil
+    assert_nothing_raised {pid = spawn(ruby, "-rabbrev", "-e0")}
+    ret, status = Process.wait2(pid)
+    assert_equal(pid, ret)
+    assert_predicate(status, :success?)
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_require_twice
