@@ -1,3 +1,8 @@
+Wed Feb  6 17:32:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (shvar_to_cpp): convert sh variable references
+	  by replacing with string literal forms in cpp.
+
 Wed Feb  6 17:05:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Import RDoc 4.0.0.rc.2

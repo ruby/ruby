@@ -205,6 +205,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
+AC_DEFINE_UNQUOTED(RUBY_BASE_NAME, "${RUBY_BASE_NAME}" !<verconf>!)
 
 AC_CANONICAL_TARGET
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
@@ -3135,6 +3136,31 @@ AS_CASE(["$target_os"],
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
 
+shvar_to_cpp() {
+    local var="$1" val="$2"
+    val="`echo '"'"${val}"'"' |
+	sed \
+	    -e 's/\${\([[A-Z][A-Z_]]*\)}/"\1"/g' \
+	    -e 's|\${libdir}|'"${libdir}|g" \
+	    -e 's/\${ruby_version}/"RUBY_LIB_VERSION"/g' \
+	    -e 's/\${arch}/"RUBY_ARCH"/g' \
+	    -e 's/\${sitearch}/"RUBY_SITEARCH"/g' \
+	    -e 's/\${vendorarchdir}/"RUBY_VENDOR_ARCH_LIB"/g' \
+	    -e 's/\${sitearchdir}/"RUBY_SITE_ARCH_LIB"/g' \
+	    -e 's/\${vendorlibdir}/"RUBY_VENDOR_LIB2"/g' \
+	    -e 's/\${sitelibdir}/"RUBY_SITE_LIB2"/g' \
+	    -e 's/\${vendordir}/"RUBY_VENDOR_LIB"/g' \
+	    -e 's/\${sitedir}/"RUBY_SITE_LIB"/g' \
+	    -e 's/\${rubylibdir}/"RUBY_LIB"/g' \
+	    -e 's/\${rubylibprefix}/"RUBY_LIB_PREFIX"/g' \
+	    -e 's/\${exec_prefix}/"RUBY_EXEC_PREFIX"/g' \
+	    -e 's|^\"NONE/|RUBY_EXEC_PREFIX\"/|' \
+	    -e 's|^\"NONE\"|\"'"${prefix}"'\"|' \
+	    -e 's/^\"\"\(.\)/\1/;s/\(.\)\"\"$/\1/'
+	`"
+    eval $var='"$val"'
+}
+
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
 AC_ARG_WITH(rubylibprefix,
 	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
@@ -3142,15 +3168,15 @@ AC_ARG_WITH(rubylibprefix,
 		AC_MSG_ERROR([No ruby, No libprefix])
 	    fi
 	    rubylibprefix="$withval"])
-RUBY_LIB_PREFIX=`eval echo \\"${rubylibprefix}\\"`
 AC_SUBST(rubylibprefix)
+rubylibdir='${rubylibprefix}/${ruby_version}'
+rubyarchdir='${rubylibdir}/${arch}'
 
 RI_BASE_NAME=`echo ${RUBY_BASE_NAME} | sed 's/ruby/ri/'`
 ridir='${datarootdir}/${RI_BASE_NAME}'
 AC_ARG_WITH(ridir,
 	    AS_HELP_STRING([--with-ridir=DIR], [ri documentation [[DATAROOTDIR/ri]]]),
 	    [ridir=$withval])
-RIDIR=`eval echo \\"${ridir}\\"`
 AC_SUBST(ridir)
 AC_SUBST(RI_BASE_NAME)
 
@@ -3183,73 +3209,48 @@ AC_ARG_WITH(sitedir,
 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
             [sitedir=$withval],
             [sitedir='${rubylibprefix}/site_ruby'])
-dir="${sitedir}"
-until SITE_DIR=`eval echo \\"${dir}\\"`; test "x${dir}" = "x${SITE_DIR}"; do
-    dir="${SITE_DIR}"
-done
+sitelibdir='${sitedir}/${ruby_version}'
+sitearchdir='${sitelibdir}/${sitearch}'
 
 AC_ARG_WITH(vendordir,
 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
             [vendordir=$withval],
             [vendordir='${rubylibprefix}/vendor_ruby'])
-dir="${vendordir}"
-until VENDOR_DIR=`eval echo \\"${dir}\\"`; test "x${dir}" = "x${VENDOR_DIR}"; do
-    dir="${VENDOR_DIR}"
-done
+vendorlibdir='${vendordir}/${ruby_version}'
+vendorarchdir='${vendorlibdir}/${sitearch}'
 
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
-    RUBY_EXEC_PREFIX=""
-    RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
-    RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
-    RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
+    RUBY_EXEC_PREFIX='""'
 else
-    RUBY_EXEC_PREFIX="`eval echo \\"$exec_prefix/\\" | sed 's|^NONE/|'"$prefix"'/|;s|/$||'`"
-    RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
-    RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
-    RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
+    shvar_to_cpp RUBY_EXEC_PREFIX "${exec_prefix}"
 fi
-
-pat=`echo "$RUBY_LIB_PREFIX/" | tr -c '\012' .`'\(.*\)'
-AS_CASE(["$RUBY_SITE_LIB_PATH"],
-  ["$RUBY_LIB_PREFIX/"*], [
-    RUBY_SITE_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_SITE_LIB_PATH\" : \"$pat\"`"'"'
-    ],
-  [
-    RUBY_SITE_LIB_PATH="\"${RUBY_SITE_LIB_PATH}\""
-    ])
-AS_CASE(["$RUBY_VENDOR_LIB_PATH"],
-  ["$RUBY_LIB_PREFIX/"*], [
-    RUBY_VENDOR_LIB_PATH='RUBY_LIB_PREFIX"/'"`expr \"$RUBY_VENDOR_LIB_PATH\" : \"$pat\"`"'"'
-    ],
-  [
-    RUBY_VENDOR_LIB_PATH="\"${RUBY_VENDOR_LIB_PATH}\""
-    ])
-pat=`echo "$RUBY_EXEC_PREFIX/" | tr -c '\012' .`'\(.*\)'
-AS_CASE(["$RUBY_LIB_PREFIX"],
-  ["$RUBY_EXEC_PREFIX/"*], [
-    RUBY_LIB_PREFIX='RUBY_EXEC_PREFIX"/'"`expr \"$RUBY_LIB_PREFIX\" : \"$pat\"`"'"'
-    ],
-  [
-    RUBY_LIB_PREFIX="\"${RUBY_LIB_PREFIX}\""
-    ])
+shvar_to_cpp RUBY_LIB_PREFIX "${rubylibprefix}"
+shvar_to_cpp RIDIR "${ridir}"
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)
 else
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION] !<verconf>!)
 fi
-AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}")
+AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, ${RUBY_EXEC_PREFIX})
 AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX} !<verconf>!)
-if test "x$SITE_DIR" = xno; then
+
+shvar_to_cpp RUBY_LIB "${rubylibdir}"
+if test "x${RUBY_LIB}" != 'xRUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'; then
+    AC_DEFINE_UNQUOTED(RUBY_LIB, ${RUBY_LIB} !<verconf>!)
+fi
+if test "x$sitedir" = xno; then
     AC_DEFINE(NO_RUBY_SITE_LIB, [] !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH} !<verconf>!)
+    shvar_to_cpp RUBY_SITE_LIB "${sitedir}"
+    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB} !<verconf>!)
 fi
-if test "x$VENDOR_DIR" = xno; then
+if test "x$vendordir" = xno; then
     AC_DEFINE(NO_RUBY_VENDOR_LIB, [] !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH} !<verconf>!)
+    shvar_to_cpp RUBY_VENDOR_LIB "${vendordir}"
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB} !<verconf>!)
 fi
 
 AC_SUBST(arch)dnl
