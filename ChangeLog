@@ -1,3 +1,9 @@
+Wed Feb  6 14:19:07 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb, test/rexml/test_comment.rb:
+	  allow a single hyphen in comment. [Bug #5278] [ruby-core:39289]
+	  Reported by Thomas Fritzsche. Thanks!!!
+
 Wed Feb  6 14:14:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (realpath_rec): prevent link from GC while link_names refers
