@@ -1,3 +1,70 @@
+Wed Feb  6 14:27:25 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (rsock_unix_sockaddr_len): return
+	  sizeof(sa_familiy_t) if path is empty.  see "Autobind Feature" in
+	  unix(7) for details.
+
+	* ext/socket/lib/socket.rb (unix_socket_abstract_name?): treat an
+	  empty path as an abstract name.
+
+	* test/socket/test_unix.rb: related test.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): use rb_inspect()
+	  because rb_sys_fail_str() fails if its argument contains NUL.
+
+	* test/socket/test_unix.rb: related test.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): calculate the
+	  correct address length of an abstract socket.
+
+	* test/socket/test_unix.rb: related test.
+
+	* ext/socket/raddrinfo (rsock_unix_sockaddr_len): renamed from
+	  rsock_unixpath_len, because it returns not the length of the path,
+	  but the length of a socket address for the path.
+
+	* ext/socket/raddrinfo.c (rsock_unixpath_len, init_unix_addrinfo),
+	  ext/socket/unixsocket.c (unixsock_connect_internal,
+	  rsock_init_unixsock): calculate the correct address length of
+	  an abstract socket.  Without this fix, sizeof(struct sockaddr_un)
+	  is specified as the length of an abstract socket for bind(2) or
+	  connect(2), so the address of the socket is filled with extra NUL
+	  characters.  See unix(7) for details.
+
+	* ext/socket/lib/socket.rb (unix_server_socket): don't access the
+	  file system if the platform is Linux and path starts with NUL,
+	  which means that the socket is an abstract socket.
+
+	* test/socket/test_unix.rb: related test.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
+	  path in sockaddr_un, really.
+	  reported by nagachika.
+	  http://d.hatena.ne.jp/nagachika/20120426/ruby_trunk_changes_35474_35476
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): support the longest
+	  path in sockaddr_un.
+	  (inspect_sockaddr): ditto.
+	  (addrinfo_mdump): ditto.
+	  (addrinfo_mload): ditto.
+	  (rsock_unixpath_str): new function.
+	  (rsock_unixpath): removed.
+	  (rsock_unixaddr): use rsock_unixpath_str.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
+	  path in sockaddr_un.
+	  (sock_s_unpack_sockaddr_un): ditto.
+	  (sock_s_gethostbyaddr): unused variable removed.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): support the longest
+	  path in sockaddr_un.
+
+	* ext/socket/rubysocket.h (rsock_unixpath_str): declared.
+	  (rsock_unixpath): removed.
+
+	* test/socket/test_unix.rb: comment out test_nul because abstract unix
+	  sockets may contain NULs.
+
 Wed Feb  6 14:20:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/basicsocket.c (bsock_getsockname): ignore truncated
