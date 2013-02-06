@@ -1574,6 +1574,9 @@ class TestProcess < Test::Unit::TestCase
   def test_setsid
     return unless Process.respond_to?(:setsid)
     return unless Process.respond_to?(:getsid)
+    # OpenBSD doesn't allow Process::getsid(pid) when pid is in
+    # different session.
+    return if /openbsd/ =~ RUBY_PLATFORM
 
     IO.popen([RUBY, "-e", <<EOS]) do|io|
 	Marshal.dump(Process.getsid, STDOUT)
@@ -1585,9 +1588,13 @@ EOS
 
       # test Process.getsid() w/o arg
       assert_equal(Marshal.load(io), Process.getsid)
+
       # test Process.setsid return value and Process::getsid(pid)
       assert_equal(Marshal.load(io), Process.getsid(io.pid))
       Process.kill(:KILL, io.pid)
     end
   end
+
+
+
 end
