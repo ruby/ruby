@@ -1,3 +1,8 @@
+Thu Feb  7 01:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/security.rdoc: Link to japanese version of CVE page patch by
+	  nagachika
+
 Wed Feb  6 23:30:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/pty/README.expect: Removed static documentation file

@@ -8,6 +8,7 @@ alternatives where applicable.
 
 Please check the full list of publicly known CVEs and how to correctly report a
 security vulnerability, at: http://www.ruby-lang.org/en/security/
+日本語版もありました。 http://www.ruby-lang.org/ja/security/
 
 == <code>$SAFE</code>
 
