@@ -1,3 +1,8 @@
+Mon Feb  4 02:22:49 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_process.rb (test_setsid): ensure to call
+	  Process.wait(). Reported by George Koehler. Thanks.
+
 Mon Feb  4 02:18:00 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_process.rb (test_setsid): skip when platform is
