@@ -3339,19 +3339,40 @@ AC_ARG_WITH(rubyhdrdir,
 	    [rubyhdrdir=$withval],
 	    [rubyhdrdir='${includedir}/${RUBY_VERSION_NAME}'])
 
+AC_ARG_WITH(rubyarchhdrdir,
+	    AS_HELP_STRING([--with-arch-rubyhdrdir=DIR],
+			   [architecture dependent core headers in DIR [[$(rubyhdrdir)/$(arch)]]]),
+	    [rubyarchhdrdir=$withval],
+	    [rubyarchhdrdir='${rubyhdrdir}/${arch}'])
+
 AC_ARG_WITH(sitehdrdir,
 	    AS_HELP_STRING([--with-sitehdrdir=DIR], [core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
 	    [sitehdrdir=$withval],
 	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
+
+AC_ARG_WITH(sitearchhdrdir,
+	    AS_HELP_STRING([--with-arch-sitehdrdir=DIR],
+			   [architecture dependent core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
+	    [sitearchhdrdir=$withval],
+	    [sitearchhdrdir='${sitehdrdir}/${sitearch}'])
 
 AC_ARG_WITH(vendorhdrdir,
 	    AS_HELP_STRING([--with-vendorhdrdir=DIR], [core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
 	    [vendorhdrdir=$withval],
 	    [vendorhdrdir='${rubyhdrdir}/vendor_ruby'])
 
+AC_ARG_WITH(vendorarchhdrdir,
+	    AS_HELP_STRING([--with-arch-vendorhdrdir=DIR],
+			   [architecture dependent core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
+	    [vendorarchhdrdir=$withval],
+	    [vendorarchhdrdir='${vendorhdrdir}/${sitearch}'])
+
 AC_SUBST(rubyhdrdir)dnl
 AC_SUBST(sitehdrdir)dnl
 AC_SUBST(vendorhdrdir)dnl
+AC_SUBST(rubyarchhdrdir)dnl
+AC_SUBST(sitearchhdrdir)dnl
+AC_SUBST(vendorarchhdrdir)dnl
 
 AC_ARG_WITH(mantype,
 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),

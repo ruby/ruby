@@ -1,4 +1,7 @@
-Wed Feb  6 17:32:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  6 17:32:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubyarchhdrdir, sitearchhdrdir, vendorarchhdrdir): add
+	  options to customize architecture dependent header directories.
 
 	* configure.in (rubyarchprefix, sitearchdir, vendorarchdir): add
 	  options to customize architecture dependent library directories.
