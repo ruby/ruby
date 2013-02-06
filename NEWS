@@ -210,6 +210,10 @@ with all sufficient information, see the ChangeLog file.
   * When HTML5 tagmaker called, overwrite CGI#header,
     CGI#header function is to create a <header> element.
 
+* CSV
+  * Removed CSV::dump and CSV::load to protect users from dangerous
+    serialization vulnerability
+
 * iconv
   * Iconv has been removed. Use String#encode instead.
 
