@@ -1529,13 +1529,22 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 	    if (rb_obj_method_arity(obj, idRespond_to) != 1) {
 		argc = 2;
 	    }
-	    else {
+	    else if (!NIL_P(ruby_verbose)) {
 		VALUE klass = CLASS_OF(obj);
+		VALUE location = rb_mod_method_location(klass, idRespond_to);
 		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") is"
 			" old fashion which takes only one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
 			QUOTE_ID(id));
+		if (!NIL_P(location)) {
+		    VALUE path = RARRAY_PTR(location)[0];
+		    VALUE line = RARRAY_PTR(location)[1];
+		    if (!NIL_P(path)) {
+			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
+					"respond_to? is defined here");
+		    }
+		}
 	    }
 	}
 	return RTEST(rb_funcall2(obj, idRespond_to, argc,  args));

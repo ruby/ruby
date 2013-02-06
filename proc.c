@@ -1844,6 +1844,37 @@ rb_method_get_iseq(VALUE method)
     return method_get_iseq(method_get_def(method));
 }
 
+static VALUE
+method_def_location(rb_method_definition_t *def)
+{
+    if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
+	if (!def->body.attr.location)
+	    return Qnil;
+	return rb_ary_dup(def->body.attr.location);
+    }
+    return iseq_location(method_get_iseq(def));
+}
+
+VALUE
+rb_method_entry_location(rb_method_entry_t *me)
+{
+    if (!me || !me->def) return Qnil;
+    return method_def_location(me->def);
+}
+
+VALUE
+rb_mod_method_location(VALUE mod, ID id)
+{
+    rb_method_entry_t *me = original_method_entry(mod, id);
+    return rb_method_entry_location(me);
+}
+
+VALUE
+rb_obj_method_location(VALUE obj, ID id)
+{
+    return rb_mod_method_location(CLASS_OF(obj), id);
+}
+
 /*
  * call-seq:
  *    meth.source_location  -> [String, Fixnum]
@@ -1856,12 +1887,7 @@ VALUE
 rb_method_location(VALUE method)
 {
     rb_method_definition_t *def = method_get_def(method);
-    if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
-	if (!def->body.attr.location)
-	    return Qnil;
-	return rb_ary_dup(def->body.attr.location);
-    }
-    return iseq_location(method_get_iseq(def));
+    return method_def_location(def);
 }
 
 /*

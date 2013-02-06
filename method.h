@@ -126,6 +126,10 @@ int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
 st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
+VALUE rb_method_entry_location(rb_method_entry_t *me);
+VALUE rb_mod_method_location(VALUE mod, ID id);
+VALUE rb_obj_method_location(VALUE obj, ID id);
+
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);

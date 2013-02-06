@@ -1,3 +1,11 @@
+Wed Feb  6 13:35:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_method_entry_location, rb_{mod,obj}_method_location): new
+	  functions to obtain source location of method definition.
+
+	* vm_method.c (rb_obj_respond_to): show the location of old style
+	  respond_to? method.
+
 Wed Feb  6 13:03:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/security.rdoc: Add link to CVEs on ruby-lang.org/en/security
