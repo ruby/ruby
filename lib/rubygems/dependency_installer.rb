@@ -260,7 +260,7 @@ class Gem::DependencyInstaller
     set = Gem::AvailableSet.new
 
     if consider_local?
-      if File.file? gem_name then
+      if gem_name =~ /\.gem$/ and File.file? gem_name then
         src = Gem::Source::SpecificFile.new(gem_name)
         set.add src.spec, src
       else
