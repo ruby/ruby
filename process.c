@@ -145,7 +145,10 @@ static void check_gid_switch(void);
 #endif
 
 #if defined(HAVE_PWD_H)
-# ifdef HAVE_GETPWNAM_R
+# if defined(HAVE_GETPWNAM_R) && defined(HAVE_GETPWNAM_R)
+#  define USE_GETPWNAM_R 1
+# endif
+# ifdef USE_GETPWNAM_R
 #   define PREPARE_GETPWNAM \
     long getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX); \
     char *getpw_buf = ALLOCA_N(char, (getpw_buf_len < 0 ? (getpw_buf_len = 4096) : getpw_buf_len));
@@ -166,7 +169,10 @@ static rb_uid_t obj2uid(VALUE id);
 #endif
 
 #if defined(HAVE_GRP_H)
-# ifdef HAVE_GETGRNAM_R
+# if defined(HAVE_GETGRNAM_R) && defined(_SC_GETGR_R_SIZE_MAX)
+#  define USE_GETGRNAM_R
+# endif
+# ifdef USE_GETGRNAM_R
 #   define PREPARE_GETGRNAM \
     long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX); \
     char *getgr_buf = ALLOCA_N(char, (getgr_buf_len < 0 ? (getgr_buf_len = 4096) : getgr_buf_len));
@@ -4726,7 +4732,7 @@ check_gid_switch(void)
 #if defined(HAVE_PWD_H)
 static rb_uid_t
 obj2uid(VALUE id
-# ifdef HAVE_GETPWNAM_R
+# ifdef USE_GETPWNAM_R
 	, char *getpw_buf, size_t getpw_buf_len
 # endif
     )
@@ -4740,7 +4746,7 @@ obj2uid(VALUE id
     else {
 	const char *usrname = StringValueCStr(id);
 	struct passwd *pwptr;
-#ifdef HAVE_GETPWNAM_R
+#ifdef USE_GETPWNAM_R
 	struct passwd pwbuf;
 	if (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr))
 	    rb_sys_fail("getpwnam_r");
@@ -4748,13 +4754,13 @@ obj2uid(VALUE id
 	pwptr = getpwnam(usrname);
 #endif
 	if (!pwptr) {
-#ifndef HAVE_GETPWNAM_R
+#ifndef USE_GETPWNAM_R
 	    endpwent();
 #endif
 	    rb_raise(rb_eArgError, "can't find user for %s", usrname);
 	}
 	uid = pwptr->pw_uid;
-#ifndef HAVE_GETPWNAM_R
+#ifndef USE_GETPWNAM_R
 	endpwent();
 #endif
     }
@@ -4774,7 +4780,7 @@ p_uid_from_name(VALUE self, VALUE id)
 #if defined(HAVE_GRP_H)
 static rb_gid_t
 obj2gid(VALUE id
-# ifdef HAVE_GETGRNAM_R
+# ifdef USE_GETGRNAM_R
 	, char *getgr_buf, size_t getgr_buf_len
 # endif
     )
@@ -4788,7 +4794,7 @@ obj2gid(VALUE id
     else {
 	const char *grpname = StringValueCStr(id);
 	struct group *grptr;
-#ifdef HAVE_GETGRNAM_R
+#ifdef USE_GETGRNAM_R
 	struct group grbuf;
 	if (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr))
 	    rb_sys_fail("getgrnam_r");
@@ -4796,13 +4802,13 @@ obj2gid(VALUE id
 	grptr = getgrnam(grpname);
 #endif
 	if (!grptr) {
-#ifndef HAVE_GETGRNAM_R
+#ifndef USE_GETGRNAM_R
 	    endgrent();
 #endif
 	    rb_raise(rb_eArgError, "can't find group for %s", grpname);
 	}
 	gid = grptr->gr_gid;
-#ifndef HAVE_GETGRNAM_R
+#ifndef USE_GETGRNAM_R
 	endgrent();
 #endif
     }

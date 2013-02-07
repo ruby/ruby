@@ -1,3 +1,14 @@
+Fri Feb  8 00:02:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (obj2gid): use getgrnum_r() only if getgrnam_r() and
+	  _SC_GETGR_R_SIZE_MAX is available.
+	  MirOS BSD (MirBSD 10 GENERIC#1382 i386) have getgrnam_r() but
+	  no _SC_GETGR_R_SIZE_MAX.
+	  (obj2uid): use getpwnam_r() only if getpwnam_r() and
+	  _SC_GETPW_R_SIZE_MAX is available.
+	  This is consistency for obj2gid.
+	  MirOS BSD have neither getpwnam_r() nor _SC_GETPW_R_SIZE_MAX.
+
 Thu Feb  7 22:01:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: define linker for shared library on MirOS BSD.
