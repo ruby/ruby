@@ -65,5 +65,22 @@ class TestMkmf
       assert_in_order(array, "c", "d" , bug)
       ## assume that a and c have no dependency
     end
+
+    def test_merge_reversal_followed
+      bug7467 = '[ruby-core:50314] [Bug #7467]'
+      array = nil
+      assert_nothing_raised(bug7467) {
+        array = merge_libs(%w[a b c d e f g h], %w[d c d e], [])
+      }
+      assert_in_order(array, "a", "b", bug7467)
+      assert_in_order(array, "b", "c", bug7467)
+      assert_in_order(array, "c", "d", bug7467)
+      assert_in_order(array, "d", "e", bug7467)
+      assert_in_order(array, "e", "f", bug7467)
+      assert_in_order(array, "f", "g", bug7467)
+      assert_in_order(array, "g", "h", bug7467)
+      assert_in_order(array, "d", "c", bug7467)
+      assert_in_order(array, "c", "e", bug7467)
+    end
   end
 end if RUBY_ENGINE == "ruby"

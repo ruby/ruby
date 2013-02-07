@@ -269,17 +269,15 @@ module MakeMakefile
 
   def merge_libs(*libs)
     libs.inject([]) do |x, y|
-      xy = x & y
-      xn = yn = 0
       y = y.inject([]) {|ary, e| ary.last == e ? ary : ary << e}
       y.each_with_index do |v, yi|
-        if xy.include?(v)
-          xi = [x.index(v), xn].max()
-          x[xi, 1] = y[yn..yi]
-          xn, yn = xi + (yi - yn + 1), yi + 1
+        if xi = x.rindex(v)
+          x[(xi+1)..-1] = merge_libs(y[(yi+1)..-1], x[(xi+1)..-1])
+          x[xi, 0] = y[0...yi]
+          break
         end
-      end
-      x.concat(y[yn..-1] || [])
+      end and x.concat(y)
+      x
     end
   end
 

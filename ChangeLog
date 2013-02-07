@@ -1,3 +1,9 @@
+Thu Feb  7 15:33:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#merge_libs): insert following reversal
+	  ordered elements just after the duplicated element, not overwriting
+	  successive elements.  [ruby-core:50314] [Bug #7467]
+
 Thu Feb  7 14:56:15 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/package.rb:  Ensure digests are generated for signing.
