@@ -1274,7 +1274,16 @@ EOY
 
     def test_string_starting_with_non_word_character_uses_double_quotes_without_exclamation_mark
       yaml = Psych.dump("@123'abc")
-      assert_match("\"", yaml)
       refute_match("!", yaml)
+    end
+
+    def test_string_dump_with_colon
+      yaml = Psych.dump 'x: foo'
+      refute_match '!', yaml
+    end
+
+    def test_string_dump_starting_with_star
+      yaml = Psych.dump '*foo'
+      refute_match '!', yaml
     end
 end

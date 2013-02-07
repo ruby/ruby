@@ -253,9 +253,9 @@ module Psych
       private :binary?
 
       def visit_String o
-        plain = false
-        quote = false
-        style = Nodes::Scalar::ANY
+        plain = true
+        quote = true
+        style = Nodes::Scalar::PLAIN
         tag   = nil
         str   = o
 
@@ -264,15 +264,14 @@ module Psych
           tag   = '!binary' # FIXME: change to below when syck is removed
           #tag   = 'tag:yaml.org,2002:binary'
           style = Nodes::Scalar::LITERAL
+          plain = false
+          quote = false
         elsif o =~ /\n/
-          quote = true
           style = Nodes::Scalar::LITERAL
-        elsif o =~ /^\W/
-          quote = true
-          style = Nodes::Scalar::DOUBLE_QUOTED
         else
-          quote = !(String === @ss.tokenize(o))
-          plain = !quote
+          unless String === @ss.tokenize(o)
+            style = Nodes::Scalar::SINGLE_QUOTED
+          end
         end
 
         ivars = find_ivars o
