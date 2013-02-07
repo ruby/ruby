@@ -603,7 +603,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 4, x[0]
   end
 
-  def test_send_opassing
+  def test_send_opassign
     bug7773 = '[ruby-core:51821]'
     x = OP.new
     assert_equal 42, x.foo = 42, bug7773
