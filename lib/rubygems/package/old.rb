@@ -32,6 +32,8 @@ class Gem::Package::Old < Gem::Package
   # A list of file names contained in this gem
 
   def contents
+    verify
+
     return @contents if @contents
 
     open @gem, 'rb' do |io|
@@ -46,6 +48,8 @@ class Gem::Package::Old < Gem::Package
   # Extracts the files in this package into +destination_dir+
 
   def extract_files destination_dir
+    verify
+
     errstr = "Error reading files from gem"
 
     open @gem, 'rb' do |io|
@@ -125,6 +129,8 @@ class Gem::Package::Old < Gem::Package
   # The specification for this gem
 
   def spec
+    verify
+
     return @spec if @spec
 
     yaml = ''
@@ -141,6 +147,20 @@ class Gem::Package::Old < Gem::Package
     raise Gem::Exception, "Failed to parse gem specification out of gem file"
   rescue ArgumentError => e
     raise Gem::Exception, "Failed to parse gem specification out of gem file"
+  end
+
+  ##
+  # Raises an exception if a security policy that verifies data is active.
+  # Old format gems cannot be verified as signed.
+
+  def verify
+    return true unless @security_policy
+
+    raise Gem::Security::Exception,
+          'old format gems do not contain signatures and cannot be verified' if
+      @security_policy.verify_data
+
+    true
   end
 
 end
