@@ -1,3 +1,9 @@
+Thu Feb  7 21:09:23 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rubygems/test_gem_config_file.rb
+	  (TestGemConfigFile#test_check_credentials_permissions): skip on
+	  Windows. see [Bug #7784] [ruby-core:51864] and r39070.
+
 Thu Feb  7 20:52:40 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): added variables which were

@@ -165,6 +165,8 @@ class TestGemConfigFile < Gem::TestCase
   end
 
   def test_check_credentials_permissions
+    skip 'chmod not supported' if win_platform?
+
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
