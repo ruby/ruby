@@ -839,6 +839,10 @@ s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
 s,@cleanobjs@,$$*.exp $$*.lib $$*.pdb,;t t
 s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
+s,@archlibdir@,$${libdir}/$${arch},;t t
+s,@sitearchlibdir@,$${libdir}/$${sitearch},;t t
+s,@archincludedir@,$${includedir}/$${arch},;t t
+s,@sitearchincludedir@,$${includedir}/$${sitearch},;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
@@ -846,10 +850,17 @@ s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
 s,@sitedir@,$${rubylibprefix}/site_ruby,;t t
+s,@sitearchdir@,$${sitelibdir}/$${arch},;t t
+s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
+s,@vendorarchdir@,$${vendirlibdir}/$${arch},;t t
+s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
 s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
 s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
+s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
+s,@sitearchhdrdir@,$$(sitehdrdir)/$${sitearch},;t t
+s,@vendorarchhdrdir@,$$(vendorhdrdir)/$${sitearch},;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
