@@ -1,9 +1,9 @@
 # -*- ruby -*-
-#
+#--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
-#
+#++
 
 require 'rbconfig'
 
@@ -109,6 +109,8 @@ require 'rubygems/errors'
 # Thanks!
 #
 # -The RubyGems Team
+
+
 module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 

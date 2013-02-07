@@ -277,9 +277,13 @@ EOM
   # the security policy.
 
   def digest entry # :nodoc:
-    return unless @checksums
+    algorithms = if @checksums then
+                   @checksums.keys
+                 else
+                   [Gem::Security::DIGEST_NAME]
+                 end
 
-    @checksums.each_key do |algorithm|
+    algorithms.each do |algorithm|
       digester = OpenSSL::Digest.new algorithm
 
       digester << entry.read(16384) until entry.eof?

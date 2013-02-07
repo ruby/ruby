@@ -1,3 +1,14 @@
+Thu Feb  7 14:56:15 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package.rb:  Ensure digests are generated for signing.
+	* test/rubygems/test_gem_package.rb:  Test for the above.
+
+	* lib/rubygems/security/policy.rb:  Ensure digests are present when
+	  verifying a gem and match the number of signatures bidirectionally.
+	* test/rubygems/test_gem_security_policy.rb:  Test for the above.
+
+	* lib/rubygems.rb:  Documentation improvements (by zzak)
+
 Thu Feb  7 05:52:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/pty/README: Remove static documentation file

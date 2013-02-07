@@ -429,10 +429,17 @@ class TestGemPackage < Gem::Package::TarTestCase
 
       digest = OpenSSL::Digest::SHA1.new
       digest << metadata_gz
-      checksum = "#{digest.name}\t#{digest.hexdigest}\n"
 
-      tar.add_file 'metadata.gz.sum', 0444 do |io|
-        io.write checksum
+      checksums = {
+        'SHA1' => {
+          'metadata.gz' => digest.hexdigest,
+        },
+      }
+
+      tar.add_file 'checksums.yaml.gz', 0444 do |io|
+        Zlib::GzipWriter.wrap io do |gz_io|
+          gz_io.write YAML.dump checksums
+        end
       end
 
       tar.add_file 'data.tar.gz', 0444 do |io|
@@ -499,6 +506,47 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal 'unsigned gems are not allowed by the High Security policy',
                  e.message
+
+    refute package.instance_variable_get(:@spec), '@spec must not be loaded'
+    assert_empty package.instance_variable_get(:@files), '@files must empty'
+  end
+
+  def test_verify_security_policy_checksum_missing
+    @spec.cert_chain = [PUBLIC_CERT.to_pem]
+    @spec.signing_key = PRIVATE_KEY
+
+    build = Gem::Package.new @gem
+    build.spec = @spec
+    build.setup_signer
+
+    FileUtils.mkdir 'lib'
+    FileUtils.touch 'lib/code.rb'
+
+    open @gem, 'wb' do |gem_io|
+      Gem::Package::TarWriter.new gem_io do |gem|
+        build.add_metadata gem
+        build.add_contents gem
+
+        # write bogus data.tar.gz to foil signature
+        bogus_data = Gem.gzip 'hello'
+        gem.add_file_simple 'data.tar.gz', 0444, bogus_data.length do |io|
+          io.write bogus_data
+        end
+
+        # pre rubygems 2.0 gems do not add checksums
+      end
+    end
+
+    Gem::Security.trust_dir.trust_cert PUBLIC_CERT
+
+    package = Gem::Package.new @gem
+    package.security_policy = Gem::Security::HighSecurity
+
+    e = assert_raises Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal 'invalid signature', e.message
 
     refute package.instance_variable_get(:@spec), '@spec must not be loaded'
     assert_empty package.instance_variable_get(:@files), '@files must empty'
