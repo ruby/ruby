@@ -1,3 +1,8 @@
+Fri Feb  8 07:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* compar.c (cmp_equal): Document ignored exception and return false
+	  By Makoto Kishimoto [Bug #7790] [ruby-dev:46925] [ruby-dev:46910]
+
 Fri Feb  8 07:17:00 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/dependency_installer.rb:  Only install local gems if
