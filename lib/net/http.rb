@@ -496,8 +496,8 @@ module Net   #:nodoc:
     #   require 'net/http'
     #   require 'uri'
     #
-    #   HTTP.post_form URI('http://www.example.com/search.cgi'),
-    #                  { "q" => "ruby", "max" => "50" }
+    #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
+    #                       { "q" => "ruby", "max" => "50" }
     #
     def HTTP.post_form(url, params)
       req = Post.new(url)

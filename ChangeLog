@@ -1,3 +1,8 @@
+Fri Feb  8 07:34:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/net/http.rb (HTTP.post_form): Fix module scope in documentation
+	  Patch by David Albert [Bug #7794] [ruby-core:51955]
+
 Fri Feb  8 07:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* compar.c (cmp_equal): Document ignored exception and return false
