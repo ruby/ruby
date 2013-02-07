@@ -66,12 +66,13 @@ class VPath
   end
 
   def list
-    @separator ||= (require 'rbconfig'; RbConfig::CONFIG["PATH_SEPARATOR"])
     @additional.reject! do |dirs|
       case dirs
       when String
         @list << dirs
       when Array
+        raise "--path-separator option is needed for vpath list" unless @separator
+        # @separator ||= (require 'rbconfig'; RbConfig::CONFIG["PATH_SEPARATOR"])
         @list.concat(dirs[0].split(@separator))
       end
       true
