@@ -1,6 +1,6 @@
 Fri Feb  8 00:02:48 2013  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (obj2gid): use getgrnum_r() only if getgrnam_r() and
+	* process.c (obj2gid): use getgrnam_r() only if getgrnam_r() and
 	  _SC_GETGR_R_SIZE_MAX is available.
 	  MirOS BSD (MirBSD 10 GENERIC#1382 i386) have getgrnam_r() but
 	  no _SC_GETGR_R_SIZE_MAX.
