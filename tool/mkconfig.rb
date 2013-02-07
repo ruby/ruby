@@ -113,6 +113,7 @@ File.foreach "config.status" do |line|
         end
       end
     end
+    eq = win32 && vars[name] ? '<< "\n"' : '='
     vars[name] = val
     if name == "configure_args"
       val.gsub!(/ +(?!-)/, "=") if win32
@@ -131,7 +132,7 @@ File.foreach "config.status" do |line|
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
     end
-    v = "  CONFIG[\"#{name}\"] #{win32 && vars[name] ? '<< "\n"' : '='} #{val}\n"
+    v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
     if fast[name]
       v_fast << v
     else
