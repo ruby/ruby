@@ -1,3 +1,9 @@
+Fri Feb  8 08:58:26 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package/old.rb:  Fix loading old format gems on ruby
+	  1.8.  This commit is only so trunk and rubygems master have the same
+	  code.
+
 Fri Feb  8 08:53:27 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: fixing string quotation

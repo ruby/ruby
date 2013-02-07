@@ -142,9 +142,19 @@ class Gem::Package::Old < Gem::Package
       end
     end
 
-    @spec = Gem::Specification.from_yaml yaml
-  rescue YAML::SyntaxError => e
-    raise Gem::Exception, "Failed to parse gem specification out of gem file"
+    yaml_error = if RUBY_VERSION < '1.8' then
+                   YAML::ParseError
+                 elsif YAML::ENGINE.yamler == 'syck' then
+                   YAML::ParseError
+                 else
+                   YAML::SyntaxError
+                 end
+
+    begin
+      @spec = Gem::Specification.from_yaml yaml
+    rescue yaml_error => e
+      raise Gem::Exception, "Failed to parse gem specification out of gem file"
+    end
   rescue ArgumentError => e
     raise Gem::Exception, "Failed to parse gem specification out of gem file"
   end
