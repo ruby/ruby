@@ -1,3 +1,8 @@
+Fri Feb  8 08:50:42 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: change output reference
+	  ids to be sequential numbers.
+
 Fri Feb  8 07:47:56 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/package/old.rb:  Disallow installation of old-format
