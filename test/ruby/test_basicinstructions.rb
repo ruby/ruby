@@ -604,7 +604,7 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   def test_send_opassign
-    return if defined?(RUBY_ENGINE) and RUBY_ENGINE == "ruby"
+    return if defined?(RUBY_ENGINE) and RUBY_ENGINE != "ruby"
 
     bug7773 = '[ruby-core:51821]'
     x = OP.new
