@@ -843,6 +843,8 @@ s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
+s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
+s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
 s,@sitedir@,$${rubylibprefix}/site_ruby,;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
 s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
