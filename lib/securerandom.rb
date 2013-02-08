@@ -62,7 +62,7 @@ module SecureRandom
       if @pid != pid
         now = Time.now
         ary = [now.to_i, now.nsec, @pid, pid]
-        OpenSSL::Random.seed(ary.to_s)
+        OpenSSL::Random.seed(ary.join("").to_s)
         @pid = pid
       end
       return OpenSSL::Random.random_bytes(n)
