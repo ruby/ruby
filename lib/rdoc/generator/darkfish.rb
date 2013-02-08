@@ -698,18 +698,18 @@ class RDoc::Generator::Darkfish
 
     return template if template
 
-    template = if page then
-                 assemble_template file
-               else
-                 file.read
-               end
+    if page then
+      template = assemble_template file
+      erbout = 'io'
+    else
+      template = file.read
+      template = template.encode @options.encoding if
+        Object.const_defined? :Encoding
 
-    erbout = if page then
-               'io'
-             else
-               file_var = File.basename(file).sub(/\..*/, '')
-               "_erbout_#{file_var}"
-             end
+      file_var = File.basename(file).sub(/\..*/, '')
+
+      erbout = "_erbout_#{file_var}"
+    end
 
     template = klass.new template, nil, '<>', erbout
     @template_cache[file] = template

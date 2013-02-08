@@ -173,5 +173,15 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_same template, @g.send(:template_for, classpage)
   end
 
+  def test_template_for_partial
+    partial = Pathname.new @options.template_dir + '_sidebar_classes.rhtml'
+
+    template = @g.send(:template_for, partial, false, RDoc::ERBPartial)
+
+    assert_kind_of RDoc::ERBPartial, template
+
+    assert_same template, @g.send(:template_for, partial)
+  end
+
 end
 
