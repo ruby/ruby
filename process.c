@@ -145,7 +145,7 @@ static void check_gid_switch(void);
 #endif
 
 #if defined(HAVE_PWD_H)
-# if defined(HAVE_GETPWNAM_R) && defined(HAVE_GETPWNAM_R)
+# if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
 #  define USE_GETPWNAM_R 1
 # endif
 # ifdef USE_GETPWNAM_R
