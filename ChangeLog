@@ -1,3 +1,8 @@
+Fri Feb  8 16:09:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_ensure): preserve errinfo accross ensure proc before
+	  JUMP_TAG().  [ruby-core:52022] [Bug #7802]
+
 Fri Feb  8 16:08:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_separately): check also terminating

@@ -805,6 +805,8 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 {
     int state;
     volatile VALUE result = Qnil;
+    volatile VALUE errinfo;
+    rb_thread_t *const th = GET_THREAD();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -813,7 +815,9 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     POP_TAG();
     /* TODO: fix me */
     /* retval = prot_tag ? prot_tag->retval : Qnil; */     /* save retval */
+    errinfo = th->errinfo;
     (*e_proc) (data2);
+    th->errinfo = errinfo;
     if (state)
 	JUMP_TAG(state);
     return result;
