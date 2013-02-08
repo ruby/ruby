@@ -1854,9 +1854,11 @@ LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
 AR = #{CONFIG['AR']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
-RUBY_BASE_NAME = #{CONFIG['RUBY_BASE_NAME']}
-RUBY_INSTALL_NAME = #{CONFIG['RUBY_INSTALL_NAME']}
-RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
+}
+    CONFIG.each do |key, val|
+      mk << "#{key} = #{val}\n" if /^RUBY.*NAME/ =~ key
+    end
+    mk << %{
 arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}

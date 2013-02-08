@@ -1,3 +1,8 @@
+Fri Feb  8 09:35:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#configuration): set all ruby names.
+	  hdrdir now needs RUBY_VERSION_NAME.
+
 Fri Feb  8 08:58:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/package/old.rb:  Fix loading old format gems on ruby
