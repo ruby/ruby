@@ -57,13 +57,13 @@ class Gem::DependencyInstaller
   # :build_args:: See Gem::Installer::new
 
   def initialize(options = {})
-    if options[:install_dir] then
-      @gem_home = options[:install_dir]
+    @install_dir = options[:install_dir] || Gem.dir
 
-      # HACK shouldn't change the global settings
-      Gem::Specification.dirs = @gem_home
-      Gem.ensure_gem_subdirectories @gem_home
-      options[:install_dir] = @gem_home # FIX: because we suck and reuse below
+    if options[:install_dir] then
+      # HACK shouldn't change the global settings, needed for -i behavior
+      # maybe move to the install command?  See also github #442
+      Gem::Specification.dirs = @install_dir
+      Gem.ensure_gem_subdirectories @install_dir
     end
 
     options = DEFAULT_OPTIONS.merge options
@@ -91,7 +91,6 @@ class Gem::DependencyInstaller
     @installed_gems = []
     @toplevel_specs = nil
 
-    @install_dir = options[:install_dir] || Gem.dir
     @cache_dir = options[:cache_dir] || @install_dir
 
     # Set with any errors that SpecFetcher finds while search through

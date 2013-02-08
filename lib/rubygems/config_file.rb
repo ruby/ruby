@@ -4,6 +4,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems/user_interaction'
+
 ##
 # Gem::ConfigFile RubyGems options and gem command options from gemrc.
 #

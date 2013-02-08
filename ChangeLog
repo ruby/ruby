@@ -1,3 +1,10 @@
+Fri Feb  8 10:11:09 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/config_file.rb:  Add missing require for
+	  user_interaction.rb
+
+	* lib/rubygems/dependency_installer.rb:  Minor refactor for clarity.
+
 Fri Feb  8 09:35:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#configuration): set all ruby names.
