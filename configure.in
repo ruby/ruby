@@ -1554,7 +1554,6 @@ AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
 				      [rb_cv_gcc_compiler_cas=no])])
 	 if test "$rb_cv_gcc_compiler_cas" = no; then
 		 unset rb_cv_gcc_compiler_cas
-		 ARCH_FLAG="-march=i486"
 		 save_CFLAGS="$CFLAGS"
 		 CFLAGS="$CFLAGS -march=i486"
 		 AC_CACHE_CHECK([for __sync_val_compare_and_swap with -march=i486], [rb_cv_gcc_compiler_cas], [
