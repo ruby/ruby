@@ -1,3 +1,8 @@
+Fri Feb  8 10:44:44 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rubygems/test_gem_dependency_installer.rb:  Improve coverage of
+	  --install-dir feature of gem install.
+
 Fri Feb  8 10:11:09 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/config_file.rb:  Add missing require for

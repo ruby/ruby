@@ -500,16 +500,21 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_setup_gems
 
     FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+
+    inst = Gem::Installer.new @a1.file_name
+    inst.install
+
     gemhome2 = File.join @tempdir, 'gemhome2'
     Dir.mkdir gemhome2
     inst = nil
 
     Dir.chdir @tempdir do
       inst = Gem::DependencyInstaller.new :install_dir => gemhome2
-      inst.install 'a'
+      inst.install 'b'
     end
 
-    assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
+    assert_equal %w[a-1 b-1], inst.installed_gems.map { |s| s.full_name }
 
     assert File.exist?(File.join(gemhome2, 'specifications', @a1.spec_name))
     assert File.exist?(File.join(gemhome2, 'cache', @a1.file_name))
