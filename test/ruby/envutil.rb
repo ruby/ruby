@@ -249,6 +249,8 @@ module Test
         assert(status.success?, m)
       end
 
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV")
+
       def assert_separately(args, file = nil, line = nil, src, **opt)
         unless file and line
           loc, = caller_locations(1,1)
@@ -261,8 +263,9 @@ module Test
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   end
 eom
-        stdout, _stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
-        assert(!status.coredump?, FailDesc[status])
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
+        assert(!abort, FailDesc[status, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
         res = Marshal.load(stdout.unpack("m")[0])
         return unless res

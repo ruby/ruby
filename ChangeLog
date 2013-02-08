@@ -1,3 +1,8 @@
+Fri Feb  8 16:08:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_separately): check also terminating
+	  signal not only if core dumped.
+
 Fri Feb  8 13:12:04 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/generator/darkfish.rb:  Set encoding on output template to
