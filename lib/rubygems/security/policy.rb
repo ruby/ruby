@@ -49,13 +49,18 @@ class Gem::Security::Policy
   # and is valid for the given +time+.
 
   def check_chain chain, time
-    chain.each_cons 2 do |issuer, cert|
-      check_cert cert, issuer, time
-    end
+    raise Gem::Security::Exception, 'missing signing chain' unless chain
+    raise Gem::Security::Exception, 'empty signing chain' if chain.empty?
 
-    true
-  rescue Gem::Security::Exception => e
-    raise Gem::Security::Exception, "invalid signing chain: #{e.message}"
+    begin
+      chain.each_cons 2 do |issuer, cert|
+        check_cert cert, issuer, time
+      end
+
+      true
+    rescue Gem::Security::Exception => e
+      raise Gem::Security::Exception, "invalid signing chain: #{e.message}"
+    end
   end
 
   ##
@@ -74,6 +79,9 @@ class Gem::Security::Policy
   # If the +issuer+ is +nil+ no verification is performed.
 
   def check_cert signer, issuer, time
+    raise Gem::Security::Exception, 'missing signing certificate' unless
+      signer
+
     message = "certificate #{signer.subject}"
 
     if not_before = signer.not_before and not_before > time then
@@ -97,6 +105,12 @@ class Gem::Security::Policy
   # Ensures the public key of +key+ matches the public key in +signer+
 
   def check_key signer, key
+    unless signer and key then
+      return true unless @only_signed
+
+      raise Gem::Security::Exception, 'missing key or signature'
+    end
+
     raise Gem::Security::Exception,
       "certificate #{signer.subject} does not match the signing key" unless
         signer.public_key.to_pem == key.public_key.to_pem
@@ -109,7 +123,11 @@ class Gem::Security::Policy
   # +time+.
 
   def check_root chain, time
+    raise Gem::Security::Exception, 'missing signing chain' unless chain
+
     root = chain.first
+
+    raise Gem::Security::Exception, 'missing root certificate' unless root
 
     raise Gem::Security::Exception,
           "root certificate #{root.subject} is not self-signed " +
@@ -124,7 +142,11 @@ class Gem::Security::Policy
   # the digests of the two certificates match according to +digester+
 
   def check_trust chain, digester, trust_dir
+    raise Gem::Security::Exception, 'missing signing chain' unless chain
+
     root = chain.first
+
+    raise Gem::Security::Exception, 'missing root certificate' unless root
 
     path = Gem::Security.trust_dir.cert_path root
 

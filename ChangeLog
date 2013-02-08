@@ -1,3 +1,9 @@
+Fri Feb  8 11:53:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/security/policy.rb:  Raise proper exceptions when
+	  verifying unsigned gems (instead of crashing).
+	* test/rubygems/test_gem_security_policy.rb:  Tests for the above.
+
 Fri Feb  8 10:44:44 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_gem_dependency_installer.rb:  Improve coverage of

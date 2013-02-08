@@ -34,6 +34,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     @no        = Gem::Security::NoSecurity
     @almost_no = Gem::Security::AlmostNoSecurity
     @low       = Gem::Security::LowSecurity
+    @medium    = Gem::Security::MediumSecurity
     @high      = Gem::Security::HighSecurity
 
     @chain = Gem::Security::Policy.new(
@@ -85,6 +86,14 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert @chain.check_chain chain, Time.now
   end
 
+  def test_check_chain_empty_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_chain [], Time.now
+    end
+
+    assert_equal 'empty signing chain', e.message
+  end
+
   def test_check_chain_invalid
     chain = [PUBLIC_CERT, CHILD_CERT, INVALIDCHILD_CERT]
 
@@ -95,6 +104,14 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert_equal "invalid signing chain: " +
                  "certificate #{INVALIDCHILD_CERT.subject} " +
                  "was not issued by #{CHILD_CERT.subject}", e.message
+  end
+
+  def test_check_chain_no_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_chain nil, Time.now
+    end
+
+    assert_equal 'missing signing chain', e.message
   end
 
   def test_check_cert
@@ -135,8 +152,26 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert @low.check_cert(CHILD_CERT, PUBLIC_CERT, Time.now)
   end
 
+  def test_check_cert_no_signer
+    e = assert_raises Gem::Security::Exception do
+      @high.check_cert(nil, nil, Time.now)
+    end
+
+    assert_equal 'missing signing certificate', e.message
+  end
+
   def test_check_key
     assert @almost_no.check_key(PUBLIC_CERT, PRIVATE_KEY)
+  end
+
+  def test_check_key_no_signer
+    assert @almost_no.check_key(nil, nil)
+
+    e = assert_raises Gem::Security::Exception do
+      @high.check_key(nil, nil)
+    end
+
+    assert_equal 'missing key or signature', e.message
   end
 
   def test_check_key_wrong_key
@@ -152,6 +187,14 @@ class TestGemSecurityPolicy < Gem::TestCase
     chain = [PUBLIC_CERT, CHILD_CERT, INVALIDCHILD_CERT]
 
     assert @chain.check_root chain, Time.now
+  end
+
+  def test_check_root_empty_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_root [], Time.now
+    end
+
+    assert_equal 'missing root certificate', e.message
   end
 
   def test_check_root_invalid_signer
@@ -178,6 +221,14 @@ class TestGemSecurityPolicy < Gem::TestCase
                  e.message
   end
 
+  def test_check_root_no_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_root nil, Time.now
+    end
+
+    assert_equal 'missing signing chain', e.message
+  end
+
   def test_check_trust
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
@@ -190,6 +241,14 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert @high.check_trust [PUBLIC_CERT, CHILD_CERT], @sha1, @trust_dir
   end
 
+  def test_check_trust_empty_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_trust [], @sha1, @trust_dir
+    end
+
+    assert_equal 'missing root certificate', e.message
+  end
+
   def test_check_trust_mismatch
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
@@ -199,6 +258,14 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     assert_equal "trusted root certificate #{PUBLIC_CERT.subject} checksum " +
                  "does not match signing root certificate checksum", e.message
+  end
+
+  def test_check_trust_no_chain
+    e = assert_raises Gem::Security::Exception do
+      @chain.check_trust nil, @sha1, @trust_dir
+    end
+
+    assert_equal 'missing signing chain', e.message
   end
 
   def test_check_trust_no_trust
