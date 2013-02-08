@@ -1,3 +1,8 @@
+Fri Feb  8 23:25:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: change CFLAGS temporally to test
+	  ARCH_FLAG="-march=i486".
+
 Fri Feb  8 21:19:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: don't define ARCH_FLAG="-march=i486" if it causes
