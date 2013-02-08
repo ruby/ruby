@@ -1,3 +1,8 @@
+Fri Feb  8 21:19:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: don't define ARCH_FLAG="-march=i486" if it causes
+	  compilation problem.
+
 Fri Feb  8 19:56:54 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (rb_ary_dup): reverted r39004.  see [Bug #7768], and
