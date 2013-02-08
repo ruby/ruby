@@ -1,3 +1,9 @@
+Sat Feb  9 01:23:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/fiddle/helper.rb: specify libc and libm locations for MirOS BSD.
+
+	* test/dl/test_base.rb: ditto.
+
 Fri Feb  8 23:25:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: change CFLAGS temporally to test
