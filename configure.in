@@ -3235,6 +3235,8 @@ if test ${RUBY_LIB_VERSION_STYLE+set}; then
     test -f verconf.h || > verconf.h
     ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
     eval $ruby_version
+elif test -z "${ruby_version}"; then
+    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
 else
     RUBY_LIB_VERSION="\"${ruby_version}\""
 fi

@@ -39,6 +39,8 @@
 #define RUBY_VENDOR_LIB RUBY_LIB_PREFIX"/vendor_ruby"
 #endif
 
+typedef char ruby_lib_version_string[(int)sizeof(RUBY_LIB_VERSION) - 2];
+
 #define RUBY_LIB                    RUBY_LIB_PREFIX  "/"RUBY_LIB_VERSION
 #define RUBY_SITE_LIB2              RUBY_SITE_LIB    "/"RUBY_LIB_VERSION
 #define RUBY_VENDOR_LIB2            RUBY_VENDOR_LIB  "/"RUBY_LIB_VERSION
