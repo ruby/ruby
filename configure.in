@@ -720,6 +720,21 @@ fi
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 
+}
+{ # header and library section
+
+dnl Checks for header files.
+AC_HEADER_DIRENT
+dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
+AC_HEADER_STDBOOL
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
+		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
+		 syscall.h pwd.h grp.h a.out.h utime.h direct.h sys/resource.h \
+		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h \
+		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
+		 net/socket.h sys/socket.h process.h sys/prctl.h)
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
@@ -921,7 +936,15 @@ RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
 RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
 RUBY_REPLACE_TYPE(mode_t, ["unsigned int" long], MODET, [@%:@include <sys/stat.h>])
-RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [@%:@include <sys/resource.h>])
+RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
+@%:@ifdef HAVE_SYS_TYPES_H
+@%:@include <sys/types.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TYPES_H
+@%:@include <sys/time.h>
+@%:@endif
+@%:@include <sys/resource.h>
+])
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -1116,9 +1139,6 @@ if test "$rb_cv_func_exported" != no; then
 fi
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
-
-}
-{ # header and library section
 
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
@@ -1330,17 +1350,6 @@ else
     ac_cv_header_sys_socket_h=${ac_cv_header_sys_socket_h=yes}
 fi
 
-dnl Checks for header files.
-AC_HEADER_DIRENT
-dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
-AC_HEADER_STDBOOL
-AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
-		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h grp.h a.out.h utime.h direct.h sys/resource.h \
-		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h \
-		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
-		 net/socket.h sys/socket.h process.h sys/prctl.h)
 
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
