@@ -1591,7 +1591,7 @@ EOS
         # test Process.setsid return value and Process::getsid(pid)
         assert_equal(Marshal.load(io), Process.getsid(io.pid))
       ensure
-        Process.kill(:KILL, io.pid)
+        Process.kill(:KILL, io.pid) rescue nil
         Process.wait(io.pid)
       end
     end
