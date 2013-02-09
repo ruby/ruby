@@ -162,9 +162,9 @@ showflags:
 
 .PHONY: showconfig
 showconfig:
-	@$(MESSAGE_BEGIN) \
-	"$(configure_args)" \
-	$(MESSAGE_END)
+	@$(ECHO_BEGIN) \
+	$(configure_args) \
+	$(ECHO_END)
 
 exts: build-ext
 

@@ -373,6 +373,8 @@ ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
 MESSAGE_BEGIN = @for %I in (
 MESSAGE_END = ) do @echo.%~I
+ECHO_BEGIN = @echo.
+ECHO_END =
 
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 
