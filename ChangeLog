@@ -1,3 +1,9 @@
+Sat Feb  9 21:13:35 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* backport r39167 from trunk. [ruby-core:52059] [Bug #7812]
+
+	* BSDL: update copyright notice for 2013.
+
 Fri Feb  8 19:56:54 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (rb_ary_dup): reverted r39004.  see [Bug #7768], and
