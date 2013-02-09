@@ -3,8 +3,8 @@ Sat Feb  9 21:11:21 2013  Tanaka Akira  <akr@fsij.org>
 	* configure.in: move header files check to the beginning of
 	  "header and library section".
 	  test rlim_t with sys/types.h and sys/time.h for MirOS BSD.
-	  sys/types.h and sys/time.h is gurded by #ifdef and the above move
-	  is required for this change.
+	  sys/types.h and sys/time.h is guarded by #ifdef and the above
+	  move is required for this change.
 
 Sat Feb  9 17:45:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
