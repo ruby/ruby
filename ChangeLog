@@ -1,3 +1,7 @@
+Sat Feb  9 10:07:47 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* BSDL: update copyright notice for 2013.
+
 Sat Feb  9 09:24:38 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/package/old.rb:  Fix behavior only on ruby 1.8.
