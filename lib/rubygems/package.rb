@@ -518,8 +518,6 @@ EOM
       when /\.sig$/ then
         @signatures[$`] = entry.read if @security_policy
         next
-      when 'checksums.yaml.gz' then
-        next # already handled
       else
         digest entry
       end

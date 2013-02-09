@@ -1,3 +1,11 @@
+Sat Feb  9 09:24:38 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/package/old.rb:  Fix behavior only on ruby 1.8.
+
+	* lib/rubygems/package.rb:  Include checksums.yaml.gz signatures for
+	  verification.
+	* test/rubygems/test_gem_package.rb:  Test for the above.
+
 Sat Feb  9 01:23:24 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/fiddle/helper.rb: specify libc and libm locations for MirOS BSD.
