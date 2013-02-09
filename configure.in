@@ -3246,7 +3246,7 @@ AC_ARG_WITH(sitedir,
 sitelibdir='${sitedir}/${ruby_version}'
 
 AC_ARG_WITH(sitearchdir,
-	    AS_HELP_STRING([--with-arch-sitedir=DIR],
+	    AS_HELP_STRING([--with-sitearchdir=DIR],
 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
             [sitearchdir=$withval],
             [sitearchdir=${multiarch+'${rubyarchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
@@ -3258,7 +3258,7 @@ AC_ARG_WITH(vendordir,
 vendorlibdir='${vendordir}/${ruby_version}'
 
 AC_ARG_WITH(vendorarchdir,
-	    AS_HELP_STRING([--with-arch-vendordir=DIR],
+	    AS_HELP_STRING([--with-vendorarchdir=DIR],
 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
             [vendorarchdir=$withval],
             [vendorarchdir=${multiarch+'${rubyarchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
@@ -3368,7 +3368,7 @@ AC_ARG_WITH(rubyhdrdir,
 	    [rubyhdrdir='${includedir}/${RUBY_VERSION_NAME}'])
 
 AC_ARG_WITH(rubyarchhdrdir,
-	    AS_HELP_STRING([--with-arch-rubyhdrdir=DIR],
+	    AS_HELP_STRING([--with-rubyarchhdrdir=DIR],
 			   [architecture dependent core headers in DIR [[$(rubyhdrdir)/$(arch)]]]),
 	    [rubyarchhdrdir=$withval],
 	    [rubyarchhdrdir=${multiarch+'${archincludedir}/${RUBY_VERSION_NAME}'}${multiarch-'${rubyhdrdir}/${arch}'}])
@@ -3379,7 +3379,7 @@ AC_ARG_WITH(sitehdrdir,
 	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
 
 AC_ARG_WITH(sitearchhdrdir,
-	    AS_HELP_STRING([--with-arch-sitehdrdir=DIR],
+	    AS_HELP_STRING([--with-sitearchhdrdir=DIR],
 			   [architecture dependent core site headers in DIR [[RUBYHDRDIR/site_ruby]]]),
 	    [sitearchhdrdir=$withval],
 	    [sitearchhdrdir=${multiarch+'${sitearchincludedir}/${RUBY_VERSION_NAME}/site_ruby'}${multiarch-'${sitehdrdir}/${sitearch}'}])
@@ -3390,7 +3390,7 @@ AC_ARG_WITH(vendorhdrdir,
 	    [vendorhdrdir='${rubyhdrdir}/vendor_ruby'])
 
 AC_ARG_WITH(vendorarchhdrdir,
-	    AS_HELP_STRING([--with-arch-vendorhdrdir=DIR],
+	    AS_HELP_STRING([--with-vendorarchhdrdir=DIR],
 			   [architecture dependent core vendor headers in DIR [[RUBYHDRDIR/vendor_ruby]]]),
 	    [vendorarchhdrdir=$withval],
 	    [vendorarchhdrdir=${multiarch+'${sitearchincludedir}/${RUBY_VERSION_NAME}/vendor_ruby'}${multiarch-'${vendorhdrdir}/${sitearch}'}])

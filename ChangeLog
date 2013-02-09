@@ -1,3 +1,7 @@
+Sat Feb  9 17:38:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fix arch parameters in help message.  [Bug #7804]
+
 Sat Feb  9 13:13:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_trace.c: Note about TracePoint events set, and comment on
