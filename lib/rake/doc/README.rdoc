@@ -154,7 +154,7 @@ other projects with similar (and not so similar) goals.
 
 Rake is available under an MIT-style license.
 
-:include: MIT-LICENSE
+See {MIT-LICENSE}[rdoc-ref:lib/rake/doc/MIT-LICENSE] for permissions.
 
 == Support
 
