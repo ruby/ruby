@@ -1,3 +1,7 @@
+Sun Feb 10 14:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/rake/, lib/rake/doc/: Move Rake rdoc files to lib/rake
+
 Sun Feb 10 12:10:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test headers at first.
