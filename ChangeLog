@@ -1,6 +1,12 @@
+Sun Feb  10 16:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/rake/doc/MIT-LICENSE: Add license file from upstream
+	* lib/rake/doc/README.rdoc: Link to license file from Rake README
+	* lib/rake/version.rb: Include README rdoc for Rake module overview
+
 Sun Feb  10 15:26:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* doc/rake/*: Sync Rake rdoc files from upstream
+	* lib/rake/doc/*: Sync Rake rdoc files from upstream
 
 Sun Feb 10 15:50:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
