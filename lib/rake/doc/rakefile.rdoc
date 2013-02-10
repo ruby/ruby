@@ -193,7 +193,7 @@ example, if the "release" task expected a parameter named
 
 or
 
-   RELEASE_VERSION rake release
+   RELEASE_VERSION=0.8.2 rake release
 
 will work.  Environment variable names must either match the task
 parameter exactly, or match an all-uppercase version of the task
@@ -291,7 +291,7 @@ Running this example:
 
 The ability to programmatically manipulate tasks gives rake very
 powerful meta-programming capabilities w.r.t. task execution, but
-should be used with cation.
+should be used with caution.
 
 == Rules
 
@@ -337,7 +337,7 @@ required on *rule* when the first argument is a regular expression.
 
 The following rule might be used for Java files ...
 
-  rule '.java' => [
+  rule '.class' => [
     proc { |tn| tn.sub(/\.class$/, '.java').sub(/^classes\//, 'src/') }
   ] do |t|
     java_compile(t.source, t.name)

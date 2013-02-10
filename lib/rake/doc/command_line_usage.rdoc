@@ -23,13 +23,6 @@ Options are:
     stardard output. If _output_ is <tt>stderr</tt>, or if it is
     missing, then the backtrace output is sent to standard error.
 
-[<tt>--classic-namespace</tt> (-n)]
-    Import the Task, FileTask, and FileCreateTask into the top-level
-    scope to be compatible with older versions of Rake.  Alternatively
-    you can include the line <code>require
-    'rake/classic_namespace'</code> in your Rakefile to get the
-    classic behavior.
-
 [<tt>--comments</tt>]
     Used in combination with the -W options to force the output to
     contain commented options only. This is the reverse of
@@ -101,16 +94,6 @@ Options are:
 
 [<tt>--rakelibdir</tt> _rakelibdir_ (-R)]
     Auto-import any .rake files in RAKELIBDIR. (default is 'rakelib')
-
-[<tt>--reduce-compat</tt>]
-
-    Remove the DSL commands from the Object inheritance hierarchy and
-    do not define top level constants. This reduces the backwards
-    compatibility of Rake, but allows rake to be used with software
-    that would otherwise have conflicting definitions.
-
-    *NOTE:* The next major version of Rake will only be able to be run
-    in "reduce-compat" mode.
 
 [<tt>--require</tt> _name_ (-r)]
     Require _name_ before executing the Rakefile.
