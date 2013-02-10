@@ -1,6 +1,6 @@
 Thu Feb  7 23:13:42 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* vm_exec.h (DISPATCH_ARCH_DEPEND_WAY): use __asm__ __vilatile__
+	* vm_exec.h (DISPATCH_ARCH_DEPEND_WAY): use __asm__ __volatile__
 	  instead of asm volatile.
 
 Thu Feb  7 23:12:31 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
