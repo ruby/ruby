@@ -34,6 +34,26 @@ if have_header("arpa/inet.h")
   headers << "arpa/inet.h"
 end
 
+have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
+have_header("netinet/udp.h")
+
+have_header("arpa/nameser.h")
+have_header("resolv.h")
+
+have_header("ifaddrs.h")
+
+have_header("sys/ioctl.h")
+have_header("sys/sockio.h")
+have_header("net/if.h", headers)
+
+have_header("sys/param.h", headers)
+have_header("sys/ucred.h", headers)
+
+have_header("sys/un.h")
+have_header("sys/uio.h")
+
+have_header("ucred.h", headers)
+
 ipv6 = false
 default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
 if enable_config("ipv6", default_ipv6)
@@ -109,9 +129,6 @@ end
 if have_struct_member("struct sockaddr", "sa_len", headers)
   $defs[-1] = "-DHAVE_SA_LEN "
 end
-
-have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
-have_header("netinet/udp.h")
 
 if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
   IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
@@ -434,24 +451,12 @@ have_func('inet_ntop(0, (const void *)0, (char *)0, 0)') or
   have_func("inet_ntoa(*(struct in_addr *)NULL)")
 have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_addr *)0)')
 have_func('getservbyport(0, "")')
-have_header("arpa/nameser.h")
-have_header("resolv.h")
-
-have_header("ifaddrs.h")
 have_func("getifaddrs")
-have_header("sys/ioctl.h")
-have_header("sys/sockio.h")
-have_header("net/if.h", headers)
-
-have_header("sys/param.h", headers)
-have_header("sys/ucred.h", headers)
 
 unless have_type("socklen_t", headers)
   $defs << "-Dsocklen_t=int"
 end
 
-have_header("sys/un.h")
-have_header("sys/uio.h")
 have_type("struct in_pktinfo", headers) {|src|
   src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<
   "#else\n" << "#error\n" << ">>>>>> no in_pktinfo <<<<<<\n" << "#endif\n"
@@ -466,7 +471,6 @@ have_type("struct cmsgcred", headers)
 
 have_func("getpeereid")
 
-have_header("ucred.h", headers)
 have_func("getpeerucred")
 
 have_func("if_indextoname")

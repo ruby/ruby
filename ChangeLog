@@ -1,3 +1,7 @@
+Sun Feb 10 12:10:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: test headers at first.
+
 Sun Feb  10 12:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/rake/*: Removed stale Rake static files
