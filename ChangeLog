@@ -1,3 +1,7 @@
+Thu Feb  7 23:12:31 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* gc.h (SET_MACHINE_STACK_END): use __volatile__ instead of volatile.
+
 Sun Feb 10 14:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/rake/, lib/rake/doc/: Move Rake rdoc files to lib/rake
