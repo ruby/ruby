@@ -86,7 +86,7 @@ error !
 /* dispather */
 #if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
 #define DISPATCH_ARCH_DEPEND_WAY(addr) \
-  __asm__ __volatile__("jmp *%0;\t# -- inseted by vm.h\t[length = 2]" : : "r" (addr))
+  __asm__ __volatile__("jmp *%0;\t# -- inserted by vm.h\t[length = 2]" : : "r" (addr))
 
 #else
 #define DISPATCH_ARCH_DEPEND_WAY(addr) \
