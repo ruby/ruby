@@ -1,3 +1,7 @@
+Sun Feb  10 12:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/rake/*: Removed stale Rake static files
+
 Sun Feb  10 09:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/pp.rb, lib/prettyprint.rb: Documentation for PP and PrettyPrint
