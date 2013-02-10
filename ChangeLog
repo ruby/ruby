@@ -1,3 +1,8 @@
+Sun Feb  10 09:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/pp.rb, lib/prettyprint.rb: Documentation for PP and PrettyPrint
+	  Based on a patch by Vincent Batts [ruby-core:51253] [Bug #7656]
+
 Sat Feb  9 21:11:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: move header files check to the beginning of
