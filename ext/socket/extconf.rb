@@ -54,6 +54,28 @@ have_header("sys/uio.h")
 
 have_header("ucred.h", headers)
 
+have_type("struct addrinfo", headers)
+
+unless have_type("socklen_t", headers)
+  $defs << "-Dsocklen_t=int"
+end
+
+have_type("struct in_pktinfo", headers) {|src|
+  src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<
+  "#else\n" << "#error\n" << ">>>>>> no in_pktinfo <<<<<<\n" << "#endif\n"
+} and have_struct_member("struct in_pktinfo", "ipi_spec_dst", headers)
+have_type("struct in6_pktinfo", headers) {|src|
+  src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO)") <<
+  "#else\n" << "#error\n" << ">>>>>> no in6_pktinfo <<<<<<\n" << "#endif\n"
+}
+
+have_type("struct sockcred", headers)
+have_type("struct cmsgcred", headers)
+
+have_type("struct ip_mreq", headers) # 4.4BSD
+have_type("struct ip_mreqn", headers) # Linux 2.4
+have_type("struct ipv6_mreq", headers) # RFC 3493
+
 ipv6 = false
 default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
 if enable_config("ipv6", default_ipv6)
@@ -397,7 +419,6 @@ Fatal: invalid value for --with-lookup-order-hack (expected INET, INET6 or UNSPE
 EOS
 end
 
-have_type("struct addrinfo", headers)
 have_func("freehostent")
 have_func("freeaddrinfo")
 if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror")
@@ -453,31 +474,11 @@ have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_
 have_func('getservbyport(0, "")')
 have_func("getifaddrs")
 
-unless have_type("socklen_t", headers)
-  $defs << "-Dsocklen_t=int"
-end
-
-have_type("struct in_pktinfo", headers) {|src|
-  src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<
-  "#else\n" << "#error\n" << ">>>>>> no in_pktinfo <<<<<<\n" << "#endif\n"
-} and have_struct_member("struct in_pktinfo", "ipi_spec_dst", headers)
-have_type("struct in6_pktinfo", headers) {|src|
-  src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IPV6) && defined(IPV6_PKTINFO)") <<
-  "#else\n" << "#error\n" << ">>>>>> no in6_pktinfo <<<<<<\n" << "#endif\n"
-}
-
-have_type("struct sockcred", headers)
-have_type("struct cmsgcred", headers)
-
 have_func("getpeereid")
 
 have_func("getpeerucred")
 
 have_func("if_indextoname")
-
-have_type("struct ip_mreq", headers) # 4.4BSD
-have_type("struct ip_mreqn", headers) # Linux 2.4
-have_type("struct ipv6_mreq", headers) # RFC 3493
 
 # workaround for recent Windows SDK
 $defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")

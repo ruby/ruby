@@ -1,3 +1,7 @@
+Sun Feb 10 20:58:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: test types just after headers test.
+
 Sun Feb  10 16:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/rake/doc/MIT-LICENSE: Add license file from upstream
