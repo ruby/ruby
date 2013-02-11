@@ -27,7 +27,7 @@ class TestRbConfig < Test::Unit::TestCase
     bug7823 = '[ruby-dev:46964] [Bug #7823]'
     RbConfig::MAKEFILE_CONFIG.each do |key, val|
       next unless /\Asite.*arch.*dir\z/ =~ key
-      assert_match(/\$\(sitearch|\$\(rubyarchprefix\)/, val, "#{key} #{bug7823}")
+      assert_match(/\$\(sitearch|\$\(rubysitearchprefix\)/, val, "#{key} #{bug7823}")
     end
   end
 
@@ -35,7 +35,7 @@ class TestRbConfig < Test::Unit::TestCase
     bug7823 = '[ruby-dev:46964] [Bug #7823]'
     RbConfig::MAKEFILE_CONFIG.each do |key, val|
       next unless /\Avendor.*arch.*dir\z/ =~ key
-      assert_match(/\$\(sitearch|\$\(rubyarchprefix\)/, val, "#{key} #{bug7823}")
+      assert_match(/\$\(sitearch|\$\(rubysitearchprefix\)/, val, "#{key} #{bug7823}")
     end
   end
 end

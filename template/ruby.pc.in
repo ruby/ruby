@@ -31,6 +31,7 @@ sitearchincludedir=@sitearchincludedir@
 ruby=${bindir}/${RUBY_INSTALL_NAME}@EXEEXT@
 rubylibprefix=@rubylibprefix@
 rubyarchprefix=@rubyarchprefix@
+rubysitearchprefix=@rubysitearchprefix@
 rubylibdir=@rubylibdir@
 vendordir=@vendordir@
 sitedir=@sitedir@

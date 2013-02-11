@@ -1,4 +1,7 @@
-Mon Feb 11 13:15:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Feb 11 13:17:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rubysitearchprefix): sitearchdir and vendorarchdir
+	  should use sitearch, not arch.  [ruby-dev:46964] [Bug #7823]
 
 	* win32/Makefile.sub (config.status): site and vendor directories
 	  should use sitearch, not arch.  [ruby-dev:46964] [Bug #7823]
