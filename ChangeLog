@@ -1,3 +1,7 @@
+Mon Feb 11 23:08:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: enable rb_cv_page_size_log test for MirOS BSD.
+
 Mon Feb 11 20:06:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: use -pthread on mirbsd*.

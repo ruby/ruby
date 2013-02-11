@@ -1477,8 +1477,11 @@ if test $rb_cv_stack_end_address != no; then
   AC_DEFINE_UNQUOTED(STACK_END_ADDRESS, $rb_cv_stack_end_address)
 fi
 
+# posix_memalign(memptr, alignment, size) implemented for OpenBSD 4.8 doesn't work if alignment > MALLOC_PAGESIZE.
+# OpenBSD 5.2 fixed the problem. (src/lib/libc/stdlib/malloc.c:1.142)
+# MirOS #10semel has the problem but fixed in the repository.  (src/lib/libc/stdlib/malloc.c:1.9)
 AS_CASE(["$target_os"],
-[openbsd*], [
+[openbsd*|mirbsd*], [
   AC_CACHE_CHECK(for heap align log on openbsd, rb_cv_page_size_log,
     [rb_cv_page_size_log=no
      for page_log in 12 13; do
