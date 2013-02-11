@@ -406,6 +406,29 @@ if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no 
     RUBY_DEFAULT_ARCH("$target_cpu")
 fi
 
+AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
+	 AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
+			 AC_TRY_LINK([unsigned long atomic_var;],
+				     [
+				      __sync_val_compare_and_swap(&atomic_var, 0, 1);
+				      ],
+				      [rb_cv_gcc_compiler_cas=yes],
+				      [rb_cv_gcc_compiler_cas=no])])
+	 if test "$rb_cv_gcc_compiler_cas" = no; then
+		 unset rb_cv_gcc_compiler_cas
+		 save_CFLAGS="$CFLAGS"
+		 CFLAGS="$CFLAGS -march=i486"
+		 AC_CACHE_CHECK([for __sync_val_compare_and_swap with -march=i486], [rb_cv_gcc_compiler_cas], [
+				 AC_TRY_LINK([unsigned long atomic_var;],
+					     [
+					      __sync_val_compare_and_swap(&atomic_var, 0, 1);
+					      ],
+					      [rb_cv_gcc_compiler_cas=yes
+					       ARCH_FLAG="-march=i486"],
+					      [rb_cv_gcc_compiler_cas=no])])
+		 CFLAGS="$save_CFLAGS"
+	 fi])
+
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
 if test -z "$AR"; then
@@ -1552,29 +1575,6 @@ AS_CASE(["$target_os"],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
 
-
-AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
-	 AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
-			 AC_TRY_LINK([unsigned long atomic_var;],
-				     [
-				      __sync_val_compare_and_swap(&atomic_var, 0, 1);
-				      ],
-				      [rb_cv_gcc_compiler_cas=yes],
-				      [rb_cv_gcc_compiler_cas=no])])
-	 if test "$rb_cv_gcc_compiler_cas" = no; then
-		 unset rb_cv_gcc_compiler_cas
-		 save_CFLAGS="$CFLAGS"
-		 CFLAGS="$CFLAGS -march=i486"
-		 AC_CACHE_CHECK([for __sync_val_compare_and_swap with -march=i486], [rb_cv_gcc_compiler_cas], [
-				 AC_TRY_LINK([unsigned long atomic_var;],
-					     [
-					      __sync_val_compare_and_swap(&atomic_var, 0, 1);
-					      ],
-					      [rb_cv_gcc_compiler_cas=yes
-					       ARCH_FLAG="-march=i486"],
-					      [rb_cv_gcc_compiler_cas=no])])
-		 CFLAGS="$save_CFLAGS"
-	 fi])
 
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
   [AC_TRY_LINK([

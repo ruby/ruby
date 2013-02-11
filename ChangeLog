@@ -1,3 +1,8 @@
+Mon Feb 11 11:04:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: move the test for -march=i486 just after
+	  RUBY_UNIVERSAL_ARCH/RUBY_DEFAULT_ARCH.
+
 Sun Feb 10 23:42:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test structure members just after types test.
