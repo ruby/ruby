@@ -2672,7 +2672,7 @@ AS_CASE("$enable_shared", [yes], [
 	   LIBRUBY_ALIASES=""
 	fi
 	],
-    [openbsd*], [
+    [openbsd*|mirbsd*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
