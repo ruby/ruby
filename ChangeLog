@@ -1,3 +1,7 @@
+Mon Feb 11 20:06:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: use -pthread on mirbsd*.
+
 Mon Feb 11 16:07:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: add SOLIBS and LIBRUBY_SO definition for mirbsd*.

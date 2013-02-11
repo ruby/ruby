@@ -2054,7 +2054,7 @@ if test x"$enable_pthread" = xyes; then
 	[root], [],
 	[c_r],  [MAINLIBS="-pthread $MAINLIBS"],
 	        [AS_CASE(["$target_os"],
-		    [openbsd*], [LIBS="-pthread $LIBS"],
+		    [openbsd*|mirbsd*], [LIBS="-pthread $LIBS"],
 		    [LIBS="-l$pthread_lib $LIBS"])])
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
