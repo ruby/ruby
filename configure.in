@@ -1478,6 +1478,7 @@ if test $rb_cv_stack_end_address != no; then
 fi
 
 # posix_memalign(memptr, alignment, size) implemented for OpenBSD 4.8 doesn't work if alignment > MALLOC_PAGESIZE.
+# [ruby-core:42158] https://bugs.ruby-lang.org/issues/5901
 # OpenBSD 5.2 fixed the problem. (src/lib/libc/stdlib/malloc.c:1.142)
 # MirOS #10semel has the problem but fixed in the repository.  (src/lib/libc/stdlib/malloc.c:1.9)
 AS_CASE(["$target_os"],
