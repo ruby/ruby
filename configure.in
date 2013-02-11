@@ -746,6 +746,191 @@ test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cx
 }
 { # header and library section
 
+AC_ARG_WITH(winnt-ver,
+  AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0501)]),
+  [with_winnt_ver="$withval"], [with_winnt_ver="0x0501"])
+AS_CASE(["$target_os"],
+[mingw*], [
+  RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
+])
+
+AS_CASE(["$target_os"],
+[freebsd*], [
+  AC_CACHE_CHECK([whether pthread should be enabled by default],
+    rb_cv_enable_pthread_default,
+    [AC_TRY_CPP([
+#include <osreldate.h>
+#if __FreeBSD_version < 502102
+#error pthread should be disabled on this platform
+#endif
+      ],
+      rb_cv_enable_pthread_default=yes,
+      rb_cv_enable_pthread_default=no)])
+  enable_pthread=$rb_cv_enable_pthread_default
+  ],
+[mingw*], [
+  enable_pthread=no
+  ],
+[
+  enable_pthread=yes
+  ])
+
+AC_ARG_ENABLE(pthread,
+       AS_HELP_STRING([--enable-pthread], [obsolete, and ignored]))
+
+dnl Checks for libraries.
+AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
+
+POSTLINK=:
+AC_SUBST(POSTLINK)
+AS_CASE(["$target_os"],
+[nextstep*], [	],
+[openstep*], [	],
+[rhapsody*], [	],
+[darwin*], [	RUBY_PREPEND_OPTION(LIBS, -lobjc)
+		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
+		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
+		AC_TRY_CPP([#include <AvailabilityMacros.h>
+		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
+		    #error pre OS X 10.4
+		    [!<===== pre OS X 10.4 =====>]
+		    #endif
+		    ],
+		    [macosx_10_5=yes], [macosx_10_5=no])
+		AC_MSG_RESULT($macosx_10_5)
+		if test $macosx_10_5 = yes; then
+		    ac_cv_header_ucontext_h=no
+		else
+		    AC_DEFINE(BROKEN_SETREUID, 1)
+		    AC_DEFINE(BROKEN_SETREGID, 1)
+		fi
+		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
+		ac_cv_lib_crypt_crypt=no
+		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
+                AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
+                    [AC_TRY_RUN([
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+int
+main()
+{
+    int i;
+    for (i = 0; i < 128*128; i++) {
+	char salt[2], buf[256], *s;
+	salt[0] = 0x80 | (i & 0x7f);
+	salt[1] = 0x80 | (i >> 7);
+	strcpy(buf, crypt("", salt));
+	if (strcmp(buf, s = crypt("", salt))) {
+#if 0
+	    printf("%.2x%.2x: %s -> %s\n", (unsigned char)salt[0], (unsigned char)salt[1],
+		   buf+2, s+2);
+#endif
+	    return 1;
+	}
+    }
+    return 0;
+}
+],
+	            rb_cv_broken_crypt=no,
+	            rb_cv_broken_crypt=yes,
+	            rb_cv_broken_crypt=yes)])
+                if test "$rb_cv_broken_crypt" = yes; then
+                  AC_DEFINE(BROKEN_CRYPT, 1)
+                fi
+		AC_CHECK_PROGS(codesign, codesign)
+		if test -n "$codesign"; then
+		    POSTLINK="test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@"
+		    LINK_SO="$LINK_SO
+$POSTLINK"
+		fi
+		AC_CHECK_HEADERS(crt_externs.h, [], [], [
+		    #include <crt_externs.h>
+		])
+		],
+[hpux*], [	LIBS="-lm $LIBS"
+		ac_cv_c_inline=no],
+[beos*|haiku*], [
+		ac_cv_func_link=no
+		ac_cv_func_sched_yield=no
+		ac_cv_func_pthread_attr_setinheritsched=no
+		AS_CASE(["$target_os"],
+		[beos*], [ ac_cv_header_net_socket_h=yes],
+		[haiku*], [ ac_cv_func_shutdown=no])
+		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
+		],
+[cygwin*], [	ac_cv_header_langinfo_h=yes
+		AC_CHECK_FUNCS(cygwin_conv_path)
+		AC_LIBOBJ([langinfo])
+		],
+[mingw*], [	LIBS="-lshell32 -lws2_32 -limagehlp -lshlwapi $LIBS"
+		ac_cv_header_a_out_h=no
+		ac_cv_header_pwd_h=no
+		ac_cv_header_utime_h=no
+		ac_cv_header_sys_ioctl_h=no
+		ac_cv_header_sys_param_h=no
+		ac_cv_header_sys_resource_h=no
+		ac_cv_header_sys_select_h=no
+		ac_cv_header_sys_time_h=no
+		ac_cv_header_sys_times_h=no
+		ac_cv_header_sys_socket_h=no
+		ac_cv_func_times=yes
+		ac_cv_func_waitpid=yes
+		ac_cv_func_fsync=yes
+		ac_cv_func_seekdir=yes
+		ac_cv_func_telldir=yes
+		ac_cv_func_isinf=yes
+		ac_cv_func_isnan=yes
+		ac_cv_func_finite=yes
+		ac_cv_func_link=yes
+		ac_cv_func_fseeko=yes
+		ac_cv_lib_crypt_crypt=no
+		ac_cv_func_getpgrp_void=no
+		ac_cv_func_memcmp_working=yes
+		ac_cv_lib_dl_dlopen=no
+		rb_cv_binary_elf=no
+		rb_cv_negative_time_t=no
+		ac_cv_func_fcntl=yes
+		ac_cv_func_flock=yes
+		ac_cv_func_gmtime_r=yes
+		rb_cv_large_fd_select=yes
+		AC_LIBOBJ([langinfo])
+		],
+[os2-emx*], [	LIBS="-lm $LIBS"
+		ac_cv_lib_dir_opendir=no],
+[bsdi*], [	LIBS="-lm $LIBS"
+		AC_DEFINE(BROKEN_SETREUID, 1)
+		AC_DEFINE(BROKEN_SETREGID, 1)
+                ac_cv_sizeof_rlim_t=8],
+[freebsd*], [	LIBS="-lm $LIBS"
+		ac_cv_func_getpeername=no
+		ac_cv_func_getsockname=no
+		ac_cv_func_shutdown=no
+		ac_cv_func_close=no
+		],
+[dragonfly*], [	LIBS="-lm $LIBS"
+		# isinf() and isnan() are macros on DragonFly.
+		ac_cv_func_isinf=yes
+		ac_cv_func_isnan=yes
+		],
+[bow], [	ac_cv_func_setitimer=no
+		],
+[superux*], [	ac_cv_func_setitimer=no
+		],
+[nacl], [
+  LIBS="-lm $LIBS"
+  if test "${nacl_cv_build_variant}" = "newlib"; then
+    RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
+    RUBY_APPEND_OPTION(LIBS, '-lnosys')
+  else
+    RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
+  fi
+  ac_cv_func_shutdown=no
+  ac_cv_func_fcntl=no
+  ],
+[	LIBS="-lm $LIBS"])
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
@@ -1167,190 +1352,6 @@ dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 @%:@include <errno.h>])
 
-AC_ARG_WITH(winnt-ver,
-  AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0501)]),
-  [with_winnt_ver="$withval"], [with_winnt_ver="0x0501"])
-AS_CASE(["$target_os"],
-[mingw*], [
-  RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
-])
-
-AS_CASE(["$target_os"],
-[freebsd*], [
-  AC_CACHE_CHECK([whether pthread should be enabled by default],
-    rb_cv_enable_pthread_default,
-    [AC_TRY_CPP([
-#include <osreldate.h>
-#if __FreeBSD_version < 502102
-#error pthread should be disabled on this platform
-#endif
-      ],
-      rb_cv_enable_pthread_default=yes,
-      rb_cv_enable_pthread_default=no)])
-  enable_pthread=$rb_cv_enable_pthread_default
-  ],
-[mingw*], [
-  enable_pthread=no
-  ],
-[
-  enable_pthread=yes
-  ])
-
-AC_ARG_ENABLE(pthread,
-       AS_HELP_STRING([--enable-pthread], [obsolete, and ignored]))
-
-dnl Checks for libraries.
-AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
-
-POSTLINK=:
-AC_SUBST(POSTLINK)
-AS_CASE(["$target_os"],
-[nextstep*], [	],
-[openstep*], [	],
-[rhapsody*], [	],
-[darwin*], [	RUBY_PREPEND_OPTION(LIBS, -lobjc)
-		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
-		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
-		AC_TRY_CPP([#include <AvailabilityMacros.h>
-		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
-		    #error pre OS X 10.4
-		    [!<===== pre OS X 10.4 =====>]
-		    #endif
-		    ],
-		    [macosx_10_5=yes], [macosx_10_5=no])
-		AC_MSG_RESULT($macosx_10_5)
-		if test $macosx_10_5 = yes; then
-		    ac_cv_header_ucontext_h=no
-		else
-		    AC_DEFINE(BROKEN_SETREUID, 1)
-		    AC_DEFINE(BROKEN_SETREGID, 1)
-		fi
-		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
-		ac_cv_lib_crypt_crypt=no
-		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
-                AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
-                    [AC_TRY_RUN([
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-
-int
-main()
-{
-    int i;
-    for (i = 0; i < 128*128; i++) {
-	char salt[2], buf[256], *s;
-	salt[0] = 0x80 | (i & 0x7f);
-	salt[1] = 0x80 | (i >> 7);
-	strcpy(buf, crypt("", salt));
-	if (strcmp(buf, s = crypt("", salt))) {
-#if 0
-	    printf("%.2x%.2x: %s -> %s\n", (unsigned char)salt[0], (unsigned char)salt[1],
-		   buf+2, s+2);
-#endif
-	    return 1;
-	}
-    }
-    return 0;
-}
-],
-	            rb_cv_broken_crypt=no,
-	            rb_cv_broken_crypt=yes,
-	            rb_cv_broken_crypt=yes)])
-                if test "$rb_cv_broken_crypt" = yes; then
-                  AC_DEFINE(BROKEN_CRYPT, 1)
-                fi
-		AC_CHECK_PROGS(codesign, codesign)
-		if test -n "$codesign"; then
-		    POSTLINK="test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@"
-		    LINK_SO="$LINK_SO
-$POSTLINK"
-		fi
-		AC_CHECK_HEADERS(crt_externs.h, [], [], [
-		    #include <crt_externs.h>
-		])
-		],
-[hpux*], [	LIBS="-lm $LIBS"
-		ac_cv_c_inline=no],
-[beos*|haiku*], [
-		ac_cv_func_link=no
-		ac_cv_func_sched_yield=no
-		ac_cv_func_pthread_attr_setinheritsched=no
-		AS_CASE(["$target_os"],
-		[beos*], [ ac_cv_header_net_socket_h=yes],
-		[haiku*], [ ac_cv_func_shutdown=no])
-		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
-		],
-[cygwin*], [	ac_cv_header_langinfo_h=yes
-		AC_CHECK_FUNCS(cygwin_conv_path)
-		AC_LIBOBJ([langinfo])
-		],
-[mingw*], [	LIBS="-lshell32 -lws2_32 -limagehlp -lshlwapi $LIBS"
-		ac_cv_header_a_out_h=no
-		ac_cv_header_pwd_h=no
-		ac_cv_header_utime_h=no
-		ac_cv_header_sys_ioctl_h=no
-		ac_cv_header_sys_param_h=no
-		ac_cv_header_sys_resource_h=no
-		ac_cv_header_sys_select_h=no
-		ac_cv_header_sys_time_h=no
-		ac_cv_header_sys_times_h=no
-		ac_cv_header_sys_socket_h=no
-		ac_cv_func_times=yes
-		ac_cv_func_waitpid=yes
-		ac_cv_func_fsync=yes
-		ac_cv_func_seekdir=yes
-		ac_cv_func_telldir=yes
-		ac_cv_func_isinf=yes
-		ac_cv_func_isnan=yes
-		ac_cv_func_finite=yes
-		ac_cv_func_link=yes
-		ac_cv_func_fseeko=yes
-		ac_cv_lib_crypt_crypt=no
-		ac_cv_func_getpgrp_void=no
-		ac_cv_func_memcmp_working=yes
-		ac_cv_lib_dl_dlopen=no
-		rb_cv_binary_elf=no
-		rb_cv_negative_time_t=no
-		ac_cv_func_fcntl=yes
-		ac_cv_func_flock=yes
-		ac_cv_func_gmtime_r=yes
-		rb_cv_large_fd_select=yes
-		AC_LIBOBJ([langinfo])
-		],
-[os2-emx*], [	LIBS="-lm $LIBS"
-		ac_cv_lib_dir_opendir=no],
-[bsdi*], [	LIBS="-lm $LIBS"
-		AC_DEFINE(BROKEN_SETREUID, 1)
-		AC_DEFINE(BROKEN_SETREGID, 1)
-                ac_cv_sizeof_rlim_t=8],
-[freebsd*], [	LIBS="-lm $LIBS"
-		ac_cv_func_getpeername=no
-		ac_cv_func_getsockname=no
-		ac_cv_func_shutdown=no
-		ac_cv_func_close=no
-		],
-[dragonfly*], [	LIBS="-lm $LIBS"
-		# isinf() and isnan() are macros on DragonFly.
-		ac_cv_func_isinf=yes
-		ac_cv_func_isnan=yes
-		],
-[bow], [	ac_cv_func_setitimer=no
-		],
-[superux*], [	ac_cv_func_setitimer=no
-		],
-[nacl], [
-  LIBS="-lm $LIBS"
-  if test "${nacl_cv_build_variant}" = "newlib"; then
-    RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
-    RUBY_APPEND_OPTION(LIBS, '-lnosys')
-  else
-    RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
-  fi
-  ac_cv_func_shutdown=no
-  ac_cv_func_fcntl=no
-  ],
-[	LIBS="-lm $LIBS"])
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
