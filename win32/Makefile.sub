@@ -852,10 +852,10 @@ s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
 s,@sitedir@,$${rubylibprefix}/site_ruby,;t t
-s,@sitearchdir@,$${sitelibdir}/$${arch},;t t
+s,@sitearchdir@,$${sitelibdir}/$${sitearch},;t t
 s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
-s,@vendorarchdir@,$${vendirlibdir}/$${arch},;t t
+s,@vendorarchdir@,$${vendirlibdir}/$${sitearch},;t t
 s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
 s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
