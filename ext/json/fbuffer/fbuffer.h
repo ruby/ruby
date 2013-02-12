@@ -3,7 +3,6 @@
 #define _FBUFFER_H_
 
 #include "ruby.h"
-#include <assert.h>
 
 #ifndef RHASH_SIZE
 #define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
@@ -166,11 +165,8 @@ static FBuffer *fbuffer_dup(FBuffer *fb)
     unsigned long len = fb->len;
     FBuffer *result;
 
-    assert(len > 0);
-    if (len > 0) {
-        result = fbuffer_alloc(len);
-        fbuffer_append(result, FBUFFER_PAIR(fb));
-    }
+    result = fbuffer_alloc(len);
+    fbuffer_append(result, FBUFFER_PAIR(fb));
     return result;
 }
 

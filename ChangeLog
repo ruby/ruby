@@ -1,3 +1,10 @@
+Tue Feb 12 12:02:35 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: merge JSON 1.7.7.
+	  This includes security fix. [CVE-2013-0269]
+	  https://github.com/flori/json/commit/d0a62f3ced7560daba2ad546d83f0479a5ae2cf2
+	  https://groups.google.com/d/topic/rubyonrails-security/4_YvCpLzL58/discussion
+
 Mon Feb 11 23:08:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: enable rb_cv_page_size_log test for MirOS BSD.
