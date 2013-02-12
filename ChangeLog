@@ -1,3 +1,10 @@
+Wed Feb 13 06:05:52 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Return BINARY strings from Gem.gzip and Gem.gunzip.
+	  Fixes intermittent test failures.  RubyGems issue #450 by Jeremey
+	  Kemper.
+	* test/rubygems/test_gem.rb:  Test for the above.
+
 Wed Feb 13 05:49:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test functions just after struct members.
