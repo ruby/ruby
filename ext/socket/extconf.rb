@@ -96,10 +96,57 @@ end
 have_struct_member('struct msghdr', 'msg_control', ['sys/types.h', 'sys/socket.h'])
 have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 
-ipv6 = false
-default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
-if enable_config("ipv6", default_ipv6)
-  if checking_for("ipv6") {try_link(<<EOF)}
+if have_func(test_func)
+
+  have_func("sendmsg")
+  have_func("recvmsg")
+
+  have_func("freehostent")
+  have_func("freeaddrinfo")
+
+  if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror")
+    if checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
+#{cpp_include(headers)}
+#include <stdlib.h>
+void
+conftest_gai_strerror_is_const()
+{
+    *gai_strerror(0) = 0;
+}
+EOF
+      $defs << "-DGAI_STRERROR_CONST"
+    end
+  end
+
+  have_func("accept4")
+
+  have_func('inet_ntop(0, (const void *)0, (char *)0, 0)') or
+    have_func("inet_ntoa(*(struct in_addr *)NULL)")
+  have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_addr *)0)')
+  have_func('getservbyport(0, "")')
+  have_func("getifaddrs")
+
+  have_func("getpeereid")
+
+  have_func("getpeerucred")
+
+  have_func("if_indextoname")
+
+  have_func("hsterror")
+  have_func("getipnodebyname")
+  have_func("gethostbyname2")
+  if !have_func("socketpair(0, 0, 0, 0)") and have_func("rb_w32_socketpair(0, 0, 0, 0)")
+    $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
+    $defs << "-DHAVE_SOCKETPAIR"
+  end
+  unless have_func("gethostname((char *)0, 0)")
+    have_func("uname")
+  end
+
+  ipv6 = false
+  default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
+  if enable_config("ipv6", default_ipv6)
+    if checking_for("ipv6") {try_link(<<EOF)}
 #include <sys/types.h>
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -111,60 +158,57 @@ main(void)
   return 0;
 }
 EOF
-    $defs << "-DENABLE_IPV6" << "-DINET6"
-    ipv6 = true
+      $defs << "-DENABLE_IPV6" << "-DINET6"
+      ipv6 = true
+    end
   end
-end
 
-if ipv6
-  if $mingw
-    $CPPFLAGS << " -D_WIN32_WINNT=0x501" unless $CPPFLAGS.include?("_WIN32_WINNT")
-  end
-  ipv6lib = nil
-  class << (fmt = "unknown")
-    def %(s) s || self end
-  end
-  idirs, ldirs = dir_config("inet6", %w[/usr/inet6 /usr/local/v6].find {|d| File.directory?(d)})
-  checking_for("ipv6 type", fmt) do
-    if have_macro("IPV6_INRIA_VERSION", "netinet/in.h")
-      "inria"
-    elsif have_macro("__KAME__", "netinet/in.h")
-      have_library(ipv6lib = "inet6")
-      "kame"
-    elsif have_macro("_TOSHIBA_INET6", "sys/param.h")
-      have_library(ipv6lib = "inet6") and "toshiba"
-    elsif have_macro("__V6D__", "sys/v6config.h")
-      have_library(ipv6lib = "v6") and "v6d"
-    elsif have_macro("_ZETA_MINAMI_INET6", "sys/param.h")
-      have_library(ipv6lib = "inet6") and "zeta"
-    elsif ipv6lib = with_config("ipv6-lib")
-      warn <<EOS
+  if ipv6
+    if $mingw
+      $CPPFLAGS << " -D_WIN32_WINNT=0x501" unless $CPPFLAGS.include?("_WIN32_WINNT")
+    end
+    ipv6lib = nil
+    class << (fmt = "unknown")
+      def %(s) s || self end
+    end
+    idirs, ldirs = dir_config("inet6", %w[/usr/inet6 /usr/local/v6].find {|d| File.directory?(d)})
+    checking_for("ipv6 type", fmt) do
+      if have_macro("IPV6_INRIA_VERSION", "netinet/in.h")
+        "inria"
+      elsif have_macro("__KAME__", "netinet/in.h")
+        have_library(ipv6lib = "inet6")
+        "kame"
+      elsif have_macro("_TOSHIBA_INET6", "sys/param.h")
+        have_library(ipv6lib = "inet6") and "toshiba"
+      elsif have_macro("__V6D__", "sys/v6config.h")
+        have_library(ipv6lib = "v6") and "v6d"
+      elsif have_macro("_ZETA_MINAMI_INET6", "sys/param.h")
+        have_library(ipv6lib = "inet6") and "zeta"
+      elsif ipv6lib = with_config("ipv6-lib")
+        warn <<EOS
 --with-ipv6-lib and --with-ipv6-libdir option will be obsolete, use
 --with-inet6lib and --with-inet6-{include,lib} options instead.
 EOS
-      find_library(ipv6lib, nil, with_config("ipv6-libdir", ldirs)) and
-        ipv6lib
-    elsif have_library("inet6")
-      "inet6"
-    end
-  end or not ipv6lib or abort <<EOS
+        find_library(ipv6lib, nil, with_config("ipv6-libdir", ldirs)) and
+          ipv6lib
+      elsif have_library("inet6")
+        "inet6"
+      end
+    end or not ipv6lib or abort <<EOS
 
 Fatal: no #{ipv6lib} library found.  cannot continue.
 You need to fetch lib#{ipv6lib}.a from appropriate
 ipv6 kit and compile beforehand.
 EOS
-end
+  end
 
-if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
-  IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
-    have_const(name, headers) unless $defs.include?("-DHAVE_CONST_#{name.upcase}")
-  }
-end
+  if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
+    IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
+      have_const(name, headers) unless $defs.include?("-DHAVE_CONST_#{name.upcase}")
+    }
+  end
 
-have_func("sendmsg")
-have_func("recvmsg")
-
-if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + <<'EOF')}
+  if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + <<'EOF')}
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -284,11 +328,11 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 EOF
-  $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
-end
+    $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+  end
 
-getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
-  (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
+  getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
+    (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
 #{cpp_include(headers)}
 #include <stdlib.h>
 
@@ -396,106 +440,66 @@ main(void)
   return EXIT_FAILURE;
 }
 EOF
-if ipv6 and not getaddr_info_ok
-  abort <<EOS
+  if ipv6 and not getaddr_info_ok
+    abort <<EOS
 
 Fatal: --enable-ipv6 is specified, and your OS seems to support IPv6 feature.
 But your getaddrinfo() and getnameinfo() are appeared to be broken.  Sorry,
 you cannot compile IPv6 socket classes with broken these functions.
 You can try --enable-wide-getaddrinfo.
 EOS
-end
+  end
 
-case with_config("lookup-order-hack", "UNSPEC")
-when "INET"
-  $defs << "-DLOOKUP_ORDER_HACK_INET"
-when "INET6"
-  $defs << "-DLOOKUP_ORDER_HACK_INET6"
-when "UNSPEC"
-  # nothing special
-else
-  abort <<EOS
+  case with_config("lookup-order-hack", "UNSPEC")
+  when "INET"
+    $defs << "-DLOOKUP_ORDER_HACK_INET"
+  when "INET6"
+    $defs << "-DLOOKUP_ORDER_HACK_INET6"
+  when "UNSPEC"
+    # nothing special
+  else
+    abort <<EOS
 
 Fatal: invalid value for --with-lookup-order-hack (expected INET, INET6 or UNSPEC)
 EOS
-end
-
-have_func("freehostent")
-have_func("freeaddrinfo")
-if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror")
-  if checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
-#{cpp_include(headers)}
-#include <stdlib.h>
-void
-conftest_gai_strerror_is_const()
-{
-    *gai_strerror(0) = 0;
-}
-EOF
-    $defs << "-DGAI_STRERROR_CONST"
   end
-end
 
-have_func("accept4")
+  $objs = [
+    "init.#{$OBJEXT}",
+    "constants.#{$OBJEXT}",
+    "basicsocket.#{$OBJEXT}",
+    "socket.#{$OBJEXT}",
+    "ipsocket.#{$OBJEXT}",
+    "tcpsocket.#{$OBJEXT}",
+    "tcpserver.#{$OBJEXT}",
+    "sockssocket.#{$OBJEXT}",
+    "udpsocket.#{$OBJEXT}",
+    "unixsocket.#{$OBJEXT}",
+    "unixserver.#{$OBJEXT}",
+    "option.#{$OBJEXT}",
+    "ancdata.#{$OBJEXT}",
+    "raddrinfo.#{$OBJEXT}"
+  ]
 
-$objs = [
-  "init.#{$OBJEXT}",
-  "constants.#{$OBJEXT}",
-  "basicsocket.#{$OBJEXT}",
-  "socket.#{$OBJEXT}",
-  "ipsocket.#{$OBJEXT}",
-  "tcpsocket.#{$OBJEXT}",
-  "tcpserver.#{$OBJEXT}",
-  "sockssocket.#{$OBJEXT}",
-  "udpsocket.#{$OBJEXT}",
-  "unixsocket.#{$OBJEXT}",
-  "unixserver.#{$OBJEXT}",
-  "option.#{$OBJEXT}",
-  "ancdata.#{$OBJEXT}",
-  "raddrinfo.#{$OBJEXT}"
-]
-
-if getaddr_info_ok == :wide or
-    !have_func("getnameinfo", headers) or !have_func("getaddrinfo", headers)
-  if have_struct_member("struct in6_addr", "s6_addr8", headers)
-    $defs[-1] = "s6_addr=s6_addr8"
+  if getaddr_info_ok == :wide or
+      !have_func("getnameinfo", headers) or !have_func("getaddrinfo", headers)
+    if have_struct_member("struct in6_addr", "s6_addr8", headers)
+      $defs[-1] = "s6_addr=s6_addr8"
+    end
+    if ipv6 == "kame" && have_struct_member("struct in6_addr", "s6_addr32", headers)
+      $defs[-1] = "-DFAITH"
+    end
+    $CPPFLAGS="-I. "+$CPPFLAGS
+    $objs += ["getaddrinfo.#{$OBJEXT}"]
+    $objs += ["getnameinfo.#{$OBJEXT}"]
+    $defs << "-DGETADDRINFO_EMU"
   end
-  if ipv6 == "kame" && have_struct_member("struct in6_addr", "s6_addr32", headers)
-    $defs[-1] = "-DFAITH"
-  end
-  $CPPFLAGS="-I. "+$CPPFLAGS
-  $objs += ["getaddrinfo.#{$OBJEXT}"]
-  $objs += ["getnameinfo.#{$OBJEXT}"]
-  $defs << "-DGETADDRINFO_EMU"
-end
 
-have_func('inet_ntop(0, (const void *)0, (char *)0, 0)') or
-  have_func("inet_ntoa(*(struct in_addr *)NULL)")
-have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_addr *)0)')
-have_func('getservbyport(0, "")')
-have_func("getifaddrs")
+  # workaround for recent Windows SDK
+  $defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
 
-have_func("getpeereid")
+  $distcleanfiles << "constants.h" << "constdefs.*"
 
-have_func("getpeerucred")
-
-have_func("if_indextoname")
-
-# workaround for recent Windows SDK
-$defs << "-DIPPROTO_IPV6=IPPROTO_IPV6" if $defs.include?("-DHAVE_CONST_IPPROTO_IPV6") && !have_macro("IPPROTO_IPV6")
-
-$distcleanfiles << "constants.h" << "constdefs.*"
-
-if have_func(test_func)
-  have_func("hsterror")
-  have_func("getipnodebyname") or have_func("gethostbyname2")
-  if !have_func("socketpair(0, 0, 0, 0)") and have_func("rb_w32_socketpair(0, 0, 0, 0)")
-    $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
-    $defs << "-DHAVE_SOCKETPAIR"
-  end
-  unless have_func("gethostname((char *)0, 0)")
-    have_func("uname")
-  end
   if enable_config("socks", ENV["SOCKS_SERVER"])
     if have_library("socks5", "SOCKSinit")
       $defs << "-DSOCKS5" << "-DSOCKS"
@@ -503,6 +507,7 @@ if have_func(test_func)
       $defs << "-DSOCKS"
     end
   end
+
   hdr = "netinet6/in6.h"
   if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
 #include <netinet/in.h>

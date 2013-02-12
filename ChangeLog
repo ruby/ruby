@@ -1,3 +1,7 @@
+Wed Feb 13 05:49:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: test functions just after struct members.
+
 Tue Feb 12 12:02:35 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: merge JSON 1.7.7.
