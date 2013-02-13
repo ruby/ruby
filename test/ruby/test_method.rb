@@ -189,6 +189,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(class << o; self; end, m.owner)
     assert_equal(:foo, m.unbind.name)
     assert_equal(class << o; self; end, m.unbind.owner)
+    class << o
+      alias bar foo
+    end
+    m = o.method(:bar)
+    assert_equal(:bar, m.name)
   end
 
   def test_instance_method
@@ -311,6 +316,12 @@ class TestMethod < Test::Unit::TestCase
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
     assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo>", m2.inspect)
+
+    bug7806 = '[ruby-core:52048] [Bug #7806]'
+    c3 = Class.new(c)
+    c3.class_eval { alias bar foo }
+    m3 = c3.new.method(:bar)
+    assert_equal("#<Method: #{ c3.inspect }#bar(foo)>", m3.inspect, bug7806)
   end
 
   def test_callee_top_level

@@ -1958,7 +1958,11 @@ method_inspect(VALUE method)
 	}
     }
     rb_str_buf_cat2(str, sharp);
-    rb_str_append(str, rb_id2str(data->me->def->original_id));
+    rb_str_append(str, rb_id2str(data->id));
+    if (data->id != data->me->def->original_id) {
+	rb_str_catf(str, "(%"PRIsVALUE")",
+		    rb_id2str(data->me->def->original_id));
+    }
     if (data->me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
         rb_str_buf_cat2(str, " (not-implemented)");
     }

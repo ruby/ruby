@@ -1,3 +1,8 @@
+Wed Feb 13 18:10:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_inspect): show the given name primarily, and
+	  original_id if aliased.  [ruby-core:52048] [Bug #7806]
+
 Wed Feb 13 17:56:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): disable -Werror by default unless
