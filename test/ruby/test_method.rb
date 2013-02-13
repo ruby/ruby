@@ -534,4 +534,31 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(x.singleton_class, x.method(:bar).owner)
     assert(x.method(:foo) != x.method(:bar), bug7613)
   end
+
+  def test_included
+    m = Module.new {
+      def foo
+      end
+    }
+    c = Class.new {
+      def foo
+      end
+      include m
+    }
+    assert_equal(c, c.instance_method(:foo).owner)
+  end
+
+  def test_prepended
+    bug7836 = '[ruby-core:52160] [Bug #7836]'
+    m = Module.new {
+      def foo
+      end
+    }
+    c = Class.new {
+      def foo
+      end
+      prepend m
+    }
+    assert_equal(c, c.instance_method(:foo).owner, bug7836)
+  end
 end
