@@ -1,3 +1,8 @@
+Wed Feb 13 17:56:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): disable -Werror by default unless
+	  development.  [ruby-core:52131] [Bug #7830]
+
 Wed Feb 13 06:05:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Return BINARY strings from Gem.gzip and Gem.gunzip.
