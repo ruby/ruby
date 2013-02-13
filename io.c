@@ -2849,7 +2849,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
     long pos = 0;
     int cr = 0;
 
-    for (;;) {
+    do {
 	int pending = READ_DATA_PENDING_COUNT(fptr);
 
 	if (pending > 0) {
@@ -2875,11 +2875,8 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
 	    if (e) break;
 	}
 	READ_CHECK(fptr);
-	if (io_fillbuf(fptr) < 0) {
-	    if (NIL_P(str)) return Qnil;
-	    break;
-	}
-    }
+    } while (io_fillbuf(fptr) >= 0);
+    if (NIL_P(str)) return Qnil;
 
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
@@ -3297,7 +3294,7 @@ rb_io_each_byte(VALUE io)
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
 
-    for (;;) {
+    do {
 	while (fptr->rbuf.len > 0) {
 	    char *p = fptr->rbuf.ptr + fptr->rbuf.off++;
 	    fptr->rbuf.len--;
@@ -3306,10 +3303,7 @@ rb_io_each_byte(VALUE io)
 	}
 	rb_io_check_byte_readable(fptr);
 	READ_CHECK(fptr);
-	if (io_fillbuf(fptr) < 0) {
-	    break;
-	}
-    }
+    } while (io_fillbuf(fptr) >= 0);
     return io;
 }
 
@@ -3549,10 +3543,7 @@ rb_io_each_codepoint(VALUE io)
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
     enc = io_input_encoding(fptr);
-    for (;;) {
-	if (io_fillbuf(fptr) < 0) {
-	    return io;
-	}
+    while (io_fillbuf(fptr) >= 0) {
 	r = rb_enc_precise_mbclen(fptr->rbuf.ptr+fptr->rbuf.off,
 				  fptr->rbuf.ptr+fptr->rbuf.off+fptr->rbuf.len, enc);
 	if (MBCLEN_CHARFOUND_P(r) &&
