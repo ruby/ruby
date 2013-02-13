@@ -1,3 +1,11 @@
+Thu Feb 14 07:01:12 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* Backport part of r39166 from trunk [ruby-trunk - Bug #7809]
+
+	* lib/rubygems/package.rb:  Include checksums.yaml.gz signatures for
+	  verification.
+	* test/rubygems/test_gem_package.rb:  Test for the above.
+
 Wed Feb 13 15:34:21 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: merge JSON 1.7.7.

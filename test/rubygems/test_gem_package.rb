@@ -511,6 +511,24 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_empty package.instance_variable_get(:@files), '@files must empty'
   end
 
+  def test_verify_security_policy_low_security
+    @spec.cert_chain = [PUBLIC_CERT.to_pem]
+    @spec.signing_key = PRIVATE_KEY
+
+    FileUtils.mkdir_p 'lib'
+    FileUtils.touch 'lib/code.rb'
+
+    build = Gem::Package.new @gem
+    build.spec = @spec
+
+    build.build
+
+    package = Gem::Package.new @gem
+    package.security_policy = Gem::Security::LowSecurity
+
+    assert package.verify
+  end
+
   def test_verify_security_policy_checksum_missing
     @spec.cert_chain = [PUBLIC_CERT.to_pem]
     @spec.signing_key = PRIVATE_KEY
