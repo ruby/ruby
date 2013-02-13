@@ -1160,6 +1160,22 @@ method_name(VALUE obj)
 
 /*
  *  call-seq:
+ *     meth.original_name    -> symbol
+ *
+ *  Returns the original name of the method.
+ */
+
+static VALUE
+method_original_name(VALUE obj)
+{
+    struct METHOD *data;
+
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
+    return ID2SYM(data->me->def->original_id);
+}
+
+/*
+ *  call-seq:
  *     meth.owner    -> class_or_module
  *
  *  Returns the class or module that defines the method.
@@ -2339,6 +2355,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
     rb_define_method(rb_cMethod, "receiver", method_receiver, 0);
     rb_define_method(rb_cMethod, "name", method_name, 0);
+    rb_define_method(rb_cMethod, "original_name", method_original_name, 0);
     rb_define_method(rb_cMethod, "owner", method_owner, 0);
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
@@ -2358,6 +2375,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "name", method_name, 0);
+    rb_define_method(rb_cUnboundMethod, "original_name", method_original_name, 0);
     rb_define_method(rb_cUnboundMethod, "owner", method_owner, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);

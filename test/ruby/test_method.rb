@@ -194,6 +194,7 @@ class TestMethod < Test::Unit::TestCase
     end
     m = o.method(:bar)
     assert_equal(:bar, m.name)
+    assert_equal(:foo, m.original_name)
   end
 
   def test_instance_method

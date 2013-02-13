@@ -1,4 +1,8 @@
-Wed Feb 13 18:10:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 13 18:11:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_original_name): new methods Method#original_name and
+	  UnboundMethod#original_name.  [ruby-core:52048] [Bug #7806]
+	  [EXPERIMENTAL]
 
 	* proc.c (method_inspect): show the given name primarily, and
 	  original_id if aliased.  [ruby-core:52048] [Bug #7806]
