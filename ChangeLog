@@ -1,3 +1,9 @@
+Wed Feb 13 20:59:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: don't define socklen_t here, just test.
+
+	* ext/socket/rubysocket.h: define socklen_t if not available.
+
 Wed Feb 13 18:37:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew): skip prepending modules and return the method bound

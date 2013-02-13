@@ -86,6 +86,10 @@
 #include <ucred.h>
 #endif
 
+#ifndef HAVE_TYPE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
 #endif

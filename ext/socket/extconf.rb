@@ -56,9 +56,7 @@ have_header("ucred.h", headers)
 
 have_type("struct addrinfo", headers)
 
-unless have_type("socklen_t", headers)
-  $defs << "-Dsocklen_t=int"
-end
+have_type("socklen_t", headers)
 
 have_type("struct in_pktinfo", headers) {|src|
   src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<
