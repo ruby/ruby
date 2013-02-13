@@ -1,3 +1,7 @@
+Wed Feb 13 16:18:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/json: Import JSON 1.5.5.
+
 Wed Feb  6 17:39:19 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Import RDoc 3.9.5.
