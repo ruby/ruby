@@ -625,11 +625,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \
 		 -Werror=shorten-64-to-32 \
-		 -Werror-implicit-function-declaration \
+		 -Werror=implicit-function-declaration \
 		 ; do
-	if test "$particular_werror_flags" = yes; then
-	    wflag=`echo x$wflag | sed 's/^x-Werror-/-Werror=/;s/^x//'`
-	else
+	if test "$particular_werror_flags" != yes; then
 	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/;s/^x//'`
 	fi
 	ok=no
