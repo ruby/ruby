@@ -10904,6 +10904,8 @@ argf_readbyte(VALUE argf)
     return c;
 }
 
+#define FOREACH_ARGF() for (; next_argv(); ARGF.next_p = 1)
+
 /*
  *  call-seq:
  *     ARGF.each(sep=$/)            {|line| block }  -> ARGF
@@ -10940,11 +10942,10 @@ static VALUE
 argf_each_line(int argc, VALUE *argv, VALUE argf)
 {
     RETURN_ENUMERATOR(argf, argc, argv);
-    for (;;) {
-	if (!next_argv()) return argf;
+    FOREACH_ARGF() {
 	rb_block_call(ARGF.current_file, rb_intern("each_line"), argc, argv, 0, 0);
-	ARGF.next_p = 1;
     }
+    return argf;
 }
 
 /*
@@ -10988,11 +10989,10 @@ static VALUE
 argf_each_byte(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
-    for (;;) {
-	if (!next_argv()) return argf;
+    FOREACH_ARGF() {
 	rb_block_call(ARGF.current_file, rb_intern("each_byte"), 0, 0, 0, 0);
-	ARGF.next_p = 1;
     }
+    return argf;
 }
 
 /*
@@ -11028,11 +11028,10 @@ static VALUE
 argf_each_char(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
-    for (;;) {
-	if (!next_argv()) return argf;
+    FOREACH_ARGF() {
 	rb_block_call(ARGF.current_file, rb_intern("each_char"), 0, 0, 0, 0);
-	ARGF.next_p = 1;
     }
+    return argf;
 }
 
 /*
@@ -11068,11 +11067,10 @@ static VALUE
 argf_each_codepoint(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
-    for (;;) {
-	if (!next_argv()) return argf;
+    FOREACH_ARGF() {
 	rb_block_call(ARGF.current_file, rb_intern("each_codepoint"), 0, 0, 0, 0);
-	ARGF.next_p = 1;
     }
+    return argf;
 }
 
 /*
