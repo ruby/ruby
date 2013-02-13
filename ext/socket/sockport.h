@@ -13,7 +13,7 @@
 #ifdef SA_LEN
 #  define SS_LEN(ss) (ss)->ss_len
 #else
-# ifdef HAVE_SA_LEN
+# ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 #  define SA_LEN(sa) (sa)->sa_len
 #  define SS_LEN(ss) (ss)->ss_len
 # else
@@ -32,7 +32,7 @@
 # endif
 #endif
 
-#ifdef HAVE_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 # define SET_SA_LEN(sa, len) (void)((sa)->sa_len = (len))
 # define SET_SS_LEN(ss, len) (void)((ss)->ss_len = (len))
 #else
@@ -40,7 +40,7 @@
 # define SET_SS_LEN(ss, len) (void)(len)
 #endif
 
-#ifdef HAVE_SIN_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
 # define SIN_LEN(si) (si)->sin_len
 # define SET_SIN_LEN(si,len) (si)->sin_len = (len)
 #else

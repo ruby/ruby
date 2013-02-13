@@ -1698,7 +1698,7 @@ socket_s_ip_address_list(VALUE self)
         if (IS_IP_FAMILY(addr->sa_family)) {
 	    rb_ary_push(list, sockaddr_obj(addr));
 	}
-#ifdef HAVE_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 # ifndef _SIZEOF_ADDR_IFREQ
 #  define _SIZEOF_ADDR_IFREQ(r) \
           (sizeof(struct ifreq) + \

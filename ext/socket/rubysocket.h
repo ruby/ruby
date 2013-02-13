@@ -136,7 +136,7 @@ typedef int socklen_t;
                                 _SS_PAD1SIZE - _SS_ALIGNSIZE)
 
 struct sockaddr_storage {
-#ifdef HAVE_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
         unsigned char ss_len;           /* address length */
         unsigned char ss_family;        /* address family */
 #else

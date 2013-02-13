@@ -1,3 +1,9 @@
+Thu Feb 14 08:18:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: don't define HAVE_SA_LEN and HAVE_SA_LEN.
+	  use HAVE_STRUCT_SOCKADDR_SA_LEN and HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+	  instead.
+
 Wed Feb 13 20:59:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: don't define socklen_t here, just test.
