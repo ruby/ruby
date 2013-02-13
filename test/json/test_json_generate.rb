@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -130,7 +130,7 @@ EOT
       :quirks_mode           => false,
       :depth                 => 0,
       :indent                => "  ",
-      :max_nesting           => 19,
+      :max_nesting           => 100,
       :object_nl             => "\n",
       :space                 => " ",
       :space_before          => "",
@@ -147,7 +147,7 @@ EOT
       :quirks_mode           => false,
       :depth                 => 0,
       :indent                => "",
-      :max_nesting           => 19,
+      :max_nesting           => 100,
       :object_nl             => "",
       :space                 => "",
       :space_before          => "",
@@ -200,7 +200,7 @@ EOT
     s = JSON.state.new
     assert_equal 0, s.depth
     assert_raises(JSON::NestingError) { ary.to_json(s) }
-    assert_equal 19, s.depth
+    assert_equal 100, s.depth
   end
 
   def test_buffer_initial_length
@@ -228,6 +228,30 @@ EOT
     EOS
   end if GC.respond_to?(:stress=)
 
+  def test_configure_using_configure_and_merge
+    numbered_state = {
+      :indent       => "1",
+      :space        => '2',
+      :space_before => '3',
+      :object_nl    => '4',
+      :array_nl     => '5'
+    }
+    state1 = JSON.state.new
+    state1.merge(numbered_state)
+    assert_equal '1', state1.indent
+    assert_equal '2', state1.space
+    assert_equal '3', state1.space_before
+    assert_equal '4', state1.object_nl
+    assert_equal '5', state1.array_nl
+    state2 = JSON.state.new
+    state2.configure(numbered_state)
+    assert_equal '1', state2.indent
+    assert_equal '2', state2.space
+    assert_equal '3', state2.space_before
+    assert_equal '4', state2.object_nl
+    assert_equal '5', state2.array_nl
+  end
+
   if defined?(JSON::Ext::Generator)
     def test_broken_bignum # [ruby-core:38867]
       pid = fork do
@@ -248,5 +272,30 @@ EOT
       # forking to avoid modifying core class of a parent process and
       # introducing race conditions of tests are run in parallel
     end
+  end
+
+  def test_hash_likeness_set_symbol
+    state = JSON.state.new
+    assert_equal nil, state[:foo]
+    assert_equal nil.class, state[:foo].class
+    assert_equal nil, state['foo']
+    state[:foo] = :bar
+    assert_equal :bar, state[:foo]
+    assert_equal :bar, state['foo']
+    state_hash = state.to_hash
+    assert_kind_of Hash, state_hash
+    assert_equal :bar, state_hash[:foo]
+  end
+
+  def test_hash_likeness_set_string
+    state = JSON.state.new
+    assert_equal nil, state[:foo]
+    assert_equal nil, state['foo']
+    state['foo'] = :bar
+    assert_equal :bar, state[:foo]
+    assert_equal :bar, state['foo']
+    state_hash = state.to_hash
+    assert_kind_of Hash, state_hash
+    assert_equal :bar, state_hash[:foo]
   end
 end

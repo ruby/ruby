@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -20,16 +20,41 @@ class TestJSONGenericObject < Test::Unit::TestCase
   end
 
   def test_generate_json
-    assert_equal @go, JSON(JSON(@go))
+    switch_json_creatable do
+      assert_equal @go, JSON(JSON(@go), :create_additions => true)
+    end
   end
 
   def test_parse_json
-    assert_equal @go, l = JSON('{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }')
-    assert_equal 1, l.a
-    assert_equal @go, l = JSON('{ "a": 1, "b": 2 }', :object_class => GenericObject)
-    assert_equal 1, l.a
-    assert_equal GenericObject[:a => GenericObject[:b => 2]],
-      l = JSON('{ "a": { "b": 2 } }', :object_class => GenericObject)
-    assert_equal 2, l.a.b
+    assert_kind_of Hash, JSON('{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }', :create_additions => true)
+    switch_json_creatable do
+      assert_equal @go, l = JSON('{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }', :create_additions => true)
+      assert_equal 1, l.a
+      assert_equal @go, l = JSON('{ "a": 1, "b": 2 }', :object_class => GenericObject)
+      assert_equal 1, l.a
+      assert_equal GenericObject[:a => GenericObject[:b => 2]],
+        l = JSON('{ "a": { "b": 2 } }', :object_class => GenericObject)
+      assert_equal 2, l.a.b
+    end
+  end
+
+  def test_from_hash
+    result  = GenericObject.from_hash(
+      :foo => { :bar => { :baz => true }, :quux => [ { :foobar => true } ] })
+    assert_kind_of GenericObject, result.foo
+    assert_kind_of GenericObject, result.foo.bar
+    assert_equal   true, result.foo.bar.baz
+    assert_kind_of GenericObject, result.foo.quux.first
+    assert_equal   true, result.foo.quux.first.foobar
+    assert_equal   true, GenericObject.from_hash(true)
+  end
+
+  private
+
+  def switch_json_creatable
+    JSON::GenericObject.json_creatable = true
+    yield
+  ensure
+    JSON::GenericObject.json_creatable = false
   end
 end

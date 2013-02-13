@@ -2,7 +2,6 @@
 #define _GENERATOR_H_
 
 #include <string.h>
-#include <assert.h>
 #include <math.h>
 #include <ctype.h>
 
@@ -12,6 +11,14 @@
 #include "ruby/re.h"
 #else
 #include "re.h"
+#endif
+
+#ifndef rb_intern_str
+#define rb_intern_str(string) SYM2ID(rb_str_intern(string))
+#endif
+
+#ifndef rb_obj_instance_variables
+#define rb_obj_instance_variables(object) rb_funcall(object, rb_intern("instance_variables"), 0)
 #endif
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))

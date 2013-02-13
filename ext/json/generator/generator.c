@@ -522,7 +522,7 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         unsigned long len;
         Check_Type(tmp, T_STRING);
         len = RSTRING_LEN(tmp);
-        state->indent = fstrndup(RSTRING_PTR(tmp), len);
+        state->indent = fstrndup(RSTRING_PTR(tmp), len + 1);
         state->indent_len = len;
     }
     tmp = rb_hash_aref(opts, ID2SYM(i_space));
@@ -530,7 +530,7 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         unsigned long len;
         Check_Type(tmp, T_STRING);
         len = RSTRING_LEN(tmp);
-        state->space = fstrndup(RSTRING_PTR(tmp), len);
+        state->space = fstrndup(RSTRING_PTR(tmp), len + 1);
         state->space_len = len;
     }
     tmp = rb_hash_aref(opts, ID2SYM(i_space_before));
@@ -538,7 +538,7 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         unsigned long len;
         Check_Type(tmp, T_STRING);
         len = RSTRING_LEN(tmp);
-        state->space_before = fstrndup(RSTRING_PTR(tmp), len);
+        state->space_before = fstrndup(RSTRING_PTR(tmp), len + 1);
         state->space_before_len = len;
     }
     tmp = rb_hash_aref(opts, ID2SYM(i_array_nl));
@@ -546,7 +546,7 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         unsigned long len;
         Check_Type(tmp, T_STRING);
         len = RSTRING_LEN(tmp);
-        state->array_nl = fstrndup(RSTRING_PTR(tmp), len);
+        state->array_nl = fstrndup(RSTRING_PTR(tmp), len + 1);
         state->array_nl_len = len;
     }
     tmp = rb_hash_aref(opts, ID2SYM(i_object_nl));
@@ -554,11 +554,11 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         unsigned long len;
         Check_Type(tmp, T_STRING);
         len = RSTRING_LEN(tmp);
-        state->object_nl = fstrndup(RSTRING_PTR(tmp), len);
+        state->object_nl = fstrndup(RSTRING_PTR(tmp), len + 1);
         state->object_nl_len = len;
     }
     tmp = ID2SYM(i_max_nesting);
-    state->max_nesting = 19;
+    state->max_nesting = 100;
     if (option_given_p(opts, tmp)) {
         VALUE max_nesting = rb_hash_aref(opts, tmp);
         if (RTEST(max_nesting)) {
@@ -598,6 +598,18 @@ static VALUE cState_configure(VALUE self, VALUE opts)
     return self;
 }
 
+static void set_state_ivars(VALUE hash, VALUE state)
+{
+    VALUE ivars = rb_obj_instance_variables(state);
+    int i = 0;
+    for (i = 0; i < RARRAY_LEN(ivars); i++) {
+        VALUE key = rb_funcall(rb_ary_entry(ivars, i), i_to_s, 0);
+        long key_len = RSTRING_LEN(key);
+        VALUE value = rb_iv_get(state, StringValueCStr(key));
+        rb_hash_aset(hash, rb_str_intern(rb_str_substr(key, 1, key_len - 1)), value);
+    }
+}
+
 /*
  * call-seq: to_h
  *
@@ -608,6 +620,7 @@ static VALUE cState_to_h(VALUE self)
 {
     VALUE result = rb_hash_new();
     GET_STATE(self);
+    set_state_ivars(result, self);
     rb_hash_aset(result, ID2SYM(i_indent), rb_str_new(state->indent, state->indent_len));
     rb_hash_aset(result, ID2SYM(i_space), rb_str_new(state->space, state->space_len));
     rb_hash_aset(result, ID2SYM(i_space_before), rb_str_new(state->space_before, state->space_before_len));
@@ -629,12 +642,31 @@ static VALUE cState_to_h(VALUE self)
 */
 static VALUE cState_aref(VALUE self, VALUE name)
 {
-    GET_STATE(self);
+    name = rb_funcall(name, i_to_s, 0);
     if (RTEST(rb_funcall(self, i_respond_to_p, 1, name))) {
         return rb_funcall(self, i_send, 1, name);
     } else {
-        return Qnil;
+        return rb_ivar_get(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)));
     }
+}
+
+/*
+* call-seq: []=(name, value)
+*
+* Set the attribute name to value.
+*/
+static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
+{
+    VALUE name_writer;
+
+    name = rb_funcall(name, i_to_s, 0);
+    name_writer = rb_str_cat2(rb_str_dup(name), "=");
+    if (RTEST(rb_funcall(self, i_respond_to_p, 1, name_writer))) {
+        return rb_funcall(self, i_send, 2, name_writer, value);
+    } else {
+        rb_ivar_set(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)), value);
+    }
+    return Qnil;
 }
 
 static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
@@ -908,7 +940,7 @@ static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE opts;
     GET_STATE(self);
-    state->max_nesting = 19;
+    state->max_nesting = 100;
     state->buffer_initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
     rb_scan_args(argc, argv, "01", &opts);
     if (!NIL_P(opts)) cState_configure(self, opts);
@@ -970,7 +1002,7 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
 static VALUE cState_indent(VALUE self)
 {
     GET_STATE(self);
-    return state->indent ? rb_str_new2(state->indent) : rb_str_new2("");
+    return state->indent ? rb_str_new(state->indent, state->indent_len) : rb_str_new2("");
 }
 
 /*
@@ -1007,7 +1039,7 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
 static VALUE cState_space(VALUE self)
 {
     GET_STATE(self);
-    return state->space ? rb_str_new2(state->space) : rb_str_new2("");
+    return state->space ? rb_str_new(state->space, state->space_len) : rb_str_new2("");
 }
 
 /*
@@ -1044,7 +1076,7 @@ static VALUE cState_space_set(VALUE self, VALUE space)
 static VALUE cState_space_before(VALUE self)
 {
     GET_STATE(self);
-    return state->space_before ? rb_str_new2(state->space_before) : rb_str_new2("");
+    return state->space_before ? rb_str_new(state->space_before, state->space_before_len) : rb_str_new2("");
 }
 
 /*
@@ -1081,7 +1113,7 @@ static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 static VALUE cState_object_nl(VALUE self)
 {
     GET_STATE(self);
-    return state->object_nl ? rb_str_new2(state->object_nl) : rb_str_new2("");
+    return state->object_nl ? rb_str_new(state->object_nl, state->object_nl_len) : rb_str_new2("");
 }
 
 /*
@@ -1117,7 +1149,7 @@ static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 static VALUE cState_array_nl(VALUE self)
 {
     GET_STATE(self);
-    return state->array_nl ? rb_str_new2(state->array_nl) : rb_str_new2("");
+    return state->array_nl ? rb_str_new(state->array_nl, state->array_nl_len) : rb_str_new2("");
 }
 
 /*
@@ -1327,7 +1359,9 @@ void Init_generator()
     rb_define_method(cState, "configure", cState_configure, 1);
     rb_define_alias(cState, "merge", "configure");
     rb_define_method(cState, "to_h", cState_to_h, 0);
+    rb_define_alias(cState, "to_hash", "to_h");
     rb_define_method(cState, "[]", cState_aref, 1);
+    rb_define_method(cState, "[]=", cState_aset, 2);
     rb_define_method(cState, "generate", cState_generate, 1);
 
     mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");

@@ -1,3 +1,10 @@
+Wed Feb 13 15:34:21 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: merge JSON 1.7.7.
+	  This includes security fix. [CVE-2013-0269]
+	  https://github.com/flori/json/commit/d0a62f3ced7560daba2ad546d83f0479a5ae2cf2
+	  https://groups.google.com/d/topic/rubyonrails-security/4_YvCpLzL58/discussion
+
 Sat Feb  9 21:13:35 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r39167 from trunk. [ruby-core:52059] [Bug #7812]

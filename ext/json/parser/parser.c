@@ -1618,7 +1618,7 @@ static VALUE convert_encoding(VALUE source)
  * _opts_ can have the following keys:
  * * *max_nesting*: The maximum depth of nesting allowed in the parsed data
  *   structures. Disable depth checking with :max_nesting => false|nil|0, it
- *   defaults to 19.
+ *   defaults to 100.
  * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
  *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
  *   false.
@@ -1655,7 +1655,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                     json->max_nesting = 0;
                 }
             } else {
-                json->max_nesting = 19;
+                json->max_nesting = 100;
             }
             tmp = ID2SYM(i_allow_nan);
             if (option_given_p(opts, tmp)) {
@@ -1680,7 +1680,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             if (option_given_p(opts, tmp)) {
                 json->create_additions = RTEST(rb_hash_aref(opts, tmp));
             } else {
-                json->create_additions = 1;
+                json->create_additions = 0;
             }
             tmp = ID2SYM(i_create_id);
             if (option_given_p(opts, tmp)) {
@@ -1709,7 +1709,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             }
         }
     } else {
-        json->max_nesting = 19;
+        json->max_nesting = 100;
         json->allow_nan = 0;
         json->create_additions = 1;
         json->create_id = rb_funcall(mJSON, i_create_id, 0);

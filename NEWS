@@ -229,6 +229,9 @@ with all sufficient information, see the ChangeLog file.
     * added IO#wait_writable method.
     * added IO#wait_readable method as alias of IO#wait.
 
+* json
+  * updated to 1.7.7.
+
 * net/http
   * new features:
     * Proxies are now automatically detected from the http_proxy environment
