@@ -19,8 +19,8 @@ when /i386-os2_emx/
   have_library("socket", "socket")
 else
   test_func = "socket"
-  have_library("nsl", "t_open")
-  have_library("socket", "socket")
+  have_library("nsl", "t_open") # SunOS
+  have_library("socket", "socket") # SunOS
 end
 
 unless $mswin or $bccwin or $mingw
