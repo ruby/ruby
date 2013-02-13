@@ -1,3 +1,12 @@
+Thu Feb 14 07:04:13 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* Backport r39213 from trunk [ruby-trunk - Bug #7383]
+
+	* lib/rubygems.rb:  Return BINARY strings from Gem.gzip and Gem.gunzip.
+	  Fixes intermittent test failures.  RubyGems issue #450 by Jeremey
+	  Kemper.
+	* test/rubygems/test_gem.rb:  Test for the above.
+
 Thu Feb 14 07:01:12 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* Backport part of r39166 from trunk [ruby-trunk - Bug #7809]

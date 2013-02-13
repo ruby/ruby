@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require 'rubygems/test_case'
 require 'rubygems'
 require 'rubygems/installer'
@@ -1235,6 +1236,33 @@ class TestGem < Gem::TestCase
 
       assert_equal %w!a-1 b-1 c-2 d-1 e-1!, loaded_spec_names
     end
+  end
+
+  def test_self_gunzip
+    input = "\x1F\x8B\b\0\xED\xA3\x1AQ\0\x03\xCBH" +
+            "\xCD\xC9\xC9\a\0\x86\xA6\x106\x05\0\0\0"
+
+    output = Gem.gunzip input
+
+    assert_equal 'hello', output
+
+    return unless Object.const_defined? :Encoding
+
+    assert_equal Encoding::BINARY, output.encoding
+  end
+
+  def test_self_gzip
+    input = 'hello'
+
+    output = Gem.gzip input
+
+    zipped = StringIO.new output
+
+    assert_equal 'hello', Zlib::GzipReader.new(zipped).read
+
+    return unless Object.const_defined? :Encoding
+
+    assert_equal Encoding::BINARY, output.encoding
   end
 
   if Gem.win_platform? && '1.9' > RUBY_VERSION
