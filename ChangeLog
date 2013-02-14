@@ -1,3 +1,8 @@
+Thu Feb 14 11:08:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (include_modules_at): detect cyclic prepend with original
+	  method table.  [ruby-core:52205] [Bug #7841]
+
 Thu Feb 14 10:30:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c: call method_removed hook on called class, not on

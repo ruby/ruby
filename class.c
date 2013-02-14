@@ -681,7 +681,7 @@ rb_include_class_new(VALUE module, VALUE super)
     return (VALUE)klass;
 }
 
-static int include_modules_at(VALUE klass, VALUE c, VALUE module);
+static int include_modules_at(const VALUE klass, VALUE c, VALUE module);
 
 void
 rb_include_module(VALUE klass, VALUE module)
@@ -713,17 +713,18 @@ add_refined_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static int
-include_modules_at(VALUE klass, VALUE c, VALUE module)
+include_modules_at(const VALUE klass, VALUE c, VALUE module)
 {
     VALUE p;
     int changed = 0;
+    const st_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
 
     while (module) {
 	int superclass_seen = FALSE;
 
 	if (RCLASS_ORIGIN(module) != module)
 	    goto skip;
-	if (RCLASS_M_TBL(klass) && RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
+	if (klass_m_tbl && klass_m_tbl == RCLASS_M_TBL(module))
 	    return -1;
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
