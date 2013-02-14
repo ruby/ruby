@@ -1,7 +1,7 @@
 Thu Feb 14 10:30:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c: call method_removed hook on called class, not on
-	  prepending iclass.
+	  prepending iclass.  [ruby-core:52207] [Bug #7843]
 
 Thu Feb 14 10:05:57 2013  Eric Hodel  <drbrain@segment7.net>
 

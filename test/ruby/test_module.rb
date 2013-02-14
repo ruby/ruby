@@ -1397,7 +1397,7 @@ class TestModule < Test::Unit::TestCase
     c.singleton_class.class_eval do
       define_method(:method_removed) {|id| removed = id}
     end
-    assert_nothing_raised(NoMethodError, NameError) do
+    assert_nothing_raised(NoMethodError, NameError, '[Bug #7843]') do
       c.class_eval do
         remove_method(:foo)
       end
