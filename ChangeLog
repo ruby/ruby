@@ -8,7 +8,7 @@ Thu Feb 14 22:25:54 2013  Tanaka Akira  <akr@fsij.org>
 Thu Feb 14 20:11:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: always operate length of socket address companion with
-	  socket address. 
+	  socket address.
 
 	* ext/socket/rubysocket.h (rsock_make_ipaddr): add an argument for
 	  socket address length.
@@ -21,7 +21,7 @@ Thu Feb 14 20:11:23 2013  Tanaka Akira  <akr@fsij.org>
 	* ext/socket/socket.c (make_addrinfo): pass length to rsock_ipaddr.
 	  (sock_s_getnameinfo): pass actual address length to rb_getnameinfo.
 	  (sock_s_unpack_sockaddr_in): pass length to rsock_make_ipaddr.
-	  
+
 	* ext/socket/init.c (rsock_s_recvfrom): pass length to rsock_ipaddr.
 	  (rsock_s_recvfrom_nonblock): ditto.
 
@@ -31,7 +31,7 @@ Thu Feb 14 20:11:23 2013  Tanaka Akira  <akr@fsij.org>
 	* ext/socket/raddrinfo.c (make_ipaddr0): add an argument for socket
 	  address length.  pass the length to rb_getnameinfo.
 	  (rsock_ipaddr): ditto.
-	  (rsock_make_ipaddr): add an argument for socket address length. 
+	  (rsock_make_ipaddr): add an argument for socket address length.
 	  pass the length to make_ipaddr0.
 	  (make_inetaddr): pass length to make_ipaddr0.
 	  a local variable renamed.
