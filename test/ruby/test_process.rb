@@ -1583,6 +1583,9 @@ class TestProcess < Test::Unit::TestCase
 	newsid = Process.setsid
 	Marshal.dump(newsid, STDOUT)
 	STDOUT.flush
+	# getsid() on MacOS X return ESRCH when target process is zombie
+	# even if it is valid process id.
+	sleep
 EOS
       begin
         # test Process.getsid() w/o arg
