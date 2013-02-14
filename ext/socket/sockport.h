@@ -16,28 +16,6 @@
 # define VALIDATE_SOCKLEN(addr, len) ((void)(addr), (void)(len), 1)
 #endif
 
-#ifdef SA_LEN
-#  define SS_LEN(ss) (ss)->ss_len
-#else
-# ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-#  define SA_LEN(sa) (sa)->sa_len
-#  define SS_LEN(ss) (ss)->ss_len
-# else
-#  ifdef AF_INET6
-#   define SA_LEN(sa) \
-	(((sa)->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) \
-				       : sizeof(struct sockaddr))
-#   define SS_LEN(ss) \
-	(((ss)->ss_family == AF_INET6) ? sizeof(struct sockaddr_in6) \
-				       : sizeof(struct sockaddr))
-#  else
-    /* by tradition, sizeof(struct sockaddr) covers most of the sockaddrs */
-#   define SA_LEN(sa)	(sizeof(struct sockaddr))
-#   define SS_LEN(ss)	(sizeof(struct sockaddr))
-#  endif
-# endif
-#endif
-
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 # define SET_SA_LEN(sa, len) (void)((sa)->sa_len = (len))
 # define SET_SS_LEN(ss, len) (void)((ss)->ss_len = (len))
@@ -47,10 +25,8 @@
 #endif
 
 #ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
-# define SIN_LEN(si) (si)->sin_len
 # define SET_SIN_LEN(si,len) (si)->sin_len = (len)
 #else
-# define SIN_LEN(si) sizeof(struct sockaddr_in)
 # define SET_SIN_LEN(si,len)
 #endif
 
