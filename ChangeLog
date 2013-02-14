@@ -1,3 +1,16 @@
+Fri Feb 15 08:12:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/sockport.h (SET_SS_LEN): removed.
+	  (SET_SIN_LEN): removed.
+	  (INIT_SOCKADDR): new macro.
+
+	* ext/socket/ancdata.c (extract_ipv6_pktinfo): use INIT_SOCKADDR.
+
+	* ext/socket/raddrinfo.c (make_inetaddr): use INIT_SOCKADDR.
+	  (addrinfo_ipv6_to_ipv4): ditto.
+
+	* ext/socket/getaddrinfo.c (GET_AI): use INIT_SOCKADDR.
+
 Fri Feb 15 07:49:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc.rb:  Update to release version of 4.0.0
