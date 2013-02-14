@@ -53,5 +53,27 @@ class HTTPRequestTest < Test::Unit::TestCase
     assert_equal expected, req.to_hash
   end
 
+  def test_initialize_accept_encoding
+    req1 = Net::HTTP::Get.new '/'
+
+    assert req1.decode_content, 'Bug #7831 - automatically decode content'
+
+    req2 = Net::HTTP::Get.new '/', 'accept-encoding' => 'identity'
+
+    refute req2.decode_content,
+           'Bug #7381 - do not decode content if the user overrides'
+  end
+
+  def test_header_set
+    req = Net::HTTP::Get.new '/'
+
+    assert req.decode_content, 'Bug #7831 - automatically decode content'
+
+    req['accept-encoding'] = 'identity'
+
+    refute req.decode_content,
+           'Bug #7831 - do not decode content if the user overrides'
+  end
+
 end
 

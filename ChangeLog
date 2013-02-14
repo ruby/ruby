@@ -1,3 +1,14 @@
+Thu Feb 14 10:05:57 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http:  Do not handle Content-Encoding when the user sets
+	  Accept-Encoding.  This allows users to handle Content-Encoding for
+	  themselves.  This restores backwards-compatibility with Ruby 1.x.
+	* lib/net/http/generic_request.rb:  ditto.
+	* lib/net/http/response.rb:  ditto
+	* test/net/http/test_http.rb:  Test for the above.
+	* test/net/http/test_http_request.rb:  ditto.
+	* test/net/http/test_httpresponse.rb:  ditto.
+
 Thu Feb 14 08:18:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: don't define HAVE_SA_LEN and HAVE_SA_LEN.

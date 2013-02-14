@@ -80,6 +80,7 @@ class Net::HTTPResponse
     @body = nil
     @read = false
     @uri  = nil
+    @decode_content = false
   end
 
   # The HTTP version supported by the server.
@@ -97,6 +98,10 @@ class Net::HTTPResponse
   # The URI used to fetch this response.  The response URI is only available
   # if a URI was used to create the request.
   attr_reader :uri
+
+  # Set to true automatically when the request did not contain an
+  # Accept-Encoding header from the user.
+  attr_accessor :decode_content
 
   def inspect
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
@@ -242,6 +247,7 @@ class Net::HTTPResponse
 
   def inflater # :nodoc:
     return yield @socket unless Net::HTTP::HAVE_ZLIB
+    return yield @socket unless @decode_content
     return yield @socket if self['content-range']
 
     case self['content-encoding']

@@ -27,11 +27,14 @@ class Net::HTTPGenericRequest
     raise ArgumentError, "HTTP request path is empty" if path.empty?
     @path = path
 
+    @decode_content = false
+
     if @response_has_body and Net::HTTP::HAVE_ZLIB then
       if !initheader ||
          !initheader.keys.any? { |k|
            %w[accept-encoding range].include? k.downcase
          } then
+        @decode_content = true
         initheader = initheader ? initheader.dup : {}
         initheader["accept-encoding"] =
           "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
@@ -51,8 +54,23 @@ class Net::HTTPGenericRequest
   attr_reader :path
   attr_reader :uri
 
+  # Automatically set to false if the user sets the Accept-Encoding header.
+  # This indicates they wish to handle Content-encoding in responses
+  # themselves.
+  attr_reader :decode_content
+
   def inspect
     "\#<#{self.class} #{@method}>"
+  end
+
+  ##
+  # Don't automatically decode response content-encoding if the user indicates
+  # they want to handle it.
+
+  def []=(key, val) # :nodoc:
+    @decode_content = false if key.downcase == 'accept-encoding'
+
+    super key, val
   end
 
   def request_body_permitted?
@@ -291,6 +309,7 @@ class Net::HTTPGenericRequest
       if IO.select([sock.io], nil, nil, sock.continue_timeout)
         res = Net::HTTPResponse.read_new(sock)
         unless res.kind_of?(Net::HTTPContinue)
+          res.decode_content = @decode_content
           throw :response, res
         end
       end

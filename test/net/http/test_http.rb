@@ -419,6 +419,7 @@ module TestNetHTTP_version_1_2_methods
   def test_request
     start {|http|
       _test_request__GET http
+      _test_request__accept_encoding http
       _test_request__file http
       # _test_request__range http   # WEBrick does not support Range: header.
       _test_request__HEAD http
@@ -440,6 +441,24 @@ module TestNetHTTP_version_1_2_methods
       end
       assert_equal $test_net_http_data.size, res.body.size
       assert_equal $test_net_http_data, res.body
+
+      assert res.decode_content, 'Bug #7831'
+    }
+  end
+
+  def _test_request__accept_encoding(http)
+    req = Net::HTTP::Get.new('/', 'accept-encoding' => 'deflate')
+    http.request(req) {|res|
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_not_nil res['content-length']
+        assert_equal $test_net_http_data.size, res['content-length'].to_i
+      end
+      assert_equal $test_net_http_data.size, res.body.size
+      assert_equal $test_net_http_data, res.body
+
+      refute res.decode_content, 'Bug #7831'
     }
   end
 

@@ -1410,6 +1410,7 @@ module Net   #:nodoc:
           req.exec @socket, @curr_http_version, edit_path(req.path)
           begin
             res = HTTPResponse.read_new(@socket)
+            res.decode_content = req.decode_content
           end while res.kind_of?(HTTPContinue)
 
           res.uri = req.uri
