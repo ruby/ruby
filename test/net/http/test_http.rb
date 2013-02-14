@@ -442,7 +442,7 @@ module TestNetHTTP_version_1_2_methods
       assert_equal $test_net_http_data.size, res.body.size
       assert_equal $test_net_http_data, res.body
 
-      assert res.decode_content, 'Bug #7831'
+      assert res.decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
     }
   end
 

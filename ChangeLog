@@ -1,3 +1,10 @@
+Thu Feb 14 14:31:43 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Removed OpenSSL dependency from Net::HTTP.
+
+	* test/net/http/test_http.rb:  Remove Zlib dependency from tests.
+	* test/net/http/test_http_request.rb:  ditto.
+
 Thu Feb 14 11:08:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (include_modules_at): detect cyclic prepend with original

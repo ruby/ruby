@@ -62,7 +62,7 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     refute req2.decode_content,
            'Bug #7381 - do not decode content if the user overrides'
-  end
+  end if Net::HTTP::HAVE_ZLIB
 
   def test_header_set
     req = Net::HTTP::Get.new '/'
@@ -73,7 +73,7 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     refute req.decode_content,
            'Bug #7831 - do not decode content if the user overrides'
-  end
+  end if Net::HTTP::HAVE_ZLIB
 
 end
 

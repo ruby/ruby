@@ -1424,7 +1424,9 @@ module Net   #:nodoc:
         raise
       rescue Net::ReadTimeout, IOError, EOFError,
              Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
-             OpenSSL::SSL::SSLError, Timeout::Error => exception
+             # avoid a dependency on OpenSSL
+             defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
+             Timeout::Error => exception
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket and not @socket.closed?
