@@ -3,6 +3,7 @@ Thu Feb 14 10:05:57 2013  Eric Hodel  <drbrain@segment7.net>
 	* lib/net/http:  Do not handle Content-Encoding when the user sets
 	  Accept-Encoding.  This allows users to handle Content-Encoding for
 	  themselves.  This restores backwards-compatibility with Ruby 1.x.
+	  [ruby-trunk - Bug #7831]
 	* lib/net/http/generic_request.rb:  ditto.
 	* lib/net/http/response.rb:  ditto
 	* test/net/http/test_http.rb:  Test for the above.
