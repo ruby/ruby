@@ -151,8 +151,8 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t ho
 	if (sa == NULL)
 		return ENI_NOSOCKET;
 
-	len = SA_LEN(sa);
-	if (len != salen) return ENI_SALEN;
+	if (!VALIDATE_SOCKLEN(sa, salen)) return ENI_SALEN;
+        len = salen;
 
 	family = sa->sa_family;
 	for (i = 0; afdl[i].a_af; i++)

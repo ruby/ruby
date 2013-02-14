@@ -10,6 +10,12 @@
 #ifndef SOCKPORT_H
 #define SOCKPORT_H
 
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+# define VALIDATE_SOCKLEN(addr, len) ((addr)->sa_len == (len))
+#else
+# define VALIDATE_SOCKLEN(addr, len) ((void)(addr), (void)(len), 1)
+#endif
+
 #ifdef SA_LEN
 #  define SS_LEN(ss) (ss)->ss_len
 #else

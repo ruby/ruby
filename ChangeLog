@@ -1,3 +1,14 @@
+Fri Feb 15 00:15:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/sockport.h (VALIDATE_SOCKLEN): new macro to validate
+	  sa_len member of 4.4BSD socket address.
+
+	* ext/socket/getnameinfo.c (getnameinfo): use VALIDATE_SOCKLEN,
+	  instead of SA_LEN.
+
+	* ext/socket/socket.c (sock_s_getnameinfo): use VALIDATE_SOCKLEN
+	  instead of SS_LEN. 
+
 Thu Feb 14 22:25:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sockaddr_len): extracted from sockaddr_obj.
