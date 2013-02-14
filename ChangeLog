@@ -1,3 +1,22 @@
+Fri Feb 15 00:49:32 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Removed OpenSSL dependency from Net::HTTP.
+
+	* test/net/http/test_http.rb:  Remove Zlib dependency from tests.
+	* test/net/http/test_http_request.rb:  ditto.
+
+Fri Feb 15 00:49:32 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http:  Do not handle Content-Encoding when the user sets
+	  Accept-Encoding.  This allows users to handle Content-Encoding for
+	  themselves.  This restores backwards-compatibility with Ruby 1.x.
+	  [ruby-trunk - Bug #7831]
+	* lib/net/http/generic_request.rb:  ditto.
+	* lib/net/http/response.rb:  ditto
+	* test/net/http/test_http.rb:  Test for the above.
+	* test/net/http/test_http_request.rb:  ditto.
+	* test/net/http/test_httpresponse.rb:  ditto.
+
 Thu Feb 14 13:17:10 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* Backport r39168 Warning about TracePoint events to 2.0.0
