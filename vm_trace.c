@@ -812,7 +812,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 /*
  * Type of event
  *
- * See TracePoint.new for events
+ * See TracePoint@Events for more information.
  */
 static VALUE
 tracepoint_attr_event(VALUE tpval)
@@ -1149,20 +1149,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *
  *	trace.disable
  *
- * To filter what is traced, you can pass any of the following as +events+:
- *
- * +:line+:: execute code on a new line
- * +:class+:: start a class or module definition
- * +:end+:: finish a class or module definition
- * +:call+:: call a Ruby method
- * +:return+:: return from a Ruby method
- * +:c_call+:: call a C-language routine
- * +:c_return+:: return from a C-language routine
- * +:raise+:: raise an exception
- * +:b_call+:: event hook at block entry
- * +:b_return+:: event hook at block ending
- * +:thread_begin+:: event hook at thread beginning
- * +:thread_end+:: event hook at thread ending
+ * See TracePoint@Events for possible events and more information.
  *
  * A block must be given, otherwise a ThreadError is raised.
  *
@@ -1284,7 +1271,7 @@ Init_vm_trace(void)
      * A class that provides the functionality of Kernel#set_trace_func in a
      * nice Object-Oriented API.
      *
-     * = Example
+     * == Example
      *
      * We can use TracePoint to gather information specifically for exceptions:
      *
@@ -1299,7 +1286,29 @@ Init_vm_trace(void)
      *	    0 / 0
      *	    #=> [5, :raise, #<ZeroDivisionError: divided by 0>]
      *
-     * See TracePoint.new for possible events.
+     * == Events
+     *
+     * If you don't specify the type of events you want to listen for,
+     * TracePoint will include all available events.
+     *
+     * *Note* do not depend on current event set, as this list is subject to
+     * change. Instead, it is recommended you specify the type of events you
+     * want to use.
+     *
+     * To filter what is traced, you can pass any of the following as +events+:
+     *
+     * +:line+:: execute code on a new line
+     * +:class+:: start a class or module definition
+     * +:end+:: finish a class or module definition
+     * +:call+:: call a Ruby method
+     * +:return+:: return from a Ruby method
+     * +:c_call+:: call a C-language routine
+     * +:c_return+:: return from a C-language routine
+     * +:raise+:: raise an exception
+     * +:b_call+:: event hook at block entry
+     * +:b_return+:: event hook at block ending
+     * +:thread_begin+:: event hook at thread beginning
+     * +:thread_end+:: event hook at thread ending
      *
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);

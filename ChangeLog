@@ -1,3 +1,10 @@
+Thu Feb 14 13:17:10 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* Backport r39168 Warning about TracePoint events to 2.0.0
+	  [ruby-core:52073] [Bug #7815]
+
+	* vm_trace.c: note about TracePoint events set
+
 Thu Feb 14 07:04:13 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* Backport r39213 from trunk [ruby-trunk - Bug #7383]
