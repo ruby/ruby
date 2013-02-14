@@ -1,6 +1,13 @@
+Thu Feb 14 22:25:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sockaddr_len): extracted from sockaddr_obj.
+	  (sockaddr_obj): add an argument to length of socket address.
+	  (socket_s_ip_address_list): call sockaddr_obj with actual socket
+	  address length if given, use sockaddr_len otherwise.
+
 Thu Feb 14 20:11:23 2013  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket: always operate length of socket addess companion with
+	* ext/socket: always operate length of socket address companion with
 	  socket address. 
 
 	* ext/socket/rubysocket.h (rsock_make_ipaddr): add an argument for

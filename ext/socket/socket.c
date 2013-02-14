@@ -1478,29 +1478,55 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 #endif
 
 #if defined(HAVE_GETIFADDRS) || defined(SIOCGLIFCONF) || defined(SIOCGIFCONF) || defined(_WIN32)
-static VALUE
-sockaddr_obj(struct sockaddr *addr)
+
+static socklen_t
+sockaddr_len(struct sockaddr *addr)
 {
-    socklen_t len;
+    if (addr == NULL)
+        return 0;
+
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+    if (addr->sa_len != 0)
+        return addr->sa_len;
+#endif
+
+    switch (addr->sa_family) {
+      case AF_INET:
+        return (socklen_t)sizeof(struct sockaddr_in);
+
+#ifdef AF_INET6
+      case AF_INET6:
+        return (socklen_t)sizeof(struct sockaddr_in6);
+#endif
+
+#ifdef HAVE_SYS_UN_H
+      case AF_UNIX:
+        return (socklen_t)sizeof(struct sockaddr_un);
+#endif
+
+      default:
+        return (socklen_t)sizeof(struct sockaddr_in);
+    }
+}
+
+static VALUE
+sockaddr_obj(struct sockaddr *addr, socklen_t len)
+{
 #if defined(AF_INET6) && defined(__KAME__)
     struct sockaddr_in6 addr6;
 #endif
 
     if (addr == NULL)
         return Qnil;
+    
+    len = sockaddr_len(addr);
 
-    switch (addr->sa_family) {
-      case AF_INET:
-        len = (socklen_t)sizeof(struct sockaddr_in);
-        break;
-
-#ifdef AF_INET6
-      case AF_INET6:
-        len = (socklen_t)sizeof(struct sockaddr_in6);
-#  ifdef __KAME__
+#if defined(__KAME__) && defined(AF_INET6)
+    if (addr->sa_family == AF_INET6) {
 	/* KAME uses the 2nd 16bit word of link local IPv6 address as interface index internally */
         /* http://orange.kame.net/dev/cvsweb.cgi/kame/IMPLEMENTATION */
 	/* convert fe80:1::1 to fe80::1%1 */
+        len = (socklen_t)sizeof(struct sockaddr_in6);
 	memcpy(&addr6, addr, len);
 	addr = (struct sockaddr *)&addr6;
 	if (IN6_IS_ADDR_LINKLOCAL(&addr6.sin6_addr) &&
@@ -1510,27 +1536,12 @@ sockaddr_obj(struct sockaddr *addr)
 	    addr6.sin6_addr.s6_addr[2] = 0;
 	    addr6.sin6_addr.s6_addr[3] = 0;
 	}
-#  endif
-        break;
-#endif
-
-#ifdef HAVE_SYS_UN_H
-      case AF_UNIX:
-        len = (socklen_t)sizeof(struct sockaddr_un);
-        break;
-#endif
-
-      default:
-        len = (socklen_t)sizeof(struct sockaddr_in);
-        break;
     }
-#ifdef SA_LEN
-    if (len < (socklen_t)SA_LEN(addr))
-	len = (socklen_t)SA_LEN(addr);
 #endif
 
     return rsock_addrinfo_new(addr, len, addr->sa_family, 0, 0, Qnil, Qnil);
 }
+
 #endif
 
 #if defined(HAVE_GETIFADDRS) || (defined(SIOCGLIFCONF) && defined(SIOCGLIFNUM) && !defined(__hpux)) || defined(SIOCGIFCONF) ||  defined(_WIN32)
@@ -1566,7 +1577,8 @@ socket_s_ip_address_list(VALUE self)
     list = rb_ary_new();
     for (p = ifp; p; p = p->ifa_next) {
         if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
-            rb_ary_push(list, sockaddr_obj(p->ifa_addr));
+            struct sockaddr *addr = p->ifa_addr;
+            rb_ary_push(list, sockaddr_obj(addr, sockaddr_len(addr)));
         }
     }
 
@@ -1628,7 +1640,7 @@ socket_s_ip_address_list(VALUE self)
                 }
                 ((struct sockaddr_in6 *)(&req->lifr_addr))->sin6_scope_id = req2.lifr_index;
             }
-            rb_ary_push(list, sockaddr_obj((struct sockaddr *)&req->lifr_addr));
+            rb_ary_push(list, sockaddr_obj((struct sockaddr *)&req->lifr_addr, req->lifr_addrlen));
         }
     }
 
@@ -1700,7 +1712,7 @@ socket_s_ip_address_list(VALUE self)
     while ((char*)req < (char*)conf.ifc_req + conf.ifc_len) {
 	struct sockaddr *addr = &req->ifr_addr;
         if (IS_IP_FAMILY(addr->sa_family)) {
-	    rb_ary_push(list, sockaddr_obj(addr));
+	    rb_ary_push(list, sockaddr_obj(addr, sockaddr_len(addr)));
 	}
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 # ifndef _SIZEOF_ADDR_IFREQ
@@ -1817,7 +1829,7 @@ socket_s_ip_address_list(VALUE self)
 #else
 	    if (IS_IP_FAMILY(uni->Address.lpSockaddr->sa_family))
 #endif
-		rb_ary_push(list, sockaddr_obj(uni->Address.lpSockaddr));
+		rb_ary_push(list, sockaddr_obj(uni->Address.lpSockaddr, uni->Address.iSockaddrLength));
 	}
 	for (any = adapters->FirstAnycastAddress; any; any = any->Next) {
 #ifndef INET6
@@ -1825,7 +1837,7 @@ socket_s_ip_address_list(VALUE self)
 #else
 	    if (IS_IP_FAMILY(any->Address.lpSockaddr->sa_family))
 #endif
-		rb_ary_push(list, sockaddr_obj(any->Address.lpSockaddr));
+		rb_ary_push(list, sockaddr_obj(any->Address.lpSockaddr, any->Address.iSockaddrLength));
 	}
     }
 
