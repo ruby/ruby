@@ -1,3 +1,11 @@
+Sat Feb 16 08:42:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in, ext/socket/extconf.rb: test netinet/in_systm.h in
+	  ext/socket/extconf.rb instead of configure.in.
+
+	  Originally, netinet/in_systm.h is included for NextStep, OpenStep,
+	  and Rhapsody.  [ruby-core:1596]
+
 Sat Feb 16 07:55:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: don't test xti.h here.
