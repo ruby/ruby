@@ -38,12 +38,12 @@
     SET_SA_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 
-#define INIT_SOCKADDR_IN(addr, family, len) \
+#define INIT_SOCKADDR_IN(addr, len) \
   do { \
     struct sockaddr_in *init_sockaddr_ptr = (addr); \
     socklen_t init_sockaddr_len = (len); \
     memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
-    init_sockaddr_ptr->sin_family = (family); \
+    init_sockaddr_ptr->sin_family = AF_INET; \
     SET_SIN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 

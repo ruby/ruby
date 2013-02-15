@@ -253,7 +253,7 @@ make_inetaddr(unsigned int host, char *buf, size_t buflen)
 {
     struct sockaddr_in sin;
 
-    INIT_SOCKADDR_IN(&sin, AF_INET, sizeof(sin));
+    INIT_SOCKADDR_IN(&sin, sizeof(sin));
     sin.sin_addr.s_addr = host;
     make_ipaddr0((struct sockaddr*)&sin, sizeof(sin), buf, buflen);
 }
@@ -1929,7 +1929,7 @@ addrinfo_ipv6_to_ipv4(VALUE self)
     addr = &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
     if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
         struct sockaddr_in sin4;
-        INIT_SOCKADDR_IN(&sin4, AF_INET, sizeof(sin4));
+        INIT_SOCKADDR_IN(&sin4, sizeof(sin4));
         memcpy(&sin4.sin_addr, (char*)addr + sizeof(*addr) - sizeof(sin4.sin_addr), sizeof(sin4.sin_addr));
         return rsock_addrinfo_new((struct sockaddr *)&sin4, (socklen_t)sizeof(sin4),
                                   PF_INET, rai->socktype, rai->protocol,
