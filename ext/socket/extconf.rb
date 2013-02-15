@@ -54,6 +54,8 @@ have_header("sys/uio.h")
 
 have_header("ucred.h", headers)
 
+have_type("struct sockaddr_storage", headers)
+
 have_type("struct addrinfo", headers)
 
 have_type("socklen_t", headers)
