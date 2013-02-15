@@ -47,6 +47,24 @@
     SET_SIN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 
+
+/* for strict-aliasing rule */
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+#  ifdef HAVE_STRUCT_SOCKADDR_IN_SUN_LEN
+#    define SET_SUN_LEN(sa, len) (void)((sa)->sun_len = (len))
+#  else
+#    define SET_SUN_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#  endif
+#  define INIT_SOCKADDR_UN(addr, len) \
+     do { \
+         struct sockaddr_un *init_sockaddr_ptr = (addr); \
+         socklen_t init_sockaddr_len = (len); \
+         memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+         init_sockaddr_ptr->sun_family = AF_UNIX; \
+         SET_SUN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+     } while (0)
+#endif
+
 #ifndef IN_MULTICAST
 # define IN_CLASSD(i)	(((long)(i) & 0xf0000000) == 0xe0000000)
 # define IN_MULTICAST(i)	IN_CLASSD(i)

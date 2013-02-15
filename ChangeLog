@@ -1,3 +1,17 @@
+Sat Feb 16 07:16:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: test struct sockaddr_un and its member,
+	  sun_len.
+
+	* ext/socket/sockport.h (INIT_SOCKADDR_UN): new macro defined.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): use INIT_SOCKADDR_UN.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): ditto.
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): ditto.
+	  (addrinfo_mload): ditto.
+
 Sat Feb 16 07:05:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/sockport.h (INIT_SOCKADDR_IN): don't need family

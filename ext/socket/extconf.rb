@@ -50,6 +50,13 @@ end
   end
 }
 
+have_struct_member("struct sockaddr", "sa_len", headers) # 4.4BSD
+have_struct_member("struct sockaddr_in", "sin_len", headers) # 4.4BSD
+
+if have_type("struct sockaddr_un", headers) # POSIX
+  have_struct_member("struct sockaddr_un", "sun_len", headers) # 4.4BSD
+end
+
 have_type("struct sockaddr_storage", headers)
 
 have_type("struct addrinfo", headers)
@@ -71,10 +78,6 @@ have_type("struct cmsgcred", headers)
 have_type("struct ip_mreq", headers) # 4.4BSD
 have_type("struct ip_mreqn", headers) # Linux 2.4
 have_type("struct ipv6_mreq", headers) # RFC 3493
-
-# 4.4BSD
-have_struct_member("struct sockaddr", "sa_len", headers)
-have_struct_member("struct sockaddr_in", "sin_len", headers)
 
 #   doug's fix, NOW add -Dss_family... only if required!
 doug = proc {have_struct_member("struct sockaddr_storage", "ss_family", headers)}

@@ -797,9 +797,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
             "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
             (size_t)RSTRING_LEN(path), sizeof(un.sun_path));
 
-    MEMZERO(&un, struct sockaddr_un, 1);
-
-    un.sun_family = AF_UNIX;
+    INIT_SOCKADDR_UN(&un, sizeof(struct sockaddr_un));
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
     len = rsock_unix_sockaddr_len(path);
@@ -1317,8 +1315,7 @@ addrinfo_mload(VALUE self, VALUE ary)
       case AF_UNIX:
       {
         struct sockaddr_un uaddr;
-        MEMZERO(&uaddr, struct sockaddr_un, 1);
-        uaddr.sun_family = AF_UNIX;
+        INIT_SOCKADDR_UN(&uaddr, sizeof(struct sockaddr_un));
 
         StringValue(v);
         if (sizeof(uaddr.sun_path) < (size_t)RSTRING_LEN(v))
