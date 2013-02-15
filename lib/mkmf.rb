@@ -811,6 +811,7 @@ SRC
   # Returns true when the executable exits successfully, false when it fails,
   # or nil when preprocessing, compilation or link fails.
   def try_run(src, opt = "", &b)
+    raise "cannot run test program while cross compiling" if CROSS_COMPILING
     if try_link0(src, opt, &b)
       xsystem("./conftest")
     else

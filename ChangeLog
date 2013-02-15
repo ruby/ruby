@@ -1,3 +1,8 @@
+Fri Feb 15 18:24:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#try_run): bail out explicitly if cross
+	  compiling, because it cannot work of course.
+
 Fri Feb 15 12:34:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test struct sockaddr_storage directly.
