@@ -22,6 +22,13 @@
 # define SET_SA_LEN(sa, len) (void)(len)
 #endif
 
+/* for strict-aliasing rule */
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+# define SET_SIN_LEN(sa, len) (void)((sa)->sin_len = (len))
+#else
+# define SET_SIN_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#endif
+
 #define INIT_SOCKADDR(addr, family, len) \
   do { \
     struct sockaddr *init_sockaddr_ptr = (addr); \
@@ -29,6 +36,15 @@
     memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
     init_sockaddr_ptr->sa_family = (family); \
     SET_SA_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+  } while (0)
+
+#define INIT_SOCKADDR_IN(addr, family, len) \
+  do { \
+    struct sockaddr_in *init_sockaddr_ptr = (addr); \
+    socklen_t init_sockaddr_len = (len); \
+    memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+    init_sockaddr_ptr->sin_family = (family); \
+    SET_SIN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 
 #ifndef IN_MULTICAST

@@ -1,3 +1,12 @@
+Fri Feb 15 20:29:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/sockport.h (SET_SIN_LEN): defined for strict-aliasing
+	  rule.
+	  (INIT_SOCKADDR_IN): ditto.
+
+	* ext/socket/raddrinfo.c (make_inetaddr): use INIT_SOCKADDR_IN.
+	  (addrinfo_ipv6_to_ipv4): ditto.
+
 Fri Feb 15 18:24:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#try_run): bail out explicitly if cross
