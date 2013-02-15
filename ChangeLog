@@ -1,3 +1,8 @@
+Sat Feb 16 04:21:07 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: workaround for mswin/mingw build problem.
+	  sendmsg emulation in win32/win32.c is not enough.
+
 Sat Feb 16 00:19:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: use all all tested available headers for

@@ -85,7 +85,7 @@ if (doug[] or
   doug[] or with_cppflags($CPPFLAGS + " -Dss_len=__ss_len", &doug)
 end
 
-have_struct_member('struct msghdr', 'msg_control', headers)
+have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
 have_struct_member('struct msghdr', 'msg_accrights', headers)
 
 if have_func(test_func, headers)
