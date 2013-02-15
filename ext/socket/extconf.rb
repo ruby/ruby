@@ -23,36 +23,32 @@ else
   have_library("socket", "socket") # SunOS
 end
 
+headers = []
 unless $mswin or $bccwin or $mingw
   headers = %w<sys/types.h netdb.h string.h sys/socket.h netinet/in.h>
 end
-if /solaris/ =~ RUBY_PLATFORM and !try_compile("")
-  # bug of gcc 3.0 on Solaris 8 ?
-  headers << "sys/feature_tests.h"
-end
-if have_header("arpa/inet.h")
-  headers << "arpa/inet.h"
-end
 
-have_header("netinet/tcp.h") if /cygwin/ !~ RUBY_PLATFORM # for cygwin 1.1.5
-have_header("netinet/udp.h")
-
-have_header("arpa/nameser.h")
-have_header("resolv.h")
-
-have_header("ifaddrs.h")
-
-have_header("sys/ioctl.h")
-have_header("sys/sockio.h")
-have_header("net/if.h", headers)
-
-have_header("sys/param.h", headers)
-have_header("sys/ucred.h", headers)
-
-have_header("sys/un.h")
-have_header("sys/uio.h")
-
-have_header("ucred.h", headers)
+%w[
+  sys/feature_tests.h
+  arpa/inet.h
+  netinet/tcp.h
+  netinet/udp.h
+  arpa/nameser.h
+  resolv.h
+  ifaddrs.h
+  sys/ioctl.h
+  sys/sockio.h
+  net/if.h
+  sys/param.h
+  sys/ucred.h
+  sys/un.h
+  sys/uio.h
+  ucred.h
+].each {|h|
+  if have_header(h, headers)
+    headers << h
+  end
+}
 
 have_type("struct sockaddr_storage", headers)
 
@@ -89,18 +85,18 @@ if (doug[] or
   doug[] or with_cppflags($CPPFLAGS + " -Dss_len=__ss_len", &doug)
 end
 
-have_struct_member('struct msghdr', 'msg_control', ['sys/types.h', 'sys/socket.h'])
-have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
+have_struct_member('struct msghdr', 'msg_control', headers)
+have_struct_member('struct msghdr', 'msg_accrights', headers)
 
-if have_func(test_func)
+if have_func(test_func, headers)
 
-  have_func("sendmsg")
-  have_func("recvmsg")
+  have_func("sendmsg", headers)
+  have_func("recvmsg", headers)
 
-  have_func("freehostent")
-  have_func("freeaddrinfo")
+  have_func("freehostent", headers)
+  have_func("freeaddrinfo", headers)
 
-  if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror")
+  if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror", headers)
     if checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
 #{cpp_include(headers)}
 #include <stdlib.h>
@@ -114,29 +110,29 @@ EOF
     end
   end
 
-  have_func("accept4")
+  have_func("accept4", headers)
 
-  have_func('inet_ntop(0, (const void *)0, (char *)0, 0)') or
-    have_func("inet_ntoa(*(struct in_addr *)NULL)")
-  have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_addr *)0)')
-  have_func('getservbyport(0, "")')
-  have_func("getifaddrs")
+  have_func('inet_ntop(0, (const void *)0, (char *)0, 0)', headers) or
+    have_func("inet_ntoa(*(struct in_addr *)NULL)", headers)
+  have_func('inet_pton(0, "", (void *)0)', headers) or have_func('inet_aton("", (struct in_addr *)0)', headers)
+  have_func('getservbyport(0, "")', headers)
+  have_func("getifaddrs", headers)
 
-  have_func("getpeereid")
+  have_func("getpeereid", headers)
 
-  have_func("getpeerucred")
+  have_func("getpeerucred", headers)
 
-  have_func("if_indextoname")
+  have_func("if_indextoname", headers)
 
-  have_func("hsterror")
-  have_func("getipnodebyname")
-  have_func("gethostbyname2")
-  if !have_func("socketpair(0, 0, 0, 0)") and have_func("rb_w32_socketpair(0, 0, 0, 0)")
+  have_func("hsterror", headers)
+  have_func("getipnodebyname", headers)
+  have_func("gethostbyname2", headers)
+  if !have_func("socketpair(0, 0, 0, 0)", headers) and have_func("rb_w32_socketpair(0, 0, 0, 0)", headers)
     $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
     $defs << "-DHAVE_SOCKETPAIR"
   end
-  unless have_func("gethostname((char *)0, 0)")
-    have_func("uname")
+  unless have_func("gethostname((char *)0, 0)", headers)
+    have_func("uname", headers)
   end
 
   ipv6 = false
