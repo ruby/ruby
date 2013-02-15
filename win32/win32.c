@@ -6582,7 +6582,8 @@ rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 
 /* License: Ruby's */
 char
-rb_w32_fd_is_text(int fd) {
+rb_w32_fd_is_text(int fd)
+{
     return _osfile(fd) & FTEXT;
 }
 
