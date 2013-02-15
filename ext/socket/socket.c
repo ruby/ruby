@@ -950,19 +950,19 @@ make_addrinfo(struct addrinfo *res0, int norevlookup)
 }
 
 static VALUE
-sock_sockaddr(struct sockaddr *addr, size_t len)
+sock_sockaddr(struct sockaddr *addr, socklen_t len)
 {
     char *ptr;
 
     switch (addr->sa_family) {
       case AF_INET:
 	ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
-	len = sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
+	len = (socklen_t)sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
 	break;
 #ifdef AF_INET6
       case AF_INET6:
 	ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
-	len = sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
+	len = (socklen_t)sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
 	break;
 #endif
       default:
@@ -1239,7 +1239,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
-        salen = RSTRING_LEN(sa);
+        salen = RSTRING_LENINT(sa);
 	goto call_nameinfo;
     }
     tmp = rb_check_array_type(sa);
@@ -1403,7 +1403,7 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_INET sockaddr");
 #endif
     }
-    host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_LEN(addr));
+    host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_LENINT(addr));
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
@@ -1518,7 +1518,7 @@ sockaddr_obj(struct sockaddr *addr, socklen_t len)
 
     if (addr == NULL)
         return Qnil;
-    
+
     len = sockaddr_len(addr);
 
 #if defined(__KAME__) && defined(AF_INET6)

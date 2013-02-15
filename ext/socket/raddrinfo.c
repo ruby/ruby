@@ -465,7 +465,7 @@ rsock_unix_sockaddr_len(VALUE path)
 struct hostent_arg {
     VALUE host;
     struct addrinfo* addr;
-    VALUE (*ipaddr)(struct sockaddr*, size_t);
+    VALUE (*ipaddr)(struct sockaddr*, socklen_t);
 };
 
 static VALUE
@@ -473,7 +473,7 @@ make_hostent_internal(struct hostent_arg *arg)
 {
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr;
-    VALUE (*ipaddr)(struct sockaddr*, size_t) = arg->ipaddr;
+    VALUE (*ipaddr)(struct sockaddr*, socklen_t) = arg->ipaddr;
 
     struct addrinfo *ai;
     struct hostent *h;
@@ -519,7 +519,7 @@ rsock_freeaddrinfo(struct addrinfo *addr)
 }
 
 VALUE
-rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
+rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t))
 {
     struct hostent_arg arg;
 
