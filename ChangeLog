@@ -1,3 +1,8 @@
+Fri Feb 15 12:26:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/getaddrinfo.c (GET_AI): don't cast 1st argument for
+	  INIT_SOCKADDR.
+
 Fri Feb 15 08:12:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/sockport.h (SET_SS_LEN): removed.

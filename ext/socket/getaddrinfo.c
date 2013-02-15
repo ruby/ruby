@@ -186,7 +186,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 	(ai)->ai_addr = (struct sockaddr *)((ai) + 1);\
 	(ai)->ai_family = (afd)->a_af;\
 	(ai)->ai_addrlen = (afd)->a_socklen;\
-	INIT_SOCKADDR((struct sockaddr *)(ai)->ai_addr, (afd)->a_af, (afd)->a_socklen);\
+	INIT_SOCKADDR((ai)->ai_addr, (afd)->a_af, (afd)->a_socklen);\
 	((struct sockinet *)(ai)->ai_addr)->si_port = (port);\
 	p = (char *)((ai)->ai_addr);\
 	memcpy(p + (afd)->a_off, (addr), (afd)->a_addrlen);\
