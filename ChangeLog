@@ -1,3 +1,11 @@
+Sat Feb 16 07:55:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: don't test xti.h here.
+
+	* ext/socket/extconf.rb: test xti.h here.
+
+	  Originally, xti.h is included for IRIX [ruby-core:14447].
+
 Sat Feb 16 07:16:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test struct sockaddr_un and its member,

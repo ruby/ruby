@@ -30,6 +30,7 @@ end
 
 %w[
   sys/feature_tests.h
+  xti.h
   arpa/inet.h
   netinet/tcp.h
   netinet/udp.h
