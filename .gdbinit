@@ -1,4 +1,19 @@
+define ruby_gdb_init
+  if !$color_type
+    set $color_type = "\033[31m"
+  end
+  if !$color_highlite
+    set $color_highlite = "\033[36m"
+  end
+  if !$color_end
+    set $color_end = "\033[m"
+  end
+end
+
+set prompt \033[36m(gdb)\033[m\040
+
 define rp
+  ruby_gdb_init
   if ruby_dummy_gdb_enums.special_consts
   end
   if (VALUE)($arg0) & RUBY_FIXNUM_FLAG
@@ -10,54 +25,54 @@ define rp
       printf "SYMBOL(:%c)\n", $id
     else
     if $id == idDot2
-      echo SYMBOL(:..)\n
+      printf "%sSYMBOL%s(:..)\n", $color_type, $color_end
     else
     if $id == idDot3
-      echo SYMBOL(:...)\n
+      printf "%sSYMBOL%s(:...)\n", $color_type, $color_end
     else
     if $id == idUPlus
-      echo SYMBOL(:+@)\n
+      printf "%sSYMBOL%s(:+@)\n", $color_type, $color_end
     else
     if $id == idUMinus
-      echo SYMBOL(:-@)\n
+      printf "%sSYMBOL%s(:-@)\n", $color_type, $color_end
     else
     if $id == idPow
-      echo SYMBOL(:**)\n
+      printf "%sSYMBOL%s(:**)\n", $color_type, $color_end
     else
     if $id == idCmp
-      echo SYMBOL(:<=>)\n
+      printf "%sSYMBOL%s(:<=>)\n", $color_type, $color_end
     else
     if $id == idLTLT
-      echo SYMBOL(:<<)\n
+      printf "%sSYMBOL%s(:<<)\n", $color_type, $color_end
     else
     if $id == idLE
-      echo SYMBOL(:<=)\n
+      printf "%sSYMBOL%s(:<=)\n", $color_type, $color_end
     else
     if $id == idGE
-      echo SYMBOL(:>=)\n
+      printf "%sSYMBOL%s(:>=)\n", $color_type, $color_end
     else
     if $id == idEq
-      echo SYMBOL(:==)\n
+      printf "%sSYMBOL%s(:==)\n", $color_type, $color_end
     else
     if $id == idEqq
-      echo SYMBOL(:===)\n
+      printf "%sSYMBOL%s(:===)\n", $color_type, $color_end
     else
     if $id == idNeq
-      echo SYMBOL(:!=)\n
+      printf "%sSYMBOL%s(:!=)\n", $color_type, $color_end
     else
     if $id == idEqTilde
-      echo SYMBOL(:=~)\n
+      printf "%sSYMBOL%s(:=~)\n", $color_type, $color_end
     else
     if $id == idNeqTilde
-      echo SYMBOL(:!~)\n
+      printf "%sSYMBOL%s(:!~)\n", $color_type, $color_end
     else
     if $id == idAREF
-      echo SYMBOL(:[])\n
+      printf "%sSYMBOL%s(:[])\n", $color_type, $color_end
     else
     if $id == idASET
-      echo SYMBOL(:[]=)\n
+      printf "%sSYMBOL%s(:[]=)\n", $color_type, $color_end
     else
-      printf "SYMBOL(%ld)\n", $id
+      printf "%sSYMBOL%s(%ld)\n", $color_type, $color_end, $id
     end
     end
     end
@@ -90,42 +105,42 @@ define rp
   else
   if (VALUE)($arg0) & RUBY_IMMEDIATE_MASK
     if ((VALUE)($arg0) & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
-      printf "FLONUM: %g\n", (double)rb_float_value($arg0)
+      printf "%sFLONUM%s: %g\n", $color_type, $color_end, (double)rb_float_value($arg0)
     else
       echo immediate\n
     end
   else
   set $flags = ((struct RBasic*)($arg0))->flags
   if ($flags & RUBY_T_MASK) == RUBY_T_NONE
-    printf "T_NONE: "
+    printf "%sT_NONE%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_NIL
-    printf "T_NIL: "
+    printf "%sT_NIL%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_OBJECT
-    printf "T_OBJECT: "
+    printf "%sT_OBJECT%s: ", $color_type, $color_end
     print (struct RObject *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
-    printf "T_CLASS%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : ""
+    printf "%sT_CLASS%s%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : "", $color_type, $color_end
     rp_class $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
-    printf "T_ICLASS: "
+    printf "%sT_ICLASS%s: ", $color_type, $color_end
     rp_class $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MODULE
-    printf "T_MODULE: "
+    printf "%sT_MODULE%s: ", $color_type, $color_end
     rp_class $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FLOAT
-    printf "T_FLOAT: %.16g ", (((struct RFloat*)($arg0))->float_value)
+    printf "%sT_FLOAT%s: %.16g ", $color_type, $color_end, (((struct RFloat*)($arg0))->float_value)
     print (struct RFloat *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRING
-    printf "T_STRING: "
+    printf "%sT_STRING%s: ", $color_type, $color_end
     set print address off
     output (char *)(($flags & RUBY_FL_USER1) ? \
 	    ((struct RString*)($arg0))->as.heap.ptr : \
@@ -163,7 +178,7 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
     set $regsrc = ((struct RRegexp*)($arg0))->src
     set $rsflags = ((struct RBasic*)$regsrc)->flags
-    printf "T_REGEXP: "
+    printf "%sT_REGEXP%s: ", $color_type, $color_end
     set print address off
     output (char *)(($rsflags & RUBY_FL_USER1) ? \
 	    ((struct RString*)$regsrc)->as.heap.ptr : \
@@ -187,7 +202,7 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
     if ($flags & RUBY_FL_USER1)
       set $len = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-      printf "T_ARRAY: len=%ld ", $len
+      printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       printf "(embed) "
       if ($len == 0)
 	printf "{(empty)} "
@@ -197,7 +212,7 @@ define rp
       end
     else
       set $len = ((struct RArray*)($arg0))->as.heap.len
-      printf "T_ARRAY: len=%ld ", $len
+      printf "%sT_ARRAY%s: len=%ld ", $color_type, $color_end, $len
       if ($flags & RUBY_FL_USER2)
 	printf "(shared) shared="
 	output/x ((struct RArray*)($arg0))->as.heap.aux.shared
@@ -215,18 +230,18 @@ define rp
     print (struct RArray *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FIXNUM
-    printf "T_FIXNUM: "
+    printf "%sT_FIXNUM%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
-    printf "T_HASH: ",
+    printf "%sT_HASH%s: ", $color_type, $color_end,
     if ((struct RHash *)($arg0))->ntbl
       printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
     end
     print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
-    printf "T_STRUCT: len=%ld ", \
+    printf "%sT_STRUCT%s: len=%ld ", $color_type, $color_end, \
       (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
        ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
        ((struct RStruct *)($arg0))->as.heap.len)
@@ -236,7 +251,7 @@ define rp
           ((struct RStruct *)($arg0))->as.heap.ptr)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
-    printf "T_BIGNUM: sign=%d len=%ld ", \
+    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
       (($flags & RUBY_FL_USER1) != 0), \
       (($flags & RUBY_FL_USER2) ? \
        ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
@@ -250,59 +265,59 @@ define rp
           ((struct RBignum*)($arg0))->as.heap.digits)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
-    printf "T_RATIONAL: "
+    printf "%sT_RATIONAL%s: ", $color_type, $color_end
     print (struct RRational *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_COMPLEX
-    printf "T_COMPLEX: "
+    printf "%sT_COMPLEX%s: ", $color_type, $color_end
     print (struct RComplex *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FILE
-    printf "T_FILE: "
+    printf "%sT_FILE%s: ", $color_type, $color_end
     print (struct RFile *)($arg0)
     output *((struct RFile *)($arg0))->fptr
     printf "\n"
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_TRUE
-    printf "T_TRUE: "
+    printf "%sT_TRUE%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FALSE
-    printf "T_FALSE: "
+    printf "%sT_FALSE%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_DATA
     if ((struct RTypedData *)($arg0))->typed_flag == 1
-      printf "T_DATA(%s): ", ((struct RTypedData *)($arg0))->type->wrap_struct_name
+      printf "%sT_DATA%s(%s): ", $color_type, $color_end, ((struct RTypedData *)($arg0))->type->wrap_struct_name
       print (struct RTypedData *)($arg0)
     else
-      printf "T_DATA: "
+      printf "%sT_DATA%s: ", $color_type, $color_end
       print (struct RData *)($arg0)
     end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
-    printf "T_MATCH: "
+    printf "%sT_MATCH%s: ", $color_type, $color_end
     print (struct RMatch *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_SYMBOL
-    printf "T_SYMBOL: "
+    printf "%sT_SYMBOL%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_UNDEF
-    printf "T_UNDEF: "
+    printf "%sT_UNDEF%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_NODE
-    printf "T_NODE("
+    printf "%sT_NODE%s(", $color_type, $color_end
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
     printf "): "
     print *(NODE *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ZOMBIE
-    printf "T_ZOMBIE: "
+    printf "%sT_ZOMBIE%s: ", $color_type, $color_end
     print (struct RData *)($arg0)
   else
-    printf "unknown: "
+    printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   end
   end
@@ -378,257 +393,257 @@ end
 # Print members of ruby node.
 
 define nd_head
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_alen
-  printf "u2.argc: "
+  printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
 end
 
 define nd_next
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_cond
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_body
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 define nd_else
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_orig
-  printf "u3.value: "
+  printf "%su3.value%s: ", $color_highlite, $color_end
   rp ($arg0).u3.value
 end
 
 
 define nd_resq
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 define nd_ensr
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_1st
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_2nd
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 
 define nd_stts
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 
 define nd_entry
-  printf "u3.entry: "
+  printf "%su3.entry%s: ", $color_highlite, $color_end
   p ($arg0).u3.entry
 end
 
 define nd_vid
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_cflag
-  printf "u2.id: "
+  printf "%su2.id%s: ", $color_highlite, $color_end
   p ($arg0).u2.id
 end
 
 define nd_cval
-  printf "u3.value: "
+  printf "%su3.value%s: ", $color_highlite, $color_end
   rp ($arg0).u3.value
 end
 
 
 define nd_cnt
-  printf "u3.cnt: "
+  printf "%su3.cnt%s: ", $color_highlite, $color_end
   p ($arg0).u3.cnt
 end
 
 define nd_tbl
-  printf "u1.tbl: "
+  printf "%su1.tbl%s: ", $color_highlite, $color_end
   p ($arg0).u1.tbl
 end
 
 
 define nd_var
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_ibdy
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 define nd_iter
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_value
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 define nd_aid
-  printf "u3.id: "
+  printf "%su3.id%s: ", $color_highlite, $color_end
   p ($arg0).u3.id
 end
 
 
 define nd_lit
-  printf "u1.value: "
+  printf "%su1.value%s: ", $color_highlite, $color_end
   rp ($arg0).u1.value
 end
 
 
 define nd_frml
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_rest
-  printf "u2.argc: "
+  printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
 end
 
 define nd_opt
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 
 define nd_recv
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_mid
-  printf "u2.id: "
+  printf "%su2.id%s: ", $color_highlite, $color_end
   p ($arg0).u2.id
 end
 
 define nd_args
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_noex
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_defn
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_old
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_new
-  printf "u2.id: "
+  printf "%su2.id%s: ", $color_highlite, $color_end
   p ($arg0).u2.id
 end
 
 
 define nd_cfnc
-  printf "u1.cfunc: "
+  printf "%su1.cfunc%s: ", $color_highlite, $color_end
   p ($arg0).u1.cfunc
 end
 
 define nd_argc
-  printf "u2.argc: "
+  printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
 end
 
 
 define nd_cname
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_super
-  printf "u3.node: "
+  printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
 end
 
 
 define nd_modl
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_clss
-  printf "u1.value: "
+  printf "%su1.value%s: ", $color_highlite, $color_end
   rp ($arg0).u1.value
 end
 
 
 define nd_beg
-  printf "u1.node: "
+  printf "%su1.node%s: ", $color_highlite, $color_end
   rp ($arg0).u1.node
 end
 
 define nd_end
-  printf "u2.node: "
+  printf "%su2.node%s: ", $color_highlite, $color_end
   rp ($arg0).u2.node
 end
 
 define nd_state
-  printf "u3.state: "
+  printf "%su3.state%s: ", $color_highlite, $color_end
   p ($arg0).u3.state
 end
 
 define nd_rval
-  printf "u2.value: "
+  printf "%su2.value%s: ", $color_highlite, $color_end
   rp ($arg0).u2.value
 end
 
 
 define nd_nth
-  printf "u2.argc: "
+  printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
 end
 
 
 define nd_tag
-  printf "u1.id: "
+  printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
 end
 
 define nd_tval
-  printf "u2.value: "
+  printf "%su2.value%s: ", $color_highlite, $color_end
   rp ($arg0).u2.value
 end
 
