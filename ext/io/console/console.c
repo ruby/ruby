@@ -23,6 +23,10 @@ typedef OpenFile rb_io_t;
 #include <sys/ioctl.h>
 #endif
 
+#ifndef RB_TYPE_P
+#define RB_TYPE_P(obj, type) (TYPE(obj) == type)
+#endif
+
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
 typedef struct termios conmode;
@@ -101,7 +105,23 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
 {
     rawmode_arg_t *optp = NULL;
     VALUE vopts;
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
     rb_scan_args(argc, argv, "0:", &vopts);
+#else
+    vopts = Qnil;
+    if (argc > 0) {
+	vopts = argv[--argc];
+	if (!NIL_P(vopts)) {
+# ifdef HAVE_RB_CHECK_HASH_TYPE
+	    vopts = rb_check_hash_type(vopts);
+	    if (NIL_P(vopts)) ++argc;
+# else
+	    Check_Type(vopts, T_HASH);
+# endif
+	}
+    }
+    rb_scan_args(argc, argv, "0");
+#endif
     if (!NIL_P(vopts)) {
 	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
 	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
@@ -643,6 +663,23 @@ console_ioflush(VALUE io)
 #endif
     return io;
 }
+
+#ifndef HAVE_RB_CLOEXEC_OPEN
+static int
+rb_cloexec_open(const char *pathname, int flags, mode_t mode)
+{
+    int ret;
+#ifdef O_CLOEXEC
+    /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+    flags |= O_CLOEXEC;
+#elif defined O_NOINHERIT
+    flags |= O_NOINHERIT;
+#endif
+    return open(pathname, flags, mode);
+}
+
+#define rb_update_max_fd(fd) (void)(fd)
+#endif
 
 /*
  * call-seq:

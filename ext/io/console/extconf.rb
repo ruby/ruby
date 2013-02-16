@@ -12,9 +12,10 @@ when have_header(hdr = "sgtty.h")
 else
   ok = false
 end
-have_header("sys/ioctl.h")
-have_func("rb_io_get_write_io", "ruby/io.h")
-have_func("dup3", "unistd.h")
 if ok
+  have_header("sys/ioctl.h")
+  have_func("rb_check_hash_type", "ruby.h")
+  have_func("rb_io_get_write_io", "ruby/io.h")
+  have_func("rb_cloexec_open", "ruby/io.h")
   create_makefile("io/console")
 end

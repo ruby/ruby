@@ -1,3 +1,8 @@
+Sat Feb 16 12:46:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rawmode_opt, console_dev): compatibility
+	  with ruby 1.9.  [ruby-core:52220] [Bug #7847]
+
 Sat Feb 16 12:45:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: unexpand arch sitearch and exec_prefix values, so
