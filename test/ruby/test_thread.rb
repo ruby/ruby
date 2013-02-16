@@ -669,8 +669,8 @@ class TestThread < Test::Unit::TestCase
             q.push :ng1
           end
           begin
-            Thread.handle_interrupthandle_interrupt(Object => :immediate){} if Thread.pending_interrupt?
-          rescue => e
+            Thread.handle_interrupt(Object => :immediate){} if Thread.pending_interrupt?
+          rescue RuntimeError => e
             q.push :ok
           end
         rescue => e

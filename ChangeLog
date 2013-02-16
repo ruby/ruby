@@ -1,3 +1,8 @@
+Sat Feb 16 20:05:26 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/ruby/test_thread.rb: fixed typo
+	  patched by Hiroki Matsue via https://github.com/ruby/ruby/pull/248
+
 Sat Feb 16 16:08:35 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_thread_mark): mark a working Proc of bmethod
