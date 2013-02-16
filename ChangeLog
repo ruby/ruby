@@ -1,3 +1,10 @@
+Sun Feb 17 00:52:14 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/mkconfig.rb: remove prefix from rubyarchdir.
+	  r39267 expands variables, it changes expansion timing,
+	  breaks RbConfig::CONFIG["includedir"] and building
+	  extension libraries with installed ruby.
+
 Sat Feb 16 20:51:17 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (ENV_IN_HEAP_P): fix off-by-one error.
