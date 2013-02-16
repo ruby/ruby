@@ -737,7 +737,7 @@ define rb_backtrace
 end
 
 define iseq
-  if dummy_gdb_enums.special_consts
+  if ruby_dummy_gdb_enums.special_consts
   end
   if ($arg0)->type == ISEQ_ELEMENT_NONE
     echo [none]\n
