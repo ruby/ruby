@@ -561,4 +561,18 @@ class TestMethod < Test::Unit::TestCase
     }
     assert_equal(c, c.instance_method(:foo).owner, bug7836)
   end
+
+  def test_gced_bmethod
+    assert_normal_exit %q{
+      require 'irb'
+      IRB::Irb.module_eval do
+        define_method(:eval_input) do
+          IRB::Irb.module_eval { alias_method :eval_input, :to_s }
+          GC.start
+          Kernel
+        end
+      end
+      IRB.start
+    }, '[Bug #7825]'
+  end
 end
