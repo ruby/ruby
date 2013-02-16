@@ -1,4 +1,6 @@
-Sat Feb 16 12:46:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 16 12:47:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): compatibility with ruby 1.8.
 
 	* ext/io/console/console.c (rawmode_opt, console_dev): compatibility
 	  with ruby 1.9.  [ruby-core:52220] [Bug #7847]

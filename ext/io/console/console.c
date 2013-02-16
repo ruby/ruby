@@ -7,6 +7,8 @@
 #include "ruby/io.h"
 #else
 #include "rubyio.h"
+/* assumes rb_io_t doesn't have pathv */
+#include "util.h"		/* for ruby_strdup() */
 #endif
 
 #ifndef HAVE_RB_IO_T
@@ -742,7 +744,11 @@ console_dev(VALUE klass)
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);
 	GetOpenFile(con, fptr);
+#ifdef HAVE_RUBY_IO_H
 	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
+#else
+	fptr->path = ruby_strdup(CONSOLE_DEVICE);
+#endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(out, ofptr);
 # ifdef HAVE_RB_IO_GET_WRITE_IO

@@ -12,6 +12,8 @@ when have_header(hdr = "sgtty.h")
 else
   ok = false
 end
+ok &&= enable_config("io-console-force-compatible-with-1.8") ||
+  macro_defined?("HAVE_RUBY_IO_H", "ruby.h")
 if ok
   have_header("sys/ioctl.h")
   have_func("rb_check_hash_type", "ruby.h")
