@@ -1,3 +1,13 @@
+Sat Feb 16 15:45:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_binding_new_with_cfp): create binding object even if
+	  the frame is IFUNC. But return a ruby-level binding to keep
+	  compatibility.
+	  This patch fix degradation introduced from r39067.
+	  [Bug #7774] [ruby-dev:46960]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Sat Feb 16 13:40:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (shvar_to_cpp): do not substitute exec_prefix itself

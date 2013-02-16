@@ -942,6 +942,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_security_error_safe4(func)
   end
 
+  def m1_for_test_trace_point_binding_in_ifunc(arg)
+    arg + nil
+  rescue
+  end
+
+  def m2_for_test_trace_point_binding_in_ifunc(arg)
+    arg.inject(:+)
+  rescue
+  end
+
   def test_trace_point_binding_in_ifunc
     bug7774 = '[ruby-dev:46908]'
     src = %q{
@@ -969,5 +979,32 @@ class TestSetTraceFunc < Test::Unit::TestCase
       rescue RuntimeError
       end
     }, bug7774
+
+    # TracePoint
+    tp_b = nil
+    TracePoint.new(:raise) do |tp|
+      tp_b = tp.binding
+    end.enable do
+      m1_for_test_trace_point_binding_in_ifunc(0)
+      assert_equal(self, eval('self', tp_b), '[ruby-dev:46960]')
+
+      m2_for_test_trace_point_binding_in_ifunc([0, nil])
+      assert_equal(self, eval('self', tp_b), '[ruby-dev:46960]')
+    end
+
+    # set_trace_func
+    stf_b = nil
+    set_trace_func ->(event, file, line, id, binding, klass) do
+      stf_b = binding if event == 'raise'
+    end
+    begin
+      m1_for_test_trace_point_binding_in_ifunc(0)
+      assert_equal(self, eval('self', stf_b), '[ruby-dev:46960]')
+
+      m2_for_test_trace_point_binding_in_ifunc([0, nil])
+      assert_equal(self, eval('self', stf_b), '[ruby-dev:46960]')
+    ensure
+      set_trace_func(nil)
+    end
   end
 end
