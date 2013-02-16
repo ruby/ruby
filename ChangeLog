@@ -1,3 +1,8 @@
+Sat Feb 16 09:24:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: reorder header tests to consider inclusion
+	  order in rubysocket.h.
+
 Sat Feb 16 08:42:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in, ext/socket/extconf.rb: test netinet/in_systm.h in

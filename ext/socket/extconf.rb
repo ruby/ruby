@@ -30,22 +30,22 @@ end
 
 %w[
   sys/feature_tests.h
+  sys/uio.h
   xti.h
   netinet/in_systm.h
-  arpa/inet.h
   netinet/tcp.h
   netinet/udp.h
-  arpa/nameser.h
-  resolv.h
+  arpa/inet.h
+  sys/un.h
   ifaddrs.h
   sys/ioctl.h
   sys/sockio.h
   net/if.h
   sys/param.h
   sys/ucred.h
-  sys/un.h
-  sys/uio.h
   ucred.h
+  arpa/nameser.h
+  resolv.h
 ].each {|h|
   if have_header(h, headers)
     headers << h
