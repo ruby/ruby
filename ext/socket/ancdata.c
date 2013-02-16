@@ -1362,11 +1362,17 @@ struct recvmsg_args_struct {
 ssize_t
 rsock_recvmsg(int socket, struct msghdr *message, int flags)
 {
+    ssize_t ret;
+    socklen_t len0;
 #ifdef MSG_CMSG_CLOEXEC
     /* MSG_CMSG_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= MSG_CMSG_CLOEXEC;
 #endif
-    return recvmsg(socket, message, flags);
+    len0 = message->msg_namelen;
+    ret = recvmsg(socket, message, flags);
+    if (ret != -1 && len0 < message->msg_namelen)
+        message->msg_namelen = len0;
+    return ret;
 }
 
 static void *

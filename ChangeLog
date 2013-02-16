@@ -1,3 +1,12 @@
+Sat Feb 16 20:43:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (rsock_recvmsg): ignore truncated part of
+	  socket address returned from recvmsg().
+
+	* ext/socket/init.c (recvfrom_blocking): ignore truncated part of
+	  socket address returned from recvfrom().
+	  (rsock_s_recvfrom_nonblock): ditto.
+
 Sat Feb 16 20:05:26 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/ruby/test_thread.rb: fixed typo

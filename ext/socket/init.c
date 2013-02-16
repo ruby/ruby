@@ -98,8 +98,13 @@ static VALUE
 recvfrom_blocking(void *data)
 {
     struct recvfrom_arg *arg = data;
-    return (VALUE)recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
-			   arg->flags, (struct sockaddr*)&arg->buf, &arg->alen);
+    socklen_t len0 = arg->alen;
+    ssize_t ret;
+    ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
+                   arg->flags, (struct sockaddr*)&arg->buf, &arg->alen);
+    if (ret != -1 && len0 < arg->alen)
+        arg->alen = len0;
+    return (VALUE)ret;
 }
 
 VALUE
@@ -182,6 +187,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     long slen;
     int fd, flags;
     VALUE addr = Qnil;
+    socklen_t len0;
 
     rb_scan_args(argc, argv, "11", &len, &flg);
 
@@ -205,7 +211,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 
     rb_io_check_closed(fptr);
     rb_io_set_nonblock(fptr);
+    len0 = alen;
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)&buf, &alen);
+    if (slen != -1 && len0 < alen)
+        alen = len0;
 
     if (slen < 0) {
 	switch (errno) {
