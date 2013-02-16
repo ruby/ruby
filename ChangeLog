@@ -1,3 +1,9 @@
+Sat Feb 16 12:45:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: unexpand arch sitearch and exec_prefix values, so
+	  directly specified bindir, libdir, rubyprefix, etc can be properly
+	  substituted.  [ruby-core:52296] [Bug #7860]
+
 Sat Feb 16 12:15:20 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* parse.y: add dtrace probe for symbol create.
