@@ -1,3 +1,20 @@
+Sat Feb 16 20:43:43 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* backport r39276 from trunk. [ruby-dev:46997] [Bug #7825]
+
+	* vm.c (rb_thread_mark): mark a working Proc of bmethod
+	  (a method defined by define_method) even if the method was removed.
+	  We could not trace working Proc object which represents the body
+	  of bmethod if the method was removed (alias/undef/overridden).
+	  Simply, it was mark miss.
+	  This patch by Kazuki Tsujimoto. [Bug #7825]
+
+	  NOTE: We can brush up this marking because we do not need to mark
+	  `me' on each living control frame. We need to mark `me's
+	  only if `me' was free'ed. This is future work after Ruby 2.0.0.
+
+	* test/ruby/test_method.rb: add a test.
+
 Fri Feb 15 00:49:32 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Removed OpenSSL dependency from Net::HTTP.
