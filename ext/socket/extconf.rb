@@ -29,7 +29,6 @@ unless $mswin or $bccwin or $mingw
 end
 
 %w[
-  sys/feature_tests.h
   sys/uio.h
   xti.h
   netinet/in_systm.h

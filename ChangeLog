@@ -1,3 +1,9 @@
+Sat Feb 16 09:27:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: don't test sys/feature_tests.h which is not
+	  used now.
+	  It was included in r7901 as "bug of gcc 3.0 on Solaris 8 ?".
+
 Sat Feb 16 09:24:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: reorder header tests to consider inclusion
