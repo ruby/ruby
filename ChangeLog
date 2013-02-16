@@ -1,3 +1,9 @@
+Sat Feb 16 12:15:20 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* parse.y: add dtrace probe for symbol create.
+
+	* probes.d: ditto
+
 Sat Feb 16 09:27:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: don't test sys/feature_tests.h which is not
