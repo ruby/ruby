@@ -3218,7 +3218,7 @@ shvar_to_cpp() {
 	    -e 's/\${rubyarchprefix}/"RUBY_ARCH_PREFIX_FOR(arch)"/g' \
 	    -e 's/\${rubysitearchprefix}/"RUBY_SITEARCH_PREFIX_FOR(arch)"/g' \
 	    -e 's/\${exec_prefix}/"RUBY_EXEC_PREFIX"/g' \
-	    -e "s|${exec_prefix_pat}|"'"RUBY_EXEC_PREFIX"|g' \
+	    -e "s|${exec_prefix_pat}/|"'"RUBY_EXEC_PREFIX"/|g' \
 	    -e "s|${arch_pat}|"'"arch"|g' \
 	    -e "s|${sitearch_pat}|"'"sitearch"|g' \
 	    -e 's|^\"NONE/|RUBY_EXEC_PREFIX\"/|' \

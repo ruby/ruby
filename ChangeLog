@@ -1,3 +1,9 @@
+Sat Feb 16 13:40:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (shvar_to_cpp): do not substitute exec_prefix itself
+	  with RUBY_EXEC_PREFIX, which cause recursive definition.
+	  [ruby-core:52296] [Bug #7860]
+
 Sat Feb 16 13:13:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/io-console.gemspec: bump to 0.4.2.  now explicitly
