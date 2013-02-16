@@ -1,4 +1,7 @@
-Sat Feb 16 12:47:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 16 13:13:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/io-console.gemspec: bump to 0.4.2.  now explicitly
+	  requires ruby 1.9.3 or later.  [Bug #7847]
 
 	* ext/io/console/console.c (console_dev): compatibility with ruby 1.8.
 
