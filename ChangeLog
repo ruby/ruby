@@ -1,3 +1,7 @@
+Sat Feb 16 20:51:17 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (ENV_IN_HEAP_P): fix off-by-one error.
+
 Sat Feb 16 20:47:16 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (LIBRUBY_DLDFLAGS): Fix a bug where --with-opt-dir
