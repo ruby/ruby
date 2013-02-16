@@ -1,7 +1,7 @@
 Sun Feb 17 01:19:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/psych/lib/psych/y.rb: Document Kernel#y by Adam Stankiewicz
-	  [Github tenderlove/psych#118]
+	  [Github tenderlove/psych#127]
 
 Sun Feb 17 00:52:14 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
