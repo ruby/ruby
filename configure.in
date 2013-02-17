@@ -2402,13 +2402,11 @@ AC_ARG_WITH(opt-dir,
 	[
 		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
 		CPPFLAGS="$CPPFLAGS $val"
-		set -x
 		val=`IFS="$PATH_SEPARATOR"
 		    for dir in $withval; do
 			echo x ${LIBPATHFLAG} ${RPATHFLAG} |
 			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
 		    done | tr '\012' ' '`
-		set +x
 		LDFLAGS_OPTDIR="$val"
 		LDFLAGS="$LDFLAGS${LDFLAGS:+ }$val"
 		DLDFLAGS="$DLDFLAGS${DLDFLAGS:+ }$val"
