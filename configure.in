@@ -3229,6 +3229,23 @@ shvar_to_cpp() {
     eval $var='"$val"'
 }
 
+unexpand_shvar() {
+    local var=$1 val n v expr quote
+    shift
+    test "$#" == 0 && return
+    quote=['s/${[^${}"]*}/"&"/g']
+    for n do
+        eval v='"$'$n'"'
+	v="`echo \"$v\" | sed -e \"$quote\" -e ['s/[][$|.\\?*]/\\\\&/g']`"
+	if test -n "$v"; then
+	    expr=["${expr};s|"'\("[^$"]*\)'"$v|\\1\${$n}\"|g"]
+	    AS_CASE(["$v"], [*'${'*'}'*], [expr=["$expr;s|$v|\"\${$n}\"|g"]])
+	fi
+    done
+    expr=["${quote}${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
+    eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"\\\"//g;s/^\\\"//;s/\\\"\\\$//\"`"'
+}
+
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
 AC_ARG_WITH(rubylibprefix,
 	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
@@ -3313,6 +3330,10 @@ AC_ARG_WITH(vendorarchdir,
             [vendorarchdir=$withval],
             [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
 
+unexpand_shvar rubylibprefix       exec_prefix libdir RUBY_BASE_NAME
+unexpand_shvar rubyarchprefix      exec_prefix libdir arch RUBY_BASE_NAME archlibdir rubylibprefix
+unexpand_shvar rubysitearchprefix  exec_prefix libdir sitearch arch RUBY_BASE_NAME archlibdir sitearchlibdir rubylibprefix
+unexpand_shvar exec_prefix         prefix arch RUBY_BASE_NAME
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
     RUBY_EXEC_PREFIX='""'

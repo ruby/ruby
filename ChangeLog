@@ -1,3 +1,8 @@
+Sun Feb 17 16:57:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (unexpand_shvar): regularize a shell variable by
+	  unexpanding shell variables in it.
+
 Sun Feb 17 01:19:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/psych/lib/psych/y.rb: Document Kernel#y by Adam Stankiewicz
