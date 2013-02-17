@@ -10,7 +10,7 @@ define ruby_gdb_init
   end
 end
 
-set prompt \033[36m(gdb)\033[m\040
+# set prompt \033[36m(gdb)\033[m\040
 
 define rp
   ruby_gdb_init
