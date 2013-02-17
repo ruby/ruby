@@ -1,3 +1,9 @@
+Sun Feb 17 17:23:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: remove extra topdir in VPATH, which was in
+	  win32/Makefile.sub for some reason and moved from there.
+	  [ruby-dev:46998] [Bug #7864]
+
 Sun Feb 17 16:57:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (unexpand_shvar): regularize a shell variable by
