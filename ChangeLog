@@ -1,3 +1,11 @@
+Sun Feb 17 20:55:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compar.c (rb_invcmp): compare by inversed comarison, with preventing
+	  from infinite recursion.  [ruby-core:52305] [Bug #7870]
+
+	* string.c (rb_str_cmp_m), time.c (time_cmp): get rid of infinite
+	  recursion.
+
 Sun Feb 17 17:23:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: remove extra topdir in VPATH, which was in

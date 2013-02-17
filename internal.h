@@ -66,6 +66,9 @@ VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 void Init_class_hierarchy(void);
 
+/* compar.c */
+VALUE rb_invcmp(VALUE, VALUE);
+
 /* compile.c */
 int rb_dvar_defined(ID);
 int rb_local_defined(ID);
