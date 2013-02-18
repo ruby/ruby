@@ -1,3 +1,13 @@
+Mon Feb 18 10:09:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (unexpand_shvar): regularize a shell variable by
+	  unexpanding shell variables in it.
+
+Mon Feb 18 10:08:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (unexpand_shvar): regularize a shell variable by
+	  unexpanding shell variables in it.
+
 Sun Feb 17 20:55:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compar.c (rb_invcmp): compare by inversed comarison, with preventing
