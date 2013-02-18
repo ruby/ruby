@@ -139,6 +139,8 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 static VALUE
 vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
+    VALUE ret;
+
     if (!ci->me->def) return Qnil;
 
     if (th->passed_block) {
@@ -165,19 +167,23 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 
 	    vm_call_iseq_setup(th, reg_cfp, ci);
 	    th->cfp->flag |= VM_FRAME_FLAG_FINISH;
-	    return vm_exec(th);
+	    return vm_exec(th); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	return vm_call0_cfunc(th, ci, argv);
+	ret = vm_call0_cfunc(th, ci, argv);
+	goto success;
       case VM_METHOD_TYPE_ATTRSET:
 	rb_check_arity(ci->argc, 1, 1);
-	return rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+	ret = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+	goto success;
       case VM_METHOD_TYPE_IVAR:
 	rb_check_arity(ci->argc, 0, 0);
-	return rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+	ret = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	return vm_call_bmethod_body(th, ci, argv);
+	ret = vm_call_bmethod_body(th, ci, argv);
+	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
 	{
@@ -190,7 +196,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
-		return method_missing(ci->recv, ci->mid, ci->argc, argv, NOEX_SUPER);
+		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, NOEX_SUPER);
+		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(th);
 	    if (!ci->me->def) return Qnil;
@@ -208,12 +215,14 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (ci->me->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    return send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	    ret = send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	    goto success;
 	  case OPTIMIZED_METHOD_TYPE_CALL:
 	    {
 		rb_proc_t *proc;
 		GetProcPtr(ci->recv, proc);
-		return rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+		ret = rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+		goto success;
 	    }
 	  default:
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", ci->me->def->body.optimize_type);
@@ -224,6 +233,10 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
     }
     rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
     return Qundef;
+
+  success:
+    RUBY_VM_CHECK_INTS(th);
+    return ret;
 }
 
 VALUE
