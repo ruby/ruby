@@ -549,7 +549,8 @@ class IPAddr
         left = $1
         right = $3 + '0:0'
       else
-        left.count(':') <= 7 or raise InvalidAddressError, "invalid address"
+        left.count(':') <= ($1.empty? || $2.empty?) ? 8 : 7 or
+          raise InvalidAddressError, "invalid address"
         left = $1
         right = $2
         addr = 0
@@ -671,6 +672,8 @@ class TC_IPAddr < Test::Unit::TestCase
       ["0:0:0:1::"],
       ["2001:200:300::/48"],
       ["2001:200:300::192.168.1.2/48"],
+      ["1:2:3:4:5:6:7::"],
+      ["::2:3:4:5:6:7:8"],
     ].each { |args|
       assert_nothing_raised {
         IPAddr.new(*args)
@@ -727,6 +730,8 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("2001:200:300::", IPAddr.new("2001:200:300::/48").to_s)
 
     assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
+    assert_equal("1:2:3:4:5:6:7:0", IPAddr.new("1:2:3:4:5:6:7::").to_s)
+    assert_equal("0:2:3:4:5:6:7:8", IPAddr.new("::2:3:4:5:6:7:8").to_s)
 
     assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
     assert_raises(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
