@@ -3341,6 +3341,7 @@ shvar_to_cpp RUBY_LIB_PREFIX "${rubylibprefix}"
 shvar_to_cpp RUBY_ARCH_PREFIX_FOR "${rubyarchprefix}"
 shvar_to_cpp RUBY_SITEARCH_PREFIX_FOR "${rubysitearchprefix}"
 shvar_to_cpp RIDIR "${ridir}"
+unexpand_shvar exec_prefix         prefix
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)
