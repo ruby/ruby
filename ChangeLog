@@ -1,3 +1,15 @@
+Tue Feb 19 07:51:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* backport r39275 from trunk. [ruby-dev:46994] [Bug #7774]
+
+	* proc.c (rb_binding_new_with_cfp): create binding object even if
+	  the frame is IFUNC. But return a ruby-level binding to keep
+	  compatibility.
+	  This patch fix degradation introduced from r39067.
+	  [Bug #7774] [ruby-dev:46960]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Sat Feb 16 20:43:43 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* backport r39276 from trunk. [ruby-dev:46997] [Bug #7825]
