@@ -1,3 +1,9 @@
+Tue Feb 19 08:14:40 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/installer.rb:  Fixed placement of executables with
+	  --user-install.  [ruby-trunk - Bug #7779]
+	* test/rubygems/test_gem_installer.rb:  Test for above.
+
 Tue Feb 19 06:04:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump: FreeBSD ports' libexecinfo's backtrace(3) can't trace

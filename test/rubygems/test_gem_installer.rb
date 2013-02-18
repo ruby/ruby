@@ -661,6 +661,24 @@ load Gem.bin_path('a', 'executable', version)
     installer = Gem::Installer.new gem
 
     assert_equal File.join(@gemhome, 'gems', spec.full_name), installer.gem_dir
+    assert_equal File.join(@gemhome, 'bin'), installer.bin_dir
+  end
+
+  def test_initialize_user_install
+    installer = Gem::Installer.new @gem, :user_install => true
+
+    assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
+                 installer.gem_dir
+    assert_equal Gem.bindir(Gem.user_dir), installer.bin_dir
+  end
+
+  def test_initialize_user_install_bin_dir
+    installer =
+      Gem::Installer.new @gem, :user_install => true, :bin_dir => @tempdir
+
+    assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
+                 installer.gem_dir
+    assert_equal @tempdir, installer.bin_dir
   end
 
   def test_install
