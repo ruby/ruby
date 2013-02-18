@@ -492,9 +492,10 @@ ruby_init_loadpath_safe(int safe_level)
 
 #define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), (path), (len))
 #else
-    static const char exec_prefix[] = RUBY_EXEC_PREFIX;
+    extern const char ruby_exec_prefix[];
+    const size_t exec_prefix_len = strlen(ruby_exec_prefix);
 #define RUBY_RELATIVE(path, len) rubylib_mangled_path((path), (len))
-#define PREFIX_PATH() RUBY_RELATIVE(exec_prefix, sizeof(exec_prefix)-1)
+#define PREFIX_PATH() RUBY_RELATIVE(ruby_exec_prefix, exec_prefix_len)
 #endif
     load_path = GET_VM()->load_path;
 

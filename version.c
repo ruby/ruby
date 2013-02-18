@@ -67,6 +67,9 @@ const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 VALUE ruby_engine_name = Qnil;
+#if !defined(LOAD_RELATIVE) || !LOAD_RELATIVE
+const char ruby_exec_prefix[] = RUBY_EXEC_PREFIX;
+#endif
 
 const char ruby_initial_load_paths[] =
 #ifndef NO_INITIAL_LOAD_PATH
