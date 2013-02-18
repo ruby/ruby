@@ -424,18 +424,18 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
-#ifndef HAVE_BACKTRACE
-#define HAVE_BACKTRACE 0
-#endif
-#ifdef BROKEN_BACKTRACE
-# undef HAVE_BACKTRACE
+#if defined(HAVE_BACKTRACE)
+# if HAVE_LIBUNWIND
+#  undef backtrace
+#  define backtrace unw_backtrace
+# elif defined(BROKEN_BACKTRACE)
+#  undef HAVE_BACKTRACE
+#  define HAVE_BACKTRACE 0
+# endif
+#else
 # define HAVE_BACKTRACE 0
 #endif
-#if HAVE_LIBUNWIND
-# define HAVE_BACKTRACE 1
-# undef backtrace
-# define backtrace unw_backtrace
-#endif
+
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
