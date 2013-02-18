@@ -1,3 +1,9 @@
+Tue Feb 19 04:26:29 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: check whether backtrace(3) works well or not.
+
+	* vm_dump.c: set HAVE_BACKTRACE 0 if BROKEN_BACKTRACE.
+
 Mon Feb 18 16:30:18 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (IPAddr#in6_addr): Fix a typo with the closing

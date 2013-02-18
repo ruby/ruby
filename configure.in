@@ -2433,6 +2433,64 @@ AS_CASE(["$target_cpu-$target_os"],
     fi])
 AC_CHECK_FUNCS(backtrace)
 
+if test "x$ac_cv_func_backtrace" = xyes; then
+  AC_CACHE_CHECK(for broken backtrace, rb_cv_broken_backtrace,
+    [AC_TRY_RUN([
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <signal.h>
+#include <execinfo.h>
+
+#define TRACE_SIZE 256
+
+void sigsegv(int signum, siginfo_t *info, void *ctx){
+    void *trace[TRACE_SIZE];
+    int n = backtrace(trace, TRACE_SIZE);
+    if (n > 0) {
+	fprintf(stdout, "backtrace:%d\n",n);
+    } else {
+	abort();
+    }
+    _exit(0);
+}
+int
+main()
+{
+    stack_t ss;
+    ss.ss_sp = malloc(SIGSTKSZ);
+    if (ss.ss_sp == NULL) {
+	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
+	abort();
+    }
+    ss.ss_size = SIGSTKSZ;
+    ss.ss_flags = 0;
+    if (sigaltstack(&ss, NULL) == -1) {
+	fprintf(stderr, "sigaltstack failed\n");
+	abort();
+    }
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(struct sigaction));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = sigsegv;
+    sa.sa_flags |= SA_SIGINFO;
+    sa.sa_flags |= SA_ONSTACK;
+    sigaction(SIGSEGV, &sa, NULL);
+    int *a = NULL;
+    a[0] = 1;
+    return 0;
+}
+],
+	rb_cv_broken_backtrace=no,
+	rb_cv_broken_backtrace=yes,
+	rb_cv_broken_backtrace=no)])
+  if test "$rb_cv_broken_backtrace" = yes; then
+    AC_DEFINE(BROKEN_BACKTRACE, 1)
+  fi
+fi
+
 AC_ARG_WITH(valgrind,
         AS_HELP_STRING([--without-valgrind],[disable valgrind memcheck support]),
         [], with_valgrind=yes)

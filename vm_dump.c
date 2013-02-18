@@ -427,6 +427,10 @@ rb_vmdebug_thread_dump_state(VALUE self)
 #ifndef HAVE_BACKTRACE
 #define HAVE_BACKTRACE 0
 #endif
+#ifdef BROKEN_BACKTRACE
+# undef HAVE_BACKTRACE
+# define HAVE_BACKTRACE 0
+#endif
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
