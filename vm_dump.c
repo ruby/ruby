@@ -431,6 +431,11 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # undef HAVE_BACKTRACE
 # define HAVE_BACKTRACE 0
 #endif
+#if HAVE_LIBUNWIND
+# define HAVE_BACKTRACE 1
+# undef backtrace
+# define backtrace unw_backtrace
+#endif
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)

@@ -1,3 +1,13 @@
+Tue Feb 19 06:04:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_dump: FreeBSD ports' libexecinfo's backtrace(3) can't trace
+	  beyond signal trampoline, and as described in r38342 it can't
+	  trace on -O because it see stack frame pointers.
+	  libunwind unw_backtrace see dwarf information in the binary
+	  and it works with -O (without frame pointers).
+
+	* configure.in: remove r38342's hack and check libunwind.
+
 Tue Feb 19 04:26:29 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: check whether backtrace(3) works well or not.

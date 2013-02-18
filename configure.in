@@ -2417,19 +2417,7 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_CHECK_HEADERS([execinfo.h])
     if test "x$ac_cv_header_execinfo_h" = xyes; then
 	AC_CHECK_LIB([execinfo], [backtrace])
-	execinfo_frame_pointer=no
-	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [execinfo_frame_pointer=yes])
-	if test "x$execinfo_frame_pointer" = xyes; then
-	    # optflags must be manipulated very carefully.  For the
-	    # later cflagspat/cxxflagspat substitution to work, CFLAGS
-	    # and CXXFLAGS must start exactly with the value of
-	    # optflags.
-	    CFLAGS="${CFLAGS# }"; CFLAGS="${CFLAGS#"$optflags "}"
-	    CXXFLAGS="${CXXFLAGS# }"; CXXFLAGS="${CXXFLAGS#"$optflags "}"
-	    RUBY_APPEND_OPTION(optflags, -fno-omit-frame-pointer)
-	    CFLAGS=" $optflags $CFLAGS"
-	    CXXFLAGS=" $optflags $CXXFLAGS"
-	fi
+	AC_CHECK_LIB([unwind], [unw_backtrace])
     fi])
 AC_CHECK_FUNCS(backtrace)
 
