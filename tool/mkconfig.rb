@@ -167,7 +167,8 @@ def vars.expand(val, config = self)
   val
 end
 vars["prefix"] = ""
-prefix = vars.expand(vars["rubyarchdir"]).sub!(vars.expand(vars["exec_prefix"]), '')
+vars["exec_prefix"] = ""
+prefix = vars.expand(vars["rubyarchdir"])
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
