@@ -549,7 +549,7 @@ class IPAddr
         left = $1
         right = $3 + '0:0'
       else
-        left.count(':') <= ($1.empty? || $2.empty?) ? 8 : 7 or
+        left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
           raise InvalidAddressError, "invalid address"
         left = $1
         right = $2

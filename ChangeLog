@@ -1,3 +1,8 @@
+Mon Feb 18 16:30:18 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (IPAddr#in6_addr): Fix a typo with the closing
+	  parenthesis.
+
 Mon Feb 18 12:32:24 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (IPAddr#in6_addr): Fix the parser so that it can
