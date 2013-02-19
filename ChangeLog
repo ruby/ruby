@@ -1,3 +1,8 @@
+Wed Feb 20 07:51:19 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/installer.rb:  Use gsub instead of gsub! to avoid
+	  altering @bin_dir.  Fixes tests on windows.  [ruby-trunk - Bug #7885]
+
 Tue Feb 19 20:50:00 2013  Kenta MURATA  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.gemspec: bump to 1.2.0.
