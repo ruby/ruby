@@ -1,6 +1,7 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 
+require './rbconfig'
 require 'fileutils'
 
 case ARGV[0]
