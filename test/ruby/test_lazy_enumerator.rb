@@ -463,4 +463,17 @@ EOS
     end
     assert_equal Enumerator::Lazy, [].lazy.chunk{}.class, bug7507
   end
+
+  def test_with_index
+    feature7877 = '[ruby-dev:47025] [Feature #7877]'
+    leibniz = ->(n) {
+      (0..Float::INFINITY).lazy.with_index {|i, j|
+        raise IndexError, "limit exceeded (#{n})" unless j < n
+        ((-1) ** j) / (2*i+1).to_f
+      }.take(n).reduce(:+)
+    }
+    assert_nothing_raised(IndexError, feature7877) {
+      assert_in_epsilon(Math::PI/4, leibniz[1000])
+    }
+  end
 end

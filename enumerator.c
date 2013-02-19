@@ -1906,6 +1906,57 @@ stop_result(VALUE self)
     return rb_attr_get(self, id_result);
 }
 
+static VALUE
+lazy_with_index_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
+    long idx = ((NODE*)m)->nd_cnt++;
+    VALUE result = rb_assoc_new(e, INT2NUM(idx));
+    rb_funcall2(argv[0], id_yield, 1, &result);
+    return Qnil;
+}
+
+static VALUE
+lazy_with_index_iter(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE e = rb_enum_values_pack(argc - 1, argv + 1);
+    long idx = ((NODE*)m)->nd_cnt++;
+    VALUE result = rb_assoc_new(e, INT2NUM(idx));
+    result = rb_yield(result);
+    rb_funcall2(argv[0], id_yield, 1, &result);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     lazy.with_index(offset = 0) {|(*args), idx| ... }
+ *     lazy.with_index(offset = 0)
+ *
+ *  Iterates the given block for each element with an index, which
+ *  starts from +offset+.  If no block is given, returns a new
+ *  lazy enumerator that includes the index, starting from +offset+
+ *
+ * +offset+:: the starting index to use
+ *
+ * see Enumerator#with_index.
+ */
+static VALUE
+lazy_with_index(int argc, VALUE *argv, VALUE obj)
+{
+    SIGNED_VALUE offset;
+    VALUE memo;
+
+    rb_scan_args(argc, argv, "01", &memo);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
+    offset = NIL_P(memo) ? 0 : (VALUE)NUM2LONG(memo);
+    memo = (VALUE)NEW_MEMO(0, 0, offset);
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+					 rb_block_given_p() ?
+					 lazy_with_index_iter : lazy_with_index_func,
+					 memo),
+			   rb_ary_new3(argc, argv), 0);
+}
+
 void
 InitVM_Enumerator(void)
 {
@@ -1954,6 +2005,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
     rb_define_method(rb_cLazy, "chunk", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_before", lazy_super, -1);
+    rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
 
     rb_define_alias(rb_cLazy, "force", "to_a");
 
