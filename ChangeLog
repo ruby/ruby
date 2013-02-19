@@ -1,3 +1,8 @@
+Tue Feb 19 12:25:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): site and vendor directories
+	  should use sitearch, not arch.  [ruby-dev:46964] [Bug #7823]
+
 Tue Feb 19 07:51:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* backport r39275 from trunk. [ruby-dev:46994] [Bug #7774]
