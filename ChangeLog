@@ -1,3 +1,11 @@
+Tue Feb 19 13:57:26 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r39247 from trunk. [Bug #7853]
+
+	* lib/rdoc.rb:  Update to release version of 4.0.0
+
+	* lib/rubygems.rb:  Update to release version of 2.0.0
+
 Tue Feb 19 12:25:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): site and vendor directories
