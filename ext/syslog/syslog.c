@@ -446,7 +446,7 @@ void Init_syslog()
     rb_define_module_function(mSyslog, "mask", mSyslog_get_mask, 0);
     rb_define_module_function(mSyslog, "mask=", mSyslog_set_mask, 1);
 
-    rb_define_module_function(mSyslog, "inspect", mSyslog_inspect, 0);
+    rb_define_singleton_method(mSyslog, "inspect", mSyslog_inspect, 0);
     rb_define_module_function(mSyslog, "instance", mSyslog_instance, 0);
 
     /* Syslog options */
