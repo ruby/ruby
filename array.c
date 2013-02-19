@@ -5241,7 +5241,7 @@ rb_ary_drop_while(VALUE ary)
  *     #=> [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
  *
  *  An array can also be created by using the Array() method, provided by
- *  Kernel, which calls  #to_ary or #to_a on it's argument.
+ *  Kernel, which tries to call #to_ary, then #to_a on its argument.
  *
  *	Array({:a => "a", :b => "b"}) #=> [[:a, "a"], [:b, "b"]]
  *
