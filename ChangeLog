@@ -1,3 +1,12 @@
+Tue Feb 19 14:08:46 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r39307 from trunk.  [Bug #7880]
+
+	* lib/rubygems/installer.rb:  Fixed placement of executables with
+	  --user-install.  [ruby-trunk - Bug #7779]
+
+	* test/rubygems/test_gem_installer.rb:  Test for above.
+
 Tue Feb 19 13:57:26 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r39247 from trunk. [Bug #7853]
