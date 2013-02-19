@@ -64,7 +64,7 @@ Mon Feb 18 10:09:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Feb 17 20:55:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* compar.c (rb_invcmp): compare by inversed comarison, with preventing
+	* compar.c (rb_invcmp): compare by inversed comparison, with preventing
 	  from infinite recursion.  [ruby-core:52305] [Bug #7870]
 
 	* string.c (rb_str_cmp_m), time.c (time_cmp): get rid of infinite
@@ -300,7 +300,7 @@ Fri Feb 15 00:15:31 2013  Tanaka Akira  <akr@fsij.org>
 	  instead of SA_LEN.
 
 	* ext/socket/socket.c (sock_s_getnameinfo): use VALIDATE_SOCKLEN
-	  instead of SS_LEN. 
+	  instead of SS_LEN.
 
 Thu Feb 14 22:25:54 2013  Tanaka Akira  <akr@fsij.org>
 
