@@ -2512,9 +2512,14 @@ AS_CASE(["$target_os"],
 
 AC_SUBST(setup)
 
-if test "$prefix" = NONE; then
-  prefix=$ac_default_prefix
-fi
+test x"$prefix" = xNONE && prefix=$ac_default_prefix
+test x"${exec_prefix}" = xNONE && exec_prefix="$prefix"
+pat=`echo "${exec_prefix}" | tr -c '\012' .`'\(.*\)'
+for var in bindir libdir; do
+    eval val='"$'$var'"'
+    AS_CASE(["$val"], ["${exec_prefix}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
+    eval $var='"$val"'
+done
 
 BTESTRUBY='$(MINIRUBY)'
 if test x"$cross_compiling" = xyes; then
@@ -3149,6 +3154,9 @@ sitearchincludedir='${includedir}/${sitearch}'
 
 shvar_to_cpp() {
     local var="$1" val="$2"
+    local exec_prefix_pat="`echo \"${exec_prefix}\" | sed 's/\\./\\\\./g'`"
+    local arch_pat="`echo \"${arch}\" | sed 's/\\./\\\\./g'`"
+    local sitearch_pat="`echo \"${sitearch}\" | sed 's/\\./\\\\./g'`"
     val="`echo '"'"${val}"'"' |
 	sed \
 	    -e 's/\${\([[A-Z][A-Z_]]*\)}/"\1"/g' \
@@ -3171,11 +3179,31 @@ shvar_to_cpp() {
 	    -e 's/\${rubyarchprefix}/"RUBY_ARCH_PREFIX_FOR(arch)"/g' \
 	    -e 's/\${rubysitearchprefix}/"RUBY_SITEARCH_PREFIX_FOR(arch)"/g' \
 	    -e 's/\${exec_prefix}/"RUBY_EXEC_PREFIX"/g' \
+	    -e "s|${exec_prefix_pat}/|"'"RUBY_EXEC_PREFIX"/|g' \
+	    -e "s|${arch_pat}|"'"arch"|g' \
+	    -e "s|${sitearch_pat}|"'"sitearch"|g' \
 	    -e 's|^\"NONE/|RUBY_EXEC_PREFIX\"/|' \
 	    -e 's|^\"NONE\"|\"'"${prefix}"'\"|' \
 	    -e 's/^\"\"\(.\)/\1/;s/\(.\)\"\"$/\1/'
 	`"
     eval $var='"$val"'
+}
+
+unexpand_shvar() {
+    local var=$1 val n v expr quote
+    shift
+    test "$#" == 0 && return
+    quote=['s/${[^${}"]*}/"&"/g']
+    for n do
+        eval v='"$'$n'"'
+	v="`echo \"$v\" | sed -e \"$quote\" -e ['s/[][$|.\\?*]/\\\\&/g']`"
+	if test -n "$v"; then
+	    expr=["${expr};s|"'\("[^$"]*\)'"$v|\\1\${$n}\"|g"]
+	    AS_CASE(["$v"], [*'${'*'}'*], [expr=["$expr;s|$v|\"\${$n}\"|g"]])
+	fi
+    done
+    expr=["${quote}${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
+    eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"\\\"//g;s/^\\\"//;s/\\\"\\\$//\"`"'
 }
 
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
@@ -3260,6 +3288,9 @@ AC_ARG_WITH(vendorarchdir,
             [vendorarchdir=$withval],
             [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
 
+unexpand_shvar rubylibprefix       exec_prefix libdir RUBY_BASE_NAME
+unexpand_shvar rubyarchprefix      exec_prefix libdir arch RUBY_BASE_NAME archlibdir rubylibprefix
+unexpand_shvar rubysitearchprefix  exec_prefix libdir sitearch arch RUBY_BASE_NAME archlibdir sitearchlibdir rubylibprefix
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
     RUBY_EXEC_PREFIX='""'
@@ -3270,6 +3301,7 @@ shvar_to_cpp RUBY_LIB_PREFIX "${rubylibprefix}"
 shvar_to_cpp RUBY_ARCH_PREFIX_FOR "${rubyarchprefix}"
 shvar_to_cpp RUBY_SITEARCH_PREFIX_FOR "${rubysitearchprefix}"
 shvar_to_cpp RIDIR "${ridir}"
+unexpand_shvar exec_prefix         prefix
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)

@@ -1,3 +1,16 @@
+Tue Feb 19 15:49:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (unexpand_shvar): regularize a shell variable by
+	  unexpanding shell variables in it.
+
+	* configure.in (shvar_to_cpp): do not substitute exec_prefix itself
+	  with RUBY_EXEC_PREFIX, which cause recursive definition.
+	  [ruby-core:52296] [Bug #7860]
+
+	* configure.in: unexpand arch sitearch and exec_prefix values, so
+	  directly specified bindir, libdir, rubyprefix, etc can be properly
+	  substituted.  [ruby-core:52296] [Bug #7860]
+
 Tue Feb 19 14:08:46 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r39307 from trunk.  [Bug #7880]
