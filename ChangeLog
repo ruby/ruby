@@ -1,3 +1,11 @@
+Wed Feb 20 08:05:25 2013 Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compar.c (rb_invcmp): compare by inversed comarison, with preventing
+	  from infinite recursion.  [ruby-core:52305] [Bug #7870]
+
+	* string.c (rb_str_cmp_m), time.c (time_cmp): get rid of infinite
+	  recursion.
+
 Tue Feb 19 15:49:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (unexpand_shvar): regularize a shell variable by

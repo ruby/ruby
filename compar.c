@@ -32,6 +32,26 @@ rb_cmperr(VALUE x, VALUE y)
 }
 
 static VALUE
+invcmp_recursive(VALUE x, VALUE y, int recursive)
+{
+    if (recursive) return Qnil;
+    return rb_check_funcall(y, cmp, 1, &x);
+}
+
+VALUE
+rb_invcmp(VALUE x, VALUE y)
+{
+    VALUE invcmp = rb_exec_recursive(invcmp_recursive, x, y);
+    if (invcmp == Qundef || NIL_P(invcmp)) {
+	return Qnil;
+    }
+    else {
+	int result = -rb_cmpint(invcmp, x, y);
+	return INT2FIX(result);
+    }
+}
+
+static VALUE
 cmp_eq(VALUE *a)
 {
     VALUE c = rb_funcall(a[0], cmp, 1, a[1]);

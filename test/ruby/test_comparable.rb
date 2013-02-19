@@ -69,4 +69,11 @@ class TestComparable < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.0 < nil }
     assert_raise(ArgumentError) { 1.0 < Object.new }
   end
+
+  def test_inversed_compare
+    bug7870 = '[ruby-core:52305] [Bug #7870]'
+    assert_nothing_raised(SystemStackError, bug7870) {
+      assert_nil(Time.new <=> "")
+    }
+  end
 end
