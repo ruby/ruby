@@ -75,6 +75,7 @@ File.foreach "config.status" do |line|
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
     when /^(?:X|(?:MINI|RUN|BASE)RUBY$)/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; next
+    when /^LIBRUBY_D?LD/; next
     when /^RUBY_INSTALL_NAME$/; next if $install_name
     when /^RUBY_SO_NAME$/; next if $so_name
     when /^arch$/; if val.empty? then val = arch else arch = val end
