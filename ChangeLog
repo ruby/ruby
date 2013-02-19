@@ -1,3 +1,8 @@
+Tue Feb 19 12:30:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* object.c: rdoc formatting for Kernel#Array()
+	* array.c: Add rdoc for Array() method to Creating Arrays section
+
 Tue Feb 19 10:35:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl.c (class OpenSSL):  Use only inner parenthesis in
