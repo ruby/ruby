@@ -550,17 +550,18 @@ unless $extlist.empty?
   list = $extlist.dup
   built = []
   while e = list.shift
-    s,t,i,r,os = e
-    if r and !(r -= built).empty?
+    _, target, feature, required = e
+    if required and !(required -= built).empty?
       l = list.size
-      if (while l > 0; break true if r.include?(list[l-=1][1]) end)
+      if (while l > 0; break true if required.include?(list[l-=1][1]) end)
         list.insert(l + 1, e)
       end
       next
     end
-    $extinit << "    init(Init_#{File.basename i}, \"#{i}.so\");\n"
-    $extobjs << format("ext/%s/%s.%s", t, File.basename(i), $LIBEXT)
-    built << t
+    base = File.basename(feature)
+    $extinit << "    init(Init_#{base}, \"#{feature}.so\");\n"
+    $extobjs << format("ext/%s/%s.%s", target, base, $LIBEXT)
+    built << target
   end
 
   src = %{\
