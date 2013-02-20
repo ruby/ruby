@@ -476,54 +476,29 @@ pty_close_pty(VALUE assoc)
  *
  * Allocates a pty (pseudo-terminal).
  *
- * In the non-block form, returns a two element array, <tt>[master_io,
- * slave_file]</tt>.
- *
  * In the block form, yields two arguments <tt>master_io, slave_file</tt>
  * and the value of the block is returned from +open+.
  *
  * The IO and File are both closed after the block completes if they haven't
  * been already closed.
  *
- * The arguments in both forms are:
- *
- * <tt>master_io</tt>:: the master of the pty, as an IO.
- * <tt>slave_file</tt>:: the slave of the pty, as a File.  The path to the
- *                       terminal device is available via
- *                       <tt>slave_file.path</tt>
- *
- * === Example
- *
- *   PTY.open {|m, s|
- *     p m      #=> #<IO:masterpty:/dev/pts/1>
- *     p s      #=> #<File:/dev/pts/1>
- *     p s.path #=> "/dev/pts/1"
+ *   PTY.open {|master, slave|
+ *     p master      #=> #<IO:masterpty:/dev/pts/1>
+ *     p slave      #=> #<File:/dev/pts/1>
+ *     p slave.path #=> "/dev/pts/1"
  *   }
  *
- *   # Change the buffering type in factor command,
- *   # assuming that factor uses stdio for stdout buffering.
- *   # If IO.pipe is used instead of PTY.open,
- *   # this code deadlocks because factor's stdout is fully buffered.
- *   require 'io/console' # for IO#raw!
- *   m, s = PTY.open
- *   s.raw! # disable newline conversion.
- *   r, w = IO.pipe
- *   pid = spawn("factor", :in=>r, :out=>s)
- *   r.close
- *   s.close
- *   w.puts "42"
- *   p m.gets #=> "42: 2 3 7\n"
- *   w.puts "144"
- *   p m.gets #=> "144: 2 2 2 2 3 3\n"
- *   w.close
- *   # The result of read operation when pty slave is closed is platform
- *   # dependent.
- *   ret = begin
- *           m.gets          # FreeBSD returns nil.
- *         rescue Errno::EIO # GNU/Linux raises EIO.
- *           nil
- *         end
- *   p ret #=> nil
+ * In the non-block form, returns a two element array, <tt>[master_io,
+ * slave_file]</tt>.
+ *
+ *   master, slave = PTY.open
+ *   # do something with master for IO, or the slave file
+ *
+ * The arguments in both forms are:
+ *
+ * +master_io+::    the master of the pty, as an IO.
+ * +slave_file+::   the slave of the pty, as a File.  The path to the
+ *		    terminal device is available via +slave_file.path+
  *
  */
 static VALUE
@@ -567,31 +542,28 @@ pty_detach_process(struct pty_info *info)
  * call-seq:
  *   PTY.spawn(command_line)  { |r, w, pid| ... }
  *   PTY.spawn(command_line)  => [r, w, pid]
- *   PTY.spawn(command, args, ...)  { |r, w, pid| ... }
- *   PTY.spawn(command, args, ...)  => [r, w, pid]
- *   PTY.getpty(command_line)  { |r, w, pid| ... }
- *   PTY.getpty(command_line)  => [r, w, pid]
- *   PTY.getpty(command, args, ...)  { |r, w, pid| ... }
- *   PTY.getpty(command, args, ...)  => [r, w, pid]
+ *   PTY.spawn(command, arguments, ...)  { |r, w, pid| ... }
+ *   PTY.spawn(command, arguments, ...)  => [r, w, pid]
  *
- * Spawns the specified command on a newly allocated pty.
+ * Spawns the specified command on a newly allocated pty. You can also use the
+ * alias ::getpty.
  *
  * The command's controlling tty is set to the slave device of the pty
  * and its standard input/output/error is redirected to the slave device.
  *
- * <tt>command_line</tt>:: The full command line to run
- * <tt>command</tt>:: The command to run, as a String.
- * <tt>args</tt>:: Zero or more arguments, as Strings, representing
- *                 the arguments to +command+
+ * +command+ and +command_line+ are the full commands to run, given a String.
+ * Any additional +arguments+ will be passed to the command.
+ *
+ * === Return values
  *
  * In the non-block form this returns an array of size three,
- * <tt>[r, w, pid]</tt>.  In the block form the block will be called with
- * these as arguments, <tt>|r,w,pid|</tt>:
+ * <tt>[r, w, pid]</tt>.
  *
- * +r+:: An IO that can be read from that contains the command's
+ * In the block form these same values will be yielded to the block:
+ *
+ * +r+:: A readable IO that that contains the command's
  *       standard output and standard error
- * +w+:: An IO that can be written to that is the command's
- *       standard input
+ * +w+:: A writable IO that is the command's standard input
  * +pid+:: The process identifier for the command.
  */
 static VALUE
@@ -667,15 +639,16 @@ raise_from_check(pid_t pid, int status)
  *   PTY.check(pid, true)          => nil or raises PTY::ChildExited
  *
  * Checks the status of the child process specified by +pid+.
- * Returns +nil+ if the process is still alive.  If the process
- * is not alive, will return a <tt>Process::Status</tt> or raise
- * a <tt>PTY::ChildExited</tt> (if +raise+ was true).
+ * Returns +nil+ if the process is still alive.
+ *
+ * If the process is not alive, and +raise+ was true, a PTY::ChildExited
+ * exception will be raised. Otherwise it will return a Process::Status
+ * instance.
  *
  * +pid+:: The process id of the process to check
- * +raise+:: If true and the process identified by +pid+ is no longer
- *           alive a <tt>PTY::ChildExited</tt> is raised.
+ * +raise+:: If +true+ and the process identified by +pid+ is no longer
+ *           alive a PTY::ChildExited is raised.
  *
- * Returns nil or a <tt>Process::Status</tt> when +raise+ is false.
  */
 static VALUE
 pty_check(int argc, VALUE *argv, VALUE self)
@@ -699,7 +672,7 @@ static VALUE cPTY;
 /*
  * Document-class: PTY::ChildExited
  *
- * Thrown when PTY#check is called for a pid that represents a process that
+ * Thrown when PTY::check is called for a pid that represents a process that
  * has exited.
  */
 
@@ -708,6 +681,45 @@ static VALUE cPTY;
  *
  * Creates and managed pseudo terminals (PTYs).  See also
  * http://en.wikipedia.org/wiki/Pseudo_terminal
+ *
+ * PTY allows you to allocate new terminals using ::open or ::spawn a new
+ * terminal with a specific command.
+ *
+ * == Example
+ *
+ * In this example we will change the buffering type in the +factor+ command,
+ * assuming that factor uses stdio for stdout buffering.
+ *
+ * If IO.pipe is used instead of PTY.open, this code deadlocks because factor's
+ * stdout is fully buffered.
+ *
+ *   # start by requiring the standard library PTY
+ *   require 'pty'
+ *
+ *   master, slave = PTY.open
+ *   read, write = IO.pipe
+ *   pid = spawn("factor", :in=>read, :out=>slave)
+ *   read.close	    # we dont need the read
+ *   slave.close    # or the slave
+ *
+ *   # pipe "42" to the factor command
+ *   write.puts "42"
+ *   # output the response from factor
+ *   p master.gets #=> "42: 2 3 7\n"
+ *
+ *   # pipe "144" to factor and print out the response
+ *   write.puts "144"
+ *   p master.gets #=> "144: 2 2 2 2 3 3\n"
+ *   write.close # close the pipe
+ *
+ *   # The result of read operation when pty slave is closed is platform
+ *   # dependent.
+ *   ret = begin
+ *           m.gets          # FreeBSD returns nil.
+ *         rescue Errno::EIO # GNU/Linux raises EIO.
+ *           nil
+ *         end
+ *   p ret #=> nil
  *
  * == License
  *
@@ -727,6 +739,7 @@ void
 Init_pty()
 {
     cPTY = rb_define_module("PTY");
+    /* :nodoc */
     rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_singleton_method(cPTY,"check",pty_check,-1);

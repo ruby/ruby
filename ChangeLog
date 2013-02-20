@@ -1,3 +1,7 @@
+Wed Feb 20 13:37:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/pty/pty.c: Documentation for the PTY module
+
 Wed Feb 20 12:18:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* object.c: Document Data class [Bug #7890] [ruby-core:52549]
