@@ -3422,6 +3422,7 @@ else
     AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), ${RUBY_VENDOR_ARCH_LIB_FOR} !<verconf>!)
 fi
 
+AC_SUBST(libdirname, ${multiarch+arch}libdir)
 AC_SUBST(archlibdir)dnl
 AC_SUBST(sitearchlibdir)dnl
 AC_SUBST(archincludedir)dnl

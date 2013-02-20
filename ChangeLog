@@ -1,3 +1,10 @@
+Wed Feb 20 18:01:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (libdirname): adjust library path name which libruby
+	  files will be installed.  [Bug #7874]
+
+	* tool/rbinstall.rb (libdir): ditto.
+
 Wed Feb 20 13:37:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/pty/pty.c: Documentation for the PTY module
