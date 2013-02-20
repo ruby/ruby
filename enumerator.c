@@ -1631,7 +1631,7 @@ lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv)
     long i, count;
 
     yielder = argv[0];
-    memo = rb_ivar_get(yielder, id_memo);
+    memo = rb_attr_get(yielder, id_memo);
     count = NIL_P(memo) ? 0 : NUM2LONG(memo);
 
     ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
@@ -1651,7 +1651,7 @@ lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
     long i;
 
     yielder = argv[0];
-    arg = rb_ivar_get(yielder, id_memo);
+    arg = rb_attr_get(yielder, id_memo);
     if (NIL_P(arg)) {
 	arg = rb_ary_new2(RARRAY_LEN(zip_args));
 	for (i = 0; i < RARRAY_LEN(zip_args); i++) {
@@ -1708,7 +1708,7 @@ static VALUE
 lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
     long remain;
-    VALUE memo = rb_ivar_get(argv[0], id_memo);
+    VALUE memo = rb_attr_get(argv[0], id_memo);
     if (NIL_P(memo)) {
 	memo = args;
     }
@@ -1791,7 +1791,7 @@ static VALUE
 lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
     long remain;
-    VALUE memo = rb_ivar_get(argv[0], id_memo);
+    VALUE memo = rb_attr_get(argv[0], id_memo);
     if (NIL_P(memo)) {
 	memo = args;
     }
@@ -1820,7 +1820,7 @@ lazy_drop(VALUE obj, VALUE n)
 static VALUE
 lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
-    VALUE memo = rb_ivar_get(argv[0], id_memo);
+    VALUE memo = rb_attr_get(argv[0], id_memo);
     if (NIL_P(memo) && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {
 	rb_ivar_set(argv[0], id_memo, memo = Qtrue);
     }
