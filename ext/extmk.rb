@@ -658,6 +658,17 @@ if $configure_only and $command_output
     mf.macro "EXTOBJS", $extlist.empty? ? ["dmyext.#{$OBJEXT}"] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
     mf.macro "EXTLIBS", $extlibs
     mf.macro "EXTLDFLAGS", $extflags.split
+    submakeopts = []
+    if enable_config("shared", $enable_shared)
+      submakeopts << 'DLDOBJS="$(EXTOBJS) $(ENCOBJS)"'
+      submakeopts << 'EXTSOLIBS="$(EXTLIBS)"'
+      submakeopts << 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS)'
+    else
+      submakeopts << 'EXTOBJS="$(EXTOBJS) $(ENCOBJS)"'
+      submakeopts << 'EXTLIBS="$(EXTLIBS)"'
+    end
+    submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
+    mf.macro "SUBMAKEOPTS", submakeopts
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -668,21 +679,10 @@ if $configure_only and $command_output
     mf.puts "distclean:\n\t-$(Q)$(RM) ext/extinit.c"
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
-    (["all static"] + rubies).each_with_index do |tgt, i|
-      mf.print "#{tgt}:\n\t$(Q)$(MAKE) "
-      mf.print "$(MFLAGS) "
-      if enable_config("shared", $enable_shared)
-        mf.print %[DLDOBJS="$(EXTOBJS) $(ENCOBJS)" EXTSOLIBS="$(EXTLIBS)" ]
-        mf.print 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) '
-      else
-        mf.print %[EXTOBJS="$(EXTOBJS) $(ENCOBJS)" EXTLIBS="$(EXTLIBS)" ]
-      end
-      mf.print 'EXTLDFLAGS="$(EXTLDFLAGS)" '
-      if i == 0
-        mf.puts rubies.join(' ')
-      else
-        mf.puts '$@'
-      end
+    submake = "$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS)"
+    mf.puts "all static:\n\t#{submake} #{rubies.join(' ')}\n"
+    rubies.each do |tgt|
+      mf.puts "#{tgt}:\n\t#{submake} $@"
     end
     mf.puts
     exec = config_string("exec") {|str| str + " "}
