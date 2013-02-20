@@ -355,6 +355,23 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_user_install
+    util_clear_gems
+
+    Gem::Installer.new(@a1_path).install
+
+    @cmd.handle_options %w[--user-install]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    installer = @cmd.installer
+    user_install = installer.instance_variable_get :@user_install
+
+    assert user_install, 'user_install must be set on the installer'
+  end
+
   def test_handle_options_system
     @cmd.handle_options %w[--system]
 

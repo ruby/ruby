@@ -1,3 +1,10 @@
+Wed Feb 20 09:34:43 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/update_command.rb:  Create the installer after
+	  options are processed.  [ruby-trunk - Bug #7779]
+	* test/rubygems/test_gem_commands_update_command.rb:  Test for the
+	  above.
+
 Wed Feb 20 07:51:19 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/installer.rb:  Use gsub instead of gsub! to avoid

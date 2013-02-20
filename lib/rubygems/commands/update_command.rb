@@ -14,6 +14,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
+  attr_reader :installer # :nodoc:
+
   def initialize
     super 'update', 'Update installed gems to the latest version',
       :document => %w[rdoc ri],
@@ -39,7 +41,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
     add_prerelease_option "as update targets"
 
     @updated   = []
-    @installer = Gem::DependencyInstaller.new options
+    @installer = nil
   end
 
   def arguments # :nodoc:
@@ -85,6 +87,9 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
   def update_gem name, version = Gem::Requirement.default
     return if @updated.any? { |spec| spec.name == name }
+
+    @installer ||= Gem::DependencyInstaller.new options
+
     success = false
 
     say "Updating #{name}"
