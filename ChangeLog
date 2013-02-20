@@ -1,4 +1,7 @@
-Wed Feb 20 18:01:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 20 18:02:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (target_os): do not strip -gnu suffix on Linux if
+	  --target is given explicitly.  [Bug #7874]
 
 	* configure.in (libdirname): adjust library path name which libruby
 	  files will be installed.  [Bug #7874]

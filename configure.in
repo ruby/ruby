@@ -211,6 +211,7 @@ AC_DEFINE_UNQUOTED(RUBY_BASE_NAME, "${RUBY_BASE_NAME}" !<verconf>!)
 AC_DEFINE_UNQUOTED(RUBY_VERSION_NAME, RUBY_BASE_NAME"-"RUBY_LIB_VERSION !<verconf>!)
 
 AC_CANONICAL_TARGET
+test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
 
