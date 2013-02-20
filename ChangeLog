@@ -1,3 +1,7 @@
+Thu Feb 21 03:16:37 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* NEWS: Floats are frozen too
+
 Thu Feb 21 03:10:53 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* NEWS: Add that Fixnums and Bignums are frozen

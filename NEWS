@@ -462,8 +462,9 @@ with all sufficient information, see the ChangeLog file.
 
   * Fixnum
   * Bignum
+  * Float
 
-    Fixnums and Bignums are frozen
+    Fixnums, Bignums and Floats are frozen
 
   * Signal.trap
 
