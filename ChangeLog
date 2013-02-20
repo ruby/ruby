@@ -1,3 +1,8 @@
+Wed Feb 20 19:27:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (HAVE_RB_SCAN_ARGS_OPTIONAL_HASH): for
+	  rb_scan_args() optional hash feature.  [Bug #7861]
+
 Wed Feb 20 18:02:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (target_os): do not strip -gnu suffix on Linux if
