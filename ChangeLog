@@ -1,3 +1,7 @@
+Thu Feb 21 03:10:53 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* NEWS: Add that Fixnums and Bignums are frozen
+
 Wed Feb 20 17:02:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (vm_call0_body): check interrupts after method dispatch

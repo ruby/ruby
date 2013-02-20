@@ -460,6 +460,11 @@ with all sufficient information, see the ChangeLog file.
     This method was removed. Two procs are == only when they are
     the same object.
 
+  * Fixnum
+  * Bignum
+
+    Fixnums and Bignums are frozen
+
   * Signal.trap
 
     See above.
