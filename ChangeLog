@@ -1,3 +1,8 @@
+Thu Feb 21 04:54:14 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/installer.rb:  Use gsub instead of gsub! to avoid
+	  altering @bin_dir.  Fixes tests on windows.  [ruby-trunk - Bug #7885]
+
 Thu Feb 21 03:16:37 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* NEWS: Floats are frozen too
