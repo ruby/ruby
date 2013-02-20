@@ -3112,6 +3112,12 @@ Init_Object(void)
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
 
+    /*
+     * Document-class: Data
+     *
+     * This is a recommended base class for C extensions using Data_Make_Struct
+     * or Data_Wrap_Struct, see README.EXT for details.
+     */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
 
