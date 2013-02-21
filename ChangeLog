@@ -1,3 +1,8 @@
+Thu Feb 21 12:56:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (rb_group_member): get rid of NGROUPS dependency.
+	  [Bug #7886] [ruby-core:52537]
+
 Thu Feb 21 12:45:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): try two levels upper for stripping

@@ -1588,6 +1588,8 @@ class TestProcess < Test::Unit::TestCase
 	sleep
 EOS
       begin
+        sleep 0.1
+
         # test Process.getsid() w/o arg
         assert_equal(Marshal.load(io), Process.getsid)
 
