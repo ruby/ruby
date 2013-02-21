@@ -1,3 +1,11 @@
+Thu Feb 21 13:15:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (access_internal): removed.
+	* file.c (rb_file_readable_real): use access() instead of
+	  access_internal().
+	* file.c (rb_file_writable_real): ditto.
+	* file.c (rb_file_executable_real): ditto.
+
 Thu Feb 21 13:04:59 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (eaccess): use access() when not using setuid nor setgid.
