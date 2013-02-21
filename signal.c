@@ -626,10 +626,31 @@ sigbus(int sig SIGINFO_ARG)
 #endif
 
 #ifdef SIGSEGV
+static void ruby_abort(void)
+{
+#ifdef __sun
+    /* Solaris's abort() is async signal unsafe. Of course, it is not
+     *  POSIX compliant.
+     */
+    raise(SIGABRT)
+#else
+    abort();
+#endif
+
+}
+
 static int segv_received = 0;
+extern int ruby_disable_gc_stress;
+
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
+    if (segv_received) {
+	char msg[] = "SEGV received in SEGV handler\n";
+	write(2, msg, sizeof(msg));
+	ruby_abort();
+    }
+
 #ifdef USE_SIGALTSTACK
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
@@ -638,16 +659,10 @@ sigsegv(int sig SIGINFO_ARG)
 	ruby_thread_stack_overflow(th);
     }
 #endif
-    if (segv_received) {
-	fprintf(stderr, "SEGV received in SEGV handler\n");
-	abort();
-    }
-    else {
-	extern int ruby_disable_gc_stress;
-	segv_received = 1;
-	ruby_disable_gc_stress = 1;
-	rb_bug("Segmentation fault");
-    }
+
+    segv_received = 1;
+    ruby_disable_gc_stress = 1;
+    rb_bug("Segmentation fault");
 }
 #endif
 

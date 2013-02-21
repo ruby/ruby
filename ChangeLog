@@ -1,3 +1,9 @@
+Thu Feb 21 14:14:13 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sigsegv): avoid to use async signal unsafe functions
+	  when nested sigsegv is happen.
+	  [Bug #5014] [ruby-dev:44082]
+
 Thu Feb 21 13:47:59 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (rb_group_member): added an error check. SUS says,
