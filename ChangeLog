@@ -1,3 +1,8 @@
+Thu Feb 21 13:47:59 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (rb_group_member): added an error check. SUS says,
+	  getgroups(small_value) may return EINVAL.
+
 Thu Feb 21 13:37:07 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (RB_MAX_GROUPS): moved to
