@@ -1,3 +1,8 @@
+Thu Feb 21 16:23:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (vm_call0_body): check interrupts after method dispatch
+	  from C methods. [Bug #7878]
+
 Thu Feb 21 05:03:38 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/update_command.rb:  Create the installer after
