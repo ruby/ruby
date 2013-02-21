@@ -2699,6 +2699,7 @@ AS_CASE("$enable_shared", [yes], [
     AS_CASE(["$libdir"], ['${exec_prefix}/'*], [libdir_basename=`basename "$libdir"`])
   fi
   AC_DEFINE_UNQUOTED(LIBDIR_BASENAME, ["${libdir_basename}"])
+  AC_SUBST(libdir_basename)
 
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
@@ -2719,7 +2720,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
-	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../${libdir_basename}'"
+	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../\${libdir_basename}'"
 	    LIBRUBY_RELATIVE=yes
 	fi
 	],
@@ -2776,7 +2777,7 @@ AS_CASE("$enable_shared", [yes], [
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
-	    libprefix="@executable_path/../${libdir_basename}"
+	    libprefix='@executable_path/../${libdir_basename}'
 	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
@@ -3236,6 +3237,9 @@ archlibdir='${libdir}/${arch}'
 sitearchlibdir='${libdir}/${sitearch}'
 archincludedir='${includedir}/${arch}'
 sitearchincludedir='${includedir}/${sitearch}'
+if test ${libdir_basename+set}; then
+    libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
+fi
 
 shvar_to_cpp() {
     local var="$1" val="$2"
