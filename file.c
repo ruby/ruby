@@ -1077,10 +1077,14 @@ eaccess(const char *path, int mode)
     struct stat st;
     rb_uid_t euid;
 
+    euid = geteuid();
+
+    /* no setuid nor setgid. run shortcut. */
+    if (getuid() == euid && getgid() == getegid())
+	return access(path, mode);
+
     if (STAT(path, &st) < 0)
 	return -1;
-
-    euid = geteuid();
 
     if (euid == 0) {
 	/* Root can read or write any file. */

@@ -1,3 +1,8 @@
+Thu Feb 21 13:04:59 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (eaccess): use access() when not using setuid nor setgid.
+	  This is minor optimization.
+
 Thu Feb 21 12:56:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (rb_group_member): get rid of NGROUPS dependency.
