@@ -20,7 +20,7 @@ Thu Feb 21 13:47:59 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Thu Feb 21 13:37:07 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* file.c (RB_MAX_GROUPS): moved to
+	* process.c (RB_MAX_GROUPS): moved to
 	* internal.h (RB_MAX_GROUPS): here.
 
 	* file.c (rb_group_member): use RB_MAX_GROUPS instead of
