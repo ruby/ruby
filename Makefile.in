@@ -34,7 +34,6 @@ exec_prefix = @exec_prefix@
 bindir = @bindir@
 sbindir = @sbindir@
 libdir = @libdir@
-libdir_basename = @libdir_basename@
 libexecdir = @libexecdir@
 datarootdir = @datarootdir@
 datadir = @datadir@

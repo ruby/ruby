@@ -1,4 +1,7 @@
-Thu Feb 21 09:51:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 21 12:42:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (libdir_basename): expand with multiarch in configure,
+	  not to defer the expansion till ruby.pc.in and mkmf.rb.  [Bug #7874]
 
 	* configure.in (libdir_basename): also -rpath and -install_name flags
 	  are affected when libruby directory changes.  [Bug #7874]

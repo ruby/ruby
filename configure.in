@@ -2667,6 +2667,15 @@ AS_CASE(["$target_os"],
     DLDLIBS="$DLDLIBS -lc"
     ])
 
+AC_ARG_ENABLE(multiarch,
+	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
+	      [multiarch=], [unset multiarch])
+
+archlibdir='${libdir}/${arch}'
+sitearchlibdir='${libdir}/${sitearch}'
+archincludedir='${includedir}/${arch}'
+sitearchincludedir='${includedir}/${sitearch}'
+
 AC_ARG_WITH(soname,
 	AS_HELP_STRING([--with-soname=SONAME], [base name of shared library]),
 	[RUBY_SO_NAME=$withval], [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
@@ -2680,7 +2689,7 @@ ENABLE_SHARED=no
 AC_ARG_ENABLE(shared,
        AS_HELP_STRING([--enable-shared], [build a shared library for Ruby]),
        [enable_shared=$enableval])
-libprefix='$(libdir)'
+libprefix=${multiarch+'$(archlibdir)'}${multiarch-'$(libdir)'}
 LIBRUBY_RELATIVE=${load_relative-no}
 AS_CASE("$enable_shared", [yes], [
   LIBRUBY='$(LIBRUBY_SO)'
@@ -2699,7 +2708,7 @@ AS_CASE("$enable_shared", [yes], [
     AS_CASE(["$libdir"], ['${exec_prefix}/'*], [libdir_basename=`basename "$libdir"`])
   fi
   AC_DEFINE_UNQUOTED(LIBDIR_BASENAME, ["${libdir_basename}"])
-  AC_SUBST(libdir_basename)
+  libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
 
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
@@ -2720,7 +2729,8 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
-	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../\${libdir_basename}'"
+	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
+	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
 	fi
 	],
@@ -2777,7 +2787,7 @@ AS_CASE("$enable_shared", [yes], [
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
-	    libprefix='@executable_path/../${libdir_basename}'
+	    libprefix="@executable_path/../${libdir_basename}"
 	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
@@ -2834,7 +2844,7 @@ AS_CASE("$enable_shared", [yes], [
 ])
 if test "$enable_rpath" = yes; then
     test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
-    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix} -L\$(libdir)"
+    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix} -L${libprefix}"
     LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
     LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
 fi
@@ -3228,18 +3238,6 @@ AS_CASE(["$target_os"],
     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
-
-AC_ARG_ENABLE(multiarch,
-	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
-	      [multiarch=], [unset multiarch])
-
-archlibdir='${libdir}/${arch}'
-sitearchlibdir='${libdir}/${sitearch}'
-archincludedir='${includedir}/${arch}'
-sitearchincludedir='${includedir}/${sitearch}'
-if test ${libdir_basename+set}; then
-    libdir_basename="${libdir_basename}"${multiarch+'/${arch}'}
-fi
 
 shvar_to_cpp() {
     local var="$1" val="$2"
