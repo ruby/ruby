@@ -137,6 +137,7 @@ load Gem.bin_path('a', 'executable', version)
     path = File.join @spec.gem_dir, "extconf_args"
 
     assert_equal args.inspect, File.read(path).strip
+    assert File.directory? File.join(@spec.gem_dir, 'lib')
   end
 
   def test_check_executable_overwrite
