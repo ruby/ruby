@@ -1,3 +1,10 @@
+Fri Feb 22 06:27:07 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/globals.rdoc:  Document what setting $VERBOSE does.  [Bug #7899]
+
+	* doc/globals.rdoc:  Added pointer to $-w and $-v for full
+	  documentation.
+
 Fri Feb 22 02:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/abbrev.rb: Add words parameter to Abbrev::abbrev
