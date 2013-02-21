@@ -604,6 +604,23 @@ rb_get_next_signal(void)
     return sig;
 }
 
+
+#ifdef USE_SIGALTSTACK
+static void
+check_stack_overflow(const void *addr)
+{
+    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
+    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+    rb_thread_t *th = GET_THREAD();
+    if (ruby_stack_overflowed_p(th, addr)) {
+	ruby_thread_stack_overflow(th);
+    }
+}
+#define CHECK_STACK_OVERFLOW() check_stack_overflow(info->si_addr)
+#else
+#define CHECK_STACK_OVERFLOW() (void)0
+#endif
+
 #ifdef SIGBUS
 static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
@@ -613,13 +630,8 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __APPLE__ && defined USE_SIGALTSTACK
-    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-    rb_thread_t *th = GET_THREAD();
-    if (ruby_stack_overflowed_p(th, info->si_addr)) {
-	ruby_thread_stack_overflow(th);
-    }
+#if defined __APPLE__
+    CHECK_STACK_OVERFLOW();
 #endif
     rb_bug("Bus Error");
 }
@@ -651,14 +663,7 @@ sigsegv(int sig SIGINFO_ARG)
 	ruby_abort();
     }
 
-#ifdef USE_SIGALTSTACK
-    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-    rb_thread_t *th = GET_THREAD();
-    if (ruby_stack_overflowed_p(th, info->si_addr)) {
-	ruby_thread_stack_overflow(th);
-    }
-#endif
+    CHECK_STACK_OVERFLOW();
 
     segv_received = 1;
     ruby_disable_gc_stress = 1;

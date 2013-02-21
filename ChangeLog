@@ -1,3 +1,8 @@
+Thu Feb 21 16:34:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): extract duplicated code and get rid
+	  of declaration-after-statement.  [Bug #5014]
+
 Thu Feb 21 14:14:13 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sigsegv): avoid to use async signal unsafe functions
