@@ -1013,9 +1013,6 @@ rb_file_lstat(VALUE obj)
 #endif
 }
 
-/* Linux allow 65536 groups and it is maximum value as far as we know. */
-#define RUBY_GROUP_MAX 65536
-
 static int
 rb_group_member(GETGROUPS_T gid)
 {
@@ -1036,7 +1033,7 @@ rb_group_member(GETGROUPS_T gid)
      * accept more larger value.
      * So we don't trunk NGROUPS anymore.
      */
-    while (groups <= RUBY_GROUP_MAX) {
+    while (groups <= RB_MAX_GROUPS) {
 	gary = ALLOCV_N(GETGROUPS_T, v, groups);
 	anum = getgroups(groups, gary);
 	if (anum != groups)

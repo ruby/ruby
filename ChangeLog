@@ -1,3 +1,11 @@
+Thu Feb 21 13:37:07 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (RB_MAX_GROUPS): moved to
+	* internal.h (RB_MAX_GROUPS): here.
+
+	* file.c (rb_group_member): use RB_MAX_GROUPS instead of
+	  RUBY_GROUP_MAX. They are the same.
+
 Thu Feb 21 13:15:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (access_internal): removed.
