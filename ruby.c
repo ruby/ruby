@@ -464,15 +464,30 @@ ruby_init_loadpath_safe(int safe_level)
 #endif
 	const ptrdiff_t bindir_len = (ptrdiff_t)sizeof(bindir) - 1;
 	const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir) - 1;
-	*p = 0;
-	if (p - libpath >= bindir_len && !STRCASECMP(p - bindir_len, bindir)) {
+
+#ifdef ENABLE_MULTIARCH
+	char *p2 = NULL;
+
+      multiarch:
+#endif
+	if (p - libpath >= bindir_len && !STRNCASECMP(p - bindir_len, bindir, bindir_len)) {
 	    p -= bindir_len;
-	    *p = 0;
 	}
-	else if (p - libpath >= libdir_len && !strcmp(p - libdir_len, libdir)) {
+	else if (p - libpath >= libdir_len && !strncmp(p - libdir_len, libdir, libdir_len)) {
 	    p -= libdir_len;
-	    *p = 0;
 	}
+#ifdef ENABLE_MULTIARCH
+	else if (p2) {
+	    p = p2;
+	}
+	else {
+	    p2 = p;
+	    p = rb_enc_path_last_separator(libpath, p, rb_ascii8bit_encoding());
+	    if (p) goto multiarch;
+	    p = p2;
+	}
+#endif
+	*p = 0;
     }
 #if !VARIABLE_LIBPATH
     else {

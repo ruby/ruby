@@ -1,4 +1,7 @@
-Thu Feb 21 12:42:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 21 12:45:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): try two levels upper for stripping
+	  libdir name.  [Bug #7874]
 
 	* configure.in (libdir_basename): expand with multiarch in configure,
 	  not to defer the expansion till ruby.pc.in and mkmf.rb.  [Bug #7874]
