@@ -1,3 +1,9 @@
+Fri Feb 22 06:30:57 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/globals.rdoc:  Document what setting $DEBUG does.
+
+	* doc/globals.rdoc:  Added pointer to $-d for full documentation.
+
 Fri Feb 22 06:27:07 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/globals.rdoc:  Document what setting $VERBOSE does.  [Bug #7899]
