@@ -1,3 +1,8 @@
+Fri Feb 22 23:46:20 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
+	  fix a typo in comment in r39384.
+
 Fri Feb 22 18:31:46 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
