@@ -1,3 +1,11 @@
+Sat Feb 23 08:14:43 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* backport r39400-r39407 from trunk.
+
+	* NEWS: many additions
+
+	* object.c: Add doc for Module.prepended
+
 Sat Feb 23 06:07:04 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/installer.rb (build_extensions):  Create extension

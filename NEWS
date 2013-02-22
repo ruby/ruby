@@ -18,6 +18,10 @@ with all sufficient information, see the ChangeLog file.
 === Library updates (outstanding ones only)
 
 * builtin classes
+  * ARGF
+    * added method:
+      * added ARGF#codepoints and ARGF#each_codepoint, like the corresponding
+        methods for IO.
 
   * Array
     * added method:
@@ -37,6 +41,7 @@ with all sufficient information, see the ChangeLog file.
       * added Enumerator#size for lazy size evaluation.
     * extended method:
       * Enumerator.new accept an argument for lazy size evaluation.
+    * new class Enumerator::Lazy for lazy enumeration
 
   * ENV
     * aliased method:
@@ -104,6 +109,8 @@ with all sufficient information, see the ChangeLog file.
       * added Module#prepend which is similar to Module#include,
         however a method in the prepended module overrides the
         corresponding method in the prepending module.
+      * added Module.prepended and Module.prepend_features, similar
+        to included and append_features.
       * added Module#refine, which extends a class or module locally.
         [experimental]
     * extended method:
@@ -125,6 +132,9 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added nil.to_h which returns {}
 
+  * ObjectSpace::WeakMap
+    * new low level class to hold weak references to objects.
+
   * Proc
     * incompatible change:
       * removed Proc#== so two procs are == only when they are
@@ -140,6 +150,11 @@ with all sufficient information, see the ChangeLog file.
       * added Range#bsearch for binary search.
 
   * RubyVM (MRI specific)
+    * added RubyVM::InstructionSequence.of to get the instruction sequence
+      from a method or a block.
+    * added RubyVM::InstructionSequence#path, #absolute_path, #label,
+      #base_label and #first_lineno to retrieve information from where
+      the instruction sequence was defined.
     * added Environment variables to specify stack usage:
       * RUBY_THREAD_VM_STACK_SIZE: vm stack size used at thread creation.
         default: 128KB (32bit CPU) or 256KB (64bit CPU).
@@ -187,6 +202,9 @@ with all sufficient information, see the ChangeLog file.
         pending_interrupt? for asynchronous handling of exceptions
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
+    * new class Thread::Backtrace::Location to hold backtrace location
+      information. These are returned by Thread#backtrace_locations and
+      Kernel#caller_locations.
     * incompatible changes:
       * Thread#join and Thread#value now raises a ThreadError if target thread
         is the current or main thread.
@@ -421,6 +439,8 @@ with all sufficient information, see the ChangeLog file.
 
   * Default source encoding is changed to UTF-8. (was US-ASCII)
 
+  * No warning for unused variables starting with '_'
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Array#values_at
@@ -445,7 +465,6 @@ with all sufficient information, see the ChangeLog file.
   * IO#bytes
   * ARGF#lines
   * ARGF#chars
-  * ARGF#codepoints
   * ARGF#bytes
   * StringIO#lines
   * StringIO#chars
@@ -482,6 +501,12 @@ with all sufficient information, see the ChangeLog file.
 
   * Kernel#respond_to? against a protected method now returns false
     unless the second argument is true.
+
+  * Kernel#respond_to_missing?
+  * Kernel#initialize_clone
+  * Kernel#initialize_dup
+
+    These methods are now private.
 
   * Dir.mktmpdir in lib/tmpdir.rb
 
