@@ -644,7 +644,7 @@ static void ruby_abort(void)
     /* Solaris's abort() is async signal unsafe. Of course, it is not
      *  POSIX compliant.
      */
-    raise(SIGABRT)
+    raise(SIGABRT);
 #else
     abort();
 #endif

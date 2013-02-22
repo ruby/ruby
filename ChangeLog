@@ -1,3 +1,7 @@
+Fri Feb 22 14:55:41 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* signal.c (ruby_abort): fix typo in r39354 [Bug #5014]
+
 Fri Feb 22 12:46:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rb_random_ulong_limited): fix error message for negative
