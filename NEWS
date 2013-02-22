@@ -183,8 +183,8 @@ with all sufficient information, see the ChangeLog file.
         variable keys.
       * added Thread#thread_variable? for testing to see if a particular thread
         variable has been set.
-      * added Thread#pending_interrupt? and Thread.handle_interrupt for
-        asynchronous handling of exceptions
+      * added Thread.handle_interrupt as well as instance and singleton methods
+        pending_interrupt? for asynchronous handling of exceptions
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
     * incompatible changes:
