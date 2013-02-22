@@ -1,3 +1,11 @@
+Fri Feb 22 18:36:51 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
+	  new attribute to read/write entity expansion text limit.  the default
+	  limit is 10Kb.
+
+	* lib/rexml/text.rb (REXML::Text.unnormalize): check above attribute.
+
 Fri Feb 22 14:48:15 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (vm_exec): get rid of a SEGV when calling rb_iter_break() from
