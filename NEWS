@@ -125,6 +125,9 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added nil.to_h which returns {}
 
+  * ObjectSpace::WeakMap
+    * new low level class to hold weak references to objects.
+
   * Proc
     * incompatible change:
       * removed Proc#== and #eql? so two procs are == only when they are
