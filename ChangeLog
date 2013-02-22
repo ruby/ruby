@@ -1,3 +1,10 @@
+Sat Feb 23 06:07:04 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/installer.rb (build_extensions):  Create extension
+	  install destination before building extension.  Patch by Kenta Murata.
+	  [ruby-trunk - Bug #7897]
+	* test/rubygems/test_gem_installer.rb:  Test for the above.
+
 Sat Feb 23 04:34:44 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* NEWS: pending_interrupt? is both instance and singleton method

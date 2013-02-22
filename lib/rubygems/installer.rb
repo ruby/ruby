@@ -8,6 +8,7 @@ require 'rubygems/exceptions'
 require 'rubygems/package'
 require 'rubygems/ext'
 require 'rubygems/user_interaction'
+require 'fileutils'
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -671,6 +672,8 @@ TEXT
                 end
 
       begin
+        FileUtils.mkdir_p dest_path
+
         Dir.chdir extension_dir do
           results = builder.build(extension, gem_dir, dest_path,
                                   results, @build_args)
