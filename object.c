@@ -790,6 +790,26 @@ rb_obj_tap(VALUE obj)
  *        module Enumerable
  *          include A
  *        end
+ *         # => prints "A included in Enumerable"
+ */
+
+/*
+ * Document-method: prepended
+ *
+ * call-seq:
+ *    prepended( othermod )
+ *
+ * The equivalent of <tt>included</tt>, but for prepended modules.
+ *
+ *        module A
+ *          def self.prepended(mod)
+ *            puts "#{self} prepended to #{mod}"
+ *          end
+ *        end
+ *        module Enumerable
+ *          prepend A
+ *        end
+ *         # => prints "A prepended to Enumerable"
  */
 
 /*
