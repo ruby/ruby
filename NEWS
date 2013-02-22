@@ -498,6 +498,12 @@ with all sufficient information, see the ChangeLog file.
   * Kernel#respond_to? against a protected method now returns false
     unless the second argument is true.
 
+  * Kernel#respond_to_missing?
+  * Kernel#initialize_clone
+  * Kernel#initialize_dup
+
+    These methods are now private.
+
   * Dir.mktmpdir in lib/tmpdir.rb
 
     See above.
