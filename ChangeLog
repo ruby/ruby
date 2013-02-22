@@ -1,3 +1,9 @@
+Fri Feb 22 11:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* numeric.c: Examples and formatting for Numeric and Float
+	  Based on a patch by Zach Morek and Oren K of newhaven.rb
+	  [Github documenting-ruby/ruby#5]
+
 Fri Feb 22 07:04:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/installer.rb (build_extensions):  Create extension
