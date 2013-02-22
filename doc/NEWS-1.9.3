@@ -1,5 +1,4 @@
 # -*- rdoc -*-
-
 = NEWS for Ruby 1.9.3
 
 This document is a list of user visible feature changes made between
@@ -15,6 +14,13 @@ with all sufficient information, see the ChangeLog file.
 * Ruby's License is changed from a dual license with GPLv2
   to a dual license with 2-clause BSDL.
 
+=== Known platform dependent issues
+==== OS X Lion
+
+* You have to configure ruby with '--with-gcc=gcc-4.2' if you're using
+  Xcode 4.1, or, if you're using Xcode 4.2, you have to configure ruby
+  with '--with-gcc=clang'.
+
 === C API updates
 
 * rb_scan_args() is enhanced with support for option hash argument
@@ -22,6 +28,9 @@ with all sufficient information, see the ChangeLog file.
 
 * ruby_vm_at_exit() added.  This enables extension libs to hook a VM
   termination.
+
+* rb_reserved_fd_p() added.  If you want to close all file descriptors,
+  check using this API.  [ruby-core:37759]
 
 === Library updates (outstanding ones only)
 
@@ -103,15 +112,33 @@ with all sufficient information, see the ChangeLog file.
       the platform don't support supplementary groups concept.
 
 * bigdecimal
+
   * BigDecimal#power and BigDecimal#** support non-integral exponent.
 
   * Kernel.BigDecimal and BigDecimal.new now accept instances of Integer,
-    Rational, and Float.  If you pass a Rational or a Float to them, you must
-    specify the precision to produce the digits of a BigDecimal.
+    Rational, Float, and BigDecimal.  If you pass a Rational or a Float to
+    them, you must specify the precision to produce the digits of a BigDecimal.
 
   * The behavior of BigDecimal#coerce with a Rational is changed.  It uses
     the precision of the receiver BigDecimal to produce the digits of a
     BigDecimal from the given Rational.
+
+* bigdecimal/util
+
+  * BigDecimal#to_d and Integer#to_d are added.
+
+  * Float#to_d accepts a precision.
+
+  * Rational#to_d raises ArgumentError when passing zero or negative
+    precision.
+
+  * Rational#to_d
+
+    * Zero and an implicit precision is deprecated.
+      This feature is removed at the next release of bigdecimal.
+
+    * A negative precision isn't supported.
+      Be careful it is an incompatible change.
 
 * date
 
@@ -165,6 +192,9 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* json
+  * updated to v1.5.4.
+
 * matrix
   * new classes:
     * Matrix::EigenvalueDecomposition
@@ -213,8 +243,12 @@ with all sufficient information, see the ChangeLog file.
       http.request_post('/continue', 'body=BODY', 'expect' => '100-continue')
 
   * new method:
-    * Net::HTTPRequest#set_form: Added to support
+    * Net::HTTPRequest#set_form): Added to support
       both application/x-www-form-urlencoded and multipart/form-data.
+
+* objspace
+  * new method:
+    * ObjectSpace::memsize_of_all
 
 * openssl
   * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme
@@ -237,18 +271,18 @@ with all sufficient information, see the ChangeLog file.
   * support for bash/zsh completion.
 
 * Rake
-  * Rake has been upgraded from 0.8.7 to 0.9.2.1.  For full release notes see
+  * Rake has been upgraded from 0.8.7 to 0.9.2.2.  For full release notes see
     https://github.com/jimweirich/rake/blob/master/CHANGES
 
 * RDoc
-  * RDoc has been upgraded from 2.5.8 to 3.8.  For full release notes see
+  * RDoc has been upgraded to version 3.9.4.  For full release notes see
     http://docs.seattlerb.org/rdoc/History_txt.html
 
 * rexml
   * Support Ruby native encoding mechanism and iconv dependency is dropped.
 
 * RubyGems
-  * RubyGems has been upgraded to version 1.8.5.1. For full release notes see
+  * RubyGems has been upgraded to version 1.8.10. For full release notes see
     http://rubygems.rubyforge.org/rubygems-update/History_txt.html
 
 * stringio
@@ -302,4 +336,6 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
-  None
+  * Rational#to_d
+
+    See above.

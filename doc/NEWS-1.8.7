@@ -54,7 +54,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten
   * Array#flatten!
 
-    Take an optional argument that determines the level of recursion
+    Takes an optional argument that determines the level of recursion
     to flatten.
 
   * Array#eql?
@@ -77,6 +77,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#reject
   * Array#reject!
   * Array#delete_if
+  * Array#select
 
     Return an enumerator if no block is given.
 
@@ -160,6 +161,10 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable#reduce
 
     New alias to #inject.
+
+  * Enumerable#to_a
+
+    Can take optional arguments and pass them to #each.
 
   * Hash#eql?
   * Hash#hash
@@ -262,12 +267,17 @@ with all sufficient information, see the ChangeLog file.
 
   * Regexp.union accepts an array of patterns.
 
+  * String#bytes
+
+    New method
+
   * String#bytesize
 
     New method, returning the size in bytes. (alias length and size)
 
   * String#chars
   * String#each_char
+  * String#lines
   * String#partition
   * String#rpartition
   * String#start_with?
@@ -500,6 +510,15 @@ with all sufficient information, see the ChangeLog file.
     instead of 'MM.DD.YY'.  While the change may confuse you, you can
     always use Date.strptime() when you know what you are dealing
     with.
+
+* REXML
+
+  * REXML::Document.entity_expansion_limit=
+
+    New method to set the entity expansion limit. By default the limit is
+    set to 10000.  See the following URL for details.
+
+    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
 
 * stringio
 
