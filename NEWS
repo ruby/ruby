@@ -37,6 +37,7 @@ with all sufficient information, see the ChangeLog file.
       * added Enumerator#size for lazy size evaluation.
     * extended method:
       * Enumerator.new accept an argument for lazy size evaluation.
+    * new class Enumerator::Lazy for lazy enumeration
 
   * ENV
     * aliased method:
