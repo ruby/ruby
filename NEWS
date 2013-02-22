@@ -143,6 +143,11 @@ with all sufficient information, see the ChangeLog file.
       * added Range#bsearch for binary search.
 
   * RubyVM (MRI specific)
+    * added RubyVM::InstructionSequence.of to get the instruction sequence
+      from a method or a block.
+    * added RubyVM::InstructionSequence#path, #absolute_path, #label,
+      #base_label and #first_lineno to retrieve information from where
+      the instruction sequence was defined.
     * added Environment variables to specify stack usage:
       * RUBY_THREAD_VM_STACK_SIZE: vm stack size used at thread creation.
         default: 128KB (32bit CPU) or 256KB (64bit CPU).
