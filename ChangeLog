@@ -1,3 +1,7 @@
+Sat Feb 23 04:34:44 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* NEWS: pending_interrupt? is both instance and singleton method
+
 Sat Feb 23 02:49:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* NEWS: Add Thread#pending_interrupt? and Thread.handle_interrupt
