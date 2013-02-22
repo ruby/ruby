@@ -185,6 +185,12 @@ negative_int_p(VALUE num)
     return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
 }
 
+int
+rb_num_negative_p(VALUE num)
+{
+    return negative_int_p(num);
+}
+
 /*
  *  call-seq:
  *     num.coerce(numeric)  ->  array
