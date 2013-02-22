@@ -5,7 +5,7 @@ require 'shellwords'
 class TestRbConfig < Test::Unit::TestCase
   @@with_config = {}
 
-  Shellwords::shellwords(CONFIG["configure_args"]).grep(/\A--with-([^=]*)=(.*)/) do
+  Shellwords::shellwords(RbConfig::CONFIG["configure_args"]).grep(/\A--with-([^=]*)=(.*)/) do
     @@with_config[$1.tr('_', '-')] = $2
   end
 
