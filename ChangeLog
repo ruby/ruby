@@ -1,3 +1,8 @@
+Fri Feb 22 14:28:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (rb_exec_end_proc): remember the latest exit status.
+	  [ruby-core:43173][Bug #5218]
+
 Fri Feb 22 14:25:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): don't set 0 to
