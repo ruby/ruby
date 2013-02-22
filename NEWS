@@ -200,6 +200,9 @@ with all sufficient information, see the ChangeLog file.
         pending_interrupt? for asynchronous handling of exceptions
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
+    * new class Thread::Backtrace::Location to hold backtrace location
+      information. These are returned by Thread#backtrace_locations and
+      Kernel#caller_locations.
     * incompatible changes:
       * Thread#join and Thread#value now raises a ThreadError if target thread
         is the current or main thread.
