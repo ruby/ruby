@@ -1,3 +1,8 @@
+Fri Feb 22 11:33:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#init_mkmf): adjust default library path
+	  for multiarch.  [Bug #7874]
+
 Fri Feb 22 11:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* enum.c (Enumerable#chunk: Improved examples, grammar, and formatting

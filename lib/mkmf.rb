@@ -2339,7 +2339,7 @@ site-install-rb: install-rb
     $LIBRUBYARG = ""
     $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
     $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
-    $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(libdir)"]
+    $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(#{config["libdirname"]})"]
     $DEFLIBPATH.unshift(".")
     $LIBPATH = []
     $INSTALLFILES = []
