@@ -406,10 +406,6 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     if (reg_cfp != th->cfp + 1) {
 	rb_bug("cfp consistency error - send");
     }
-#ifdef __llvm__
-#define RB_LLVM_GUARD(v) RB_GC_GUARD(v)
-    RB_LLVM_GUARD(reg_cfp);
-#endif
 
     vm_pop_frame(th);
 

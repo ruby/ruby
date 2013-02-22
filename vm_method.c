@@ -99,7 +99,7 @@ void
 rb_gc_mark_unlinked_live_method_entries(void *pvm)
 {
     rb_vm_t *vm = pvm;
-    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
+    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list;
 
     while (ume) {
 	if (ume->me->mark) {

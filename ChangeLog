@@ -1,3 +1,20 @@
+Fri Feb 22 14:40:57 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c : remove a unused function.
+
+Fri Feb 22 14:40:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (onig_number_of_names): suppress a warning.
+
+Fri Feb 22 14:40:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_cfunc): remove useless hack.
+
+Fri Feb 22 14:40:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_cfunc): suppress a warning.  note that
+	  `volatile type *var' doesn't make var itself volatile.
+
 Fri Feb 22 14:28:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_jump.c (rb_exec_end_proc): remember the latest exit status.
