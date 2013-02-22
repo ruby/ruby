@@ -2439,7 +2439,7 @@ void sigsegv(int signum, siginfo_t *info, void *ctx){
     void *trace[TRACE_SIZE];
     int n = backtrace(trace, TRACE_SIZE);
     if (n > 0) {
-	fprintf(stdout, "backtrace:%d\n",n);
+	/*fprintf(stdout, "backtrace:%d\n",n);*/
     } else {
 	abort();
     }
