@@ -18,6 +18,10 @@ with all sufficient information, see the ChangeLog file.
 === Library updates (outstanding ones only)
 
 * builtin classes
+  * ARGF
+    * added method:
+      * added ARGF#codepoints and ARGF#each_codepoint, like the corresponding
+        methods for IO.
 
   * Array
     * added method:
@@ -456,7 +460,6 @@ with all sufficient information, see the ChangeLog file.
   * IO#bytes
   * ARGF#lines
   * ARGF#chars
-  * ARGF#codepoints
   * ARGF#bytes
   * StringIO#lines
   * StringIO#chars
