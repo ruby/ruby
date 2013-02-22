@@ -1,3 +1,7 @@
+Sat Feb 23 02:49:10 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* NEWS: Add Thread#pending_interrupt? and Thread.handle_interrupt
+
 Fri Feb 22 19:22:05 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
