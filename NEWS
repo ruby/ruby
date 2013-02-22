@@ -127,7 +127,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Proc
     * incompatible change:
-      * removed Proc#== so two procs are == only when they are
+      * removed Proc#== and #eql? so two procs are == only when they are
         the same object.
 
   * Process
@@ -458,8 +458,9 @@ with all sufficient information, see the ChangeLog file.
     each_char and each_codepoint.
 
   * Proc#==
+  * Proc#eql?
 
-    This method was removed. Two procs are == only when they are
+    These methods were removed. Two procs are == only when they are
     the same object.
 
   * Fixnum
