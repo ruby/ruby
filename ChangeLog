@@ -1,3 +1,9 @@
+Sat Feb 23 08:14:43 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* NEWS: many additions for Ruby 2.0.0
+
+	* object.c: Add doc for Module.prepended
+
 Sat Feb 23 07:52:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby.pc.in: reorder library flags which may refer library

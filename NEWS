@@ -109,6 +109,8 @@ with all sufficient information, see the ChangeLog file.
       * added Module#prepend which is similar to Module#include,
         however a method in the prepended module overrides the
         corresponding method in the prepending module.
+      * added Module.prepended and Module.prepend_features, similar
+        to included and append_features.
       * added Module#refine, which extends a class or module locally.
         [experimental]
     * extended method:
