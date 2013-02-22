@@ -1370,6 +1370,7 @@ vm_exec(rb_thread_t *th)
 			    *th->cfp->sp++ = (GET_THROWOBJ_VAL(err));
 #endif
 			}
+			th->state = 0;
 			th->errinfo = Qnil;
 			goto vm_loop_start;
 		    }
