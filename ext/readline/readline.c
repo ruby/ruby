@@ -1678,10 +1678,8 @@ Init_readline()
     rl_attempted_completion_function = readline_attempted_completion_function;
 #ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
-#endif
-#ifdef HAVE_RL_CATCH_SIGWINCH
-    rl_catch_sigwinch = 0;
-#endif
+#endif 
+
 #ifdef HAVE_RL_CLEAR_SIGNALS
     rl_clear_signals();
 #endif
