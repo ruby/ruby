@@ -1,3 +1,9 @@
+Sat Feb 23 12:58:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: remove extra topdir in VPATH, which was in
+	  win32/Makefile.sub for some reason and moved from there.
+	  [ruby-dev:46998] [Bug #7864]
+
 Tue Feb 23 12:07:00 2013  Kenta MURATA  <mrkn@mrkn.jp>
 
 	* backport r39321 from trunk. [ruby-core:51777] [Bug #7761]

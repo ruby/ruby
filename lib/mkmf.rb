@@ -2343,7 +2343,7 @@ site-install-rb: install-rb
     $LIBPATH = []
     $INSTALLFILES = []
     $NONINSTALLFILES = [/~\z/, /\A#.*#\z/, /\A\.#/, /\.bak\z/i, /\.orig\z/, /\.rej\z/, /\.l[ao]\z/, /\.o\z/]
-    $VPATH = %w[$(srcdir) $(topdir) $(arch_hdrdir)/ruby $(hdrdir)/ruby]
+    $VPATH = %w[$(srcdir) $(arch_hdrdir)/ruby $(hdrdir)/ruby]
 
     $objs = nil
     $srcs = nil
