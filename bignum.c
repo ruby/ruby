@@ -1520,9 +1520,11 @@ rb_integer_float_eq(VALUE x, VALUE y)
  *  call-seq:
  *     big <=> numeric   -> -1, 0, +1 or nil
  *
- *  Comparison---Returns -1, 0, or +1 depending on whether <i>big</i> is
- *  less than, equal to, or greater than <i>numeric</i>. This is the
- *  basis for the tests in <code>Comparable</code>.
+ *  Comparison---Returns -1, 0, or +1 depending on whether +big+ is
+ *  less than, equal to, or greater than +numeric+. This is the
+ *  basis for the tests in Comparable.
+ *
+ *  +nil+ is returned if the two values are incomparable.
  *
  */
 

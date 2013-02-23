@@ -3703,6 +3703,8 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *  Comparison --- Returns an integer (+-1+, +0+, or <code>+1</code>) if this
  *  array is less than, equal to, or greater than +other_ary+.
  *
+ *  +nil+ is returned if the two values are incomparable.
+ *
  *  Each object in each array is compared (using the <=> operator).
  *
  *  Arrays are compared in an "element-wise" manner; the first two elements

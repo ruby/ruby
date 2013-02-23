@@ -3334,10 +3334,12 @@ time_subsec(VALUE time)
  *  call-seq:
  *     time <=> other_time -> -1, 0, +1 or nil
  *
- *  Comparison---Compares _time_ with +other_time+.
- *  The return value is ++1+ if _time_ is greater than
- *  +other_time+, +0+ if _time_ is equal to +other_time+ and
- *  +-1+ if _time_ is smaller than +other_time+.
+ *  Comparison---Compares +time+ with +other_time+.
+ *
+ *  -1, 0, +1 or nil depending on whether +time+ is less  than, equal to, or
+ *  greater than +other_time+.
+ *
+ *  +nil+ is returned if the two values are incomparable.
  *
  *     t = Time.now       #=> 2007-11-19 08:12:12 -0600
  *     t2 = t + 2592000   #=> 2007-12-19 08:12:12 -0600

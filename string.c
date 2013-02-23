@@ -2358,20 +2358,22 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str <=> other_str   -> -1, 0, +1 or nil
+ *     string <=> other_string   -> -1, 0, +1 or nil
  *
- *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
- *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
- *  <i>str</i>. If the strings are of different lengths, and the strings are
- *  equal when compared up to the shortest length, then the longer string is
- *  considered greater than the shorter one. In older versions of Ruby, setting
- *  <code>$=</code> allowed case-insensitive comparisons; this is now deprecated
- *  in favor of using <code>String#casecmp</code>.
+ *
+ *  Comparison---Returns -1, 0, +1 or nil depending on whether +string+ is less
+ *  than, equal to, or greater than +other_string+.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ *
+ *  If the strings are of different lengths, and the strings are equal when
+ *  compared up to the shortest length, then the longer string is considered
+ *  greater than the shorter one.
  *
  *  <code><=></code> is the basis for the methods <code><</code>,
- *  <code><=</code>, <code>></code>, <code>>=</code>, and <code>between?</code>,
- *  included from module <code>Comparable</code>.  The method
- *  <code>String#==</code> does not use <code>Comparable#==</code>.
+ *  <code><=</code>, <code>></code>, <code>>=</code>, and
+ *  <code>between?</code>, included from module Comparable. The method
+ *  String#== does not use Comparable#==.
  *
  *     "abcdef" <=> "abcde"     #=> 1
  *     "abcdef" <=> "abcdef"    #=> 0
@@ -7946,9 +7948,15 @@ sym_succ(VALUE sym)
 /*
  * call-seq:
  *
- *   str <=> other       -> -1, 0, +1 or nil
+ *   symbol <=> other_symbol       -> -1, 0, +1 or nil
  *
- * Compares _sym_ with _other_ in string form.
+ * Compares +symbol+ with +other_symbol+ after calling #to_s on each of the
+ * symbols. Returns -1, 0, +1 or nil depending on whether +symbol+ is less
+ * than, equal to, or greater than +other_symbol+.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ *
+ * See String#<=> for more information.
  */
 
 static VALUE
