@@ -2697,7 +2697,7 @@ env_each_pair(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.reject! { |name, value| } -> Hash or nil
+ *   ENV.reject! { |name, value| } -> ENV or nil
  *   ENV.reject!                   -> Enumerator
  *
  * Equivalent to ENV#delete_if but returns +nil+ if no changes were made.

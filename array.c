@@ -4197,8 +4197,8 @@ flatten(VALUE ary, int level, int *modified)
 
 /*
  *  call-seq:
- *     ary.flatten!        -> Array or nil
- *     ary.flatten!(level) -> Array or nil
+ *     ary.flatten!        -> ary or nil
+ *     ary.flatten!(level) -> ary or nil
  *
  *  Flattens +self+ in place.
  *
