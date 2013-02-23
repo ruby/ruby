@@ -1,3 +1,10 @@
+Sat Feb 23 13:00:49 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (LIBRUBY_DLDFLAGS): Fix a bug where --with-opt-dir
+	  options given were not reflected to LIBRUBY_DLDFLAGS on many
+	  platforms including Linux and other GNU-based systems, NetBSD,
+	  AIX and BeOS.
+
 Sat Feb 23 13:00:07 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix a bug introduced in r38342 that the cflagspat

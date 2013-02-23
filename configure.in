@@ -2377,6 +2377,7 @@ AC_ARG_WITH(opt-dir,
 			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
 		    done | tr '\012' ' '`
 		set +x
+		LDFLAGS_OPTDIR="$val"
 		LDFLAGS="$LDFLAGS${LDFLAGS:+ }$val"
 		DLDFLAGS="$DLDFLAGS${DLDFLAGS:+ }$val"
 	])
@@ -2638,7 +2639,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu], [
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
 	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../${libdir_basename}'"
@@ -2656,7 +2657,7 @@ AS_CASE("$enable_shared", [yes], [
     [netbsd*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'" $LDFLAGS_OPTDIR"
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_SO_NAME).so'
 	else	# a.out platforms
@@ -2684,14 +2685,14 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	],
     [aix*], [
-	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS"
+	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS $LDFLAGS_OPTDIR"
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	],
     [beos*], [
 	AS_CASE(["$target_cpu"],
 	[powerpc*], [
-	    LIBRUBY_DLDFLAGS='-f ruby.exp -lnet -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
+	    LIBRUBY_DLDFLAGS="-f ruby.exp -lnet -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o $LDFLAGS_OPTDIR"
 	    ])
 	],
     [darwin*], [
