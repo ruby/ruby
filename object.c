@@ -1320,6 +1320,17 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *     obj <=> other -> 0 or nil
  *
  *  Returns 0 if obj === other, otherwise nil.
+ *
+ *  The <=> is used by various methods to compare objects, for example
+ *  Enumerable#sort, Enumerable#max etc.
+ *
+ *  Your implementation of <=> should return one of the following values: -1, 0,
+ *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
+ *  1 means self is bigger than other. Nil means the two values could not be
+ *  compared.
+ *
+ *  When you defined <=>, you can include Comparable to gain the methods <=, <,
+ *  ==, >=, > and between?.
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
