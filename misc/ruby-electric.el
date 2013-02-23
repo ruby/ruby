@@ -159,47 +159,63 @@ strings. Note that you must have Font Lock enabled."
                      (beginning-of-line)
                      (looking-at ruby-electric-single-keyword-in-line-re))))))))
 
+(defun ruby-electric-cua-replace-region-p()
+  (eq (key-binding "a") 'cua-replace-region))
+
+(defun ruby-electric-cua-replace-region()
+  (setq this-original-command 'self-insert-command)
+  (setq this-command 'cua-replace-region)
+  (cua-replace-region))
+
+(defmacro ruby-electric-insert (arg &rest body)
+  `(cond ((ruby-electric-cua-replace-region-p)
+          (ruby-electric-cua-replace-region))
+         ((null ,arg)
+          (self-insert-command 1)
+          ,@body)
+         (t
+          (self-insert-command (prefix-numeric-value ,arg)))))
 
 (defun ruby-electric-curlies(arg)
   (interactive "P")
-  (self-insert-command (prefix-numeric-value arg))
-  (if (ruby-electric-is-last-command-char-expandable-punct-p)
-      (cond ((ruby-electric-code-at-point-p)
-             (insert " ")
-             (save-excursion
-               (if ruby-electric-newline-before-closing-bracket
-                   (progn
-                     (newline)
-                     (insert "}")
-                     (ruby-indent-line t))
-                 (insert "}"))))
-            ((ruby-electric-string-at-point-p)
-             (if (eq last-command-event ?{)
-                 (save-excursion
-                   (backward-char 1)
-                   (or (char-equal ?\# (preceding-char))
-                       (insert "#"))
-                   (forward-char 1)
-                   (insert "}")))))))
+  (ruby-electric-insert arg
+    (if (ruby-electric-is-last-command-char-expandable-punct-p)
+        (cond ((ruby-electric-code-at-point-p)
+               (insert " ")
+               (save-excursion
+                 (if ruby-electric-newline-before-closing-bracket
+                     (progn
+                       (newline)
+                       (insert "}")
+                       (ruby-indent-line t))
+                   (insert "}"))))
+              ((ruby-electric-string-at-point-p)
+               (if (eq last-command-event ?{)
+                   (save-excursion
+                     (backward-char 1)
+                     (or (char-equal ?\# (preceding-char))
+                         (insert "#"))
+                     (forward-char 1)
+                     (insert "}"))))))))
 
 (defun ruby-electric-matching-char(arg)
   (interactive "P")
-  (self-insert-command (prefix-numeric-value arg))
-  (and (ruby-electric-is-last-command-char-expandable-punct-p)
-       (ruby-electric-code-at-point-p)
-       (save-excursion
-         (insert (cdr (assoc last-command-event
-                             ruby-electric-matching-delimeter-alist))))))
+  (ruby-electric-insert arg
+    (and (ruby-electric-is-last-command-char-expandable-punct-p)
+         (ruby-electric-code-at-point-p)
+         (save-excursion
+           (insert (cdr (assoc last-command-event
+                               ruby-electric-matching-delimeter-alist)))))))
 
 (defun ruby-electric-bar(arg)
   (interactive "P")
-  (self-insert-command (prefix-numeric-value arg))
-  (and (ruby-electric-is-last-command-char-expandable-punct-p)
-       (ruby-electric-code-at-point-p)
-       (and (save-excursion (re-search-backward ruby-electric-expandable-bar nil t))
-            (= (point) (match-end 0))) ;looking-back is missing on XEmacs
-       (save-excursion
-         (insert "|"))))
+  (ruby-electric-insert arg
+    (and (ruby-electric-is-last-command-char-expandable-punct-p)
+         (ruby-electric-code-at-point-p)
+         (and (save-excursion (re-search-backward ruby-electric-expandable-bar nil t))
+              (= (point) (match-end 0))) ;looking-back is missing on XEmacs
+         (save-excursion
+           (insert "|")))))
 
 
 (provide 'ruby-electric)

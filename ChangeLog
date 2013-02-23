@@ -1,3 +1,14 @@
+Sat Feb 23 12:26:43 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-curlies)
+	  (ruby-electric-matching-char, ruby-electric-bar): Avoid electric
+	  insertion when there is a prefix argument.
+
+	* misc/ruby-electric.el (ruby-electric-insert)
+	  (ruby-electric-cua-replace-region-p)
+	  (ruby-electric-cua-replace-region): Avoid electric insertion and
+	  fall back when cua-mode is enabled and a region is active.
+
 Sat Feb 23 12:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Document #<=> return values and formatting
