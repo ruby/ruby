@@ -313,7 +313,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv, VA
  *   p fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
  *
  * The optional parameter can be used to specify how to calculate the size
- * in a lazy fashion (see Enumerable#size). It can either be a value or
+ * in a lazy fashion (see Enumerator#size). It can either be a value or
  * a callable object.
  *
  * In the second, deprecated, form, a generated Enumerator iterates over the
