@@ -378,7 +378,7 @@ with all sufficient information, see the ChangeLog file.
     XML declaration is used for XML document encoding.
 
 * RubyGems
-  * Updated to 2.0.0.preview2
+  * Updated to 2.0.0
 
     RubyGems 2.0.0 features the following improvements:
 
