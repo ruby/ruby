@@ -1,3 +1,9 @@
+Sat Feb 23 09:48:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (file_s_fnmatch, fnmatch_brace): encoding-incompatible pattern
+	  and string do not match, instead of exception.  [ruby-dev:47069]
+	  [Bug #7911]
+
 Sat Feb 23 08:57:46 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* doc/NEWS-*: Update NEWS from their respective branches
