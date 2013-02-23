@@ -1347,6 +1347,9 @@ VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 
+/* rb_scan_args() format allows ':' for optional hash */
+#define HAVE_RB_SCAN_ARGS_OPTIONAL_HASH 1
+
 VALUE rb_gv_set(const char*, VALUE);
 VALUE rb_gv_get(const char*);
 VALUE rb_iv_get(VALUE, const char*);
