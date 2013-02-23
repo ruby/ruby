@@ -40,6 +40,7 @@ datadir = @datadir@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
+archlibdir = @archlibdir@
 ruby_version = @ruby_version@
 
 TESTUI = console
