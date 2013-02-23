@@ -1,6 +1,13 @@
+Tue Feb 23 12:07:00 2013  Kenta MURATA  <mrkn@mrkn.jp>
+
+	* backport r39321 from trunk. [ruby-core:51777] [Bug #7761]
+
+	* ext/bigdecimal/bigdecimal.gemspec: bump to 1.2.0.
+	  [ruby-core:51777] [Bug #7761]
+
 Sat Feb 23 08:57:46 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
-    * backport r39410 from trunk
+	* backport r39410 from trunk
 
 	* doc/NEWS-*: Update NEWS from their respective branches
 

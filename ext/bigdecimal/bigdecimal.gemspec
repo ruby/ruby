@@ -1,10 +1,10 @@
 # -*- ruby -*-
-_VERSION = "1.1.0"
+_VERSION = "1.2.0"
 
 Gem::Specification.new do |s|
   s.name = "bigdecimal"
   s.version = _VERSION
-  s.date = "2011-07-30"
+  s.date = "2012-02-19"
   s.summary = "Arbitrary-precision decimal floating-point number library."
   s.homepage = "http://www.ruby-lang.org"
   s.email = "mrkn@mrkn.jp"
