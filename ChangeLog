@@ -1,3 +1,13 @@
+Sat Feb 23 13:00:07 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Fix a bug introduced in r38342 that the cflagspat
+	  substitution is messed up by the way CFLAGS and optflags are
+	  modified, which affected FreeBSD and NetBSD/amd64 when
+	  configured to use libexecinfo.  This bug resulted in CFLAGS and
+	  CXXFLAGS in RbConfig::CONFIG having warnflags expanded in them,
+	  forcing third-party C/C++ extensions to follow what warnflags
+	  demands, like ANSI/ISO-C90 conformance.  ref [Bug #7101]
+
 Sat Feb 23 12:58:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: remove extra topdir in VPATH, which was in

@@ -2389,8 +2389,15 @@ AS_CASE(["$target_cpu-$target_os"],
 	execinfo_frame_pointer=no
 	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [execinfo_frame_pointer=yes])
 	if test "x$execinfo_frame_pointer" = xyes; then
-	    optflags="${optflags+$optflags }-fno-omit-frame-pointer"
-	    CFLAGS="$CFLAGS -fno-omit-frame-pointer"
+	    # optflags must be manipulated very carefully.  For the
+	    # later cflagspat/cxxflagspat substitution to work, CFLAGS
+	    # and CXXFLAGS must start exactly with the value of
+	    # optflags.
+	    CFLAGS="${CFLAGS# }"; CFLAGS="${CFLAGS#"$optflags "}"
+	    CXXFLAGS="${CXXFLAGS# }"; CXXFLAGS="${CXXFLAGS#"$optflags "}"
+	    RUBY_APPEND_OPTION(optflags, -fno-omit-frame-pointer)
+	    CFLAGS=" $optflags $CFLAGS"
+	    CXXFLAGS=" $optflags $CXXFLAGS"
 	fi
     fi])
 AC_CHECK_FUNCS(backtrace)
