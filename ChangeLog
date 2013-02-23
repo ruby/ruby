@@ -1,3 +1,13 @@
+Sun Feb 24 07:51:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): no keyword check if any keyword rest
+	  argument exists, even unnamed.  [ruby-core:52744] [Bug #7922]
+
+Sun Feb 24 07:50:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): no keyword check if any keyword rest
+	  argument exists, even unnamed.  [ruby-core:52744] [Bug #7922]
+
 Sat Feb 23 16:51:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c: Documentation for Thread#backtrace_locations

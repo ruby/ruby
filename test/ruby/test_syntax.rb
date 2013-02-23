@@ -77,6 +77,9 @@ class TestSyntax < Test::Unit::TestCase
       eval("def o.m(k: 0) k end")
     end
     assert_equal(42, o.m(k: 42), '[ruby-core:45744]')
+    bug7922 = '[ruby-core:52744] [Bug #7922]'
+    def o.bug7922(**) end
+    assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
   end
 
   def test_keyword_splat
