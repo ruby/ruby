@@ -1324,7 +1324,7 @@ if test "$with_dln_a_out" != yes; then
 			*shlicc*)	: ${LDSHARED='$(CC) -r'}
 					rb_cv_dlopen=yes ;;
 			esac ;;
-	linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi*)
+	linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | minix*)
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
@@ -1640,7 +1640,7 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_ALIASES=''
 	fi
 	;;
-    netbsd*)
+    netbsd*|minix*)
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'
@@ -1724,7 +1724,7 @@ AC_SUBST(RDOCTARGET)
 case "$target_os" in
     linux*)
 	;;
-    netbsd*)
+    netbsd*|minix*)
 	CFLAGS="$CFLAGS -pipe"
 	;;
     nextstep*|openstep*)

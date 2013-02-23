@@ -1,3 +1,7 @@
+Sun Feb 24 02:03:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Minix 3.2.1 supports shared libraries as NetBSD.
+
 Sun Dec  2 22:05:54 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/generator.rb (Generator#initialize): Make an internal block
