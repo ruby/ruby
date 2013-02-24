@@ -1,3 +1,7 @@
+Sun Feb 24 21:15:05 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: [ruby-core:52303]
+
 Sun Feb 24 15:33:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rb_random_ulong_limited): limit is inclusive, but generic
