@@ -3853,6 +3853,12 @@ static const rb_data_type_t thgroup_data_type = {
  *  were created.
  */
 
+/*
+ * Document-const: Default
+ *
+ *  The default ThreadGroup created when Ruby starts; all Threads belong to it
+ *  by default.
+ */
 static VALUE
 thgroup_s_alloc(VALUE klass)
 {
