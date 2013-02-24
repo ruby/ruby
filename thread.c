@@ -1640,7 +1640,7 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  *   th.raise "stop"
  *
  * While we are ignoring the RuntimeError exception, it's safe to write our
- * resource allocation code. Then in the ensure block is where you can safely
+ * resource allocation code. Then, the ensure block is where we can safely
  * deallocate your resources.
  *
  * ==== Guarding from TimeoutError
@@ -4853,8 +4853,8 @@ rb_thread_backtrace_m(int argc, VALUE *argv, VALUE thval)
  *
  * See Thread::Backtrace::Location for more information.
  *
- * This method behaves similarly to Kernel#caller_locations except for a
- * specific thread.
+ * This method behaves similarly to Kernel#caller_locations except it applies
+ * to a specific thread.
  */
 static VALUE
 rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)

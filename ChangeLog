@@ -1,3 +1,7 @@
+Wed Feb 20 14:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: Grammar for #backtrace_locations and ::handle_interrupt
+
 Sun Feb 24 13:35:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): block level control frame does not
