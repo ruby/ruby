@@ -1806,12 +1806,15 @@ rb_class_get_superclass(VALUE klass)
 
 /*
  *  call-seq:
- *     attr_reader(symbol, ...)    -> nil
- *     attr(symbol, ...)             -> nil
+ *     attr_reader(symbol, ...)  -> nil
+ *     attr(symbol, ...)         -> nil
+ *     attr_reader(string, ...)  -> nil
+ *     attr(string, ...)         -> nil
  *
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
  *  ``<code>attr</code><i>:name</i>'' on each name in turn.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1839,9 +1842,11 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *      attr_writer(symbol, ...)    -> nil
+ *      attr_writer(string, ...)    -> nil
  *
  *  Creates an accessor method to allow assignment to the attribute
  *  <i>symbol</i><code>.id2name</code>.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1858,11 +1863,13 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *     attr_accessor(symbol, ...)    -> nil
+ *     attr_accessor(string, ...)    -> nil
  *
  *  Defines a named attribute for this module, where the name is
  *  <i>symbol.</i><code>id2name</code>, creating an instance variable
  *  (<code>@name</code>) and a corresponding access method to read it.
  *  Also creates a method called <code>name=</code> to set the attribute.
+ *  String arguments are converted to symbols.
  *
  *     module Mod
  *       attr_accessor(:one, :two)
@@ -2084,12 +2091,14 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     obj.instance_variable_get(symbol)    -> obj
+ *     obj.instance_variable_get(string)    -> obj
  *
  *  Returns the value of the given instance variable, or nil if the
  *  instance variable is not set. The <code>@</code> part of the
  *  variable name should be included for regular instance
  *  variables. Throws a <code>NameError</code> exception if the
  *  supplied symbol is not valid as an instance variable name.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -2125,11 +2134,14 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     obj.instance_variable_set(symbol, obj)    -> obj
+ *     obj.instance_variable_set(string, obj)    -> obj
  *
  *  Sets the instance variable names by <i>symbol</i> to
  *  <i>object</i>, thereby frustrating the efforts of the class's
  *  author to attempt to provide proper encapsulation. The variable
  *  did not have to exist prior to this call.
+ *  If the instance variable name is passed as a string, that string
+ *  is converted to a symbol.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -2157,9 +2169,11 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 /*
  *  call-seq:
  *     obj.instance_variable_defined?(symbol)    -> true or false
+ *     obj.instance_variable_defined?(string)    -> true or false
  *
  *  Returns <code>true</code> if the given instance variable is
  *  defined in <i>obj</i>.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -2196,10 +2210,12 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     mod.class_variable_get(symbol)    -> obj
+ *     mod.class_variable_get(string)    -> obj
  *
  *  Returns the value of the given class variable (or throws a
  *  <code>NameError</code> exception). The <code>@@</code> part of the
  *  variable name should be included for regular class variables
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       @@foo = 99
@@ -2232,9 +2248,12 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     obj.class_variable_set(symbol, obj)    -> obj
+ *     obj.class_variable_set(string, obj)    -> obj
  *
  *  Sets the class variable names by <i>symbol</i> to
  *  <i>object</i>.
+ *  If the class variable name is passed as a string, that string
+ *  is converted to a symbol.
  *
  *     class Fred
  *       @@foo = 99
@@ -2262,9 +2281,11 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 /*
  *  call-seq:
  *     obj.class_variable_defined?(symbol)    -> true or false
+ *     obj.class_variable_defined?(string)    -> true or false
  *
  *  Returns <code>true</code> if the given class variable is defined
  *  in <i>obj</i>.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       @@foo = 99

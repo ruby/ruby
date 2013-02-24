@@ -693,9 +693,11 @@ rb_remove_method(VALUE klass, const char *name)
 /*
  *  call-seq:
  *     remove_method(symbol)   -> self
+ *     remove_method(string)   -> self
  *
  *  Removes the method identified by _symbol_ from the current
  *  class. For an example, see <code>Module.undef_method</code>.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -878,11 +880,13 @@ rb_undef(VALUE klass, ID id)
 /*
  *  call-seq:
  *     undef_method(symbol)    -> self
+ *     undef_method(string)    -> self
  *
  *  Prevents the current class from responding to calls to the named
  *  method. Contrast this with <code>remove_method</code>, which deletes
  *  the method from the particular class; Ruby will still search
  *  superclasses and mixed-in modules for a possible receiver.
+ *  String arguments are converted to symbols.
  *
  *     class Parent
  *       def hello
@@ -936,10 +940,12 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.method_defined?(symbol)    -> true or false
+ *     mod.method_defined?(string)    -> true or false
  *
  *  Returns +true+ if the named method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors). Public and protected methods are matched.
+ *  String arguments are converted to symbols.
  *
  *     module A
  *       def method1()  end
@@ -989,10 +995,12 @@ check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 /*
  *  call-seq:
  *     mod.public_method_defined?(symbol)   -> true or false
+ *     mod.public_method_defined?(string)   -> true or false
  *
  *  Returns +true+ if the named public method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors).
+ *  String arguments are converted to symbols.
  *
  *     module A
  *       def method1()  end
@@ -1021,10 +1029,12 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 /*
  *  call-seq:
  *     mod.private_method_defined?(symbol)    -> true or false
+ *     mod.private_method_defined?(string)    -> true or false
  *
  *  Returns +true+ if the named private method is defined by
  *  _ mod_ (or its included modules and, if _mod_ is a class,
  *  its ancestors).
+ *  String arguments are converted to symbols.
  *
  *     module A
  *       def method1()  end
@@ -1053,10 +1063,12 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 /*
  *  call-seq:
  *     mod.protected_method_defined?(symbol)   -> true or false
+ *     mod.protected_method_defined?(string)   -> true or false
  *
  *  Returns +true+ if the named protected method is defined
  *  by _mod_ (or its included modules and, if _mod_ is a
  *  class, its ancestors).
+ *  String arguments are converted to symbols.
  *
  *     module A
  *       def method1()  end
@@ -1274,10 +1286,12 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
  *  call-seq:
  *     public                 -> self
  *     public(symbol, ...)    -> self
+ *     public(string, ...)    -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1297,10 +1311,12 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     protected                -> self
  *     protected(symbol, ...)   -> self
+ *     protected(string, ...)   -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1320,10 +1336,12 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *  call-seq:
  *     private                 -> self
  *     private(symbol, ...)    -> self
+ *     private(string, ...)    -> self
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to private. With arguments, sets the named methods
  *  to have private visibility.
+ *  String arguments are converted to symbols.
  *
  *     module Mod
  *       def a()  end
@@ -1351,8 +1369,11 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 /*
  *  call-seq:
  *     mod.public_class_method(symbol, ...)    -> mod
+ *     mod.public_class_method(string, ...)    -> mod
  *
  *  Makes a list of existing class methods public.
+ *
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1365,9 +1386,12 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 /*
  *  call-seq:
  *     mod.private_class_method(symbol, ...)   -> mod
+ *     mod.private_class_method(string, ...)   -> mod
  *
  *  Makes existing class methods private. Often used to hide the default
  *  constructor <code>new</code>.
+ *
+ *  String arguments are converted to symbols.
  *
  *     class SimpleSingleton  # Not thread safe
  *       private_class_method :new
@@ -1389,10 +1413,13 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     public
  *     public(symbol, ...)
+ *     public(string, ...)
  *
  *  With no arguments, sets the default visibility for subsequently
  *  defined methods to public. With arguments, sets the named methods to
  *  have public visibility.
+ *
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1410,6 +1437,7 @@ top_private(int argc, VALUE *argv)
 /*
  *  call-seq:
  *     module_function(symbol, ...)    -> self
+ *     module_function(string, ...)    -> self
  *
  *  Creates module functions for the named methods. These functions may
  *  be called with the module as a receiver, and also become available
@@ -1418,6 +1446,7 @@ top_private(int argc, VALUE *argv)
  *  independently. The instance-method versions are made private. If
  *  used with no arguments, subsequently defined methods become module
  *  functions.
+ *  String arguments are converted to symbols.
  *
  *     module Mod
  *       def one
@@ -1562,6 +1591,7 @@ rb_respond_to(VALUE obj, ID id)
 /*
  *  call-seq:
  *     obj.respond_to?(symbol, include_all=false) -> true or false
+ *     obj.respond_to?(string, include_all=false) -> true or false
  *
  *  Returns +true+ if _obj_ responds to the given method.  Private and
  *  protected methods are included in the search only if the optional
@@ -1573,6 +1603,9 @@ rb_respond_to(VALUE obj, ID id)
  *
  *  If the method is not defined, <code>respond_to_missing?</code>
  *  method is called and the result is returned.
+ *
+ *  When the method name parameter is given as a string, the string is
+ *  converted to a symbol.
  */
 
 static VALUE
@@ -1599,11 +1632,15 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 /*
  *  call-seq:
  *     obj.respond_to_missing?(symbol, include_all) -> true or false
+ *     obj.respond_to_missing?(string, include_all) -> true or false
  *
  *  DO NOT USE THIS DIRECTLY.
  *
  *  Hook method to return whether the _obj_ can respond to _id_ method
  *  or not.
+ *
+ *  When the method name parameter is given as a string, the string is
+ *  converted to a symbol.
  *
  *  See #respond_to?.
  */

@@ -1,3 +1,10 @@
+Wed Feb 20 13:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* object.c: Document methods receiving string and convert to symbol
+	  Patch by Stefan Rusterholz
+	* vm_eval.c: ditto
+	* vm_method.c: ditto
+
 Wed Feb 20 07:20:56 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sigsegv): suppress unused result warning. Because
