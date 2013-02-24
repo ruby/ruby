@@ -49,8 +49,8 @@ module Abbrev
   # are all the possible abbreviations and the values are the full
   # strings.
   #
-  # Thus, given input of "car" and "cone", the keys pointing to "car" would be
-  # "ca" and "car", while those pointing to "cone" would be "co", "con", and
+  # Thus, given +words+ is "car" and "cone", the keys pointing to "car" would
+  # be "ca" and "car", while those pointing to "cone" would be "co", "con", and
   # "cone".
   #
   #   require 'abbrev'

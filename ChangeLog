@@ -1,3 +1,8 @@
+Fri Feb 22 02:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/abbrev.rb: Add words parameter to Abbrev::abbrev
+	  Patch by Devin Weaver [Backport #7927]
+
 Wed Feb 20 13:37:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/pty/pty.c: Documentation for the PTY module [Backport #7928]
