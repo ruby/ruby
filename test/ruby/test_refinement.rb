@@ -801,6 +801,31 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("mixin", TestRefinement::PrependAfterRefine::C.new.bar)
   end
 
+  module SuperInBlock
+    class C
+      def foo(*args)
+        [:foo, *args]
+      end
+    end
+
+    module R
+      refine C do
+        def foo(*args)
+          tap do
+            return super(:ref, *args)
+          end
+        end
+      end
+    end
+  end
+
+  def test_super_in_block
+    bug7925 = '[ruby-core:52750] [Bug #7925]'
+    x = eval_using(SuperInBlock::R,
+                   "TestRefinement:: SuperInBlock::C.new.foo(#{bug7925.dump})")
+    assert_equal([:foo, :ref, bug7925], x, bug7925)
+  end
+
   private
 
   def eval_using(mod, s)
