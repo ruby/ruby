@@ -2747,8 +2747,9 @@ rb_Array(VALUE val)
  *  call-seq:
  *     Array(arg)    -> array
  *
- *  Returns <i>arg</i> as an <code>Array</code>. First tries to call
- *  <i>arg</i><code>.to_ary</code>, then <i>arg</i><code>.to_a</code>.
+ *  Returns +arg+ as an Array.
+ *
+ *  First tries to call Array#to_ary on +arg+, then Array#to_a.
  *
  *     Array(1..5)   #=> [1, 2, 3, 4, 5]
  */

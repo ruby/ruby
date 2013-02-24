@@ -5240,6 +5240,11 @@ rb_ary_drop_while(VALUE ary)
  *     empty_table = Array.new(3) { Array.new(3) }
  *     #=> [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
  *
+ *  An array can also be created by using the Array() method, provided by
+ *  Kernel, which calls  #to_ary or #to_a on it's argument.
+ *
+ *	Array({:a => "a", :b => "b"}) #=> [[:a, "a"], [:b, "b"]]
+ *
  *  == Example Usage
  *
  *  In addition to the methods it mixes in through the Enumerable module, the
