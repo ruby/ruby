@@ -1,3 +1,8 @@
+Wed Feb 20 07:20:56 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sigsegv): suppress unused result warning. Because
+	  write(2) is marked __warn_unused_result__ on Linux glibc.
+
 Sun Feb 24 07:51:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_arguments): no keyword check if any keyword rest
