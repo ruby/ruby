@@ -124,7 +124,7 @@ define rp
     print (struct RObject *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
-    printf "%sT_CLASS%s%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : "", $color_type, $color_end
+    printf "%sT_CLASS%s%s: ", $color_type, ($flags & RUBY_FL_SINGLETON) ? "*" : "", $color_end
     rp_class $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
