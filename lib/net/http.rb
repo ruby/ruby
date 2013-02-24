@@ -1122,13 +1122,6 @@ module Net   #:nodoc:
     #
     def get(path, initheader = {}, dest = nil, &block) # :yield: +body_segment+
       res = nil
-      if HAVE_ZLIB
-        unless  initheader.keys.any?{|k| k.downcase == "accept-encoding"}
-          initheader = initheader.merge({
-            "accept-encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
-          })
-        end
-      end
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
         res = r

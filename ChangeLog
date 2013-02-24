@@ -1,3 +1,9 @@
+Sun Feb 24 15:16:00 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Removed duplicate Accept-Encoding in Net::HTTP#get.
+	  [ruby-trunk - Bug #7924]
+	* test/net/http/test_http.rb:  Test for the above.
+
 Wed Feb 20 14:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c: Grammar for #backtrace_locations and ::handle_interrupt

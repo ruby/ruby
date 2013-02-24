@@ -232,6 +232,8 @@ module TestNetHTTP_version_1_1_methods
     assert_nothing_raised {
       http.get('/', { 'User-Agent' => 'test' }.freeze)
     }
+
+    assert res.decode_content, '[Bug #7924]'
   end
 
   def _test_get__iter(http)
