@@ -1,4 +1,4 @@
-require "rss-testcase"
+require_relative "rss-testcase"
 
 require "rss/maker"
 

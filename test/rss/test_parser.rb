@@ -1,6 +1,6 @@
 require "tempfile"
 
-require "rss-testcase"
+require_relative "rss-testcase"
 
 require "rss/1.0"
 require "rss/dublincore"

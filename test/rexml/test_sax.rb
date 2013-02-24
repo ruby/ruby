@@ -1,4 +1,4 @@
-require "rexml_test_utils"
+require_relative "rexml_test_utils"
 require 'rexml/sax2listener'
 require 'rexml/parsers/sax2parser'
 require 'rexml/document'

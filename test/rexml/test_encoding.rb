@@ -1,6 +1,6 @@
 # coding: binary
 
-require "rexml_test_utils"
+require_relative "rexml_test_utils"
 
 require 'rexml/source'
 require 'rexml/document'

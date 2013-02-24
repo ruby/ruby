@@ -1,6 +1,6 @@
 # coding: binary
 
-require "rexml_test_utils"
+require_relative "rexml_test_utils"
 
 require "rexml/document"
 require "rexml/parseexception"
@@ -9,7 +9,7 @@ require "rexml/source"
 require "rexml/formatters/pretty"
 require "rexml/undefinednamespaceexception"
 
-require "listener"
+require_relative "listener"
 
 class Tester < Test::Unit::TestCase
   include REXMLTestUtils
