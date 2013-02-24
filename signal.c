@@ -658,7 +658,7 @@ static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
     if (segv_received) {
-	int RB_UNUSED_VAR(err);
+	ssize_t RB_UNUSED_VAR(err);
 	char msg[] = "SEGV received in SEGV handler\n";
 
 	err = write(2, msg, sizeof(msg));
