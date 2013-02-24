@@ -1,3 +1,15 @@
+Sun Feb 24 15:33:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_random_ulong_limited): limit is inclusive, but generic
+	  rand method should return a number less than it, so increase for the
+	  difference.  [ruby-core:52779] [Bug #7935]
+
+Sun Feb 24 15:32:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_random_ulong_limited): limit is inclusive, but generic
+	  rand method should return a number less than it, so increase for the
+	  difference.  [ruby-core:52779] [Bug #7935]
+
 Sun Feb 24 15:14:43 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Removed duplicate Accept-Encoding in Net::HTTP#get.
