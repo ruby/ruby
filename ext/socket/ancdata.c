@@ -1482,7 +1482,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     int request_scm_rights;
     struct msghdr mh;
     struct iovec iov;
-    struct sockaddr_storage namebuf;
+    union_sockaddr namebuf;
     char datbuf0[4096], *datbuf;
     VALUE dat_str = Qnil;
     VALUE ret;
@@ -1571,7 +1571,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     memset(&mh, 0, sizeof(mh));
 
     memset(&namebuf, 0, sizeof(namebuf));
-    mh.msg_name = (struct sockaddr *)&namebuf;
+    mh.msg_name = &namebuf.addr;
     mh.msg_namelen = (socklen_t)sizeof(namebuf);
 
     mh.msg_iov = &iov;

@@ -91,7 +91,7 @@ struct recvfrom_arg {
     int fd, flags;
     VALUE str;
     socklen_t alen;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
 };
 
 static VALUE
@@ -101,7 +101,7 @@ recvfrom_blocking(void *data)
     socklen_t len0 = arg->alen;
     ssize_t ret;
     ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), RSTRING_LEN(arg->str),
-                   arg->flags, (struct sockaddr*)&arg->buf, &arg->alen);
+                   arg->flags, &arg->buf.addr, &arg->alen);
     if (ret != -1 && len0 < arg->alen)
         arg->alen = len0;
     return (VALUE)ret;
@@ -160,16 +160,16 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
 #endif
 	if (arg.alen && arg.alen != sizeof(arg.buf)) /* OSX doesn't return a from result for connection-oriented sockets */
-	    return rb_assoc_new(str, rsock_ipaddr((struct sockaddr*)&arg.buf, arg.alen, fptr->mode & FMODE_NOREVLOOKUP));
+	    return rb_assoc_new(str, rsock_ipaddr(&arg.buf.addr, arg.alen, fptr->mode & FMODE_NOREVLOOKUP));
 	else
 	    return rb_assoc_new(str, Qnil);
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        return rb_assoc_new(str, rsock_unixaddr((struct sockaddr_un*)&arg.buf, arg.alen));
+        return rb_assoc_new(str, rsock_unixaddr(&arg.buf.un, arg.alen));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, (struct sockaddr*)&arg.buf, arg.alen));
+	return rb_assoc_new(str, rsock_io_socket_addrinfo(sock, &arg.buf.addr, arg.alen));
       default:
 	rb_bug("rsock_s_recvfrom called with bad value");
     }
@@ -180,7 +180,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 {
     rb_io_t *fptr;
     VALUE str;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t alen = (socklen_t)sizeof buf;
     VALUE len, flg;
     long buflen;
@@ -212,7 +212,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     rb_io_check_closed(fptr);
     rb_io_set_nonblock(fptr);
     len0 = alen;
-    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)&buf, &alen);
+    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
     if (slen != -1 && len0 < alen)
         alen = len0;
 
@@ -236,11 +236,11 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 
       case RECV_IP:
         if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
-            addr = rsock_ipaddr((struct sockaddr*)&buf, alen, fptr->mode & FMODE_NOREVLOOKUP);
+            addr = rsock_ipaddr(&buf.addr, alen, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
       case RECV_SOCKET:
-        addr = rsock_io_socket_addrinfo(sock, (struct sockaddr*)&buf, alen);
+        addr = rsock_io_socket_addrinfo(sock, &buf.addr, alen);
         break;
 
       default:
@@ -596,14 +596,14 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 int
 rsock_getfamily(int sockfd)
 {
-    struct sockaddr_storage ss;
+    union_sockaddr ss;
     socklen_t sslen = (socklen_t)sizeof(ss);
 
-    ss.ss_family = AF_UNSPEC;
-    if (getsockname(sockfd, (struct sockaddr*)&ss, &sslen) < 0)
+    ss.addr.sa_family = AF_UNSPEC;
+    if (getsockname(sockfd, &ss.addr, &sslen) < 0)
         return AF_UNSPEC;
 
-    return ss.ss_family;
+    return ss.addr.sa_family;
 }
 
 void

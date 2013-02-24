@@ -356,13 +356,13 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 static VALUE
 bsock_getsockname(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
     socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     if (len0 < len) len = len0;
     return rb_str_new((char*)&buf, len);
@@ -387,13 +387,13 @@ bsock_getsockname(VALUE sock)
 static VALUE
 bsock_getpeername(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
     socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
     if (len0 < len) len = len0;
     return rb_str_new((char*)&buf, len);
@@ -477,16 +477,16 @@ bsock_getpeereid(VALUE self)
 static VALUE
 bsock_local_address(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
     socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     if (len0 < len) len = len0;
-    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
 
 /*
@@ -511,16 +511,16 @@ bsock_local_address(VALUE sock)
 static VALUE
 bsock_remote_address(VALUE sock)
 {
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
     socklen_t len0 = len;
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, (struct sockaddr*)&buf, &len) < 0)
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
     if (len0 < len) len = len0;
-    return rsock_fd_socket_addrinfo(fptr->fd, (struct sockaddr *)&buf, len);
+    return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
 
 /*

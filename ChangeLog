@@ -1,3 +1,47 @@
+Mon Feb 25 02:37:56 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: define and use union_sockaddr instead of struct
+	  sockaddr_storage for less casts.
+
+	* ext/socket/rubysocket.h (union_sockaddr): defined.
+
+	* ext/socket/socket.c (sock_accept): use union_sockaddr.
+	  (sock_accept_nonblock): ditto.
+	  (sock_sysaccept): ditto.
+	  (sock_s_getnameinfo): ditto.
+
+	* ext/socket/basicsocket.c (bsock_getsockname): ditto.
+	  (bsock_getpeername): ditto.
+	  (bsock_local_address): ditto.
+	  (bsock_remote_address): ditto.
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): ditto.
+
+	* ext/socket/init.c (recvfrom_arg): ditto.
+	  (recvfrom_blocking): ditto.
+	  (rsock_s_recvfrom): ditto.
+	  (rsock_s_recvfrom_nonblock): ditto.
+	  (rsock_getfamily): ditto.
+
+	* ext/socket/raddrinfo.c (rb_addrinfo_t): ditto.
+	  (ai_get_afamily): ditto.
+	  (inspect_sockaddr): ditto.
+	  (addrinfo_mdump): ditto.
+	  (addrinfo_mload): ditto.
+	  (addrinfo_getnameinfo): ditto.
+	  (addrinfo_ip_port): ditto.
+	  (extract_in_addr): ditto.
+	  (addrinfo_ipv6_to_ipv4): ditto.
+	  (addrinfo_unix_path): ditto.
+
+	* ext/socket/tcpserver.c (tcp_accept): ditto.
+	  (tcp_accept_nonblock): ditto.
+	  (tcp_sysaccept): ditto.
+
+	* ext/socket/ipsocket.c (ip_addr): ditto.
+	  (ip_peeraddr): ditto.
+	  (ip_s_getaddress): ditto.
+
 Sun Feb 24 21:15:05 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:52303]

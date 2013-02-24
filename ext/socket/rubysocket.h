@@ -151,6 +151,18 @@ struct sockaddr_storage {
 };
 #endif
 
+typedef union {
+  struct sockaddr addr;
+  struct sockaddr_in in;
+#ifdef AF_INET6
+  struct sockaddr_in6 in6;
+#endif
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+  struct sockaddr_un un;
+#endif
+  struct sockaddr_storage storage; 
+} union_sockaddr;
+
 #ifdef __APPLE__
 /*
  * CMSG_ macros are broken on 64bit darwin, because __DARWIN_ALIGN

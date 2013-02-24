@@ -755,13 +755,13 @@ sock_accept(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)&buf,&len);
+    sock2 = rsock_s_accept(rb_cSocket,fptr->fd,&buf.addr,&len);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
 /*
@@ -820,12 +820,12 @@ sock_accept_nonblock(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)&buf, &len);
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    sock2 = rsock_s_accept_nonblock(rb_cSocket, fptr, &buf.addr, &len);
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
 /*
@@ -871,13 +871,13 @@ sock_sysaccept(VALUE sock)
 {
     rb_io_t *fptr;
     VALUE sock2;
-    struct sockaddr_storage buf;
+    union_sockaddr buf;
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept(0,fptr->fd,(struct sockaddr*)&buf,&len);
+    sock2 = rsock_s_accept(0,fptr->fd,&buf.addr,&len);
 
-    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, (struct sockaddr*)&buf, len));
+    return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -1217,7 +1217,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     int fl;
     struct addrinfo hints, *res = NULL, *r;
     int error;
-    struct sockaddr_storage ss;
+    union_sockaddr ss;
     struct sockaddr *sap;
     socklen_t salen;
 
@@ -1235,10 +1235,10 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING_PTR(sa), RSTRING_LEN(sa));
-        if (!VALIDATE_SOCKLEN((struct sockaddr *)&ss, RSTRING_LEN(sa))) {
+        if (!VALIDATE_SOCKLEN(&ss.addr, RSTRING_LEN(sa))) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
-	sap = (struct sockaddr*)&ss;
+	sap = &ss.addr;
         salen = RSTRING_LENINT(sa);
 	goto call_nameinfo;
     }
@@ -1658,7 +1658,7 @@ socket_s_ip_address_list(VALUE self)
 #elif defined(SIOCGIFCONF)
     int fd = -1;
     int ret;
-#define EXTRA_SPACE (sizeof(struct ifconf) + sizeof(struct sockaddr_storage))
+#define EXTRA_SPACE (sizeof(struct ifconf) + sizeof(union_sockaddr))
     char initbuf[4096+EXTRA_SPACE];
     char *buf = initbuf;
     int bufsize;

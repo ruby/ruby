@@ -537,7 +537,7 @@ typedef struct {
     int socktype;
     int protocol;
     socklen_t sockaddr_len;
-    struct sockaddr_storage addr;
+    union_sockaddr addr;
 } rb_addrinfo_t;
 
 static void
@@ -944,7 +944,7 @@ get_afamily(struct sockaddr *addr, socklen_t len)
 static int
 ai_get_afamily(rb_addrinfo_t *rai)
 {
-    return get_afamily((struct sockaddr *)&rai->addr, rai->sockaddr_len);
+    return get_afamily(&rai->addr.addr, rai->sockaddr_len);
 }
 
 static VALUE
@@ -955,10 +955,10 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
     if (rai->sockaddr_len == 0) {
         rb_str_cat2(ret, "empty-sockaddr");
     }
-    else if ((long)rai->sockaddr_len < ((char*)&rai->addr.ss_family + sizeof(rai->addr.ss_family)) - (char*)&rai->addr)
+    else if ((long)rai->sockaddr_len < ((char*)&rai->addr.addr.sa_family + sizeof(rai->addr.addr.sa_family)) - (char*)&rai->addr)
         rb_str_cat2(ret, "too-short-sockaddr");
     else {
-        switch (rai->addr.ss_family) {
+        switch (rai->addr.addr.sa_family) {
           case AF_INET:
           {
             struct sockaddr_in *addr;
@@ -967,7 +967,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                 rb_str_cat2(ret, "too-short-AF_INET-sockaddr");
             }
             else {
-                addr = (struct sockaddr_in *)&rai->addr;
+                addr = &rai->addr.in;
                 rb_str_catf(ret, "%d.%d.%d.%d",
                             ((unsigned char*)&addr->sin_addr)[0],
                             ((unsigned char*)&addr->sin_addr)[1],
@@ -993,12 +993,12 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                 rb_str_cat2(ret, "too-short-AF_INET6-sockaddr");
             }
             else {
-                addr = (struct sockaddr_in6 *)&rai->addr;
+                addr = &rai->addr.in6;
                 /* use getnameinfo for scope_id.
                  * RFC 4007: IPv6 Scoped Address Architecture
                  * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
                  */
-                error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+                error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
                                     hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                     NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
@@ -1021,7 +1021,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
 #ifdef HAVE_SYS_UN_H
           case AF_UNIX:
           {
-            struct sockaddr_un *addr = (struct sockaddr_un *)&rai->addr;
+            struct sockaddr_un *addr = &rai->addr.un;
             char *p, *s, *e;
             s = addr->sun_path;
             e = (char*)addr + rai->sockaddr_len;
@@ -1058,9 +1058,9 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
 
           default:
           {
-            ID id = rsock_intern_family(rai->addr.ss_family);
+            ID id = rsock_intern_family(rai->addr.addr.sa_family);
             if (id == 0)
-                rb_str_catf(ret, "unknown address family %d", rai->addr.ss_family);
+                rb_str_catf(ret, "unknown address family %d", rai->addr.addr.sa_family);
             else
                 rb_str_catf(ret, "%s address format unknown", rb_id2name(id));
             break;
@@ -1215,7 +1215,7 @@ addrinfo_mdump(VALUE self)
 #ifdef HAVE_SYS_UN_H
       case AF_UNIX:
       {
-        struct sockaddr_un *su = (struct sockaddr_un *)&rai->addr;
+        struct sockaddr_un *su = &rai->addr.un;
         char *s, *e;
         s = su->sun_path;
         e = (char*)su + rai->sockaddr_len;
@@ -1230,7 +1230,7 @@ addrinfo_mdump(VALUE self)
       {
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int error;
-        error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+        error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
                             hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                             NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
@@ -1251,7 +1251,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     VALUE v;
     VALUE canonname, inspectname;
     int afamily, pfamily, socktype, protocol;
-    struct sockaddr_storage ss;
+    union_sockaddr ss;
     socklen_t len;
     rb_addrinfo_t *rai;
 
@@ -1348,7 +1348,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     }
 
     DATA_PTR(self) = rai = alloc_addrinfo();
-    init_addrinfo(rai, (struct sockaddr *)&ss, len,
+    init_addrinfo(rai, &ss.addr, len,
                   pfamily, socktype, protocol,
                   canonname, inspectname);
     return self;
@@ -1576,7 +1576,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
     if (rai->socktype == SOCK_DGRAM)
         flags |= NI_DGRAM;
 
-    error = getnameinfo((struct sockaddr *)&rai->addr, rai->sockaddr_len,
+    error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
                         hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                         flags);
     if (error) {
@@ -1667,14 +1667,14 @@ addrinfo_ip_port(VALUE self)
       case AF_INET:
         if (rai->sockaddr_len != sizeof(struct sockaddr_in))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv4");
-        port = ntohs(((struct sockaddr_in *)&rai->addr)->sin_port);
+        port = ntohs(rai->addr.in.sin_port);
         break;
 
 #ifdef AF_INET6
       case AF_INET6:
         if (rai->sockaddr_len != sizeof(struct sockaddr_in6))
             rb_raise(rb_eSocket, "unexpected sockaddr size for IPv6");
-        port = ntohs(((struct sockaddr_in6 *)&rai->addr)->sin6_port);
+        port = ntohs(rai->addr.in6.sin6_port);
         break;
 #endif
 
@@ -1691,7 +1691,7 @@ extract_in_addr(VALUE self, uint32_t *addrp)
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
     if (family != AF_INET) return 0;
-    *addrp = ntohl(((struct sockaddr_in *)&rai->addr)->sin_addr.s_addr);
+    *addrp = ntohl(rai->addr.in.sin_addr.s_addr);
     return 1;
 }
 
@@ -1747,7 +1747,7 @@ extract_in6_addr(VALUE self)
     rb_addrinfo_t *rai = get_addrinfo(self);
     int family = ai_get_afamily(rai);
     if (family != AF_INET6) return NULL;
-    return &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+    return &rai->addr.in6.sin6_addr;
 }
 
 /*
@@ -1923,7 +1923,7 @@ addrinfo_ipv6_to_ipv4(VALUE self)
     struct in6_addr *addr;
     int family = ai_get_afamily(rai);
     if (family != AF_INET6) return Qnil;
-    addr = &((struct sockaddr_in6 *)&rai->addr)->sin6_addr;
+    addr = &rai->addr.in6.sin6_addr;
     if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
         struct sockaddr_in sin4;
         INIT_SOCKADDR_IN(&sin4, sizeof(sin4));
@@ -1959,7 +1959,7 @@ addrinfo_unix_path(VALUE self)
     if (family != AF_UNIX)
 	rb_raise(rb_eSocket, "need AF_UNIX address");
 
-    addr = (struct sockaddr_un *)&rai->addr;
+    addr = &rai->addr.un;
 
     s = addr->sun_path;
     e = (char*)addr + rai->sockaddr_len;

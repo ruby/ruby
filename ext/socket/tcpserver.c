@@ -47,13 +47,12 @@ static VALUE
 tcp_accept(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(rb_cTCPSocket, fptr->fd,
-		          (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(rb_cTCPSocket, fptr->fd, &from.addr, &fromlen);
 }
 
 /*
@@ -93,13 +92,12 @@ static VALUE
 tcp_accept_nonblock(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr,
-			           (struct sockaddr *)&from, &fromlen);
+    return rsock_s_accept_nonblock(rb_cTCPSocket, fptr, &from.addr, &fromlen);
 }
 
 /*
@@ -120,12 +118,12 @@ static VALUE
 tcp_sysaccept(VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage from;
+    union_sockaddr from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    return rsock_s_accept(0, fptr->fd, &from.addr, &fromlen);
 }
 
 void
