@@ -4833,9 +4833,10 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 
 /*
  *  call-seq:
- *     thr.backtrace    -> array
+ *     thr.backtrace	 -> array
  *
- *  Returns the current back trace of the _thr_.
+ *  Returns the current backtrace of the target thread.
+ *
  */
 
 static VALUE
@@ -4844,6 +4845,17 @@ rb_thread_backtrace_m(int argc, VALUE *argv, VALUE thval)
     return vm_thread_backtrace(argc, argv, thval);
 }
 
+/* call-seq:
+ *  thr.backtrace_locations(*args)	-> array or nil
+ *
+ * Returns the execution stack for the target thread---an array containing
+ * backtrace location objects.
+ *
+ * See Thread::Backtrace::Location for more information.
+ *
+ * This method behaves similarly to Kernel#caller_locations except for a
+ * specific thread.
+ */
 static VALUE
 rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
 {

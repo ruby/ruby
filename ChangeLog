@@ -1,3 +1,8 @@
+Sat Feb 23 16:51:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: Documentation for Thread#backtrace_locations
+	  [Backport #7932]
+
 Sat Feb 23 16:05:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm.c: Typo in ObjectSpace::WeakMap overview [Backport #7933]
