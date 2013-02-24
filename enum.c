@@ -2394,17 +2394,13 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *     enum.chunk { |elt| ... }                       -> an_enumerator
  *     enum.chunk(initial_state) { |elt, state| ... } -> an_enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The consecutive elements which have same block value are chunked.
+ *  Enumerates over the items, chunking them together based on the return
+ *  value of the block.
  *
- *  The result enumerator yields the block value and an array of chunked elements.
- *  So "each" method can be called as follows.
- *
- *    enum.chunk { |elt| key }.each { |key, ary| ... }
- *    enum.chunk(initial_state) { |elt, state| key }.each { |key, ary| ... }
+ *  Consecutive elements which return the same block value are chunked together.
  *
  *  For example, consecutive even numbers and odd numbers can be
- *  splitted as follows.
+ *  chunked as follows.
  *
  *    [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5].chunk { |n|
  *      n.even?
@@ -2430,13 +2426,18 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #   ["D", 791]
  *    #   ...
  *
- *  The following key values has special meaning:
- *  - nil and :_separator specifies that the elements are dropped.
- *  - :_alone specifies that the element should be chunked as a singleton.
- *  Other symbols which begins an underscore are reserved.
+ *  The following key values have special meaning:
+ *  - +nil+ and +:_separator+ specifies that the elements should be dropped.
+ *  - +:_alone+ specifies that the element should be chunked by itself.
  *
- *  nil and :_separator can be used to ignore some elements.
- *  For example, the sequence of hyphens in svn log can be eliminated as follows.
+ *  Any other symbols that begin with an underscore will raise an error:
+ *
+ *    items.chunk { |item| :_underscore }
+ *    #=> RuntimeError: symbol begins with an underscore is reserved
+ *
+ *  +nil+ and +:_separator+ can be used to ignore some elements.
+ *
+ *  For example, the sequence of hyphens in svn log can be eliminated as follows:
  *
  *    sep = "-"*72 + "\n"
  *    IO.popen("svn log README") { |f|
@@ -2456,7 +2457,7 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #    "\n"]
  *    #   ...
  *
- *  paragraphs separated by empty lines can be parsed as follows.
+ *  Paragraphs separated by empty lines can be parsed as follows:
  *
  *    File.foreach("README").chunk { |line|
  *      /\A\s*\z/ !~ line || nil
@@ -2464,26 +2465,22 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *      pp lines
  *    }
  *
- *  :_alone can be used to pass through bunch of elements.
- *  For example, sort consecutive lines formed as Foo#bar and
- *  pass other lines, chunk can be used as follows.
+ *  +:_alone+ can be used to force items into their own chunk.
+ *  For example, you can put lines that contain a URL by themselves,
+ *  and chunk the rest of the lines together, like this:
  *
- *    pat = /\A[A-Z][A-Za-z0-9_]+\#/
+ *    pattern = /http/
  *    open(filename) { |f|
- *      f.chunk { |line| pat =~ line ? $& : :_alone }.each { |key, lines|
- *        if key != :_alone
- *          print lines.sort.join('')
- *        else
- *          print lines.join('')
- *        end
+ *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
+ *        pp lines
  *      }
  *    }
  *
  *  If the block needs to maintain state over multiple elements,
- *  _initial_state_ argument can be used.
- *  If non-nil value is given,
- *  it is duplicated for each "each" method invocation of the enumerator.
- *  The duplicated object is passed to 2nd argument of the block for "chunk" method.
+ *  an +initial_state+ argument can be used.
+ *  If a non-nil value is given,
+ *  a reference to it is passed as the 2nd argument of the block for the
+ *  +chunk+ method, so state-changes to it persist across block calls.
  *
  */
 static VALUE

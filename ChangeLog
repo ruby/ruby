@@ -1,3 +1,9 @@
+Fri Feb 22 11:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* enum.c (Enumerable#chunk: Improved examples, grammar, and formatting
+	  Patch by Dan Bernier and Rich Bruchal of newhaven.rb
+	  [Backport #7926]
+
 Fri Feb 22 02:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/abbrev.rb: Add words parameter to Abbrev::abbrev
