@@ -1,3 +1,8 @@
+Sat Feb 23 16:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: Improved rdoc for ::handle_interrupt, ::pending_interrupt?
+	  and #pending_interrupt? [Backport #7934]
+
 Sat Feb 23 14:19:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (HAVE_RB_SCAN_ARGS_OPTIONAL_HASH): for

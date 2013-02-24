@@ -1585,49 +1585,53 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  * call-seq:
  *   Thread.handle_interrupt(hash) { ... } -> result of the block
  *
- * Thread.Thread#handle_interrupt changes async interrupt timing.
+ * Changes asynchronous interrupt timing.
  *
  * _interrupt_ means asynchronous event and corresponding procedure
  * by Thread#raise, Thread#kill, signal trap (not supported yet)
  * and main thread termination (if main thread terminates, then all
  * other thread will be killed).
  *
- * _hash_ has pairs of ExceptionClass and TimingSymbol.  TimingSymbol
- * is one of them:
- * - :immediate   Invoke interrupts immediately.
- * - :on_blocking Invoke interrupts while _BlockingOperation_.
- * - :never       Never invoke all interrupts.
+ * The given +hash+ has pairs like <code>ExceptionClass =>
+ * :TimingSymbol</code>. Where the ExceptionClass is the interrupt handled by
+ * the given block. The TimingSymbol can be one of the following symbols:
+ *
+ * [+:immediate+]   Invoke interrupts immediately.
+ * [+:on_blocking+] Invoke interrupts while _BlockingOperation_.
+ * [+:never+]       Never invoke all interrupts.
  *
  * _BlockingOperation_ means that the operation will block the calling thread,
- * such as read and write.  On CRuby implementation, _BlockingOperation_ is
+ * such as read and write.  On CRuby implementation, _BlockingOperation_ is any
  * operation executed without GVL.
  *
- * Masked async interrupts are delayed until they are enabled.
+ * Masked asynchronous interrupts are delayed until they are enabled.
  * This method is similar to sigprocmask(3).
  *
- * TODO (DOC): Thread#handle_interrupt is stacked.
- * TODO (DOC): check ancestors.
- * TODO (DOC): to prevent all async interrupt, {Object => :never} works.
+ * === NOTE
  *
- * NOTE: Asynchronous interrupts are difficult to use.
- *       If you need to communicate between threads,
- *       please consider to use another way such as Queue.
- *       Or use them with deep understanding about this method.
+ * Asynchronous interrupts are difficult to use.
  *
+ * If you need to communicate between threads, please consider to use another way such as Queue.
  *
- *   # example: Guard from Thread#raise
+ * Or use them with deep understanding about this method.
+ *
+ * === Usage
+ *
+ * In this example, we can guard from Thread#raise exceptions.
+ *
+ * Using the +:never+ TimingSymbol the RuntimeError exception will always be
+ * ignored in the first block of the main thread. In the second
+ * ::handle_interrupt block we can purposefully handle RuntimeError exceptions.
+ *
  *   th = Thread.new do
  *     Thead.handle_interrupt(RuntimeError => :never) {
  *       begin
- *         # Thread#raise doesn't async interrupt here.
  *         # You can write resource allocation code safely.
  *         Thread.handle_interrupt(RuntimeError => :immediate) {
- *           # ...
- *           # It is possible to be interrupted by Thread#raise.
+ *	     # ...
  *         }
  *       ensure
- *         # Thread#raise doesn't interrupt here.
- *         # You can write resource dealocation code safely.
+ *         # You can write resource deallocation code safely.
  *       end
  *     }
  *   end
@@ -1635,7 +1639,17 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  *   # ...
  *   th.raise "stop"
  *
- *   # example: Guard from TimeoutError
+ * While we are ignoring the RuntimeError exception, it's safe to write our
+ * resource allocation code. Then in the ensure block is where you can safely
+ * deallocate your resources.
+ *
+ * ==== Guarding from TimeoutError
+ *
+ * In the next example, we will guard from the TimeoutError exception. This
+ * will help prevent from leaking resources when TimeoutError exceptions occur
+ * during normal ensure clause. For this example we use the help of the
+ * standard library Timeout, from lib/timeout.rb
+ *
  *   require 'timeout'
  *   Thread.handle_interrupt(TimeoutError => :never) {
  *     timeout(10){
@@ -1648,14 +1662,26 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  *     }
  *   }
  *
- *   # example: Stack control settings
+ * In the first part of the +timeout+ block, we can rely on TimeoutError being
+ * ignored. Then in the <code>TimeoutError => :on_blocking</code> block, any
+ * operation that will block the calling thread is susceptible to a
+ * TimeoutError exception being raised.
+ *
+ * ==== Stack control settings
+ *
+ * It's possible to stack multiple levels of ::handle_interrupt blocks in order
+ * to control more than one ExceptionClass and TimingSymbol at a time.
+ *
  *   Thread.handle_interrupt(FooError => :never) {
  *     Thread.handle_interrupt(BarError => :never) {
  *        # FooError and BarError are prohibited.
  *     }
  *   }
  *
- *   # example: check ancestors
+ * ==== Inheritance with ExceptionClass
+ *
+ * All exceptions inherited from the ExceptionClass parameter will be considered.
+ *
  *   Thread.handle_interrupt(Exception => :never) {
  *     # all exceptions inherited from Exception are prohibited.
  *   }
@@ -1704,9 +1730,13 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 
 /*
  * call-seq:
- *   target_thread.pending_interrupt?(err = nil) -> true/false
+ *   target_thread.pending_interrupt?(error = nil) -> true/false
  *
- *   Check async queue is empty or not.
+ * Returns whether or not the asychronous queue is empty for the target thread.
+ *
+ * If +error+ is given, then check only for +error+ type deferred events.
+ *
+ * See ::pending_interrupt? for more information.
  */
 static VALUE
 rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
@@ -1738,17 +1768,17 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
 
 /*
  * call-seq:
- *   Thread.pending_interrupt?(err = nil) -> true/false
+ *   Thread.pending_interrupt?(error = nil) -> true/false
  *
- *   Check async queue is empty or not.
+ * Returns whether or not the asynchronous queue is empty.
  *
- *   Thread.handle_interrupt can defer asynchronous events.
- *   This method returns deferred event are there.
- *   If you find this method return true, then you may finish
- *   never block.
+ * Since Thread::handle_interrupt can be used to defer asynchronous events.
+ * This method can be used to determine if there are any deferred events.
  *
- *   For example, the following method processes defferred async event
- *   immediately.
+ * If you find this method returns true, then you may finish +:never+ blocks.
+ *
+ * For example, the following method processes deferred asynchronous events
+ * immediately.
  *
  *   def Thread.kick_interrupt_immediately
  *     Thread.handle_interrupt(Object => :immediate) {
@@ -1756,9 +1786,9 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
  *     }
  *   end
  *
- *   If _err_ is given, then check only _err_ async interrupts.
+ * If +error+ is given, then check only for +error+ type deferred events.
  *
- * Examples:
+ * === Usage
  *
  *   th = Thread.new{
  *     Thread.handle_interrupt(RuntimeError => :on_blocking){
@@ -1775,8 +1805,8 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
  *   ...
  *   th.raise # stop thread
  *
- * NOTE: This example can be described by the another code.
- *       You need to keep to avoid asynchronous interrupts.
+ * This example can also be written as the following, which you should use to
+ * avoid asynchronous interrupts.
  *
  *   flag = true
  *   th = Thread.new{
