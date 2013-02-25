@@ -1,4 +1,4 @@
-option platform cygwin|mingw|mswin
+#option platform cygwin|mingw|mswin
 #option nodynamic
 
 Win32API
