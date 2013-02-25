@@ -304,7 +304,7 @@ rubyw_install_name = CONFIG["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
-libdir = CONFIG[CONFIG["libdirname", true], true]
+libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
 archhdrdir = CONFIG["rubyarchhdrdir"] || (rubyhdrdir + "/" + CONFIG['arch'])
 rubylibdir = CONFIG["rubylibdir", true]
