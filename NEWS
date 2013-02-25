@@ -1,4 +1,5 @@
-# -*- rd -*-
+# -*- rdoc -*-
+
 = NEWS for Ruby 2.1.0
 
 This document is a list of user visible feature changes made between
