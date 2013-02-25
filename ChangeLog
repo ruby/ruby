@@ -1,4 +1,8 @@
-Wed Feb 20 17:22:21 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+Tue Feb 26 04:50:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* error.c: clarify reason for sleep in SignalException example
+
+Tue Feb 26 03:47:00 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* error.c: clarify a document of SignalException. Process.kill()
 	  doesn't have any guarantee when signal will be delivered.
