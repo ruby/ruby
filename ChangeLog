@@ -1,3 +1,8 @@
+Mon Feb 25 12:48:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: Document Thread::new, clean up ::fork and mention calling
+	  super if subclassing Thread
+
 Mon Feb 25 12:38:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: don't test ss_family and ss_len member of

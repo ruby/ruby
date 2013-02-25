@@ -622,7 +622,26 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *  Thread.new { ... }			-> thread
+ *  Thread.new(*args, &proc)		-> thread
+ *  Thread.new(*args) { |args| ... }	-> thread
+ *
+ *  Creates a new thread executing the given block.
+ *
+ *  Any +args+ given to ::new will be passed to the block:
+ *
+ *	arr = []
+ *	a, b, c = 1, 2, 3
+ *	Thread.new(a,b,c) { |d,e,f| arr << d << e << f }.join
+ *	arr #=> [1, 2, 3]
+ *
+ *  A ThreadError exception is raised if ::new is called without a block.
+ *
+ *  If you're going to subclass Thread, be sure to call super in your
+ *  +initialize+ method, otherwise a ThreadError will be raised.
+ */
 static VALUE
 thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -646,9 +665,12 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
  *     Thread.start([args]*) {|args| block }   -> thread
  *     Thread.fork([args]*) {|args| block }    -> thread
  *
- *  Basically the same as <code>Thread::new</code>. However, if class
- *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
- *  subclass will not invoke the subclass's <code>initialize</code> method.
+ *  Basically the same as ::new. However, if class Thread is subclassed, then
+ *  calling +start+ in that subclass will not invoke the subclass's
+ *  +initialize+ method.
+ *
+ *  If you're going to subclass Thread, be sure to call super in your
+ *  +initialize+ method, otherwise a ThreadError will be raised.
  */
 
 static VALUE
