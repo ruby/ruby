@@ -6,6 +6,7 @@ def pre_1_7_1
 end
 
 class TestString < Test::Unit::TestCase
+  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "2.1.0"
 
   def initialize(*args)
     @cls = String
@@ -642,7 +643,7 @@ class TestString < Test::Unit::TestCase
     s = S("ABC")
     assert_equal [65, 66, 67], s.bytes
 
-    if RUBY_VERSION >= "2.1.0"
+    if ENUMERATOR_WANTARRAY
       assert_warn(/block not used/) {
         assert_equal [65, 66, 67], s.bytes {}
       }
@@ -679,7 +680,7 @@ class TestString < Test::Unit::TestCase
     s = S("\u3042\u3044\u3046")
     assert_equal [0x3042, 0x3044, 0x3046], s.codepoints
 
-    if RUBY_VERSION >= "2.1.0"
+    if ENUMERATOR_WANTARRAY
       assert_warn(/block not used/) {
         assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
       }
@@ -710,7 +711,7 @@ class TestString < Test::Unit::TestCase
     s = S("ABC")
     assert_equal ["A", "B", "C"], s.chars
 
-    if RUBY_VERSION >= "2.1.0"
+    if ENUMERATOR_WANTARRAY
       assert_warn(/block not used/) {
         assert_equal ["A", "B", "C"], s.chars {}
       }
@@ -772,7 +773,7 @@ class TestString < Test::Unit::TestCase
     assert_equal ["hello\n", "world"], s.lines
     assert_equal ["hello\nworld"], s.lines(nil)
 
-    if RUBY_VERSION >= "2.1.0"
+    if ENUMERATOR_WANTARRAY
       assert_warn(/block not used/) {
         assert_equal ["hello\n", "world"], s.lines {}
       }
