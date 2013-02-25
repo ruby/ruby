@@ -1,3 +1,9 @@
+Mon Feb 25 12:38:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: don't test ss_family and ss_len member of
+	  struct sockaddr_storage.  They are not used now except SunOS
+	  specific code.
+
 Mon Feb 25 11:03:38 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (unexpand_shvar): Use the numeric comparison
