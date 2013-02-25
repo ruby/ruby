@@ -18,7 +18,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       "ed244fbf2b1a52e012da8616c512fa47f9aa5250"
 
     @spec, @path = util_gem "freewill", "1.0.0"
-    @host = Gem.host
+    @host = 'https://rubygems.example'
     @api_key = Gem.configuration.rubygems_api_key
 
     @fetcher = Gem::FakeFetcher.new
@@ -59,6 +59,27 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal @api_key, @fetcher.last_request["Authorization"]
 
     assert_match @response, @ui.output
+  end
+
+  def test_execute_host
+    host = 'https://other.example'
+
+    open 'example', 'w' do |io| io.write 'hello' end
+
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems"] =
+      ['fail', 500, 'Internal Server Error']
+
+    @cmd.options[:host] = host
+    @cmd.options[:args] = %w[example]
+
+    @cmd.execute
+
+    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal 'hello', @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
   end
 
   def test_sending_when_default_host_disabled
@@ -110,25 +131,9 @@ class TestGemCommandsPushCommand < Gem::TestCase
     send_battery
   end
 
-  def test_sending_gem_default
+  def test_sending_gem
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
-
-    send_battery
-  end
-
-  def test_sending_gem_host
-    @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
-    @cmd.options['host'] = "#{Gem.host}"
-
-    send_battery
-  end
-
-  def test_sending_gem_ENV
-    @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
-    ENV["RUBYGEMS_HOST"] = "#{Gem.host}"
 
     send_battery
   end
@@ -143,6 +148,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
   def test_sending_gem_denied
     response = "You don't have permission to push to this gem"
     @fetcher.data["#{@host}/api/v1/gems"] = [response, 403, 'Forbidden']
+    @cmd.instance_variable_set :@host, @host
 
     assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
@@ -162,6 +168,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     Gem.configuration.load_api_keys
 
     @cmd.handle_options %w(-k other)
+    @cmd.instance_variable_set :@host, @host
     @cmd.send_gem(@path)
 
     assert_equal Gem.configuration.api_keys[:other],
