@@ -317,7 +317,7 @@ eom
         AssertFile
       end
 
-      class << (AssertFile = Struct.new(:message).new)
+      class << (AssertFile = Struct.new(:failure_message).new)
         include Assertions
         def assert_file_predicate(predicate, *args)
           if /\Anot_/ =~ predicate
@@ -329,13 +329,13 @@ eom
           mesg = "Expected file " << args.shift.inspect
           mesg << mu_pp(args) unless args.empty?
           mesg << "#{neg} to be #{predicate}"
-          mesg << " #{message}" if message
+          mesg << " #{failure_message}" if failure_message
           assert(result, mesg)
         end
         alias method_missing assert_file_predicate
 
         def for(message)
-          clone.tap {|a| a.message = message}
+          clone.tap {|a| a.failure_message = message}
         end
       end
     end
