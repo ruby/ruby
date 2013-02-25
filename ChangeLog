@@ -1,3 +1,9 @@
+Wed Feb 20 17:22:21 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* error.c: clarify a document of SignalException. Process.kill()
+	  doesn't have any guarantee when signal will be delivered.
+	  [Bug #7951] [ruby-core:52864]
+
 Mon Feb 25 23:51:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/version.h: bump RUBY_API_VERSION same as RUBY_VERSION.
