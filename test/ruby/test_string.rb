@@ -6,7 +6,7 @@ def pre_1_7_1
 end
 
 class TestString < Test::Unit::TestCase
-  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "2.1.0"
+  ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
 
   def initialize(*args)
     @cls = String
