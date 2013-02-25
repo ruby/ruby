@@ -1,3 +1,11 @@
+Mon Feb 25 15:47:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (ARFLAGS): VisualC++ linker does not allow spaces between
+	  output option and the output file name.  [Bug #7950]
+
+	* enc/depend (RANLIB): set default command to do nothing, or make the
+	  entire line a label on Windows.
+
 Mon Feb 25 14:41:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#init_mkmf): default libdirname to libdir.
