@@ -668,9 +668,6 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
  *  Basically the same as ::new. However, if class Thread is subclassed, then
  *  calling +start+ in that subclass will not invoke the subclass's
  *  +initialize+ method.
- *
- *  If you're going to subclass Thread, be sure to call super in your
- *  +initialize+ method, otherwise a ThreadError will be raised.
  */
 
 static VALUE
