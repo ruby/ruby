@@ -1,3 +1,10 @@
+Mon Feb 25 13:12:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (setup): find Setup file from target_os 1. by
+	  suffix (e.g. Setup.nacl, Setup.atheos), 2. by "platform"
+	  option (e.g. Setup.nt, Setup.emx), and 3. default Setup.  And
+	  Setup.dj had been removed.
+
 Mon Feb 25 12:48:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c: Document Thread::new, clean up ::fork and mention calling

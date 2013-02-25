@@ -2580,21 +2580,22 @@ fi
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
 
-AS_CASE(["$target_os"],
-  dnl OS/2 environment w/ Autoconf 2.1x for EMX
-  [os2-emx], [
-    setup=Setup.emx
-    ],
-  [*djgpp*], [
-    setup=Setup.dj
-    ],
-  [nacl], [
-    setup=Setup.nacl
-    ],
-  [
-    setup=Setup
-    ])
-
+if test -f "$srcdir/ext/Setup.$target_os"; then
+    setup="Setup.$target_os"
+else
+    setup=
+    for file in "$srcdir"/ext/Setup.*; do
+	AS_CASE(["$file"], [*~|*.bak|*.orig|*.rej|*.tmp], [continue])
+	setup=`basename "$file"`
+	AS_CASE(["$target_os"], [`expr "$setup" : 'Setup.\(.*\)'`*], [break])
+	platform=`sed '/^option  *platform  */!d;s///;s/|/*|/g;q' "$file"`
+	if test "x$platform" != x; then
+	    eval "AS_CASE([\"\$target_os\"], [$platform*], [break])"
+	fi
+	setup=
+    done
+    : ${setup:=Setup}
+fi
 AC_SUBST(setup)
 
 test x"$prefix" = xNONE && prefix=$ac_default_prefix

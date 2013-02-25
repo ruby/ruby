@@ -1,3 +1,5 @@
+# OS/2 environment w/ Autoconf 2.1x for EMX
+option platform os2-emx
 option nodynamic
 
 #Win32API
