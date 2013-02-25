@@ -29,6 +29,8 @@
 #include <unistd.h>
 #endif
 
+#define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
+
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 #undef rb_str_new_cstr
@@ -6115,7 +6117,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 
     if (rb_block_given_p()) {
 	if (wantarray) {
-#if 0 /* next major */
+#if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
 	    ary = rb_ary_new();
 #else
@@ -6297,7 +6299,7 @@ rb_str_enumerate_bytes(VALUE str, int wantarray)
 
     if (rb_block_given_p()) {
 	if (wantarray) {
-#if 0 /* next major */
+#if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
 	    ary = rb_ary_new();
 #else
@@ -6390,7 +6392,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 
     if (rb_block_given_p()) {
 	if (wantarray) {
-#if 0 /* next major */
+#if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
 	    ary = rb_ary_new();
 #else
@@ -6493,7 +6495,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
 
     if (rb_block_given_p()) {
 	if (wantarray) {
-#if 0 /* next major */
+#if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
 	    ary = rb_ary_new();
 #else
