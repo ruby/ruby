@@ -243,16 +243,18 @@ module REXML
       Parsers::StreamParser.new( source, listener ).parse
     end
 
-    @@entity_expansion_limit = 10_000
-
     # Set the entity expansion limit. By default the limit is set to 10000.
+    #
+    # Deprecated. Use REXML.entity_expansion_limit= instead.
     def Document::entity_expansion_limit=( val )
-      @@entity_expansion_limit = val
+      REXML.entity_expansion_limit = val
     end
 
     # Get the entity expansion limit. By default the limit is set to 10000.
+    #
+    # Deprecated. Use REXML.entity_expansion_limit= instead.
     def Document::entity_expansion_limit
-      return @@entity_expansion_limit
+      return REXML.entity_expansion_limit
     end
 
     # Set the entity expansion limit. By default the limit is set to 10240.
@@ -273,7 +275,7 @@ module REXML
 
     def record_entity_expansion
       @entity_expansion_count += 1
-      if @entity_expansion_count > @@entity_expansion_limit
+      if @entity_expansion_count > REXML.entity_expansion_limit
         raise "number of entity expansions exceeded, processing aborted."
       end
     end

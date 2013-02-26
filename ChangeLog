@@ -1,3 +1,12 @@
+Tue Feb 26 23:32:44 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb: move entity_expansion_limit accessor to ...
+	* lib/rexml/rexml.rb: ... here for consistency.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_limit):
+	  deprecated.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_limit=):
+	  deprecated.
+
 Tue Feb 26 23:26:13 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb: move entity_expansion_limit accessor to ...
