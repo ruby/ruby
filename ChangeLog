@@ -1,3 +1,12 @@
+Tue Feb 26 09:53:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* st.c (st_add_direct): int is not always same with st_index_t.  some
+	  version of clang reports error.
+
+	* thread.c (vm_living_thread_num): ditto.
+	  reported by d6rkaiz (Isao Sugimoto) at [ruby-dev:47096]
+	  [Backport #7946]
+
 Fri Feb 22 18:36:51 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
