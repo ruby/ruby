@@ -274,4 +274,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_valid_syntax("def bug7662(*, **) end")
     assert_valid_syntax("def bug7662(a, **) end")
   end
+
+  def test_without_paren
+    bug7942 = '[ruby-core:52820] [Bug #7942]'
+    assert_valid_syntax("def bug7942 a: 1; end")
+    assert_valid_syntax("def bug7942 a: 1, **; end")
+
+    o = Object.new
+    eval("def o.bug7942 a: 1; a; end", nil, __FILE__, __LINE__)
+    assert_equal(1, o.bug7942(), bug7942)
+    assert_equal(42, o.bug7942(a: 42), bug7942)
+
+    o = Object.new
+    eval("def o.bug7942 a: 1, **; a; end", nil, __FILE__, __LINE__)
+    assert_equal(1, o.bug7942(), bug7942)
+    assert_equal(42, o.bug7942(a: 42), bug7942)
+  end
 end
