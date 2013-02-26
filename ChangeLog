@@ -1,3 +1,16 @@
+Tue Feb 26 23:26:13 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb: move entity_expansion_limit accessor to ...
+	* lib/rexml/rexml.rb: ... here to make rexml/text independent from
+	  REXML::Document. It causes circular require.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_limit):
+	  deprecated.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_limit=):
+	  deprecated.
+	* lib/rexml/text.rb: add missing require "rexml/rexml" for
+	  REXML.entity_expansion_limit.
+	  Reported by Robert Ulejczyk. Thanks!!! [ruby-core:52895] [Bug #7961]
+
 Tue Feb 26 15:12:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: reconstruct comma separated list values.  a
