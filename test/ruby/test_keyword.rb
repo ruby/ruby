@@ -246,7 +246,7 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def m1(*args)
-    yield *args
+    yield(*args)
   end
 
   def test_block
