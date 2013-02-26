@@ -1,3 +1,9 @@
+Tue Feb 26 15:12:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb: reconstruct comma separated list values.  a
+	  command line to Windows batch file is splitted not only by spaces
+	  and equals sign but also by commas and semicolons.
+
 Tue Feb 26 15:04:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (unexpand_shvar): get rid of non-portable shell
