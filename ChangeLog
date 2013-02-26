@@ -1,3 +1,8 @@
+Wed Feb 27 00:20:43 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_process.rb (test_setsid): Added a workaround for
+	  MacOS X. Patch by nagachika. [Bug #7826] [ruby-core:52126]
+
 Sun Feb 24 15:16:00 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Removed duplicate Accept-Encoding in Net::HTTP#get.
