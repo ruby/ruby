@@ -1,3 +1,7 @@
+Thu Feb 28 05:57:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: rdoc formatting for Thread, ThreadGroup, and ThreadError
+
 Thu Feb 28 02:42:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm.c: Typo in overview for example of Thread#status returning false

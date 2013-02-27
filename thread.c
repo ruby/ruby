@@ -822,38 +822,37 @@ thread_join(rb_thread_t *target_th, double delay)
  *     thr.join          -> thr
  *     thr.join(limit)   -> thr
  *
- *  The calling thread will suspend execution and run <i>thr</i>. Does not
- *  return until <i>thr</i> exits or until <i>limit</i> seconds have passed. If
- *  the time limit expires, <code>nil</code> will be returned, otherwise
- *  <i>thr</i> is returned.
+ *  The calling thread will suspend execution and run this +thr+.
  *
- *  Any threads not joined will be killed when the main program exits.  If
- *  <i>thr</i> had previously raised an exception and the
- *  <code>abort_on_exception</code> and <code>$DEBUG</code> flags are not set
- *  (so the exception has not yet been processed) it will be processed at this
- *  time.
+ *  Does not return until +thr+ exits or until the given +limit+ seconds have
+ *  passed.
+ *
+ *  If the time limit expires, +nil+ will be returned, otherwise this +thr+ is
+ *  returned.
+ *
+ *  Any threads not joined will be killed when the main program exits.
+ *
+ *  If +thr+ had previously raised an exception and the ::abort_on_exception or
+ *  $DEBUG flags are not set, (so the exception has not yet been processed), it
+ *  will be processed at this time.
  *
  *     a = Thread.new { print "a"; sleep(10); print "b"; print "c" }
  *     x = Thread.new { print "x"; Thread.pass; print "y"; print "z" }
  *     x.join # Let x thread finish, a will be killed on exit.
+ *     #=> "axyz"
  *
- *  <em>produces:</em>
- *
- *     axyz
- *
- *  The following example illustrates the <i>limit</i> parameter.
+ *  The following example illustrates the +limit+ parameter.
  *
  *     y = Thread.new { 4.times { sleep 0.1; puts 'tick... ' }}
  *     puts "Waiting" until y.join(0.15)
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     tick...
  *     Waiting
  *     tick...
- *     Waitingtick...
- *
- *
+ *     Waiting
+ *     tick...
  *     tick...
  */
 
@@ -878,8 +877,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     thr.value   -> obj
  *
- *  Waits for <i>thr</i> to complete (via <code>Thread#join</code>) and returns
- *  its value.
+ *  Waits for +thr+ to complete, using #join, and returns its value.
  *
  *     a = Thread.new { 2 + 2 }
  *     a.value   #=> 4
@@ -2064,7 +2062,7 @@ rb_thread_fd_close(int fd)
  *     a = Thread.new { sleep(200) }
  *     a.raise("Gotcha")
  *
- *  _produces:_
+ *  This will produce:
  *
  *     prog.rb:3: Gotcha (RuntimeError)
  *     	from prog.rb:2:in `initialize'
@@ -2094,10 +2092,11 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
  *     thr.kill        -> thr or nil
  *     thr.terminate   -> thr or nil
  *
- *  Terminates <i>thr</i> and schedules another thread to be run. If this thread
- *  is already marked to be killed, <code>exit</code> returns the
- *  <code>Thread</code>. If this is the main thread, or the last thread, exits
- *  the process.
+ *  Terminates +thr+ and schedules another thread to be run.
+ *
+ *  If this thread is already marked to be killed, #exit returns the Thread.
+ *
+ *  If this is the main thread, or the last thread, exits the process.
  */
 
 VALUE
@@ -2135,7 +2134,7 @@ rb_thread_kill(VALUE thread)
  *  call-seq:
  *     Thread.kill(thread)   -> thread
  *
- *  Causes the given <em>thread</em> to exit (see <code>Thread::exit</code>).
+ *  Causes the given +thread+ to exit, see also Thread::exit.
  *
  *     count = 0
  *     a = Thread.new { loop { count += 1 } }
@@ -2157,9 +2156,11 @@ rb_thread_s_kill(VALUE obj, VALUE th)
  *     Thread.exit   -> thread
  *
  *  Terminates the currently running thread and schedules another thread to be
- *  run. If this thread is already marked to be killed, <code>exit</code>
- *  returns the <code>Thread</code>. If this is the main thread, or the last
- *  thread, exit the process.
+ *  run.
+ *
+ *  If this thread is already marked to be killed, ::exit returns the Thread.
+ *
+ *  If this is the main thread, or the last  thread, exit the process.
  */
 
 static VALUE
@@ -2183,10 +2184,7 @@ rb_thread_exit(void)
  *     sleep 0.1 while c.status!='sleep'
  *     c.wakeup
  *     c.join
- *
- *  _produces:_
- *
- *     hey!
+ *     #=> "hey!"
  */
 
 VALUE
@@ -2218,7 +2216,7 @@ rb_thread_wakeup_alive(VALUE thread)
  *  call-seq:
  *     thr.run   -> thr
  *
- *  Wakes up <i>thr</i>, making it eligible for scheduling.
+ *  Wakes up +thr+, making it eligible for scheduling.
  *
  *     a = Thread.new { puts "a"; Thread.stop; puts "c" }
  *     sleep 0.1 while a.status!='sleep'
@@ -2226,11 +2224,13 @@ rb_thread_wakeup_alive(VALUE thread)
  *     a.run
  *     a.join
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     a
  *     Got here
  *     c
+ *
+ *  See also the instance method #wakeup.
  */
 
 VALUE
@@ -2254,10 +2254,7 @@ rb_thread_run(VALUE thread)
  *     print "b"
  *     a.run
  *     a.join
- *
- *  <em>produces:</em>
- *
- *     abc
+ *     #=> "abc"
  */
 
 VALUE
@@ -2295,15 +2292,15 @@ thread_list_i(st_data_t key, st_data_t val, void *data)
  *  call-seq:
  *     Thread.list   -> array
  *
- *  Returns an array of <code>Thread</code> objects for all threads that are
- *  either runnable or stopped.
+ *  Returns an array of Thread objects for all threads that are either runnable
+ *  or stopped.
  *
  *     Thread.new { sleep(200) }
  *     Thread.new { 1000000.times {|i| i*i } }
  *     Thread.new { Thread.stop }
  *     Thread.list.each {|t| p t}
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     #<Thread:0x401b3e84 sleep>
  *     #<Thread:0x401b3f38 run>
@@ -2364,12 +2361,20 @@ rb_thread_s_main(VALUE klass)
  *  call-seq:
  *     Thread.abort_on_exception   -> true or false
  *
- *  Returns the status of the global ``abort on exception'' condition.  The
- *  default is <code>false</code>. When set to <code>true</code>, or if the
- *  global <code>$DEBUG</code> flag is <code>true</code> (perhaps because the
- *  command line option <code>-d</code> was specified) all threads will abort
- *  (the process will <code>exit(0)</code>) if an exception is raised in any
- *  thread. See also <code>Thread::abort_on_exception=</code>.
+ *  Returns the status of the global ``abort on exception'' condition.
+ *
+ *  The default is +false+.
+ *
+ *  When set to +true+, all threads will abort (the process will
+ *  <code>exit(0)</code>) if an exception is raised in any thread.
+ *
+ *  Can also be specified by the global $DEBUG flag or command line option
+ *  +-d+.
+ *
+ *  See also ::abort_on_exception=.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #abort_on_exception.
  */
 
 static VALUE
@@ -2383,8 +2388,8 @@ rb_thread_s_abort_exc(void)
  *  call-seq:
  *     Thread.abort_on_exception= boolean   -> true or false
  *
- *  When set to <code>true</code>, all threads will abort if an exception is
- *  raised. Returns the new state.
+ *  When set to +true+, all threads will abort if an exception is raised.
+ *  Returns the new state.
  *
  *     Thread.abort_on_exception = true
  *     t1 = Thread.new do
@@ -2394,13 +2399,18 @@ rb_thread_s_abort_exc(void)
  *     sleep(1)
  *     puts "not reached"
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     In new thread
  *     prog.rb:4: Exception from thread (RuntimeError)
  *     	from prog.rb:2:in `initialize'
  *     	from prog.rb:2:in `new'
  *     	from prog.rb:2
+ *
+ *  See also ::abort_on_exception.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #abort_on_exception=.
  */
 
 static VALUE
@@ -2417,8 +2427,14 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
  *     thr.abort_on_exception   -> true or false
  *
  *  Returns the status of the thread-local ``abort on exception'' condition for
- *  <i>thr</i>. The default is <code>false</code>. See also
- *  <code>Thread::abort_on_exception=</code>.
+ *  this +thr+.
+ *
+ *  The default is +false+.
+ *
+ *  See also #abort_on_exception=.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::abort_on_exception.
  */
 
 static VALUE
@@ -2434,9 +2450,15 @@ rb_thread_abort_exc(VALUE thread)
  *  call-seq:
  *     thr.abort_on_exception= boolean   -> true or false
  *
- *  When set to <code>true</code>, causes all threads (including the main
- *  program) to abort if an exception is raised in <i>thr</i>. The process will
- *  effectively <code>exit(0)</code>.
+ *  When set to +true+, all threads (including the main program) will abort if
+ *  an exception is raised in this +thr+.
+ *
+ *  The process will effectively <code>exit(0)</code>.
+ *
+ *  See also #abort_on_exception.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::abort_on_exception=.
  */
 
 static VALUE
@@ -2505,11 +2527,18 @@ rb_threadptr_dead(rb_thread_t *th)
  *  call-seq:
  *     thr.status   -> string, false or nil
  *
- *  Returns the status of <i>thr</i>: ``<code>sleep</code>'' if <i>thr</i> is
- *  sleeping or waiting on I/O, ``<code>run</code>'' if <i>thr</i> is executing,
- *  ``<code>aborting</code>'' if <i>thr</i> is aborting, <code>false</code> if
- *  <i>thr</i> terminated normally, and <code>nil</code> if <i>thr</i>
- *  terminated with an exception.
+ *  Returns the status of +thr+.
+ *
+ *  [<tt>"sleep"</tt>]
+ *	Returned if this thread is sleeping or waiting on I/O
+ *  [<tt>"run"</tt>]
+ *	When this thread is executing
+ *  [<tt>"aborting"</tt>]
+ *	If this thread is aborting
+ *  [+false+]
+ *	When this thread is terminated normally
+ *  [+nil+]
+ *	If terminated with an exception.
  *
  *     a = Thread.new { raise("die now") }
  *     b = Thread.new { Thread.stop }
@@ -2521,6 +2550,8 @@ rb_threadptr_dead(rb_thread_t *th)
  *     c.status                #=> false
  *     d.status                #=> "aborting"
  *     Thread.current.status   #=> "run"
+ *
+ *  See also the instance methods #alive? and #stop?
  */
 
 static VALUE
@@ -2544,12 +2575,14 @@ rb_thread_status(VALUE thread)
  *  call-seq:
  *     thr.alive?   -> true or false
  *
- *  Returns <code>true</code> if <i>thr</i> is running or sleeping.
+ *  Returns +true+ if +thr+ is running or sleeping.
  *
  *     thr = Thread.new { }
  *     thr.join                #=> #<Thread:0x401b3fb0 dead>
  *     Thread.current.alive?   #=> true
  *     thr.alive?              #=> false
+ *
+ *  See also #stop? and #status.
  */
 
 static VALUE
@@ -2567,12 +2600,14 @@ rb_thread_alive_p(VALUE thread)
  *  call-seq:
  *     thr.stop?   -> true or false
  *
- *  Returns <code>true</code> if <i>thr</i> is dead or sleeping.
+ *  Returns +true+ if +thr+ is dead or sleeping.
  *
  *     a = Thread.new { Thread.stop }
  *     b = Thread.current
  *     a.stop?   #=> true
  *     b.stop?   #=> false
+ *
+ *  See also #alive? and #status.
  */
 
 static VALUE
@@ -2657,7 +2692,7 @@ rb_thread_local_aref(VALUE thread, ID id)
  *
  *  Attribute Reference---Returns the value of a fiber-local variable (current thread's root fiber
  *  if not explicitely inside a Fiber), using either a symbol or a string name.
- *  If the specified variable does not exist, returns <code>nil</code>.
+ *  If the specified variable does not exist, returns +nil+.
  *
  *     [
  *       Thread.new { Thread.current["name"] = "A" },
@@ -2668,7 +2703,7 @@ rb_thread_local_aref(VALUE thread, ID id)
  *       puts "#{th.inspect}: #{th[:name]}"
  *     end
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     #<Thread:0x00000002a54220 dead>: A
  *     #<Thread:0x00000002a541a8 dead>: B
@@ -2706,8 +2741,8 @@ rb_thread_local_aref(VALUE thread, ID id)
  *    #=> nil if fiber-local
  *    #=> 2 if thread-local (The value 2 is leaked to outside of meth method.)
  *
- *  For thread-local variables, please see <code>Thread#thread_local_get</code>
- *  and <code>Thread#thread_local_set</code>.
+ *  For thread-local variables, please see #thread_variable_get and
+ *  #thread_variable_set.
  *
  */
 
@@ -2745,9 +2780,12 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *      thr[sym] = obj   -> obj
  *
  *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
- *  using either a symbol or a string. See also <code>Thread#[]</code>.  For
- *  thread-local variables, please see <code>Thread#thread_variable_set</code>
- *  and <code>Thread#thread_variable_get</code>.
+ *  using either a symbol or a string.
+ *
+ *  See also Thread#[].
+ *
+ *  For thread-local variables, please see #thread_variable_set and
+ *  #thread_variable_get.
  */
 
 static VALUE
@@ -2834,8 +2872,8 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
  *  call-seq:
  *     thr.key?(sym)   -> true or false
  *
- *  Returns <code>true</code> if the given string (or symbol) exists as a
- *  fiber-local variable.
+ *  Returns +true+ if the given string (or symbol) exists as a fiber-local
+ *  variable.
  *
  *     me = Thread.current
  *     me[:oliver] = "a"
@@ -2952,8 +2990,8 @@ rb_thread_variables(VALUE thread)
  *  call-seq:
  *     thr.thread_variable?(key)   -> true or false
  *
- *  Returns <code>true</code> if the given string (or symbol) exists as a
- *  thread-local variable.
+ *  Returns +true+ if the given string (or symbol) exists as a thread-local
+ *  variable.
  *
  *     me = Thread.current
  *     me.thread_variable_set(:oliver, "a")
@@ -3865,10 +3903,11 @@ static const rb_data_type_t thgroup_data_type = {
 /*
  * Document-class: ThreadGroup
  *
- *  <code>ThreadGroup</code> provides a means of keeping track of a number of
- *  threads as a group. A <code>Thread</code> can belong to only one
- *  <code>ThreadGroup</code> at a time; adding a thread to a new group will
- *  remove it from any previous group.
+ *  ThreadGroup provides a means of keeping track of a number of threads as a
+ *  group.
+ *
+ *  A given Thread object can only belong to one ThreadGroup at a time; adding
+ *  a thread to a new group will remove it from any previous group.
  *
  *  Newly created threads belong to the same group as the thread from which they
  *  were created.
@@ -3917,8 +3956,7 @@ thgroup_list_i(st_data_t key, st_data_t val, st_data_t data)
  *  call-seq:
  *     thgrp.list   -> array
  *
- *  Returns an array of all existing <code>Thread</code> objects that belong to
- *  this group.
+ *  Returns an array of all existing Thread objects that belong to this group.
  *
  *     ThreadGroup::Default.list   #=> [#<Thread:0x401bdf4c run>]
  */
@@ -3941,17 +3979,15 @@ thgroup_list(VALUE group)
  *     thgrp.enclose   -> thgrp
  *
  *  Prevents threads from being added to or removed from the receiving
- *  <code>ThreadGroup</code>. New threads can still be started in an enclosed
- *  <code>ThreadGroup</code>.
+ *  ThreadGroup.
+ *
+ *  New threads can still be started in an enclosed ThreadGroup.
  *
  *     ThreadGroup::Default.enclose        #=> #<ThreadGroup:0x4029d914>
  *     thr = Thread::new { Thread.stop }   #=> #<Thread:0x402a7210 sleep>
  *     tg = ThreadGroup::new               #=> #<ThreadGroup:0x402752d4>
  *     tg.add thr
- *
- *  <em>produces:</em>
- *
- *     ThreadError: can't move from the enclosed thread group
+ *     #=> ThreadError: can't move from the enclosed thread group
  */
 
 static VALUE
@@ -3970,8 +4006,7 @@ thgroup_enclose(VALUE group)
  *  call-seq:
  *     thgrp.enclosed?   -> true or false
  *
- *  Returns <code>true</code> if <em>thgrp</em> is enclosed. See also
- *  ThreadGroup#enclose.
+ *  Returns +true+ if the +thgrp+ is enclosed. See also ThreadGroup#enclose.
  */
 
 static VALUE
@@ -3990,8 +4025,8 @@ thgroup_enclosed_p(VALUE group)
  *  call-seq:
  *     thgrp.add(thread)   -> thgrp
  *
- *  Adds the given <em>thread</em> to this group, removing it from any other
- *  group to which it may have previously belonged.
+ *  Adds the given +thread+ to this group, removing it from any other
+ *  group to which it may have previously been a member.
  *
  *     puts "Initial group is #{ThreadGroup::Default.list}"
  *     tg = ThreadGroup.new
@@ -4003,7 +4038,7 @@ thgroup_enclosed_p(VALUE group)
  *     puts "Initial group now #{ThreadGroup::Default.list}"
  *     puts "tg group now #{tg.list}"
  *
- *  <em>produces:</em>
+ *  This will produce:
  *
  *     Initial group is #<Thread:0x401bdf4c>
  *     t1 is #<Thread:0x401b3c90>
@@ -4898,18 +4933,10 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
  *
  *     Thread.stop
  *
- *  <em>raises the exception:</em>
+ *  This will raises the following exception:
  *
  *     ThreadError: stopping only thread
- */
-
-/*
- *  +Thread+ encapsulates the behavior of a thread of
- *  execution, including the main thread of the Ruby script.
- *
- *  In the descriptions of the methods in this class, the parameter _sym_
- *  refers to a symbol, which is either a quoted string or a
- *  +Symbol+ (such as <code>:name</code>).
+ *     note: use sleep to stop forever
  */
 
 void
