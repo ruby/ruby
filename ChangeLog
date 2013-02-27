@@ -1,3 +1,8 @@
+Wed Feb 27 22:54:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (union_sockaddr): make it longer for SunOS
+	  and Darwin.
+
 Wed Feb 27 21:14:34 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/security.rb (REXML::Security): create.
