@@ -1056,13 +1056,16 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 #	define check_envopt(name, allow_envopt) \
 	    (((allow_envopt) || !envopt) ? (void)0 : \
 	     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
-#	define need_argument(name, s) \
-	    ((*(s)++ ? !*(s) : (!--argc || !((s) = *++argv))) ?		\
+#	define need_argument(name, s, needs_arg) \
+	    ((*(s)++ ? !*(s) : (!--argc || !((s) = *++argv))) && (needs_arg) ? \
 	     rb_raise(rb_eRuntimeError, "missing argument for --" name) \
 	     : (void)0)
-#	define is_option_with_arg(name, allow_hyphen, allow_envopt) \
+#	define is_option_with_arg(name, allow_hyphen, allow_envopt)	\
+	    is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue)
+#	define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg) \
 	    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) ? \
-	     (check_envopt(name, (allow_envopt)), s += n, need_argument(name, s), 1) : 0)
+	     (check_envopt(name, (allow_envopt)), s += n, \
+		need_argument(name, s, needs_arg), 1) : 0)
 
 	    if (strcmp("copyright", s) == 0) {
 		if (envopt) goto noenvopt_long;
@@ -1174,6 +1177,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 #	undef check_envopt
 #	undef need_argument
 #	undef is_option_with_arg
+#	undef is_option_with_optarg
 	}
     }
 
