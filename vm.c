@@ -2293,7 +2293,7 @@ Init_VM(void)
      *	    thr = Thread.new { ... }
      *	    Thread.kill(thr) # sends exit() to thr
      *
-     *	Alternatively, you can use the instance method #exit, or any of it's
+     *	Alternatively, you can use the instance method #exit, or any of its
      *	aliases #kill or #terminate.
      *
      *	    thr.exit
@@ -2301,7 +2301,7 @@ Init_VM(void)
      * 	=== Thread status
      *
      * 	Ruby provides a few instance methods for querying the state of a given
-     * 	thread. To get a string with a thread's current state use #status
+     * 	thread. To get a string with the current thread's state use #status
      *
      *	    thr = Thread.new { sleep }
      *	    thr.status # => "sleep"
@@ -2319,7 +2319,7 @@ Init_VM(void)
      *
      * 	==== Fiber-local vs. Thread-local
      *
-     *	Each fiber has it's own bucket for Thread#[] storage, when you set a
+     *	Each fiber has its own bucket for Thread#[] storage. When you set a
      *	new fiber-local it is only accessible within this Fiber. To illustrate:
      *
      *	    Thread.new {
@@ -2382,7 +2382,7 @@ Init_VM(void)
      *
      * 	You can also try ::pass, which attempts to pass execution to another
      * 	thread but is dependent on the OS whether a running thread will switch
-     * 	or not. The same goes for #priority, which let's you hint to the thread
+     * 	or not. The same goes for #priority, which lets you hint to the thread
      * 	scheduler which threads you want to take precedence when passing
      * 	execution. This method is also dependent on the OS and may be ignored
      * 	on some platforms.

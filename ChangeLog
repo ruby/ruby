@@ -1,3 +1,7 @@
+Wed Feb 27 19:53:32 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* vm.c (Thread): fix typos in overview
+
 Wed Feb 27 13:21:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm.c (Thread): Typo in overview, swap setting and getting
