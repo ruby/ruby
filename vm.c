@@ -2306,7 +2306,7 @@ Init_VM(void)
      *	    thr = Thread.new { sleep }
      *	    thr.status # => "sleep"
      *	    thr.exit
-     *	    thr.status # => "false"
+     *	    thr.status # => false
      *
      *	You can also use #alive? to tell if the thread is running or sleeping,
      *	and #stop? if the thread is dead or sleeping.
