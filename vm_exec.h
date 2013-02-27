@@ -116,9 +116,21 @@ error !
 
 #endif /* DISPATCH_DIRECT_THREADED_CODE */
 
+#if defined(__llvm__) && !defined(__clang__)
+  /* llvm-gcc may optimize out reg_cfp and cause Stack/cfp consistency error
+   * when the instruction doesn't use reg_cfp.
+   * Usually instructions use PUSH() but for example trace doesn't.
+   * This hack cause speed down but you shouldn't use llvm-gcc, use clang.
+   */
+#define END_INSN(insn)      \
+  { rb_control_frame_t *volatile RB_UNUSED_VAR(tmpcfp) = reg_cfp; } \
+  DEBUG_END_INSN();         \
+  TC_DISPATCH(insn);
+#else
 #define END_INSN(insn)      \
   DEBUG_END_INSN();         \
-  TC_DISPATCH(insn);        \
+  TC_DISPATCH(insn);
+#endif
 
 #define INSN_DISPATCH()     \
   TC_DISPATCH(__START__)    \

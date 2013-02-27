@@ -1,3 +1,11 @@
+Wed Feb 27 12:13:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.h (END_INSN): llvm-gcc may optimize out reg_cfp and cause
+	  Stack/cfp consistency error when the instruction doesn't use reg_cfp.
+	  Usually instructions use PUSH() but for example trace doesn't.
+	  This hack cause speed down but you shouldn't use llvm-gcc, use clang.
+	  [Bug #7938]
+
 Wed Feb 27 10:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c (thread_raise_m): rdoc formatting
