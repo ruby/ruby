@@ -1,3 +1,7 @@
+Wed Feb 27 10:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c (thread_raise_m): rdoc formatting
+
 Tue Feb 26 23:32:44 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb: move entity_expansion_limit accessor to ...

@@ -2057,14 +2057,14 @@ rb_thread_fd_close(int fd)
  *     thr.raise(string)
  *     thr.raise(exception [, string [, array]])
  *
- *  Raises an exception (see <code>Kernel::raise</code>) from <i>thr</i>. The
- *  caller does not have to be <i>thr</i>.
+ *  Raises an exception from the given thread. The caller does not have to be
+ *  +thr+. See Kernel#raise for more information.
  *
  *     Thread.abort_on_exception = true
  *     a = Thread.new { sleep(200) }
  *     a.raise("Gotcha")
  *
- *  <em>produces:</em>
+ *  _produces:_
  *
  *     prog.rb:3: Gotcha (RuntimeError)
  *     	from prog.rb:2:in `initialize'
