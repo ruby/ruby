@@ -1,3 +1,7 @@
+Wed Feb 27 12:53:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c (rb_thread_group): rdoc formatting
+
 Wed Feb 27 12:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/ostruct.rb: Typo in OpenStruct overview [Github Fixes #251]

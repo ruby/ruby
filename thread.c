@@ -2453,8 +2453,8 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  *  call-seq:
  *     thr.group   -> thgrp or nil
  *
- *  Returns the <code>ThreadGroup</code> which contains <i>thr</i>, or nil if
- *  the thread is not a member of any group.
+ *  Returns the ThreadGroup which contains the given thread, or returns +nil+
+ *  if +thr+ is not a member of any group.
  *
  *     Thread.main.group   #=> #<ThreadGroup:0x4029d914>
  */
