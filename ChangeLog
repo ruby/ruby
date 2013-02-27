@@ -1,3 +1,7 @@
+Wed Feb 27 13:21:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm.c (Thread): Typo in overview, swap setting and getting
+
 Wed Feb 27 13:02:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm.c (Thread): Documentation overview of Thread class

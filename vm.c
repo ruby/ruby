@@ -2329,7 +2329,7 @@ Init_VM(void)
      *	      }.resume
      *	    }.join
      *
-     * 	This example uses #[] for setting and #[]= for getting fiber-locals,
+     * 	This example uses #[] for getting and #[]= for setting fiber-locals,
      * 	you can also use #keys to list the fiber-locals for a given
      * 	thread and #key? to check if a fiber-local exists.
      *
