@@ -2174,15 +2174,17 @@ rb_thread_exit(void)
  *  call-seq:
  *     thr.wakeup   -> thr
  *
- *  Marks <i>thr</i> as eligible for scheduling (it may still remain blocked on
- *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
+ *  Marks a given thread as eligible for scheduling, however it may still
+ *  remain blocked on I/O.
+ *
+ *  *Note:* This does not invoke the scheduler, see #run for more information.
  *
  *     c = Thread.new { Thread.stop; puts "hey!" }
  *     sleep 0.1 while c.status!='sleep'
  *     c.wakeup
  *     c.join
  *
- *  <em>produces:</em>
+ *  _produces:_
  *
  *     hey!
  */
