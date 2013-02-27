@@ -1,3 +1,7 @@
+Wed Feb 27 13:02:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm.c (Thread): Documentation overview of Thread class
+
 Wed Feb 27 12:57:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c (rb_thread_wakeup): rdoc formatting
