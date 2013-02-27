@@ -1,4 +1,4 @@
-require 'rexml/rexml'
+require 'rexml/security'
 require 'rexml/entity'
 require 'rexml/doctype'
 require 'rexml/child'
@@ -384,7 +384,7 @@ module REXML
       sum = 0
       string.gsub( /\r\n?/, "\n" ).gsub( REFERENCE ) {
         s = Text.expand($&, doctype, filter)
-        if sum + s.bytesize > REXML.entity_expansion_text_limit
+        if sum + s.bytesize > Security.entity_expansion_text_limit
           raise "entity expansion has grown too large"
         else
           sum += s.bytesize

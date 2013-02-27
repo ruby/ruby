@@ -1,3 +1,13 @@
+Wed Feb 27 21:14:34 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/security.rb (REXML::Security): create.
+	* lib/rexml/rexml.rb: move entity_expansion_limit and
+	  entity_expansion_text_limit accessors to ...
+	* lib/rexml/security.rb: ... here.
+	* lib/rexml/document.rb: use REXML::Security.
+	* lib/rexml/text.rb: use REXML::Security.
+	* test/rexml/test_document.rb: use REXML::Security.
+
 Wed Feb 27 19:53:32 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* vm.c (Thread): fix typos in overview

@@ -1,3 +1,4 @@
+require "rexml/security"
 require "rexml/element"
 require "rexml/xmldecl"
 require "rexml/source"
@@ -245,37 +246,37 @@ module REXML
 
     # Set the entity expansion limit. By default the limit is set to 10000.
     #
-    # Deprecated. Use REXML.entity_expansion_limit= instead.
+    # Deprecated. Use REXML::Security.entity_expansion_limit= instead.
     def Document::entity_expansion_limit=( val )
-      REXML.entity_expansion_limit = val
+      Security.entity_expansion_limit = val
     end
 
     # Get the entity expansion limit. By default the limit is set to 10000.
     #
-    # Deprecated. Use REXML.entity_expansion_limit= instead.
+    # Deprecated. Use REXML::Security.entity_expansion_limit= instead.
     def Document::entity_expansion_limit
-      return REXML.entity_expansion_limit
+      return Security.entity_expansion_limit
     end
 
     # Set the entity expansion limit. By default the limit is set to 10240.
     #
-    # Deprecated. Use REXML.entity_expansion_text_limit= instead.
+    # Deprecated. Use REXML::Security.entity_expansion_text_limit= instead.
     def Document::entity_expansion_text_limit=( val )
-      REXML.entity_expansion_text_limit = val
+      Security.entity_expansion_text_limit = val
     end
 
     # Get the entity expansion limit. By default the limit is set to 10240.
     #
-    # Deprecated. Use REXML.entity_expansion_text_limit instead.
+    # Deprecated. Use REXML::Security.entity_expansion_text_limit instead.
     def Document::entity_expansion_text_limit
-      return REXML.entity_expansion_text_limit
+      return Security.entity_expansion_text_limit
     end
 
     attr_reader :entity_expansion_count
 
     def record_entity_expansion
       @entity_expansion_count += 1
-      if @entity_expansion_count > REXML.entity_expansion_limit
+      if @entity_expansion_count > Security.entity_expansion_limit
         raise "number of entity expansions exceeded, processing aborted."
       end
     end
