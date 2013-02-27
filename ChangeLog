@@ -1,3 +1,8 @@
+Wed Feb 27 12:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/ostruct.rb: Typo in OpenStruct overview [Github Fixes #251]
+	  Patch by Chun-wei Kuo
+
 Wed Feb 27 12:13:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_exec.h (END_INSN): llvm-gcc may optimize out reg_cfp and cause
