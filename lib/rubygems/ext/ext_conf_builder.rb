@@ -6,16 +6,27 @@
 
 require 'rubygems/ext/builder'
 require 'rubygems/command'
+require 'fileutils'
+require 'tmpdir'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
   def self.build(extension, directory, dest_path, results, args=[])
-    cmd = "#{Gem.ruby} #{File.basename extension}"
+    pwd = Dir.pwd
+    cmd = "#{Gem.ruby} #{File.join pwd, File.basename(extension)}"
     cmd << " #{args.join ' '}" unless args.empty?
 
-    run cmd, results
+    Dir.mktmpdir("gem-install.") do |tmpdir|
+      Dir.chdir(tmpdir) do
+        begin
+          run cmd, results
 
-    make dest_path, results
+          make dest_path, results
+        ensure
+          FileUtils.mv("mkmf.log", pwd) if $! and File.exist?("mkmf.log")
+        end
+      end
+    end
 
     results
   end
