@@ -49,7 +49,7 @@ class Gem::DependencyList
   # Adds +gemspecs+ to the dependency list.
 
   def add(*gemspecs)
-    @specs.push(*gemspecs)
+    @specs.concat gemspecs
   end
 
   def clear

@@ -35,6 +35,61 @@ class TestGemDependencyInstaller < Gem::TestCase
     util_reset_gems
   end
 
+  def test_available_set_for_name
+    util_setup_gems
+    p1a, gem = util_gem 'a', '10.a'
+    util_setup_spec_fetcher p1a, @a1, @a1_pre
+
+    inst = Gem::DependencyInstaller.new
+
+    available = inst.available_set_for 'a', Gem::Requirement.default
+
+    assert_equal %w[a-1], available.set.map { |s| s.spec.full_name }
+  end
+
+  def test_available_set_for_name_prerelease
+    util_setup_gems
+    p1a, gem = util_gem 'a', '10.a'
+    util_setup_spec_fetcher p1a, @a1, @a1_pre
+
+    inst = Gem::DependencyInstaller.new :prerelease => true
+
+    available = inst.available_set_for 'a', Gem::Requirement.default
+
+    assert_equal %w[a-10.a],
+                 available.sorted.map { |s| s.spec.full_name }
+  end
+
+  def test_available_set_for_dep
+    util_setup_gems
+    p1a, gem = util_gem 'a', '10.a'
+    util_setup_spec_fetcher p1a, @a1, @a1_pre
+
+    inst = Gem::DependencyInstaller.new
+
+    dep = Gem::Dependency.new 'a', Gem::Requirement.default
+
+    available = inst.available_set_for dep, Gem::Requirement.default
+
+    assert_equal %w[a-1], available.set.map { |s| s.spec.full_name }
+  end
+
+  def test_available_set_for_dep_prerelease
+    util_setup_gems
+    p1a, gem = util_gem 'a', '10.a'
+    util_setup_spec_fetcher p1a, @a1, @a1_pre
+
+    inst = Gem::DependencyInstaller.new :prerelease => true
+
+    dep = Gem::Dependency.new 'a', Gem::Requirement.default
+    dep.prerelease = true
+
+    available = inst.available_set_for dep, Gem::Requirement.default
+
+    assert_equal %w[a-10.a],
+                 available.sorted.map { |s| s.spec.full_name }
+  end
+
   def test_install
     util_setup_gems
 
