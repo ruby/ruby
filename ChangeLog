@@ -1,3 +1,9 @@
+Thu Feb 28 22:23:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (inspect_sockaddr): don't show that Unix
+	  domain socket filename is bigger than sizeof(sun_path).
+	  This limit is not rigid on some platforms such as Darwin and SunOS.
+
 Thu Feb 28 21:33:01 2013  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in(AC_DISABLE_OPTION_CHECKING): avoid warning "WARNING:

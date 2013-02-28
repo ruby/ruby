@@ -1048,9 +1048,6 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                     while (s < e)
                         rb_str_catf(ret, ":%02x", (unsigned char)*s++);
                 }
-                if (addr->sun_path + sizeof(addr->sun_path) < (char*)&rai->addr + rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)",
-                            (int)(rai->sockaddr_len - (addr->sun_path + sizeof(addr->sun_path) - (char*)&rai->addr)));
             }
             break;
           }
