@@ -5566,12 +5566,12 @@ constat_reset(HANDLE h)
 }
 
 /* License: Ruby's */
-static DWORD
-constat_attr(int count, const int *seq, DWORD attr, DWORD default_attr)
+static WORD
+constat_attr(int count, const int *seq, WORD attr, WORD default_attr)
 {
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED)
-    DWORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
+    WORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
     int rev = 0;
 
     if (!count) return attr;
