@@ -1,3 +1,8 @@
+Fri Mar 1 03:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/psych/lib/psych.rb: rdoc for Psych overview by Adam Stankiewicz
+	  [Github tenderlove/psych#134]
+
 Thu Feb 28 22:57:48 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): remove redundant trace(line)
