@@ -3154,6 +3154,7 @@ static int
 iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 {
     enum node_type type;
+    LINK_ELEMENT *saved_last_element = 0;
 
     if (node == 0) {
 	if (!poped) {
@@ -3170,6 +3171,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
     if (node->flags & NODE_FL_NEWLINE) {
 	ADD_TRACE(ret, nd_line(node), RUBY_EVENT_LINE);
+	saved_last_element = ret->last;
     }
 
     switch (type) {
@@ -5293,6 +5295,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       default:
 	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
 	return COMPILE_NG;
+    }
+
+    /* check & remove redundant trace(line) */
+    if (saved_last_element && ret /* ret can be 0 when error */ &&
+	ret->last == saved_last_element &&
+	((INSN *)saved_last_element)->insn_id == BIN(trace)) {
+	POP_ELEMENT(ret);
     }
 
     debug_node_end();
