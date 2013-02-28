@@ -482,7 +482,7 @@ init_env(void)
     BOOL f;
 #define env wk.val
 #define set_env_val(vname) do { \
-	typedef char wk_name_offset[(numberof(wk.name) - numberof(vname) + 1) * 2 + 1]; \
+	typedef char wk_name_offset[(numberof(wk.name) - (numberof(vname) - 1)) * 2 + 1]; \
 	WCHAR *const buf = wk.name + sizeof(wk_name_offset) / 2; \
 	MEMCPY(buf, vname, WCHAR, numberof(vname) - 1); \
 	_wputenv(buf); \
