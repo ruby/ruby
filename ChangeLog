@@ -1,3 +1,11 @@
+Thu Feb 28 20:22:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_data_to_ary): fix condition.
+	  r34303 introduces a bug to avoid all line information from
+	  a result of ISeq#to_a. This is a regression problem from 2.0.0p0.
+
+	* test/ruby/test_iseq.rb: add a test of lines after ISeq#to_a.
+
 Thu Feb 28 08:20:33 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/available_set.rb:  Undent for style
