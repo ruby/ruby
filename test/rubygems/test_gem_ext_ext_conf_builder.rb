@@ -134,12 +134,6 @@ checking for main\(\) in .*?nonexistent/m, error.message)
 
     assert_equal make_command, output[0]
     assert_equal "#{make_command} install", output[2]
-
-    edited_makefile = Gem.read_binary makefile_path
-    edited_makefile.gsub!(/\r/, '') if Gem.win_platform?
-
-    assert_match "\nRUBYARCHDIR = #{@ext}$(target_prefix)\n", edited_makefile
-    assert_match "\nRUBYLIBDIR = #{@ext}$(target_prefix)\n", edited_makefile
   end
 
   def test_class_make_no_Makefile
