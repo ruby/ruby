@@ -81,7 +81,7 @@ load Gem.bin_path('a', 'executable', version)
 
     gem_make_out = File.join @gemhome, 'gems', @spec.full_name, 'gem_make.out'
 
-    assert_match %r%#{Regexp.escape Gem.ruby} extconf\.rb%,
+    assert_match %r%#{Regexp.escape Gem.ruby} .*extconf\.rb%,
                  File.read(gem_make_out)
     assert_match %r%#{Regexp.escape Gem.ruby}: No such file%,
                  File.read(gem_make_out)
@@ -119,7 +119,8 @@ load Gem.bin_path('a', 'executable', version)
     File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
       f.write <<-'RUBY'
         puts "IN EXTCONF"
-        File.open 'extconf_args', 'w' do |f|
+        extconf_args = File.join File.dirname(__FILE__), 'extconf_args'
+        File.open extconf_args, 'w' do |f|
           f.puts ARGV.inspect
         end
 

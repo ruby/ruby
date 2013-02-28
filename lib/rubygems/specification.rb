@@ -17,7 +17,7 @@
 #     s.authors     = ["Ruby Coder"]
 #     s.email       = 'rubycoder@example.com'
 #     s.files       = ["lib/example.rb"]
-#     s.homepage    = 'http://rubygems.org/gems/example'
+#     s.homepage    = 'https://rubygems.org/gems/example'
 #   end
 #
 #   Starting in RubyGems 1.9.0, a Specification can hold arbitrary

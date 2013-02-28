@@ -1,3 +1,27 @@
+Fri Mar  1 07:21:41 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/ext/builder.rb:  Fix incompatibilities when installing
+	  extensions.  Patch by Nobu.
+	  [ruby-trunk - Bug #7968] [ruby-trunk - Bug #7971]
+	* lib/rubygems/ext/ext_conf_builder.rb:  ditto.
+	* lib/rubygems/installer.rb:  ditto.
+	* test/rubygems/test_gem_ext_ext_conf_builder.rb:  Test for the above.
+	* test/rubygems/test_gem_installer.rb:  ditto.
+
+	* lib/rubygems/commands/sources_command.rb:  Prefer HTTPS over HTTP.
+	* lib/rubygems/defaults.rb:  ditto
+	* lib/rubygems/dependency_resolver.rb:  Ditto.
+	* lib/rubygems/source.rb:  ditto.
+	* lib/rubygems/spec_fetcher.rb:  ditto.
+	* lib/rubygems/specification.rb:  ditto.
+	* lib/rubygems/test_utilities.rb:  ditto.
+	* test/rubygems/test_gem.rb:  Test for the above.
+	* test/rubygems/test_gem_commands_sources_command.rb:  ditto.
+	* test/rubygems/test_gem_dependency_resolver_api_set.rb:  ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb:  ditto.
+	* test/rubygems/test_gem_source.rb:  ditto.
+	* test/rubygems/test_gem_spec_fetcher.rb:  ditto.
+
 Fri Mar 1 03:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/psych/lib/psych.rb: rdoc for Psych overview by Adam Stankiewicz
