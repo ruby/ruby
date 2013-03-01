@@ -1,3 +1,14 @@
+Fri Mar  1 11:09:06 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb:  Revert r34669 which altered the way
+	  metaprogramming in FileUtils occurred.  [ruby-trunk - Bug #7958]
+
+	* test/fileutils/visibility_tests.rb:  Refactored tests of FileUtils
+	  options modules to expose bug found in #7958
+	* test/fileutils/test_dryrun.rb:  ditto.
+	* test/fileutils/test_nowrite.rb:  ditto.
+	* test/fileutils/test_verbose.rb:  ditto.
+
 Fri Mar  1 09:18:00 2013  Zachary Scott <zachary@zacharyscott.net>
 
 	* lib/psych.rb: specify in rdoc what object is returned in parser
