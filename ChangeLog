@@ -18,7 +18,7 @@ Fri Mar  1 07:21:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ext/builder.rb:  Fix incompatibilities when installing
 	  extensions.  Patch by Nobu.
-	  [ruby-trunk - Bug #7968] [ruby-trunk - Bug #7971]
+	  [ruby-trunk - Bug #7698] [ruby-trunk - Bug #7971]
 	* lib/rubygems/ext/ext_conf_builder.rb:  ditto.
 	* lib/rubygems/installer.rb:  ditto.
 	* test/rubygems/test_gem_ext_ext_conf_builder.rb:  Test for the above.
