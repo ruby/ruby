@@ -1,3 +1,7 @@
+Sat Mar  2 02:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c: typo in comment patch by Nami-Doc [Github fixes #253]
+
 Sat Mar  2 01:33:17 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo 0fe387da2fee089254f6b04990541c731a26757f

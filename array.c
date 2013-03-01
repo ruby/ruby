@@ -299,7 +299,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 		    rb_ary_modify_check(ary);
 		}
 		else {
-		    /* if array is shared, than it is likely it participate in push/shift pattern */
+		    /* if array is shared, then it is likely it participate in push/shift pattern */
 		    rb_ary_modify(ary);
 		    capa = ARY_CAPA(ary);
 		    if (new_len > capa - (capa >> 6)) {
