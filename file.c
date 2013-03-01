@@ -1025,7 +1025,7 @@ rb_group_member(GETGROUPS_T gid)
     int groups = 16;
     VALUE v = 0;
     GETGROUPS_T *gary;
-    int anum;
+    int anum = -1;
 
     if (getgid() == gid || getegid() == gid)
 	return TRUE;
