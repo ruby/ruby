@@ -252,7 +252,7 @@ module Psych
   end
 
   ###
-  # Parse a YAML string in +yaml+.  Returns the first object of a YAML AST.
+  # Parse a YAML string in +yaml+.  Returns the Psych::Nodes::Document.
   # +filename+ is used in the exception message if a Psych::SyntaxError is
   # raised.
   #
@@ -260,7 +260,7 @@ module Psych
   #
   # Example:
   #
-  #   Psych.parse("---\n - a\n - b") # => #<Psych::Nodes::Sequence:0x00>
+  #   Psych.parse("---\n - a\n - b") # => #<Psych::Nodes::Document:0x00>
   #
   #   begin
   #     Psych.parse("--- `", "file.txt")
@@ -278,7 +278,7 @@ module Psych
   end
 
   ###
-  # Parse a file at +filename+. Returns the YAML AST.
+  # Parse a file at +filename+. Returns the Psych::Nodes::Document.
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   def self.parse_file filename
@@ -294,7 +294,7 @@ module Psych
   end
 
   ###
-  # Parse a YAML string in +yaml+.  Returns the full AST for the YAML document.
+  # Parse a YAML string in +yaml+.  Returns the Psych::Nodes::Stream.
   # This method can handle multiple YAML documents contained in +yaml+.
   # +filename+ is used in the exception message if a Psych::SyntaxError is
   # raised.

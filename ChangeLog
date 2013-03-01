@@ -1,3 +1,8 @@
+Fri Mar  1 09:18:00 2013  Zachary Scott <zachary@zacharyscott.net>
+
+	* lib/psych.rb: specify in rdoc what object is returned in parser
+	  By Adam Stankiewicz [Github tenderlove/psych#133]
+
 Fri Mar  1 07:21:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ext/builder.rb:  Fix incompatibilities when installing
