@@ -1,3 +1,8 @@
+Sat Mar  2 01:33:17 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Merge Onigmo 0fe387da2fee089254f6b04990541c731a26757f
+	  v5.13.3 [Bug#7972] [Bug#7974]
+
 Fri Mar  1 11:09:06 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/fileutils.rb:  Revert r34669 which altered the way

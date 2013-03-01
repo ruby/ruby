@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2012  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2013  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -156,7 +156,7 @@ bbuf_clone(BBuf** rto, BBuf* from)
 #define BITSET_IS_EMPTY(bs,empty) do {\
   int i;\
   empty = 1;\
-  for (i = 0; i < (int )BITSET_SIZE; i++) {\
+  for (i = 0; i < BITSET_SIZE; i++) {\
     if ((bs)[i] != 0) {\
       empty = 0; break;\
     }\
@@ -185,35 +185,35 @@ static void
 bitset_invert(BitSetRef bs)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) { bs[i] = ~(bs[i]); }
+  for (i = 0; i < BITSET_SIZE; i++) { bs[i] = ~(bs[i]); }
 }
 
 static void
 bitset_invert_to(BitSetRef from, BitSetRef to)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) { to[i] = ~(from[i]); }
+  for (i = 0; i < BITSET_SIZE; i++) { to[i] = ~(from[i]); }
 }
 
 static void
 bitset_and(BitSetRef dest, BitSetRef bs)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) { dest[i] &= bs[i]; }
+  for (i = 0; i < BITSET_SIZE; i++) { dest[i] &= bs[i]; }
 }
 
 static void
 bitset_or(BitSetRef dest, BitSetRef bs)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) { dest[i] |= bs[i]; }
+  for (i = 0; i < BITSET_SIZE; i++) { dest[i] |= bs[i]; }
 }
 
 static void
 bitset_copy(BitSetRef dest, BitSetRef bs)
 {
   int i;
-  for (i = 0; i < (int )BITSET_SIZE; i++) { dest[i] = bs[i]; }
+  for (i = 0; i < BITSET_SIZE; i++) { dest[i] = bs[i]; }
 }
 
 extern int
@@ -425,9 +425,6 @@ typedef struct {
 typedef st_table  NameTable;
 typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
 
-#define NAMEBUF_SIZE    24
-#define NAMEBUF_SIZE_1  25
-
 #ifdef ONIG_DEBUG
 static int
 i_print_name_entry(UChar* key, NameEntry* e, void* arg)
@@ -589,7 +586,7 @@ onig_number_of_names(regex_t* reg)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t))
-    return (int)t->num_entries;
+    return (int )t->num_entries;
   else
     return 0;
 }
@@ -2627,7 +2624,7 @@ fetch_name_with_level(OnigCodePoint start_code, UChar** src, UChar* end,
     name_end = p;
     PFETCH(c);
     if (c == end_code || c == ')' || c == '+' || c == '-') {
-      if (is_num == 2) 	r = ONIGERR_INVALID_GROUP_NAME;
+      if (is_num == 2) r = ONIGERR_INVALID_GROUP_NAME;
       break;
     }
 
@@ -2752,7 +2749,7 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
       name_end = p;
       PFETCH(c);
       if (c == end_code || c == ')') {
-	if (is_num == 2) 	r = ONIGERR_INVALID_GROUP_NAME;
+	if (is_num == 2) r = ONIGERR_INVALID_GROUP_NAME;
 	break;
       }
 
@@ -4124,23 +4121,35 @@ add_ctype_to_cc(CClassNode* cc, int ctype, int not, int char_prop, ScanEnv* env)
 
   r = ONIGENC_GET_CTYPE_CODE_RANGE(enc, ctype, &sb_out, &ranges);
   if (r == 0) {
-    r = add_ctype_to_cc_by_range(cc, ctype, not, env, sb_out, ranges);
-    if ((r == 0) && ascii_range) {
-      if (not != 0) {
-	r = add_code_range_to_buf0(&(cc->mbuf), env, 0x80, ONIG_LAST_CODE_POINT, FALSE);
-      }
-      else {
-	CClassNode ccascii;
-	initialize_cclass(&ccascii);
-	if (ONIGENC_MBC_MINLEN(env->enc) > 1) {
-	  add_code_range(&(ccascii.mbuf), env, 0x00, 0x7F);
+    if (ascii_range) {
+      CClassNode ccwork;
+      initialize_cclass(&ccwork);
+      r = add_ctype_to_cc_by_range(&ccwork, ctype, not, env, sb_out,
+				   ranges);
+      if (r == 0) {
+	if (not) {
+	  r = add_code_range_to_buf0(&(ccwork.mbuf), env, 0x80, ONIG_LAST_CODE_POINT, FALSE);
 	}
 	else {
-	  bitset_set_range(env, ccascii.bs, 0x00, 0x7F);
+	  CClassNode ccascii;
+	  initialize_cclass(&ccascii);
+	  if (ONIGENC_MBC_MINLEN(env->enc) > 1) {
+	    add_code_range(&(ccascii.mbuf), env, 0x00, 0x7F);
+	  }
+	  else {
+	    bitset_set_range(env, ccascii.bs, 0x00, 0x7F);
+	  }
+	  r = and_cclass(&ccwork, &ccascii, env);
+	  if (IS_NOT_NULL(ccascii.mbuf)) bbuf_free(ccascii.mbuf);
 	}
-	r = and_cclass(cc, &ccascii, env);
-	if (IS_NOT_NULL(ccascii.mbuf)) bbuf_free(ccascii.mbuf);
+	if (r == 0) {
+	  r = or_cclass(cc, &ccwork, env);
+	}
+	if (IS_NOT_NULL(ccwork.mbuf)) bbuf_free(ccwork.mbuf);
       }
+    }
+    else {
+      r = add_ctype_to_cc_by_range(cc, ctype, not, env, sb_out, ranges);
     }
     return r;
   }
@@ -4562,7 +4571,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 	UChar* psave = p;
 	int i, base = tok->base;
 
-	buf[0] = tok->u.c;
+	buf[0] = (UChar )tok->u.c;
 	for (i = 1; i < ONIGENC_MBC_MAXLEN(env->enc); i++) {
 	  r = fetch_token_in_cc(tok, &p, end, env);
 	  if (r < 0) goto err;
@@ -4570,7 +4579,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 	    fetched = 1;
 	    break;
 	  }
-	  buf[i] = tok->u.c;
+	  buf[i] = (UChar )tok->u.c;
 	}
 
 	if (i < ONIGENC_MBC_MINLEN(env->enc)) {
@@ -4706,7 +4715,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 
 	if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC)) {
 	  CC_ESC_WARN(env, (UChar* )"-");
-	  goto range_end_val; /* [0-9-a] is allowed as [0-9\-a] */
+	  goto range_end_val;   /* [0-9-a] is allowed as [0-9\-a] */
 	}
 	r = ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS;
 	goto err;
@@ -5684,7 +5693,7 @@ countbits(unsigned int bits)
 static int
 is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
 {
-  const OnigCodePoint not_found = (OnigCodePoint)-1;
+  const OnigCodePoint not_found = ONIG_LAST_CODE_POINT;
   OnigCodePoint c = not_found;
   int i;
   BBuf *bbuf = cc->mbuf;
@@ -5710,7 +5719,7 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
   }
 
   /* check bitset */
-  for (i = 0; i < (int )BITSET_SIZE; i++) {
+  for (i = 0; i < BITSET_SIZE; i++) {
     Bits b1 = cc->bs[i];
     if (b1 != 0) {
       if (((b1 & (b1 - 1)) == 0) && (c == not_found)) {

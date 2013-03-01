@@ -2559,7 +2559,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  (int )mem, (intptr_t )s, s);
 #endif
 	  if (isnull == -1) goto fail;
-	  goto 	null_check_found;
+	  goto null_check_found;
 	}
       }
       MOP_OUT;
@@ -2585,7 +2585,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  (int )mem, (intptr_t )s, s);
 #endif
 	  if (isnull == -1) goto fail;
-	  goto 	null_check_found;
+	  goto null_check_found;
 	}
 	else {
 	  STACK_PUSH_NULL_CHECK_END(mem);
