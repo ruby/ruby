@@ -1,3 +1,10 @@
+Sat Mar  2 17:34:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: use Socket.tcp_server_sockets to create server
+	  sockets.
+	  fix [Bug #7100] https://bugs.ruby-lang.org/issues/7100
+	  reported by sho-h (Sho Hashimoto).
+
 Sat Mar  2 02:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: typo in comment patch by Nami-Doc [Github fixes #253]
