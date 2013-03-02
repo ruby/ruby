@@ -355,6 +355,11 @@ COMMON_MACROS = WIN32_LEAN_AND_MEAN WIN32
 COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 !endif
 
+!if "$(EXTSTATIC)" == "static"
+ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
+EXTOBJS = ext/extinit.$(OBJEXT)
+!endif
+
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
@@ -677,6 +682,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
+!if "$(EXTSTATIC)" == "static"
+#define EXTSTATIC 1
+!endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
