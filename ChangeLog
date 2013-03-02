@@ -1,3 +1,10 @@
+Sun Mar  3 01:14:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  revert use of temporary directory for build, to work some buggy
+	  extconf.rb which cannot build outside the source directory.
+	  [ruby-core:53056] [Bug #7698]
+
 Sun Mar  3 00:04:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (CPPFLAGS), lib/mkmf.rb (MakeMakefile#create_makefile):
