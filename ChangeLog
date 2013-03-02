@@ -5,7 +5,7 @@ Sun Mar  3 00:04:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Mar  2 22:49:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* win32/Makefile.sub (EXTOBJS, EXTOBJS, config.h): definitions for
+	* win32/Makefile.sub (ENCOBJS, EXTOBJS, config.h): definitions for
 	  static-linked-ext.  [Bug #7960]
 
 Sat Mar  2 17:34:19 2013  Tanaka Akira  <akr@fsij.org>
