@@ -783,6 +783,7 @@ s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@RMDIR@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,:t t
 s,@RMDIRS@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rmdirs.bat,;t t
 s,@RMALL@,$$(COMSPEC) /C rmdir /s /q,;t t
+s,@MAKEDIRS@,$$(COMSPEC) /E:ON /C $$(top_srcdir:/=\)\win32\makedirs.bat,;t t
 s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
