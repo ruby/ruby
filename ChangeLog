@@ -1,3 +1,8 @@
+Sun Mar  3 01:57:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (warnflags): disable -Werror by default unless
+	  development.  [ruby-core:52131] [Bug #7830]
+
 Wed Feb 27 00:20:43 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_process.rb (test_setsid): Added a workaround for

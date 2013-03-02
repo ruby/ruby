@@ -172,6 +172,7 @@ RUBY_PROGRAM_VERSION=`sed -n 's/^#define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/ver
 AC_SUBST(RUBY_PROGRAM_VERSION)
 RUBY_RELEASE_DATE=`sed -n 's/^#define RUBY_RELEASE_DATE "\(.*\)"/\1/p' $srcdir/version.h`
 AC_SUBST(RUBY_RELEASE_DATE)
+RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
@@ -592,9 +593,17 @@ AC_DEFUN(RUBY_TRY_LDFLAGS, [
     save_LDFLAGS=
 ])
 
+AS_CASE([$RUBY_PATCHLEVEL], [-*],
+	[particular_werror_flags=yes], [particular_werror_flags=no])
+AC_ARG_ENABLE(werror,
+	AS_HELP_STRING([--disable-werror],
+		       [don't make warnings into errors
+		       even if a compiler support -Werror feature
+		       [[disabled by default unless development version]]]),
+	[particular_werror_flags=$enableval])
+
 rb_cv_warnflags="$warnflags"
 if test "$GCC:${warnflags+set}:no" = yes::no; then
-    particular_werror_flags=yes
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wunused-variable \
@@ -602,11 +611,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \
 		 -Werror=shorten-64-to-32 \
-		 -Werror-implicit-function-declaration \
+		 -Werror=implicit-function-declaration \
 		 ; do
-	if test "$particular_werror_flags" = yes; then
-	    wflag=`echo x$wflag | sed 's/^x-Werror-/-Werror=/;s/^x//'`
-	else
+	if test "$particular_werror_flags" != yes; then
 	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/;s/^x//'`
 	fi
 	ok=no
