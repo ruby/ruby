@@ -26,8 +26,8 @@
  * Internally, TCPServer.new calls getaddrinfo() function to
  * obtain addresses.
  * If getaddrinfo() returns multiple addresses,
- * TCPServer.new try to create a server socket for each addresses
- * and return first one succeed.
+ * TCPServer.new tries to create a server socket for each address
+ * and returns first one that is successful.
  *
  */
 static VALUE

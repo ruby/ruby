@@ -1,3 +1,7 @@
+Sun Mar  3 07:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/tcpserver.c: Grammar for TCPServer.new from r39554
+
 Sun Mar  3 01:17:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb
