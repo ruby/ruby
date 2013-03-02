@@ -11,7 +11,7 @@ require 'tempfile'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
-  def self.hack_for_obsolete_sytle_gems(directory)
+  def self.hack_for_obsolete_style_gems(directory)
     return unless directory and File.identical?(directory, ".")
     mf = Gem.read_binary 'Makefile'
     changed = false
@@ -40,7 +40,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
     run cmd, results
 
-    hack_for_obsolete_sytle_gems directory
+    hack_for_obsolete_style_gems directory
 
     make dest_path, results
 
