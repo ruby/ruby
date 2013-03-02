@@ -262,7 +262,7 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
  */
 
 #define ENV_IN_HEAP_P(th, env)  \
-  (!((th)->stack < (env) && (env) < ((th)->stack + (th)->stack_size)))
+  (!((th)->stack <= (env) && (env) < ((th)->stack + (th)->stack_size)))
 #define ENV_VAL(env)        ((env)[1])
 
 static void

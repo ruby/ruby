@@ -1,3 +1,7 @@
+Sun Mar  3 02:45:13 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (ENV_IN_HEAP_P): fix off-by-one error.
+
 Sun Mar  3 02:39:01 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/ruby/test_thread.rb: fixed typo
