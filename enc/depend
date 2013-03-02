@@ -12,6 +12,7 @@
 % transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "%s") % ""
 % CONFIG['ARFLAGS'] = 'rcu ' if (CONFIG['ARFLAGS'] || "").empty?
 % CONFIG['RANLIB'] = ':' if (CONFIG['RANLIB'] || "").empty?
+% CONFIG['CPPFLAGS'] += " -DRUBY_EXPORT=1" if CONFIG["EXTSTATIC"] == "static"
 % if File::ALT_SEPARATOR
 %   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else

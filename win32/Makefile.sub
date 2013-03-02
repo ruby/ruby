@@ -944,6 +944,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
+# | findstr -v -c:LNK4049 -c:LNK4217
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(ECHO) generating $(@:\=/)

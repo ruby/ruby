@@ -2106,6 +2106,10 @@ RULES
       $distcleandirs.concat($INSTALLFILES.collect {|files, dir| dir})
     end
 
+    if $extmk and $static
+      $defs << "-DRUBY_EXPORT=1"
+    end
+
     if $extmk and not $extconf_h
       create_header
     end
