@@ -314,7 +314,7 @@ Mon Feb 25 12:38:50 2013  Tanaka Akira  <akr@fsij.org>
 Mon Feb 25 11:03:38 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (unexpand_shvar): Use the numeric comparison
-	  operator instead of '==' which is a ksh extention. [Bug #7941]
+	  operator instead of '==' which is a ksh extension. [Bug #7941]
 
 Mon Feb 25 02:37:56 2013  Tanaka Akira  <akr@fsij.org>
 
