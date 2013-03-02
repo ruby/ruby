@@ -1,3 +1,8 @@
+Sun Mar  3 02:39:01 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/ruby/test_thread.rb: fixed typo
+	  patched by Hiroki Matsue via https://github.com/ruby/ruby/pull/248
+
 Sun Mar  3 02:22:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (include_modules_at): detect cyclic prepend with original
