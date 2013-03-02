@@ -1465,6 +1465,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:m1], Class.new(Class.new{def m2;end}){ prepend Module.new; def m1; end }.instance_methods(false), bug6660)
   end
 
+  def test_cyclic_prepend
+    bug7841 = '[ruby-core:52205] [Bug #7841]'
+    m1 = Module.new
+    m2 = Module.new
+    m1.instance_eval { prepend(m2) }
+    assert_raise(ArgumentError, bug7841) do
+      m2.instance_eval { prepend(m1) }
+    end
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)
