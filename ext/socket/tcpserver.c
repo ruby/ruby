@@ -22,6 +22,13 @@
  *   s = serv.accept
  *   s.puts Time.now
  *   s.close
+ *
+ * Internally, TCPServer.new calls getaddrinfo() function to
+ * obtain addresses.
+ * If getaddrinfo() returns multiple addresses,
+ * TCPServer.new try to create a server socket for each addresses
+ * and return first one succeed.
+ *
  */
 static VALUE
 tcp_svr_init(int argc, VALUE *argv, VALUE sock)
