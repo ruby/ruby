@@ -3865,6 +3865,14 @@ rb_io_close_on_exec_p(VALUE io)
  *     f.close_on_exec = true
  *     system("cat", "/proc/self/fd/#{f.fileno}") # cat: /proc/self/fd/3: No such file or directory
  *     f.closed?                #=> false
+ *
+ *  Ruby sets close-on-exec flags of all file descriptors by default
+ *  since Ruby 2.0.0.
+ *  So you don't need to set by yourself.
+ *  Also, unsetting a close-on-exec flag can cause file descriptor leak
+ *  if another thread use fork() and exec() (via system() method for example).
+ *  If you really needs file descriptor inheritance to child process,
+ *  use spawn()'s argument such as fd=>fd.
  */
 
 static VALUE
