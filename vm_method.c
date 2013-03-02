@@ -648,6 +648,7 @@ remove_method(VALUE klass, ID mid)
 {
     st_data_t key, data;
     rb_method_entry_t *me = 0;
+    VALUE self = klass;
 
     klass = RCLASS_ORIGIN(klass);
     if (klass == rb_cObject) {
@@ -674,7 +675,7 @@ remove_method(VALUE klass, ID mid)
     rb_clear_cache_for_undef(klass, mid);
     rb_unlink_method_entry(me);
 
-    CALL_METHOD_HOOK(klass, removed, mid);
+    CALL_METHOD_HOOK(self, removed, mid);
 }
 
 void

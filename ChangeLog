@@ -1,3 +1,8 @@
+Sun Mar  3 02:16:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c: call method_removed hook on called class, not on
+	  prepending iclass.  [ruby-core:52207] [Bug #7843]
+
 Sun Mar  3 01:57:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (warnflags): disable -Werror by default unless

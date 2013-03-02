@@ -1382,12 +1382,27 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_prepend_remove_method
+    c = Class.new do
+      prepend Module.new {def foo; end}
+    end
     assert_raise(NameError) do
-      Class.new do
-        prepend Module.new {def foo; end}
+      c.class_eval do
         remove_method(:foo)
       end
     end
+    c.class_eval do
+      def foo; end
+    end
+    removed = nil
+    c.singleton_class.class_eval do
+      define_method(:method_removed) {|id| removed = id}
+    end
+    assert_nothing_raised(NoMethodError, NameError, '[Bug #7843]') do
+      c.class_eval do
+        remove_method(:foo)
+      end
+    end
+    assert_equal(:foo, removed)
   end
 
   def test_prepend_class_ancestors
