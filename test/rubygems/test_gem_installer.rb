@@ -1038,6 +1038,9 @@ gem 'other', version
       RUBY
     end
 
+    # make sure timestamp file will become newer than the script file.
+    sleep 2
+
     assert !File.exist?(File.join(@spec.gem_dir, rb))
     use_ui @ui do
       path = Gem::Package.build @spec
