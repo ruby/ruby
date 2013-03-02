@@ -22,7 +22,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       f
     end
 
-    cmd = [Gem.ruby, "-r#{siteconf.path}", File.basename(extension), *args].join ' '
+    rubyopt = ENV["RUBYOPT"]
+    ENV["RUBYOPT"] = ["-r#{siteconf.path}", rubyopt].compact.join(' ')
+    cmd = [Gem.ruby, File.basename(extension), *args].join ' '
 
     run cmd, results
 
@@ -30,6 +32,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
     results
   ensure
+    ENV["RUBYOPT"] = rubyopt
     siteconf.close(true) if siteconf
   end
 

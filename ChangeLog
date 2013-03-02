@@ -1,4 +1,7 @@
-Sun Mar  3 01:14:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Mar  3 01:16:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  use RUBYOPT instead of -r option, and revert some tests.  [Bug #7698]
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
 	  revert use of temporary directory for build, to work some buggy
