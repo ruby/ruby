@@ -18,6 +18,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     changed |= mf.gsub!(/^(install-rb-default:)(.*)/) {
       "#$1#{$2.gsub(/(?:^|\s+)\$\(RUBY(?:ARCH|LIB)DIR\)\/\S+(?=\s|$)/, '')}"
     }
+    changed |= mf.gsub!(/^(install-so:.*DLLIB.*\n)((?:\t.*\n)+)/) {
+      "#$1#{$2.gsub(/.*INSTALL.*DLLIB.*\n/, '')}"
+    }
     if changed
       File.open('Makefile', 'wb') {|f| f.print mf}
     end

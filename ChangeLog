@@ -1,3 +1,10 @@
+Sun Mar  3 12:17:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb
+	  (Gem::Ext::ExtConfBuilder.hack_for_obsolete_style_gems): remove
+	  circular dependencies in install-so too.  [ruby-core:52882]
+	  [Bug #7698]
+
 Sun Mar  3 07:33:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/socket/tcpserver.c: Grammar for TCPServer.new from r39554
