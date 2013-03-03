@@ -351,7 +351,8 @@ module MakeMakefile
   end
 
   def libpath_env
-    if libpathenv = CONFIG["LIBPATHENV"]
+    # used only if native compiling
+    if libpathenv = config_string("LIBPATHENV")
       pathenv = ENV[libpathenv]
       libpath = RbConfig.expand($DEFLIBPATH.join(File::PATH_SEPARATOR))
       {libpathenv => [libpath, pathenv].compact.join(File::PATH_SEPARATOR)}
