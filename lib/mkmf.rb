@@ -350,6 +350,16 @@ module MakeMakefile
     end
   end
 
+  def libpath_env
+    if libpathenv = CONFIG["LIBPATHENV"]
+      pathenv = ENV[libpathenv]
+      libpath = RbConfig.expand($DEFLIBPATH.join(File::PATH_SEPARATOR))
+      {libpathenv => [libpath, pathenv].compact.join(File::PATH_SEPARATOR)}
+    else
+      {}
+    end
+  end
+
   def xsystem command, opts = nil
     varpat = /\$\((\w+)\)|\$\{(\w+)\}/
     if varpat =~ command
@@ -362,12 +372,12 @@ module MakeMakefile
       if opts and opts[:werror]
         result = nil
         Logging.postpone do |log|
-          result = (system(command) and File.zero?(log.path))
+          result = (system(libpath_env, command) and File.zero?(log.path))
           ""
         end
         result
       else
-        system(command)
+        system(libpath_env, command)
       end
     end
   end
@@ -380,7 +390,7 @@ module MakeMakefile
       else
         puts "| #{command}"
       end
-      IO.popen(command, *mode, &block)
+      IO.popen(libpath_env, command, *mode, &block)
     end
   end
 
