@@ -1013,39 +1013,52 @@ rb_file_lstat(VALUE obj)
 #endif
 }
 
+/* Linux allow 65536 groups and it is maximum value as far as we know. */
+#define RUBY_GROUP_MAX 65536
+
 static int
 rb_group_member(GETGROUPS_T gid)
 {
+#ifdef _WIN32
+    return FALSE;
+#else
     int rv = FALSE;
-#ifndef _WIN32
+    int groups = 16;
+    VALUE v = 0;
+    GETGROUPS_T *gary;
+    int anum;
+
     if (getgid() == gid || getegid() == gid)
 	return TRUE;
 
-# ifdef HAVE_GETGROUPS
-#  ifndef NGROUPS
-#   ifdef NGROUPS_MAX
-#    define NGROUPS NGROUPS_MAX
-#   else
-#    define NGROUPS 32
-#   endif
-#  endif
-    {
-	GETGROUPS_T *gary;
-	int anum;
-
-	gary = xmalloc(NGROUPS * sizeof(GETGROUPS_T));
-	anum = getgroups(NGROUPS, gary);
-	while (--anum >= 0) {
-	    if (gary[anum] == gid) {
-		rv = TRUE;
-		break;
-	    }
+    /*
+     * On Mac OS X (Mountain Lion), NGROUPS is 16. But libc and kernel
+     * accept more larger value.
+     * So we don't trunk NGROUPS anymore.
+     */
+    while (groups <= RUBY_GROUP_MAX) {
+	gary = ALLOCV_N(GETGROUPS_T, v, groups);
+	anum = getgroups(groups, gary);
+	if (anum != groups)
+	    break;
+	groups *= 2;
+	if (v) {
+	    ALLOCV_END(v);
+	    v = 0;
 	}
-	xfree(gary);
     }
-# endif
-#endif
+
+    while (--anum >= 0) {
+	if (gary[anum] == gid) {
+	    rv = TRUE;
+	    break;
+	}
+    }
+    if (v)
+	ALLOCV_END(v);
+
     return rv;
+#endif
 }
 
 #ifndef S_IXUGO
