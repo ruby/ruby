@@ -7,11 +7,6 @@ Sun Mar  3 12:35:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (MakeMakefile#libpath_env): set runtime library path for
 	  the case rpath is disabled.
 
-Sun Mar  3 12:34:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/mkmf.rb (MakeMakefile#libpath_env): set runtime library path for
-	  the case rpath is disabled.
-
 Sun Mar  3 12:17:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb
