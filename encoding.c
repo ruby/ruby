@@ -1676,7 +1676,7 @@ rb_enc_aliases(VALUE klass)
  *   #=> "R\xC3\xA9sum\xC3\xA9"
  *   string.encoding
  *   #=> #<Encoding:ISO-8859-1>
- *   string.force_encoding(Encoding::UTF-8)
+ *   string.force_encoding(Encoding::UTF_8)
  *   #=> "R\u00E9sum\u00E9"
  *
  * Second, it is possible to transcode a string, i.e. translate its internal
