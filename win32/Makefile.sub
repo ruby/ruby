@@ -249,7 +249,7 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
-SOLIBS = 
+SOLIBS =
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 !ifndef RCFLAGS
 !if $(MSC_VER) >= 1600
@@ -324,7 +324,7 @@ PREP          = miniruby$(EXEEXT)
 !endif
 
 !if !defined(EXTSTATIC)
-EXTSTATIC     = 
+EXTSTATIC     =
 !endif
 
 OBJEXT = obj
