@@ -1,3 +1,7 @@
+Mon Mar  4 10:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* encoding.c: Typo in Encoding overview by Tom Wardrop [GH fixes #255]
+
 Sun Mar  3 12:35:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#libpath_env): set runtime library path for
