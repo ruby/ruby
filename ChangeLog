@@ -1,3 +1,8 @@
+Mon Mar  4 23:53:18 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	(merge r39291)
+	* configure.in (opt-dir): remove debug print.
+
 Mon Mar  4 23:42:34 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/psych/lib/psych/y.rb: Document Kernel#y by Adam Stankiewicz
