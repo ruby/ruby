@@ -1,3 +1,9 @@
+Mon Mar  4 14:13:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (miniruby, ruby): move MAINLIBC because linker arguments
+	  must appear after object files with newer versions of gcc.  patch by
+	  tmm1 (Aman Gupta) in [ruby-core:53121] [Bug #8009]
+
 Mon Mar  4 10:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* encoding.c: Typo in Encoding overview by Tom Wardrop [GH fixes #255]
