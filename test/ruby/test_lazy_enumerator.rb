@@ -463,4 +463,13 @@ EOS
     end
     assert_equal Enumerator::Lazy, [].lazy.chunk{}.class, bug7507
   end
+
+  def test_no_warnings
+    le = (1..3).lazy
+    assert_warning("") {le.zip([4,5,6]).force}
+    assert_warning("") {le.zip(4..6).force}
+    assert_warning("") {le.take(1).force}
+    assert_warning("") {le.drop(1).force}
+    assert_warning("") {le.drop_while{false}.force}
+  end
 end
