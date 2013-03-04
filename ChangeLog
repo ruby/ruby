@@ -1,3 +1,13 @@
+Tue Mar  5 00:16:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl.c (class OpenSSL):  Use only inner parenthesis in
+	  create_extension examples.
+
+Tue Mar  5 00:16:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl.c (class OpenSSL):  Fixed ExtensionFactory example.
+	  Patch by Richard Bradley.  [ruby-trunk - Bug #7551]
+
 Mon Mar  4 23:53:18 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	(merge r39291)

@@ -701,10 +701,18 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
  *
  *   extension_factory = OpenSSL::X509::ExtensionFactory.new nil, cert
  *
- *   extension_factory.create_extension 'basicConstraints', 'CA:FALSE'
- *   extension_factory.create_extension 'keyUsage',
- *     'keyEncipherment,dataEncipherment,digitalSignature'
- *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *   cert.add_extension \
+ *     extension_factory.create_extension('basicConstraints', 'CA:FALSE', true)
+ *
+ *   cert.add_extension \
+ *     extension_factory.create_extension(
+ *       'keyUsage', 'keyEncipherment,dataEncipherment,digitalSignature')
+ *
+ *   cert.add_extension \
+ *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
+ *
+ * The list of supported extensions (and in some cases their possible values)
+ * can be derived from the "objects.h" file in the OpenSSL source code.
  *
  * === Signing a Certificate
  *
@@ -772,16 +780,20 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
  *   extension_factory.subject_certificate = ca_cert
  *   extension_factory.issuer_certificate = ca_cert
  *
- *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *   ca_cert.add_extension \
+ *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
  * This extension indicates the CA's key may be used as a CA.
  *
- *   extension_factory.create_extension 'basicConstraints', 'CA:TRUE', true
+ *   ca_cert.add_extension \
+ *     extension_factory.create_extension('basicConstraints', 'CA:TRUE', true)
  *
  * This extension indicates the CA's key may be used to verify signatures on
  * both certificates and certificate revocations.
  *
- *   extension_factory.create_extension 'keyUsage', 'cRLSign,keyCertSign', true
+ *   ca_cert.add_extension \
+ *     extension_factory.create_extension(
+ *       'keyUsage', 'cRLSign,keyCertSign', true)
  *
  * Root CA certificates are self-signed.
  *
@@ -837,10 +849,15 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
  *   extension_factory.subject_certificate = csr_cert
  *   extension_factory.issuer_certificate = ca_cert
  *
- *   extension_factory.create_extension 'basicConstraints', 'CA:FALSE'
- *   extension_factory.create_extension 'keyUsage',
- *     'keyEncipherment,dataEncipherment,digitalSignature'
- *   extension_factory.create_extension 'subjectKeyIdentifier', 'hash'
+ *   csr_cert.add_extension \
+ *     extension_factory.create_extension('basicConstraints', 'CA:FALSE')
+ *
+ *   csr_cert.add_extension \
+ *     extension_factory.create_extension(
+ *       'keyUsage', 'keyEncipherment,dataEncipherment,digitalSignature')
+ *
+ *   csr_cert.add_extension \
+ *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
  *   csr_cert.sign ca_key, OpenSSL::Digest::SHA1.new
  *
