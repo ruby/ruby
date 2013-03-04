@@ -1,3 +1,10 @@
+Mon Mar  4 15:33:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  fix for unusal cases again.  install to a temporary directory once
+	  and move instaled files to the destination directory, if it is same
+	  as the current directory.  [Bug #7698]
+
 Mon Mar  4 14:13:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (miniruby, ruby): move MAINLIBC because linker arguments

@@ -1038,7 +1038,17 @@ gem 'other', version
       RUBY
     end
 
+    Dir.mkdir(File.join("lib", @spec.name))
+    rb2 = File.join("lib", @spec.name, "#{@spec.name}.rb")
+    @spec.files << rb2
+    write_file File.join(@tempdir, rb2) do |io|
+      io.write <<-RUBY
+        # #{@spec.name}/#{@spec.name}.rb
+      RUBY
+    end
+
     assert !File.exist?(File.join(@spec.gem_dir, rb))
+    assert !File.exist?(File.join(@spec.gem_dir, rb2))
     use_ui @ui do
       path = Gem::Package.build @spec
 
@@ -1046,6 +1056,7 @@ gem 'other', version
       @installer.install
     end
     assert File.exist?(File.join(@spec.gem_dir, rb))
+    assert File.exist?(File.join(@spec.gem_dir, rb2))
   end
 
   def test_install_extension_flat
