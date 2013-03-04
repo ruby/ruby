@@ -217,7 +217,7 @@ Wed Feb 20 17:02:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 Wed Feb 20 08:05:25 2013 Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* compar.c (rb_invcmp): compare by inversed comarison, with preventing
+	* compar.c (rb_invcmp): compare by inversed comparison, with preventing
 	  from infinite recursion.  [ruby-core:52305] [Bug #7870]
 
 	* string.c (rb_str_cmp_m), time.c (time_cmp): get rid of infinite
