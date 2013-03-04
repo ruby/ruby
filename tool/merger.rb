@@ -192,6 +192,11 @@ else
     system *%w'svn revert ChangeLog' if /^\+/ =~ l
   end
 
+  if `svn diff --diff-cmd=diff -x -upw`.empty?
+    interactive 'Only ChangeLog is modified, right?' do
+    end
+  end
+
   if /^\+/ =~ log
     system *%w'svn revert ChangeLog'
     IO.popen %w'patch -p0', 'wb' do |f|

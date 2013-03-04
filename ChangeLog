@@ -1,3 +1,7 @@
+Tue Mar  5 01:20:39 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: add interaction when only ChangeLog is modified.
+
 Tue Mar  5 01:03:16 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (rb_group_member): get rid of NGROUPS dependency.
