@@ -550,6 +550,7 @@ class TestMethod < Test::Unit::TestCase
 
   def test_prepended
     bug7836 = '[ruby-core:52160] [Bug #7836]'
+    bug7988 = '[ruby-core:53038] [Bug #7988]'
     m = Module.new {
       def foo
       end
@@ -559,7 +560,7 @@ class TestMethod < Test::Unit::TestCase
       end
       prepend m
     }
-    assert_equal(c, c.instance_method(:foo).owner, bug7836)
+    assert_raise(NameError, bug7988) {Module.new{prepend m}.instance_method(:bar)}
   end
 
   def test_gced_bmethod
