@@ -1,3 +1,9 @@
+Tue Mar  5 10:40:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/objspace.c (count_nodes): count also newly added nodes,
+	  and fix key for unknown node.  patch by tmm1 (Aman Gupta) in
+	  [ruby-core:53130] [Bug #8014]
+
 Tue Mar  5 10:20:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index_i): allow Bignum as offset, to
