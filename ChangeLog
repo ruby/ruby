@@ -1,3 +1,34 @@
+Wed Mar  6 07:40:21 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/query_command.rb:  Only fetch remote specs when
+	  showing details.  [ruby-trunk - Bug #8019]  RubyGems bug #487
+	* lib/rubygems/remote_fetcher.rb:  ditto.
+	* lib/rubygems/security/policy.rb:  ditto.
+	* test/rubygems/test_gem_commands_query_command.rb:  Test for the
+	  above.
+
+	* lib/rubygems/security.rb:  Make OpenSSL optional for RubyGems.
+	* lib/rubygems/commands/cert_command.rb:  ditto.
+
+	* lib/rubygems/config_file.rb:  Display file with YAML error, not
+	  ~/.gemrc
+
+	* lib/rubygems/remote_fetcher.rb:  Only create gem subdirectories when
+	  installing gems.
+	* lib/rubygems/dependency_resolver.rb:  ditto.
+	* lib/rubygems/test_utilities.rb:  ditto.
+	* test/rubygems/test_gem_commands_fetch_command.rb:  Test for the
+	  above.
+
+	* lib/rubygems/spec_fetcher.rb:  Only try to upgrade
+	  http://rubygems.org to HTTPS
+	* test/rubygems/test_gem_spec_fetcher.rb:  Test for the above.
+
+	* lib/rubygems.rb:  Update win_platform? check for JRuby compatibility.
+
+	* test/rubygems/test_gem_installer.rb:  Update for Ruby 1.9.2
+	  compatibility
+
 Wed Mar  6 01:19:28 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* enumerator.c (enumerator_with_index, lazy_take): use INT2FIX(0)

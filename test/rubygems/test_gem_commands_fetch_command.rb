@@ -18,6 +18,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
       File.read(@a2.cache_file)
 
+    refute_path_exists File.join(@tempdir, 'cache'), 'sanity check'
+
     @cmd.options[:args] = [@a2.name]
 
     use_ui @ui do
@@ -28,6 +30,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
     assert_path_exists(File.join(@tempdir, @a2.file_name),
                        "#{@a2.full_name} not fetched")
+    refute_path_exists File.join(@tempdir, 'cache'),
+                       'gem repository directories must not be created'
   end
 
   def test_execute_prerelease

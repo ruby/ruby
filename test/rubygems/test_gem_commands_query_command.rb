@@ -430,5 +430,21 @@ pl \(1\)
     assert_equal expected, @ui.output
   end
 
+  def test_make_entry
+    @fetcher.data.delete \
+      "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{@a2.original_name}.gemspec.rz"
+
+    entry_tuples = [
+      [Gem::NameTuple.new(@a2.name, @a2.version, @a2.platform),
+       Gem.sources.first],
+    ]
+
+    platforms = { @a2.version => [@a2.platform] }
+
+    entry = @cmd.send :make_entry, entry_tuples, platforms
+
+    assert_equal 'a (2)', entry
+  end
+
 end
 

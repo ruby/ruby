@@ -895,7 +895,8 @@ module Gem
 
   def self.win_platform?
     if @@win_platform.nil? then
-      @@win_platform = !!WIN_PATTERNS.find { |r| RUBY_PLATFORM =~ r }
+      ruby_platform = RbConfig::CONFIG['host_os']
+      @@win_platform = !!WIN_PATTERNS.find { |r| ruby_platform =~ r }
     end
 
     @@win_platform

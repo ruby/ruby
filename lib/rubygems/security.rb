@@ -5,8 +5,28 @@
 #++
 
 require 'rubygems/exceptions'
-require 'openssl'
 require 'fileutils'
+
+begin
+  require 'openssl'
+rescue LoadError => e
+  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
+               e.message =~ / -- openssl$/
+
+  module OpenSSL # :nodoc:
+    class Digest # :nodoc:
+      class SHA1 # :nodoc:
+        def name
+          'SHA1'
+        end
+      end
+    end
+    module PKey # :nodoc:
+      class RSA # :nodoc:
+      end
+    end
+  end
+end
 
 ##
 # = Signing gems

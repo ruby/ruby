@@ -253,19 +253,36 @@ class TestGemSpecFetcher < Gem::TestCase
 
     assert_equal URI('http://example'), same_source.uri
 
-    @fetcher.data['https://example/'] = 'hello'
+    assert_empty @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_upgrade_http_source_rubygems
+    Gem.configuration.verbose = :really
+
+    source       = Gem::Source.new URI 'http://rubygems.org'
+    same_source  = nil
+    https_source = nil
+
+    use_ui @ui do
+      same_source = @sf.upgrade_http_source source
+    end
+
+    assert_equal URI('http://rubygems.org'), same_source.uri
+
+    @fetcher.data['https://rubygems.org/'] = 'hello'
 
     use_ui @ui do
       https_source = @sf.upgrade_http_source source
     end
 
-    assert_equal URI('https://example'), https_source.uri
+    assert_equal URI('https://rubygems.org'), https_source.uri
 
     assert_empty @ui.error
 
     expected = <<-EXPECTED
-Upgrading http://example to HTTPS failed, continuing
-Upgraded http://example to HTTPS
+Upgrading http://rubygems.org to HTTPS failed, continuing
+Upgraded http://rubygems.org to HTTPS
     EXPECTED
 
     assert_equal expected, @ui.output
