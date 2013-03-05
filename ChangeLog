@@ -1,6 +1,6 @@
 Tue Mar  5 21:36:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* class.c (rb_prepend_module): check redefinition of built-in opimized
+	* class.c (rb_prepend_module): check redefinition of built-in optimized
 	  methods.  [ruby-dev:47124] [Bug #7983]
 
 	* vm.c (rb_vm_check_redefinition_by_prepend): ditto.
@@ -13,7 +13,7 @@ Tue Mar  5 20:23:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_check_arity): make a static inline
 	  function so it can be used as an expression and argc would be
-	  evaulated only once.
+	  evaluated only once.
 
 Tue Mar  5 12:30:55 2013  Eric Hodel  <drbrain@segment7.net>
 
@@ -50,14 +50,14 @@ Tue Mar  5 10:20:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Mar  5 10:02:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
-	  clear DESTDIR so RUBYARCHDIR and RUBYLIBDIR are not be overrdden.
+	  clear DESTDIR so RUBYARCHDIR and RUBYLIBDIR are not be overridden.
 	  [Bug #7698]
 
 Mon Mar  4 15:33:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
-	  fix for unusal cases again.  install to a temporary directory once
-	  and move instaled files to the destination directory, if it is same
+	  fix for unusual cases again.  install to a temporary directory once
+	  and move installed files to the destination directory, if it is same
 	  as the current directory.  [Bug #7698]
 
 Mon Mar  4 14:13:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
