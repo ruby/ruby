@@ -266,10 +266,12 @@ const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, VALUE*);
 
 NORETURN(void rb_error_arity(int, int, int));
-#define rb_check_arity(argc, min, max) do { \
-  if (((argc) < (min)) || ((argc) > (max) && (max) != UNLIMITED_ARGUMENTS)) \
-    rb_error_arity(argc, min, max); \
-  } while(0)
+static inline void
+rb_check_arity(int argc, int min, int max)
+{
+    if ((argc < min) || (max != UNLIMITED_ARGUMENTS && argc > max))
+	rb_error_arity(argc, min, max);
+}
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {
