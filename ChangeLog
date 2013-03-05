@@ -1,4 +1,8 @@
-Tue Mar  5 10:19:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  5 10:20:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index_i): allow Bignum as offset, to
+	  get rid of conversion exception and integer overflow.
+	  [ruby-dev:47131] [Bug #8010]
 
 	* numeric.c (rb_int_succ, rb_int_pred): shortcut optimization for
 	  Bignum.
