@@ -1,3 +1,15 @@
+Tue Mar  5 12:30:55 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Bump version to 2.0.1 for upcoming bugfix release
+
+	* lib/rubygems/ext/ext_conf_builder.rb:  Restore ruby 1.8 compatibility
+	  for [Bug #9698]
+	* test/rubygems/test_gem_installer.rb:  Ditto.
+
+	* lib/rubygems/package.rb:  Restore ruby 1.8 compatibility.
+
+	* test/rubygems/test_gem_dependency_installer.rb:  Fix warnings
+
 Tue Mar  5 12:24:23 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c (enumerator_with_index):  Restore handling of a nil memo
