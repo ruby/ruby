@@ -2,19 +2,30 @@ require 'rubygems/test_case'
 require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
+
+  def setup
+    super
+
+    assert_raises LoadError do
+      save_loaded_features do
+        require 'test_gem_require_a'
+      end
+    end
+  end
+
   def assert_require(path)
     assert require(path), "'#{path}' was already required"
   end
 
   def test_require_is_not_lazy_with_exact_req
-    a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/a.rb"
+    a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
     b1 = new_spec "b", "1", nil, "lib/b/c.rb"
     b2 = new_spec "b", "2", nil, "lib/b/c.rb"
 
     install_specs a1, b1, b2
 
     save_loaded_features do
-      assert_require 'a'
+      assert_require 'test_gem_require_a'
       assert_equal %w(a-1 b-1), loaded_spec_names
       assert_equal unresolved_names, []
 
@@ -24,14 +35,14 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_is_lazy_with_inexact_req
-    a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/a.rb"
+    a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = new_spec "b", "1", nil, "lib/b/c.rb"
     b2 = new_spec "b", "2", nil, "lib/b/c.rb"
 
     install_specs a1, b1, b2
 
     save_loaded_features do
-      assert_require 'a'
+      assert_require 'test_gem_require_a'
       assert_equal %w(a-1), loaded_spec_names
       assert_equal unresolved_names, ["b (>= 1)"]
 
@@ -41,13 +52,13 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_is_not_lazy_with_one_possible
-    a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/a.rb"
+    a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
     b1 = new_spec "b", "1", nil, "lib/b/c.rb"
 
     install_specs a1, b1
 
     save_loaded_features do
-      assert_require 'a'
+      assert_require 'test_gem_require_a'
       assert_equal %w(a-1 b-1), loaded_spec_names
       assert_equal unresolved_names, []
 
@@ -59,13 +70,13 @@ class TestGemRequire < Gem::TestCase
   def test_activate_via_require_respects_loaded_files
     require 'benchmark' # stdlib
     save_loaded_features do
-      a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/a.rb"
+      a1 = new_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
       b1 = new_spec "b", "1", nil, "lib/benchmark.rb"
       b2 = new_spec "b", "2", nil, "lib/benchmark.rb"
 
       install_specs a1, b1, b2
 
-      require 'a'
+      require 'test_gem_require_a'
       assert_equal unresolved_names, ["b (>= 1)"]
 
       refute require('benchmark'), "benchmark should have already been loaded"
