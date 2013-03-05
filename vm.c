@@ -972,26 +972,52 @@ rb_iter_break_value(VALUE val)
 
 static st_table *vm_opt_method_table = 0;
 
+static int
+vm_redefinition_check_flag(VALUE klass)
+{
+    if (klass == rb_cFixnum) return FIXNUM_REDEFINED_OP_FLAG;
+    if (klass == rb_cFloat)  return FLOAT_REDEFINED_OP_FLAG;
+    if (klass == rb_cString) return STRING_REDEFINED_OP_FLAG;
+    if (klass == rb_cArray)  return ARRAY_REDEFINED_OP_FLAG;
+    if (klass == rb_cHash)   return HASH_REDEFINED_OP_FLAG;
+    if (klass == rb_cBignum) return BIGNUM_REDEFINED_OP_FLAG;
+    if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
+    if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
+    return 0;
+}
+
 static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
     if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
-	    int flag = 0;
-
-	    if      (klass == rb_cFixnum) flag = FIXNUM_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cFloat)  flag = FLOAT_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cString) flag = STRING_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cArray)  flag = ARRAY_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cHash)   flag = HASH_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cBignum) flag = BIGNUM_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cSymbol) flag = SYMBOL_REDEFINED_OP_FLAG;
-	    else if (klass == rb_cTime)   flag = TIME_REDEFINED_OP_FLAG;
+	    int flag = vm_redefinition_check_flag(klass);
 
 	    ruby_vm_redefined_flag[bop] |= flag;
 	}
     }
+}
+
+static int
+check_redefined_method(st_data_t key, st_data_t value, st_data_t data)
+{
+    ID mid = (ID)key;
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
+    VALUE klass = (VALUE)data;
+    rb_method_entry_t *newme = rb_method_entry(klass, mid, NULL);
+
+    if (newme != me)
+	rb_vm_check_redefinition_opt_method(me, me->klass);
+    return ST_CONTINUE;
+}
+
+void
+rb_vm_check_redefinition_by_prepend(VALUE klass)
+{
+    if (!vm_redefinition_check_flag(klass)) return;
+    st_foreach(RCLASS_M_TBL(RCLASS_ORIGIN(klass)), check_redefined_method,
+	       (st_data_t)klass);
 }
 
 static void
