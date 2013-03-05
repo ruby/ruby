@@ -1,3 +1,8 @@
+Tue Mar  5 10:19:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_int_succ, rb_int_pred): shortcut optimization for
+	  Bignum.
+
 Tue Mar  5 10:02:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):

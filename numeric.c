@@ -2390,6 +2390,9 @@ int_succ(VALUE num)
 	long i = FIX2LONG(num) + 1;
 	return LONG2NUM(i);
     }
+    if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_plus(num, INT2FIX(1));
+    }
     return rb_funcall(num, '+', 1, INT2FIX(1));
 }
 
@@ -2409,6 +2412,9 @@ int_pred(VALUE num)
     if (FIXNUM_P(num)) {
 	long i = FIX2LONG(num) - 1;
 	return LONG2NUM(i);
+    }
+    if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_minus(num, INT2FIX(1));
     }
     return rb_funcall(num, '-', 1, INT2FIX(1));
 }
