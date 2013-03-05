@@ -1,3 +1,8 @@
+Tue Mar  5 12:24:23 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* enumerator.c (enumerator_with_index):  Restore handling of a nil memo
+	  from r39594.
+
 Tue Mar  5 10:40:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/objspace/objspace.c (count_nodes): count also newly added nodes,
