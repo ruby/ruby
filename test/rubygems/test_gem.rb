@@ -700,6 +700,18 @@ class TestGem < Gem::TestCase
     assert File.directory? File.join(@gemhome, "cache")
   end
 
+  def test_self_ensure_gem_directories_permissions
+    FileUtils.rm_r @gemhome
+    Gem.use_paths @gemhome
+
+    Gem.ensure_gem_subdirectories @gemhome, 0750
+
+    assert File.directory? File.join(@gemhome, "cache")
+
+    assert_equal 0750, File::Stat.new(@gemhome).mode & 0777
+    assert_equal 0750, File::Stat.new(File.join(@gemhome, "cache")).mode & 0777
+  end unless win_platform?
+
   def test_self_ensure_gem_directories_safe_permissions
     FileUtils.rm_r @gemhome
     Gem.use_paths @gemhome
