@@ -135,9 +135,9 @@ function_call(int argc, VALUE argv[], VALUE self)
 
 	if(NUM2INT(type) == TYPE_VOIDP) {
 	    if(NIL_P(src)) {
-		src = INT2NUM(0);
+		src = INT2FIX(0);
 	    } else if(cPointer != CLASS_OF(src)) {
-	        src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+		src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
 	    }
 	    src = rb_Integer(src);
 	}

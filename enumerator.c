@@ -493,7 +493,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &memo);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
     if (NIL_P(memo))
-	memo = INT2NUM(0);
+	memo = INT2FIX(0);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)&memo);
 }
 
@@ -1742,7 +1742,7 @@ lazy_take(VALUE obj, VALUE n)
 	rb_raise(rb_eArgError, "attempt to take negative size");
     }
     if (len == 0) {
-	VALUE len = INT2NUM(0);
+	VALUE len = INT2FIX(0);
 	lazy = lazy_to_enum_i(obj, sym_cycle, 1, &len, 0);
     }
     else {

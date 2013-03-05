@@ -4248,7 +4248,7 @@ proc_getsid(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "01", &pid);
 
     if (NIL_P(pid))
-	pid = INT2NUM(0);
+	pid = INT2FIX(0);
 
     sid = getsid(NUM2PIDT(pid));
     if (sid < 0) rb_sys_fail(0);

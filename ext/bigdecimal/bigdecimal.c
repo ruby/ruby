@@ -2669,7 +2669,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     }
     if (infinite) {
 	if (negative) {
-	    return ToValue(GetVpValueWithPrec(INT2NUM(0), prec, 1));
+	    return ToValue(GetVpValueWithPrec(INT2FIX(0), prec, 1));
 	}
 	else {
 	    Real* vy;

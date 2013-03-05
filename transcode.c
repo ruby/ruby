@@ -3864,7 +3864,7 @@ econv_finish(VALUE self)
     av[1] = dst;
     av[2] = Qnil;
     av[3] = Qnil;
-    av[4] = INT2NUM(0);
+    av[4] = INT2FIX(0);
     ac = 5;
 
     ret = econv_primitive_convert(ac, av, self);

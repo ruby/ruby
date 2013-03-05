@@ -1,3 +1,18 @@
+Wed Mar  6 01:19:28 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* enumerator.c (enumerator_with_index, lazy_take): use INT2FIX(0)
+	  instead of INT2NUM(0).
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): ditto.
+
+	* ext/fiddle/function.c (function_call): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): ditto.
+
+	* process.c (proc_getsid): ditto.
+
+	* transcode.c (econv_finish): ditto.
+
 Tue Mar  5 21:36:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_prepend_module): check redefinition of built-in optimized
