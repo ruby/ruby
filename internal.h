@@ -165,7 +165,7 @@ void Init_newline(void);
 
 /* numeric.c */
 int rb_num_to_uint(VALUE val, unsigned int *ret);
-VALUE num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
+VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
@@ -331,8 +331,8 @@ void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
-VALUE vm_thread_backtrace(int argc, VALUE *argv, VALUE thval);
-VALUE vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace(int argc, VALUE *argv, VALUE thval);
+VALUE rb_vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval);
 
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);

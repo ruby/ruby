@@ -48,7 +48,7 @@ static int ruby_event_flag_count[MAX_EVENT_NUM] = {0};
 /* called from vm.c */
 
 void
-vm_trace_mark_event_hooks(rb_hook_list_t *hooks)
+rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks)
 {
     rb_event_hook_t *hook = hooks->hooks;
 

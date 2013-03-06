@@ -20,7 +20,7 @@ static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref,
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 /* vm_backtrace.c */
-VALUE vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
+VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
 
 typedef enum call_type {
     CALL_PUBLIC,
@@ -1250,7 +1250,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
-		    (bt2 = vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
+		    (bt2 = rb_vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 			if (OBJ_FROZEN(mesg)) {
 			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);

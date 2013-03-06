@@ -1119,9 +1119,9 @@ id_to_name(ID id, VALUE default_value)
 }
 
 VALUE
-insn_operand_intern(rb_iseq_t *iseq,
-		    VALUE insn, int op_no, VALUE op,
-		    int len, size_t pos, VALUE *pnop, VALUE child)
+rb_insn_operand_intern(rb_iseq_t *iseq,
+		       VALUE insn, int op_no, VALUE op,
+		       int len, size_t pos, VALUE *pnop, VALUE child)
 {
     const char *types = insn_op_types(insn);
     char type = types[op_no];
@@ -1268,9 +1268,9 @@ rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, size_t pos,
 
     for (j = 0; types[j]; j++) {
 	const char *types = insn_op_types(insn);
-	VALUE opstr = insn_operand_intern(iseqdat, insn, j, iseq[pos + j + 1],
-					  len, pos, &iseq[pos + j + 2],
-					  child);
+	VALUE opstr = rb_insn_operand_intern(iseqdat, insn, j, iseq[pos + j + 1],
+					     len, pos, &iseq[pos + j + 2],
+					     child);
 	rb_str_concat(str, opstr);
 
 	if (types[j + 1]) {

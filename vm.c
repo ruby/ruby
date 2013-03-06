@@ -1543,7 +1543,7 @@ vm_mark_each_thread_func(st_data_t key, st_data_t value, st_data_t dummy)
     return ST_CONTINUE;
 }
 
-void vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
+void rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
 
 void
 rb_vm_mark(void *ptr)
@@ -1574,7 +1574,7 @@ rb_vm_mark(void *ptr)
 	    rb_mark_tbl(vm->loading_table);
 	}
 
-	vm_trace_mark_event_hooks(&vm->event_hooks);
+	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
 
 	for (i = 0; i < RUBY_NSIG; i++) {
 	    if (vm->trap_list[i].cmd)
@@ -1845,7 +1845,7 @@ rb_thread_mark(void *ptr)
 				 sizeof(th->machine_regs) / sizeof(VALUE));
 	}
 
-	vm_trace_mark_event_hooks(&th->event_hooks);
+	rb_vm_trace_mark_event_hooks(&th->event_hooks);
     }
 
     RUBY_MARK_LEAVE("thread");
@@ -2609,9 +2609,9 @@ rb_ruby_debug_ptr(void)
 }
 
 /* iseq.c */
-VALUE insn_operand_intern(rb_iseq_t *iseq,
-			  VALUE insn, int op_no, VALUE op,
-			  int len, size_t pos, VALUE *pnop, VALUE child);
+VALUE rb_insn_operand_intern(rb_iseq_t *iseq,
+			     VALUE insn, int op_no, VALUE op,
+			     int len, size_t pos, VALUE *pnop, VALUE child);
 
 #if VM_COLLECT_USAGE_DETAILS
 
@@ -2693,7 +2693,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
 	HASH_ASET(ihash, INT2FIX(n), ophash);
     }
     /* intern */
-    valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+    valstr = rb_insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
     /* set count */
     if ((cv = rb_hash_aref(ophash, valstr)) == Qnil) {
@@ -2806,7 +2806,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
     if (RUBY_DTRACE_INSN_OPERAND_ENABLED()) {
 	VALUE valstr;
 
-	valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+	valstr = rb_insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
 	RUBY_DTRACE_INSN_OPERAND(RSTRING_PTR(valstr), rb_insns_name(insn));
 	RB_GC_GUARD(valstr);

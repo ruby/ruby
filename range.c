@@ -340,7 +340,7 @@ range_step_size(VALUE range, VALUE args)
     }
 
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
-	return num_interval_step_size(b, e, step, EXCL(range));
+	return ruby_num_interval_step_size(b, e, step, EXCL(range));
     }
     return Qnil;
 }
@@ -706,7 +706,7 @@ range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
-	return num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+	return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
     }
     return Qnil;
 }

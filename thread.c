@@ -4904,7 +4904,7 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 static VALUE
 rb_thread_backtrace_m(int argc, VALUE *argv, VALUE thval)
 {
-    return vm_thread_backtrace(argc, argv, thval);
+    return rb_vm_thread_backtrace(argc, argv, thval);
 }
 
 /* call-seq:
@@ -4921,7 +4921,7 @@ rb_thread_backtrace_m(int argc, VALUE *argv, VALUE thval)
 static VALUE
 rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
 {
-    return vm_thread_backtrace_locations(argc, argv, thval);
+    return rb_vm_thread_backtrace_locations(argc, argv, thval);
 }
 
 /*
