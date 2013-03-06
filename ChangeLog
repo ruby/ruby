@@ -1,3 +1,7 @@
+Wed Mar  6 13:14:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rubygems/test_gem_spec_fetcher.rb:  Removed unused variable.
+
 Wed Mar  6 08:10:15 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_require.rb:  Fix tests when 'a.rb' exists.
