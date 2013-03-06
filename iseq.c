@@ -1391,10 +1391,11 @@ rb_iseq_disasm(VALUE self)
     if (tbl) {
 	rb_str_catf(str,
 		    "local table (size: %d, argc: %d "
-		    "[opts: %d, rest: %d, post: %d, block: %d] s%d)\n",
+		    "[opts: %d, rest: %d, post: %d, block: %d, keyword: %d@%d] s%d)\n",
 		    iseqdat->local_size, iseqdat->argc,
 		    iseqdat->arg_opts, iseqdat->arg_rest,
 		    iseqdat->arg_post_len, iseqdat->arg_block,
+		    iseqdat->arg_keywords, iseqdat->arg_keyword,
 		    iseqdat->arg_simple);
 
 	for (i = 0; i < iseqdat->local_table_size; i++) {
