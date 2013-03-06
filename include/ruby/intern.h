@@ -266,6 +266,7 @@ const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, VALUE*);
 
 NORETURN(void rb_error_arity(int, int, int));
+#define rb_check_arity rb_check_arity /* for ifdef */
 static inline void
 rb_check_arity(int argc, int min, int max)
 {
