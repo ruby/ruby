@@ -1,3 +1,10 @@
+Wed Mar  6 22:13:38 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+merge revision(s) 39297: [Backport #8032]
+
+	* tool/mkconfig.rb: clear exec_prefix which may differ from prefix,
+	  before expanding rubyarchdir to remove prefix.
+
 Tue Mar  5 01:20:39 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/merger.rb: add interaction when only ChangeLog is modified.
