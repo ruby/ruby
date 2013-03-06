@@ -3074,10 +3074,7 @@ AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
     rm -fr conftest.dir
     AS_CASE(["$gnumake"],
     [*yes*], [
-	echo '@%:@ -*- makefile -*-' > GNUmakefile
-	echo 'override MFLAGS := $(filter-out -j%,$(MFLAGS))' >> GNUmakefile
-	echo "include Makefile" >> GNUmakefile
-	echo "-include uncommon.mk" >> GNUmakefile
+	FIRSTMAKEFILE=GNUmakefile:template/GNUmakefile.in
 	gnumake=yes],
     [
 	gnumake=no])
