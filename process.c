@@ -1472,10 +1472,10 @@ check_exec_redirect_fd(VALUE v, int iskey)
         fd = fptr->fd;
     }
     else {
+      wrong:
         rb_raise(rb_eArgError, "wrong exec redirect");
     }
     if (fd < 0) {
-      wrong:
         rb_raise(rb_eArgError, "negative file descriptor");
     }
 #ifdef _WIN32
