@@ -326,6 +326,8 @@ post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-
 uninstall: $(INSTALLED_LIST)
 	$(Q)$(SUDO) $(MINIRUBY) $(srcdir)/tool/rbuninstall.rb --destdir=$(DESTDIR) $(INSTALLED_LIST)
 
+reinstall: uninstall install
+
 what-where-nodoc: no-install-nodoc
 no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
 pre-no-install-nodoc:: pre-no-install-local pre-no-install-ext

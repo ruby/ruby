@@ -15,3 +15,12 @@ yes-test-all yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARG
 endif
 
 $(TEST_TARGETS): $(TEST_DEPENDS)
+
+ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
+install-targets := $(filter install uninstall,$(MAKECMDGOALS))
+$(word 1,$(install-targets)): $(word 0,$(install-targets))
+endif
+
+ifneq ($(filter reinstall,$(MAKECMDGOALS)),)
+install: uninstall
+endif
