@@ -4472,6 +4472,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			argc = post_len + post_start;
 		    }
 		}
+
+		if (liseq->arg_keyword > 0) {
+		    int local_size = liseq->local_size;
+		    int idx = local_size - liseq->arg_keyword;
+		    argc++;
+		    ADD_INSN1(args, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		    ADD_SEND (args, line, ID2SYM(rb_intern("dup")), INT2FIX(0));
+		    for (i = 0; i < liseq->arg_keywords; ++i) {
+			ID id = liseq->arg_keyword_table[i];
+			idx = local_size - get_local_var_idx(liseq, id);
+			ADD_INSN1(args, line, putobject, ID2SYM(id));
+			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		    }
+		    ADD_SEND(args, line, ID2SYM(id_core_hash_merge_ptr), INT2FIX(i * 2 + 1));
+		}
 	    }
 	}
 

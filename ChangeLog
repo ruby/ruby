@@ -1,3 +1,8 @@
+Thu Mar  7 14:21:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): pass keyword arguments to zsuper,
+	  with current values.  [ruby-core:53114] [Bug #8008]
+
 Thu Mar  7 12:53:47 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/setup_command.rb:  Install .pem files.
