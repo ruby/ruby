@@ -4401,14 +4401,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_SUPER:
       case NODE_ZSUPER:{
 	DECL_ANCHOR(args);
-	VALUE argc;
+	int argc;
 	VALUE flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
 
 	INIT_ANCHOR(args);
 	iseq->compile_data->current_block = Qfalse;
 	if (nd_type(node) == NODE_SUPER) {
-	    argc = setup_args(iseq, args, node->nd_args, &flag);
+	    VALUE vargc = setup_args(iseq, args, node->nd_args, &flag);
+	    argc = FIX2INT(vargc);
 	}
 	else {
 	    /* NODE_ZSUPER */
@@ -4416,7 +4417,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_iseq_t *liseq = iseq->local_iseq;
 	    int lvar_level = get_lvar_level(iseq);
 
-	    argc = INT2FIX(liseq->argc);
+	    argc = liseq->argc;
 
 	    /* normal arguments */
 	    for (i = 0; i < liseq->argc; i++) {
@@ -4433,14 +4434,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    }
 		    i += j;
-		    argc = INT2FIX(i);
+		    argc = i;
 		}
 
 		if (liseq->arg_rest != -1) {
 		    /* rest argument */
 		    int idx = liseq->local_size - liseq->arg_rest;
 		    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
-		    argc = INT2FIX(liseq->arg_rest + 1);
+		    argc = liseq->arg_rest + 1;
 		    flag |= VM_CALL_ARGS_SPLAT;
 		}
 
@@ -4465,7 +4466,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			    int idx = liseq->local_size - (post_start + j);
 			    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 			}
-			argc = INT2FIX(post_len + post_start);
+			argc = post_len + post_start;
 		    }
 		}
 	    }
@@ -4474,7 +4475,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* dummy receiver */
 	ADD_INSN1(ret, nd_line(node), putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
-	ADD_INSN1(ret, nd_line(node), invokesuper, new_callinfo(iseq, 0, FIX2INT(argc), parent_block,
+	ADD_INSN1(ret, nd_line(node), invokesuper, new_callinfo(iseq, 0, argc, parent_block,
 								flag | VM_CALL_SUPER | VM_CALL_FCALL));
 
 	if (poped) {
