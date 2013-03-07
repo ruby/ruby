@@ -1,3 +1,8 @@
+Thu Mar  7 10:39:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): Gem.ensure_gem_subdirectories now has mode
+	  option since r39607.  refix of r38870.
+
 Wed Mar  6 13:14:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_gem_spec_fetcher.rb:  Removed unused variable.
