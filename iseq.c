@@ -1395,7 +1395,7 @@ rb_iseq_disasm(VALUE self)
 		    iseqdat->local_size, iseqdat->argc,
 		    iseqdat->arg_opts, iseqdat->arg_rest,
 		    iseqdat->arg_post_len, iseqdat->arg_block,
-		    iseqdat->arg_keywords, iseqdat->arg_keyword,
+		    iseqdat->arg_keywords, iseqdat->local_size-iseqdat->arg_keyword,
 		    iseqdat->arg_simple);
 
 	for (i = 0; i < iseqdat->local_table_size; i++) {
