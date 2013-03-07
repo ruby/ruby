@@ -40,6 +40,14 @@ module MarshalTestLib
     end
   end
 
+  def marshal_equal_with_ancestry(o1, msg = nil)
+    marshal_equal(o1, msg) do |o|
+      ancestry = o.singleton_class.ancestors
+      ancestry[ancestry.index(o.singleton_class)] = :singleton_class
+      ancestry
+    end
+  end
+
   class MyObject; def initialize(v) @v = v end; attr_reader :v; end
   def test_object
     o1 = Object.new
@@ -54,25 +62,17 @@ module MarshalTestLib
   def test_object_extend
     o1 = Object.new
     o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
     o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
   end
 
   def test_object_subclass_extend
     o1 = MyObject.new(2)
     o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
     o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
   end
 
   class MyArray < Array
@@ -141,25 +141,17 @@ module MarshalTestLib
   def test_hash_extend
     o1 = Hash.new
     o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
     o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
   end
 
   def test_hash_subclass_extend
     o1 = MyHash.new(2)
     o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
     o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
   end
 
   def test_bignum
@@ -289,13 +281,9 @@ module MarshalTestLib
   def test_struct_subclass_extend
     o1 = MyStruct.new
     o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
     o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
+    marshal_equal_with_ancestry(o1)
   end
 
   def test_symbol
@@ -404,7 +392,7 @@ module MarshalTestLib
     o = Object.new
     o.extend Mod1
     o.extend Mod2
-    marshal_equal(o) {|obj| class << obj; ancestors end}
+    marshal_equal_with_ancestry(o)
     o = Object.new
     o.extend Module.new
     assert_raise(TypeError) { marshaltest(o) }
@@ -417,7 +405,7 @@ module MarshalTestLib
     o = ""
     o.extend Mod1
     o.extend Mod2
-    marshal_equal(o) {|obj| class << obj; ancestors end}
+    marshal_equal_with_ancestry(o)
     o = ""
     o.extend Module.new
     assert_raise(TypeError) { marshaltest(o) }

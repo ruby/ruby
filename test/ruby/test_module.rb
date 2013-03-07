@@ -1663,6 +1663,20 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_ancestors
+    feature8035 = '[ruby-core:53171]'
+    obj = Object.new
+    assert_equal [obj.singleton_class, Object], obj.singleton_class.ancestors.first(2), feature8035
+
+    mod = Module.new
+    obj.extend mod
+    assert_equal [obj.singleton_class, mod, Object], obj.singleton_class.ancestors.first(3)
+
+    obj = Object.new
+    obj.singleton_class.send :prepend, mod
+    assert_equal [mod, obj.singleton_class, Object], obj.singleton_class.ancestors.first(3)
+  end
+
   private
 
   def assert_top_method_is_private(method)
