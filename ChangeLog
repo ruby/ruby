@@ -1,3 +1,14 @@
+Fri Mar  8 03:16:15 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* class.c (rb_mod_ancestors): Include singleton_class in ancestors
+	  list [Feature #8035]
+
+	* test/ruby/test_module.rb (class): test for above
+
+	* test/ruby/marshaltestlib.rb (module): adapt test
+
+	* NEWS: list change
+
 Thu Mar  7 14:21:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): pass keyword arguments to zsuper,
