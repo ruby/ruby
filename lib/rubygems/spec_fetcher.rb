@@ -241,7 +241,13 @@ class Gem::SpecFetcher
     https_uri.scheme = 'https'
     https_uri += '/'
 
-    Gem::RemoteFetcher.fetcher.fetch_path https_uri, nil, true
+    https_uri = URI https_uri.to_s # cast to URI::HTTPS
+
+    begin
+      Gem::RemoteFetcher.fetcher.fetch_path https_uri, nil, true
+    rescue Gem::RemoteFetcher::FetchError => e
+      raise unless e.message =~ / Not Allowed 405 /
+    end
 
     say "Upgraded #{uri} to HTTPS"
 

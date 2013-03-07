@@ -38,6 +38,11 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
+    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name then
+      raise ArgumentError,
+        "mismatch for scheme #{path.scheme} and class #{path.class}"
+    end
+
     path = path.to_s
     @paths << path
     raise ArgumentError, 'need full URI' unless path =~ %r'^https?://'
