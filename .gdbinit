@@ -1,3 +1,9 @@
+define hook-run
+  set $color_type = 0
+  set $color_highlite = 0
+  set $color_end = 0
+end
+
 define ruby_gdb_init
   if !$color_type
     set $color_type = "\033[31m"
