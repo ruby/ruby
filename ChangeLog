@@ -1,3 +1,9 @@
+Sat Mar  9 08:36:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (features_index_add_single, rb_feature_p): store single index
+	  as Fixnum to reduce the number of arrays for the indexes.  based on
+	  the patch by tmm1 (Aman Gupta) in [ruby-core:53216] [Bug #8048].
+
 Sat Mar  9 00:25:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): load prepended objects.  treat the class of

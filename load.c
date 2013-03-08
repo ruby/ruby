@@ -11,6 +11,8 @@
 
 VALUE ruby_dln_librefs;
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #ifdef DLEXT2
@@ -186,11 +188,23 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 {
     VALUE features_index, this_feature_index;
     features_index = get_loaded_features_index_raw();
-    if ((this_feature_index = rb_hash_lookup(features_index, short_feature)) == Qnil) {
-	this_feature_index = rb_ary_new();
+    this_feature_index = rb_hash_lookup(features_index, short_feature);
+
+    if (NIL_P(this_feature_index)) {
+	rb_hash_aset(features_index, short_feature, offset);
+    }
+    else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
+	VALUE feature_indexes[2];
+	feature_indexes[0] = this_feature_index;
+	feature_indexes[1] = offset;
+	this_feature_index = rb_ary_tmp_new(numberof(feature_indexes));
+	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
 	rb_hash_aset(features_index, short_feature, this_feature_index);
     }
-    rb_ary_push(this_feature_index, offset);
+    else {
+	Check_Type(this_feature_index, T_ARRAY);
+	rb_ary_push(this_feature_index, offset);
+    }
 }
 
 /* Add to the loaded-features index all the required entries for
@@ -392,8 +406,19 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
      */
-    for (i = 0; this_feature_index != Qnil && i < RARRAY_LEN(this_feature_index); i++) {
-	long index = FIX2LONG(rb_ary_entry(this_feature_index, i));
+    for (i = 0; !NIL_P(this_feature_index); i++) {
+	VALUE entry;
+	long index;
+	if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
+	    if (i >= RARRAY_LEN(this_feature_index)) break;
+	    entry = RARRAY_PTR(this_feature_index)[i];
+	}
+	else {
+	    if (i > 0) break;
+	    entry = this_feature_index;
+	}
+	index = FIX2LONG(entry);
+
 	v = RARRAY_PTR(features)[index];
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
