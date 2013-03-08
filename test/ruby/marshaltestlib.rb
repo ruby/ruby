@@ -229,7 +229,7 @@ module MarshalTestLib
     str = MyString.new(10, "b")
     str.instance_eval { @v = str }
     marshal_equal(str) { |o|
-      assert_equal(o.__id__, o.instance_eval { @v }.__id__)
+      assert_same(o, o.instance_eval { @v })
       o.instance_eval { @v }
     }
   end
@@ -239,7 +239,7 @@ module MarshalTestLib
     o.extend(Mod1)
     str = MyString.new(o, "c")
     marshal_equal(str) { |v|
-      assert(v.instance_eval { @v }.kind_of?(Mod1))
+      assert_kind_of(Mod1, v.instance_eval { @v })
     }
   end
 
