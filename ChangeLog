@@ -1,3 +1,8 @@
+Fri Mar  8 10:44:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/webrick/httpproxy.rb: Fix typos in HTTPProxyServer [Bug #8013]
+	  Patch by Nobuhiro IMAI [ruby-core:53127]
+
 Fri Mar  8 03:16:15 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* class.c (rb_mod_ancestors): Include singleton_class in ancestors
