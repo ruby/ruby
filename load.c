@@ -297,10 +297,13 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	    return 0;
 	plen = e - name - len - 1;
     }
-    if (type == 's' && !IS_DLEXT(&name[plen+len+1])
-     || type == 'r' && !IS_RBEXT(&name[plen+len+1])
-     || name[plen] != '/') {
-       return 0;
+    if (name[plen] != '/') {
+	return 0;
+    }
+    if (type == 's' ? !IS_DLEXT(&name[plen+len+1]) :
+	type == 'r' ? !IS_RBEXT(&name[plen+len+1]) :
+	0) {
+	return 0;
     }
     /* Now name == "#{prefix}/#{feature}#{ext}" where ext is acceptable
        (possibly empty) and prefix is some string of length plen. */
