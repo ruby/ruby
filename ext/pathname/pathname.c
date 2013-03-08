@@ -1107,7 +1107,20 @@ path_unlink(VALUE self)
 }
 
 /*
- * Creates a new Pathname object.
+ * :call-seq:
+ *  Pathname(path)  -> pathname
+ *
+ * Creates a new Pathname object from the given string, +path+, and returns
+ * pathname object.
+ *
+ * In order to use this constuctor, you must first require the Pathname
+ * standard library extension.
+ *
+ *	require 'pathname'
+ *	Pathname("/home/zzak")
+ *	#=> #<Pathname:/home/zzak>
+ *
+ * See also Pathname::new for more information.
  */
 static VALUE
 path_f_pathname(VALUE self, VALUE str)

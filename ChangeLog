@@ -1,3 +1,7 @@
+Fri Mar  8 13:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/pathname/pathname.c (path_f_pathname): rdoc for Pathname()
+
 Fri Mar  8 12:00:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* man/rake.1: Document ENVIRONMENT variables on RAKE(1) manpage
