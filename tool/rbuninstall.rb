@@ -39,7 +39,12 @@ END {
     end
     $dirs.reverse_each do |dir|
       begin
-        Dir.rmdir(dir)
+        begin
+          Dir.rmdir(dir)
+        rescue Errno::ENOTDIR
+          raise unless File.symlink?(dir)
+          File.unlink(dir)
+        end
       rescue Errno::ENOENT, Errno::ENOTEMPTY
       rescue
         status = false
