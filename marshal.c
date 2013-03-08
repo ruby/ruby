@@ -1387,11 +1387,11 @@ path2class(VALUE path)
     return v;
 }
 
-static VALUE
-path2module(VALUE path)
-{
-    VALUE v = rb_path_to_class(path);
+#define path2module(path) must_be_module(rb_path_to_class(path), path)
 
+static VALUE
+must_be_module(VALUE v, VALUE path)
+{
     if (!RB_TYPE_P(v, T_MODULE)) {
 	rb_raise(rb_eArgError, "%"PRIsVALUE" does not refer to module", path);
     }
@@ -1473,16 +1473,36 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_EXTENDED:
 	{
-	    VALUE m = path2module(r_unique(arg));
+	    VALUE path = r_unique(arg);
+	    VALUE m = rb_path_to_class(path);
 
-            if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
-            rb_ary_push(extmod, m);
+	    if (RB_TYPE_P(m, T_CLASS)) { /* prepended */
+		VALUE c;
 
-	    v = r_object0(arg, 0, extmod);
-            while (RARRAY_LEN(extmod) > 0) {
-                m = rb_ary_pop(extmod);
-                rb_extend_object(v, m);
-            }
+		v = r_object0(arg, 0, Qnil);
+		c = CLASS_OF(v);
+		if (c != m || FL_TEST(c, FL_SINGLETON)) {
+		    rb_raise(rb_eArgError,
+			     "prepended class %"PRIsVALUE" differs from class %"PRIsVALUE,
+			     path, rb_class_name(c));
+		}
+		c = rb_singleton_class(v);
+		while (RARRAY_LEN(extmod) > 0) {
+		    m = rb_ary_pop(extmod);
+		    rb_prepend_module(c, m);
+		}
+	    }
+	    else {
+		must_be_module(m, path);
+		if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
+		rb_ary_push(extmod, m);
+
+		v = r_object0(arg, 0, extmod);
+		while (RARRAY_LEN(extmod) > 0) {
+		    m = rb_ary_pop(extmod);
+		    rb_extend_object(v, m);
+		}
+	    }
 	}
 	break;
 

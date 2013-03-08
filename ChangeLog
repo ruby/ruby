@@ -1,3 +1,9 @@
+Sat Mar  9 00:25:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): load prepended objects.  treat the class of
+	  extended object in the included modules as prepended singleton
+	  class. [ruby-core:53202] [Bug #8041]
+
 Fri Mar  8 19:44:00 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* man/rake.1, man/ruby.1: Use the Pa macro to make URLs stand out.

@@ -75,6 +75,16 @@ module MarshalTestLib
     marshal_equal_with_ancestry(o1)
   end
 
+  def test_object_prepend
+    bug8041 = '[ruby-core:53202] [Bug #8041]'
+
+    o1 = MyObject.new(42)
+    o1.singleton_class.class_eval {prepend Mod1}
+    assert_nothing_raised(ArgumentError, bug8041) {
+      marshal_equal_with_ancestry(o1, bug8041)
+    }
+  end
+
   class MyArray < Array
     def initialize(v, *args)
       super(args)
