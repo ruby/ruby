@@ -406,40 +406,42 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
      */
-    for (i = 0; !NIL_P(this_feature_index); i++) {
-	VALUE entry;
-	long index;
-	if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
-	    if (i >= RARRAY_LEN(this_feature_index)) break;
-	    entry = RARRAY_PTR(this_feature_index)[i];
-	}
-	else {
-	    if (i > 0) break;
-	    entry = this_feature_index;
-	}
-	index = FIX2LONG(entry);
+    if (!NIL_P(this_feature_index)) {
+	for (i = 0; ; i++) {
+	    VALUE entry;
+	    long index;
+	    if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
+		if (i >= RARRAY_LEN(this_feature_index)) break;
+		entry = RARRAY_PTR(this_feature_index)[i];
+	    }
+	    else {
+		if (i > 0) break;
+		entry = this_feature_index;
+	    }
+	    index = FIX2LONG(entry);
 
-	v = RARRAY_PTR(features)[index];
-	f = StringValuePtr(v);
-	if ((n = RSTRING_LEN(v)) < len) continue;
-	if (strncmp(f, feature, len) != 0) {
-	    if (expanded) continue;
-	    if (!load_path) load_path = rb_get_expanded_load_path();
-	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
-		continue;
-	    expanded = 1;
-	    f += RSTRING_LEN(p) + 1;
-	}
-	if (!*(e = f + len)) {
-	    if (ext) continue;
-	    return 'u';
-	}
-	if (*e != '.') continue;
-	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
-	    return 's';
-	}
-	if ((rb || !ext) && (IS_RBEXT(e))) {
-	    return 'r';
+	    v = RARRAY_PTR(features)[index];
+	    f = StringValuePtr(v);
+	    if ((n = RSTRING_LEN(v)) < len) continue;
+	    if (strncmp(f, feature, len) != 0) {
+		if (expanded) continue;
+		if (!load_path) load_path = rb_get_expanded_load_path();
+		if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
+		    continue;
+		expanded = 1;
+		f += RSTRING_LEN(p) + 1;
+	    }
+	    if (!*(e = f + len)) {
+		if (ext) continue;
+		return 'u';
+	    }
+	    if (*e != '.') continue;
+	    if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
+		return 's';
+	    }
+	    if ((rb || !ext) && (IS_RBEXT(e))) {
+		return 'r';
+	    }
 	}
     }
 
