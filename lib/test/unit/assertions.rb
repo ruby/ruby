@@ -322,7 +322,9 @@ EOT
 
       def message(msg = nil, *args, &default)
         if Proc === msg
-          super(nil, *args) {"#{msg.call}#{default.call if default}"}
+          super(nil, *args) do
+            [msg.call, (default.call if default)].compact.reject(&:empty?).join(".\n")
+          end
         else
           super
         end
