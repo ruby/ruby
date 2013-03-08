@@ -131,11 +131,7 @@ module DRbCore
 
     obj = @there.unknown_module
     assert_kind_of(DRb::DRbUnknown, obj)
-    if RUBY_VERSION >= '1.8'
-      assert_equal('DRbEx::', obj.name)
-    else
-      assert_equal('DRbEx', obj.name)
-    end
+    assert_equal('DRbEx::', obj.name)
 
     assert_raise(DRb::DRbUnknownError) do
       @there.unknown_error

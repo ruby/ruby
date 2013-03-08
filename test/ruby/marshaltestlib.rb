@@ -244,31 +244,12 @@ module MarshalTestLib
   end
 
   MyStruct = Struct.new("MyStruct", :a, :b)
-  if RUBY_VERSION < "1.8.0"
-    # Struct#== is not defined in ruby/1.6
-    class MyStruct
-      def ==(rhs)
-	return true if __id__ == rhs.__id__
-	return false unless rhs.is_a?(::Struct)
-	return false if self.class != rhs.class
-	members.each do |member|
-	  return false if self.__send__(member) != rhs.__send__(member)
-	end
-	return true
-      end
-    end
-  end
   class MySubStruct < MyStruct; def initialize(v, *args) super(*args); @v = v; end end
   def test_struct
     marshal_equal(MyStruct.new(1,2))
   end
 
   def test_struct_subclass
-    if RUBY_VERSION < "1.8.0"
-      # Substruct instance cannot be dumped in ruby/1.6
-      # ::Marshal.dump(MySubStruct.new(10, 1, 2)) #=> uninitialized struct
-      return false
-    end
     marshal_equal(MySubStruct.new(10,1,2))
   end
 
@@ -433,20 +414,6 @@ module MarshalTestLib
   end
 
   MyStruct2 = Struct.new(:a, :b)
-  if RUBY_VERSION < "1.8.0"
-    # Struct#== is not defined in ruby/1.6
-    class MyStruct2
-      def ==(rhs)
-	return true if __id__ == rhs.__id__
-	return false unless rhs.is_a?(::Struct)
-	return false if self.class != rhs.class
-	members.each do |member|
-	  return false if self.__send__(member) != rhs.__send__(member)
-	end
-	return true
-      end
-    end
-  end
   def test_struct_toplevel
     o = MyStruct2.new(1,2)
     marshal_equal(o)
