@@ -11,6 +11,20 @@ AC_DEFUN([RUBY_PREREQ_AC],
 
 AC_DISABLE_OPTION_CHECKING
 
+# suppress error messages, rm: cannot remove 'conftest.dSYM', from
+# AC_EGREP_CPP with CFLAGS=-g on Darwin.
+rm() {
+    local recursive
+    for arg do
+	AS_CASE("$arg",
+		[--*], [],
+		[-*r*], [break],
+		[conftest.*], [if test -d "$arg"; then recursive=-r; break; fi],
+		[])
+    done
+    command rm $recursive "$@"
+}
+
 { # environment section
 
 AC_ARG_WITH(baseruby,
