@@ -319,6 +319,14 @@ EOT
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
       end
+
+      def message(msg = nil, *args, &default)
+        if Proc === msg
+          super(nil, *args) {"#{msg.call}#{default.call if default}"}
+        else
+          super
+        end
+      end
     end
   end
 end
