@@ -1024,9 +1024,11 @@ nurat_expt(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    rat <=> numeric  ->  -1, 0, +1 or nil
+ *    rational <=> numeric  ->  -1, 0, +1 or nil
  *
  * Performs comparison and returns -1, 0, or +1.
+ *
+ * +nil+ is returned if the two values are incomparable.
  *
  *    Rational(2, 3)  <=> Rational(2, 3)  #=> 0
  *    Rational(5)     <=> 5               #=> 0

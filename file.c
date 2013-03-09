@@ -326,8 +326,10 @@ static struct timespec stat_mtimespec(struct stat *st);
  *  call-seq:
  *     stat <=> other_stat    -> -1, 0, 1, nil
  *
- *  Compares <code>File::Stat</code> objects by comparing their
- *  respective modification times.
+ *  Compares File::Stat objects by comparing their respective modification
+ *  times.
+ *
+ *  +nil+ is returned if the two values are incomparable.
  *
  *     f1 = File.new("f1", "w")
  *     sleep 1

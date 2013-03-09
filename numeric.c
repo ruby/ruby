@@ -1032,10 +1032,10 @@ num_eql(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num <=> other  ->  0 or nil
+ *     number <=> other  ->  0 or nil
  *
- *  Returns zero if <i>num</i> equals <i>other</i>, <code>nil</code>
- *  otherwise.
+ *  Returns zero if +number+ equals +other+, otherwise +nil+ is returned if the
+ *  two values are incomparable.
  */
 
 static VALUE
@@ -1123,13 +1123,15 @@ rb_dbl_cmp(double a, double b)
 
 /*
  *  call-seq:
- *     flt <=> real  ->  -1, 0, +1 or nil
+ *     float <=> real  ->  -1, 0, +1 or nil
  *
- *  Returns -1, 0, +1 or nil depending on whether <i>flt</i> is less
- *  than, equal to, or greater than <i>real</i>. This is the basis for
- *  the tests in <code>Comparable</code>.
+ *  Returns -1, 0, +1 or nil depending on whether +float+ is less than, equal
+ *  to, or greater than +real+. This is the basis for the tests in Comparable.
+ *
  *  The result of <code>NaN <=> NaN</code> is undefined, so the
  *  implementation-dependent value is returned.
+ *
+ *  +nil+ is returned if the two values are incomparable.
  */
 
 static VALUE
@@ -3036,10 +3038,11 @@ fix_equal(VALUE x, VALUE y)
  *  call-seq:
  *     fix <=> numeric  ->  -1, 0, +1 or nil
  *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether
- *  <i>fix</i> is less than, equal to, or greater than
- *  <i>numeric</i>. This is the basis for the tests in
- *  <code>Comparable</code>.
+ *  Comparison---Returns -1, 0, +1 or nil depending on whether +fix+ is less
+ *  than, equal to, or greater than +numeric+. This is the basis for the tests
+ *  in  Comparable.
+ *
+ *  +nil+ is returned if the two values are incomparable.
  */
 
 static VALUE

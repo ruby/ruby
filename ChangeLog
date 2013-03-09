@@ -1,3 +1,14 @@
+Sat Mar  9 22:50:28 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c: Document #<=> return values and formatting
+	* bignum.c: ditto
+	* file.c: ditto
+	* object.c: ditto
+	* numeric.c: ditto
+	* rational.c: ditto
+	* string.c: ditto
+	* time.c: ditto
+
 Sat Mar  9 22:45:01 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c (rb_ary_diff, rb_ary_and, rb_ary_or): Document return order
