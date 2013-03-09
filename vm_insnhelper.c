@@ -1675,6 +1675,24 @@ find_refinement(VALUE refinements, VALUE klass)
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 static VALUE vm_call_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci);
 
+static rb_control_frame_t *
+current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
+{
+    rb_control_frame_t *top_cfp = cfp;
+
+    if (cfp->iseq && cfp->iseq->type == ISEQ_TYPE_BLOCK) {
+	rb_iseq_t *local_iseq = cfp->iseq->local_iseq;
+	do {
+	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+		/* TODO: orphan block */
+		return top_cfp;
+	    }
+	} while (cfp->iseq != local_iseq);
+    }
+    return cfp;
+}
+
 static
 #ifdef _MSC_VER
 __forceinline
@@ -1767,10 +1785,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		}
 		me = rb_method_entry(refinement, ci->mid, &defined_class);
 		if (me) {
-		    if (ci->call == vm_call_super_method &&
-			cfp->me &&
-			rb_method_definition_eq(me->def, cfp->me->def)) {
-			goto no_refinement_dispatch;
+		    if (ci->call == vm_call_super_method) {
+			rb_control_frame_t *top_cfp = current_method_entry(th, cfp);
+			if (top_cfp->me &&
+			    rb_method_definition_eq(me->def, top_cfp->me->def)) {
+			    goto no_refinement_dispatch;
+			}
 		    }
 		    ci->me = me;
 		    ci->defined_class = defined_class;
