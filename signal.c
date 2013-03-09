@@ -658,8 +658,10 @@ static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
     if (segv_received) {
+	ssize_t RB_UNUSED_VAR(err);
 	char msg[] = "SEGV received in SEGV handler\n";
-	write(2, msg, sizeof(msg));
+
+	err = write(2, msg, sizeof(msg));
 	ruby_abort();
     }
 
