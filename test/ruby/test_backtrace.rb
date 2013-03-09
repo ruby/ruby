@@ -141,4 +141,21 @@ class TestBacktrace < Test::Unit::TestCase
       q << true
     end
   end
+
+  def test_thread_backtrace_locations_with_range
+    begin
+      q = Queue.new
+      th = Thread.new{
+        th_rec q
+      }
+      sleep 0.5
+      bt = th.backtrace(0,2)
+      locs = th.backtrace_locations(0..1).map { |loc|
+        loc.to_s
+      }
+      assert_equal(bt, locs)
+    ensure
+      q << true
+    end
+  end
 end
