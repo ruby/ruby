@@ -13,6 +13,8 @@ AC_DISABLE_OPTION_CHECKING
 
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from
 # AC_EGREP_CPP with CFLAGS=-g on Darwin.
+#
+# TODO: remove this hack when AC_PREREQ() becomes 2.70 or later.
 rm() {
     local recursive
     for arg do
