@@ -191,6 +191,7 @@ VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
 /* process.c */
+#define RB_MAX_GROUPS (65536)
 
 struct rb_execarg {
     int use_shell;
