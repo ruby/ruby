@@ -1,3 +1,8 @@
+Sat Mar  9 23:08:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): no keyword check if any keyword rest
+	  argument exists, even unnamed.  [ruby-core:52744] [Bug #7922]
+
 Sat Mar  9 22:50:28 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Document #<=> return values and formatting

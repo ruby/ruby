@@ -1204,7 +1204,6 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	else if (args->kw_rest_arg) {
 	    iseq->arg_keyword = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 	    COMPILE(optargs, "kwarg", args->kw_rest_arg);
-	    iseq->arg_keyword_check = (args->kw_rest_arg->nd_vid & ID_SCOPE_MASK) == ID_JUNK;
 	    ADD_INSN(optargs, nd_line(args->kw_rest_arg), pop);
 	}
 	else {
