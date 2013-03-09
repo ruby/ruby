@@ -58,7 +58,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
     long i;
     int level = rb_safe_level();
 
-    ary = rb_ary_new2(RARRAY_LEN(load_path));
+    ary = rb_ary_tmp_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE path, as_str, expanded_path;
 	int is_string, non_cache;
@@ -1112,15 +1112,16 @@ Init_load()
     rb_alias_variable(rb_intern("$-I"), id_load_path);
     rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
-    vm->expanded_load_path = rb_ary_new();
-    vm->load_path_snapshot = rb_ary_new();
+    vm->expanded_load_path = rb_ary_tmp_new(0);
+    vm->load_path_snapshot = rb_ary_tmp_new(0);
     vm->load_path_check_cache = 0;
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
-    vm->loaded_features_snapshot = rb_ary_new();
+    vm->loaded_features_snapshot = rb_ary_tmp_new(0);
     vm->loaded_features_index = rb_hash_new();
+    RBASIC(vm->loaded_features_index)->klass = 0;
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
@@ -1130,6 +1131,6 @@ Init_load()
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, 1);
 
-    ruby_dln_librefs = rb_ary_new();
+    ruby_dln_librefs = rb_ary_tmp_new();
     rb_gc_register_mark_object(ruby_dln_librefs);
 }
