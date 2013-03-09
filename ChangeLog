@@ -1,3 +1,8 @@
+Sat Mar  9 22:45:01 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c (rb_ary_diff, rb_ary_and, rb_ary_or): Document return order
+	  [RubySpec #7803]
+
 Sat Mar  9 22:38:26 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* object.c (rb_obj_comp): Documenting Object#<=> return values

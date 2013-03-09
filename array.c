@@ -3801,7 +3801,8 @@ ary_recycle_hash(VALUE hash)
  *  Array Difference
  *
  *  Returns a new array that is a copy of the original array, removing any
- *  items that also appear in +other_ary+.
+ *  items that also appear in +other_ary+. The order is preserved from the
+ *  original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
@@ -3833,7 +3834,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *     ary & other_ary      -> new_ary
  *
  *  Set Intersection --- Returns a new array containing elements common to the
- *  two arrays, excluding any duplicates.
+ *  two arrays, excluding any duplicates. The order is preserved from the
+ *  original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
@@ -3875,7 +3877,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *     ary | other_ary     -> new_ary
  *
  *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
- *  excluding any duplicates.
+ *  excluding any duplicates and preserving the order from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
