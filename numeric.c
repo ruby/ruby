@@ -522,8 +522,10 @@ num_real_p(VALUE num)
  *  call-seq:
  *     num.integer?  ->  true or false
  *
- *  Returns <code>true</code> if <i>num</i> is an <code>Integer</code>
- *  (including <code>Fixnum</code> and <code>Bignum</code>).
+ *  Returns +true+ if +num+ is an Integer (including Fixnum and Bignum).
+ *
+ *      (1.0).integer? #=> false
+ *      (1).integer?   #=> true
  */
 
 static VALUE
@@ -596,8 +598,11 @@ num_nonzero_p(VALUE num)
  *  call-seq:
  *     num.to_int  ->  integer
  *
- *  Invokes the child class's <code>to_i</code> method to convert
- *  <i>num</i> to an integer.
+ *  Invokes the child class's +to_i+ method to convert +num+ to an integer.
+ *
+ *      1.0.class => Float
+ *      1.0.to_int.class => Fixnum
+ *      1.0.to_i.class => Fixnum
  */
 
 static VALUE
@@ -899,10 +904,10 @@ ruby_float_mod(double x, double y)
 
 /*
  *  call-seq:
- *     flt % other        ->  float
- *     flt.modulo(other)  ->  float
+ *     float % other        ->  float
+ *     float.modulo(other)  ->  float
  *
- *  Return the modulo after division of <code>flt</code> by <code>other</code>.
+ *  Return the modulo after division of +float+ by +other+.
  *
  *     6543.21.modulo(137)      #=> 104.21
  *     6543.21.modulo(137.24)   #=> 92.9299999999996
@@ -941,9 +946,12 @@ dbl2ival(double d)
 
 /*
  *  call-seq:
- *     flt.divmod(numeric)  ->  array
+ *     float.divmod(numeric)  ->  array
  *
- *  See <code>Numeric#divmod</code>.
+ *  See Numeric#divmod.
+ *
+ *      42.0.divmod 6 #=> [7, 0.0]
+ *      42.0.divmod 5 #=> [8, 2.0]
  */
 
 static VALUE
