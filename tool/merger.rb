@@ -64,7 +64,7 @@ end
 def version_up
   d = DateTime.now
   d = d.new_offset(Rational(9,24)) # we need server locale (i.e. japanese) time
-  system *%w'svn revert version.h'
+  system(*%w'svn revert version.h')
   v, p = version
 
   teeny = v[2]
@@ -91,9 +91,9 @@ def version_up
    %W[RUBY_RELEASE_MONTH #{d.month}],
    %W[RUBY_RELEASE_DAY   #{d.day}],
   ].each do |(k, i)|
-    str.sub! /^(#define\s+#{k}\s+).*$/, "\\1#{i}"
+    str.sub!(/^(#define\s+#{k}\s+).*$/, "\\1#{i}")
   end
-  str.sub! /\s+\z/m, ''
+  str.sub!(/\s+\z/m, '')
   fn = sprintf 'version.h.tmp.%032b', rand(1 << 31)
   File.rename 'version.h', fn
   open 'version.h', 'wb' do |f|
@@ -130,7 +130,7 @@ def tag intv_p = false, relname=nil
     interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
     end
   end
-  system *%w'svn cp -m' + ["add tag #{tagname}"] + [branch_url, tag_url]
+  system(*%w'svn cp -m', "add tag #{tagname}", branch_url, tag_url)
 end
 
 def default_merge_branch
@@ -157,7 +157,7 @@ else
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
-  revs = ARGV[0].split /,\s*/
+  revs = ARGV[0].split(/,\s*/)
   log = ''
   log_svn = ''
 
@@ -189,7 +189,7 @@ else
     STDERR.puts a.join(' ')
 
     system(*a)
-    system *%w'svn revert ChangeLog' if /^\+/ =~ l
+    system(*%w'svn revert ChangeLog') if /^\+/ =~ l
   end
 
   if `svn diff --diff-cmd=diff -x -upw`.empty?
@@ -198,13 +198,13 @@ else
   end
 
   if /^\+/ =~ log
-    system *%w'svn revert ChangeLog'
+    system(*%w'svn revert ChangeLog')
     IO.popen %w'patch -p0', 'wb' do |f|
       f.write log.gsub(/\+(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ 123][0-9] [012][0-9]:[0-5][0-9]:[0-5][0-9] \d\d\d\d/,
                        # this format-time-string was from the file local variables of ChangeLog
                        '+'+Time.now.strftime('%a %b %e %H:%M:%S %Y'))
     end
-    system *%w'touch ChangeLog' # needed somehow, don't know why...
+    system(*%w'touch ChangeLog') # needed somehow, don't know why...
   else
     STDERR.puts '*** You should write ChangeLog NOW!!! ***'
   end
@@ -228,7 +228,7 @@ else
     end
   end
 
-  if system *%w'svn ci -F' + [f.path]
+  if system(*%w'svn ci -F', f.path)
     # tag :interactive # no longer needed.
     system 'rm -f subversion.commitlog'
   else
