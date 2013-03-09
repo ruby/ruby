@@ -1131,6 +1131,6 @@ Init_load()
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, 1);
 
-    ruby_dln_librefs = rb_ary_tmp_new();
+    ruby_dln_librefs = rb_ary_tmp_new(0);
     rb_gc_register_mark_object(ruby_dln_librefs);
 }
