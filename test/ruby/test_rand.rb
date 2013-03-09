@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRand < Test::Unit::TestCase
   def assert_random_int(ws, m, init = 0)
@@ -513,5 +514,19 @@ END
     assert_raise(SecurityError, '[Bug #6540]') do
       l.call
     end
+  end
+
+  def test_random_ulong_limited
+    def (gen = Object.new).rand(*) 1 end
+    assert_equal([2], (1..100).map {[1,2,3].sample(random: gen)}.uniq)
+
+    def (gen = Object.new).rand(*) 100 end
+    e = assert_raise(RangeError) {[1,2,3].sample(random: gen)}
+    assert_match(/big 100\z/, e.message)
+
+    bug7903 = '[ruby-dev:47061] [Bug #7903]'
+    def (gen = Object.new).rand(*) -1 end
+    e = assert_raise(RangeError) {[1,2,3].sample(random: gen)}
+    assert_match(/small -1\z/, e.message, bug7903)
   end
 end

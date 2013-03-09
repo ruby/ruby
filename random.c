@@ -947,9 +947,13 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
+	extern int rb_num_negative_p(VALUE);
 	VALUE lim = ULONG2NUM(limit);
 	VALUE v = rb_funcall2(obj, id_rand, 1, &lim);
 	unsigned long r = NUM2ULONG(v);
+	if (rb_num_negative_p(v)) {
+	    rb_raise(rb_eRangeError, "random number too small %ld", r);
+	}
 	if (r > limit) {
 	    rb_raise(rb_eRangeError, "random number too big %ld", r);
 	}
