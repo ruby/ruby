@@ -1,3 +1,9 @@
+Sat Mar  9 22:35:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (file_s_fnmatch, fnmatch_brace): encoding-incompatible pattern
+	  and string do not match, instead of exception.  [ruby-dev:47069]
+	  [Bug #7911]
+
 Sat Mar  9 22:18:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/test_rbconfig.rb (TestRbConfig): fix r39372.

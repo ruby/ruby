@@ -109,4 +109,19 @@ class TestFnmatch < Test::Unit::TestCase
     assert_file.for(feature5422).not_fnmatch?( "{.g,t}*", ".gem")
     assert_file.for(feature5422).fnmatch?("{.g,t}*", ".gem", File::FNM_EXTGLOB)
   end
+
+  def test_unmatched_encoding
+    bug7911 = '[ruby-dev:47069] [Bug #7911]'
+    path = "\u{3042}"
+    pattern_ascii = 'a'.encode('US-ASCII')
+    pattern_eucjp = path.encode('EUC-JP')
+    assert_nothing_raised(ArgumentError, bug7911) do
+      assert(!File.fnmatch(pattern_ascii, path))
+      assert(!File.fnmatch(pattern_eucjp, path))
+      assert(!File.fnmatch(pattern_ascii, path, File::FNM_CASEFOLD))
+      assert(!File.fnmatch(pattern_eucjp, path, File::FNM_CASEFOLD))
+      assert(File.fnmatch("{*,#{pattern_ascii}}", path, File::FNM_EXTGLOB))
+      assert(File.fnmatch("{*,#{pattern_eucjp}}", path, File::FNM_EXTGLOB))
+    end
+  end
 end
