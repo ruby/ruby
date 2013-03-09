@@ -1,3 +1,13 @@
+Sat Mar  9 22:18:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/test_rbconfig.rb (TestRbConfig): fix r39372.
+	  It must see RbConfig::CONFIG instead of CONFIG.
+
+Sat Mar  9 22:18:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/test_rbconfig.rb (TestRbConfig): skip user defined values by
+	  configuration options.  [Bug #7902]
+
 Sat Mar  9 22:07:53 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
