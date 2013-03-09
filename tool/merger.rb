@@ -1,4 +1,7 @@
-#! /bin/ruby
+#!/bin/sh
+# -*- ruby -*-
+exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
+#!ruby
 # This needs ruby 1.9 and subversion.
 # run this in a repository to commit.
 
