@@ -1,3 +1,11 @@
+Sat Mar  9 21:15:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (access_internal): removed.
+	* file.c (rb_file_readable_real): use access() instead of
+	  access_internal().
+	* file.c (rb_file_writable_real): ditto.
+	* file.c (rb_file_executable_real): ditto.
+
 Wed Mar  6 22:13:38 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 merge revision(s) 39297: [Backport #8032]

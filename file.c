@@ -1109,12 +1109,6 @@ eaccess(const char *path, int mode)
 }
 #endif
 
-static inline int
-access_internal(const char *path, int mode)
-{
-    return access(path, mode);
-}
-
 
 /*
  * Document-class: FileTest
@@ -1346,7 +1340,7 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (access_internal(StringValueCStr(fname), R_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1418,7 +1412,7 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (access_internal(StringValueCStr(fname), W_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1482,7 +1476,7 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (access_internal(StringValueCStr(fname), X_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
