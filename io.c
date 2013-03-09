@@ -8350,7 +8350,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  Calls select(2) system call.
  *  It monitors given arrays of <code>IO</code> objects, waits one or more
  *  of <code>IO</code> objects ready for reading, are ready for writing,
- *  and have pending exceptions respectably, and returns an array that
+ *  and have pending exceptions respectively, and returns an array that
  *  contains arrays of those IO objects.  It will return <code>nil</code>
  *  if optional <i>timeout</i> value is given and no <code>IO</code> object
  *  is ready in <i>timeout</i> seconds.
