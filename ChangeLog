@@ -1,3 +1,8 @@
+Sat Mar  9 22:38:26 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* object.c (rb_obj_comp): Documenting Object#<=> return values
+	  Patch by Stefan Rusterholz
+
 Sat Mar  9 22:35:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (file_s_fnmatch, fnmatch_brace): encoding-incompatible pattern
