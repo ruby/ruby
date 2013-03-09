@@ -2055,14 +2055,14 @@ class TestArray < Test::Unit::TestCase
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
     gen0 = proc do |max|
-      (max+1)/2
+      max/2
     end
     class << gen0
       alias rand call
     end
     gen1 = proc do |max|
       ary.replace([])
-      (max+1)/2
+      max/2
     end
     class << gen1
       alias rand call

@@ -1,3 +1,9 @@
+Sat Mar  9 23:55:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_random_ulong_limited): limit is inclusive, but generic
+	  rand method should return a number less than it, so increase for the
+	  difference.  [ruby-core:52779] [Bug #7935]
+
 Sat Mar  9 23:51:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rb_random_ulong_limited): fix error message for negative

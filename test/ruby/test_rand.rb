@@ -528,5 +528,13 @@ END
     def (gen = Object.new).rand(*) -1 end
     e = assert_raise(RangeError) {[1,2,3].sample(random: gen)}
     assert_match(/small -1\z/, e.message, bug7903)
+
+    bug7935 = '[ruby-core:52779] [Bug #7935]'
+    class << (gen = Object.new)
+      def rand(limit) @limit = limit; 0 end
+      attr_reader :limit
+    end
+    [1, 2].sample(1, random: gen)
+    assert_equal(2, gen.limit, bug7935)
   end
 end

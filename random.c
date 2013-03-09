@@ -942,13 +942,26 @@ rb_random_real(VALUE obj)
     return genrand_real(&rnd->mt);
 }
 
+static inline VALUE
+ulong_to_num_plus_1(unsigned long n)
+{
+#if HAVE_LONG_LONG
+    return ULL2NUM((LONG_LONG)n+1);
+#else
+    if (n >= ULONG_MAX) {
+	return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+    }
+    return ULONG2NUM(n+1);
+#endif
+}
+
 unsigned long
 rb_random_ulong_limited(VALUE obj, unsigned long limit)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	extern int rb_num_negative_p(VALUE);
-	VALUE lim = ULONG2NUM(limit);
+	VALUE lim = ulong_to_num_plus_1(limit);
 	VALUE v = rb_funcall2(obj, id_rand, 1, &lim);
 	unsigned long r = NUM2ULONG(v);
 	if (rb_num_negative_p(v)) {
