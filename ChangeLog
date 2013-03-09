@@ -1,3 +1,8 @@
+Sat Mar  9 11:58:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_extended): check for prepended object.
+	  [ruby-core:53206] [Bug #8043]
+
 Sat Mar  9 08:36:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (features_index_add_single, rb_feature_p): store single index
