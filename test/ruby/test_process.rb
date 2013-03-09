@@ -1380,15 +1380,15 @@ class TestProcess < Test::Unit::TestCase
 
   def test_spawn_too_long_path
     bug4314 = '[ruby-core:34842]'
-    assert_fail_too_long_path(bug4314)
+    assert_fail_too_long_path("a", bug4314)
   end
 
   def test_aspawn_too_long_path
     bug4315 = '[ruby-core:34833]'
-    assert_fail_too_long_path(bug4315)
+    assert_fail_too_long_path("a|", bug4315)
   end
 
-  def assert_fail_too_long_path(cmd, mesg = nil)
+  def assert_fail_too_long_path(cmd, mesg)
     size = 1_000_000 / cmd.size
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
