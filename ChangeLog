@@ -1,3 +1,10 @@
+Sat Mar  9 21:45:38 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/globals.rdoc:  Document what setting $VERBOSE does.  [Bug #7899]
+
+	* doc/globals.rdoc:  Added pointer to $-w and $-v for full
+	  documentation.
+
 Sat Mar  9 21:29:45 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* signal.c (ruby_abort): fix typo in r39354 [Bug #5014]
