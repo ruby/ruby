@@ -1036,7 +1036,7 @@ rb_group_member(GETGROUPS_T gid)
     while (groups <= RB_MAX_GROUPS) {
 	gary = ALLOCV_N(GETGROUPS_T, v, groups);
 	anum = getgroups(groups, gary);
-	if (anum != groups)
+	if (anum != -1 && anum != groups)
 	    break;
 	groups *= 2;
 	if (v) {
@@ -1044,6 +1044,8 @@ rb_group_member(GETGROUPS_T gid)
 	    v = 0;
 	}
     }
+    if (anum == -1)
+	return FALSE;
 
     while (--anum >= 0) {
 	if (gary[anum] == gid) {
