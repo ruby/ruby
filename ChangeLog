@@ -1,3 +1,8 @@
+Sat Mar  9 22:07:53 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
+	  fix a typo in comment in r39384.
+
 Sat Mar  9 21:52:19 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* numeric.c: Examples and formatting for Numeric and Float
