@@ -1,3 +1,8 @@
+Sun Mar 10 09:12:51 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: described syntax of string form.
+	* rational.c: ditto.
+
 Sat Mar  9 11:58:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_extended): check for prepended object.
