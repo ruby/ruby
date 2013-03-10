@@ -1,3 +1,11 @@
+Wed Mar  6 21:31:35 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (timer_thread_sleep): use poll() instead of
+	  select(). select doesn't work if timer_thread_pipe[0] is
+	  greater than FD_SETSIZE.
+	* thread_pthread.c (USE_SLEEPY_TIMER_THREAD): add a dependency
+	  against poll.
+
 Wed Mar  6 21:00:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (USE_SLEEPY_TIMER_THREAD): use more accurate
