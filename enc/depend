@@ -10,6 +10,8 @@
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
 % transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "%s") % ""
+% CONFIG['ARFLAGS'] = 'rcu ' if (CONFIG['ARFLAGS'] || "").empty?
+% CONFIG['RANLIB'] = ':' if (CONFIG['RANLIB'] || "").empty?
 % if File::ALT_SEPARATOR
 %   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else
@@ -63,12 +65,12 @@ libtrans: $(LIBTRANS)
 $(LIBENC): $(ENCOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked encoding library $@
-	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(ENCOBJS)
+	$(Q) $(AR) $(ARFLAGS)$@ $(ENCOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 $(LIBTRANS): $(TRANSOBJS)
 	@$(RM) $@
 	$(ECHO) linking statically-linked transcoder library $@
-	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(TRANSOBJS)
+	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 
 srcs: $(TRANSCSRCS)

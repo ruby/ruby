@@ -1,3 +1,11 @@
+Mon Mar 11 00:54:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (ARFLAGS): VisualC++ linker does not allow spaces between
+	  output option and the output file name.  [Bug #7950]
+
+	* enc/depend (RANLIB): set default command to do nothing, or make the
+	  entire line a label on Windows.
+
 Mon Mar 11 00:50:21 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* thread.c: Document Thread::new, clean up ::fork and mention calling
