@@ -1,3 +1,17 @@
+Sun Mar 10 23:27:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  it is impossible to predict which file will be installed to where,
+	  by the arguments, so use intermediate destination directory always.
+	  [Bug #7698]
+
+Sun Mar 10 23:27:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  it is impossible to predict which file will be installed to where,
+	  by the arguments, so use intermediate destination directory always.
+	  [Bug #7698]
+
 Sun Mar 10 17:00:22 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: edited rdoc.
