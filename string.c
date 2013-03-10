@@ -4122,9 +4122,28 @@ str_byte_substr(VALUE str, long beg, long len)
     }
     else {
 	str2 = rb_str_new5(str, p, len);
-	rb_enc_cr_str_copy_for_substr(str2, str);
-	OBJ_INFECT(str2, str);
     }
+
+    str_enc_copy(str2, str);
+
+    if (RSTRING_LEN(str2) == 0) {
+	if (!rb_enc_asciicompat(STR_ENC_GET(str)))
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
+	else
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+    }
+    else {
+	switch (ENC_CODERANGE(str)) {
+	  case ENC_CODERANGE_7BIT:
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+	    break;
+	  default:
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_UNKNOWN);
+	    break;
+	}
+    }
+
+    OBJ_INFECT(str2, str);
 
     return str2;
 }

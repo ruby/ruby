@@ -1,3 +1,8 @@
+Mon Mar 11 01:04:54 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_byte_substr): don't set coderange if it's not known.
+	  [Bug #7954] [ruby-dev:47108]
+
 Mon Mar 11 00:58:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (realclean-local): miniprelude.c is made by srcs, so it
