@@ -151,15 +151,15 @@ provider ruby {
   probe string__create(long length, const char *filename, int lineno);
 
   /*
-     ruby:::symbol-create(string, filename, lineno);
+     ruby:::symbol-create(str, filename, lineno);
 
      This probe is fired when a Symbol is about to be allocated.
 
-      * `string` the contents of the symbol (string)
+      * `str` the contents of the symbol (string)
       * `filename` the name of the file where the string is allocated (string)
       * `lineno` the line number in the file where the string is allocated (int)
   */
-  probe symbol__create(const char *string, const char *filename, int lineno);
+  probe symbol__create(const char *str, const char *filename, int lineno);
 
   /*
      ruby:::parse-begin(sourcefile, lineno);

@@ -1,3 +1,8 @@
+Wed Mar  6 03:27:43 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* probes.d (symbol-create): change argument name `string' to
+	  `str'. `string' is a keyword for systemtap.
+
 Tue Mar  5 22:23:01 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* probes.d: added argument name
