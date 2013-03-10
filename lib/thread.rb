@@ -165,6 +165,7 @@ class Queue
         @que.push obj
         @cond.signal
       end
+      self
     end
   end
 
@@ -228,6 +229,7 @@ class Queue
   #
   def clear
     @que.clear
+    self
   end
 
   #
@@ -315,6 +317,7 @@ class SizedQueue < Queue
         @que.push obj
         @cond.signal
       end
+      self
     end
   end
 

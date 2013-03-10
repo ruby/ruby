@@ -108,4 +108,29 @@ class TestQueue < Test::Unit::TestCase
       end
     }
   end
+
+  def test_queue_push_return_value
+    q = Queue.new
+    retval = q.push(1)
+    assert_same q, retval
+  end 
+
+  def test_queue_clear_return_value
+    q = Queue.new
+    retval = q.clear
+    assert_same q, retval
+  end
+
+  def test_sized_queue_push_return_value
+    q = SizedQueue.new(1)
+    retval = q.push(1)
+    assert_same q, retval
+  end
+
+  def test_sized_queue_clear_return_value
+    q = SizedQueue.new(1)
+    retval = q.clear
+    assert_same q, retval
+  end
+
 end

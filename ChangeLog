@@ -1,3 +1,10 @@
+Thu Mar  7 10:42:28 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (Queue#push): return self.
+	* lib/thread.rb (Queue#clear): ditto.
+	* lib/thread.rb (SizedQueue#push): ditto.
+	* test/thread/test_queue.rb: add tests for the above.
+
 Thu Mar  7 10:40:49 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/change_maker.rb (#diff2index): check Encoding::BINARY.
