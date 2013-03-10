@@ -1,3 +1,7 @@
+Wed Mar  6 00:30:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* tool/gen_ruby_tapset.rb: add tapset generator.
+
 Wed Mar  6 03:27:43 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* probes.d (symbol-create): change argument name `string' to
