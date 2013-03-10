@@ -1,3 +1,8 @@
+Thu Mar  7 10:40:49 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* tool/change_maker.rb (#diff2index): check Encoding::BINARY.
+	  BASERUBY may still be 1.8.x.
+
 Thu Mar  7 08:47:42 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* NEWS (Mutex#owned?): no longer experimental.
