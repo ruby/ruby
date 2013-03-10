@@ -19,6 +19,7 @@
 #include "id.h"
 #include <ctype.h>
 #include <errno.h>
+#include "ruby_atomic.h"
 
 #define free(x) xfree(x)
 
@@ -158,10 +159,14 @@ void
 rb_update_max_fd(int fd)
 {
     struct stat buf;
+
     if (fstat(fd, &buf) != 0 && errno == EBADF) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }
-    if (max_file_descriptor < fd) max_file_descriptor = fd;
+
+    while (max_file_descriptor < fd) {
+	ATOMIC_CAS(max_file_descriptor, max_file_descriptor, fd);
+    }
 }
 
 void

@@ -1,3 +1,8 @@
+Thu Mar  7 00:14:51 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_update_max_fd): use ATOMIC_CAS because this function
+	  is used from timer thread too.
+
 Wed Mar  6 23:30:21 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (ARRAY_SIZE): new.
