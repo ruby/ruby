@@ -53,12 +53,12 @@ static pthread_t timer_thread_id;
 #define USE_MONOTONIC_COND 0
 #endif
 
-#ifdef __native_client__
-/* Doesn't have select(1). */
-# define USE_SLEEPY_TIMER_THREAD 0
-#else
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK) && !defined(__native_client__)
 /* The timer thread sleeps while only one Ruby thread is running. */
 # define USE_SLEEPY_TIMER_THREAD 1
+#else
+/* Doesn't have select(1). */
+# define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
 static void
