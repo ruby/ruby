@@ -13,6 +13,11 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 === Core classes updates (outstanding ones only)
+
+* Mutex
+  * misc
+    * Mutex#owned? is no longer experimental.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * Module#ancestors
