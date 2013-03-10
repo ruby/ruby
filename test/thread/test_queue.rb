@@ -85,7 +85,7 @@ class TestQueue < Test::Unit::TestCase
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
       timeout = 30
-      total_count = 2000
+      total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
           require "thread"
@@ -98,7 +98,8 @@ class TestQueue < Test::Unit::TestCase
               r.read 1
             }
             queue.pop
-            th.kill.join
+            th.kill
+            th.join
           end
         _eom
       rescue Timeout::Error
