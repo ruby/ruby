@@ -1,3 +1,8 @@
+Wed Mar  6 22:56:14 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (ubf_select): add to small comments why we
+	  need to call rb_thread_wakeup_timer_thread().
+
 Wed Mar  6 21:42:24 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): factor out

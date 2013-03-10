@@ -1098,8 +1098,16 @@ ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     add_signal_thread_list(th);
+
+    /*
+     * ubf_select_each() doesn't guarantee to wake up the target thread.
+     * Therefore, we need to activate timer thread when called from
+     * Thread#kill etc.
+     * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
+     * if running on timer thread because it may make endless wakeups.
+     */
     if (pthread_self() != timer_thread_id)
-	rb_thread_wakeup_timer_thread(); /* activate timer thread */
+	rb_thread_wakeup_timer_thread();
     ubf_select_each(th);
 }
 
