@@ -1186,13 +1186,20 @@ consume_communication_pipe(void)
     static char buff[CCP_READ_BUFF_SIZE];
     ssize_t result;
 
-  retry:
-    result = read(timer_thread_pipe[0], buff, CCP_READ_BUFF_SIZE);
-    if (result < 0) {
-	switch (errno) {
-	  case EINTR: goto retry;
-	  default:
-	    rb_async_bug_errno("consume_communication_pipe: read\n", errno);
+    while (1) {
+	result = read(timer_thread_pipe[0], buff, sizeof(buff));
+	if (result == 0) {
+	    return;
+	}
+	else if (result < 0) {
+	    switch (errno) {
+	    case EINTR:
+		continue; /* retry */
+	    case EAGAIN:
+		return;
+	    default:
+		rb_async_bug_errno("consume_communication_pipe: read\n", errno);
+	    }
 	}
     }
 }

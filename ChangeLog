@@ -1,3 +1,8 @@
+Sun Mar  3 02:42:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (consume_communication_pipe): retry when
+	  read returned CCP_READ_BUFF_SIZE.
+
 Wed Mar  6 21:31:35 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (timer_thread_sleep): use poll() instead of
