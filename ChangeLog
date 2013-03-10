@@ -1,3 +1,15 @@
+Wed Mar  6 22:36:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (rb_thread_wakeup_timer_thread_fd): add fd
+	  argument and remove hardcoded dependency of timer_thread_pipe[1].
+	* thread_pthread.c (consume_communication_pipe): add fd argument.
+	* thread_pthread.c (close_communication_pipe): ditto.
+
+	* thread_pthread.c (timer_thread_sleep): adjust the above changes.
+
+	* thread_pthread.c (setup_communication_pipe_internal): factor
+	  out pipe initialize logic.
+
 Wed Mar  6 22:56:14 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (ubf_select): add to small comments why we

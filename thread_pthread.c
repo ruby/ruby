@@ -1155,10 +1155,9 @@ static int check_signal_thread_list(void) { return 0; }
 static int timer_thread_pipe[2] = {-1, -1};
 static int timer_thread_pipe_owner_process;
 
-
 /* only use signal-safe system calls here */
-void
-rb_thread_wakeup_timer_thread(void)
+static void
+rb_thread_wakeup_timer_thread_fd(int fd)
 {
     ssize_t result;
 
@@ -1166,7 +1165,7 @@ rb_thread_wakeup_timer_thread(void)
     if (timer_thread_pipe_owner_process == getpid()) {
 	const char *buff = "!";
       retry:
-	if ((result = write(timer_thread_pipe[1], buff, 1)) <= 0) {
+	if ((result = write(fd, buff, 1)) <= 0) {
 	    switch (errno) {
 	      case EINTR: goto retry;
 	      case EAGAIN:
@@ -1185,9 +1184,15 @@ rb_thread_wakeup_timer_thread(void)
     }
 }
 
+void
+rb_thread_wakeup_timer_thread(void)
+{
+    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe[1]);
+}
+
 /* VM-dependent API is not available for this function */
 static void
-consume_communication_pipe(void)
+consume_communication_pipe(int fd)
 {
 #define CCP_READ_BUFF_SIZE 1024
     /* buffer can be shared because no one refers to them. */
@@ -1195,7 +1200,7 @@ consume_communication_pipe(void)
     ssize_t result;
 
     while (1) {
-	result = read(timer_thread_pipe[0], buff, sizeof(buff));
+	result = read(fd, buff, sizeof(buff));
 	if (result == 0) {
 	    return;
 	}
@@ -1213,15 +1218,15 @@ consume_communication_pipe(void)
 }
 
 static void
-close_communication_pipe(void)
+close_communication_pipe(int pipes[2])
 {
-    if (close(timer_thread_pipe[0]) < 0) {
+    if (close(pipes[0]) < 0) {
 	rb_bug_errno("native_stop_timer_thread - close(ttp[0])", errno);
     }
-    if (close(timer_thread_pipe[1]) < 0) {
+    if (close(pipes[1]) < 0) {
 	rb_bug_errno("native_stop_timer_thread - close(ttp[1])", errno);
     }
-    timer_thread_pipe[0] = timer_thread_pipe[1] = -1;
+    pipes[0] = pipes[1] = -1;
 }
 
 #if USE_SLEEPY_TIMER_THREAD
@@ -1241,34 +1246,43 @@ set_nonblock(int fd)
 }
 #endif
 
+#if USE_SLEEPY_TIMER_THREAD
+static void
+setup_communication_pipe_internal(int pipes[2])
+{
+    int err;
+
+    if (pipes[0] != -1) {
+	/* close pipe of parent process */
+	close_communication_pipe(pipes);
+    }
+
+    err = rb_cloexec_pipe(pipes);
+    if (err != 0) {
+	rb_bug_errno("setup_communication_pipe: Failed to create communication pipe for timer thread", errno);
+    }
+    rb_update_max_fd(pipes[0]);
+    rb_update_max_fd(pipes[1]);
+    set_nonblock(pipes[0]);
+    set_nonblock(pipes[1]);
+}
+#endif /* USE_SLEEPY_TIMER_THREAD */
+
+/* communication pipe with timer thread and signal handler */
 static void
 setup_communication_pipe(void)
 {
 #if USE_SLEEPY_TIMER_THREAD
-    int err;
-
-    /* communication pipe with timer thread and signal handler */
-    if (timer_thread_pipe_owner_process != getpid()) {
-	if (timer_thread_pipe[0] != -1) {
-	    /* close pipe of parent process */
-	    close_communication_pipe();
-	}
-
-	err = rb_cloexec_pipe(timer_thread_pipe);
-	if (err != 0) {
-	    rb_bug_errno("setup_communication_pipe: Failed to create communication pipe for timer thread", errno);
-	}
-	rb_update_max_fd(timer_thread_pipe[0]);
-	rb_update_max_fd(timer_thread_pipe[1]);
-	set_nonblock(timer_thread_pipe[0]);
-	set_nonblock(timer_thread_pipe[1]);
-
-	/* validate pipe on this process */
-	timer_thread_pipe_owner_process = getpid();
+    if (timer_thread_pipe_owner_process == getpid()) {
+	/* already set up. */
+	return;
     }
+    setup_communication_pipe_internal(timer_thread_pipe);
+
+    /* validate pipe on this process */
+    timer_thread_pipe_owner_process = getpid();
 #endif /* USE_SLEEPY_TIMER_THREAD */
 }
-
 
 /**
  * Let the timer thread sleep a while.
@@ -1301,7 +1315,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 	/* maybe timeout */
     }
     else if (result > 0) {
-	consume_communication_pipe();
+	consume_communication_pipe(timer_thread_pipe[0]);
     }
     else { /* result < 0 */
 	switch (errno) {
