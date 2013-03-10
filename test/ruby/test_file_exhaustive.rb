@@ -502,6 +502,18 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  def test_expand_path_home_dir_string
+    home = ENV["HOME"]
+    new_home = "#{DRIVE}/UserHome"
+    ENV["HOME"] = new_home
+    bug8034 = "[ruby-core:53168]"
+
+    assert_equal File.join(new_home, "foo"), File.expand_path("foo", "~")
+    assert_equal File.join(new_home, "bar", "foo"), File.expand_path("foo", "~/bar")
+  ensure
+    ENV["HOME"] = home
+  end if DRIVE
+
   def test_expand_path_remove_trailing_alternative_data
     assert_equal File.join(@rootdir, "aaa"), File.expand_path("#{@rootdir}/aaa::$DATA")
     assert_equal File.join(@rootdir, "aa:a"), File.expand_path("#{@rootdir}/aa:a:$DATA")

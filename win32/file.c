@@ -323,7 +323,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size_t size = 0, wpath_len = 0, wdir_len = 0, whome_len = 0;
     size_t buffer_len = 0;
     char *fullpath = NULL;
-    wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL, *wdir = NULL;
+    wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
+    wchar_t *wdir = NULL, *wdir_pos = NULL;
     wchar_t *whome = NULL, *buffer = NULL, *buffer_pos = NULL;
     UINT path_cp, cp;
     VALUE path = fname, dir = dname;
@@ -442,9 +443,38 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 
 	/* convert char * to wchar_t */
-	convert_mb_to_wchar(dir, &wdir, NULL, &wdir_len, cp);
+	convert_mb_to_wchar(dir, &wdir, &wdir_pos, &wdir_len, cp);
 
-	if (wdir_len >= 2 && wdir[1] == L':') {
+	if (abs_mode == 0 && wdir_len > 0 && wdir_pos[0] == L'~' &&
+	    (wdir_len == 1 || IS_DIR_SEPARATOR_P(wdir_pos[1]))) {
+	    /* tainted if expanding '~' */
+	    tainted = 1;
+
+	    whome = home_dir();
+	    if (whome == NULL) {
+		xfree(wpath);
+		xfree(wdir);
+		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+	    }
+	    whome_len = wcslen(whome);
+
+	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+		xfree(wpath);
+		xfree(wdir);
+		rb_raise(rb_eArgError, "non-absolute home");
+	    }
+
+	    /* exclude ~ from the result */
+	    wdir_pos++;
+	    wdir_len--;
+
+	    /* exclude separator if present */
+	    if (wdir_len && IS_DIR_SEPARATOR_P(wdir_pos[0])) {
+		wdir_pos++;
+		wdir_len--;
+	    }
+	}
+	else if (wdir_len >= 2 && wdir[1] == L':') {
 	    dir_drive = wdir[0];
 	    if (wpath_len && IS_DIR_SEPARATOR_P(wpath_pos[0])) {
 		wdir_len = 2;
@@ -515,7 +545,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	if (!tainted && OBJ_TAINTED(dir))
 	    tainted = 1;
 
-	wcsncpy(buffer_pos, wdir, wdir_len);
+	wcsncpy(buffer_pos, wdir_pos, wdir_len);
 	buffer_pos += wdir_len;
     }
 
