@@ -1,3 +1,8 @@
+Sun Mar 10 15:02:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (setup_communication_pipe): remove unused function.
+	  it was unintentionally added r39683.
+
 Wed Mar  6 00:30:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/gen_ruby_tapset.rb: add tapset generator.

@@ -1080,32 +1080,6 @@ before_exec_non_async_signal_safe(void)
 }
 
 static void
-setup_communication_pipe(void)
-{
-#if USE_SLEEPY_TIMER_THREAD
-	/* communication pipe with timer thread and signal handler */
-	if (timer_thread_pipe_owner_process != getpid()) {
-	    if (timer_thread_pipe[0] != -1) {
-		/* close pipe of parent process */
-		close_communication_pipe();
-	    }
-
-	    err = rb_cloexec_pipe(timer_thread_pipe);
-	    if (err != 0) {
-		rb_bug_errno("thread_timer: Failed to create communication pipe for timer thread", errno);
-	    }
-            rb_update_max_fd(timer_thread_pipe[0]);
-            rb_update_max_fd(timer_thread_pipe[1]);
-	    set_nonblock(timer_thread_pipe[0]);
-	    set_nonblock(timer_thread_pipe[1]);
-
-	    /* validate pipe on this process */
-	    timer_thread_pipe_owner_process = getpid();
-	}
-#endif /* USE_SLEEPY_TIMER_THREAD */
-}
-
-static void
 before_exec(void)
 {
     before_exec_non_async_signal_safe();
