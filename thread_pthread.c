@@ -1216,6 +1216,52 @@ close_communication_pipe(void)
     timer_thread_pipe[0] = timer_thread_pipe[1] = -1;
 }
 
+#if USE_SLEEPY_TIMER_THREAD
+static void
+set_nonblock(int fd)
+{
+    int oflags;
+    int err;
+
+    oflags = fcntl(fd, F_GETFL);
+    if (oflags == -1)
+	rb_sys_fail(0);
+    oflags |= O_NONBLOCK;
+    err = fcntl(fd, F_SETFL, oflags);
+    if (err == -1)
+	rb_sys_fail(0);
+}
+#endif
+
+static void
+setup_communication_pipe(void)
+{
+#if USE_SLEEPY_TIMER_THREAD
+    int err;
+
+    /* communication pipe with timer thread and signal handler */
+    if (timer_thread_pipe_owner_process != getpid()) {
+	if (timer_thread_pipe[0] != -1) {
+	    /* close pipe of parent process */
+	    close_communication_pipe();
+	}
+
+	err = rb_cloexec_pipe(timer_thread_pipe);
+	if (err != 0) {
+	    rb_bug_errno("setup_communication_pipe: Failed to create communication pipe for timer thread", errno);
+	}
+	rb_update_max_fd(timer_thread_pipe[0]);
+	rb_update_max_fd(timer_thread_pipe[1]);
+	set_nonblock(timer_thread_pipe[0]);
+	set_nonblock(timer_thread_pipe[1]);
+
+	/* validate pipe on this process */
+	timer_thread_pipe_owner_process = getpid();
+    }
+#endif /* USE_SLEEPY_TIMER_THREAD */
+}
+
+
 /**
  * Let the timer thread sleep a while.
  *
@@ -1319,23 +1365,6 @@ thread_timer(void *p)
 }
 
 static void
-set_nonblock(int fd)
-{
-#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
-    int oflags;
-    int err;
-
-    oflags = fcntl(fd, F_GETFL);
-    if (oflags == -1)
-	rb_sys_fail(0);
-    oflags |= O_NONBLOCK;
-    err = fcntl(fd, F_SETFL, oflags);
-    if (err == -1)
-	rb_sys_fail(0);
-#endif
-}
-
-static void
 rb_thread_create_timer_thread(void)
 {
     if (!timer_thread_id) {
@@ -1364,27 +1393,7 @@ rb_thread_create_timer_thread(void)
 # endif
 #endif
 
-#if USE_SLEEPY_TIMER_THREAD
-	/* communication pipe with timer thread and signal handler */
-	if (timer_thread_pipe_owner_process != getpid()) {
-	    if (timer_thread_pipe[0] != -1) {
-		/* close pipe of parent process */
-		close_communication_pipe();
-	    }
-
-	    err = rb_cloexec_pipe(timer_thread_pipe);
-	    if (err != 0) {
-		rb_bug_errno("thread_timer: Failed to create communication pipe for timer thread", errno);
-	    }
-            rb_update_max_fd(timer_thread_pipe[0]);
-            rb_update_max_fd(timer_thread_pipe[1]);
-	    set_nonblock(timer_thread_pipe[0]);
-	    set_nonblock(timer_thread_pipe[1]);
-
-	    /* validate pipe on this process */
-	    timer_thread_pipe_owner_process = getpid();
-	}
-#endif /* USE_SLEEPY_TIMER_THREAD */
+	setup_communication_pipe();
 
 	/* create timer thread */
 	if (timer_thread_id) {

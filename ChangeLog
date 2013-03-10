@@ -1,3 +1,11 @@
+Wed Mar  6 21:42:24 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): factor out
+	  creating communication pipe logic into separate function.
+	* thread_pthread.c (setup_communication_pipe): new helper function.
+	* thread_pthread.c (set_nonblock): moves a definition before
+	  setup_communication_pipe.
+
 Sun Mar  3 02:42:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (consume_communication_pipe): retry when
