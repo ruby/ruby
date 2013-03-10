@@ -44,6 +44,7 @@ static void native_cond_broadcast(rb_thread_cond_t *cond);
 static void native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(rb_thread_cond_t *cond, int flags);
 static void native_cond_destroy(rb_thread_cond_t *cond);
+static void rb_thread_wakeup_timer_thread_low(void);
 static pthread_t timer_thread_id;
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
@@ -63,6 +64,10 @@ static pthread_t timer_thread_id;
 # define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 static void
 gvl_acquire_common(rb_vm_t *vm)
 {
@@ -70,8 +75,12 @@ gvl_acquire_common(rb_vm_t *vm)
 
 	vm->gvl.waiting++;
 	if (vm->gvl.waiting == 1) {
-	    /* transit to polling mode */
-	    rb_thread_wakeup_timer_thread();
+	    /*
+	     * Wake up timer thread iff timer thread is slept.
+	     * When timer thread is polling mode, we don't want to
+	     * make confusing timer thread interval time.
+	     */
+	    rb_thread_wakeup_timer_thread_low();
 	}
 
 	while (vm->gvl.acquired) {
@@ -1153,6 +1162,7 @@ static int check_signal_thread_list(void) { return 0; }
 
 #if USE_SLEEPY_TIMER_THREAD
 static int timer_thread_pipe[2] = {-1, -1};
+static int timer_thread_pipe_low[2] = {-1, -1}; /* low priority */
 static int timer_thread_pipe_owner_process;
 
 /* only use signal-safe system calls here */
@@ -1188,6 +1198,12 @@ void
 rb_thread_wakeup_timer_thread(void)
 {
     rb_thread_wakeup_timer_thread_fd(timer_thread_pipe[1]);
+}
+
+static void
+rb_thread_wakeup_timer_thread_low(void)
+{
+    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe_low[1]);
 }
 
 /* VM-dependent API is not available for this function */
@@ -1278,6 +1294,7 @@ setup_communication_pipe(void)
 	return;
     }
     setup_communication_pipe_internal(timer_thread_pipe);
+    setup_communication_pipe_internal(timer_thread_pipe_low);
 
     /* validate pipe on this process */
     timer_thread_pipe_owner_process = getpid();
@@ -1295,20 +1312,22 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 {
     int result;
     int need_polling;
-    struct pollfd pollfd;
+    struct pollfd pollfds[2];
 
-    pollfd.fd = timer_thread_pipe[0];
-    pollfd.events = POLLIN;
+    pollfds[0].fd = timer_thread_pipe[0];
+    pollfds[0].events = POLLIN;
+    pollfds[1].fd = timer_thread_pipe_low[0];
+    pollfds[1].events = POLLIN;
 
     need_polling = check_signal_thread_list();
 
     if (gvl->waiting > 0 || need_polling) {
 	/* polling (TIME_QUANTUM_USEC usec) */
-	result = poll(&pollfd, 1, TIME_QUANTUM_USEC/1000);
+	result = poll(pollfds, 1, TIME_QUANTUM_USEC/1000);
     }
     else {
 	/* wait (infinite) */
-	result = poll(&pollfd, 1, -1);
+	result = poll(pollfds, ARRAY_SIZE(pollfds), -1);
     }
 
     if (result == 0) {
@@ -1316,6 +1335,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     }
     else if (result > 0) {
 	consume_communication_pipe(timer_thread_pipe[0]);
+	consume_communication_pipe(timer_thread_pipe_low[0]);
     }
     else { /* result < 0 */
 	switch (errno) {
@@ -1510,8 +1530,10 @@ int
 rb_reserved_fd_p(int fd)
 {
 #if USE_SLEEPY_TIMER_THREAD
-    if (fd == timer_thread_pipe[0] ||
-	fd == timer_thread_pipe[1]) {
+    if (fd == timer_thread_pipe[0]     ||
+	fd == timer_thread_pipe[1]     ||
+	fd == timer_thread_pipe_low[0] ||
+	fd == timer_thread_pipe_low[1]) {
 	return 1;
     }
     else {

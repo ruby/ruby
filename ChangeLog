@@ -1,3 +1,14 @@
+Wed Mar  6 23:30:21 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (ARRAY_SIZE): new.
+	* thread_pthread.c (gvl_acquire_common): use low priority
+	  notification for avoiding timer thread interval confusion.
+	  If we use timer_thread_pipe[1], every gvl_yield() request
+	  one more gvl_yield(). It lead to thread starvation.
+	  [Bug #7999] [ruby-core:53095]
+	* thread_pthread.c (rb_reserved_fd_p): adds timer_thread_pipe_low
+	  to reserved fds.
+
 Wed Mar  6 22:36:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (rb_thread_wakeup_timer_thread_fd): add fd
