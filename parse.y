@@ -6760,7 +6760,7 @@ parser_prepare(struct parser_params *parser)
 #define IS_END() IS_lex_state(EXPR_END_ANY)
 #define IS_BEG() IS_lex_state(EXPR_BEG_ANY)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
-#define IS_LABEL_POSSIBLE() ((IS_lex_state(EXPR_BEG) && !cmd_state) || IS_ARG())
+#define IS_LABEL_POSSIBLE() ((IS_lex_state(EXPR_BEG | EXPR_ENDFN) && !cmd_state) || IS_ARG())
 #define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
 #define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
 

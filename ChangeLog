@@ -1,3 +1,9 @@
+Mon Mar 11 01:12:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (IS_LABEL_POSSIBLE): allow labels for keyword arguments just
+	  after method definition without a parenthesis.  [ruby-core:52820]
+	  [Bug #7942]
+
 Mon Mar 11 01:09:23 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* error.c: clarify reason for sleep in SignalException example
