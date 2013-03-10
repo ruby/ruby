@@ -454,7 +454,7 @@ clean-docs: clean-rdoc clean-capi
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
 distclean-local:: clean-local
 	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc
-	$(Q)$(RM) config.cache config.status config.status.lineno $(PRELUDES)
+	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
 distclean-golf: clean-golf
@@ -466,7 +466,7 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h
+	$(Q)$(RM) parse.c parse.h lex.c newline.c miniprelude.c revision.h
 realclean-ext::
 realclean-golf: distclean-golf
 realclean-capi: PHONY
