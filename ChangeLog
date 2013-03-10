@@ -1,3 +1,8 @@
+Sun Mar 10 17:00:22 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: edited rdoc.
+	* rational.c: ditto.
+
 Sun Mar 10 15:02:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (setup_communication_pipe): remove unused function.
