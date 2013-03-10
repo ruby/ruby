@@ -1,7 +1,8 @@
 Thu Mar  7 10:42:28 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* lib/thread.rb (Queue#push): return self.
-	* lib/thread.rb (Queue#clear): ditto.
+	* lib/thread.rb (Queue#clear): return self.
+	  Patch by Cubing Cube. Thank you! [Bug #7947] [ruby-dev:47098]
+	* lib/thread.rb (Queue#push): ditto.
 	* lib/thread.rb (SizedQueue#push): ditto.
 	* test/thread/test_queue.rb: add tests for the above.
 
