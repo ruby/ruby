@@ -1,3 +1,8 @@
+Mon Mar 11 01:16:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (unexpand_shvar): get rid of non-portable shell
+	  behavior on OpenBSD, so no extra quotes.  [Bug #7959]
+
 Mon Mar 11 01:12:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (IS_LABEL_POSSIBLE): allow labels for keyword arguments just

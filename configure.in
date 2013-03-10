@@ -3203,19 +3203,18 @@ shvar_to_cpp() {
 }
 
 unexpand_shvar() {
-    local var=$1 val n v expr quote
+    local var=$1 val n v expr
     shift
     test "$#" -eq 0 && return
-    quote=['s/${[^${}"]*}/"&"/g']
     for n do
         eval v='"$'$n'"'
-	v="`echo \"$v\" | sed -e \"$quote\" -e ['s/[][$|.\\?*]/\\\\&/g']`"
+	v="`echo \"$v\" | sed -e ['s/${[^${}"]*}/"&"/g'] -e ['s/[][$|.\\?*]/\\\\&/g']`"
 	if test -n "$v"; then
 	    expr=["${expr};s|"'\("[^$"]*\)'"$v|\\1\${$n}\"|g"]
 	    AS_CASE(["$v"], [*'${'*'}'*], [expr=["$expr;s|$v|\"\${$n}\"|g"]])
 	fi
     done
-    expr=["${quote}${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
+    expr=['s/${[^${}"]*}/"&"/g;'"${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
     eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"\\\"//g;s/^\\\"//;s/\\\"\\\$//\"`"'
 }
 
