@@ -11,14 +11,14 @@ provider ruby {
      * `filename` the file name where the method is _being called_ (a string)
      * `lineno` the line number where the method is _being called_ (an int)
   */
-  probe method__entry(const char *, const char *, const char *, int);
+  probe method__entry(const char *classname, const char *methodname, const char *filename, int lineno);
   /*
      ruby:::method-return(classname, methodname, filename, lineno);
 
      This probe is fired just after a method has returned. The arguments are
      the same as "ruby:::function-entry".
   */
-  probe method__return(const char *, const char *, const char *, int);
+  probe method__return(const char *classname, const char *methodname, const char *filename, int lineno);
 
   /*
      ruby:::cmethod-entry(classname, methodname, filename, lineno);
@@ -26,14 +26,14 @@ provider ruby {
      This probe is fired just before a C method is entered. The arguments are
      the same as "ruby:::function-entry".
   */
-  probe cmethod__entry(const char *, const char *, const char *, int);
+  probe cmethod__entry(const char *classname, const char *methodname, const char *filename, int lineno);
   /*
      ruby:::cmethod-return(classname, methodname, filename, lineno);
 
      This probe is fired just before a C method returns. The arguments are
      the same as "ruby:::function-entry".
   */
-  probe cmethod__return(const char *, const char *, const char *, int);
+  probe cmethod__return(const char *classname, const char *methodname, const char *filename, int lineno);
 
   /*
      ruby:::require-entry(requiredfile, filename, lineno);
@@ -45,7 +45,7 @@ provider ruby {
      * `filename` is the file that called "require" (string).
      * `lineno` is the line number where the call to require was made (int).
   */
-  probe require__entry(const char *, const char *, int);
+  probe require__entry(const char *rquiredfile, const char *filename, int lineno);
 
   /*
      ruby:::require-return(requiredfile, filename, lineno);
@@ -54,7 +54,7 @@ provider ruby {
      returns.  The arguments are the same as "ruby:::require-entry".  This
      probe will not fire if there was an exception during file require.
   */
-  probe require__return(const char *, const char *, int);
+  probe require__return(const char *requiredfile, const char *filename, int lineno);
 
   /*
      ruby:::find-require-entry(requiredfile, filename, lineno);
@@ -68,7 +68,7 @@ provider ruby {
      * `filename` is the file that called "require" (string).
      * `lineno` is the line number where the call to require was made (int).
   */
-  probe find__require__entry(const char *, const char *, int);
+  probe find__require__entry(const char *requiredfile, const char *filename, int lineno);
 
   /*
      ruby:::find-require-return(requiredfile, filename, lineno);
@@ -77,7 +77,7 @@ provider ruby {
      documentation for "ruby:::find-require-entry" for more details.  Arguments
      for this probe are the same as "ruby:::find-require-entry".
   */
-  probe find__require__return(const char *, const char *, int);
+  probe find__require__return(const char *requiredfile, const char *filename, int lineno);
 
   /*
      ruby:::load-entry(loadedfile, filename, lineno);
@@ -85,7 +85,7 @@ provider ruby {
      This probe is fired when calls to "load" are made.  The arguments are the
      same as "ruby:::require-entry".
   */
-  probe load__entry(const char *, const char *, int);
+  probe load__entry(const char *loadedfile, const char *filename, int lineno);
 
   /*
      ruby:::load-return(loadedfile, filename, lineno);
@@ -93,7 +93,7 @@ provider ruby {
      This probe is fired when "load" returns.  The arguments are the same as
      "ruby:::load-entry".
   */
-  probe load__return(const char *, const char *, int);
+  probe load__return(const char *loadedfile, const char *filename, int lineno);
 
   /*
      ruby:::raise(classname, filename, lineno);
@@ -104,7 +104,7 @@ provider ruby {
      * `filename` the name of the file where the exception was raised (string)
      * `lineno` the line number in the file where the exception was raised (int)
   */
-  probe raise(const char *, const char *, int);
+  probe raise(const char *classname, const char *filename, int lineno);
 
   /*
      ruby:::object-create(classname, filename, lineno);
@@ -115,7 +115,7 @@ provider ruby {
       * `filename` the name of the file where the object is allocated (string)
       * `lineno` the line number in the file where the object is allocated (int)
   */
-  probe object__create(const char *, const char *, int);
+  probe object__create(const char *classname, const char *filename, int lineno);
 
   /*
      ruby:::array-create(length, filename, lineno);
@@ -126,7 +126,7 @@ provider ruby {
       * `filename` the name of the file where the array is allocated (string)
       * `lineno` the line number in the file where the array is allocated (int)
   */
-  probe array__create(long, const char *, int);
+  probe array__create(long length, const char *filename, int lineno);
 
   /*
      ruby:::hash-create(length, filename, lineno);
@@ -137,7 +137,7 @@ provider ruby {
       * `filename` the name of the file where the hash is allocated (string)
       * `lineno` the line number in the file where the hash is allocated (int)
   */
-  probe hash__create(long, const char *, int);
+  probe hash__create(long length, const char *filename, int lineno);
 
   /*
      ruby:::string-create(length, filename, lineno);
@@ -148,7 +148,7 @@ provider ruby {
       * `filename` the name of the file where the string is allocated (string)
       * `lineno` the line number in the file where the string is allocated (int)
   */
-  probe string__create(long, const char *, int);
+  probe string__create(long length, const char *filename, int lineno);
 
   /*
      ruby:::symbol-create(string, filename, lineno);
@@ -159,7 +159,7 @@ provider ruby {
       * `filename` the name of the file where the string is allocated (string)
       * `lineno` the line number in the file where the string is allocated (int)
   */
-  probe symbol__create(const char *, const char *, int);
+  probe symbol__create(const char *string, const char *filename, int lineno);
 
   /*
      ruby:::parse-begin(sourcefile, lineno);
@@ -169,7 +169,7 @@ provider ruby {
      * `sourcefile` the file being parsed (string)
      * `lineno` the line number where the source starts (int)
   */
-  probe parse__begin(const char *, int);
+  probe parse__begin(const char *sourcefile, int lineno);
 
   /*
      ruby:::parse-end(sourcefile, lineno);
@@ -179,11 +179,11 @@ provider ruby {
      * `sourcefile` the file being parsed (string)
      * `lineno` the line number where the source ended (int)
   */
-  probe parse__end(const char *, int);
+  probe parse__end(const char *sourcefile, int lineno);
 
 #if VM_COLLECT_USAGE_DETAILS
-  probe insn(const char *);
-  probe insn__operand(const char *, const char *);
+  probe insn(const char *insns_name);
+  probe insn__operand(const char *val, const char *insns_name);
 #endif
 
   /*
