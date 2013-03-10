@@ -1313,6 +1313,23 @@ thread_timer(void *p)
 }
 
 static void
+set_nonblock(int fd)
+{
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
+    int oflags;
+    int err;
+
+    oflags = fcntl(fd, F_GETFL);
+    if (oflags == -1)
+	rb_sys_fail(0);
+    oflags |= O_NONBLOCK;
+    err = fcntl(fd, F_SETFL, oflags);
+    if (err == -1)
+	rb_sys_fail(0);
+#endif
+}
+
+static void
 rb_thread_create_timer_thread(void)
 {
     if (!timer_thread_id) {
@@ -1355,20 +1372,8 @@ rb_thread_create_timer_thread(void)
 	    }
             rb_update_max_fd(timer_thread_pipe[0]);
             rb_update_max_fd(timer_thread_pipe[1]);
-# if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
-	    {
-		int oflags;
-		int err;
-
-		oflags = fcntl(timer_thread_pipe[1], F_GETFL);
-		if (oflags == -1)
-		    rb_sys_fail(0);
-		oflags |= O_NONBLOCK;
-		err = fcntl(timer_thread_pipe[1], F_SETFL, oflags);
-		if (err == -1)
-		    rb_sys_fail(0);
-	    }
-# endif /* defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) */
+	    set_nonblock(timer_thread_pipe[0]);
+	    set_nonblock(timer_thread_pipe[1]);
 
 	    /* validate pipe on this process */
 	    timer_thread_pipe_owner_process = getpid();

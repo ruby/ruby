@@ -1,3 +1,10 @@
+Sun Mar  3 02:30:36 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (set_nonblock): new helper function for set
+	  O_NONBLOCK.
+	* thread_pthread.c (rb_thread_create_timer_thread): set O_NONBLOCK
+	  to timer_thread_pipe[0] too.
+
 Sun Mar 10 09:12:51 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: described syntax of string form.
