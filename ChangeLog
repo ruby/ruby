@@ -1,3 +1,8 @@
+Mon Mar 11 00:50:21 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* thread.c: Document Thread::new, clean up ::fork and mention calling
+	  super if subclassing Thread
+
 Mon Mar 11 00:47:47 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (unexpand_shvar): Use the numeric comparison
