@@ -1,3 +1,16 @@
+Tue Mar 12 00:51:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (timer_thread_sleep): use poll() instead of
+	  select(). select doesn't work if timer_thread_pipe[0] is
+	  greater than FD_SETSIZE.
+	* thread_pthread.c (USE_SLEEPY_TIMER_THREAD): add a dependency
+	  against poll.
+
+Tue Mar 12 00:51:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (USE_SLEEPY_TIMER_THREAD): use more accurate
+	  ifdef condtions.
+
 Mon Mar 11 01:16:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (unexpand_shvar): get rid of non-portable shell

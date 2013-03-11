@@ -30,6 +30,9 @@
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/select.h"
 #endif
+#if HAVE_POLL
+#include <poll.h>
+#endif
 
 static void native_mutex_lock(pthread_mutex_t *lock);
 static void native_mutex_unlock(pthread_mutex_t *lock);
@@ -53,12 +56,11 @@ static pthread_t timer_thread_id;
 #define USE_MONOTONIC_COND 0
 #endif
 
-#ifdef __native_client__
-/* Doesn't have select(1). */
-# define USE_SLEEPY_TIMER_THREAD 0
-#else
+#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK) && !defined(__native_client__)
 /* The timer thread sleeps while only one Ruby thread is running. */
 # define USE_SLEEPY_TIMER_THREAD 1
+#else
+# define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
 static void
@@ -1218,23 +1220,20 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 {
     int result;
     int need_polling;
-    struct timeval timeout;
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(timer_thread_pipe[0], &rfds);
+    struct pollfd pollfd;
+
+    pollfd.fd = timer_thread_pipe[0];
+    pollfd.events = POLLIN;
 
     need_polling = check_signal_thread_list();
 
     if (gvl->waiting > 0 || need_polling) {
-	timeout.tv_sec = 0;
-	timeout.tv_usec = TIME_QUANTUM_USEC;
-
 	/* polling (TIME_QUANTUM_USEC usec) */
-	result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, &timeout);
+	result = poll(&pollfd, 1, TIME_QUANTUM_USEC/1000);
     }
     else {
 	/* wait (infinite) */
-	result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, 0);
+	result = poll(&pollfd, 1, -1);
     }
 
     if (result == 0) {
