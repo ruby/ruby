@@ -437,13 +437,18 @@ abort "#{deprecation_message}"
   end
 
   def remove_old_lib_files lib_dir
-    lib_files = rb_files_in 'lib'
+    rubygems_dir = File.join lib_dir, 'rubygems'
+    lib_files = rb_files_in 'lib/rubygems'
 
-    old_lib_files = rb_files_in lib_dir
+    old_lib_files = rb_files_in rubygems_dir
 
     to_remove = old_lib_files - lib_files
 
-    Dir.chdir lib_dir do
+    to_remove.delete_if do |file|
+      file.start_with? 'defaults'
+    end
+
+    Dir.chdir rubygems_dir do
       to_remove.each do |file|
         FileUtils.rm_f file
 
