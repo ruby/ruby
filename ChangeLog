@@ -1,3 +1,9 @@
+Mon Mar 11 12:25:12 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Merge Onigmo d4bad41e16e3eccd97ccce6f1f96712e557c4518.
+	  fix lookbehind assertion fails with /m mode enabled. [Bug #8023]
+	  fix \Z matches where it shouldn't. [Bug #8001]
+
 Mon Mar 11 11:53:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#dir_config, MakeMakefile#_libdir_basename):
