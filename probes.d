@@ -1,3 +1,4 @@
+/* -*- c -*- */
 #include "vm_opts.h"
 
 provider ruby {
