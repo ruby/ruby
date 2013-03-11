@@ -1,3 +1,15 @@
+Tue Mar 12 00:56:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/thread/test_queue.rb (TestQueue#test_thr_kill): reduce
+	  iterations from 2000 to 250. When running on uniprocessor
+	  systems, every th.kill needs TIME_QUANTUM_USEC time (i.e.
+	  100msec on posix systems). Because, "r.read 1" is 3 steps
+	  operations that 1) release GVL 2) read 3) acquire gvl and
+	  (1) invoke context switch to main thread. and then, main
+	  thread's th.kill resume (1), but not (2). Thus read interrupt
+	  need TIME_QUANTUM_USEC. Then maximum iteration is 30sec/100msec
+	  = 300.
+
 Tue Mar 12 00:53:34 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (setup_communication_pipe): remove unused function.
