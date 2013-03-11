@@ -494,6 +494,8 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
     if (NIL_P(memo))
 	memo = INT2FIX(0);
+    else
+	memo = rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)&memo);
 }
 
