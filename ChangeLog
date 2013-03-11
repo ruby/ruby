@@ -1,3 +1,12 @@
+Mon Mar 11 17:27:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil.with_default_external): add for
+	  changing Encoding.default_external without warnings.
+
+	* test/ruby/envutil.rb (EnvUtil.with_default_internal): ditto.
+
+	* test/ruby/test_io_m17n.rb: use above with_default_external.
+
 Mon Mar 11 16:57:00 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (extract_binmode): raise error even if binmode and textmode

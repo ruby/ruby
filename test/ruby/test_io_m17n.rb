@@ -479,14 +479,13 @@ EOT
     with_tmpdir {
       src = "\u3042"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(true, s.valid_encoding?)
-        assert_equal("\u3042", s)
-      }
-      Encoding.default_external = defext
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(true, s.valid_encoding?)
+          assert_equal("\u3042", s)
+        }
+      end
     }
   end
 
@@ -494,17 +493,16 @@ EOT
     with_tmpdir {
       src = "\xE3\x81"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\xE3".force_encoding("UTF-8"), s)
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\x81".force_encoding("UTF-8"), s)
-      }
-      Encoding.default_external = defext
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\xE3".force_encoding("UTF-8"), s)
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\x81".force_encoding("UTF-8"), s)
+        }
+      end
     }
   end
 
@@ -1681,7 +1679,7 @@ EOT
     u16 = "\x85\x35\0\r\x00\xa2\0\r\0\n\0\n".force_encoding("utf-16be")
     i = "\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n".force_encoding("iso-2022-jp")
     n = system_newline
-    un = n.encode("utf-16be").force_encoding("ascii-8bit")
+    n.encode("utf-16be").force_encoding("ascii-8bit")
 
     assert_write("a\rb\r#{n}c#{n}", "wt", a)
     assert_write("\xc2\xa2", "wt", e)

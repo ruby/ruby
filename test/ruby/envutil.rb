@@ -127,6 +127,30 @@ module EnvUtil
     GC.stress = stress
   end
   module_function :under_gc_stress
+
+  def with_default_external(enc)
+    verbose, $VERBOSE = $VERBOSE, nil
+    origenc, Encoding.default_external = Encoding.default_external, enc
+    $VERBOSE = verbose
+    yield
+  ensure
+    verbose, $VERBOSE = $VERBOSE, nil
+    Encoding.default_external = origenc
+    $VERBOSE = verbose
+  end
+  module_function :with_default_external
+
+  def with_default_internal(enc)
+    verbose, $VERBOSE = $VERBOSE, nil
+    origenc, Encoding.default_internal = Encoding.default_internal, enc
+    $VERBOSE = verbose
+    yield
+  ensure
+    verbose, $VERBOSE = $VERBOSE, nil
+    Encoding.default_internal = origenc
+    $VERBOSE = verbose
+  end
+  module_function :with_default_internal
 end
 
 module Test
