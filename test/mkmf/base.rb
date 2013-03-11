@@ -8,7 +8,7 @@ RbConfig::CONFIG["extout"] = CONFIG["extout"] = $extout
 $INCFLAGS << " -I."
 $extout_prefix = "$(extout)$(target_prefix)/"
 
-class TestMkmfBase < Test::Unit::TestCase
+class TestMkmf < Test::Unit::TestCase
   MKMFLOG = proc {File.read("mkmf.log") rescue ""}
 
   class Capture

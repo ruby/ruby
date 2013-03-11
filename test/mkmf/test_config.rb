@@ -2,7 +2,7 @@ require 'test/unit'
 require 'mkmf'
 require_relative '../ruby/envutil'
 
-class TestMkmf
+class TestMkmf < Test::Unit::TestCase
   class TestConfig < Test::Unit::TestCase
     def test_dir_config
       bug8074 = '[Bug #8074]'
