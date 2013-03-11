@@ -1,3 +1,10 @@
+Tue Mar 12 02:25:19 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/smtp.rb:  Added Net::SMTP#rset method to implement the SMTP
+	  RSET command.  [ruby-trunk - Feature #5373]
+	* NEWS:  ditto.
+	* test/net/smtp/test_smtp.rb:  Test for the above.
+
 Mon Mar 11 22:44:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv-replace.rb (TCPSocket#initialize): resolve the 3rd

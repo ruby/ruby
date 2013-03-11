@@ -815,6 +815,12 @@ module Net
 
     public
 
+    # Aborts the current mail transaction
+
+    def rset
+      getok('RSET')
+    end
+
     def starttls
       getok('STARTTLS')
     end
