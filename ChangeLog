@@ -1,3 +1,8 @@
+Mon Mar 11 11:53:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#dir_config, MakeMakefile#_libdir_basename):
+	  defer use of instance variable until needed.  [Bug #8074]
+
 Thu Mar  7 10:42:28 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/thread.rb (Queue#clear): return self.

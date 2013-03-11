@@ -45,6 +45,16 @@ end
 # correctly compile and link the C extension to ruby and a third-party
 # library.
 module MakeMakefile
+  #### defer until this module become global-state free.
+  # def self.extended(obj)
+  #   obj.init_mkmf
+  #   super
+  # end
+  #
+  # def initialize(*args, rbconfig: RbConfig, **rest)
+  #   init_mkmf(rbconfig::MAKEFILE_CONFIG, rbconfig::CONFIG)
+  #   super(*args, **rest)
+  # end
 
   ##
   # The makefile configuration using the defaults from when ruby was built.
@@ -1676,7 +1686,7 @@ SRC
     idir = with_config(target + "-include", idefault)
     $arg_config.last[1] ||= "${#{target}-dir}/include"
     ldir = with_config(target + "-lib", ldefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/#{@libdir_basename}"
+    $arg_config.last[1] ||= "${#{target}-dir}/#{_libdir_basename}"
 
     idirs = idir ? Array === idir ? idir.dup : idir.split(File::PATH_SEPARATOR) : []
     if defaults
@@ -1693,7 +1703,7 @@ SRC
 
     ldirs = ldir ? Array === ldir ? ldir.dup : ldir.split(File::PATH_SEPARATOR) : []
     if defaults
-      ldirs.concat(defaults.collect {|d| "#{d}/#{@libdir_basename}"})
+      ldirs.concat(defaults.collect {|d| "#{d}/#{_libdir_basename}"})
       ldir = ([ldir] + ldirs).compact.join(File::PATH_SEPARATOR)
     end
     $LIBPATH = ldirs | $LIBPATH
@@ -2378,8 +2388,6 @@ site-install-rb: install-rb
     $extout ||= nil
     $extout_prefix ||= nil
 
-    @libdir_basename = config["libdir"] && config["libdir"][/\A\$\(exec_prefix\)\/(.*)/, 1] or "lib"
-
     $arg_config.clear
     dir_config("opt")
   end
@@ -2402,6 +2410,12 @@ MESSAGE
       opts = $arg_config.collect {|t, n| "\t#{t}#{n ? "=#{n}" : ""}\n"}
       abort "*** #{path} failed ***\n" + FailedMessage + opts.join
     end
+  end
+
+  private
+
+  def _libdir_basename
+    @libdir_basename ||= config_string("libdir") {|name| name[/\A\$\(exec_prefix\)\/(.*)/, 1]} || "lib"
   end
 
   extend self
