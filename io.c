@@ -5020,6 +5020,8 @@ extract_binmode(VALUE opthash, int *fmode)
 	if (!NIL_P(v)) {
 	    if (*fmode & FMODE_TEXTMODE)
 		rb_raise(rb_eArgError, "textmode specified twice");
+	    if (*fmode & FMODE_BINMODE)
+		rb_raise(rb_eArgError, "both textmode and binmode specified");
 	    if (RTEST(v))
 		*fmode |= FMODE_TEXTMODE;
 	}
@@ -5027,6 +5029,8 @@ extract_binmode(VALUE opthash, int *fmode)
 	if (!NIL_P(v)) {
 	    if (*fmode & FMODE_BINMODE)
 		rb_raise(rb_eArgError, "binmode specified twice");
+	    if (*fmode & FMODE_TEXTMODE)
+		rb_raise(rb_eArgError, "both textmode and binmode specified");
 	    if (RTEST(v))
 		*fmode |= FMODE_BINMODE;
 	}

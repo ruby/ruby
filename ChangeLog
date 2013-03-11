@@ -1,3 +1,8 @@
+Mon Mar 11 16:57:00 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (extract_binmode): raise error even if binmode and textmode
+	  don't conflict. [Bug #5918] [ruby-core:42199]
+
 Mon Mar 11 12:25:12 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo d4bad41e16e3eccd97ccce6f1f96712e557c4518.

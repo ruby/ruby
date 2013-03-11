@@ -1406,9 +1406,12 @@ EOT
   end
 
   def test_both_textmode_binmode
-    assert_raise(ArgumentError) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
-    assert_raise(ArgumentError) { open("not-exist", "rt", :binmode=>true) }
-    assert_raise(ArgumentError) { open("not-exist", "rb", :textmode=>true) }
+    bug5918 = '[ruby-core:42199]'
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>false) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>false) }
   end
 
   def test_textmode_decode_universal_newline_read
