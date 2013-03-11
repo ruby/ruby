@@ -113,7 +113,7 @@ class TestQueue < Test::Unit::TestCase
     q = Queue.new
     retval = q.push(1)
     assert_same q, retval
-  end 
+  end
 
   def test_queue_clear_return_value
     q = Queue.new
