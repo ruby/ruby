@@ -290,4 +290,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(1, o.bug7942(), bug7942)
     assert_equal(42, o.bug7942(a: 42), bug7942)
   end
+
+  def test_required_keyword
+    feature7701 = '[ruby-core:51454] [Feature #7701] required keyword argument'
+    o = Object.new
+    assert_nothing_raised(SyntaxError, feature7701) do
+      eval("def o.foo(a:) a; end")
+    end
+    assert_raise(ArgumentError, feature7701) {o.foo}
+    assert_equal(42, o.foo(a: 42), feature7701)
+    assert_equal([[:keyreq, :a]], o.method(:foo).parameters, feature7701)
+  end
+
+  def test_block_required_keyword
+    feature7701 = '[ruby-core:51454] [Feature #7701] required keyword argument'
+    b = assert_nothing_raised(SyntaxError, feature7701) do
+      break eval("proc {|a:| a}")
+    end
+    assert_raise(ArgumentError, feature7701) {b.call}
+    assert_equal(42, b.call(a: 42), feature7701)
+    assert_equal([[:keyreq, :a]], b.parameters, feature7701)
+  end
 end

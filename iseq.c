@@ -1965,8 +1965,20 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	}
     }
     if (iseq->arg_keyword != -1) {
+	i = 0;
+	if (iseq->arg_keyword_required) {
+	    ID keyreq;
+	    CONST_ID(keyreq, "keyreq");
+	    for (; i < iseq->arg_keyword_required; i++) {
+		PARAM_TYPE(keyreq);
+		if (rb_id2str(iseq->arg_keyword_table[i])) {
+		    rb_ary_push(a, ID2SYM(iseq->arg_keyword_table[i]));
+		}
+		rb_ary_push(args, a);
+	    }
+	}
 	CONST_ID(key, "key");
-	for (i = 0; i < iseq->arg_keywords; i++) {
+	for (; i < iseq->arg_keywords; i++) {
 	    PARAM_TYPE(key);
 	    if (rb_id2str(iseq->arg_keyword_table[i])) {
 		rb_ary_push(a, ID2SYM(iseq->arg_keyword_table[i]));

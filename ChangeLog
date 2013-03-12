@@ -1,3 +1,17 @@
+Tue Mar 12 22:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments, iseq_compile_each): support required
+	  keyword arguments.   [ruby-core:51454] [Feature #7701]
+
+	* iseq.c (rb_iseq_parameters): ditto.
+
+	* parse.y (f_kw, f_block_kw): ditto.  this syntax is still
+	  experimental, the notation may change.
+
+	* vm_core.h (rb_iseq_struct): ditto.
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg): ditto.
+
 Tue Mar 12 17:02:53 2013  TAKANO Mitsuhiro <tak@no32.tk>
 
 	* date_core.c: clearly specify operator precedence.

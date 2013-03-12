@@ -273,6 +273,7 @@ struct rb_iseq_struct {
     int arg_keyword;
     int arg_keyword_check; /* if this is true, raise an ArgumentError when unknown keyword argument is passed */
     int arg_keywords;
+    int arg_keyword_required;
     ID *arg_keyword_table;
 
     size_t stack_max; /* for stack overflow check */

@@ -1183,19 +1183,31 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	if (args->kw_args) {
 	    NODE *node = args->kw_args;
 	    VALUE keywords = rb_ary_tmp_new(1);
-	    int i = 0, j;
+	    VALUE required = 0;
+	    int i = 0, j, r = 0;
 
 	    iseq->arg_keyword = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 	    COMPILE(optargs, "kwarg", args->kw_rest_arg);
 	    while (node) {
-		rb_ary_push(keywords, INT2FIX(node->nd_body->nd_vid));
+		VALUE list = keywords;
+		if (node->nd_body->nd_value == (NODE *)-1) {
+		    ++r;
+		    if (!required) required = rb_ary_tmp_new(1);
+		    list = required;
+		}
+		rb_ary_push(list, INT2FIX(node->nd_body->nd_vid));
 		COMPILE_POPED(optargs, "kwarg", node); /* nd_type(node) == NODE_KW_ARG */
 		node = node->nd_next;
 		i += 1;
 	    }
 	    iseq->arg_keyword_check = (args->kw_rest_arg->nd_vid & ID_SCOPE_MASK) == ID_JUNK;
 	    iseq->arg_keywords = i;
+	    iseq->arg_keyword_required = r;
 	    iseq->arg_keyword_table = ALLOC_N(ID, i);
+	    if (r) {
+		rb_ary_concat(required, keywords);
+		keywords = required;
+	    }
 	    for (j = 0; j < i; j++) {
 		iseq->arg_keyword_table[j] = FIX2INT(RARRAY_PTR(keywords)[j]);
 	    }
@@ -5200,7 +5212,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_KW_ARG:{
 	LABEL *default_label = NEW_LABEL(line);
-	LABEL *end_label = NEW_LABEL(line);
+	LABEL *end_label = 0;
 	int idx, lv, ls;
 	ID id = node->nd_body->nd_vid;
 
@@ -5224,10 +5236,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  default:
 	    rb_bug("iseq_compile_each (NODE_KW_ARG): unknown node: %s", ruby_node_name(nd_type(node->nd_body)));
 	}
-	ADD_INSNL(ret, line, jump, end_label);
+	if (node->nd_body->nd_value != (NODE *)-1) {
+	    end_label = NEW_LABEL(nd_line(node));
+	    ADD_INSNL(ret, nd_line(node), jump, end_label);
+	}
 	ADD_LABEL(ret, default_label);
-	COMPILE_POPED(ret, "keyword default argument", node->nd_body);
-	ADD_LABEL(ret, end_label);
+	if (node->nd_body->nd_value != (NODE *)-1) {
+	    COMPILE_POPED(ret, "keyword default argument", node->nd_body);
+	    ADD_LABEL(ret, end_label);
+	}
 	break;
       }
       case NODE_DSYM:{

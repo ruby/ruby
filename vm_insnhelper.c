@@ -143,21 +143,27 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
     rb_exc_raise(exc);
 }
 
+NORETURN(static void keyword_error(const char *error, VALUE keys));
+static void
+keyword_error(const char *error, VALUE keys)
+{
+    const char *msg = RARRAY_LEN(keys) == 1 ? "" : "s";
+    keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
+    rb_raise(rb_eArgError, "%s keyword%s: %"PRIsVALUE, error, msg, keys);
+}
+
 NORETURN(static void unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash));
 static void
 unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
 {
-    VALUE sep = rb_usascii_str_new2(", "), keys;
-    const char *msg;
+    VALUE keys;
     int i;
     for (i = 0; i < iseq->arg_keywords; i++) {
 	rb_hash_delete(hash, ID2SYM(iseq->arg_keyword_table[i]));
     }
     keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
-    msg = RARRAY_LEN(keys) == 1 ? "" : "s";
-    keys = rb_funcall(keys, rb_intern("join"), 1, sep);
-    rb_raise(rb_eArgError, "unknown keyword%s: %"PRIsVALUE, msg, keys);
+    keyword_error("unknown", keys);
 }
 
 void
@@ -1075,13 +1081,30 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	argc--;
 	keyword_hash = rb_hash_dup(keyword_hash);
 	if (iseq->arg_keyword_check) {
-	    for (i = j = 0; i < iseq->arg_keywords; i++) {
+	    VALUE missing = Qnil;
+	    for (i = 0; i < iseq->arg_keyword_required; i++) {
+		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0))
+		    continue;
+		if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
+		rb_ary_push(missing, ID2SYM(iseq->arg_keyword_table[i]));
+	    }
+	    if (!NIL_P(missing)) {
+		keyword_error("missing", missing);
+	    }
+	    for (j = i; i < iseq->arg_keywords; i++) {
 		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
 	    }
 	    if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
 		unknown_keyword_error(iseq, keyword_hash);
 	    }
 	}
+    }
+    else if (iseq->arg_keyword_check && iseq->arg_keyword_required) {
+	VALUE missing = rb_ary_tmp_new(iseq->arg_keyword_required);
+	for (i = 0; i < iseq->arg_keyword_required; i++) {
+	    rb_ary_push(missing, ID2SYM(iseq->arg_keyword_table[i]));
+	}
+	keyword_error("missing", missing);
     }
     else {
 	keyword_hash = rb_hash_new();

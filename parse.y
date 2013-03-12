@@ -4613,6 +4613,16 @@ f_kw		: tLABEL arg_value
 			$$ = rb_assoc_new($$, $2);
 		    %*/
 		    }
+		| tLABEL
+		    {
+			arg_var(formal_argument(get_id($1)));
+			$$ = assignable($1, (NODE *)-1);
+		    /*%%%*/
+			$$ = NEW_KW_ARG(0, $$);
+		    /*%
+			$$ = rb_assoc_new($$, 0);
+		    %*/
+		    }
 		;
 
 f_block_kw	: tLABEL primary_value
@@ -4623,6 +4633,16 @@ f_block_kw	: tLABEL primary_value
 			$$ = NEW_KW_ARG(0, $$);
 		    /*%
 			$$ = rb_assoc_new($$, $2);
+		    %*/
+		    }
+		| tLABEL
+		    {
+			arg_var(formal_argument(get_id($1)));
+			$$ = assignable($1, (NODE *)-1);
+		    /*%%%*/
+			$$ = NEW_KW_ARG(0, $$);
+		    /*%
+			$$ = rb_assoc_new($$, 0);
 		    %*/
 		    }
 		;
