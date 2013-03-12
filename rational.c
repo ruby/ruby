@@ -991,16 +991,22 @@ nurat_expt(VALUE self, VALUE other)
     /* Deal with special cases of 0**n and 1**n */
     if (k_numeric_p(other) && k_exact_p(other)) {
 	get_dat1(self);
-	if (f_one_p(dat->den))
-	    if (f_one_p(dat->num))
+	if (f_one_p(dat->den)) {
+	    if (f_one_p(dat->num)) {
 		return f_rational_new_bang1(CLASS_OF(self), ONE);
-	    else if (f_minus_one_p(dat->num) && k_integer_p(other))
+	    }
+	    else if (f_minus_one_p(dat->num) && k_integer_p(other)) {
 		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(f_odd_p(other) ? -1 : 1));
-	    else if (f_zero_p(dat->num))
-		if (FIX2INT(f_cmp(other, ZERO)) == -1)
+	    }
+	    else if (f_zero_p(dat->num)) {
+		if (FIX2INT(f_cmp(other, ZERO)) == -1) {
 		    rb_raise_zerodiv();
-		else
+		}
+		else {
 		    return f_rational_new_bang1(CLASS_OF(self), ZERO);
+		}
+	    }
+	}
     }
 
     /* General case */

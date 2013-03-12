@@ -1,3 +1,7 @@
+Tue Mar 12 16:48:19 2013  TAKANO Mitsuhiro <tak@no32.tk>
+
+	* rational.c: fix dangling if, else-if and else.
+
 Tue Mar 12 06:27:59 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/setup_command.rb:  Don't delete non-rubygems
