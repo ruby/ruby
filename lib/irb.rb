@@ -101,7 +101,7 @@ STDOUT.sync = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
-#     IRB.conf[:PROMPT_MODE] = :DEFALUT
+#     IRB.conf[:PROMPT_MODE] = :DEFAULT
 #     IRB.conf[:PROMPT] = {...}
 #     IRB.conf[:DEBUG_LEVEL]=0
 #

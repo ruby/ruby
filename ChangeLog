@@ -1,3 +1,7 @@
+Wed Mar 13 05:49:29 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/irb.rb:  Fix typo
+
 Tue Mar 12 22:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_arguments, iseq_compile_each): support required
