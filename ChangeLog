@@ -1,3 +1,11 @@
+Wed Mar 13 13:06:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rm, shvar_to_cpp, unexpand_shvar): local is not
+	  available on old shells.
+
+	* configure.in (shvar_to_cpp): escape quotes for old shells.
+	  [Bug #7959] [Bug #8071]
+
 Wed Mar 13 11:11:07 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (Init_Object): remove Module#used, which has been

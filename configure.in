@@ -16,15 +16,15 @@ AC_DISABLE_OPTION_CHECKING
 #
 # TODO: remove this hack when AC_PREREQ() becomes 2.70 or later.
 rm() {
-    local recursive
+    rm_recursive=''
     for arg do
 	AS_CASE("$arg",
 		[--*], [],
 		[-*r*], [break],
-		[conftest.*], [if test -d "$arg"; then recursive=-r; break; fi],
+		[conftest.*], [if test -d "$arg"; then rm_recursive=-r; break; fi],
 		[])
     done
-    command rm $recursive "$@"
+    command rm $rm_recursive "$@"
 }
 
 { # environment section
@@ -3259,44 +3259,44 @@ AS_CASE(["$target_os"],
     ])
 
 shvar_to_cpp() {
-    local var="$1" val="$2"
-    local exec_prefix_pat="`echo \"${exec_prefix}\" | sed 's/\\./\\\\./g'`"
-    local arch_pat="`echo \"${arch}\" | sed 's/\\./\\\\./g'`"
-    local sitearch_pat="`echo \"${sitearch}\" | sed 's/\\./\\\\./g'`"
-    val="`echo '"'"${val}"'"' |
+    var="$1" val="$2"
+    exec_prefix_pat="`echo \"${exec_prefix}\" | sed 's/\\./\\\\./g'`"
+    arch_pat="`echo \"${arch}\" | sed 's/\\./\\\\./g'`"
+    sitearch_pat="`echo \"${sitearch}\" | sed 's/\\./\\\\./g'`"
+    val="`echo '\"'\"${val}\"'\"' |
 	sed \
-	    -e 's/\${\([[A-Z][A-Z_]]*\)}/"\1"/g' \
-	    -e 's|\${sitearchlibdir}|'"${sitearchlibdir}|g" \
-	    -e 's|\${sitearchincludedir}|'"${sitearchincludedir}|g" \
-	    -e 's|\${archlibdir}|'"${archlibdir}|g" \
-	    -e 's|\${archincludedir}|'"${archincludedir}|g" \
-	    -e 's|\${libdir}|'"${libdir}|g" \
-	    -e 's/\${ruby_version}/"RUBY_LIB_VERSION"/g' \
-	    -e 's/\${arch}/"arch"/g' \
-	    -e 's/\${sitearch}/"arch"/g' \
-	    -e 's/\${vendorarchdir}/"RUBY_VENDOR_ARCH_LIB"/g' \
-	    -e 's/\${sitearchdir}/"RUBY_SITE_ARCH_LIB"/g' \
-	    -e 's/\${vendorlibdir}/"RUBY_VENDOR_LIB2"/g' \
-	    -e 's/\${sitelibdir}/"RUBY_SITE_LIB2"/g' \
-	    -e 's/\${vendordir}/"RUBY_VENDOR_LIB"/g' \
-	    -e 's/\${sitedir}/"RUBY_SITE_LIB"/g' \
-	    -e 's/\${rubylibdir}/"RUBY_LIB"/g' \
-	    -e 's/\${rubylibprefix}/"RUBY_LIB_PREFIX"/g' \
-	    -e 's/\${rubyarchprefix}/"RUBY_ARCH_PREFIX_FOR(arch)"/g' \
-	    -e 's/\${rubysitearchprefix}/"RUBY_SITEARCH_PREFIX_FOR(arch)"/g' \
-	    -e 's/\${exec_prefix}/"RUBY_EXEC_PREFIX"/g' \
-	    -e "s|${exec_prefix_pat}/|"'"RUBY_EXEC_PREFIX"/|g' \
-	    -e "s|${arch_pat}|"'"arch"|g' \
-	    -e "s|${sitearch_pat}|"'"sitearch"|g' \
-	    -e 's|^\"NONE/|RUBY_EXEC_PREFIX\"/|' \
-	    -e 's|^\"NONE\"|\"'"${prefix}"'\"|' \
-	    -e 's/^\"\"\(.\)/\1/;s/\(.\)\"\"$/\1/'
+	    -e 's/\${\([[A-Z][A-Z_]]*\)}/\"\1\"/g' \
+	    -e 's|\${sitearchlibdir}|'\"${sitearchlibdir}|g\" \
+	    -e 's|\${sitearchincludedir}|'\"${sitearchincludedir}|g\" \
+	    -e 's|\${archlibdir}|'\"${archlibdir}|g\" \
+	    -e 's|\${archincludedir}|'\"${archincludedir}|g\" \
+	    -e 's|\${libdir}|'\"${libdir}|g\" \
+	    -e 's/\${ruby_version}/\"RUBY_LIB_VERSION\"/g' \
+	    -e 's/\${arch}/\"arch\"/g' \
+	    -e 's/\${sitearch}/\"arch\"/g' \
+	    -e 's/\${vendorarchdir}/\"RUBY_VENDOR_ARCH_LIB\"/g' \
+	    -e 's/\${sitearchdir}/\"RUBY_SITE_ARCH_LIB\"/g' \
+	    -e 's/\${vendorlibdir}/\"RUBY_VENDOR_LIB2\"/g' \
+	    -e 's/\${sitelibdir}/\"RUBY_SITE_LIB2\"/g' \
+	    -e 's/\${vendordir}/\"RUBY_VENDOR_LIB\"/g' \
+	    -e 's/\${sitedir}/\"RUBY_SITE_LIB\"/g' \
+	    -e 's/\${rubylibdir}/\"RUBY_LIB\"/g' \
+	    -e 's/\${rubylibprefix}/\"RUBY_LIB_PREFIX\"/g' \
+	    -e 's/\${rubyarchprefix}/\"RUBY_ARCH_PREFIX_FOR(arch)\"/g' \
+	    -e 's/\${rubysitearchprefix}/\"RUBY_SITEARCH_PREFIX_FOR(arch)\"/g' \
+	    -e 's/\${exec_prefix}/\"RUBY_EXEC_PREFIX\"/g' \
+	    -e \"s|${exec_prefix_pat}/|\"'\"RUBY_EXEC_PREFIX\"/|g' \
+	    -e \"s|${arch_pat}|\"'\"arch\"|g' \
+	    -e \"s|${sitearch_pat}|\"'\"sitearch\"|g' \
+	    -e 's|^\\\"NONE/|RUBY_EXEC_PREFIX\\\"/|' \
+	    -e 's|^\\\"NONE\\\"|\\\"'\"${prefix}\"'\\\"|' \
+	    -e 's/^\\\"\\\"\(.\)/\1/;s/\(.\)\\\"\\\"$/\1/'
 	`"
     eval $var='"$val"'
 }
 
 unexpand_shvar() {
-    local var=$1 val n v expr
+    var=$1 n="" v="" expr=""
     shift
     test "$#" -eq 0 && return
     for n do
