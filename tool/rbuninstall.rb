@@ -15,7 +15,7 @@ BEGIN {
   $dirs = []
   $files = []
 }
-list = (/\/\z/ =~ $_ ? $dirs : $files)
+list = ($_.chomp!('/') ? $dirs : $files)
 $_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
