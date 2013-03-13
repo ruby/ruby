@@ -1,3 +1,9 @@
+Wed Mar 13 14:51:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_export_method): directly override the flag of method
+	  defined in prepending class too, not adding zsuper entry.
+	  [ruby-core:53106] [Bug #8005]
+
 Wed Mar 13 13:06:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rm, shvar_to_cpp, unexpand_shvar): local is not

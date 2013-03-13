@@ -1489,6 +1489,18 @@ class TestModule < Test::Unit::TestCase
     assert_equal(0, 1 / 2)
   end
 
+  def test_prepend_visibility
+    bug8005 = '[ruby-core:53106] [Bug #8005]'
+    c = Class.new do
+      prepend Module.new {}
+      def foo() end
+      protected :foo
+    end
+    a = c.new
+    assert_respond_to a, [:foo, true]
+    assert_nothing_raised(NoMethodError) {a.send :foo}
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)
