@@ -514,7 +514,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal File.join(new_home, "bar", "foo"), File.expand_path("foo", "~/bar"), bug8034
 
     assert_raise(ArgumentError) { File.expand_path(".", UnknownUserHome) }
-    assert_nothing_raised(ArgumentError) { File.expand_path("/", UnknownUserHome) }
+    assert_nothing_raised(ArgumentError) { File.expand_path("#{DRIVE}/", UnknownUserHome) }
   ensure
     ENV["HOME"] = home
   end
