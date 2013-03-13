@@ -1,3 +1,11 @@
+Wed Mar 13 19:43:46 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* doc/irb/irb.rd.ja: fix typo
+
+	* ext/tk/MANUAL_tcltklib.eng: fix typos
+
+	* ext/tk/sample/tktextframe.rb (Tk#component_delegates): fix typo
+
 Wed Mar 13 15:13:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_obj_singleton_methods): collect methods from the origin
