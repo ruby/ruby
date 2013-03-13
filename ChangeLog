@@ -1,3 +1,9 @@
+Wed Mar 13 23:25:59 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: allow to tune growth of heap by environment variable
+	  RUBY_HEAP_SLOTS_GROWTH_FACTOR. patched by tmm1(Aman Gupta).
+	  [Feature #8015] [ruby-core:53131]
+
 Wed Mar 13 19:43:46 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/irb/irb.rd.ja: fix typo

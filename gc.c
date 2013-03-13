@@ -71,11 +71,13 @@
 #endif
 #define HEAP_MIN_SLOTS 10000
 #define FREE_MIN  4096
+#define HEAP_GROWTH_FACTOR 1.8
 
 typedef struct {
     unsigned int initial_malloc_limit;
     unsigned int initial_heap_min_slots;
     unsigned int initial_free_min;
+    double initial_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     int gc_stress;
 #endif
@@ -85,6 +87,7 @@ static ruby_gc_params_t initial_params = {
     GC_MALLOC_LIMIT,
     HEAP_MIN_SLOTS,
     FREE_MIN,
+    HEAP_GROWTH_FACTOR,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
 #endif
@@ -287,6 +290,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define initial_malloc_limit	initial_params.initial_malloc_limit
 #define initial_heap_min_slots	initial_params.initial_heap_min_slots
 #define initial_free_min	initial_params.initial_free_min
+#define initial_growth_factor	initial_params.initial_growth_factor
 
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
@@ -605,7 +609,7 @@ initial_expand_heap(rb_objspace_t *objspace)
 static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
-    size_t next_heaps_length = (size_t)(heaps_used * 1.8);
+    size_t next_heaps_length = (size_t)(heaps_used * initial_growth_factor);
 
     if (next_heaps_length == heaps_used) {
         next_heaps_length++;
@@ -3290,7 +3294,7 @@ rb_gc_disable(void)
 void
 rb_gc_set_params(void)
 {
-    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr;
+    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr, *growth_factor_ptr;
 
     if (rb_safe_level() > 0) return;
 
@@ -3314,6 +3318,17 @@ rb_gc_set_params(void)
 	if (heap_min_slots_i > 0) {
 	    initial_heap_min_slots = heap_min_slots_i;
             initial_expand_heap(&rb_objspace);
+	}
+    }
+
+    growth_factor_ptr = getenv("RUBY_HEAP_SLOTS_GROWTH_FACTOR");
+    if (growth_factor_ptr != NULL) {
+	double growth_factor_f = strtod(growth_factor_ptr, NULL);
+	if (RTEST(ruby_verbose))
+	    fprintf(stderr, "heap_slots_growth_factor=%f (%f)\n",
+		    growth_factor_f, initial_growth_factor);
+	if (growth_factor_f > 1) {
+	    initial_growth_factor = growth_factor_f;
 	}
     }
 
