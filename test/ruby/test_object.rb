@@ -159,6 +159,15 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo2], (o2.public_methods(false) - o0.public_methods(false)).sort)
   end
 
+  def test_methods_prepend
+    bug8044 = '[ruby-core:53207] [Bug #8044]'
+    o = Object.new
+    def o.foo; end
+    assert_equal([:foo], o.methods(false))
+    class << o; prepend Module.new; end
+    assert_equal([:foo], o.methods(false), bug8044)
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }

@@ -1228,8 +1228,8 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
 VALUE
 rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE recur, ary, klass;
-    st_table *list;
+    VALUE recur, ary, klass, origin;
+    st_table *list, *mtbl;
 
     if (argc == 0) {
 	recur = Qtrue;
@@ -1238,16 +1238,17 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 	rb_scan_args(argc, argv, "01", &recur);
     }
     klass = CLASS_OF(obj);
+    origin = RCLASS_ORIGIN(klass);
     list = st_init_numtable();
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
-	if (RCLASS_M_TBL(klass))
-	    st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
+	if ((mtbl = RCLASS_M_TBL(origin)) != 0)
+	    st_foreach(mtbl, method_entry_i, (st_data_t)list);
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
-	    if (RCLASS_M_TBL(klass))
-		st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
+	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0)
+		st_foreach(mtbl, method_entry_i, (st_data_t)list);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
