@@ -14,6 +14,10 @@ with all sufficient information, see the ChangeLog file.
 === Language changes
 === Core classes updates (outstanding ones only)
 
+* GC
+  * added environment variable:
+    * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
+
 * Mutex
   * misc
     * Mutex#owned? is no longer experimental.
