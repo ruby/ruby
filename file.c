@@ -109,6 +109,7 @@ static void
 rb_sys_fail_path0(const char *func_name, VALUE path)
 {
     VALUE mesg = rb_str_new_cstr(func_name);
+    rb_str_buf_cat2(mesg, ": ");
     rb_str_buf_append(mesg, path);
     rb_sys_fail_str(mesg);
 }
