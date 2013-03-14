@@ -1,3 +1,7 @@
+Fri Mar 15 08:24:51 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_sys_fail_path): define & use rb_sys_fail_path0 like r39752
+
 Fri Mar 15 04:08:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* proc.c: Typo in Proc.arity found by Jack Nagel [Bug #8094]
