@@ -102,8 +102,8 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
-#ifdef __GNUC__
-# define rb_sys_fail_path(path) rb_sys_fail_path0(__func__, path)
+#ifdef RUBY_FUNCTION_NAME_STRING
+# define rb_sys_fail_path(path) rb_sys_fail_path0(RUBY_FUNCTION_NAME_STRING, path)
 NORETURN(static void rb_sys_fail_path0(const char *,VALUE));
 static void
 rb_sys_fail_path0(const char *func_name, VALUE path)
