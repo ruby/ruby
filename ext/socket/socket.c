@@ -142,6 +142,14 @@ rsock_socketpair(int domain, int type, int protocol, int sv[2])
  * _protocol_ should be a protocol defined in the domain,
  * defaults to 0 for the domain.
  *
+ *   s1, s2 = Socket.pair(:UNIX, :STREAM, 0)
+ *   s1.send "a", 0
+ *   s1.send "b", 0
+ *   s1.close
+ *   p s2.recv(10) #=> "ab"
+ *   p s2.recv(10) #=> ""
+ *   p s2.recv(10) #=> ""
+ *
  *   s1, s2 = Socket.pair(:UNIX, :DGRAM, 0)
  *   s1.send "a", 0
  *   s1.send "b", 0
