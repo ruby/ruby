@@ -649,7 +649,7 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
  *
  *     proc   { |x = 0| }.arity       #=> 0
  *     lambda { |a = 0| }.arity       #=> -1
- *     proc   { |x=0, y| }.arity      #=> 0
+ *     proc   { |x=0, y| }.arity      #=> 1
  *     lambda { |x=0, y| }.arity      #=> -2
  *     proc   { |x=0, y=0| }.arity    #=> 0
  *     lambda { |x=0, y=0| }.arity    #=> -1
