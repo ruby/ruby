@@ -1,3 +1,7 @@
+Thu Mar 14 10:01:12 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/globals.rdoc:  $? is thread-local
+
 Wed Mar 13 23:25:59 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: allow to tune growth of heap by environment variable

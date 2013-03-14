@@ -22,7 +22,8 @@ $_::   The last input line of string by gets or readline.
 $0::   Contains the name of the script being executed. May be assignable.
 $*::   Command line arguments given for the script sans args.
 $$::   The process number of the Ruby running this script.
-$?::   The status of the last executed child process.
+$?::   The status of the last executed child process.  This value is
+       thread-local.
 $:::   Load path for scripts and binary modules by load or require.
 $"::   The array contains the module names loaded by require.
 $DEBUG::     The debug flag, which is set by the -d switch.  Enabling debug
