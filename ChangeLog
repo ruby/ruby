@@ -1,3 +1,8 @@
+Thu Mar 14 14:12:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_sys_fail_path): use rb_sys_fail_path0 only on GCC.
+	  __func__ is C99 feature.
+
 Thu Mar 14 12:59:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_sys_fail_path0): add to append the name of called function
