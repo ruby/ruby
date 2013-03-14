@@ -317,6 +317,37 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
     return size;
 }
 
+static inline VALUE
+get_user_from_path(wchar_t **wpath, int offset, UINT cp, UINT path_cp, rb_encoding *path_encoding)
+{
+    VALUE result, tmp;
+    wchar_t *wuser = *wpath + offset;
+    wchar_t *pos = wuser;
+    char *user;
+    size_t size;
+
+    while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
+     pos++;
+
+    *pos = '\0';
+    convert_wchar_to_mb(wuser, &user, &size, cp);
+
+    /* convert to VALUE and set the path encoding */
+    if (path_cp == INVALID_CODE_PAGE) {
+	tmp = rb_enc_str_new(user, size, rb_utf8_encoding());
+	result = rb_str_encode(tmp, rb_enc_from_encoding(path_encoding), 0, Qnil);
+	rb_str_resize(tmp, 0);
+    }
+    else {
+	result = rb_enc_str_new(user, size, path_encoding);
+    }
+
+    if (user)
+	xfree(user);
+
+    return result;
+}
+
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
@@ -405,32 +436,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
-	wchar_t *wuser = wpath_pos + 1;
-	wchar_t *pos = wuser;
-	char *user;
+	result = get_user_from_path(&wpath_pos, 1, cp, path_cp, path_encoding);
 
-	/* tainted if expanding '~' */
-	tainted = 1;
-
-	while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
-	    pos++;
-
-	*pos = '\0';
-	convert_wchar_to_mb(wuser, &user, &size, cp);
-
-	/* convert to VALUE and set the path encoding */
-	if (path_cp == INVALID_CODE_PAGE) {
-	    VALUE tmp = rb_enc_str_new(user, size, rb_utf8_encoding());
-	    result = rb_str_encode(tmp, rb_enc_from_encoding(path_encoding), 0, Qnil);
-	    rb_str_resize(tmp, 0);
-	}
-	else {
-	    result = rb_enc_str_new(user, size, path_encoding);
-	}
-
-	xfree(wpath);
-	if (user)
-	    xfree(user);
+	if (wpath)
+	    xfree(wpath);
 
 	rb_raise(rb_eArgError, "can't find user %s", StringValuePtr(result));
     }
@@ -495,6 +504,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 		if (separators == 2)
 		    wdir_len = pos - 1;
 	    }
+	}
+	else if (abs_mode == 0 && wdir_len >= 2 && wdir_pos[0] == L'~') {
+	    result = get_user_from_path(&wdir_pos, 1, cp, path_cp, path_encoding);
+	    if (wpath)
+		xfree(wpath);
+
+	    if (wdir)
+		xfree(wdir);
+
+	    rb_raise(rb_eArgError, "can't find user %s", StringValuePtr(result));
 	}
     }
 

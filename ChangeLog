@@ -1,3 +1,11 @@
+Thu Mar 14 12:53:15 2013  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (get_user_from_path):  add internal function that retrieves
+	  username from supplied path (refactored).
+	* win32/file.c (rb_file_expand_path_internal):  refactor expansion of user
+	  home to use get_user_from_path and cover dir_string corner cases.
+	  [ruby-core:53168] [Bug #8034]
+
 Thu Mar 14 11:53:01 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* NEWS: describe RUBY_HEAP_SLOTS_GROWTH_FACTOR.
