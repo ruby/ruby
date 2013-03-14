@@ -1,3 +1,11 @@
+Thu Mar 14 12:59:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_sys_fail_path0): add to append the name of called function
+	  to ease debugging for example blow umask_spec failure.
+	  http://fbsd.rubyci.org/~chkbuild/ruby-trunk/log/20130309T010202Z.diff.html.gz
+
+	* file.c (rb_sys_fail_path): use rb_sys_fail_path0.
+
 Thu Mar 14 12:53:15 2013  Luis Lavena  <luislavena@gmail.com>
 
 	* win32/file.c (get_user_from_path):  add internal function that retrieves

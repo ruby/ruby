@@ -102,7 +102,16 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
-#define rb_sys_fail_path(path) rb_sys_fail_str(path)
+#define rb_sys_fail_path(path) rb_sys_fail_path0(__func__, path)
+
+NORETURN(static void rb_sys_fail_path0(const char *,VALUE));
+static void
+rb_sys_fail_path0(const char *func_name, VALUE path)
+{
+    VALUE mesg = rb_str_new_cstr(func_name);
+    rb_str_buf_append(mesg, path);
+    rb_sys_fail_str(mesg);
+}
 
 #if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */
 static int
