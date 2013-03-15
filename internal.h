@@ -123,7 +123,13 @@ VALUE rb_get_path_check_convert(VALUE, VALUE, int);
 void Init_File(void);
 
 #ifdef RUBY_FUNCTION_NAME_STRING
+# if defined __GNUC__ && __GNUC__ >= 4
+#   pragma GCC visibility push(default)
+# endif
 NORETURN(void rb_sys_fail_path_with_func(const char *func_name, VALUE path));
+# if defined __GNUC__ && __GNUC__ >= 4
+#   pragma GCC visibility pop
+# endif
 # define rb_sys_fail_path(path) rb_sys_fail_path_with_func(RUBY_FUNCTION_NAME_STRING, path)
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)

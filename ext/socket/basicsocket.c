@@ -247,8 +247,6 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 	break;
     }
 
-#define rb_sys_fail_path(path) rb_sys_fail_str(path)
-
     rb_io_check_closed(fptr);
     if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
 	rb_sys_fail_path(fptr->pathv);
