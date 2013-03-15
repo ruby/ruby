@@ -509,7 +509,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_match / -\snonexistent\.gem\z/, e.message
+    assert_match /\s-\snonexistent\.gem\z/, e.message
   end
 
   def test_verify_security_policy
