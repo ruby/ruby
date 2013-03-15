@@ -103,18 +103,19 @@ int flock(int, int);
 #endif
 
 #ifdef RUBY_FUNCTION_NAME_STRING
-# define rb_sys_fail_path(path) rb_sys_fail_path0(RUBY_FUNCTION_NAME_STRING, path)
-NORETURN(static void rb_sys_fail_path0(const char *,VALUE));
-static void
-rb_sys_fail_path0(const char *func_name, VALUE path)
+void
+rb_sys_fail_path_with_func(const char *func_name, VALUE path)
 {
     VALUE mesg = rb_str_new_cstr(func_name);
-    rb_str_buf_cat2(mesg, ": ");
-    rb_str_buf_append(mesg, path);
+    if (!NIL_P(path)) {
+	/* RUBY_FUNCTION_NAME_STRING, aka __func__/__FUNCTION__ is not a
+	 * preprocessor macro but a static constant array, so string
+	 * literal concatenation is not allowed */
+	rb_str_buf_cat2(mesg, ": ");
+	rb_str_buf_append(mesg, path);
+    }
     rb_sys_fail_str(mesg);
 }
-#else
-# define rb_sys_fail_path(path) rb_sys_fail_str(path)
 #endif
 
 #if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */

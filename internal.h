@@ -122,6 +122,13 @@ VALUE rb_get_path_check_to_string(VALUE, int);
 VALUE rb_get_path_check_convert(VALUE, VALUE, int);
 void Init_File(void);
 
+#ifdef RUBY_FUNCTION_NAME_STRING
+NORETURN(void rb_sys_fail_path_with_func(const char *func_name, VALUE path));
+# define rb_sys_fail_path(path) rb_sys_fail_path_with_func(RUBY_FUNCTION_NAME_STRING, path)
+#else
+# define rb_sys_fail_path(path) rb_sys_fail_str(path)
+#endif
+
 #ifdef _WIN32
 /* file.c, win32/file.c */
 void rb_w32_init_file(void);

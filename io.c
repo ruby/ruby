@@ -399,21 +399,6 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #  endif
 #endif
 
-#ifdef RUBY_FUNCTION_NAME_STRING
-# define rb_sys_fail_path(path) rb_sys_fail_path0(RUBY_FUNCTION_NAME_STRING, path)
-NORETURN(static void rb_sys_fail_path0(const char *,VALUE));
-static void
-rb_sys_fail_path0(const char *func_name, VALUE path)
-{
-    VALUE mesg = rb_str_new_cstr(func_name);
-    rb_str_buf_cat2(mesg, ": ");
-    rb_str_buf_append(mesg, path);
-    rb_sys_fail_str(mesg);
-}
-#else
-# define rb_sys_fail_path(path) rb_sys_fail_str(path)
-#endif
-
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
