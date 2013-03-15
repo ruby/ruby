@@ -102,22 +102,6 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
-#ifdef RUBY_FUNCTION_NAME_STRING
-void
-rb_sys_fail_path_with_func(const char *func_name, VALUE path)
-{
-    VALUE mesg = rb_str_new_cstr(func_name);
-    if (!NIL_P(path)) {
-	/* RUBY_FUNCTION_NAME_STRING, aka __func__/__FUNCTION__ is not a
-	 * preprocessor macro but a static constant array, so string
-	 * literal concatenation is not allowed */
-	rb_str_buf_cat2(mesg, ": ");
-	rb_str_buf_append(mesg, path);
-    }
-    rb_sys_fail_str(mesg);
-}
-#endif
-
 #if defined(__BEOS__) || defined(__HAIKU__) /* should not change ID if -1 */
 static int
 be_chown(const char *path, uid_t owner, gid_t group)

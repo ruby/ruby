@@ -126,11 +126,11 @@ void Init_File(void);
 # if defined __GNUC__ && __GNUC__ >= 4
 #   pragma GCC visibility push(default)
 # endif
-NORETURN(void rb_sys_fail_path_with_func(const char *func_name, VALUE path));
+NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
 # if defined __GNUC__ && __GNUC__ >= 4
 #   pragma GCC visibility pop
 # endif
-# define rb_sys_fail_path(path) rb_sys_fail_path_with_func(RUBY_FUNCTION_NAME_STRING, path)
+# define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
 #endif

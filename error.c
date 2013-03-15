@@ -1224,12 +1224,12 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     char *strerror();
 #endif
     const char *err;
-    VALUE mesg, error;
+    VALUE mesg, error, func;
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
 	st_data_t data = (st_data_t)klass;
-	rb_scan_args(argc, argv, "11", &mesg, &error);
+	rb_scan_args(argc, argv, "12", &mesg, &error, &func);
 	if (argc == 1 && FIXNUM_P(mesg)) {
 	    error = mesg; mesg = Qnil;
 	}
@@ -1243,7 +1243,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	}
     }
     else {
-	rb_scan_args(argc, argv, "01", &mesg);
+	rb_scan_args(argc, argv, "02", &mesg, &func);
 	error = rb_const_get(klass, rb_intern("Errno"));
     }
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
@@ -1253,7 +1253,10 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	VALUE str = StringValue(mesg);
 	rb_encoding *me = rb_enc_get(mesg);
 
-	mesg = rb_sprintf("%s - %"PRIsVALUE, err, mesg);
+	if (NIL_P(func))
+	    mesg = rb_sprintf("%s - %"PRIsVALUE, err, mesg);
+	else
+	    mesg = rb_sprintf("%s @ %"PRIsVALUE" - %"PRIsVALUE, err, func, mesg);
 	if (le != me && rb_enc_asciicompat(me)) {
 	    le = me;
 	}/* else assume err is non ASCII string. */
@@ -1906,6 +1909,27 @@ rb_sys_fail_str(VALUE mesg)
 {
     rb_exc_raise(make_errno_exc_str(mesg));
 }
+
+#ifdef RUBY_FUNCTION_NAME_STRING
+void
+rb_sys_fail_path_in(const char *func_name, VALUE path)
+{
+    int n = errno;
+    VALUE args[2];
+
+    errno = 0;
+    if (!path) path = Qnil;
+    if (n == 0) {
+	const char *s = !NIL_P(path) ? RSTRING_PTR(path) : "";
+	if (!func_name) func_name = "(null)";
+	rb_bug("rb_sys_fail_path_in(%s, %s) - errno == 0",
+	       func_name, s);
+    }
+    args[0] = path;
+    args[1] = rb_str_new_cstr(func_name);
+    rb_exc_raise(rb_class_new_instance(2, args, get_syserr(n)));
+}
+#endif
 
 void
 rb_mod_sys_fail(VALUE mod, const char *mesg)
