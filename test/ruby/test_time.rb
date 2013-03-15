@@ -408,6 +408,15 @@ class TestTime < Test::Unit::TestCase
     assert_kind_of(Integer, t2000.hash)
   end
 
+  def test_reinitialize
+    bug8099 = '[ruby-core:53436] [Bug #8099]'
+    t2000 = get_t2000
+    assert_raise(TypeError, bug8099) {
+      t2000.send(:initialize, 2013, 03, 14)
+    }
+    assert_equal(get_t2000, t2000, bug8099)
+  end
+
   def test_init_copy
     t2000 = get_t2000
     assert_equal(t2000, t2000.dup)
