@@ -1,3 +1,9 @@
+Say Mar 15 01:33:00 2013  Charles Oliver Nutter <headius@headius.com>
+
+	* test/ruby/test_lazy_enumerator.rb (TestLazyEnumerator#test_drop_while):
+	  Modify while condition to show dropping remains off after first false
+	  value. This change was made in 39711.
+
 Fri Mar 15 23:06:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (GetTimeval): check if already initialized instance.
