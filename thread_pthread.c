@@ -64,8 +64,8 @@ static pthread_t timer_thread_id;
 # define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#ifndef numberof
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #endif
 
 static void
@@ -1327,7 +1327,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     }
     else {
 	/* wait (infinite) */
-	result = poll(pollfds, ARRAY_SIZE(pollfds), -1);
+	result = poll(pollfds, numberof(pollfds), -1);
     }
 
     if (result == 0) {

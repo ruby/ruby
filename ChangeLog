@@ -1,3 +1,8 @@
+Fri Mar 15 14:17:55 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (numberof): renamed from ARRAY_SIZE() because
+	  other all files use numberof().
+
 Say Mar 15 01:33:00 2013  Charles Oliver Nutter <headius@headius.com>
 
 	* test/ruby/test_lazy_enumerator.rb (TestLazyEnumerator#test_drop_while):
