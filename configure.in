@@ -684,6 +684,10 @@ if test "$GCC" = yes; then
     test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
 
     # -D_FORTIFY_SOURCE
+    # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
+    # argument check. The performance drop is very little and Ubuntu enables
+    # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
+    # a mistake of silly C extensions.
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
 
     # -fstack-protector

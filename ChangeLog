@@ -1,3 +1,7 @@
+Fri Mar 15 14:45:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in (_FORTIFY_SOURCE): added a few comments.
+
 Fri Mar 15 14:17:55 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (numberof): renamed from ARRAY_SIZE() because
