@@ -110,6 +110,11 @@
 # endif
 #endif
 
+#if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
+/* Mac OS X and OpenBSD have __syscall but don't define it in headers */
+off_t __syscall(quad_t number, ...);
+#endif
+
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 #define IO_RBUF_CAPA_MIN  8192

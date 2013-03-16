@@ -31,6 +31,11 @@ extern "C" {
 #else
 # include <varargs.h>
 #endif
+
+#if defined(HAVE_SYS_TYPES_H)
+#include <sys/types.h>
+#endif
+
 #include "ruby/st.h"
 
 #if defined __GNUC__ && __GNUC__ >= 4

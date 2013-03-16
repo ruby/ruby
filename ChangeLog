@@ -1,3 +1,12 @@
+Wed Mar 13 15:16:35 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h (__syscall): moved to...
+	* io.c: here. because __syscall() is only used from io.c.
+
+	* include/ruby/missing.h: move "#include <sys/type.h>" to ....
+	* include/ruby/intern.h: here. because it was introduced for
+	  fixing NFDBITS issue. [ruby-core:05179].
+
 Wed Mar 13 14:38:53 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/missing.h (struct timespec): include <sys/time.h>

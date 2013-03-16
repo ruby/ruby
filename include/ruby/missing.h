@@ -37,10 +37,6 @@ struct timeval {
 # endif
 #endif /* HAVE_STRUCT_TIMEVAL */
 
-#if defined(HAVE_SYS_TYPES_H)
-#  include <sys/types.h>
-#endif
-
 #if !defined(HAVE_STRUCT_TIMESPEC)
 # if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>
@@ -56,11 +52,6 @@ struct timezone {
     int tz_minuteswest;
     int tz_dsttime;
 };
-#endif
-
-#if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
-/* Mac OS X and OpenBSD have __syscall but don't define it in headers */
-off_t __syscall(quad_t number, ...);
 #endif
 
 #ifdef RUBY_EXPORT
