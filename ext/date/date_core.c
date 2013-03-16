@@ -6,6 +6,9 @@
 #include "ruby/encoding.h"
 #include <math.h>
 #include <time.h>
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
 
 #define NDEBUG
 #include <assert.h>
