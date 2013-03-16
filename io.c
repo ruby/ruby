@@ -159,18 +159,19 @@ struct argf {
     int8_t init_p, next_p, binmode;
 };
 
-static int max_file_descriptor = NOFILE;
+static rb_atomic_t max_file_descriptor = NOFILE;
 void
 rb_update_max_fd(int fd)
 {
     struct stat buf;
+    rb_atomic_t afd = (rb_atomic_t)fd;
 
     if (fstat(fd, &buf) != 0 && errno == EBADF) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }
 
-    while (max_file_descriptor < fd) {
-	ATOMIC_CAS(max_file_descriptor, max_file_descriptor, fd);
+    while (max_file_descriptor < afd) {
+	ATOMIC_CAS(max_file_descriptor, max_file_descriptor, afd);
     }
 }
 
@@ -200,8 +201,9 @@ rb_maygvl_fd_fix_cloexec(int fd)
 void
 rb_fd_fix_cloexec(int fd)
 {
+    rb_atomic_t afd = (rb_atomic_t)fd;
     rb_maygvl_fd_fix_cloexec(fd);
-    if (max_file_descriptor < fd) max_file_descriptor = fd;
+    if (max_file_descriptor < afd) max_file_descriptor = afd;
 }
 
 int
@@ -5605,7 +5607,7 @@ void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
     int fd, ret;
-    int max = max_file_descriptor;
+    int max = (int)max_file_descriptor;
 #ifdef F_MAXFD
     /* F_MAXFD is available since NetBSD 2.0. */
     ret = fcntl(0, F_MAXFD); /* async-signal-safe */
