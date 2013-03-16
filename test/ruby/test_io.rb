@@ -2629,5 +2629,30 @@ End
     s.puts(c.new)
     assert_equal("[...]\n", s.string, bug5986)
   end
-end
 
+  def test_io_select_with_many_files
+    bug8080 = '[ruby-core:53349]'
+
+    assert_normal_exit %q{
+      require "tempfile"
+
+      # try to raise RLIM_NOFILE to >FD_SETSIZE
+      # Unfortunately, ruby export FD_SETSIZE. then we assume it's 1024.
+      fd_setsize = 1024
+
+      begin
+        Process.setrlimit(Process::RLIMIT_NOFILE, fd_setsize+10)
+      rescue =>e
+        # Process::RLIMIT_NOFILE couldn't be raised. skip the test
+        exit 0
+      end
+
+      tempfiles = []
+      (0..fd_setsize+1).map {|i|
+        tempfiles << Tempfile.open("test_io_select_with_many_files")
+      }
+
+      IO.select(tempfiles)
+  }, bug8080
+  end
+end
