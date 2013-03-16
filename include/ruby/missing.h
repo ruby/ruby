@@ -25,11 +25,13 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#if !defined(HAVE_STRUCT_TIMEVAL) || !defined(HAVE_STRUCT_TIMESPEC)
 #if defined(HAVE_TIME_H)
 # include <time.h>
 #endif
-#if defined(HAVE_SYS_TIME_H)
+#if defined(HAVE_SYS_TIME_H) && !defined(__linux__)
 # include <sys/time.h>
+#endif
 #endif
 
 #if !defined(HAVE_STRUCT_TIMEVAL)
