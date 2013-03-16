@@ -1,3 +1,7 @@
+Wed Mar 13 14:38:53 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h (struct timespec): include <sys/time.h>
+
 Wed Mar 13 13:54:45 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: check struct timeval exist or not.

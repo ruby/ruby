@@ -42,6 +42,9 @@ struct timeval {
 #endif
 
 #if !defined(HAVE_STRUCT_TIMESPEC)
+# if defined(HAVE_SYS_TIME_H)
+#  include <sys/time.h>
+# endif
 struct timespec {
     time_t tv_sec;	/* seconds */
     long tv_nsec;	/* nanoseconds */
