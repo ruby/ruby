@@ -610,6 +610,7 @@ console_iflush(VALUE io)
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     if (tcflush(fd, TCIFLUSH)) rb_sys_fail(0);
 #endif
+    (void)fd;
     return io;
 }
 
@@ -632,6 +633,7 @@ console_oflush(VALUE io)
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     if (tcflush(fd, TCOFLUSH)) rb_sys_fail(0);
 #endif
+    (void)fd;
     return io;
 }
 
