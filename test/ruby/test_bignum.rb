@@ -560,25 +560,22 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(true, (2**32).even?)
   end
 
-  def assert_interrupt
+  def test_interrupt_during_to_s
     time = Time.now
     start_flag = false
     end_flag = false
+    num = (65536 ** 65536)
     thread = Thread.new do
       start_flag = true
-      yield
+      num.to_s
       end_flag = true
     end
-    Thread.pass until start_flag
+    sleep 0.001 until start_flag
     thread.raise
     thread.join rescue nil
     time = Time.now - time
-    assert_equal([true, false], [start_flag, end_flag])
+    skip "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
-  end
-
-  def test_interrupt
-    assert_interrupt {(65536 ** 65536).to_s}
   end
 
   def test_interrupt_during_bigdivrem
