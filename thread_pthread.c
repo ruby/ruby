@@ -33,6 +33,9 @@
 #if HAVE_POLL
 #include <poll.h>
 #endif
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
 
 static void native_mutex_lock(pthread_mutex_t *lock);
 static void native_mutex_unlock(pthread_mutex_t *lock);

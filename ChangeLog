@@ -1,3 +1,15 @@
+Wed Mar 13 13:54:45 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: check struct timeval exist or not.
+	* include/ruby/missing.h (struct timeval): check HAVE_STRUCT_TIMEVAL
+	  properly. and don't include sys/time.h if struct timeval exist.
+
+	* file.c: include sys/time.h explicitly.
+	* random.c: ditto.
+	* thread_pthread.c: ditto.
+	* time.c: ditto.
+	* ext/date/date_strftime.c: ditto.
+
 Fri Mar 15 14:45:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in (_FORTIFY_SOURCE): added a few comments.

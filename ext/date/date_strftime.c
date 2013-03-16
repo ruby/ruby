@@ -12,6 +12,10 @@
 #include <ctype.h>
 #include <errno.h>
 
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
+
 #undef strchr	/* avoid AIX weirdness */
 
 #define range(low, item, hi)	(item)
