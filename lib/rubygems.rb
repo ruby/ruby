@@ -375,20 +375,28 @@ module Gem
   end
 
   ##
-  # Quietly ensure the named Gem directory contains all the proper
+  # Quietly ensure the Gem directory +dir+ contains all the proper
   # subdirectories.  If we can't create a directory due to a permission
   # problem, then we will silently continue.
+  #
+  # If +mode+ is given, missing directories are created with this mode.
+  #
+  # World-writable directories will never be created.
 
-  def self.ensure_gem_subdirectories dir = Gem.dir
+  def self.ensure_gem_subdirectories dir = Gem.dir, mode = nil
     old_umask = File.umask
     File.umask old_umask | 002
 
     require 'fileutils'
 
+    options = {}
+
+    options[:mode] = mode if mode
+
     REPOSITORY_SUBDIRECTORIES.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
-      FileUtils.mkdir_p subdir rescue nil # in case of perms issues -- lame
+      FileUtils.mkdir_p subdir, options rescue nil
     end
   ensure
     File.umask old_umask
