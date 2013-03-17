@@ -5,7 +5,7 @@ class TestGemSourceList < Gem::TestCase
   def setup
     super
 
-    @uri = "http://blah.com"
+    @uri = "http://example"
     @source = Gem::Source.new(@uri)
 
     @sl = Gem::SourceList.new

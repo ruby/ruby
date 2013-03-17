@@ -132,7 +132,7 @@ class Gem::Installer
   def check_executable_overwrite filename # :nodoc:
     return if @force
 
-    generated_bin = File.join @bin_dir, filename
+    generated_bin = File.join @bin_dir, formatted_program_filename(filename)
 
     return unless File.exist? generated_bin
 

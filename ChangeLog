@@ -1,3 +1,31 @@
+Sun Mar 17 23:36:05 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/available_set.rb:  Undent for style
+
+	* lib/rubygems/dependency_installer.rb:  Pick latest prerelease gem to
+	  install.  Fixes RubyGems bug #468.
+	* test/rubygems/test_gem_dependency_installer.rb:  Test for the above.
+
+	* lib/rubygems/dependency_installer.rb:  Don't display "Done installing
+	  documentation" if documentation will not be installed.
+	* lib/rubygems/rdoc.rb:  ditto
+
+	* lib/rubygems/dependency_list.rb:  Use Array#concat for Ruby 1.x
+	  performance.
+
+	* lib/rubygems/installer.rb:  Use formatted program name when comparing
+	  executables.  RubyGems pull request #471
+	* test/rubygems/test_gem_installer.rb:  Test for the above.
+
+	* lib/rubygems/package.rb:  Use more explicit feature check to work
+	  around JRuby bug #552
+
+	* lib/rubygems/ssl_certs/GeoTrust_Global_CA.pem:  Added GeoTrust root
+	  certificate.
+
+	* test/rubygems/test_gem_source_list.rb:  Use "example" instead of real
+	  hostname
+
 Sun Mar 17 23:28:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
