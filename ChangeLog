@@ -1,3 +1,8 @@
+Mon Mar 18 00:03:27 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rubygems/test_require.rb:  Fix tests when 'a.rb' exists.
+	  [ruby-trunk - Bug #7749]
+
 Mon Mar 18 00:02:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Allow specification of directory permissions.
