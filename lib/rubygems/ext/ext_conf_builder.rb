@@ -13,7 +13,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   FileEntry = FileUtils::Entry_ # :nodoc:
 
   def self.build(extension, directory, dest_path, results, args=[])
-    tmp_dest = Dir.mktmpdir(".gem.", ".") if File.identical?(dest_path, ".")
+    tmp_dest = Dir.mktmpdir(".gem.", ".")
 
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
       siteconf.puts "require 'rbconfig'"

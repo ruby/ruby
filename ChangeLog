@@ -1,3 +1,17 @@
+Mon Mar 18 00:11:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  it is impossible to predict which file will be installed to where,
+	  by the arguments, so use intermediate destination directory always.
+	  [Bug #7698]
+
+Mon Mar 18 00:11:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  it is impossible to predict which file will be installed to where,
+	  by the arguments, so use intermediate destination directory always.
+	  [Bug #7698]
+
 Mon Mar 18 00:05:50 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/setup_command.rb:  Install .pem files.
