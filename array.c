@@ -5357,7 +5357,8 @@ rb_ary_drop_while(VALUE ary)
  *  To delete a particular element anywhere in an array, use #delete:
  *
  *     arr = [1, 2, 2, 3]
- *     arr.delete(2) #=> [1, 3]
+ *     arr.delete(2) #=> 2
+ *     arr #=> [1,3]
  *
  *  A useful method if you need to remove +nil+ values from an array is
  *  #compact:
