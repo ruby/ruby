@@ -1,3 +1,9 @@
+Sun Mar 17 23:28:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
+	  clear DESTDIR so RUBYARCHDIR and RUBYLIBDIR are not be overrdden.
+	  [Bug #7698]
+
 Sun Mar 17 23:26:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):
