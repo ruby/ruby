@@ -1,3 +1,27 @@
+Sun Mar 17 23:11:35 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/ext/builder.rb:  Fix incompatibilities when installing
+	  extensions.  Patch by Nobu.
+	  [ruby-trunk - Bug #7698] [ruby-trunk - Bug #7971]
+	* lib/rubygems/ext/ext_conf_builder.rb:  ditto.
+	* lib/rubygems/installer.rb:  ditto.
+	* test/rubygems/test_gem_ext_ext_conf_builder.rb:  Test for the above.
+	* test/rubygems/test_gem_installer.rb:  ditto.
+
+	* lib/rubygems/commands/sources_command.rb:  Prefer HTTPS over HTTP.
+	* lib/rubygems/defaults.rb:  ditto
+	* lib/rubygems/dependency_resolver.rb:  Ditto.
+	* lib/rubygems/source.rb:  ditto.
+	* lib/rubygems/spec_fetcher.rb:  ditto.
+	* lib/rubygems/specification.rb:  ditto.
+	* lib/rubygems/test_utilities.rb:  ditto.
+	* test/rubygems/test_gem.rb:  Test for the above.
+	* test/rubygems/test_gem_commands_sources_command.rb:  ditto.
+	* test/rubygems/test_gem_dependency_resolver_api_set.rb:  ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb:  ditto.
+	* test/rubygems/test_gem_source.rb:  ditto.
+	* test/rubygems/test_gem_spec_fetcher.rb:  ditto.
+
 Tue Mar 12 00:56:19 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/thread/test_queue.rb (TestQueue#test_thr_kill): reduce

@@ -188,6 +188,8 @@ class Gem::SpecFetcher
     list = {}
 
     Gem.sources.each_source do |source|
+      source = upgrade_http_source source
+
       begin
         names = case type
                 when :latest
@@ -225,5 +227,31 @@ class Gem::SpecFetcher
       cache[source.uri] ||= source.load_specs(type)
     end
   end
+
+  def upgrade_http_source source
+    uri = source.uri
+
+    return source unless uri.scheme.downcase == 'http'
+
+    https_uri = uri.dup
+    https_uri.scheme = 'https'
+    https_uri += '/'
+
+    Gem::RemoteFetcher.fetcher.fetch_path https_uri, nil, true
+
+    say "Upgraded #{uri} to HTTPS"
+
+    https_uri += uri.request_uri
+
+    source.uri = URI https_uri.to_s # cast to URI::HTTPS
+
+    source
+  rescue Gem::RemoteFetcher::FetchError
+    say "Upgrading #{uri} to HTTPS failed, continuing" if
+      Gem.configuration.really_verbose
+
+    source
+  end
+
 end
 

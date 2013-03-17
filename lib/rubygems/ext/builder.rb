@@ -16,13 +16,6 @@ class Gem::Ext::Builder
       raise Gem::InstallError, "Makefile not found:\n\n#{results.join "\n"}"
     end
 
-    mf = Gem.read_binary 'Makefile'
-    mf = mf.gsub(/^RUBYARCHDIR\s*=\s*\$[^$]*/, "RUBYARCHDIR = #{dest_path}")
-    mf = mf.gsub(/^RUBYLIBDIR\s*=\s*\$[^$]*/, "RUBYLIBDIR = #{dest_path}")
-    mf = mf.gsub(/\s*\S+\.time$/, "")
-
-    File.open('Makefile', 'wb') {|f| f.print mf}
-
     # try to find make program from Ruby configure arguments first
     RbConfig::CONFIG['configure_args'] =~ /with-make-prog\=(\w+)/
     make_program = $1 || ENV['MAKE'] || ENV['make']

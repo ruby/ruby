@@ -32,13 +32,14 @@ class TestGemSpecFetcher < Gem::TestCase
       Gem::NameTuple.new(spec.name, spec.version, spec.original_platform)
     }
 
-    v = Gem.marshal_version
-    s_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@specs)))
-    l_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@latest_specs)))
-    p_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@prerelease_specs)))
-    @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
-    @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
-    @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
+    @v = Gem.marshal_version
+    @s_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@specs)))
+    @l_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@latest_specs)))
+    @p_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@prerelease_specs)))
+
+    @fetcher.data["#{@gem_repo}specs.#{@v}.gz"]            = @s_zip
+    @fetcher.data["#{@gem_repo}latest_specs.#{@v}.gz"]     = @l_zip
+    @fetcher.data["#{@gem_repo}prerelease_specs.#{@v}.gz"] = @p_zip
 
     @sf = Gem::SpecFetcher.new
 
@@ -200,7 +201,6 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal comp.sort, specs[@source].sort
   end
 
-
   def test_available_specs_cache
     specs, _ = @sf.available_specs(:latest)
 
@@ -238,6 +238,37 @@ class TestGemSpecFetcher < Gem::TestCase
 
     assert_equal({}, specs)
     assert_kind_of Gem::SourceFetchProblem, errors.first
+  end
+
+  def test_upgrade_http_source
+    Gem.configuration.verbose = :really
+
+    source       = Gem::Source.new URI 'http://example'
+    same_source  = nil
+    https_source = nil
+
+    use_ui @ui do
+      same_source = @sf.upgrade_http_source source
+    end
+
+    assert_equal URI('http://example'), same_source.uri
+
+    @fetcher.data['https://example/'] = 'hello'
+
+    use_ui @ui do
+      https_source = @sf.upgrade_http_source source
+    end
+
+    assert_equal URI('https://example'), https_source.uri
+
+    assert_empty @ui.error
+
+    expected = <<-EXPECTED
+Upgrading http://example to HTTPS failed, continuing
+Upgraded http://example to HTTPS
+    EXPECTED
+
+    assert_equal expected, @ui.output
   end
 
 end

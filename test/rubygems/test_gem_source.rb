@@ -184,5 +184,16 @@ class TestGemSource < Gem::TestCase
     end
   end
 
+  def test_uri_equals
+    @source.api_uri # cached
+
+    refute_equal URI('https://secure.example'), @source.api_uri
+
+    @source.uri = URI 'https://secure.example'
+
+    assert_equal URI('https://secure.example'), @source.uri
+    assert_equal URI('https://secure.example'), @source.api_uri
+  end
+
 end
 

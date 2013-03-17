@@ -69,6 +69,8 @@ module Gem
     # and dependencies.
     #
     class APISpecification
+      attr_reader :set # :nodoc:
+
       def initialize(set, api_data)
         @set = set
         @name = api_data[:name]
@@ -79,6 +81,14 @@ module Gem
       end
 
       attr_reader :name, :version, :dependencies
+
+      def == other # :nodoc:
+        self.class === other and
+          @set          == other.set and
+          @name         == other.name and
+          @version      == other.version and
+          @dependencies == other.dependencies
+      end
 
       def full_name
         "#{@name}-#{@version}"
@@ -91,6 +101,7 @@ module Gem
     class APISet
       def initialize
         @data = Hash.new { |h,k| h[k] = [] }
+        @dep_uri = URI 'https://rubygems.org/api/v1/dependencies'
       end
 
       # Return data for all versions of the gem +name+.
@@ -100,8 +111,8 @@ module Gem
           return @data[name]
         end
 
-        u = URI.parse "http://rubygems.org/api/v1/dependencies?gems=#{name}"
-        str = Net::HTTP.get(u)
+        uri = @dep_uri + "?gems=#{name}"
+        str = Gem::RemoteFetcher.fetcher.fetch_path uri
 
         Marshal.load(str).each do |ver|
           @data[ver[:name]] << ver
@@ -134,8 +145,8 @@ module Gem
 
         return if needed.empty?
 
-        u = URI.parse "http://rubygems.org/api/v1/dependencies?gems=#{needed.join ','}"
-        str = Net::HTTP.get(u)
+        uri = @dep_uri + "?gems=#{needed.sort.join ','}"
+        str = Gem::RemoteFetcher.fetcher.fetch_path uri
 
         Marshal.load(str).each do |ver|
           @data[ver[:name]] << ver

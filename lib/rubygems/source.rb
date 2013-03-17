@@ -141,4 +141,14 @@ class Gem::Source
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.download spec, @uri.to_s, dir
   end
+
+  ##
+  # Replaces the URI for this source with +uri+.  Used for upgrading this
+  # source to HTTPS
+
+  def uri= uri # :nodoc:
+    @api_uri = nil
+    @uri     = uri
+  end
+
 end
