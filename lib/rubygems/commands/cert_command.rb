@@ -1,5 +1,6 @@
 require 'rubygems/command'
 require 'rubygems/security'
+require 'openssl'
 
 class Gem::Commands::CertCommand < Gem::Command
 

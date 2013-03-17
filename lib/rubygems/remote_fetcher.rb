@@ -127,8 +127,6 @@ class Gem::RemoteFetcher
   # always replaced.
 
   def download(spec, source_uri, install_dir = Gem.dir)
-    Gem.ensure_gem_subdirectories(install_dir) rescue nil
-
     cache_dir =
       if Dir.pwd == install_dir then # see fetch_command
         install_dir
@@ -403,7 +401,8 @@ class Gem::RemoteFetcher
     connection.start unless connection.started?
 
     connection
-  rescue OpenSSL::SSL::SSLError, Errno::EHOSTDOWN => e
+  rescue defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : Errno::EHOSTDOWN,
+         Errno::EHOSTDOWN => e
     raise FetchError.new(e.message, uri)
   end
 
@@ -424,6 +423,12 @@ class Gem::RemoteFetcher
       add_rubygems_trusted_certs(store)
     end
     connection.cert_store = store
+  rescue LoadError => e
+    raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
+                 e.message =~ / -- openssl$/
+
+    raise Gem::Exception.new(
+            'Unable to require openssl, install OpenSSL and rebuild ruby (preferred) or use non-HTTPS sources')
   end
 
   def add_rubygems_trusted_certs(store)

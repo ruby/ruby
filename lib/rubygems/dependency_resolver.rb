@@ -406,6 +406,8 @@ module Gem
           source = Gem.sources.first
         end
 
+        Gem.ensure_gem_subdirectories path
+
         source.download full_spec, path
       end
 

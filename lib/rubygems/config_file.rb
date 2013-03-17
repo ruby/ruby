@@ -304,14 +304,14 @@ if you believe they were disclosed to a third party.
     begin
       content = YAML.load(File.read(filename))
       unless content.kind_of? Hash
-        warn "Failed to load #{config_file_name} because it doesn't contain valid YAML hash"
+        warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       end
       return content
     rescue ArgumentError
-      warn "Failed to load #{config_file_name}"
+      warn "Failed to load #{filename}"
     rescue Errno::EACCES
-      warn "Failed to load #{config_file_name} due to permissions problem."
+      warn "Failed to load #{filename} due to permissions problem."
     end
 
     {}

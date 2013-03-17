@@ -192,8 +192,12 @@ class Gem::Commands::QueryCommand < Gem::Command
     end
   end
 
-  def entry_details entry, spec, specs, platforms
+  def entry_details entry, detail_tuple, specs, platforms
     return unless options[:details]
+
+    name_tuple, spec = detail_tuple
+
+    spec = spec.fetch_spec name_tuple unless Gem::Specification === spec
 
     entry << "\n"
 
@@ -228,19 +232,15 @@ class Gem::Commands::QueryCommand < Gem::Command
 
   def make_entry entry_tuples, platforms
     detail_tuple = entry_tuples.first
-    name_tuple, latest_spec = detail_tuple
-
-    latest_spec = latest_spec.fetch_spec name_tuple unless
-      Gem::Specification === latest_spec
 
     name_tuples, specs = entry_tuples.flatten.partition do |item|
       Gem::NameTuple === item
     end
 
-    entry = [latest_spec.name]
+    entry = [name_tuples.first.name]
 
     entry_versions entry, name_tuples, platforms
-    entry_details  entry, latest_spec, specs, platforms
+    entry_details  entry, detail_tuple, specs, platforms
 
     entry.join
   end

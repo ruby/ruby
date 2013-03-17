@@ -121,8 +121,6 @@ class Gem::FakeFetcher
 
     path = File.join path, name
 
-    Gem.ensure_gem_subdirectories install_dir
-
     if source_uri =~ /^http/ then
       File.open(path, "wb") do |f|
         f.write fetch_path(File.join(source_uri, "gems", name))

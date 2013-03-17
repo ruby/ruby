@@ -228,10 +228,14 @@ class Gem::SpecFetcher
     end
   end
 
+  ##
+  # Attempts to upgrade +source+ to HTTPS if it is for http://rubygems.org
+
   def upgrade_http_source source
     uri = source.uri
 
-    return source unless uri.scheme.downcase == 'http'
+    return source unless uri.scheme.downcase == 'http' &&
+                         uri.host.downcase == 'rubygems.org'
 
     https_uri = uri.dup
     https_uri.scheme = 'https'
