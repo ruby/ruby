@@ -18,6 +18,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     @gem = @spec.cache_file
 
     @destination = File.join @tempdir, 'extract'
+
+    FileUtils.mkdir_p @destination
   end
 
   def test_class_new_old_format
@@ -328,6 +330,20 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal("installing into parent path /absolute.rb of " +
                  "#{@destination} is not allowed", e.message)
+  end
+
+  def test_install_location_extra_slash
+    package = Gem::Package.new @gem
+
+    file = 'foo//file.rb'
+    file.taint
+
+    destination = @destination.sub '/', '//'
+
+    destination = package.install_location file, destination
+
+    assert_equal File.join(@destination, 'foo', 'file.rb'), destination
+    refute destination.tainted?
   end
 
   def test_install_location_relative

@@ -12,6 +12,8 @@ class TestGemPackageOld < Gem::TestCase
 
     @package = Gem::Package::Old.new 'old_format.gem'
     @destination = File.join @tempdir, 'extract'
+
+    FileUtils.mkdir_p @destination
   end
 
   def test_contents

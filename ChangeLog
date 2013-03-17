@@ -1,3 +1,23 @@
+Mon Mar 18 00:12:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/setup_command.rb:  Don't delete non-rubygems
+	  files when installing RubyGems.
+	* test/rubygems/test_gem_commands_setup_command.rb:  Test for the
+	  above.
+
+	* lib/rubygems/ext/ext_conf_builder.rb:  Use full path to siteconf.rb
+	  in case the extconf.rb changes directories (like memcached does).
+
+	* lib/rubygems/package.rb:  Remove double slash from path.
+	* test/rubygems/test_gem_package.rb:  Test for the above.
+	* test/rubygems/test_gem_package_old.rb:  ditto.
+
+	* lib/rubygems/source.rb:  Revert automatic HTTPS upgrade
+	* lib/rubygems/spec_fetcher.rb:  ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb:  ditto.
+	* test/rubygems/test_gem_source.rb:  ditto.
+	* test/rubygems/test_gem_spec_fetcher.rb:  ditto.
+
 Mon Mar 18 00:11:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):

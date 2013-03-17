@@ -41,21 +41,36 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_remove_old_lib_files
-    lib            = File.join @install_dir, 'lib'
-    lib_rubygems   = File.join lib, 'rubygems'
+    lib                   = File.join @install_dir, 'lib'
+    lib_rubygems          = File.join lib, 'rubygems'
+    lib_rubygems_defaults = File.join lib_rubygems, 'defaults'
 
-    old_builder_rb = File.join lib_rubygems, 'builder.rb'
-    old_format_rb  = File.join lib_rubygems, 'format.rb'
+    securerandom_rb    = File.join lib, 'securerandom.rb'
 
-    FileUtils.mkdir_p lib_rubygems
+    engine_defaults_rb = File.join lib_rubygems_defaults, 'jruby.rb'
+    os_defaults_rb     = File.join lib_rubygems_defaults, 'operating_system.rb'
 
-    open old_builder_rb, 'w' do |io| io.puts '# builder.rb' end
-    open old_format_rb,  'w' do |io| io.puts '# format.rb'  end
+    old_builder_rb     = File.join lib_rubygems, 'builder.rb'
+    old_format_rb      = File.join lib_rubygems, 'format.rb'
+
+    FileUtils.mkdir_p lib_rubygems_defaults
+
+    open securerandom_rb,    'w' do |io| io.puts '# securerandom.rb'     end
+
+    open old_builder_rb,     'w' do |io| io.puts '# builder.rb'          end
+    open old_format_rb,      'w' do |io| io.puts '# format.rb'           end
+
+    open engine_defaults_rb, 'w' do |io| io.puts '# jruby.rb'            end
+    open os_defaults_rb,     'w' do |io| io.puts '# operating_system.rb' end
 
     @cmd.remove_old_lib_files lib
 
     refute_path_exists old_builder_rb
     refute_path_exists old_format_rb
+
+    assert_path_exists securerandom_rb
+    assert_path_exists engine_defaults_rb
+    assert_path_exists os_defaults_rb
   end
 
 end

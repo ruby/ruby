@@ -399,9 +399,6 @@ gems:
     @fetcher.instance_variable_set :@a1, @a1
     @fetcher.instance_variable_set :@a2, @a2
     def @fetcher.fetch_path uri, mtime = nil, head = false
-      raise Gem::RemoteFetcher::FetchError.new 'no http upgrade', uri if
-        uri.scheme != 'http'
-
       case uri.request_uri
       when /#{@a1.spec_name}/ then
         Gem.deflate Marshal.dump @a1

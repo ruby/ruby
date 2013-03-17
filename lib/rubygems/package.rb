@@ -368,6 +368,9 @@ EOM
     raise Gem::Package::PathError.new(filename, destination_dir) if
       filename.start_with? '/'
 
+    destination_dir = File.realpath destination_dir if
+      File.respond_to? :realpath
+
     destination = File.join destination_dir, filename
     destination = File.expand_path destination
 
