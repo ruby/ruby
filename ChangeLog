@@ -1,3 +1,7 @@
+Mon Mar 18 03:18:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c: Typo in Array#delete by Timo Sand [GH fixes #258]
+
 Mon Mar 18 01:14:56 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_fillbuf): show fd number on failure to debug.
