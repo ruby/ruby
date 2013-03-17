@@ -1,3 +1,10 @@
+Sun Mar 17 23:22:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/ext_conf_builder.rb
+	  (Gem::Ext::ExtConfBuilder.hack_for_obsolete_style_gems): remove
+	  circular dependencies in install-so too.  [ruby-core:52882]
+	  [Bug #7698]
+
 Sun Mar 17 23:19:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/ext_conf_builder.rb (Gem::Ext::ExtConfBuilder.build):

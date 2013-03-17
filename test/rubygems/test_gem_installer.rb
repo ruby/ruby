@@ -1011,6 +1011,38 @@ load Gem.bin_path('a', 'executable', version)
     assert File.exist?(File.join(@spec.gem_dir, rb))
   end
 
+  def test_install_extension_flat
+    @spec.require_paths = ["."]
+
+    @spec.extensions << "extconf.rb"
+
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+        require "mkmf"
+
+        CONFIG['CC'] = '$(TOUCH) $@ ||'
+        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
+
+        create_makefile("#{@spec.name}")
+      RUBY
+    end
+
+    # empty depend file for no auto dependencies
+    @spec.files += %W"depend #{@spec.name}.c".each {|file|
+      write_file File.join(@tempdir, file)
+    }
+
+    so = File.join(@spec.gem_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
+    assert !File.exist?(so)
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      @installer = Gem::Installer.new path
+      @installer.install
+    end
+    assert File.exist?(so)
+  end
+
   def test_installation_satisfies_dependency_eh
     quick_spec 'a'
 

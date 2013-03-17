@@ -11,6 +11,21 @@ require 'tempfile'
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
+  def self.hack_for_obsolete_style_gems(directory)
+    return unless directory and File.identical?(directory, ".")
+    mf = Gem.read_binary 'Makefile'
+    changed = false
+    changed |= mf.gsub!(/^(install-rb-default:)(.*)/) {
+      "#$1#{$2.gsub(/(?:^|\s+)\$\(RUBY(?:ARCH|LIB)DIR\)\/\S+(?=\s|$)/, '')}"
+    }
+    changed |= mf.gsub!(/^(install-so:.*DLLIB.*\n)((?:\t.*\n)+)/) {
+      "#$1#{$2.gsub(/.*INSTALL.*DLLIB.*\n/, '')}"
+    }
+    if changed
+      File.open('Makefile', 'wb') {|f| f.print mf}
+    end
+  end
+
   def self.build(extension, directory, dest_path, results, args=[])
     siteconf = Tempfile.open(%w"siteconf .rb", ".") do |f|
       f.puts "require 'rbconfig'"
@@ -27,6 +42,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     cmd = [Gem.ruby, File.basename(extension), *args].join ' '
 
     run cmd, results
+
+    hack_for_obsolete_style_gems directory
 
     make dest_path, results
 
