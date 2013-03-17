@@ -1,3 +1,15 @@
+Sun Mar 17 23:53:19 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Bump version to 2.0.1 for upcoming bugfix release
+
+	* lib/rubygems/ext/ext_conf_builder.rb:  Restore ruby 1.8 compatibility
+	  for [Bug #9698]
+	* test/rubygems/test_gem_installer.rb:  Ditto.
+
+	* lib/rubygems/package.rb:  Restore ruby 1.8 compatibility.
+
+	* test/rubygems/test_gem_dependency_installer.rb:  Fix warnings
+
 Sun Mar 17 23:36:05 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/available_set.rb:  Undent for style

@@ -1060,6 +1060,7 @@ gem 'other', version
   end
 
   def test_install_extension_flat
+    skip '1.8 mkmf.rb does not create TOUCH' if RUBY_VERSION < '1.9'
     @spec.require_paths = ["."]
 
     @spec.extensions << "extconf.rb"
@@ -1089,6 +1090,13 @@ gem 'other', version
       @installer.install
     end
     assert File.exist?(so)
+  rescue
+    puts '-' * 78
+    puts File.read File.join(@gemhome, 'gems', 'a-2', 'Makefile')
+    puts '-' * 78
+    puts File.read File.join(@gemhome, 'gems', 'a-2', 'gem_make.out')
+    puts '-' * 78
+    raise
   end
 
   def test_installation_satisfies_dependency_eh

@@ -37,7 +37,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_available_set_for_name
     util_setup_gems
-    p1a, gem = util_gem 'a', '10.a'
+    p1a, = util_gem 'a', '10.a'
     util_setup_spec_fetcher p1a, @a1, @a1_pre
 
     inst = Gem::DependencyInstaller.new
@@ -49,7 +49,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_available_set_for_name_prerelease
     util_setup_gems
-    p1a, gem = util_gem 'a', '10.a'
+    p1a, = util_gem 'a', '10.a'
     util_setup_spec_fetcher p1a, @a1, @a1_pre
 
     inst = Gem::DependencyInstaller.new :prerelease => true
@@ -62,7 +62,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_available_set_for_dep
     util_setup_gems
-    p1a, gem = util_gem 'a', '10.a'
+    p1a, = util_gem 'a', '10.a'
     util_setup_spec_fetcher p1a, @a1, @a1_pre
 
     inst = Gem::DependencyInstaller.new
@@ -76,7 +76,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_available_set_for_dep_prerelease
     util_setup_gems
-    p1a, gem = util_gem 'a', '10.a'
+    p1a, = util_gem 'a', '10.a'
     util_setup_spec_fetcher p1a, @a1, @a1_pre
 
     inst = Gem::DependencyInstaller.new :prerelease => true
