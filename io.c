@@ -1657,7 +1657,13 @@ io_fillbuf(rb_io_t *fptr)
         if (r < 0) {
             if (rb_io_wait_readable(fptr->fd))
                 goto retry;
-            rb_sys_fail_path(fptr->pathv);
+	    {
+		VALUE path = rb_sprintf("fd:%d ", fptr->fd);
+		if (!NIL_P(fptr->pathv)) {
+		    rb_str_append(path, fptr->pathv);
+		}
+		rb_sys_fail_path(path);
+	    }
         }
         fptr->rbuf.off = 0;
         fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
