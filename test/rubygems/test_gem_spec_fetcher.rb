@@ -287,5 +287,30 @@ Upgraded http://rubygems.org to HTTPS
     assert_equal expected, @ui.output
   end
 
+  def test_upgrade_http_source_rubygems_405
+    Gem.configuration.verbose = :really
+
+    source       = Gem::Source.new URI 'http://rubygems.org'
+    https_source = nil
+
+    @fetcher.data['https://rubygems.org/'] = proc do
+      raise Gem::RemoteFetcher::FetchError.new ' Not Allowed 405 ', nil
+    end
+
+    use_ui @ui do
+      https_source = @sf.upgrade_http_source source
+    end
+
+    assert_equal URI('https://rubygems.org'), https_source.uri
+
+    assert_empty @ui.error
+
+    expected = <<-EXPECTED
+Upgraded http://rubygems.org to HTTPS
+    EXPECTED
+
+    assert_equal expected, @ui.output
+  end
+
 end
 

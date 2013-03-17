@@ -77,6 +77,8 @@ class Gem::Commands::SetupCommand < Gem::Command
 
       options[:document].uniq!
     end
+
+    @verbose = nil
   end
 
   def check_ruby_version
@@ -279,18 +281,27 @@ TEXT
     end
   end
 
+  def install_file file, dest_dir
+    dest_file = File.join dest_dir, file
+    dest_dir = File.dirname dest_file
+    mkdir_p dest_dir unless File.directory? dest_dir
+
+    install file, dest_file, :mode => 0644
+  end
+
   def install_lib(lib_dir)
     say "Installing RubyGems" if @verbose
 
     lib_files = rb_files_in 'lib'
+    pem_files = pem_files_in 'lib'
 
     Dir.chdir 'lib' do
       lib_files.each do |lib_file|
-        dest_file = File.join lib_dir, lib_file
-        dest_dir = File.dirname dest_file
-        mkdir_p dest_dir unless File.directory? dest_dir
+        install_file lib_file, lib_dir
+      end
 
-        install lib_file, dest_file, :mode => 0644
+      pem_files.each do |pem_file|
+        install_file pem_file, lib_dir
       end
     end
   end
@@ -379,6 +390,12 @@ TEXT
     end
 
     [lib_dir, bin_dir]
+  end
+
+  def pem_files_in dir
+    Dir.chdir dir do
+      Dir[File.join('**', '*pem')]
+    end
   end
 
   def rb_files_in dir

@@ -1,3 +1,17 @@
+Mon Mar 18 00:05:50 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/commands/setup_command.rb:  Install .pem files.
+	* test/rubygems/test_gem_commands_setup_command.rb:  Test for the
+	  above.
+
+	* lib/rubygems/spec_fetcher.rb:  Test HTTPS upgrade with URI::HTTPS,
+	  not URI::HTTP.  Fixes bug in automatic HTTPS upgrade.
+	* test/rubygems/test_gem_spec_fetcher.rb:  Test for the above.
+
+	* lib/rubygems.rb:  Version 2.0.2
+
+	* lib/rubygems/test_utilities.rb:  Ensure scheme and uri class match.
+
 Mon Mar 18 00:03:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_require.rb:  Fix tests when 'a.rb' exists.
