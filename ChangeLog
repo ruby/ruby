@@ -1,3 +1,7 @@
+Tue Mar 19 02:13:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: set ac_cv_prog_cxx if CXX is supplied.
+
 Tue Mar 19 01:18:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: Fix c++ compiler auto-selection not only for

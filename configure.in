@@ -216,6 +216,7 @@ AS_CASE(["$build_os"],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
   ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
+test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
 if test "$program_prefix" = NONE; then
   program_prefix=
