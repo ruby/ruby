@@ -7,6 +7,7 @@ class WithDigitOptions < TestOptionParser
     @opt.def_option("-x"){|x| @flag = @flags[:x] = x }
     @opt.def_option("-o VAL"){|x| @flag = @flags[:o] = x}
     @opt.def_option("-p [VAL]"){|x| @flag = @flags[:p] = x}
+    @opt.def_option("-q=[VAL]"){|x| @flag = @flags[:q] = x}
     @opt.def_option("-2"){|x| @flag = @flags[2] = x}
     @opt.def_option("-4"){|x| @flag = @flags[4] = x}
   end
@@ -75,6 +76,18 @@ class WithDigitOptions < TestOptionParser
     assert_equal(true, @flags[2])
     @flags.clear
   end
+
+  # When one uses option with optional argument
+  # with equal sign in its specification (instead of spaces)
+  # argument should be just after option letter without any spaces
+  def test_negative_digits_with_optargs_with_eq_sign
+    assert_raise(OptionParser::InvalidOption) {@opt.parse!(%w"-q -1")}
+    @flags.clear
+
+    assert_equal(%w"", no_error {@opt.parse!(%w"-q-1")})
+    assert_equal('-1', @flags[:q])
+    @flags.clear
+  end
 end
 
 class WithoutDigitOptions < TestOptionParser
@@ -84,6 +97,7 @@ class WithoutDigitOptions < TestOptionParser
     @opt.def_option("-x"){|x| @flag = @flags[:x] = x}
     @opt.def_option("-o VAL"){|x| @flag = @flags[:o] = x}
     @opt.def_option("-p [VAL]"){|x| @flag = @flags[:p] = x}
+    @opt.def_option("-q=[VAL]"){|x| @flag = @flags[:q] = x}
   end
   
   def test_negative_digits
@@ -115,6 +129,20 @@ class WithoutDigitOptions < TestOptionParser
 
     assert_equal(%w"-2", no_error {@opt.parse!(%w"-p-1 -2")})
     assert_equal('-1', @flags[:p])
+    @flags.clear
+  end
+
+  # When one uses option with optional argument
+  # with equal sign in its specification (instead of spaces)
+  # argument should be just after option letter without any spaces
+  def test_negative_digits_with_optargs_with_eq_sign
+    assert_equal(%w"-1 -2", no_error {@opt.parse!(%w"-q -1 -2")})
+    assert_equal(true, @flags.has_key?(:q))
+    assert_equal(nil, @flags[:q])
+    @flags.clear
+
+    assert_equal(%w"-2", no_error {@opt.parse!(%w"-q-1 -2")})
+    assert_equal('-1', @flags[:q])
     @flags.clear
   end
 end
