@@ -10,6 +10,7 @@ end
 if defined?(WIN32OLE)
   require 'mkmf'
   require 'test/unit'
+  require 'tmpdir'
   class TestErrInCallBack < Test::Unit::TestCase
     def setup
       @ruby = nil
@@ -35,18 +36,17 @@ if defined?(WIN32OLE)
     def test_err_in_callback
       skip "'ADODB.Connection' is not available" unless available_adodb?
       if @ruby
-        cmd = "#{@ruby} -v #{@iopt} #{@script} > test_err_in_callback.log 2>&1"
-        system(cmd)
-        str = ""
-        open("test_err_in_callback.log") {|ifs|
-          str = ifs.read
-        }
-        assert_match(/NameError/, str)
+        Dir.mktmpdir do |tmpdir|
+          logfile = File.join(tmpdir, "test_err_in_callback.log")
+          cmd = "#{@ruby} -v #{@iopt} #{@script} > #{logfile.gsub(%r(/), '\\')} 2>&1"
+          system(cmd)
+          str = ""
+          open(logfile) {|ifs|
+            str = ifs.read
+          }
+          assert_match(/NameError/, str)
+        end
       end
-    end
-
-    def teardown
-      File.unlink("test_err_in_callback.log") if File.exist?("test_err_in_callback.log")
     end
   end
 end

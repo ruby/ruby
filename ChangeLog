@@ -1,3 +1,9 @@
+Mon Mar 18 14:46:19 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb
+	  (TestErrInCallBack#test_err_in_callback): shouldn't create a file in
+	  source directory.
+
 Mon Mar 18 13:29:52 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c (backtrace): on darwin use custom backtrace() to trace
