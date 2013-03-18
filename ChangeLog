@@ -1,3 +1,8 @@
+Mon Mar 18 10:41:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.c: Correct predefined macro name. This typo is introduced by
+	  r36534 and should be backported to ruby_2_0_0.
+
 Mon Mar 18 03:18:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Typo in Array#delete by Timo Sand [GH fixes #258]

@@ -18,7 +18,7 @@ static void vm_analysis_insn(int insn);
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
-#elif defined(__GNUC__) && defined(_x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
 #elif defined(__GNUC__) && defined(__i386__)
