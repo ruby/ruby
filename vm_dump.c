@@ -452,8 +452,13 @@ int backtrace (void **trace, int size) {
     }
     return n;
 darwin_sigtramp:
+    /* darwin's bundled libunwind doesn't support signal trampoline */
     {
 	ucontext_t *uctx;
+	/* get _sigtramp's ucontext_t and set values to cursor
+	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
+	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
+	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
 	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->__ss.__rax);
@@ -474,7 +479,7 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
 	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)(unw_word_t)uctx->uc_mcontext->__ss.__rip;
+	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
 	trace[n++] = (void *)ip;
     }
     while (unw_step(&cursor) > 0) {
