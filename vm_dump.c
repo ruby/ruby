@@ -428,6 +428,61 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # if HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
+# elif defined(__APPLE__) && defined(__x86_64__)
+#  define UNW_LOCAL_ONLY
+#  include <libunwind.h>
+#  undef backtrace
+int backtrace (void **trace, int size) {
+    unw_cursor_t cursor; unw_context_t uc;
+    unw_word_t ip;
+    int n = 0;
+
+    unw_getcontext(&uc);
+    unw_init_local(&cursor, &uc);
+    while (unw_step(&cursor) > 0) {
+	unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	trace[n++] = (void *)ip;
+	{
+	    char buf[256];
+	    unw_get_proc_name(&cursor, buf, 256, &ip);
+	    if (strncmp("_sigtramp", buf, sizeof("_sigtramp")) == 0) {
+		goto darwin_sigtramp;
+	    }
+	}
+    }
+    return n;
+darwin_sigtramp:
+    {
+	ucontext_t *uctx;
+	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
+	uctx = (ucontext_t *)ip;
+	unw_set_reg(&cursor, UNW_X86_64_RAX, uctx->uc_mcontext->__ss.__rax);
+	unw_set_reg(&cursor, UNW_X86_64_RBX, uctx->uc_mcontext->__ss.__rbx);
+	unw_set_reg(&cursor, UNW_X86_64_RCX, uctx->uc_mcontext->__ss.__rcx);
+	unw_set_reg(&cursor, UNW_X86_64_RDX, uctx->uc_mcontext->__ss.__rdx);
+	unw_set_reg(&cursor, UNW_X86_64_RDI, uctx->uc_mcontext->__ss.__rdi);
+	unw_set_reg(&cursor, UNW_X86_64_RSI, uctx->uc_mcontext->__ss.__rsi);
+	unw_set_reg(&cursor, UNW_X86_64_RBP, uctx->uc_mcontext->__ss.__rbp);
+	unw_set_reg(&cursor, UNW_X86_64_RSP, 8+(uctx->uc_mcontext->__ss.__rsp));
+	unw_set_reg(&cursor, UNW_X86_64_R8,  uctx->uc_mcontext->__ss.__r8);
+	unw_set_reg(&cursor, UNW_X86_64_R9,  uctx->uc_mcontext->__ss.__r9);
+	unw_set_reg(&cursor, UNW_X86_64_R10, uctx->uc_mcontext->__ss.__r10);
+	unw_set_reg(&cursor, UNW_X86_64_R11, uctx->uc_mcontext->__ss.__r11);
+	unw_set_reg(&cursor, UNW_X86_64_R12, uctx->uc_mcontext->__ss.__r12);
+	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
+	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
+	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
+	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
+	trace[n++] = (void *)(unw_word_t)uctx->uc_mcontext->__ss.__rip;
+	trace[n++] = (void *)ip;
+    }
+    while (unw_step(&cursor) > 0) {
+	unw_get_reg(&cursor, UNW_REG_IP, &ip);
+	trace[n++] = (void *)ip;
+    }
+    return n;
+}
 # elif defined(BROKEN_BACKTRACE)
 #  undef HAVE_BACKTRACE
 #  define HAVE_BACKTRACE 0
