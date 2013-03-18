@@ -146,4 +146,18 @@ class TestGc < Test::Unit::TestCase
       ObjectSpace.define_finalizer(Thread.main) { p 'finalize' }
     EOS
   end
+
+  def test_expand_heap
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
+    base_length = GC.stat[:heap_length]
+    (base_length * 500).times{ 'a' }
+    GC.start
+    assert_equal base_length, GC.stat[:heap_length], "invalid heap expanding"
+
+    a = []
+    (base_length * 500).times{ a << 'a' }
+    GC.start
+    assert base_length < GC.stat[:heap_length]
+    eom
+  end
 end

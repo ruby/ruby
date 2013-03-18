@@ -1,3 +1,8 @@
+Mon Mar 18 21:42:48 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Avoid unnecessary heap growth. patched by tmm1(Aman Gupta).
+	  [Bug #8093] [ruby-core:53393]
+
 Mon Mar 18 17:58:36 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Fix unlimited memory growth with large values of
