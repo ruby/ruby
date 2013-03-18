@@ -208,7 +208,7 @@ then
 (it is also a good idea to do 'make clean' before compiling))
 fi
 AS_CASE(["$build_os"],
-  [darwin11.*], [
+  [darwin1*.*], [
     AS_CASE(["x$CC"],
       [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
       [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],

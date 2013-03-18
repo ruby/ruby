@@ -1,3 +1,8 @@
+Tue Mar 19 01:18:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: Fix c++ compiler auto-selection not only for
+	  Darwin 11.x, but also the other versions of Darwin.
+
 Tue Mar 19 00:26:22 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Improve accuracy of objspace_live_num() and
