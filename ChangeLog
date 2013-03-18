@@ -1,3 +1,9 @@
+Mon Mar 18 17:58:36 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Fix unlimited memory growth with large values of
+	  RUBY_FREE_MIN. patched by tmm1(Aman Gupta).
+	  [Bug #8095] [ruby-core:53405]
+
 Mon Mar 18 14:46:19 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb

@@ -1973,8 +1973,9 @@ before_gc_sweep(rb_objspace_t *objspace)
     objspace->heap.do_heap_free = (size_t)((heaps_used * HEAP_OBJ_LIMIT) * 0.65);
     objspace->heap.free_min = (size_t)((heaps_used * HEAP_OBJ_LIMIT)  * 0.2);
     if (objspace->heap.free_min < initial_free_min) {
-	objspace->heap.do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
         objspace->heap.free_min = initial_free_min;
+	if (objspace->heap.do_heap_free < initial_free_min)
+	    objspace->heap.do_heap_free = initial_free_min;
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
