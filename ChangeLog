@@ -1,3 +1,9 @@
+Tue Mar 19 00:26:22 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Improve accuracy of objspace_live_num() and
+	  allocated/freed counters. patched by tmm1(Aman Gupta).
+	  [Bug #8092] [ruby-core:53392]
+
 Mon Mar 18 21:42:48 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Avoid unnecessary heap growth. patched by tmm1(Aman Gupta).

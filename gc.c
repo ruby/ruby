@@ -1431,12 +1431,10 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
     while (p) {
 	RVALUE *tmp = p->as.free.next;
 	run_final(objspace, (VALUE)p);
+	objspace->total_freed_object_num++;
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
             add_slot_local_freelist(objspace, p);
-            if (!is_lazy_sweeping(objspace)) {
-		objspace->total_freed_object_num++;
-		objspace->heap.free_num++;
-            }
+	    objspace->heap.free_num++;
 	}
 	else {
 	    struct heaps_slot *slot = (struct heaps_slot *)(VALUE)RDATA(p)->dmark;
@@ -1940,9 +1938,9 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         else {
             sweep_slot->free_next = NULL;
         }
-	objspace->total_freed_object_num += freed_num;
 	objspace->heap.free_num += freed_num + empty_num;
     }
+    objspace->total_freed_object_num += freed_num;
     objspace->heap.final_num += final_num;
 
     if (deferred_final_list && !finalizing) {
@@ -2969,11 +2967,11 @@ rb_gc_force_recycle(VALUE p)
     rb_objspace_t *objspace = &rb_objspace;
     struct heaps_slot *slot;
 
+    objspace->total_freed_object_num++;
     if (MARKED_IN_BITMAP(GET_HEAP_BITMAP(p), p)) {
         add_slot_local_freelist(objspace, (RVALUE *)p);
     }
     else {
-	objspace->total_freed_object_num++;
 	objspace->heap.free_num++;
         slot = add_slot_local_freelist(objspace, (RVALUE *)p);
         if (slot->free_next == NULL) {
