@@ -523,10 +523,10 @@ class OptionParser
     class PlacedArgument < self
 
       #
-      # Returns nil if argument is not present or begins with '-'.
+      # Returns nil if argument is not present or begins with '-' and is not a negative number.
       #
       def parse(arg, argv, &error)
-        if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
+        if !(val = arg) and (argv.empty? or /\A-\D/ =~ (val = argv[0]))
           return nil, block, nil
         end
         opt = (val = parse_arg(val, &error))[1]
@@ -707,6 +707,14 @@ class OptionParser
           opt.compsys(*args, &block)
         end
       end
+    end
+
+    #
+    # any of keys in list is negative number, such as -2
+    #
+    def has_digit_options?
+      digits = (0..9).map{|x|x.to_s}
+      short.keys.any?{|k| digits.include?(k) }
     end
   end
 
@@ -1276,6 +1284,13 @@ XXX
       nolong
   end
 
+  #
+  # any of keys is negative number, such as -2
+  #
+  def has_digit_options?
+    @stack.any?{|list| list.has_digit_options? }
+  end
+
   def define(*opts, &block)
     top.append(*(sw = make_switch(opts, block)))
     sw[0]
@@ -1369,6 +1384,14 @@ XXX
 
         # short option
         when /\A-(.)((=).*|.+)?/m
+          # negative digit works as option if any digit-options
+          # were explicitly specified
+
+          if negative_numeric?(arg) && !has_digit_options?
+            parse_non_option(arg, &nonopt)
+            next
+          end
+
           opt, has_arg, eq, val, rest = $1, $3, $3, $2, $2
           begin
             sw, = search(:short, opt)
@@ -1400,13 +1423,7 @@ XXX
 
         # non-option argument
         else
-          catch(:prune) do
-            visit(:each_option) do |sw0|
-              sw = sw0
-              sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
-            end
-            nonopt.call(arg)
-          end
+          parse_non_option(arg, &nonopt)
         end
       end
 
@@ -1418,6 +1435,17 @@ XXX
     argv
   end
   private :parse_in_order
+
+  def parse_non_option(arg, &nonopt)
+    catch(:prune) do
+      visit(:each_option) do |sw0|
+        sw = sw0
+        sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
+      end
+      nonopt.call(arg)
+    end
+  end
+  private :parse_non_option
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -1680,6 +1708,20 @@ XXX
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
   accept(DecimalNumeric) {|s,| eval(s) if s}
+
+  #
+  # Pattern for negative numerics matching which shouldn't be accidentally
+  # treated as options
+  #
+  NegativeNumeric = /\A-\d+(\.\d*)?/
+
+  #
+  # this method is used to create a local scope
+  # and not to clear old values of regex variables such as $~
+  #
+  def negative_numeric?(arg)
+    NegativeNumeric === arg
+  end
 
   #
   # Boolean switch, which means whether it is present or not, whether it is
