@@ -18,6 +18,7 @@
 #include <errno.h>
 #include "ruby_atomic.h"
 #include "eval_intern.h"
+#include "internal.h"
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/signal.h"
@@ -421,10 +422,11 @@ rb_f_kill(int argc, VALUE *argv)
     }
     else {
 	for (i=1; i<argc; i++) {
-	    if (kill(NUM2PIDT(argv[i]), sig) < 0)
-		rb_sys_fail(0);
+	    ruby_kill(NUM2PIDT(argv[i]), sig);
 	}
     }
+    rb_thread_execute_interrupts(rb_thread_current());
+
     return INT2FIX(i-1);
 }
 

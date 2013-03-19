@@ -1,3 +1,22 @@
+Sat Mar 16 01:44:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* internal.h: added a declaration of ruby_kill().
+	* thread.c (ruby_kill): helper function of kill().
+
+	* signal.c (rb_f_kill): use ruby_kill() instead of kill().
+	* signal.c (rb_f_kill): call rb_thread_execute_interrupts()
+	  to ensure that make SignalException if sent a signal
+	  to myself. [Bug #7951] [ruby-core:52864]
+
+	* vm_core.h (typedef struct rb_thread_struct): added
+	  th->interrupt_cond.
+	* thread.c (rb_threadptr_interrupt_common): added to
+	  initialization of th->interrupt_cond.
+	* thread.c (thread_create_core): ditto.
+
+	* test/ruby/test_signal.rb (TestSignal#test_hup_me): test for
+	  the above.
+
 Sat Mar 16 00:42:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (linux_iocparm_len): enable only exist _IOC_SIZE().

@@ -273,4 +273,11 @@ EOS
       sleep 0.1
     INPUT
   end
+
+  def test_hup_me
+    # [Bug #7951] [ruby-core:52864]
+    assert_raise(SignalException) {
+      Process.kill('HUP',Process.pid)
+    }
+  end
 end
