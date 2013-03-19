@@ -5255,7 +5255,7 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
         ef = eb / (SIGNED_VALUE)BASE_FIG;
         ef = eb - ef * (SIGNED_VALUE)BASE_FIG;
         if (ef) {
-            ++j;        /* Means to add one more preceeding zero */
+            ++j;        /* Means to add one more preceding zero */
             ++e;
         }
     }
