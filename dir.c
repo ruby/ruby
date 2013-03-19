@@ -79,6 +79,49 @@ char *strchr(char*,char);
 #define opendir(p) rb_w32_uopendir(p)
 #endif
 
+#ifdef __APPLE__
+# define HAVE_HFS 1
+#else
+# define HAVE_HFS 0
+#endif
+#if HAVE_HFS
+#include <sys/param.h>
+#include <sys/mount.h>
+
+rb_encoding *
+rb_utf8mac_encoding(void)
+{
+    static rb_encoding *utf8mac;
+    if (!utf8mac) utf8mac = rb_enc_find("UTF8-MAC");
+    return utf8mac;
+}
+
+static inline int
+is_hfs(const char *path)
+{
+    struct statfs buf;
+    if (statfs(path, &buf) == 0) {
+	return buf.f_type == 17; /* HFS on darwin */
+    }
+    return FALSE;
+}
+
+static inline int
+has_nonascii(const char *ptr, size_t len)
+{
+    while (len > 0) {
+	if (!ISASCII(*ptr)) return 1;
+	ptr++;
+	--len;
+    }
+    return 0;
+}
+
+# define IF_HAVE_HFS(something) something
+#else
+# define IF_HAVE_HFS(something) /* nothing */
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
@@ -1377,12 +1420,17 @@ glob_helper(
 	struct dirent *dp;
 	DIR *dirp;
 	IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
+	IF_HAVE_HFS(int hfs_p);
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) return 0;
+	IF_HAVE_HFS(hfs_p = is_hfs(*path ? path : "."));
 
 	while (READDIR(dirp, enc, &STRUCT_DIRENT(entry), dp)) {
 	    char *buf;
 	    enum answer new_isdir = UNKNOWN;
+	    const char *name;
+	    size_t namlen;
+	    IF_HAVE_HFS(VALUE utf8str = Qnil);
 
 	    if (recursive && dp->d_name[0] == '.') {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
@@ -1393,11 +1441,25 @@ glob_helper(
 		if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
 	    }
 
-	    buf = join_path(path, pathlen, dirsep, dp->d_name, NAMLEN(dp));
+	    name = dp->d_name;
+	    namlen = NAMLEN(dp);
+# if HAVE_HFS
+	    if (hfs_p && has_nonascii(name, namlen)) {
+		rb_encoding *utf8mac = rb_utf8mac_encoding();
+		if (utf8mac) {
+		    utf8str = rb_str_conv_enc(rb_str_new(name, namlen),
+					      utf8mac, rb_utf8_encoding());
+		    RSTRING_GETMEM(utf8str, name, namlen);
+		}
+	    }
+# endif
+	    buf = join_path(path, pathlen, dirsep, name, namlen);
+	    IF_HAVE_HFS(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
 	    if (!buf) {
 		status = -1;
 		break;
 	    }
+	    name = buf + pathlen + (dirsep != 0);
 	    if (recursive) {
 #ifndef _WIN32
 		if (do_lstat(buf, &st, flags) == 0)
@@ -1424,7 +1486,7 @@ glob_helper(
 		    p = p->next; /* 0 times recursion */
 		}
 		if (p->type == PLAIN || p->type == MAGICAL) {
-		    if (fnmatch(p->str, enc, dp->d_name, flags) == 0)
+		    if (fnmatch(p->str, enc, name, flags) == 0)
 			*new_end++ = p->next;
 		}
 	    }

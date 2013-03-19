@@ -269,4 +269,22 @@ class TestDir_M17N < Test::Unit::TestCase
     m = Class.new {define_method(:to_path) {d}}
     assert_raise(Encoding::CompatibilityError) {Dir.glob(m.new)}
   end
+
+  def test_glob_compose
+    bug7267 = '[ruby-core:48745] [Bug #7267]'
+
+    pp = Object.new.extend(Test::Unit::Assertions)
+    def pp.mu_pp(str) #:nodoc:
+      str.dump
+    end
+
+    with_tmpdir {|d|
+      orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+      orig.each {|n| open(n, "w") {}}
+      orig.each do |o|
+        n = Dir.glob("#{o[0..0]}*")[0]
+        pp.assert_equal(o, n, bug7267)
+      end
+    }
+  end
 end

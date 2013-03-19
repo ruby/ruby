@@ -1,3 +1,8 @@
+Tue Mar 19 17:06:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): compose HFS file names from UTF8-MAC.
+	  [ruby-core:48745] [Bug #7267]
+
 Sat Mar 16 01:44:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* internal.h: added a declaration of ruby_kill().
