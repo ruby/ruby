@@ -4726,7 +4726,7 @@ Exit:
 }
 
 /*
- *  Input  a = 00000xxxxxxxx En(5 preceeding zeros)
+ *  Input  a = 00000xxxxxxxx En(5 preceding zeros)
  *  Output a = xxxxxxxx En-5
  */
 static int
