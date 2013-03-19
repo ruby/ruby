@@ -1246,9 +1246,8 @@ glob_free_pattern(struct glob_pattern *list)
 }
 
 static char *
-join_path(const char *path, int dirsep, const char *name, size_t namlen)
+join_path(const char *path, long len, int dirsep, const char *name, size_t namlen)
 {
-    long len = strlen(path);
     char *buf = GLOB_ALLOC_N(char, len+namlen+(dirsep?1:0)+1);
 
     if (!buf) return 0;
@@ -1311,6 +1310,7 @@ glob_helper(
     struct glob_pattern **cur, **new_beg, **new_end;
     int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
+    long pathlen;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -1336,6 +1336,7 @@ glob_helper(
 	}
     }
 
+    pathlen = strlen(path);
     if (*path) {
 	if (match_all && exist == UNKNOWN) {
 	    if (do_lstat(path, &st, flags) == 0) {
@@ -1362,7 +1363,7 @@ glob_helper(
 	    if (status) return status;
 	}
 	if (match_dir && isdir == YES) {
-	    char *tmp = join_path(path, dirsep, "", 0);
+	    char *tmp = join_path(path, pathlen, dirsep, "", 0);
 	    if (!tmp) return -1;
 	    status = glob_call_func(func, tmp, arg, enc);
 	    GLOB_FREE(tmp);
@@ -1392,7 +1393,7 @@ glob_helper(
 		if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
 	    }
 
-	    buf = join_path(path, dirsep, dp->d_name, NAMLEN(dp));
+	    buf = join_path(path, pathlen, dirsep, dp->d_name, NAMLEN(dp));
 	    if (!buf) {
 		status = -1;
 		break;
@@ -1473,7 +1474,7 @@ glob_helper(
 		    }
 		}
 
-		buf = join_path(path, dirsep, name, len);
+		buf = join_path(path, pathlen, dirsep, name, len);
 		GLOB_FREE(name);
 		if (!buf) {
 		    GLOB_FREE(new_beg);
