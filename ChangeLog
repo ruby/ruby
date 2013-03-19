@@ -1,3 +1,7 @@
+Sat Mar 16 03:39:38 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (ruby_kill): added a few comments.
+
 Sat Mar 16 03:36:56 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (ruby_kill): release GVL while waiting signal delivered.

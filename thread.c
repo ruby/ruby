@@ -5210,6 +5210,10 @@ ruby_kill(rb_pid_t pid, int sig)
     rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = GET_VM();
 
+    /*
+     * When target pid is self, many caller assume signal will be
+     * delivered immediately and synchronously.
+     */
     if ((th == vm->main_thread) && (pid == getpid())) {
 	GVL_UNLOCK_BEGIN();
 	native_mutex_lock(&th->interrupt_lock);
