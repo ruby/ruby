@@ -5204,7 +5204,7 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
 }
 
 void
-ruby_kill(pid_t pid, int sig)
+ruby_kill(rb_pid_t pid, int sig)
 {
     int err;
     rb_thread_t *th = GET_THREAD();
