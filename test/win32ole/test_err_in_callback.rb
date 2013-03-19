@@ -39,7 +39,8 @@ if defined?(WIN32OLE)
         Dir.mktmpdir do |tmpdir|
           logfile = File.join(tmpdir, "test_err_in_callback.log")
           cmd = "#{@ruby} -v #{@iopt} #{@script} > #{logfile.gsub(%r(/), '\\')} 2>&1"
-          system(cmd)
+          result = system(cmd)
+          p [result, cmd]
           str = ""
           open(logfile) {|ifs|
             str = ifs.read
