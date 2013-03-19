@@ -1,3 +1,7 @@
+Sat Mar 16 03:40:49 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_signal.rb (test_hup_me): added a few comments.
+
 Sat Mar 16 03:39:38 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (ruby_kill): added a few comments.

@@ -276,6 +276,10 @@ EOS
 
   def test_hup_me
     # [Bug #7951] [ruby-core:52864]
+    # This is MRI specific spec. ruby has no guarantee
+    # that signal will be deliverd synchronously.
+    # This ugly workaround was introduced to don't break
+    # compatibility against silly example codes.
     assert_raise(SignalException) {
       Process.kill('HUP',Process.pid)
     }
