@@ -1,3 +1,8 @@
+Wed Mar 20 04:15:32 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/bigdecimal/bigdecimal.c: fixed typo.
+	  patched by Vipul A M <vipulnsward@gmail.com>
+
 Sat Mar 16 03:40:49 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_signal.rb (test_hup_me): added a few comments.
