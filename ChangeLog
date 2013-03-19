@@ -1,3 +1,8 @@
+Wed Mar 20 04:27:42 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/rinda/test_rinda.rb: remove unused variables.
+	  patched by Vipul A M <vipulnsward@gmail.com>
+
 Wed Mar 20 04:15:32 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/bigdecimal/bigdecimal.c: fixed typo.

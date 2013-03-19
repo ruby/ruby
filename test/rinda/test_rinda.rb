@@ -150,7 +150,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raise(Rinda::InvalidHashTupleKey) do
-      tmpl = Rinda::Template.new({:message=>String, "name"=>String})
+      Rinda::Template.new({:message=>String, "name"=>String})
     end
     tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
@@ -262,7 +262,7 @@ module TupleSpaceTestModule
   end
 
   def test_core_01
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
@@ -297,7 +297,7 @@ module TupleSpaceTestModule
       s
     end
 
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
@@ -310,7 +310,7 @@ module TupleSpaceTestModule
     notify1 = @ts.notify(nil, [:req, Integer])
     notify2 = @ts.notify(nil, {"message"=>String, "name"=>String})
 
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
