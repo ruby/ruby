@@ -1,3 +1,8 @@
+Sat Mar 16 00:42:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (linux_iocparm_len): enable only exist _IOC_SIZE().
+	  Because musl libc doesn't have it. [Bug #8051] [ruby-core:53229]
+
 Tue Mar 19 10:05:04 2013  Shota Fukumori  <her@sorah.jp>
 
 	* ext/objspace/objspace.c: Fix typo in doc. Patch by Sho Hashimoto.
