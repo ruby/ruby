@@ -5211,10 +5211,12 @@ ruby_kill(rb_pid_t pid, int sig)
     rb_vm_t *vm = GET_VM();
 
     if ((th == vm->main_thread) && (pid == getpid())) {
+	GVL_UNLOCK_BEGIN();
 	native_mutex_lock(&th->interrupt_lock);
 	err = kill(pid, sig);
 	native_cond_wait(&th->interrupt_cond, &th->interrupt_lock);
 	native_mutex_unlock(&th->interrupt_lock);
+	GVL_UNLOCK_END();
     } else {
 	err = kill(pid, sig);
     }
