@@ -492,12 +492,15 @@ RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cst
 VALUE
 rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
 {
+    extern VALUE rb_cEncodingConverter;
     rb_econv_t *ec;
     rb_econv_result_t ret;
-    long len;
+    long len, olen;
+    VALUE econv_wrapper;
     VALUE newstr;
-    const unsigned char *sp;
-    unsigned char *dp;
+    const unsigned char *start, *sp;
+    unsigned char *dest, *dp;
+    size_t converted_output = 0;
 
     if (!to) return str;
     if (!from) from = rb_enc_get(str);
@@ -513,23 +516,38 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
 
     len = RSTRING_LEN(str);
     newstr = rb_str_new(0, len);
+    olen = len;
 
-  retry:
     ec = rb_econv_open_opts(from->name, to->name, ecflags, ecopts);
     if (!ec) return str;
+    econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);
+    DATA_PTR(econv_wrapper) = ec;
 
     sp = (unsigned char*)RSTRING_PTR(str);
-    dp = (unsigned char*)RSTRING_PTR(newstr);
-    ret = rb_econv_convert(ec, &sp, (unsigned char*)RSTRING_END(str),
-			   &dp, (unsigned char*)RSTRING_END(newstr), 0);
-    rb_econv_close(ec);
-    switch (ret) {
-      case econv_destination_buffer_full:
+    start = sp;
+    while ((dest = (unsigned char*)RSTRING_PTR(newstr)),
+	   (dp = dest + converted_output),
+	   (ret = rb_econv_convert(ec, &sp, start + len, &dp, dest + olen, 0)),
+	   ret == econv_destination_buffer_full) {
 	/* destination buffer short */
-	len = len < 2 ? 2 : len * 2;
-	rb_str_resize(newstr, len);
-	goto retry;
-
+	size_t converted_input = sp - start;
+	size_t rest = len - converted_input;
+	converted_output = dp - dest;
+	rb_str_set_len(newstr, converted_output);
+	if (converted_input && converted_output &&
+	    rest < (LONG_MAX / converted_output)) {
+	    rest = (rest * converted_output) / converted_input;
+	}
+	else {
+	    rest = olen;
+	}
+	olen += rest < 2 ? 2 : rest;
+	rb_str_resize(newstr, olen);
+    }
+    DATA_PTR(econv_wrapper) = 0;
+    rb_econv_close(ec);
+    rb_gc_force_recycle(econv_wrapper);
+    switch (ret) {
       case econv_finished:
 	len = dp - (unsigned char*)RSTRING_PTR(newstr);
 	rb_str_set_len(newstr, len);

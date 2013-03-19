@@ -1,3 +1,8 @@
+Tue Mar 19 17:09:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_conv_enc_opts): convert with one converter, instead
+	  of re-creating converters for each buffer expansion.
+
 Tue Mar 19 17:06:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): compose HFS file names from UTF8-MAC.
