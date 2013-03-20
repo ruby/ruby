@@ -1,3 +1,8 @@
+Wed Mar 20 22:53:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (find_library): fix to format message.
+	  [ruby-core:53568] [Bug #8130]
+
 Wed Mar 20 22:52:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (install_dirs, with_destdir): prefix with DESTDIR
