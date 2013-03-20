@@ -1,3 +1,7 @@
+Wed Mar 20 23:08:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h: removed __linux__. it's unnecessary.
+
 Wed Mar 20 23:03:27 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: move OS specific header/function knowledge before
