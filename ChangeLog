@@ -1,3 +1,9 @@
+Wed Mar 20 16:24:12 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/rubygems/test_gem_installer.rb (test_install_extension_flat):
+	  use ruby in build directory in case ruby is not installed.
+	  [ruby-core:53265] [Bug #8058]
+
 Wed Mar 20 15:22:07 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup): use
