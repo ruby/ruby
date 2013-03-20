@@ -1,3 +1,19 @@
+Wed Mar 20 22:33:26 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h (struct timespec): include <sys/time.h>
+
+Wed Mar 20 22:33:26 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: check struct timeval exist or not.
+	* include/ruby/missing.h (struct timeval): check HAVE_STRUCT_TIMEVAL
+	  properly. and don't include sys/time.h if struct timeval exist.
+
+	* file.c: include sys/time.h explicitly.
+	* random.c: ditto.
+	* thread_pthread.c: ditto.
+	* time.c: ditto.
+	* ext/date/date_strftime.c: ditto.
+
 Mon Mar 18 00:12:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/commands/setup_command.rb:  Don't delete non-rubygems
