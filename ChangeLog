@@ -1,3 +1,20 @@
+Wed Mar 20 23:17:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup):
+	  allow using different root for source and build directories.
+	  this may fixes a minor problem of r39834.
+
+Wed Mar 20 23:17:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup): use
+	  relative path to get rid of "too long commandline" error.
+
+Wed Mar 20 23:17:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb
+	  (TestErrInCallBack#test_err_in_callback): shouldn't create a file in
+	  the top of build directory.
+
 Wed Mar 20 23:08:40 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/missing.h: removed __linux__. it's unnecessary.
