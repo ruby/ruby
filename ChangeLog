@@ -1,3 +1,10 @@
+Wed Mar 20 22:36:41 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c: disabled _FORTIFY_SOURCE for avoid to hit glibc bug.
+	  [Bug #8080] [ruby-core:53349]
+	* test/ruby/test_io.rb (TestIO#test_io_select_with_many_files):
+	  test for the above.
+
 Wed Mar 20 22:34:52 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/missing.h (__syscall): moved to...
