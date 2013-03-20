@@ -199,21 +199,21 @@ module MakeMakefile
       ]
     elsif $configure_args.has_key?('--vendor')
       dirs = [
-        ['BINDIR',        '$(bindir)'],
-        ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
-        ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
-        ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['BINDIR',        '$(DESTDIR)$(bindir)'],
+        ['RUBYCOMMONDIR', '$(DESTDIR)$(vendordir)$(target_prefix)'],
+        ['RUBYLIBDIR',    '$(DESTDIR)$(vendorlibdir)$(target_prefix)'],
+        ['RUBYARCHDIR',   '$(DESTDIR)$(vendorarchdir)$(target_prefix)'],
+        ['HDRDIR',        '$(DESTDIR)$(rubyhdrdir)/ruby$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(DESTDIR)$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
       ]
     else
       dirs = [
-        ['BINDIR',        '$(bindir)'],
-        ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
-        ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
-        ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
-        ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
-        ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
+        ['BINDIR',        '$(DESTDIR)$(bindir)'],
+        ['RUBYCOMMONDIR', '$(DESTDIR)$(sitedir)$(target_prefix)'],
+        ['RUBYLIBDIR',    '$(DESTDIR)$(sitelibdir)$(target_prefix)'],
+        ['RUBYARCHDIR',   '$(DESTDIR)$(sitearchdir)$(target_prefix)'],
+        ['HDRDIR',        '$(DESTDIR)$(rubyhdrdir)/ruby$(target_prefix)'],
+        ['ARCHHDRDIR',    '$(DESTDIR)$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
       ]
     end
     dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -1750,6 +1750,7 @@ SRC
   end
 
   def with_destdir(dir)
+    return dir unless $extmk
     dir = dir.sub($dest_prefix_pattern, '')
     /\A\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
   end
@@ -1808,8 +1809,8 @@ ECHO = $(ECHO1:0=@echo)
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2]).unspace}}
-topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).unspace}
-hdrdir = #{mkintpath(CONFIG["hdrdir"]).unspace}
+topdir = #{mkintpath(topdir = $extmk ? CONFIG["topdir"] : $topdir).unspace}
+hdrdir = #{(hdrdir = CONFIG["hdrdir"]) == topdir ? "$(topdir)" : mkintpath(hdrdir).unspace}
 arch_hdrdir = #{$arch_hdrdir.quote}
 PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}

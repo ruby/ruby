@@ -1,3 +1,9 @@
+Wed Mar 20 22:52:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (install_dirs, with_destdir): prefix with DESTDIR
+	  directories to install only unless bundled extension libraries.
+	  [ruby-core:53502] [Bug #8115]
+
 Wed Mar 20 17:47:53 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup):
