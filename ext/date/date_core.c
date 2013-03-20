@@ -9315,7 +9315,7 @@ Init_date_core(void)
 
     rb_include_module(cDate, rb_mComparable);
 
-    /* An array of stirng of full month name in English.  The first
+    /* An array of string of full month name in English.  The first
      * element is nil.
      */
     rb_define_const(cDate, "MONTHNAMES", mk_ary_of_str(13, monthnames));
