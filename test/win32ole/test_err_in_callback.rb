@@ -20,9 +20,10 @@ if defined?(WIN32OLE)
         @ruby = "." + sep + CONFIG["RUBY_INSTALL_NAME"]
         cwd = Pathname.new(File.expand_path('.'))
         @iopt = $:.map {|e|
-          " -I " + Pathname.new(e).relative_path_from(cwd).to_s
+          " -I " + (Pathname.new(e).relative_path_from(cwd).to_s rescue e)
         }.join("")
-        @script = Pathname.new(File.join(File.dirname(__FILE__), "err_in_callback.rb")).relative_path_from(cwd).to_s
+        script = File.join(File.dirname(__FILE__), "err_in_callback.rb")
+        @script = Pathname.new(script).relative_path_from(cwd).to_s rescue script
       end
     end
 
