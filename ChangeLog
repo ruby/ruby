@@ -1,3 +1,8 @@
+Wed Mar 20 23:03:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: move OS specific header/function knowledge before
+	  automatic header tests.
+
 Wed Mar 20 23:01:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: move header files check to the beginning of
