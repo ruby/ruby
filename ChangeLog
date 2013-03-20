@@ -1,3 +1,8 @@
+Wed Mar 20 22:57:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: move the test for -march=i486 just after
+	  RUBY_UNIVERSAL_ARCH/RUBY_DEFAULT_ARCH.
+
 Wed Mar 20 22:56:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: change CFLAGS temporally to test
