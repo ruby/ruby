@@ -1,3 +1,8 @@
+Thu Mar 21 07:34:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/date/date_core.c: Typo in Date::MONTHNAMES by Matt Gauger
+	  [GH fixes #261]
+
 Wed Mar 20 22:53:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (find_library): fix to format message.
