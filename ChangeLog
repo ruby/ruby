@@ -1,3 +1,8 @@
+Wed Mar 20 16:40:48 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_signal.rb (test_hup_me): skip if HUP isn't supported.
+	  On Windows this test causes ArgumentError.
+
 Wed Mar 20 16:24:12 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/rubygems/test_gem_installer.rb (test_install_extension_flat):
