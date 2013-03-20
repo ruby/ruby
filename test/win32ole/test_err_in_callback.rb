@@ -9,6 +9,7 @@ rescue LoadError
 end
 if defined?(WIN32OLE)
   require 'mkmf'
+  require 'pathname'
   require 'test/unit'
   require 'tmpdir'
   class TestErrInCallBack < Test::Unit::TestCase
@@ -17,10 +18,11 @@ if defined?(WIN32OLE)
       if File.exist?("./" + CONFIG["RUBY_INSTALL_NAME"] + CONFIG["EXEEXT"])
         sep = File::ALT_SEPARATOR || "/"
         @ruby = "." + sep + CONFIG["RUBY_INSTALL_NAME"]
+        cwd = Pathname.new(File.expand_path('.'))
         @iopt = $:.map {|e|
-          " -I " + e
+          " -I " + Pathname.new(e).relative_path_from(cwd).to_s
         }.join("")
-        @script = File.join(File.dirname(__FILE__), "err_in_callback.rb")
+        @script = Pathname.new(File.join(File.dirname(__FILE__), "err_in_callback.rb")).relative_path_from(cwd).to_s
       end
     end
 
@@ -39,7 +41,7 @@ if defined?(WIN32OLE)
         Dir.mktmpdir do |tmpdir|
           logfile = File.join(tmpdir, "test_err_in_callback.log")
           cmd = "#{@ruby} -v #{@iopt} #{@script} > #{logfile.gsub(%r(/), '\\')} 2>&1"
-          system(cmd)
+          result = system(cmd)
           str = ""
           open(logfile) {|ifs|
             str = ifs.read

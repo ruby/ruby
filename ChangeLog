@@ -1,3 +1,8 @@
+Wed Mar 20 15:22:07 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup): use
+	  relative path to get rid of "too long commandline" error.
+
 Wed Mar 20 04:27:42 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rinda/test_rinda.rb: remove unused variables.
@@ -94,7 +99,7 @@ Mon Mar 18 14:46:19 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb
 	  (TestErrInCallBack#test_err_in_callback): shouldn't create a file in
-	  source directory.
+	  the top of build directory.
 
 Mon Mar 18 13:29:52 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
