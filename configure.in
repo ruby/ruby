@@ -902,6 +902,7 @@ $POSTLINK"
 		ac_cv_func_flock=yes
 		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
+		ac_cv_type_struct_timeval=yes
 		AC_LIBOBJ([langinfo])
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"

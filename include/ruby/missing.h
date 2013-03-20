@@ -25,22 +25,21 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#if defined(HAVE_TIME_H)
+# include <time.h>
+#endif
+#if defined(HAVE_SYS_TIME_H)
+# include <sys/time.h>
+#endif
+
 #if !defined(HAVE_STRUCT_TIMEVAL)
-# if defined(HAVE_SYS_TIME_H)
-#  include <sys/time.h>
-# elif !defined(_WIN32)
-#  define time_t long
 struct timeval {
     time_t tv_sec;	/* seconds */
     long tv_usec;	/* microseconds */
 };
-# endif
 #endif /* HAVE_STRUCT_TIMEVAL */
 
 #if !defined(HAVE_STRUCT_TIMESPEC)
-# if defined(HAVE_SYS_TIME_H)
-#  include <sys/time.h>
-# endif
 struct timespec {
     time_t tv_sec;	/* seconds */
     long tv_nsec;	/* nanoseconds */
