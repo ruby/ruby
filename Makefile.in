@@ -223,7 +223,7 @@ $(LIBRUBY_SO):
 		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(DTRACE_OBJ) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
 		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
 		$(Q) $(POSTLINK)
-		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link rescue nil; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
 $(arch)-fake.rb: config.status $(srcdir)/template/fake.rb.in
