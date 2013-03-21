@@ -619,16 +619,16 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
 	line_info_t *line = &lines[i];
 
 	if (line->line > 0) {
-	    fprintf(stderr, "%s ", syms[i]);
 	    if (line->filename) {
 		if (line->dirname && line->dirname[0]) {
-		    fprintf(stderr, "%s/", line->dirname);
+		    fprintf(stderr, "%s %s/%s:%d\n", syms[i], line->dirname, line->filename, line->line);
 		}
-		fprintf(stderr, "%s", line->filename);
+		else {
+		    fprintf(stderr, "%s %s:%d\n", syms[i], line->filename, line->line);
+		}
 	    } else {
-		fprintf(stderr, "???");
+		fprintf(stderr, "%s ???:%d\n", syms[i], line->line);
 	    }
-	    fprintf(stderr, ":%d\n", line->line);
 	} else {
 	    fprintf(stderr, "%s\n", syms[i]);
 	}
