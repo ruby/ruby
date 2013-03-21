@@ -466,8 +466,12 @@ class TestRubyOptions < Test::Unit::TestCase
       write_file("test-script", "$0 = 'hello world'; sleep 60")
 
       pid = spawn(EnvUtil.rubybin, "test-script")
-      sleep 0.1
-      ps = `ps -p #{pid} -o command`
+      ps = nil
+      10.times do
+        sleep 0.1
+        ps = `ps -p #{pid} -o command`
+        break if /hello world/ =~ ps
+      end
       assert_match(/hello world/, ps)
       Process.kill :KILL, pid
     end
