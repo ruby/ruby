@@ -283,7 +283,13 @@ EOS
     # This ugly workaround was introduced to don't break
     # compatibility against silly example codes.
     assert_raise(SignalException) {
-      Process.kill('HUP',Process.pid)
+      Process.kill('HUP', Process.pid)
+    }
+    bug8137 = '[ruby-dev:47182] [Bug #8137]'
+    assert_nothing_raised(bug8137) {
+      Timeout.timeout(1) {
+        Process.kill(0, Process.pid)
+      }
     }
   end
 end
