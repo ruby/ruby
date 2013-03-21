@@ -1619,7 +1619,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         id = SYM2ID(key);
 #ifdef HAVE_SETPGID
         if (id == rb_intern("pgroup")) {
-            pid_t pgroup;
+            rb_pid_t pgroup;
             if (eargp->pgroup_given) {
                 rb_raise(rb_eArgError, "pgroup option specified twice");
             }
@@ -2783,7 +2783,7 @@ run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *
      * (Is there an environment which has setpgid but no FD_CLOEXEC?)
      */
     int ret;
-    pid_t pgroup;
+    rb_pid_t pgroup;
 
     pgroup = eargp->pgroup_pgid;
     if (pgroup == -1)

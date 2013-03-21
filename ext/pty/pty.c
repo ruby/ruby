@@ -604,9 +604,9 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     return res;
 }
 
-NORETURN(static void raise_from_check(pid_t pid, int status));
+NORETURN(static void raise_from_check(rb_pid_t pid, int status));
 static void
-raise_from_check(pid_t pid, int status)
+raise_from_check(rb_pid_t pid, int status)
 {
     const char *state;
     char buf[1024];
@@ -654,7 +654,7 @@ static VALUE
 pty_check(int argc, VALUE *argv, VALUE self)
 {
     VALUE pid, exc;
-    pid_t cpid;
+    rb_pid_t cpid;
     int status;
 
     rb_scan_args(argc, argv, "11", &pid, &exc);
