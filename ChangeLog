@@ -1,3 +1,20 @@
+Thu Mar 21 20:34:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup):
+	  allow using different root for source and build directories.
+	  this may fixes a minor problem of r39834.
+
+Thu Mar 21 20:34:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup): use
+	  relative path to get rid of "too long commandline" error.
+
+Thu Mar 21 20:34:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb
+	  (TestErrInCallBack#test_err_in_callback): shouldn't create a file in
+	  the top of build directory.
+
 Tue Feb 26 09:53:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* st.c (st_add_direct): int is not always same with st_index_t.  some
