@@ -518,9 +518,10 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     newstr = rb_str_new(0, len);
     olen = len;
 
+    econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);
+    RBASIC(econv_wrapper)->klass = 0;
     ec = rb_econv_open_opts(from->name, to->name, ecflags, ecopts);
     if (!ec) return str;
-    econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);
     DATA_PTR(econv_wrapper) = ec;
 
     sp = (unsigned char*)RSTRING_PTR(str);
