@@ -301,7 +301,7 @@ rb_w32_Sleep(unsigned long msec)
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
 {
-    const DWORD msec = (tv) ?
+    const volatile DWORD msec = (tv) ?
 	(DWORD)(tv->tv_sec * 1000 + tv->tv_usec / 1000) : INFINITE;
 
     GVL_UNLOCK_BEGIN();
