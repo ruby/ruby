@@ -115,13 +115,7 @@
 #define UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
-#if (defined(__clang__) && (__clang_major__ == 4 && __clang_minor__ == 2))
-#define UNINITIALIZED_VAR(x) x __attribute__((unused))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
+#define UNINITIALIZED_VAR(x) RB_UNUSED_VAR(x)
 
 typedef unsigned long rb_num_t;
 
