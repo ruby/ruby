@@ -111,6 +111,27 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_warn_balanced
+    warning = <<WARN
+test:1: warning: `%s' after local variable or literal is interpreted as binary operator
+test:1: warning: even though it seems like %s
+WARN
+    [
+     [:**, "argument prefix"],
+     [:*, "argument prefix"],
+     [:<<, "here document"],
+     [:&, "argument prefix"],
+     [:+, "unary operator"],
+     [:-, "unary operator"],
+     [:/, "regexp literal"],
+     [:%, "string literal"],
+    ].each do |op, syn|
+      assert_warning(warning % [op, syn]) do
+        assert_valid_syntax("puts 1 #{op}0", "test") {$VERBOSE = true}
+      end
+    end
+  end
+
   def test_cmd_symbol_after_keyword
     bug6347 = '[ruby-dev:45563]'
     assert_not_label(:foo, 'if true then not_label:foo end', bug6347)
