@@ -1,3 +1,8 @@
+Thu Mar 21 16:48:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (simple_re_meta): escape all closing characters, not only
+	  round parenthesis.  [ruby-core:53578] [Bug #8133]
+
 Thu Mar 21 13:50:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (UNINITIALIZED_VAR): suppress warnings by clang 4.2.

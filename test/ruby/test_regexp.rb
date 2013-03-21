@@ -180,9 +180,15 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_source_escaped_paren
-    bug7610 = '[ruby-core:51088]'
-    s = '\(a\)'
-    assert_equal(/#{s}/, eval("%r(#{s})"), bug7610)
+    bug7610 = '[ruby-core:51088] [Bug #7610]'
+    bug8133 = '[ruby-core:53578] [Bug #8133]'
+    [
+     ["(", ")", bug7610], ["[", "]", bug8133],
+     ["{", "}", bug8133], ["<", ">", bug8133],
+    ].each do |lparen, rparen, bug|
+      s = "\\#{lparen}a\\#{rparen}"
+      assert_equal(/#{s}/, eval("%r#{lparen}#{s}#{rparen}"), bug)
+    end
   end
 
   def test_source_unescaped
