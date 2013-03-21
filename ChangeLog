@@ -1,3 +1,9 @@
+Fri Mar 22 04:51:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg): should check required
+	  keyword arguments even if rest hash is defined.  [ruby-core:53608]
+	  [Bug #8139]
+
 Fri Mar 22 01:00:17 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* process.c (rb_execarg_addopt, run_exec_pgroup): use rb_pid_t

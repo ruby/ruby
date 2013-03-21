@@ -1080,9 +1080,10 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	!NIL_P(keyword_hash = rb_check_hash_type(orig_argv[argc-1]))) {
 	argc--;
 	keyword_hash = rb_hash_dup(keyword_hash);
-	if (iseq->arg_keyword_check) {
+	i = 0;
+	if (iseq->arg_keyword_required) {
 	    VALUE missing = Qnil;
-	    for (i = 0; i < iseq->arg_keyword_required; i++) {
+	    for (; i < iseq->arg_keyword_required; i++) {
 		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0))
 		    continue;
 		if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
@@ -1091,6 +1092,8 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	    if (!NIL_P(missing)) {
 		keyword_error("missing", missing);
 	    }
+	}
+	if (iseq->arg_keyword_check) {
 	    for (j = i; i < iseq->arg_keywords; i++) {
 		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
 	    }
@@ -1099,7 +1102,7 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	    }
 	}
     }
-    else if (iseq->arg_keyword_check && iseq->arg_keyword_required) {
+    else if (iseq->arg_keyword_required) {
 	VALUE missing = rb_ary_tmp_new(iseq->arg_keyword_required);
 	for (i = 0; i < iseq->arg_keyword_required; i++) {
 	    rb_ary_push(missing, ID2SYM(iseq->arg_keyword_table[i]));
