@@ -3,13 +3,6 @@ Thu Mar 21 23:17:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* thread.c (ruby_kill): get rid of deadlock on signal 0.
 	  [ruby-dev:47182] [Bug #8137]
 
-Thu Mar 21 23:14:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* include/ruby/ruby.h (RB_UNUSED_VAR): move code from
-	  UNINITIALIZED_VAR() in vm_core.h.
-
-	* vm_core.h (UNINITIALIZED_VAR): use RB_UNUSED_VAR().
-
 Thu Mar 21 22:39:46 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* marshal.c (marshal_dump, marshal_load): workaround for segv on

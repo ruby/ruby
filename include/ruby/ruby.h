@@ -529,10 +529,8 @@ static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr
 #endif
 #define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
 
-#if (defined(__clang__) && (__clang_major__ == 4 && __clang_minor__ == 2))
+#ifdef __GNUC__
 #define RB_UNUSED_VAR(x) x __attribute__ ((unused))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define RB_UNUSED_VAR(x) x = x
 #else
 #define RB_UNUSED_VAR(x) x
 #endif
