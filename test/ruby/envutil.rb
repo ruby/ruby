@@ -299,10 +299,9 @@ eom
         raise res
       end
 
-      def assert_warning(pat, message = nil)
+      def assert_warning(pat, msg = nil)
         stderr = EnvUtil.verbose_warning { yield }
-        message = ' "' + message + '"' if message
-        msg = proc {"warning message #{stderr.inspect} is expected to match #{pat.inspect}#{message}"}
+        msg = message(msg) {diff stderr, pat}
         assert(pat === stderr, msg)
       end
 
