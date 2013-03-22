@@ -1,3 +1,10 @@
+Fri Mar 22 17:48:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (Forwardable::FILE_REGEXP): create regexp object
+	  outside sources for eval, to reduce allocations in def_delegators
+	  wrappers.  //o option does not make each regexps shared.  patch by
+	  tmm1 (Aman Gupta) in [ruby-core:53620] [Bug #8143].
+
 Fri Mar 22 17:38:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p), vm_core.h (rb_vm_struct): turn
