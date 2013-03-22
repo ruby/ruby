@@ -282,7 +282,7 @@ class Net::HTTPGenericRequest
 
   def quote_string(str, charset)
     str = str.encode(charset, fallback:->(c){'&#%d;'%c.encode("UTF-8").ord}) if charset
-    str = str.gsub(/[\\"]/, '\\\\\&')
+    str.gsub(/[\\"]/, '\\\\\&')
   end
 
   def flush_buffer(out, buf, chunked_p)

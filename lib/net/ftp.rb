@@ -996,7 +996,6 @@ module Net
       else
         raise FTPProtoError, resp
       end
-      return host, port
     end
     private :parse228
 
