@@ -1565,13 +1565,15 @@ rb_vm_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(vm->expanded_load_path);
 	RUBY_MARK_UNLESS_NULL(vm->loaded_features);
 	RUBY_MARK_UNLESS_NULL(vm->loaded_features_snapshot);
-	RUBY_MARK_UNLESS_NULL(vm->loaded_features_index);
 	RUBY_MARK_UNLESS_NULL(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
 	rb_gc_mark_locations(vm->special_exceptions, vm->special_exceptions + ruby_special_error_count);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
+	}
+	if (vm->loaded_features_index) {
+	    rb_mark_tbl(vm->loaded_features_index);
 	}
 
 	rb_vm_trace_mark_event_hooks(&vm->event_hooks);

@@ -171,7 +171,7 @@ reset_loaded_features_snapshot(void)
     rb_ary_replace(vm->loaded_features_snapshot, vm->loaded_features);
 }
 
-static VALUE
+static struct st_table *
 get_loaded_features_index_raw(void)
 {
     return GET_VM()->loaded_features_index;
@@ -186,12 +186,19 @@ get_loading_table(void)
 static void
 features_index_add_single(VALUE short_feature, VALUE offset)
 {
-    VALUE features_index, this_feature_index;
+    struct st_table *features_index;
+    VALUE this_feature_index = Qnil;
+    char *short_feature_cstr;
+
+    Check_Type(offset, T_FIXNUM);
+    Check_Type(short_feature, T_STRING);
+    short_feature_cstr = StringValueCStr(short_feature);
+
     features_index = get_loaded_features_index_raw();
-    this_feature_index = rb_hash_lookup(features_index, short_feature);
+    st_lookup(features_index, (st_data_t)short_feature_cstr, (st_data_t *)&this_feature_index);
 
     if (NIL_P(this_feature_index)) {
-	rb_hash_aset(features_index, short_feature, offset);
+	st_insert(features_index, (st_data_t)ruby_strdup(short_feature_cstr), (st_data_t)offset);
     }
     else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
 	VALUE feature_indexes[2];
@@ -199,7 +206,7 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 	feature_indexes[1] = offset;
 	this_feature_index = rb_ary_tmp_new(numberof(feature_indexes));
 	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
-	rb_hash_aset(features_index, short_feature, this_feature_index);
+	st_insert(features_index, (st_data_t)short_feature_cstr, (st_data_t)this_feature_index);
     }
     else {
 	Check_Type(this_feature_index, T_ARRAY);
@@ -254,7 +261,14 @@ features_index_add(VALUE feature, VALUE offset)
     }
 }
 
-static VALUE
+static int
+loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    xfree((char *)key);
+    return ST_DELETE;
+}
+
+static st_table *
 get_loaded_features_index(void)
 {
     VALUE features;
@@ -264,7 +278,7 @@ get_loaded_features_index(void)
     if (!rb_ary_shared_with_p(vm->loaded_features_snapshot, vm->loaded_features)) {
 	/* The sharing was broken; something (other than us in rb_provide_feature())
 	   modified loaded_features.  Rebuild the index. */
-	rb_hash_clear(vm->loaded_features_index);
+	st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
 	features = vm->loaded_features;
 	for (i = 0; i < RARRAY_LEN(features); i++) {
 	    VALUE entry, as_str;
@@ -357,10 +371,10 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
-    VALUE features, features_index, feature_val, this_feature_index, v, p, load_path = 0;
+    VALUE features, feature_val, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
-    st_table *loading_tbl;
+    st_table *loading_tbl, *features_index;
     st_data_t data;
     int type;
 
@@ -379,7 +393,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features_index = get_loaded_features_index();
 
     feature_val = rb_str_new(feature, len);
-    this_feature_index = rb_hash_lookup(features_index, feature_val);
+    st_lookup(features_index, (st_data_t)feature, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -1120,8 +1134,7 @@ Init_load()
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
-    vm->loaded_features_index = rb_hash_new();
-    RBASIC(vm->loaded_features_index)->klass = 0;
+    vm->loaded_features_index = st_init_strtable();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

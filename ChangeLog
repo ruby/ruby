@@ -1,3 +1,9 @@
+Fri Mar 22 17:38:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p), vm_core.h (rb_vm_struct): turn
+	  loaded_features_index into st_table.  patches by tmm1 (Aman Gupta)
+	  in [ruby-core:53251] and [ruby-core:53274] [Bug #8048]
+
 Fri Mar 22 10:29:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Fix style.
