@@ -53,6 +53,7 @@ arch_hdrdir = $(EXTOUT)/include/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/enc:$(srcdir)/missing
 
 empty =
+CC_VERSION = @CC_VERSION@
 OUTFLAG = @OUTFLAG@$(empty)
 COUTFLAG = @COUTFLAG@$(empty)
 ARCH_FLAG = @ARCH_FLAG@

@@ -422,6 +422,13 @@ RUBY_CPPOUTFILE
 AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 
+cc_version_option=
+for option in --version -v -V -qversion; do
+    $CC $option > /dev/null 2>&1 || continue
+    cc_version='$(CC) '$option
+done
+AC_SUBST(CC_VERSION, $cc_version)
+
 RUBY_UNIVERSAL_ARCH
 if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then
     RUBY_DEFAULT_ARCH("$target_cpu")

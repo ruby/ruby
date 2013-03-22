@@ -159,6 +159,7 @@ showflags:
 	"	DLDFLAGS = $(DLDFLAGS)" \
 	"	SOLIBS = $(SOLIBS)" \
 	$(MESSAGE_END)
+	-@$(CC_VERSION)
 
 .PHONY: showconfig
 showconfig:
