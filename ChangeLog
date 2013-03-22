@@ -1,3 +1,7 @@
+Fri Mar 22 10:29:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Fix style.
+
 Fri Mar 22 05:30:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (ambiguous_operator): refine warning message, since this
