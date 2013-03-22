@@ -1,3 +1,8 @@
+Sat Mar 23 07:30:31 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c: Avoid zip bug by not using obsolete rb_check_block_call
+	  [Bug #8153]
+
 Fri Mar 22 17:48:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (Forwardable::FILE_REGEXP): create regexp object

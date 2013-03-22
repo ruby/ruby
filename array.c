@@ -17,6 +17,7 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include "probes.h"
+#include "node.h"
 #include "id.h"
 
 #ifndef ARRAY_DEBUG
@@ -3032,11 +3033,11 @@ rb_ary_delete_if(VALUE ary)
 }
 
 static VALUE
-take_i(VALUE val, VALUE *args, int argc, VALUE *argv)
+take_i(VALUE i, VALUE args, int argc, VALUE *argv)
 {
-    if (args[1]-- == 0) rb_iter_break();
-    if (argc > 1) val = rb_ary_new4(argc, argv);
-    rb_ary_push(args[0], val);
+    NODE *memo = RNODE(args);
+    rb_ary_push(memo->u1.value, rb_enum_values_pack(argc, argv));
+    if (--memo->u3.cnt == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -3044,17 +3045,18 @@ static VALUE
 take_items(VALUE obj, long n)
 {
     VALUE result = rb_check_array_type(obj);
-    VALUE args[2];
+    NODE *memo;
 
     if (!NIL_P(result)) return rb_ary_subseq(result, 0, n);
+    if (!rb_respond_to(obj, idEach)) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
+	    rb_obj_classname(obj));
+    }
     result = rb_ary_new2(n);
-    args[0] = result; args[1] = (VALUE)n;
-    if (rb_check_block_call(obj, idEach, 0, 0, take_i, (VALUE)args) == Qundef)
-        rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
-            rb_obj_classname(obj));
+    memo = NEW_MEMO(result, 0, n);
+    rb_block_call(obj, idEach, 0, 0, take_i, (VALUE)memo);
     return result;
 }
-
 
 /*
  *  call-seq:
