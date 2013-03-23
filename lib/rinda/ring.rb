@@ -15,13 +15,25 @@ module Rinda
 
   ##
   # A RingServer allows a Rinda::TupleSpace to be located via UDP broadcasts.
-  # Service location uses the following steps:
+  # Default service location uses the following steps:
   #
-  # 1. A RingServer begins listening on the broadcast UDP address.
+  # 1. A RingServer begins listening on the network broadcast UDP address.
   # 2. A RingFinger sends a UDP packet containing the DRb URI where it will
   #    listen for a reply.
   # 3. The RingServer receives the UDP packet and connects back to the
   #    provided DRb URI with the DRb service.
+  #
+  # A RingServer requires a TupleSpace:
+  #
+  #   ts = Rinda::TupleSpace.new
+  #   rs = Rinda::RingServer.new
+  #
+  # RingServer can also listen on multicast addresses for announcements.  This
+  # allows multiple RingServers to run on the same host.  To use network
+  # broadcast and multicast:
+  #
+  #   ts = Rinda::TupleSpace.new
+  #   rs = Rinda::RingServer.new ts, %w[Socket::INADDR_ANY, 239.0.0.1 ff02::1]
 
   class RingServer
 
@@ -48,7 +60,13 @@ module Rinda
     end
 
     ##
-    # Advertises +ts+ on the UDP broadcast address at +port+.
+    # Advertises +ts+ on the given +addresses+ at +port+.
+    #
+    # If +addresses+ is omitted only the UDP broadcast address is used.
+    #
+    # +addresses+ can contain multiple addresses.  If a multicast address is
+    # given in +addresses+ then the RingServer will listen for multicast
+    # queries.
 
     def initialize(ts, addresses=[Socket::INADDR_ANY], port=Ring_PORT)
       @port = port
@@ -175,6 +193,33 @@ module Rinda
   # TupleSpace.  Typically, all a client needs to do is call
   # RingFinger.primary to retrieve the remote TupleSpace, which it can then
   # begin using.
+  #
+  # To find the first available remote TupleSpace:
+  #
+  #   Rinda::RingFinger.primary
+  #
+  # To create a RingFinger that broadcasts to a custom list:
+  #
+  #   rf = Rinda::RingFinger.new  ['localhost', '192.0.2.1']
+  #   rf.primary
+  #
+  # Rinda::RingFinger also understands multicast addresses and sets them up
+  # properly.  This allows you to run multiple RingServers on the same host:
+  #
+  #   rf = Rinda::RingFinger.new ['239.0.0.1']
+  #   rf.primary
+  #
+  # You can set the hop count (or TTL) for multicast searches using
+  # #multicast_hops.
+  #
+  # If you use IPv6 multicast you may need to set both an address and the
+  # outbound interface index:
+  #
+  #   rf = Rinda::RingFinger.new ['ff02::1']
+  #   rf.multicast_interface = 1
+  #   rf.primary
+  #
+  # At this time there is no easy way to get an interface index by name.
 
   class RingFinger
 
@@ -238,6 +283,9 @@ module Rinda
     ##
     # Creates a new RingFinger that will look for RingServers at +port+ on
     # the addresses in +broadcast_list+.
+    #
+    # If +broadcast_list+ contains a multicast address then multicast queries
+    # will be made using the given multicast_hops and multicast_interface.
 
     def initialize(broadcast_list=@@broadcast_list, port=Ring_PORT)
       @broadcast_list = broadcast_list || ['localhost']

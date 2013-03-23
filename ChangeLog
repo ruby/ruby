@@ -1,3 +1,9 @@
+Sun Mar 24 05:36:29 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb:  Added documentation for multicast support.
+
+	* NEWS:  Point to above documentation.
+
 Sun Mar 24 05:32:39 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rinda/test_rinda.rb:  Restore tests commented out while fixing
