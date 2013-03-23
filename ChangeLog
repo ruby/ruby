@@ -1,3 +1,11 @@
+Sun Mar 24 05:03:36 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/ring.rb:  Add multicast support to Rinda::RingFinger and
+	  Rinda::RingServer.  [ruby-trunk - Bug #8073]
+	* test/rinda/test_rinda.rb:  Test for the above.
+
+	* NEWS: Update with Rinda multicast support
+
 Sun Mar 24 04:13:27 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rinda/test_rinda.rb:  Fixed test failures in r39890 and r39890

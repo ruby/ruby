@@ -32,6 +32,8 @@ with all sufficient information, see the ChangeLog file.
 
 * Net::SMTP
   * Added Net::SMTP#rset to implement the RSET comamnd
+* Rinda::RingServer, Rinda::RingFinger
+  * Rinda now supports multicast sockets
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 === C API updates
