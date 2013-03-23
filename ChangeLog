@@ -1,3 +1,10 @@
+Sun Mar 24 03:34:02 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/rinda.rb:  Fixed loss of tuple when remote is alive but the
+	  call stack was unwound.  Patch by Joel VanderWerf.
+	  [ruby-trunk - Bug #8125]
+	* test/rinda/test_rinda.rb:  Test for the above.
+
 Sun Mar 24 02:14:53 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/mkmf/test_have_macro.rb: remove temporally files in the tests.
