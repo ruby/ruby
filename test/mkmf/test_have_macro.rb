@@ -16,6 +16,7 @@ class TestMkmf
         tmp.close
         base = File.basename(tmp.path)
         assert_equal(true, have_macro(MACRO_NAME, base, "-I."), MKMFLOG)
+        tmp.close(true)
       end
     end
 
@@ -29,6 +30,7 @@ class TestMkmf
         tmp.close
         base = File.basename(tmp.path)
         assert_equal(false, have_macro(MACRO_NAME, base, "-I."), MKMFLOG)
+        tmp.close(true)
       end
     end
   end
