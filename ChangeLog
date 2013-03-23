@@ -1,3 +1,8 @@
+Sun Mar 24 04:13:27 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rinda/test_rinda.rb:  Fixed test failures in r39890 and r39890
+	  due to stopping DRb service.
+
 Sun Mar 24 03:34:02 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/rinda.rb:  Fixed loss of tuple when remote is alive but the

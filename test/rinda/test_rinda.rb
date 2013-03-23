@@ -478,13 +478,11 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    DRb.stop_service
     service = DRb.start_service(nil, @ts_base)
 
     uri = service.uri
 
     take = fork do
-      DRb.stop_service
       DRb.start_service
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
@@ -500,7 +498,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     @ts_base.take([:barrier, :continue])
 
     write = fork do
-      DRb.stop_service
       DRb.start_service
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
@@ -514,7 +511,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   ensure
     Process.kill("TERM", write) if write && status.nil?
     Process.kill("TERM", take)  if take
-    service.stop_service
   end
 
   @server = DRb.primary_server || DRb.start_service
