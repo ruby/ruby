@@ -1,3 +1,4 @@
+require_relative "../ruby/envutil"
 require_relative "utils"
 
 if defined?(OpenSSL)
@@ -21,7 +22,9 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     cert  = OpenSSL::X509::Certificate.new
     store = OpenSSL::X509::Store.new
     ctx   = OpenSSL::X509::StoreContext.new(store, cert, [])
-    ctx.cleanup
+    EnvUtil.suppress_warning do
+      ctx.cleanup
+    end
     ctx.verify
   end
 
