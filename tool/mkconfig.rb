@@ -39,7 +39,6 @@ win32 = /mswin/ =~ arch
 universal = /universal.*darwin/ =~ arch
 v_fast = []
 v_others = []
-v_runtime = {}
 vars = {}
 continued_name = nil
 continued_line = nil
