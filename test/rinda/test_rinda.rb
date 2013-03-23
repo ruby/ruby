@@ -477,6 +477,46 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
                  @ts.take({'head' => 1, 'tail' => 2}, 0))
   end
 
+  def test_take_bug_8215
+    DRb.stop_service
+    service = DRb.start_service(nil, @ts_base)
+
+    uri = service.uri
+
+    take = fork do
+      DRb.stop_service
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      th = Thread.new do
+        ts.take([:test_take, nil])
+      end
+      Kernel.sleep(0.1)
+      th.raise(Interrupt) # causes loss of the taken tuple
+      ts.write([:barrier, :continue])
+      Kernel.sleep
+    end
+
+    @ts_base.take([:barrier, :continue])
+
+    write = fork do
+      DRb.stop_service
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      ts.write([:test_take, 42])
+    end
+
+    status = Process.wait(write)
+
+    assert_equal([[:test_take, 42]], @ts_base.read_all([:test_take, nil]),
+                 '[bug:8215] tuple lost')
+  ensure
+    Process.kill("TERM", write) if write && status.nil?
+    Process.kill("TERM", take)  if take
+    service.stop_service
+  end
+
   @server = DRb.primary_server || DRb.start_service
 end
 
