@@ -1,3 +1,14 @@
+Sat Mar 23 23:28:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divide): Use Qnil and NIL_P
+	  instead of (VALUE)0 as a return value.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_divremain): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_remainder): ditto.
+
 Sat Mar 23 17:39:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_respond_to): preserve passed_block, which

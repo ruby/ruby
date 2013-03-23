@@ -1211,7 +1211,7 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     GUARD_OBJ((*c), VpCreateRbObject(mx, "#0"));
     GUARD_OBJ((*res), VpCreateRbObject((mx+1) * 2 +(VpBaseFig() + 1), "#0"));
     VpDivd(*c, *res, a, b);
-    return (VALUE)0;
+    return Qnil;
 }
 
  /* call-seq:
@@ -1240,7 +1240,7 @@ BigDecimal_div(VALUE self, VALUE r)
     ENTER(5);
     Real *c=NULL, *res=NULL, *div = NULL;
     r = BigDecimal_divide(&c, &res, &div, self, r);
-    if (r != (VALUE)0) return r; /* coerced by other */
+    if (!NIL_P(r)) return r; /* coerced by other */
     SAVE(c); SAVE(res); SAVE(div);
     /* a/b = c + r/b */
     /* c xxxxx
@@ -1401,7 +1401,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 
     *dv = d;
     *rv = ff;
-    return (VALUE)0;
+    return Qnil;
 }
 
 /* Returns the remainder from dividing by the value.
@@ -1414,7 +1414,7 @@ BigDecimal_remainder(VALUE self, VALUE r) /* remainder */
     VALUE  f;
     Real  *d, *rv = 0;
     f = BigDecimal_divremain(self, r, &d, &rv);
-    if (f != (VALUE)0) return f;
+    if (!NIL_P(f)) return f;
     return ToValue(rv);
 }
 
