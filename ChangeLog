@@ -1,3 +1,8 @@
+Sun Mar 24 05:32:39 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rinda/test_rinda.rb:  Restore tests commented out while fixing
+	  test slowdown bug before r39895.
+
 Sun Mar 24 05:03:36 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb:  Add multicast support to Rinda::RingFinger and
