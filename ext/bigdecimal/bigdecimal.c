@@ -3525,8 +3525,6 @@ VpIsNegDoubleZero(double v)
 VP_EXPORT int
 VpException(unsigned short f, const char *str,int always)
 {
-    VALUE exc;
-    int   fatal=0;
     unsigned short const exception_mode = VpGetException();
 
     if (f == VP_EXCEPTION_OP || f == VP_EXCEPTION_MEMORY) always = 1;
@@ -3539,22 +3537,14 @@ VpException(unsigned short f, const char *str,int always)
 	  case VP_EXCEPTION_NaN:
 	  case VP_EXCEPTION_UNDERFLOW:
 	  case VP_EXCEPTION_OP:
-	    exc = rb_eFloatDomainError;
-	    goto raise;
+	    rb_raise(rb_eFloatDomainError, "%s", str);
+	    break;
 	  case VP_EXCEPTION_MEMORY:
-	    fatal = 1;
-	    goto raise;
 	  default:
-	    fatal = 1;
-	    goto raise;
+	    rb_fatal("%s", str);
 	}
     }
     return 0; /* 0 Means VpException() raised no exception */
-
-raise:
-    if (fatal) rb_fatal("%s", str);
-    else       rb_raise(exc, "%s", str);
-    return 0;
 }
 
 /* Throw exception or returns 0,when resulting c is Inf or NaN */
@@ -4497,7 +4487,7 @@ VpMult(Real *c, Real *a, Real *b)
 	    ind_ae = MxIndA - (nc - MxIndB);
 	    ind_bs = MxIndB;
 	}
-	else if (nc > MxIndA) {    /*  The right triangle of the Fig. */
+	else /* if (nc > MxIndA) */ {    /*  The right triangle of the Fig. */
 	    ind_as = 0;
 	    ind_ae = MxIndAB - nc - 1;
 	    ind_bs = MxIndB - (nc - MxIndA);
