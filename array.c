@@ -3050,8 +3050,8 @@ take_items(VALUE obj, long n)
     result = rb_ary_new2(n);
     args[0] = result; args[1] = (VALUE)n;
     if (rb_check_block_call(obj, idEach, 0, 0, take_i, (VALUE)args) == Qundef)
-        rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
-            rb_obj_classname(obj));
+	rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
+		 rb_obj_class(obj));
     return result;
 }
 
