@@ -358,7 +358,8 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
     const rb_method_entry_t *me = rb_method_entry(klass, idRespond_to, &defined_class);
 
     if (me && !(me->flag & NOEX_BASIC)) {
-	VALUE args[2];
+	const rb_block_t *passed_block = th->passed_block;
+	VALUE args[2], result;
 	int arity = rb_method_entry_arity(me);
 
 	if (arity > 2)
@@ -368,7 +369,9 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
-	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me, defined_class))) {
+	result = vm_call0(th, recv, idRespond_to, arity, args, me, defined_class);
+	th->passed_block = passed_block;
+	if (!RTEST(result)) {
 	    return FALSE;
 	}
     }

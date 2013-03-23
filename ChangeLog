@@ -1,7 +1,10 @@
-Sat Mar 23 07:30:31 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+Sat Mar 23 17:39:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* array.c: Avoid zip bug by not using obsolete rb_check_block_call
-	  [Bug #8153]
+	* vm_eval.c (check_funcall_respond_to): preserve passed_block, which
+	  is modified in vm_call0_body() via vm_call0(), and caused a bug of
+	  rb_check_funcall() by false negative result of rb_block_given_p().
+	  re-fix [ruby-core:53650] [Bug #8153].
+	  [ruby-core:53653] [Bug #8154]
 
 Fri Mar 22 17:48:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
