@@ -4,10 +4,13 @@
 #
 
 assert_normal_exit %q{
-  loop do
-    def x
-      "hello" * 1000
+  require 'timeout'
+  timeout(2) do
+    loop do
+      def x
+        "hello" * 1000
+      end
+      method(:x).call
     end
-    method(:x).call
   end
 }, '[ruby-core:53640] [Bug #8100]'
