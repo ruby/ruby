@@ -1,3 +1,10 @@
+Sun Mar 24 22:13:51 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_rpartition): revert r39903, and convert byte offset
+	  to char offset; the return value of rb_reg_search is byte offset,
+	  but other than it of rb_str_rpartition expects char offset.
+	  [Bug #8138] [ruby-dev:47183]
+
 Sun Mar 24 18:29:46 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_rpartition): Fix String#rpartition(/re/)

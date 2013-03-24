@@ -1348,6 +1348,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
     return pos;
 }
 
+/* returns byte offset */
 long
 rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
