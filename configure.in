@@ -3244,7 +3244,7 @@ unexpand_shvar() {
 	fi
     done
     expr=['s/${[^${}"]*}/"&"/g;'"${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
-    eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"\\\"//g;s/^\\\"//;s/\\\"\\\$//\"`"'
+    eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"//g\"`"'
 }
 
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
