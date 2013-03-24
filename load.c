@@ -371,7 +371,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
-    VALUE features, feature_val, this_feature_index = Qnil, v, p, load_path = 0;
+    VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
     st_table *loading_tbl, *features_index;
@@ -392,7 +392,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features = get_loaded_features();
     features_index = get_loaded_features_index();
 
-    feature_val = rb_str_new(feature, len);
     st_lookup(features_index, (st_data_t)feature, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
