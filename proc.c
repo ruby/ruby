@@ -905,6 +905,7 @@ bm_free(void *ptr)
 {
     struct METHOD *data = ptr;
     struct unlinked_method_entry_list_entry *ume = data->ume;
+    data->me->mark = 0;
     ume->me = data->me;
     ume->next = GET_VM()->unlinked_method_entry_list;
     GET_VM()->unlinked_method_entry_list = ume;
