@@ -1,3 +1,8 @@
+Mon Mar 25 01:26:26 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/webrick/httpproxy.rb: Fix typos in HTTPProxyServer [Bug #8013]
+	  Patch by Nobuhiro IMAI [ruby-core:53127]
+
 Mon Mar 25 01:09:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): pass keyword arguments to zsuper,

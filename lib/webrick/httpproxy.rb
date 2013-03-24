@@ -46,10 +46,10 @@ module WEBrick
   #
   #   proxy = WEBrick::HTTPProxyServer.new Port: 8000
   #
-  #   trap 'INT'  do p.shutdown end
-  #   trap 'TERM' do p.shutdown end
+  #   trap 'INT'  do proxy.shutdown end
+  #   trap 'TERM' do proxy.shutdown end
   #
-  #   p.start
+  #   proxy.start
   #
   # See ::new for proxy-specific configuration items.
   #
@@ -186,7 +186,7 @@ module WEBrick
         res.send_response(ua)
         access_log(@config, req, res)
 
-        # Should clear request-line not to send the sesponse twice.
+        # Should clear request-line not to send the response twice.
         # see: HTTPServer#run
         req.parse(NullReader) rescue nil
       end
