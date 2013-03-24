@@ -1,3 +1,9 @@
+Mon Mar 25 01:05:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/objspace.c (count_nodes): count also newly added nodes,
+	  and fix key for unknown node.  patch by tmm1 (Aman Gupta) in
+	  [ruby-core:53130] [Bug #8014]
+
 Mon Mar 25 01:00:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_prepend_module): check redefinition of built-in optimized
