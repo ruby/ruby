@@ -61,7 +61,7 @@ Sun Mar 24 05:03:36 2013  Eric Hodel  <drbrain@segment7.net>
 
 Sun Mar 24 04:13:27 2013  Eric Hodel  <drbrain@segment7.net>
 
-	* test/rinda/test_rinda.rb:  Fixed test failures in r39890 and r39890
+	* test/rinda/test_rinda.rb:  Fixed test failures in r39890 and r39891
 	  due to stopping DRb service.
 
 Sun Mar 24 03:34:02 2013  Eric Hodel  <drbrain@segment7.net>
