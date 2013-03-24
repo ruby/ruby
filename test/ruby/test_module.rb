@@ -1475,6 +1475,20 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_prepend_optmethod
+    bug7983 = '[ruby-dev:47124] [Bug #7983]'
+    assert_separately [], %{
+      module M
+        def /(other)
+          to_f / other
+        end
+      end
+      Fixnum.send(:prepend, M)
+      assert_equal(0.5, 1 / 2, "#{bug7983}")
+    }
+    assert_equal(0, 1 / 2)
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)

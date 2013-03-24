@@ -790,6 +790,7 @@ move_refined_method(st_data_t key, st_data_t value, st_data_t data)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
+    void rb_vm_check_redefinition_by_prepend(VALUE klass);
     VALUE origin;
     int changed = 0;
 
@@ -816,7 +817,10 @@ rb_prepend_module(VALUE klass, VALUE module)
     changed = include_modules_at(klass, klass, module);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
-    if (changed) rb_clear_cache();
+    if (changed) {
+	rb_clear_cache();
+	rb_vm_check_redefinition_by_prepend(klass);
+    }
 }
 
 /*
