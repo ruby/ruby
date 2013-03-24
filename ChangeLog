@@ -1,3 +1,9 @@
+Mon Mar 25 00:51:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (miniruby, ruby): move MAINLIBC because linker arguments
+	  must appear after object files with newer versions of gcc.  patch by
+	  tmm1 (Aman Gupta) in [ruby-core:53121] [Bug #8009]
+
 Mon Mar 25 00:47:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_data_to_ary): fix condition.
