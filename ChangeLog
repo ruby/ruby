@@ -1,3 +1,9 @@
+Mon Mar 25 06:59:01 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rinda/test_rinda.rb:  Skip IPv6 tests if no IPv6 addresses
+	  exist.  Skip fork-dependent test if fork is not available.
+	  [ruby-trunk - Bug #8159]
+
 Sun Mar 24 10:38:24 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* addr2line.c (putce): suppress unused return value warning.

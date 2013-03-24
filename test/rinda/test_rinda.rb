@@ -479,6 +479,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
+    skip 'missing fork' unless have_fork?
     service = DRb.start_service(nil, @ts_base)
 
     uri = service.uri
@@ -512,6 +513,13 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   ensure
     Process.kill("TERM", write) if write && status.nil?
     Process.kill("TERM", take)  if take
+  end
+
+  def have_fork?
+    Process.fork {}
+    return true
+  rescue NotImplementedError
+    return false
   end
 
   @server = DRb.primary_server || DRb.start_service
@@ -552,6 +560,9 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
     begin
       v6mc = @rs.make_socket('ff02::1')
     rescue Errno::EADDRNOTAVAIL
@@ -609,6 +620,9 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
     v6mc = @rf.make_socket('ff02::1')
 
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
@@ -621,6 +635,8 @@ class TestRingFinger < Test::Unit::TestCase
     v4mc = @rf.make_socket('239.0.0.1')
 
     assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).int)
+
+    return unless Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
 
     v6mc = @rf.make_socket('ff02::1')
 
