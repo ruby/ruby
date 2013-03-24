@@ -98,6 +98,9 @@ static ruby_gc_params_t initial_params = {
 #ifndef GC_PROFILE_MORE_DETAIL
 #define GC_PROFILE_MORE_DETAIL 0
 #endif
+#ifndef GC_ENABLE_LAZY_SWEEP
+#define GC_ENABLE_LAZY_SWEEP 1
+#endif
 
 typedef struct gc_profile_record {
     double gc_time;
@@ -2043,7 +2046,7 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 {
     int res;
 
-    if (objspace->flags.dont_lazy_sweep) {
+    if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	if (heaps_increment(objspace)) {
 	    return;
 	}

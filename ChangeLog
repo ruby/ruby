@@ -1,3 +1,8 @@
+Sun Mar 24 13:42:24 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (GC_ENABLE_LAZY_SWEEP): new macro to switch lazy sweeping
+	  for debugging. [Feature #8024] [ruby-dev:47135]
+
 Sun Mar 24 12:55:47 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: We have no chance to expand the heap when lazy sweeping is
