@@ -171,47 +171,209 @@ reset_loaded_features_snapshot(void)
     rb_ary_replace(vm->loaded_features_snapshot, vm->loaded_features);
 }
 
-static struct st_table *
-get_loaded_features_index_raw(void)
-{
-    return GET_VM()->loaded_features_index;
-}
-
 static st_table *
 get_loading_table(void)
 {
     return GET_VM()->loading_table;
 }
 
-static void
-features_index_add_single(VALUE short_feature, VALUE offset)
+static inline uint32_t
+fmix_uint(uint32_t val)
 {
-    struct st_table *features_index;
-    VALUE this_feature_index = Qnil;
-    char *short_feature_cstr;
+    /* with -O2 even on i386 gcc and clang transform this to
+     * single multiplication 32bit*32bit=64bit */
+    uint64_t res = ((uint64_t)val) * (uint64_t)0x85ebca6b;
+    return (uint32_t)res ^ (uint32_t)(res>>32);
+}
 
-    Check_Type(offset, T_FIXNUM);
-    Check_Type(short_feature, T_STRING);
-    short_feature_cstr = StringValueCStr(short_feature);
-
-    features_index = get_loaded_features_index_raw();
-    st_lookup(features_index, (st_data_t)short_feature_cstr, (st_data_t *)&this_feature_index);
-
-    if (NIL_P(this_feature_index)) {
-	st_insert(features_index, (st_data_t)ruby_strdup(short_feature_cstr), (st_data_t)offset);
+static uint32_t
+fast_string_hash(const char *str, long len)
+{
+    uint32_t res = 0;
+    for(;len > 0; str+=16, len-=16) {
+	uint32_t buf[4] = {0, 0, 0, 0};
+	memcpy(buf, str, len < 16 ? len : 16);
+	res = fmix_uint(res ^ buf[0]);
+	res = fmix_uint(res ^ buf[1]);
+	res = fmix_uint(res ^ buf[2]);
+	res = fmix_uint(res ^ buf[3]);
     }
-    else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
-	VALUE feature_indexes[2];
-	feature_indexes[0] = this_feature_index;
-	feature_indexes[1] = offset;
-	this_feature_index = rb_ary_tmp_new(numberof(feature_indexes));
-	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
-	st_insert(features_index, (st_data_t)short_feature_cstr, (st_data_t)this_feature_index);
+    return res;
+}
+
+/*
+ * We build index for loaded features relying on fact that loaded_feature_path
+ * rechecks feature name. So that, we could store only hash of string instead
+ * of whole string in a hash.
+ * Instead of allocation of array of offsets by each feature, we organize
+ * offsets in a single linked lists - one list per feature - which are stored
+ * in a single array. And we store in a hash positions of head and tail of
+ * this list
+ */
+#define FI_LAST (-1)
+#define FI_DEFAULT_HASH_SIZE   (64)
+#define FI_DEFAULT_LIST_SIZE  (64)
+
+typedef struct features_index_hash_item {
+    uint32_t hash;
+    /* we will store position + 1 in head and tail,
+     * so that if head == 0 then item is free */
+    int head;
+    int tail;
+} fi_hash_item;
+
+typedef struct features_index_hash {
+    int capa;
+    int size;
+    fi_hash_item *items;
+} fi_hash;
+
+static fi_hash_item *
+fi_hash_candidate(fi_hash *index, uint32_t hash)
+{
+    fi_hash_item *items = index->items;
+    int capa_1 = index->capa - 1;
+    int pos = hash & capa_1;
+    if (items[pos].hash != hash && items[pos].head != 0) {
+	/* always odd, so that it has no common diviser with capa*/
+	int step = (hash % capa_1) | 1;
+	do {
+	    pos = (pos + step) & capa_1;
+	} while (items[pos].hash != hash && items[pos].head != 0);
+    }
+    return items + pos;
+}
+
+static void
+fi_hash_rehash(fi_hash *index)
+{
+    fi_hash temp;
+    int i;
+    fi_hash_item *items = index->items;
+    temp.capa = index->capa * 2;
+    temp.size = index->size;
+    temp.items = xcalloc(temp.capa, sizeof(fi_hash_item));
+    for(i=0; i < index->capa; i++) {
+	if (items[i].head) {
+	    fi_hash_item *item = fi_hash_candidate(&temp, items[i].hash);
+	    *item = items[i];
+	}
+    }
+    *index = temp;
+    xfree(items);
+}
+
+static int
+fi_hash_find_head(fi_hash *index, const char *str, long len)
+{
+    uint32_t hash = fast_string_hash(str, len);
+    fi_hash_item *item = fi_hash_candidate(index, hash);
+    return item->head - 1; /* if head==0 then result is FI_LAST */
+}
+
+/* inserts position of tail into hash,
+ * returns previous tail position or FI_LAST */
+static int
+fi_hash_insert_pos(fi_hash *index, const char *str, long len, int pos)
+{
+    fi_hash_item *item;
+    int hash = fast_string_hash(str, len);
+    if (index->size > index->capa / 4 * 3) {
+	fi_hash_rehash(index);
+    }
+    item = fi_hash_candidate(index, hash);
+    if (item->head) {
+	int res = item->tail - 1;
+	item->tail = pos + 1;
+	return res;
     }
     else {
-	Check_Type(this_feature_index, T_ARRAY);
-	rb_ary_push(this_feature_index, offset);
+	item->hash = hash;
+	item->head = pos + 1;
+	item->tail = pos + 1;
+	index->size++;
+	return FI_LAST;
     }
+}
+
+typedef struct features_index_multilist_item {
+    int offset;
+    int next;
+} fi_list_item;
+
+typedef struct features_index_multilist {
+    fi_list_item *items;
+    int capa;
+    int size;
+} fi_list;
+
+static void
+fi_list_insert_offset(fi_list *list, int offset, int prev_pos)
+{
+    if (list->size == list->capa) {
+	REALLOC_N(list->items, fi_list_item, list->capa*2);
+	MEMZERO(list->items + list->capa, fi_list_item, list->capa);
+	list->capa*=2;
+    }
+    list->items[list->size].offset = offset;
+    list->items[list->size].next = FI_LAST;
+    if (prev_pos != FI_LAST) {
+	list->items[prev_pos].next = list->size;
+    }
+    list->size++;
+}
+
+typedef struct features_index {
+    fi_hash hash;
+    fi_list list;
+} st_features_index;
+
+static void
+features_index_free(void *p)
+{
+    if (p) {
+	st_features_index *fi = p;
+	xfree(fi->hash.items);
+	xfree(fi->list.items);
+	xfree(fi);
+    }
+}
+
+static VALUE
+features_index_allocate()
+{
+    st_features_index *index = xcalloc(1, sizeof(st_features_index));
+    index->hash.capa = FI_DEFAULT_HASH_SIZE;
+    index->hash.items = xcalloc(index->hash.capa, sizeof(fi_hash_item));
+    index->list.capa = FI_DEFAULT_LIST_SIZE;
+    index->list.items = xcalloc(index->list.capa, sizeof(fi_list_item));
+    return Data_Wrap_Struct(rb_cObject, 0, features_index_free, index);
+}
+
+static st_features_index *
+get_loaded_features_index_raw(void)
+{
+    st_features_index *index;
+    Data_Get_Struct(GET_VM()->loaded_features_index, st_features_index, index);
+    return index;
+}
+
+static void
+features_index_clear()
+{
+    st_features_index *index = get_loaded_features_index_raw();
+    MEMZERO(index->hash.items, fi_hash_item, index->hash.capa);
+    index->hash.size = 0;
+    MEMZERO(index->list.items, fi_list_item, index->list.capa);
+    index->list.size = 0;
+}
+
+static void
+features_index_add_single(const char *short_feature, long len, int offset)
+{
+    st_features_index *index = get_loaded_features_index_raw();
+    int prev_pos = fi_hash_insert_pos(&index->hash, short_feature, len, index->list.size);
+    fi_list_insert_offset(&index->list, offset, prev_pos);
 }
 
 /* Add to the loaded-features index all the required entries for
@@ -223,13 +385,11 @@ features_index_add_single(VALUE short_feature, VALUE offset)
    relies on for its fast lookup.
 */
 static void
-features_index_add(VALUE feature, VALUE offset)
+features_index_add(const char *feature_str, long len, int offset)
 {
-    VALUE short_feature;
-    const char *feature_str, *feature_end, *ext, *p;
+    const char *feature_end, *ext, *p;
 
-    feature_str = StringValuePtr(feature);
-    feature_end = feature_str + RSTRING_LEN(feature);
+    feature_end = feature_str + len;
 
     for (ext = feature_end; ext > feature_str; ext--)
       if (*ext == '.' || *ext == '/')
@@ -247,28 +407,41 @@ features_index_add(VALUE feature, VALUE offset)
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	short_feature = rb_str_substr(feature, p + 1 - feature_str, feature_end - p - 1);
-	features_index_add_single(short_feature, offset);
+	features_index_add_single(p + 1, feature_end - p - 1, offset);
 	if (ext) {
-	    short_feature = rb_str_substr(feature, p + 1 - feature_str, ext - p - 1);
-	    features_index_add_single(short_feature, offset);
+	    features_index_add_single(p + 1, ext - p - 1, offset);
 	}
     }
-    features_index_add_single(feature, offset);
+    features_index_add_single(feature_str, len, offset);
     if (ext) {
-	short_feature = rb_str_substr(feature, 0, ext - feature_str);
-	features_index_add_single(short_feature, offset);
+	features_index_add_single(feature_str, ext - feature_str, offset);
     }
 }
 
-static int
-loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
+static fi_list_item
+features_index_find(st_features_index *index, const char *feature, long len)
 {
-    xfree((char *)key);
-    return ST_DELETE;
+    int pos = fi_hash_find_head(&index->hash, feature, len);
+    if (pos == FI_LAST) {
+	fi_list_item res = {FI_LAST, FI_LAST};
+	return res;
+    }
+    else
+	return index->list.items[pos];
 }
 
-static st_table *
+static fi_list_item
+features_index_next(st_features_index *index, fi_list_item cur)
+{
+    if (cur.next == FI_LAST) {
+	fi_list_item res = {FI_LAST, FI_LAST};
+	return res;
+    }
+    else
+	return index->list.items[cur.next];
+}
+
+static st_features_index *
 get_loaded_features_index(void)
 {
     VALUE features;
@@ -278,7 +451,7 @@ get_loaded_features_index(void)
     if (!rb_ary_shared_with_p(vm->loaded_features_snapshot, vm->loaded_features)) {
 	/* The sharing was broken; something (other than us in rb_provide_feature())
 	   modified loaded_features.  Rebuild the index. */
-	st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
+	features_index_clear();
 	features = vm->loaded_features;
 	for (i = 0; i < RARRAY_LEN(features); i++) {
 	    VALUE entry, as_str;
@@ -287,11 +460,11 @@ get_loaded_features_index(void)
 	    if (as_str != entry)
 		rb_ary_store(features, i, as_str);
 	    rb_str_freeze(as_str);
-	    features_index_add(as_str, INT2FIX(i));
+	    features_index_add(RSTRING_PTR(as_str), RSTRING_LEN(as_str), i);
 	}
 	reset_loaded_features_snapshot();
     }
-    return vm->loaded_features_index;
+    return get_loaded_features_index_raw();
 }
 
 /* This searches `load_path` for a value such that
@@ -371,10 +544,12 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
-    VALUE features, feature_val, this_feature_index = Qnil, v, p, load_path = 0;
+    VALUE features,  v, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
-    st_table *loading_tbl, *features_index;
+    st_table *loading_tbl;
+    st_features_index *features_index;
+    fi_list_item index_list;
     st_data_t data;
     int type;
 
@@ -392,8 +567,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features = get_loaded_features();
     features_index = get_loaded_features_index();
 
-    feature_val = rb_str_new(feature, len);
-    st_lookup(features_index, (st_data_t)feature, (st_data_t *)&this_feature_index);
+    index_list = features_index_find(features_index, feature, len);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -413,26 +587,20 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        form "#{feature}#{e}" are accepted.
 
        In `rb_provide_feature()` and `get_loaded_features_index()` we
-       maintain an invariant that the array `this_feature_index` will
-       point to every entry in `features` which has the form
+       maintain an invariant that the list `index` will point to at least
+       every entry in `features` which has the form
          "#{prefix}#{feature}#{e}"
        where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
+       (since we store only hash value of feature, there could be also
+       other features in the list, but probability of it is very small,
+       and loaded_feature_path will recheck for it)
      */
-    if (!NIL_P(this_feature_index)) {
-	for (i = 0; ; i++) {
-	    VALUE entry;
-	    long index;
-	    if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
-		if (i >= RARRAY_LEN(this_feature_index)) break;
-		entry = RARRAY_PTR(this_feature_index)[i];
-	    }
-	    else {
-		if (i > 0) break;
-		entry = this_feature_index;
-	    }
-	    index = FIX2LONG(entry);
+    if (index_list.offset != FI_LAST) {
+	for (; index_list.offset != FI_LAST ;
+	       index_list = features_index_next(features_index, index_list)) {
+	    long index = index_list.offset;
 
 	    v = RARRAY_PTR(features)[index];
 	    f = StringValuePtr(v);
@@ -548,7 +716,9 @@ rb_provide_feature(VALUE feature)
     rb_str_freeze(feature);
 
     rb_ary_push(features, feature);
-    features_index_add(feature, INT2FIX(RARRAY_LEN(features)-1));
+    StringValue(feature);
+    features_index_add(RSTRING_PTR(feature), RSTRING_LEN(feature), (int)(RARRAY_LEN(features)-1));
+    RB_GC_GUARD(feature);
     reset_loaded_features_snapshot();
 }
 
@@ -1134,7 +1304,7 @@ Init_load()
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
-    vm->loaded_features_index = st_init_strtable();
+    vm->loaded_features_index = features_index_allocate();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
