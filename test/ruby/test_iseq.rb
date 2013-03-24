@@ -9,6 +9,18 @@ class TestISeq < Test::Unit::TestCase
     assert_normal_exit('p RubyVM::InstructionSequence.compile("1", "mac", "", 0).to_a', bug5894)
   end
 
+  def test_to_a_lines
+    src = <<-EOS
+    p __LINE__ # 1
+    p __LINE__ # 2
+               # 3
+    p __LINE__ # 4
+    EOS
+    body = RubyVM::InstructionSequence.new(src).to_a[13]
+    lines = body.find_all{|e| e.kind_of? Fixnum}
+    assert_equal [1, 2, 4], lines
+  end
+
   def test_unsupport_type
     ary = RubyVM::InstructionSequence.compile("p").to_a
     ary[9] = :foobar
