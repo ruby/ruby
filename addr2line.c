@@ -694,8 +694,11 @@ static int kvprintf(char const *fmt, void (*func)(int), void *arg, int radix, va
 static void putce(int c)
 {
     char s[1];
+    ssize_t ret;
+
     s[0] = (char)c;
-    write(2, s, 1);
+    ret = write(2, s, 1);
+    (void)ret;
 }
 
 int

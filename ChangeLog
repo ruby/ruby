@@ -1,3 +1,7 @@
+Sun Mar 24 10:38:24 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* addr2line.c (putce): suppress unused return value warning.
+
 Mon Mar 25 02:01:03 2013  Narihiro Nakamura  <authornari@gmail.com>
 
         * proc.c (bm_free): need to clean up the mark flag of a free and
