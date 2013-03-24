@@ -1998,6 +1998,9 @@ class TestString < Test::Unit::TestCase
       s = S("a:".force_encoding(enc))
       assert_equal([enc]*3, s.partition("|").map(&:encoding), bug6206)
     end
+
+    assert_equal(["\u30E6\u30FC\u30B6", "@", "\u30C9\u30E1.\u30A4\u30F3"],
+      "\u30E6\u30FC\u30B6@\u30C9\u30E1.\u30A4\u30F3".partition(/[@.]/))
   end
 
   def test_rpartition
@@ -2013,6 +2016,10 @@ class TestString < Test::Unit::TestCase
       s = S("a:".force_encoding(enc))
       assert_equal([enc]*3, s.rpartition("|").map(&:encoding), bug6206)
     end
+
+    bug8138 = '[ruby-dev:47183]'
+    assert_equal(["\u30E6\u30FC\u30B6@\u30C9\u30E1", ".", "\u30A4\u30F3"],
+      "\u30E6\u30FC\u30B6@\u30C9\u30E1.\u30A4\u30F3".rpartition(/[@.]/), bug8138)
   end
 
   def test_setter

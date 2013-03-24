@@ -7542,9 +7542,10 @@ rb_str_rpartition(VALUE str, VALUE sep)
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
     }
-    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+    return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
-		          rb_str_substr(str,pos+str_strlen(sep,STR_ENC_GET(sep)),RSTRING_LEN(str)));
+		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
+					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
 }
 
 /*

@@ -1,3 +1,8 @@
+Sun Mar 24 18:29:46 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_rpartition): Fix String#rpartition(/re/)
+	  against a multibyte string. [Bug #8138] [ruby-dev:47183]
+
 Sun Mar 24 13:42:24 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (GC_ENABLE_LAZY_SWEEP): new macro to switch lazy sweeping
