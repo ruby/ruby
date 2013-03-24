@@ -1,3 +1,13 @@
+Mon Mar 25 02:02:15 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: edited rdoc.
+	* rational.c: ditto.
+
+Mon Mar 25 02:02:15 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: described syntax of string form.
+	* rational.c: ditto.
+
 Mon Mar 25 01:26:26 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/webrick/httpproxy.rb: Fix typos in HTTPProxyServer [Bug #8013]

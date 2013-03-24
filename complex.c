@@ -483,6 +483,28 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
  *
  *    Complex(1, 2)    #=> (1+2i)
  *    Complex('1+2i')  #=> (1+2i)
+ *
+ * Syntax of string form:
+ *
+ *   string form = extra spaces , complex , extra spaces ;
+ *   complex = real part | [ sign ] , imaginary part
+ *           | real part , sign , imaginary part
+ *           | rational , "@" , rational ;
+ *   real part = rational ;
+ *   imaginary part = imaginary unit | unsigned rational , imaginary unit ;
+ *   rational = [ sign ] , unsigned rational ;
+ *   unsigned rational = numerator | numerator , "/" , denominator ;
+ *   numerator = integer part | fractional part | integer part , fractional part ;
+ *   denominator = digits ;
+ *   integer part = digits ;
+ *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
+ *   imaginary unit = "i" | "I" | "j" | "J" ;
+ *   sign = "-" | "+" ;
+ *   digits = digit , { digit | "_" , digit };
+ *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+ *   extra spaces = ? \s* ? ;
+ *
+ * See String#to_c.
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -1825,6 +1847,8 @@ string_to_c_strict(VALUE self)
  *    '-0.0-0.0i'.to_c   #=> (-0.0-0.0i)
  *    '1/2+3/4i'.to_c    #=> ((1/2)+(3/4)*i)
  *    'ruby'.to_c        #=> (0+0i)
+ *
+ * See Kernel.Complex.
  */
 static VALUE
 string_to_c(VALUE self)
