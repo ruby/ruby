@@ -2043,8 +2043,14 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 {
     int res;
 
-    if (objspace->flags.dont_lazy_sweep)
-        return garbage_collect(objspace);
+    if (objspace->flags.dont_lazy_sweep) {
+	if (heaps_increment(objspace)) {
+	    return;
+	}
+	else {
+	    return garbage_collect(objspace);
+	}
+    }
 
 
     if (!ready_to_gc(objspace)) return TRUE;

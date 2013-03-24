@@ -1,3 +1,10 @@
+Sun Mar 24 12:55:47 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: We have no chance to expand the heap when lazy sweeping is
+	  restricted. So collecting is often invoked if there is not
+	  enough free space in the heap. Try to expand heap when this is
+	  the case.
+
 Sun Mar 24 11:03:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_require.rb: Remove temporally files in the tests.
