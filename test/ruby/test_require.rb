@@ -26,6 +26,7 @@ class TestRequire < Test::Unit::TestCase
         p :ok
       end
     INPUT
+    t.close(true)
   end
 
   def test_require_too_long_filename
@@ -101,6 +102,7 @@ class TestRequire < Test::Unit::TestCase
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
     env_home ? ENV["HOME"] = env_home : ENV.delete("HOME")
+    t.close(true)
   end
 
   def test_require_with_unc
@@ -258,6 +260,7 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     assert_raise(ArgumentError) { at_exit }
+    t.close(true)
   end
 
   def test_load2  # [ruby-core:25039]
@@ -271,6 +274,7 @@ class TestRequire < Test::Unit::TestCase
     assert_in_out_err([], <<-INPUT, %w("hello"), [])
       load(#{ t.path.dump }, true)
     INPUT
+    t.close(true)
   end
 
   def test_tainted_loadpath
@@ -320,6 +324,8 @@ class TestRequire < Test::Unit::TestCase
       require "#{ file }"
       p :ok
     INPUT
+
+    t.close(true)
   end
 
   def test_relative

@@ -85,7 +85,7 @@ class TestSyslogRootLogger < Test::Unit::TestCase
     assert_equal true, @logger.__send__(msg_id, *arg, &block)
     logdev.open
     msg = logdev.read
-    logdev.close
+    logdev.close(true)
     msg
   end
 

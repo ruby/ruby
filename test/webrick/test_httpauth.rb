@@ -59,6 +59,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       http.request(g){|res| assert_equal("hoge", res.body, log.call)}
       g.basic_auth("webrick", "not super")
       http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
+      tmpfile.close(true)
     }
   end
 
@@ -140,6 +141,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         g['Authorization'] = credentials_for_request('webrick', "not super", params)
         http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
       end
+      tmpfile.close(true)
     }
   end
 

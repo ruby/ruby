@@ -1,3 +1,21 @@
+Sun Mar 24 11:03:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_require.rb: Remove temporally files in the tests.
+
+	* test/ruby/test_rubyoptions.rb: Ditto.
+
+	* test/logger/test_logger.rb: Ditto.
+
+	* test/psych/test_psych.rb: Ditto.
+
+	* test/readline/test_readline.rb: Ditto.
+
+	* test/syslog/test_syslog_logger.rb: Ditto.
+
+	* test/webrick/test_httpauth.rb: Ditto.
+
+	* test/zlib/test_zlib.rb: Ditto.
+
 Sun Mar 24 05:36:29 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/ring.rb:  Added documentation for multicast support.
