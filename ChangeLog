@@ -1,3 +1,10 @@
+Mon Mar 25 07:09:20 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rinda/tuplespace.rb:  Only return tuple entry once on move,
+	  either through port or regular return, not both.  This results in a
+	  120% speedup when combined with #8125.  Patch by Joel VanderWerf.
+	  [ruby-trunk - Feature #8119]
+
 Mon Mar 25 06:59:01 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rinda/test_rinda.rb:  Skip IPv6 tests if no IPv6 addresses

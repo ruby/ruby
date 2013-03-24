@@ -491,7 +491,7 @@ module Rinda
           port.push(entry.value) if port
           @bag.delete(entry)
           notify_event('take', entry.value)
-          return entry.value
+          return port ? nil : entry.value
         end
         raise RequestExpiredError if template.expired?
 
@@ -506,7 +506,7 @@ module Rinda
               port.push(entry.value) if port
               @bag.delete(entry)
               notify_event('take', entry.value)
-              return entry.value
+              return port ? nil : entry.value
             end
             template.wait
           end
