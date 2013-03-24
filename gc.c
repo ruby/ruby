@@ -2048,7 +2048,7 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 
     if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	if (heaps_increment(objspace)) {
-	    return;
+	    return TRUE;
 	}
 	else {
 	    return garbage_collect(objspace);
