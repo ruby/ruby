@@ -7,6 +7,7 @@ class TestSuper < Test::Unit::TestCase
     def double(a, b) [a,b] end
     def array(*a) a end
     def optional(a = 0) a end
+    def keyword(**a) a end
   end
   class Single1 < Base
     def single(*) super end
@@ -49,6 +50,18 @@ class TestSuper < Test::Unit::TestCase
   end
   class Optional5 < Base
     def array(a = 1, b = 2, *) super end
+  end
+  class Keyword1 < Base
+    def keyword(foo: "keyword1") super end
+  end
+  class Keyword2 < Base
+    def keyword(foo: "keyword2")
+      foo = "changed1"
+      x = super
+      foo = "changed2"
+      y = super
+      [x, y]
+    end
   end
 
   def test_single1
@@ -111,6 +124,14 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([9, 2], Optional5.new.array(9))
     assert_equal([9, 8], Optional5.new.array(9, 8))
     assert_equal([9, 8, 7], Optional5.new.array(9, 8, 7))
+  end
+  def test_keyword1
+    assert_equal({foo: "keyword1"}, Keyword1.new.keyword)
+    bug8008 = '[ruby-core:53114] [Bug #8008]'
+    assert_equal({foo: bug8008}, Keyword1.new.keyword(foo: bug8008))
+  end
+  def test_keyword2
+    assert_equal([{foo: "changed1"}, {foo: "changed2"}], Keyword2.new.keyword)
   end
 
   class A

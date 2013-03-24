@@ -1,3 +1,8 @@
+Mon Mar 25 01:09:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): pass keyword arguments to zsuper,
+	  with current values.  [ruby-core:53114] [Bug #8008]
+
 Mon Mar 25 01:05:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/objspace/objspace.c (count_nodes): count also newly added nodes,
