@@ -580,7 +580,19 @@ class TestRingFinger < Test::Unit::TestCase
 
   def setup
     @rf = Rinda::RingFinger.new
-    @rf.multicast_interface = 1
+    ifindex = nil
+    10.times do |i|
+      begin
+        addrinfo = Addrinfo.udp('ff02::1', Rinda::Ring_PORT)
+        soc = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
+        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
+                       [i].pack('I'))
+        ifindex = i
+        break
+      rescue
+      end
+    end
+    @rf.multicast_interface = ifindex
   end
 
   def test_make_socket_unicast
