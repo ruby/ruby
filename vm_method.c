@@ -122,26 +122,20 @@ void
 rb_sweep_method_entry(void *pvm)
 {
     rb_vm_t *vm = pvm;
-    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
+    struct unlinked_method_entry_list_entry **prev_ume = &vm->unlinked_method_entry_list, *ume = *prev_ume, *curr_ume;
 
     while (ume) {
 	if (ume->me->mark) {
 	    ume->me->mark = 0;
-	    prev_ume = ume;
-	    ume = ume->next;
+	    prev_ume = &ume->next;
+	    ume = *prev_ume;
 	}
 	else {
 	    rb_free_method_entry(ume->me);
 
-	    if (prev_ume == 0) {
-		vm->unlinked_method_entry_list = ume->next;
-	    }
-	    else {
-		prev_ume->next = ume->next;
-	    }
-
 	    curr_ume = ume;
 	    ume = ume->next;
+	    *prev_ume = ume;
 	    xfree(curr_ume);
 	}
     }
