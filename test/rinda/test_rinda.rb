@@ -525,6 +525,21 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   @server = DRb.primary_server || DRb.start_service
 end
 
+module RingIPv6
+  def prepare_ipv6(r)
+    Socket.ip_address_list.any? do |addrinfo|
+      if /%(?<ifname>\w+)\z/ =~ addrinfo.ip_address
+        next if /\Alo/ =~ ifname
+        _family, _port, _flowinfo, _addr, scope_id =
+          addrinfo.to_sockaddr.unpack("s!S!La16L")
+        r.multicast_interface = scope_id
+        return
+      end
+    end
+    skip 'IPv6 not available'
+  end
+end
+
 class TestRingServer < Test::Unit::TestCase
 
   def setup
@@ -588,22 +603,10 @@ class TestRingServer < Test::Unit::TestCase
 end
 
 class TestRingFinger < Test::Unit::TestCase
+  include RingIPv6
 
   def setup
     @rf = Rinda::RingFinger.new
-    ifindex = nil
-    10.times do |i|
-      begin
-        addrinfo = Addrinfo.udp('ff02::1', Rinda::Ring_PORT)
-        soc = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
-        soc.setsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_IF,
-                       [i].pack('I'))
-        ifindex = i
-        break
-      rescue
-      end
-    end
-    @rf.multicast_interface = ifindex
   end
 
   def test_make_socket_unicast
@@ -620,26 +623,23 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
-    skip 'IPv6 not available' unless
-      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
-
+    prepare_ipv6(@rf)
     v6mc = @rf.make_socket('ff02::1')
 
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
   end
 
-  def test_make_socket_multicast_hops
+  def test_make_socket_ipv4_multicast_hops
     @rf.multicast_hops = 2
-
     v4mc = @rf.make_socket('239.0.0.1')
-
     assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).int)
+  end
 
-    return unless Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
-
+  def test_make_socket_ipv6_multicast_hops
+    prepare_ipv6(@rf)
+    @rf.multicast_hops = 2
     v6mc = @rf.make_socket('ff02::1')
-
     assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
   end
 
