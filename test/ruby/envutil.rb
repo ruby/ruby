@@ -269,8 +269,9 @@ module Test
 
       def assert_ruby_status(args, test_stdin="", message=nil, opt={})
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, opt)
+        assert(!status.signaled?, FailDesc[status, message, out])
         message ||= "ruby exit status is not success:"
-        assert(status.success?, FailDesc[status, "#{message} (#{status.inspect})", out])
+        assert(status.success?, "#{message} (#{status.inspect})")
       end
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV")
