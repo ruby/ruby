@@ -71,11 +71,11 @@ static const struct signals {
 #ifdef SIGTRAP
     {"TRAP", SIGTRAP},
 #endif
-#ifdef SIGIOT
-    {"IOT", SIGIOT},
-#endif
 #ifdef SIGABRT
     {"ABRT", SIGABRT},
+#endif
+#ifdef SIGIOT
+    {"IOT", SIGIOT},
 #endif
 #ifdef SIGEMT
     {"EMT", SIGEMT},
