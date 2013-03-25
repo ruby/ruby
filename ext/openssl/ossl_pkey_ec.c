@@ -1592,6 +1592,7 @@ void Init_ossl_ec()
     rb_define_method(cEC, "public_key", ossl_ec_key_get_public_key, 0);
     rb_define_method(cEC, "public_key=", ossl_ec_key_set_public_key, 1);
     rb_define_method(cEC, "private_key?", ossl_ec_key_is_private_key, 0);
+    rb_define_alias(cEC, "private?", "private_key?");
     rb_define_method(cEC, "public_key?", ossl_ec_key_is_public_key, 0);
 /*  rb_define_method(cEC, "", ossl_ec_key_get_, 0);
     rb_define_method(cEC, "=", ossl_ec_key_set_ 1);
