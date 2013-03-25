@@ -50,7 +50,7 @@ class MockClock
   end
 
   def rewind
-    now ,= @ts.take([nil, :now])
+    @ts.take([nil, :now])
     @ts.write([@inf, :now])
     @ts.take([nil, :now])
     @now = 2
@@ -76,7 +76,7 @@ module Time
   module_function :at
 
   def now
-    @m ? @m.now : 2
+    defined?(@m) && @m ? @m.now : 2
   end
   module_function :now
 
