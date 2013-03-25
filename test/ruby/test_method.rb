@@ -579,14 +579,18 @@ class TestMethod < Test::Unit::TestCase
 
   def test_unlinked_method_entry_in_method_object_bug
     bug8100 = '[ruby-core:53640] [Bug #8100]'
-    assert_ruby_status [], %q{
+    begin
+      assert_normal_exit %q{
       loop do
         def x
           "hello" * 1000
         end
         method(:x).call
       end
-    }, bug8100, timeout: 2
-  rescue Timeout::Error
+      }, bug8100, timeout: 2
+    rescue Timeout::Error => e
+    else
+    end
+    assert_raise(Timeout::Error, bug8100) {raise e if e}
   end
 end
