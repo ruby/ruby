@@ -506,6 +506,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     GetISeqPtr(iseqval, iseq);
     iseq->self = iseqval;
+    iseq->local_iseq = iseq;
 
     if (type_map == 0) {
 	type_map = st_init_numtable();
