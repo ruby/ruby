@@ -7,7 +7,7 @@ class TestSyntax < Test::Unit::TestCase
     assert_separately(%W[--disable-gem -r#{__dir__}/envutil - #{srcdir}],
                       __FILE__, __LINE__, <<-eom, timeout: Float::INFINITY)
       dir = ARGV.shift
-      for script in Dir["#{srcdir}/{lib,sample,ext,test}/**/*.rb"].sort
+      for script in Dir["\#{dir}/{lib,sample,ext,test}/**/*.rb"].sort
         assert_valid_syntax(IO::read(script), script)
       end
     eom
