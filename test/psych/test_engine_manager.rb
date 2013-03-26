@@ -1,4 +1,4 @@
-require 'psych/helper'
+require_relative 'helper'
 require 'yaml'
 
 module Psych

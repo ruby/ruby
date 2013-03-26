@@ -2,7 +2,7 @@
 #												vim:sw=4:ts=4
 # $Id$
 #
-require 'psych/helper'
+require_relative 'helper'
 require 'ostruct'
 
 # [ruby-core:01946]

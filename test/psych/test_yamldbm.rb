@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-require 'psych/helper'
+require_relative 'helper'
 require 'tmpdir'
 
 begin

@@ -1,4 +1,4 @@
-require 'psych/helper'
+require_relative 'helper'
 
 module Psych
   class Tagged

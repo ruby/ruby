@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-require 'psych/helper'
+require_relative 'helper'
 
 module Psych
   class TestScalar < TestCase
