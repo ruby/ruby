@@ -10,8 +10,7 @@ yes-btest-ruby: $(TEST_DEPENDS) yes-test-sample
 yes-test-sample: $(TEST_DEPENDS)
 endif
 ifneq ($(filter check%,$(MAKECMDGOALS)) $(filter test-all,$(TEST_TARGETS)),)
-yes-test-all yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS)) \
-	yes-test-knownbug
+yes-test-all yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS))
 endif
 
 $(TEST_TARGETS): $(TEST_DEPENDS)
