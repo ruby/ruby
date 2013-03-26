@@ -1,3 +1,8 @@
+Wed Mar 27 03:02:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.c: Correct predefined macro name. This typo is introduced by
+	  r36534 and should be backported to ruby_2_0_0.
+
 Wed Mar 27 02:58:44 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo 0fe387da2fee089254f6b04990541c731a26757f
