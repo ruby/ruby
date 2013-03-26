@@ -738,16 +738,16 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     decltype && try_link(<<"SRC", opt, &b) or
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
     call && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { #{call}; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -757,9 +757,9 @@ SRC
     try_compile(<<"SRC", opt, &b)
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1142,8 +1142,8 @@ SRC
       if try_compile(<<"SRC", opt, &b)
 #{cpp_include(headers)}
 /*top*/
-#{MAIN_DOES_NOTHING}
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
+#{MAIN_DOES_NOTHING "s"}
 SRC
         $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
         $defs.push(format("-DHAVE_ST_%s", member.tr_cpp)) # backward compatibility
@@ -1396,9 +1396,9 @@ SRC
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1409,9 +1409,9 @@ SRC
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -2417,6 +2417,12 @@ MESSAGE
 
   def _libdir_basename
     @libdir_basename ||= config_string("libdir") {|name| name[/\A\$\(exec_prefix\)\/(.*)/, 1]} || "lib"
+  end
+
+  def MAIN_DOES_NOTHING(*refs)
+    src = MAIN_DOES_NOTHING
+    src = src.sub(/\{/) {$&+refs.map {|n|"(void)#{n}; "}.join("")}
+    src
   end
 
   extend self

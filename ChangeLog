@@ -1,3 +1,8 @@
+Wed Mar 27 06:39:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): force to refer symbols for tests
+	  to be preserved.  [ruby-core:53745] [Bug #8169]
+
 Wed Mar 27 05:15:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_REPLACE_TYPE): define SIGNEDNESS_OF_type same as
