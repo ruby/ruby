@@ -731,7 +731,7 @@ ksprintn(char *nbuf, uintmax_t num, int base, int *lenp, int upper)
 		*++p = upper ? toupper(c) : c;
 	} while (num /= base);
 	if (lenp)
-		*lenp = p - nbuf;
+		*lenp = (int)(p - nbuf);
 	return (p);
 }
 
@@ -946,7 +946,7 @@ reswitch:	switch (ch = (u_char)*fmt++) {
 			if (p == NULL)
 				p = "(null)";
 			if (!dot)
-				n = strlen (p);
+				n = (int)strlen (p);
 			else
 				for (n = 0; n < dwidth && p[n]; n++)
 					continue;
