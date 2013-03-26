@@ -516,8 +516,6 @@ typedef unsigned LONG_LONG unsigned_time_t;
 # error cannot find integer type which size is same as time_t.
 #endif
 
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
-
 static struct timespec
 native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 {

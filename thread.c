@@ -73,9 +73,6 @@
 #define THREAD_DEBUG 0
 #endif
 
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
-#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
-
 VALUE rb_cMutex;
 VALUE rb_cThreadShield;
 
