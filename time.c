@@ -4536,7 +4536,7 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *
  *  This method is similar to strftime() function defined in ISO C and POSIX.
  *
- *  While all directives are locale independant since Ruby 1.9 %Z is platform
+ *  While all directives are locale independant since Ruby 1.9, %Z is platform
  *  dependant.
  *  So, the result may differ even if the same format string is used in other
  *  systems such as C.
