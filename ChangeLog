@@ -1,3 +1,9 @@
+Tue Mar 26 22:14:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (double2timeval): convert the infinity to TIME_MAX to avoid
+	  SEGV by Thread.new {}.join(Float::INFINITY) on
+	  Debian GNU/Linux (amd64).
+
 Mon Mar 25 07:09:20 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rinda/tuplespace.rb:  Only return tuple entry once on move,

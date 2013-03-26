@@ -73,6 +73,9 @@
 #define THREAD_DEBUG 0
 #endif
 
+#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
+#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
+
 VALUE rb_cMutex;
 VALUE rb_cThreadShield;
 
@@ -915,6 +918,12 @@ static struct timeval
 double2timeval(double d)
 {
     struct timeval time;
+
+    if (isinf(d)) {
+        time.tv_sec = TIMET_MAX;
+        time.tv_usec = 0;
+        return time;
+    }
 
     time.tv_sec = (int)d;
     time.tv_usec = (int)((d - (int)d) * 1e6);
@@ -3550,9 +3559,6 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 #define POLLIN_SET (POLLRDNORM | POLLRDBAND | POLLIN | POLLHUP | POLLERR)
 #define POLLOUT_SET (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
 #define POLLEX_SET (POLLPRI)
-
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
-#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
 
 #ifndef HAVE_PPOLL
 /* TODO: don't ignore sigmask */
