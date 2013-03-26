@@ -48,7 +48,7 @@ module Rinda
       ##
       # Set to false to shutdown future requests using this Renewer
 
-      attr_accessor :renew
+      attr_writer :renew
 
       def initialize # :nodoc:
         @renew = true
