@@ -9,7 +9,7 @@ Tue Mar 26 23:41:18 2013  Tanaka Akira  <akr@fsij.org>
 	* thread_pthread.c: Remove TIMET_MAX definition.
 
 	* thread_win32.c: Ditto.
-	
+
 Tue Mar 26 22:31:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sockaddr_len): return the shortest length for
