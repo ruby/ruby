@@ -1,3 +1,9 @@
+Wed Mar 27 00:28:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (TIMET_MAX_PLUS_ONE): Defined.
+
+	* thread.c (double2timeval): Saturate out-of-range values. 
+
 Tue Mar 26 23:41:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: Define TIMET_MAX and TIMET_MIN here.

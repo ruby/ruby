@@ -916,17 +916,21 @@ double2timeval(double d)
 {
     struct timeval time;
 
-    if (isinf(d)) {
+    if (TIMET_MAX_PLUS_ONE <= d) {
         time.tv_sec = TIMET_MAX;
-        time.tv_usec = 0;
-        return time;
+        time.tv_usec = 999999;
     }
-
-    time.tv_sec = (int)d;
-    time.tv_usec = (int)((d - (int)d) * 1e6);
-    if (time.tv_usec < 0) {
-	time.tv_usec += (int)1e6;
-	time.tv_sec -= 1;
+    else if (d <= TIMET_MIN) {
+        time.tv_sec = TIMET_MIN;
+        time.tv_usec = 0;
+    }
+    else {
+        time.tv_sec = (time_t)d;
+        time.tv_usec = (int)((d - (time_t)d) * 1e6);
+        if (time.tv_usec < 0) {
+            time.tv_usec += (int)1e6;
+            time.tv_sec -= 1;
+        }
     }
     return time;
 }
