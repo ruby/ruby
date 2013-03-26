@@ -1171,7 +1171,9 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	    t=INT])
 	rb_cv_[$1]_convertible=${u}${t}])
     test "${AS_TR_SH(ac_cv_type_[$1])}" = "yes" && n="$1"
+    AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1], [u=-1])
     AC_DEFINE_UNQUOTED(rb_[$1], $n)
+    AC_DEFINE_UNQUOTED([SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
     AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
     AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,

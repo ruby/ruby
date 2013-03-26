@@ -19,12 +19,17 @@ extern "C" {
 #endif
 #endif
 
-#define TIMET_MAX (~(time_t)0 <= 0 ? (time_t)((~(unsigned_time_t)0) >> 1) : (time_t)(~(unsigned_time_t)0))
-#define TIMET_MIN (~(time_t)0 <= 0 ? (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1)) : (time_t)0)
-
-#define TIMET_MAX_PLUS_ONE (~(time_t)0 <= 0 ? \
-    ((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2)) * (double)((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2 - 1)) : \
-    ((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2)) * (double)((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2)))
+#if SIGNEDNESS_OF_TIME_T < 0	/* signed */
+# define TIMET_MAX (time_t)((~(unsigned_time_t)0) >> 1)
+# define TIMET_MIN (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1))
+# define TIMET_MAX_PLUS_ONE \
+    (((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2)) * (double)((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2 - 1)))
+#elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
+# define TIMET_MAX (time_t)(~(unsigned_time_t)0)
+# define TIMET_MIN (time_t)0
+# define TIMET_MAX_PLUS_ONE \
+    (((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2)) * (double)((time_t)1 << (sizeof(time_t) * CHAR_BIT / 2))))
+#endif
 
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];

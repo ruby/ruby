@@ -1,3 +1,11 @@
+Wed Mar 27 05:15:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): define SIGNEDNESS_OF_type same as
+	  check_signedness of mkmf.rb.
+
+	* internal.h (TIMET_MAX, TIMET_MIN, TIMET_MAX_PLUS_ONE): use
+	  SIGNEDNESS_OF_TIME_T.
+
 Wed Mar 27 00:28:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (TIMET_MAX_PLUS_ONE): Defined.
