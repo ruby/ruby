@@ -415,8 +415,14 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
     EC_KEY *ec;
     EC_POINT *point = NULL;
+    VALUE group;
 
     Require_EC_KEY(self, ec);
+
+    group = rb_funcall(self, rb_intern("group"), 0);
+    if (NIL_P(group)) ossl_raise(eECError, "There is no group set");
+
+
     if (!NIL_P(public_key))
         SafeRequire_EC_POINT(public_key, point);
 
