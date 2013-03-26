@@ -1512,7 +1512,7 @@ sockaddr_len(struct sockaddr *addr)
 #endif
 
       default:
-        return (socklen_t)sizeof(struct sockaddr_in);
+        return (socklen_t)(offsetof(struct sockaddr, sa_family) + sizeof(addr->sa_family));
     }
 }
 

@@ -1,3 +1,8 @@
+Tue Mar 26 22:31:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sockaddr_len): return the shortest length for
+	  unknown socket address.
+
 Tue Mar 26 22:14:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (double2timeval): convert the infinity to TIME_MAX to avoid
