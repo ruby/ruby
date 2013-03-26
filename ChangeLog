@@ -40,7 +40,7 @@ Sun Mar 24 10:38:24 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Mon Mar 25 02:01:03 2013  Narihiro Nakamura  <authornari@gmail.com>
 
-        * proc.c (bm_free): need to clean up the mark flag of a free and
+	* proc.c (bm_free): need to clean up the mark flag of a free and
 	  unlinked method entry. [Bug #8100] [ruby-core:53439]
 
 Sun Mar 24 22:13:51 2013  NARUSE, Yui  <naruse@ruby-lang.org>
