@@ -3,7 +3,7 @@ require_relative 'envutil'
 
 class TestSyntax < Test::Unit::TestCase
   def test_syntax
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
+    assert_separately %W[--disable-gem -r#{__dir__}/envutil], __FILE__, __LINE__, <<-'eom'
     assert_nothing_raised(Exception) do
       for script in Dir[File.expand_path("../../../{lib,sample,ext,test}/**/*.rb", __FILE__)].sort
         assert_valid_syntax(IO::read(script), script)
