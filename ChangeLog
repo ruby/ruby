@@ -1,3 +1,8 @@
+Wed Mar 27 02:50:45 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (Init_Object): remove Module#used, which has been
+	  introduced in Ruby 2.0 by mistake.  [Bug #7916] [ruby-core:52719]
+
 Mon Mar 25 02:02:15 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: edited rdoc.
