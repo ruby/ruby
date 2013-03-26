@@ -1,3 +1,8 @@
+Wed Mar 27 02:58:44 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Merge Onigmo 0fe387da2fee089254f6b04990541c731a26757f
+	  v5.13.3 [Bug#7972] [Bug#7974]
+
 Wed Mar 27 02:53:53 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb: move entity_expansion_text_limit accessor to ...
