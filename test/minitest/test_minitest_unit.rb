@@ -6,7 +6,7 @@
 ######################################################################
 
 require 'pathname'
-require 'minitest/metametameta'
+require_relative 'metametameta'
 
 module MyModule; end
 class AnError < StandardError; include MyModule; end

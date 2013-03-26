@@ -276,7 +276,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 end
 
-require "minitest/metametameta"
+require_relative "metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
   parallelize_me! if ENV["PARALLEL"]
