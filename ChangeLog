@@ -1,3 +1,17 @@
+Wed Mar 27 22:09:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (LONG_MIN_MINUS_ONE_IS_LESS_THAN): New macro.
+	  (LLONG_MIN_MINUS_ONE_IS_LESS_THAN): Ditto.
+	  (rb_num2long): Use LONG_MIN_MINUS_ONE_IS_LESS_THAN.
+	  (rb_num2ulong): Ditto.
+	  (rb_num2ll): Use LLONG_MIN_MINUS_ONE_IS_LESS_THAN.
+	  (rb_num2ull): Ditto.
+
+	* test/-ext-/num2int/test_num2int.rb (asert_num2i_success): Test the
+	  value converted into a Float if Float can represent the value
+	  exactly.
+	  (asert_num2i_error): Ditto.
+
 Wed Mar 27 20:59:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/-ext-/num2int/test_num2int.rb (asert_num2i_success): New

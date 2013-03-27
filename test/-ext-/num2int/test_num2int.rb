@@ -36,12 +36,22 @@ class TestNum2int < Test::Unit::TestCase
     assert_output(result.to_s) do
       Num2int.send(method, num)
     end
+    if num.to_f.to_i == num
+      assert_output(result.to_s) do
+	Num2int.send(method, num.to_f)
+      end
+    end
   end
 
   def asert_num2i_error(type, num)
     method = "print_num2#{type}"
     assert_raise(RangeError) do
       Num2int.send(method, num)
+    end
+    if num.to_f.to_i == num
+      assert_raise(RangeError) do
+	Num2int.send(method, num)
+      end
     end
   end
 
