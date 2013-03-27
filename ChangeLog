@@ -1,3 +1,9 @@
+Wed Mar 27 12:45:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (num_exact): use to_r method only if to_int method is
+	  available.
+	  [ruby-core:53764] [Bug #8173] reported by Hiro Asari.
+
 Wed Mar 27 12:07:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/-ext-/num2int/test_num2int.rb (test_num2ll): test LLONG_MIN,
