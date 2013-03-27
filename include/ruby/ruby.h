@@ -26,6 +26,8 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#include "defines.h"
+
 #define NORETURN_STYLE_NEW 1
 #ifndef NORETURN
 # define NORETURN(x) x
@@ -47,27 +49,11 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
-# include <strings.h>
-#endif
-
 #ifdef HAVE_INTRINSICS_H
 # include <intrinsics.h>
 #endif
 
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
-#endif
-
 #include <stdarg.h>
-#include <stdio.h>
-
-#include "defines.h"
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

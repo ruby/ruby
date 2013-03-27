@@ -59,10 +59,6 @@ extern "C" {
 
 #define RUBY
 
-# include <stddef.h>
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
 #  define HAVE_PROTOTYPES 1

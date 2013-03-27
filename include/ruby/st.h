@@ -14,19 +14,6 @@ extern "C" {
 
 #include "ruby/defines.h"
 
-#if   defined STDC_HEADERS
-#include <stddef.h>
-#elif defined HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
-#endif
-
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
 #endif
