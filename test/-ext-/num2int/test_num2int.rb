@@ -164,8 +164,8 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def test_num2ll
-    assert_output(LONG_MIN.to_s) do
-      Num2int.print_num2ll(LONG_MIN)
+    assert_output(LLONG_MIN.to_s) do
+      Num2int.print_num2ll(LLONG_MIN)
     end
     assert_output(LLONG_MAX.to_s) do
       Num2int.print_num2ll(LLONG_MAX)
