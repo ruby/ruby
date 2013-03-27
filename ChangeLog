@@ -1,8 +1,14 @@
-Wed Mar 27 12:45:41 2013  Tanaka Akira  <akr@fsij.org>
+Wed Mar 27 20:59:47 2013  Tanaka Akira  <akr@fsij.org>
 
-	* time.c (num_exact): use to_r method only if to_int method is
+	* test/-ext-/num2int/test_num2int.rb (asert_num2i_success): New
+	  utility method.
+	  (asert_num2i_error): Ditto.
+
+Wed Mar 27 20:37:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (num_exact): Use to_r method only if to_int method is
 	  available.
-	  [ruby-core:53764] [Bug #8173] reported by Hiro Asari.
+	  [ruby-core:53764] [Bug #8173] Reported by Hiro Asari.
 
 Wed Mar 27 12:07:40 2013  Tanaka Akira  <akr@fsij.org>
 
