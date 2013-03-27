@@ -431,8 +431,8 @@ enum_collect(obj)
     VALUE ary = rb_ary_new();
 
     if (!rb_block_given_p()) {
-	rb_warn("Enumerable#%s without a block does not return an array in 1.9 and later",
-		rb_id2name(rb_frame_last_func()));
+	rb_warning("Enumerable#%s without a block does not return an array in 1.9 and later",
+		   rb_id2name(rb_frame_last_func()));
 	rb_iterate(rb_each, obj, collect_all, ary);
     }
     else {
