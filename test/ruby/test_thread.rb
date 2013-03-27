@@ -120,6 +120,12 @@ class TestThread < Test::Unit::TestCase
     assert_equal(max * max * max, r)
   end
 
+  def test_mutex_synchronize_yields_no_block_params
+    Mutex.new.synchronize do |*params|
+      assert_equal([], params)
+    end
+  end
+
   def test_local_barrier
     dir = File.dirname(__FILE__)
     lbtest = File.join(dir, "lbtest.rb")
