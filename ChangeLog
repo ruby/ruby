@@ -1,3 +1,7 @@
+Wed Mar 27 12:02:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (TIMET_MAX_PLUS_ONE): definition simplified.
+
 Wed Mar 27 06:39:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MAIN_DOES_NOTHING): force to refer symbols for tests
