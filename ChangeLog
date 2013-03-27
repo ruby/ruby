@@ -7,16 +7,16 @@ Wed Mar 27 22:09:14 2013  Tanaka Akira  <akr@fsij.org>
 	  (rb_num2ll): Use LLONG_MIN_MINUS_ONE_IS_LESS_THAN.
 	  (rb_num2ull): Ditto.
 
-	* test/-ext-/num2int/test_num2int.rb (asert_num2i_success): Test the
+	* test/-ext-/num2int/test_num2int.rb (assert_num2i_success): Test the
 	  value converted into a Float if Float can represent the value
 	  exactly.
-	  (asert_num2i_error): Ditto.
+	  (assert_num2i_error): Ditto.
 
 Wed Mar 27 20:59:47 2013  Tanaka Akira  <akr@fsij.org>
 
-	* test/-ext-/num2int/test_num2int.rb (asert_num2i_success): New
+	* test/-ext-/num2int/test_num2int.rb (assert_num2i_success): New
 	  utility method.
-	  (asert_num2i_error): Ditto.
+	  (assert_num2i_error): Ditto.
 
 Wed Mar 27 20:37:59 2013  Tanaka Akira  <akr@fsij.org>
 
