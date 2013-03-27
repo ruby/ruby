@@ -4567,7 +4567,7 @@ rb_mutex_synchronize_m(VALUE self, VALUE args)
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
 
-    return rb_mutex_synchronize(self, rb_yield, Qnil);
+    return rb_mutex_synchronize(self, rb_yield, Qundef);
 }
 
 void rb_mutex_allow_trap(VALUE self, int val)
