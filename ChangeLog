@@ -1,3 +1,9 @@
+Thu Mar 28 18:22:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/-ext-/num2int/test_num2int.rb: extract
+	  assert_num2i_success_internal and assert_num2i_error_internal and
+	  provide assertion messages as "NUM2XXX(NNN)".
+
 Thu Mar 28 07:05:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h: Delete redundant inclusions caused by

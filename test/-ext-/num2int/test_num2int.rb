@@ -31,27 +31,37 @@ class TestNum2int < Test::Unit::TestCase
   FIXNUM_MAX = LONG_MAX/2
   FIXNUM_MIN = LONG_MIN/2
 
+  def assert_num2i_success_internal(exp, func, arg)
+    mesg = "#{func}(#{arg.inspect})"
+    method = "print_#{func}".downcase
+    out = err = nil
+    assert_nothing_raised(mesg) {
+      out, err = capture_io { Num2int.send(method, arg) }
+    }
+    STDERR.puts err if err && !err.empty?
+    assert_equal(exp, out, mesg)
+  end
+
   def assert_num2i_success(type, num, result=num)
-    method = "print_num2#{type}"
-    assert_output(result.to_s) do
-      Num2int.send(method, num)
-    end
+    func = "NUM2#{type}".upcase
+    assert_num2i_success_internal(result.to_s, func, num)
     if num.to_f.to_i == num
-      assert_output(result.to_s) do
-	Num2int.send(method, num.to_f)
-      end
+      assert_num2i_success_internal(result.to_s, func, num.to_f)
     end
   end
 
+  def assert_num2i_error_internal(func, arg)
+    method = "print_#{func}".downcase
+    assert_raise(RangeError, "#{func}(#{arg.inspect})") {
+      Num2int.send(method, arg)
+    }
+  end
+
   def assert_num2i_error(type, num)
-    method = "print_num2#{type}"
-    assert_raise(RangeError) do
-      Num2int.send(method, num)
-    end
+    func = "NUM2#{type}".upcase
+    assert_num2i_error_internal(func, num)
     if num.to_f.to_i == num
-      assert_raise(RangeError) do
-	Num2int.send(method, num)
-      end
+      assert_num2i_error_internal(func, num.to_f)
     end
   end
 
@@ -88,9 +98,6 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def test_num2long
-    #assert_output(LONG_MIN.to_s) do
-    #  Num2int.print_num2long(LONG_MIN.to_f)
-    #end
     assert_num2i_success(:long, LONG_MIN)
     assert_num2i_success(:long, LONG_MAX)
     assert_num2i_error(:long, LONG_MIN-1)
