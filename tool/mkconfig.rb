@@ -113,7 +113,12 @@ File.foreach "config.status" do |line|
       end
     end
     if name == "configure_args"
-      val.gsub!(/ +(?!-)/, "=") if win32
+      if win32
+        val.gsub!(/\G(--[-a-z0-9]+)((=\S+)|(?:\s+(?!-)\S+)+)?(\s*)/) {
+          _, opt, list, arg, sep = *$~
+          "#{opt}#{arg || list && list.sub(/^\s+/, '=').tr_s(' ', ',')}#{sep}"
+        }
+      end
       val.gsub!(/--with-out-ext/, "--without-ext")
     elsif name == "libdir"
       v_runtime[:libdir] = val[/\$(\(exec_prefix\)|\{exec_prefix\})\/(.*)/, 2]
