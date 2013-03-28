@@ -2421,7 +2421,14 @@ MESSAGE
 
   def MAIN_DOES_NOTHING(*refs)
     src = MAIN_DOES_NOTHING
-    src = src.sub(/\{/) {$&+refs.map {|n|"(void)#{n}; "}.join("")}
+    unless refs.empty?
+      src = src.sub(/\{/) do
+        $& +
+          "\n  if (argc > 1000000) {\n" +
+          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          "  }\n"
+      end
+    end
     src
   end
 
@@ -2532,7 +2539,7 @@ MESSAGE
   ##
   # A C main function which does no work
 
-  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return 0;\n}"
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 

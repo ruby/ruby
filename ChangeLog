@@ -1,3 +1,8 @@
+Fri Mar 29 00:54:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): ensure symbols for tests to be
+	  preserved.  [ruby-core:53745] [Bug #8169]
+
 Thu Mar 28 23:11:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Test Windows platform by detecting LoadError when
