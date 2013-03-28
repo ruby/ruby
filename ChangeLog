@@ -1,3 +1,8 @@
+Thu Mar 28 23:10:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h: rename SVR3,4 member names as POSIX compliants,
+	  to get rid of conflict on AIX.  [ruby-core:53765] [Bug #8174]
+
 Thu Mar 28 18:22:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/-ext-/num2int/test_num2int.rb: extract
