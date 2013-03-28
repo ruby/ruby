@@ -413,10 +413,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  UnknownUserHome = "~foo_bar_baz_unknown_user_wahaha".freeze
+
   def test_expand_path_home
     assert_kind_of(String, File.expand_path("~")) if ENV["HOME"]
-    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
-    assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
+    assert_raise(ArgumentError) { File.expand_path(UnknownUserHome) }
+    assert_raise(ArgumentError) { File.expand_path(UnknownUserHome, "/") }
     begin
       bug3630 = '[ruby-core:31537]'
       home = ENV["HOME"]
@@ -438,6 +440,21 @@ class TestFileExhaustive < Test::Unit::TestCase
       ENV["HOMEPATH"] = home_path
       ENV["USERPROFILE"] = user_profile
     end
+  end
+
+  def test_expand_path_home_dir_string
+    home = ENV["HOME"]
+    new_home = "#{DRIVE}/UserHome"
+    ENV["HOME"] = new_home
+    bug8034 = "[ruby-core:53168]"
+
+    assert_equal File.join(new_home, "foo"), File.expand_path("foo", "~"), bug8034
+    assert_equal File.join(new_home, "bar", "foo"), File.expand_path("foo", "~/bar"), bug8034
+
+    assert_raise(ArgumentError) { File.expand_path(".", UnknownUserHome) }
+    assert_nothing_raised(ArgumentError) { File.expand_path("#{DRIVE}/", UnknownUserHome) }
+  ensure
+    ENV["HOME"] = home
   end
 
   def test_expand_path_remove_trailing_alternative_data

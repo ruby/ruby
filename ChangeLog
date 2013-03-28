@@ -1,3 +1,17 @@
+Thu Mar 28 18:35:01 2013  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (get_user_from_path):  add internal function that retrieves
+	  username from supplied path (refactored).
+	* win32/file.c (rb_file_expand_path_internal):  refactor expansion of user
+	  home to use get_user_from_path and cover dir_string corner cases.
+	  [ruby-core:53168] [Bug #8034]
+
+Thu Mar 28 18:35:01 2013  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (rb_file_expand_path_internal):  Expand home directory when
+	  used as second parameter (dir_string).  [ruby-core:53168] [Bug #8034]
+	* test/ruby/test_file_exhaustive.rb: add test to verify.
+
 Thu Mar 28 18:18:49 2013  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: raise TypeError when trying to encode nil
