@@ -1995,5 +1995,9 @@ class TestString < Test::Unit::TestCase
     assert_equal(u("\x81\x82"), "\u3042".byteslice(1..2))
 
     assert_equal(u("\x82")+("\u3042"*9), ("\u3042"*10).byteslice(2, 28))
+
+    bug7954 = '[ruby-dev:47108]'
+    assert_equal(false, "\u3042".byteslice(0, 2).valid_encoding?)
+    assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?)
   end
 end
