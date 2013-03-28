@@ -1,3 +1,12 @@
+Fri Mar 29 06:39:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2ull): Cast double to unsigned LONG_LONG via
+	  LONG_LONG instead of double to unsigned LONG_LONG directly.
+	  This is a challenge to fix a test_num2ull(TestNum2int)
+	  failure (NUM2ULL(-1.0) should be "18446744073709551615" but was "0")
+	  on Mac OS X with 32bit clang.
+	  http://a.mrkn.jp/~mrkn/chkbuild/mountain_lion/ruby-trunk-m32-o0/log/20130328T191100Z.diff.html.gz
+
 Fri Mar 29 00:54:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MAIN_DOES_NOTHING): ensure symbols for tests to be

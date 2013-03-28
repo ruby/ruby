@@ -2258,7 +2258,7 @@ rb_num2ull(VALUE val)
       case T_FLOAT:
 	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
             && LLONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
-	    return (unsigned LONG_LONG)(RFLOAT_VALUE(val));
+	    return (unsigned LONG_LONG)(LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {
 	    char buf[24];
