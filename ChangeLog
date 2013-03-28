@@ -1,3 +1,9 @@
+Thu Mar 28 23:11:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Test Windows platform by detecting LoadError when
+	  require 'win32/resolv' suggested by Nobuyoshi Nakada [ruby-core:53389].
+	  [ruby-core:53388] [Feature #8090] Reported by Charles Nutter.
+
 Thu Mar 28 23:10:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h: rename SVR3,4 member names as POSIX compliants,
