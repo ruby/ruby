@@ -3560,7 +3560,9 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
       }
     }
     else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML)) {
-      goto begin_position;
+      if (!(reg->anchor & ANCHOR_LOOK_BEHIND)) {
+	goto begin_position;
+      }
     }
   }
   else if (str == end) { /* empty string */

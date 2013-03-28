@@ -1,3 +1,13 @@
+Thu Mar 28 18:54:31 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* regcomp.c (optimize_node_left, set_optimize_info_from_tree): right
+	  handling for look behind anchor.
+
+	* regexec.c (onig_search): ditto.
+	  [Backport #8076]
+
+	this patch is derived from Onigmo base tree.
+
 Thu Mar 28 18:35:01 2013  Luis Lavena  <luislavena@gmail.com>
 
 	* win32/file.c (get_user_from_path):  add internal function that retrieves
