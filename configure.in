@@ -1098,6 +1098,7 @@ main()
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
 		rb_cv_large_fd_select=yes
+		ac_cv_type_struct_timeval=yes
 		AC_LIBOBJ([langinfo])
 		: ${enable_win95=maybe}
 		],
@@ -1191,6 +1192,13 @@ AC_CHECK_MEMBERS([struct stat.st_mtimensec])
 AC_CHECK_MEMBERS([struct stat.st_ctim])
 AC_CHECK_MEMBERS([struct stat.st_ctimespec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec])
+
+AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
+@%:@include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@include <sys/time.h>
+@%:@endif])
 
 AC_CHECK_TYPES([struct timespec], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>

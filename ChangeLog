@@ -1,3 +1,39 @@
+Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h: removed __linux__. it's unnecessary.
+
+Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c: disabled _FORTIFY_SOURCE for avoid to hit glibc bug.
+	  [Bug #8080] [ruby-core:53349]
+	* test/ruby/test_io.rb (TestIO#test_io_select_with_many_files):
+	  test for the above.
+
+Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h (__syscall): moved to...
+	* io.c: here. because __syscall() is only used from io.c.
+
+	* include/ruby/missing.h: move "#include <sys/type.h>" to ....
+	* include/ruby/intern.h: here. because it was introduced for
+	  fixing NFDBITS issue. [ruby-core:05179].
+
+Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h (struct timespec): include <sys/time.h>
+
+Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: check struct timeval exist or not.
+	* include/ruby/missing.h (struct timeval): check HAVE_STRUCT_TIMEVAL
+	  properly. and don't include sys/time.h if struct timeval exist.
+
+	* file.c: include sys/time.h explicitly.
+	* random.c: ditto.
+	* thread_pthread.c: ditto.
+	* time.c: ditto.
+	* ext/date/date_strftime.c: ditto.
+
 Thu Mar 28 18:54:31 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regcomp.c (optimize_node_left, set_optimize_info_from_tree): right
