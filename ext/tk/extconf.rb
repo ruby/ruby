@@ -1746,23 +1746,13 @@ end
 ##############################################################
 # check header file
 print("check functions.")
-have_func("ruby_native_thread_p", "ruby.h")
-print(".") # progress
-have_func("rb_errinfo", "ruby.h")
-print(".") # progress
-have_func("rb_safe_level", "ruby.h")
-print(".") # progress
-have_func("rb_hash_lookup", "ruby.h")
-print(".") # progress
-have_func("rb_proc_new", "ruby.h")
-print(".") # progress
-have_func("rb_obj_untrust", "ruby.h")
-print(".") # progress
-have_func("rb_obj_taint", "ruby.h")
-print(".") # progress
-have_func("rb_set_safe_level_force", "ruby.h")
-print(".") # progress
-have_func("rb_sourcefile", "ruby.h")
+
+%w"ruby_native_thread_p rb_errinfo rb_safe_level rb_hash_lookup
+ rb_proc_new rb_obj_untrust rb_obj_taint rb_set_safe_level_force
+ rb_sourcefile rb_thread_alive_p rb_thread_check_trap_pending".each do |func|
+  have_func(func, "ruby.h")
+  print(".") # progress
+end
 print("\n") # progress
 
 print("check struct members.")
