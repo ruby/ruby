@@ -217,16 +217,18 @@ module REXML
       return @@entity_expansion_limit
     end
 
-    @@entity_expansion_text_limit = 10_240
-
     # Set the entity expansion limit. By default the limit is set to 10240.
+    #
+    # Deprecated. Use REXML.entity_expansion_text_limit= instead.
     def Document::entity_expansion_text_limit=( val )
-      @@entity_expansion_text_limit = val
+      REXML.entity_expansion_text_limit = val
     end
 
     # Get the entity expansion limit. By default the limit is set to 10000.
+    #
+    # Deprecated. Use REXML.entity_expansion_text_limit instead.
     def Document::entity_expansion_text_limit
-      return @@entity_expansion_text_limit
+      return REXML.entity_expansion_text_limit
     end
 
     attr_reader :entity_expansion_count

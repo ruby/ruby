@@ -1,3 +1,16 @@
+Thu Mar 28 18:12:19 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb: move entity_expansion_text_limit accessor to ...
+	* lib/rexml/rexml.rb: ... here to make rexml/text independent from
+	  REXML::Document. It causes circular require.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit):
+	  deprecated.
+	* lib/rexml/document.rb (REXML::Document.entity_expansion_text_limit=):
+	  deprecated.
+	* lib/rexml/text.rb: add missing require "rexml/rexml" for
+	  REXML.entity_expansion_text_limit.
+	  Reported by Robert Ulejczyk. Thanks!!! [ruby-core:52895] [Bug #7961]
+
 Thu Mar 21 20:34:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb (TestErrInCallBack#setup):
