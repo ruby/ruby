@@ -51,7 +51,6 @@ module Jacobian
     dx = fx[i].abs/ratio if isEqual(dx,f.zero,f.zero,f.eps)
     dx = f.one/f.ten     if isEqual(dx,f.zero,f.zero,f.eps)
     until ok>0 do
-      s = f.zero
       deriv = []
       nRetry += 1
       if nRetry > 100
