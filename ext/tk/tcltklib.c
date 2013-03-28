@@ -270,11 +270,7 @@ static CONST86 Tcl_ObjType *Tcl_ObjType_String;
 #endif
 
 #ifndef HAVE_RB_THREAD_ALIVE_P
-static VALUE
-rb_thread_alive_p(VALUE thread)
-{
-    return rb_funcall(thread, ID_alive_p, 0, 0);
-}
+#define rb_thread_alive_p(thread) rb_funcall2((thread), ID_alive_p, 0, NULL)
 #endif
 
 /* safe Tcl_Eval and Tcl_GlobalEval */
