@@ -2201,7 +2201,9 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
     volatile VALUE current = eventloop_thread;
     int found_event = 1;
     int event_flag;
+#if 0
     struct timeval t;
+#endif
     int thr_crit_bup;
     int status;
     int depth = rbtk_eventloop_depth;
@@ -2213,8 +2215,10 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 
     if (update_flag) DUMP1("update loop start!!");
 
+#if 0
     t.tv_sec = 0;
     t.tv_usec = 1000 * no_event_wait;
+#endif
 
     Tcl_DeleteTimerHandler(timer_token);
     run_timer_flag = 0;
@@ -2962,7 +2966,7 @@ lib_thread_callback(argc, argv, self)
 {
     struct thread_call_proc_arg *q;
     VALUE proc, th, ret;
-    int status, foundEvent;
+    int status;
 
     if (rb_scan_args(argc, argv, "01", &proc) == 0) {
         proc = rb_block_proc();
@@ -2981,8 +2985,8 @@ lib_thread_callback(argc, argv, self)
     rb_thread_schedule();
 
     /* start sub-eventloop */
-    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 0,
-                                              q->done, (Tcl_Interp*)NULL));
+    lib_eventloop_launcher(/* not check root-widget */0, 0,
+			   q->done, (Tcl_Interp*)NULL);
 
     if (RTEST(rb_thread_alive_p(th))) {
         rb_funcall(th, ID_kill, 0);
@@ -3887,8 +3891,6 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
     char *objv[];
 #endif
 {
-    int  optionIndex;
-    int  ret;
     int  flags = 0;
     static CONST char *updateOptions[] = {"idletasks", (char *) NULL};
     enum updateOptions {REGEXP_IDLETASKS};
@@ -3914,6 +3916,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 
     } else if (objc == 2) {
 #if TCL_MAJOR_VERSION >= 8
+        int  optionIndex;
         if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
@@ -3957,7 +3960,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 
     /* call eventloop */
     /* ret = lib_eventloop_core(0, flags, (int *)NULL);*/ /* ignore result */
-    ret = RTEST(lib_eventloop_launcher(0, flags, (int *)NULL, interp)); /* ignore result */
+    lib_eventloop_launcher(0, flags, (int *)NULL, interp); /* ignore result */
 
     /* exception check */
     if (!NIL_P(rbtk_pending_exception)) {
@@ -4037,8 +4040,9 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     char *objv[];
 #endif
 {
-    int  optionIndex;
+# if 0
     int  flags = 0;
+# endif
     struct th_update_param *param;
     static CONST char *updateOptions[] = {"idletasks", (char *) NULL};
     enum updateOptions {REGEXP_IDLETASKS};
@@ -4075,17 +4079,21 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     Tcl_ResetResult(interp);
 
     if (objc == 1) {
+# if 0
         flags = TCL_DONT_WAIT;
-
+# endif
     } else if (objc == 2) {
 #if TCL_MAJOR_VERSION >= 8
+        int  optionIndex;
         if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
         }
         switch ((enum updateOptions) optionIndex) {
             case REGEXP_IDLETASKS: {
+# if 0
                 flags = TCL_IDLE_EVENTS;
+# endif
                 break;
             }
             default: {
@@ -4098,7 +4106,9 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
                     "\": must be idletasks", (char *) NULL);
             return TCL_ERROR;
         }
+# if 0
         flags = TCL_IDLE_EVENTS;
+# endif
 #endif
     } else {
 #ifdef Tcl_WrongNumArgs
@@ -7917,7 +7927,9 @@ lib_toUTF8_core(ip_obj, src, encodename)
     volatile VALUE str = src;
 
 #ifdef TCL_UTF_MAX
+# if 0
     Tcl_Interp *interp;
+# endif
     Tcl_Encoding encoding;
     Tcl_DString dstr;
     int taint_flag = OBJ_TAINTED(str);
@@ -7934,15 +7946,19 @@ lib_toUTF8_core(ip_obj, src, encodename)
 
 #ifdef TCL_UTF_MAX
     if (NIL_P(ip_obj)) {
+# if 0
         interp = (Tcl_Interp *)NULL;
+# endif
     } else {
         ptr = get_ip(ip_obj);
 
         /* ip is deleted? */
         if (deleted_ip(ptr)) {
+# if 0
             interp = (Tcl_Interp *)NULL;
         } else {
             interp = ptr->ip;
+# endif
         }
     }
 
@@ -8534,7 +8550,6 @@ ip_invoke_core(interp, argc, argv)
 #if 1 /* wrap tcl-proc call */
     struct invoke_info inf;
     int status;
-    VALUE ret;
 #else
 #if TCL_MAJOR_VERSION >= 8
     int argc = objc;
@@ -8646,7 +8661,7 @@ ip_invoke_core(interp, argc, argv)
 #endif
 
     /* invoke tcl-proc */
-    ret = rb_protect(invoke_tcl_proc, (VALUE)&inf, &status);
+    rb_protect(invoke_tcl_proc, (VALUE)&inf, &status);
     switch(status) {
     case TAG_RAISE:
         if (NIL_P(rb_errinfo())) {
