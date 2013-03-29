@@ -159,7 +159,6 @@ module BigMath
 
     d = one
     k = one
-    w = one
     t = BigDecimal("-80")
     while d.nonzero? && ((m = n - (pi.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
@@ -171,7 +170,6 @@ module BigMath
 
     d = one
     k = one
-    w = one
     t = BigDecimal("956")
     while d.nonzero? && ((m = n - (pi.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig

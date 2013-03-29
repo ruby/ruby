@@ -238,7 +238,7 @@ class CGI
         arr.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
       when Hash
         hash = cookie
-        hash.each {|name, c| buf << "Set-Cookie: #{c}#{EOL}" }
+        hash.each_value {|c| buf << "Set-Cookie: #{c}#{EOL}" }
       end
     end
     if @output_cookies
