@@ -1,3 +1,8 @@
+Fri Mar 29 11:09:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): not include all CFLAGS in CXXFLAGS, to
+	  use different set than C for C++.  [ruby-core:45273] [Bug #6504]
+
 Fri Mar 29 10:24:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h: undef POSIX compliants names on AIX, which are no
