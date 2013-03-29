@@ -1,3 +1,8 @@
+Fri Mar 29 13:22:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/missing.h: fixed merge mistake of r39985.
+	  [Backport #8080]
+
 Thu Mar 28 19:01:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/missing.h: removed __linux__. it's unnecessary.

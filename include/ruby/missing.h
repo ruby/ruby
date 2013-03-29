@@ -54,11 +54,6 @@ struct timezone {
 };
 #endif
 
-#if defined(HAVE___SYSCALL) && defined(__APPLE__)
-/* Mac OS X has __syscall but doen't defined in headers */
-off_t __syscall(quad_t number, ...);
-#endif
-
 #ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
 #endif
