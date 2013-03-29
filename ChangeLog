@@ -1,3 +1,9 @@
+Fri Mar 29 10:24:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h: undef POSIX compliants names on AIX, which are no
+	  longer needed.  patch suggested by edelsohn (David Edelsohn) in
+	  [ruby-core:53815].  [Bug #8174]
+
 Fri Mar 29 06:39:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2ull): Cast double to unsigned LONG_LONG via

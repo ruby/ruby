@@ -37,6 +37,8 @@ extern "C" {
 #  ifdef _AIX
 #    undef reqevents
 #    undef rtnevents
+#    undef events
+#    undef revents
 #  endif
 #  define RB_WAITFD_IN  POLLIN
 #  define RB_WAITFD_PRI POLLPRI
