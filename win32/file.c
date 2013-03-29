@@ -212,9 +212,9 @@ code_page(rb_encoding *enc)
 	names_ary = rb_funcall(encoding, names, 0);
     }
 
-    /* map US-ASCII and ASCII-8bit as code page 20127 (us-ascii) */
+    /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
     if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
-	UINT code_page = 20127;
+	UINT code_page = 1252;
 	rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
 	return code_page;
     }
