@@ -1,3 +1,10 @@
+Fri Mar 29 16:51:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_close): deal with init flag.
+
+	* io.c (argf_block_call_i, argf_block_call): forward next file if
+	  skipped while iteration, to get rid of IOError.  [ruby-list:49185]
+
 Fri Mar 29 11:09:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): not include all CFLAGS in CXXFLAGS, to

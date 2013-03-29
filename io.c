@@ -7573,13 +7573,15 @@ argf_forward(int argc, VALUE *argv, VALUE argf)
 } while (0)
 
 static void
-argf_close(VALUE file)
+argf_close(VALUE argf)
 {
+    VALUE file = ARGF.current_file;
     if (file == rb_stdin) return;
     if (RB_TYPE_P(file, T_FILE)) {
 	rb_io_set_write_io(file, Qnil);
     }
     rb_funcall3(file, rb_intern("close"), 0, 0);
+    ARGF.init_p = -1;
 }
 
 static int
@@ -7612,6 +7614,7 @@ argf_next_argv(VALUE argf)
 	else if (ARGF.next_p == -1 && RARRAY_LEN(ARGF.argv) > 0) {
 	    ARGF.next_p = 1;
 	}
+	ARGF.init_p = 1;
     }
 
     if (ARGF.next_p == 1) {
@@ -7766,7 +7769,7 @@ argf_getline(int argc, VALUE *argv, VALUE argf)
 	    line = rb_io_getline(argc, argv, ARGF.current_file);
 	}
 	if (NIL_P(line) && ARGF.next_p != -1) {
-	    argf_close(ARGF.current_file);
+	    argf_close(argf);
 	    ARGF.next_p = 1;
 	    goto retry;
 	}
@@ -7992,7 +7995,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 	}
 	else {
 	    lines = rb_io_readlines(argc, argv, ARGF.current_file);
-	    argf_close(ARGF.current_file);
+	    argf_close(argf);
 	}
 	ARGF.next_p = 1;
 	rb_ary_concat(ary, lines);
@@ -10645,7 +10648,7 @@ argf_read(int argc, VALUE *argv, VALUE argf)
     else if (!NIL_P(tmp)) rb_str_append(str, tmp);
     if (NIL_P(tmp) || NIL_P(length)) {
 	if (ARGF.next_p != -1) {
-	    argf_close(ARGF.current_file);
+	    argf_close(argf);
 	    ARGF.next_p = 1;
 	    goto retry;
 	}
@@ -10757,7 +10760,7 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
         if (ARGF.next_p == -1) {
             rb_eof_error();
         }
-        argf_close(ARGF.current_file);
+        argf_close(argf);
         ARGF.next_p = 1;
         if (RARRAY_LEN(ARGF.argv) == 0)
             rb_eof_error();
@@ -10805,7 +10808,7 @@ argf_getc(VALUE argf)
 	ch = rb_io_getc(ARGF.current_file);
     }
     if (NIL_P(ch) && ARGF.next_p != -1) {
-	argf_close(ARGF.current_file);
+	argf_close(argf);
 	ARGF.next_p = 1;
 	goto retry;
     }
@@ -10845,7 +10848,7 @@ argf_getbyte(VALUE argf)
 	ch = rb_io_getbyte(ARGF.current_file);
     }
     if (NIL_P(ch) && ARGF.next_p != -1) {
-	argf_close(ARGF.current_file);
+	argf_close(argf);
 	ARGF.next_p = 1;
 	goto retry;
     }
@@ -10885,7 +10888,7 @@ argf_readchar(VALUE argf)
 	ch = rb_io_getc(ARGF.current_file);
     }
     if (NIL_P(ch) && ARGF.next_p != -1) {
-	argf_close(ARGF.current_file);
+	argf_close(argf);
 	ARGF.next_p = 1;
 	goto retry;
     }
@@ -10926,6 +10929,23 @@ argf_readbyte(VALUE argf)
 
 #define FOREACH_ARGF() for (; next_argv(); ARGF.next_p = 1)
 
+static VALUE
+argf_block_call_i(VALUE i, VALUE argf, int argc, VALUE *argv)
+{
+    const VALUE current = ARGF.current_file;
+    rb_yield_values2(argc, argv);
+    if (ARGF.init_p == -1 || current != ARGF.current_file) {
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static void
+argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
+{
+    rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_i, argf);
+}
+
 /*
  *  call-seq:
  *     ARGF.each(sep=$/)            {|line| block }  -> ARGF
@@ -10963,7 +10983,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 {
     RETURN_ENUMERATOR(argf, argc, argv);
     FOREACH_ARGF() {
-	rb_block_call(ARGF.current_file, rb_intern("each_line"), argc, argv, 0, 0);
+	argf_block_call(rb_intern("each_line"), argc, argv, argf);
     }
     return argf;
 }
@@ -11010,7 +11030,7 @@ argf_each_byte(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	rb_block_call(ARGF.current_file, rb_intern("each_byte"), 0, 0, 0, 0);
+	argf_block_call(rb_intern("each_byte"), 0, 0, argf);
     }
     return argf;
 }
@@ -11049,7 +11069,7 @@ argf_each_char(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	rb_block_call(ARGF.current_file, rb_intern("each_char"), 0, 0, 0, 0);
+	argf_block_call(rb_intern("each_char"), 0, 0, argf);
     }
     return argf;
 }
@@ -11088,7 +11108,7 @@ argf_each_codepoint(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	rb_block_call(ARGF.current_file, rb_intern("each_codepoint"), 0, 0, 0, 0);
+	argf_block_call(rb_intern("each_codepoint"), 0, 0, argf);
     }
     return argf;
 }
@@ -11224,7 +11244,7 @@ static VALUE
 argf_skip(VALUE argf)
 {
     if (ARGF.init_p && ARGF.next_p == 0) {
-	argf_close(ARGF.current_file);
+	argf_close(argf);
 	ARGF.next_p = 1;
     }
     return argf;
@@ -11252,7 +11272,7 @@ static VALUE
 argf_close_m(VALUE argf)
 {
     next_argv();
-    argf_close(ARGF.current_file);
+    argf_close(argf);
     if (ARGF.next_p != -1) {
 	ARGF.next_p = 1;
     }
