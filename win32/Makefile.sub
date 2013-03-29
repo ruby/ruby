@@ -382,6 +382,7 @@ ECHO_BEGIN = @echo.
 ECHO_END =
 
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
+prog: config
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
