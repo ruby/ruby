@@ -18,7 +18,7 @@ Fri Mar 29 11:09:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Mar 29 10:24:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/io.h: undef POSIX compliants names on AIX, which are no
+	* include/ruby/io.h: undef POSIX compliant names on AIX, which are no
 	  longer needed.  patch suggested by edelsohn (David Edelsohn) in
 	  [ruby-core:53815].  [Bug #8174]
 
@@ -44,7 +44,7 @@ Thu Mar 28 23:11:25 2013  Tanaka Akira  <akr@fsij.org>
 
 Thu Mar 28 23:10:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/io.h: rename SVR3,4 member names as POSIX compliants,
+	* include/ruby/io.h: rename SVR3,4 member names as POSIX compliant,
 	  to get rid of conflict on AIX.  [ruby-core:53765] [Bug #8174]
 
 Thu Mar 28 18:22:21 2013  Tanaka Akira  <akr@fsij.org>
