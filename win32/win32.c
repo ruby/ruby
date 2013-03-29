@@ -4344,17 +4344,8 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
 	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
-	if (!MoveFileW(oldpath, newpath))
+	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
 	    res = -1;
-
-	if (res) {
-	    switch (GetLastError()) {
-	      case ERROR_ALREADY_EXISTS:
-	      case ERROR_FILE_EXISTS:
-		if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-		    res = 0;
-	    }
-	}
 
 	if (res)
 	    errno = map_errno(GetLastError());
