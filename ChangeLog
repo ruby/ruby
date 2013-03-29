@@ -1,4 +1,10 @@
-Fri Mar 29 16:51:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar 29 16:51:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv): set init flag if succeeded to forward, after
+	  skipping.
+
+	* io.c (argf_block_call_i, argf_block_call): no more forwarding if
+	  forwarded after skipping.  [ruby-list:49185]
 
 	* io.c (argf_close): deal with init flag.
 

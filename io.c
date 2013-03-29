@@ -7614,7 +7614,6 @@ argf_next_argv(VALUE argf)
 	else if (ARGF.next_p == -1 && RARRAY_LEN(ARGF.argv) > 0) {
 	    ARGF.next_p = 1;
 	}
-	ARGF.init_p = 1;
     }
 
     if (ARGF.next_p == 1) {
@@ -7747,6 +7746,7 @@ argf_next_argv(VALUE argf)
 	    rb_stdout = orig_stdout;
 	}
     }
+    if (ARGF.init_p == -1) ARGF.init_p = 1;
     return TRUE;
 }
 
@@ -10927,7 +10927,7 @@ argf_readbyte(VALUE argf)
     return c;
 }
 
-#define FOREACH_ARGF() for (; next_argv(); ARGF.next_p = 1)
+#define FOREACH_ARGF() while (next_argv())
 
 static VALUE
 argf_block_call_i(VALUE i, VALUE argf, int argc, VALUE *argv)
@@ -10935,7 +10935,7 @@ argf_block_call_i(VALUE i, VALUE argf, int argc, VALUE *argv)
     const VALUE current = ARGF.current_file;
     rb_yield_values2(argc, argv);
     if (ARGF.init_p == -1 || current != ARGF.current_file) {
-	rb_iter_break();
+	rb_iter_break_value(Qundef);
     }
     return Qnil;
 }
@@ -10943,7 +10943,8 @@ argf_block_call_i(VALUE i, VALUE argf, int argc, VALUE *argv)
 static void
 argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
 {
-    rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_i, argf);
+    VALUE ret = rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_i, argf);
+    if (ret != Qundef) ARGF.next_p = 1;
 }
 
 /*

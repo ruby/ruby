@@ -689,6 +689,11 @@ class TestArgf < Test::Unit::TestCase
     SRC
       assert_equal("1\n3\n5\n", f.read, '[ruby-list:49185]')
     end
+    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      ARGF.each_line {|l| ARGF.skip; puts [l, ARGF.gets].map {|s| s ? s.chomp : s.inspect}.join("+")}
+    SRC
+      assert_equal("1+3\n4+5\n6+nil\n", f.read, '[ruby-list:49185]')
+    end
   end
 
   def test_skip_in_each_byte
