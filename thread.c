@@ -60,6 +60,7 @@
 #include "eval_intern.h"
 #include "gc.h"
 #include "internal.h"
+#include "timev.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
 

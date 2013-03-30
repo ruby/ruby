@@ -745,7 +745,7 @@ struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}thread_$(THREAD_MODEL).c $(ENCODING_H_INCLUDES) \
-  {$(VPATH)}internal.h {$(VPATH)}io.h {$(VPATH)}thread.h
+  {$(VPATH)}internal.h {$(VPATH)}io.h {$(VPATH)}thread.h {$(VPATH)}timev.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}transcode_data.h {$(VPATH)}internal.h
 cont.$(OBJEXT): {$(VPATH)}cont.c $(RUBY_H_INCLUDES) \

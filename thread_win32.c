@@ -506,16 +506,6 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
     return native_cond_timedwait_ms(cond, mutex, timeout_ms);
 }
 
-#if SIZEOF_TIME_T == SIZEOF_LONG
-typedef unsigned long unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_INT
-typedef unsigned int unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned LONG_LONG unsigned_time_t;
-#else
-# error cannot find integer type which size is same as time_t.
-#endif
-
 static struct timespec
 native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 {
