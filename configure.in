@@ -1461,6 +1461,24 @@ AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <sys/time.h>
 @%:@endif])
 
+if test "${ac_cv_type_struct_timeval}" = yes; then
+    RUBY_CHECK_SIZEOF([struct timeval.tv_sec], [time_t long "long long"], [],
+		      [@%:@ifdef HAVE_TIME_H
+@%:@include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@include <sys/time.h>
+@%:@endif])
+    AS_CASE(${ac_cv_sizeof_struct_timeval_tv_sec},
+	    [SIZEOF_INT], [t=int],
+	    [SIZEOF_LONG], [t=long],
+	    [SIZEOF_LONG_LONG], [t=LONG_LONG],
+	    [t=])
+    if test "${t}" != ""; then
+	AC_DEFINE_UNQUOTED(TYPEOF_TIMEVAL_TV_SEC, [$t])
+    fi
+fi
+
 AC_CHECK_TYPES([struct timespec], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>
 @%:@endif

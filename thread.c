@@ -915,18 +915,29 @@ thread_value(VALUE self)
 static struct timeval
 double2timeval(double d)
 {
+    /* assume timeval.tv_sec has same signedness as time_t */
+#if SIGNEDNESS_OF_TIME_T < 0	/* signed */
+    const unsigned_time_t TIMEVAL_SEC_MAX_P1 = (((unsigned_time_t)1) << (sizeof(TYPEOF_TIMEVAL_TV_SEC) * CHAR_BIT - 1));
+    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MAX = (TYPEOF_TIMEVAL_TV_SEC)(TIMEVAL_SEC_MAX_P1 - 1);
+    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MIN = (TYPEOF_TIMEVAL_TV_SEC)TIMEVAL_SEC_MAX_P1;
+#elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
+    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MAX = (TYPEOF_TIMEVAL_TV_SEC)(~(unsigned_time_t)0);
+    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MIN = (TYPEOF_TIMEVAL_TV_SEC)0;
+#endif
+    const double TIMEVAL_SEC_MAX_PLUS_ONE = (2*(double)(TIMEVAL_SEC_MAX/2+1));
+
     struct timeval time;
 
-    if (TIMET_MAX_PLUS_ONE <= d) {
-        time.tv_sec = TIMET_MAX;
+    if (TIMEVAL_SEC_MAX_PLUS_ONE <= d) {
+        time.tv_sec = TIMEVAL_SEC_MAX;
         time.tv_usec = 999999;
     }
-    else if (d <= TIMET_MIN) {
-        time.tv_sec = TIMET_MIN;
+    else if (d <= TIMEVAL_SEC_MIN) {
+        time.tv_sec = TIMEVAL_SEC_MIN;
         time.tv_usec = 0;
     }
     else {
-        time.tv_sec = (time_t)d;
+        time.tv_sec = (TYPEOF_TIMEVAL_TV_SEC)d;
         time.tv_usec = (int)((d - (time_t)d) * 1e6);
         if (time.tv_usec < 0) {
             time.tv_usec += (int)1e6;
