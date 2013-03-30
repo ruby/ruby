@@ -3450,6 +3450,7 @@ aligned_malloc(size_t alignment, size_t size)
 #if defined __MINGW32__
     res = __mingw_aligned_malloc(size, alignment);
 #elif defined _WIN32 && !defined __CYGWIN__
+    void *_aligned_malloc(size_t, size_t);
     res = _aligned_malloc(size, alignment);
 #elif defined(HAVE_POSIX_MEMALIGN)
     if (posix_memalign(&res, alignment, size) == 0) {
