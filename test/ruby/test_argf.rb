@@ -44,10 +44,10 @@ class TestArgf < Test::Unit::TestCase
     t
   end
 
-  def ruby(*args)
+  def ruby(*args, external_encoding: Encoding::UTF_8)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
-    f = IO.popen([ruby] + args, 'r+')
+    f = IO.popen([ruby] + args, 'r+', external_encoding: external_encoding)
     yield(f)
   ensure
     f.close unless !f || f.closed?
@@ -247,8 +247,6 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_inplace_stdin
-    t = make_tempfile
-
     assert_in_out_err(["-", "-"], <<-INPUT, [], /Can't do inplace edit for stdio; skipping/)
       ARGF.inplace_mode = '.bak'
       f = ARGF.dup
@@ -259,8 +257,6 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_inplace_stdin2
-    t = make_tempfile
-
     assert_in_out_err(["-"], <<-INPUT, [], /Can't do inplace edit for stdio/)
       ARGF.inplace_mode = '.bak'
       while line = ARGF.gets
