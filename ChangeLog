@@ -1,3 +1,8 @@
+Sat Mar 30 14:11:28 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* bcc32: removed. agreed at
+	  http://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130223Japan
+
 Sat Mar 30 03:58:00 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/file.c (code_page): use cp1252 instead of cp20127 as US-ASCII.
