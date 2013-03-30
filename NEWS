@@ -26,7 +26,8 @@ with all sufficient information, see the ChangeLog file.
 
 * Module#ancestors
 
-  The ancestors of a singleton class now include that singleton class.
+  The ancestors of a singleton class now include singleton classes,
+  in particular itself.
 
 === Stdlib updates (outstanding ones only)
 
