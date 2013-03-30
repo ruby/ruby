@@ -2396,20 +2396,17 @@ End
   end
 
   def test_warn
-    stderr = EnvUtil.verbose_warning do
+    assert_warning "warning\n" do
       warn "warning"
     end
-    assert_equal("warning\n", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       warn
     end
-    assert_equal("", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning "[Feature #5029]\n[ruby-core:38070]\n" do
       warn "[Feature #5029]", "[ruby-core:38070]"
     end
-    assert_equal("[Feature #5029]\n[ruby-core:38070]\n", stderr)
   end
 
   def test_cloexec

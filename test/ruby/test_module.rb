@@ -1067,23 +1067,21 @@ class TestModule < Test::Unit::TestCase
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
     assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Module.new do
         def foo; end
         alias bar foo
         def foo; end
       end
     end
-    assert_equal("", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Module.new do
         def foo; end
         alias bar foo
         alias bar foo
       end
     end
-    assert_equal("", stderr)
 
     line = __LINE__+4
     stderr = EnvUtil.verbose_warning do
@@ -1095,31 +1093,28 @@ class TestModule < Test::Unit::TestCase
     assert_match(/:#{line}: warning: method redefined; discarding old foo/, stderr)
     assert_match(/:#{line-1}: warning: previous definition of foo/, stderr, feature2155)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Module.new do
         define_method(:foo) do end
         alias bar foo
         alias bar foo
       end
     end
-    assert_equal("", stderr)
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning('', '[ruby-dev:39397]') do
       Module.new do
         module_function
         def foo; end
         module_function :foo
       end
     end
-    assert_equal("", stderr, '[ruby-dev:39397]')
 
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       Module.new do
         def foo; end
         undef foo
       end
     end
-    assert_equal("", stderr)
   end
 
   def test_protected_singleton_method
@@ -1592,55 +1587,47 @@ class TestModule < Test::Unit::TestCase
 
   def test_uninitialized_instance_variable
     a = AttrTest.new
-    stderr = EnvUtil.verbose_warning do
+    assert_warning /instance variable @ivar not initialized/ do
       assert_nil(a.ivar)
     end
-    assert_match(/instance variable @ivar not initialized/, stderr)
     a.instance_variable_set(:@ivar, 42)
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_equal(42, a.ivar)
     end
-    assert_equal("", stderr)
   end
 
   def test_uninitialized_attr
     a = AttrTest.new
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_nil(a.iattr)
     end
-    assert_equal("", stderr)
     a.iattr = 42
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_equal(42, a.iattr)
     end
-    assert_equal("", stderr)
   end
 
   def test_uninitialized_attr_class
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_nil(AttrTest.cattr)
     end
-    assert_equal("", stderr)
     AttrTest.cattr = 42
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_equal(42, AttrTest.cattr)
     end
-    assert_equal("", stderr)
   end
 
   def test_uninitialized_attr_non_object
     a = Class.new(Array) do
       attr_accessor :iattr
     end.new
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_nil(a.iattr)
     end
-    assert_equal("", stderr)
     a.iattr = 42
-    stderr = EnvUtil.verbose_warning do
+    assert_warning '' do
       assert_equal(42, a.iattr)
     end
-    assert_equal("", stderr)
   end
 
   def test_remove_const
