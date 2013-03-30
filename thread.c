@@ -996,9 +996,9 @@ sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
 	getclockofday(&tvn);
 	if (to.tv_sec < tvn.tv_sec) break;
 	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
-	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
-		     (long)to.tv_sec, (long)to.tv_usec,
-		     (long)tvn.tv_sec, (long)tvn.tv_usec);
+	thread_debug("sleep_timeval: %"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
+		     (time_t)to.tv_sec, (long)to.tv_usec,
+		     (time_t)tvn.tv_sec, (long)tvn.tv_usec);
 	tv.tv_sec = to.tv_sec - tvn.tv_sec;
 	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
 	    --tv.tv_sec;
