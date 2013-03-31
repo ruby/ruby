@@ -1,3 +1,12 @@
+Sun Mar 31 13:47:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2ulong_internal): New function similart to
+	  rb_num2ulong but integer wrap around flag is also returned.
+	  (rb_num2ulong): Use rb_num2ulong_internal.
+	  (rb_num2uint): Use rb_num2ulong_internal and the wrap around flag is
+	  used instead of negative_int_p(val).
+	  (rb_num2ushort): ditto.
+
 Sun Mar 31 06:27:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (HAVE_METACLASS_P): should check FL_SINGLTON flag before get

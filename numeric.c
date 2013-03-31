@@ -1979,21 +1979,29 @@ rb_num2long(VALUE val)
     }
 }
 
-VALUE
-rb_num2ulong(VALUE val)
+static unsigned long
+rb_num2ulong_internal(VALUE val, int *wrap_p)
 {
   again:
     if (NIL_P(val)) {
        rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
     }
 
-    if (FIXNUM_P(val)) return FIX2LONG(val); /* this is FIX2LONG, inteneded */
+    if (FIXNUM_P(val)) {
+        long l = FIX2LONG(val); /* this is FIX2LONG, inteneded */
+        if (wrap_p)
+            *wrap_p = l < 0;
+        return l;
+    }
 
     switch (TYPE(val)) {
       case T_FLOAT:
        if (RFLOAT_VALUE(val) < ULONG_MAX_PLUS_ONE
            && LONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
-           return (VALUE)RFLOAT_VALUE(val);
+           double d = RFLOAT_VALUE(val);
+           if (wrap_p)
+               *wrap_p = d <= -1.0; /* NUM2ULONG(v) uses v.to_int conceptually.  */
+           return (unsigned long)d;
        }
        else {
            char buf[24];
@@ -2005,12 +2013,23 @@ rb_num2ulong(VALUE val)
        }
 
       case T_BIGNUM:
-	return rb_big2ulong(val);
+        {
+            unsigned long ul = rb_big2ulong(val);
+            if (wrap_p)
+                *wrap_p = RBIGNUM_NEGATIVE_P(val);
+            return ul;
+        }
 
       default:
        val = rb_to_int(val);
        goto again;
     }
+}
+
+VALUE
+rb_num2ulong(VALUE val)
+{
+    return rb_num2ulong_internal(val, NULL);
 }
 
 #if SIZEOF_INT < SIZEOF_VALUE
@@ -2068,10 +2087,11 @@ rb_fix2int(VALUE val)
 unsigned long
 rb_num2uint(VALUE val)
 {
-    VALUE num = rb_num2ulong(val);
+    int wrap;
+    unsigned long num = rb_num2ulong_internal(val, &wrap);
 
-    check_uint(num, negative_int_p(val));
-    return (unsigned long)num;
+    check_uint(num, wrap);
+    return num;
 }
 
 unsigned long
@@ -2155,10 +2175,11 @@ rb_fix2short(VALUE val)
 unsigned short
 rb_num2ushort(VALUE val)
 {
-    VALUE num = rb_num2ulong(val);
+    int wrap;
+    unsigned long num = rb_num2ulong_internal(val, &wrap);
 
-    check_ushort(num, negative_int_p(val));
-    return (unsigned long)num;
+    check_ushort(num, wrap);
+    return num;
 }
 
 unsigned short

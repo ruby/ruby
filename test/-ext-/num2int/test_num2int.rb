@@ -48,6 +48,17 @@ class TestNum2int < Test::Unit::TestCase
     if num.to_f.to_i == num
       assert_num2i_success_internal(result.to_s, func, num.to_f)
     end
+    if num == result
+      # The conversion functions such as NUM2INT uses to_int (conceptually).
+      arg = num.to_f + 0.5
+      if arg != num.to_f && arg.to_int == num
+        assert_num2i_success_internal(result.to_s, func, arg)
+      end
+      arg = num.to_f - 0.5
+      if arg != num.to_f && arg.to_int == num
+        assert_num2i_success_internal(result.to_s, func, arg)
+      end
+    end
   end
 
   def assert_num2i_error_internal(func, arg)
