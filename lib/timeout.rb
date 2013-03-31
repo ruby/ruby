@@ -33,11 +33,12 @@ module Timeout
   CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
   # :startdoc:
 
-  # Perform an operation in a block, timing it out if it takes longer
-  # than +sec+ seconds to complete.
+  # Perform an operation in a block, raising an error if it takes longer than
+  # +sec+ seconds to complete.
   #
   # +sec+:: Number of seconds to wait for the block to terminate. Any number
-  #         may be used, including Floats to specify fractional seconds.
+  #         may be used, including Floats to specify fractional seconds. A
+  #         value of 0 or +nil+ will execute the block without any timeout.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
   #
