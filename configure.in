@@ -396,7 +396,7 @@ AS_CASE(["$host_os:$build_os"],
     # clang version 1.0 (http://llvm.org/svn/llvm-project/cfe/tags/Apple/clang-23 exported)
     # Apple clang version 2.0 (tags/Apple/clang-137) (based on LLVM 2.9svn)
     # Apple clang version 2.1 (tags/Apple/clang-163.7.1) (based on LLVM 3.0svn)
-    if @<:@ $CC = "clang" @:>@ && $CC --version | grep 'clang version @<:@12 @:>@\.' ; then
+    if test "$CC" = "clang" && $CC --version | grep 'clang version @<:@12 @:>@\.' ; then
         AC_MSG_ERROR([clang version 3.0 or later is required])
     fi
 ])
