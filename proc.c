@@ -1377,7 +1377,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 {
     ID id;
     VALUE body;
-    int noex = NOEX_PUBLIC;
+    int noex = (int)rb_vm_cref()->nd_visi;
 
     if (argc == 1) {
 	id = rb_to_id(argv[0]);
@@ -1410,6 +1410,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    }
 	}
 	rb_method_entry_set(mod, id, method->me, noex);
+	if (noex == NOEX_MODFUNC) {
+	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, NOEX_PUBLIC);
+	}
     }
     else if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
@@ -1423,6 +1426,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    proc->block.klass = mod;
 	}
 	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, noex);
+	if (noex == NOEX_MODFUNC) {
+	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, NOEX_PUBLIC);
+	}
     }
     else {
 	/* type error */

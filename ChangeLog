@@ -1,3 +1,8 @@
+Sun Mar 31 17:17:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): consider visibility in define_method.
+	  patch by mashiro <mail AT mashiro.org>.  fix GH-268.
+
 Sun Mar 31 15:40:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/configure.bat: try to fix option arguments split by commas and

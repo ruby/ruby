@@ -270,6 +270,38 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:meth, c.new.meth, feature4254)
   end
 
+  def test_define_method_visibility
+    c = Class.new do
+      public
+      define_method(:foo) {:foo}
+      protected
+      define_method(:bar) {:bar}
+      private
+      define_method(:baz) {:baz}
+    end
+
+    assert_equal(true, c.public_method_defined?(:foo))
+    assert_equal(false, c.public_method_defined?(:bar))
+    assert_equal(false, c.public_method_defined?(:baz))
+
+    assert_equal(false, c.protected_method_defined?(:foo))
+    assert_equal(true, c.protected_method_defined?(:bar))
+    assert_equal(false, c.protected_method_defined?(:baz))
+
+    assert_equal(false, c.private_method_defined?(:foo))
+    assert_equal(false, c.private_method_defined?(:bar))
+    assert_equal(true, c.private_method_defined?(:baz))
+
+    m = Module.new do
+      module_function
+      define_method(:foo) {:foo}
+    end
+    assert_equal(true, m.respond_to?(:foo))
+    assert_equal(false, m.public_method_defined?(:foo))
+    assert_equal(false, m.protected_method_defined?(:foo))
+    assert_equal(true, m.private_method_defined?(:foo))
+  end
+
   def test_super_in_proc_from_define_method
     c1 = Class.new {
       def m
