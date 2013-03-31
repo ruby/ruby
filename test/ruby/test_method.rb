@@ -238,7 +238,9 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:bar, o.method(:bar)) }
     end
+  end
 
+  def test_define_singleton_method
     o = Object.new
     def o.foo(c)
       c.class_eval { define_method(:foo) }
@@ -258,7 +260,9 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Module.new.module_eval {define_method(:foo, Base.instance_method(:foo))}
     end
+  end
 
+  def test_define_method_transplating
     feature4254 = '[ruby-core:34267]'
     m = Module.new {define_method(:meth, M.instance_method(:meth))}
     assert_equal(:meth, Object.new.extend(m).meth, feature4254)
