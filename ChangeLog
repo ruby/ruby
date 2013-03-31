@@ -1,3 +1,7 @@
+Mon Apr  1 07:15:03 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* configure.in: use quadrigraph to put '[' or ']'. [Bug #8192]
+
 Mon Apr  1 04:16:41 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: kick old clang. [ruby-dev:47204] [Bug #8192]
