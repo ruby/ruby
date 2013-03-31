@@ -1,3 +1,7 @@
+Mon Apr  1 04:16:41 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: kick old clang. [ruby-dev:47204] [Bug #8192]
+
 Mon Apr  1 01:12:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (FIX2ULONG): Make it consistent with NUM2ULONG.
