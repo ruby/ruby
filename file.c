@@ -264,6 +264,7 @@ apply2files(void (*func)(const char *, VALUE, void *), VALUE vargs, void *arg)
 /*
  *  call-seq:
  *     file.path  ->  filename
+ *     file.to_path  ->  filename
  *
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
