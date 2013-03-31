@@ -116,12 +116,6 @@ File.foreach "config.status" do |line|
     eq = win32 && vars[name] ? '<< "\n"' : '='
     vars[name] = val
     if name == "configure_args"
-      if win32
-        val.gsub!(/\G(--[-a-z0-9]+)((=\S+)|(?:\s+(?!-)\S+)+)?(\s*)/) {
-          _, opt, list, arg, sep = *$~
-          "#{opt}#{arg || list && list.sub(/^\s+/, '=').tr_s(' ', ',')}#{sep}"
-        }
-      end
       val.gsub!(/--with-out-ext/, "--without-ext")
     end
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump

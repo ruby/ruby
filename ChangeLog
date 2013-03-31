@@ -1,3 +1,10 @@
+Sun Mar 31 15:40:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/configure.bat: try to fix option arguments split by commas and
+	  equals here.  this batch file no longer run with old command.com.
+
+	* tool/mkconfig.rb: no hacks for cmd.exe.
+
 Sun Mar 31 13:47:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2ulong_internal): New function similar to
