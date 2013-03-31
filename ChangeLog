@@ -1,3 +1,11 @@
+Mon Apr  1 01:12:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (FIX2ULONG): Make it consistent with NUM2ULONG.
+
+	* ext/-test-/num2int/num2int.c: Add utility methods for FIX2XXX tests.
+
+	* test/-ext-/num2int/test_num2int.rb: Add tests for FIX2XXX.
+
 Sun Mar 31 17:17:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): consider visibility in define_method.

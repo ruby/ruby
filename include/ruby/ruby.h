@@ -337,7 +337,7 @@ rb_long2int_inline(long n)
 #endif
 
 #define FIX2LONG(x) (long)RSHIFT((SIGNED_VALUE)(x),1)
-#define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
+#define FIX2ULONG(x) ((unsigned long)FIX2LONG(x))
 #define FIXNUM_P(f) (((int)(SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) < FIXNUM_MAX+1)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)

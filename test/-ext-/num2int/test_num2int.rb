@@ -83,6 +83,36 @@ class TestNum2int < Test::Unit::TestCase
     end
   end
 
+  def assert_fix2i_success_internal(exp, func, arg)
+    mesg = "#{func}(#{arg.inspect})"
+    method = "print_#{func}".downcase
+    out = err = nil
+    assert_nothing_raised(mesg) {
+      out, err = capture_io { Num2int.send(method, arg) }
+    }
+    STDERR.puts err if err && !err.empty?
+    assert_equal(exp, out, mesg)
+  end
+
+  def assert_fix2i_success(type, num, result=num)
+    return if !num.kind_of?(Fixnum)
+    func = "FIX2#{type}".upcase
+    assert_fix2i_success_internal(result.to_s, func, num)
+  end
+
+  def assert_fix2i_error_internal(func, arg)
+    method = "print_#{func}".downcase
+    assert_raise(RangeError, "#{func}(#{arg.inspect})") {
+      Num2int.send(method, arg)
+    }
+  end
+
+  def assert_fix2i_error(type, num)
+    return if !num.kind_of?(Fixnum)
+    func = "FIX2#{type}".upcase
+    assert_num2i_error_internal(func, num)
+  end
+
   def test_num2short
     assert_num2i_success(:short, SHRT_MIN)
     assert_num2i_success(:short, SHRT_MAX)
@@ -162,6 +192,50 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, FIXNUM_MAX)
     assert_num2i_success(:ull, FIXNUM_MAX+1)
   end if defined?(Num2int.print_num2ull)
+
+  def test_fix2short
+    assert_fix2i_success(:short, 0)
+    assert_fix2i_success(:short, SHRT_MAX)
+    assert_fix2i_success(:short, SHRT_MIN)
+    assert_fix2i_error(:short, SHRT_MAX+1)
+    assert_fix2i_error(:short, SHRT_MIN-1)
+    assert_fix2i_error(:short, FIXNUM_MAX)
+    assert_fix2i_error(:short, FIXNUM_MIN)
+  end
+
+  def test_fix2int
+    assert_fix2i_success(:int, 0)
+    assert_fix2i_success(:int, INT_MAX)
+    assert_fix2i_success(:int, INT_MIN)
+    assert_fix2i_error(:int, INT_MAX+1)
+    assert_fix2i_error(:int, INT_MIN-1)
+    assert_fix2i_error(:int, FIXNUM_MAX) if INT_MAX < FIXNUM_MAX
+    assert_fix2i_error(:int, FIXNUM_MIN) if FIXNUM_MIN < INT_MIN
+  end
+
+  def test_fix2uint
+    assert_fix2i_success(:uint, 0)
+    assert_fix2i_success(:uint, UINT_MAX)
+    assert_fix2i_success(:uint, INT_MAX)
+    assert_fix2i_success(:uint, INT_MIN, INT_MAX+1)
+    assert_fix2i_error(:uint, UINT_MAX+1)
+    assert_fix2i_error(:uint, INT_MIN-1)
+    assert_fix2i_error(:uint, FIXNUM_MAX) if UINT_MAX < FIXNUM_MAX
+    assert_fix2i_error(:uint, FIXNUM_MIN) if FIXNUM_MIN < INT_MIN
+  end
+
+  def test_fix2long
+    assert_fix2i_success(:long, 0)
+    assert_fix2i_success(:long, FIXNUM_MAX)
+    assert_fix2i_success(:long, FIXNUM_MIN)
+  end
+
+  def test_fix2ulong
+    assert_fix2i_success(:ulong, 0)
+    assert_fix2i_success(:ulong, FIXNUM_MAX)
+    assert_fix2i_success(:ulong, -1, ULONG_MAX)
+  end
+
 end
 
 

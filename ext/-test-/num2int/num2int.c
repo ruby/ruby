@@ -98,6 +98,66 @@ print_num2ull(VALUE obj, VALUE num)
 }
 #endif
 
+static VALUE
+print_fix2short(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%d", FIX2SHORT(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+    return Qnil;
+}
+
+static VALUE
+print_fix2int(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%d", FIX2INT(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+    return Qnil;
+}
+
+static VALUE
+print_fix2uint(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%u", FIX2UINT(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+    return Qnil;
+}
+
+static VALUE
+print_fix2long(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%ld", FIX2LONG(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+    return Qnil;
+}
+
+static VALUE
+print_fix2ulong(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%lu", FIX2ULONG(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+    return Qnil;
+}
+
 void
 Init_num2int(void)
 {
@@ -116,5 +176,13 @@ Init_num2int(void)
     rb_define_singleton_method(cNum2int, "print_num2ll", print_num2ll, 1);
     rb_define_singleton_method(cNum2int, "print_num2ull", print_num2ull, 1);
 #endif
+
+    rb_define_singleton_method(cNum2int, "print_fix2short", print_fix2short, 1);
+
+    rb_define_singleton_method(cNum2int, "print_fix2int", print_fix2int, 1);
+    rb_define_singleton_method(cNum2int, "print_fix2uint", print_fix2uint, 1);
+
+    rb_define_singleton_method(cNum2int, "print_fix2long", print_fix2long, 1);
+    rb_define_singleton_method(cNum2int, "print_fix2ulong", print_fix2ulong, 1);
 }
 
