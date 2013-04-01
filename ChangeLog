@@ -1,3 +1,9 @@
+Mon Apr  1 22:08:02 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/zlib/zlib.c (Zlib::Inflate.new):
+	  Fix documentation syntax and naming errors.
+	  Based on patch by Robin Dupret. Fix GH-271.
+
 Mon Apr  1 21:22:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/-ext-/num2int/test_num2int.rb: Test small bignums.

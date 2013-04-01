@@ -1850,12 +1850,12 @@ rb_inflate_s_allocate(VALUE klass)
  * == Example
  *
  *   open "compressed.file" do |compressed_io|
- *     inflate = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
+ *     zi = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
  *
  *     begin
  *       open "uncompressed.file", "w+" do |uncompressed_io|
  *         uncompressed_io << zi.inflate(compressed_io.read)
- *       }
+ *       end
  *     ensure
  *       zi.close
  *     end
