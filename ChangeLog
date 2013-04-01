@@ -1,3 +1,7 @@
+Mon Apr  1 21:22:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/-ext-/num2int/test_num2int.rb: Test small bignums.
+
 Mon Apr  1 21:10:56 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2ulong_internal): Don't cast a negative double value

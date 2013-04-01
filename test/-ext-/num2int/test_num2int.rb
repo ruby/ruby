@@ -31,6 +31,10 @@ class TestNum2int < Test::Unit::TestCase
   FIXNUM_MAX = LONG_MAX/2
   FIXNUM_MIN = LONG_MIN/2
 
+  def fix2big(n)
+    10000000000000000000000000000.coerce(n)[0]
+  end
+
   def assert_num2i_success_internal(exp, func, arg)
     mesg = "#{func}(#{arg.inspect})"
     method = "rb_#{func}".downcase
@@ -44,6 +48,7 @@ class TestNum2int < Test::Unit::TestCase
   def assert_num2i_success(type, num, result=num)
     func = "NUM2#{type}".upcase
     assert_num2i_success_internal(result.to_s, func, num)
+    assert_num2i_success_internal(result.to_s, func, fix2big(num))
     if num.to_f.to_i == num
       assert_num2i_success_internal(result.to_s, func, num.to_f)
     end
@@ -68,6 +73,7 @@ class TestNum2int < Test::Unit::TestCase
   def assert_num2i_error(type, num)
     func = "NUM2#{type}".upcase
     assert_num2i_error_internal(func, num)
+    assert_num2i_error_internal(func, fix2big(num))
     if num.to_f.to_i == num
       assert_num2i_error_internal(func, num.to_f)
     end
