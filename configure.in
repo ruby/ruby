@@ -3,7 +3,7 @@ AC_INIT()
 {
 AC_CONFIG_AUX_DIR(tool)
 
-AC_PREREQ(2.62)
+AC_PREREQ(2.67)
 
 AC_DEFUN([RUBY_PREREQ_AC],
 	[m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [$1]), [-1],
@@ -306,7 +306,6 @@ if test ${target_archs+set}; then
     target=`echo $target | sed "s/^$target_cpu-/-/"`
     target_alias=`echo $target_alias | sed "s/^$target_cpu-/-/"`
     if test "${universal_binary-no}" = yes; then
-	RUBY_PREREQ_AC(2.63, [ to compile universal binary])
 	AC_SUBST(try_header,try_compile)
 	target_cpu=universal
 	real_cross_compiling=$cross_compiling

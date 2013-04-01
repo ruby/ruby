@@ -1,3 +1,8 @@
+Mon Apr  1 18:41:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: skip autoconf 2.64 and 2.66, 2.67 seems short-lived
+	  but stick on it for Debian Squeeze.
+
 Mon Apr  1 14:22:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check clang version by predefined macro values.
