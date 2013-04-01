@@ -1,10 +1,7 @@
 require 'test/unit'
+require '-test-/num2int/num2int'
 
 class TestNum2int < Test::Unit::TestCase
-  module Num2int
-  end
-  require '-test-/num2int/num2int'
-
   SHRT_MIN = -32768
   SHRT_MAX = 32767
   USHRT_MAX = 65535
