@@ -1,3 +1,9 @@
+Mon Apr  1 12:05:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (check_uint): Take the 1st argument as unsigned long,
+	  instead of VALUE.  Refine the validity test conditions.
+	  (check_ushort): Ditto.
+
 Mon Apr  1 07:15:03 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* configure.in: use quadrigraph to put '[' or ']'. [Bug #8192]

@@ -2049,20 +2049,17 @@ check_int(SIGNED_VALUE num)
 }
 
 static void
-check_uint(VALUE num, int sign)
+check_uint(unsigned long num, int sign)
 {
-    static const VALUE mask = ~(VALUE)UINT_MAX;
-
     if (sign) {
 	/* minus */
-	if ((num & mask) != mask || (num & ~mask) <= INT_MAX)
-#define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
-	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num|VALUE_MSBMASK);
+	if (num < (unsigned long)INT_MIN)
+	    rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned int'", (long)num);
     }
     else {
 	/* plus */
-	if ((num & mask) != 0)
-	    rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned int'", num);
+	if (UINT_MAX < num)
+	    rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
     }
 }
 
@@ -2137,20 +2134,17 @@ check_short(SIGNED_VALUE num)
 }
 
 static void
-check_ushort(VALUE num, int sign)
+check_ushort(unsigned long num, int sign)
 {
-    static const VALUE mask = ~(VALUE)USHRT_MAX;
-
     if (sign) {
 	/* minus */
-	if ((num & mask) != mask || (num & ~mask) <= SHRT_MAX)
-#define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
-	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned short'", num|VALUE_MSBMASK);
+	if (num < (unsigned long)SHRT_MIN)
+	    rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned short'", (long)num);
     }
     else {
 	/* plus */
-	if ((num & mask) != 0)
-	    rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned short'", num);
+	if (USHRT_MAX < num)
+	    rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned short'", num);
     }
 }
 
