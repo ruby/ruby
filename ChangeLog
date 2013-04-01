@@ -1,3 +1,8 @@
+Mon Apr  1 14:22:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check clang version by predefined macro values.
+	  [Bug #8192]
+
 Mon Apr  1 12:05:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (check_uint): Take the 1st argument as unsigned long,
