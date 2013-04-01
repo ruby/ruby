@@ -3188,13 +3188,9 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 	rb_raise(cGzError, "header is already written");
     }
 
-    if (FIXNUM_P(mtime)) {
-	gz->mtime = FIX2INT(mtime);
-    }
-    else {
-	val = rb_Integer(mtime);
-	gz->mtime = FIXNUM_P(val) ? FIX2UINT(val) : rb_big2ulong(val);
-    }
+    val = rb_Integer(mtime);
+    gz->mtime = NUM2UINT(val);
+
     return mtime;
 }
 

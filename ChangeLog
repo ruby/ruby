@@ -1,3 +1,15 @@
+Mon Apr  1 22:26:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c (rb_gzfile_set_mtime): Use NUM2UINT.
+	  The old logic doesn't work well on LP64 platforms as:
+	  .. -2**63-1 => error,
+	  -2**63 .. -2**62-1 => success,
+	  -2**62 .. -2**31-1 => error,
+	  -2**31 .. 2**31-1 => success,
+	  2**31 .. 2**62-1 => error,
+	  2**62 .. 2**64-1 => success,
+	  2**64 ..  => error.
+	
 Mon Apr  1 22:08:02 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/zlib/zlib.c (Zlib::Inflate.new):
