@@ -48,7 +48,7 @@ Sun Mar 31 13:47:04 2013  Tanaka Akira  <akr@fsij.org>
 
 Sun Mar 31 06:27:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* class.c (HAVE_METACLASS_P): should check FL_SINGLTON flag before get
+	* class.c (HAVE_METACLASS_P): should check FL_SINGLETON flag before get
 	  instance variable to get rid of wrong warning about __attached__.
 	  [ruby-core:53839] [Bug #8188]
 
