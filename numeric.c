@@ -1959,7 +1959,7 @@ rb_num2long(VALUE val)
       case T_FLOAT:
 	if (RFLOAT_VALUE(val) < LONG_MAX_PLUS_ONE
 	    && LONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
-	    return (SIGNED_VALUE)(RFLOAT_VALUE(val));
+	    return (long)RFLOAT_VALUE(val);
 	}
 	else {
 	    char buf[24];
@@ -1991,7 +1991,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
         long l = FIX2LONG(val); /* this is FIX2LONG, inteneded */
         if (wrap_p)
             *wrap_p = l < 0;
-        return l;
+        return (unsigned long)l;
     }
 
     switch (TYPE(val)) {
@@ -2021,8 +2021,8 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
         }
 
       default:
-       val = rb_to_int(val);
-       goto again;
+        val = rb_to_int(val);
+        goto again;
     }
 }
 
@@ -2032,7 +2032,7 @@ rb_num2ulong(VALUE val)
     return rb_num2ulong_internal(val, NULL);
 }
 
-#if SIZEOF_INT < SIZEOF_VALUE
+#if SIZEOF_INT < SIZEOF_LONG
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
@@ -2041,9 +2041,9 @@ rb_out_of_int(SIGNED_VALUE num)
 }
 
 static void
-check_int(SIGNED_VALUE num)
+check_int(long num)
 {
-    if ((SIGNED_VALUE)(int)num != num) {
+    if ((long)(int)num != num) {
 	rb_out_of_int(num);
     }
 }
@@ -2126,9 +2126,9 @@ rb_out_of_short(SIGNED_VALUE num)
 }
 
 static void
-check_short(SIGNED_VALUE num)
+check_short(long num)
 {
-    if ((SIGNED_VALUE)(short)num != num) {
+    if ((long)(short)num != num) {
 	rb_out_of_short(num);
     }
 }
@@ -2193,13 +2193,13 @@ rb_fix2ushort(VALUE val)
 VALUE
 rb_num2fix(VALUE val)
 {
-    SIGNED_VALUE v;
+    long v;
 
     if (FIXNUM_P(val)) return val;
 
     v = rb_num2long(val);
     if (!FIXABLE(v))
-	rb_raise(rb_eRangeError, "integer %"PRIdVALUE " out of range of fixnum", v);
+	rb_raise(rb_eRangeError, "integer %ld out of range of fixnum", v);
     return LONG2FIX(v);
 }
 

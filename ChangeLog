@@ -1,3 +1,11 @@
+Mon Apr  1 20:08:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2long): Don't use SIGNED_VALUE uselessly.
+	  (check_int): Ditto.
+	  (check_short): Ditto.
+	  (rb_num2fix): Ditto.
+	  (rb_num2ulong_internal): Add a cast.
+
 Mon Apr  1 18:41:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: skip autoconf 2.64 and 2.66, 2.67 seems short-lived
