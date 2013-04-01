@@ -37,10 +37,9 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_num2i_success_internal(exp, func, arg)
     mesg = "#{func}(#{arg.inspect})"
-    method = "rb_#{func}".downcase
     out = nil
     assert_nothing_raised(mesg) {
-      out = Num2int.send(method, arg)
+      out = Kernel.send(func, arg)
     }
     assert_equal(exp, out, mesg)
   end
@@ -64,9 +63,8 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_num2i_error_internal(func, arg)
-    method = "rb_#{func}".downcase
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
-      Num2int.send(method, arg)
+      Kernel.send(func, arg)
     }
   end
 
@@ -90,10 +88,9 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_fix2i_success_internal(exp, func, arg)
     mesg = "#{func}(#{arg.inspect})"
-    method = "rb_#{func}".downcase
     out = nil
     assert_nothing_raised(mesg) {
-      out = Num2int.send(method, arg)
+      out = Kernel.send(func, arg)
     }
     assert_equal(exp, out, mesg)
   end
@@ -105,9 +102,8 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_fix2i_error_internal(func, arg)
-    method = "rb_#{func}".downcase
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
-      Num2int.send(method, arg)
+      Kernel.send(func, arg)
     }
   end
 

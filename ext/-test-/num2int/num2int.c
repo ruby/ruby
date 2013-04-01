@@ -109,28 +109,26 @@ test_fix2ulong(VALUE obj, VALUE num)
 void
 Init_num2int(void)
 {
-    VALUE cNum2int = rb_path2class("TestNum2int::Num2int");
+    rb_define_global_function("NUM2SHORT", test_num2short, 1);
+    rb_define_global_function("NUM2USHORT", test_num2ushort, 1);
 
-    rb_define_singleton_method(cNum2int, "rb_num2short", test_num2short, 1);
-    rb_define_singleton_method(cNum2int, "rb_num2ushort", test_num2ushort, 1);
+    rb_define_global_function("NUM2INT", test_num2int, 1);
+    rb_define_global_function("NUM2UINT", test_num2uint, 1);
 
-    rb_define_singleton_method(cNum2int, "rb_num2int", test_num2int, 1);
-    rb_define_singleton_method(cNum2int, "rb_num2uint", test_num2uint, 1);
-
-    rb_define_singleton_method(cNum2int, "rb_num2long", test_num2long, 1);
-    rb_define_singleton_method(cNum2int, "rb_num2ulong", test_num2ulong, 1);
+    rb_define_global_function("NUM2LONG", test_num2long, 1);
+    rb_define_global_function("NUM2ULONG", test_num2ulong, 1);
 
 #ifdef HAVE_LONG_LONG
-    rb_define_singleton_method(cNum2int, "rb_num2ll", test_num2ll, 1);
-    rb_define_singleton_method(cNum2int, "rb_num2ull", test_num2ull, 1);
+    rb_define_global_function("NUM2LL", test_num2ll, 1);
+    rb_define_global_function("NUM2ULL", test_num2ull, 1);
 #endif
 
-    rb_define_singleton_method(cNum2int, "rb_fix2short", test_fix2short, 1);
+    rb_define_global_function("FIX2SHORT", test_fix2short, 1);
 
-    rb_define_singleton_method(cNum2int, "rb_fix2int", test_fix2int, 1);
-    rb_define_singleton_method(cNum2int, "rb_fix2uint", test_fix2uint, 1);
+    rb_define_global_function("FIX2INT", test_fix2int, 1);
+    rb_define_global_function("FIX2UINT", test_fix2uint, 1);
 
-    rb_define_singleton_method(cNum2int, "rb_fix2long", test_fix2long, 1);
-    rb_define_singleton_method(cNum2int, "rb_fix2ulong", test_fix2ulong, 1);
+    rb_define_global_function("FIX2LONG", test_fix2long, 1);
+    rb_define_global_function("FIX2ULONG", test_fix2ulong, 1);
 }
 

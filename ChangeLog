@@ -1,3 +1,10 @@
+Tue Apr  2 06:46:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/num2int/num2int.c: Rename utility methods
+	  to global functions to ease manual experiments.
+
+	* test/-ext-/num2int/test_num2int.rb: Follow the above change.
+
 Mon Apr  1 22:26:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/zlib/zlib.c (rb_gzfile_set_mtime): Use NUM2UINT.
