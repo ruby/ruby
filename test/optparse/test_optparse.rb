@@ -10,7 +10,7 @@ class TestOptionParser < Test::Unit::TestCase
   class DummyOutput < String
     alias write <<
   end
-  def no_error(*args)
+  def assert_no_error(*args)
     $stderr, stderr = DummyOutput.new, $stderr
     assert_nothing_raised(*args) {return yield}
   ensure
@@ -18,6 +18,7 @@ class TestOptionParser < Test::Unit::TestCase
     $!.backtrace.delete_if {|e| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}/o =~ e} if $!
     assert_empty(stderr)
   end
+  alias no_error assert_no_error
 
   def test_permute
     assert_equal(%w"", no_error {@opt.permute!(%w"")})
