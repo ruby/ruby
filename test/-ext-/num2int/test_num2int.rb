@@ -48,16 +48,21 @@ class TestNum2int < Test::Unit::TestCase
     func = "NUM2#{type}".upcase
     assert_num2i_success_internal(result.to_s, func, num)
     assert_num2i_success_internal(result.to_s, func, fix2big(num))
+    assert_num2i_success_internal(result.to_s, func, Rational(num, 1))
     if num.to_f.to_i == num
       assert_num2i_success_internal(result.to_s, func, num.to_f)
     end
     # The conversion functions such as NUM2INT uses (conceptually) to_int.
-    arg = num.to_f + 0.5
-    if arg != num.to_f && arg.to_int == num
+    if (arg = num.to_f + 0.5) != num.to_f && arg.to_int == num
       assert_num2i_success_internal(result.to_s, func, arg)
     end
-    arg = num.to_f - 0.5
-    if arg != num.to_f && arg.to_int == num
+    if (arg = num.to_f - 0.5) != num.to_f && arg.to_int == num
+      assert_num2i_success_internal(result.to_s, func, arg)
+    end
+    if (arg = num + Rational(1,2)) && arg.to_int == num
+      assert_num2i_success_internal(result.to_s, func, arg)
+    end
+    if (arg = num - Rational(1,2)) && arg.to_int == num
       assert_num2i_success_internal(result.to_s, func, arg)
     end
   end
@@ -72,16 +77,21 @@ class TestNum2int < Test::Unit::TestCase
     func = "NUM2#{type}".upcase
     assert_num2i_error_internal(func, num)
     assert_num2i_error_internal(func, fix2big(num))
+    assert_num2i_error_internal(func, Rational(num, 1))
     if num.to_f.to_i == num
       assert_num2i_error_internal(func, num.to_f)
     end
     # The conversion functions such as NUM2INT uses (conceptually) to_int.
-    arg = num.to_f + 0.5
-    if arg != num.to_f && arg.to_int == num
+    if (arg = num.to_f + 0.5) != num.to_f && arg.to_int == num
       assert_num2i_error_internal(func, arg)
     end
-    arg = num.to_f - 0.5
-    if arg != num.to_f && arg.to_int == num
+    if (arg = num.to_f - 0.5) != num.to_f && arg.to_int == num
+      assert_num2i_error_internal(func, arg)
+    end
+    if (arg = num + Rational(1,2)) && arg.to_int == num
+      assert_num2i_error_internal(func, arg)
+    end
+    if (arg = num - Rational(1,2)) && arg.to_int == num
       assert_num2i_error_internal(func, arg)
     end
   end
