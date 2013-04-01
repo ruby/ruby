@@ -188,7 +188,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ll, FIXNUM_MIN-1)
     assert_num2i_success(:ll, FIXNUM_MAX)
     assert_num2i_success(:ll, FIXNUM_MAX+1)
-  end if defined?(Num2int.rb_num2ll)
+  end if defined?(Kernel.NUM2LL)
 
   def test_num2ull
     assert_num2i_success(:ull, 0)
@@ -201,7 +201,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, FIXNUM_MIN-1, ULLONG_MAX-FIXNUM_MAX-1)
     assert_num2i_success(:ull, FIXNUM_MAX)
     assert_num2i_success(:ull, FIXNUM_MAX+1)
-  end if defined?(Num2int.rb_num2ull)
+  end if defined?(Kernel.NUM2ULL)
 
   def test_fix2short
     assert_fix2i_success(:short, 0)
