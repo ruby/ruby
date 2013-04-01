@@ -33,12 +33,11 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_num2i_success_internal(exp, func, arg)
     mesg = "#{func}(#{arg.inspect})"
-    method = "print_#{func}".downcase
-    out = err = nil
+    method = "rb_#{func}".downcase
+    out = nil
     assert_nothing_raised(mesg) {
-      out, err = capture_io { Num2int.send(method, arg) }
+      out = Num2int.send(method, arg)
     }
-    STDERR.puts err if err && !err.empty?
     assert_equal(exp, out, mesg)
   end
 
@@ -60,7 +59,7 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_num2i_error_internal(func, arg)
-    method = "print_#{func}".downcase
+    method = "rb_#{func}".downcase
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
       Num2int.send(method, arg)
     }
@@ -85,12 +84,11 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_fix2i_success_internal(exp, func, arg)
     mesg = "#{func}(#{arg.inspect})"
-    method = "print_#{func}".downcase
-    out = err = nil
+    method = "rb_#{func}".downcase
+    out = nil
     assert_nothing_raised(mesg) {
-      out, err = capture_io { Num2int.send(method, arg) }
+      out = Num2int.send(method, arg)
     }
-    STDERR.puts err if err && !err.empty?
     assert_equal(exp, out, mesg)
   end
 
@@ -101,7 +99,7 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_fix2i_error_internal(func, arg)
-    method = "print_#{func}".downcase
+    method = "rb_#{func}".downcase
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
       Num2int.send(method, arg)
     }
@@ -178,7 +176,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ll, FIXNUM_MIN-1)
     assert_num2i_success(:ll, FIXNUM_MAX)
     assert_num2i_success(:ll, FIXNUM_MAX+1)
-  end if defined?(Num2int.print_num2ll)
+  end if defined?(Num2int.rb_num2ll)
 
   def test_num2ull
     assert_num2i_success(:ull, 0)
@@ -191,7 +189,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, FIXNUM_MIN-1, ULLONG_MAX-FIXNUM_MAX-1)
     assert_num2i_success(:ull, FIXNUM_MAX)
     assert_num2i_success(:ull, FIXNUM_MAX+1)
-  end if defined?(Num2int.print_num2ull)
+  end if defined?(Num2int.rb_num2ull)
 
   def test_fix2short
     assert_fix2i_success(:short, 0)

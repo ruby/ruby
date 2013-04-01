@@ -1,3 +1,10 @@
+Mon Apr  1 20:57:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/num2int/num2int.c: Return string for result, instead of
+	  printing.
+
+	* test/-ext-/num2int/test_num2int.rb: updated to follow above change.
+
 Mon Apr  1 20:08:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num2long): Don't use SIGNED_VALUE uselessly.
