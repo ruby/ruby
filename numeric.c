@@ -2001,7 +2001,9 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
            double d = RFLOAT_VALUE(val);
            if (wrap_p)
                *wrap_p = d <= -1.0; /* NUM2ULONG(v) uses v.to_int conceptually.  */
-           return (unsigned long)d;
+           if (0 <= d)
+               return (unsigned long)d;
+           return (unsigned long)(long)d;
        }
        else {
            char buf[24];
@@ -2273,6 +2275,8 @@ rb_num2ull(VALUE val)
       case T_FLOAT:
 	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
             && LLONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
+            if (0 <= RFLOAT_VALUE(val))
+                return (unsigned LONG_LONG)(RFLOAT_VALUE(val));
 	    return (unsigned LONG_LONG)(LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {

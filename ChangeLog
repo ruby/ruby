@@ -1,3 +1,10 @@
+Mon Apr  1 21:10:56 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num2ulong_internal): Don't cast a negative double value
+	  into unsigned long, which is undefined behavior.
+	  (rb_num2ull): Don't cast a value bigger than LLONG_MAX into
+	  long long, which is undefined behavior.
+
 Mon Apr  1 20:57:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/num2int/num2int.c: Return string for result, instead of
