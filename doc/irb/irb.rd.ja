@@ -12,7 +12,7 @@ irbはinteractive rubyの略です. rubyの式を標準入力から簡単に入�
 
   % irb
 
-で行ないます. 
+で行ないます.
 
 = 使い方
 
@@ -30,7 +30,7 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   irb(main):005:2>  end
   irb(main):006:1> end
   nil
-  irb(main):007:0> 
+  irb(main):007:0>
 
 また, irbはReadlineモジュールにも対応しています. Readlineモジュールが
 インストールされている時には, それを使うのが標準の動作になります.
@@ -48,19 +48,19 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   --noverbose	    これから実行する行を表示しない
   --echo	    実行結果を表示する(デフォルト)
   --noecho	    実行結果を表示しない
-  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
+  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト).
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
   --noreadline	    readlineライブラリを利用しない. デフォルトの動作は,
 		    inf-ruby-mode以外でreadlineライブラリを利用しよう
-		    とする. 
+		    とする.
   --prompt prompt-mode
   --prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが
 		    用意されています. デフォルトはdefaultプロンプトモー
 		    ドになっています.
-			    
+
   --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
 		    に指定がない限り, readlineライブラリは使わなくなる.
   --simple-prompt
@@ -69,7 +69,7 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本
   --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
 		    バックトレース表示をバックトレースの頭から n, 後ろ
-		    からnだけ行なう. デフォルトは16 
+		    からnだけ行なう. デフォルトは16
   --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
 		    い方が無難でしょう).
   -v, --version	    irbのバージョンを表示する
@@ -103,7 +103,7 @@ irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は
 
 == プロンプトの設定
 
-プロンプトをカスタマイズしたい時には, 
+プロンプトをカスタマイズしたい時には,
 
    IRB.conf[:PROMPT]
 
@@ -145,7 +145,7 @@ PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
       :PROMPT_S => "%N(%m):%03n:%i%l ",
       :PROMPT_C => "%N(%m):%03n:%i* ",
       :RETURN => "%s\n"
-  } 
+  }
 
 となっています.
 
@@ -167,34 +167,34 @@ procをirbのコンテキストを引数として呼び出します. これに�
 irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
 います. これは, 簡単な名前がoverrideされた時のためです.
 
---- exit, quit, irb_exit	
-    終了する. 
+--- exit, quit, irb_exit
+    終了する.
     サブirbの場合, そのサブirbを終了する.
 
 --- conf, irb_context
     irbの現在の設定を表示する. 設定の変更は, confにメッセージを送るこ
-    とによって行なえる. 
+    とによって行なえる.
 
 --- conf.eval_history = N
     実行結果のヒストリ機能の設定.
     nnは整数かnilで nn>0 であればその数だけヒストリにためる。nn==0の時は
-    無制限に記憶する、nilだとヒストリ機能はやめる(デフォルト). 
+    無制限に記憶する、nilだとヒストリ機能はやめる(デフォルト).
 
 --- Conf.back_trace_limit
     バックトレース表示をバックトレースの頭からn, 後ろからnだけ行なう.
     デフォルトは16
-    
+
 --- conf.debug_level = N
     irb用のデバッグレベルの設定
 
 --- conf.ignore_eof = true/false
     ^Dが入力された時の動作を設定する. trueの時は^Dを無視する, falseの
-    時はirbを終了する. 
+    時はirbを終了する.
 
 --- conf.ignore_sigint= true/false
     ^Cが入力された時の動作を設定する. false時は, irbを終了する. trueの
     時の動作は以下のようになる:
-      入力中: これまで入力したものをキャンセルしトップレベルに戻る. 
+      入力中: これまで入力したものをキャンセルしトップレベルに戻る.
       実行中: 実行を中止する.
 
 --- conf.inf_ruby_mode = true/false
@@ -205,7 +205,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
     true: インスペクトして表示する.
     false: 通常のprintで表示する.
     nil: 通常モードであれば, inspect modeとなり, mathモードの時は, non
-	 inspect modeとなる.   
+	 inspect modeとなる.
 
 --- conf.math_mode
     参照のみ. bcモード(分数, 行列の計算ができます)かどうか?
@@ -234,7 +234,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
     true: readlineを使う.
     false: readlineを使わない.
     nil: (デフォルト)inf-ruby-mode以外でreadlineライブラリを利用しよ
-         うとする.  
+         うとする.
 #
 #--- conf.verbose=T/F
 #    irbからいろいろなメッセージを出力するか?
@@ -276,9 +276,9 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
 
 = システム変数
 
---- _  
+--- _
     前の計算の実行結果を覚えている(ローカル変数).
---- __ 
+--- __
     実行結果の履歴を覚えている.
     __[line_no]で、その行で実行した結果を得ることができる. line_noが負の
     時には、最新の結果から-line_no前の結果を得ることができる.
@@ -321,7 +321,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
   nil
   irb#2(Foo):010:0>  Foo.instance_methods
   ["bar", "foo"]
-  irb#2(Foo):011:0> fg 0                      
+  irb#2(Foo):011:0> fg 0
   nil
   irb(main):007:0> f = Foo.new
   #<Foo:0x4010af3c>
@@ -343,7 +343,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
   #0->irb on main (#<Thread:0x400fb7e4> : running)
   nil
   irb(main):010:0> exit                       # 終了
-  dim% 
+  dim%
 
 = 使用上の制限
 
@@ -372,11 +372,11 @@ rubyでは, 以下のプログラムはエラーになります.
 
 となり, エラーを起こしません. これは, rubyが最初にスクリプト全体をコン
 パイルしてローカル変数を決定するからです. それに対し, irbは実行可能に
-なる(式が閉じる)と自動的に評価しているからです. 上記の例では, 
+なる(式が閉じる)と自動的に評価しているからです. 上記の例では,
 
-  evel "foo = 0" 
+  evel "foo = 0"
 
-を行なった時点で評価を行ない, その時点で変数が定義されるため, 次式で 
+を行なった時点で評価を行ない, その時点で変数が定義されるため, 次式で
 変数fooは定義されているからです.
 
 このようなrubyとirbの動作の違いを解決したい場合は, begin...endで括って
@@ -392,7 +392,7 @@ rubyでは, 以下のプログラムはエラーになります.
 
 == ヒアドキュメント
 
-現在のところヒアドキュメントの実装は不完全です. 
+現在のところヒアドキュメントの実装は不完全です.
 
 == シンボル
 

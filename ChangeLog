@@ -9,7 +9,7 @@ Mon Apr  1 22:26:17 2013  Tanaka Akira  <akr@fsij.org>
 	  2**31 .. 2**62-1 => error,
 	  2**62 .. 2**64-1 => success,
 	  2**64 ..  => error.
-	
+
 Mon Apr  1 22:08:02 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/zlib/zlib.c (Zlib::Inflate.new):
