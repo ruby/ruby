@@ -93,7 +93,7 @@ class TestObjSpace < Test::Unit::TestCase
         }
       end
     }
-    assert_operator(max, :>=, 1_001, "1000 elems + Array class")
+    assert_operator(max, :>=, long_ary.size+1, "1000 elems + Array class")
     eom
   end
 
