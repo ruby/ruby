@@ -114,19 +114,14 @@ module Psych
     end
 
     def test_to_yaml_is_valid
-      ext_before = Encoding.default_external
-      int_before = Encoding.default_internal
-
-      Encoding.default_external = Encoding::US_ASCII
-      Encoding.default_internal = nil
-
-      s = "こんにちは！"
-      # If no encoding is specified, use UTF-8
-      assert_equal Encoding::UTF_8, Psych.dump(s).encoding
-      assert_equal s, Psych.load(Psych.dump(s))
-    ensure
-      Encoding.default_external = ext_before
-      Encoding.default_internal = int_before
+      EnvUtil.with_default_external(Encoding::US_ASCII) do
+        EnvUtil.with_default_internal(nil) do
+          s = "こんにちは！"
+          # If no encoding is specified, use UTF-8
+          assert_equal Encoding::UTF_8, Psych.dump(s).encoding
+          assert_equal s, Psych.load(Psych.dump(s))
+        end
+      end
     end
 
     def test_start_mapping
@@ -191,19 +186,14 @@ module Psych
     end
 
     def test_default_internal
-      before = Encoding.default_internal
+      EnvUtil.with_default_internal(Encoding::EUC_JP) do
+        str  = "壁に耳あり、障子に目あり"
+        assert_equal @utf8, str.encoding
 
-      Encoding.default_internal = 'EUC-JP'
-
-      str  = "壁に耳あり、障子に目あり"
-      yaml = "--- #{str}"
-      assert_equal @utf8, str.encoding
-
-      @parser.parse str
-      assert_encodings Encoding.find('EUC-JP'), @handler.strings
-      assert_equal str, @handler.strings.first.encode('UTF-8')
-    ensure
-      Encoding.default_internal = before
+        @parser.parse str
+        assert_encodings Encoding::EUC_JP, @handler.strings
+        assert_equal str, @handler.strings.first.encode('UTF-8')
+      end
     end
 
     def test_scalar

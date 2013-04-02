@@ -3,6 +3,7 @@ require 'stringio'
 require 'tempfile'
 require 'date'
 require 'psych'
+require_relative '../ruby/envutil'
 
 module Psych
   class TestCase < MiniTest::Unit::TestCase
