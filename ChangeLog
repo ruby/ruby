@@ -1,3 +1,9 @@
+Tue Apr  2 12:59:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): Windows 8 fixed one of a bug of console
+	  API.
+	  based on the patch by Heesob Park at [ruby-core:49479] [Bug #7379]
+
 Tue Apr  2 12:56:15 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* signal.c (ruby_abort): fix typo in r39354 [Bug #5014]
