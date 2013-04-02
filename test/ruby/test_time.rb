@@ -324,6 +324,7 @@ class TestTime < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -(2**31), :foo, :foo) }
     o = Object.new
+    def o.to_int; 0; end
     def o.to_r; nil; end
     assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
     def o.to_r; ""; end

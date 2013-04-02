@@ -1,3 +1,9 @@
+Tue Apr  2 13:07:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (num_exact): use to_r method only if to_int method is
+	  available.
+	  [ruby-core:53764] [Bug #8173] reported by Hiro Asari.
+
 Tue Apr  2 13:01:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (EXTDLDFLAGS): split options for each extension
