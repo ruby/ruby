@@ -1,3 +1,10 @@
+Tue Apr  2 23:56:03 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (SecureRandom.random_bytes): Use
+	  OpenSSL::Random.random_add instead of OpenSSL::Random.seed and
+	  specify 0.0 as the entropy.
+	  [ruby-core:47308] [Bug #6928]
+
 Tue Apr  2 20:24:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c: Support Q! and q! for long long.
