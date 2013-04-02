@@ -1,3 +1,18 @@
+Tue Apr  2 12:56:15 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* signal.c (ruby_abort): fix typo in r39354 [Bug #5014]
+
+Tue Apr  2 12:56:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (check_stack_overflow): extract duplicated code and get rid
+	  of declaration-after-statement.  [Bug #5014]
+
+Tue Apr  2 12:56:15 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sigsegv): avoid to use async signal unsafe functions
+	  when nested sigsegv is happen.
+	  [Bug #5014] [ruby-dev:44082]
+
 Fri Mar 29 13:22:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h: fixed merge mistake of r39985.

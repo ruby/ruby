@@ -564,6 +564,23 @@ rb_get_next_signal(void)
     return sig;
 }
 
+
+#ifdef USE_SIGALTSTACK
+static void
+check_stack_overflow(const void *addr)
+{
+    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
+    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+    rb_thread_t *th = GET_THREAD();
+    if (ruby_stack_overflowed_p(th, addr)) {
+	ruby_thread_stack_overflow(th);
+    }
+}
+#define CHECK_STACK_OVERFLOW() check_stack_overflow(info->si_addr)
+#else
+#define CHECK_STACK_OVERFLOW() (void)0
+#endif
+
 #ifdef SIGBUS
 static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
@@ -573,41 +590,44 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __MACH__ && defined __APPLE__ && defined USE_SIGALTSTACK
-    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-    rb_thread_t *th = GET_THREAD();
-    if (ruby_stack_overflowed_p(th, info->si_addr)) {
-	ruby_thread_stack_overflow(th);
-    }
+#if defined __APPLE__
+    CHECK_STACK_OVERFLOW();
 #endif
     rb_bug("Bus Error");
 }
 #endif
 
 #ifdef SIGSEGV
+static void ruby_abort(void)
+{
+#ifdef __sun
+    /* Solaris's abort() is async signal unsafe. Of course, it is not
+     *  POSIX compliant.
+     */
+    raise(SIGABRT);
+#else
+    abort();
+#endif
+
+}
+
 static int segv_received = 0;
+extern int ruby_disable_gc_stress;
+
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
-#ifdef USE_SIGALTSTACK
-    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-    rb_thread_t *th = GET_THREAD();
-    if (ruby_stack_overflowed_p(th, info->si_addr)) {
-	ruby_thread_stack_overflow(th);
-    }
-#endif
     if (segv_received) {
-	fprintf(stderr, "SEGV received in SEGV handler\n");
-	abort();
+	char msg[] = "SEGV received in SEGV handler\n";
+	write(2, msg, sizeof(msg));
+	ruby_abort();
     }
-    else {
-	extern int ruby_disable_gc_stress;
-	segv_received = 1;
-	ruby_disable_gc_stress = 1;
-	rb_bug("Segmentation fault");
-    }
+
+    CHECK_STACK_OVERFLOW();
+
+    segv_received = 1;
+    ruby_disable_gc_stress = 1;
+    rb_bug("Segmentation fault");
 }
 #endif
 
