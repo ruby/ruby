@@ -82,10 +82,10 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   DIGESTRES_ = /
-    ([a-zA-z\-]+)
-      [\s\t]*(?:\r\n[\s\t]*)*
+    ([a-zA-Z\-]+)
+      [ \t]*(?:\r\n[ \t]*)*
       =
-      [\s\t]*(?:\r\n[\s\t]*)*
+      [ \t]*(?:\r\n[ \t]*)*
       (?:
        "((?:[^"]+|\\[\x00-\x7F])*)" |
        ([!\#$%&'*+\-.0-9A-Z^_`a-z|~]+)

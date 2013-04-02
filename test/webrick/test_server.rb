@@ -29,7 +29,7 @@ class TestWEBrickServer < Test::Unit::TestCase
       :StopCallback => Proc.new{ stopped += 1 },
     }
 
-    e = assert_raises(SignalException) do
+    assert_raises(SignalException) do
       TestWEBrick.start_server(Echo, config) { |server, addr, port, log|
         listener = server.listeners.first
 

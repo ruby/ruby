@@ -159,11 +159,13 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         end
 
         req = Net::HTTP::Get.new("/")
+        req["Content-Type"] = "application/x-www-form-urlencoded"
         http.request(req){|res|
           assert_equal("SSL GET / ", res.body, s_log.call + log.call)
         }
 
         req = Net::HTTP::Post.new("/")
+        req["Content-Type"] = "application/x-www-form-urlencoded"
         req.body = "post-data"
         http.request(req){|res|
           assert_equal("SSL POST / post-data", res.body, s_log.call + log.call)
