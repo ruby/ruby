@@ -1,3 +1,8 @@
+Tue Apr  2 18:49:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: Don't use Array#to_s.
+	   [ruby-core:52058] [Bug #7811] fixed by zzak (Zachary Scott).
+
 Tue Apr  2 17:38:20 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_to_s): suppress duplicated charclass warning.
