@@ -20,7 +20,23 @@
    ((__GNUC__ > (major)) ||  \
     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
-#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
+
+/*
+ * It is intentional that the condition for natstr is HAVE_LONG_LONG
+ * instead of LONG_LONG.
+ * This means q! and Q! means always the standard long long type and
+ * causes ArgumentError for platforms which has no long long type,
+ * even if the platform has an implementation specific 64bit type.
+ * This behavior is consistent with the document of pack/unpack.
+ */
+#ifdef HAVE_LONG_LONG
+static const char natstr[] = "sSiIlLqQ";
+#else
+static const char natstr[] = "sSiIlL";
+#endif
+static const char endstr[] = "sSiIlLqQ";
+
+#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4 || (defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG != 8)
 # define NATINT_PACK
 #endif
 
@@ -50,6 +66,12 @@
 # define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
 #else
 # define NATINT_LEN(type,len) ((int)sizeof(type))
+#endif
+
+#ifdef HAVE_LONG_LONG
+# define NATINT_LEN_Q NATINT_LEN(long long, 8)
+#else
+# define NATINT_LEN_Q 8
 #endif
 
 #if SIZEOF_LONG == 8
@@ -303,24 +325,30 @@ static unsigned long utf8_to_uv(const char*,long*);
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
+ *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (Q_ and Q! is available since Ruby 2.1.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *      q_, q!    | Integer | signed long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (q_ and q! is available since Ruby 2.1.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
  *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!>       |         | "S>" is same as "n"
+ *      L!> Q!>   |         | "S>" is same as "n"
  *      s!> i!>   |         | "L>" is same as "N"
- *      l!>       |         |
+ *      l!> q!>   |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
  *      s< l< q<  |         | little endian
  *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!<       |         | "S<" is same as "v"
+ *      L!< Q!<   |         | "S<" is same as "v"
  *      s!< i!<   |         | "L<" is same as "V"
- *      l!<       |         |
+ *      l!< q!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -412,9 +440,6 @@ pack_pack(VALUE ary, VALUE fmt)
 	}
 
 	{
-	    static const char natstr[] = "sSiIlL";
-	    static const char endstr[] = "sSiIlLqQ";
-
           modifiers:
 	    switch (*p) {
 	      case '_':
@@ -680,13 +705,13 @@ pack_pack(VALUE ary, VALUE fmt)
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'q':		/* signed quad (64bit) int */
-	    integer_size = 8;
+	  case 'q':		/* signed long long or int64_t */
+	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
-	  case 'Q':		/* unsigned quad (64bit) int */
-	    integer_size = 8;
+	  case 'Q':		/* unsigned long long or uint64_t */
+	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
@@ -1249,10 +1274,16 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
  *      L_, L!    | Integer | unsigned long, native endian
+ *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (Q_ and Q! is available since Ruby 2.1.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
  *      l_, l!    | Integer | signed long, native endian
+ *      q_, q!    | Integer | signed long long, native endian (ArgumentError
+ *                |         | if the platform has no long long type.)
+ *                |         | (q_ and q! is available since Ruby 2.1.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
@@ -1361,9 +1392,6 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	star = 0;
 	{
-	    static const char natstr[] = "sSiIlL";
-	    static const char endstr[] = "sSiIlLqQ";
-
           modifiers:
 	    switch (*p) {
 	      case '_':
@@ -1590,13 +1618,13 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'q':
 	    signed_p = 1;
-	    integer_size = 8;
+	    integer_size = NATINT_LEN_Q;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 
 	  case 'Q':
 	    signed_p = 0;
-	    integer_size = 8;
+	    integer_size = NATINT_LEN_Q;
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 

@@ -22,6 +22,9 @@ with all sufficient information, see the ChangeLog file.
   * misc
     * Mutex#owned? is no longer experimental.
 
+* pack/unpack (Array/String)
+  * Q! and q! directives for long long type if platform has the type. 
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * Module#ancestors

@@ -1,3 +1,13 @@
+Tue Apr  2 20:24:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c: Support Q! and q! for long long.
+	  (natstr): Moved to toplevel.  Add q and Q if there is long long type.
+	  (endstr): Moved to toplevel.
+	  (NATINT_PACK): Consider long long.
+	  (NATINT_LEN_Q): New macro.
+	  (pack_pack): Support Q! and q!.
+	  (pack_unpack): Ditto.
+
 Tue Apr  2 19:24:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/num2int/num2int.c: Define utility methods

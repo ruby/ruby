@@ -403,8 +403,15 @@ class TestPack < Test::Unit::TestCase
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q*"))
     assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q*"))
 
+    s1 = [578437695752307201, -506097522914230529].pack("q!*")
+    s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
+    assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
+    assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q!*"))
+
     assert_equal(8, [1].pack("q").bytesize)
     assert_equal(8, [1].pack("Q").bytesize)
+    assert_operator(8, :<=, [1].pack("q!").bytesize)
+    assert_operator(8, :<=, [1].pack("Q!").bytesize)
   end
 
   def test_pack_unpack_nN
