@@ -336,6 +336,7 @@ VALUE rb_sourcefilename(void);
 
 /* vm_dump.c */
 void rb_vm_bugreport(void);
+void rb_print_backtrace(void);
 
 /* vm_eval.c */
 void Init_vm_eval(void);

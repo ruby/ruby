@@ -1,3 +1,9 @@
+Tue Apr  2 16:00:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_dump.c (rb_print_backtrace): separate to ease showing C backtrace.
+
+	* internal.h (rb_print_backtrace): ditto.
+
 Tue Apr  2 15:22:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_separately): stop_auto_run of

@@ -675,6 +675,34 @@ dump_thread(void *arg)
 #endif
 
 void
+rb_print_backtrace(void)
+{
+#if HAVE_BACKTRACE
+#define MAX_NATIVE_TRACE 1024
+    static void *trace[MAX_NATIVE_TRACE];
+    int n = backtrace(trace, MAX_NATIVE_TRACE);
+    char **syms = backtrace_symbols(trace, n);
+
+    if (syms) {
+#ifdef USE_ELF
+	rb_dump_backtrace_with_lines(n, trace, syms);
+#else
+	int i;
+	for (i=0; i<n; i++) {
+	    fprintf(stderr, "%s\n", syms[i]);
+	}
+#endif
+	free(syms);
+    }
+#elif defined(_WIN32)
+    DWORD tid = GetCurrentThreadId();
+    HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
+    if (th != (HANDLE)-1)
+	WaitForSingleObject(th, INFINITE);
+#endif
+}
+
+void
 rb_vm_bugreport(void)
 {
 #ifdef __linux__
@@ -708,32 +736,8 @@ rb_vm_bugreport(void)
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
+    rb_print_backtrace();
 
-    {
-#if HAVE_BACKTRACE
-#define MAX_NATIVE_TRACE 1024
-	static void *trace[MAX_NATIVE_TRACE];
-	int n = backtrace(trace, MAX_NATIVE_TRACE);
-	char **syms = backtrace_symbols(trace, n);
-
-	if (syms) {
-#ifdef USE_ELF
-	    rb_dump_backtrace_with_lines(n, trace, syms);
-#else
-	    int i;
-	    for (i=0; i<n; i++) {
-		fprintf(stderr, "%s\n", syms[i]);
-	    }
-#endif
-	    free(syms);
-	}
-#elif defined(_WIN32)
-	DWORD tid = GetCurrentThreadId();
-	HANDLE th = (HANDLE)_beginthread(dump_thread, 0, &tid);
-	if (th != (HANDLE)-1)
-	    WaitForSingleObject(th, INFINITE);
-#endif
-    }
 
     fprintf(stderr, "\n");
 #endif /* HAVE_BACKTRACE */
