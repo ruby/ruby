@@ -5629,6 +5629,7 @@ constat_attr(int count, const int *seq, DWORD attr, DWORD default_attr)
 
 	  case 40:
 	    attr &= ~(BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED);
+	    break;
 	  case 41:
 	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_GREEN) | BACKGROUND_RED;
 	    break;
