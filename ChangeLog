@@ -113,7 +113,7 @@ Thu Mar 28 18:35:01 2013  Luis Lavena  <luislavena@gmail.com>
 Thu Mar 28 18:18:49 2013  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: raise TypeError when trying to encode nil
-	  values for Primitive instances. 
+	  values for Primitive instances.
 	* test/openssl/test_asn1.rb: Assert consistent behavior when
 	  encoding nil values: Primitives raise TypeError, Constructives
 	  raise NoMethodError.
@@ -1645,7 +1645,7 @@ Fri Apr 27 11:02:33 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Fri Apr 27 08:29:51 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* test/rinda/test_rinda.rb: fix sticks on some testsf problem 
+	* test/rinda/test_rinda.rb: fix sticks on some testsf problem
 	  [Bug #6272]
 
 Wed Apr 25 05:56:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -2405,7 +2405,7 @@ Wed Feb 15 05:03:41 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 Wed Feb 15 05:02:43 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* test/win32ole/test_err_in_callback.rb (test_err_in_callback): 
+	* test/win32ole/test_err_in_callback.rb (test_err_in_callback):
 	  skip test if ADODB.connection is not available.
 
 Wed Feb 15 04:49:23 2012  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -2426,7 +2426,7 @@ Tue Feb 14 16:52:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  see https://github.com/rdoc/rdoc/issues/87
 
 	* test/rdoc/test_rdoc_markup_pre_process.rb
-	  (TestRDocMarkupPreProcess#test_include_file, 
+	  (TestRDocMarkupPreProcess#test_include_file,
 	  TestRDocMarkupPreProcess#test_include_file_encoding_incompatible):
 	  follow above change.
 
