@@ -1,3 +1,13 @@
+Tue Apr  2 15:22:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_separately): stop_auto_run of
+	  Test::Unit::Runner to prevent auto runner use ARGV.
+
+	* test/ruby/envutil.rb (assert_separately): add $: to separate process.
+
+	* test/ruby/envutil.rb (assert_separately): fail if stderr is not
+	  empty and ignore_stderr is false.
+
 Tue Apr  2 06:46:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/num2int/num2int.c: Rename utility methods
