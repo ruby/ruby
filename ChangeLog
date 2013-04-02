@@ -7,6 +7,7 @@ Tue Apr  2 20:24:52 2013  Tanaka Akira  <akr@fsij.org>
 	  (NATINT_LEN_Q): New macro.
 	  (pack_pack): Support Q! and q!.
 	  (pack_unpack): Ditto.
+	  [ruby-dev:43970] [Feature #3946]
 
 Tue Apr  2 19:24:26 2013  Tanaka Akira  <akr@fsij.org>
 
