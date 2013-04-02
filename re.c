@@ -571,12 +571,15 @@ rb_reg_to_s(VALUE re)
 	}
 	if (*ptr == ':' && ptr[len-1] == ')') {
 	    Regexp *rp;
+	    VALUE verbose = ruby_verbose;
+	    ruby_verbose = Qfalse;
 
 	    ++ptr;
 	    len -= 2;
             err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
 			   enc, OnigDefaultSyntax, NULL);
 	    onig_free(rp);
+	    ruby_verbose = verbose;
 	}
 	if (err) {
 	    options = RREGEXP(re)->ptr->options;

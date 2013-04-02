@@ -915,6 +915,9 @@ class TestRegexp < Test::Unit::TestCase
 
     bug7471 = '[ruby-core:50344]'
     assert_warning('', bug7471) { Regexp.new('[\D]') =~ "\u3042" }
+
+    bug8151 = '[ruby-core:53649]'
+    assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
   end
 
   def test_property_warn
