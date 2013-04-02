@@ -109,26 +109,28 @@ test_fix2ulong(VALUE obj, VALUE num)
 void
 Init_num2int(void)
 {
-    rb_define_global_function("NUM2SHORT", test_num2short, 1);
-    rb_define_global_function("NUM2USHORT", test_num2ushort, 1);
+    VALUE mNum2int = rb_define_module("Num2int");
 
-    rb_define_global_function("NUM2INT", test_num2int, 1);
-    rb_define_global_function("NUM2UINT", test_num2uint, 1);
+    rb_define_module_function(mNum2int, "NUM2SHORT", test_num2short, 1);
+    rb_define_module_function(mNum2int, "NUM2USHORT", test_num2ushort, 1);
 
-    rb_define_global_function("NUM2LONG", test_num2long, 1);
-    rb_define_global_function("NUM2ULONG", test_num2ulong, 1);
+    rb_define_module_function(mNum2int, "NUM2INT", test_num2int, 1);
+    rb_define_module_function(mNum2int, "NUM2UINT", test_num2uint, 1);
+
+    rb_define_module_function(mNum2int, "NUM2LONG", test_num2long, 1);
+    rb_define_module_function(mNum2int, "NUM2ULONG", test_num2ulong, 1);
 
 #ifdef HAVE_LONG_LONG
-    rb_define_global_function("NUM2LL", test_num2ll, 1);
-    rb_define_global_function("NUM2ULL", test_num2ull, 1);
+    rb_define_module_function(mNum2int, "NUM2LL", test_num2ll, 1);
+    rb_define_module_function(mNum2int, "NUM2ULL", test_num2ull, 1);
 #endif
 
-    rb_define_global_function("FIX2SHORT", test_fix2short, 1);
+    rb_define_module_function(mNum2int, "FIX2SHORT", test_fix2short, 1);
 
-    rb_define_global_function("FIX2INT", test_fix2int, 1);
-    rb_define_global_function("FIX2UINT", test_fix2uint, 1);
+    rb_define_module_function(mNum2int, "FIX2INT", test_fix2int, 1);
+    rb_define_module_function(mNum2int, "FIX2UINT", test_fix2uint, 1);
 
-    rb_define_global_function("FIX2LONG", test_fix2long, 1);
-    rb_define_global_function("FIX2ULONG", test_fix2ulong, 1);
+    rb_define_module_function(mNum2int, "FIX2LONG", test_fix2long, 1);
+    rb_define_module_function(mNum2int, "FIX2ULONG", test_fix2ulong, 1);
 }
 

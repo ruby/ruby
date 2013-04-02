@@ -36,7 +36,7 @@ class TestNum2int < Test::Unit::TestCase
     mesg = "#{func}(#{arg.inspect})"
     out = nil
     assert_nothing_raised(mesg) {
-      out = Kernel.send(func, arg)
+      out = Num2int.send(func, arg)
     }
     assert_equal(exp, out, mesg)
   end
@@ -66,7 +66,7 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_num2i_error_internal(func, arg)
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
-      Kernel.send(func, arg)
+      Num2int.send(func, arg)
     }
   end
 
@@ -97,7 +97,7 @@ class TestNum2int < Test::Unit::TestCase
     mesg = "#{func}(#{arg.inspect})"
     out = nil
     assert_nothing_raised(mesg) {
-      out = Kernel.send(func, arg)
+      out = Num2int.send(func, arg)
     }
     assert_equal(exp, out, mesg)
   end
@@ -110,7 +110,7 @@ class TestNum2int < Test::Unit::TestCase
 
   def assert_fix2i_error_internal(func, arg)
     assert_raise(RangeError, "#{func}(#{arg.inspect})") {
-      Kernel.send(func, arg)
+      Num2int.send(func, arg)
     }
   end
 
@@ -185,7 +185,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ll, FIXNUM_MIN-1)
     assert_num2i_success(:ll, FIXNUM_MAX)
     assert_num2i_success(:ll, FIXNUM_MAX+1)
-  end if defined?(Kernel.NUM2LL)
+  end if defined?(Num2int.NUM2LL)
 
   def test_num2ull
     assert_num2i_success(:ull, 0)
@@ -198,7 +198,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, FIXNUM_MIN-1, ULLONG_MAX-FIXNUM_MAX-1)
     assert_num2i_success(:ull, FIXNUM_MAX)
     assert_num2i_success(:ull, FIXNUM_MAX+1)
-  end if defined?(Kernel.NUM2ULL)
+  end if defined?(Num2int.NUM2ULL)
 
   def test_fix2short
     assert_fix2i_success(:short, 0)

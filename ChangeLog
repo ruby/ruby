@@ -1,3 +1,10 @@
+Tue Apr  2 19:24:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/num2int/num2int.c: Define utility methods
+	  as module methods of Num2int.
+
+	* test/-ext-/num2int/test_num2int.rb: Follow the above change.
+
 Tue Apr  2 18:49:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: Don't use Array#to_s.
