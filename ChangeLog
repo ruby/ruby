@@ -1,3 +1,16 @@
+Tue Apr  2 13:13:19 2013  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c (documentation for str_encode): Explain
+	  that transcoding to the same encoding is a no-op
+	  (i.e. no exceptions, no replacements,...).
+	  [ruby-core:43557][Bug #6190]
+
+Tue Apr  2 13:13:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode_bang, encoded_dup): if nothing was
+	  transcoded, just set encoding but leave coderange unchanged as
+	  forcee_encoding.  [ruby-core:43557][Bug #6190]
+
 Tue Apr  2 13:07:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (num_exact): use to_r method only if to_int method is

@@ -1369,6 +1369,14 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(true, s.valid_encoding?)
     s << "\xff".force_encoding("utf-16be")
     assert_equal(false, s.valid_encoding?, bug4018)
+
+    bug6190 = '[ruby-core:43557]'
+    s = "\xe9"
+    s = s.encode("utf-8", "utf-8")
+    assert_equal(false, s.valid_encoding?, bug6190)
+    s = "\xe9"
+    s.encode!("utf-8", "utf-8")
+    assert_equal(false, s.valid_encoding?, bug6190)
   end
 
   def test_getbyte
