@@ -1,3 +1,9 @@
+Wed Apr  3 17:11:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (constat_apply): pass through unknown sequence which
+	  starts with ESC but is not followed by a bracket.  [ruby-core:53879]
+	  [Bug #8201]
+
 Wed Apr  3 16:35:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_eq): hide intermediate Bignums not just freeing
