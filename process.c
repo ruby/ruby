@@ -2349,6 +2349,12 @@ static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *er
  *  The standard shell means always <code>"/bin/sh"</code> on Unix-like systems,
  *  <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on Windows NT series, and
  *  similar.
+ *  If _commandline_ is simple enough,
+ *  no meta characters, no shell reserved word and no special built-in,
+ *  Ruby invokes the command directly without shell.
+ *  You can force shell invocation by adding ";" for _commandline_ (because ";" is a meta characetr).
+ *  Note that this behavior is observable by pid obtained
+ *  (return value of spawn() and IO#pid for IO.popen) is the pid of the invoked command, not shell.
  *
  *  If two or more +string+ given,
  *  the first is taken as a command name and

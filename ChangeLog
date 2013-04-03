@@ -1,3 +1,9 @@
+Wed Apr  3 20:52:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: Describe the behavior which Ruby invokes a commandline
+	  directly without shell if the commandline is simple enough.
+	  [ruby-core:50459] [Bug #7489]
+
 Wed Apr  3 20:27:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/extmk.rb (extmake): Invoke Logging::log_close in a ensure
