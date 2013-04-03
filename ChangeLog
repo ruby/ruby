@@ -1,3 +1,7 @@
+Thu Apr  4 03:25:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): fix can't create from bn.
+
 Wed Apr  3 22:09:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Test functions and libraries after headers.
