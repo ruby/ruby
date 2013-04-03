@@ -2,27 +2,6 @@ require 'mkmf'
 
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
-case RUBY_PLATFORM
-when /(ms|bcc)win(32|64)|mingw/
-  test_func = "WSACleanup"
-  have_library("ws2_32", "WSACleanup")
-when /cygwin/
-  test_func = "socket"
-when /beos/
-  test_func = "socket"
-  have_library("net", "socket")
-when /haiku/
-  test_func = "socket"
-  have_library("network", "socket")
-when /i386-os2_emx/
-  test_func = "socket"
-  have_library("socket", "socket")
-else
-  test_func = "socket"
-  have_library("nsl", "t_open") # SunOS
-  have_library("socket", "socket") # SunOS
-end
-
 headers = []
 unless $mswin or $bccwin or $mingw
   headers = %w<sys/types.h netdb.h string.h sys/socket.h netinet/in.h>
@@ -82,6 +61,27 @@ have_type("struct ipv6_mreq", headers) # RFC 3493
 
 have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
 have_struct_member('struct msghdr', 'msg_accrights', headers)
+
+case RUBY_PLATFORM
+when /(ms|bcc)win(32|64)|mingw/
+  test_func = "WSACleanup"
+  have_library("ws2_32", "WSACleanup", headers)
+when /cygwin/
+  test_func = "socket"
+when /beos/
+  test_func = "socket"
+  have_library("net", "socket", headers)
+when /haiku/
+  test_func = "socket"
+  have_library("network", "socket", headers)
+when /i386-os2_emx/
+  test_func = "socket"
+  have_library("socket", "socket", headers)
+else
+  test_func = "socket"
+  have_library("nsl", "t_open", headers) # SunOS
+  have_library("socket", "socket", headers) # SunOS
+end
 
 if have_func(test_func, headers)
 
