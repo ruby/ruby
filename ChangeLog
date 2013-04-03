@@ -1,3 +1,10 @@
+Thu Apr  4 02:27:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv-replace.rb (TCPSocket#initialize): resolve the 3rd
+	  argument only if non-nil value is given.
+	  [ruby-dev:47150] [ruby-trunk - Bug #8054] reported and analyzed by
+	  mrkn.
+
 Thu Apr  4 02:24:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo d4bad41e16e3eccd97ccce6f1f96712e557c4518.
