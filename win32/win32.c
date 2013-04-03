@@ -5787,9 +5787,19 @@ constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
 	WCHAR wc = *ptr++;
 	if (wc == 0x1b) {
 	    rest = *lenp - len - 1;
+	    if (s->vt100.state == constat_esc) {
+		rest++;		/* reuse this ESC */
+	    }
+	    s->vt100.state = constat_init;
+	    if (len > 0 && *ptr != L'[') continue;
 	    s->vt100.state = constat_esc;
 	}
-	else if (s->vt100.state == constat_esc && wc == L'[') {
+	else if (s->vt100.state == constat_esc) {
+	    if (wc != L'[') {
+		/* TODO: supply dropped ESC at beginning */
+		s->vt100.state = constat_init;
+		continue;
+	    }
 	    rest = *lenp - len - 1;
 	    if (rest > 0) --rest;
 	    s->vt100.state = constat_seq;
