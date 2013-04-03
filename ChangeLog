@@ -1,3 +1,8 @@
+Wed Apr  3 16:34:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): test as Fixnum if possible and get rid of zero
+	  length Bignum.  [ruby-core:53893] [Bug #8204]
+
 Tue Apr  2 23:56:03 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): Use

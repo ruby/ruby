@@ -1686,6 +1686,7 @@ rb_big_eq(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
+	if (bignorm(x) == y) return Qtrue;
 	y = rb_int2big(FIX2LONG(y));
 	break;
       case T_BIGNUM:
