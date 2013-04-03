@@ -386,6 +386,11 @@ module MarshalTestLib
     o = Object.new
     def o.m() end
     assert_raise(TypeError) { marshaltest(o) }
+
+    bug8043 = '[ruby-core:53206] [Bug #8043]'
+    class << o; prepend Mod1; end
+    assert_raise(TypeError, bug8043) {marshaltest(o)}
+
     o = Object.new
     c = class << o
       @v = 1

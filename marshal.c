@@ -457,12 +457,17 @@ hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
     return ST_CONTINUE;
 }
 
+#define SINGLETON_DUMP_UNABLE_P(klass) \
+    (RCLASS_M_TBL(klass)->num_entries || \
+     (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1))
+
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
     if (check && FL_TEST(klass, FL_SINGLETON)) {
-	if (RCLASS_M_TBL(klass)->num_entries ||
-	    (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1)) {
+	VALUE origin = RCLASS_ORIGIN(klass);
+	if (SINGLETON_DUMP_UNABLE_P(klass) ||
+	    (origin != klass && SINGLETON_DUMP_UNABLE_P(origin))) {
 	    rb_raise(rb_eTypeError, "singleton can't be dumped");
 	}
 	klass = RCLASS_SUPER(klass);

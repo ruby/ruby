@@ -1,3 +1,8 @@
+Thu Apr  4 02:11:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_extended): check for prepended object.
+	  [ruby-core:53206] [Bug #8043]
+
 Wed Mar 27 03:02:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_exec.c: Correct predefined macro name. This typo is introduced by
