@@ -196,6 +196,7 @@ VALUE rb_int_pred(VALUE num);
 
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+VALUE rb_obj_hide(VALUE obj);
 
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);

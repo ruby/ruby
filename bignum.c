@@ -1095,6 +1095,8 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
 
     b = power_cache_get_power(base, n1, &m1);
     bigdivmod(x, b, &q, &r);
+    rb_obj_hide(q);
+    rb_obj_hide(r);
     lh = big2str_karatsuba(q, base, ptr, (len - m1)/2,
 			   len - m1, hbase, trim);
     rb_big_resize(q, 0);

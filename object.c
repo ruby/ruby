@@ -43,6 +43,15 @@ static ID id_const_missing;
     (!SPECIAL_CONST_P(obj) && \
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
+VALUE
+rb_obj_hide(VALUE obj)
+{
+    if (!SPECIAL_CONST_P(obj)) {
+	RBASIC(obj)->klass = 0;
+    }
+    return obj;
+}
+
 /*
  *  call-seq:
  *     obj === other   -> true or false
