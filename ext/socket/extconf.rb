@@ -67,31 +67,32 @@ when /(ms|bcc)win(32|64)|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
-  test_func = "socket"
+  test_func = "socket(0,0,0)"
 when /beos/
-  test_func = "socket"
-  have_library("net", "socket", headers)
+  test_func = "socket(0,0,0)"
+  have_library("net", "socket(0,0,0)", headers)
 when /haiku/
-  test_func = "socket"
-  have_library("network", "socket", headers)
+  test_func = "socket(0,0,0)"
+  have_library("network", "socket(0,0,0)", headers)
 when /i386-os2_emx/
-  test_func = "socket"
-  have_library("socket", "socket", headers)
+  test_func = "socket(0,0,0)"
+  have_library("socket", "socket(0,0,0)", headers)
 else
-  test_func = "socket"
-  have_library("nsl", "t_open", headers) # SunOS
-  have_library("socket", "socket", headers) # SunOS
+  test_func = "socket(0,0,0)"
+  have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
+  have_library("socket", "socket(0,0,0)", headers) # SunOS
 end
 
 if have_func(test_func, headers)
 
-  have_func("sendmsg", headers)
-  have_func("recvmsg", headers)
+  have_func("sendmsg(0, (struct msghdr *)NULL, 0)", headers) # POSIX
+  have_func("recvmsg(0, (struct msghdr *)NULL, 0)", headers) # POSIX
 
-  have_func("freehostent", headers)
-  have_func("freeaddrinfo", headers)
+  have_func("freehostent((struct hostent *)NULL)", headers) # RFC 2553
+  have_func("freeaddrinfo((struct addrinfo *)NULL)", headers) # RFC 2553
 
-  if /haiku/ !~ RUBY_PLATFORM and have_func("gai_strerror", headers)
+  if /haiku/ !~ RUBY_PLATFORM and
+     have_func("gai_strerror(0)", headers) # POSIX
     if checking_for("gai_strerror() returns const pointer") {!try_compile(<<EOF)}
 #{cpp_include(headers)}
 #include <stdlib.h>
@@ -109,25 +110,27 @@ EOF
 
   have_func('inet_ntop(0, (const void *)0, (char *)0, 0)', headers) or
     have_func("inet_ntoa(*(struct in_addr *)NULL)", headers)
-  have_func('inet_pton(0, "", (void *)0)', headers) or have_func('inet_aton("", (struct in_addr *)0)', headers)
+  have_func('inet_pton(0, "", (void *)0)', headers) or
+    have_func('inet_aton("", (struct in_addr *)0)', headers)
   have_func('getservbyport(0, "")', headers)
-  have_func("getifaddrs", headers)
+  have_func("getifaddrs((struct ifaddrs **)NULL)", headers)
 
   have_func("getpeereid", headers)
 
-  have_func("getpeerucred", headers)
+  have_func("getpeerucred(0, (ucred_t **)NULL)", headers) # SunOS
 
-  have_func("if_indextoname", headers)
+  have_func('if_indextoname(0, "")', headers)
 
   have_func("hsterror", headers)
-  have_func("getipnodebyname", headers)
-  have_func("gethostbyname2", headers)
-  if !have_func("socketpair(0, 0, 0, 0)", headers) and have_func("rb_w32_socketpair(0, 0, 0, 0)", headers)
+  have_func('getipnodebyname("", 0, 0, (int *)0)', headers) # RFC 2553
+  have_func('gethostbyname2("", 0)', headers) # RFC 2133
+  if !have_func("socketpair(0, 0, 0, 0)", headers) and
+     have_func("rb_w32_socketpair(0, 0, 0, 0)", headers)
     $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
     $defs << "-DHAVE_SOCKETPAIR"
   end
   unless have_func("gethostname((char *)0, 0)", headers)
-    have_func("uname", headers)
+    have_func("uname((struct utsname *)NULL)", headers)
   end
 
   ipv6 = false
