@@ -1,3 +1,13 @@
+Wed Apr  3 18:53:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/extmk.rb (extmake): Use Logging.open to switch stdout and
+	  stderr.  Delay Logging::log_close until the failure message is
+	  written.  Write the failure message only if log file is opened.
+
+	* lib/mkmf.rb (Logging.log_opened?): New method.
+
+	  [ruby-dev:47215] [Bug #8209]
+
 Wed Apr  3 17:11:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (constat_apply): pass through unknown sequence which

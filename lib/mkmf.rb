@@ -310,6 +310,10 @@ module MakeMakefile
       @log.sync = true
     end
 
+    def self::log_opened?
+      @log and not @log.closed?
+    end
+
     def self::open
       log_open
       $stderr.reopen(@log)

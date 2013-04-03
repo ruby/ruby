@@ -193,19 +193,11 @@ def extmake(target)
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
 	  if conf
-            stdout = $stdout.dup
-            stderr = $stderr.dup
-            unless verbose?
-              $stderr.reopen($stdout.reopen(@null))
-            end
-            begin
+            Logging.open do
+              unless verbose?
+                $stderr.reopen($stdout.reopen(@null))
+              end
               load $0 = conf
-            ensure
-              Logging::log_close
-              $stderr.reopen(stderr)
-              $stdout.reopen(stdout)
-              stdout.close
-              stderr.close
             end
 	  else
 	    create_makefile(target)
@@ -235,11 +227,13 @@ def extmake(target)
         mess = "#{error}\n#{mess}"
       end
 
-      Logging::message(mess)
+      Logging::message(mess) if Logging.log_opened?
       print(mess)
       $stdout.flush
+      Logging::log_close
       return true
     end
+    Logging::log_close
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
