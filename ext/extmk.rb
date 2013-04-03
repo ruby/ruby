@@ -230,10 +230,8 @@ def extmake(target)
       Logging::message(mess) if Logging.log_opened?
       print(mess)
       $stdout.flush
-      Logging::log_close
       return true
     end
-    Logging::log_close
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
@@ -265,6 +263,7 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
+    Logging::log_close
     unless $ignore
       RbConfig.module_eval {
 	remove_const(:CONFIG)
