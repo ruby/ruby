@@ -18,6 +18,10 @@ with all sufficient information, see the ChangeLog file.
   * added environment variable:
     * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
 
+* IO
+  * extended methods:
+    * IO#seek accepts symbols (:CUR, :END, :SET) for 2nd argument.
+
 * Mutex
   * misc
     * Mutex#owned? is no longer experimental.

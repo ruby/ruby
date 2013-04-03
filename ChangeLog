@@ -1,3 +1,9 @@
+Wed Apr  3 21:23:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	 * io.c (rb_io_seek_m): Accept :CUR, :END, :SET as "whence" argument.
+	   (interpret_seek_whence): New function.
+	   [ruby-dev:45818] [Feature #6643]
+
 Wed Apr  3 20:52:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Describe the behavior which Ruby invokes a commandline

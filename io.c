@@ -148,6 +148,7 @@ static VALUE argf;
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
+static VALUE sym_SET, sym_CUR, sym_END;
 
 struct argf {
     VALUE filename, current_file;
@@ -1533,6 +1534,18 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
     return INT2FIX(0);
 }
 
+static int
+interpret_seek_whence(VALUE vwhence)
+{
+    if (vwhence == sym_SET)
+        return SEEK_SET;
+    if (vwhence == sym_CUR)
+        return SEEK_CUR;
+    if (vwhence == sym_END)
+        return SEEK_END;
+    return NUM2INT(vwhence);
+}
+
 /*
  *  call-seq:
  *     ios.seek(amount, whence=IO::SEEK_SET)  ->  0
@@ -1540,12 +1553,12 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
  *  Seeks to a given offset <i>anInteger</i> in the stream according to
  *  the value of <i>whence</i>:
  *
- *    IO::SEEK_CUR  | Seeks to _amount_ plus current position
- *    --------------+----------------------------------------------------
- *    IO::SEEK_END  | Seeks to _amount_ plus end of stream (you probably
- *                  | want a negative value for _amount_)
- *    --------------+----------------------------------------------------
- *    IO::SEEK_SET  | Seeks to the absolute location given by _amount_
+ *    :CUR or IO::SEEK_CUR  | Seeks to _amount_ plus current position
+ *    ----------------------+--------------------------------------------------
+ *    :END or IO::SEEK_END  | Seeks to _amount_ plus end of stream (you
+ *                          | probably want a negative value for _amount_)
+ *    ----------------------+--------------------------------------------------
+ *    :SET or IO::SEEK_SET  | Seeks to the absolute location given by _amount_
  *
  *  Example:
  *
@@ -1561,7 +1574,7 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
     int whence = SEEK_SET;
 
     if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
-	whence = NUM2INT(ptrname);
+	whence = interpret_seek_whence(ptrname);
     }
 
     return rb_io_seek(io, offset, whence);
@@ -4418,7 +4431,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     off_t pos;
 
     if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
-	whence = NUM2INT(ptrname);
+	whence = interpret_seek_whence(ptrname);
     }
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
@@ -11904,4 +11917,7 @@ Init_IO(void)
     sym_willneed = ID2SYM(rb_intern("willneed"));
     sym_dontneed = ID2SYM(rb_intern("dontneed"));
     sym_noreuse = ID2SYM(rb_intern("noreuse"));
+    sym_SET = ID2SYM(rb_intern("SET"));
+    sym_CUR = ID2SYM(rb_intern("CUR"));
+    sym_END = ID2SYM(rb_intern("END"));
 }

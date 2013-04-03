@@ -1514,6 +1514,26 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_seek_symwhence
+    make_tempfile {|t|
+      open(t.path) { |f|
+        f.seek(9, :SET)
+        assert_equal("az\n", f.read)
+      }
+
+      open(t.path) { |f|
+        f.seek(-4, :END)
+        assert_equal("baz\n", f.read)
+      }
+
+      open(t.path) { |f|
+        assert_equal("foo\n", f.gets)
+        f.seek(2, :CUR)
+        assert_equal("r\nbaz\n", f.read)
+      }
+    }
+  end
+
   def test_sysseek
     make_tempfile {|t|
       open(t.path) do |f|
