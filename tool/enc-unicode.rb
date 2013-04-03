@@ -187,7 +187,7 @@ def parse_age(data)
   IO.foreach(get_file('DerivedAge.txt')) do |line|
     if /^# Total code points: / =~ line
       constname = constantize_agename(current)
-			# each version matches all previous versions
+      # each version matches all previous versions
       cps.concat(data[last_constname]) if last_constname
       data[constname] = cps
       make_const(constname, cps, "Derived Age #{current}")
