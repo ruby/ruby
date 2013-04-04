@@ -2870,7 +2870,7 @@ rb_thread_variable_get(VALUE thread, VALUE id)
     GetThreadPtr(thread, th);
 
     if (rb_safe_level() >= 4 && th != GET_THREAD()) {
-	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
+	rb_raise(rb_eSecurityError, "Insecure: can't access thread locals");
     }
 
     locals = rb_iv_get(thread, "locals");
