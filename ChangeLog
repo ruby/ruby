@@ -1,3 +1,9 @@
+Thu Apr  4 16:55:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (make_struct): avoid inadvertent symbol creation.
+	  (rb_struct_aref): ditto.
+	  (rb_struct_aset): ditto.
+
 Thu Apr  4 16:54:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_set): avoid inadvertent symbol creation.
