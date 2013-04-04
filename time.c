@@ -4455,6 +4455,7 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *      %S - Second of the minute (00..60)
  *
  *      %L - Millisecond of the second (000..999)
+ *           The digits under millisecond are truncated to not produce 1000.
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
  *              %3N  milli second (3 digits)
  *              %6N  micro second (6 digits)
@@ -4464,6 +4465,8 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *              %18N atto second (18 digits)
  *              %21N zepto second (21 digits)
  *              %24N yocto second (24 digits)
+ *           The digits under the specified length are truncated to avoid
+ *           carry up.
  *
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)

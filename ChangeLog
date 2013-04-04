@@ -1,3 +1,9 @@
+Thu Apr  4 22:32:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_strftime): Describe %L and %N truncates digits under
+	  the specified length.
+	  [ruby-core:52130] [Bug #7829]
+
 Thu Apr  4 22:08:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* object.c (rb_mod_cvar_set): Reverted "avoid inadvertent
