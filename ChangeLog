@@ -1,3 +1,9 @@
+Thu Apr  4 22:08:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* object.c (rb_mod_cvar_set): Reverted "avoid inadvertent
+	  symbol creation" to avoid SEGV by
+	  Class.new.class_variable_set(1, 2).
+
 Thu Apr  4 20:07:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_write): New method.

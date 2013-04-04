@@ -2296,21 +2296,11 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id;
+    ID id = rb_to_id(iv);
 
-    if (SYMBOL_P(iv)) {
-	id = SYM2ID(iv);
-	if (!rb_is_class_id(id)) {
-	    rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an class variable name",
-			  QUOTE_ID(id));
-	}
-    }
-    else if (!rb_is_class_id(iv)) {
-	rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
-			  QUOTE(iv));
-    }
-    else {
-	id = rb_to_id(iv);
+    if (!rb_is_class_id(id)) {
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     rb_cvar_set(obj, id, val);
     return val;
