@@ -298,7 +298,11 @@ eom
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
-        res = Marshal.load(stdout.unpack("m")[0])
+        begin
+          res = Marshal.load(stdout.unpack("m")[0])
+        rescue => marshal_error
+          ignore_stderr = nil
+        end
         if res
           res.backtrace.each do |l|
             l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
@@ -312,6 +316,7 @@ eom
           assert_equal("", stderr, "assert_separately failed with error message")
         end
         assert_equal(0, status, "assert_separately failed: '#{stderr}'")
+        raise marshal_error if marshal_error
       end
 
       def assert_warning(pat, msg = nil)
