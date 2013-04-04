@@ -645,7 +645,7 @@ class Resolv
       begin
         port = rangerand(1024..65535)
         udpsock.bind(bind_host, port)
-      rescue Errno::EADDRINUSE
+      rescue Errno::EADDRINUSE, Errno::EACCES
         retry
       end
     end

@@ -1,3 +1,10 @@
+Thu Apr  4 23:45:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (bind_random_port): Rescue EACCES for SunOS.
+	  bind() on SunOS for port 2049 (nfs) and 4045 (lockd) causes
+	  EACCES with unprivileged process.  cf. PRIV_SYS_NFS in privileges(5)
+	  [ruby-core:48064] [Bug #7183] reported by Frank Meier.
+
 Thu Apr  4 23:24:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Remove condition for bcc.
