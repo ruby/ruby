@@ -8152,24 +8152,18 @@ rb_to_id(VALUE name)
 {
     VALUE tmp;
 
-    switch (TYPE(name)) {
-      default:
-	tmp = rb_check_string_type(name);
-	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol",
-		     RSTRING_PTR(tmp));
-	}
-	name = tmp;
-	/* fall through */
-      case T_STRING:
-	name = rb_str_intern(name);
-	/* fall through */
-      case T_SYMBOL:
+    if (SYMBOL_P(name)) {
 	return SYM2ID(name);
     }
-
-    UNREACHABLE;
+    if (!RB_TYPE_P(name, T_STRING)) {
+	tmp = rb_check_string_type(name);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
+		     name);
+	}
+	name = tmp;
+    }
+    return rb_intern_str(name);
 }
 
 /*

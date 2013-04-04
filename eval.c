@@ -34,6 +34,10 @@ VALUE rb_eSysStackError;
 #include "eval_error.c"
 #include "eval_jump.c"
 
+#define CLASS_OR_MODULE_P(obj) \
+    (!SPECIAL_CONST_P(obj) && \
+     (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
+
 /* Initializes the Ruby VM and builtin libraries.
  * @retval 0 if succeeded.
  * @retval non-zero an error occured.
@@ -402,13 +406,17 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 void
 rb_frozen_class_p(VALUE klass)
 {
-    const char *desc = "something(?!)";
-
+    if (SPECIAL_CONST_P(klass)) {
+      noclass:
+	Check_Type(klass, T_CLASS);
+    }
     if (OBJ_FROZEN(klass)) {
+	const char *desc;
+
 	if (FL_TEST(klass, FL_SINGLETON))
 	    desc = "object";
 	else {
-	    switch (TYPE(klass)) {
+	    switch (BUILTIN_TYPE(klass)) {
 	      case T_MODULE:
 	      case T_ICLASS:
 		desc = "module";
@@ -416,6 +424,8 @@ rb_frozen_class_p(VALUE klass)
 	      case T_CLASS:
 		desc = "class";
 		break;
+	      default:
+		goto noclass;
 	    }
 	}
 	rb_error_frozen(desc);
@@ -953,13 +963,8 @@ rb_frame_pop(void)
 static VALUE
 rb_mod_append_features(VALUE module, VALUE include)
 {
-    switch (TYPE(include)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(include)) {
 	Check_Type(include, T_CLASS);
-	break;
     }
     rb_include_module(include, module);
 
@@ -1006,13 +1011,8 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_prepend_features(VALUE module, VALUE prepend)
 {
-    switch (TYPE(prepend)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(prepend)) {
 	Check_Type(prepend, T_CLASS);
-	break;
     }
     rb_prepend_module(prepend, module);
 

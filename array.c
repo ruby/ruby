@@ -1839,13 +1839,12 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 	    rb_str_buf_append(result, sep);
 
 	val = RARRAY_PTR(ary)[i];
-	switch (TYPE(val)) {
-	  case T_STRING:
+	if (RB_TYPE_P(val, T_STRING)) {
 	  str_join:
 	    rb_str_buf_append(result, val);
 	    *first = FALSE;
-	    break;
-	  case T_ARRAY:
+	}
+	else if (RB_TYPE_P(val, T_ARRAY)) {
 	    obj = val;
 	  ary_join:
 	    if (val == ary) {
@@ -1860,8 +1859,8 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		args[3] = (VALUE)first;
 		rb_exec_recursive(recursive_join, obj, (VALUE)args);
 	    }
-	    break;
-	  default:
+	}
+	else {
 	    tmp = rb_check_string_type(val);
 	    if (!NIL_P(tmp)) {
 		val = tmp;
