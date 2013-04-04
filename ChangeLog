@@ -1,3 +1,11 @@
+Thu Apr  4 09:44:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): use TARGET_ENTRY to specify an entry point
+	  instead of TARGET which may contain non-identifer characters.
+
+	* lib/mkmf.rb (create_makefile): add TARGET_NAME which is the first
+	  part consists of only word characters.  [ruby-core:46248][Bug #6709]
+
 Tue Apr  2 13:13:19 2013  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c (documentation for str_encode): Explain

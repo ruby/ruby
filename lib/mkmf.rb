@@ -1925,7 +1925,7 @@ def create_makefile(target, srcprefix = nil)
         makedef = %{-pe "$_.sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
       end
     else
-      makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}' + 'Init_$(TARGET)'.sub(/\\..*\\z/,'')"}
+      makedef = %{-e "puts 'EXPORTS', '$(TARGET_ENTRY)'"}
     end
     if makedef
       $cleanfiles << '$(DEFFILE)'
@@ -1969,6 +1969,8 @@ LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs.join(" ")}
 TARGET = #{target}
+TARGET_NAME = #{target && target[/\A\w+/]}
+TARGET_ENTRY = #{EXPORT_PREFIX || ''}Init_$(TARGET_NAME)
 DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
