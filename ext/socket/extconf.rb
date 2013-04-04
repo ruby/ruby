@@ -3,7 +3,7 @@ require 'mkmf'
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
 headers = []
-unless $mswin or $bccwin or $mingw
+unless $mswin or $mingw
   headers = %w<sys/types.h netdb.h string.h sys/socket.h netinet/in.h>
 end
 
@@ -63,7 +63,7 @@ have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mi
 have_struct_member('struct msghdr', 'msg_accrights', headers)
 
 case RUBY_PLATFORM
-when /(ms|bcc)win(32|64)|mingw/
+when /mswin(32|64)|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
