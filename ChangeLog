@@ -1,3 +1,8 @@
+Thu Apr  4 16:51:29 2013  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* thread_pthread.c: Fixes wrong scopes of #if USE_SLEEPY_TIMER_THREAD
+	  .. #endif sections.  This fixes a build error on NativeClient.
+
 Wed Apr  3 17:25:31 2013  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* thread_pthread.c (ruby_init_stack): Avoid using uninitialized value.
