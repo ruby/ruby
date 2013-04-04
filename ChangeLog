@@ -1,3 +1,8 @@
+Thu Apr  4 11:33:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_to_i): Use bn2hex to speed up.
+	  In general, binary to/from decimal needs extra cost.
+
 Thu Apr  4 07:24:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Specify arguments to test functions.

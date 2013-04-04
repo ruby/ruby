@@ -226,10 +226,10 @@ ossl_bn_to_i(VALUE self)
 
     GetBN(self, bn);
 
-    if (!(txt = BN_bn2dec(bn))) {
+    if (!(txt = BN_bn2hex(bn))) {
 	ossl_raise(eBNError, NULL);
     }
-    num = rb_cstr_to_inum(txt, 10, Qtrue);
+    num = rb_cstr_to_inum(txt, 16, Qtrue);
     OPENSSL_free(txt);
 
     return num;
