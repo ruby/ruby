@@ -1,3 +1,9 @@
+Thu Apr  4 16:17:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (miniruby, ruby): move MAINLIBC because linker arguments
+	  must appear after object files with newer versions of gcc.  patch by
+	  tmm1 (Aman Gupta) in [ruby-core:53121] [Bug #8009]
+
 Thu Apr  4 09:44:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): use TARGET_ENTRY to specify an entry point
