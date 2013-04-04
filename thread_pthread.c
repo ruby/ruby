@@ -588,6 +588,23 @@ static struct {
 extern void *STACK_END_ADDRESS;
 #endif
 
+enum {
+    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
+    RUBY_STACK_SPACE_RATIO = 5
+};
+
+static size_t
+space_size(size_t stack_size)
+{
+    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
+    if (space_size > RUBY_STACK_SPACE_LIMIT) {
+	return RUBY_STACK_SPACE_LIMIT;
+    }
+    else {
+	return space_size;
+    }
+}
+
 #undef ruby_init_stack
 /* Set stack bottom of Ruby implementation.
  *
@@ -618,13 +635,21 @@ ruby_init_stack(volatile VALUE *addr
     }
 #endif
     {
-	size_t size = 0;
-	size_t space = 0;
+#if defined(PTHREAD_STACK_DEFAULT)
+# if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
+#  error "PTHREAD_STACK_DEFAULT is too small"
+# endif
+	size_t size = PTHREAD_STACK_DEFAULT;
+#else
+	size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
+#endif
+	size_t space = space_size(size);
 #if MAINSTACKADDR_AVAILABLE
 	void* stackaddr;
 	STACK_GROW_DIR_DETECTION;
-	get_stack(&stackaddr, &size);
-	space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
+	if (get_stack(&stackaddr, &size) == 0) {
+            space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
+        }
 	native_main_thread.stack_maxsize = size - space;
 #elif defined(HAVE_GETRLIMIT)
 	int pagesize = getpagesize();
@@ -829,23 +854,6 @@ use_cached_thread(rb_thread_t *th)
     }
 #endif
     return result;
-}
-
-enum {
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
-    RUBY_STACK_SPACE_RATIO = 5
-};
-
-static size_t
-space_size(size_t stack_size)
-{
-    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
-    if (space_size > RUBY_STACK_SPACE_LIMIT) {
-	return RUBY_STACK_SPACE_LIMIT;
-    }
-    else {
-	return space_size;
-    }
 }
 
 static int
