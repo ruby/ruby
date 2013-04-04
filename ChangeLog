@@ -1,3 +1,9 @@
+Thu Apr  4 16:54:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_set): avoid inadvertent symbol creation.
+	  (rb_obj_ivar_set): ditto.
+	  (rb_mod_cvar_set): ditto.
+
 Thu Apr  4 15:46:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_inject): avoid inadvertent symbol creation.

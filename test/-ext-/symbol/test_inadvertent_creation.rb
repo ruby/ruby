@@ -193,5 +193,26 @@ module Test_Symbol
       assert_raise(NoMethodError) {[1, 2].inject(name)}
       assert_not_send([Bug::Symbol, :interned?, name])
     end
+
+    def test_module_const_set
+      name = noninterned_name
+      mod = Module.new
+      assert_raise(NameError) {mod.const_set(name, true)}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_module_cvar_set
+      name = noninterned_name
+      mod = Module.new
+      assert_raise(NameError) {mod.class_variable_set(name, true)}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_object_ivar_set
+      name = noninterned_name
+      obj = Object.new
+      assert_raise(NameError) {obj.instance_variable_set(name, true)}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
   end
 end
