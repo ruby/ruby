@@ -336,7 +336,7 @@ rb_long2int_inline(long n)
 #define MODET2NUM(v) INT2NUM(v)
 #endif
 
-#define FIX2LONG(x) (long)RSHIFT((SIGNED_VALUE)(x),1)
+#define FIX2LONG(x) ((long)RSHIFT((SIGNED_VALUE)(x),1))
 #define FIX2ULONG(x) ((unsigned long)FIX2LONG(x))
 #define FIXNUM_P(f) (((int)(SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) < FIXNUM_MAX+1)

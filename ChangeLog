@@ -1,3 +1,7 @@
+Thu Apr  4 22:53:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (FIX2LONG): Parenthesize the macro body.
+
 Thu Apr  4 22:32:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_strftime): Describe %L and %N truncates digits under
