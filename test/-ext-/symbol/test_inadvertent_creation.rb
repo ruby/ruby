@@ -159,5 +159,33 @@ module Test_Symbol
       assert_equal(name, e.name)
       assert_equal([Feature5112], e.args)
     end
+
+    def test_thread_aref
+      Thread.current[:test] = nil
+      name = noninterned_name
+      assert_nil(Thread.current[name])
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_thread_key?
+      Thread.current[:test] = nil
+      name = noninterned_name
+      assert_not_send([Thread.current, :key?, name])
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_thread_variable_get
+      Thread.current.thread_variable_set(:test, nil)
+      name = noninterned_name
+      assert_nil(Thread.current.thread_variable_get(name))
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
+
+    def test_thread_variable?
+      Thread.current.thread_variable_set(:test, nil)
+      name = noninterned_name
+      assert_not_send([Thread.current, :thread_variable?, name])
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
   end
 end

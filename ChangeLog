@@ -1,3 +1,10 @@
+Thu Apr  4 14:37:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_aref): avoid inadvertent symbol creation.
+	  (rb_thread_variable_get): ditto.
+	  (rb_thread_key_p): ditto.
+	  (rb_thread_variable_p): ditto.
+
 Thu Apr  4 11:33:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_to_i): Use bn2hex to speed up.

@@ -2784,9 +2784,11 @@ rb_thread_local_aref(VALUE thread, ID id)
  */
 
 static VALUE
-rb_thread_aref(VALUE thread, VALUE id)
+rb_thread_aref(VALUE thread, VALUE key)
 {
-    return rb_thread_local_aref(thread, rb_to_id(id));
+    ID id = rb_check_id(&key);
+    if (!id) return Qnil;
+    return rb_thread_local_aref(thread, id);
 }
 
 VALUE
@@ -2862,10 +2864,11 @@ rb_thread_aset(VALUE self, VALUE id, VALUE val)
  */
 
 static VALUE
-rb_thread_variable_get(VALUE thread, VALUE id)
+rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
     rb_thread_t *th;
+    ID id = rb_check_id(&key);
 
     GetThreadPtr(thread, th);
 
@@ -2873,8 +2876,9 @@ rb_thread_variable_get(VALUE thread, VALUE id)
 	rb_raise(rb_eSecurityError, "Insecure: can't access thread locals");
     }
 
+    if (!id) return Qnil;
     locals = rb_iv_get(thread, "locals");
-    return rb_hash_aref(locals, ID2SYM(rb_to_id(id)));
+    return rb_hash_aref(locals, ID2SYM(id));
 }
 
 /*
@@ -2922,11 +2926,11 @@ static VALUE
 rb_thread_key_p(VALUE self, VALUE key)
 {
     rb_thread_t *th;
-    ID id = rb_to_id(key);
+    ID id = rb_check_id(&key);
 
     GetThreadPtr(self, th);
 
-    if (!th->local_storage) {
+    if (!id || !th->local_storage) {
 	return Qfalse;
     }
     if (st_lookup(th->local_storage, id, 0)) {
@@ -3043,13 +3047,16 @@ static VALUE
 rb_thread_variable_p(VALUE thread, VALUE key)
 {
     VALUE locals;
+    ID id = rb_check_id(&key);
+
+    if (!id) return Qfalse;
 
     locals = rb_iv_get(thread, "locals");
 
     if (!RHASH(locals)->ntbl)
         return Qfalse;
 
-    if (st_lookup(RHASH(locals)->ntbl, ID2SYM(rb_to_id(key)), 0)) {
+    if (st_lookup(RHASH(locals)->ntbl, ID2SYM(id), 0)) {
 	return Qtrue;
     }
 
