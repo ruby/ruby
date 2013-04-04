@@ -17,6 +17,10 @@
 
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
+VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
+
 VALUE rb_mEnumerable;
 
 static ID id_next;
@@ -527,6 +531,7 @@ static VALUE
 inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
 {
     NODE *memo = RNODE(p);
+    VALUE name;
 
     ENUM_WANT_SVALUE();
 
@@ -534,8 +539,14 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
 	memo->u2.argc = 1;
 	memo->u1.value = i;
     }
+    else if (SYMBOL_P(name = memo->u3.value)) {
+	memo->u1.value = rb_funcall(memo->u1.value, SYM2ID(name), 1, i);
+    }
     else {
-	memo->u1.value = rb_funcall(memo->u1.value, memo->u3.id, 1, i);
+	VALUE args[2];
+	args[0] = name;
+	args[1] = i;
+	memo->u1.value = rb_f_send(numberof(args), args, memo->u1.value);
     }
     return Qnil;
 }
@@ -589,6 +600,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
     NODE *memo;
     VALUE init, op;
     VALUE (*iter)(VALUE, VALUE, int, VALUE*) = inject_i;
+    ID id;
 
     switch (rb_scan_args(argc, argv, "02", &init, &op)) {
       case 0:
@@ -597,7 +609,8 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	if (rb_block_given_p()) {
 	    break;
 	}
-	op = (VALUE)rb_to_id(init);
+	id = rb_check_id(&init);
+	op = id ? ID2SYM(id) : init;
 	argc = 0;
 	init = Qnil;
 	iter = inject_op_i;
@@ -606,7 +619,8 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	if (rb_block_given_p()) {
 	    rb_warning("given block not used");
 	}
-	op = (VALUE)rb_to_id(op);
+	id = rb_check_id(&op);
+	if (id) op = ID2SYM(id);
 	iter = inject_op_i;
 	break;
     }

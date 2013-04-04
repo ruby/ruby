@@ -1,3 +1,7 @@
+Thu Apr  4 15:46:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_inject): avoid inadvertent symbol creation.
+
 Thu Apr  4 14:37:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_aref): avoid inadvertent symbol creation.

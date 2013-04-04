@@ -187,5 +187,11 @@ module Test_Symbol
       assert_not_send([Thread.current, :thread_variable?, name])
       assert_not_send([Bug::Symbol, :interned?, name])
     end
+
+    def test_enumerable_inject_op
+      name = noninterned_name
+      assert_raise(NoMethodError) {[1, 2].inject(name)}
+      assert_not_send([Bug::Symbol, :interned?, name])
+    end
   end
 end
