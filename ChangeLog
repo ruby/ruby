@@ -1,3 +1,9 @@
+Thu Apr  4 20:07:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_write): New method.
+	  (path_binwrite): Ditto.
+	  [ruby-core:49468] [Feature #7378]
+
 Thu Apr  4 16:51:29 2013  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* thread_pthread.c: Fixes wrong scopes of #if USE_SLEEPY_TIMER_THREAD

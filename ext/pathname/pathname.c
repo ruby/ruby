@@ -346,6 +346,48 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   pathname.write(string, [offset] )   => fixnum
+ *   pathname.write(string, [offset], open_args )   => fixnum
+ *
+ * Writes +contents+ to the file.
+ *
+ * See IO.write.
+ *
+ */
+static VALUE
+path_write(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("write"), 1+n, args);
+}
+
+/*
+ * call-seq:
+ *   pathname.binwrite(string, [offset] )   => fixnum
+ *   pathname.binwrite(string, [offset], open_args )   => fixnum
+ *
+ * Writes +contents+ to the file, opening it in binary mode.
+ *
+ * See IO.binwrite.
+ *
+ */
+static VALUE
+path_binwrite(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[4];
+    int n;
+
+    args[0] = get_strpath(self);
+    n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
+    return rb_funcall2(rb_cIO, rb_intern("binwrite"), 1+n, args);
+}
+
+/*
+ * call-seq:
  *   pathname.readlines(sep=$/ [, open_args])     -> array
  *   pathname.readlines(limit [, open_args])      -> array
  *   pathname.readlines(sep, limit [, open_args]) -> array
@@ -1334,6 +1376,8 @@ Init_pathname()
     rb_define_method(rb_cPathname, "read", path_read, -1);
     rb_define_method(rb_cPathname, "binread", path_binread, -1);
     rb_define_method(rb_cPathname, "readlines", path_readlines, -1);
+    rb_define_method(rb_cPathname, "write", path_write, -1);
+    rb_define_method(rb_cPathname, "binwrite", path_binwrite, -1);
     rb_define_method(rb_cPathname, "sysopen", path_sysopen, -1);
     rb_define_method(rb_cPathname, "atime", path_atime, 0);
     rb_define_method(rb_cPathname, "ctime", path_ctime, 0);

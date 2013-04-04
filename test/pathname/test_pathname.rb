@@ -716,6 +716,22 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_write
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.write "abc"
+      assert_equal("abc", path.read)
+    }
+  end
+
+  def test_binwrite
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("a")
+      path.binwrite "abc\x80"
+      assert_equal("abc\x80".b, path.binread)
+    }
+  end
+
   def test_sysopen
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.write "abc" }

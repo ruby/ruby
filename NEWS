@@ -41,6 +41,11 @@ with all sufficient information, see the ChangeLog file.
 * Net::SMTP
   * Added Net::SMTP#rset to implement the RSET command
 
+* Pathname
+  * New methods:
+    * Pathname#write
+    * Pathname#binwrite
+
 * Rinda::RingServer, Rinda::RingFinger
   * Rinda now supports multicast sockets.  See Rinda::RingServer and
     Rinda::RingFinger for details.
