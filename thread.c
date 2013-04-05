@@ -2803,12 +2803,13 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
     if (OBJ_FROZEN(thread)) {
 	rb_error_frozen("thread locals");
     }
-    if (!th->local_storage) {
-	th->local_storage = st_init_numtable();
-    }
     if (NIL_P(val)) {
+	if (!th->local_storage) return Qnil;
 	st_delete_wrap(th->local_storage, id);
 	return Qnil;
+    }
+    if (!th->local_storage) {
+	th->local_storage = st_init_numtable();
     }
     st_insert(th->local_storage, id, val);
     return val;
