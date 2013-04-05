@@ -1,3 +1,9 @@
+Sat Apr  6 01:21:56 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (cloexec_accept): Fix a compile error on
+	  Debian GNU/kFreeBSD.  Consider HAVE_ACCEPT4 is defined
+	  but SOCK_CLOEXEC is not defined.
+
 Sat Apr  6 00:19:30 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* load.c (features_index_add): use rb_str_subseq() to specify C string
