@@ -51,4 +51,10 @@ src
   def test_getch_nocbreak
     assert_raise(Timeout::Error) {run_curses("nocbreak; getch", "a")}
   end
+  def test_getch_crmode
+    assert_equal("a", run_curses("crmode; getch", "a"))
+  end
+  def test_getch_nocrmode
+    assert_raise(Timeout::Error) {run_curses("nocrmode; getch", "a")}
+  end
 end if defined? TestCurses and defined? PTY

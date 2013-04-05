@@ -1,3 +1,8 @@
+Fri Apr  5 13:22:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (Init_curses): fix implementation function,
+	  crmode should be same as cbreak.  [ruby-core:54013] [Bug #8222]
+
 Fri Apr  5 12:06:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/curses/hello.rb: Typo in Curses example by Drew Blas
