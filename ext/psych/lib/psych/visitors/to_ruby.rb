@@ -1,4 +1,5 @@
 require 'psych/scalar_scanner'
+require 'psych/exception'
 
 unless defined?(Regexp::NOENCODING)
   Regexp::NOENCODING = 32

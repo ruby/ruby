@@ -1,3 +1,11 @@
+Sat Apr  6 02:54:08 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/exception.rb: there should be only one exception
+	  base class. Fixes tenderlove/psych #125
+	* ext/psych/lib/psych.rb: require the correct exception class
+	* ext/psych/lib/psych/syntax_error.rb: ditto
+	* ext/psych/lib/psych/visitors/to_ruby.rb: ditto
+
 Sat Apr  6 02:30:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (new_defined): remove all extra parentheses, and return
