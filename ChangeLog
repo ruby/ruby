@@ -1,3 +1,8 @@
+Fri Apr  5 12:06:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/curses/hello.rb: Typo in Curses example by Drew Blas
+	  [Fixes GH-273]
+
 Thu Apr  4 23:45:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (bind_random_port): Rescue EACCES for SunOS.
