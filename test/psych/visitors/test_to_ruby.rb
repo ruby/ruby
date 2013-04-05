@@ -18,8 +18,8 @@ module Psych
         assert_equal 'bar', o.instance_variable_get(:@foo)
       end
 
-      def test_awesome
-        Psych.load('1900-01-01T00:00:00+00:00')
+      def test_tz_00_00_loads_without_error
+        assert Psych.load('1900-01-01T00:00:00+00:00')
       end
 
       def test_legacy_struct
