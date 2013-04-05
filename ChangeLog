@@ -1,3 +1,9 @@
+Sat Apr  6 02:30:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_defined): remove all extra parentheses, and return
+	  "nil" for defined? with empty expression.
+	  [ruby-core:54024] [Bug #8224]
+
 Sat Apr  6 02:06:04 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: correctly register

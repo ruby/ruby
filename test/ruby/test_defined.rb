@@ -89,6 +89,13 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("true", defined?(true))
     assert_equal("false", defined?(false))
     assert_equal("expression", defined?(1))
+
+    bug8224 = '[ruby-core:54024] [Bug #8224]'
+    (1..3).each do |level|
+      expr = "("*level+")"*level
+      assert_equal("nil", eval("defined? #{expr}"), "#{bug8224} defined? #{expr}")
+      assert_equal("nil", eval("defined?(#{expr})"), "#{bug8224} defined?(#{expr})")
+    end
   end
 
   def test_defined_impl_specific
