@@ -1,3 +1,8 @@
+Fri Apr  5 19:39:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): fix of defined? with empty
+	  expression.  [ruby-core:53999] [Bug #8220]
+
 Fri Apr  5 13:22:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c (Init_curses): fix implementation function,

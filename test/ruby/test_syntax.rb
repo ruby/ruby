@@ -13,6 +13,11 @@ class TestSyntax < Test::Unit::TestCase
     eom
   end
 
+  def test_defined_empty_argument
+    bug8220 = '[ruby-core:53999] [Bug #8220]'
+    assert_ruby_status(%w[--disable-gem], 'puts defined? ()', bug8220)
+  end
+
   def test_must_ascii_compatible
     require 'tempfile'
     f = Tempfile.new("must_ac_")
