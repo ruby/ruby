@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/config.h"
+#include "ruby/missing.h"
 #include "addr2line.h"
 
 #include <stdio.h>
