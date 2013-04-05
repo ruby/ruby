@@ -1,3 +1,9 @@
+Sat Apr  6 03:11:07 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix symbol keys in coder
+	  emission.  Thanks @tjwallace
+	* test/psych/test_coder.rb: test for change
+
 Sat Apr  6 02:54:08 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/exception.rb: there should be only one exception

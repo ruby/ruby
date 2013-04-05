@@ -463,7 +463,7 @@ module Psych
         when :map
           @emitter.start_mapping nil, c.tag, c.implicit, c.style
           c.map.each do |k,v|
-            @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
+            accept k
             accept v
           end
           @emitter.end_mapping
