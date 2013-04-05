@@ -114,7 +114,7 @@ void xfree(void*);
 #define STRINGIZE0(expr) #expr
 #endif
 
-#ifdef HAVE_LONG_LONG 1
+#ifdef HAVE_LONG_LONG
 # define HAVE_TRUE_LONG_LONG 1
 #endif
 
