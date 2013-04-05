@@ -180,15 +180,25 @@ module Psych
           end
 
         when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
-          klass = resolve_class($1)
-          members = Hash[*o.children.map { |c| accept c }]
-          string = members.delete 'str'
+          klass   = resolve_class($1)
+          members = {}
+          string  = nil
 
-          if klass
-            string = klass.allocate.replace string
-            register(o, string)
+          o.children.each_slice(2) do |k,v|
+            key   = accept k
+            value = accept v
+
+            if key == 'str'
+              if klass
+                string = klass.allocate.replace value
+              else
+                string = value
+              end
+              register(o, string)
+            else
+              members[key] = value
+            end
           end
-
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
         when /^!ruby\/array:(.*)$/
           klass = resolve_class($1)

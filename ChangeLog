@@ -1,3 +1,10 @@
+Sat Apr  6 02:06:04 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: correctly register
+	  self-referential strings. Fixes tenderlove/psych #135
+
+	* test/psych/test_string.rb: appropriate test.
+
 Sat Apr  6 01:21:56 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (cloexec_accept): Fix a compile error on
