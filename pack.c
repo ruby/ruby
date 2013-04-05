@@ -69,7 +69,7 @@ static const char endstr[] = "sSiIlLqQ";
 #endif
 
 #ifdef HAVE_LONG_LONG
-# define NATINT_LEN_Q NATINT_LEN(long long, 8)
+# define NATINT_LEN_Q NATINT_LEN(LONG_LONG, 8)
 #else
 # define NATINT_LEN_Q 8
 #endif
