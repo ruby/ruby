@@ -434,7 +434,7 @@ RUBY_CPPOUTFILE
 AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 
-cc_version_option=
+cc_version=
 for option in --version -v -V -qversion; do
     $CC $option > /dev/null 2>&1 || continue
     cc_version='$(CC) '$option
@@ -765,13 +765,7 @@ if test "$GCC" = ""; then
     AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
 fi
 if test "$GCC" = yes; then
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-	@%:@if !(defined __GNUC__ && __GNUC__ >= 4)
-	@%:@error not GCC 4 or later
-	>>>not GCC 4 or later<<<
-	@%:@endif])],
-	[visibility_option=yes], [visibility_option=no])
-    if test "$visibility_option" = yes; then
+    if test "$gcc_major" -ge 4; then
 	RUBY_TRY_CFLAGS(-fvisibility=hidden, [visibility_option=yes], [visibility_option=no])
     fi
     AC_SUBST(WERRORFLAG, "-Werror")
