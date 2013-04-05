@@ -1,6 +1,13 @@
+Fri Apr  5 20:41:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/defines.h (HAVE_TRUE_LONG_LONG): Defined to distinguish
+	  availability of long long and availability of 64bit integer type.
+
+	* pack.c: Use HAVE_TRUE_LONG_LONG to distinguish q! and Q! support.
+
 Fri Apr  5 20:19:42 2013  Tanaka Akira  <akr@fsij.org>
 
-	* addr2line.c: include ruby/missing.h to fix compile error on Debian.
+	* addr2line.c: Include ruby/missing.h to fix compile error on Debian.
 
 Fri Apr  5 19:39:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

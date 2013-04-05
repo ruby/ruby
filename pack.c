@@ -22,21 +22,21 @@
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
 
 /*
- * It is intentional that the condition for natstr is HAVE_LONG_LONG
- * instead of LONG_LONG.
+ * It is intentional that the condition for natstr is HAVE_TRUE_LONG_LONG
+ * instead of HAVE_LONG_LONG or LONG_LONG.
  * This means q! and Q! means always the standard long long type and
  * causes ArgumentError for platforms which has no long long type,
  * even if the platform has an implementation specific 64bit type.
  * This behavior is consistent with the document of pack/unpack.
  */
-#ifdef HAVE_LONG_LONG
+#ifdef HAVE_TRUE_LONG_LONG
 static const char natstr[] = "sSiIlLqQ";
 #else
 static const char natstr[] = "sSiIlL";
 #endif
 static const char endstr[] = "sSiIlLqQ";
 
-#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4 || (defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG != 8)
+#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4 || (defined(HAVE_TRUE_LONG_LONG) && SIZEOF_LONG_LONG != 8)
 # define NATINT_PACK
 #endif
 
@@ -68,8 +68,8 @@ static const char endstr[] = "sSiIlLqQ";
 # define NATINT_LEN(type,len) ((int)sizeof(type))
 #endif
 
-#ifdef HAVE_LONG_LONG
-# define NATINT_LEN_Q NATINT_LEN(LONG_LONG, 8)
+#ifdef HAVE_TRUE_LONG_LONG
+# define NATINT_LEN_Q NATINT_LEN(long long, 8)
 #else
 # define NATINT_LEN_Q 8
 #endif
