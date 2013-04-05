@@ -22,9 +22,7 @@ extern "C" {
 #include <stdarg.h>
 #include "ruby/oniguruma.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #define ENCODING_INLINE_MAX 1023
 #define ENCODING_SHIFT (FL_USHIFT+10)
@@ -340,9 +338,7 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_AFTER_OUTPUT                      0x00020000
 /* end of flags for rb_econv_convert */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

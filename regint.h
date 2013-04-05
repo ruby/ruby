@@ -262,9 +262,7 @@ typedef unsigned int uintptr_t;
 
 #include "regenc.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifdef MIN
 #undef MIN
@@ -907,8 +905,6 @@ extern int onigenc_property_list_init P_((ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE))
 extern size_t onig_memsize P_((const regex_t *reg));
 extern size_t onig_region_memsize P_((const struct re_registers *regs));
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* ONIGURUMA_REGINT_H */

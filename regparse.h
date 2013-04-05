@@ -32,9 +32,7 @@
 
 #include "regint.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node type */
 #define NT_STR         0
@@ -360,8 +358,6 @@ extern int onig_print_names(FILE*, regex_t*);
 #endif
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* ONIGURUMA_REGPARSE_H */

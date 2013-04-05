@@ -55,9 +55,7 @@ extern "C" {
 
 #include <stdarg.h>
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -1708,9 +1706,7 @@ void ruby_sig_finalize(void);
 
 /*! @} */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

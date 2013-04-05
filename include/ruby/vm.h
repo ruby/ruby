@@ -19,9 +19,7 @@ extern "C" {
 #endif
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /* Place holder.
  *
@@ -54,9 +52,7 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  */
 void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

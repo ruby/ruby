@@ -1540,9 +1540,7 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
 }
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 void
 ruby_Init_Continuation_body(void)
@@ -1563,6 +1561,4 @@ ruby_Init_Fiber_as_Coroutine(void)
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
 }
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END

@@ -466,9 +466,7 @@ typedef struct RNode {
 		    roomof(type, VALUE)), \
      MEMO_FOR(type, value))
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
@@ -525,9 +523,7 @@ void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

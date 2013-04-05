@@ -24,9 +24,7 @@ extern "C" {
 #include "oniguruma.h"
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifndef ONIG_RUBY_M17N
 
@@ -36,9 +34,7 @@ ONIG_EXTERN OnigEncoding    OnigEncDefaultCharEncoding;
 
 #endif /* ifndef ONIG_RUBY_M17N */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

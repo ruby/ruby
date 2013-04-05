@@ -34,6 +34,11 @@ extern "C" {
 #endif
 #endif
 
+#ifndef RUBY_SYMBOL_EXPORT_BEGIN
+# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+# define RUBY_SYMBOL_EXPORT_END   /* end */
+#endif
+
 #if !defined(HAVE_STRUCT_TIMEVAL)
 struct timeval {
     time_t tv_sec;	/* seconds */
@@ -62,9 +67,7 @@ struct timezone {
 #define RUBY_EXTERN extern
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifndef HAVE_ACOSH
 RUBY_EXTERN double acosh(double);
@@ -229,9 +232,7 @@ RUBY_EXTERN int ruby_close(int);
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

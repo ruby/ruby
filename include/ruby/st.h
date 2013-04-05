@@ -14,9 +14,7 @@ extern "C" {
 
 #include "ruby/defines.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
@@ -130,9 +128,7 @@ st_index_t st_hash_end(st_index_t h);
 st_index_t st_hash_start(st_index_t h);
 #define st_hash_start(h) ((st_index_t)(h))
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

@@ -12,9 +12,7 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
 VALUE rb_iseq_compile_node(VALUE self, NODE *node);
@@ -132,8 +130,6 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 
 #define DEFAULT_SPECIAL_VAR_COUNT 2
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_COMPILE_H */

@@ -88,9 +88,12 @@ extern "C" {
 #define ANYARGS
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
+#ifndef RUBY_SYMBOL_EXPORT_BEGIN
+# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+# define RUBY_SYMBOL_EXPORT_END   /* end */
 #endif
+
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #define xmalloc ruby_xmalloc
 #define xmalloc2 ruby_xmalloc2
@@ -281,9 +284,7 @@ void rb_ia64_flushrs(void);
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

@@ -98,9 +98,7 @@ extern "C" {
 #define ONIG_EXTERN   extern
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #include <stddef.h>		/* for size_t */
 
@@ -825,9 +823,7 @@ const char* onig_version P_((void));
 ONIG_EXTERN
 const char* onig_copyright P_((void));
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #ifdef __cplusplus
 #if 0

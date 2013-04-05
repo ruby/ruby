@@ -996,13 +996,9 @@ Init_vm_backtrace(void)
 
 /* debugger API */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 struct rb_debug_inspector_struct {
     rb_thread_t *th;
