@@ -1,3 +1,12 @@
+Sat Apr  6 00:19:30 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* load.c (features_index_add): use rb_str_subseq() to specify C string
+	  position properly to fix require non ascii path.
+	  [ruby-core:53733] [Bug #8165]
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  a test for the above.
+
 Fri Apr  5 20:41:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h (HAVE_TRUE_LONG_LONG): Defined to distinguish

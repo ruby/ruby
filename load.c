@@ -247,16 +247,16 @@ features_index_add(VALUE feature, VALUE offset)
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	short_feature = rb_str_substr(feature, p + 1 - feature_str, feature_end - p - 1);
+	short_feature = rb_str_subseq(feature, p + 1 - feature_str, feature_end - p - 1);
 	features_index_add_single(short_feature, offset);
 	if (ext) {
-	    short_feature = rb_str_substr(feature, p + 1 - feature_str, ext - p - 1);
+	    short_feature = rb_str_subseq(feature, p + 1 - feature_str, ext - p - 1);
 	    features_index_add_single(short_feature, offset);
 	}
     }
     features_index_add_single(feature, offset);
     if (ext) {
-	short_feature = rb_str_substr(feature, 0, ext - feature_str);
+	short_feature = rb_str_subseq(feature, 0, ext - feature_str);
 	features_index_add_single(short_feature, offset);
     }
 }
