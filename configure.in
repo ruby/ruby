@@ -419,7 +419,7 @@ AC_SUBST(LD)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
-    RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
+    # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 else
     linker_flag=
 fi
