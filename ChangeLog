@@ -1,6 +1,11 @@
+Sat Apr  6 13:13:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_sys_fail_path): Use rb_str_inspect only
+	  for String to avoid SEGV.
+
 Sat Apr  6 12:40:16 2013  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/rubysocket.h (rsock_sys_fail_host_port) Wrap by NORETURN.
+	* ext/socket/rubysocket.h (rsock_sys_fail_host_port): Wrap by NORETURN.
 	  (rsock_sys_fail_path): Ditto.
 	  (rsock_sys_fail_sockaddr): Ditto.
 
