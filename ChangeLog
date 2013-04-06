@@ -1,3 +1,15 @@
+Sun Apr  7 03:24:36 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: use more generic type:
+	  * u_char -> unsigned char
+	  * u_short -> unsigned short
+	  * u_int -> unsigned int
+	  * u_long -> unsigned long
+	  * quad_t -> int64_t
+	  * u_quad_t -> uint64_t
+
+	* addr2line.c (imax): inline is defined by configure.
+
 Sun Apr  7 01:40:39 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-hash): New electric
