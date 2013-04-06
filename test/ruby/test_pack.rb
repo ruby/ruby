@@ -404,6 +404,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q*"))
 
     # Note: q! and Q! should not work on platform which has no long long type.
+    # Is there a such platform now?
     s1 = [578437695752307201, -506097522914230529].pack("q!*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
