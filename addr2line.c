@@ -646,6 +646,19 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
     free(lines);
 }
 
+#if defined(__sun)
+/* Solaris has different quad_t and does not have u_quad_t */
+# include "ruby/defines.h"
+# define quad_t LONG_LONG
+# define u_quad_t unsigned LONG_LONG
+/* __inline can only be used with GCC or Sun Studio 12 Update 1 or later */
+# if defined(__GNUC__)
+# elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+# else
+#  define __inline inline
+# endif
+#endif /* defined(__sun) */
+
 /* From FreeBSD's lib/libstand/printf.c */
 /*-
  * Copyright (c) 1986, 1988, 1991, 1993

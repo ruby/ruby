@@ -1,3 +1,9 @@
+Sat Apr  6 23:38:09 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* addr2line.c: quad_t and u_quad_t is not available on Solaris.
+	  __inline is not available with old compilers on Solaris.
+	  [ruby-dev:47229] [Bug #8227]
+
 Sat Apr  6 23:31:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Add one-shot multicast DNS support.
