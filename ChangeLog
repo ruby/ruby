@@ -1,3 +1,10 @@
+Sat Apr  6 23:46:54 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in (AC_CHECK_HEADERS): atomic.h for Solaris atomic_ops.
+
+	* ruby_atomic.h: Skip using Solaris10 atomic_ops on Solaris 9 or
+	  earlier if atomic.h is not available. [ruby-dev:47229] [Bug #8228]
+
 Sat Apr  6 23:40:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: Support LOC resources.
