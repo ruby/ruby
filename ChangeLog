@@ -1,3 +1,12 @@
+Sat Apr  6 19:24:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): Takes struct sockaddr
+	  and socklen_t instead of String object.
+	  (rsock_sys_fail_addrinfo_or_sockaddr): Follow the above change.
+
+	* ext/socket/rubysocket.h (rsock_sys_fail_sockaddr): Follow the above
+	  change.
+
 Sat Apr  6 14:28:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (SockAddrStringValueWithAddrinfo): New macro.

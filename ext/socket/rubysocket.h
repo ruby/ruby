@@ -342,7 +342,7 @@ void rsock_init_socket_init(void);
 
 NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));
 NORETURN(void rsock_sys_fail_path(const char *, VALUE));
-NORETURN(void rsock_sys_fail_sockaddr(const char *, VALUE addr));
+NORETURN(void rsock_sys_fail_sockaddr(const char *, struct sockaddr *addr, socklen_t len));
 NORETURN(void rsock_sys_fail_addrinfo(const char *, VALUE rai));
 NORETURN(void rsock_sys_fail_sockaddr_or_addrinfo(const char *, VALUE addr, VALUE rai));
 

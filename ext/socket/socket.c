@@ -47,14 +47,11 @@ rsock_sys_fail_path(const char *mesg, VALUE path)
 }
 
 void
-rsock_sys_fail_sockaddr(const char *mesg, VALUE addr)
+rsock_sys_fail_sockaddr(const char *mesg, struct sockaddr *addr, socklen_t len)
 {
     VALUE rai;
 
-    rai = rsock_addrinfo_new(
-            (struct sockaddr *)RSTRING_PTR(addr),
-            (socklen_t)RSTRING_LEN(addr), /* overflow should be checked already */
-            PF_UNSPEC, 0, 0, Qnil, Qnil);
+    rai = rsock_addrinfo_new(addr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
 
     rsock_sys_fail_addrinfo(mesg, rai);
 }
@@ -73,8 +70,12 @@ rsock_sys_fail_addrinfo(const char *mesg, VALUE rai)
 void
 rsock_sys_fail_addrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
 {
-    if (NIL_P(rai))
-        rsock_sys_fail_sockaddr(mesg, addr);
+    if (NIL_P(rai)) {
+        StringValue(addr);
+        rsock_sys_fail_sockaddr(mesg,
+            (struct sockaddr *)RSTRING_PTR(addr),
+            (socklen_t)RSTRING_LEN(addr)); /* overflow should be checked already */
+    }
     else
         rsock_sys_fail_addrinfo(mesg, rai);
 }
