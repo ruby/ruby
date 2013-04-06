@@ -1,3 +1,8 @@
+Sat Apr  6 11:49:35 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_sys_fail_path): Use rb_str_inspect if the
+	  path contains a NUL.
+
 Sat Apr  6 11:39:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket: Improve socket exception message to show socket address.

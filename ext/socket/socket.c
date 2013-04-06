@@ -28,9 +28,16 @@ rsock_sys_fail_host_port(const char *mesg, VALUE host, VALUE port)
 void
 rsock_sys_fail_path(const char *mesg, VALUE path)
 {
-    VALUE message = rb_sprintf("%s for \"%s\"",
-	    mesg, StringValueCStr(path));
-
+    VALUE message;
+    if (memchr(RSTRING_PTR(path), '\0', RSTRING_LEN(path))) {
+        path = rb_str_inspect(path);
+        message = rb_sprintf("%s for %s", mesg,
+                StringValueCStr(path));
+    }
+    else {
+        message = rb_sprintf("%s for \"%s\"", mesg,
+                StringValueCStr(path));
+    }
     rb_sys_fail_str(message);
 }
 
