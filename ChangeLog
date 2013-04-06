@@ -1,3 +1,8 @@
+Sat Apr  6 11:23:18 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  fix load path for encoding to run the test as stand-alone.
+
 Sat Apr  6 09:54:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (NATINT_LEN): fix definition order, must be after

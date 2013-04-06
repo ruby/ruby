@@ -73,7 +73,9 @@ class TestRequire < Test::Unit::TestCase
       open(require_path, "wb") {}
       assert_in_out_err([], <<-INPUT, %w(:ok), [], bug8165)
         # coding: #{encoding}
-        $:.replace([IO::NULL] + $:.reject {|path| path !~ /\.ext/})
+        # leave paths for require encoding objects
+        enc_path = Regexp.new(RUBY_PLATFORM)
+        $:.replace([IO::NULL] + $:.reject {|path| enc_path !~ path})
         p :ok if require '#{require_path}'
         p :ng if require '#{require_path}'
       INPUT
