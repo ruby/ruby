@@ -36,12 +36,6 @@ static const char natstr[] = "sSiIlL";
 #endif
 static const char endstr[] = "sSiIlLqQ";
 
-#ifdef NATINT_PACK
-# define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
-#else
-# define NATINT_LEN(type,len) ((int)sizeof(type))
-#endif
-
 #ifdef HAVE_TRUE_LONG_LONG
 /* It is intentional to use long long instead of LONG_LONG. */
 # define NATINT_LEN_Q NATINT_LEN(long long, 8)
@@ -73,6 +67,12 @@ static const char endstr[] = "sSiIlLqQ";
 # define BIGENDIAN_P() 1
 #else
 # define BIGENDIAN_P() 0
+#endif
+
+#ifdef NATINT_PACK
+# define NATINT_LEN(type,len) (natint?(int)sizeof(type):(int)(len))
+#else
+# define NATINT_LEN(type,len) ((int)sizeof(type))
 #endif
 
 #if SIZEOF_LONG == 8
