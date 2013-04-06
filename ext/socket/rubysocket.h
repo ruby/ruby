@@ -335,6 +335,6 @@ void rsock_init_socket_init(void);
 
 NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));
 NORETURN(void rsock_sys_fail_path(const char *, VALUE));
-NORETURN(void rsock_sys_fail_sockaddr(const char *, VALUE, VALUE));
+NORETURN(void rsock_sys_fail_sockaddr(const char *, VALUE));
 
 #endif

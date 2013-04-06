@@ -1,3 +1,10 @@
+Sat Apr  6 13:34:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): Delete 2nd argument.
+
+	* ext/socket/rubysocket.h (rsock_sys_fail_sockaddr): Follow above
+	  change.
+
 Sat Apr  6 13:13:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_sys_fail_path): Use rb_str_inspect only
