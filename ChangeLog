@@ -1,3 +1,12 @@
+Sat Apr  6 20:17:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): Renamed from
+	  rsock_sys_fail_addrinfo.
+	  (rsock_sys_fail_raddrinfo_or_sockaddr): Renamed from
+	  rsock_sys_fail_addrinfo_or_sockaddr.
+
+	* ext/socket/rubysocket.h: Follow the above change.
+
 Sat Apr  6 19:24:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_sys_fail_sockaddr): Takes struct sockaddr

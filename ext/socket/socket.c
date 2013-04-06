@@ -53,11 +53,11 @@ rsock_sys_fail_sockaddr(const char *mesg, struct sockaddr *addr, socklen_t len)
 
     rai = rsock_addrinfo_new(addr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
 
-    rsock_sys_fail_addrinfo(mesg, rai);
+    rsock_sys_fail_raddrinfo(mesg, rai);
 }
 
 void
-rsock_sys_fail_addrinfo(const char *mesg, VALUE rai)
+rsock_sys_fail_raddrinfo(const char *mesg, VALUE rai)
 {
     VALUE str, message;
 
@@ -68,7 +68,7 @@ rsock_sys_fail_addrinfo(const char *mesg, VALUE rai)
 }
 
 void
-rsock_sys_fail_addrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
+rsock_sys_fail_raddrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
 {
     if (NIL_P(rai)) {
         StringValue(addr);
@@ -77,7 +77,7 @@ rsock_sys_fail_addrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
             (socklen_t)RSTRING_LEN(addr)); /* overflow should be checked already */
     }
     else
-        rsock_sys_fail_addrinfo(mesg, rai);
+        rsock_sys_fail_raddrinfo(mesg, rai);
 }
 
 static void
@@ -384,7 +384,7 @@ sock_connect(VALUE sock, VALUE addr)
     fd = fptr->fd;
     n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
     if (n < 0) {
-	rsock_sys_fail_addrinfo_or_sockaddr("connect(2)", addr, rai);
+	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
@@ -447,7 +447,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     if (n < 0) {
         if (errno == EINPROGRESS)
             rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
-	rsock_sys_fail_addrinfo_or_sockaddr("connect(2)", addr, rai);
+	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
@@ -548,7 +548,7 @@ sock_bind(VALUE sock, VALUE addr)
     SockAddrStringValueWithAddrinfo(addr, rai);
     GetOpenFile(sock, fptr);
     if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr)) < 0)
-	rsock_sys_fail_addrinfo_or_sockaddr("bind(2)", addr, rai);
+	rsock_sys_fail_raddrinfo_or_sockaddr("bind(2)", addr, rai);
 
     return INT2FIX(0);
 }
