@@ -53,7 +53,7 @@ rsock_sys_fail_sockaddr(const char *mesg, VALUE addr)
 
     rai = rsock_addrinfo_new(
             (struct sockaddr *)RSTRING_PTR(addr),
-            RSTRING_LEN(addr),
+            (socklen_t)RSTRING_LEN(addr), /* overflow should be checked already */
             PF_UNSPEC, 0, 0, Qnil, Qnil);
 
     rsock_sys_fail_addrinfo(mesg, rai);
