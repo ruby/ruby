@@ -1255,7 +1255,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     memset(&mh, 0, sizeof(mh));
     if (!NIL_P(dest_sockaddr)) {
         mh.msg_name = RSTRING_PTR(dest_sockaddr);
-        mh.msg_namelen = RSTRING_LENINT(dest_sockaddr);
+        mh.msg_namelen = RSTRING_SOCKLEN(dest_sockaddr);
     }
     mh.msg_iovlen = 1;
     mh.msg_iov = &iov;
@@ -1264,7 +1264,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
     if (controls_str) {
         mh.msg_control = RSTRING_PTR(controls_str);
-        mh.msg_controllen = RSTRING_LENINT(controls_str);
+        mh.msg_controllen = RSTRING_SOCKLEN(controls_str);
     }
     else {
         mh.msg_control = NULL;

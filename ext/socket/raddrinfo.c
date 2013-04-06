@@ -923,7 +923,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
     else {
         StringValue(sockaddr_arg);
         sockaddr_ptr = (struct sockaddr *)RSTRING_PTR(sockaddr_arg);
-        sockaddr_len = RSTRING_LENINT(sockaddr_arg);
+        sockaddr_len = RSTRING_SOCKLEN(sockaddr_arg);
         init_addrinfo(rai, sockaddr_ptr, sockaddr_len,
                       i_pfamily, i_socktype, i_protocol,
                       canonname, inspectname);

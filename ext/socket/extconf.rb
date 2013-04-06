@@ -41,7 +41,11 @@ have_type("struct sockaddr_storage", headers)
 
 have_type("struct addrinfo", headers)
 
-have_type("socklen_t", headers)
+if have_type("socklen_t", headers)
+  if try_static_assert("sizeof(socklen_t) >= sizeof(long)", headers)
+    $defs << "-DRSTRING_SOCKLEN=(socklen_t)RSTRING_LEN"
+  end
+end
 
 have_type("struct in_pktinfo", headers) {|src|
   src.sub(%r'^/\*top\*/', '\&'"\n#if defined(IPPROTO_IP) && defined(IP_PKTINFO)") <<

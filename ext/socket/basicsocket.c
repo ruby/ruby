@@ -243,7 +243,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
       default:
 	StringValue(val);
 	v = RSTRING_PTR(val);
-	vlen = RSTRING_LENINT(val);
+	vlen = RSTRING_SOCKLEN(val);
 	break;
     }
 
@@ -555,7 +555,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
 	SockAddrStringValue(to);
 	to = rb_str_new4(to);
 	arg.to = (struct sockaddr *)RSTRING_PTR(to);
-	arg.tolen = (socklen_t)RSTRING_LENINT(to);
+	arg.tolen = RSTRING_SOCKLEN(to);
 	func = rsock_sendto_blocking;
     }
     else {

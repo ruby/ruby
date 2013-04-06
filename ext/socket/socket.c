@@ -381,7 +381,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr), 0);
+    n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0);
     if (n < 0) {
 	rsock_sys_fail_addrinfo_or_sockaddr("connect(2)", addr, rai);
     }
@@ -442,7 +442,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
-    n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr));
+    n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
         if (errno == EINPROGRESS)
             rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
@@ -546,7 +546,7 @@ sock_bind(VALUE sock, VALUE addr)
 
     SockAddrStringValueWithAddrinfo(addr, rai);
     GetOpenFile(sock, fptr);
-    if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr)) < 0)
+    if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr)) < 0)
 	rsock_sys_fail_addrinfo_or_sockaddr("bind(2)", addr, rai);
 
     return INT2FIX(0);
@@ -1096,7 +1096,7 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
 	t = AF_INET6;
     }
 #endif
-    h = gethostbyaddr(RSTRING_PTR(addr), RSTRING_LENINT(addr), t);
+    h = gethostbyaddr(RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), t);
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
@@ -1319,7 +1319,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = &ss.addr;
-        salen = RSTRING_LENINT(sa);
+        salen = RSTRING_SOCKLEN(sa);
 	goto call_nameinfo;
     }
     tmp = rb_check_array_type(sa);
@@ -1483,7 +1483,7 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_INET sockaddr");
 #endif
     }
-    host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_LENINT(addr));
+    host = rsock_make_ipaddr((struct sockaddr*)sockaddr, RSTRING_SOCKLEN(addr));
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
@@ -1550,7 +1550,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
-    path = rsock_unixpath_str(sockaddr, RSTRING_LENINT(addr));
+    path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
     OBJ_INFECT(path, addr);
     return path;
 }
