@@ -13,7 +13,7 @@ end
 ok &= (`dtrace -V` rescue false)
 module DTrace
   class TestCase < MiniTest::Unit::TestCase
-    INCLUDE = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+    INCLUDE = File.expand_path('..', File.dirname(__FILE__))
 
     def trap_probe d_program, ruby_program
       d = Tempfile.new('probe.d')
@@ -28,7 +28,14 @@ module DTrace
       rb_path = rb.path
 
       cmd = ["dtrace", "-q", "-s", d_path, "-c", "#{EnvUtil.rubybin} -I#{INCLUDE} #{rb_path}"]
-      sudo = ENV["SUDO"] and cmd.unshift(sudo)
+      if sudo = ENV["SUDO"]
+        [RbConfig::CONFIG["LIBPATHENV"], "RUBY", "RUBYOPT"].each do |name|
+          if name and val = ENV[name]
+            cmd.unshift("#{name}=#{val}")
+          end
+        end
+        cmd.unshift(sudo)
+      end
       probes = IO.popen(cmd) do |io|
         io.readlines
       end
