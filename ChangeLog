@@ -1,3 +1,8 @@
+Sun Apr  7 01:01:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* strftime.c (rb_strftime_with_timespec): Test yday range.
+	  [ruby-core:44088] [Bug #6247] reported by Ruby Submit.
+
 Sat Apr  6 23:46:54 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in (AC_CHECK_HEADERS): atomic.h for Solaris atomic_ops.
