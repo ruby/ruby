@@ -649,6 +649,48 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
+ *     hsh.traverse(*keys)                  => obj
+ *     hsh.traverse(*keys) {| key | block } => obj
+ *
+ *  Traverses the hash and returns a value for the given key. If the key can't be
+ *  found, there are two options: With no other arguments, it will
+ *  return nil;if the optional code block is
+ *  specified, then that will be run and its result returned.
+ *
+ *     h = { "a" => { "b" => { "c" => 100 } } }
+ *     h.traverse("a", "b", "c")                          #=> 100
+ *     h.traverse("a", "z")                               #=> nil
+ *     h.traverse("a", "z") { |key| "#{key} not found"}   #=> "z not found"
+ */
+
+static VALUE
+rb_hash_traverse(int argc, VALUE *argv, VALUE hash)
+{
+  VALUE required;
+  VALUE rval = hash;
+  int i;
+  rb_scan_args(argc, argv, "1*", &required, &argv);
+  rb_ary_unshift(argv, required);
+
+  for (i = 0; i < RARRAY_LEN(argv) ; i++) {
+    rval = rb_hash_aref(rval, RARRAY_PTR(argv)[i]);
+    if (!rb_obj_is_kind_of(rval, rb_cHash)){
+      if (i < RARRAY_LEN(argv) - 1){
+        rval = Qnil;
+      }
+      break;
+    }
+  }
+
+  if (rval == Qnil && rb_block_given_p()){
+    rval = rb_yield(RARRAY_PTR(argv)[i]);
+  }
+
+  return rval;
+}
+
+/*
+ *  call-seq:
  *     hsh.default(key=nil)   -> obj
  *
  *  Returns the default value, the value that would be returned by
@@ -3448,6 +3490,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"hash", rb_hash_hash, 0);
     rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch_m, -1);
+    rb_define_method(rb_cHash,"traverse", rb_hash_traverse, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"default", rb_hash_default, -1);

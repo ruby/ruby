@@ -979,6 +979,17 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def test_traverse
+    hash = { :l1 => { :l2 => { :l3 => 100 } } }
+    assert_raise(ArgumentError) { hash.traverse }
+    assert_nothing_raised { hash.traverse 'gumby' }
+    assert_equal(nil, hash.traverse('nonexistent'))
+    assert_equal({ :l2 => { :l3 => 100 } }, hash.traverse(:l1))
+    assert_equal('gumbygumby', hash.traverse('gumby') {|k| k * 2 })
+    assert_equal(100, hash.traverse(:l1, :l2, :l3))
+    assert_equal(nil, hash.traverse(:l1, :l2, :l3, :l4))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
     end
