@@ -1,3 +1,8 @@
+Sat Apr  6 23:31:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Add one-shot multicast DNS support.
+	  [ruby-core:53387] [Feature #8089] by Eric Hodel.
+
 Sat Apr  6 22:12:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS.fetch_resource): New method to obtain

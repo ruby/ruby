@@ -49,6 +49,7 @@ with all sufficient information, see the ChangeLog file.
 * Resolv
   * New methods:
     * Resolv::DNS.fetch_resource
+  * One-shot multicast DNS support
 
 * Rinda::RingServer, Rinda::RingFinger
   * Rinda now supports multicast sockets.  See Rinda::RingServer and
