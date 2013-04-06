@@ -1,3 +1,9 @@
+Sat Apr  6 22:12:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS.fetch_resource): New method to obtain
+	  full result.
+	  [ruby-dev:43587] [Feature #4788] proposed by Makoto Kishimoto.
+
 Sat Apr  6 20:17:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_sys_fail_raddrinfo): Renamed from

@@ -506,6 +506,12 @@ class Resolv
     # #getresource for argument details.
 
     def each_resource(name, typeclass, &proc)
+      fetch_resource(name, typeclass) {|reply, reply_name|
+        extract_resources(reply, reply_name, typeclass, &proc)
+      }
+    end
+
+    def fetch_resource(name, typeclass)
       lazy_initialize
       requester = make_udp_requester
       senders = {}
@@ -532,7 +538,7 @@ class Resolv
               # response will not fit in an untruncated UDP packet.
               redo
             else
-              extract_resources(reply, reply_name, typeclass, &proc)
+              yield(reply, reply_name)
             end
             return
           when RCode::NXDomain
