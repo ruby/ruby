@@ -64,6 +64,12 @@ class TestGc < Test::Unit::TestCase
     assert_equal(arg, res)
     assert_equal(false, res.empty?)
     assert_kind_of(Integer, res[:count])
+
+    stat, count = {}, {}
+    GC.start
+    GC.stat(stat)
+    ObjectSpace.count_objects(count)
+    assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_num])
   end
 
   def test_singleton_method
