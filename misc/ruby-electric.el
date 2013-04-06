@@ -84,7 +84,8 @@ inserted. The word 'all' will do all insertions."
               (const :tag "Quote" ?\' )
               (const :tag "Double quote" ?\" )
               (const :tag "Back quote" ?\` )
-              (const :tag "Vertical bar" ?\| ))
+              (const :tag "Vertical bar" ?\| )
+              (const :tag "Hash" ?\# ))
   :group 'ruby-electric)
 
 (defcustom ruby-electric-newline-before-closing-bracket nil
@@ -119,7 +120,8 @@ strings. Note that you must have Font Lock enabled."
   (define-key ruby-mode-map "[" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\"" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\'" 'ruby-electric-matching-char)
-  (define-key ruby-mode-map "|" 'ruby-electric-bar))
+  (define-key ruby-mode-map "|" 'ruby-electric-bar)
+  (define-key ruby-mode-map "#" 'ruby-electric-hash))
 
 (defun ruby-electric-space (arg)
   (interactive "P")
@@ -139,6 +141,18 @@ strings. Note that you must have Font Lock enabled."
 (defun ruby-electric-string-at-point-p()
   (and ruby-electric-mode
        (consp (memq 'font-lock-string-face (text-properties-at (point))))))
+
+(defun ruby-electric-escaped-p()
+  (let ((f nil))
+    (save-excursion
+      (while (char-equal ?\\ (preceding-char))
+        (backward-char 1)
+        (setq f (not f))))
+    f))
+
+(defun ruby-electric-command-char-expandable-punct-p(char)
+  (or (memq 'all ruby-electric-expand-delimiters-list)
+      (memq char ruby-electric-expand-delimiters-list)))
 
 (defun ruby-electric-is-last-command-char-expandable-punct-p()
   (or (memq 'all ruby-electric-expand-delimiters-list)
@@ -178,25 +192,57 @@ strings. Note that you must have Font Lock enabled."
 
 (defun ruby-electric-curlies(arg)
   (interactive "P")
-  (ruby-electric-insert arg
-    (if (ruby-electric-is-last-command-char-expandable-punct-p)
-        (cond ((ruby-electric-code-at-point-p)
-               (insert " ")
-               (save-excursion
-                 (if ruby-electric-newline-before-closing-bracket
-                     (progn
-                       (newline)
-                       (insert "}")
-                       (ruby-indent-line t))
-                   (insert "}"))))
-              ((ruby-electric-string-at-point-p)
-               (if (eq last-command-event ?{)
-                   (save-excursion
-                     (backward-char 1)
-                     (or (char-equal ?\# (preceding-char))
-                         (insert "#"))
-                     (forward-char 1)
-                     (insert "}"))))))))
+  (ruby-electric-insert
+   arg
+   (if (ruby-electric-is-last-command-char-expandable-punct-p)
+       (cond
+        ((ruby-electric-code-at-point-p)
+         (insert "}")
+         (backward-char 1)
+         (redisplay)
+         (cond
+          ((ruby-electric-string-at-point-p) ; %w{}, %r{}, etc.
+           t)
+          (ruby-electric-newline-before-closing-bracket
+           (insert " ")
+           (save-excursion
+             (newline)
+             (ruby-indent-line t)))
+          (t
+           (insert "  ")
+           (backward-char 1))))
+        ((ruby-electric-string-at-point-p)
+         (save-excursion
+           (backward-char 1)
+           (cond
+            ((char-equal ?\# (preceding-char))
+             (unless (save-excursion
+                       (backward-char 1)
+                       (ruby-electric-escaped-p))
+               (forward-char 1)
+               (insert "}")))
+            ((ruby-electric-command-char-expandable-punct-p ?\#)
+             t) ; no need for the following if ruby-electric-hash is enabled
+            ((ruby-electric-escaped-p)
+             t)
+            (t
+             (insert "#")
+             (forward-char 1)
+             (insert "}")))))))))
+
+(defun ruby-electric-hash(arg)
+  (interactive "P")
+  (ruby-electric-insert
+   arg
+   (and (ruby-electric-is-last-command-char-expandable-punct-p)
+        (ruby-electric-string-at-point-p)
+        (or (looking-at "'") ; likely to be in ''
+            (save-excursion
+              (backward-char 1)
+              (ruby-electric-escaped-p))
+            (progn
+              (insert "{}")
+              (backward-char 1))))))
 
 (defun ruby-electric-matching-char(arg)
   (interactive "P")
