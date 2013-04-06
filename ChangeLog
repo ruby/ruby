@@ -1,3 +1,8 @@
+Sat Apr  6 23:40:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: Support LOC resources.
+	  [ruby-core:23361] [Feature #1436] by JB Smith.
+
 Sat Apr  6 23:38:09 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* addr2line.c: quad_t and u_quad_t is not available on Solaris.
