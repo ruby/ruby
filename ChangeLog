@@ -1,3 +1,27 @@
+Sat Apr  6 14:28:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (SockAddrStringValueWithAddrinfo): New macro.
+	  (rsock_sockaddr_string_value_with_addrinfo): New declaration.
+	  (rsock_addrinfo_inspect_sockaddr): Ditto.
+	  (rsock_sys_fail_addrinfo): Ditto.
+	  (rsock_sys_fail_sockaddr_or_addrinfo): Ditto.
+
+	* ext/socket/raddrinfo.c (rsock_addrinfo_inspect_sockaddr): Renamed
+	  from addrinfo_inspect_sockaddr and exported.
+	  (rsock_sockaddr_string_value_with_addrinfo): New function to obtain
+	  string and possibly addrinfo object.
+
+	* ext/socket/socket.c (rsock_sys_fail_sockaddr): Don't use
+	  rsock_sys_fail_host_port which is IP dependent.  Invoke
+	  rsock_sys_fail_addrinfo.
+	  (rsock_sys_fail_addrinfo): New function using
+	  rsock_addrinfo_inspect_sockaddr.
+	  (rsock_sys_fail_addrinfo_or_sockaddr): New function.
+	  (sock_connect): Use SockAddrStringValueWithAddrinfo and
+	  rsock_sys_fail_addrinfo_or_sockaddr.
+	  (sock_connect_nonblock): Ditto.
+	  (sock_bind): Ditto.
+
 Sat Apr  6 13:34:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_sys_fail_sockaddr): Delete 2nd argument.

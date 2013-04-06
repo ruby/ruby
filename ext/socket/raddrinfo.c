@@ -1158,8 +1158,8 @@ addrinfo_inspect(VALUE self)
  *   Addrinfo.unix("/tmp/sock").inspect_sockaddr        #=> "/tmp/sock"
  *
  */
-static VALUE
-addrinfo_inspect_sockaddr(VALUE self)
+VALUE
+rsock_addrinfo_inspect_sockaddr(VALUE self)
 {
     return inspect_sockaddr(self, rb_str_new("", 0));
 }
@@ -2127,6 +2127,19 @@ rsock_sockaddr_string_value(volatile VALUE *v)
     return *v;
 }
 
+VALUE
+rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *rai_ret)
+{
+    VALUE val = *v;
+    *rai_ret = Qnil;
+    if (IS_ADDRINFO(val)) {
+        *v = addrinfo_to_sockaddr(val);
+        *rai_ret = val;
+    }
+    StringValue(*v);
+    return *v;
+}
+
 char *
 rsock_sockaddr_string_value_ptr(volatile VALUE *v)
 {
@@ -2198,7 +2211,7 @@ rsock_init_addrinfo(void)
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);
     rb_define_method(rb_cAddrinfo, "inspect", addrinfo_inspect, 0);
-    rb_define_method(rb_cAddrinfo, "inspect_sockaddr", addrinfo_inspect_sockaddr, 0);
+    rb_define_method(rb_cAddrinfo, "inspect_sockaddr", rsock_addrinfo_inspect_sockaddr, 0);
     rb_define_singleton_method(rb_cAddrinfo, "getaddrinfo", addrinfo_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cAddrinfo, "ip", addrinfo_s_ip, 1);
     rb_define_singleton_method(rb_cAddrinfo, "tcp", addrinfo_s_tcp, 2);

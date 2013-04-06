@@ -49,11 +49,34 @@ rsock_sys_fail_path(const char *mesg, VALUE path)
 void
 rsock_sys_fail_sockaddr(const char *mesg, VALUE addr)
 {
-    VALUE host_port = sock_s_unpack_sockaddr_in(rb_cSocket, addr);
+    VALUE rai;
 
-    rsock_sys_fail_host_port(mesg,
-	    RARRAY_PTR(host_port)[1],
-	    RARRAY_PTR(host_port)[0]);
+    rai = rsock_addrinfo_new(
+            (struct sockaddr *)RSTRING_PTR(addr),
+            RSTRING_LEN(addr),
+            PF_UNSPEC, 0, 0, Qnil, Qnil);
+
+    rsock_sys_fail_addrinfo(mesg, rai);
+}
+
+void
+rsock_sys_fail_addrinfo(const char *mesg, VALUE rai)
+{
+    VALUE str, message;
+
+    str = rsock_addrinfo_inspect_sockaddr(rai);
+    message = rb_sprintf("%s for %s", mesg, StringValueCStr(str));
+
+    rb_sys_fail_str(message);
+}
+
+void
+rsock_sys_fail_addrinfo_or_sockaddr(const char *mesg, VALUE addr, VALUE rai)
+{
+    if (NIL_P(rai))
+        rsock_sys_fail_sockaddr(mesg, addr);
+    else
+        rsock_sys_fail_addrinfo(mesg, rai);
 }
 
 static void
@@ -350,16 +373,17 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 static VALUE
 sock_connect(VALUE sock, VALUE addr)
 {
+    VALUE rai;
     rb_io_t *fptr;
     int fd, n;
 
-    SockAddrStringValue(addr);
+    SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
     n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr), 0);
     if (n < 0) {
-	rsock_sys_fail_sockaddr("connect(2)", addr);
+	rsock_sys_fail_addrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
@@ -410,10 +434,11 @@ sock_connect(VALUE sock, VALUE addr)
 static VALUE
 sock_connect_nonblock(VALUE sock, VALUE addr)
 {
+    VALUE rai;
     rb_io_t *fptr;
     int n;
 
-    SockAddrStringValue(addr);
+    SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
@@ -421,7 +446,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     if (n < 0) {
         if (errno == EINPROGRESS)
             rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
-	rsock_sys_fail_sockaddr("connect(2)", addr);
+	rsock_sys_fail_addrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
@@ -516,12 +541,13 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
 static VALUE
 sock_bind(VALUE sock, VALUE addr)
 {
+    VALUE rai;
     rb_io_t *fptr;
 
-    SockAddrStringValue(addr);
+    SockAddrStringValueWithAddrinfo(addr, rai);
     GetOpenFile(sock, fptr);
     if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr)) < 0)
-	rsock_sys_fail_sockaddr("bind(2)", addr);
+	rsock_sys_fail_addrinfo_or_sockaddr("bind(2)", addr, rai);
 
     return INT2FIX(0);
 }

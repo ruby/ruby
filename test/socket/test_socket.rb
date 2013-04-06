@@ -81,7 +81,7 @@ class TestSocket < Test::Unit::TestCase
           s.bind(Socket.sockaddr_in(port, "127.0.0.1"))
         end
 
-        assert_match "bind(2) for \"127.0.0.1\" port #{port}", e.message
+        assert_match "bind(2) for 127.0.0.1:#{port}", e.message
       }
     }
   end

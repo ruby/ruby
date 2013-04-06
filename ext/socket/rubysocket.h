@@ -227,8 +227,11 @@ int Rconnect();
 
 #define SockAddrStringValue(v) rsock_sockaddr_string_value(&(v))
 #define SockAddrStringValuePtr(v) rsock_sockaddr_string_value_ptr(&(v))
+#define SockAddrStringValueWithAddrinfo(v, rai_ret) rsock_sockaddr_string_value_with_addrinfo(&(v), &(rai_ret))
 VALUE rsock_sockaddr_string_value(volatile VALUE *);
 char *rsock_sockaddr_string_value_ptr(volatile VALUE *);
+VALUE rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *ai_ret);
+
 VALUE rb_check_sockaddr_string_type(VALUE);
 
 NORETURN(void rsock_raise_socket_error(const char *, int));
@@ -250,6 +253,7 @@ VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
 VALUE rsock_addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
+VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 
 VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
 VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
@@ -335,6 +339,8 @@ void rsock_init_socket_init(void);
 
 NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));
 NORETURN(void rsock_sys_fail_path(const char *, VALUE));
-NORETURN(void rsock_sys_fail_sockaddr(const char *, VALUE));
+NORETURN(void rsock_sys_fail_sockaddr(const char *, VALUE addr));
+NORETURN(void rsock_sys_fail_addrinfo(const char *, VALUE rai));
+NORETURN(void rsock_sys_fail_sockaddr_or_addrinfo(const char *, VALUE addr, VALUE rai));
 
 #endif
