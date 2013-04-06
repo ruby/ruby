@@ -6,6 +6,23 @@ end
 
 
 class TestSocket_TCPSocket < Test::Unit::TestCase
+  def test_initialize_failure
+    s = TCPServer.new("localhost", nil)
+    server_port = s.addr[1]
+
+    c = TCPSocket.new("localhost", server_port)
+    client_port = c.addr[1]
+
+    begin
+      # TCPServer.new uses SO_REUSEADDR so we must create a failure on the
+      # local address.
+      TCPSocket.new("localhost", server_port, "localhost", client_port)
+      flunk "expected SystemCallError"
+    rescue SystemCallError => e
+      assert_match "for \"localhost\" port #{client_port}", e.message
+    end
+  end
+
   def test_recvfrom
     svr = TCPServer.new("localhost", 0)
     th = Thread.new {

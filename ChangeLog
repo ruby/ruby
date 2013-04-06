@@ -1,3 +1,47 @@
+Sat Apr  6 11:39:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: Improve socket exception message to show socket address.
+	  [ruby-core:45617] [Feature #6583] proposed Eric Hodel.
+
+	* ext/socket/rubysocket.h (rsock_sys_fail_host_port): Declared.
+	  (rsock_sys_fail_path): Ditto.
+	  (rsock_sys_fail_sockaddr): Ditto.
+
+	* ext/socket/udpsocket.c (udp_connect): Use rsock_sys_fail_host_port.
+	  (udp_bind): Ditto.
+	  (udp_send): Ditto.
+
+	* ext/socket/init.c (rsock_init_sock): Specify a string for rb_sys_fail
+	  argument.
+	  (make_fd_nonblock): Ditto.
+	  (rsock_s_accept): Ditto.
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): Use
+	  rsock_sys_fail_host_port.
+
+	* ext/socket/socket.c (rsock_sys_fail_host_port): Defined.
+	  (rsock_sys_fail_path): Ditto.
+	  (rsock_sys_fail_sockaddr): Ditto.
+	  (setup_domain_and_type): Use rsock_sys_fail_sockaddr.
+	  (sock_connect_nonblock): Ditto.
+	  (sock_bind): Ditto.
+	  (sock_gethostname): Specify a string for rb_sys_fail argument.
+	  (socket_s_ip_address_list): Ditto.
+
+	* ext/socket/basicsocket.c (bsock_shutdown): Specify a string for
+	  rb_sys_fail argument.
+	  (bsock_setsockopt): Use rsock_sys_fail_path.
+	  (bsock_getsockopt): Ditto.
+	  (bsock_getpeereid): Refine the argument for rb_sys_fail.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): Use
+	  rsock_sys_fail_path.
+	  (unix_path): Ditto.
+	  (unix_send_io): Ditto.
+	  (unix_recv_io): Ditto.
+	  (unix_addr): Ditto.
+	  (unix_peeraddr): Ditto.
+
 Sat Apr  6 11:23:18 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):

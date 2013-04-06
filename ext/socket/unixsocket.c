@@ -36,7 +36,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     SafeStringValue(path);
     fd = rsock_socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
-	rb_sys_fail("socket(2)");
+	rsock_sys_fail_path("socket(2)", path);
     }
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
@@ -65,13 +65,13 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     if (status < 0) {
 	close(fd);
-	rb_sys_fail_str(rb_inspect(path));
+        rsock_sys_fail_path("connect(2)", path);
     }
 
     if (server) {
 	if (listen(fd, SOMAXCONN) < 0) {
 	    close(fd);
-	    rb_sys_fail("listen(2)");
+            rsock_sys_fail_path("listen(2)", path);
 	}
     }
 
@@ -121,7 +121,7 @@ unix_path(VALUE sock)
 	socklen_t len = (socklen_t)sizeof(addr);
 	socklen_t len0 = len;
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
-	    rb_sys_fail(0);
+            rsock_sys_fail_path("getsockname(2)", fptr->pathv);
         if (len0 < len) len = len0;
 	fptr->pathv = rb_obj_freeze(rsock_unixpath_str(&addr, len));
     }
@@ -255,7 +255,7 @@ unix_send_io(VALUE sock, VALUE val)
     arg.fd = fptr->fd;
     while ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1) {
 	if (!rb_io_wait_writable(arg.fd))
-	    rb_sys_fail("sendmsg(2)");
+	    rsock_sys_fail_path("sendmsg(2)", fptr->pathv);
     }
 
     return Qnil;
@@ -343,7 +343,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     arg.fd = fptr->fd;
     while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
 	if (!rb_io_wait_readable(arg.fd))
-	    rb_sys_fail("recvmsg(2)");
+	    rsock_sys_fail_path("recvmsg(2)", fptr->pathv);
     }
 
 #if FD_PASSING_BY_MSG_CONTROL
@@ -430,7 +430,7 @@ unix_addr(VALUE sock)
     GetOpenFile(sock, fptr);
 
     if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
-	rb_sys_fail("getsockname(2)");
+        rsock_sys_fail_path("getsockname(2)", fptr->pathv);
     if (len0 < len) len = len0;
     return rsock_unixaddr(&addr, len);
 }
@@ -458,7 +458,7 @@ unix_peeraddr(VALUE sock)
     GetOpenFile(sock, fptr);
 
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
-	rb_sys_fail("getpeername(2)");
+        rsock_sys_fail_path("getpeername(2)", fptr->pathv);
     if (len0 < len) len = len0;
     return rsock_unixaddr(&addr, len);
 }

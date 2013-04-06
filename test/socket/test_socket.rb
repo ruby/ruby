@@ -70,6 +70,22 @@ class TestSocket < Test::Unit::TestCase
     }
   end
 
+  def test_bind
+    Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|bound|
+      bound.bind(Socket.sockaddr_in(0, "127.0.0.1"))
+      addr = bound.getsockname
+      port, = Socket.unpack_sockaddr_in(addr)
+
+      Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
+        e = assert_raises(Errno::EADDRINUSE) do
+          s.bind(Socket.sockaddr_in(port, "127.0.0.1"))
+        end
+
+        assert_match "bind(2) for \"127.0.0.1\" port #{port}", e.message
+      }
+    }
+  end
+
   def test_getaddrinfo
     # This should not send a DNS query because AF_UNIX.
     assert_raise(SocketError) { Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX") }

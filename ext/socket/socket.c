@@ -10,6 +10,40 @@
 
 #include "rubysocket.h"
 
+static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
+
+void
+rsock_sys_fail_host_port(const char *mesg, VALUE host, VALUE port)
+{
+    VALUE message;
+
+    port = rb_String(port);
+
+    message = rb_sprintf("%s for \"%s\" port %s",
+	    mesg, StringValueCStr(host), StringValueCStr(port));
+
+    rb_sys_fail_str(message);
+}
+
+void
+rsock_sys_fail_path(const char *mesg, VALUE path)
+{
+    VALUE message = rb_sprintf("%s for \"%s\"",
+	    mesg, StringValueCStr(path));
+
+    rb_sys_fail_str(message);
+}
+
+void
+rsock_sys_fail_sockaddr(const char *mesg, VALUE sock, VALUE addr)
+{
+    VALUE host_port = sock_s_unpack_sockaddr_in(sock, addr);
+
+    rsock_sys_fail_host_port(mesg,
+	    RARRAY_PTR(host_port)[1],
+	    RARRAY_PTR(host_port)[0]);
+}
+
 static void
 setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
@@ -313,7 +347,7 @@ sock_connect(VALUE sock, VALUE addr)
     fd = fptr->fd;
     n = rsock_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr), 0);
     if (n < 0) {
-	rb_sys_fail("connect(2)");
+	rsock_sys_fail_sockaddr("connect(2)", sock, addr);
     }
 
     return INT2FIX(n);
@@ -375,7 +409,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     if (n < 0) {
         if (errno == EINPROGRESS)
             rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
-	rb_sys_fail("connect(2)");
+	rsock_sys_fail_sockaddr("connect(2)", sock, addr);
     }
 
     return INT2FIX(n);
@@ -475,7 +509,7 @@ sock_bind(VALUE sock, VALUE addr)
     SockAddrStringValue(addr);
     GetOpenFile(sock, fptr);
     if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LENINT(addr)) < 0)
-	rb_sys_fail("bind(2)");
+	rsock_sys_fail_sockaddr("bind(2)", sock, addr);
 
     return INT2FIX(0);
 }
@@ -910,7 +944,7 @@ sock_gethostname(VALUE obj)
 
     rb_secure(3);
     if (gethostname(buf, (int)sizeof buf - 1) < 0)
-	rb_sys_fail("gethostname");
+	rb_sys_fail("gethostname(3)");
 
     buf[sizeof buf - 1] = '\0';
     return rb_str_new2(buf);
@@ -1608,7 +1642,7 @@ socket_s_ip_address_list(VALUE self)
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1)
-        rb_sys_fail("socket");
+        rb_sys_fail("socket(2)");
 
     memset(&ln, 0, sizeof(ln));
     ln.lifn_family = AF_UNSPEC;
@@ -1678,7 +1712,7 @@ socket_s_ip_address_list(VALUE self)
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd == -1)
-        rb_sys_fail("socket");
+        rb_sys_fail("socket(2)");
 
     bufsize = sizeof(initbuf);
     buf = initbuf;

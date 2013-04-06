@@ -47,7 +47,7 @@ rsock_init_sock(VALUE sock, int fd)
     struct stat sbuf;
 
     if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail(0);
+        rb_sys_fail("fstat(2)");
     rb_update_max_fd(fd);
     if (!S_ISSOCK(sbuf.st_mode))
         rb_raise(rb_eArgError, "not a socket file descriptor");
@@ -475,14 +475,14 @@ make_fd_nonblock(int fd)
 #ifdef F_GETFL
     flags = fcntl(fd, F_GETFL);
     if (flags == -1) {
-        rb_sys_fail(0);
+        rb_sys_fail("fnctl(2)");
     }
 #else
     flags = 0;
 #endif
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) {
-        rb_sys_fail(0);
+        rb_sys_fail("fnctl(2)");
     }
 }
 
@@ -590,7 +590,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	    retry = 0;
 	    goto retry;
 	}
-	rb_sys_fail(0);
+	rb_sys_fail("accept(2)");
     }
     rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);

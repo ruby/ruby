@@ -36,4 +36,30 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
       s.bind(host, 2000)
     }
   end
+
+  def test_bind_addrinuse
+    host = "127.0.0.1"
+    port = 2001
+
+    in_use = UDPSocket.new
+    in_use.bind(host, port)
+
+    s = UDPSocket.new
+    
+    e = assert_raises(Errno::EADDRINUSE) do
+      s.bind(host, port)
+    end
+
+    assert_match "bind(2) for \"#{host}\" port #{port}", e.message
+  end
+
+  def test_send_too_long
+    u = UDPSocket.new
+
+    e = assert_raises Errno::EMSGSIZE do
+      u.send "\0" * 100_000, 0, "127.0.0.1", 7 # echo
+    end
+
+    assert_match 'for "127.0.0.1" port 7', e.message
+  end
 end if defined?(UDPSocket)

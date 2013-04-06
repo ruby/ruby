@@ -93,7 +93,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
-    if (!ret) rb_sys_fail("connect(2)");
+    if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
     return INT2FIX(0);
 }
 
@@ -126,7 +126,9 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
 	return INT2FIX(0);
     }
     freeaddrinfo(res0);
-    rb_sys_fail("bind(2)");
+
+    rsock_sys_fail_host_port("bind(2)", host, port);
+
     return INT2FIX(0);
 }
 
@@ -187,7 +189,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 	}
     }
     freeaddrinfo(res0);
-    rb_sys_fail("sendto(2)");
+    rsock_sys_fail_host_port("sendto(2)", host, port);
     return INT2FIX(n);
 }
 

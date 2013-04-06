@@ -43,7 +43,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 {
     int type = arg->type;
     struct addrinfo *res;
-    int fd, status = 0;
+    int fd, status = 0, local = 0;
     const char *syscall = 0;
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
@@ -81,6 +81,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	else {
 	    if (arg->local.res) {
 		status = bind(fd, arg->local.res->ai_addr, arg->local.res->ai_addrlen);
+		local = status;
 		syscall = "bind(2)";
 	    }
 
@@ -99,7 +100,17 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    break;
     }
     if (status < 0) {
-	rb_sys_fail(syscall);
+	VALUE host, port;
+
+	if (local < 0) {
+	    host = arg->local.host;
+	    port = arg->local.serv;
+	} else {
+	    host = arg->remote.host;
+	    port = arg->remote.serv;
+	}
+
+	rsock_sys_fail_host_port(syscall, host, port);
     }
 
     arg->fd = -1;
