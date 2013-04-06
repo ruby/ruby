@@ -5226,7 +5226,7 @@ rb_ary_drop_while(VALUE ary)
  *
  *     ary = Array.new    #=> []
  *     Array.new(3)       #=> [nil, nil, nil]
- *     Array.new(3, true) #=> [0, 0, 0]
+ *     Array.new(3, true) #=> [true, true, true]
  *
  *  Note that the second argument populates the array with references to the
  *  same object.  Therefore, it is only recommended in cases when you need to
