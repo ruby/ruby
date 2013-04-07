@@ -96,6 +96,8 @@ io_ready_p(VALUE io)
  * call-seq:
  *   io.wait          -> IO, true, false or nil
  *   io.wait(timeout) -> IO, true, false or nil
+ *   io.wait_readable          -> IO, true, false or nil
+ *   io.wait_readable(timeout) -> IO, true, false or nil
  *
  * Waits until input is available or times out and returns self or nil when
  * EOF is reached.
