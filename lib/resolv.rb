@@ -831,7 +831,6 @@ class Resolv
 
       class MDNSOneShot < UnconnectedUDP # :nodoc:
         def sender(msg, data, host, port=Port)
-          service = [host, port]
           id = DNS.allocate_request_id(host, port)
           request = msg.encode
           request[0,2] = [id].pack('n')

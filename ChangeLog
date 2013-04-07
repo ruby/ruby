@@ -1,3 +1,7 @@
+Sun Apr  7 10:41:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (MDNSOneShot#sender): Delete an unused variable.
+
 Sun Apr  7 03:24:36 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: use more generic type:
