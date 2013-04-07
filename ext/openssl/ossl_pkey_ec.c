@@ -533,8 +533,8 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
 
 /*
  *  call-seq:
- *     key.export   => String
- *     key.export(cipher, pass_phrase) => String
+ *     key.export([cipher, pass_phrase]) => String
+ *     key.to_pem([cipher, pass_phrase]) => String
  *
  * Outputs the EC key in PEM encoding.  If +cipher+ and +pass_phrase+ are
  * given they will be used to encrypt the key.  +cipher+ must be an
@@ -843,6 +843,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /*  call-seq:
+ *     group1.eql?(group2)   => true | false
  *     group1 == group2   => true | false
  *
  */
@@ -1312,6 +1313,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     point1.eql?(point2) => true | false
  *     point1 == point2 => true | false
  *
  */

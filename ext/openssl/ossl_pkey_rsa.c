@@ -291,8 +291,9 @@ ossl_rsa_is_private(VALUE self)
 
 /*
  * call-seq:
- *   rsa.to_pem                      => PEM-format String
- *   rsa.to_pem(cipher, pass_phrase) => PEM-format String
+ *   rsa.export([cipher, pass_phrase]) => PEM-format String
+ *   rsa.to_pem([cipher, pass_phrase]) => PEM-format String
+ *   rsa.to_s([cipher, pass_phrase]) => PEM-format String
  *
  * Outputs this keypair in PEM encoding.  If +cipher+ and +pass_phrase+ are
  * given they will be used to encrypt the key.  +cipher+ must be an
