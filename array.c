@@ -1320,6 +1320,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.find_index(obj)             ->  int or nil
+ *     ary.find_index { |item| block } ->  int or nil
+ *     ary.find_index                  ->  Enumerator
  *     ary.index(obj)             ->  int or nil
  *     ary.index { |item| block } ->  int or nil
  *     ary.index                  ->  Enumerator
