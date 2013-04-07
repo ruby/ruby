@@ -544,6 +544,7 @@ dir_inspect(VALUE dir)
 /*
  *  call-seq:
  *     dir.path -> string or nil
+ *     dir.to_path -> string or nil
  *
  *  Returns the path parameter passed to <em>dir</em>'s constructor.
  *
@@ -732,7 +733,7 @@ dir_seek(VALUE dir, VALUE pos)
 
 /*
  *  call-seq:
- *     dir.pos( integer ) -> integer
+ *     dir.pos = integer  -> integer
  *
  *  Synonym for <code>Dir#seek</code>, but returns the position
  *  parameter.
