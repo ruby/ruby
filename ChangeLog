@@ -1,3 +1,9 @@
+Mon Apr  8 00:10:59 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Fix unlimited memory growth with large values of
+	  RUBY_FREE_MIN. patched by tmm1(Aman Gupta).
+	  [Bug #8095] [ruby-core:53405]
+
 Sun Apr  7 22:27:12 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Avoid unnecessary heap growth. patched by tmm1(Aman Gupta).
