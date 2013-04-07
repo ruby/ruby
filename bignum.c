@@ -3761,6 +3761,7 @@ rb_big_coerce(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big.abs -> aBignum
+ *     big.magnitude -> aBignum
  *
  *  Returns the absolute value of <i>big</i>.
  *
