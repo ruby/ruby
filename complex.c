@@ -2018,6 +2018,7 @@ numeric_arg(VALUE self)
 /*
  * call-seq:
  *    num.rect  ->  array
+ *    num.rectangular  ->  array
  *
  * Returns an array; [num, 0].
  */
