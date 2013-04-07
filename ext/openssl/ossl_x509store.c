@@ -257,7 +257,7 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
 
 /*
  * call-seq:
- *   store.set_default_path
+ *   store.set_default_paths
  *
  * Adds the default certificates to the certificate store.  These certificates
  * are loaded from the default configuration directory which can usually be
