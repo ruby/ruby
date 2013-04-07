@@ -57,6 +57,10 @@ extern "C" {
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
+
 #define RUBY
 
 #ifdef __cplusplus
@@ -193,8 +197,6 @@ void xfree(void*);
 
 #if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
 #include <net/socket.h> /* intern.h needs fd_set definition */
-#elif defined (__SYMBIAN32__) && defined (HAVE_SYS_SELECT_H)
-# include <sys/select.h>
 #endif
 
 #ifdef __SYMBIAN32__

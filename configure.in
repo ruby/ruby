@@ -2439,8 +2439,7 @@ if test "$with_dln_a_out" != yes; then
 			    DLDFLAGS="$DLDFLAGS -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
                             ],
 			  [i586*], [
-			    : ${LDSHARED='$(LD) -shared'}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lroot"
+			    : ${LDSHARED='$(CC) -shared'}
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes ],

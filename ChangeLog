@@ -1,3 +1,11 @@
+Sun Apr  7 10:44:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/defines.h: Simplify the logic to include sys/select.h.
+	  This fixes a compilation error on Haiku (gcc2 and gcc4).
+
+	* configure.in: Use shared linker as $(CC) for Haiku.
+	  This fixes a build error on Haiku (gcc2).
+
 Sun Apr  7 10:41:30 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (MDNSOneShot#sender): Delete an unused variable.
