@@ -206,7 +206,7 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 
 /*
  *  call-seq:
- *     HMAC.digest(digest, key, data) -> aString
+ *     HMAC.hexdigest(digest, key, data) -> aString
  *
  */
 static VALUE
