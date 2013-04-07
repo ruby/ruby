@@ -665,6 +665,7 @@ class TestModule < Test::Unit::TestCase
     c.class_eval('@@foo = :foo')
     assert_equal(:foo, c.class_variable_get(:@@foo))
     assert_raise(NameError) { c.class_variable_get(:@@bar) } # c.f. instance_variable_get
+    assert_raise(NameError) { c.class_variable_get('@@') }
     assert_raise(NameError) { c.class_variable_get(:foo) }
     assert_raise(NameError) { c.class_variable_get("bar") }
     assert_raise(TypeError) { c.class_variable_get(1) }
@@ -674,6 +675,7 @@ class TestModule < Test::Unit::TestCase
     c = Class.new
     c.class_variable_set(:@@foo, :foo)
     assert_equal(:foo, c.class_eval('@@foo'))
+    assert_raise(NameError) { c.class_variable_set('@@', 1) }
     assert_raise(NameError) { c.class_variable_set(:foo, 1) }
     assert_raise(NameError) { c.class_variable_set("bar", 1) }
     assert_raise(TypeError) { c.class_variable_set(1, 1) }

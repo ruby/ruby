@@ -1,3 +1,8 @@
+Sun Apr  7 21:16:19 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* object.c (rb_mod_cvar_set): call to_str for string only once.
+	  to_str was called from rb_is_class_name and rb_to_id before.
+
 Sun Apr  7 13:56:16 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):

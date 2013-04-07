@@ -2305,12 +2305,17 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 			  QUOTE_ID(id));
 	}
     }
-    else if (!rb_is_class_name(iv)) {
-	rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
-			  QUOTE(iv));
-    }
     else {
-	id = rb_to_id(iv);
+	VALUE cname = rb_check_string_type(iv);
+	if (NIL_P(cname)) {
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
+		     iv);
+	}
+	if (!rb_is_class_name(cname)) {
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		    QUOTE(cname));
+	}
+	id = rb_to_id(cname);
     }
     rb_cvar_set(obj, id, val);
     return val;
