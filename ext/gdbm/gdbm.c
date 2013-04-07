@@ -953,7 +953,9 @@ fgdbm_values(VALUE obj)
 
 /*
  * call-seq:
+ *      gdbm.include?(k) -> true or false
  *      gdbm.has_key?(k) -> true or false
+ *      gdbm.member?(k) -> true or false
  *      gdbm.key?(k) -> true or false
  *
  * Returns true if the given key _k_ exists within the database.
