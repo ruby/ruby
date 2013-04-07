@@ -853,6 +853,7 @@ flo_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
+ *     float.fdiv(numeric)  ->  float
  *     float.quo(numeric)  ->  float
  *
  *  Returns float / numeric.
