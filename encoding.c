@@ -992,6 +992,7 @@ enc_inspect(VALUE self)
 /*
  * call-seq:
  *   enc.name -> string
+ *   enc.to_s -> string
  *
  * Returns the name of the encoding.
  *
