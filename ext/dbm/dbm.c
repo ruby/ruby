@@ -655,6 +655,7 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 /*
  * call-seq:
  *   dbm.length -> integer
+ *   dbm.size -> integer
  *
  * Returns the number of entries in the database.
  */
@@ -832,7 +833,10 @@ fdbm_values(VALUE obj)
 
 /*
  * call-seq:
+ *   dbm.include?(key) -> boolean
  *   dbm.has_key?(key) -> boolean
+ *   dbm.member?(key) -> boolean
+ *   dbm.key?(key) -> boolean
  *
  * Returns true if the database contains the specified key, false otherwise.
  */
@@ -859,6 +863,7 @@ fdbm_has_key(VALUE obj, VALUE keystr)
 /*
  * call-seq:
  *   dbm.has_value?(value) -> boolean
+ *   dbm.value?(value) -> boolean
  *
  * Returns true if the database contains the specified string value, false
  * otherwise.
