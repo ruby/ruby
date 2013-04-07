@@ -2051,12 +2051,17 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 			  QUOTE_ID(id));
 	}
     }
-    else if (!rb_is_const_name(name)) {
-	rb_name_error_str(name, "wrong constant name %"PRIsVALUE,
-			  QUOTE(name));
-    }
     else {
-	id = rb_to_id(name);
+	VALUE cname = rb_check_string_type(name);
+	if (NIL_P(cname)) {
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
+		    name);
+	}
+	if (!rb_is_const_name(cname)) {
+	    rb_name_error_str(cname, "wrong constant name %"PRIsVALUE,
+		    QUOTE(cname));
+	}
+	id = rb_to_id(cname);
     }
     rb_const_set(mod, id, value);
     return value;
