@@ -127,6 +127,7 @@ sockopt_optname_m(VALUE self)
 /*
  * call-seq:
  *   sockopt.data => string
+ *   sockopt.to_s => string
  *
  * returns the socket option data as a string.
  *
