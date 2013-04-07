@@ -8032,6 +8032,7 @@ sym_casecmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *   sym =~ obj   -> fixnum or nil
+ *   sym.match(obj)   -> fixnum or nil
  *
  * Returns <code>sym.to_s =~ obj</code>.
  */
@@ -8045,7 +8046,9 @@ sym_match(VALUE sym, VALUE other)
 /*
  * call-seq:
  *   sym[idx]      -> char
- *   sym[b, n]     -> char
+ *   sym[b, n]     -> string
+ *   sym.slice(idx)      -> char
+ *   sym.slice(b, n)     -> string
  *
  * Returns <code>sym.to_s[]</code>.
  */
@@ -8059,6 +8062,7 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
 /*
  * call-seq:
  *   sym.length    -> integer
+ *   sym.size    -> integer
  *
  * Same as <code>sym.to_s.length</code>.
  */
