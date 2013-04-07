@@ -526,6 +526,8 @@ enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
 
 /*
  * call-seq:
+ *   e.each_with_object(obj) {|(*args), obj| ... }
+ *   e.each_with_object(obj)
  *   e.with_object(obj) {|(*args), obj| ... }
  *   e.with_object(obj)
  *
@@ -1501,6 +1503,7 @@ lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 
 /*
  *  call-seq:
+ *     lazy.collect_concat { |obj| block } -> a_lazy_enumerator
  *     lazy.flat_map       { |obj| block } -> a_lazy_enumerator
  *
  *  Returns a new lazy enumerator with the concatenated results of running
