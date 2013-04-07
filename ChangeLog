@@ -1,3 +1,9 @@
+Sun Apr  7 13:56:16 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  RUBY_PLATFORM should escape as Regexp,
+	  because RUBY_PLATFORM may contain '.'.
+
 Sun Apr  7 10:44:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h: Simplify the logic to include sys/select.h.
