@@ -1,3 +1,9 @@
+Mon Apr  8 16:03:55 2013  Yuki Yugui Sonoda  <yugui@google.com>
+
+	Fixes a build failure of ext/ripper/ripper.c on building out of place.
+	* common.mk (id.h, id.c): Always generated in $(srcdir).
+	(ext/ripper/ripper.c): Passes $(PATH_SEPARATOR) too to the sub make.
+
 Mon Apr  8 12:05:02 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* object.c (rb_obj_ivar_set): call to_str for string only once.
