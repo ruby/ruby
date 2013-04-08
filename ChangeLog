@@ -1,3 +1,8 @@
+Mon Apr  8 23:57:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (id_for_setter): extract common code from const, class
+	  variable, instance variable setters.
+
 Mon Apr  8 23:55:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/depend (ENCOBJS, TRANSOBJS): use explicit path to ruby.h for

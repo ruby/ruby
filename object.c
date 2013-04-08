@@ -1813,6 +1813,33 @@ rb_class_get_superclass(VALUE klass)
     return RCLASS_SUPER(klass);
 }
 
+#define id_for_setter(name, type, message) \
+    check_setter_id(name, rb_is_##type##_id, rb_is_##type##_name, message)
+static ID
+check_setter_id(VALUE name, int (*valid_id_p)(ID), int (*valid_name_p)(VALUE),
+		const char *message)
+{
+    ID id;
+    if (SYMBOL_P(name)) {
+	id = SYM2ID(name);
+	if (!valid_id_p(id)) {
+	    rb_name_error(id, message, QUOTE_ID(id));
+	}
+    }
+    else {
+	VALUE str = rb_check_string_type(name);
+	if (NIL_P(str)) {
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
+		     str);
+	}
+	if (!valid_name_p(str)) {
+	    rb_name_error_str(str, message, QUOTE(str));
+	}
+	id = rb_to_id(str);
+    }
+    return id;
+}
+
 /*
  *  call-seq:
  *     attr_reader(symbol, ...)  -> nil
@@ -2043,26 +2070,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 {
-    ID id;
-    if (SYMBOL_P(name)) {
-	id = SYM2ID(name);
-	if (!rb_is_const_id(id)) {
-	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
-			  QUOTE_ID(id));
-	}
-    }
-    else {
-	VALUE cname = rb_check_string_type(name);
-	if (NIL_P(cname)) {
-	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
-		    name);
-	}
-	if (!rb_is_const_name(cname)) {
-	    rb_name_error_str(cname, "wrong constant name %"PRIsVALUE,
-		    QUOTE(cname));
-	}
-	id = rb_to_id(cname);
-    }
+    ID id = id_for_setter(name, const, "wrong constant name %"PRIsVALUE);
     rb_const_set(mod, id, value);
     return value;
 }
@@ -2180,26 +2188,7 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id;
-
-    if (SYMBOL_P(iv)) {
-	id = SYM2ID(iv);
-	if (!rb_is_instance_id(id)) {
-	    rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
-			  QUOTE_ID(id));
-	}
-    }
-    else {
-	VALUE name = rb_check_string_type(iv);
-       if (NIL_P(name)) {
-           rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string", iv);
-       }
-	if (!rb_is_instance_name(name)) {
-	rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
-			  QUOTE(iv));
-	}
-	id = rb_to_id(name);
-    }
+    ID id = id_for_setter(iv, instance, "`%"PRIsVALUE"' is not allowed as an instance variable name");
     return rb_ivar_set(obj, id, val);
 }
 
@@ -2305,27 +2294,7 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id;
-
-    if (SYMBOL_P(iv)) {
-	id = SYM2ID(iv);
-	if (!rb_is_class_id(id)) {
-	    rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an class variable name",
-			  QUOTE_ID(id));
-	}
-    }
-    else {
-	VALUE cname = rb_check_string_type(iv);
-	if (NIL_P(cname)) {
-	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string",
-		     iv);
-	}
-	if (!rb_is_class_name(cname)) {
-	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
-		    QUOTE(cname));
-	}
-	id = rb_to_id(cname);
-    }
+    ID id = id_for_setter(iv, class, "`%"PRIsVALUE"' is not allowed as a class variable name");
     rb_cvar_set(obj, id, val);
     return val;
 }
