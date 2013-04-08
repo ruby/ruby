@@ -2968,7 +2968,7 @@ rb_thread_alone(void)
  *  call-seq:
  *     thr.keys   -> array
  *
- *  Returns an an array of the names of the fiber-local variables (as Symbols).
+ *  Returns an array of the names of the fiber-local variables (as Symbols).
  *
  *     thr = Thread.new do
  *       Thread.current[:cat] = 'meow'
@@ -3002,7 +3002,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *  call-seq:
  *     thr.thread_variables   -> array
  *
- *  Returns an an array of the names of the thread-local variables (as Symbols).
+ *  Returns an array of the names of the thread-local variables (as Symbols).
  *
  *     thr = Thread.new do
  *       Thread.current.thread_variable_set(:cat, 'meow')
