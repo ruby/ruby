@@ -482,7 +482,7 @@ EOS
       $defs << "-Din_addr6=in6_addr"
     end
     if have_struct_member("struct in6_addr", "s6_addr8", headers)
-      $defs[-1] = "s6_addr=s6_addr8"
+      $defs[-1] = "-Ds6_addr=s6_addr8"
     end
     if ipv6 == "kame" && have_struct_member("struct in6_addr", "s6_addr32", headers)
       $defs[-1] = "-DFAITH"

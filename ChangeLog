@@ -1,4 +1,7 @@
-Tue Apr  9 02:42:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  9 02:44:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb: $defs needs -D or -U.  nothing is added
+	  otherwize.
 
 	* ext/socket/extconf.rb: check struct in_addr6, which is defined in
 	  VC6 instead of in6_addr.
