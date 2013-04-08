@@ -446,7 +446,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
         if (errno == EINPROGRESS)
-            rb_mod_sys_fail(rb_mWaitWritable, "connect(2) would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 

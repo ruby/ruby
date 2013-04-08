@@ -133,6 +133,16 @@ VALUE rb_eEOFError;
 VALUE rb_eIOError;
 VALUE rb_mWaitReadable;
 VALUE rb_mWaitWritable;
+extern VALUE rb_eEAGAIN;
+extern VALUE rb_eEWOULDBLOCK;
+extern VALUE rb_eEINPROGRESS;
+
+static VALUE rb_eEAGAINWaitReadable;
+static VALUE rb_eEAGAINWaitWritable;
+static VALUE rb_eEWOULDBLOCKWaitReadable;
+static VALUE rb_eEWOULDBLOCKWaitWritable;
+static VALUE rb_eEINPROGRESSWaitWritable;
+static VALUE rb_eEINPROGRESSWaitReadable;
 
 VALUE rb_stdin, rb_stdout, rb_stderr;
 VALUE rb_deferr;		/* rescue VIM plugin */
@@ -2355,6 +2365,9 @@ rb_io_set_nonblock(rb_io_t *fptr)
     }
 }
 
+void
+rb_readwrite_sys_fail(int writable, const char *mesg);
+
 static VALUE
 io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 {
@@ -2393,7 +2406,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
             if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
-                rb_mod_sys_fail(rb_mWaitReadable, "read would block");
+                rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
             rb_sys_fail_path(fptr->pathv);
         }
     }
@@ -2612,7 +2625,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
 
     if (n == -1) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            rb_mod_sys_fail(rb_mWaitWritable, "write would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
         rb_sys_fail_path(fptr->pathv);
     }
 
@@ -11450,6 +11463,50 @@ argf_write(VALUE argf, VALUE str)
     return rb_io_write(argf_write_io(argf), str);
 }
 
+void
+rb_readwrite_sys_fail(int writable, const char *mesg)
+{
+    VALUE arg;
+    int n = errno;
+    arg = mesg ? rb_str_new2(mesg) : Qnil;
+    if (writable == RB_IO_WAIT_WRITABLE) {
+	switch (n) {
+	    case EAGAIN:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitWritable));
+		break;
+#if EAGAIN != EWOULDBLOCK
+	    case EWOULDBLOCK:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitWritable));
+		break;
+#endif
+	    case EINPROGRESS:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitWritable));
+		break;
+	    default:
+		rb_mod_sys_fail_str(rb_mWaitWritable, arg);
+	}
+    }
+    else if (writable == RB_IO_WAIT_READABLE) {
+	switch (n) {
+	    case EAGAIN:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitReadable));
+		break;
+#if EAGAIN != EWOULDBLOCK
+	    case EWOULDBLOCK:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitReadable));
+		break;
+#endif
+	    case EINPROGRESS:
+		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitReadable));
+		break;
+	    default:
+		rb_mod_sys_fail_str(rb_mWaitReadable, arg);
+	}
+    } else {
+	rb_bug("invalid read/write type passed to rb_readwrite_sys_fail: %d", writable);
+    }
+}
+
 /*
  * Document-class: IOError
  *
@@ -11658,6 +11715,25 @@ Init_IO(void)
 
     rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
+    rb_eEAGAINWaitReadable = rb_define_class_under(rb_cIO, "EAGAINWaitReadable", rb_eEAGAIN);
+    rb_include_module(rb_eEAGAINWaitReadable, rb_mWaitReadable);
+    rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
+    rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
+    if (EAGAIN == EWOULDBLOCK) {
+	rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
+	rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
+	rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
+	rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
+    } else {
+	rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKRWaiteadable", rb_eEWOULDBLOCK);
+	rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
+	rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
+	rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
+    }
+    rb_eEINPROGRESSWaitReadable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitReadable", rb_eEINPROGRESS);
+    rb_include_module(rb_eEINPROGRESSWaitReadable, rb_mWaitReadable);
+    rb_eEINPROGRESSWaitWritable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitWritable", rb_eEINPROGRESS);
+    rb_include_module(rb_eEINPROGRESSWaitWritable, rb_mWaitWritable);
 
 #if 0
     /* This is necessary only for forcing rdoc handle File::open */

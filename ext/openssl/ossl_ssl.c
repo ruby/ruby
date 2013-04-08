@@ -29,6 +29,9 @@ VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
 
+static VALUE eSSLErrorWaitReadable;
+static VALUE eSSLErrorWaitWritable;
+
 #define ossl_sslctx_set_cert(o,v)        	rb_iv_set((o),"@cert",(v))
 #define ossl_sslctx_set_key(o,v)         	rb_iv_set((o),"@key",(v))
 #define ossl_sslctx_set_client_ca(o,v)   	rb_iv_set((o),"@client_ca",(v))
@@ -1230,8 +1233,7 @@ static void
 write_would_block(int nonblock)
 {
     if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLError, "write would block");
-        rb_extend_object(exc, rb_mWaitWritable);
+        VALUE exc = ossl_exc_new(eSSLErrorWaitReadable, "write would block");
         rb_exc_raise(exc);
     }
 }
@@ -1240,8 +1242,7 @@ static void
 read_would_block(int nonblock)
 {
     if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLError, "read would block");
-        rb_extend_object(exc, rb_mWaitReadable);
+        VALUE exc = ossl_exc_new(eSSLErrorWaitReadable, "read would block");
         rb_exc_raise(exc);
     }
 }
@@ -1846,6 +1847,10 @@ Init_ossl_ssl()
      * Generic error class raised by SSLSocket and SSLContext.
      */
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
+    eSSLErrorWaitReadable = rb_define_class_under(mSSL, "SSLErrorWaitReadable", eSSLError);
+    rb_include_module(eSSLErrorWaitReadable, rb_mWaitReadable);
+    eSSLErrorWaitWritable = rb_define_class_under(mSSL, "SSLErrorWaitWritable", eSSLError);
+    rb_include_module(eSSLErrorWaitWritable, rb_mWaitWritable);
 
     Init_ossl_ssl_session();
 

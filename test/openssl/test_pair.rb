@@ -141,7 +141,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
   def test_read_nonblock
     ssl_pair {|s1, s2|
       err = nil
-      assert_raise(OpenSSL::SSL::SSLError) {
+      assert_raise(OpenSSL::SSL::SSLErrorWaitReadable) {
         begin
           s2.read_nonblock(10)
         ensure

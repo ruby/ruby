@@ -39,6 +39,10 @@
 #define WEXITSTATUS(status) (status)
 #endif
 
+VALUE rb_eEAGAIN;
+VALUE rb_eEWOULDBLOCK;
+VALUE rb_eEINPROGRESS;
+
 extern const char ruby_description[];
 
 #define REPORTBUG_MSG \
@@ -1183,6 +1187,24 @@ set_syserr(int n, const char *name)
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+	
+	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
+	switch (n) {
+	    case EAGAIN:
+	        rb_eEAGAIN = error;
+		
+#if EAGAIN != EWOULDBLOCK
+                break;
+	    case EWOULDBLOCK:
+#endif
+
+		rb_eEWOULDBLOCK = error;
+		break;
+	    case EINPROGRESS:
+		rb_eEINPROGRESS = error;
+		break;
+	}
+	
 	rb_define_const(error, "Errno", INT2NUM(n));
 	st_add_direct(syserr_tbl, n, error);
     }

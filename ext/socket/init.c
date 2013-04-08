@@ -222,7 +222,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            rb_mod_sys_fail(rb_mWaitReadable, "recvfrom(2) would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
 	}
 	rb_sys_fail("recvfrom(2)");
     }
@@ -541,7 +541,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 #if defined EPROTO
 	  case EPROTO:
 #endif
-            rb_mod_sys_fail(rb_mWaitReadable, "accept(2) would block");
+            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}
         rb_sys_fail("accept(2)");
     }

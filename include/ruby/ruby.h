@@ -1354,6 +1354,7 @@ NORETURN(void rb_sys_fail(const char*));
 NORETURN(void rb_sys_fail_str(VALUE));
 NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_mod_sys_fail_str(VALUE, VALUE));
+NORETURN(void rb_readwrite_sys_fail(int, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_iter_break_value(VALUE));
 NORETURN(void rb_exit(int));
@@ -1372,6 +1373,10 @@ PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
+
+/* for rb_readwrite_sys_fail first argument */
+#define RB_IO_WAIT_READABLE 0
+#define RB_IO_WAIT_WRITABLE 1
 
 typedef VALUE rb_block_call_func(VALUE, VALUE, int, VALUE*);
 
