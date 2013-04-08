@@ -45,7 +45,7 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
     in_use.bind(host, port)
 
     s = UDPSocket.new
-    
+
     e = assert_raises(Errno::EADDRINUSE) do
       s.bind(host, port)
     end

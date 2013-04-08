@@ -163,7 +163,7 @@ typedef union {
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
   struct sockaddr_un un;
 #endif
-  struct sockaddr_storage storage; 
+  struct sockaddr_storage storage;
   char place_holder[2048]; /* sockaddr_storage is not enough for Unix domain sockets on SunOS and Darwin. */
 } union_sockaddr;
 

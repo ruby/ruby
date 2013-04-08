@@ -52,7 +52,7 @@
 
 (defgroup ruby-electric nil
   "Minor mode providing electric editing commands for ruby files"
-  :group 'ruby) 
+  :group 'ruby)
 
 (defconst ruby-electric-expandable-do-re
   "do\\s-$")
