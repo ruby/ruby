@@ -1,4 +1,7 @@
-Tue Apr  9 02:40:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  9 02:42:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb: check struct in_addr6, which is defined in
+	  VC6 instead of in6_addr.
 
 	* ext/socket/option.c (optname_to_sym): fix macro name.
 

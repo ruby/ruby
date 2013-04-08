@@ -477,6 +477,10 @@ EOS
 
   if getaddr_info_ok == :wide or
       !have_func("getnameinfo", headers) or !have_func("getaddrinfo", headers)
+    if !have_type("struct in6_addr", headers) and have_type("struct in_addr6", headers)
+      $defs.pop(2)
+      $defs << "-Din_addr6=in6_addr"
+    end
     if have_struct_member("struct in6_addr", "s6_addr8", headers)
       $defs[-1] = "s6_addr=s6_addr8"
     end
