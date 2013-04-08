@@ -28,14 +28,16 @@ rescue Exception => e
 ensure
   close_screen
   puts "", [Marshal.dump([result, e])].pack('m').delete("\n")
+  print "\\0"
 end
 src
       if input
         w.print(input)
         w.flush
       end
-      res = r.read
+      res = r.gets("\0")
       return unless res
+      res.chomp!("\0")
       res, error = Marshal.load(res[/(.*)\Z/, 1].unpack('m')[0])
       raise error if error
       return res
