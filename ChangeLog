@@ -1,3 +1,7 @@
+Mon Apr  8 20:30:37 2013  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* ext/depend (ENCOBJS, TRANSOBJS): Add missing dependencies.
+
 Mon Apr  8 17:19:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (fole_missing): should check actual argument
