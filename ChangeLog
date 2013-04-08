@@ -1,13 +1,11 @@
-Sun Apr  7 21:27:40 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+Mon Apr  8 12:05:02 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* object.c (rb_mod_const_set): call to_str for string only once.
+	* object.c (rb_obj_ivar_set): call to_str for string only once.
 	  to_str was called from rb_is_const_name and rb_to_id before.
 
+	* object.c (rb_mod_const_set): ditto.
 
-Sun Apr  7 21:16:19 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* object.c (rb_mod_cvar_set): call to_str for string only once.
-	  to_str was called from rb_is_class_name and rb_to_id before.
+	* object.c (rb_mod_cvar_set): ditto.
 
 Sun Apr  7 13:56:16 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 

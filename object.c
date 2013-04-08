@@ -2189,12 +2189,16 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 			  QUOTE_ID(id));
 	}
     }
-    else if (!rb_is_instance_name(iv)) {
+    else {
+	VALUE name = rb_check_string_type(iv);
+       if (NIL_P(name)) {
+           rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol or string", iv);
+       }
+	if (!rb_is_instance_name(name)) {
 	rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
 			  QUOTE(iv));
-    }
-    else {
-	id = rb_to_id(iv);
+	}
+	id = rb_to_id(name);
     }
     return rb_ivar_set(obj, id, val);
 }

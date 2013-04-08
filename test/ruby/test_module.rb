@@ -262,6 +262,12 @@ class TestModule < Test::Unit::TestCase
   def test_const_get
     assert_equal(Math::PI, Math.const_get("PI"))
     assert_equal(Math::PI, Math.const_get(:PI))
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "PI"; end
+    def n.count; @count; end
+    assert_equal(Math::PI, Math.const_get(n))
+    assert_equal(1, n.count)
   end
 
   def test_nested_get
@@ -302,6 +308,20 @@ class TestModule < Test::Unit::TestCase
     assert_equal(99, Other::KOALA)
     Other.const_set("WOMBAT", "Hi")
     assert_equal("Hi", Other::WOMBAT)
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "HOGE"; end
+    def n.count; @count; end
+    def n.count=(v); @count=v; end
+    assert(!Other.const_defined?(:HOGE))
+    Other.const_set(n, 999)
+    assert_equal(1, n.count)
+    n.count = 0
+    assert_equal(999, Other.const_get(n))
+    assert_equal(1, n.count)
+    n.count = 0
+    assert_equal(true, Other.const_defined?(n))
+    assert_equal(1, n.count)
   end
 
   def test_constants
@@ -669,6 +689,12 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c.class_variable_get(:foo) }
     assert_raise(NameError) { c.class_variable_get("bar") }
     assert_raise(TypeError) { c.class_variable_get(1) }
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@@foo"; end
+    def n.count; @count; end
+    assert_equal(:foo, c.class_variable_get(n))
+    assert_equal(1, n.count)
   end
 
   def test_class_variable_set
@@ -679,6 +705,13 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c.class_variable_set(:foo, 1) }
     assert_raise(NameError) { c.class_variable_set("bar", 1) }
     assert_raise(TypeError) { c.class_variable_set(1, 1) }
+
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@@foo"; end
+    def n.count; @count; end
+    c.class_variable_set(n, :bar)
+    assert_equal(:bar, c.class_eval('@@foo'))
+    assert_equal(1, n.count)
   end
 
   def test_class_variable_defined
@@ -689,6 +722,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c.class_variable_defined?(:foo) }
     assert_raise(NameError) { c.class_variable_defined?("bar") }
     assert_raise(TypeError) { c.class_variable_defined?(1) }
+    n = Object.new
+    def n.to_str; @count = defined?(@count) ? @count + 1 : 1; "@@foo"; end
+    def n.count; @count; end
+    assert_equal(true, c.class_variable_defined?(n))
+    assert_equal(1, n.count)
   end
 
   def test_remove_class_variable
