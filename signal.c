@@ -629,7 +629,7 @@ sigbus(int sig SIGINFO_ARG)
 {
 /*
  * Mac OS X makes KERN_PROTECTION_FAILURE when thread touch guard page.
- * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
+ * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
 #if defined __APPLE__
