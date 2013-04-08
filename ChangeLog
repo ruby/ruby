@@ -1,3 +1,7 @@
+Tue Apr  9 00:28:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/constants.c (rsock_cmsg_type_arg): fix macro name.
+
 Mon Apr  8 23:57:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (id_for_setter): extract common code from const, class
