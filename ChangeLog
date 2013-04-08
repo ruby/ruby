@@ -1,4 +1,7 @@
-Mon Apr  8 23:09:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr  8 23:55:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/depend (ENCOBJS, TRANSOBJS): use explicit path to ruby.h for
+	  nmake.
 
 	* ext/depend (ENCOBJS, TRANSOBJS): fix header dependency, VPATH has
 	  $(srcdir)/include/ruby but not $(srcdir)/include, so cannot find out
