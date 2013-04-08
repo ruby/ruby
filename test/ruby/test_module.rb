@@ -334,9 +334,6 @@ class TestModule < Test::Unit::TestCase
 
     a = Module.new
     Other.const_set :BUG6454, a
-
-    original = Other::BUG6454.inspect
-
     b = a.dup
     Other.const_set :BUG6454_dup, b
 
@@ -1540,8 +1537,8 @@ class TestModule < Test::Unit::TestCase
       protected :foo
     end
     a = c.new
-    assert_respond_to a, [:foo, true]
-    assert_nothing_raised(NoMethodError) {a.send :foo}
+    assert_respond_to a, [:foo, true], bug8005
+    assert_nothing_raised(NoMethodError, bug8005) {a.send :foo}
   end
 
   def test_class_variables
@@ -1635,7 +1632,7 @@ class TestModule < Test::Unit::TestCase
 
   def test_uninitialized_instance_variable
     a = AttrTest.new
-    assert_warning /instance variable @ivar not initialized/ do
+    assert_warning(/instance variable @ivar not initialized/) do
       assert_nil(a.ivar)
     end
     a.instance_variable_set(:@ivar, 42)
