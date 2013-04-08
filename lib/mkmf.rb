@@ -1922,7 +1922,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
 
   def timestamp_file(name)
     name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "" : $2 ? ".-." : "_"}
-    "$(TIMESTAMP_DIR)/.#{name}.time"
+    "./.#{name}.time"
   end
   # :startdoc:
 
@@ -2174,7 +2174,6 @@ DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 #{!$extout && defined?($installed_list) ? "INSTALLED_LIST = #{$installed_list}\n" : ""}
-TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
 " #"
     # TODO: fixme
     install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
@@ -2268,7 +2267,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     dirs.unshift(sodir) if target and !dirs.include?(sodir)
     dirs.each do |d|
       t = timestamp_file(d)
-      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) #{d}\n\t$(Q) $(TOUCH) $@\n"
     end
 
     mfile.print <<-SITEINSTALL
