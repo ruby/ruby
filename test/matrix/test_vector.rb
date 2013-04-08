@@ -8,9 +8,6 @@ class TestVector < Test::Unit::TestCase
     @v3 = @v1.clone
     @v4 = Vector[1.0, 2.0, 3.0]
     @w1 = Vector[2,3,4]
-    @ortogonal3_x = Vector[1.0, 0.0, 0.0]
-    @ortogonal3_y = Vector[0.0, 1.0, 0.0]
-    @ortogonal3_z = Vector[0.0, 0.0, 1.0]
   end
 
   def test_identity
@@ -119,7 +116,8 @@ class TestVector < Test::Unit::TestCase
   end
 
   def test_cross_product
-    assert_equal( @ortogonal3_z, @ortogonal3_x.cross_product(@ortogonal3_y) )
+    assert_equal( Vector[-1.0, 2.0,-1.0], @v2.cross_product(@w1) )
+    assert_equal( Vector[ 1.0,-2.0, 1.0], @w1.cross_product(@v2) )
   end
 
   def test_r
