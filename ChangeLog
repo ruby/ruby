@@ -1,3 +1,8 @@
+Mon Apr  8 17:19:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (fole_missing): should check actual argument
+	  count before accessing.
+
 Mon Apr  8 16:03:55 2013  Yuki Yugui Sonoda  <yugui@google.com>
 
 	Fixes a build failure of ext/ripper/ripper.c on building out of place.
