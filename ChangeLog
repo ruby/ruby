@@ -1,4 +1,6 @@
-Tue Apr  9 00:28:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  9 02:40:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (optname_to_sym): fix macro name.
 
 	* ext/socket/constants.c (rsock_cmsg_type_arg): fix macro name.
 
