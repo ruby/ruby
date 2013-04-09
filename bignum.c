@@ -1236,9 +1236,8 @@ rb_big2ulong(VALUE x)
             return -(long)num;
         if (num == 1+(unsigned long)(-(LONG_MIN+1)))
             return LONG_MIN;
-        rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
     }
-    return num;
+    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
 }
 
 SIGNED_VALUE
@@ -1247,17 +1246,16 @@ rb_big2long(VALUE x)
     VALUE num = big2ulong(x, "long", TRUE);
 
     if (RBIGNUM_POSITIVE_P(x)) {
-        if (LONG_MAX < num)
-            rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
-        return num;
+        if (num <= LONG_MAX)
+            return num;
     }
     else {
         if (num <= LONG_MAX)
             return -(long)num;
         if (num == 1+(unsigned long)(-(LONG_MIN+1)))
             return LONG_MIN;
-        rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
     }
+    rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
 }
 
 #if HAVE_LONG_LONG
@@ -1293,9 +1291,8 @@ rb_big2ull(VALUE x)
             return -(LONG_LONG)num;
         if (num == 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
             return LLONG_MIN;
-        rb_raise(rb_eRangeError, "bignum out of range of unsigned long long");
     }
-    return num;
+    rb_raise(rb_eRangeError, "bignum out of range of unsigned long long");
 }
 
 LONG_LONG
@@ -1304,17 +1301,16 @@ rb_big2ll(VALUE x)
     unsigned LONG_LONG num = big2ull(x, "long long");
 
     if (RBIGNUM_POSITIVE_P(x)) {
-        if (LLONG_MAX < num)
-            rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
-        return num;
+        if (num <= LLONG_MAX)
+            return num;
     }
     else {
         if (num <= LLONG_MAX)
             return -(LONG_LONG)num;
         if (num == 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
             return LLONG_MIN;
-        rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
     }
+    rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
 }
 
 #endif  /* HAVE_LONG_LONG */
