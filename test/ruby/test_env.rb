@@ -270,15 +270,15 @@ class TestEnv < Test::Unit::TestCase
 
   def test_empty_p
     ENV.clear
-    assert(ENV.empty?)
+    assert_predicate(ENV, :empty?)
     ENV["test"] = "foo"
-    assert(!ENV.empty?)
+    assert_not_predicate(ENV, :empty?)
   end
 
   def test_has_key
-    assert(!ENV.has_key?("test"))
+    assert_not_send([ENV, :has_key?, "test"])
     ENV["test"] = "foo"
-    assert(ENV.has_key?("test"))
+    assert_send([ENV, :has_key?, "test"])
     assert_raise(ArgumentError) { ENV.has_key?("foo\0bar") }
   end
 
@@ -298,9 +298,9 @@ class TestEnv < Test::Unit::TestCase
 
   def test_has_value2
     ENV.clear
-    assert(!ENV.has_value?("foo"))
+    assert_not_send([ENV, :has_value?, "foo"])
     ENV["test"] = "foo"
-    assert(ENV.has_value?("foo"))
+    assert_send([ENV, :has_value?, "foo"])
   end
 
   def test_rassoc

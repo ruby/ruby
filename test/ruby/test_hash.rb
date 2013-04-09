@@ -21,8 +21,8 @@ class TestHash < Test::Unit::TestCase
        end)
 
     assert_equal(3, x.length)
-    assert(x.has_key?(1))
-    assert(x.has_value?(4))
+    assert_send([x, :has_key?, 1])
+    assert_send([x, :has_value?, 4])
     assert_equal([4,6], x.values_at(2,3))
     assert_equal({1=>2, 2=>4, 3=>6}, x)
 
@@ -208,17 +208,17 @@ class TestHash < Test::Unit::TestCase
     h2 = @cls[ "a" => 1, "c" => 2, 7 => 35 ]
     h3 = @cls[ "a" => 1, "c" => 2, 7 => 35 ]
     h4 = @cls[ ]
-    assert(h1 == h1)
-    assert(h2 == h2)
-    assert(h3 == h3)
-    assert(h4 == h4)
-    assert(!(h1 == h2))
-    assert(h2 == h3)
-    assert(!(h3 == h4))
+    assert_equal(h1, h1)
+    assert_equal(h2, h2)
+    assert_equal(h3, h3)
+    assert_equal(h4, h4)
+    assert_not_equal(h1, h2)
+    assert_equal(h2, h3)
+    assert_not_equal(h3, h4)
   end
 
   def test_clear
-    assert(@h.size > 0)
+    assert_operator(@h.size, :>, 0)
     @h.clear
     assert_equal(0, @h.size)
     assert_nil(@h[1])
@@ -235,7 +235,7 @@ class TestHash < Test::Unit::TestCase
           b = a.clone
 
           assert_equal(a, b)
-          assert(a.__id__ != b.__id__)
+          assert_not_same(a, b)
           assert_equal(a.frozen?, b.frozen?)
           assert_equal(a.untrusted?, b.untrusted?)
           assert_equal(a.tainted?, b.tainted?)
@@ -327,7 +327,7 @@ class TestHash < Test::Unit::TestCase
           b = a.dup
 
           assert_equal(a, b)
-          assert(a.__id__ != b.__id__)
+          assert_not_same(a, b)
           assert_equal(false, b.frozen?)
           assert_equal(a.tainted?, b.tainted?)
           assert_equal(a.untrusted?, b.untrusted?)
@@ -397,8 +397,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_empty?
-    assert(@cls[].empty?)
-    assert(!@h.empty?)
+    assert_empty(@cls[])
+    assert_not_empty(@h)
   end
 
   def test_fetch
@@ -453,11 +453,11 @@ class TestHash < Test::Unit::TestCase
 
   def test_values_at
     res = @h.values_at('dog', 'cat', 'horse')
-    assert(res.length == 3)
+    assert_equal(3, res.length)
     assert_equal([nil, nil, nil], res)
 
     res = @h.values_at
-    assert(res.length == 0)
+    assert_equal(0, res.length)
 
     res = @h.values_at(3, 2, 1, nil)
     assert_equal 4, res.length
@@ -476,7 +476,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil,  h['nil'])
 
     h.each do |k, v|
-      assert(@h.key?(v))    # not true in general, but works here
+      assert_send([@h, :key?, v])    # not true in general, but works here
     end
 
     h = @cls[ 'a' => 1, 'b' => 2, 'c' => 1].invert
@@ -841,18 +841,18 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_equal2
-    assert({} != 0)
+    assert_not_equal(0, {})
     o = Object.new
     def o.to_hash; {}; end
     def o.==(x); true; end
-    assert({} == o)
+    assert_equal({}, o)
     def o.==(x); false; end
-    assert({} != o)
+    assert_not_equal({}, o)
 
     h1 = {1=>2}; h2 = {3=>4}
-    assert(h1 != h2)
+    assert_not_equal(h1, h2)
     h1 = {1=>2}; h2 = {1=>4}
-    assert(h1 != h2)
+    assert_not_equal(h1, h2)
   end
 
   def test_eql
@@ -922,11 +922,11 @@ class TestHash < Test::Unit::TestCase
 
   def test_compare_by_identity
     a = "foo"
-    assert(!{}.compare_by_identity?)
+    assert_not_predicate({}, :compare_by_identity?)
     h = { a => "bar" }
-    assert(!h.compare_by_identity?)
+    assert_not_predicate(h, :compare_by_identity?)
     h.compare_by_identity
-    assert(h.compare_by_identity?)
+    assert_predicate(h, :compare_by_identity?)
     #assert_equal("bar", h[a])
     assert_nil(h["foo"])
   end
