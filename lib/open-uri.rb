@@ -336,7 +336,7 @@ module OpenURI
     io = buf.io
     io.rewind
     io.status = [resp.code, resp.message]
-    resp.each {|name,value| buf.io.meta_add_field name, value }
+    resp.each_name {|name| buf.io.meta_add_field2 name, resp.get_fields(name) }
     case resp
     when Net::HTTPSuccess
     when Net::HTTPMovedPermanently, # 301
@@ -405,13 +405,14 @@ module OpenURI
       obj.extend Meta
       obj.instance_eval {
         @base_uri = nil
-        @meta = {}
+        @meta = {} # name to string.  legacy.
+        @metas = {} # name to array of strings.
       }
       if src
         obj.status = src.status
         obj.base_uri = src.base_uri
-        src.meta.each {|name, value|
-          obj.meta_add_field(name, value)
+        src.metas.each {|name, values|
+          obj.meta_add_field2(name, values)
         }
       end
     end
@@ -425,7 +426,15 @@ module OpenURI
 
     # returns a Hash that represents header fields.
     # The Hash keys are downcased for canonicalization.
+    # The Hash values are a field body.
+    # If there are multiple field with same field name,
+    # the field values are concatenated with a comma.
     attr_reader :meta
+
+    # returns a Hash that represents header fields.
+    # The Hash keys are downcased for canonicalization.
+    # The Hash value are an array of field values.
+    attr_reader :metas
 
     def meta_setup_encoding # :nodoc:
       charset = self.charset
@@ -446,15 +455,17 @@ module OpenURI
       end
     end
 
-    def meta_add_field(name, value) # :nodoc:
+    def meta_add_field2(name, values) # :nodoc:
       name = name.downcase
-      @meta[name] = value
+      @metas[name] = values
+      @meta[name] = values.join(', ')
       meta_setup_encoding if name == 'content-type'
     end
 
     # returns a Time that represents the Last-Modified field.
     def last_modified
-      if v = @meta['last-modified']
+      if vs = @metas['last-modified']
+        v = vs.join(', ')
         Time.httpdate(v)
       else
         nil
@@ -469,9 +480,9 @@ module OpenURI
     # :startdoc:
 
     def content_type_parse # :nodoc:
-      v = @meta['content-type']
+      vs = @metas['content-type']
       # The last (?:;#{RE_LWS}?)? matches extra ";" which violates RFC2045.
-      if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ v
+      if vs && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ vs.join(', ')
         type = $1.downcase
         subtype = $2.downcase
         parameters = []
@@ -523,8 +534,8 @@ module OpenURI
     # as an Array of String.
     # The encodings are downcased for canonicalization.
     def content_encoding
-      v = @meta['content-encoding']
-      if v && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ v
+      vs = @metas['content-encoding']
+      if vs && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ (v = vs.join(', '))
         v.scan(RE_TOKEN).map {|content_coding| content_coding.downcase}
       else
         []

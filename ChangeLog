@@ -1,3 +1,11 @@
+Tue Apr  9 19:45:44 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Support multiple fields with same field
+	  name (like Set-Cookie).
+	  (OpenURI::Meta#metas): New accessor to obtain fields as a Hash from
+	  field name (string) to field values (array of strings).
+	  [ruby-core:37734] [Bug #4964] reported by ren li.
+
 Tue Apr  9 15:26:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): append keyword hash to argument array

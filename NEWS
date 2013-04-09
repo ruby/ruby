@@ -46,6 +46,9 @@ with all sufficient information, see the ChangeLog file.
     * Pathname#write
     * Pathname#binwrite
 
+* open-uri
+  * Support multiple fields with same field name (like Set-Cookie).
+
 * Resolv
   * New methods:
     * Resolv::DNS.fetch_resource

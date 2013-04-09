@@ -502,6 +502,21 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end if defined?(Zlib::GzipWriter)
 
+  def test_multiple_cookies
+    with_http {|srv, dr, url|
+      srv.mount_proc("/mcookie/") {|req, res|
+        res.cookies << "name1=value1; blabla"
+        res.cookies << "name2=value2; blabla"
+        res.body = "foo"
+      }
+      open("#{url}/mcookie/") {|f|
+        assert_equal("foo", f.read)
+        assert_equal(["name1=value1; blabla", "name2=value2; blabla"],
+                     f.metas['set-cookie'].sort)
+      }
+    }
+  end
+
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
   def test_ftp_invalid_request
