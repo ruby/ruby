@@ -1920,7 +1920,14 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
     mk
   end
 
-  def timestamp_file(name)
+  def timestamp_file(name, target_prefix = nil)
+    if target_prefix
+      pat = []
+      install_dirs.each do |n, d|
+        pat << n if /\$\(target_prefix\)\z/ =~ d
+      end
+      name = name.gsub(/\$\((#{pat.join("|")})\)/) {$&+target_prefix}
+    end
     name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "" : $2 ? ".-." : "_"}
     "./.#{name}.time"
   end
@@ -2216,7 +2223,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
-        mfile.print "#{f} #{timestamp_file(dir)}\n"
+        mfile.print "#{f} #{timestamp_file(dir, target_prefix)}\n"
         mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
@@ -2236,12 +2243,12 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       for dir, *files in files
         unless dirs.include?(dir)
           dirs << dir
-          mfile.print "pre-install-rb#{sfx}: #{timestamp_file(dir)}\n"
+          mfile.print "pre-install-rb#{sfx}: #{timestamp_file(dir, target_prefix)}\n"
         end
         for f in files
           dest = "#{dir}/#{File.basename(f)}"
           mfile.print("install-rb#{sfx}: #{dest}\n")
-          mfile.print("#{dest}: #{f} #{timestamp_file(dir)}\n")
+          mfile.print("#{dest}: #{f} #{timestamp_file(dir, target_prefix)}\n")
           mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D#{sep})\n")
           if defined?($installed_list) and !$extout
             mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
@@ -2266,8 +2273,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
     dirs.unshift(sodir) if target and !dirs.include?(sodir)
     dirs.each do |d|
-      t = timestamp_file(d)
-      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) #{d}\n\t$(Q) $(TOUCH) $@\n"
+      t = timestamp_file(d, target_prefix)
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
     end
 
     mfile.print <<-SITEINSTALL
@@ -2302,7 +2309,7 @@ site-install-rb: install-rb
     mfile.print "$(DLLIB): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file('$(RUBYARCHDIR)')}" if $extout
+    mfile.print " #{timestamp_file('$(RUBYARCHDIR)', target_prefix)}" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"

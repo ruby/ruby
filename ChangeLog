@@ -1,3 +1,9 @@
+Tue Apr  9 10:02:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (timestamp_file): gather timestamp files in one
+	  directory from each extension directories, with considering
+	  target_prefix.
+
 Tue Apr  9 04:57:59 JST 2013  Charles Oliver Nutter  <headius@headius.com>
 
 	* error.c: Capture EGAIN, EWOULDBLOCK, EINPROGRESS exceptions and
