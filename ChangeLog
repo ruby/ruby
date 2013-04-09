@@ -1,3 +1,9 @@
+Wed Apr 10 06:32:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (MUL_OVERFLOW_INT_P): New macro.
+
+	* sprintf.c (GETNUM): Don't overflow on signed integer multiplication.
+
 Tue Apr  9 20:38:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (MUL_OVERFLOW_SIGNED_INTEGER_P): New macro.

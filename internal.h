@@ -36,6 +36,7 @@ extern "C" {
       ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 #define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
 #define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
+#define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];

@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include <math.h>
 #include <stdarg.h>
 
@@ -128,10 +129,13 @@ sign_bits(int base, const char *p)
 
 #define GETNUM(n, val) \
     for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
-	int next_n = 10 * (n) + (*p - '0'); \
-        if (next_n / 10 != (n)) {\
+	int next_n = (n); \
+        if (MUL_OVERFLOW_INT_P(10, next_n)) \
 	    rb_raise(rb_eArgError, #val " too big"); \
-	} \
+	next_n *= 10; \
+        if (INT_MAX - (*p - '0') < next_n) \
+	    rb_raise(rb_eArgError, #val " too big"); \
+	next_n += *p - '0'; \
 	(n) = next_n; \
     } \
     if (p >= end) { \
