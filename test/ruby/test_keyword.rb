@@ -327,4 +327,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError, bug8139) {b.call(c: bug8139)}
     assert_raise(ArgumentError, bug8139) {b.call}
   end
+
+  def test_super_with_keyword
+    bug8236 = '[ruby-core:54094] [Bug #8236]'
+    base = Class.new do
+      def foo(*args)
+        args
+      end
+    end
+    a = Class.new(base) do
+      def foo(arg, bar: 'x')
+        super
+      end
+    end
+    b = Class.new(base) do
+      def foo(*args, bar: 'x')
+        super
+      end
+    end
+    assert_equal([42, {:bar=>"x"}], a.new.foo(42), bug8236)
+    assert_equal([42, {:bar=>"x"}], b.new.foo(42), bug8236)
+  end
 end
