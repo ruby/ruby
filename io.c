@@ -110,6 +110,10 @@
 # endif
 #endif
 
+#ifndef EWOULDBLOCK
+# define EWOULDBLOCK EAGAIN
+#endif
+
 #if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
 /* Mac OS X and OpenBSD have __syscall but don't define it in headers */
 off_t __syscall(quad_t number, ...);
@@ -11471,38 +11475,39 @@ rb_readwrite_sys_fail(int writable, const char *mesg)
     arg = mesg ? rb_str_new2(mesg) : Qnil;
     if (writable == RB_IO_WAIT_WRITABLE) {
 	switch (n) {
-	    case EAGAIN:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitWritable));
-		break;
+	  case EAGAIN:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitWritable));
+	    break;
 #if EAGAIN != EWOULDBLOCK
-	    case EWOULDBLOCK:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitWritable));
-		break;
+	  case EWOULDBLOCK:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitWritable));
+	    break;
 #endif
-	    case EINPROGRESS:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitWritable));
-		break;
-	    default:
-		rb_mod_sys_fail_str(rb_mWaitWritable, arg);
+	  case EINPROGRESS:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitWritable));
+	    break;
+	  default:
+	    rb_mod_sys_fail_str(rb_mWaitWritable, arg);
 	}
     }
     else if (writable == RB_IO_WAIT_READABLE) {
 	switch (n) {
-	    case EAGAIN:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitReadable));
-		break;
+	  case EAGAIN:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEAGAINWaitReadable));
+	    break;
 #if EAGAIN != EWOULDBLOCK
-	    case EWOULDBLOCK:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitReadable));
-		break;
+	  case EWOULDBLOCK:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEWOULDBLOCKWaitReadable));
+	    break;
 #endif
-	    case EINPROGRESS:
-		rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitReadable));
-		break;
-	    default:
-		rb_mod_sys_fail_str(rb_mWaitReadable, arg);
+	  case EINPROGRESS:
+	    rb_exc_raise(rb_class_new_instance(1, &arg, rb_eEINPROGRESSWaitReadable));
+	    break;
+	  default:
+	    rb_mod_sys_fail_str(rb_mWaitReadable, arg);
 	}
-    } else {
+    }
+    else {
 	rb_bug("invalid read/write type passed to rb_readwrite_sys_fail: %d", writable);
     }
 }
@@ -11719,17 +11724,17 @@ Init_IO(void)
     rb_include_module(rb_eEAGAINWaitReadable, rb_mWaitReadable);
     rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
-    if (EAGAIN == EWOULDBLOCK) {
-	rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
-	rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
-	rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
-	rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
-    } else {
-	rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKRWaiteadable", rb_eEWOULDBLOCK);
-	rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
-	rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
-	rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
-    }
+#if EAGAIN == EWOULDBLOCK
+    rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
+    rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
+    rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
+    rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
+#else
+    rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKRWaiteadable", rb_eEWOULDBLOCK);
+    rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
+    rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
+    rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
+#endif
     rb_eEINPROGRESSWaitReadable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitReadable", rb_eEINPROGRESS);
     rb_include_module(rb_eEINPROGRESSWaitReadable, rb_mWaitReadable);
     rb_eEINPROGRESSWaitWritable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitWritable", rb_eEINPROGRESS);
