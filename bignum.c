@@ -309,13 +309,17 @@ VALUE
 rb_int2big(SIGNED_VALUE n)
 {
     long neg = 0;
+    VALUE u;
     VALUE big;
 
     if (n < 0) {
-	n = -n;
+        u = 1 + (VALUE)(-(n + 1)); /* u = -n avoiding overflow */
 	neg = 1;
     }
-    big = rb_uint2big(n);
+    else {
+        u = n;
+    }
+    big = rb_uint2big(u);
     if (neg) {
 	RBIGNUM_SET_SIGN(big, 0);
     }
@@ -1224,12 +1228,15 @@ rb_big2ulong(VALUE x)
 {
     VALUE num = big2ulong(x, "unsigned long", TRUE);
 
-    if (!RBIGNUM_SIGN(x)) {
-	unsigned long v = (unsigned long)(-(long)num);
-
-	if (v <= LONG_MAX)
-	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
-	return (VALUE)v;
+    if (RBIGNUM_POSITIVE_P(x)) {
+        return num;
+    }
+    else {
+        if (num <= LONG_MAX)
+            return -(long)num;
+        if (num == 1+(unsigned long)(-(LONG_MIN+1)))
+            return LONG_MIN;
+        rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
     }
     return num;
 }
@@ -1239,12 +1246,18 @@ rb_big2long(VALUE x)
 {
     VALUE num = big2ulong(x, "long", TRUE);
 
-    if ((long)num < 0 &&
-	(RBIGNUM_SIGN(x) || (long)num != LONG_MIN)) {
-	rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
+    if (RBIGNUM_POSITIVE_P(x)) {
+        if (LONG_MAX < num)
+            rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
+        return num;
     }
-    if (!RBIGNUM_SIGN(x)) return -(SIGNED_VALUE)num;
-    return num;
+    else {
+        if (num <= LONG_MAX)
+            return -(long)num;
+        if (num == 1+(unsigned long)(-(LONG_MIN+1)))
+            return LONG_MIN;
+        rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
+    }
 }
 
 #if HAVE_LONG_LONG
@@ -1272,13 +1285,15 @@ rb_big2ull(VALUE x)
 {
     unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
-    if (!RBIGNUM_SIGN(x)) {
-	LONG_LONG v = -(LONG_LONG)num;
-
-	/* FIXNUM_MIN-1 .. LLONG_MIN mapped into 0xbfffffffffffffff .. LONG_MAX+1 */
-	if ((unsigned LONG_LONG)v <= LLONG_MAX)
-	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long long");
-	return v;
+    if (RBIGNUM_POSITIVE_P(x)) {
+        return num;
+    }
+    else {
+        if (num <= LLONG_MAX)
+            return -(LONG_LONG)num;
+        if (num == 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
+            return LLONG_MIN;
+        rb_raise(rb_eRangeError, "bignum out of range of unsigned long long");
     }
     return num;
 }
@@ -1288,12 +1303,18 @@ rb_big2ll(VALUE x)
 {
     unsigned LONG_LONG num = big2ull(x, "long long");
 
-    if ((LONG_LONG)num < 0 && (RBIGNUM_SIGN(x)
-			       || (LONG_LONG)num != LLONG_MIN)) {
-	rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
+    if (RBIGNUM_POSITIVE_P(x)) {
+        if (LLONG_MAX < num)
+            rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
+        return num;
     }
-    if (!RBIGNUM_SIGN(x)) return -(LONG_LONG)num;
-    return num;
+    else {
+        if (num <= LLONG_MAX)
+            return -(LONG_LONG)num;
+        if (num == 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
+            return LLONG_MIN;
+        rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
+    }
 }
 
 #endif  /* HAVE_LONG_LONG */

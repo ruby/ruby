@@ -639,7 +639,6 @@ inline static VALUE
 f_imul(long a, long b)
 {
     VALUE r;
-    volatile long c;
 
     if (a == 0 || b == 0)
 	return ZERO;
@@ -648,10 +647,10 @@ f_imul(long a, long b)
     else if (b == 1)
 	return LONG2NUM(a);
 
-    c = a * b;
-    r = LONG2NUM(c);
-    if (NUM2LONG(r) != c || (c / a) != b)
+    if (MUL_OVERFLOW_LONG_P(a, b))
 	r = rb_big_mul(rb_int2big(a), rb_int2big(b));
+    else
+        r = LONG2NUM(a * b);
     return r;
 }
 

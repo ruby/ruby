@@ -5034,15 +5034,14 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     else {
 	/* Compute the length of the result array; return [] if any is empty */
 	for (i = 0; i < n; i++) {
-	    long k = RARRAY_LEN(arrays[i]), l = resultlen;
+	    long k = RARRAY_LEN(arrays[i]);
 	    if (k == 0) {
 		result = rb_ary_new2(0);
 		goto done;
 	    }
-	    resultlen *= k;
-	    if (resultlen < k || resultlen < l || resultlen / k != l) {
+            if (MUL_OVERFLOW_LONG_P(resultlen, k))
 		rb_raise(rb_eRangeError, "too big to product");
-	    }
+	    resultlen *= k;
 	}
 	result = rb_ary_new2(resultlen);
     }

@@ -2731,7 +2731,6 @@ fix_mul(VALUE x, VALUE y)
 #if SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
 	LONG_LONG d;
 #else
-	volatile long c;
 	VALUE r;
 #endif
 
@@ -2745,13 +2744,11 @@ fix_mul(VALUE x, VALUE y)
 #else
 	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
 	    return LONG2FIX(a*b);
-	c = a * b;
-	r = LONG2FIX(c);
-
 	if (a == 0) return x;
-	if (FIX2LONG(r) != c || c/a != b) {
+        if (MUL_OVERFLOW_FIXNUM_P(a, b))
 	    r = rb_big_mul(rb_int2big(a), rb_int2big(b));
-	}
+        else
+            r = LONG2FIX(a * b);
 	return r;
 #endif
     }
@@ -2973,11 +2970,10 @@ int_pow(long x, unsigned long y)
 	    y >>= 1;
 	}
 	{
-	    volatile long xz = x * z;
-	    if (!POSFIXABLE(xz) || xz / x != z) {
+            if (MUL_OVERFLOW_FIXNUM_P(x, z)) {
 		goto bignum;
 	    }
-	    z = xz;
+	    z = x * z;
 	}
     } while (--y);
     if (neg) z = -z;

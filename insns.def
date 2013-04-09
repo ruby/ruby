@@ -1418,16 +1418,13 @@ opt_mult
 	    val = recv;
 	}
 	else {
-	    volatile long c;
 	    b = FIX2LONG(obj);
-	    c = a * b;
-
-	    if (FIXABLE(c) && c / a == b) {
-		val = LONG2FIX(c);
-	    }
-	    else {
+            if (MUL_OVERFLOW_FIXNUM_P(a, b)) {
 		val = rb_big_mul(rb_int2big(a), rb_int2big(b));
-	    }
+            }
+            else {
+		val = LONG2FIX(a * b);
+            }
 	}
     }
     else if (FLONUM_2_P(recv, obj) &&
