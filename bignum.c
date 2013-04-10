@@ -832,13 +832,17 @@ static VALUE
 rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
+    unsigned LONG_LONG u;
     VALUE big;
 
     if (n < 0) {
-	n = -n;
+        u = 1 + (unsigned LONG_LONG)(-(n + 1)); /* u = -n avoiding overflow */
 	neg = 1;
     }
-    big = rb_ull2big(n);
+    else {
+        u = n;
+    }
+    big = rb_ull2big(u);
     if (neg) {
 	RBIGNUM_SET_SIGN(big, 0);
     }

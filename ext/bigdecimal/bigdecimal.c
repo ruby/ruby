@@ -38,6 +38,16 @@
 
 /* #define ENABLE_NUMERIC_STRING */
 
+#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
+    (a) == 0 ? 0 : \
+    (a) == -1 ? (b) < -(max) : \
+    (a) > 0 ? \
+      ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
+      ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
+#define SIGNED_VALUE_MAX INTPTR_MAX
+#define SIGNED_VALUE_MIN INTPTR_MIN
+#define MUL_OVERFLOW_SIGNED_VALUE_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, SIGNED_VALUE_MIN, SIGNED_VALUE_MAX)
+
 VALUE rb_cBigDecimal;
 VALUE rb_mBigMath;
 
@@ -3735,12 +3745,18 @@ AddExponent(Real *a, SIGNED_VALUE n)
     SIGNED_VALUE eb, mb;
     if (e > 0) {
 	if (n > 0) {
+            if (MUL_OVERFLOW_SIGNED_VALUE_P(m, (SIGNED_VALUE)BASE_FIG) ||
+                MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG))
+                goto overflow;
 	    mb = m*(SIGNED_VALUE)BASE_FIG;
 	    eb = e*(SIGNED_VALUE)BASE_FIG;
 	    if (mb < eb) goto overflow;
 	}
     }
     else if (n < 0) {
+        if (MUL_OVERFLOW_SIGNED_VALUE_P(m, (SIGNED_VALUE)BASE_FIG) ||
+            MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG))
+            goto underflow;
 	mb = m*(SIGNED_VALUE)BASE_FIG;
 	eb = e*(SIGNED_VALUE)BASE_FIG;
 	if (mb > eb) goto underflow;
@@ -5254,9 +5270,17 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
 	    ++me;
 	}
 	while (i < me) {
+            if (MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG))
+                goto exp_overflow;
 	    es = e * (SIGNED_VALUE)BASE_FIG;
+            if (MUL_OVERFLOW_SIGNED_VALUE_P(e, 10) ||
+                SIGNED_VALUE_MAX - (exp_chr[i] - '0') < e * 10)
+                goto exp_overflow;
 	    e = e * 10 + exp_chr[i] - '0';
+            if (MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG))
+                goto exp_overflow;
 	    if (es > (SIGNED_VALUE)(e * BASE_FIG)) {
+              exp_overflow:
 		exponent_overflow = 1;
 		e = es; /* keep sign */
 		break;

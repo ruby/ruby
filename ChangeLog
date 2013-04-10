@@ -1,3 +1,13 @@
+Wed Apr 10 12:32:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_ll2big): Don't overflow on signed integer negation.
+
+	* ext/bigdecimal/bigdecimal.c (MUL_OVERFLOW_SIGNED_VALUE_P): New
+	  macro.
+	  (AddExponent): Don't overflow on signed integer multiplication.
+	  (VpCtoV): Don't overflow on signed integer arithmetic.
+	  (VpCtoV): Don't overflow on signed integer arithmetic.
+
 Wed Apr 10 06:32:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (MUL_OVERFLOW_INT_P): New macro.
