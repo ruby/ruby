@@ -1722,7 +1722,7 @@ SRC
   #
   # The actual command name can be overridden by
   # <code>--with-pkg-config</code> command line option.
-  def pkg_config(pkg)
+  def pkg_config(pkg, option=nil)
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # iff package specific config command is given
       get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
@@ -1736,7 +1736,9 @@ SRC
       # default to package specific config command, as a last resort.
       get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
     end
-    if get and try_ldflags(ldflags = get['libs'])
+    if get and option
+      get[option]
+    elsif get and try_ldflags(ldflags = get['libs'])
       cflags = get['cflags']
       libs = get['libs-only-l']
       ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
