@@ -1320,9 +1320,12 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.index(obj)             ->  int or nil
- *     ary.index { |item| block } ->  int or nil
- *     ary.index                  ->  Enumerator
+ *     ary.index(obj)                   ->  int or nil
+ *     ary.index { |item| block }       ->  int or nil
+ *     ary.index                        ->  Enumerator
+ *     ary.find_index(obj)              ->  int or nil
+ *     ary.find_index { |item| block }  ->  int or nil
+ *     ary.find_index                   ->  Enumerator
  *
  *  Returns the _index_ of the first object in +ary+ such that the object is
  *  <code>==</code> to +obj+.
@@ -1339,8 +1342,6 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *     a.index("b")              #=> 1
  *     a.index("z")              #=> nil
  *     a.index { |x| x == "b" }  #=> 1
- *
- *  This is an alias of Array#find_index.
  */
 
 static VALUE
@@ -3155,6 +3156,7 @@ rb_ary_transpose(VALUE ary)
 /*
  *  call-seq:
  *     ary.replace(other_ary)  -> ary
+ *     ary.initialize_copy(other_ary)  -> ary
  *
  *  Replaces the contents of +self+ with the contents of +other_ary+,
  *  truncating or expanding if necessary.
@@ -5450,7 +5452,8 @@ Init_Array(void)
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
-    rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
+    rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
+    rb_define_alias(rb_cArray,  "initialize_copy", "replace");
 
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_alias(rb_cArray,  "to_s", "inspect");
@@ -5481,8 +5484,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_alias(rb_cArray,  "size", "length");
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
-    rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
+    rb_define_alias(rb_cArray,  "find_index", "index");
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
@@ -5494,8 +5497,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sort_by!", rb_ary_sort_by_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
-    rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
+    rb_define_alias(rb_cArray,  "map", "collect");
+    rb_define_alias(rb_cArray,  "map!", "collect!");
     rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
@@ -5507,13 +5510,12 @@ Init_Array(void)
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
     rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
-    rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
 
-    rb_define_method(rb_cArray, "slice", rb_ary_aref, -1);
+    rb_define_alias(rb_cArray,  "slice", "[]");
     rb_define_method(rb_cArray, "slice!", rb_ary_slice_bang, -1);
 
     rb_define_method(rb_cArray, "assoc", rb_ary_assoc, 1);
