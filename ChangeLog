@@ -1,3 +1,7 @@
+Wed Apr 11 11:58:04 2013  Konstantin Haase  <me@rkh.im>
+
+	* dir.c (file_s_fnmatch): Document File::FNM_EXTGLOB flag.
+
 Wed Apr 10 17:39:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): Initialize a local variable
