@@ -49,27 +49,27 @@ Tue Apr  9 10:02:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Apr  9 04:57:59 JST 2013  Charles Oliver Nutter  <headius@headius.com>
 
-	* error.c: Capture EGAIN, EWOULDBLOCK, EINPROGRESS exceptions and
+	* error.c: Capture EAGAIN, EWOULDBLOCK, EINPROGRESS exceptions and
 	  export them for use in WaitReadable/Writable exceptions.
 	* io.c: Create versions of EAGAIN, EWOULDBLOCK, EINPROGRESS that
-          include WaitReadable and WaitWritable. Add rb_readwrite_sys_fail
+	  include WaitReadable and WaitWritable. Add rb_readwrite_sys_fail
 	  for nonblocking failures using those exceptions. Use that
 	  function in io_getpartial and io_write_nonblock instead of
 	  rb_mod_sys_fail
-        * ext/openssl/ossl_ssl.c: Add new SSLError subclasses that include
+	* ext/openssl/ossl_ssl.c: Add new SSLError subclasses that include
 	  WaitReadable and WaitWritable. Use those classes for
 	  write_would_block and read_would_block instead of rb_mod_sys_fail.
 	* ext/socket/ancdata.c: Use rb_readwrite_sys_fail instead of
 	  rb_mod_sys_fail in bsock_sendmsg_internal and
 	  bsock_recvmsg_internal.
-        * ext/socket/init.c: Use rb_readwrite_sys_fail instead of
+	* ext/socket/init.c: Use rb_readwrite_sys_fail instead of
 	  rb_mod_sys_fail in rsock_s_recvfrom_nonblock and
-          rsock_s_connect_nonblock.
-        * ext/socket/socket.c: Use rb_readwrite_sys_fail instead of
-          rb_mod_sys_fail in sock_connect_nonblock.
+	  rsock_s_connect_nonblock.
+	* ext/socket/socket.c: Use rb_readwrite_sys_fail instead of
+	  rb_mod_sys_fail in sock_connect_nonblock.
 	* include/ruby/ruby.h: Export rb_readwrite_sys_fail for use instead
 	  of rb_mod_sys_fail. Introduce new constants RB_IO_WAIT_READABLE and
-          RB_IO_WAIT_WRITABLE for first arg to rb_readwrite_sys_fail.
+	  RB_IO_WAIT_WRITABLE for first arg to rb_readwrite_sys_fail.
 
 Tue Apr  9 02:44:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
