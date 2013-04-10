@@ -1,3 +1,10 @@
+Thu Apr 11 06:09:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/extconf.rb: define RUBY_LIBFFI_MODVERSION macro.
+
+	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): define 0 or 1
+	  with platform and libffi's version. [Bug #3371]
+
 Thu Apr 11 05:30:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): Add optional argument "option".

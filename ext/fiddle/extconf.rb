@@ -5,6 +5,10 @@ require 'mkmf'
 dir_config 'libffi'
 
 pkg_config("libffi")
+if ver = pkg_config("libffi", "modversion")
+  $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % ver.split('.') }})
+end
+
 unless have_header('ffi.h')
   if have_header('ffi/ffi.h')
     $defs.push(format('-DUSE_HEADER_HACKS'))
