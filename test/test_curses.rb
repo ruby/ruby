@@ -29,6 +29,7 @@ ensure
   close_screen
   puts "", [Marshal.dump([result, e])].pack('m').delete("\n")
   print "\\0"
+  $stdio.flush
 end
 src
       if input
