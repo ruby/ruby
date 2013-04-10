@@ -5270,8 +5270,10 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
 	    ++me;
 	}
 	while (i < me) {
-            if (MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG))
+            if (MUL_OVERFLOW_SIGNED_VALUE_P(e, (SIGNED_VALUE)BASE_FIG)) {
+                es = e;
                 goto exp_overflow;
+            }
 	    es = e * (SIGNED_VALUE)BASE_FIG;
             if (MUL_OVERFLOW_SIGNED_VALUE_P(e, 10) ||
                 SIGNED_VALUE_MAX - (exp_chr[i] - '0') < e * 10)

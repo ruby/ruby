@@ -1,3 +1,8 @@
+Wed Apr 10 17:39:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): Initialize a local variable
+	  even when overflow.
+
 Wed Apr 10 12:32:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_ll2big): Don't overflow on signed integer negation.
