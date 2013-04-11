@@ -1,3 +1,14 @@
+Fri Apr 12 01:57:52 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb:  Revert r34669 which altered the way
+	  metaprogramming in FileUtils occurred.  [ruby-trunk - Bug #7958]
+
+	* test/fileutils/visibility_tests.rb:  Refactored tests of FileUtils
+	  options modules to expose bug found in #7958
+	* test/fileutils/test_dryrun.rb:  ditto.
+	* test/fileutils/test_nowrite.rb:  ditto.
+	* test/fileutils/test_verbose.rb:  ditto.
+
 Fri Apr 12 01:28:46 2013  Luis Lavena  <luislavena@gmail.com>
 
 	* win32/file.c (get_user_from_path):  add internal function that retrieves
