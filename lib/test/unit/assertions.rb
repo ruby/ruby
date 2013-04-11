@@ -250,7 +250,13 @@ EOT
       #
       #    assert_respond_to("hello", :reverse)  #Succeeds
       #    assert_respond_to("hello", :does_not_exist)  #Fails
-      def assert_respond_to obj, meth, msg = nil
+      def assert_respond_to obj, (meth, priv), msg = nil
+        if priv
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to respond to ##{meth}#{" privately" if priv}"
+          }
+          return assert obj.respond_to?(meth, priv), msg
+        end
         #get rid of overcounting
         super if !caller[0].rindex(MINI_DIR, 0) || !obj.respond_to?(meth)
       end

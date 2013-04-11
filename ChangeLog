@@ -1,3 +1,9 @@
+Fri Apr 12 02:10:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_export_method): directly override the flag of method
+	  defined in prepending class too, not adding zsuper entry.
+	  [ruby-core:53106] [Bug #8005]
+
 Fri Apr 12 01:57:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/fileutils.rb:  Revert r34669 which altered the way

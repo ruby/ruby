@@ -752,7 +752,8 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
     if (me->flag != noex) {
 	rb_vm_check_redefinition_opt_method(me, klass);
 
-	if (klass == defined_class) {
+	if (klass == defined_class ||
+	    RCLASS_ORIGIN(klass) == defined_class) {
 	    me->flag = noex;
 	    if (me->def->type == VM_METHOD_TYPE_REFINED) {
 		me->def->body.orig_me->flag = noex;
