@@ -13,7 +13,7 @@ typedef struct {
 #if defined(USE_FFI_CLOSURE_ALLOC)
 #elif defined(__OpenBSD__)
 # define USE_FFI_CLOSURE_ALLOC 0
-#elif RUBY_LIBFFI_MODVERSION < 3000005 && \
+#elif defined(RUBY_LIBFFI_MODVERSION) && RUBY_LIBFFI_MODVERSION < 3000005 && \
 	(defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_AMD64))
 # define USE_FFI_CLOSURE_ALLOC 0
 #else

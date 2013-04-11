@@ -1,3 +1,8 @@
+Thu Apr 11 10:39:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): add missing case:
+	  RUBY_LIBFFI_MODVERSION is not defined (usually on Windows).
+
 Thu Apr 11 09:27:04 2013  Konstantin Haase  <me@rkh.im>
 
 	* dir.c (file_s_fnmatch): Document File::FNM_EXTGLOB flag.
