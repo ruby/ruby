@@ -1,3 +1,37 @@
+Fri Apr 12 02:27:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: use more generic type:
+	  * u_char -> unsigned char
+	  * u_short -> unsigned short
+	  * u_int -> unsigned int
+	  * u_long -> unsigned long
+	  * quad_t -> int64_t
+	  * u_quad_t -> uint64_t
+
+	* addr2line.c (imax): inline is defined by configure.
+
+Fri Apr 12 02:27:42 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* addr2line.c: quad_t and u_quad_t is not available on Solaris.
+	  __inline is not available with old compilers on Solaris.
+	  [ruby-dev:47229] [Bug #8227]
+
+Fri Apr 12 02:27:42 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* addr2line.c (putce): suppress unused return value warning.
+
+Fri Apr 12 02:27:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (kprintf): added from FreeBSD libstand's printf.
+	  this is consided as async signal safe function.
+
+	* addr2line.c (rb_dump_backtrace_with_lines): use kfprintf.
+	  [Bug #8144] [ruby-core:53632]
+
+Fri Apr 12 02:27:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c (rb_dump_backtrace_with_lines): output line at once.
+
 Fri Apr 12 02:10:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_export_method): directly override the flag of method
