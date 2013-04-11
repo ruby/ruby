@@ -1,3 +1,8 @@
+Thu Apr 11 11:21:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): should pass the proper value.
+	  [ruby-dev:44984][Bug #5753]
+
 Thu Apr 11 11:18:57 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:52303]
