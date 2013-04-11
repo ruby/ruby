@@ -1,3 +1,10 @@
+Thu Apr 11 19:59:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: partially revert r40183, which breaks building on
+	  other than source directory. (its commit log also says the same
+	  thing, but such failure is not reproducible on my environment
+	  and the commit breaks build on my environment)
+
 Thu Apr 11 16:10:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): define 0 on
