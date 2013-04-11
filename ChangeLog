@@ -1,3 +1,17 @@
+Fri Apr 12 01:28:46 2013  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (get_user_from_path):  add internal function that retrieves
+	  username from supplied path (refactored).
+	* win32/file.c (rb_file_expand_path_internal):  refactor expansion of user
+	  home to use get_user_from_path and cover dir_string corner cases.
+	  [ruby-core:53168] [Bug #8034]
+
+Fri Apr 12 01:28:46 2013  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (rb_file_expand_path_internal):  Expand home directory when
+	  used as second parameter (dir_string).  [ruby-core:53168] [Bug #8034]
+	* test/ruby/test_file_exhaustive.rb: add test to verify.
+
 Mon Apr  8 00:10:59 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Fix unlimited memory growth with large values of
