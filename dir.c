@@ -2042,7 +2042,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *     File.fnmatch('cat',       'category')   #=> false # only match partial string
  *
  *     File.fnmatch('c{at,ub}s', 'cats')                    #=> false # { } isn't supported by default
- *     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> false # { } is supported on FNM_EXTGLOB
+ *     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> true  # { } is supported on FNM_EXTGLOB
  *
  *     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
  *     File.fnmatch('c??t',    'cat')          #=> false # ditto
