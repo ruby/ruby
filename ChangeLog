@@ -1,3 +1,8 @@
+Fri Apr 12 03:48:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (find_library): fix to format message.
+	  [ruby-core:53568] [Bug #8130]
+
 Fri Apr 12 03:44:45 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* proc.c (bm_free): need to clean up the mark flag of a free and

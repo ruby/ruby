@@ -966,7 +966,7 @@ SRC
     func = "main" if !func or func.empty?
     lib = with_config(lib+'lib', lib)
     paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
-    checking_for(func.funcall_style, LIBARG%lib) do
+    checking_for checking_message(func.funcall_style, LIBARG%lib) do
       libpath = $LIBPATH
       libs = append_library($libs, lib)
       begin
