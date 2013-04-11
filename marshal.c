@@ -925,7 +925,7 @@ marshal_dump(int argc, VALUE *argv)
     VALUE obj, port, a1, a2;
     int limit = -1;
     struct dump_arg *arg;
-    VALUE wrapper;
+    volatile VALUE wrapper;
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -1909,7 +1909,7 @@ marshal_load(int argc, VALUE *argv)
     VALUE port, proc;
     int major, minor, infection = 0;
     VALUE v;
-    VALUE wrapper;
+    volatile VALUE wrapper;
     struct load_arg *arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);

@@ -1,3 +1,9 @@
+Fri Apr 12 04:16:30 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* marshal.c (marshal_dump, marshal_load): workaround for segv on
+	  Intel Solaris compiled with Oracle SolarisStudio 12.3.
+	  Partly revert r38174. [ruby-core:52042] [Bug #7805]
+
 Fri Apr 12 04:12:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_conv_enc_opts): convert with one converter, instead
