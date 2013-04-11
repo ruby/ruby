@@ -1,3 +1,9 @@
+Thu Apr 11 13:19:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/drb/drbtest.rb (Drb{Core,Ary}#teardown): retry Process.kill
+	  if it fails with Errno::EPERM on Windows (workaround).
+	  [ruby-dev:47245] [Bug #8251]
+
 Thu Apr 11 11:11:38 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c: Fix a typo.
