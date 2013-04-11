@@ -1,3 +1,9 @@
+Thu Apr 11 11:22:32 2013  Naohisa Goto  <ngoto@gen-info.osaka-u.ac.jp>
+
+	* string.c (rb_str_concat): set array element after definition
+	  to fix compile error with Fujitsu C Compiler 5.6 on Solaris 10
+	  on Sparc.  [Bug #5878] [ruby-dev:45123]
+
 Thu Apr 11 11:21:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_magic_comment): should pass the proper value.
