@@ -12,8 +12,6 @@ class CGI
       s = nOE_element(element, attributes)
       if block_given?
         s << yield.to_s
-      else
-        ""
       end
       s << "</#{element.upcase}>"
     end
@@ -903,14 +901,14 @@ class CGI
       end
     end
 
-      # - O EMPTY
+    # - O EMPTY
     instance_method(:nOE_element_def).tap do |m|
       for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ]
         define_method(element.downcase, m)
       end
     end
 
-      # O O or - O
+    # O O or - O
     instance_method(:nO_element_def).tap do |m|
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD ]
