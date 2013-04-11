@@ -51,7 +51,7 @@ class CGI
     #
     #   O O or - O
     def nO_element(element, attributes = {})
-      s = nOE_element(element)
+      s = nOE_element(element, attributes)
       if block_given?
         s << yield.to_s
         s << "</#{element.upcase}>"
