@@ -1233,7 +1233,7 @@ static void
 write_would_block(int nonblock)
 {
     if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLErrorWaitReadable, "write would block");
+        VALUE exc = ossl_exc_new(eSSLErrorWaitWritable, "write would block");
         rb_exc_raise(exc);
     }
 }
