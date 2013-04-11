@@ -743,15 +743,15 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
 #{headers}
 /*top*/
 extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
 int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
-#{MAIN_DOES_NOTHING "t"}
 SRC
     call && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
 int t(void) { #{call}; return 0; }
-#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -762,8 +762,8 @@ SRC
 #{headers}
 /*top*/
 extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
 int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
-#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1147,7 +1147,7 @@ SRC
 #{cpp_include(headers)}
 /*top*/
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
-#{MAIN_DOES_NOTHING "s"}
+#{MAIN_DOES_NOTHING}
 SRC
         $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
         $defs.push(format("-DHAVE_ST_%s", member.tr_cpp)) # backward compatibility
@@ -1401,8 +1401,8 @@ SRC
 /*top*/
 volatile #{type} conftestval;
 extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
 int t(void) {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
-#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1414,8 +1414,8 @@ SRC
 /*top*/
 volatile #{type} conftestval;
 extern int t(void);
+#{MAIN_DOES_NOTHING 't'}
 int t(void) {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
-#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
