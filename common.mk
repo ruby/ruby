@@ -616,7 +616,7 @@ flock.$(OBJEXT): {$(VPATH)}flock.c
 memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
 memmove.$(OBJEXT): {$(VPATH)}memmove.c
 mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
-setproctitle.$(OBJEXT): {$(VPATH)}setproctitle.c {$(VPATH)}util.h $(RUBY_H_INCLUDES)
+setproctitle.$(OBJEXT): {$(VPATH)}setproctitle.c {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(hdrdir)/ruby.h
 strchr.$(OBJEXT): {$(VPATH)}strchr.c
 strdup.$(OBJEXT): {$(VPATH)}strdup.c
 strerror.$(OBJEXT): {$(VPATH)}strerror.c
@@ -642,7 +642,7 @@ class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}internal.h {$(VPATH)}constant.h {$(VPATH)}vm_opts.h
 compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
 complex.$(OBJEXT): {$(VPATH)}complex.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}internal.h
+  {$(VPATH)}internal.h $(hdrdir)/ruby.h
 dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES) \
   {$(VPATH)}internal.h
@@ -685,7 +685,7 @@ inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES) \
 io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
   {$(VPATH)}util.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h \
   {$(VPATH)}internal.h {$(VPATH)}thread.h {$(VPATH)}id.h {$(VPATH)}ruby_atomic.h
-main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h {$(VPATH)}vm_debug.h {$(VPATH)}vm_opts.h
+main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h {$(VPATH)}vm_debug.h {$(VPATH)}vm_opts.h $(hdrdir)/ruby.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}util.h {$(VPATH)}internal.h
 math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES) \
@@ -714,7 +714,7 @@ random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}siphash.c {$(VPATH)}siphash.h
 range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h {$(VPATH)}id.h
-rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
+rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h $(hdrdir)/ruby.h
 re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) {$(VPATH)}util.h \
   {$(VPATH)}regint.h {$(VPATH)}regenc.h {$(VPATH)}internal.h
@@ -803,7 +803,7 @@ prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \
 golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}internal.h {$(VPATH)}vm_opts.h
 goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}vm_debug.h {$(VPATH)}node.h
+  {$(VPATH)}vm_debug.h {$(VPATH)}node.h $(hdrdir)/ruby.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}missing.h $(RUBY_H_INCLUDES)
