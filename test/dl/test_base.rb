@@ -130,5 +130,10 @@ module DL
 
     def test_empty()
     end
+
+    def teardown
+      if /linux/ =~ RUBY_PLATFORM
+        GC.start
+    end
   end
 end

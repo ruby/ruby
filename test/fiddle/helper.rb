@@ -109,5 +109,10 @@ module Fiddle
       @libc = Fiddle.dlopen(LIBC_SO)
       @libm = Fiddle.dlopen(LIBM_SO)
     end
+
+    def teardown
+      if /linux/ =~ RUBY_PLATFORM
+        GC.start
+    end
   end
 end
