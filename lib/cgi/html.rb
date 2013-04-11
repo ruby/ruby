@@ -99,11 +99,7 @@ class CGI
                    else
                      href
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
     # Generate a Document Base URI element as a String.
@@ -121,11 +117,7 @@ class CGI
                    else
                      href
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
     # Generate a BlockQuote element as a string.
@@ -144,11 +136,7 @@ class CGI
                    else
                      cite
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
 
@@ -168,11 +156,7 @@ class CGI
                    else
                      align
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
 
@@ -435,11 +419,7 @@ class CGI
         buf << doctype
       end
 
-      if block_given?
-        buf << super(attributes){ yield }
-      else
-        buf << super(attributes)
-      end
+      buf << super(attributes)
 
       if pretty
         CGI::pretty(buf, pretty)
@@ -831,11 +811,7 @@ class CGI
                    else
                      name
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
   end # HtmlExtension
