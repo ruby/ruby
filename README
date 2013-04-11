@@ -37,7 +37,7 @@ following command:
 
   $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
 
-Or if you are using git then use following command:
+Or if you are using git then use the following command:
 
   $ git clone git://github.com/ruby/ruby.git
 
@@ -46,7 +46,7 @@ command and see the list of branches:
 
   $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
-Or if you are using git then use following command:
+Or if you are using git then use the following command:
 
   $ git ls-remote git://github.com/ruby/ruby.git
 
