@@ -1,139 +1,157 @@
 #!/usr/bin/ruby
 
-# tool/update-deps assists you to update dependencies in common.mk.
+# tool/update-deps verify makefile dependencies.
 
-# This script uses preprocessed source files (*.i) to extract
-# dependencies.
-# It is possible to generate *.i using gcc with -save-temps option as:
+# Requirements:
+#   gcc 4.5 (for -save-temps=obj option)
+#   GNU make (for -p option)
 #
-#   ./configure CFLAGS='-save-temps'
-#   make all golf
-#
-# After that, tool/update-deps generate common.mk with up-to-date dependencies.
-# Currently, the result is not perfect around version.o, compile.o, etc.
-# So you must see each changes and incorporate right changes.
-#
-#   ./tool/update-deps > z
-#   wdiff =(sed -e 's/\\$//' common.mk ) =(sed -e 's/\\$//' z) |less -j 5 -p '\{\+|\+\}|\[-|-\]'
-#   vi common.mk
+# Usage:
+#   1. Compile ruby with -save-temps=obj option.
+#      Ex.  ./configure debugflags='-save-temps=obj -g' && make all golf
+#   2. Run tool/update-deps to show dependency problems.
+#      Ex.  ruby tool/update-deps
 
-src = File.read("common.mk")
+require 'pathname'
+require 'pp'
 
-includes_macro = {}
-src.scan(/^([A-Z_]+_H_INCLUDES)[ \t]*=(([^\\\n]|\\(.|\n))*)\n/) {
-  name = $1
-  vals = $2
-  #STDERR.puts vals.inspect
-  vals.gsub!(/\\\n/, ' ')
-  vals.gsub!(/\{\$\(VPATH\)\}/, '')
-  vals.gsub!(/thread_\$\(THREAD_MODEL\)/, 'thread_pthread')
-  vals = vals.strip.split(/\s+/)
-  includes_macro[name] = vals
-  #STDERR.puts  [name, vals].inspect
-}
+ENV['LC_ALL'] = 'C'
 
-begin
-  again = false
-  includes_macro.each  {|name, vals|
-    vals.map! {|val|
-      if /\A\$\((.*_H_INCLUDES)\)\z/ =~ val
-        again = true
-        includes_macro.fetch($1)
-      else
-        val
+def read_make_deps(cwd)
+  dependencies = {}
+  make_p = `make -p 2> /dev/null`
+  dirstack = [cwd]
+  make_p.scan(%r{Entering directory `(.*)'|Leaving directory `(.*)'|^([/0-9a-zA-Z._-]+):(.*)}) {
+    if $1
+      enter_dir = Pathname($1)
+      #p [:enter, enter_dir]
+      dirstack.push enter_dir
+    elsif $2
+      leave_dir = Pathname($2)
+      #p [:leave, leave_dir]
+      if leave_dir != dirstack.last
+        warn "unexpected leave_dir : #{dirstack.last.inspect} != #{leave_dir.inspect}"
       end
-    }
-    vals.flatten!
-  }
-end while again
-
-src.gsub!(/^([0-9a-z._]+)\.\$\(OBJEXT\):(.*\n(?:[ 	].*\n)*)/) {
-  #STDERR.puts  $&.inspect
-  matched = $&
-  basename = $1
-  deps = $2
-  dd = deps.dup
-  dd.gsub!(/\{\$\(VPATH\)\}/, '')
-  dd.gsub!(/\\\n/, ' ')
-  dd.gsub!(/thread_\$\(THREAD_MODEL\)/, 'thread_pthread')
-  used_imacro = {}
-  includes_macro.each {|k, v|
-    if dd.sub!(/\$\(#{Regexp.escape k}\)/) { v.join(' ') }
-      used_imacro[k] = true
+      dirstack.pop
+    else
+      target = $3
+      deps = $4
+      deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
+      next if /\.o\z/ !~ target.to_s
+      next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
+      dependencies[dirstack.last + target] ||= []
+      dependencies[dirstack.last + target] |= deps.map {|dep| dirstack.last + dep }
     end
   }
-  dd = dd.strip.split(/\s+/)
-  if !File.file?("#{basename}.o")
-    warn "#{basename}.o not found."
+  dependencies
+end
+
+#def guess_compiler_wd(filename, hint0)
+#  hint = hint0
+#  begin
+#    guess = hint + filename
+#    if guess.file?
+#      return hint
+#    end
+#    hint = hint.parent
+#  end while hint.to_s != '.'
+#  raise ArgumentError, "can not find #{filename} (hint: #{hint0})"
+#end
+
+def read_single_actual_deps(path_i, cwd)
+  files = {}
+  path_i.each_line.with_index {|line, lineindex|
+    next if /\A\# \d+ "(.*)"/ !~ line
+    files[$1] = lineindex
+  }
+  # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
+  compiler_wd = files.keys.find {|f| %r{\A/.*//\z} =~ f }
+  if compiler_wd
+    files.delete compiler_wd
+    compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
   else
-    unless File.file? "#{basename}.i"
-      puts "#{basename}.i not found."
+    raise "compiler working directory not found"
+  end
+  deps = []
+  files.each_key {|dep|
+    next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
+    dep = Pathname(dep)
+    if dep.relative?
+      dep = compiler_wd + dep
+    end
+    if !dep.file?
+      warn "file not found: #{dep}"
       next
     end
-    incs = []
-    File.foreach("#{basename}.i") {|line|
-      next unless /^# \d+ "([^"]*)"/ =~ line
-      inc = $1
-      next if %r{\A[/<]} =~ inc
-      inc.sub!(%r{\A\./}, '')
-      inc.sub!(%r{\Ainclude/ruby/}, '') or
-      inc.sub!(%r{\Ainclude/}, '') or
-      inc.sub!(%r{\A\.ext/include/[^/]+/ruby/}, '') or
-      inc.sub!(%r{\Aenc/}, '') or
-      inc.sub!(%r{\Amissing/}, '')
-      #p inc
-      incs << inc
-    }
-    incs.uniq!
-    incs = incs.sort_by {|inc| [(dd.index(inc) || dd.length), incs.index(inc)] }
-    add = incs - dd
-    if !add.empty? || true
-      if incs[0] != dd[0]
-        raise "first file not matched: #{incs[0].inspect} v.s. #{dd[0].inspect}"
-      end
-      depline = "#{basename}.$(OBJEXT):"
-      used_imacro.each_key {|k|
-        if includes_macro[k].all? {|v| incs.include? v }
-          im = "$(#{k})"
-          incs.map! {|inc|
-            if includes_macro[k].include? inc
-              im0 = im
-              im = nil
-              im0
-            else
-              inc
-            end
-          }
-          incs.compact!
-        else
-          needless = includes_macro[k].reject {|v| incs.include? v }
-          STDERR.puts "#{basename}.$(OBJEXT) can't use #{k}. #{needless.join(' ')} is not used."
-        end
-      }
+    next if !dep.to_s.start_with?(cwd.to_s) # omit system headers.
+    deps << dep
+  }
+  deps
+end
 
-      incs.each {|inc|
-        inc = inc.sub(/\Athread_pthread/, 'thread_$(THREAD_MODEL)')
-        if /_INCLUDES\)\z/ =~ inc
-          # use $(RUBY_H_INCLUDES) as is.
-        elsif inc == 'revision.h'
-          inc = '$(srcdir)/revision.h'
-        else
-          inc = "{$(VPATH)}#{inc}"
-        end
-        depline << " #{inc}"
-      }
-      lines = []
-      while 72 < depline.length && depline.sub!(/\A(.{0,72}|.{72}.*?) /, '')
-        lines << $&
-      end
-      lines << depline
-      matched = lines.join("\\\n  ")
-      matched << "\n"
+def read_actual_deps(cwd)
+  deps = {}
+  Pathname.glob('**/*.o').sort.each {|fn_o|
+    fn_i = fn_o.sub_ext('.i')
+    next if !fn_i.exist?
+    path_o = cwd + fn_o
+    path_i = cwd + fn_i
+    deps[path_o] = read_single_actual_deps(path_i, cwd)
+  }
+  deps
+end
+
+def concentrate(dependencies, cwd)
+  deps = {}
+  dependencies.keys.sort.each {|target|
+    sources = dependencies[target]
+    target = target.relative_path_from(cwd)
+    sources = sources.map {|s| s.relative_path_from(cwd) }
+    if %r{\A\.\.(/|\z)} =~ target.to_s
+      warn "out of tree target: #{target}"
+      next
     end
-  end
-  #STDERR.puts  matched.inspect
-  matched
-}
+    sources = sources.reject {|s|
+      if %r{\A\.\.(/|\z)} =~ s.to_s
+        warn "out of tree source: #{s}"
+        true
+      else
+        false
+      end
+    }
+    deps[target] = sources
+  }
+  deps
+end
 
-puts src
+def compare_deps(make_deps, actual_deps)
+  targets = actual_deps.keys.sort_by {|t|
+    ary = t.to_s.split(%r{/})
+    ary.map.with_index {|e, i| i == ary.length-1 ? [0, e] : [1, e] } # regular file first, directories last.
+  }
+  targets.each {|target|
+    actual_sources = actual_deps[target]
+    if !make_deps.has_key?(target)
+      warn "no makefile dependency for #{target}"
+    else
+      make_sources = make_deps[target]
+      lacks = actual_sources - make_sources
+      puts "#{target} lacks: #{lacks.join(" ")}" if !lacks.empty?
+      unused = make_sources - actual_sources
+      puts "#{target} unuse: #{unused.join(" ")}" if !unused.empty?
+    end
+  }
+end
 
+def main
+  cwd = Pathname.pwd
+  make_deps = read_make_deps(cwd)
+  make_deps = concentrate(make_deps, cwd)
+  #pp make_deps
+  actual_deps = read_actual_deps(cwd)
+  actual_deps = concentrate(actual_deps, cwd)
+  #pp actual_deps
+  compare_deps(make_deps, actual_deps)
+end
+
+main
