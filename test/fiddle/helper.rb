@@ -113,6 +113,7 @@ module Fiddle
     def teardown
       if /linux/ =~ RUBY_PLATFORM
         GC.start
+      end
     end
   end
 end
