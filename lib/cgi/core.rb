@@ -832,29 +832,23 @@ class CGI
     when "html3"
       require 'cgi/html'
       extend Html3
-      element_init()
       extend HtmlExtension
     when "html4"
       require 'cgi/html'
       extend Html4
-      element_init()
       extend HtmlExtension
     when "html4Tr"
       require 'cgi/html'
       extend Html4Tr
-      element_init()
       extend HtmlExtension
     when "html4Fr"
       require 'cgi/html'
       extend Html4Tr
-      element_init()
       extend Html4Fr
-      element_init()
       extend HtmlExtension
     when "html5"
       require 'cgi/html'
       extend Html5
-      element_init()
       extend HtmlExtension
     end
   end
