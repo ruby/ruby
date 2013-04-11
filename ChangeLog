@@ -1,3 +1,7 @@
+Thu Apr 11 11:11:38 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c: Fix a typo.
+
 Thu Apr 11 10:39:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): add missing case:

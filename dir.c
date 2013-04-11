@@ -2031,7 +2031,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *                          (<code>[^a-z]</code>).
  *  <code> \ </code>::      Escapes the next metacharacter.
  *  <code>{a,b}</code>::    Matches pattern a and pattern b if
- *                          <code>File::FNM_PATHNAME</code> flag is enabled.
+ *                          <code>File::FNM_EXTGLOB</code> flag is enabled.
  *                          Behaves like a Regexp union (<code>(?:a|b)</code>).
  *
  *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code>
