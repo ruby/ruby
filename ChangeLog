@@ -1,3 +1,7 @@
+Thu Apr 11 09:27:04 2013  Konstantin Haase  <me@rkh.im>
+
+	* dir.c (file_s_fnmatch): Document File::FNM_EXTGLOB flag.
+
 Thu Apr 11 09:17:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* README: Fix typo by Benjamin Winkler [Fixes GH-281]

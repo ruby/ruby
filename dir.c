@@ -2030,6 +2030,9 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *                          Regexp, including set negation
  *                          (<code>[^a-z]</code>).
  *  <code> \ </code>::      Escapes the next metacharacter.
+ *  <code>{a,b}</code>::    Matches pattern a and pattern b if
+ *                          <code>File::FNM_PATHNAME</code> flag is enabled.
+ *                          Behaves like a Regexp union (<code>(?:a|b)</code>).
  *
  *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code>
  *  parameters. The same glob pattern and flags are used by
@@ -2037,7 +2040,9 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *
  *     File.fnmatch('cat',       'cat')        #=> true  # match entire string
  *     File.fnmatch('cat',       'category')   #=> false # only match partial string
- *     File.fnmatch('c{at,ub}s', 'cats')       #=> false # { } isn't supported
+ *
+ *     File.fnmatch('c{at,ub}s', 'cats')                    #=> false # { } isn't supported by default
+ *     File.fnmatch('c{at,ub}s', 'cats', File::FNM_EXTGLOB) #=> false # { } is supported on FNM_EXTGLOB
  *
  *     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
  *     File.fnmatch('c??t',    'cat')          #=> false # ditto
