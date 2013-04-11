@@ -19,7 +19,7 @@ ENV['LC_ALL'] = 'C'
 
 def read_make_deps(cwd)
   dependencies = {}
-  make_p = `make -p 2> /dev/null`
+  make_p = `make -p all golf 2> /dev/null`
   dirstack = [cwd]
   make_p.scan(%r{Entering directory `(.*)'|Leaving directory `(.*)'|^([/0-9a-zA-Z._-]+):(.*)}) {
     if $1
