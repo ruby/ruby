@@ -777,7 +777,7 @@ Init_etc(void)
      *	    members of the group.
      */
     rb_define_const(mEtc, "Group", sGroup);
-    rb_set_class_path(sPasswd, mEtc, "Group");
+    rb_set_class_path(sGroup, mEtc, "Group");
     rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
