@@ -54,7 +54,7 @@ profile.rb:: Runs the Ruby Profiler__
 Profiler__:: Provides a way to profile your Ruby application
 PStore:: Implements a file based persistence mechanism based on a Hash
 Queue:: Synchronized communication between threads, provided by thread.rb
-Racc:: A LALR(1) parser generator writting in Ruby.
+Racc:: A LALR(1) parser generator written in Ruby.
 Rake:: Ruby build program with capabilities similar to make
 rational.rb:: Deprecated library replaced by C implementation in core
 RbConfig:: Information of your configure and build of Ruby
