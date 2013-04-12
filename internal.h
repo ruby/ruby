@@ -19,6 +19,12 @@ extern "C" {
 #endif
 #endif
 
+#define GCC_VERSION_SINCE(major, minor, patchlevel) \
+  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
+   ((__GNUC__ > (major)) ||  \
+    (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
+    (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
+
 #if SIGNEDNESS_OF_TIME_T < 0	/* signed */
 # define TIMET_MAX (time_t)((~(unsigned_time_t)0) >> 1)
 # define TIMET_MIN (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1))

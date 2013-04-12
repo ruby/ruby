@@ -887,27 +887,31 @@ static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *mo
 static inline int
 ones(register unsigned long x)
 {
-#if SIZEOF_LONG == 8
-# define MASK_55 0x5555555555555555UL
-# define MASK_33 0x3333333333333333UL
-# define MASK_0f 0x0f0f0f0f0f0f0f0fUL
+#if GCC_VERSION_SINCE(3, 4, 0)
+    return  __builtin_popcountl(x);
 #else
-# define MASK_55 0x55555555UL
-# define MASK_33 0x33333333UL
-# define MASK_0f 0x0f0f0f0fUL
-#endif
+#   if SIZEOF_LONG == 8
+#       define MASK_55 0x5555555555555555UL
+#       define MASK_33 0x3333333333333333UL
+#       define MASK_0f 0x0f0f0f0f0f0f0f0fUL
+#   else
+#       define MASK_55 0x55555555UL
+#       define MASK_33 0x33333333UL
+#       define MASK_0f 0x0f0f0f0fUL
+#   endif
     x -= (x >> 1) & MASK_55;
     x = ((x >> 2) & MASK_33) + (x & MASK_33);
     x = ((x >> 4) + x) & MASK_0f;
     x += (x >> 8);
     x += (x >> 16);
-#if SIZEOF_LONG == 8
+#   if SIZEOF_LONG == 8
     x += (x >> 32);
-#endif
+#   endif
     return (int)(x & 0x7f);
-#undef MASK_0f
-#undef MASK_33
-#undef MASK_55
+#   undef MASK_0f
+#   undef MASK_33
+#   undef MASK_55
+#endif
 }
 
 static inline unsigned long
