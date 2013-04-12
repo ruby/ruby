@@ -1,3 +1,7 @@
+Fri Apr 12 21:06:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: pack.o depends on internal.h.
+
 Fri Apr 12 20:59:24 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (ones): Use __builtin_popcountl if available.

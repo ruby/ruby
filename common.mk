@@ -697,7 +697,7 @@ numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) \
 object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   {$(VPATH)}internal.h {$(VPATH)}constant.h $(ENCODING_H_INCLUDES) $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h
 pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES) {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h
+  {$(VPATH)}oniguruma.h {$(VPATH)}internal.h
 parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}id.h {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
