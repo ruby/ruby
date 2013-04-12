@@ -1052,6 +1052,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 
 /*
  * call-seq:
+ *   meth.eql?(other_meth)  -> true or false
  *   meth == other_meth  -> true or false
  *
  * Two method objects are equal if they are bound to the same

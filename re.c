@@ -2643,6 +2643,7 @@ match_hash(VALUE match)
 /*
  * call-seq:
  *    mtch == mtch2   -> true or false
+ *    mtch.eql?(mtch2)   -> true or false
  *
  *  Equality---Two matchdata are equal if their target strings,
  *  patterns, and matched positions are identical.

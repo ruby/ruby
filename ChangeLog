@@ -1,3 +1,16 @@
+Fri Apr 12 11:58:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c: Document synonymous methods, by windwiny [GH-277]
+	* bignum.c: ditto
+	* complex.c: ditto
+	* dir.c: ditto
+	* encoding.c: ditto
+	* enumerator.c: ditto
+	* numeric.c: ditto
+	* proc.c: ditto
+	* re.c: ditto
+	* string.c: ditto
+
 Thu Apr 11 23:41:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: Add dependencies for include/ruby.h
