@@ -137,7 +137,7 @@ setup_passwd(struct passwd *pwd)
  * === Example:
  *
  *	Etc.getpwuid(0)
- *	#=> #<struct Struct::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ *	#=> #<struct Etc::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
 etc_getpwuid(int argc, VALUE *argv, VALUE obj)
@@ -175,7 +175,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
  * === Example:
  *
  *	Etc.getpwnam('root')
- *	#=> #<struct Struct::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ *	#=> #<struct Etc::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
 etc_getpwnam(VALUE obj, VALUE nam)
@@ -380,7 +380,7 @@ setup_group(struct group *grp)
  * === Example:
  *
  *	Etc.getgrgid(100)
- *	#=> #<struct Struct::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
+ *	#=> #<struct Etc::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
  *
  */
 static VALUE
@@ -419,7 +419,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
  * === Example:
  *
  *	Etc.getgrnam('users')
- *	#=> #<struct Struct::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
+ *	#=> #<struct Etc::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
  *
  */
 static VALUE
@@ -678,7 +678,7 @@ Init_etc(void)
     rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
 
-    sPasswd =  rb_struct_define("Passwd",
+    sPasswd =  rb_struct_define(NULL,
 				"name", "passwd", "uid", "gid",
 #ifdef HAVE_ST_PW_GECOS
 				"gecos",
@@ -743,11 +743,13 @@ Init_etc(void)
      *	    account expiration time(integer) must be compiled with +HAVE_ST_PW_EXPIRE+
      */
     rb_define_const(mEtc, "Passwd", sPasswd);
+    rb_set_class_path(sPasswd, mEtc, "Passwd");
+    rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
 
 #ifdef HAVE_GETGRENT
-    sGroup = rb_struct_define("Group", "name",
+    sGroup = rb_struct_define(NULL, "name",
 #ifdef HAVE_ST_GR_PASSWD
 			      "passwd",
 #endif
@@ -775,6 +777,8 @@ Init_etc(void)
      *	    members of the group.
      */
     rb_define_const(mEtc, "Group", sGroup);
+    rb_set_class_path(sPasswd, mEtc, "Group");
+    rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif
