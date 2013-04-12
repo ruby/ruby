@@ -1,3 +1,10 @@
+Fri Apr 12 18:29:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: version.o depends on $(srcdir)/include/ruby/version.h
+	  instead of {$(VPATH)}version.h to avoid confusion by VPATH between
+	  top level version.h and include/ruby/version.h for build in-place.
+	  [ruby-dev:47249] [Bug #8256]
+
 Fri Apr 12 15:21:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_keyword_arg): non-symbol key is not
