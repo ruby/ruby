@@ -1,3 +1,12 @@
+Sun Apr 14 02:32:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (GetTimeval): check if already initialized instance.
+
+	* time.c (GetNewTimeval): check if newly created instance.
+
+	* time.c (time_init_0, time_init_1, time_init_copy, time_mload): must
+	  be newly created instance.  [ruby-core:53436] [Bug #8099]
+
 Sun Apr 14 02:13:25 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* vm_eval.c (check_funcall_respond_to): preserve passed_block, which

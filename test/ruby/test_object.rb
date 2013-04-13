@@ -883,7 +883,6 @@ class TestObject < Test::Unit::TestCase
     assert_not_initialize_copy {/.*/.match("foo")}
     st = Struct.new(:foo)
     assert_not_initialize_copy {st.new}
-    assert_not_initialize_copy {Time.now}
   end
 
   def test_type_error_message

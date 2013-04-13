@@ -1827,10 +1827,11 @@ struct time_object {
     int tm_got;
 };
 
-#define GetTimeval(obj, tobj) \
-    TypedData_Get_Struct((obj), struct time_object, &time_data_type, (tobj))
+#define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
+#define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))
 
 #define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
+#define TIME_INIT_P(tobj) ((tobj)->gmt != -1)
 
 #define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
 #define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
@@ -1893,10 +1894,33 @@ time_s_alloc(VALUE klass)
     struct time_object *tobj;
 
     obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
+    tobj->gmt = -1;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 
     return obj;
+}
+
+static struct time_object *
+get_timeval(VALUE obj)
+{
+    struct time_object *tobj;
+    TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj);
+    if (!TIME_INIT_P(tobj)) {
+	rb_raise(rb_eTypeError, "uninitialized %"PRIsVALUE, CLASS_OF(obj));
+    }
+    return tobj;
+}
+
+static struct time_object *
+get_new_timeval(VALUE obj)
+{
+    struct time_object *tobj;
+    TypedData_Get_Struct(obj, struct time_object, &time_data_type, tobj);
+    if (TIME_INIT_P(tobj)) {
+	rb_raise(rb_eTypeError, "already initialized %"PRIsVALUE, CLASS_OF(obj));
+    }
+    return tobj;
 }
 
 static void
@@ -1964,7 +1988,8 @@ time_init_0(VALUE time)
     struct timespec ts;
 
     time_modify(time);
-    GetTimeval(time, tobj);
+    GetNewTimeval(time, tobj);
+    tobj->gmt = 0;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 #ifdef HAVE_CLOCK_GETTIME
@@ -2207,7 +2232,8 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     validate_vtm(&vtm);
 
     time_modify(time);
-    GetTimeval(time, tobj);
+    GetNewTimeval(time, tobj);
+    tobj->gmt = 0;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 
@@ -2324,7 +2350,8 @@ time_new_timew(VALUE klass, wideval_t timew)
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
 
-    GetTimeval(time, tobj);
+    tobj = DATA_PTR(time);	/* skip type check */
+    tobj->gmt = 0;
     tobj->timew = timew;
 
     return time;
@@ -3451,7 +3478,7 @@ time_init_copy(VALUE copy, VALUE time)
 
     if (!OBJ_INIT_COPY(copy, time)) return copy;
     GetTimeval(time, tobj);
-    GetTimeval(copy, tcopy);
+    GetNewTimeval(copy, tcopy);
     MEMCPY(tcopy, tobj, struct time_object, 1);
 
     return copy;
@@ -4836,7 +4863,8 @@ end_submicro: ;
         timew = timegmw(&vtm);
     }
 
-    GetTimeval(time, tobj);
+    GetNewTimeval(time, tobj);
+    tobj->gmt = 0;
     tobj->tm_got = 0;
     tobj->timew = timew;
     if (gmt) {
