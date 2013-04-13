@@ -1,3 +1,7 @@
+Sat Apr 13 18:56:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/ripper/depend: parse.h and id.h may be created on topdir.
+
 Sat Apr 13 12:08:16 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Vector#cross_product, patch by Luis Ezcurdia

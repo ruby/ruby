@@ -15,8 +15,8 @@ ripper.o: ripper.c id.c lex.c eventids1.c eventids2.c eventids2table.c \
         $(hdrdir)/ruby/util.h \
 	$(top_srcdir)/node.h \
 	$(top_srcdir)/internal.h \
-	$(top_srcdir)/parse.h \
-	$(top_srcdir)/id.h \
+	{$(VPATH)}parse.h \
+	{$(VPATH)}id.h \
 	$(top_srcdir)/regenc.h \
 	$(top_srcdir)/vm_opts.h \
 	$(topdir)/probes.h
