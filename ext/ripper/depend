@@ -8,15 +8,15 @@ BISON = bison
 src: ripper.c eventids1.c eventids2table.c
 
 ripper.o: ripper.c id.c lex.c eventids1.c eventids2.c eventids2table.c \
-        $(HDRS) $(ruby_headers) \
+	$(HDRS) $(ruby_headers) \
 	$(hdrdir)/ruby/encoding.h \
-        $(hdrdir)/ruby/oniguruma.h \
+	$(hdrdir)/ruby/oniguruma.h \
 	$(hdrdir)/ruby/regex.h \
-        $(hdrdir)/ruby/util.h \
+	$(hdrdir)/ruby/util.h \
 	$(top_srcdir)/node.h \
 	$(top_srcdir)/internal.h \
-	{$(VPATH)}parse.h \
-	{$(VPATH)}id.h \
+	parse.h \
+	id.h \
 	$(top_srcdir)/regenc.h \
 	$(top_srcdir)/vm_opts.h \
 	$(topdir)/probes.h
