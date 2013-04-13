@@ -3658,7 +3658,7 @@ rb_ary_hash(VALUE ary)
  *     ary.include?(object)   -> true or false
  *
  *  Returns +true+ if the given +object+ is present in +self+ (that is, if any
- *  object <code>==</code> +object+), otherwise returns +false+.
+ *  element <code>==</code> +object+), otherwise returns +false+.
  *
  *     a = [ "a", "b", "c" ]
  *     a.include?("b")   #=> true
