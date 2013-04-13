@@ -1580,7 +1580,7 @@ str_node_split_last_char(StrNode* sn, OnigEncoding enc)
 
   if (sn->end > sn->s) {
     p = onigenc_get_prev_char_head(enc, sn->s, sn->end, sn->end);
-    if (p && p > sn->s) { /* can be splitted. */
+    if (p && p > sn->s) { /* can be split. */
       n = node_new_str(p, sn->end);
       if (IS_NOT_NULL(n) && (sn->flag & NSTR_RAW) != 0)
 	NSTRING_SET_RAW(n);
@@ -3201,7 +3201,7 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
   else if (c == '[') {
     if (IS_SYNTAX_OP(syn, ONIG_SYN_OP_POSIX_BRACKET) && (PPEEK_IS(':'))) {
       OnigCodePoint send[] = { (OnigCodePoint )':', (OnigCodePoint )']' };
-      tok->backp = p; /* point at '[' is readed */
+      tok->backp = p; /* point at '[' is read */
       PINC;
       if (str_exist_check_with_esc(send, 2, p, end,
                                    (OnigCodePoint )']', enc, syn)) {
