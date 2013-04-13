@@ -1,3 +1,64 @@
+Sat Apr 13 09:34:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/mkmf.rb: Add ruby/ruby.h, ruby/missing.h, ruby/intern.h,
+	  ruby/st.h and ruby/subst.h for ruby_headers in generated Makefile.
+
+	* ext/-test-/old_thread_select/depend: Update dependencies.
+
+	* ext/-test-/wait_for_single_fd/depend: Ditto.
+
+	* ext/bigdecimal/depend: Ditto.
+
+	* ext/curses/depend: Ditto.
+
+	* ext/digest/bubblebabble/depend: Ditto.
+
+	* ext/digest/depend: Ditto.
+
+	* ext/digest/md5/depend: Ditto.
+
+	* ext/digest/rmd160/depend: Ditto.
+
+	* ext/digest/sha1/depend: Ditto.
+
+	* ext/digest/sha2/depend: Ditto.
+
+	* ext/dl/callback/depend: Ditto.
+
+	* ext/dl/depend: Ditto.
+
+	* ext/etc/depend: Ditto.
+
+	* ext/nkf/depend: Ditto.
+
+	* ext/objspace/depend: Ditto.
+
+	* ext/pty/depend: Ditto.
+
+	* ext/readline/depend: Ditto.
+
+	* ext/ripper/depend: Ditto.
+
+	* ext/sdbm/depend: Ditto.
+
+	* ext/socket/depend: Ditto.
+
+	* ext/stringio/depend: Ditto.
+
+	* ext/strscan/depend: Ditto.
+
+	* ext/syslog/depend: Ditto.
+
+	* ext/-test-/num2int/depend: Removed.
+
+	* ext/dbm/depend: Ditto.
+
+	* ext/fcntl/depend: Ditto.
+
+	* ext/gdbm/depend: Ditto.
+
+	* ext/racc/cparse/depend: Ditto.
+
 Sat Apr 13 00:15:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (Init_etc): move Passwd and Group under Etc namespace

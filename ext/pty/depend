@@ -1,1 +1,6 @@
-pty.o: pty.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/io.h
+pty.o: pty.c $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h \
+  $(hdrdir)/ruby/util.h \
+  $(top_srcdir)/internal.h

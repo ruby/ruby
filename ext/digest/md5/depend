@@ -1,6 +1,3 @@
-md5.o: md5.c md5.h $(srcdir)/../defs.h $(hdrdir)/ruby.h $(topdir)/config.h \
-  $(hdrdir)/defines.h $(hdrdir)/intern.h
-md5init.o: md5init.c $(srcdir)/../digest.h $(hdrdir)/ruby.h \
-  $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h md5.h \
-  $(srcdir)/../defs.h
+md5.o: md5.c md5.h $(srcdir)/../defs.h
+md5init.o: md5init.c md5.h $(srcdir)/../digest.h $(srcdir)/../defs.h $(HDRS) $(ruby_headers)
 md5ossl.o: md5ossl.h

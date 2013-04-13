@@ -1,1 +1,0 @@
-num2int.o: $(top_srcdir)/numeric.c $(hdrdir)/ruby/ruby.h

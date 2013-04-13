@@ -1,7 +1,14 @@
-cfunc.o: cfunc.c dl.h $(hdrdir)/ruby.h
+cfunc.o: cfunc.c dl.h $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/util.h
 
-cptr.o: cptr.c dl.h $(hdrdir)/ruby.h $(hdrdir)/io.h
+cptr.o: cptr.c dl.h $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h
 
-handle.o: handle.c dl.h $(hdrdir)/ruby.h
+handle.o: handle.c dl.h $(HDRS) $(ruby_headers)
 
-dl.o: dl.c dl.h $(hdrdir)/ruby.h $(hdrdir)/io.h
+dl.o: dl.c dl.h $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h

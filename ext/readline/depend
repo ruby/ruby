@@ -1,1 +1,4 @@
-readline.o: readline.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h
+readline.o: readline.c $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h

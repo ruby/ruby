@@ -1,1 +1,5 @@
-curses.o: curses.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/thread.h
+$(OBJS): $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h \
+  $(hdrdir)/ruby/thread.h

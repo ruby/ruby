@@ -1,2 +1,7 @@
-strscan.o: strscan.c $(hdrdir)/ruby.h $(hdrdir)/re.h $(hdrdir)/regex.h \
-	   $(hdrdir)/oniguruma.h $(topdir)/config.h $(hdrdir)/defines.h
+strscan.o: strscan.c $(HDRS) $(ruby_headers) \
+           $(hdrdir)/re.h \
+           $(hdrdir)/regex.h \
+	   $(hdrdir)/encoding.h \
+	   $(hdrdir)/oniguruma.h \
+	   $(top_srcdir)/regint.h \
+	   $(top_srcdir)/regenc.h

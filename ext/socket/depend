@@ -1,5 +1,8 @@
-SOCK_HEADERS = $(srcdir)/rubysocket.h $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
-	$(hdrdir)/ruby/defines.h $(hdrdir)/ruby/io.h $(hdrdir)/ruby/thread.h \
+SOCK_HEADERS = $(srcdir)/rubysocket.h $(HDRS) $(ruby_headers) \
+	$(hdrdir)/ruby/encoding.h \
+        $(hdrdir)/ruby/oniguruma.h \
+        $(hdrdir)/ruby/util.h \
+	$(hdrdir)/ruby/io.h $(hdrdir)/ruby/thread.h \
 	$(srcdir)/addrinfo.h $(srcdir)/sockport.h constdefs.h $(top_srcdir)/internal.h
 
 init.o: init.c $(SOCK_HEADERS)

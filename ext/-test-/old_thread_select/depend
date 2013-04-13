@@ -1,2 +1,4 @@
-old_thread_select.o: $(top_srcdir)/thread.c \
-  $(hdrdir)/ruby/ruby.h $(hdrdir)/ruby/io.h
+$(OBJS): $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h

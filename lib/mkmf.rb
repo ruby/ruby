@@ -1846,7 +1846,15 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     end
     possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
-    headers = %w[$(hdrdir)/ruby.h $(hdrdir)/ruby/defines.h]
+    headers = %w[
+      $(hdrdir)/ruby.h
+      $(hdrdir)/ruby/ruby.h
+      $(hdrdir)/ruby/defines.h
+      $(hdrdir)/ruby/missing.h
+      $(hdrdir)/ruby/intern.h
+      $(hdrdir)/ruby/st.h
+      $(hdrdir)/ruby/subst.h
+    ]
     if RULE_SUBST
       headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
     end
