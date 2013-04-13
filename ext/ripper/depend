@@ -18,8 +18,8 @@ ripper.o: ripper.c id.c lex.c eventids1.c eventids2.c eventids2table.c \
 	$(top_srcdir)/parse.h \
 	$(top_srcdir)/id.h \
 	$(top_srcdir)/regenc.h \
-	$(top_srcdir)/probes.h \
-	$(top_srcdir)/vm_opts.h
+	$(top_srcdir)/vm_opts.h \
+	$(topdir)/probes.h
 
 .y.c:
 	$(ECHO) compiling compiler $<
