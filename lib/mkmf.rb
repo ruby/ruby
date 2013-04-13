@@ -1822,6 +1822,7 @@ PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
     if $extmk
+      mk << "disthdrdir = #{$nmake ? '{$(VPATH)}' : '$(top_srcdir)/'}\n"
       mk << "RUBYLIB =\n""RUBYOPT = -\n"
     end
     prefix = mkintpath(CONFIG["prefix"])
