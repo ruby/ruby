@@ -38,6 +38,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Matrix
+  * Added Vector#cross_product.
+
 * Net::SMTP
   * Added Net::SMTP#rset to implement the RSET command
 

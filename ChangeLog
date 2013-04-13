@@ -1,3 +1,8 @@
+Sat Apr 13 12:08:16 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector#cross_product, patch by Luis Ezcurdia
+	  [fix GH-276] [rubyspec:81eec89a124]
+
 Sat Apr 13 10:20:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (rb_struct_define_without_accessor, rb_struct_define),
