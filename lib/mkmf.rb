@@ -1822,7 +1822,6 @@ PATH_SEPARATOR = #{CONFIG['PATH_SEPARATOR']}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
     if $extmk
-      mk << "disthdrdir = #{$nmake ? '{$(VPATH)}' : '$(top_srcdir)/'}\n"
       mk << "RUBYLIB =\n""RUBYOPT = -\n"
     end
     prefix = mkintpath(CONFIG["prefix"])
@@ -2004,6 +2003,7 @@ RULES
     end
     depend.each_line do |line|
       line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+      line.gsub!(/\{\$\(VPATH\)\}/, "") unless $nmake
       line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h)
       line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
       if $nmake && /\A\s*\$\(RM|COPY\)/ =~ line
