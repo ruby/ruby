@@ -1918,6 +1918,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal([['a', 5], ['b', 6]], %w(a b).zip(ary))
   end
 
+  def test_zip_bug
+    bug8153 = "ruby-core:53650"
+    r = 1..1
+    def r.respond_to?(*)
+      super
+    end
+    assert_equal [[42, 1]], [42].zip(r), bug8153
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)

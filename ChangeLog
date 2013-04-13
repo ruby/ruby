@@ -1,3 +1,11 @@
+Sun Apr 14 02:13:25 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* vm_eval.c (check_funcall_respond_to): preserve passed_block, which
+	  is modified in vm_call0_body() via vm_call0(), and caused a bug of
+	  rb_check_funcall() by false negative result of rb_block_given_p().
+	  re-fix [ruby-core:53650] [Bug #8153].
+	  [ruby-core:53653] [Bug #8154]
+
 Fri Apr 12 04:16:30 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* marshal.c (marshal_dump, marshal_load): workaround for segv on
