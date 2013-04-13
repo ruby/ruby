@@ -243,7 +243,7 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
     VALUE members;
     char *name;
 
-    members = rb_ary_new2(0);
+    members = rb_ary_tmp_new(0);
     va_start(ar, alloc);
     while ((name = va_arg(ar, char*)) != NULL) {
         rb_ary_push(members, ID2SYM(rb_intern(name)));
@@ -275,7 +275,7 @@ rb_struct_define(const char *name, ...)
     VALUE st, ary;
     char *mem;
 
-    ary = rb_ary_new();
+    ary = rb_ary_tmp_new(0);
 
     va_start(ar, name);
     while ((mem = va_arg(ar, char*)) != 0) {
@@ -351,7 +351,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	--argc;
 	++argv;
     }
-    rest = rb_ary_new2(argc);
+    rest = rb_ary_tmp_new(argc);
     for (i=0; i<argc; i++) {
 	id = rb_to_id(argv[i]);
 	RARRAY_PTR(rest)[i] = ID2SYM(id);

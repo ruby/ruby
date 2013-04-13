@@ -1,4 +1,7 @@
-Sat Apr 13 10:20:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 13 10:20:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_define_without_accessor, rb_struct_define),
+	  (rb_struct_s_def): hide member names array.
 
 	* struct.c (anonymous_struct, new_struct, setup_struct): split
 	  make_struct() for each purpose.
