@@ -1,231 +1,9 @@
-Sat Apr 13 09:34:31 2013  Tanaka Akira  <akr@fsij.org>
+Sat Apr 13 10:20:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb: Add ruby/ruby.h, ruby/missing.h, ruby/intern.h,
-	  ruby/st.h and ruby/subst.h for ruby_headers in generated Makefile.
+	* struct.c (anonymous_struct, new_struct, setup_struct): split
+	  make_struct() for each purpose.
 
-	* ext/-test-/old_thread_select/depend: Update dependencies.
-
-	* ext/-test-/wait_for_single_fd/depend: Ditto.
-
-	* ext/bigdecimal/depend: Ditto.
-
-	* ext/curses/depend: Ditto.
-
-	* ext/digest/bubblebabble/depend: Ditto.
-
-	* ext/digest/depend: Ditto.
-
-	* ext/digest/md5/depend: Ditto.
-
-	* ext/digest/rmd160/depend: Ditto.
-
-	* ext/digest/sha1/depend: Ditto.
-
-	* ext/digest/sha2/depend: Ditto.
-
-	* ext/dl/callback/depend: Ditto.
-
-	* ext/dl/depend: Ditto.
-
-	* ext/etc/depend: Ditto.
-
-	* ext/nkf/depend: Ditto.
-
-	* ext/objspace/depend: Ditto.
-
-	* ext/pty/depend: Ditto.
-
-	* ext/readline/depend: Ditto.
-
-	* ext/ripper/depend: Ditto.
-
-	* ext/sdbm/depend: Ditto.
-
-	* ext/socket/depend: Ditto.
-
-	* ext/stringio/depend: Ditto.
-
-	* ext/strscan/depend: Ditto.
-
-	* ext/syslog/depend: Ditto.
-
-	* ext/-test-/num2int/depend: Removed.
-
-	* ext/dbm/depend: Ditto.
-
-	* ext/fcntl/depend: Ditto.
-
-	* ext/gdbm/depend: Ditto.
-
-	* ext/racc/cparse/depend: Ditto.
-
-Sat Apr 13 00:15:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/etc/etc.c (Init_etc): move Passwd and Group under Etc namespace
-	  as primary names.
-
-Fri Apr 12 21:06:55 2013  Tanaka Akira  <akr@fsij.org>
-
-	* common.mk: pack.o depends on internal.h.
-
-Fri Apr 12 20:59:24 2013  Tanaka Akira  <akr@fsij.org>
-
-	* bignum.c (ones): Use __builtin_popcountl if available.
-
-	* internal.h (GCC_VERSION_SINCE): Macro moved from pack.c.
-
-	* pack.c: Include internal.h for GCC_VERSION_SINCE.
-
-Fri Apr 12 18:29:42 2013  Tanaka Akira  <akr@fsij.org>
-
-	* common.mk: version.o depends on $(srcdir)/include/ruby/version.h
-	  instead of {$(VPATH)}version.h to avoid confusion by VPATH between
-	  top level version.h and include/ruby/version.h for build in-place.
-	  [ruby-dev:47249] [Bug #8256]
-
-Fri Apr 12 15:21:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* vm_insnhelper.c (vm_callee_setup_keyword_arg): non-symbol key is not
-	  a keyword argument, keep it as an positional argument.
-
-Fri Apr 12 11:58:00 2013  Zachary Scott  <zachary@zacharyscott.net>
-
-	* array.c: Document synonymous methods, by windwiny [GH-277]
-	* bignum.c: ditto
-	* complex.c: ditto
-	* dir.c: ditto
-	* encoding.c: ditto
-	* enumerator.c: ditto
-	* numeric.c: ditto
-	* proc.c: ditto
-	* re.c: ditto
-	* string.c: ditto
-
-Thu Apr 11 23:41:46 2013  Tanaka Akira  <akr@fsij.org>
-
-	* common.mk: Add dependencies for include/ruby.h
-
-	* tool/update-deps: Use "make -p all miniruby ruby golf" to extract
-	  dependencies in makefiles.
-
-Thu Apr 11 23:21:17 2013  Tanaka Akira  <akr@fsij.org>
-
-	* tool/update-deps: Use "make -p all golf" to extract dependencies in
-	  makefiles.
-
-Thu Apr 11 21:02:19 2013  Tanaka Akira  <akr@fsij.org>
-
-	* common.mk: Dependency updated.
-
-	* tool/update-deps: Rewritten.
-
-Thu Apr 11 19:59:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* common.mk: partially revert r40183, which breaks building on
-	  other than source directory. (its commit log also says the same
-	  thing, but such failure is not reproducible on my environment
-	  and the commit breaks build on my environment)
-
-Thu Apr 11 16:10:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): define 0 on
-	  Mac OS X and Linux [Bug #3371]
-
-Thu Apr 11 13:19:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
-
-	* test/drb/drbtest.rb (Drb{Core,Ary}#teardown): retry Process.kill
-	  if it fails with Errno::EPERM on Windows (workaround).
-	  [ruby-dev:47245] [Bug #8251]
-
-Thu Apr 11 11:11:38 2013  Akinori MUSHA  <knu@iDaemons.org>
-
-	* dir.c: Fix a typo.
-
-Thu Apr 11 10:39:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): add missing case:
-	  RUBY_LIBFFI_MODVERSION is not defined (usually on Windows).
-
-Thu Apr 11 09:27:04 2013  Konstantin Haase  <me@rkh.im>
-
-	* dir.c (file_s_fnmatch): Document File::FNM_EXTGLOB flag.
-
-Thu Apr 11 09:17:00 2013  Zachary Scott  <zachary@zacharyscott.net>
-
-	* README: Fix typo by Benjamin Winkler [Fixes GH-281]
-
-Thu Apr 11 06:15:51 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* regint.h: fix typo: _M_AMD86 -> _M_AMD64.
-
-	* siphash.c: ditto.
-
-	* st.c: ditto.
-
-Thu Apr 11 06:09:57 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* ext/fiddle/extconf.rb: define RUBY_LIBFFI_MODVERSION macro.
-
-	* ext/fiddle/closure.c (USE_FFI_CLOSURE_ALLOC): define 0 or 1
-	  with platform and libffi's version. [Bug #3371]
-
-Thu Apr 11 05:30:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* lib/mkmf.rb (pkg_config): Add optional argument "option".
-	  If it is given, it returns the result of
-	  `pkg-config --<option> <pkgname>`.
-
-Thu Apr 11 03:33:05 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* ext/fiddle/closure.c (initialize): check mprotect's return value.
-	  If mprotect is failed because of PaX or something, its function call
-	  will cause SEGV.
-	  http://c5664.rubyci.org/~chkbuild/ruby-trunk/log/20130401T210301Z.diff.html.gz
-
-Wed Apr 10 17:39:13 2013  Tanaka Akira  <akr@fsij.org>
-
-	* ext/bigdecimal/bigdecimal.c (VpCtoV): Initialize a local variable
-	  even when overflow.
-
-Wed Apr 10 12:32:37 2013  Tanaka Akira  <akr@fsij.org>
-
-	* bignum.c (rb_ll2big): Don't overflow on signed integer negation.
-
-	* ext/bigdecimal/bigdecimal.c (MUL_OVERFLOW_SIGNED_VALUE_P): New
-	  macro.
-	  (AddExponent): Don't overflow on signed integer multiplication.
-	  (VpCtoV): Don't overflow on signed integer arithmetic.
-	  (VpCtoV): Don't overflow on signed integer arithmetic.
-
-Wed Apr 10 06:32:12 2013  Tanaka Akira  <akr@fsij.org>
-
-	* internal.h (MUL_OVERFLOW_INT_P): New macro.
-
-	* sprintf.c (GETNUM): Don't overflow on signed integer multiplication.
-
-Tue Apr  9 20:38:20 2013  Tanaka Akira  <akr@fsij.org>
-
-	* internal.h (MUL_OVERFLOW_SIGNED_INTEGER_P): New macro.
-	  (MUL_OVERFLOW_FIXNUM_P): Ditto.
-	  (MUL_OVERFLOW_LONG_P): Ditto.
-
-	* array.c (rb_ary_product): Don't overflow on signed integer
-	  multiplication.
-
-	* numeric.c (fix_mul): Ditto.
-	  (int_pow): Ditto.
-
-	* rational.c (f_imul): Ditto.
-
-	* insns.def (opt_mult): Ditto.
-
-	* thread.c (sleep_timeval): Don't overflow on signed integer addition.
-
-	* bignum.c (rb_int2big): Don't overflow on signed integer negation.
-	  (rb_big2ulong): Ditto.
-	  (rb_big2long): Ditto.
-	  (rb_big2ull): Ditto.
-	  (rb_big2ll): Ditto.
+	  make_struct() for each purpose.
 
 Tue Apr  9 19:45:44 2013  Tanaka Akira  <akr@fsij.org>
 
@@ -248,27 +26,27 @@ Tue Apr  9 10:02:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Apr  9 04:57:59 JST 2013  Charles Oliver Nutter  <headius@headius.com>
 
-	* error.c: Capture EAGAIN, EWOULDBLOCK, EINPROGRESS exceptions and
+	* error.c: Capture EGAIN, EWOULDBLOCK, EINPROGRESS exceptions and
 	  export them for use in WaitReadable/Writable exceptions.
 	* io.c: Create versions of EAGAIN, EWOULDBLOCK, EINPROGRESS that
-	  include WaitReadable and WaitWritable. Add rb_readwrite_sys_fail
+          include WaitReadable and WaitWritable. Add rb_readwrite_sys_fail
 	  for nonblocking failures using those exceptions. Use that
 	  function in io_getpartial and io_write_nonblock instead of
 	  rb_mod_sys_fail
-	* ext/openssl/ossl_ssl.c: Add new SSLError subclasses that include
+        * ext/openssl/ossl_ssl.c: Add new SSLError subclasses that include
 	  WaitReadable and WaitWritable. Use those classes for
 	  write_would_block and read_would_block instead of rb_mod_sys_fail.
 	* ext/socket/ancdata.c: Use rb_readwrite_sys_fail instead of
 	  rb_mod_sys_fail in bsock_sendmsg_internal and
 	  bsock_recvmsg_internal.
-	* ext/socket/init.c: Use rb_readwrite_sys_fail instead of
+        * ext/socket/init.c: Use rb_readwrite_sys_fail instead of
 	  rb_mod_sys_fail in rsock_s_recvfrom_nonblock and
-	  rsock_s_connect_nonblock.
-	* ext/socket/socket.c: Use rb_readwrite_sys_fail instead of
-	  rb_mod_sys_fail in sock_connect_nonblock.
+          rsock_s_connect_nonblock.
+        * ext/socket/socket.c: Use rb_readwrite_sys_fail instead of
+          rb_mod_sys_fail in sock_connect_nonblock.
 	* include/ruby/ruby.h: Export rb_readwrite_sys_fail for use instead
 	  of rb_mod_sys_fail. Introduce new constants RB_IO_WAIT_READABLE and
-	  RB_IO_WAIT_WRITABLE for first arg to rb_readwrite_sys_fail.
+          RB_IO_WAIT_WRITABLE for first arg to rb_readwrite_sys_fail.
 
 Tue Apr  9 02:44:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
