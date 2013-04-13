@@ -22,6 +22,7 @@ include Curses
 init_screen
 begin
   result = Timeout.timeout(#{timeout}) do
+    print "!"
     #{src}
   end
 rescue Exception => e
@@ -32,6 +33,11 @@ ensure
   $stdio.flush
 end
 src
+      wait = r.readpartial(1)
+      if wait != "!"
+        wait << r.readpartial(1000)
+        raise wait
+      end
       if input
         w.print(input)
         w.flush
