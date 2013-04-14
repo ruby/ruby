@@ -1,3 +1,13 @@
+Sun Apr 14 23:19:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): ensure symbols for tests to be
+	  preserved.  [ruby-core:53745] [Bug #8169]
+
+Sun Apr 14 23:19:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): force to refer symbols for tests
+	  to be preserved.  [ruby-core:53745] [Bug #8169]
+
 Sun Apr 14 03:00:51 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in (AC_CHECK_HEADERS): atomic.h for Solaris atomic_ops.

@@ -717,16 +717,16 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
     decltype && try_link(<<"SRC", opt, &b) or
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
     call && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { #{call}; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -736,9 +736,9 @@ SRC
     try_compile(<<"SRC", opt, &b)
 #{headers}
 /*top*/
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1120,8 +1120,8 @@ SRC
       if try_compile(<<"SRC", opt, &b)
 #{cpp_include(headers)}
 /*top*/
-#{MAIN_DOES_NOTHING}
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
+#{MAIN_DOES_NOTHING "s"}
 SRC
         $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
         $defs.push(format("-DHAVE_ST_%s", member.tr_cpp)) # backward compatibility
@@ -1374,9 +1374,9 @@ SRC
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -1387,9 +1387,9 @@ SRC
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-#{MAIN_DOES_NOTHING}
 extern int t(void);
 int t(void) {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
+#{MAIN_DOES_NOTHING "t"}
 SRC
   end
 
@@ -2388,6 +2388,19 @@ MESSAGE
     end
   end
 
+  def MAIN_DOES_NOTHING(*refs)
+    src = MAIN_DOES_NOTHING
+    unless refs.empty?
+      src = src.sub(/\{/) do
+        $& +
+          "\n  if (argc > 1000000) {\n" +
+          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          "  }\n"
+      end
+    end
+    src
+  end
+
   extend self
   init_mkmf
 
@@ -2495,7 +2508,7 @@ MESSAGE
   ##
   # A C main function which does no work
 
-  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return 0;\n}"
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 
