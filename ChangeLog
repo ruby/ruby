@@ -1,3 +1,9 @@
+Mon Apr 15 00:25:00 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (num_exact): use to_r method only if to_int method is
+	  available.
+	  [ruby-core:53764] [Bug #8173] reported by Hiro Asari.
+
 Mon Apr 15 00:22:09 2013  Shota Fukumori  <her@sorah.jp>
 
 	* ext/objspace/objspace.c: Fix typo in doc. Patch by Sho Hashimoto.
