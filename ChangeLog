@@ -1,3 +1,9 @@
+Mon Apr 15 00:13:13 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/file.c (code_page): use cp1252 instead of cp20127 as US-ASCII.
+	  fix [ruby-core:53079] [Bug #7996]
+	  reported and patched by mmeltner (Michael Meltner).
+
 Mon Apr 15 00:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/io.h: undef POSIX compliant names on AIX, which are no
