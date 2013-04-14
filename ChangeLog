@@ -1,3 +1,8 @@
+Sun Apr 14 23:49:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): not include all CFLAGS in CXXFLAGS, to
+	  use different set than C for C++.  [ruby-core:45273] [Bug #6504]
+
 Sun Apr 14 23:43:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/fiddle/closure.c (initialize): check mprotect's return value.
