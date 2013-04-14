@@ -2061,7 +2061,7 @@ fnmatch_brace(const char *pattern, VALUE val, void *enc)
  *
  *     File.fnmatch('\?',   '?')                       #=> true  # escaped wildcard becomes ordinary
  *     File.fnmatch('\a',   'a')                       #=> true  # escaped ordinary remains ordinary
- *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESACPE makes '\' ordinary
+ *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESCAPE makes '\' ordinary
  *     File.fnmatch('[\?]', '?')                       #=> true  # can escape inside bracket expression
  *
  *     File.fnmatch('*',   '.profile')                      #=> false # wildcard doesn't match leading
