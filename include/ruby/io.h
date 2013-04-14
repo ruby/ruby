@@ -29,7 +29,17 @@ extern "C" {
 
 #include "ruby/config.h"
 #if defined(HAVE_POLL)
+#  ifdef _AIX
+#    define reqevents events
+#    define rtnevents revents
+#  endif
 #  include <poll.h>
+#  ifdef _AIX
+#    undef reqevents
+#    undef rtnevents
+#    undef events
+#    undef revents
+#  endif
 #  define RB_WAITFD_IN  POLLIN
 #  define RB_WAITFD_PRI POLLPRI
 #  define RB_WAITFD_OUT POLLOUT

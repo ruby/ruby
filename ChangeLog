@@ -1,3 +1,14 @@
+Mon Apr 15 00:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h: undef POSIX compliant names on AIX, which are no
+	  longer needed.  patch suggested by edelsohn (David Edelsohn) in
+	  [ruby-core:53815].  [Bug #8174]
+
+Mon Apr 15 00:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/io.h: rename SVR3,4 member names as POSIX compliant,
+	  to get rid of conflict on AIX.  [ruby-core:53765] [Bug #8174]
+
 Sun Apr 14 23:49:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): not include all CFLAGS in CXXFLAGS, to
