@@ -307,6 +307,14 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  */
 #define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == (k))
 
+/*!
+ * whether k has a metaclass
+ * @retval 1 if \a k has a metaclass
+ * @retval 0 otherwise
+ */
+#define HAVE_METACLASS_P(k) \
+    (FL_TEST(METACLASS_OF(k), FL_SINGLETON) && \
+     rb_ivar_get(METACLASS_OF(k), id_attached) == (k))
 
 /*!
  * ensures \a klass belongs to its own eigenclass.
@@ -316,7 +324,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  * @note this macro creates a new eigenclass if necessary.
  */
 #define ENSURE_EIGENCLASS(klass) \
- (rb_ivar_get(METACLASS_OF(klass), id_attached) == (klass) ? METACLASS_OF(klass) : make_metaclass(klass))
+    (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
 
 /*!

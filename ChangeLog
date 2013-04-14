@@ -1,3 +1,9 @@
+Mon Apr 15 00:15:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (HAVE_METACLASS_P): should check FL_SINGLETON flag before get
+	  instance variable to get rid of wrong warning about __attached__.
+	  [ruby-core:53839] [Bug #8188]
+
 Mon Apr 15 00:13:13 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/file.c (code_page): use cp1252 instead of cp20127 as US-ASCII.

@@ -215,6 +215,13 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_eval_on_argf_singleton_class
+    bug8188 = '[ruby-core:53839] [Bug #8188]'
+    assert_warning('', bug8188) do
+      ARGF.singleton_class.instance_eval{}
+    end
+  end
+
   class Foo
     Bar = 2
   end
