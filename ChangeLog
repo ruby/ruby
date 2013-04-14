@@ -27,7 +27,7 @@ Sun Apr 14 19:46:14 2013  Tanaka Akira  <akr@fsij.org>
 Sun Apr 14 02:46:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#create_makefile): remove {$(VPATH)} other
-	  than nmke.
+	  than nmake.
 
 	* ext/ripper/depend: use VPATH expecting removed by above.
 
