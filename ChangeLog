@@ -1,3 +1,8 @@
+Mon Apr 15 00:22:09 2013  Shota Fukumori  <her@sorah.jp>
+
+	* ext/objspace/objspace.c: Fix typo in doc. Patch by Sho Hashimoto.
+	  [Bug #8116] [ruby-dev:47177]
+
 Mon Apr 15 00:15:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (HAVE_METACLASS_P): should check FL_SINGLETON flag before get
