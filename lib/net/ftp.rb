@@ -97,13 +97,13 @@ module Net
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the FTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception.
+    # Net::OpenTimeout exception. The default value is +nil+.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the FTP object cannot read data in this many seconds,
-    # it raises a TimeoutError exception.
+    # it raises a TimeoutError exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Setter for the read_timeout attribute.
