@@ -1,3 +1,10 @@
+Sun Apr 14 23:43:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/fiddle/closure.c (initialize): check mprotect's return value.
+	  If mprotect is failed because of PaX or something, its function call
+	  will cause SEGV.
+	  http://c5664.rubyci.org/~chkbuild/ruby-trunk/log/20130401T210301Z.diff.html.gz
+
 Sun Apr 14 23:19:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MAIN_DOES_NOTHING): ensure symbols for tests to be

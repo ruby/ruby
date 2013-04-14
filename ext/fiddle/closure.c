@@ -228,7 +228,10 @@ initialize(int rbargc, VALUE argv[], VALUE self)
 #else
     result = ffi_prep_closure(pcl, cif, callback, (void *)self);
     cl->code = (void *)pcl;
-    mprotect(pcl, sizeof(pcl), PROT_READ | PROT_EXEC);
+    i = mprotect(pcl, sizeof(pcl), PROT_READ | PROT_EXEC);
+    if (i) {
+	rb_sys_fail("mprotect");
+    }
 #endif
 
     if (FFI_OK != result)
