@@ -1,3 +1,29 @@
+Sun Apr 14 19:46:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/debug/depend: New file.
+
+	* ext/-test-/exception/depend: Ditto.
+
+	* ext/-test-/printf/depend: Ditto.
+
+	* ext/-test-/string/depend: Ditto.
+
+	* ext/coverage/depend: Ditto.
+
+	* ext/io/console/depend: Ditto.
+
+	* ext/io/nonblock/depend: Ditto.
+
+	* ext/io/wait/depend: Ditto.
+
+	* ext/openssl/depend: Ditto.
+
+	* ext/pathname/depend: Ditto.
+
+	* ext/psych/depend: Ditto.
+
+	* ext/zlib/depend: Ditto.
+
 Sun Apr 14 02:46:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#create_makefile): remove {$(VPATH)} other
