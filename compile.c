@@ -5161,7 +5161,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_DEFINED:{
-	if (!poped) {
+	if (poped) break;
+	if (!node->nd_head) {
+	    VALUE str = rb_iseq_defined_string(DEFINED_NIL);
+	    ADD_INSN1(ret, nd_line(node), putobject, str);
+	}
+	else {
 	    LABEL *lfinish[2];
 	    lfinish[0] = NEW_LABEL(line);
 	    lfinish[1] = 0;
