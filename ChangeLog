@@ -3,11 +3,6 @@ Tue Apr 16 00:27:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* compile.c (iseq_compile_each): fix of defined? with empty
 	  expression.  [ruby-core:53999] [Bug #8220]
 
-Mon Apr 15 23:19:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/curses/curses.c (Init_curses): fix implementation function,
-	  crmode should be same as cbreak.  [ruby-core:54013] [Bug #8222]
-
 Mon Apr 15 00:25:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (num_exact): use to_r method only if to_int method is
