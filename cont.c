@@ -476,7 +476,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
-		(void)sp;
+		space[0] = *sp;
 # else
 		cont_restore_0(cont, &space[0]);
 # endif
@@ -492,7 +492,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    if (&space[STACK_PAD_SIZE] < end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, end - &space[STACK_PAD_SIZE]);
-		(void)sp;
+		space[0] = *sp;
 # else
 		cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
 # endif
