@@ -3977,7 +3977,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
  *  double-quoted string, both back-references must be preceded by an
  *  additional backslash. However, within <i>replacement</i> the special match
- *  variables, such as <code>&$</code>, will not refer to the current match.
+ *  variables, such as <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a <code>Hash</code>, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
