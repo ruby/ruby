@@ -1,3 +1,12 @@
+Tue Apr 16 01:30:47 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: set ac_cv_prog_cxx if CXX is supplied.
+
+Tue Apr 16 01:30:47 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: Fix c++ compiler auto-selection not only for
+	  Darwin 11.x, but also the other versions of Darwin.
+
 Tue Apr 16 00:27:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): fix of defined? with empty
