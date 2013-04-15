@@ -1,3 +1,9 @@
+Mon Apr 15 14:57:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/parser/parser.rl (json_string_unescape): workaround fix
+	  for over optimization of GCC 4.7. [ruby-core:42085] [Bug #5888]
+	  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=51862
+
 Mon Apr 15 10:56:55 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (cont_restore_0): prevent optimizing out `sp'. sp is used for
