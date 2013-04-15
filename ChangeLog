@@ -1,3 +1,7 @@
+Mon Apr 15 22:21:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/fiddle/depend: New file.
+
 Mon Apr 15 22:01:02 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-insert): Check
