@@ -61,4 +61,8 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal(CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"),"'&\"><")
   end
 
+  def test_cgi_unescapeHTML_uppercasecharacter
+    assert_equal(CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"),"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86")
+  end
+
 end

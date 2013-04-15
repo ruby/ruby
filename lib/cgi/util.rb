@@ -55,7 +55,7 @@ class CGI
       end
     end
     asciicompat = Encoding.compatible?(string, "a")
-    string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/) do
+    string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
       when 'apos'                then "'"
