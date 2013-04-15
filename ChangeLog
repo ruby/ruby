@@ -1,7 +1,13 @@
-Mon Apr 15 21:55:12 2013  Akinori MUSHA  <knu@iDaemons.org>
+Mon Apr 15 22:01:02 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-insert): Check
 	  ruby-electric-is-last-command-char-expandable-punct-p here.
+
+	* misc/ruby-electric.el (ruby-electric-closing-char): New
+	  interactive function bound to closing characters.  Typing one of
+	  those closing characters right after the matching counterpart
+	  cancels the effect of automatic closing.  For example, typing
+	  "{" followed by "}" simply makes "{}" instead of "{ } }".
 
 Mon Apr 15 12:54:42 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 

@@ -120,6 +120,9 @@ strings. Note that you must have Font Lock enabled."
   (define-key ruby-mode-map "[" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\"" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\'" 'ruby-electric-matching-char)
+  (define-key ruby-mode-map "}" 'ruby-electric-closing-char)
+  (define-key ruby-mode-map ")" 'ruby-electric-closing-char)
+  (define-key ruby-mode-map "]" 'ruby-electric-closing-char)
   (define-key ruby-mode-map "|" 'ruby-electric-bar)
   (define-key ruby-mode-map "#" 'ruby-electric-hash))
 
@@ -226,7 +229,7 @@ strings. Note that you must have Font Lock enabled."
         ((or
           (ruby-electric-command-char-expandable-punct-p ?\#)
           (ruby-electric-escaped-p))
-         t)
+         (setq this-command 'self-insert-command))
         (t
          (insert "#")
          (forward-char 1)
@@ -249,9 +252,39 @@ strings. Note that you must have Font Lock enabled."
   (interactive "P")
   (ruby-electric-insert
    arg
-   (and (ruby-electric-code-at-point-p)
-        (save-excursion (insert (cdr (assoc last-command-event
-                                            ruby-electric-matching-delimeter-alist)))))))))
+   (cond
+    ((and
+      (eq last-command 'ruby-electric-matching-char)
+      (char-equal last-command-event (following-char))) ;; repeated ' or "
+     (setq this-command 'self-insert-command)
+     (delete-forward-char 1))
+    (t
+     (and (ruby-electric-code-at-point-p)
+          (save-excursion (insert (cdr (assoc last-command-event
+                                              ruby-electric-matching-delimeter-alist)))))))))
+
+(defun ruby-electric-closing-char(arg)
+  (interactive "P")
+  (cond
+   ((ruby-electric-cua-replace-region-p)
+    (ruby-electric-cua-replace-region))
+   (arg
+    (setq this-command 'self-insert-command)
+    (self-insert-command (prefix-numeric-value arg)))
+   ((and
+     (eq last-command 'ruby-electric-curlies)
+     (= last-command-event ?})) ;; {}
+    (if (char-equal (following-char) ?\n) (delete-char 1))
+    (delete-horizontal-space)
+    (forward-char))
+   ((and
+     (= last-command-event (following-char))
+     (memq last-command '(ruby-electric-matching-char
+                          ruby-electric-closing-char))) ;; ()/[] and (())/[[]]
+    (forward-char))
+   (t
+    (setq this-command 'self-insert-command)
+    (self-insert-command 1))))
 
 (defun ruby-electric-bar(arg)
   (interactive "P")
