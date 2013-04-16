@@ -1,3 +1,7 @@
+Tue Apr 16 11:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/openssl/*: Document synonymous methods, by windwiny [GH-277]
+
 Mon Apr 15 22:21:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/fiddle/depend: New file.

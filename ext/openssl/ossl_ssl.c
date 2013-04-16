@@ -1634,7 +1634,7 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
 
 /*
 * call-seq:
-*    ssl.version => String
+*    ssl.ssl_version => String
 *
 * Returns a String representing the SSL/TLS version that was negotiated
 * for the connection, for example "TLSv1.2".
