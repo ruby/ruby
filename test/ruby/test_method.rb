@@ -499,7 +499,7 @@ class TestMethod < Test::Unit::TestCase
           define_singleton_method(:reverse, target.method(:reverse).to_proc)
         end
       end
-      1000.times {p = Bug6171.new('test'); 10000.times {p.reverse}}
+      100.times {p = Bug6171.new('test'); 1000.times {p.reverse}}
       EOC
   end
 
