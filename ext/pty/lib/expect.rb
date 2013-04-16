@@ -37,7 +37,7 @@ class IO
     when Regexp
       e_pat = pat
     else
-      raise TypeError, "unsupported pattern class: #{pattern.class}"
+      raise TypeError, "unsupported pattern class: #{pat.class}"
     end
     @unusedBuf ||= ''
     while true
