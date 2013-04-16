@@ -2926,7 +2926,7 @@ env_inspect(void)
  *
  * Converts the environment variables into an array of names and value arrays.
  *
- *   ENV.to_a # => [["TERM" => "xterm-color"], ["SHELL" => "/bin/bash"], ...]
+ *   ENV.to_a # => [["TERM", "xterm-color"], ["SHELL", "/bin/bash"], ...]
  *
  */
 static VALUE
