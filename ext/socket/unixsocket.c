@@ -208,9 +208,9 @@ unix_send_io(VALUE sock, VALUE val)
     char buf[1];
 
 #if FD_PASSING_BY_MSG_CONTROL
-    struct {
+    union {
 	struct cmsghdr hdr;
-	char pad[8+sizeof(int)+8];
+	char pad[sizeof(struct cmsghdr)+8+sizeof(int)+8];
     } cmsg;
 #endif
 
@@ -303,9 +303,9 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 
     int fd;
 #if FD_PASSING_BY_MSG_CONTROL
-    struct {
+    union {
 	struct cmsghdr hdr;
-	char pad[8+sizeof(int)+8];
+	char pad[sizeof(struct cmsghdr)+8+sizeof(int)+8];
     } cmsg;
 #endif
 

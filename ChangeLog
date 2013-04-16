@@ -1,3 +1,8 @@
+Tue Apr 16 23:07:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/unixsocket.c (unix_send_io): Suppress a warning by clang.
+	  (unix_recv_io): Ditto.
+
 Tue Apr 16 12:27:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/sdbm/init.c: Fix comment indentation, by windwiny [Fixes GH-277]
