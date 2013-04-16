@@ -5752,7 +5752,7 @@ ole_type_visible(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *    WIN32OLE_TYPE#visible  #=> true or false
+ *    WIN32OLE_TYPE#visible?  #=> true or false
  *
  *  Returns true if the OLE class is public.
  *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')

@@ -1331,6 +1331,8 @@ strio_read(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq:
  *   strio.sysread(integer[, outbuf])    -> string
+ *   strio.readpartial(integer[, outbuf])    -> string
+ *   strio.read_nonblock(integer[, outbuf])    -> string
  *
  * Similar to #read, but raises +EOFError+ at end of string instead of
  * returning +nil+, as well as IO#sysread does.
@@ -1363,6 +1365,7 @@ strio_sysread(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   strio.length -> integer
  *   strio.size   -> integer
  *
  * Returns the size of the buffer string.

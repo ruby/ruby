@@ -1293,12 +1293,8 @@ rb_zstream_finish(VALUE obj)
 
 /*
  * call-seq:
- *   flush_next_out                 -> String
- *   flush_next_out { |chunk| ... } -> nil
+ *   flush_next_in -> input
  *
- * Flushes output buffer and returns all data in that buffer.  If a block is
- * given each chunk is yielded to the block until the current output buffer
- * has been flushed.
  */
 static VALUE
 rb_zstream_flush_next_in(VALUE obj)
@@ -1313,7 +1309,13 @@ rb_zstream_flush_next_in(VALUE obj)
 }
 
 /*
- * Flushes output buffer and returns all data in that buffer.
+ * call-seq:
+ *   flush_next_out                 -> String
+ *   flush_next_out { |chunk| ... } -> nil
+ *
+ * Flushes output buffer and returns all data in that buffer.  If a block is
+ * given each chunk is yielded to the block until the current output buffer
+ * has been flushed.
  */
 static VALUE
 rb_zstream_flush_next_out(VALUE obj)

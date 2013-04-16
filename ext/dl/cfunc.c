@@ -285,7 +285,9 @@ rb_dlcfunc_set_ptr(VALUE self, VALUE addr)
 }
 
 /*
- * call-seq: inspect
+ * call-seq:
+ *    inspect
+ *    to_s
  *
  * Returns a string formatted with an easily readable representation of the
  * internal state of the DL::CFunc

@@ -1,3 +1,16 @@
+Tue Apr 16 12:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/option.c: Document synonymous methods, by windwiny [GH-277]
+	* ext/stringio/stringio.c: ditto
+	* ext/io/wait/wait.c: ditto
+	* ext/gdbm/gdbm.c: ditto
+	* ext/dl/cfunc.c: ditto
+	* ext/zlib/zlib.c: ditto
+	* ext/win32ole/win32ole.c: ditto
+	* ext/dbm/dbm.c: ditto
+	* ext/json/generator/generator.c: ditto
+	* ext/date/date_core.c: ditto
+
 Tue Apr 16 11:23:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/openssl/*: Document synonymous methods, by windwiny [GH-277]

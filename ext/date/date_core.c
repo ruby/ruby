@@ -5935,6 +5935,7 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *    d.succ  ->  date
  *    d.next  ->  date
  *
  * Returns a date object denoting the following day.
