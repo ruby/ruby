@@ -1,3 +1,7 @@
+Tue Apr 16 12:27:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/sdbm/init.c: Fix comment indentation, by windwiny [Fixes GH-277]
+
 Tue Apr 16 12:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/socket/option.c: Document synonymous methods, by windwiny [GH-277]
