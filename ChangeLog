@@ -1,3 +1,18 @@
+Wed Apr 17 04:09:19 2013  Aman Gupta  <ruby@tmm1.net>
+
+	* compile.c (iseq_add_mark_object): Use new rb_iseq_add_mark_object().
+
+	* insns.def (setinlinecache): Ditto.
+
+	* iseq.c (rb_iseq_add_mark_object): New function to allocate
+	  iseq->mark_ary on demand. [Bug #8142]
+
+	* iseq.h (rb_iseq_add_mark_object): Ditto.
+
+	* iseq.c (prepare_iseq_build): Avoid allocating mark_ary until needed.
+
+	* iseq.c (rb_iseq_build_for_ruby2cext): Ditto.
+
 Wed Apr 17 20:00:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (SOCKLEN_MAX): Defined.
