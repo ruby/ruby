@@ -291,7 +291,10 @@ class TestReadline < Test::Unit::TestCase
     else
       results = %W"\xa1\xa1 \xa1\xa2".map {|s| s.force_encoding(locale)}
     end or
+    begin
+      return if assert_under_utf8
       skip("missing test for locale #{locale.name}")
+    end
     expected = results[0][0...1]
     Readline.completion_case_fold = false
     assert_equal(expected, with_pipe {|r, w| w << "\t"}, bug5941)
@@ -417,7 +420,10 @@ class TestReadline < Test::Unit::TestCase
   end if !/EditLine/n.match(Readline::VERSION)
 
   def test_input_metachar_multibyte
-    skip 'this test needs UTF-8 locale' unless Encoding.find("locale") == Encoding::UTF_8
+    unless Encoding.find("locale") == Encoding::UTF_8
+      return if assert_under_utf8
+      skip 'this test needs UTF-8 locale'
+    end
     bug6602 = '[ruby-core:45683]'
     Readline::HISTORY << "\u3042\u3093"
     Readline::HISTORY << "\u3044\u3093"
@@ -495,5 +501,16 @@ class TestReadline < Test::Unit::TestCase
 
   def get_default_internal_encoding
     return Encoding.default_internal || Encoding.find("locale")
+  end
+
+  def assert_under_utf8
+    return false if ENV['LC_ALL'] == 'UTF-8'
+    loc = caller_locations(1, 1)[0].base_label.to_s
+    require_relative "../ruby/envutil"
+    assert_separately([{"LC_ALL"=>"UTF-8"}, "-r", __FILE__], <<SRC)
+#skip "test \#{ENV['LC_ALL']}"
+#{self.class.name}.new(#{loc.dump}).run(Test::Unit::Runner.new)
+SRC
+    return true
   end
 end if defined?(::Readline)
