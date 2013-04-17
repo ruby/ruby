@@ -1,3 +1,10 @@
+Wed Apr 17 20:00:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (SOCKLEN_MAX): Defined.
+
+	* ext/socket/raddrinfo.c (ext/socket/raddrinfo.c): Reject too long
+	  Linux abstract socket name.
+
 Wed Apr 17 19:45:27 2013  Aman Gupta  <tmm1@ruby-lang.org>
 
 	* iseq.c (iseq_location_setup): re-use existing string when iseq has

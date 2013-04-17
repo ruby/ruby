@@ -450,8 +450,10 @@ rsock_unix_sockaddr_len(VALUE path)
     }
     else if (RSTRING_PTR(path)[0] == '\0') {
 	/* abstract namespace; see unix(7) for details. */
+        if (SOCKLEN_MAX - offsetof(struct sockaddr_un, sun_path) < (size_t)RSTRING_LEN(path))
+            rb_raise(rb_eArgError, "Linux abstract socket too long");
 	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
-	    RSTRING_LEN(path);
+	    RSTRING_SOCKLEN(path);
     }
     else {
 #endif
