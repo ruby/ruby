@@ -891,7 +891,7 @@ module URI
 
   # Decode given +str+ of URL-encoded form data.
   #
-  # This decods + to SP.
+  # This decodes + to SP.
   #
   # See URI.encode_www_form_component, URI.decode_www_form
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
