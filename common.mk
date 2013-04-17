@@ -449,6 +449,7 @@ clean-local:: PHONY
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT)
 clean-ext:: PHONY
+	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
