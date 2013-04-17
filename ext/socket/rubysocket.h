@@ -93,7 +93,7 @@ typedef int socklen_t;
 #endif
 
 #define SOCKLEN_MAX \
-  (0 < (((socklen_t)0)-1) ? \
+  (0 < (socklen_t)-1 ? \
    ~(socklen_t)0 : \
    (((((socklen_t)1) << (sizeof(socklen_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
 
