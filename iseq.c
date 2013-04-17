@@ -188,7 +188,10 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name
 {
     rb_iseq_location_t *loc = &iseq->location;
     loc->path = path;
-    loc->absolute_path = absolute_path;
+    if (RTEST(absolute_path) && rb_str_cmp(path, absolute_path) == 0)
+	loc->absolute_path = path;
+    else
+	loc->absolute_path = absolute_path;
     loc->label = loc->base_label = name;
     loc->first_lineno = first_lineno;
     return loc;
