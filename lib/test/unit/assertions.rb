@@ -12,10 +12,8 @@ module Test
 
       MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
 
-      UNASSIGNED = Object.new # :nodoc:
-
       # :call-seq:
-      #   assert( test, failure_message = UNASSIGNED )
+      #   assert(test, [failure_message])
       #
       #Tests if +test+ is true.
       #
@@ -26,15 +24,13 @@ module Test
       #If no +msg+ is given, a default message will be used.
       #
       #    assert(false, "This was expected to be true")
-      def assert(test, msg = UNASSIGNED)
-        case msg
-        when UNASSIGNED
-          msg = nil
+      def assert(test, *msgs)
+        case msg = msgs.first
         when String, Proc
         else
-          bt = caller.reject { |s| s.rindex(MINI_DIR, 0) }
+          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
-        end
+        end unless msgs.empty?
         super
       end
 
