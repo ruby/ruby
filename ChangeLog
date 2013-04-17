@@ -1,3 +1,8 @@
+Wed Apr 17 10:58:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (sleep_timeval): get rid of overflow on Windows where
+	  timeval.tv_sec is not time_t but mere long.
+
 Tue Apr 16 23:07:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/unixsocket.c (unix_send_io): Suppress a warning by clang.

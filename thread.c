@@ -912,18 +912,19 @@ thread_value(VALUE self)
  * Thread Scheduling
  */
 
+#if SIGNEDNESS_OF_TIME_T < 0	/* signed */
+# define TIMEVAL_SEC_MAX_P1 (((unsigned_time_t)1) << (sizeof(TYPEOF_TIMEVAL_TV_SEC) * CHAR_BIT - 1))
+# define TIMEVAL_SEC_MAX ((TYPEOF_TIMEVAL_TV_SEC)(TIMEVAL_SEC_MAX_P1 - 1))
+# define TIMEVAL_SEC_MIN ((TYPEOF_TIMEVAL_TV_SEC)TIMEVAL_SEC_MAX_P1)
+#elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
+# define TIMEVAL_SEC_MAX ((TYPEOF_TIMEVAL_TV_SEC)(~(unsigned_time_t)0))
+# define TIMEVAL_SEC_MIN ((TYPEOF_TIMEVAL_TV_SEC)0)
+#endif
+
 static struct timeval
 double2timeval(double d)
 {
     /* assume timeval.tv_sec has same signedness as time_t */
-#if SIGNEDNESS_OF_TIME_T < 0	/* signed */
-    const unsigned_time_t TIMEVAL_SEC_MAX_P1 = (((unsigned_time_t)1) << (sizeof(TYPEOF_TIMEVAL_TV_SEC) * CHAR_BIT - 1));
-    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MAX = (TYPEOF_TIMEVAL_TV_SEC)(TIMEVAL_SEC_MAX_P1 - 1);
-    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MIN = (TYPEOF_TIMEVAL_TV_SEC)TIMEVAL_SEC_MAX_P1;
-#elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
-    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MAX = (TYPEOF_TIMEVAL_TV_SEC)(~(unsigned_time_t)0);
-    const TYPEOF_TIMEVAL_TV_SEC TIMEVAL_SEC_MIN = (TYPEOF_TIMEVAL_TV_SEC)0;
-#endif
     const double TIMEVAL_SEC_MAX_PLUS_ONE = (2*(double)(TIMEVAL_SEC_MAX/2+1));
 
     struct timeval time;
@@ -994,12 +995,12 @@ sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
     enum rb_thread_status prev_status = th->status;
 
     getclockofday(&to);
-    if (TIMET_MAX - tv.tv_sec < to.tv_sec)
-        to.tv_sec = TIMET_MAX;
+    if (TIMEVAL_SEC_MAX - tv.tv_sec < to.tv_sec)
+        to.tv_sec = TIMEVAL_SEC_MAX;
     else
         to.tv_sec += tv.tv_sec;
     if ((to.tv_usec += tv.tv_usec) >= 1000000) {
-        if (to.tv_sec == TIMET_MAX)
+        if (to.tv_sec == TIMEVAL_SEC_MAX)
             to.tv_usec = 999999;
         else {
             to.tv_sec++;
