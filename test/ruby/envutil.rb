@@ -292,7 +292,7 @@ module Test
   end
 eom
         args = args.dup
-        $:.each{|l| args.unshift "-I#{l}" }
+        args.insert((Hash === args.first ? 1 : 0), *$:.map {|l| "-I#{l}"})
         ignore_stderr = opt.delete(:ignore_stderr)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
