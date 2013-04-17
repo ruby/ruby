@@ -15,7 +15,7 @@ end if defined? Curses
 
 class TestCurses
   def run_curses(src, input = nil, timeout: 1)
-    PTY.spawn(EnvUtil.rubybin, "-e", <<-"src") {|r, w, pid|
+    PTY.spawn({"TERM"=>ENV["TERM"]||"dumb"}, EnvUtil.rubybin, "-e", <<-"src") {|r, w, pid|
 require 'timeout'
 require 'curses'
 include Curses
