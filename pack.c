@@ -1941,7 +1941,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'm':
 	    {
-		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
+		VALUE buf = infected_str_new(0, (send - s + 2)*3/4, str); /* +2 is for skipping paddings */
 		char *ptr = RSTRING_PTR(buf);
 		int a = -1,b = -1,c = 0,d = 0;
 		static signed char b64_xtable[256];
