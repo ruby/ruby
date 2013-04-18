@@ -1374,7 +1374,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 {
-    set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PUBLIC);
+    set_method_visibility(rb_singleton_class(obj), argc, argv, NOEX_PUBLIC);
     return obj;
 }
 
@@ -1400,7 +1400,7 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 static VALUE
 rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
 {
-    set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PRIVATE);
+    set_method_visibility(rb_singleton_class(obj), argc, argv, NOEX_PRIVATE);
     return obj;
 }
 

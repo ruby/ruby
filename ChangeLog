@@ -1,3 +1,9 @@
+Thu Apr 18 16:58:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_mod_public_method): fix visibility on anonymous
+	  module. set visibility of singleton method, not method in base
+	  class.  [ruby-core:54404] [Bug #8284]
+
 Thu Apr 18 16:20:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): should skip dot directories only for recursion,
