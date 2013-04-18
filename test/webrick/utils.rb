@@ -13,6 +13,13 @@ module TestWEBrick
     return self
   end
 
+  class WEBrick::HTTPServlet::CGIHandler
+    remove_const :Ruby
+    Ruby = EnvUtil.rubybin
+    remove_const :CGIRunner
+    CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+  end
+
   RubyBin = "\"#{EnvUtil.rubybin}\""
   RubyBin << " --disable-gems"
   RubyBin << " \"-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib\""
