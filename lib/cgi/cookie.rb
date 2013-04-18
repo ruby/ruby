@@ -1,6 +1,5 @@
 require 'cgi/util'
 class CGI
-  @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # Class representing an HTTP cookie.
   #
   # In addition to its specific fields and methods, a Cookie instance
@@ -9,9 +8,9 @@ class CGI
   # See RFC 2965.
   #
   # == Examples of use
-  #   cookie1 = CGI::Cookie::new("name", "value1", "value2", ...)
-  #   cookie1 = CGI::Cookie::new("name" => "name", "value" => "value")
-  #   cookie1 = CGI::Cookie::new('name'    => 'name',
+  #   cookie1 = CGI::Cookie.new("name", "value1", "value2", ...)
+  #   cookie1 = CGI::Cookie.new("name" => "name", "value" => "value")
+  #   cookie1 = CGI::Cookie.new('name'    => 'name',
   #                              'value'   => ['value1', 'value2', ...],
   #                              'path'    => 'path',   # optional
   #                              'domain'  => 'domain', # optional
@@ -35,6 +34,7 @@ class CGI
   #   cookie1.expires = Time.now + 30
   #   cookie1.secure  = true
   class Cookie < Array
+    @@accept_charset="UTF-8" unless defined?(@@accept_charset)
 
     # Create a new CGI::Cookie object.
     #
@@ -125,7 +125,7 @@ class CGI
 
     # Convert the Cookie to its string representation.
     def to_s
-      val = collect{|v| CGI::escape(v) }.join("&")
+      val = collect{|v| CGI.escape(v) }.join("&")
       buf = "#{@name}=#{val}"
       buf << "; domain=#{@domain}" if @domain
       buf << "; path=#{@path}"     if @path
@@ -134,32 +134,32 @@ class CGI
       buf
     end
 
-  end # class Cookie
+    # Parse a raw cookie string into a hash of cookie-name=>Cookie
+    # pairs.
+    #
+    #   cookies = CGI::Cookie.parse("raw_cookie_string")
+    #     # { "name1" => cookie1, "name2" => cookie2, ... }
+    #
+    def self.parse(raw_cookie)
+      cookies = Hash.new([])
+      return cookies unless raw_cookie
 
-  # Parse a raw cookie string into a hash of cookie-name=>Cookie
-  # pairs.
-  #
-  #   cookies = CGI::Cookie::parse("raw_cookie_string")
-  #     # { "name1" => cookie1, "name2" => cookie2, ... }
-  #
-  def Cookie::parse(raw_cookie)
-    cookies = Hash.new([])
-    return cookies unless raw_cookie
-
-    raw_cookie.split(/[;,]\s?/).each do |pairs|
-      name, values = pairs.split('=',2)
-      next unless name and values
-      name = CGI::unescape(name)
-      values ||= ""
-      values = values.split('&').collect{|v| CGI::unescape(v,@@accept_charset) }
-      if cookies.has_key?(name)
-        values = cookies[name].value + values
+      raw_cookie.split(/[;,]\s?/).each do |pairs|
+        name, values = pairs.split('=',2)
+        next unless name and values
+        name = CGI.unescape(name)
+        values ||= ""
+        values = values.split('&').collect{|v| CGI.unescape(v,@@accept_charset) }
+        if cookies.has_key?(name)
+          values = cookies[name].value + values
+        end
+        cookies[name] = Cookie.new(name, *values)
       end
-      cookies[name] = Cookie::new(name, *values)
+
+      cookies
     end
 
-    cookies
-  end
+  end # class Cookie
 end
 
 
