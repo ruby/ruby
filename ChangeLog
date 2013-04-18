@@ -1,3 +1,9 @@
+Thu Apr 18 16:20:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): should skip dot directories only for recursion,
+	  but should not if matching to the given pattern.  [ruby-core:54387]
+	  [Bug #8283]
+
 Thu Apr 18 16:20:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_unpack): increase buffer size to fix buffer overflow,

@@ -177,6 +177,15 @@ class TestDir < Test::Unit::TestCase
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/?/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
       assert_equal(["a/b/c/d/e/f"], Dir.glob("a/**/c/**/d/e/f"), bug6977)
+
+      bug8283 = '[ruby-core:54387] [Bug #8283]'
+      dirs = ["a/.x", "a/b/.y"]
+      FileUtils.mkdir_p(dirs)
+      dirs.map {|dir| open("#{dir}/z", "w") {}}
+      assert_equal([], Dir.glob("a/**/z").sort, bug8283)
+      assert_equal(["a/.x/z"], Dir.glob("a/**/.x/z"), bug8283)
+      assert_equal(["a/.x/z"], Dir.glob("a/.x/**/z"), bug8283)
+      assert_equal(["a/b/.y/z"], Dir.glob("a/**/.y/z"), bug8283)
     end
   end
 

@@ -1434,9 +1434,6 @@ glob_helper(
 	    IF_HAVE_HFS(VALUE utf8str = Qnil);
 
 	    if (recursive && dp->d_name[0] == '.') {
-		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-		if (!(flags & FNM_DOTMATCH)) continue;
-
 		/* always skip current and parent directories not to recurse infinitely */
 		if (!dp->d_name[1]) continue;
 		if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
@@ -1461,7 +1458,8 @@ glob_helper(
 		break;
 	    }
 	    name = buf + pathlen + (dirsep != 0);
-	    if (recursive) {
+	    if (recursive && ((flags & FNM_DOTMATCH) || dp->d_name[0] != '.')) {
+		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 #ifndef _WIN32
 		if (do_lstat(buf, &st, flags) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
