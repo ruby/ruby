@@ -1,3 +1,8 @@
+Wed Apr 17 19:45:27 2013  Aman Gupta  <tmm1@ruby-lang.org>
+
+	* iseq.c (iseq_location_setup): re-use existing string when iseq has
+	  the same path and absolute_path. [Bug #8149]
+
 Wed Apr 17 11:38:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert):
