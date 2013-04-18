@@ -1,3 +1,7 @@
+Thu Apr 18 08:20:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (clean-ext): remove timestamps.
+
 Wed Apr 17 22:07:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (SOCKLEN_MAX): Expression simplified.
