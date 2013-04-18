@@ -2006,9 +2006,9 @@ pack_unpack(VALUE str, VALUE fmt)
 			*ptr++ = castchar(c << 6 | d);
 		    }
 		    if (a != -1 && b != -1) {
-			if (c == -1 && *s == '=')
+			if (c == -1)
 			    *ptr++ = castchar(a << 2 | b >> 4);
-			else if (c != -1 && *s == '=') {
+			else {
 			    *ptr++ = castchar(a << 2 | b >> 4);
 			    *ptr++ = castchar(b << 4 | c >> 2);
 			}

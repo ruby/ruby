@@ -545,6 +545,10 @@ EXPECTED
     assert_equal(["\377"], "/w==\n".unpack("m"))
     assert_equal(["\377\377"], "//8=\n".unpack("m"))
     assert_equal(["\377\377\377"], "////\n".unpack("m"))
+    assert_equal([""], "A\n".unpack("m"))
+    assert_equal(["\0"], "AA\n".unpack("m"))
+    assert_equal(["\0"], "AA=\n".unpack("m"))
+    assert_equal(["\0\0"], "AAA\n".unpack("m"))
   end
 
   def test_pack_unpack_m0
