@@ -1,3 +1,7 @@
+Wed Apr 17 22:07:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (SOCKLEN_MAX): Expression simplified.
+
 Wed Apr 17 20:09:19 2013  Aman Gupta  <ruby@tmm1.net>
 
 	* compile.c (iseq_add_mark_object): Use new rb_iseq_add_mark_object().
