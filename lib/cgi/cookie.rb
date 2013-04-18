@@ -1,3 +1,4 @@
+require 'cgi/util'
 class CGI
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # Class representing an HTTP cookie.
