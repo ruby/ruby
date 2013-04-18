@@ -479,12 +479,15 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    skip 'missing fork' unless have_fork?
+    require_relative '../ruby/envutil'
     service = DRb.start_service(nil, @ts_base)
 
     uri = service.uri
 
-    take = fork do
+    args = [EnvUtil.rubybin, *%W[-rdrb/drb -rdrb/eq -rrinda/ring -rrinda/tuplespace -e]]
+
+    take = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
       DRb.start_service
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
@@ -495,16 +498,17 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       th.raise(Interrupt) # causes loss of the taken tuple
       ts.write([:barrier, :continue])
       Kernel.sleep
-    end
+    end;
 
     @ts_base.take([:barrier, :continue])
 
-    write = fork do
+    write = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
       DRb.start_service
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
       ts.write([:test_take, 42])
-    end
+    end;
 
     status = Process.wait(write)
 
