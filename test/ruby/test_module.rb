@@ -1721,7 +1721,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal [mod, obj.singleton_class, Object], obj.singleton_class.ancestors.first(3)
   end
 
-  def test_anonymous_module_public_class_method
+  def test_visibility_by_public_class_method
     bug8284 = '[ruby-core:54404] [Bug #8284]'
     assert_raise(NoMethodError) {Object.define_method}
     Module.new.public_class_method(:define_method)
