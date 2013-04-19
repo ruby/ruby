@@ -1,3 +1,8 @@
+Sat Apr 20 00:41:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): append keyword hash to argument array
+	  to splat if needed.  [ruby-core:54094] [Bug #8236]
+
 Sat Apr 20 00:31:57 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* README.EXT.ja (Data_Wrap_Struct): Remove a description about

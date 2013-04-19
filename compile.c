@@ -4485,6 +4485,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    }
 		    ADD_SEND(args, line, ID2SYM(id_core_hash_merge_ptr), INT2FIX(i * 2 + 1));
+		    if (liseq->arg_rest != -1) {
+			ADD_INSN1(args, line, newarray, INT2FIX(1));
+			ADD_INSN (args, line, concatarray);
+			--argc;
+		    }
 		}
 	    }
 	}

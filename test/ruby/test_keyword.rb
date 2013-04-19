@@ -290,4 +290,25 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(1, o.bug7942(), bug7942)
     assert_equal(42, o.bug7942(a: 42), bug7942)
   end
+
+  def test_super_with_keyword
+    bug8236 = '[ruby-core:54094] [Bug #8236]'
+    base = Class.new do
+      def foo(*args)
+        args
+      end
+    end
+    a = Class.new(base) do
+      def foo(arg, bar: 'x')
+        super
+      end
+    end
+    b = Class.new(base) do
+      def foo(*args, bar: 'x')
+        super
+      end
+    end
+    assert_equal([42, {:bar=>"x"}], a.new.foo(42), bug8236)
+    assert_equal([42, {:bar=>"x"}], b.new.foo(42), bug8236)
+  end
 end
