@@ -1,3 +1,11 @@
+Fri Apr 19 17:54:57 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (body_type_msg): should accept
+	  message/delivery-status with extra data.
+	  [ruby-core:53741] [Bug #8167]
+
+	* test/net/imap/test_imap_response_parser.rb: related test.
+
 Fri Apr 19 13:03:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): do not dump encoding which is dumped with

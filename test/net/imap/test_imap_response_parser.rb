@@ -180,4 +180,47 @@ EOF
 * 1038 FETCH (BODY ("MIXED"))
 EOF
   end
+
+  # [Bug #8167]
+  def test_msg_delivery_status_with_extra_data
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 29021 FETCH (RFC822.SIZE 3162 UID 113622 RFC822.HEADER {1155}
+Return-path: <>
+Envelope-to: info@xxxxxxxx.si
+Delivery-date: Tue, 26 Mar 2013 12:42:58 +0100
+Received: from mail by xxxx.xxxxxxxxxxx.net with spam-scanned (Exim 4.76)
+	id 1UKSHI-000Cwl-AR
+	for info@xxxxxxxx.si; Tue, 26 Mar 2013 12:42:58 +0100
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on xxxx.xxxxxxxxxxx.net
+X-Spam-Level: **
+X-Spam-Status: No, score=2.1 required=7.0 tests=DKIM_ADSP_NXDOMAIN,RDNS_NONE
+	autolearn=no version=3.3.1
+Received: from [xx.xxx.xxx.xx] (port=56890 helo=xxxxxx.localdomain)
+	by xxxx.xxxxxxxxxxx.net with esmtp (Exim 4.76)
+	id 1UKSHI-000Cwi-9j
+	for info@xxxxxxxx.si; Tue, 26 Mar 2013 12:42:56 +0100
+Received: by xxxxxx.localdomain (Postfix)
+	id 72725BEA64A; Tue, 26 Mar 2013 12:42:55 +0100 (CET)
+Date: Tue, 26 Mar 2013 12:42:55 +0100 (CET)
+From: MAILER-DAEMON@xxxxxx.localdomain (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender
+To: info@xxxxxxxx.si
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="27797BEA649.1364298175/xxxxxx.localdomain"
+Message-Id: <20130326114255.72725BEA64A@xxxxxx.localdomain>
+
+ BODYSTRUCTURE (("text" "plain" ("charset" "us-ascii") NIL "Notification" "7bit" 510 14 NIL NIL NIL NIL)("message" "delivery-status" NIL NIL "Delivery report" "7bit" 410 NIL NIL NIL NIL)("text" "rfc822-headers" ("charset" "us-ascii") NIL "Undelivered Message Headers" "7bit" 612 15 NIL NIL NIL NIL) "report" ("report-type" "delivery-status" "boundary" "27797BEA649.1364298175/xxxxxx.localdomain") NIL NIL NIL))
+EOF
+    delivery_status = response.data.attr["BODYSTRUCTURE"].parts[1]
+    assert_equal("MESSAGE", delivery_status.media_type)
+    assert_equal("DELIVERY-STATUS", delivery_status.subtype)
+    assert_equal(nil, delivery_status.param)
+    assert_equal(nil, delivery_status.content_id)
+    assert_equal("Delivery report", delivery_status.description)
+    assert_equal("7BIT", delivery_status.encoding)
+    assert_equal(410, delivery_status.size)
+  end
 end
