@@ -1,3 +1,13 @@
+Fri Apr 19 21:55:40 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* README.EXT.ja (Data_Wrap_Struct): Remove a description about
+	  orphan argument. Oh, I renamed the argument name without
+	  changing description at r36180... Sorry....
+	  Patch by Makoto Kishimoto. Thanks!!! [ruby-dev:47269] [Bug #8292]
+	* README.EXT.ja (Data_Make_Struct): Add a sample code that describes
+	  how it works.
+	  Patch by Makoto Kishimoto. Thanks!!! [ruby-dev:47269] [Bug #8292]
+
 Fri Apr 19 17:54:57 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_type_msg): should accept
