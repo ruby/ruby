@@ -26,6 +26,14 @@ with all sufficient information, see the ChangeLog file.
   * misc
     * Mutex#owned? is no longer experimental.
 
+* String
+  * New methods:
+    * added String#scrub to verify and fix invalid byte sequence.
+  * extended methods:
+    * If invalid: :replace is specified for String#encode, replace
+      invalid byte sequence even if the destination encoding equals to
+      the source encoding.
+
 * pack/unpack (Array/String)
   * Q! and q! directives for long long type if platform has the type.
 

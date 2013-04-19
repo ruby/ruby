@@ -7741,6 +7741,272 @@ rb_str_ellipsize(VALUE str, long len)
     return ret;
 }
 
+static VALUE
+str_compat_and_valid(VALUE str, rb_encoding *enc)
+{
+    int cr;
+    str = StringValue(str);
+    cr = rb_enc_str_coderange(str);
+    if (cr == ENC_CODERANGE_BROKEN) {
+	rb_raise(rb_eArgError, "replacement must be valid byte sequence '%+"PRIsVALUE"'", str);
+    }
+    else if (cr == ENC_CODERANGE_7BIT) {
+	rb_encoding *e = STR_ENC_GET(str);
+	if (!rb_enc_asciicompat(enc)) {
+	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+		    rb_enc_name(enc), rb_enc_name(e));
+	}
+    }
+    else { /* ENC_CODERANGE_VALID */
+	rb_encoding *e = STR_ENC_GET(str);
+	if (enc != e) {
+	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+		    rb_enc_name(enc), rb_enc_name(e));
+	}
+    }
+    return str;
+}
+
+/*
+ *  call-seq:
+ *    str.scrub -> new_str
+ *    str.scrub(repl) -> new_str
+ *    str.scrub{|bytes|} -> new_str
+ *
+ *  If the string is invalid byte sequence then replace invalid bytes with given replacement
+ *  character, else returns self.
+ *  If block is given, replace invalid bytes with returned value of the block.
+ */
+VALUE
+rb_str_scrub(int argc, VALUE *argv, VALUE str)
+{
+    int cr = ENC_CODERANGE(str);
+    rb_encoding *enc;
+    VALUE repl;
+
+    if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
+	return rb_str_dup(str);
+
+    enc = STR_ENC_GET(str);
+    rb_scan_args(argc, argv, "01", &repl);
+    if (argc != 0) {
+	repl = str_compat_and_valid(repl, enc);
+    }
+
+    if (rb_enc_dummy_p(enc)) {
+	return rb_str_dup(str);
+    }
+
+    if (rb_enc_asciicompat(enc)) {
+	const char *p = RSTRING_PTR(str);
+	const char *e = RSTRING_END(str);
+	const char *p1 = p;
+	const char *rep;
+	long replen;
+	int rep7bit_p;
+	VALUE buf = rb_str_buf_new(RSTRING_LEN(str));
+	if (rb_block_given_p()) {
+	    rep = NULL;
+	}
+	else if (!NIL_P(repl)) {
+	    rep = RSTRING_PTR(repl);
+	    replen = RSTRING_LEN(repl);
+	    rep7bit_p = (ENC_CODERANGE(repl) == ENC_CODERANGE_7BIT);
+	}
+	else if (enc == rb_utf8_encoding()) {
+	    rep = "\xEF\xBF\xBD";
+	    replen = strlen(rep);
+	    rep7bit_p = FALSE;
+	}
+	else {
+	    rep = "?";
+	    replen = strlen(rep);
+	    rep7bit_p = TRUE;
+	}
+	cr = ENC_CODERANGE_7BIT;
+
+	p = search_nonascii(p, e);
+	if (!p) {
+	    p = e;
+	}
+	while (p < e) {
+	    int ret = rb_enc_precise_mbclen(p, e, enc);
+	    if (MBCLEN_NEEDMORE_P(ret)) {
+		break;
+	    }
+	    else if (MBCLEN_CHARFOUND_P(ret)) {
+		cr = ENC_CODERANGE_VALID;
+		p += MBCLEN_CHARFOUND_LEN(ret);
+	    }
+	    else if (MBCLEN_INVALID_P(ret)) {
+		/*
+		 * p1~p: valid ascii/multibyte chars
+		 * p ~e: invalid bytes + unknown bytes
+		 */
+		long clen = rb_enc_mbmaxlen(enc);
+		if (p > p1) {
+		    rb_str_buf_cat(buf, p1, p - p1);
+		}
+
+		if (e - p < clen) clen = e - p;
+		if (clen <= 2) {
+		    clen = 1;
+		}
+		else {
+		    const char *q = p;
+		    clen--;
+		    for (; clen > 1; clen--) {
+			ret = rb_enc_precise_mbclen(q, q + clen, enc);
+			if (MBCLEN_NEEDMORE_P(ret)) break;
+			else if (MBCLEN_INVALID_P(ret)) continue;
+			else UNREACHABLE;
+		    }
+		}
+		if (rep) {
+		    rb_str_buf_cat(buf, rep, replen);
+		    if (!rep7bit_p) cr = ENC_CODERANGE_VALID;
+		}
+		else {
+		    repl = rb_yield(rb_enc_str_new(p1, clen, enc));
+		    repl = str_compat_and_valid(repl, enc);
+		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		    if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
+			cr = ENC_CODERANGE_VALID;
+		}
+		p += clen;
+		p1 = p;
+		p = search_nonascii(p, e);
+		if (!p) {
+		    p = e;
+		    break;
+		}
+	    }
+	    else {
+		UNREACHABLE;
+	    }
+	}
+	if (p1 < p) {
+	    rb_str_buf_cat(buf, p1, p - p1);
+	}
+	if (p < e) {
+	    if (rep) {
+		rb_str_buf_cat(buf, rep, replen);
+		if (!rep7bit_p) cr = ENC_CODERANGE_VALID;
+	    }
+	    else {
+		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		repl = str_compat_and_valid(repl, enc);
+		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
+		    cr = ENC_CODERANGE_VALID;
+	    }
+	}
+	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+	return buf;
+    }
+    else {
+	/* ASCII incompatible */
+	const char *p = RSTRING_PTR(str);
+	const char *e = RSTRING_END(str);
+	const char *p1 = p;
+	VALUE buf = rb_str_buf_new(RSTRING_LEN(str));
+	const char *rep;
+	long replen;
+	long mbminlen = rb_enc_mbminlen(enc);
+	static rb_encoding *utf16be;
+	static rb_encoding *utf16le;
+	static rb_encoding *utf32be;
+	static rb_encoding *utf32le;
+	if (!utf16be) {
+	    utf16be = rb_enc_find("UTF-16BE");
+	    utf16le = rb_enc_find("UTF-16LE");
+	    utf32be = rb_enc_find("UTF-32BE");
+	    utf32le = rb_enc_find("UTF-32LE");
+	}
+	if (!NIL_P(repl)) {
+	    rep = RSTRING_PTR(repl);
+	    replen = RSTRING_LEN(repl);
+	}
+	else if (enc == utf16be) {
+	    rep = "\xFF\xFD";
+	    replen = strlen(rep);
+	}
+	else if (enc == utf16le) {
+	    rep = "\xFD\xFF";
+	    replen = strlen(rep);
+	}
+	else if (enc == utf32be) {
+	    rep = "\x00\x00\xFF\xFD";
+	    replen = strlen(rep);
+	}
+	else if (enc == utf32le) {
+	    rep = "\xFD\xFF\x00\x00";
+	    replen = strlen(rep);
+	}
+	else {
+	    rep = "?";
+	    replen = strlen(rep);
+	}
+
+	while (p < e) {
+	    int ret = rb_enc_precise_mbclen(p, e, enc);
+	    if (MBCLEN_NEEDMORE_P(ret)) {
+		break;
+	    }
+	    else if (MBCLEN_CHARFOUND_P(ret)) {
+		p += MBCLEN_CHARFOUND_LEN(ret);
+	    }
+	    else if (MBCLEN_INVALID_P(ret)) {
+		const char *q = p;
+		long clen = rb_enc_mbmaxlen(enc);
+		if (p > p1) rb_str_buf_cat(buf, p1, p - p1);
+
+		if (e - p < clen) clen = e - p;
+		if (clen <= mbminlen * 2) {
+		    clen = mbminlen;
+		}
+		else {
+		    clen -= mbminlen;
+		    for (; clen > mbminlen; clen-=mbminlen) {
+			ret = rb_enc_precise_mbclen(q, q + clen, enc);
+			if (MBCLEN_NEEDMORE_P(ret)) break;
+			else if (MBCLEN_INVALID_P(ret)) continue;
+			else UNREACHABLE;
+		    }
+		}
+		if (rep) {
+		    rb_str_buf_cat(buf, rep, replen);
+		}
+		else {
+		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		    repl = str_compat_and_valid(repl, enc);
+		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		}
+		p += clen;
+		p1 = p;
+	    }
+	    else {
+		UNREACHABLE;
+	    }
+	}
+	if (p1 < p) {
+	    rb_str_buf_cat(buf, p1, p - p1);
+	}
+	if (p < e) {
+	    if (rep) {
+		rb_str_buf_cat(buf, rep, replen);
+	    }
+	    else {
+		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		repl = str_compat_and_valid(repl, enc);
+		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+	    }
+	}
+	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), ENC_CODERANGE_VALID);
+	return buf;
+    }
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -8226,6 +8492,7 @@ Init_String(void)
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
+    rb_define_method(rb_cString, "scrub", rb_str_scrub, -1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

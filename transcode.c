@@ -2652,6 +2652,8 @@ str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
     return dencidx;
 }
 
+VALUE rb_str_scrub(int argc, VALUE *argv, VALUE str);
+
 static int
 str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 {
@@ -2686,6 +2688,17 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_XML_ATTR_CONTENT_DECORATOR|
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
+	    if (ecflags & ECONV_INVALID_MASK) {
+		if (!NIL_P(ecopts)) {
+		    VALUE rep = rb_hash_aref(ecopts, sym_replace);
+		    dest = rb_str_scrub(1, &rep, str);
+		}
+		else {
+		    dest = rb_str_scrub(0, NULL, str);
+		}
+		*self = dest;
+		return dencidx;
+	    }
             return NIL_P(arg2) ? -1 : dencidx;
         }
         if (senc && denc && rb_enc_asciicompat(senc) && rb_enc_asciicompat(denc)) {
@@ -2814,10 +2827,6 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *  Encoding::InvalidByteSequenceError for invalid byte sequences
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
- *
- *  Please note that conversion from an encoding +enc+ to the
- *  same encoding +enc+ is a no-op, i.e. the receiver is returned without
- *  any changes, and no exceptions are raised, even if there are invalid bytes.
  *
  *  The +options+ Hash gives details for conversion and can have the following
  *  keys:
