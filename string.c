@@ -7776,6 +7776,10 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
  *  If the string is invalid byte sequence then replace invalid bytes with given replacement
  *  character, else returns self.
  *  If block is given, replace invalid bytes with returned value of the block.
+ *
+ *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
+ *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
+ *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
  */
 VALUE
 rb_str_scrub(int argc, VALUE *argv, VALUE str)
