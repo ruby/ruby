@@ -1759,7 +1759,7 @@ class Vector
   end
 
   #
-  # Returns the cross product of this vector whit the other.
+  # Returns the cross product of this vector with the other.
   #   Vector[1, 0, 0].cross_product Vector[0, 1, 0]   => Vector[0, 0, 1]
   #
   def cross_product(v)
