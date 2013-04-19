@@ -1,3 +1,12 @@
+Fri Apr 19 11:36:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	 together on SmartOS
+
+	* configure.in (stack_protector): control use of -fstack-protector.
+
+	* configure.in (debugflags): let -fstack-protector precede and disable
+	  debugflags, because they can't work together on SmartOS.  [Bug #8268]
+
 Fri Apr 19 07:43:52 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/openssl/test_cipher.rb: Correct a typo

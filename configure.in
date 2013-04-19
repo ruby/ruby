@@ -705,10 +705,6 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     warnflags=
 fi
 if test "$GCC" = yes; then
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb3, [debugflags=-ggdb3])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb, [debugflags=-ggdb])}
-    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
-
     # -D_FORTIFY_SOURCE
     # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
     # argument check. The performance drop is very little and Ubuntu enables
@@ -720,13 +716,13 @@ if test "$GCC" = yes; then
     AS_CASE(["$target_os"],
     [mingw*|nacl|haiku], [
 	stack_protector=no
-    ],
-    [
+    ])
+    if test -z "${stack_protector+set}"; then
 	RUBY_TRY_CFLAGS(-fstack-protector, [stack_protector=yes], [stack_protector=no])
 	if test "x$stack_protector" = xyes; then
 	    RUBY_TRY_LDFLAGS(-fstack-protector, [], [stack_protector=broken])
 	fi
-    ])
+    fi
     if test "x$stack_protector" = xyes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
@@ -758,6 +754,10 @@ if test "$GCC" = yes; then
 
     # suppress annoying -Wstrict-overflow warnings
     RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])
+
+    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb3, [debugflags=-ggdb3])}
+    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb, [debugflags=-ggdb])}
+    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
 fi
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 
