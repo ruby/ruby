@@ -102,7 +102,7 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
     return bins;
 }
 
-/* Shortage */
+/* Shortcut */
 #define bins as.big.bins
 #define head as.big.head
 #define tail as.big.tail
