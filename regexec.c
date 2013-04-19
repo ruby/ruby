@@ -4020,15 +4020,14 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 	  start = min_semi_end - reg->anchor_dmax;
 	  if (start < end)
 	    start = onigenc_get_right_adjust_char_head(reg->enc, str, start, end);
-	  else { /* match with empty at end */
-	    start = onigenc_get_prev_char_head(reg->enc, str, end, end);
-	  }
 	}
 	if ((OnigDistance )(max_semi_end - (range - 1)) < reg->anchor_dmin) {
 	  range = max_semi_end - reg->anchor_dmin + 1;
 	}
 
-	if (start >= range) goto mismatch_no_msa;
+	if (start > range) goto mismatch_no_msa;
+	/* If start == range, match with empty at end.
+	   Backward search is used. */
       }
       else {
 	if ((OnigDistance )(min_semi_end - range) > reg->anchor_dmax) {
@@ -4258,7 +4257,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   ONIG_STATE_DEC_THREAD(reg);
 
   /* If result is mismatch and no FIND_NOT_EMPTY option,
-     then the region is not setted in match_at(). */
+     then the region is not set in match_at(). */
   if (IS_FIND_NOT_EMPTY(reg->options) && region
 #ifdef USE_POSIX_API_REGION_OPTION
       && !IS_POSIX_REGION(option)

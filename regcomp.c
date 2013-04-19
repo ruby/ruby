@@ -4990,7 +4990,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       int i, z;
       CClassNode* cc = NCCLASS(node);
 
-      /* no need to check ignore case. (setted in setup_tree()) */
+      /* no need to check ignore case. (set in setup_tree()) */
 
       if (IS_NOT_NULL(cc->mbuf) || IS_NCCLASS_NOT(cc)) {
         OnigDistance min = ONIGENC_MBC_MINLEN(env->enc);

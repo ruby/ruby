@@ -805,7 +805,7 @@ typedef struct _OnigStackType {
     struct {
       int num;           /* memory num */
       UChar *pstr;       /* start/end position */
-      /* Following information is setted, if this stack type is MEM-START */
+      /* Following information is set, if this stack type is MEM-START */
       OnigStackIndex start;  /* prev. info (for backtrack  "(...)*" ) */
       OnigStackIndex end;    /* prev. info (for backtrack  "(...)*" ) */
     } mem;
@@ -878,6 +878,7 @@ typedef void hash_table_type;
 #include "ruby/st.h"
 typedef st_data_t hash_data_type;
 #else
+#include "st.h"
 typedef uintptr_t hash_data_type;
 #endif
 

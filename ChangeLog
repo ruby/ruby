@@ -1,3 +1,8 @@
+Sat Apr 20 01:31:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Merge Onigmo 5.13.4 f22cf2e566712cace60d17f84d63119d7c5764ee.
+	  [bug] fix problem with optimization of \z (Issue #16) [Bug #8210]
+
 Sat Apr 20 01:18:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_keyword_arg): non-symbol key is not
