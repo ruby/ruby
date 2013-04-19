@@ -592,6 +592,33 @@ if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
 
 end
 
+  def test_invalid_shutdown_by_gc
+    assert_nothing_raised {
+      start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+        10.times {
+          sock = TCPSocket.new("127.0.0.1", port)
+          ssl = OpenSSL::SSL::SSLSocket.new(sock)
+          GC.start
+          ssl.connect
+          sock.close
+        }
+      }
+    }
+  end
+
+  def test_close_after_socket_close
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      sock.close
+      assert_nothing_raised do
+        ssl.close
+      end
+    }
+  end
+
   private
 
   def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)

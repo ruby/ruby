@@ -1,3 +1,11 @@
+Sat Apr 20 02:09:46 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_ssl.c: Correct shutdown behavior w.r.t GC.
+
+	* test/openssl/test_ssl.rb: Add tests to verify correct behavior.
+
+	[Bug #8240] Patch provided by Shugo Maeda. Thanks!
+
 Sat Apr 20 01:56:32 2013  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* thread_pthread.c (ruby_init_stack): Avoid using uninitialized value.
