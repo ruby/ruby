@@ -1,7 +1,5 @@
 Fri Apr 19 11:36:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	 together on SmartOS
-
 	* configure.in (stack_protector): control use of -fstack-protector.
 
 	* configure.in (debugflags): let -fstack-protector precede and disable
