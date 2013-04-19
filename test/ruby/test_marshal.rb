@@ -539,6 +539,24 @@ class TestMarshal < Test::Unit::TestCase
     assert_nil(loaded.foo, bug7627)
   end
 
+  class Bug8276
+    attr_reader :data
+    def initialize(data)
+      @data = data
+      freeze
+    end
+    alias marshal_dump data
+    alias marshal_load initialize
+  end
+
+  def test_marshal_dump_excess_encoding
+    bug8276 = '[ruby-core:54334] [Bug #8276]'
+    t = Bug8276.new(bug8276)
+    s = Marshal.dump(t)
+    assert_nothing_raised(RuntimeError) {s = Marshal.load(s)}
+    assert_equal(t.data, s.data, bug8276)
+  end
+
   def test_class_ivar
     assert_raise(TypeError) {Marshal.load("\x04\x08Ic\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}

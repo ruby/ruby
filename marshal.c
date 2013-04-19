@@ -598,7 +598,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     st_table *ivtbl = 0;
     st_data_t num;
     int hasiv = 0;
-#define has_ivars(obj, ivtbl) (((ivtbl) = rb_generic_ivar_table(obj)) != 0 || \
+#define has_ivars_noenc(obj, ivtbl) (((ivtbl) = rb_generic_ivar_table(obj)) != 0)
+#define has_ivars(obj, ivtbl) (has_ivars_noenc(obj, ivtbl) || \
 			       (!SPECIAL_CONST_P(obj) && !ENCODING_IS_ASCII8BIT(obj)))
 
     if (limit == 0) {
@@ -656,7 +657,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall2(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
-	    hasiv = has_ivars(v, ivtbl);
+	    hasiv = has_ivars_noenc(v, ivtbl);
 	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);

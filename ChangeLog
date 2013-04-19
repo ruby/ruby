@@ -1,3 +1,8 @@
+Fri Apr 19 13:03:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): do not dump encoding which is dumped with
+	  marshal_dump data.  [ruby-core:54334] [Bug #8276]
+
 Fri Apr 19 11:36:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (stack_protector): control use of -fstack-protector.
