@@ -1,3 +1,9 @@
+Sat Apr 20 01:14:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_mutex_synchronize_m): yield no block params.  patch by
+	  splattael (Peter Suschlik) in [ruby-core:53773] [Bug #8097].
+	  fix GH-266.
+
 Sat Apr 20 00:41:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): append keyword hash to argument array

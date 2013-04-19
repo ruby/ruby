@@ -120,6 +120,11 @@ class TestThread < Test::Unit::TestCase
     assert_equal(max * max * max, r)
   end
 
+  def test_mutex_synchronize_yields_no_block_params
+    bug8097 = '[ruby-core:53424] [Bug #8097]'
+    assert_empty(Mutex.new.synchronize {|*params| break params}, bug8097)
+  end
+
   def test_local_barrier
     dir = File.dirname(__FILE__)
     lbtest = File.join(dir, "lbtest.rb")
