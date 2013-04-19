@@ -714,17 +714,17 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
       cDBM = rb_define_class("DBM", rb_cObject);
       /* DBMはEnumerateモジュールをインクルードする */
       rb_include_module(cDBM, rb_mEnumerable);
-  
+
       /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
       rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
-  
+
       /* DBMクラスのメソッドclose(): 引数はなし */
       rb_define_method(cDBM, "close", fdbm_close, 0);
       /* DBMクラスのメソッド[]: 引数は1個 */
       rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 
       /* ... */
-  
+
       /* DBMデータを格納するインスタンス変数名のためのID */
       id_dbm = rb_intern("dbm");
   }
@@ -738,8 +738,8 @@ dbm.cではData_Make_Structを以下のように使っています．
       int  di_size;
       DBM *di_dbm;
   };
-  
-  
+
+
   obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 
 ここではdbmstruct構造体へのポインタをDataにカプセル化してい
@@ -1307,7 +1307,7 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv, VALUE (*func) (AN
   func2をブロックとして設定し, func1をイテレータとして呼ぶ．
   func1には arg1が引数として渡され, func2には第1引数にイテレー
   タから与えられた値, 第2引数にarg2が渡される．
-  
+
   1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
   を呼び出さなければならない.
   1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
