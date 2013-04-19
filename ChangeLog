@@ -1,3 +1,8 @@
+Sat Apr 20 01:18:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg): non-symbol key is not
+	  a keyword argument, keep it as a positional argument.
+
 Sat Apr 20 01:14:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_mutex_synchronize_m): yield no block params.  patch by

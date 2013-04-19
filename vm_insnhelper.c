@@ -1064,16 +1064,47 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
     }
 }
 
+static int
+separate_symbol(st_data_t key, st_data_t value, st_data_t arg)
+{
+    VALUE *kwdhash = (VALUE *)arg;
+
+    if (!SYMBOL_P(key)) kwdhash++;
+    if (!*kwdhash) *kwdhash = rb_hash_new();
+    rb_hash_aset(*kwdhash, (VALUE)key, (VALUE)value);
+    return ST_CONTINUE;
+}
+
+static VALUE
+extract_keywords(VALUE *orighash)
+{
+    VALUE parthash[2] = {0, 0};
+    VALUE hash = *orighash;
+
+    if (RHASH_EMPTY_P(hash)) {
+	*orighash = 0;
+	return hash;
+    }
+    st_foreach(RHASH_TBL(hash), separate_symbol, (st_data_t)&parthash);
+    *orighash = parthash[1];
+    return parthash[0];
+}
+
 static inline int
 vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, VALUE *kwd)
 {
-    VALUE keyword_hash;
+    VALUE keyword_hash, orig_hash;
     int i, j;
 
     if (argc > 0 &&
-	!NIL_P(keyword_hash = rb_check_hash_type(orig_argv[argc-1]))) {
-	argc--;
-	keyword_hash = rb_hash_dup(keyword_hash);
+	!NIL_P(orig_hash = rb_check_hash_type(orig_argv[argc-1])) &&
+	(keyword_hash = extract_keywords(&orig_hash)) != 0) {
+	if (!orig_hash) {
+	    argc--;
+	}
+	else {
+	    orig_argv[argc-1] = orig_hash;
+	}
 	if (iseq->arg_keyword_check) {
 	    for (i = j = 0; i < iseq->arg_keywords; i++) {
 		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
