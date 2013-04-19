@@ -1,3 +1,13 @@
+Sat Apr 20 00:31:57 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* README.EXT.ja (Data_Wrap_Struct): Remove a description about
+	  orphan argument. Oh, I renamed the argument name without
+	  changing description at r36180... Sorry....
+	  Patch by Makoto Kishimoto. Thanks!!! [ruby-dev:47269] [Bug #8292]
+	* README.EXT.ja (Data_Make_Struct): Add a sample code that describes
+	  how it works.
+	  Patch by Makoto Kishimoto. Thanks!!! [ruby-dev:47269] [Bug #8292]
+
 Tue Apr 16 01:30:47 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: set ac_cv_prog_cxx if CXX is supplied.
