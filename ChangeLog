@@ -1,3 +1,8 @@
+Sat Apr 20 02:37:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (Init_curses): fix implementation function,
+	  crmode should be same as cbreak.  [ruby-core:54013] [Bug #8222]
+
 Sat Apr 20 02:09:46 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/ossl_ssl.c: Correct shutdown behavior w.r.t GC.
