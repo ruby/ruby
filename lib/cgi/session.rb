@@ -435,9 +435,9 @@ class CGI
 
       # Close and delete the session's FileStore file.
       def delete
-        File::unlink @path+".lock" rescue Errno::ENOENT
-        File::unlink @path+".new" rescue Errno::ENOENT
-        File::unlink @path rescue Errno::ENOENT
+        File::unlink @path+".lock" rescue nil
+        File::unlink @path+".new" rescue nil
+        File::unlink @path rescue nil
       end
     end
 
