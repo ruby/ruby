@@ -312,7 +312,7 @@ Fri Apr 12 18:29:42 2013  Tanaka Akira  <akr@fsij.org>
 Fri Apr 12 15:21:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_callee_setup_keyword_arg): non-symbol key is not
-	  a keyword argument, keep it as an positional argument.
+	  a keyword argument, keep it as a positional argument.
 
 Fri Apr 12 11:58:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
