@@ -1240,7 +1240,6 @@ close_communication_pipe(int pipes[2])
     pipes[0] = pipes[1] = -1;
 }
 
-#if USE_SLEEPY_TIMER_THREAD
 static void
 set_nonblock(int fd)
 {
@@ -1255,9 +1254,7 @@ set_nonblock(int fd)
     if (err == -1)
 	rb_sys_fail(0);
 }
-#endif
 
-#if USE_SLEEPY_TIMER_THREAD
 static void
 setup_communication_pipe_internal(int pipes[2])
 {
@@ -1277,13 +1274,11 @@ setup_communication_pipe_internal(int pipes[2])
     set_nonblock(pipes[0]);
     set_nonblock(pipes[1]);
 }
-#endif /* USE_SLEEPY_TIMER_THREAD */
 
 /* communication pipe with timer thread and signal handler */
 static void
 setup_communication_pipe(void)
 {
-#if USE_SLEEPY_TIMER_THREAD
     if (timer_thread_pipe_owner_process == getpid()) {
 	/* already set up. */
 	return;
@@ -1293,7 +1288,6 @@ setup_communication_pipe(void)
 
     /* validate pipe on this process */
     timer_thread_pipe_owner_process = getpid();
-#endif /* USE_SLEEPY_TIMER_THREAD */
 }
 
 /**
@@ -1348,6 +1342,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 #else /* USE_SLEEPY_TIMER_THREAD */
 # define PER_NANO 1000000000
 void rb_thread_wakeup_timer_thread(void) {}
+static void rb_thread_wakeup_timer_thread_low(void) {}
 
 static pthread_mutex_t timer_thread_lock;
 static rb_thread_cond_t timer_thread_cond;
@@ -1430,7 +1425,9 @@ rb_thread_create_timer_thread(void)
 # endif
 #endif
 
+#if USE_SLEEPY_TIMER_THREAD
 	setup_communication_pipe();
+#endif /* USE_SLEEPY_TIMER_THREAD */
 
 	/* create timer thread */
 	if (timer_thread_id) {

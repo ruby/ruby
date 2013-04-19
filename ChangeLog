@@ -1,3 +1,8 @@
+Sat Apr 20 01:47:31 2013  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* thread_pthread.c: Fixes wrong scopes of #if USE_SLEEPY_TIMER_THREAD
+	  .. #endif sections.  This fixes a build error on NativeClient.
+
 Sat Apr 20 01:31:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo 5.13.4 f22cf2e566712cace60d17f84d63119d7c5764ee.
