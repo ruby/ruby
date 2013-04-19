@@ -437,7 +437,7 @@ class CGI
       def delete
         File::unlink @path+".lock" rescue Errno::ENOENT
         File::unlink @path+".new" rescue Errno::ENOENT
-        File::unlink @path rescue Errno::ENOENT 
+        File::unlink @path rescue Errno::ENOENT
       end
     end
 
