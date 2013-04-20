@@ -1,3 +1,23 @@
+Sun Apr 21 00:14:36 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  RUBY_PLATFORM should escape as Regexp,
+	  because RUBY_PLATFORM may contain '.'.
+
+Sun Apr 21 00:14:36 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  fix load path for encoding to run the test as stand-alone.
+
+Sun Apr 21 00:14:36 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* load.c (features_index_add): use rb_str_subseq() to specify C string
+	  position properly to fix require non ascii path.
+	  [ruby-core:53733] [Bug #8165]
+
+	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):
+	  a test for the above.
+
 Sun Apr 21 00:13:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p), vm_core.h (rb_vm_struct): turn

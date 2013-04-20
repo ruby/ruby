@@ -58,6 +58,29 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  def test_require_nonascii_path
+    bug8165 = '[ruby-core:53733] [Bug #8165]'
+    Dir.mktmpdir {|tmp|
+      encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? 'filesystem' : 'UTF-8'
+      dir = "\u3042" * 5
+      begin
+        require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
+      rescue
+        skip "cannot convert path encoding to #{encoding}"
+      end
+      Dir.mkdir(File.dirname(require_path))
+      open(require_path, "wb") {}
+      assert_in_out_err([], <<-INPUT, %w(:ok), [], bug8165)
+        # coding: #{encoding}
+        # leave paths for require encoding objects
+        enc_path = Regexp.new(Regexp.escape(RUBY_PLATFORM))
+        $:.replace([IO::NULL] + $:.reject {|path| enc_path !~ path})
+        p :ok if require '#{require_path}'
+        p :ng if require '#{require_path}'
+      INPUT
+    }
+  end
+
   def test_require_path_home_1
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
     pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
