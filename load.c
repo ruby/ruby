@@ -11,6 +11,8 @@
 
 VALUE ruby_dln_librefs;
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #ifdef DLEXT2
@@ -56,7 +58,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
     long i;
     int level = rb_safe_level();
 
-    ary = rb_ary_new2(RARRAY_LEN(load_path));
+    ary = rb_ary_tmp_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE path, as_str, expanded_path;
 	int is_string, non_cache;
@@ -169,7 +171,7 @@ reset_loaded_features_snapshot(void)
     rb_ary_replace(vm->loaded_features_snapshot, vm->loaded_features);
 }
 
-static VALUE
+static struct st_table *
 get_loaded_features_index_raw(void)
 {
     return GET_VM()->loaded_features_index;
@@ -184,13 +186,32 @@ get_loading_table(void)
 static void
 features_index_add_single(VALUE short_feature, VALUE offset)
 {
-    VALUE features_index, this_feature_index;
+    struct st_table *features_index;
+    VALUE this_feature_index = Qnil;
+    char *short_feature_cstr;
+
+    Check_Type(offset, T_FIXNUM);
+    Check_Type(short_feature, T_STRING);
+    short_feature_cstr = StringValueCStr(short_feature);
+
     features_index = get_loaded_features_index_raw();
-    if ((this_feature_index = rb_hash_lookup(features_index, short_feature)) == Qnil) {
-	this_feature_index = rb_ary_new();
-	rb_hash_aset(features_index, short_feature, this_feature_index);
+    st_lookup(features_index, (st_data_t)short_feature_cstr, (st_data_t *)&this_feature_index);
+
+    if (NIL_P(this_feature_index)) {
+	st_insert(features_index, (st_data_t)ruby_strdup(short_feature_cstr), (st_data_t)offset);
     }
-    rb_ary_push(this_feature_index, offset);
+    else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
+	VALUE feature_indexes[2];
+	feature_indexes[0] = this_feature_index;
+	feature_indexes[1] = offset;
+	this_feature_index = rb_ary_tmp_new(numberof(feature_indexes));
+	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
+	st_insert(features_index, (st_data_t)short_feature_cstr, (st_data_t)this_feature_index);
+    }
+    else {
+	Check_Type(this_feature_index, T_ARRAY);
+	rb_ary_push(this_feature_index, offset);
+    }
 }
 
 /* Add to the loaded-features index all the required entries for
@@ -240,7 +261,14 @@ features_index_add(VALUE feature, VALUE offset)
     }
 }
 
-static VALUE
+static int
+loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    xfree((char *)key);
+    return ST_DELETE;
+}
+
+static st_table *
 get_loaded_features_index(void)
 {
     VALUE features;
@@ -250,7 +278,7 @@ get_loaded_features_index(void)
     if (!rb_ary_shared_with_p(vm->loaded_features_snapshot, vm->loaded_features)) {
 	/* The sharing was broken; something (other than us in rb_provide_feature())
 	   modified loaded_features.  Rebuild the index. */
-	rb_hash_clear(vm->loaded_features_index);
+	st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
 	features = vm->loaded_features;
 	for (i = 0; i < RARRAY_LEN(features); i++) {
 	    VALUE entry, as_str;
@@ -340,10 +368,10 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
-    VALUE features, features_index, feature_val, this_feature_index, v, p, load_path = 0;
+    VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
-    st_table *loading_tbl;
+    st_table *loading_tbl, *features_index;
     st_data_t data;
     int type;
 
@@ -361,8 +389,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features = get_loaded_features();
     features_index = get_loaded_features_index();
 
-    feature_val = rb_str_new(feature, len);
-    this_feature_index = rb_hash_lookup(features_index, feature_val);
+    st_lookup(features_index, (st_data_t)feature, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -389,8 +416,19 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
        or ends in '/'.  This includes both match forms above, as well
        as any distractors, so we may ignore all other entries in `features`.
      */
-    for (i = 0; this_feature_index != Qnil && i < RARRAY_LEN(this_feature_index); i++) {
-	long index = FIX2LONG(rb_ary_entry(this_feature_index, i));
+    for (i = 0; !NIL_P(this_feature_index); i++) {
+	VALUE entry;
+	long index;
+	if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
+	    if (i >= RARRAY_LEN(this_feature_index)) break;
+	    entry = RARRAY_PTR(this_feature_index)[i];
+	}
+	else {
+	    if (i > 0) break;
+	    entry = this_feature_index;
+	}
+	index = FIX2LONG(entry);
+
 	v = RARRAY_PTR(features)[index];
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
@@ -1082,15 +1120,15 @@ Init_load()
     rb_alias_variable(rb_intern("$-I"), id_load_path);
     rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
-    vm->expanded_load_path = rb_ary_new();
-    vm->load_path_snapshot = rb_ary_new();
+    vm->expanded_load_path = rb_ary_tmp_new(0);
+    vm->load_path_snapshot = rb_ary_tmp_new(0);
     vm->load_path_check_cache = 0;
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
-    vm->loaded_features_snapshot = rb_ary_new();
-    vm->loaded_features_index = rb_hash_new();
+    vm->loaded_features_snapshot = rb_ary_tmp_new(0);
+    vm->loaded_features_index = st_init_strtable();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
@@ -1100,6 +1138,6 @@ Init_load()
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, 1);
 
-    ruby_dln_librefs = rb_ary_new();
+    ruby_dln_librefs = rb_ary_tmp_new(0);
     rb_gc_register_mark_object(ruby_dln_librefs);
 }

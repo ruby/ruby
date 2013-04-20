@@ -1,3 +1,15 @@
+Sun Apr 21 00:13:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p), vm_core.h (rb_vm_struct): turn
+	  loaded_features_index into st_table.  patches by tmm1 (Aman Gupta)
+	  in [ruby-core:53251] and [ruby-core:53274] [Bug #8048]
+
+Sun Apr 21 00:13:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (features_index_add_single, rb_feature_p): store single index
+	  as Fixnum to reduce the number of arrays for the indexes.  based on
+	  the patch by tmm1 (Aman Gupta) in [ruby-core:53216] [Bug #8048].
+
 Sat Apr 20 23:32:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): should skip dot directories only for recursion,
