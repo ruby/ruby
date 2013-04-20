@@ -1,3 +1,9 @@
+Sat Apr 20 22:47:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tempfile.rb (Tempfile.create): New method.
+	  The method name is proposed by Shugo Maeda.  [ruby-dev:47220]
+	  [ruby-core:41478] [Feature #5707]
+
 Sat Apr 20 14:22:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): dump no ivars to the original by marshal_dump.

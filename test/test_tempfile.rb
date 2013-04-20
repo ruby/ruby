@@ -304,5 +304,26 @@ puts Tempfile.new('foo').path
       assert_equal(0600, t.stat.mode & 0777)
     end
   end
+
+  def test_create_with_block
+    path = nil
+    Tempfile.create("tempfile-create") {|f|
+      path = f.path
+      assert(File.exist?(path))
+    }
+    assert(!File.exist?(path))
+  end
+
+  def test_create_without_block
+    path = nil
+    f = Tempfile.create("tempfile-create")
+    path = f.path
+    assert(File.exist?(path))
+    f.close
+    assert(File.exist?(path))
+  ensure
+    f.close if f && !f.closed?
+    File.unlink path if path
+  end
 end
 
