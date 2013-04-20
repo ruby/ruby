@@ -1,3 +1,9 @@
+Sat Apr 20 23:38:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/httpauth/htpasswd.rb: Use Tempfile.create to avoid
+	  unintentional unlink() by the finalizer.
+	  lib/webrick/httpauth/htdigest.rb: Ditto.
+
 Sat Apr 20 22:47:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile.create): New method.
