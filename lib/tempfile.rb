@@ -370,6 +370,7 @@ def Tempfile.create(basename, *rest)
     begin
       yield tmpfile
     ensure
+      tmpfile.close if !tmpfile.closed?
       File.unlink tmpfile
     end
   else
