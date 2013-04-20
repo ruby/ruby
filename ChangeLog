@@ -1,3 +1,9 @@
+Sat Apr 20 23:32:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): should skip dot directories only for recursion,
+	  but should not if matching to the given pattern.  [ruby-core:54387]
+	  [Bug #8283]
+
 Sat Apr 20 02:37:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c (Init_curses): fix implementation function,
