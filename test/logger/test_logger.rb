@@ -41,13 +41,12 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def log_raw(logger, msg_id, *arg, &block)
-    logdev = Tempfile.new(File.basename(__FILE__) + '.log')
-    logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
-    logger.__send__(msg_id, *arg, &block)
-    logdev.open
-    msg = logdev.read
-    logdev.close(true)
-    msg
+    Tempfile.create(File.basename(__FILE__) + '.log') {|logdev|
+      logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
+      logger.__send__(msg_id, *arg, &block)
+      logdev.rewind
+      logdev.read
+    }
   end
 
   def test_level

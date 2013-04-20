@@ -333,11 +333,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(c, Marshal.load(Marshal.dump(c)), bug2109)
 
     assert_nothing_raised(ArgumentError, '[ruby-dev:40386]') do
-      re = Tempfile.open("marshal_regexp") do |f|
+      re = Tempfile.create("marshal_regexp") do |f|
         f.binmode.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
-        f.close
-        re2 = Marshal.load(f.open.binmode)
-        f.close(true)
+        f.rewind
+        re2 = Marshal.load(f)
         re2
       end
       assert_equal(//, re)

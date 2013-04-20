@@ -511,8 +511,8 @@ EOL
 
   def test_pos
     require 'tempfile'
-    testfile = Tempfile.new("tidal")
-    testdata = %Q{<calibration>
+    Tempfile.create("tidal") {|testfile|
+      testdata = %Q{<calibration>
 <section name="parameters">
 <param name="barpress">760</param>
 <param name="hertz">50</param>
@@ -520,12 +520,12 @@ EOL
 </calibration>
 }
 
-    testfile.puts testdata
-    testfile.rewind
-    assert_nothing_raised do
-      REXML::Document.new(testfile)
-    end
-    testfile.close(true)
+      testfile.puts testdata
+      testfile.rewind
+      assert_nothing_raised do
+        REXML::Document.new(testfile)
+      end
+    }
   end
 
   def test_deep_clone

@@ -16,22 +16,19 @@ class TestBeginEndBlock < Test::Unit::TestCase
     result = IO.popen([ruby, target]){|io|io.read}
     assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e1-1 e4 e4-2 e4-1 e4-1-1 e3 e2), result.split)
 
-    input = Tempfile.new(self.class.name)
-    inputpath = input.path
-    input.close
-    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin), result.split)
-    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin), result.split)
-    input.open
-    input.puts "foo\nbar"
-    input.close
-    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin :end), result.split)
-    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
-    assert_equal(%w(:begin foo bar :end), result.split)
-  ensure
-    input.unlink
+    Tempfile.create(self.class.name) {|input|
+      inputpath = input.path
+      result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin), result.split)
+      result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin), result.split)
+      input.puts "foo\nbar"
+      input.close
+      result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin :end), result.split)
+      result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+      assert_equal(%w(:begin foo bar :end), result.split)
+    }
   end
 
   def test_begininmethod
@@ -56,10 +53,10 @@ class TestBeginEndBlock < Test::Unit::TestCase
   def test_endblockwarn
     ruby = EnvUtil.rubybin
     # Use Tempfile to create temporary file path.
-    launcher = Tempfile.new(self.class.name)
-    errout = Tempfile.new(self.class.name)
+    Tempfile.create(self.class.name) {|launcher|
+      Tempfile.create(self.class.name) {|errout|
 
-    launcher << <<EOF
+        launcher << <<EOF
 # -*- coding: #{ruby.encoding.name} -*-
 errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
@@ -67,20 +64,18 @@ STDERR.sync = true
 Dir.chdir(#{q(DIR)})
 system("#{ruby}", "endblockwarn_rb")
 EOF
-    launcher.close
-    launcherpath = launcher.path
-    errout.close
-    erroutpath = errout.path
-    system(ruby, launcherpath, erroutpath)
-    expected = <<EOW
+        launcher.close
+        launcherpath = launcher.path
+        errout.close
+        erroutpath = errout.path
+        system(ruby, launcherpath, erroutpath)
+        expected = <<EOW
 endblockwarn_rb:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
 EOW
-    assert_equal(expected, File.read(erroutpath))
-    # expecting Tempfile to unlink launcher and errout file.
-  ensure
-    launcher.unlink
-    errout.unlink
+        assert_equal(expected, File.read(erroutpath))
+      }
+    }
   end
 
   def test_raise_in_at_exit
@@ -134,25 +129,24 @@ EOW
   end
 
   def test_nested_at_exit
-    t = Tempfile.new(["test_nested_at_exit_", ".rb"])
-    t.puts "at_exit { puts :outer0 }"
-    t.puts "at_exit { puts :outer1_begin; at_exit { puts :inner1 }; puts :outer1_end }"
-    t.puts "at_exit { puts :outer2_begin; at_exit { puts :inner2 }; puts :outer2_end }"
-    t.puts "at_exit { puts :outer3 }"
-    t.flush
+    Tempfile.create(["test_nested_at_exit_", ".rb"]) {|t|
+      t.puts "at_exit { puts :outer0 }"
+      t.puts "at_exit { puts :outer1_begin; at_exit { puts :inner1 }; puts :outer1_end }"
+      t.puts "at_exit { puts :outer2_begin; at_exit { puts :inner2 }; puts :outer2_end }"
+      t.puts "at_exit { puts :outer3 }"
+      t.flush
 
-    expected = [ "outer3",
-                 "outer2_begin",
-                 "outer2_end",
-                 "inner2",
-                 "outer1_begin",
-                 "outer1_end",
-                 "inner1",
-                 "outer0" ]
+      expected = [ "outer3",
+                   "outer2_begin",
+                   "outer2_end",
+                   "inner2",
+                   "outer1_begin",
+                   "outer1_end",
+                   "inner1",
+                   "outer0" ]
 
-    assert_in_out_err(t.path, "", expected, [], "[ruby-core:35237]")
-  ensure
-    t.close(true)
+      assert_in_out_err(t.path, "", expected, [], "[ruby-core:35237]")
+    }
   end
 
   def test_rescue_at_exit

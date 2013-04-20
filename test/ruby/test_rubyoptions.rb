@@ -271,20 +271,21 @@ class TestRubyOptions < Test::Unit::TestCase
     rubypath_orig = ENV['RUBYPATH']
     path_orig = ENV['PATH']
 
-    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
-    t.puts "p 1"
-    t.close
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
+      t.puts "p 1"
+      t.close
 
-    @verbose = $VERBOSE
-    $VERBOSE = nil
+      @verbose = $VERBOSE
+      $VERBOSE = nil
 
-    ENV['PATH'] = File.dirname(t.path)
+      ENV['PATH'] = File.dirname(t.path)
 
-    assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
+      assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
 
-    ENV['RUBYPATH'] = File.dirname(t.path)
+      ENV['RUBYPATH'] = File.dirname(t.path)
 
-    assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
+      assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
+    }
 
   ensure
     if rubypath_orig
@@ -297,7 +298,6 @@ class TestRubyOptions < Test::Unit::TestCase
     else
       ENV.delete('PATH')
     end
-    t.close(true) if t
     $VERBOSE = @verbose
   end
 
@@ -333,81 +333,79 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_assignment_in_conditional
-    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
-    t.puts "if a = 1"
-    t.puts "end"
-    t.puts "0.times do"
-    t.puts "  if b = 2"
-    t.puts "    a += b"
-    t.puts "  end"
-    t.puts "end"
-    t.close
-    warning = ' warning: found = in conditional, should be =='
-    err = ["#{t.path}:1:#{warning}",
-           "#{t.path}:4:#{warning}",
-          ]
-    bug2136 = '[ruby-dev:39363]'
-    assert_in_out_err(["-w", t.path], "", [], err, bug2136)
-    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, bug2136)
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
+      t.puts "if a = 1"
+      t.puts "end"
+      t.puts "0.times do"
+      t.puts "  if b = 2"
+      t.puts "    a += b"
+      t.puts "  end"
+      t.puts "end"
+      t.flush
+      warning = ' warning: found = in conditional, should be =='
+      err = ["#{t.path}:1:#{warning}",
+             "#{t.path}:4:#{warning}",
+            ]
+      bug2136 = '[ruby-dev:39363]'
+      assert_in_out_err(["-w", t.path], "", [], err, bug2136)
+      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, bug2136)
 
-    t.open
-    t.truncate(0)
-    t.puts "if a = ''; end"
-    t.puts "if a = []; end"
-    t.puts "if a = [1]; end"
-    t.puts "if a = [a]; end"
-    t.puts "if a = {}; end"
-    t.puts "if a = {1=>2}; end"
-    t.puts "if a = {3=>a}; end"
-    t.close
-    err = ["#{t.path}:1:#{warning}",
-           "#{t.path}:2:#{warning}",
-           "#{t.path}:3:#{warning}",
-           "#{t.path}:5:#{warning}",
-           "#{t.path}:6:#{warning}",
-          ]
-    feature4299 = '[ruby-dev:43083]'
-    assert_in_out_err(["-w", t.path], "", [], err, feature4299)
-    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, feature4299)
-  ensure
-    t.close(true) if t
+      t.rewind
+      t.truncate(0)
+      t.puts "if a = ''; end"
+      t.puts "if a = []; end"
+      t.puts "if a = [1]; end"
+      t.puts "if a = [a]; end"
+      t.puts "if a = {}; end"
+      t.puts "if a = {1=>2}; end"
+      t.puts "if a = {3=>a}; end"
+      t.flush
+      err = ["#{t.path}:1:#{warning}",
+             "#{t.path}:2:#{warning}",
+             "#{t.path}:3:#{warning}",
+             "#{t.path}:5:#{warning}",
+             "#{t.path}:6:#{warning}",
+            ]
+      feature4299 = '[ruby-dev:43083]'
+      assert_in_out_err(["-w", t.path], "", [], err, feature4299)
+      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, feature4299)
+    }
   end
 
   def test_indentation_check
-    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
-    t.puts "begin"
-    t.puts " end"
-    t.close
-    err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
-    assert_in_out_err(["-w", t.path], "", [], err)
-    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
+      t.puts "begin"
+      t.puts " end"
+      t.flush
+      err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
+      assert_in_out_err(["-w", t.path], "", [], err)
+      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
 
-    t.open
-    t.puts "# -*- warn-indent: false -*-"
-    t.puts "begin"
-    t.puts " end"
-    t.close
-    assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+      t.rewind
+      t.puts "# -*- warn-indent: false -*-"
+      t.puts "begin"
+      t.puts " end"
+      t.flush
+      assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
 
-    err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 3"]
-    t.open
-    t.puts "# -*- warn-indent: false -*-"
-    t.puts "# -*- warn-indent: true -*-"
-    t.puts "begin"
-    t.puts " end"
-    t.close
-    assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
+      err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 3"]
+      t.rewind
+      t.puts "# -*- warn-indent: false -*-"
+      t.puts "# -*- warn-indent: true -*-"
+      t.puts "begin"
+      t.puts " end"
+      t.flush
+      assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
 
-    err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 2"]
-    t.open
-    t.puts "# -*- warn-indent: true -*-"
-    t.puts "begin"
-    t.puts "# -*- warn-indent: false -*-"
-    t.puts " end"
-    t.close
-    assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
-  ensure
-    t.close(true) if t
+      err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 2"]
+      t.rewind
+      t.puts "# -*- warn-indent: true -*-"
+      t.puts "begin"
+      t.puts "# -*- warn-indent: false -*-"
+      t.puts " end"
+      t.flush
+      assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+    }
   end
 
   def test_notfound
@@ -523,25 +521,24 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")
 
     bug7597 = '[ruby-dev:46786]'
-    t = Tempfile.new(["test_ruby_test_bug7597", ".rb"])
-    t.write "f" * 100
-    t.flush
-    assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
-                      "", [], expected_stderr, bug7597, opts)
-    t.close(true)
+    Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
+      t.write "f" * 100
+      t.flush
+      assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
+                        "", [], expected_stderr, bug7597, opts)
+    }
   end
 
   def test_DATA
-    t = Tempfile.new(["test_ruby_test_rubyoption", ".rb"])
-    t.puts "puts DATA.read.inspect"
-    t.puts "__END__"
-    t.puts "foo"
-    t.puts "bar"
-    t.puts "baz"
-    t.close
-    assert_in_out_err([t.path], "", %w("foo\\nbar\\nbaz\\n"), [])
-  ensure
-    t.close(true) if t
+    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
+      t.puts "puts DATA.read.inspect"
+      t.puts "__END__"
+      t.puts "foo"
+      t.puts "bar"
+      t.puts "baz"
+      t.flush
+      assert_in_out_err([t.path], "", %w("foo\\nbar\\nbaz\\n"), [])
+    }
   end
 
   def test_unused_variable

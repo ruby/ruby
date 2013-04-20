@@ -121,13 +121,12 @@ __EOC__
     assert_equal("", c.to_s)
     assert_equal([], c.sections)
     #
-    file = Tempfile.open("openssl.cnf")
-    file.close
-    c = OpenSSL::Config.load(file.path)
-    assert_equal("[ default ]\n\n", c.to_s)
-    assert_equal(['default'], c.sections)
-  ensure
-    file.unlink if file
+    Tempfile.create("openssl.cnf") {|file|
+      file.close
+      c = OpenSSL::Config.load(file.path)
+      assert_equal("[ default ]\n\n", c.to_s)
+      assert_equal(['default'], c.sections)
+    }
   end
 
   def test_initialize
@@ -137,13 +136,12 @@ __EOC__
   end
 
   def test_initialize_with_empty_file
-    file = Tempfile.open("openssl.cnf")
-    file.close
-    c = OpenSSL::Config.new(file.path)
-    assert_equal("[ default ]\n\n", c.to_s)
-    assert_equal(['default'], c.sections)
-  ensure
-    file.unlink if file
+    Tempfile.create("openssl.cnf") {|file|
+      file.close
+      c = OpenSSL::Config.new(file.path)
+      assert_equal("[ default ]\n\n", c.to_s)
+      assert_equal(['default'], c.sections)
+    }
   end
 
   def test_initialize_with_example_file

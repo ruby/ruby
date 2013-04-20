@@ -599,15 +599,15 @@ module TestNetHTTP_version_1_2_methods
 
   def test_set_form
     require 'tempfile'
-    file = Tempfile.new('ruby-test')
-    file << "\u{30c7}\u{30fc}\u{30bf}"
-    data = [
-      ['name', 'Gonbei Nanashi'],
-      ['name', "\u{540d}\u{7121}\u{3057}\u{306e}\u{6a29}\u{5175}\u{885b}"],
-      ['s"i\o', StringIO.new("\u{3042 3044 4e9c 925b}")],
-      ["file", file, filename: "ruby-test"]
-    ]
-    expected = <<"__EOM__".gsub(/\n/, "\r\n")
+    Tempfile.create('ruby-test') {|file|
+      file << "\u{30c7}\u{30fc}\u{30bf}"
+      data = [
+        ['name', 'Gonbei Nanashi'],
+        ['name', "\u{540d}\u{7121}\u{3057}\u{306e}\u{6a29}\u{5175}\u{885b}"],
+        ['s"i\o', StringIO.new("\u{3042 3044 4e9c 925b}")],
+        ["file", file, filename: "ruby-test"]
+      ]
+      expected = <<"__EOM__".gsub(/\n/, "\r\n")
 --<boundary>
 Content-Disposition: form-data; name="name"
 
@@ -627,13 +627,12 @@ Content-Type: application/octet-stream
 \xE3\x83\x87\xE3\x83\xBC\xE3\x82\xBF
 --<boundary>--
 __EOM__
-    start {|http|
-      _test_set_form_urlencoded(http, data.reject{|k,v|!v.is_a?(String)})
-      _test_set_form_multipart(http, false, data, expected)
-      _test_set_form_multipart(http, true, data, expected)
+      start {|http|
+        _test_set_form_urlencoded(http, data.reject{|k,v|!v.is_a?(String)})
+        _test_set_form_multipart(http, false, data, expected)
+        _test_set_form_multipart(http, true, data, expected)
+      }
     }
-  ensure
-    file.close! if file
   end
 
   def _test_set_form_urlencoded(http, data)
@@ -658,12 +657,12 @@ __EOM__
 
   def test_set_form_with_file
     require 'tempfile'
-    file = Tempfile.new('ruby-test')
-    file.binmode
-    file << $test_net_http_data
-    filename = File.basename(file.to_path)
-    data = [['file', file]]
-    expected = <<"__EOM__".gsub(/\n/, "\r\n")
+    Tempfile.create('ruby-test') {|file|
+      file.binmode
+      file << $test_net_http_data
+      filename = File.basename(file.to_path)
+      data = [['file', file]]
+      expected = <<"__EOM__".gsub(/\n/, "\r\n")
 --<boundary>
 Content-Disposition: form-data; name="file"; filename="<filename>"
 Content-Type: application/octet-stream
@@ -671,31 +670,30 @@ Content-Type: application/octet-stream
 <data>
 --<boundary>--
 __EOM__
-    expected.sub!(/<filename>/, filename)
-    expected.sub!(/<data>/, $test_net_http_data)
-    start {|http|
-      data.each{|k,v|v.rewind rescue nil}
-      req = Net::HTTP::Post.new('/')
-      req.set_form(data, 'multipart/form-data')
-      res = http.request req
-      body = res.body
-      header, _ = body.split(/\r\n\r\n/, 2)
-      assert_match(/\A--(?<boundary>\S+)/, body)
-      /\A--(?<boundary>\S+)/ =~ body
-      expected = expected.gsub(/<boundary>/, boundary)
-      assert_match(/^--(?<boundary>\S+)\r\n/, header)
-      assert_match(
-        /^Content-Disposition: form-data; name="file"; filename="#{filename}"\r\n/,
-        header)
-      assert_equal(expected, body)
+      expected.sub!(/<filename>/, filename)
+      expected.sub!(/<data>/, $test_net_http_data)
+      start {|http|
+        data.each{|k,v|v.rewind rescue nil}
+        req = Net::HTTP::Post.new('/')
+        req.set_form(data, 'multipart/form-data')
+        res = http.request req
+        body = res.body
+        header, _ = body.split(/\r\n\r\n/, 2)
+        assert_match(/\A--(?<boundary>\S+)/, body)
+        /\A--(?<boundary>\S+)/ =~ body
+        expected = expected.gsub(/<boundary>/, boundary)
+        assert_match(/^--(?<boundary>\S+)\r\n/, header)
+        assert_match(
+          /^Content-Disposition: form-data; name="file"; filename="#{filename}"\r\n/,
+          header)
+        assert_equal(expected, body)
 
-      data.each{|k,v|v.rewind rescue nil}
-      req['Transfer-Encoding'] = 'chunked'
-      res = http.request req
-      #assert_equal(expected, res.body)
+        data.each{|k,v|v.rewind rescue nil}
+        req['Transfer-Encoding'] = 'chunked'
+        res = http.request req
+        #assert_equal(expected, res.body)
+      }
     }
-  ensure
-    file.close! if file
   end
 end
 

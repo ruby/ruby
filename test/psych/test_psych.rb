@@ -64,11 +64,10 @@ class TestPsych < Psych::TestCase
 
   def test_dump_file
     hash = {'hello' => 'TGIF!'}
-    Tempfile.open('fun.yml') do |io|
+    Tempfile.create('fun.yml') do |io|
       assert_equal io, Psych.dump(hash, io)
       io.rewind
       assert_equal Psych.dump(hash), io.read
-      io.close(true)
     end
   end
 
@@ -126,21 +125,21 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_file
-    t = Tempfile.new(['yikes', 'yml'])
-    t.binmode
-    t.write('--- hello world')
-    t.close
-    assert_equal 'hello world', Psych.load_file(t.path)
-    t.close(true)
+    Tempfile.create(['yikes', 'yml']) {|t|
+      t.binmode
+      t.write('--- hello world')
+      t.close
+      assert_equal 'hello world', Psych.load_file(t.path)
+    }
   end
 
   def test_parse_file
-    t = Tempfile.new(['yikes', 'yml'])
-    t.binmode
-    t.write('--- hello world')
-    t.close
-    assert_equal 'hello world', Psych.parse_file(t.path).transform
-    t.close(true)
+    Tempfile.create(['yikes', 'yml']) {|t|
+      t.binmode
+      t.write('--- hello world')
+      t.close
+      assert_equal 'hello world', Psych.parse_file(t.path).transform
+    }
   end
 
   def test_degenerate_strings

@@ -432,185 +432,184 @@ if defined? Zlib
 
   class TestZlibGzipFile < Test::Unit::TestCase
     def test_to_io
-      t = Tempfile.new("test_zlib_gzip_file_to_io")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_kind_of(IO, f.to_io)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_kind_of(IO, f.to_io)
+        end
+      }
     end
 
     def test_crc
-      t = Tempfile.new("test_zlib_gzip_file_crc")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_crc") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        f.read
-        assert_equal(0x8c736521, f.crc)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          f.read
+          assert_equal(0x8c736521, f.crc)
+        end
+      }
     end
 
     def test_mtime
       tim = Time.now
 
-      t = Tempfile.new("test_zlib_gzip_file_mtime")
-      t.close
-      Zlib::GzipWriter.open(t.path) do |gz|
-        gz.mtime = -1
-        gz.mtime = tim
-        gz.print("foo")
-        gz.flush
-        assert_raise(Zlib::GzipFile::Error) { gz.mtime = Time.now }
-      end
+      Tempfile.create("test_zlib_gzip_file_mtime") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) do |gz|
+          gz.mtime = -1
+          gz.mtime = tim
+          gz.print("foo")
+          gz.flush
+          assert_raise(Zlib::GzipFile::Error) { gz.mtime = Time.now }
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(tim.to_i, f.mtime.to_i)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(tim.to_i, f.mtime.to_i)
+        end
+      }
     end
 
     def test_level
-      t = Tempfile.new("test_zlib_gzip_file_level")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_level") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(Zlib::DEFAULT_COMPRESSION, f.level)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(Zlib::DEFAULT_COMPRESSION, f.level)
+        end
+      }
     end
 
     def test_os_code
-      t = Tempfile.new("test_zlib_gzip_file_os_code")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_os_code") {|t|
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(Zlib::OS_CODE, f.os_code)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(Zlib::OS_CODE, f.os_code)
+        end
+      }
     end
 
     def test_orig_name
-      t = Tempfile.new("test_zlib_gzip_file_orig_name")
-      t.close
-      Zlib::GzipWriter.open(t.path) do |gz|
-        gz.orig_name = "foobarbazqux\0quux"
-        gz.print("foo")
-        gz.flush
-        assert_raise(Zlib::GzipFile::Error) { gz.orig_name = "quux" }
-      end
+      Tempfile.create("test_zlib_gzip_file_orig_name") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) do |gz|
+          gz.orig_name = "foobarbazqux\0quux"
+          gz.print("foo")
+          gz.flush
+          assert_raise(Zlib::GzipFile::Error) { gz.orig_name = "quux" }
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foobarbazqux", f.orig_name)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foobarbazqux", f.orig_name)
+        end
+      }
     end
 
     def test_comment
-      t = Tempfile.new("test_zlib_gzip_file_comment")
-      t.close
-      Zlib::GzipWriter.open(t.path) do |gz|
-        gz.comment = "foobarbazqux\0quux"
-        gz.print("foo")
-        gz.flush
-        assert_raise(Zlib::GzipFile::Error) { gz.comment = "quux" }
-      end
+      Tempfile.create("test_zlib_gzip_file_comment") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) do |gz|
+          gz.comment = "foobarbazqux\0quux"
+          gz.print("foo")
+          gz.flush
+          assert_raise(Zlib::GzipFile::Error) { gz.comment = "quux" }
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foobarbazqux", f.comment)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foobarbazqux", f.comment)
+        end
+      }
     end
 
     def test_lineno
-      t = Tempfile.new("test_zlib_gzip_file_lineno")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\nqux\n") }
+      Tempfile.create("test_zlib_gzip_file_lineno") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\nqux\n") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal([0, "foo\n"], [f.lineno, f.gets])
-        assert_equal([1, "bar\n"], [f.lineno, f.gets])
-        f.lineno = 1000
-        assert_equal([1000, "baz\n"], [f.lineno, f.gets])
-        assert_equal([1001, "qux\n"], [f.lineno, f.gets])
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal([0, "foo\n"], [f.lineno, f.gets])
+          assert_equal([1, "bar\n"], [f.lineno, f.gets])
+          f.lineno = 1000
+          assert_equal([1000, "baz\n"], [f.lineno, f.gets])
+          assert_equal([1001, "qux\n"], [f.lineno, f.gets])
+        end
+      }
     end
 
     def test_closed_p
-      t = Tempfile.new("test_zlib_gzip_file_closed_p")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_closed_p") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(false, f.closed?)
-        f.read
-        assert_equal(false, f.closed?)
-        f.close
-        assert_equal(true, f.closed?)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(false, f.closed?)
+          f.read
+          assert_equal(false, f.closed?)
+          f.close
+          assert_equal(true, f.closed?)
+        end
+      }
     end
 
     def test_sync
-      t = Tempfile.new("test_zlib_gzip_file_sync")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_file_sync") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        f.sync = true
-        assert_equal(true, f.sync)
-        f.read
-        f.sync = false
-        assert_equal(false, f.sync)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          f.sync = true
+          assert_equal(true, f.sync)
+          f.read
+          f.sync = false
+          assert_equal(false, f.sync)
+        end
+      }
     end
 
     def test_pos
-      t = Tempfile.new("test_zlib_gzip_file_pos")
-      t.close
-      Zlib::GzipWriter.open(t.path) do |gz|
-        gz.print("foo")
-        gz.flush
-        assert_equal(3, gz.tell)
-      end
-      t.close(true)
+      Tempfile.create("test_zlib_gzip_file_pos") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) do |gz|
+          gz.print("foo")
+          gz.flush
+          assert_equal(3, gz.tell)
+        end
+      }
     end
 
     def test_path
-      t = Tempfile.new("test_zlib_gzip_file_path")
-      t.close
+      Tempfile.create("test_zlib_gzip_file_path") {|t|
+        t.close
 
-      gz = Zlib::GzipWriter.open(t.path)
-      gz.print("foo")
-      assert_equal(t.path, gz.path)
-      gz.close
-      assert_equal(t.path, gz.path)
+        gz = Zlib::GzipWriter.open(t.path)
+        gz.print("foo")
+        assert_equal(t.path, gz.path)
+        gz.close
+        assert_equal(t.path, gz.path)
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(t.path, f.path)
-        f.close
-        assert_equal(t.path, f.path)
-      end
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(t.path, f.path)
+          f.close
+          assert_equal(t.path, f.path)
+        end
 
-      s = ""
-      sio = StringIO.new(s)
-      gz = Zlib::GzipWriter.new(sio)
-      gz.print("foo")
-      assert_raise(NoMethodError) { gz.path }
-      gz.close
+        s = ""
+        sio = StringIO.new(s)
+        gz = Zlib::GzipWriter.new(sio)
+        gz.print("foo")
+        assert_raise(NoMethodError) { gz.path }
+        gz.close
 
-      sio = StringIO.new(s)
-      Zlib::GzipReader.new(sio) do |f|
-        assert_raise(NoMethodError) { f.path }
-      end
-      t.close(true)
+        sio = StringIO.new(s)
+        Zlib::GzipReader.new(sio) do |f|
+          assert_raise(NoMethodError) { f.path }
+        end
+      }
     end
   end
 
@@ -650,67 +649,67 @@ if defined? Zlib
     end
 
     def test_open
-      t = Tempfile.new("test_zlib_gzip_reader_open")
-      t.close
-      e = assert_raise(Zlib::GzipFile::Error) {
-        Zlib::GzipReader.open(t.path)
+      Tempfile.create("test_zlib_gzip_reader_open") {|t|
+        t.close
+        e = assert_raise(Zlib::GzipFile::Error) {
+          Zlib::GzipReader.open(t.path)
+        }
+        assert_equal("not in gzip format", e.message)
+        assert_nil(e.input)
+        open(t.path, "wb") {|f| f.write("foo")}
+        e = assert_raise(Zlib::GzipFile::Error) {
+          Zlib::GzipReader.open(t.path)
+        }
+        assert_equal("not in gzip format", e.message)
+        assert_equal("foo", e.input)
+        open(t.path, "wb") {|f| f.write("foobarzothoge")}
+        e = assert_raise(Zlib::GzipFile::Error) {
+          Zlib::GzipReader.open(t.path)
+        }
+        assert_equal("not in gzip format", e.message)
+        assert_equal("foobarzothoge", e.input)
+
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+
+        assert_raise(ArgumentError) { Zlib::GzipReader.open }
+
+        assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+
+        f = Zlib::GzipReader.open(t.path)
+        begin
+          assert_equal("foo", f.read)
+        ensure
+          f.close
+        end
       }
-      assert_equal("not in gzip format", e.message)
-      assert_nil(e.input)
-      open(t.path, "wb") {|f| f.write("foo")}
-      e = assert_raise(Zlib::GzipFile::Error) {
-        Zlib::GzipReader.open(t.path)
-      }
-      assert_equal("not in gzip format", e.message)
-      assert_equal("foo", e.input)
-      open(t.path, "wb") {|f| f.write("foobarzothoge")}
-      e = assert_raise(Zlib::GzipFile::Error) {
-        Zlib::GzipReader.open(t.path)
-      }
-      assert_equal("not in gzip format", e.message)
-      assert_equal("foobarzothoge", e.input)
-
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
-
-      assert_raise(ArgumentError) { Zlib::GzipReader.open }
-
-      assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
-
-      f = Zlib::GzipReader.open(t.path)
-      begin
-        assert_equal("foo", f.read)
-      ensure
-        f.close
-      end
-      t.close(true)
     end
 
     def test_rewind
-      t = Tempfile.new("test_zlib_gzip_reader_rewind")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+      Tempfile.create("test_zlib_gzip_reader_rewind") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foo", f.read)
-        f.rewind
-        assert_equal("foo", f.read)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foo", f.read)
+          f.rewind
+          assert_equal("foo", f.read)
+        end
+      }
     end
 
     def test_unused
-      t = Tempfile.new("test_zlib_gzip_reader_unused")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_unused") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(nil, f.unused)
-        assert_equal("foo", f.read(3))
-        assert_equal(nil, f.unused)
-        assert_equal("bar", f.read)
-        assert_equal(nil, f.unused)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(nil, f.unused)
+          assert_equal("foo", f.read(3))
+          assert_equal(nil, f.unused)
+          assert_equal("bar", f.read)
+          assert_equal(nil, f.unused)
+        end
+      }
     end
 
     def test_unused2
@@ -741,185 +740,185 @@ if defined? Zlib
     end
 
     def test_read
-      t = Tempfile.new("test_zlib_gzip_reader_read")
-      t.close
-      str = "\u3042\u3044\u3046"
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print(str) }
+      Tempfile.create("test_zlib_gzip_reader_read") {|t|
+        t.close
+        str = "\u3042\u3044\u3046"
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print(str) }
 
-      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
-        assert_raise(ArgumentError) { f.read(-1) }
-        assert_equal(str, f.read)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+          assert_raise(ArgumentError) { f.read(-1) }
+          assert_equal(str, f.read)
+        end
+      }
     end
 
     def test_readpartial
-      t = Tempfile.new("test_zlib_gzip_reader_readpartial")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_readpartial") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert("foo".start_with?(f.readpartial(3)))
-      end
+        Zlib::GzipReader.open(t.path) do |f|
+          assert("foo".start_with?(f.readpartial(3)))
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        s = ""
-        f.readpartial(3, s)
-        assert("foo".start_with?(s))
+        Zlib::GzipReader.open(t.path) do |f|
+          s = ""
+          f.readpartial(3, s)
+          assert("foo".start_with?(s))
 
-        assert_raise(ArgumentError) { f.readpartial(-1) }
-      end
-      t.close(true)
+          assert_raise(ArgumentError) { f.readpartial(-1) }
+        end
+      }
     end
 
     def test_getc
-      t = Tempfile.new("test_zlib_gzip_reader_getc")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_getc") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        "foobar".each_char {|c| assert_equal(c, f.getc) }
-        assert_nil(f.getc)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          "foobar".each_char {|c| assert_equal(c, f.getc) }
+          assert_nil(f.getc)
+        end
+      }
     end
 
     def test_getbyte
-      t = Tempfile.new("test_zlib_gzip_reader_getbyte")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_getbyte") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        "foobar".each_byte {|c| assert_equal(c, f.getbyte) }
-        assert_nil(f.getbyte)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          "foobar".each_byte {|c| assert_equal(c, f.getbyte) }
+          assert_nil(f.getbyte)
+        end
+      }
     end
 
     def test_readchar
-      t = Tempfile.new("test_zlib_gzip_reader_readchar")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_readchar") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        "foobar".each_byte {|c| assert_equal(c, f.readchar.ord) }
-        assert_raise(EOFError) { f.readchar }
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          "foobar".each_byte {|c| assert_equal(c, f.readchar.ord) }
+          assert_raise(EOFError) { f.readchar }
+        end
+      }
     end
 
     def test_each_byte
-      t = Tempfile.new("test_zlib_gzip_reader_each_byte")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
+      Tempfile.create("test_zlib_gzip_reader_each_byte") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foobar") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        a = []
-        f.each_byte {|c| a << c }
-        assert_equal("foobar".each_byte.to_a, a)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          a = []
+          f.each_byte {|c| a << c }
+          assert_equal("foobar".each_byte.to_a, a)
+        end
+      }
     end
 
     def test_gets
-      t = Tempfile.new("test_zlib_gzip_reader_gets")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
+      Tempfile.create("test_zlib_gzip_reader_gets") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foo\n", f.gets)
-        assert_equal("bar\n", f.gets)
-        assert_equal("baz\n", f.gets)
-        assert_nil(f.gets)
-      end
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foo\n", f.gets)
+          assert_equal("bar\n", f.gets)
+          assert_equal("baz\n", f.gets)
+          assert_nil(f.gets)
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foo\nbar\nbaz\n", f.gets(nil))
-      end
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foo\nbar\nbaz\n", f.gets(nil))
+        end
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foo\n", f.gets(10))
-        assert_equal("ba", f.gets(2))
-        assert_equal("r\nb", f.gets(nil, 3))
-        assert_equal("az\n", f.gets(nil, 10))
-        assert_nil(f.gets)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foo\n", f.gets(10))
+          assert_equal("ba", f.gets(2))
+          assert_equal("r\nb", f.gets(nil, 3))
+          assert_equal("az\n", f.gets(nil, 10))
+          assert_nil(f.gets)
+        end
+      }
     end
 
     def test_gets2
-      t = Tempfile.new("test_zlib_gzip_reader_gets2")
-      t.close
-      ustrs = %W"\u{3042 3044 3046}\n \u{304b 304d 304f}\n \u{3055 3057 3059}\n"
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print(*ustrs) }
+      Tempfile.create("test_zlib_gzip_reader_gets2") {|t|
+        t.close
+        ustrs = %W"\u{3042 3044 3046}\n \u{304b 304d 304f}\n \u{3055 3057 3059}\n"
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print(*ustrs) }
 
-      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
-        assert_equal(ustrs[0], f.gets)
-        assert_equal(ustrs[1], f.gets)
-        assert_equal(ustrs[2], f.gets)
-        assert_nil(f.gets)
-      end
+        Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+          assert_equal(ustrs[0], f.gets)
+          assert_equal(ustrs[1], f.gets)
+          assert_equal(ustrs[2], f.gets)
+          assert_nil(f.gets)
+        end
 
-      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
-        assert_equal(ustrs.join(''), f.gets(nil))
-      end
+        Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+          assert_equal(ustrs.join(''), f.gets(nil))
+        end
 
-      Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
-        assert_equal(ustrs[0], f.gets(20))
-        assert_equal(ustrs[1][0,2], f.gets(5))
-        assert_equal(ustrs[1][2..-1]+ustrs[2][0,1], f.gets(nil, 5))
-        assert_equal(ustrs[2][1..-1], f.gets(nil, 20))
-        assert_nil(f.gets)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path, encoding: "UTF-8") do |f|
+          assert_equal(ustrs[0], f.gets(20))
+          assert_equal(ustrs[1][0,2], f.gets(5))
+          assert_equal(ustrs[1][2..-1]+ustrs[2][0,1], f.gets(nil, 5))
+          assert_equal(ustrs[2][1..-1], f.gets(nil, 20))
+          assert_nil(f.gets)
+        end
+      }
     end
 
     def test_readline
-      t = Tempfile.new("test_zlib_gzip_reader_readline")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
+      Tempfile.create("test_zlib_gzip_reader_readline") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal("foo\n", f.readline)
-        assert_equal("bar\n", f.readline)
-        assert_equal("baz\n", f.readline)
-        assert_raise(EOFError) { f.readline }
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal("foo\n", f.readline)
+          assert_equal("bar\n", f.readline)
+          assert_equal("baz\n", f.readline)
+          assert_raise(EOFError) { f.readline }
+        end
+      }
     end
 
     def test_each
-      t = Tempfile.new("test_zlib_gzip_reader_each")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
+      Tempfile.create("test_zlib_gzip_reader_each") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        a = ["foo\n", "bar\n", "baz\n"]
-        f.each {|l| assert_equal(a.shift, l) }
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          a = ["foo\n", "bar\n", "baz\n"]
+          f.each {|l| assert_equal(a.shift, l) }
+        end
+      }
     end
 
     def test_readlines
-      t = Tempfile.new("test_zlib_gzip_reader_readlines")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
+      Tempfile.create("test_zlib_gzip_reader_readlines") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo\nbar\nbaz\n") }
 
-      Zlib::GzipReader.open(t.path) do |f|
-        assert_equal(["foo\n", "bar\n", "baz\n"], f.readlines)
-      end
-      t.close(true)
+        Zlib::GzipReader.open(t.path) do |f|
+          assert_equal(["foo\n", "bar\n", "baz\n"], f.readlines)
+        end
+      }
     end
 
     def test_reader_wrap
-      t = Tempfile.new("test_zlib_gzip_reader_wrap")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
-      f = open(t.path)
-      f.binmode
-      assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
-      assert_raise(IOError) { f.close }
-      t.close(true)
+      Tempfile.create("test_zlib_gzip_reader_wrap") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+        f = open(t.path)
+        f.binmode
+        assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
+        assert_raise(IOError) { f.close }
+      }
     end
 
     def test_corrupted_header
@@ -937,20 +936,19 @@ if defined? Zlib
     end
 
     def test_encoding
-      t = Tempfile.new("test_zlib_gzip_reader_encoding")
-      t.binmode
-      content = (0..255).to_a.pack('c*')
-      Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
-      t.close
+      Tempfile.create("test_zlib_gzip_reader_encoding") {|t|
+        t.binmode
+        content = (0..255).to_a.pack('c*')
+        Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
 
-      read_all = Zlib::GzipReader.open(t.path) {|gz| gz.read }
-      assert_equal(Encoding.default_external, read_all.encoding)
+        read_all = Zlib::GzipReader.open(t.path) {|gz| gz.read }
+        assert_equal(Encoding.default_external, read_all.encoding)
 
-      # chunks are in BINARY regardless of encoding settings
-      read_size = Zlib::GzipReader.open(t.path) {|gz| gz.read(1024) }
-      assert_equal(Encoding::ASCII_8BIT, read_size.encoding)
-      assert_equal(content, read_size)
-      t.close(true)
+        # chunks are in BINARY regardless of encoding settings
+        read_size = Zlib::GzipReader.open(t.path) {|gz| gz.read(1024) }
+        assert_equal(Encoding::ASCII_8BIT, read_size.encoding)
+        assert_equal(content, read_size)
+      }
     end
   end
 
@@ -965,53 +963,52 @@ if defined? Zlib
     def test_open
       assert_raise(ArgumentError) { Zlib::GzipWriter.open }
 
-      t = Tempfile.new("test_zlib_gzip_writer_open")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
-      assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      Tempfile.create("test_zlib_gzip_writer_open") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+        assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
 
-      f = Zlib::GzipWriter.open(t.path)
-      begin
-        f.print("bar")
-      ensure
-        f.close
-      end
-      assert_equal("bar", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+        f = Zlib::GzipWriter.open(t.path)
+        begin
+          f.print("bar")
+        ensure
+          f.close
+        end
+        assert_equal("bar", Zlib::GzipReader.open(t.path) {|gz| gz.read })
 
-      assert_raise(Zlib::StreamError) { Zlib::GzipWriter.open(t.path, 10000) }
-      t.close(true)
+        assert_raise(Zlib::StreamError) { Zlib::GzipWriter.open(t.path, 10000) }
+      }
     end
 
     def test_write
-      t = Tempfile.new("test_zlib_gzip_writer_write")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
-      assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      Tempfile.create("test_zlib_gzip_writer_write") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
+        assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
 
-      o = Object.new
-      def o.to_s; "bar"; end
-      Zlib::GzipWriter.open(t.path) {|gz| gz.print(o) }
-      assert_equal("bar", Zlib::GzipReader.open(t.path) {|gz| gz.read })
-      t.close(true)
+        o = Object.new
+        def o.to_s; "bar"; end
+        Zlib::GzipWriter.open(t.path) {|gz| gz.print(o) }
+        assert_equal("bar", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      }
     end
 
     def test_putc
-      t = Tempfile.new("test_zlib_gzip_writer_putc")
-      t.close
-      Zlib::GzipWriter.open(t.path) {|gz| gz.putc(?x) }
-      assert_equal("x", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      Tempfile.create("test_zlib_gzip_writer_putc") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.putc(?x) }
+        assert_equal("x", Zlib::GzipReader.open(t.path) {|gz| gz.read })
 
-      # todo: multibyte char
-      t.close(true)
+        # todo: multibyte char
+      }
     end
 
     def test_writer_wrap
-      t = Tempfile.new("test_zlib_gzip_writer_wrap")
-      t.binmode
-      Zlib::GzipWriter.wrap(t) {|gz| gz.print("foo") }
-      t.close
-      assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
-      t.close(true)
+      Tempfile.create("test_zlib_gzip_writer_wrap") {|t|
+        t.binmode
+        Zlib::GzipWriter.wrap(t) {|gz| gz.print("foo") }
+        assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      }
     end
   end
 

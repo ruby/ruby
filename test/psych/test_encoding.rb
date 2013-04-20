@@ -50,58 +50,54 @@ module Psych
     end
 
     def test_io_shiftjis
-      t = Tempfile.new(['shiftjis', 'yml'], :encoding => 'SHIFT_JIS')
-      t.write '--- こんにちは！'
-      t.close
+      Tempfile.create(['shiftjis', 'yml'], :encoding => 'SHIFT_JIS') {|t|
+        t.write '--- こんにちは！'
+        t.close
 
-      # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
-      # process the file.
-      File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
-        assert_raises Psych::SyntaxError do
-          Psych.load(f)
+        # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
+        # process the file.
+        File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
+          assert_raises Psych::SyntaxError do
+            Psych.load(f)
+          end
         end
-      end
-
-      t.close(true)
+      }
     end
 
     def test_io_utf16le
-      t = Tempfile.new(['utf16le', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-16LE')
-      t.close
+      Tempfile.create(['utf16le', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-16LE')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-16LE') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-16LE') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_io_utf16be
-      t = Tempfile.new(['utf16be', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-16BE')
-      t.close
+      Tempfile.create(['utf16be', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-16BE')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-16BE') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-16BE') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_io_utf8
-      t = Tempfile.new(['utf8', 'yml'])
-      t.binmode
-      t.write '--- こんにちは！'.encode('UTF-8')
-      t.close
+      Tempfile.create(['utf8', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-8')
+        t.close
 
-      File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
-        assert_equal "こんにちは！", Psych.load(f)
-      end
-
-      t.close(true)
+        File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
     end
 
     def test_emit_alias

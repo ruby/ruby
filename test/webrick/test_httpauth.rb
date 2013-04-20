@@ -31,54 +31,54 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       realm = "WEBrick's realm"
       path = "/basic_auth2"
 
-      tmpfile = Tempfile.new("test_webrick_auth")
-      tmpfile.close
-      tmp_pass = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
-      tmp_pass.set_passwd(realm, "webrick", "supersecretpassword")
-      tmp_pass.set_passwd(realm, "foo", "supersecretpassword")
-      tmp_pass.flush
+      Tempfile.create("test_webrick_auth") {|tmpfile|
+        tmpfile.close
+        tmp_pass = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+        tmp_pass.set_passwd(realm, "webrick", "supersecretpassword")
+        tmp_pass.set_passwd(realm, "foo", "supersecretpassword")
+        tmp_pass.flush
 
-      htpasswd = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
-      users = []
-      htpasswd.each{|user, pass| users << user }
-      assert_equal(2, users.size, log.call)
-      assert(users.member?("webrick"), log.call)
-      assert(users.member?("foo"), log.call)
+        htpasswd = WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+        users = []
+        htpasswd.each{|user, pass| users << user }
+        assert_equal(2, users.size, log.call)
+        assert(users.member?("webrick"), log.call)
+        assert(users.member?("foo"), log.call)
 
-      server.mount_proc(path){|req, res|
-        auth = WEBrick::HTTPAuth::BasicAuth.new(
-          :Realm => realm, :UserDB => htpasswd,
-          :Logger => server.logger
-        )
-        auth.authenticate(req, res)
-        res.body = "hoge"
+        server.mount_proc(path){|req, res|
+          auth = WEBrick::HTTPAuth::BasicAuth.new(
+            :Realm => realm, :UserDB => htpasswd,
+            :Logger => server.logger
+          )
+          auth.authenticate(req, res)
+          res.body = "hoge"
+        }
+        http = Net::HTTP.new(addr, port)
+        g = Net::HTTP::Get.new(path)
+        g.basic_auth("webrick", "supersecretpassword")
+        http.request(g){|res| assert_equal("hoge", res.body, log.call)}
+        g.basic_auth("webrick", "not super")
+        http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
       }
-      http = Net::HTTP.new(addr, port)
-      g = Net::HTTP::Get.new(path)
-      g.basic_auth("webrick", "supersecretpassword")
-      http.request(g){|res| assert_equal("hoge", res.body, log.call)}
-      g.basic_auth("webrick", "not super")
-      http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
-      tmpfile.close(true)
     }
   end
 
   def test_basic_auth3
-    tmpfile = Tempfile.new("test_webrick_auth")
-    tmpfile.puts("webrick:{SHA}GJYFRpBbdchp595jlh3Bhfmgp8k=")
-    tmpfile.flush
-    assert_raise(NotImplementedError){
-      WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+    Tempfile.create("test_webrick_auth") {|tmpfile|
+      tmpfile.puts("webrick:{SHA}GJYFRpBbdchp595jlh3Bhfmgp8k=")
+      tmpfile.flush
+      assert_raise(NotImplementedError){
+        WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+      }
     }
-    tmpfile.close(true)
 
-    tmpfile = Tempfile.new("test_webrick_auth")
-    tmpfile.puts("webrick:$apr1$IOVMD/..$rmnOSPXr0.wwrLPZHBQZy0")
-    tmpfile.flush
-    assert_raise(NotImplementedError){
-      WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+    Tempfile.create("test_webrick_auth") {|tmpfile|
+      tmpfile.puts("webrick:$apr1$IOVMD/..$rmnOSPXr0.wwrLPZHBQZy0")
+      tmpfile.flush
+      assert_raise(NotImplementedError){
+        WEBrick::HTTPAuth::Htpasswd.new(tmpfile.path)
+      }
     }
-    tmpfile.close(true)
   end
 
   DIGESTRES_ = /
@@ -96,52 +96,52 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       realm = "WEBrick's realm"
       path = "/digest_auth"
 
-      tmpfile = Tempfile.new("test_webrick_auth")
-      tmpfile.close
-      tmp_pass = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
-      tmp_pass.set_passwd(realm, "webrick", "supersecretpassword")
-      tmp_pass.set_passwd(realm, "foo", "supersecretpassword")
-      tmp_pass.flush
+      Tempfile.create("test_webrick_auth") {|tmpfile|
+        tmpfile.close
+        tmp_pass = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
+        tmp_pass.set_passwd(realm, "webrick", "supersecretpassword")
+        tmp_pass.set_passwd(realm, "foo", "supersecretpassword")
+        tmp_pass.flush
 
-      htdigest = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
-      users = []
-      htdigest.each{|user, pass| users << user }
-      assert_equal(2, users.size, log.call)
-      assert(users.member?("webrick"), log.call)
-      assert(users.member?("foo"), log.call)
+        htdigest = WEBrick::HTTPAuth::Htdigest.new(tmpfile.path)
+        users = []
+        htdigest.each{|user, pass| users << user }
+        assert_equal(2, users.size, log.call)
+        assert(users.member?("webrick"), log.call)
+        assert(users.member?("foo"), log.call)
 
-      auth = WEBrick::HTTPAuth::DigestAuth.new(
-        :Realm => realm, :UserDB => htdigest,
-        :Algorithm => 'MD5',
-        :Logger => server.logger
-      )
-      server.mount_proc(path){|req, res|
-        auth.authenticate(req, res)
-        res.body = "hoge"
-      }
+        auth = WEBrick::HTTPAuth::DigestAuth.new(
+          :Realm => realm, :UserDB => htdigest,
+          :Algorithm => 'MD5',
+          :Logger => server.logger
+        )
+        server.mount_proc(path){|req, res|
+          auth.authenticate(req, res)
+          res.body = "hoge"
+        }
 
-      Net::HTTP.start(addr, port) do |http|
-        g = Net::HTTP::Get.new(path)
-        params = {}
-        http.request(g) do |res|
-          assert_equal('401', res.code, log.call)
-          res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
-            params[key.downcase] = token || quoted.delete('\\')
+        Net::HTTP.start(addr, port) do |http|
+          g = Net::HTTP::Get.new(path)
+          params = {}
+          http.request(g) do |res|
+            assert_equal('401', res.code, log.call)
+            res["www-authenticate"].scan(DIGESTRES_) do |key, quoted, token|
+              params[key.downcase] = token || quoted.delete('\\')
+            end
+             params['uri'] = "http://#{addr}:#{port}#{path}"
           end
-           params['uri'] = "http://#{addr}:#{port}#{path}"
+
+          g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
+          http.request(g){|res| assert_equal("hoge", res.body, log.call)}
+
+          params['algorithm'].downcase! #4936
+          g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
+          http.request(g){|res| assert_equal("hoge", res.body, log.call)}
+
+          g['Authorization'] = credentials_for_request('webrick', "not super", params)
+          http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
         end
-
-        g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
-        http.request(g){|res| assert_equal("hoge", res.body, log.call)}
-
-        params['algorithm'].downcase! #4936
-        g['Authorization'] = credentials_for_request('webrick', "supersecretpassword", params)
-        http.request(g){|res| assert_equal("hoge", res.body, log.call)}
-
-        g['Authorization'] = credentials_for_request('webrick', "not super", params)
-        http.request(g){|res| assert_not_equal("hoge", res.body, log.call)}
-      end
-      tmpfile.close(true)
+      }
     }
   end
 

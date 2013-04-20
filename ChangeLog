@@ -1,3 +1,18 @@
+Sun Apr 21 08:00:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/csv/test_features.rb, test/logger/test_logger.rb
+	  test/mkmf/test_have_macro.rb, test/net/http/test_http.rb,
+	  test/openssl/test_config.rb, test/psych/test_encoding.rb,
+	  test/psych/test_exception.rb, test/psych/test_psych.rb,
+	  test/psych/test_tainted.rb, test/readline/test_readline.rb,
+	  test/rexml/test_contrib.rb, test/ruby/test_autoload.rb,
+	  test/ruby/test_beginendblock.rb, test/ruby/test_exception.rb,
+	  test/ruby/test_file.rb, test/ruby/test_io.rb,
+	  test/ruby/test_marshal.rb, test/ruby/test_process.rb,
+	  test/ruby/test_require.rb, test/ruby/test_rubyoptions.rb,
+	  test/syslog/test_syslog_logger.rb, test/webrick/test_httpauth.rb,
+	  test/zlib/test_zlib.rb: Use Tempfile.create.
+
 Sun Apr 21 00:15:36 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile.create): Close when the block exits.

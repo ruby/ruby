@@ -80,13 +80,12 @@ class TestSyslogRootLogger < Test::Unit::TestCase
   end
 
   def log_raw(msg_id, *arg, &block)
-    logdev = Tempfile.new(File.basename(__FILE__) + '.log')
-    @logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
-    assert_equal true, @logger.__send__(msg_id, *arg, &block)
-    logdev.open
-    msg = logdev.read
-    logdev.close(true)
-    msg
+    Tempfile.create(File.basename(__FILE__) + '.log') {|logdev|
+      @logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
+      assert_equal true, @logger.__send__(msg_id, *arg, &block)
+      logdev.rewind
+      logdev.read
+    }
   end
 
   def test_initialize

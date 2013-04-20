@@ -29,12 +29,11 @@ class TestFile < Test::Unit::TestCase
 
   include TestEOF
   def open_file(content)
-    f = Tempfile.new("test-eof")
-    f << content
-    f.rewind
-    yield f
-  ensure
-    f.close(true)
+    Tempfile.create("test-eof") {|f|
+      f << content
+      f.rewind
+      yield f
+    }
   end
   alias open_file_rw open_file
 
@@ -42,33 +41,32 @@ class TestFile < Test::Unit::TestCase
 
   def test_empty_file_bom
     bug6487 = '[ruby-core:45203]'
-    f = Tempfile.new(__method__.to_s)
-    f.close
-    assert_file.exist?(f.path)
-    assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:utf-8')}
-    assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:bom|utf-8')}
-    f.close(true)
+    Tempfile.create(__method__.to_s) {|f|
+      assert_file.exist?(f.path)
+      assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:utf-8')}
+      assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:bom|utf-8')}
+    }
   end
 
   def assert_bom(bytes, name)
     bug6487 = '[ruby-core:45203]'
 
-    f = Tempfile.new(name.to_s)
-    f.sync = true
-    expected = ""
-    result = nil
-    bytes[0...-1].each do |x|
-      f.write x
-      f.write ' '
-      f.pos -= 1
-      expected << x
+    Tempfile.create(name.to_s) {|f|
+      f.sync = true
+      expected = ""
+      result = nil
+      bytes[0...-1].each do |x|
+        f.write x
+        f.write ' '
+        f.pos -= 1
+        expected << x
+        assert_nothing_raised(bug6487) {result = File.read(f.path, mode: 'rb:bom|utf-8')}
+        assert_equal("#{expected} ".force_encoding("utf-8"), result)
+      end
+      f.write bytes[-1]
       assert_nothing_raised(bug6487) {result = File.read(f.path, mode: 'rb:bom|utf-8')}
-      assert_equal("#{expected} ".force_encoding("utf-8"), result)
-    end
-    f.write bytes[-1]
-    assert_nothing_raised(bug6487) {result = File.read(f.path, mode: 'rb:bom|utf-8')}
-    assert_equal '', result, "valid bom"
-    f.close(true)
+      assert_equal '', result, "valid bom"
+    }
   end
 
   def test_bom_8
@@ -92,113 +90,112 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_truncate_wbuf
-    f = Tempfile.new("test-truncate")
-    f.print "abc"
-    f.truncate(0)
-    f.print "def"
-    f.flush
-    assert_equal("\0\0\0def", File.read(f.path), "[ruby-dev:24191]")
-    f.close(true)
+    Tempfile.create("test-truncate") {|f|
+      f.print "abc"
+      f.truncate(0)
+      f.print "def"
+      f.flush
+      assert_equal("\0\0\0def", File.read(f.path), "[ruby-dev:24191]")
+    }
   end
 
   def test_truncate_rbuf
-    f = Tempfile.new("test-truncate")
-    f.puts "abc"
-    f.puts "def"
-    f.close
-    f.open
-    assert_equal("abc\n", f.gets)
-    f.truncate(3)
-    assert_equal(nil, f.gets, "[ruby-dev:24197]")
-    f.close(true)
+    Tempfile.create("test-truncate") {|f|
+      f.puts "abc"
+      f.puts "def"
+      f.rewind
+      assert_equal("abc\n", f.gets)
+      f.truncate(3)
+      assert_equal(nil, f.gets, "[ruby-dev:24197]")
+    }
   end
 
   def test_truncate_beyond_eof
-    f = Tempfile.new("test-truncate")
-    f.print "abc"
-    f.truncate 10
-    assert_equal("\0" * 7, f.read(100), "[ruby-dev:24532]")
-    f.close(true)
+    Tempfile.create("test-truncate") {|f|
+      f.print "abc"
+      f.truncate 10
+      assert_equal("\0" * 7, f.read(100), "[ruby-dev:24532]")
+    }
   end
 
   def test_read_all_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      assert_equal("a", f.read, "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        assert_equal("a", f.read, "mode = <#{mode}>")
+      }
     end
   end
 
   def test_gets_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      assert_equal("a", f.gets("a"), "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        assert_equal("a", f.gets("a"), "mode = <#{mode}>")
+      }
     end
   end
 
   def test_gets_para_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "\na"
-      f.rewind
-      assert_equal("a", f.gets(""), "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "\na"
+        f.rewind
+        assert_equal("a", f.gets(""), "mode = <#{mode}>")
+      }
     end
   end
 
   def test_each_char_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      result = []
-      f.each_char {|b| result << b }
-      assert_equal([?a], result, "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        result = []
+        f.each_char {|b| result << b }
+        assert_equal([?a], result, "mode = <#{mode}>")
+      }
     end
   end
 
   def test_each_byte_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      result = []
-      f.each_byte {|b| result << b.chr }
-      assert_equal([?a], result, "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        result = []
+        f.each_byte {|b| result << b.chr }
+        assert_equal([?a], result, "mode = <#{mode}>")
+      }
     end
   end
 
   def test_getc_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      assert_equal(?a, f.getc, "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        assert_equal(?a, f.getc, "mode = <#{mode}>")
+      }
     end
   end
 
   def test_getbyte_extended_file
     [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
-      f = Tempfile.new("test-extended-file", mode)
-      assert_nil(f.getc)
-      f.print "a"
-      f.rewind
-      assert_equal(?a, f.getbyte.chr, "mode = <#{mode}>")
-      f.close(true)
+      Tempfile.create("test-extended-file", mode) {|f|
+        assert_nil(f.getc)
+        f.print "a"
+        f.rewind
+        assert_equal(?a, f.getbyte.chr, "mode = <#{mode}>")
+      }
     end
   end
 
@@ -258,11 +255,10 @@ class TestFile < Test::Unit::TestCase
       require "tempfile"
       t = Time.at(-1)
       begin
-        f = Tempfile.new('test_utime_with_minus_time_segv')
-        File.utime(t, t, f)
+        Tempfile.create('test_utime_with_minus_time_segv') {|f|
+          File.utime(t, t, f)
+        }
       rescue
-      ensure
-        f.close(true)
       end
       puts '#{bug5596}'
     EOS
