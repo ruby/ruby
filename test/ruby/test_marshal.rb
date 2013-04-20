@@ -553,8 +553,16 @@ class TestMarshal < Test::Unit::TestCase
     bug8276 = '[ruby-core:54334] [Bug #8276]'
     t = Bug8276.new(bug8276)
     s = Marshal.dump(t)
-    assert_nothing_raised(RuntimeError) {s = Marshal.load(s)}
+    assert_nothing_raised(RuntimeError, bug8276) {s = Marshal.load(s)}
     assert_equal(t.data, s.data, bug8276)
+  end
+
+  def test_marshal_dump_ivar
+    s = "data with ivar"
+    s.instance_variable_set(:@t, 42)
+    t = Bug8276.new(s)
+    s = Marshal.dump(t)
+    assert_raise(RuntimeError) {Marshal.load(s)}
   end
 
   def test_class_ivar

@@ -1,3 +1,11 @@
+Sat Apr 20 14:22:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): dump no ivars to the original by marshal_dump.
+	  [ruby-core:54334] [Bug #8276]
+
+	* marshal.c (r_object0): copy all ivars of marshal_dump data to the
+	  result object instead.  [ruby-core:51163] [Bug #7627]
+
 Sat Apr 20 02:33:27 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (str_scrub): add ruby method String#scrub which verify and

@@ -598,8 +598,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     st_table *ivtbl = 0;
     st_data_t num;
     int hasiv = 0;
-#define has_ivars_noenc(obj, ivtbl) (((ivtbl) = rb_generic_ivar_table(obj)) != 0)
-#define has_ivars(obj, ivtbl) (has_ivars_noenc(obj, ivtbl) || \
+#define has_ivars(obj, ivtbl) ((((ivtbl) = rb_generic_ivar_table(obj)) != 0) || \
 			       (!SPECIAL_CONST_P(obj) && !ENCODING_IS_ASCII8BIT(obj)))
 
     if (limit == 0) {
@@ -657,11 +656,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall2(obj, s_mdump, 0, 0);
 	    check_dump_arg(arg, s_mdump);
-	    hasiv = has_ivars_noenc(v, ivtbl);
-	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
 	    w_object(v, arg, limit);
-	    if (hasiv) w_ivar(v, ivtbl, &c_arg);
 	    return;
 	}
 	if (rb_obj_respond_to(obj, s_dump, TRUE)) {
@@ -1772,6 +1768,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE oldclass = 0;
 	    VALUE data;
+	    st_table *ivtbl;
 
 	    v = obj_alloc_by_klass(klass, arg, &oldclass);
             if (!NIL_P(extmod)) {
@@ -1787,6 +1784,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_funcall2(v, s_mload, 1, &data);
 	    check_load_arg(arg, s_mload);
             v = r_leave(v, arg);
+	    ivtbl = rb_generic_ivar_table(data);
+	    if (ivtbl && ivtbl->num_entries) {
+		rb_check_frozen(v);
+		rb_copy_generic_ivar(v, data);
+	    }
 	    if (!NIL_P(extmod)) {
 		if (oldclass) append_extmod(v, extmod);
 		rb_ary_clear(extmod);
