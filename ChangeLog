@@ -1,3 +1,12 @@
+Sun Apr 21 21:35:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* configure.in: Use sigsetjmp by default so jumping out of signal
+	  handlers properly restores the signal mask and SS_ONSTACK flag.
+	  [ruby-core:54175] [Bug #8254]
+
+	* configure.in: Manually check for presence of sigsetjmp. It is not a
+	  function on some systems, so AC_CHECK_FUNCS cannot be used.
+
 Sun Apr 21 08:00:55 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/csv/test_features.rb, test/logger/test_logger.rb
