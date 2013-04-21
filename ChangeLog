@@ -1,3 +1,8 @@
+Sun Apr 21 23:19:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* configure.in: Revert using sigsetjmp by default due to performance
+	  problems on some systems (eg. older Linux)
+
 Sun Apr 21 21:35:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* configure.in: Use sigsetjmp by default so jumping out of signal

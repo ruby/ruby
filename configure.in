@@ -1745,12 +1745,12 @@ if test ${setjmp_prefix+set}; then
     if test "${setjmp_prefix}" && eval test '$ac_cv_func_'${setjmp_prefix}setjmp = no; then
 	AC_MSG_ERROR(${setjmp_prefix}setjmp is not available)
     fi
-elif test "$ac_cv_func_sigsetjmp" = yes; then
-    AS_CASE([$target_os],[solaris*|cygwin*],[setjmp_prefix=],[setjmp_prefix=sig])
 elif test "$ac_cv_func___builtin_setjmp" = yes; then
     setjmp_prefix=__builtin_
 elif test "$ac_cv_func__setjmp" = yes; then
     setjmp_prefix=_
+elif test "$ac_cv_func_sigsetjmp" = yes; then
+    AS_CASE([$target_os],[solaris*|cygwin*],[setjmp_prefix=],[setjmp_prefix=sig])
 else
     setjmp_prefix=
 fi
@@ -1760,7 +1760,7 @@ else
     unset setjmp_sigmask
 fi
 AC_MSG_RESULT(${setjmp_prefix}setjmp)
-AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp(env${setjmp_sigmask+,1})])
+AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp(env${setjmp_sigmask+,0})])
 AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp(env,val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
 
