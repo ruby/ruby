@@ -122,6 +122,7 @@ class TestNum2int < Test::Unit::TestCase
 
   def test_num2short
     assert_num2i_success(:short, SHRT_MIN)
+    assert_num2i_success(:short, SHRT_MIN+1)
     assert_num2i_success(:short, SHRT_MAX)
     assert_num2i_error(:short, SHRT_MIN-1)
     assert_num2i_error(:short, SHRT_MAX+1)
@@ -132,12 +133,14 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ushort, USHRT_MAX)
     assert_num2i_success(:ushort, -1, USHRT_MAX)
     assert_num2i_success(:ushort, SHRT_MIN, SHRT_MAX+1)
+    assert_num2i_success(:ushort, SHRT_MIN+1, SHRT_MAX+2)
     assert_num2i_error(:ushort, SHRT_MIN-1)
     assert_num2i_error(:ushort, USHRT_MAX+1)
   end
 
   def test_num2int
     assert_num2i_success(:int, INT_MIN)
+    assert_num2i_success(:int, INT_MIN+1)
     assert_num2i_success(:int, INT_MAX)
     assert_num2i_error(:int, INT_MIN-1)
     assert_num2i_error(:int, INT_MAX+1)
@@ -148,16 +151,19 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:uint, UINT_MAX)
     assert_num2i_success(:uint, -1, UINT_MAX)
     assert_num2i_success(:uint, INT_MIN, INT_MAX+1)
+    assert_num2i_success(:uint, INT_MIN+1, INT_MAX+2)
     assert_num2i_error(:uint, INT_MIN-1)
     assert_num2i_error(:uint, UINT_MAX+1)
   end
 
   def test_num2long
     assert_num2i_success(:long, LONG_MIN)
+    assert_num2i_success(:long, LONG_MIN+1)
     assert_num2i_success(:long, LONG_MAX)
     assert_num2i_error(:long, LONG_MIN-1)
     assert_num2i_error(:long, LONG_MAX+1)
     assert_num2i_success(:long, FIXNUM_MIN)
+    assert_num2i_success(:long, FIXNUM_MIN+1)
     assert_num2i_success(:long, FIXNUM_MIN-1)
     assert_num2i_success(:long, FIXNUM_MAX)
     assert_num2i_success(:long, FIXNUM_MAX+1)
@@ -168,9 +174,11 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ulong, ULONG_MAX)
     assert_num2i_success(:ulong, -1, ULONG_MAX)
     assert_num2i_success(:ulong, LONG_MIN, LONG_MAX+1)
+    assert_num2i_success(:ulong, LONG_MIN+1, LONG_MAX+2)
     assert_num2i_error(:ulong, LONG_MIN-1)
     assert_num2i_error(:ulong, ULONG_MAX+1)
     assert_num2i_success(:ulong, FIXNUM_MIN, ULONG_MAX-FIXNUM_MAX)
+    assert_num2i_success(:ulong, FIXNUM_MIN+1, ULONG_MAX-FIXNUM_MAX+1)
     assert_num2i_success(:ulong, FIXNUM_MIN-1, ULONG_MAX-FIXNUM_MAX-1)
     assert_num2i_success(:ulong, FIXNUM_MAX, FIXNUM_MAX)
     assert_num2i_success(:ulong, FIXNUM_MAX+1, FIXNUM_MAX+1)
@@ -178,10 +186,12 @@ class TestNum2int < Test::Unit::TestCase
 
   def test_num2ll
     assert_num2i_success(:ll, LLONG_MIN)
+    assert_num2i_success(:ll, LLONG_MIN+1)
     assert_num2i_success(:ll, LLONG_MAX)
     assert_num2i_error(:ll, LLONG_MIN-1)
     assert_num2i_error(:ll, LLONG_MAX+1)
     assert_num2i_success(:ll, FIXNUM_MIN)
+    assert_num2i_success(:ll, FIXNUM_MIN+1)
     assert_num2i_success(:ll, FIXNUM_MIN-1)
     assert_num2i_success(:ll, FIXNUM_MAX)
     assert_num2i_success(:ll, FIXNUM_MAX+1)
@@ -192,9 +202,11 @@ class TestNum2int < Test::Unit::TestCase
     assert_num2i_success(:ull, ULLONG_MAX)
     assert_num2i_success(:ull, -1, ULLONG_MAX)
     assert_num2i_success(:ull, LLONG_MIN, LLONG_MAX+1)
+    assert_num2i_success(:ull, LLONG_MIN+1, LLONG_MAX+2)
     assert_num2i_error(:ull, LLONG_MIN-1)
     assert_num2i_error(:ull, ULLONG_MAX+1)
     assert_num2i_success(:ull, FIXNUM_MIN, ULLONG_MAX-FIXNUM_MAX)
+    assert_num2i_success(:ull, FIXNUM_MIN+1, ULLONG_MAX-FIXNUM_MAX+1)
     assert_num2i_success(:ull, FIXNUM_MIN-1, ULLONG_MAX-FIXNUM_MAX-1)
     assert_num2i_success(:ull, FIXNUM_MAX)
     assert_num2i_success(:ull, FIXNUM_MAX+1)
@@ -204,20 +216,24 @@ class TestNum2int < Test::Unit::TestCase
     assert_fix2i_success(:short, 0)
     assert_fix2i_success(:short, SHRT_MAX)
     assert_fix2i_success(:short, SHRT_MIN)
+    assert_fix2i_success(:short, SHRT_MIN+1)
     assert_fix2i_error(:short, SHRT_MAX+1)
     assert_fix2i_error(:short, SHRT_MIN-1)
     assert_fix2i_error(:short, FIXNUM_MAX)
     assert_fix2i_error(:short, FIXNUM_MIN)
+    assert_fix2i_error(:short, FIXNUM_MIN+1)
   end
 
   def test_fix2int
     assert_fix2i_success(:int, 0)
     assert_fix2i_success(:int, INT_MAX)
     assert_fix2i_success(:int, INT_MIN)
+    assert_fix2i_success(:int, INT_MIN+1)
     assert_fix2i_error(:int, INT_MAX+1)
     assert_fix2i_error(:int, INT_MIN-1)
     assert_fix2i_error(:int, FIXNUM_MAX) if INT_MAX < FIXNUM_MAX
     assert_fix2i_error(:int, FIXNUM_MIN) if FIXNUM_MIN < INT_MIN
+    assert_fix2i_error(:int, FIXNUM_MIN+1) if FIXNUM_MIN+1 < INT_MIN
   end
 
   def test_fix2uint
@@ -225,16 +241,19 @@ class TestNum2int < Test::Unit::TestCase
     assert_fix2i_success(:uint, UINT_MAX)
     assert_fix2i_success(:uint, INT_MAX)
     assert_fix2i_success(:uint, INT_MIN, INT_MAX+1)
+    assert_fix2i_success(:uint, INT_MIN+1, INT_MAX+2)
     assert_fix2i_error(:uint, UINT_MAX+1)
     assert_fix2i_error(:uint, INT_MIN-1)
     assert_fix2i_error(:uint, FIXNUM_MAX) if UINT_MAX < FIXNUM_MAX
     assert_fix2i_error(:uint, FIXNUM_MIN) if FIXNUM_MIN < INT_MIN
+    assert_fix2i_error(:uint, FIXNUM_MIN+1) if FIXNUM_MIN+1 < INT_MIN
   end
 
   def test_fix2long
     assert_fix2i_success(:long, 0)
     assert_fix2i_success(:long, FIXNUM_MAX)
     assert_fix2i_success(:long, FIXNUM_MIN)
+    assert_fix2i_success(:long, FIXNUM_MIN+1)
   end
 
   def test_fix2ulong
