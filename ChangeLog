@@ -1,3 +1,8 @@
+Mon Apr 22 22:54:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* insns.def (opt_mod): Use % operator if both operands are positive for
+	  a significant performance improvement. Thanks to @samsaffron.
+
 Mon Apr 22 17:09:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): copy all instance variables not only generic
