@@ -1335,7 +1335,7 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 }
 
 static VALUE
-r_leave(VALUE v, struct load_arg *arg)
+r_fixup_compat(VALUE v, struct load_arg *arg)
 {
     st_data_t data;
     if (st_lookup(arg->compat_tbl, v, &data)) {
@@ -1349,10 +1349,38 @@ r_leave(VALUE v, struct load_arg *arg)
         st_delete(arg->compat_tbl, &key, 0);
         v = real_obj;
     }
+    return v;
+}
+
+static VALUE
+r_post_proc(VALUE v, struct load_arg *arg)
+{
     if (arg->proc) {
 	v = rb_funcall(arg->proc, s_call, 1, v);
 	check_load_arg(arg, s_call);
     }
+    return v;
+}
+
+static VALUE
+r_leave(VALUE v, struct load_arg *arg)
+{
+    v = r_fixup_compat(v, arg);
+    v = r_post_proc(v, arg);
+    return v;
+}
+
+static int
+copy_ivar_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_ivar_set((VALUE)arg, (ID)key, (VALUE)val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+r_copy_ivar(VALUE v, VALUE data)
+{
+    rb_ivar_foreach(data, copy_ivar_i, (st_data_t)v);
     return v;
 }
 
@@ -1458,10 +1486,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	v = (VALUE)link;
-	if (arg->proc) {
-	    v = rb_funcall(arg->proc, s_call, 1, v);
-	    check_load_arg(arg, s_call);
-	}
+	r_post_proc(v, arg);
 	break;
 
       case TYPE_IVAR:
@@ -1768,7 +1793,6 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE oldclass = 0;
 	    VALUE data;
-	    st_table *ivtbl;
 
 	    v = obj_alloc_by_klass(klass, arg, &oldclass);
             if (!NIL_P(extmod)) {
@@ -1783,12 +1807,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    data = r_object(arg);
 	    rb_funcall2(v, s_mload, 1, &data);
 	    check_load_arg(arg, s_mload);
-            v = r_leave(v, arg);
-	    ivtbl = rb_generic_ivar_table(data);
-	    if (ivtbl && ivtbl->num_entries) {
-		rb_check_frozen(v);
-		rb_copy_generic_ivar(v, data);
-	    }
+	    v = r_fixup_compat(v, arg);
+	    v = r_copy_ivar(v, data);
+	    v = r_post_proc(v, arg);
 	    if (!NIL_P(extmod)) {
 		if (oldclass) append_extmod(v, extmod);
 		rb_ary_clear(extmod);

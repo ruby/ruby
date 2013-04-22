@@ -538,13 +538,20 @@ class TestMarshal < Test::Unit::TestCase
     assert_nil(loaded.foo, bug7627)
   end
 
-  class Bug8276
+  class LoadData
     attr_reader :data
     def initialize(data)
       @data = data
-      freeze
     end
     alias marshal_dump data
+    alias marshal_load initialize
+  end
+
+  class Bug8276 < LoadData
+    def initialize(*)
+      super
+      freeze
+    end
     alias marshal_load initialize
   end
 
@@ -562,6 +569,23 @@ class TestMarshal < Test::Unit::TestCase
     t = Bug8276.new(s)
     s = Marshal.dump(t)
     assert_raise(RuntimeError) {Marshal.load(s)}
+  end
+
+  def test_marshal_load_ivar
+    s = "data with ivar"
+    s.instance_variable_set(:@t, 42)
+    t = LoadData.new(s)
+    s = Marshal.dump(t)
+    hook = ->(v) {
+      if LoadData === v
+        assert_send([v, :instance_variable_defined?, :@t])
+        assert_equal(42, v.instance_variable_get(:@t))
+      end
+      v
+    }
+    v = Marshal.load(s, hook)
+    assert_send([v, :instance_variable_defined?, :@t])
+    assert_equal(42, v.instance_variable_get(:@t))
   end
 
   def test_class_ivar
