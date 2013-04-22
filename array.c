@@ -3021,8 +3021,8 @@ rb_ary_reject(VALUE ary)
  *
  *  If no block is given, an Enumerator is returned instead.
  *
- *     a = [ "a", "b", "c" ]
- *     a.delete_if {|x| x >= "b" }   #=> ["a"]
+ *     scores = [ 97, 42, 75 ]
+ *     scores.delete_if {|score| score < 80 }   #=> [97]
  */
 
 static VALUE
