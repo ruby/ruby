@@ -509,7 +509,7 @@ class TestRubyOptions < Test::Unit::TestCase
       (?:#{additional})
       \z
       )x
-    assert_in_out_err(["-e", "Process.kill :SEGV, $$"], "", [], expected_stderr, nil, opts)
+    assert_in_out_err(["--disable-gems", "-e", "Process.kill :SEGV, $$"], "", [], expected_stderr, nil, opts)
 
     bug7402 = '[ruby-core:49573]'
     status = assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
@@ -524,7 +524,7 @@ class TestRubyOptions < Test::Unit::TestCase
     Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
       t.write "f" * 100
       t.flush
-      assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
+      assert_in_out_err(["--disable-gems", "-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
                         "", [], expected_stderr, bug7597, opts)
     }
   end
