@@ -1985,6 +1985,12 @@ class TestString < Test::Unit::TestCase
     assert_instance_of(String, s.to_s)
   end
 
+  def test_inspect_nul
+    s = "\0" + "12"
+    assert_not_equal '"\\012"', eval(s.inspect)
+    assert_equal s, eval(s.inspect)
+  end
+
   def test_partition
     assert_equal(%w(he l lo), "hello".partition(/l/))
     assert_equal(%w(he l lo), "hello".partition("l"))
