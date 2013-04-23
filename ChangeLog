@@ -1,3 +1,9 @@
+Tue Apr 23 11:58:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): fix for UTF-32.  strlen() on strings
+	  contain NUL returns wrong result, use sizeof operator instead.
+	  [ruby-dev:45975] [Feature #6752]
+
 Tue Apr 23 10:26:50 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_module.rb

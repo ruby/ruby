@@ -7805,6 +7805,11 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	return rb_str_dup(str);
     }
 
+#define DEFAULT_REPLACE_CHAR(str) do { \
+	static const char replace[sizeof(str)-1] = str; \
+	rep = replace; replen = (int)sizeof(replace); \
+    } while (0)
+
     if (rb_enc_asciicompat(enc)) {
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
@@ -7824,13 +7829,11 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	    rep7bit_p = (ENC_CODERANGE(repl) == ENC_CODERANGE_7BIT);
 	}
 	else if (enc == rb_utf8_encoding()) {
-	    rep = "\xEF\xBF\xBD";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("\xEF\xBF\xBD");
 	    rep7bit_p = FALSE;
 	}
 	else {
-	    rep = "?";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("?");
 	    rep7bit_p = TRUE;
 	}
 	cr = ENC_CODERANGE_7BIT;
@@ -7938,24 +7941,19 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	    replen = RSTRING_LEN(repl);
 	}
 	else if (enc == utf16be) {
-	    rep = "\xFF\xFD";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("\xFF\xFD");
 	}
 	else if (enc == utf16le) {
-	    rep = "\xFD\xFF";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("\xFD\xFF");
 	}
 	else if (enc == utf32be) {
-	    rep = "\x00\x00\xFF\xFD";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("\x00\x00\xFF\xFD");
 	}
 	else if (enc == utf32le) {
-	    rep = "\xFD\xFF\x00\x00";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("\xFD\xFF\x00\x00");
 	}
 	else {
-	    rep = "?";
-	    replen = strlen(rep);
+	    DEFAULT_REPLACE_CHAR("?");
 	}
 
 	while (p < e) {

@@ -1522,5 +1522,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\uFFFD\u3042".encode("UTF-16LE"),
                  "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
                  scrub)
+    assert_equal("\uFFFD".encode("UTF-32BE"),
+                 "\xff".force_encoding(Encoding::UTF_32BE).
+                 scrub)
+    assert_equal("\uFFFD".encode("UTF-32LE"),
+                 "\xff".force_encoding(Encoding::UTF_32LE).
+                 scrub)
   end
 end
