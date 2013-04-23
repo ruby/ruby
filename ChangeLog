@@ -1,3 +1,10 @@
+Tue Apr 23 17:40:40 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/rexml/document.rb, lib/rexml/element.rb,
+	  lib/rexml/formatters/pretty.rb: remove opinionated
+	  language in documentation. [Bug #8309],
+	  reported by Charles Beckmann
+
 Tue Apr 23 14:04:44 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (getacl_response): parse the mailbox of an ACL
