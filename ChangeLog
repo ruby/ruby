@@ -1,3 +1,8 @@
+Tue Apr 23 22:33:16 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (getacl_response): parse the mailbox of an ACL
+	  response correctly.  [ruby-core:54365] [Bug #8281]
+
 Sun Apr 21 00:14:36 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_nonascii_path):

@@ -1740,7 +1740,7 @@ module Net
     # rights:: The access rights the indicated user has to the
     #          mailbox.
     #
-    MailboxACLItem = Struct.new(:user, :rights)
+    MailboxACLItem = Struct.new(:user, :rights, :mailbox)
 
     # Net::IMAP::StatusData represents contents of the STATUS response.
     #
@@ -2807,6 +2807,7 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
+        mailbox = astring
         data = []
         token = lookahead
         if token.symbol == T_SPACE
@@ -2822,8 +2823,7 @@ module Net
             user = astring
             match(T_SPACE)
             rights = astring
-            ##XXX data.push([user, rights])
-            data.push(MailboxACLItem.new(user, rights))
+            data.push(MailboxACLItem.new(user, rights, mailbox))
           end
         end
         return UntaggedResponse.new(name, data, @str)

@@ -180,4 +180,18 @@ EOF
 * 1038 FETCH (BODY ("MIXED"))
 EOF
   end
+
+  # [Bug #8281]
+  def test_acl
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* ACL "INBOX/share" "imshare2copy1366146467@xxxxxxxxxxxxxxxxxx.com" lrswickxteda
+EOF
+    assert_equal("ACL", response.name)
+    assert_equal(1, response.data.length)
+    assert_equal("INBOX/share", response.data[0].mailbox)
+    assert_equal("imshare2copy1366146467@xxxxxxxxxxxxxxxxxx.com",
+                 response.data[0].user)
+    assert_equal("lrswickxteda", response.data[0].rights)
+  end
 end
