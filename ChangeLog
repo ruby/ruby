@@ -1,3 +1,8 @@
+Tue Apr 23 14:04:44 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (getacl_response): parse the mailbox of an ACL
+	  response correctly.  [ruby-core:54365] [Bug #8281]
+
 Tue Apr 23 11:58:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scrub): fix for UTF-32.  strlen() on strings
