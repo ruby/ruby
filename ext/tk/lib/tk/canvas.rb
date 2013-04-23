@@ -85,7 +85,12 @@ class Tk::Canvas<TkWindow
 
   # create a canvas item without creating a TkcItem object
   def create(type, *args)
-    type = TkcItem.type2class(type.to_s) unless type.kind_of?(TkcItem)
+    if TkcItem.type2class(type.to_s)
+      type = TkcItem.type2class(type.to_s)
+    elsif type.kind_of?(Class) and type.ancestors.member?(TkcItem)
+    else
+      raise "type must a TkcItem class, or a string in CItemTypeToClass"
+    end
     type.create(self, *args)
   end
 
