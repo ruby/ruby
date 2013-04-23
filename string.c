@@ -7815,6 +7815,8 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	VALUE buf = rb_str_buf_new(RSTRING_LEN(str));
 	if (rb_block_given_p()) {
 	    rep = NULL;
+	    replen = 0;
+	    rep7bit_p = FALSE;
 	}
 	else if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
@@ -7866,8 +7868,8 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 		    for (; clen > 1; clen--) {
 			ret = rb_enc_precise_mbclen(q, q + clen, enc);
 			if (MBCLEN_NEEDMORE_P(ret)) break;
-			else if (MBCLEN_INVALID_P(ret)) continue;
-			else UNREACHABLE;
+			if (MBCLEN_INVALID_P(ret)) continue;
+			UNREACHABLE;
 		    }
 		}
 		if (rep) {
@@ -7978,8 +7980,8 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 		    for (; clen > mbminlen; clen-=mbminlen) {
 			ret = rb_enc_precise_mbclen(q, q + clen, enc);
 			if (MBCLEN_NEEDMORE_P(ret)) break;
-			else if (MBCLEN_INVALID_P(ret)) continue;
-			else UNREACHABLE;
+			if (MBCLEN_INVALID_P(ret)) continue;
+			UNREACHABLE;
 		    }
 		}
 		if (rep) {
