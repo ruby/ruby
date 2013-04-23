@@ -1,3 +1,8 @@
+Tue Apr 23 20:10:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* missing/isnan.c (isnan): Don't define if isnan() macro is defined.
+	  This fixes a compilation failure on uClibc based Gentoo system.
+
 Tue Apr 23 17:40:40 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
 
 	* lib/rexml/document.rb, lib/rexml/element.rb,
