@@ -1,3 +1,9 @@
+Tue Apr 23 10:26:50 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_module.rb
+	  (TestModule#test_const_get_invalid_name)
+	  (test_const_defined_invalid_name): Fix expected values.
+
 Tue Apr 23 09:51:26 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_inspect): NUL should not be represented as "\0"
