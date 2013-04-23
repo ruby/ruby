@@ -70,7 +70,7 @@ SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
 Shell:: An idiomatic Ruby interface for common UNIX shell commands
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
-Singleton:: Implementation of the Singelton pattern for Ruby
+Singleton:: Implementation of the Singleton pattern for Ruby
 Synchronizer:: A module that provides a two-phase lock with a counter
 Tempfile:: A utility class for managing temporary files
 Test::Unit:: A compatibility layer for MiniTest
