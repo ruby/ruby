@@ -4572,11 +4572,6 @@ rb_str_inspect(VALUE str)
 	    }
 	}
 	switch (c) {
-	  case '\0':
-	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
-	    str_buf_cat(result, "\\000", 4);
-	    prev = p;
-	    continue;
 	  case '\n': cc = 'n'; break;
 	  case '\r': cc = 'r'; break;
 	  case '\t': cc = 't'; break;

@@ -1986,9 +1986,11 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_inspect_nul
+    bug8290 = '[ruby-core:54458]'
     s = "\0" + "12"
-    assert_not_equal '"\\012"', eval(s.inspect)
-    assert_equal s, eval(s.inspect)
+    assert_equal '"\u000012"', s.inspect, bug8290
+    s = "\0".b + "12"
+    assert_equal '"\x0012"', s.inspect, bug8290
   end
 
   def test_partition
