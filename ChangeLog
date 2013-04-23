@@ -1,7 +1,7 @@
 Tue Apr 23 09:51:26 2013  Akinori MUSHA  <knu@iDaemons.org>
 
-	* string.c (rb_str_inspect): NUL should not be represented as
-	  "\0" when octal digits may follow.
+	* string.c (rb_str_inspect): NUL should not be represented as "\0"
+	  when octal digits may follow.  [ruby-core:54458] [Bug #8290]
 
 Mon Apr 22 22:54:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
