@@ -2241,7 +2241,7 @@ lchown_internal(const char *path, VALUE pathv, void *arg)
 
 /*
  *  call-seq:
- *     file.lchown(owner_int, group_int, file_name,..) -> integer
+ *     File.lchown(owner_int, group_int, file_name,..) -> integer
  *
  *  Equivalent to <code>File::chown</code>, but does not follow symbolic
  *  links (so it will change the owner associated with the link, not the
@@ -3775,7 +3775,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     File.dirname(file_name )  ->  dir_name
+ *     File.dirname(file_name)  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one. The filename can be formed using both
@@ -4206,7 +4206,7 @@ rb_thread_flock(void *data)
 
 /*
  *  call-seq:
- *     file.flock (locking_constant )-> 0 or false
+ *     file.flock(locking_constant) -> 0 or false
  *
  *  Locks or unlocks a file according to <i>locking_constant</i> (a
  *  logical <em>or</em> of the values in the table below).
@@ -4311,14 +4311,14 @@ test_check(int n, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     test(int_cmd, file1 [, file2] ) -> obj
+ *     test(cmd, file1 [, file2] ) -> obj
  *
- *  Uses the integer +int_cmd+ to perform various tests on +file1+ (first
+ *  Uses the integer +cmd+ to perform various tests on +file1+ (first
  *  table below) or on +file1+ and +file2+ (second table).
  *
  *  File tests on a single file:
  *
- *    Test   Returns   Meaning
+ *    Cmd    Returns   Meaning
  *    "A"  | Time    | Last access time for file1
  *    "b"  | boolean | True if file1 is a block device
  *    "c"  | boolean | True if file1 is a character device
