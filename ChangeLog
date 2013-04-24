@@ -1,3 +1,7 @@
+Thu Apr 25 00:38:06 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
+
 Tue Apr 23 23:06:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_mod_public_method): fix visibility on anonymous
