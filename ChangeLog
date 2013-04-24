@@ -1,3 +1,8 @@
+Thu Apr 25 00:39:16 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* string.c: Document String#setbyte return value by @gjmurakami-10gen
+	  [Fixes GH-294]
+
 Thu Apr 25 00:38:06 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
