@@ -4092,9 +4092,9 @@ rb_str_getbyte(VALUE str, VALUE index)
 
 /*
  *  call-seq:
- *     str.setbyte(index, int) -> int
+ *     str.setbyte(index, integer) -> integer
  *
- *  modifies the <i>index</i>th byte as <i>int</i>.
+ *  modifies the <i>index</i>th byte as <i>integer</i>.
  */
 static VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)

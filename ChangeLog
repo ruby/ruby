@@ -1,3 +1,8 @@
+Wed Apr 24 13:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* string.c: Document String#setbyte return value by @gjmurakami-10gen
+	  [Fixes GH-294]
+
 Wed Apr 24 13:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* class.c: Example of Object#methods by @windwiny [Fixes GH-293]
