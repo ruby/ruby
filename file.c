@@ -1135,6 +1135,8 @@ eaccess(const char *path, int mode)
  * or a symlink that points at a directory, and <code>false</code>
  * otherwise.
  *
+ * _file_name_ can be an IO object.
+ *
  *    File.directory?(".")
  */
 
@@ -1157,6 +1159,8 @@ rb_file_directory_p(VALUE obj, VALUE fname)
  *   File.pipe?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a pipe.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1218,6 +1222,8 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
  *   File.socket?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a socket.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1252,6 +1258,8 @@ rb_file_socket_p(VALUE obj, VALUE fname)
  *   File.blockdev?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a block device.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1280,6 +1288,8 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
  *   File.chardev?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file is a character device.
+ *
+ * _file_name_ can be an IO object.
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
@@ -1302,6 +1312,10 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
  *    File.exists?(file_name)   ->  true or false
  *
  * Return <code>true</code> if the named file exists.
+ *
+ * _file_name_ can be an IO object.
+ *
+ * "file exists" means that stat() or fstat() system call is successful.
  */
 
 static VALUE
@@ -1366,6 +1380,8 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
  * <code>nil</code> otherwise. The meaning of the bits is platform
  * dependent; on Unix systems, see <code>stat(2)</code>.
  *
+ * _file_name_ can be an IO object.
+ *
  *    File.world_readable?("/etc/passwd")	    #=> 420
  *    m = File.world_readable?("/etc/passwd")
  *    sprintf("%o", m)				    #=> "644"
@@ -1429,6 +1445,8 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
  * representing the file permission bits of <i>file_name</i>. Returns
  * <code>nil</code> otherwise. The meaning of the bits is platform
  * dependent; on Unix systems, see <code>stat(2)</code>.
+ *
+ * _file_name_ can be an IO object.
  *
  *    File.world_writable?("/tmp")		    #=> 511
  *    m = File.world_writable?("/tmp")
@@ -1495,6 +1513,8 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file exists and is a
  * regular file.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1513,6 +1533,8 @@ rb_file_file_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named file exists and has
  * a zero size.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1531,6 +1553,8 @@ rb_file_zero_p(VALUE obj, VALUE fname)
  *
  * Returns +nil+ if +file_name+ doesn't exist or has zero size, the size of the
  * file otherwise.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1550,6 +1574,8 @@ rb_file_size_p(VALUE obj, VALUE fname)
  * Returns <code>true</code> if the named file exists and the
  * effective used id of the calling process is the owner of
  * the file.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1579,6 +1605,8 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
  * Returns <code>true</code> if the named file exists and the
  * effective group id of the calling process is the owner of
  * the file. Returns <code>false</code> on Windows.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1665,6 +1693,8 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
  *
  * Returns <code>true</code> if the named files are identical.
  *
+ * _file_1_ and _file_2_ can be an IO object.
+ *
  *     open("a", "w") {}
  *     p File.identical?("a", "a")      #=> true
  *     p File.identical?("a", "./a")    #=> true
@@ -1729,6 +1759,8 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
  *    File.size(file_name)   -> integer
  *
  * Returns the size of <code>file_name</code>.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1820,6 +1852,8 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *
  *  Returns the last access time for the named file as a Time object).
  *
+ *  _file_name_ can be an IO object.
+ *
  *     File.atime("testfile")   #=> Wed Apr 09 08:51:48 CDT 2003
  *
  */
@@ -1865,6 +1899,8 @@ rb_file_atime(VALUE obj)
  *     File.mtime(file_name)  ->  time
  *
  *  Returns the modification time for the named file as a Time object.
+ *
+ *  _file_name_ can be an IO object.
  *
  *     File.mtime("testfile")   #=> Tue Apr 08 12:58:04 CDT 2003
  *
@@ -1912,6 +1948,8 @@ rb_file_mtime(VALUE obj)
  *  Returns the change time for the named file (the time at which
  *  directory information about the file was changed, not the file
  *  itself).
+ *
+ *  _file_name_ can be an IO object.
  *
  *  Note that on Windows (NTFS), returns creation time (birth time).
  *
