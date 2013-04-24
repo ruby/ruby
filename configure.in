@@ -11,10 +11,13 @@ AC_DEFUN([RUBY_PREREQ_AC],
 
 AC_DISABLE_OPTION_CHECKING
 
+AC_DEFUN([RUBY_RM_RECURSIVE], [
+m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [2.70]), [-1], [
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from
 # AC_EGREP_CPP with CFLAGS=-g on Darwin.
 #
 # TODO: remove this hack when AC_PREREQ() becomes 2.70 or later.
+AS_CASE([$build_os], [darwin*], [
 rm() {
     rm_recursive=''
     for arg do
@@ -24,8 +27,9 @@ rm() {
 		[conftest.*], [if test -d "$arg"; then rm_recursive=-r; break; fi],
 		[])
     done
-    command rm $rm_recursive "$@"
+    command rm $rm_recursive "[$]@"
 }
+])])])
 
 { # environment section
 
@@ -194,6 +198,7 @@ RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
+RUBY_RM_RECURSIVE
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
 	[

@@ -1,3 +1,8 @@
+Thu Apr 25 02:23:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_RM_RECURSIVE): this hack is needed by only
+	  autoconf 2.69 or earlier on darwin.
+
 Thu Apr 25 01:22:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tracer.rb (get_line): simply read by File.readlines.
