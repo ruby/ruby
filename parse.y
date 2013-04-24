@@ -10189,18 +10189,23 @@ sym_check_asciionly(VALUE str)
  */
 static ID intern_str(VALUE str);
 
+static VALUE
+setup_fake_str(struct RString *fake_str, const char *name, long len)
+{
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED;
+    fake_str->basic.klass = rb_cString;
+    fake_str->as.heap.len = len;
+    fake_str->as.heap.ptr = (char *)name;
+    fake_str->as.heap.aux.capa = len;
+    return (VALUE)fake_str;
+}
+
 ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
-    VALUE str;
     st_data_t data;
     struct RString fake_str;
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-    fake_str.basic.klass = rb_cString;
-    fake_str.as.heap.len = len;
-    fake_str.as.heap.ptr = (char *)name;
-    fake_str.as.heap.aux.capa = len;
-    str = (VALUE)&fake_str;
+    VALUE str = setup_fake_str(&fake_str, name, len);
     rb_enc_associate(str, enc);
     OBJ_FREEZE(str);
 
@@ -10523,13 +10528,8 @@ rb_check_id(volatile VALUE *namep)
 
     if (rb_is_attrset_name(name)) {
 	struct RString fake_str;
-	const VALUE localname = (VALUE)&fake_str;
 	/* make local name by chopping '=' */
-	fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-	fake_str.basic.klass = rb_cString;
-	fake_str.as.heap.len = RSTRING_LEN(name) - 1;
-	fake_str.as.heap.ptr = RSTRING_PTR(name);
-	fake_str.as.heap.aux.capa = fake_str.as.heap.len;
+	const VALUE localname = setup_fake_str(&fake_str, RSTRING_PTR(name), RSTRING_LEN(name) - 1);
 	rb_enc_copy(localname, name);
 	OBJ_FREEZE(localname);
 
@@ -10547,12 +10547,7 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 {
     st_data_t id;
     struct RString fake_str;
-    const VALUE name = (VALUE)&fake_str;
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-    fake_str.basic.klass = rb_cString;
-    fake_str.as.heap.len = len;
-    fake_str.as.heap.ptr = (char *)ptr;
-    fake_str.as.heap.aux.capa = len;
+    const VALUE name = setup_fake_str(&fake_str, ptr, len);
     rb_enc_associate(name, enc);
 
     sym_check_asciionly(name);
