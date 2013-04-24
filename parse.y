@@ -5129,7 +5129,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 #define parser_encoding_name()  (current_enc->name)
 #define parser_mbclen()  mbclen((lex_p-1),lex_pend,current_enc)
 #define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,current_enc)
-#define is_identchar(p,e,enc) (rb_enc_isalnum(*(p),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
+#define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
 #define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,current_enc))
 
 #define parser_isascii() ISASCII(*(lex_p-1))
@@ -7829,9 +7829,7 @@ parser_yylex(struct parser_params *parser)
 	  case '\"':		/* $": already loaded files */
 	    tokadd('$');
 	    tokadd(c);
-	    tokfix();
-	    set_yylval_name(rb_intern(tok()));
-	    return tGVAR;
+	    goto gvar;
 
 	  case '-':
 	    tokadd('$');
@@ -7842,10 +7840,11 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    else {
 		pushback(c);
+		pushback('-');
+		return '$';
 	    }
 	  gvar:
-	    tokfix();
-	    set_yylval_name(rb_intern(tok()));
+	    set_yylval_name(rb_intern3(tok(), tokidx, current_enc));
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */
@@ -10010,8 +10009,8 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 	++m;
 	break;
       case '-':
-	++m;
-	if (m < e && is_identchar(m, e, enc)) {
+	if (++m >= e) return 0;
+	if (is_identchar(m, e, enc)) {
 	    if (!ISASCII(*m)) mb = 1;
 	    m += rb_enc_mbclen(m, e, enc);
 	}

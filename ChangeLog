@@ -1,3 +1,11 @@
+Wed Apr 24 14:03:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): disallow $- without following identifier
+	  character.  [ruby-talk:406969]
+
+	* parse.y (is_special_global_name): mere $- is not a valid global
+	  variable name.
+
 Wed Apr 24 13:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* string.c: Document String#setbyte return value by @gjmurakami-10gen

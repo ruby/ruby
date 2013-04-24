@@ -64,11 +64,10 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_inspect_dollar
     # 4) :$- always treats next character literally:
-    sym = "$-".intern
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(':$-'))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$-\n"))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$- "))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$-#"))}
+    assert_raise(SyntaxError) {eval ':$-'}
+    assert_raise(SyntaxError) {eval ":$-\n"}
+    assert_raise(SyntaxError) {eval ":$- "}
+    assert_raise(SyntaxError) {eval ":$-#"}
     assert_raise(SyntaxError) {eval ':$-('}
   end
 
