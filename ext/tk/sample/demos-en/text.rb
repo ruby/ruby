@@ -117,7 +117,7 @@ insertion cursor. #{
       end
 }
 
-7. Resize the window.  This widget has been configured with the "setGrid"
+8. Resize the window.  This widget has been configured with the "setGrid"
 option on, so that if you resize the window it will always resize to an
 even number of characters high and wide.  Also, if you make the window
 narrow you can see that long lines automatically wrap around onto
