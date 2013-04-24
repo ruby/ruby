@@ -630,7 +630,7 @@ num_to_int(VALUE num)
  *  So you should know its esoteric system. see following:
  *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
- *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#floats_imprecise
+ *  - http://wiki.github.com/rdp/ruby_tutorials_core/ruby-talk-faq#wiki-floats_imprecise
  *  - http://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  */
 

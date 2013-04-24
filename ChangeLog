@@ -1,3 +1,8 @@
+Thu Apr 25 00:40:41 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* numeric.c: Fix wiki link on Float imprecision in overview, patched
+	  by Makoto Kishimoto [Bug #8304] [ruby-dev:47280]
+
 Thu Apr 25 00:39:16 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* string.c: Document String#setbyte return value by @gjmurakami-10gen
