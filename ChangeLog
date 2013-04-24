@@ -1,3 +1,9 @@
+Wed Apr 24 21:51:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check mblen().
+
+	* eval_intern.h (CharNext): Don't use mblen() is not available.
+
 Wed Apr 24 15:55:06 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_fd_fix_cloexec): use rb_update_max_fd().

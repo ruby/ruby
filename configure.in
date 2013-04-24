@@ -1701,7 +1701,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday poll ppoll\
               pread sendfile shutdown sigaltstack dl_iterate_phdr\
-              dup dup3 pipe2 posix_memalign memalign ioctl)
+              dup dup3 pipe2 posix_memalign memalign ioctl mblen)
 
 AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
   [AC_TRY_COMPILE([
