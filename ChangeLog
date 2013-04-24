@@ -1,3 +1,8 @@
+Wed Apr 24 14:08:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* numeric.c: Fix wiki link on Float imprecision in overview, patched
+	  by Makoto Kishimoto [Bug #8304] [ruby-dev:47280]
+
 Wed Apr 24 14:03:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): disallow $- without following identifier
