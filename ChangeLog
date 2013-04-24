@@ -1,3 +1,7 @@
+Wed Apr 24 12:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
+
 Wed Apr 24 12:27:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Fix documentation for Array#index and #replace aliases
