@@ -1,4 +1,12 @@
-Thu Apr 25 01:18:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 25 01:21:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/debug.rb (script_lines): get source lines from SCRIPT_LINES__ or
+	  read from the file.
+
+	* lib/debug.rb (display_list): use script_lines instead of recursion.
+	  [Bug #8318]
+
+	* lib/debug.rb (line_at): use script_lines same as display_list.
 
 	* lib/debug.rb (display_list): Fix debug listing when called from the
 	  same file it has been required.  patch by Dario Bertini <berdario AT
