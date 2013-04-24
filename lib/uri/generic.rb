@@ -1659,7 +1659,8 @@ module URI
         proxy_uri = URI.parse(proxy_uri)
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]
-          no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
+          no_proxy.scan(/([^:,;\s]+)(?::(\d+))?/) {|host, port|
+            host.slice!(0,1) if host[0] == '.'
             if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host &&
                (!port || self.port == port.to_i)
               proxy_uri = nil
