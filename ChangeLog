@@ -1,3 +1,9 @@
+Thu Apr 25 01:18:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/debug.rb (display_list): Fix debug listing when called from the
+	  same file it has been required.  patch by Dario Bertini <berdario AT
+	  gmail.com> [Bug #8318] [fix GH-280]
+
 Wed Apr 24 21:51:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Check mblen().
