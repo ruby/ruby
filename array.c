@@ -1342,8 +1342,6 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *     a.index("b")              #=> 1
  *     a.index("z")              #=> nil
  *     a.index { |x| x == "b" }  #=> 1
- *
- *  This is an alias of Array#find_index.
  */
 
 static VALUE
@@ -3158,6 +3156,7 @@ rb_ary_transpose(VALUE ary)
 /*
  *  call-seq:
  *     ary.replace(other_ary)  -> ary
+ *     ary.initialize_copy(other_ary)	-> ary
  *
  *  Replaces the contents of +self+ with the contents of +other_ary+,
  *  truncating or expanding if necessary.
