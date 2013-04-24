@@ -1117,13 +1117,14 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     obj.methods(all=true)    -> array
+ *     obj.methods(regular=true)    -> array
  *
  *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
- *  If the <i>all</i> parameter is set to <code>false</code>, only those methods
- *  in the receiver will be listed.
+ *  If the <i>regular</i> parameter is set to <code>false</code>, 
+ *  Returns an array of obj's public and protected singleton methods,
+ *  the array will not include methods in modules included in <i>obj</i>.
  *
  *     class Klass
  *       def klass_method()
@@ -1134,6 +1135,14 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *                        #    :==~, :!, :eql?
  *                        #    :hash, :<=>, :class, :singleton_class]
  *     k.methods.length   #=> 57
+ *
+ *     k.methods(false)   #=> []
+ *     def k.singleton_method; end
+ *     k.methods(false)   #=> [:singleton_method]
+ *
+ *     module M123; def m123; end end
+ *     k.extend M123
+ *     k.methods(false)   #=> [:singleton_method]
  */
 
 VALUE
