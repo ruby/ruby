@@ -1,4 +1,6 @@
-Thu Apr 25 01:21:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 25 01:22:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tracer.rb (get_line): simply read by File.readlines.
 
 	* lib/debug.rb (script_lines): get source lines from SCRIPT_LINES__ or
 	  read from the file.

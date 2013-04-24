@@ -155,16 +155,8 @@ class Tracer
     end
 
     unless list = SCRIPT_LINES__[file]
-      begin
-        f = File::open(file)
-        begin
-          SCRIPT_LINES__[file] = list = f.readlines
-        ensure
-          f.close
-        end
-      rescue
-        SCRIPT_LINES__[file] = list = []
-      end
+      list = File.readlines(file) rescue []
+      SCRIPT_LINES__[file] = list
     end
 
     if l = list[line - 1]
