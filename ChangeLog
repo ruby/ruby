@@ -1,3 +1,13 @@
+Wed Apr 24 13:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* class.c: Example of Object#methods by @windwiny [Fixes GH-293]
+	* ruby.c: Document return values of Kernel #sub, #gsub, and #chop
+
+Wed Apr 24 12:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
+
+
 Wed Apr 24 12:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
