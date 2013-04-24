@@ -753,8 +753,8 @@ EOHELP
     end
 
     def display_list(b, e, file, line)
-      stdout.printf "[%d, %d] in %s\n", b, e, file
       if lines = SCRIPT_LINES__[file] and lines != true
+        stdout.printf "[%d, %d] in %s\n", b, e, file
         b.upto(e) do |n|
           if n > 0 && lines[n-1]
             if n == line
@@ -764,6 +764,9 @@ EOHELP
             end
           end
         end
+      elsif File.exists? file
+        Tracer::Single.get_line(file, line)
+        display_list(b, e, file, line)
       else
         stdout.printf "No sourcefile available for %s\n", file
       end
