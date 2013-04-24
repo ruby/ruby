@@ -1122,7 +1122,7 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
- *  If the <i>regular</i> parameter is set to <code>false</code>, 
+ *  If the <i>regular</i> parameter is set to <code>false</code>,
  *  Returns an array of obj's public and protected singleton methods,
  *  the array will not include methods in modules included in <i>obj</i>.
  *
