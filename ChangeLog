@@ -1,3 +1,7 @@
+Wed Apr 24 15:55:06 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_fd_fix_cloexec): use rb_update_max_fd().
+
 Wed Apr 24 14:08:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* numeric.c: Fix wiki link on Float imprecision in overview, patched

@@ -216,9 +216,8 @@ rb_maygvl_fd_fix_cloexec(int fd)
 void
 rb_fd_fix_cloexec(int fd)
 {
-    rb_atomic_t afd = (rb_atomic_t)fd;
     rb_maygvl_fd_fix_cloexec(fd);
-    if (max_file_descriptor < afd) max_file_descriptor = afd;
+    rb_update_max_fd(fd);
 }
 
 int
