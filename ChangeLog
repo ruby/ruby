@@ -1,3 +1,15 @@
+Thu Apr 25 14:26:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI.decode_www_form): follow current URL Standard.
+	  It gets encoding argument to specify the character encoding.
+	  It now allows loose percent encoded strings, but denies ;-separator.
+	  [ruby-core:53475] [Bug #8103]
+
+	* lib/uri/common.rb (URI.decode_www_form): follow current URL Standard.
+	  It gets encoding argument to convert before percent encode.
+	  Now UTF-16 strings aren't converted to UTF-8 before percent encode
+	  by default.
+
 Wed Apr 25 14:26:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
 
 	* benchmark/bm_hash_shift.rb: add benchmark for Hash#shift

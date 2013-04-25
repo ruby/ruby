@@ -75,4 +75,14 @@ with all sufficient information, see the ChangeLog file.
     * Tempfile.create
 
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* URI
+  * incompatible changes:
+    * URI.decode_www_form follows current WHATWG URL Standard.
+      It gets encoding argument to specify the character encoding.
+      It now allows loose percent encoded strings, but denies ;-separator.
+    * URI.encode_www_form follows current WHATWG URL Standard.
+      It gets encoding argument to convert before percent encode.
+      UTF-16 strings aren't converted to UTF-8 before percent encode by default.
+
 === C API updates

@@ -56,10 +56,32 @@ class TestCommon < Test::Unit::TestCase
                  URI.encode_www_form_component("\x00 !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
     assert_equal("%95A", URI.encode_www_form_component(
                    "\x95\x41".force_encoding(Encoding::Shift_JIS)))
-    assert_equal("%E3%81%82", URI.encode_www_form_component(
+    assert_equal("0B", URI.encode_www_form_component(
                    "\x30\x42".force_encoding(Encoding::UTF_16BE)))
     assert_equal("%1B%24B%24%22%1B%28B", URI.encode_www_form_component(
                    "\e$B$\"\e(B".force_encoding(Encoding::ISO_2022_JP)))
+
+    assert_equal("%E3%81%82", URI.encode_www_form_component(
+                   "\u3042", Encoding::ASCII_8BIT))
+    assert_equal("%82%A0", URI.encode_www_form_component(
+                   "\u3042", Encoding::Windows_31J))
+    assert_equal("%E3%81%82", URI.encode_www_form_component(
+                   "\u3042", Encoding::UTF_8))
+
+    assert_equal("%82%A0", URI.encode_www_form_component(
+                   "\u3042".encode("sjis"), Encoding::ASCII_8BIT))
+    assert_equal("%A4%A2", URI.encode_www_form_component(
+                   "\u3042".encode("sjis"), Encoding::EUC_JP))
+    assert_equal("%E3%81%82", URI.encode_www_form_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_8))
+    assert_equal("B0", URI.encode_www_form_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_16LE))
+
+    # invalid
+    assert_equal("%EF%BF%BD%EF%BF%BD", URI.encode_www_form_component(
+                   "\xE3\x81\xFF", "utf-8"))
+    assert_equal("%E6%9F%8A%EF%BF%BD%EF%BF%BD", URI.encode_www_form_component(
+                   "\x95\x41\xff\xff".force_encoding(Encoding::Shift_JIS), "utf-8"))
   end
 
   def test_decode_www_form_component
@@ -82,6 +104,8 @@ class TestCommon < Test::Unit::TestCase
     assert_equal(expected, URI.encode_www_form(a: 1, :"\u3042" => "\u6F22"))
     assert_equal(expected, URI.encode_www_form([["a", "1"], ["\u3042", "\u6F22"]]))
     assert_equal(expected, URI.encode_www_form([[:a, 1], [:"\u3042", "\u6F22"]]))
+    assert_equal("a=1&%82%A0=%8A%BF",
+                 URI.encode_www_form({"a" => "1", "\u3042" => "\u6F22"}, "sjis"))
 
     assert_equal('+a+=+1+', URI.encode_www_form([[' a ', ' 1 ']]))
     assert_equal('text=x%0Ay', URI.encode_www_form([['text', "x\u000Ay"]]))
@@ -106,18 +130,32 @@ class TestCommon < Test::Unit::TestCase
 
   def test_decode_www_form
     assert_equal([%w[a 1], %w[a 2]], URI.decode_www_form("a=1&a=2"))
+    assert_equal([%w[a 1;a=2]], URI.decode_www_form("a=1;a=2"))
+    assert_equal([%w[a 1], ['', ''], %w[a 2]], URI.decode_www_form("a=1&&a=2"))
+    assert_raise(ArgumentError){URI.decode_www_form("\u3042")}
     assert_equal([%w[a 1], ["\u3042", "\u6F22"]],
-                 URI.decode_www_form("a=1;%E3%81%82=%E6%BC%A2"))
+                 URI.decode_www_form("a=1&%E3%81%82=%E6%BC%A2"))
     assert_equal([%w[?a 1], %w[a 2]], URI.decode_www_form("?a=1&a=2"))
     assert_equal([], URI.decode_www_form(""))
-    assert_raise(ArgumentError){URI.decode_www_form("%=1")}
-    assert_raise(ArgumentError){URI.decode_www_form("a=%")}
-    assert_raise(ArgumentError){URI.decode_www_form("a=1&%=2")}
-    assert_raise(ArgumentError){URI.decode_www_form("a=1&b=%")}
-    assert_raise(ArgumentError){URI.decode_www_form("a&b")}
+    assert_equal([%w[% 1]], URI.decode_www_form("%=1"))
+    assert_equal([%w[a %]], URI.decode_www_form("a=%"))
+    assert_equal([%w[a 1], %w[% 2]], URI.decode_www_form("a=1&%=2"))
+    assert_equal([%w[a 1], %w[b %]], URI.decode_www_form("a=1&b=%"))
+    assert_equal([['a', ''], ['b', '']], URI.decode_www_form("a&b"))
     bug4098 = '[ruby-core:33464]'
-    assert_raise(ArgumentError, bug4098){URI.decode_www_form("a=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&b")}
+    assert_equal([['a', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], ['b', '']], URI.decode_www_form("a=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&b"), bug4098)
+
+    assert_raise(ArgumentError){ URI.decode_www_form("a=1&%82%A0=%8A%BF", "x-sjis") }
+    assert_equal([["a", "1"], [s("\x82\xA0"), s("\x8a\xBF")]],
+                 URI.decode_www_form("a=1&%82%A0=%8A%BF", "sjis"))
+    assert_equal([["a", "1"], [s("\x82\xA0"), s("\x8a\xBF")], %w[_charset_ sjis], [s("\x82\xA1"), s("\x8a\xC0")]],
+                 URI.decode_www_form("a=1&%82%A0=%8A%BF&_charset_=sjis&%82%A1=%8A%C0", use__charset_: true))
+    assert_equal([["", "isindex"], ["a", "1"]],
+                 URI.decode_www_form("isindex&a=1", isindex: true))
   end
+
+  private
+  def s(str) str.force_encoding(Encoding::Windows_31J); end
 end
 
 
