@@ -1,3 +1,8 @@
+Thu Apr 25 14:35:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): allow Fixnum and Bignum.
+	  [ruby-core:53986] [Feature #8217]
+
 Thu Apr 25 14:26:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.decode_www_form): follow current URL Standard.

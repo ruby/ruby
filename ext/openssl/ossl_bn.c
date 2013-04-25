@@ -106,6 +106,7 @@ ossl_bn_alloc(VALUE klass)
  * call-seq:
  *    BN.new => aBN
  *    BN.new(bn) => aBN
+ *    BN.new(integer) => aBN
  *    BN.new(string) => aBN
  *    BN.new(string, 0 | 2 | 10 | 16) => aBN
  */
@@ -120,6 +121,44 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	base = NUM2INT(bs);
     }
 
+    if (RB_TYPE_P(str, T_FIXNUM)) {
+	long i;
+	unsigned char *bin = (unsigned char*)ALLOC_N(long, 1);
+	long n = FIX2LONG(str);
+	unsigned long un = abs(n);
+
+	for (i = sizeof(VALUE) - 1; 0 <= i; i--) {
+	    bin[i] = un&0xff;
+	    un >>= 8;
+	}
+
+	GetBN(self, bn);
+	if (!BN_bin2bn(bin, sizeof(long), bn)) {
+	    ossl_raise(eBNError, NULL);
+	}
+	if (n < 0) BN_set_negative(bn, 1);
+	return self;
+    }
+    else if (RB_TYPE_P(str, T_BIGNUM)) {
+	long i, j;
+	BDIGIT *ds = RBIGNUM_DIGITS(str);
+	unsigned char *bin = (unsigned char*)ALLOC_N(BDIGIT, RBIGNUM_LEN(str));
+
+	for (i = 0; RBIGNUM_LEN(str) > i; i++) {
+	    BDIGIT v = ds[i];
+	    for (j = sizeof(BDIGIT) - 1; 0 <= j; j--) {
+		bin[(RBIGNUM_LEN(str)-1-i)*sizeof(BDIGIT)+j] = v&0xff;
+		v >>= 8;
+	    }
+	}
+
+	GetBN(self, bn);
+	if (!BN_bin2bn(bin, sizeof(BDIGIT)*RBIGNUM_LEN(str), bn)) {
+	    ossl_raise(eBNError, NULL);
+	}
+	if (!RBIGNUM_SIGN(str)) BN_set_negative(bn, 1);
+	return self;
+    }
     if (RTEST(rb_obj_is_kind_of(str, cBN))) {
 	BIGNUM *other;
 

@@ -57,6 +57,10 @@ with all sufficient information, see the ChangeLog file.
     * Pathname#write
     * Pathname#binwrite
 
+* OpenSSL::BN
+  * extended methods:
+    * OpenSSL::BN.new allows Fixnum/Bignum argument.
+
 * open-uri
   * Support multiple fields with same field name (like Set-Cookie).
 
