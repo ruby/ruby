@@ -1,3 +1,9 @@
+Thu Apr 25 23:16:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: Implement
+	  --with-curses-version={function,variable} configure option for
+	  cross-compiling.
+
 Thu Apr 25 18:15:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Don't use WIDE getaddrinfo by default.
