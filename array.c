@@ -3602,7 +3602,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *     ary.eql?(other)  -> true or false
  *
  *  Returns +true+ if +self+ and +other+ are the same object,
- *  or are both arrays with the same content.
+ *  or are both arrays with the same content (according to Object#eql?).
  */
 
 static VALUE
