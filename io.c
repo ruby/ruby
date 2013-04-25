@@ -4860,7 +4860,7 @@ rb_io_oflags_modestr(int oflags)
  * Qnil => no encoding specified (internal only)
  */
 static void
-rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, rb_encoding **enc2)
+rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, rb_encoding **enc2, int fmode)
 {
     int default_ext = 0;
 
@@ -4871,7 +4871,8 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
     if (intern == NULL && ext != rb_ascii8bit_encoding())
 	/* If external is ASCII-8BIT, no default transcoding */
 	intern = rb_default_internal_encoding();
-    if (intern == NULL || intern == (rb_encoding *)Qnil || intern == ext) {
+    if (intern == NULL || intern == (rb_encoding *)Qnil ||
+	(!(fmode & FMODE_SETENC_BY_BOM) && (intern == ext))) {
 	/* No internal encoding => use external + no transcoding */
 	*enc = (default_ext && intern != ext) ? NULL : ext;
 	*enc2 = NULL;
@@ -4894,6 +4895,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
     int idx, idx2;
+    int fmode = fmode_p ? *fmode_p : 0;
     rb_encoding *ext_enc, *int_enc;
 
     /* parse estr as "enc" or "enc2:enc" or "enc:-" */
@@ -4905,7 +4907,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    idx = -1;
 	else {
 	    if (io_encname_bom_p(estr, len)) {
-		if (fmode_p) *fmode_p |= FMODE_SETENC_BY_BOM;
+		fmode |= FMODE_SETENC_BY_BOM;
 		estr += 4;
                 len -= 4;
             }
@@ -4918,7 +4920,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
     else {
 	long len = strlen(estr);
 	if (io_encname_bom_p(estr, len)) {
-	    if (fmode_p) *fmode_p |= FMODE_SETENC_BY_BOM;
+	    fmode |= FMODE_SETENC_BY_BOM;
 	    estr += 4;
             len -= 4;
 	    memcpy(encname, estr, len);
@@ -4927,6 +4929,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	}
 	idx = rb_enc_find_index(estr);
     }
+    if (fmode_p) *fmode_p = fmode;
 
     if (idx >= 0)
 	ext_enc = rb_enc_from_index(idx);
@@ -4946,7 +4949,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    idx2 = rb_enc_find_index(p);
 	    if (idx2 < 0)
 		unsupported_encoding(p);
-	    else if (idx2 == idx) {
+	    else if (!(fmode & FMODE_SETENC_BY_BOM) && (idx2 == idx)) {
 		int_enc = (rb_encoding *)Qnil;
 	    }
 	    else
@@ -4954,7 +4957,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	}
     }
 
-    rb_io_ext_int_to_encs(ext_enc, int_enc, enc_p, enc2_p);
+    rb_io_ext_int_to_encs(ext_enc, int_enc, enc_p, enc2_p, fmode);
 }
 
 int
@@ -5015,12 +5018,12 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
 	    parse_mode_enc(StringValueCStr(tmp), enc_p, enc2_p, fmode_p);
 	}
 	else {
-	    rb_io_ext_int_to_encs(rb_to_encoding(encoding), NULL, enc_p, enc2_p);
+	    rb_io_ext_int_to_encs(rb_to_encoding(encoding), NULL, enc_p, enc2_p, 0);
 	}
     }
     else if (extenc != Qundef || intenc != Qundef) {
         extracted = 1;
-	rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p);
+	rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p, 0);
     }
     return extracted;
 }
@@ -5095,7 +5098,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     vmode = *vmode_p;
 
     /* Set to defaults */
-    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
+    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2, 0);
 
   vmode_handle:
     if (NIL_P(vmode)) {
@@ -5123,7 +5126,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	    rb_encoding *e;
 
 	    e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
-	    rb_io_ext_int_to_encs(e, NULL, &enc, &enc2);
+	    rb_io_ext_int_to_encs(e, NULL, &enc, &enc2, fmode);
 	}
     }
 
@@ -5147,7 +5150,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
             oflags |= O_BINARY;
 #endif
 	    if (!has_enc)
-		rb_io_ext_int_to_encs(rb_ascii8bit_encoding(), NULL, &enc, &enc2);
+		rb_io_ext_int_to_encs(rb_ascii8bit_encoding(), NULL, &enc, &enc2, fmode);
 	}
 #if DEFAULT_TEXTMODE
 	else if (NIL_P(vmode)) {
@@ -5370,12 +5373,15 @@ static void
 io_set_encoding_by_bom(VALUE io)
 {
     int idx = io_strip_bom(io);
+    rb_io_t *fptr;
 
+    GetOpenFile(io, fptr);
     if (idx) {
-	rb_io_t *fptr;
-	GetOpenFile(io, fptr);
 	io_encoding_set(fptr, rb_enc_from_encoding(rb_enc_from_index(idx)),
 		rb_io_internal_encoding(io), Qnil);
+    }
+    else {
+	fptr->encs.enc2 = NULL;
     }
 }
 
@@ -5386,7 +5392,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig
     convconfig_t cc;
     if (!convconfig) {
 	/* Set to default encodings */
-	rb_io_ext_int_to_encs(NULL, NULL, &cc.enc, &cc.enc2);
+	rb_io_ext_int_to_encs(NULL, NULL, &cc.enc, &cc.enc2, fmode);
         cc.ecflags = 0;
         cc.ecopts = Qnil;
         convconfig = &cc;
@@ -5420,7 +5426,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 	/* Set to default encodings */
 
 	e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
-	rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2);
+	rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2, fmode);
         convconfig.ecflags = 0;
         convconfig.ecopts = Qnil;
     }
@@ -9078,7 +9084,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
     else {
 	if (NIL_P(v1)) {
 	    /* Set to default encodings */
-	    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
+	    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2, 0);
 	    SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
             ecopts = Qnil;
 	}
@@ -9090,7 +9096,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
                 ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
 	    }
 	    else {
-		rb_io_ext_int_to_encs(find_encoding(v1), NULL, &enc, &enc2);
+		rb_io_ext_int_to_encs(find_encoding(v1), NULL, &enc, &enc2, 0);
 		SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
                 ecopts = Qnil;
 	    }

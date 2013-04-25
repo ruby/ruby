@@ -1,3 +1,14 @@
+Thu Apr 25 16:11:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_ext_int_to_encs, parse_mode_enc): bom-prefixed name is
+	  not a real encoding name, just a fallback.  so the proper conversion
+	  should take place even if if the internal encoding is equal to the
+	  bom-prefixed name, unless actual encoding is equal to the internal
+	  encoding.  [ruby-core:54563] [Bug #8323]
+
+	* io.c (io_set_encoding_by_bom): reset extenal encoding if no BOM
+	  found.  [ruby-core:54569]
+
 Thu Apr 25 14:35:01 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_initialize): allow Fixnum and Bignum.
