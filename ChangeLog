@@ -1,3 +1,18 @@
+Wed Apr 25 14:26:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* benchmark/bm_hash_shift.rb: add benchmark for Hash#shift
+
+	* hash.c (rb_hash_shift): use st_shift if hash is not being iterated to
+	  delete element without iterating the whole hash.
+
+	* hash.c (shift_i): remove function
+
+	* include/ruby/st.h (st_shift): add st_shift function
+
+	* st.c (st_shift): ditto
+
+	[Bug #8312] [ruby-core:54524] Patch by funny-falcon
+
 Thu Apr 25 12:03:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Extract C programs as toplevel constants.

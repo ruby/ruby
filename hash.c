@@ -875,17 +875,6 @@ struct shift_var {
 };
 
 static int
-shift_i(VALUE key, VALUE value, VALUE arg)
-{
-    struct shift_var *var = (struct shift_var *)arg;
-
-    if (var->key != Qundef) return ST_STOP;
-    var->key = key;
-    var->val = value;
-    return ST_DELETE;
-}
-
-static int
 shift_i_safe(VALUE key, VALUE value, VALUE arg)
 {
     struct shift_var *var = (struct shift_var *)arg;
@@ -916,14 +905,17 @@ rb_hash_shift(VALUE hash)
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl) {
 	var.key = Qundef;
-	rb_hash_foreach(hash, RHASH_ITER_LEV(hash) > 0 ? shift_i_safe : shift_i,
-			(VALUE)&var);
-
-	if (var.key != Qundef) {
-	    if (RHASH_ITER_LEV(hash) > 0) {
-		rb_hash_delete_key(hash, var.key);
+	if (RHASH_ITER_LEV(hash) == 0) {
+	    if (st_shift(RHASH(hash)->ntbl, &var.key, &var.val)) {
+		return rb_assoc_new(var.key, var.val);
 	    }
-	    return rb_assoc_new(var.key, var.val);
+	}
+	else {
+	    rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
+	    if (var.key != Qundef) {
+		rb_hash_delete_key(hash, var.key);
+		return rb_assoc_new(var.key, var.val);
+	    }
 	}
     }
     return hash_default_value(hash, Qnil);

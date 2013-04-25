@@ -793,6 +793,35 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     return 0;
 }
 
+int
+st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
+{
+    st_index_t hash_val;
+    st_table_entry **prev;
+    register st_table_entry *ptr;
+
+    if (table->num_entries == 0) {
+        if (value != 0) *value = 0;
+        return 0;
+    }
+
+    if (table->entries_packed) {
+        if (value != 0) *value = PVAL(table, 0);
+        *key = PKEY(table, 0);
+        remove_packed_entry(table, 0);
+        return 1;
+    }
+
+    prev = &table->bins[table->head->hash % table->num_bins];
+    while ((ptr = *prev) != table->head) prev = &ptr->next;
+    *prev = ptr->next;
+    if (value != 0) *value = ptr->record;
+    *key = ptr->key;
+    remove_entry(table, ptr);
+    st_free_entry(ptr);
+    return 1;
+}
+
 void
 st_cleanup_safe(st_table *table, st_data_t never)
 {
