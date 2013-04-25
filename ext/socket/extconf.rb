@@ -484,7 +484,7 @@ EOS
   when nil
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       getaddr_info_ok = :os
-      if !CROSS_COMPILING && checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+      if !CROSS_COMPILING && !checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
         getaddr_info_ok = :wide
       end
     else
@@ -493,7 +493,7 @@ EOS
   when false
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       getaddr_info_ok = :os
-      if !CROSS_COMPILING && checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+      if !CROSS_COMPILING && !checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
         getaddr_info_ok = nil
       end
     else
