@@ -78,7 +78,8 @@ module Rinda
       @renewer = Renewer.new
 
       @ts = ts
-      @sockets = addresses.map do |address|
+      @sockets = []
+      addresses.each do |address|
         make_socket(address)
       end
 
@@ -94,6 +95,7 @@ module Rinda
 
       socket = Socket.new(addrinfo.pfamily, addrinfo.socktype,
                           addrinfo.protocol)
+      @sockets << socket
 
       if addrinfo.ipv4_multicast? or addrinfo.ipv6_multicast? then
         if Socket.const_defined?(:SO_REUSEPORT) then

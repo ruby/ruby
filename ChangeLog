@@ -1,3 +1,11 @@
+Thu Apr 25 23:45:02 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* lib/rinda/ring.rb (Rinda::RingServer#initialize): add a socket
+	  to @sockets in make_socket() to close sockets on shutdown even if
+	  make_socket() is called after initialize.
+
+	* lib/rinda/ring.rb (Rinda::RingServer#make_socket): ditto.
+
 Thu Apr 25 23:39:42 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/rinda/test_rinda.rb (TupleSpaceProxyTest#test_take_bug_8215):
