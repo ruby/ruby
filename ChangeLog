@@ -1,3 +1,9 @@
+Thu Apr 25 23:39:42 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/rinda/test_rinda.rb (TupleSpaceProxyTest#test_take_bug_8215):
+	  use KILL on Windows since TERM doen't work and ruby process remains
+	  after test-all on Windows.
+
 Thu Apr 25 23:16:28 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: Implement

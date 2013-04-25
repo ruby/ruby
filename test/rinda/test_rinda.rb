@@ -515,8 +515,9 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     assert_equal([[:test_take, 42]], @ts_base.read_all([:test_take, nil]),
                  '[bug:8215] tuple lost')
   ensure
-    Process.kill("TERM", write) if write && status.nil?
-    Process.kill("TERM", take)  if take
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
+    Process.kill(signal, write) if write && status.nil?
+    Process.kill(signal, take)  if take
   end
 
   def have_fork?
