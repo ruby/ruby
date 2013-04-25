@@ -67,6 +67,29 @@ module Rinda
     # +addresses+ can contain multiple addresses.  If a multicast address is
     # given in +addresses+ then the RingServer will listen for multicast
     # queries.
+    #
+    # If you use IPv4 multicast you may need to set an address of the inbound
+    # interface which joins a multicast group.
+    #
+    #   ts = Rinda::TupleSpace.new
+    #   rs = Rinda::RingServer.new(ts, [['239.0.0.1', '9.5.1.1']])
+    #
+    # You can set addresses as an Array Object.  The first element of the
+    # Array is a multicast address and the second is an inbound interface
+    # address.  If the second is omitted then '0.0.0.0' is used.
+    #
+    # If you use IPv6 multicast you may need to set both the local interface
+    # address and the inbound interface index:
+    #
+    #   rs = Rinda::RingServer.new(ts, [['ff02::1', '::1', 1]])
+    #
+    # The first element is a multicast address and the second is an inbound
+    # interface address.  The third is an inbound interface index.
+    #
+    # At this time there is no easy way to get an interface index by name.
+    #
+    # If the second is omitted then '::1' is used.
+    # If the third is omitted then 0 (default interface) is used.
 
     def initialize(ts, addresses=[Socket::INADDR_ANY], port=Ring_PORT)
       @port = port
@@ -80,7 +103,11 @@ module Rinda
       @ts = ts
       @sockets = []
       addresses.each do |address|
-        make_socket(address)
+        if Array === address
+          make_socket(*address)
+        else
+          make_socket(address)
+        end
       end
 
       @w_services = write_services
@@ -89,8 +116,20 @@ module Rinda
 
     ##
     # Creates a socket at +address+
+    #
+    # If +address+ is multicast address then +interface_address+ and
+    # +multicast_interface+ can be set as optional.
+    #
+    # A created socket is bound to +interface_address+.  If you use IPv4
+    # multicast then the interface of +interface_address+ is used as the
+    # inbound interface.  If +interface_address+ is omitted or nil then
+    # '0.0.0.0' or '::1' is used.
+    #
+    # If you use IPv6 multicast then +multicast_interface+ is used as the
+    # inbound interface.  +multicast_interface+ is a network interface index.
+    # If +multicast_interface+ is omitted then 0 (default interface) is used.
 
-    def make_socket(address)
+    def make_socket(address, interface_address=nil, multicast_interface=0)
       addrinfo = Addrinfo.udp(address, @port)
 
       socket = Socket.new(addrinfo.pfamily, addrinfo.socktype,
@@ -105,18 +144,25 @@ module Rinda
         end
 
         if addrinfo.ipv4_multicast? then
+          interface_address = '0.0.0.0' if interface_address.nil?
+          socket.bind(Addrinfo.udp(interface_address, @port))
+
           mreq = IPAddr.new(addrinfo.ip_address).hton +
-            IPAddr.new('0.0.0.0').hton
+            IPAddr.new(interface_address).hton
 
           socket.setsockopt(:IPPROTO_IP, :IP_ADD_MEMBERSHIP, mreq)
         else
-          mreq = IPAddr.new(addrinfo.ip_address).hton + [0].pack('I')
+          interface_address = '::1' if interface_address.nil?
+          socket.bind(Addrinfo.udp(interface_address, @port))
+
+          mreq = IPAddr.new(addrinfo.ip_address).hton +
+            [multicast_interface].pack('I')
 
           socket.setsockopt(:IPPROTO_IPV6, :IPV6_JOIN_GROUP, mreq)
         end
+      else
+        socket.bind(addrinfo)
       end
-
-      socket.bind(addrinfo)
 
       socket
     end

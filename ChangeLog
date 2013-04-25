@@ -1,3 +1,23 @@
+Fri Apr 26 00:07:52 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* lib/rinda/ring.rb (Rinda::RingServer#initialize): accept array
+	  arguments of address to specify multicast interface.
+
+	* lib/rinda/ring.rb (Rinda::RingServer#make_socket): add optional
+	  arguments for multicast interface.
+
+	* test/rinda/test_rinda.rb
+	  (TestRingFinger#test_ring_server_ipv4_multicast,
+	   TestRingFinger#test_ring_server_ipv6_multicast): add tests for
+	  above change.
+
+	* test/rinda/test_rinda.rb
+	  (TestRingServer#test_make_socket_ipv4_multicast,
+	   TestRingServer#test_make_socket_ipv6_multicast): change bound
+	  interface address because multicast address is not allowed on Linux
+	  or Windows.
+	  [ruby-core:53692] [Bug #8159]
+
 Thu Apr 25 23:45:02 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/rinda/ring.rb (Rinda::RingServer#initialize): add a socket

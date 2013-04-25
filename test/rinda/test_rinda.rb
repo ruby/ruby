@@ -575,8 +575,8 @@ class TestRingServer < Test::Unit::TestCase
       assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
     end
 
-    assert_equal('239.0.0.1', v4mc.local_address.ip_address)
-    assert_equal(@port,       v4mc.local_address.ip_port)
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
   end
 
   def test_make_socket_ipv6_multicast
@@ -595,7 +595,43 @@ class TestRingServer < Test::Unit::TestCase
       assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
     end
 
-    assert_equal('ff02::1',  v6mc.local_address.ip_address)
+    assert_equal('::1', v6mc.local_address.ip_address)
+    assert_equal(@port, v6mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv4_multicast
+    @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    v4mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+    else
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    end
+
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
+    begin
+      @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    end
+
+    v6mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool
+    else
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
+    end
+
+    assert_equal('::1', v6mc.local_address.ip_address)
     assert_equal(@port, v6mc.local_address.ip_port)
   end
 
