@@ -796,7 +796,6 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 int
 st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
 {
-    st_index_t hash_val;
     st_table_entry **prev;
     register st_table_entry *ptr;
 
