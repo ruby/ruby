@@ -125,7 +125,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	long i;
 	unsigned char *bin = (unsigned char*)ALLOC_N(long, 1);
 	long n = FIX2LONG(str);
-	unsigned long un = abs(n);
+	unsigned long un = labs(n);
 
 	for (i = sizeof(VALUE) - 1; 0 <= i; i--) {
 	    bin[i] = un&0xff;
@@ -153,7 +153,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	}
 
 	GetBN(self, bn);
-	if (!BN_bin2bn(bin, sizeof(BDIGIT)*RBIGNUM_LEN(str), bn)) {
+	if (!BN_bin2bn(bin, (int)sizeof(BDIGIT)*RBIGNUM_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	if (!RBIGNUM_SIGN(str)) BN_set_negative(bn, 1);
