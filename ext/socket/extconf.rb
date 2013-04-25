@@ -1,5 +1,247 @@
 require 'mkmf'
 
+AF_INET6_SOCKET_CREATION_TEST = <<EOF
+#include <sys/types.h>
+#ifndef _WIN32
+#include <sys/socket.h>
+#endif
+int
+main(void)
+{
+  socket(AF_INET6, SOCK_STREAM, 0);
+  return 0;
+}
+EOF
+
+GETADDRINFO_GETNAMEINFO_TEST = <<EOF
+#include <stdlib.h>
+
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
+#ifndef AF_LOCAL
+#define AF_LOCAL AF_UNIX
+#endif
+
+int
+main(void)
+{
+  int passive, gaierr, inet4 = 0, inet6 = 0;
+  struct addrinfo hints, *ai, *aitop;
+  char straddr[INET6_ADDRSTRLEN], strport[16];
+#ifdef _WIN32
+  WSADATA retdata;
+
+  WSAStartup(MAKEWORD(2, 0), &retdata);
+#endif
+
+  for (passive = 0; passive <= 1; passive++) {
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = passive ? AI_PASSIVE : 0;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((gaierr = getaddrinfo(NULL, "54321", &hints, &aitop)) != 0) {
+      (void)gai_strerror(gaierr);
+      goto bad;
+    }
+    for (ai = aitop; ai; ai = ai->ai_next) {
+      if (ai->ai_family == AF_LOCAL) continue;
+      if (ai->ai_addr == NULL)
+        goto bad;
+#if defined(_AIX)
+      if (ai->ai_family == AF_INET6 && passive) {
+        inet6++;
+        continue;
+      }
+      ai->ai_addr->sa_len = ai->ai_addrlen;
+      ai->ai_addr->sa_family = ai->ai_family;
+#endif
+      if (ai->ai_addrlen == 0 ||
+          getnameinfo(ai->ai_addr, ai->ai_addrlen,
+                      straddr, sizeof(straddr), strport, sizeof(strport),
+                      NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
+        goto bad;
+      }
+      if (strcmp(strport, "54321") != 0) {
+        goto bad;
+      }
+      switch (ai->ai_family) {
+      case AF_INET:
+        if (passive) {
+          if (strcmp(straddr, "0.0.0.0") != 0) {
+            goto bad;
+          }
+        } else {
+          if (strcmp(straddr, "127.0.0.1") != 0) {
+            goto bad;
+          }
+        }
+        inet4++;
+        break;
+      case AF_INET6:
+        if (passive) {
+          if (strcmp(straddr, "::") != 0) {
+            goto bad;
+          }
+        } else {
+          if (strcmp(straddr, "::1") != 0) {
+            goto bad;
+          }
+        }
+        inet6++;
+        break;
+      case AF_UNSPEC:
+        goto bad;
+        break;
+      default:
+        /* another family support? */
+        break;
+      }
+    }
+  }
+
+  if (!(inet4 == 0 || inet4 == 2))
+    goto bad;
+  if (!(inet6 == 0 || inet6 == 2))
+    goto bad;
+
+  if (aitop)
+    freeaddrinfo(aitop);
+  return EXIT_SUCCESS;
+
+ bad:
+  if (aitop)
+    freeaddrinfo(aitop);
+  return EXIT_FAILURE;
+}
+EOF
+
+RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST = <<'EOF'
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[])
+{
+    int ps[2], sv[2];
+    int ret;
+    ssize_t ss;
+    int s_fd, r_fd;
+    struct msghdr s_msg, r_msg;
+    union {
+        struct cmsghdr hdr;
+        char dummy[CMSG_SPACE(sizeof(int))];
+    } s_cmsg, r_cmsg;
+    struct iovec s_iov, r_iov;
+    char s_buf[1], r_buf[1];
+    struct stat s_statbuf, r_statbuf;
+
+    ret = pipe(ps);
+    if (ret == -1) { perror("pipe"); exit(EXIT_FAILURE); }
+
+    s_fd = ps[0];
+
+    ret = socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
+    if (ret == -1) { perror("socketpair"); exit(EXIT_FAILURE); }
+
+    s_msg.msg_name = NULL;
+    s_msg.msg_namelen = 0;
+    s_msg.msg_iov = &s_iov;
+    s_msg.msg_iovlen = 1;
+    s_msg.msg_control = &s_cmsg;
+    s_msg.msg_controllen = CMSG_SPACE(sizeof(int));;
+    s_msg.msg_flags = 0;
+
+    s_iov.iov_base = &s_buf;
+    s_iov.iov_len = sizeof(s_buf);
+
+    s_buf[0] = 'a';
+
+    s_cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
+    s_cmsg.hdr.cmsg_level = SOL_SOCKET;
+    s_cmsg.hdr.cmsg_type = SCM_RIGHTS;
+    memcpy(CMSG_DATA(&s_cmsg.hdr), (char *)&s_fd, sizeof(int));
+
+    ss = sendmsg(sv[0], &s_msg, 0);
+    if (ss == -1) { perror("sendmsg"); exit(EXIT_FAILURE); }
+
+    r_msg.msg_name = NULL;
+    r_msg.msg_namelen = 0;
+    r_msg.msg_iov = &r_iov;
+    r_msg.msg_iovlen = 1;
+    r_msg.msg_control = &r_cmsg;
+    r_msg.msg_controllen = CMSG_SPACE(sizeof(int));
+    r_msg.msg_flags = 0;
+
+    r_iov.iov_base = &r_buf;
+    r_iov.iov_len = sizeof(r_buf);
+
+    r_buf[0] = '0';
+
+    memset(&r_cmsg, 0xff, CMSG_SPACE(sizeof(int)));
+
+    ss = recvmsg(sv[1], &r_msg, MSG_PEEK);
+    if (ss == -1) { perror("recvmsg"); exit(EXIT_FAILURE); }
+
+    if (ss != 1) {
+        fprintf(stderr, "unexpected return value from recvmsg: %ld\n", (long)ss);
+        exit(EXIT_FAILURE);
+    }
+    if (r_buf[0] != 'a') {
+        fprintf(stderr, "unexpected return data from recvmsg: 0x%02x\n", r_buf[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) {
+        fprintf(stderr, "unexpected: r_msg.msg_controllen < CMSG_LEN(sizeof(int)) not hold: %ld\n",
+                (long)r_msg.msg_controllen);
+        exit(EXIT_FAILURE);
+    }
+    if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) {
+        fprintf(stderr, "unexpected: r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int)) not hold: %ld\n",
+                (long)r_cmsg.hdr.cmsg_len);
+        exit(EXIT_FAILURE);
+    }
+    memcpy((char *)&r_fd, CMSG_DATA(&r_cmsg.hdr), sizeof(int));
+
+    if (r_fd < 0) {
+        fprintf(stderr, "negative r_fd: %d\n", r_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    if (r_fd == s_fd) {
+        fprintf(stderr, "r_fd and s_fd is same: %d\n", r_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    ret = fstat(s_fd, &s_statbuf);
+    if (ret == -1) { perror("fstat(s_fd)"); exit(EXIT_FAILURE); }
+
+    ret = fstat(r_fd, &r_statbuf);
+    if (ret == -1) { perror("fstat(r_fd)"); exit(EXIT_FAILURE); }
+
+    if (s_statbuf.st_dev != r_statbuf.st_dev ||
+        s_statbuf.st_ino != r_statbuf.st_ino) {
+        fprintf(stderr, "dev/ino doesn't match: s_fd:%ld/%ld r_fd:%ld/%ld\n",
+                (long)s_statbuf.st_dev, (long)s_statbuf.st_ino,
+                (long)r_statbuf.st_dev, (long)r_statbuf.st_ino);
+        exit(EXIT_FAILURE);
+    }
+
+    return EXIT_SUCCESS;
+}
+EOF
+
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
 headers = []
@@ -140,18 +382,7 @@ EOF
   ipv6 = false
   default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
-    if checking_for("ipv6") {try_link(<<EOF)}
-#include <sys/types.h>
-#ifndef _WIN32
-#include <sys/socket.h>
-#endif
-int
-main(void)
-{
-  socket(AF_INET6, SOCK_STREAM, 0);
-  return 0;
-}
-EOF
+    if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"
       ipv6 = true
     end
@@ -202,238 +433,12 @@ EOS
     }
   end
 
-  if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + <<'EOF')}
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-int main(int argc, char *argv[])
-{
-    int ps[2], sv[2];
-    int ret;
-    ssize_t ss;
-    int s_fd, r_fd;
-    struct msghdr s_msg, r_msg;
-    union {
-        struct cmsghdr hdr;
-        char dummy[CMSG_SPACE(sizeof(int))];
-    } s_cmsg, r_cmsg;
-    struct iovec s_iov, r_iov;
-    char s_buf[1], r_buf[1];
-    struct stat s_statbuf, r_statbuf;
-
-    ret = pipe(ps);
-    if (ret == -1) { perror("pipe"); exit(EXIT_FAILURE); }
-
-    s_fd = ps[0];
-
-    ret = socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
-    if (ret == -1) { perror("socketpair"); exit(EXIT_FAILURE); }
-
-    s_msg.msg_name = NULL;
-    s_msg.msg_namelen = 0;
-    s_msg.msg_iov = &s_iov;
-    s_msg.msg_iovlen = 1;
-    s_msg.msg_control = &s_cmsg;
-    s_msg.msg_controllen = CMSG_SPACE(sizeof(int));;
-    s_msg.msg_flags = 0;
-
-    s_iov.iov_base = &s_buf;
-    s_iov.iov_len = sizeof(s_buf);
-
-    s_buf[0] = 'a';
-
-    s_cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
-    s_cmsg.hdr.cmsg_level = SOL_SOCKET;
-    s_cmsg.hdr.cmsg_type = SCM_RIGHTS;
-    memcpy(CMSG_DATA(&s_cmsg.hdr), (char *)&s_fd, sizeof(int));
-
-    ss = sendmsg(sv[0], &s_msg, 0);
-    if (ss == -1) { perror("sendmsg"); exit(EXIT_FAILURE); }
-
-    r_msg.msg_name = NULL;
-    r_msg.msg_namelen = 0;
-    r_msg.msg_iov = &r_iov;
-    r_msg.msg_iovlen = 1;
-    r_msg.msg_control = &r_cmsg;
-    r_msg.msg_controllen = CMSG_SPACE(sizeof(int));
-    r_msg.msg_flags = 0;
-
-    r_iov.iov_base = &r_buf;
-    r_iov.iov_len = sizeof(r_buf);
-
-    r_buf[0] = '0';
-
-    memset(&r_cmsg, 0xff, CMSG_SPACE(sizeof(int)));
-
-    ss = recvmsg(sv[1], &r_msg, MSG_PEEK);
-    if (ss == -1) { perror("recvmsg"); exit(EXIT_FAILURE); }
-
-    if (ss != 1) {
-        fprintf(stderr, "unexpected return value from recvmsg: %ld\n", (long)ss);
-        exit(EXIT_FAILURE);
-    }
-    if (r_buf[0] != 'a') {
-        fprintf(stderr, "unexpected return data from recvmsg: 0x%02x\n", r_buf[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) {
-        fprintf(stderr, "unexpected: r_msg.msg_controllen < CMSG_LEN(sizeof(int)) not hold: %ld\n",
-                (long)r_msg.msg_controllen);
-        exit(EXIT_FAILURE);
-    }
-    if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) {
-        fprintf(stderr, "unexpected: r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int)) not hold: %ld\n",
-                (long)r_cmsg.hdr.cmsg_len);
-        exit(EXIT_FAILURE);
-    }
-    memcpy((char *)&r_fd, CMSG_DATA(&r_cmsg.hdr), sizeof(int));
-
-    if (r_fd < 0) {
-        fprintf(stderr, "negative r_fd: %d\n", r_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    if (r_fd == s_fd) {
-        fprintf(stderr, "r_fd and s_fd is same: %d\n", r_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    ret = fstat(s_fd, &s_statbuf);
-    if (ret == -1) { perror("fstat(s_fd)"); exit(EXIT_FAILURE); }
-
-    ret = fstat(r_fd, &r_statbuf);
-    if (ret == -1) { perror("fstat(r_fd)"); exit(EXIT_FAILURE); }
-
-    if (s_statbuf.st_dev != r_statbuf.st_dev ||
-        s_statbuf.st_ino != r_statbuf.st_ino) {
-        fprintf(stderr, "dev/ino doesn't match: s_fd:%ld/%ld r_fd:%ld/%ld\n",
-                (long)s_statbuf.st_dev, (long)s_statbuf.st_ino,
-                (long)r_statbuf.st_dev, (long)r_statbuf.st_ino);
-        exit(EXIT_FAILURE);
-    }
-
-    return EXIT_SUCCESS;
-}
-EOF
+  if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)}
     $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
   end
 
   getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
-    (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
-#{cpp_include(headers)}
-#include <stdlib.h>
-
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
-#endif
-
-#ifndef AF_LOCAL
-#define AF_LOCAL AF_UNIX
-#endif
-
-int
-main(void)
-{
-  int passive, gaierr, inet4 = 0, inet6 = 0;
-  struct addrinfo hints, *ai, *aitop;
-  char straddr[INET6_ADDRSTRLEN], strport[16];
-#ifdef _WIN32
-  WSADATA retdata;
-
-  WSAStartup(MAKEWORD(2, 0), &retdata);
-#endif
-
-  for (passive = 0; passive <= 1; passive++) {
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = passive ? AI_PASSIVE : 0;
-    hints.ai_socktype = SOCK_STREAM;
-    if ((gaierr = getaddrinfo(NULL, "54321", &hints, &aitop)) != 0) {
-      (void)gai_strerror(gaierr);
-      goto bad;
-    }
-    for (ai = aitop; ai; ai = ai->ai_next) {
-      if (ai->ai_family == AF_LOCAL) continue;
-      if (ai->ai_addr == NULL)
-        goto bad;
-#if defined(_AIX)
-      if (ai->ai_family == AF_INET6 && passive) {
-        inet6++;
-        continue;
-      }
-      ai->ai_addr->sa_len = ai->ai_addrlen;
-      ai->ai_addr->sa_family = ai->ai_family;
-#endif
-      if (ai->ai_addrlen == 0 ||
-          getnameinfo(ai->ai_addr, ai->ai_addrlen,
-                      straddr, sizeof(straddr), strport, sizeof(strport),
-                      NI_NUMERICHOST|NI_NUMERICSERV) != 0) {
-        goto bad;
-      }
-      if (strcmp(strport, "54321") != 0) {
-        goto bad;
-      }
-      switch (ai->ai_family) {
-      case AF_INET:
-        if (passive) {
-          if (strcmp(straddr, "0.0.0.0") != 0) {
-            goto bad;
-          }
-        } else {
-          if (strcmp(straddr, "127.0.0.1") != 0) {
-            goto bad;
-          }
-        }
-        inet4++;
-        break;
-      case AF_INET6:
-        if (passive) {
-          if (strcmp(straddr, "::") != 0) {
-            goto bad;
-          }
-        } else {
-          if (strcmp(straddr, "::1") != 0) {
-            goto bad;
-          }
-        }
-        inet6++;
-        break;
-      case AF_UNSPEC:
-        goto bad;
-        break;
-      default:
-        /* another family support? */
-        break;
-      }
-    }
-  }
-
-  if (!(inet4 == 0 || inet4 == 2))
-    goto bad;
-  if (!(inet6 == 0 || inet6 == 2))
-    goto bad;
-
-  if (aitop)
-    freeaddrinfo(aitop);
-  return EXIT_SUCCESS;
-
- bad:
-  if (aitop)
-    freeaddrinfo(aitop);
-  return EXIT_FAILURE;
-}
-EOF
+    (checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)} && :os)
   if ipv6 and not getaddr_info_ok
     abort <<EOS
 

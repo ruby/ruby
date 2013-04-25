@@ -1,3 +1,7 @@
+Thu Apr 25 12:03:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Extract C programs as toplevel constants.
+
 Thu Apr 25 02:23:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_RM_RECURSIVE): this hack is needed by only
