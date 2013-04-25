@@ -1,3 +1,11 @@
+Thu Apr 25 17:43:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Implement
+	  --{enable,disable}-close-fds-by-recvmsg-with-peek configure option
+	  for cross-compiling.
+	  Make --{enable,disable}-wide-getaddrinfo configure option
+	  cross-compiling friendly.
+
 Thu Apr 25 16:11:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ext_int_to_encs, parse_mode_enc): bom-prefixed name is

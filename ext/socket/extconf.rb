@@ -433,12 +433,83 @@ EOS
     }
   end
 
-  if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)}
+  case enable_config("close-fds-by-recvmsg-with-peek")
+  when true
     $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+  when false
+    # nothing to do.
+  else
+    case RUBY_PLATFORM
+    when /linux/
+      # Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
+      close_fds = true
+    when /bsd|darwin/
+      # FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
+      # allocate fds by recvmsg with MSG_PEEK.
+      # [ruby-dev:44189]
+      # http://bugs.ruby-lang.org/issues/5075
+      close_fds = false
+    else
+      close_fds = nil
+    end
+    if !CROSS_COMPILING
+      if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)}
+        if close_fds == false
+          warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation unexpected."
+        elsif close_fds == nil
+          puts "info: #{RUBY_PLATFORM} recvmsg() with MSG_PEEK allocates fds."
+        end
+        close_fds = true
+      else
+        if close_fds == true
+          warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation expected."
+        elsif close_fds == nil
+          puts "info: #{RUBY_PLATFORM}: recvmsg() with MSG_PEEK doesn't allocates fds."
+        end
+        close_fds = false
+      end
+    end
+    if close_fds == nil
+      abort <<EOS
+Fatal: cannot test recvmsg() with MSG_PEEK allocate file descriptors or not
+because cross-compilation.
+Specify a configure option.
+If recvmsg() with MSG_PEEK allocates fds on fd passing:
+  --enable-close-fds-by-recvmsg-with-peek
+If recvmsg() with MSG_PEEK doesn't allocate fds on fd passing:
+  --disable-close-fds-by-recvmsg-with-peek
+EOS
+    end
+    if close_fds
+      $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+    end
   end
 
-  getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
-    (checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)} && :os)
+  case enable_config("wide-getaddrinfo")
+  when true
+    getaddr_info_ok = :wide
+  when nil
+    if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
+      getaddr_info_ok = :os
+      if !CROSS_COMPILING && checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+        getaddr_info_ok = :wide
+      end
+    else
+      getaddr_info_ok = :wide
+    end
+  when false
+    if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
+      getaddr_info_ok = :os
+      if !CROSS_COMPILING && checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+        getaddr_info_ok = nil
+      end
+    else
+      getaddr_info_ok = nil
+    end
+  else
+    raise "unexpected enable_config() value"
+  end
+
   if ipv6 and not getaddr_info_ok
     abort <<EOS
 
