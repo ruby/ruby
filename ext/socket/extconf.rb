@@ -409,13 +409,6 @@ EOF
         have_library(ipv6lib = "v6") and "v6d"
       elsif have_macro("_ZETA_MINAMI_INET6", "sys/param.h")
         have_library(ipv6lib = "inet6") and "zeta"
-      elsif ipv6lib = with_config("ipv6-lib")
-        warn <<EOS
---with-ipv6-lib and --with-ipv6-libdir option will be obsolete, use
---with-inet6lib and --with-inet6-{include,lib} options instead.
-EOS
-        find_library(ipv6lib, nil, with_config("ipv6-libdir", ldirs)) and
-          ipv6lib
       elsif have_library("inet6")
         "inet6"
       end
