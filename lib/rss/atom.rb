@@ -1,6 +1,14 @@
 require 'rss/parser'
 
 module RSS
+  ##
+  # Atom is an XML-based document format that is used to describe 'feeds' of related information.
+  # A typical use is in a news feed where the information is periodically updated and which users
+  # can subscribe to.  The Atom format is described in http://tools.ietf.org/html/rfc4287
+  #
+  # The Atom module provides support in reading and creating feeds.
+  #
+  # See the RSS module for examples consuming and creating feeds
   module Atom
 
     ##
@@ -82,6 +90,10 @@ module RSS
       end
     end
 
+    # The TextConstruct module is used to define a Text construct Atom element,
+    # which is used to store small quantities of human-readable text
+    #
+    # The TextConstruct has a type attribute, e.g. text, html, xhtml
     module TextConstruct
       def self.append_features(klass)
         super
@@ -108,6 +120,7 @@ module RSS
       end
 
       attr_writer :xhtml
+
       def xhtml
         return @xhtml if @xhtml.nil?
         if @xhtml.is_a?(XML::Element) and
@@ -121,6 +134,7 @@ module RSS
                          {"xmlns" => XHTML_URI}, children)
       end
 
+      # Returns true if type is "xhtml"
       def have_xml_content?
         @type == "xhtml"
       end
@@ -148,7 +162,13 @@ module RSS
       end
     end
 
+    # The PersonConstruct module is used to define a Person Atom element that can be
+    # used to describe a person, corporation, or similar entity
+    #
+    # The PersonConstruct has a Name, Uri, and Email child elements
     module PersonConstruct
+
+      # Adds attributes for name, uri, and email to the +klass+
       def self.append_features(klass)
         super
         klass.class_eval do
@@ -166,22 +186,30 @@ module RSS
         target.__send__("new_#{self.class.name.split(/::/).last.downcase}")
       end
 
+      # The name of the person or entity
       class Name < RSS::Element
         include CommonModel
         include ContentModel
       end
 
+      # The URI of the person or entity
       class Uri < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
+      # The email of the person or entity
       class Email < RSS::Element
         include CommonModel
         include ContentModel
       end
     end
 
+    # Element used to describe an Atom date and time in the ISO 8601 format
+    #
+    # Examples:
+    # * 2013-03-04T15:30:02Z
+    # * 2013-03-04T10:30:02-05:00
     module DateConstruct
       def self.append_features(klass)
         super
@@ -191,12 +219,17 @@ module RSS
         end
       end
 
+      # Raises NotAvailableValueError if element content is nil
       def atom_validate(ignore_unknown_element, tags, uri)
         raise NotAvailableValueError.new(tag_name, "") if content.nil?
       end
     end
 
     module DuplicateLinkChecker
+      # Checks if there are duplicate links with the same type and hreflang attributes
+      # that have an alternate (or empty) rel attribute
+      #
+      # Raises a TooMuchTagError if there are duplicates found
       def validate_duplicate_links(links)
         link_infos = {}
         links.each do |link|
@@ -211,6 +244,9 @@ module RSS
       end
     end
 
+    # Atom feed element
+    #
+    # A Feed has several metadata attributes in addition to a number of Entry child elements
     class Feed < RSS::Element
       include RootElementMixin
       include CommonModel
@@ -238,6 +274,7 @@ module RSS
                  tag, URI, occurs, tag, *args)
       end
 
+      # Creates a new Atom feed
       def initialize(version=nil, encoding=nil, standalone=nil)
         super("1.0", version, encoding, standalone)
         @feed_type = "atom"
@@ -246,6 +283,8 @@ module RSS
 
       alias_method :items, :entries
 
+      # Returns true if there are any authors for the feed or any of the Entry
+      # child elements have an author
       def have_author?
         authors.any? {|author| !author.to_s.empty?} or
           entries.any? {|entry| entry.have_author?(false)}
@@ -329,16 +368,32 @@ module RSS
         end
       end
 
+      # Atom Icon element
+      #
+      # Image that provides a visual identification for the Feed.  Image should have an aspect
+      # ratio of 1:1
       class Icon < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
+      # Atom ID element
+      #
+      # Universally Unique Identifier (UUID) for the Feed
       class Id < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
+      # Defines an Atom Link element
+      #
+      # A Link has the following attributes:
+      # * href
+      # * rel
+      # * type
+      # * hreflang
+      # * title
+      # * length
       class Link < RSS::Element
         include CommonModel
 
@@ -359,6 +414,10 @@ module RSS
         end
       end
 
+      # Atom Logo element
+      #
+      # Image that provides a visual identification for the Feed.  Image should have an aspect
+      # ratio of 2:1 (horizontal:vertical)
       class Logo < RSS::Element
         include CommonModel
         include URIContentModel
@@ -373,26 +432,40 @@ module RSS
         end
       end
 
+      # Atom Rights element
+      #
+      # TextConstruct that contains copyright information regarding the content in an Entry or Feed
       class Rights < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
+      # Atom Subtitle element
+      #
+      # TextConstruct that conveys a description or subtitle for a Feed
       class Subtitle < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
+      # Atom Title element
+      #
+      # TextConstruct that conveys a description or title for a feed or Entry
       class Title < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
+      # Atom Updated element
+      #
+      # DateConstruct indicating the most recent time when an Entry or Feed was modified
+      # in a way the publisher considers significant
       class Updated < RSS::Element
         include CommonModel
         include DateConstruct
       end
 
+      # Defines a child Atom Entry element for an Atom Feed
       class Entry < RSS::Element
         include CommonModel
         include DuplicateLinkChecker
@@ -416,6 +489,10 @@ module RSS
                    tag, URI, occurs, tag, *args)
         end
 
+        # Returns whether any of the following are true
+        # * There are any authors in the feed
+        # * If the parent element has an author and the +check_parent+ parameter was given.
+        # * There is a source element that has an author
         def have_author?(check_parent=true)
           authors.any? {|author| !author.to_s.empty?} or
             (check_parent and @parent and @parent.have_author?) or
@@ -642,6 +719,8 @@ module RSS
       end
     end
 
+    # Defines a top-level Atom Entry element
+    #
     class Entry < RSS::Element
       include RootElementMixin
       include CommonModel
@@ -666,21 +745,25 @@ module RSS
                  tag, URI, occurs, tag, *args)
       end
 
+      # Creates a new Atom Entry element
       def initialize(version=nil, encoding=nil, standalone=nil)
         super("1.0", version, encoding, standalone)
         @feed_type = "atom"
         @feed_subtype = "entry"
       end
 
+      # Returns the Entry in an array
       def items
         [self]
       end
 
+      # sets up the +maker+ for constructing Entry elements
       def setup_maker(maker)
         maker = maker.maker if maker.respond_to?("maker")
         super(maker)
       end
 
+      # Returns where there are any authors present or there is a source with an author
       def have_author?
         authors.any? {|author| !author.to_s.empty?} or
           (source and source.have_author?)

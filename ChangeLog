@@ -1,3 +1,17 @@
+Fri Apr 26 23:32:09 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/atom.rb (RSS::Atom::Entry): Fix indent of document comment.
+
+Fri Apr 26 23:32:09 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb (RSS::Maker): Fix indent of document comment.
+
+Fri Apr 26 23:32:09 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/rss/atom.rb: Documentation for RSS::Atom based on a patch by
+	  Michael Denomy
+	* lib/rss/maker.rb: Documentation for RSS::Maker also by @mdenomy
+
 Thu Apr 25 00:40:41 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* numeric.c: Fix wiki link on Float imprecision in overview, patched
