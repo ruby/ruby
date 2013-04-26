@@ -987,7 +987,7 @@ module REXML
     end
 
     def to_a
-      values.flatten
+      enum_for(:each_attribute).to_a
     end
 
     # Returns the number of attributes the owning Element contains.

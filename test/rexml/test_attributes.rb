@@ -195,4 +195,26 @@ class AttributesTester < Test::Unit::TestCase
     doc.add_element 'a', { 'v' => 'x & y' }
     assert doc.to_s.index(';')
   end
+
+  def test_to_a_with_namespaces
+    document = Document.new(<<-XML)
+<root
+  xmlns:ns1="http://example.org/ns1"
+  xmlns:ns2="http://example.org/ns2">
+  <child
+    ns1:attribute="ns1"
+    ns2:attribute="ns2"
+        attribute="no-ns"
+    other-attribute="other-value"/>
+</root>
+XML
+    child = document.root.elements["child"]
+    assert_equal([
+                   "attribute='no-ns'",
+                   "ns1:attribute='ns1'",
+                   "ns2:attribute='ns2'",
+                   "other-attribute='other-value'",
+                 ],
+                 child.attributes.to_a.collect(&:to_string).sort)
+  end
 end

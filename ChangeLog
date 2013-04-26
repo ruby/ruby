@@ -1,3 +1,12 @@
+Fri Apr 26 22:53:55 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/element.rb (REXML::Attributes#to_a): Support
+	  namespaced attributes. [ruby-dev:47277] [Bug #8301]
+	  Patch by Ippei Obayashi. Thanks!!!
+	* test/rexml/test_attributes.rb
+	  (AttributesTester#test_to_a_with_namespaces): Add a test of the
+	  above change.
+
 Fri Apr 26 21:48:29 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/atom.rb (RSS::Atom::Entry): Fix indent of document comment.
