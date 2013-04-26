@@ -731,6 +731,7 @@ dir_seek(VALUE dir, VALUE pos)
 #define dir_seek rb_f_notimplement
 #endif
 
+#ifdef HAVE_SEEKDIR
 /*
  *  call-seq:
  *     dir.pos = integer  -> integer
@@ -751,6 +752,9 @@ dir_set_pos(VALUE dir, VALUE pos)
     dir_seek(dir, pos);
     return pos;
 }
+#else
+#define dir_set_pos rb_f_notimplement
+#endif
 
 /*
  *  call-seq:

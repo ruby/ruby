@@ -1,3 +1,8 @@
+Fri Apr 26 18:08:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (dir_set_pos): Fix a compilation error when seekdir() is not
+	  exist.
+
 Fri Apr 26 17:41:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.
