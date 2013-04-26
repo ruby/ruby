@@ -719,8 +719,8 @@ module RSS
       end
     end
 
-     # Defines a top-level Atom Entry element
-      #
+    # Defines a top-level Atom Entry element
+    #
     class Entry < RSS::Element
       include RootElementMixin
       include CommonModel

@@ -1,3 +1,7 @@
+Fri Apr 26 21:48:29 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/atom.rb (RSS::Atom::Entry): Fix indent of document comment.
+
 Fri Apr 26 21:21:17 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb (RSS::Maker): Fix indent of document comment.
