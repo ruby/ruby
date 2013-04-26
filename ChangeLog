@@ -1,3 +1,8 @@
+Fri Apr 26 17:41:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.
+	  This fixes a compilation failure while cross-compiling for ARM.
+
 Fri Apr 26 14:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/rss/atom.rb: Documentation for RSS::Atom based on a patch by

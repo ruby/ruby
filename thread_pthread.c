@@ -672,6 +672,7 @@ ruby_init_stack(volatile VALUE *addr
     /* it should be on co-routine (alternative stack). [Feature #2294] */
     {
 	void *start, *end;
+	STACK_GROW_DIR_DETECTION;
 
 	if (IS_STACK_DIR_UPPER()) {
 	    start = native_main_thread.stack_start;
