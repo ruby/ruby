@@ -1,3 +1,9 @@
+Fri Apr 26 14:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/rss/atom.rb: Documentation for RSS::Atom based on a patch by
+	  Michael Denomy
+	* lib/rss/maker.rb: Documentation for RSS::Maker also by @mdenomy
+
 Fri Apr 26 12:41:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: Test linkability of curses_version at first.
