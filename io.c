@@ -11735,7 +11735,7 @@ Init_IO(void)
     rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else
-    rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKRWaitReadable", rb_eEWOULDBLOCK);
+    rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
     rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
