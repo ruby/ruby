@@ -1,3 +1,11 @@
+Fri Apr 26 12:41:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: Test linkability of curses_version at first.
+
+	* ext/socket/extconf.rb: Test the behavior of fd passing with MSG_PEEK
+	  only if recvmsg(), msg_control member, AF_UNIX and SCM_RIGHTS are
+	  available.
+
 Fri Apr 26 00:07:52 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/rinda/ring.rb (Rinda::RingServer#initialize): accept array

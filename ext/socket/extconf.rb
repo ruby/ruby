@@ -305,7 +305,8 @@ have_type("struct ip_mreq", headers) # 4.4BSD
 have_type("struct ip_mreqn", headers) # Linux 2.4
 have_type("struct ipv6_mreq", headers) # RFC 3493
 
-have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
+have_msg_control = nil
+have_msg_control = have_struct_member('struct msghdr', 'msg_control', headers) unless $mswin or $mingw
 have_struct_member('struct msghdr', 'msg_accrights', headers)
 
 case RUBY_PLATFORM
@@ -332,7 +333,7 @@ end
 if have_func(test_func, headers)
 
   have_func("sendmsg(0, (struct msghdr *)NULL, 0)", headers) # POSIX
-  have_func("recvmsg(0, (struct msghdr *)NULL, 0)", headers) # POSIX
+  have_recvmsg = have_func("recvmsg(0, (struct msghdr *)NULL, 0)", headers) # POSIX
 
   have_func("freehostent((struct hostent *)NULL)", headers) # RFC 2553
   have_func("freeaddrinfo((struct addrinfo *)NULL)", headers) # RFC 2553
@@ -432,38 +433,40 @@ EOS
   when false
     # nothing to do.
   else
-    case RUBY_PLATFORM
-    when /linux/
-      # Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
-      close_fds = true
-    when /bsd|darwin/
-      # FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
-      # allocate fds by recvmsg with MSG_PEEK.
-      # [ruby-dev:44189]
-      # http://bugs.ruby-lang.org/issues/5075
-      close_fds = false
-    else
-      close_fds = nil
-    end
-    if !CROSS_COMPILING
-      if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)}
-        if close_fds == false
-          warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation unexpected."
-        elsif close_fds == nil
-          puts "info: #{RUBY_PLATFORM} recvmsg() with MSG_PEEK allocates fds."
-        end
+    if have_msg_control && have_recvmsg &&
+       have_const('AF_UNIX', headers) && have_const('SCM_RIGHTS', headers)
+      case RUBY_PLATFORM
+      when /linux/
+        # Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
         close_fds = true
-      else
-        if close_fds == true
-          warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation expected."
-        elsif close_fds == nil
-          puts "info: #{RUBY_PLATFORM}: recvmsg() with MSG_PEEK doesn't allocates fds."
-        end
+      when /bsd|darwin/
+        # FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
+        # allocate fds by recvmsg with MSG_PEEK.
+        # [ruby-dev:44189]
+        # http://bugs.ruby-lang.org/issues/5075
         close_fds = false
+      else
+        close_fds = nil
       end
-    end
-    if close_fds == nil
-      abort <<EOS
+      if !CROSS_COMPILING
+        if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)}
+          if close_fds == false
+            warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation unexpected."
+          elsif close_fds == nil
+            puts "info: #{RUBY_PLATFORM} recvmsg() with MSG_PEEK allocates fds."
+          end
+          close_fds = true
+        else
+          if close_fds == true
+            warn "unexpected recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation expected."
+          elsif close_fds == nil
+            puts "info: #{RUBY_PLATFORM}: recvmsg() with MSG_PEEK doesn't allocates fds."
+          end
+          close_fds = false
+        end
+      end
+      if close_fds == nil
+        abort <<EOS
 Fatal: cannot test recvmsg() with MSG_PEEK allocate file descriptors or not
 because cross-compilation.
 Specify a configure option.
@@ -472,9 +475,10 @@ If recvmsg() with MSG_PEEK allocates fds on fd passing:
 If recvmsg() with MSG_PEEK doesn't allocate fds on fd passing:
   --disable-close-fds-by-recvmsg-with-peek
 EOS
-    end
-    if close_fds
-      $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+      end
+      if close_fds
+        $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+      end
     end
   end
 
@@ -484,7 +488,7 @@ EOS
   when nil
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       getaddr_info_ok = :os
-      if !CROSS_COMPILING && !checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+      if !CROSS_COMPILING && !checking_for("system getaddrinfo working") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
         getaddr_info_ok = :wide
       end
     else
@@ -493,7 +497,7 @@ EOS
   when false
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
       getaddr_info_ok = :os
-      if !CROSS_COMPILING && !checking_for("wide getaddrinfo") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
+      if !CROSS_COMPILING && !checking_for("system getaddrinfo working") {try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)}
         getaddr_info_ok = nil
       end
     else

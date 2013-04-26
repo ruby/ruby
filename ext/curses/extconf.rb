@@ -89,40 +89,40 @@ if header_library
   when "variable"
     $defs << '-DHAVE_VAR_CURSES_VERSION'
   when nil
-    function_p = nil
-    variable_p = nil
+    func_test_program = cpp_include(curses) + <<-"End"
+      int main(int argc, char *argv[])
+      {
+          curses_version();
+          return EXIT_SUCCESS;
+      }
+    End
+    var_test_program = cpp_include(curses) + <<-"End"
+      extern char *curses_version;
+      int main(int argc, char *argv[])
+      {
+          int i = 0;
+          for (i = 0; i < 100; i++) {
+              if (curses_version[i] == 0)
+                  return 0 < i ? EXIT_SUCCESS : EXIT_FAILURE;
+              if (curses_version[i] & 0x80)
+                  return EXIT_FAILURE;
+          }
+          return EXIT_FAILURE;
+      }
+    End
+    function_p = checking_for(checking_message('link function curses_version', curses)) { try_link(func_test_program) } ? nil : false
+    variable_p = checking_for(checking_message('link variable curses_version', curses)) { try_link(var_test_program) } ? nil : false
     if [header, library].any? {|v| /ncurses|pdcurses|xcurses/i =~ v }
-      function_p = true
+      function_p = true if function_p == nil
+      variable_p = false if variable_p == nil
     end
     if !CROSS_COMPILING
-      prolog = cpp_include(curses)
-      function_p = checking_for(checking_message('function curses_version', curses)) {
-        try_run(<<-"End")
-          #{prolog}
-          int main(int argc, char *argv[])
-          {
-              curses_version();
-              return EXIT_SUCCESS;
-          }
-        End
-      }
-      variable_p = checking_for(checking_message('variable curses_version', curses)) {
-        try_run(<<-"End")
-          #{prolog}
-          extern char *curses_version;
-          int main(int argc, char *argv[])
-          {
-              int i = 0;
-              for (i = 0; i < 100; i++) {
-                  if (curses_version[i] == 0)
-                      return 0 < i ? EXIT_SUCCESS : EXIT_FAILURE;
-                  if (curses_version[i] & 0x80)
-                      return EXIT_FAILURE;
-              }
-              return EXIT_FAILURE;
-          }
-        End
-      }
+      if function_p != false
+        function_p = checking_for(checking_message('run function curses_version', curses)) { try_run(func_test_program) }
+      end
+      if variable_p != false
+        variable_p = checking_for(checking_message('run variable curses_version', curses)) { try_run(var_test_program) }
+      end
     end
     $defs << '-DHAVE_FUNC_CURSES_VERSION' if function_p
     $defs << '-DHAVE_VAR_CURSES_VERSION' if variable_p
