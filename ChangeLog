@@ -1,3 +1,7 @@
+Fri Apr 26 21:21:17 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb (RSS::Maker): Fix indent of document comment.
+
 Fri Apr 26 18:41:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Use a block of enable_config() for

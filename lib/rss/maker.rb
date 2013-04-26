@@ -20,10 +20,10 @@ module RSS
     MAKERS = {}
 
     class << self
-        # Builder for an RSS object
-        # Creates an object of the type passed in +args+
-        #
-        # Executes the +block+ to populate elements of the created RSS object
+      # Builder for an RSS object
+      # Creates an object of the type passed in +args+
+      #
+      # Executes the +block+ to populate elements of the created RSS object
       def make(version, &block)
         self[version].make(&block)
       end
