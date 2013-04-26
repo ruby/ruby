@@ -1,3 +1,11 @@
+Fri Apr 26 23:34:59 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/text.rb (REXML::Text.normalize): Fix a bug that all
+	  entity filters are ignored. [ruby-dev:47278] [Bug #8302]
+	  Patch by Ippei Obayashi. Thanks!!!
+	* test/rexml/test_entity.rb (EntityTester#test_entity_filter): Add
+	  a test of the above change.
+
 Fri Apr 26 22:53:55 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/element.rb (REXML::Attributes#to_a): Support

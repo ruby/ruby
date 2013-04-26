@@ -164,4 +164,24 @@ class EntityTester < Test::Unit::TestCase
   def test_single_pass_unnormalization # ticket 123
     assert_equal '&amp;&', REXML::Text::unnormalize('&#38;amp;&amp;')
   end
+
+  def test_entity_filter
+    document = REXML::Document.new(<<-XML)
+<!DOCTYPE root [
+<!ENTITY copy "(c)">
+<!ENTITY release-year "2013">
+]>
+<root/>
+XML
+    respect_whitespace = false
+    parent = document.root
+    raw = false
+    entity_filter = ["copy"]
+    assert_equal("(c) &release-year;",
+                 REXML::Text.new("(c) 2013",
+                                 respect_whitespace,
+                                 parent,
+                                 raw,
+                                 entity_filter).to_s)
+  end
 end
