@@ -1,3 +1,12 @@
+Sat Apr 27 02:12:14 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_fd_fix_cloexec): use rb_update_max_fd().
+
+Sat Apr 27 02:12:14 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_update_max_fd): use ATOMIC_CAS because this function
+	  is used from timer thread too.
+
 Sat Apr 27 01:57:43 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* configure.in: use quadrigraphs. workaround for autoconf 2.64.
