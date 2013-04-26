@@ -1951,11 +1951,16 @@ main()
 fi
 
 if test "$ac_cv_func_getpgid" = no; then
+  # AC_FUNC_GETPGRP fails when cross-compiling with old autoconf.
+  # autoconf is changed between 2.52d and 2.52f?
+  # http://lists.gnu.org/archive/html/bug-gnu-utils/2001-09/msg00181.html
+  # "autoconf cleanup for AC_FUNC_GETPGRP and GETPGRP_VOID"
 AC_FUNC_GETPGRP
 fi
 if test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes; then
   # AC_FUNC_SETPGRP fails when cross-compiling.  (until autoconf 2.69?)
   # https://lists.gnu.org/archive/html/bug-autoconf/2013-02/msg00002.html
+  # "AC_FUNC_SETPGRP fails to work properly when cross-compiling"
 AC_FUNC_SETPGRP
 fi
 
