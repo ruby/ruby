@@ -1954,6 +1954,8 @@ if test "$ac_cv_func_getpgid" = no; then
 AC_FUNC_GETPGRP
 fi
 if test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes; then
+  # AC_FUNC_SETPGRP fails when cross-compiling.  (until autoconf 2.69?)
+  # https://lists.gnu.org/archive/html/bug-autoconf/2013-02/msg00002.html
 AC_FUNC_SETPGRP
 fi
 
