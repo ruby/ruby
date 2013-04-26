@@ -1,3 +1,20 @@
+Sat Apr 27 00:39:28 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_inspect): refix r40413, on Ruby 1.9 usual character
+	  escape uses hex/Unicode escapes, so fix to use Unicode escape on
+	  Unicode strings and hex on others. [ruby-core:54458] [Bug #8290]
+
+Sat Apr 27 00:39:28 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_module.rb
+	  (TestModule#test_const_get_invalid_name)
+	  (test_const_defined_invalid_name): Fix expected values.
+
+Sat Apr 27 00:39:28 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_inspect): NUL should not be represented as "\0"
+	  when octal digits may follow.  [ruby-core:54458] [Bug #8290]
+
 Fri Apr 26 23:48:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.

@@ -4570,7 +4570,6 @@ rb_str_inspect(VALUE str)
 	    }
 	}
 	switch (c) {
-	  case '\0': cc = '0'; break;
 	  case '\n': cc = 'n'; break;
 	  case '\r': cc = 'r'; break;
 	  case '\t': cc = 't'; break;
