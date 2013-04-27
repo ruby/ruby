@@ -4808,13 +4808,13 @@ obj2gid(VALUE id
 	grptr = getgrnam(grpname);
 #endif
 	if (!grptr) {
-#ifndef USE_GETGRNAM_R
+#if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
 	    endgrent();
 #endif
 	    rb_raise(rb_eArgError, "can't find group for %s", grpname);
 	}
 	gid = grptr->gr_gid;
-#ifndef USE_GETGRNAM_R
+#if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
 	endgrent();
 #endif
     }
