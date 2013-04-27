@@ -73,6 +73,10 @@ end
 #     YAML.dump("foo")     # => "--- foo\n...\n"
 #     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
 #
+# Do not use YAML to load untrusted data. Doing so is unsafe and could allow
+# malicious input to execute arbitrary code inside your application. Please see
+# doc/security.rdoc for more information.
+#
 # For more advanced details on the implementation see Psych, and also check out
 # yaml.org for spec details and other helpful information.
 module YAML; end

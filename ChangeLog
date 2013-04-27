@@ -1,3 +1,7 @@
+Sat Apr 27 23:53:00 2013  Charlie Somerville  <charlie@charliesomerville.com>
+
+	* lib/yaml.rb: add security warning to YAML documentation
+
 Sat Apr 27 23:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/yaml.rb: Documentation for YAML module [Bug #8213]
