@@ -1,7 +1,12 @@
+Sun Apr 28 02:41:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Fix a typo.  Should check endgrent() instead of
+	  endgrnam().
+
 Sun Apr 28 00:35:45 2013  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (obj2gid): Don't call endgrnam() if not exist.
-	  Bionic (Android's libc) don't have endgrnam().
+	* process.c (obj2gid): Don't call endgrent() if not exist.
+	  Bionic (Android's libc) don't have endgrent().
 
 	* configure.in: Check endgrnam function.
 
