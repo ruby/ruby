@@ -553,8 +553,7 @@ EOS
     "raddrinfo.#{$OBJEXT}"
   ]
 
-  if getaddr_info_ok == :wide or
-      !have_func("getnameinfo", headers) or !have_func("getaddrinfo", headers)
+  if getaddr_info_ok == :wide
     if !have_type("struct in6_addr", headers) and have_type("struct in_addr6", headers)
       $defs.pop(2)
       $defs << "-Din_addr6=in6_addr"

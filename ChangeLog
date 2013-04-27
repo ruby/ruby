@@ -1,3 +1,7 @@
+Sat Apr 27 17:22:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Redundant test removed.
+
 Sat Apr 27 16:00:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb (test_recvmsg_with_msg_peek_creates_fds):
