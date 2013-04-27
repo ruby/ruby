@@ -1366,7 +1366,8 @@ void rb_bug(const char *fmt, ...) ::
   called under the situation caused by the bug in the interpreter.  No
   exception handling nor ensure execution will be done.
 
-Note: You can't use %i or variations of int with the fmt string message.
+Note: In the fmt string message, %i is used for Object#inspect output (and
+related argument must be a VALUE).  For integers in format strings, use %d.
 
 == Initialize and Start the Interpreter
 

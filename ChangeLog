@@ -1,3 +1,7 @@
+Sun Apr 28 08:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Update note from r40504, by Jeremy Evans [Bug #7982]
+
 Sun Apr 28 08:02:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* README.EXT: Add note to warn use of %i in Exceptions [Bug #7982]
