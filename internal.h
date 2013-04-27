@@ -25,12 +25,19 @@ extern "C" {
     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
 
+#define SIGNED_INTEGER_TYPE_P(int_type) (0 > ((int_type)0)-1)
+#define SIGNED_INTEGER_MAX(sint_type) \
+  ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) | \
+  ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) - 1))
+#define SIGNED_INTEGER_MIN(sint_type) (-SIGNED_INTEGER_MAX(sint_type)-1)
+#define UNSIGNED_INTEGER_MAX(uint_type) (~(uint_type)0)
+
 #if SIGNEDNESS_OF_TIME_T < 0	/* signed */
-# define TIMET_MAX (time_t)((~(unsigned_time_t)0) >> 1)
-# define TIMET_MIN (time_t)(((unsigned_time_t)1) << (sizeof(time_t) * CHAR_BIT - 1))
+# define TIMET_MAX SIGNED_INTEGER_MAX(time_t)
+# define TIMET_MIN SIGNED_INTEGER_MIN(time_t)
 #elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
-# define TIMET_MAX (time_t)(~(unsigned_time_t)0)
-# define TIMET_MIN (time_t)0
+# define TIMET_MAX UNSIGNED_INTEGER_MAX(time_t)
+# define TIMET_MIN ((time_t)0)
 #endif
 #define TIMET_MAX_PLUS_ONE (2*(double)(TIMET_MAX/2+1))
 

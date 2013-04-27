@@ -1,3 +1,15 @@
+Sat Apr 27 15:50:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (SIGNED_INTEGER_TYPE_P): New macro.
+	  (SIGNED_INTEGER_MAX): Ditto.
+	  (SIGNED_INTEGER_MIN): Ditto.
+	  (UNSIGNED_INTEGER_MAX): Ditto.
+	  (TIMET_MAX): Use SIGNED_INTEGER_MAX and UNSIGNED_INTEGER_MAX.
+	  (TIMET_MIN): Use SIGNED_INTEGER_MIN.
+
+	* thread.c (TIMEVAL_SEC_MAX): Use SIGNED_INTEGER_MAX.
+	  (TIMEVAL_SEC_MIN): Use SIGNED_INTEGER_MIN.
+
 Sat Apr 27 10:52:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (TIMEVAL_SEC_MAX, TIMEVAL_SEC_MIN): Consider environments,
