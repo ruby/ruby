@@ -242,6 +242,52 @@ int main(int argc, char *argv[])
 }
 EOF
 
+def test_recvmsg_with_msg_peek_creates_fds(headers)
+  case RUBY_PLATFORM
+  when /linux/
+    # Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
+    close_fds = true
+  when /bsd|darwin/
+    # FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
+    # allocate fds by recvmsg with MSG_PEEK.
+    # [ruby-dev:44189]
+    # http://bugs.ruby-lang.org/issues/5075
+    close_fds = false
+  else
+    close_fds = nil
+  end
+  if !CROSS_COMPILING
+    if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {
+        try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)
+       }
+      if close_fds == false
+        warn "unexpected fd-passing recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation unexpected."
+      elsif close_fds == nil
+        puts "info: #{RUBY_PLATFORM} recvmsg() with MSG_PEEK allocates fds on fd-passing."
+      end
+      close_fds = true
+    else
+      if close_fds == true
+        warn "unexpected fd-passing recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation expected."
+      elsif close_fds == nil
+        puts "info: #{RUBY_PLATFORM}: recvmsg() with MSG_PEEK doesn't allocates fds on fd-passing."
+      end
+      close_fds = false
+    end
+  end
+  if close_fds == nil
+    abort <<EOS
+Fatal: cannot test fd-passing recvmsg() with MSG_PEEK behavor
+because cross-compilation for #{RUBY_PLATFORM}.
+If recvmsg() with MSG_PEEK allocates fds on fd passing:
+--enable-close-fds-by-recvmsg-with-peek
+If recvmsg() with MSG_PEEK doesn't allocate fds on fd passing:
+--disable-close-fds-by-recvmsg-with-peek
+EOS
+  end
+  close_fds
+end
+
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
 headers = []
@@ -428,54 +474,9 @@ EOS
   end
 
   if enable_config("close-fds-by-recvmsg-with-peek") {
-      if have_msg_control && have_recvmsg &&
-         have_const('AF_UNIX', headers) && have_const('SCM_RIGHTS', headers)
-        case RUBY_PLATFORM
-        when /linux/
-          # Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
-          close_fds = true
-        when /bsd|darwin/
-          # FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
-          # allocate fds by recvmsg with MSG_PEEK.
-          # [ruby-dev:44189]
-          # http://bugs.ruby-lang.org/issues/5075
-          close_fds = false
-        else
-          close_fds = nil
-        end
-        if !CROSS_COMPILING
-          if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {
-              try_run(cpp_include(headers) + RECVMSG_WITH_MSG_PEEK_ALLOCATE_FD_TEST)
-             }
-            if close_fds == false
-              warn "unexpected fd-passing recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation unexpected."
-            elsif close_fds == nil
-              puts "info: #{RUBY_PLATFORM} recvmsg() with MSG_PEEK allocates fds on fd-passing."
-            end
-            close_fds = true
-          else
-            if close_fds == true
-              warn "unexpected fd-passing recvmsg() with MSG_PEEK behavor on #{RUBY_PLATFORM}: fd allocation expected."
-            elsif close_fds == nil
-              puts "info: #{RUBY_PLATFORM}: recvmsg() with MSG_PEEK doesn't allocates fds on fd-passing."
-            end
-            close_fds = false
-          end
-        end
-        if close_fds == nil
-          abort <<EOS
-Fatal: cannot test fd-passing recvmsg() with MSG_PEEK behavor
-because cross-compilation for #{RUBY_PLATFORM}.
-If recvmsg() with MSG_PEEK allocates fds on fd passing:
-  --enable-close-fds-by-recvmsg-with-peek
-If recvmsg() with MSG_PEEK doesn't allocate fds on fd passing:
-  --disable-close-fds-by-recvmsg-with-peek
-EOS
-        end
-        close_fds
-      else
-        false
-      end
+      have_msg_control && have_recvmsg &&
+      have_const('AF_UNIX', headers) && have_const('SCM_RIGHTS', headers) &&
+      test_recvmsg_with_msg_peek_creates_fds(headers)
      }
     $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
   end

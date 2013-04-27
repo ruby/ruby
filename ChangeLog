@@ -1,3 +1,8 @@
+Sat Apr 27 16:00:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb (test_recvmsg_with_msg_peek_creates_fds):
+	  Extracted.
+
 Sat Apr 27 15:50:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (SIGNED_INTEGER_TYPE_P): New macro.
