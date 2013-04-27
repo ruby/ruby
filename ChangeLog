@@ -1,3 +1,8 @@
+Sun Apr 28 08:28:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/curses/curses.c: Update Curses::Window example for nicer output
+	  Patch by Michal Suchanek [Bug #8121] [ruby-core:53520]
+
 Sun Apr 28 08:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* README.EXT: Update note from r40504, by Jeremy Evans [Bug #7982]
