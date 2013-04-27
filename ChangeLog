@@ -1,3 +1,7 @@
+Sat Apr 27 23:25:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/yaml.rb: Documentation for YAML module [Bug #8213]
+
 Sat Apr 27 20:19:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.

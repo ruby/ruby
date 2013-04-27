@@ -12,7 +12,7 @@ rescue LoadError
   raise
 end
 
-module Psych
+module Psych # :nodoc:
   class EngineManager
     # Returns the YAML engine in use.
     #
@@ -53,4 +53,27 @@ module Psych
   ENGINE = EngineManager.new # :nodoc:
 end
 
+# YAML Ain't Markup Language
+#
+# This module provides a Ruby interface for data serialization in YAML format.
+#
+# The underlying implementation depends on an engine to handle the parsing and
+# serialization for Ruby, by default this will be using the libyaml wrapper
+# Psych.
+#
+# See Psych::EngineManager for details on switching the default YAML engine.
+#
+# Working with YAML can be very simple, for example:
+#
+#     require 'yaml' # STEP ONE, REQUIRE YAML!
+#     # Parse a YAML string
+#     YAML.load("--- foo") #=> "foo"
+#
+#     # Emit some YAML
+#     YAML.dump("foo")     # => "--- foo\n...\n"
+#     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#
+# For more advanced details on the implementation see Psych, and also check out
+# yaml.org for spec details and other helpful information.
+module YAML; end
 YAML = Psych
