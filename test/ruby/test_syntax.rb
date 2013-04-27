@@ -2,16 +2,22 @@ require 'test/unit'
 require_relative 'envutil'
 
 class TestSyntax < Test::Unit::TestCase
-  def test_syntax
+  def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
+    srcdir = File.join(srcdir, test)
     assert_separately(%W[--disable-gem -r#{__dir__}/envutil - #{srcdir}],
-                      __FILE__, __LINE__, <<-eom, timeout: Float::INFINITY)
+                      __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
       dir = ARGV.shift
-      for script in Dir["\#{dir}/{lib,sample,ext,test}/**/*.rb"].sort
+      for script in Dir["#{dir}/**/*.rb"].sort
         assert_valid_syntax(IO::read(script), script)
       end
     eom
   end
+
+  def test_syntax_lib; assert_syntax_files("lib"); end
+  def test_syntax_sample; assert_syntax_files("sample"); end
+  def test_syntax_ext; assert_syntax_files("ext"); end
+  def test_syntax_test; assert_syntax_files("test"); end
 
   def test_defined_empty_argument
     bug8220 = '[ruby-core:53999] [Bug #8220]'
