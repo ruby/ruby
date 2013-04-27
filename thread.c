@@ -912,10 +912,20 @@ thread_value(VALUE self)
  * Thread Scheduling
  */
 
+/*
+ * The type of tv_sec in struct timeval is time_t in POSIX.
+ * But several systems violates POSIX.
+ *
+ * OpenBSD 5.2 (amd64):
+ *   time_t: int (signed 32bit integer)
+ *   tv_sec: long (signed 64bit integer)
+ */
+
 #if SIGNEDNESS_OF_TIME_T < 0	/* signed */
-# define TIMEVAL_SEC_MAX_P1 (((unsigned_time_t)1) << (sizeof(TYPEOF_TIMEVAL_TV_SEC) * CHAR_BIT - 1))
-# define TIMEVAL_SEC_MAX ((TYPEOF_TIMEVAL_TV_SEC)(TIMEVAL_SEC_MAX_P1 - 1))
-# define TIMEVAL_SEC_MIN ((TYPEOF_TIMEVAL_TV_SEC)TIMEVAL_SEC_MAX_P1)
+# define TIMEVAL_SEC_MAXBIT \
+  (((TYPEOF_TIMEVAL_TV_SEC)1) << (sizeof(TYPEOF_TIMEVAL_TV_SEC) * CHAR_BIT - 2))
+# define TIMEVAL_SEC_MAX (TIMEVAL_SEC_MAXBIT | (TIMEVAL_SEC_MAXBIT-1))
+# define TIMEVAL_SEC_MIN (-TIMEVAL_SEC_MAX-1)
 #elif SIGNEDNESS_OF_TIME_T > 0	/* unsigned */
 # define TIMEVAL_SEC_MAX ((TYPEOF_TIMEVAL_TV_SEC)(~(unsigned_time_t)0))
 # define TIMEVAL_SEC_MIN ((TYPEOF_TIMEVAL_TV_SEC)0)
