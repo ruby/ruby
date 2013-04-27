@@ -1,3 +1,7 @@
+Sun Apr 28 08:02:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Add note to warn use of %i in Exceptions [Bug #7982]
+
 Sun Apr 28 02:41:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Fix a typo.  Should check endgrent() instead of

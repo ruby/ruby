@@ -1366,6 +1366,8 @@ void rb_bug(const char *fmt, ...) ::
   called under the situation caused by the bug in the interpreter.  No
   exception handling nor ensure execution will be done.
 
+Note: You can't use %i or variations of int with the fmt string message.
+
 == Initialize and Start the Interpreter
 
 The embedding API functions are below (not needed for extension libraries):
