@@ -1,3 +1,9 @@
+Sat Apr 27 19:04:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sparc.c: Use __asm__ instead of asm for gcc.
+	  gcc doesn't provide asm keyword if -ansi option is given.
+	  http://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html
+
 Sat Apr 27 17:22:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Redundant test removed.
