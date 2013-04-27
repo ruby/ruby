@@ -654,6 +654,7 @@ ruby_init_stack(volatile VALUE *addr
 #elif defined(HAVE_GETRLIMIT)
 	int pagesize = getpagesize();
 	struct rlimit rlim;
+        STACK_GROW_DIR_DETECTION;
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
 	    size = (size_t)rlim.rlim_cur;
 	}
