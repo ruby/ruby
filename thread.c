@@ -46,7 +46,7 @@
  * FD_SET, FD_CLR and FD_ISSET have a small sanity check when using glibc
  * 2.15 or later and set _FORTIFY_SOURCE > 0.
  * However, the implementation is wrong. Even though Linux's select(2)
- * support large fd size (>FD_SETSIZE), it wrongly assume fd is always
+ * supports large fd size (>FD_SETSIZE), it wrongly assumes fd is always
  * less than FD_SETSIZE (i.e. 1024). And then when enabling HAVE_RB_FD_INIT,
  * it doesn't work correctly and makes program abort. Therefore we need to
  * disable FORTY_SOURCE until glibc fixes it.
@@ -491,7 +491,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 # endif
 
     if (th == th->vm->main_thread)
-	rb_bug("thread_start_func_2 must not used for main thread");
+	rb_bug("thread_start_func_2 must not be used for main thread");
 
     ruby_thread_set_native(th);
 
@@ -843,7 +843,7 @@ thread_join(rb_thread_t *target_th, double delay)
  *  Does not return until +thr+ exits or until the given +limit+ seconds have
  *  passed.
  *
- *  If the time limit expires, +nil+ will be returned, otherwise this +thr+ is
+ *  If the time limit expires, +nil+ will be returned, otherwise +thr+ is
  *  returned.
  *
  *  Any threads not joined will be killed when the main program exits.
@@ -854,7 +854,7 @@ thread_join(rb_thread_t *target_th, double delay)
  *
  *     a = Thread.new { print "a"; sleep(10); print "b"; print "c" }
  *     x = Thread.new { print "x"; Thread.pass; print "y"; print "z" }
- *     x.join # Let x thread finish, a will be killed on exit.
+ *     x.join # Let thread x finish, thread a will be killed on exit.
  *     #=> "axyz"
  *
  *  The following example illustrates the +limit+ parameter.
@@ -914,7 +914,7 @@ thread_value(VALUE self)
 
 /*
  * The type of tv_sec in struct timeval is time_t in POSIX.
- * But several systems violates POSIX.
+ * But several systems violate POSIX.
  *
  * OpenBSD 5.2 (amd64):
  *   time_t: int (signed 32bit integer)
@@ -1286,12 +1286,12 @@ call_without_gvl(void *(*func)(void *), void *data1,
  * provide proper ubf(), your program will not stop for Control+C or other
  * shutdown events.
  *
- * "Check interrupts" on above list means that check asynchronous
+ * "Check interrupts" on above list means checking asynchronous
  * interrupt events (such as Thread#kill, signal delivery, VM-shutdown
- * request, and so on) and call corresponding procedures
+ * request, and so on) and calling corresponding procedures
  * (such as `trap' for signals, raise an exception for Thread#raise).
- * If `func()' finished and receive interrupts, you may skip interrupt
- * checking.  For example, assume the following func() it read data from file.
+ * If `func()' finished and received interrupts, you may skip interrupt
+ * checking.  For example, assume the following func() it reads data from file.
  *
  *   read_func(...) {
  *                   // (a) before read
@@ -1301,12 +1301,12 @@ call_without_gvl(void *(*func)(void *), void *data1,
  *
  * If an interrupt occurs at (a) or (b), then `ubf()' cancels this
  * `read_func()' and interrupts are checked. However, if an interrupt occurs
- * at (c), after *read* operation is completed, check intterrupts is harmful
+ * at (c), after *read* operation is completed, checking interrupts is harmful
  * because it causes irrevocable side-effect, the read data will vanish.  To
  * avoid such problem, the `read_func()' should be used with
  * `rb_thread_call_without_gvl2()'.
  *
- * If `rb_thread_call_without_gvl2()' detects interrupt, return its execution
+ * If `rb_thread_call_without_gvl2()' detects interrupt, it returns
  * immediately. This function does not show when the execution was interrupted.
  * For example, there are 4 possible timing (a), (b), (c) and before calling
  * read_func(). You need to record progress of a read_func() and check
@@ -1368,7 +1368,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     }
     TH_POP_TAG();
 
-    /* clear waitinf_fd anytime */
+    /* clear waiting_fd anytime */
     th->waiting_fd = -1;
 
     if (state) {
@@ -1406,13 +1406,13 @@ rb_thread_blocking_region(
  * (4) return a value which is returned at (2).
  *
  * NOTE: You should not return Ruby object at (2) because such Object
- *       will not marked.
+ *       will not be marked.
  *
  * NOTE: If an exception is raised in `func', this function DOES NOT
  *       protect (catch) the exception.  If you have any resources
  *       which should free before throwing exception, you need use
  *       rb_protect() in `func' and return a value which represents
- *       exception is raised.
+ *       exception was raised.
  *
  * NOTE: This function should not be called by a thread which was not
  *       created as Ruby thread (created by Thread.new or so).  In other
@@ -1428,7 +1428,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     void *r;
 
     if (th == 0) {
-	/* Error is occurred, but we can't use rb_bug()
+	/* Error has occurred, but we can't use rb_bug()
 	 * because this thread is not Ruby's thread.
          * What should we do?
 	 */
@@ -1498,8 +1498,8 @@ thread_s_pass(VALUE klass)
  * Thread#kill and thread termination (after main thread termination)
  * will be queued to th->pending_interrupt_queue.
  * - clear: clear the queue.
- * - enque: enque err object into queue.
- * - deque: deque err object from queue.
+ * - enque: enqueue err object into queue.
+ * - deque: dequeue err object from queue.
  * - active_p: return 1 if the queue should be checked.
  *
  * All rb_threadptr_pending_interrupt_* functions are called by
@@ -1627,7 +1627,7 @@ rb_threadptr_pending_interrupt_active_p(rb_thread_t *th)
 {
     /*
      * For optimization, we don't check async errinfo queue
-     * if it nor a thread interrupt mask were not changed
+     * if the queue and the thread interrupt mask were not changed
      * since last check.
      */
     if (th->pending_interrupt_queue_checked) {
@@ -1842,8 +1842,8 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
  *
  * Returns whether or not the asynchronous queue is empty.
  *
- * Since Thread::handle_interrupt can be used to defer asynchronous events.
- * This method can be used to determine if there are any deferred events.
+ * Since Thread::handle_interrupt can be used to defer asynchronous events,
+ * this method can be used to determine if there are any deferred events.
  *
  * If you find this method returns true, then you may finish +:never+ blocks.
  *
@@ -2764,7 +2764,7 @@ rb_thread_local_aref(VALUE thread, ID id)
  *
  *  Thread#[] and Thread#[]= are not thread-local but fiber-local.
  *  This confusion did not exist in Ruby 1.8 because
- *  fibers were only available since Ruby 1.9.
+ *  fibers are only available since Ruby 1.9.
  *  Ruby 1.9 chooses that the methods behaves fiber-local to save
  *  following idiom for dynamic scope.
  *
@@ -3688,7 +3688,7 @@ retry:
 
     /*
      * POLLIN, POLLOUT have a different meanings from select(2)'s read/write bit.
-     * Therefore we need fix it up.
+     * Therefore we need to fix it up.
      */
     result = 0;
     if (fds.revents & POLLIN_SET)
@@ -3812,7 +3812,7 @@ timer_thread_function(void *arg)
 
     /*
      * Tricky: thread_destruct_lock doesn't close a race against
-     * vm->running_thread switch. however it guarantee th->running_thread
+     * vm->running_thread switch. however it guarantees th->running_thread
      * point to valid pointer or NULL.
      */
     native_mutex_lock(&vm->thread_destruct_lock);
