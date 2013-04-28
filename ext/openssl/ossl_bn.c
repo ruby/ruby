@@ -123,11 +123,11 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     if (RB_TYPE_P(str, T_FIXNUM)) {
 	long i;
-	unsigned char *bin = (unsigned char*)ALLOC_N(long, 1);
+	unsigned char *bin = (unsigned char*)ALLOCA_N(long, 1);
 	long n = FIX2LONG(str);
 	unsigned long un = labs(n);
 
-	for (i = sizeof(VALUE) - 1; 0 <= i; i--) {
+	for (i = sizeof(long) - 1; 0 <= i; i--) {
 	    bin[i] = un&0xff;
 	    un >>= 8;
 	}
@@ -154,8 +154,10 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
 	GetBN(self, bn);
 	if (!BN_bin2bn(bin, (int)sizeof(BDIGIT)*RBIGNUM_LENINT(str), bn)) {
+	    xfree(bin);
 	    ossl_raise(eBNError, NULL);
 	}
+	xfree(bin);
 	if (!RBIGNUM_SIGN(str)) BN_set_negative(bn, 1);
 	return self;
     }

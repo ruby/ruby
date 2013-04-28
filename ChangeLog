@@ -1,3 +1,9 @@
+Sun Apr 28 22:04:37 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): fix buffer overflow on
+	  x64 Windows and memory leak when initializing with integer.
+	  [ruby-core:54615] [Bug #8337]
+
 Sun Apr 28 12:38:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT: correct method name to be used.  [Bug #7982]
