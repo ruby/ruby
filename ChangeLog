@@ -1,3 +1,8 @@
+Mon Apr 29 00:40:13 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/yaml.rb: Clarify documentation about YAML being always Psych.
+	  Give a tip about using Syck. See #8344.
+
 Sun Apr 28 23:34:01 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/yaml.rb: Use another trick to define the YAML module.

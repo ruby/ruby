@@ -1,7 +1,5 @@
 ##
-# The YAML module allows you to use one of the two YAML engines that ship with
-# ruby.  By default Psych is used but the old and unmaintained Syck may be
-# chosen.
+# The YAML module is an alias of Psych, the YAML engine for ruby.
 
 begin
   require 'psych'
@@ -15,13 +13,9 @@ end
 YAML = Psych
 
 module Psych # :nodoc:
+  # For compatibility, deprecated
   class EngineManager
-    # Returns the YAML engine in use.
-    #
-    # By default Psych is used but the old and unmaintained Syck may be chosen.
-    #
-    # See #yamler= for more information.
-    attr_reader :yamler
+    attr_reader :yamler # :nodoc:
 
     def initialize # :nodoc:
       @yamler = 'psych'
@@ -31,18 +25,15 @@ module Psych # :nodoc:
       false
     end
 
-    # By default Psych is used but the old and unmaintained Syck may be chosen.
+    # Psych is now always used and this method has no effect.
     #
-    # After installing the 'syck' gem, you can set the YAML engine to syck:
+    # This method is still present for compatibility.
     #
-    #   YAML::ENGINE.yamler = 'syck'
-    #
-    # To set the YAML engine back to psych:
-    #
-    #   YAML::ENGINE.yamler = 'psych'
+    # You may still use the Syck engine by installing
+    # the 'syck' gem and using the Syck constant.
     def yamler= engine
       case engine
-      when 'syck' then warn "syck has been removed"
+      when 'syck' then warn "syck has been removed, psych is used instead"
       when 'psych' then @yamler = 'psych'
       else
         raise(ArgumentError, "bad engine")
@@ -59,11 +50,9 @@ end
 #
 # This module provides a Ruby interface for data serialization in YAML format.
 #
-# The underlying implementation depends on an engine to handle the parsing and
-# serialization for Ruby, by default this will be using the libyaml wrapper
-# Psych.
+# The underlying implementation is now always the libyaml wrapper Psych.
 #
-# See Psych::EngineManager for details on switching the default YAML engine.
+# See Psych::EngineManager#yamler= for details on using Syck.
 #
 # Working with YAML can be very simple, for example:
 #
@@ -80,6 +69,6 @@ end
 # doc/security.rdoc for more information.
 #
 # For more advanced details on the implementation see Psych, and also check out
-# yaml.org for spec details and other helpful information.
+# http://yaml.org for spec details and other helpful information.
 module YAML
 end
