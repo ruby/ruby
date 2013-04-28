@@ -264,14 +264,22 @@ class TestIO_Console < Test::Unit::TestCase
       t2.close
       cmd = NOCTTY + [
         '--disable=gems',
-        '-rio/console',
-        '-e', 'open(ARGV[0], "w") {|f| f.puts IO.console.inspect}',
-        '-e', 'File.unlink(ARGV[1])',
+        '-e', 'open(ARGV[0], "w") {|f|',
+        '-e',   'STDOUT.reopen(f)',
+        '-e',   'STDERR.reopen(f)',
+        '-e',   'require "io/console"',
+        '-e',   'f.puts IO.console.inspect',
+        '-e',   'f.flush',
+        '-e',   'File.unlink(ARGV[1])',
+        '-e', '}',
         '--', t.path, t2.path]
       system(*cmd)
-      sleep 0.1 while File.exist?(t2.path)
+      30.times do
+        break unless File.exist?(t2.path)
+        sleep 0.1
+      end
       t.open
-      assert_equal("nil", t.gets.chomp)
+      assert_equal("nil", t.gets(nil).chomp)
     ensure
       t.close! if t and !t.closed?
       t2.close!
