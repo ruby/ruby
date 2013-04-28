@@ -844,7 +844,7 @@ rb_obj_dummy(void)
  *  call-seq:
  *     obj.tainted?    -> true or false
  *
- *  Returns whether the object is tainted.
+ *  Returns true if the object is tainted.
  *
  *  See #taint for more information.
  */
@@ -863,18 +863,18 @@ rb_obj_tainted(VALUE obj)
  *
  *  Mark the object as tainted.
  *
- *  To check whether an object is tainted, use #tainted?
- *
  *  Objects that are marked as tainted will be restricted from various built-in
  *  methods. This is to prevent insecure data, such as command-line arguments
  *  or strings read from Kernel#gets, from inadvertently compromising the users
  *  system.
  *
+ *  To check whether an object is tainted, use #tainted?
+ *
  *  You should only untaint a tainted object if your code has inspected it and
  *  determined that it is safe. To do so use #untaint
  *
- *  In $SAFE level 3 and 4, all objects are both tainted and untrusted, and the
- *  trust and taint methods will both raise a SecurityError exception.
+ *  In $SAFE level 3 and 4, all objects are tainted and untrusted, any use of
+ *  trust or taint methods will raise a SecurityError exception.
  */
 
 VALUE
@@ -913,7 +913,7 @@ rb_obj_untaint(VALUE obj)
  *  call-seq:
  *     obj.untrusted?    -> true or false
  *
- *  Returns whether the object is untrusted.
+ *  Returns true if the object is untrusted.
  *
  *  See #untrust for more information.
  */
@@ -941,8 +941,8 @@ rb_obj_untrusted(VALUE obj)
  *  You should only trust an untrusted object if your code has inspected it and
  *  determined that it is safe. To do so use #trust
  *
- *  In $SAFE level 3 and 4, all objects are both tainted and untrusted, and the
- *  trust and taint methods will both raise a SecurityError exception.
+ *  In $SAFE level 3 and 4, all objects are tainted and untrusted, any use of
+ *  trust or taint methods will raise a SecurityError exception.
  */
 
 VALUE

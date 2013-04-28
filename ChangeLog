@@ -1,3 +1,8 @@
+Sun Apr 28 10:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* object.c: With feedback from Steve Klabnik, reverted a change to
+	  #untrusted? and #tainted?. Also adjusted grammar for $SAFE levels
+
 Sun Apr 28 10:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/yaml.rb: Disable setting YAML const twice [ruby-core:54642]
