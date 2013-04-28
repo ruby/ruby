@@ -224,6 +224,9 @@ rb_vsprintf(const char *format, va_list ap)
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列を生成する．
 
+  注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
+  使ったVALUEの出力に使用されているため，整数には%dを使用すること．
+
 rb_str_cat(VALUE str, const char *ptr, long len)
 
   Rubyの文字列strにlenバイトの文字列ptrを追加する．
@@ -1380,6 +1383,9 @@ void rb_bug(const char *fmt, ...) ::
   インタープリタなどプログラムのバグでしか発生するはずのない
   状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
   例外処理は一切行なわれない．
+
+注意: %iはObject#to_s('+'フラグが指定されているときはObject#inspect)を
+使ったVALUEの出力に使用されているため，整数には%dを使用すること．
 
 == Rubyの初期化・実行
 

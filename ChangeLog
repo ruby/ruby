@@ -1,3 +1,9 @@
+Sun Apr 28 12:38:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT: correct method name to be used.  [Bug #7982]
+
+	* README.EXT.ja: add notes too.
+
 Sun Apr 28 10:35:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* object.c: With feedback from Steve Klabnik, reverted a change to
