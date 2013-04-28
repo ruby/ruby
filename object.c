@@ -844,7 +844,9 @@ rb_obj_dummy(void)
  *  call-seq:
  *     obj.tainted?    -> true or false
  *
- *  Returns <code>true</code> if the object is tainted.
+ *  Returns whether the object is tainted.
+ *
+ *  See #taint for more information.
  */
 
 VALUE
@@ -859,9 +861,20 @@ rb_obj_tainted(VALUE obj)
  *  call-seq:
  *     obj.taint -> obj
  *
- *  Marks <i>obj</i> as tainted---if the <code>$SAFE</code> level is
- *  set appropriately, many method calls which might alter the running
- *  programs environment will refuse to accept tainted strings.
+ *  Mark the object as tainted.
+ *
+ *  To check whether an object is tainted, use #tainted?
+ *
+ *  Objects that are marked as tainted will be restricted from various built-in
+ *  methods. This is to prevent insecure data, such as command-line arguments
+ *  or strings read from Kernel#gets, from inadvertently compromising the users
+ *  system.
+ *
+ *  You should only untaint a tainted object if your code has inspected it and
+ *  determined that it is safe. To do so use #untaint
+ *
+ *  In $SAFE level 3 and 4, all objects are both tainted and untrusted, and the
+ *  trust and taint methods will both raise a SecurityError exception.
  */
 
 VALUE
@@ -880,7 +893,9 @@ rb_obj_taint(VALUE obj)
  *  call-seq:
  *     obj.untaint    -> obj
  *
- *  Removes the taint from <i>obj</i>.
+ *  Removes the tainted mark from the object.
+ *
+ *  See #taint for more information.
  */
 
 VALUE
@@ -898,7 +913,9 @@ rb_obj_untaint(VALUE obj)
  *  call-seq:
  *     obj.untrusted?    -> true or false
  *
- *  Returns <code>true</code> if the object is untrusted.
+ *  Returns whether the object is untrusted.
+ *
+ *  See #untrust for more information.
  */
 
 VALUE
@@ -913,7 +930,19 @@ rb_obj_untrusted(VALUE obj)
  *  call-seq:
  *     obj.untrust -> obj
  *
- *  Marks <i>obj</i> as untrusted.
+ *  Mark the object as untrusted.
+ *
+ *  An untrusted object is not allowed to modify any trusted objects. To check
+ *  whether an object is trusted, use #untrusted?
+ *
+ *  Any object created by untrusted code is marked as both tainted and
+ *  untrusted. See #taint for more information.
+ *
+ *  You should only trust an untrusted object if your code has inspected it and
+ *  determined that it is safe. To do so use #trust
+ *
+ *  In $SAFE level 3 and 4, all objects are both tainted and untrusted, and the
+ *  trust and taint methods will both raise a SecurityError exception.
  */
 
 VALUE
@@ -932,7 +961,9 @@ rb_obj_untrust(VALUE obj)
  *  call-seq:
  *     obj.trust    -> obj
  *
- *  Removes the untrusted mark from <i>obj</i>.
+ *  Removes the untrusted mark from the object.
+ *
+ *  See #untrust for more information.
  */
 
 VALUE
