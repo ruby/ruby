@@ -25,14 +25,19 @@ module Kernel
   module_function :pp # :nodoc:
 end
 
-# Pretty-printer for Ruby objects.
+##
+# A pretty-printer for Ruby objects.
 #
-# == Which seems better?
+# All examples assume you have loaded the PP class with:
+#   require 'pp'
 #
-# Standard output by #p like this?
+##
+# == What PP Does
+#
+# Standard output by #p returns this:
 #   #<PP:0x81fedf0 @genspace=#<Proc:0x81feda0>, @group_queue=#<PrettyPrint::GroupQueue:0x81fed3c @queue=[[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], []]>, @buffer=[], @newline="\n", @group_stack=[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], @buffer_width=0, @indent=0, @maxwidth=79, @output_width=2, @output=#<IO:0x8114ee4>>
 #
-# Or the pretty-printed version:
+# Pretty-printed output returns this:
 #   #<PP:0x81fedf0
 #    @buffer=[],
 #    @buffer_width=0,
@@ -50,11 +55,11 @@ end
 #    @output=#<IO:0x8114ee4>,
 #    @output_width=2>
 #
-# I like the latter.  If you do too, this library is for you.
-#
+##
 # == Usage
 #
 #   pp(obj)             #=> obj
+#   pp obj              #=> obj
 #   pp(obj1, obj2, ...) #=> [obj1, obj2, ...]
 #   pp()                #=> nil
 #
@@ -62,22 +67,30 @@ end
 #
 # It returns <tt>obj(s)</tt>.
 #
-# = Output Customization
+##
+# == Output Customization
 #
-# To define your customized pretty printing function for your classes,
-# redefine a method #pretty_print(+pp+) in the class.
+# To define a customized pretty printing function for your classes,
+# redefine method <code>#pretty_print(pp)</code> in the class.
 #
-# It takes an argument +pp+ which is an instance of the class PP.
-# The method should use #text, #breakable, #nest, #group and #pp to print the
+# <code>#pretty_print</code> takes the +pp+ argument, which is an instance of the PP class.
+# The method uses #text, #breakable, #nest, #group and #pp to print the
 # object.
 #
-# = Author
+##
+# == Pretty-Print JSON
+#
+# To pretty-print JSON refer to JSON#pretty_generate.
+#
+##
+# == Author
 # Tanaka Akira <akr@fsij.org>
+
 class PP < PrettyPrint
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
-  # If +out+ is omitted, +$>+ is assumed.
+  # If +out+ is omitted, <code>$></code> is assumed.
   # If +width+ is omitted, 79 is assumed.
   #
   # PP.pp returns +out+.
