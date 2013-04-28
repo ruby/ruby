@@ -1,3 +1,7 @@
+Sun Apr 28 10:10:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/yaml.rb: Disable setting YAML const twice [ruby-core:54642]
+
 Sun Apr 28 09:50:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* object.c: Documentation for taint and trust [Bug #8162]

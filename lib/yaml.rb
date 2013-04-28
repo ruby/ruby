@@ -79,5 +79,5 @@ end
 #
 # For more advanced details on the implementation see Psych, and also check out
 # yaml.org for spec details and other helpful information.
-module YAML; end
+module YAML end if false
 YAML = Psych
