@@ -1,3 +1,11 @@
+Mon Apr 29 06:58:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): no need of alloca for
+	  small fixed size array.
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): check overflow first,
+	  and use alloca for small size input.
+
 Mon Apr 29 00:40:13 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/yaml.rb: Clarify documentation about YAML being always Psych.

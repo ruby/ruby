@@ -123,7 +123,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     if (RB_TYPE_P(str, T_FIXNUM)) {
 	long i;
-	unsigned char *bin = (unsigned char*)ALLOCA_N(long, 1);
+	unsigned char bin[sizeof(long)];
 	long n = FIX2LONG(str);
 	unsigned long un = labs(n);
 
@@ -133,31 +133,32 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	}
 
 	GetBN(self, bn);
-	if (!BN_bin2bn(bin, sizeof(long), bn)) {
+	if (!BN_bin2bn(bin, sizeof(bin), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	if (n < 0) BN_set_negative(bn, 1);
 	return self;
     }
     else if (RB_TYPE_P(str, T_BIGNUM)) {
-	long i, j;
+	int i, j, len = RBIGNUM_LENINT(str);
 	BDIGIT *ds = RBIGNUM_DIGITS(str);
-	unsigned char *bin = (unsigned char*)ALLOC_N(BDIGIT, RBIGNUM_LEN(str));
+	VALUE buf;
+	unsigned char *bin = (unsigned char*)ALLOCV_N(BDIGIT, buf, len);
 
-	for (i = 0; RBIGNUM_LEN(str) > i; i++) {
+	for (i = 0; len > i; i++) {
 	    BDIGIT v = ds[i];
 	    for (j = sizeof(BDIGIT) - 1; 0 <= j; j--) {
-		bin[(RBIGNUM_LEN(str)-1-i)*sizeof(BDIGIT)+j] = v&0xff;
+		bin[(len-1-i)*sizeof(BDIGIT)+j] = v&0xff;
 		v >>= 8;
 	    }
 	}
 
 	GetBN(self, bn);
-	if (!BN_bin2bn(bin, (int)sizeof(BDIGIT)*RBIGNUM_LENINT(str), bn)) {
-	    xfree(bin);
+	if (!BN_bin2bn(bin, (int)sizeof(BDIGIT)*len, bn)) {
+	    ALLOCV_END(buf);
 	    ossl_raise(eBNError, NULL);
 	}
-	xfree(bin);
+	ALLOCV_END(buf);
 	if (!RBIGNUM_SIGN(str)) BN_set_negative(bn, 1);
 	return self;
     }
