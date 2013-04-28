@@ -12,6 +12,8 @@ rescue LoadError
   raise
 end
 
+YAML = Psych
+
 module Psych # :nodoc:
   class EngineManager
     # Returns the YAML engine in use.
@@ -79,5 +81,5 @@ end
 #
 # For more advanced details on the implementation see Psych, and also check out
 # yaml.org for spec details and other helpful information.
-module YAML end if false
-YAML = Psych
+module YAML
+end

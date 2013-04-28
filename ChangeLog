@@ -1,3 +1,8 @@
+Sun Apr 28 23:34:01 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/yaml.rb: Use another trick to define the YAML module.
+	  https://twitter.com/n0kada/status/328342207511801856
+
 Sun Apr 28 23:19:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/pp.rb: Update PP module overview by @geopet
