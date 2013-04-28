@@ -1,3 +1,7 @@
+Sun Apr 28 09:40:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Copy note from r40505 for rb_sprintf() [Bug #7982]
+
 Sun Apr 28 08:28:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/curses/curses.c: Update Curses::Window example for nicer output
