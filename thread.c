@@ -919,6 +919,10 @@ thread_value(VALUE self)
  * OpenBSD 5.2 (amd64):
  *   time_t: int (signed 32bit integer)
  *   tv_sec: long (signed 64bit integer)
+ *
+ * MinGW-w64 (x64):
+ *   time_t: long long (signed 64bit integer)
+ *   tv_sec: long (signed 32bit integer)
  */
 
 #if SIGNEDNESS_OF_TIME_T < 0	/* signed */
