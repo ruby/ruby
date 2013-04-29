@@ -24,12 +24,10 @@
 static inline VALUE *
 VM_EP_LEP(VALUE *ep)
 {
-    while (1) {
-	if (VM_EP_LEP_P(ep)) {
-	    return ep;
-	}
+    while (!VM_EP_LEP_P(ep)) {
 	ep = VM_EP_PREV_EP(ep);
     }
+    return ep;
 }
 
 VALUE *
