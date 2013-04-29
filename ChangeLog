@@ -1,3 +1,9 @@
+Mon Apr 29 17:02:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.h: Bionic libc doesn't have locale.
+	  [Feature #8338]
+
+
 Mon Apr 29 06:58:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_initialize): no need of alloca for
