@@ -1,3 +1,8 @@
+Tue Apr 30 12:30:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_block_lambda): add declaration instead of
+	  deprecated rb_f_lambda.
+
 Mon Apr 29 17:02:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.h: Bionic libc doesn't have locale.
