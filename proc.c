@@ -2000,13 +2000,13 @@ method_inspect(VALUE method)
 static VALUE
 mproc(VALUE method)
 {
-    return rb_funcall(Qnil, rb_intern("proc"), 0);
+    return rb_funcall2(rb_mRubyVMFrozenCore, rb_intern("proc"), 0, 0);
 }
 
 static VALUE
 mlambda(VALUE method)
 {
-    return rb_funcall(Qnil, rb_intern("lambda"), 0);
+    return rb_funcall(rb_mRubyVMFrozenCore, rb_intern("lambda"), 0, 0);
 }
 
 static VALUE

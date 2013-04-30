@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestProc < Test::Unit::TestCase
   def setup
@@ -1156,5 +1157,15 @@ class TestProc < Test::Unit::TestCase
     assert_nothing_raised(LocalJumpError, bug3792) {
       assert_equal('zot', o.method(:foo).to_proc.() {'zot'}, bug3792)
     }
+  end
+
+  def test_overriden_lambda
+    bug8345 = '[ruby-core:54687] [Bug #8345]'
+    assert_normal_exit('def lambda; end; method(:puts).to_proc', bug8345)
+  end
+
+  def test_overriden_proc
+    bug8345 = '[ruby-core:54688] [Bug #8345]'
+    assert_normal_exit('def proc; end; ->{}.curry', bug8345)
   end
 end

@@ -1,4 +1,10 @@
-Tue Apr 30 12:30:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr 30 12:31:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mproc, mlambda): use frozen core methods instead of plain
+	  global methods, so that methods cannot be overridden.
+	  [ruby-core:54687] [Bug #8345]
+
+	* vm.c (Init_VM): define proc and lambda on the frozen core object.
 
 	* include/ruby/intern.h (rb_block_lambda): add declaration instead of
 	  deprecated rb_f_lambda.
