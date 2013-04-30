@@ -481,6 +481,14 @@ rb_block_proc(void)
     return proc_new(rb_cProc, FALSE);
 }
 
+/*
+ * call-seq:
+ *   lambda { |...| block }  -> a_proc
+ *
+ * Equivalent to <code>Proc.new</code>, except the resulting Proc objects
+ * check the number of parameters passed when called.
+ */
+
 VALUE
 rb_block_lambda(void)
 {
@@ -491,20 +499,6 @@ VALUE
 rb_f_lambda(void)
 {
     rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
-    return rb_block_lambda();
-}
-
-/*
- * call-seq:
- *   lambda { |...| block }  -> a_proc
- *
- * Equivalent to <code>Proc.new</code>, except the resulting Proc objects
- * check the number of parameters passed when called.
- */
-
-static VALUE
-proc_lambda(void)
-{
     return rb_block_lambda();
 }
 
@@ -2353,7 +2347,7 @@ Init_Proc(void)
 
     /* utility functions */
     rb_define_global_function("proc", rb_block_proc, 0);
-    rb_define_global_function("lambda", proc_lambda, 0);
+    rb_define_global_function("lambda", rb_block_lambda, 0);
 
     /* Method */
     rb_cMethod = rb_define_class("Method", rb_cObject);
