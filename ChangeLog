@@ -1,3 +1,7 @@
+Tue Apr 30 23:18:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/benchmark.rb: Update Benchmark results on newer CPU
+
 Tue Apr 30 12:31:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mproc, mlambda): use frozen core methods instead of plain
