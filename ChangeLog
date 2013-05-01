@@ -1,3 +1,8 @@
+Wed May  1 21:11:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (localtime_with_gmtoff_zone): musl libc may return NULL for
+	  tm_zone.
+
 Wed May  1 18:59:36 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* enum.c (Enumerable#chunk): fix grammar of error message
