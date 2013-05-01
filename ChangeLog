@@ -1,3 +1,9 @@
+Thu May  2 00:30:00 2013  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.
+	  This fixes a compilation failure while cross-compiling for Tensilica
+	  Xtensa Processor.
+
 Thu May  2 00:19:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* dir.c (dir_set_pos): Fix a compilation error when seekdir() is not
