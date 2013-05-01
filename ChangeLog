@@ -1,3 +1,8 @@
+Wed May  1 16:47:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/extconf.rb (curses_version): try once for each tests, a
+	  function or a variable.  fallback to variable for old SVR4.
+
 Wed May  1 16:17:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): extensions not to be installed should not

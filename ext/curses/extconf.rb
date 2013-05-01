@@ -110,18 +110,17 @@ if header_library
           return EXIT_FAILURE;
       }
     End
-    function_p = checking_for(checking_message('link function curses_version', curses)) { try_link(func_test_program) } ? nil : false
-    variable_p = checking_for(checking_message('link variable curses_version', curses)) { try_link(var_test_program) } ? nil : false
-    if [header, library].any? {|v| /ncurses|pdcurses|xcurses/i =~ v }
-      function_p = true if function_p == nil
-      variable_p = false if variable_p == nil
-    end
-    if !CROSS_COMPILING
-      if function_p != false
-        function_p = checking_for(checking_message('run function curses_version', curses)) { try_run(func_test_program) }
-      end
-      if variable_p != false
-        variable_p = checking_for(checking_message('run variable curses_version', curses)) { try_run(var_test_program) }
+    try = method(CROSS_COMPILING ? :try_link : :try_run)
+    function_p = checking_for(checking_message('function curses_version', curses)) { try[func_test_program] }
+    variable_p = checking_for(checking_message('variable curses_version', curses)) { try[var_test_program] }
+    if function_p and variable_p
+      if [header, library].grep(/ncurses|pdcurses|xcurses/i)
+        variable_p = false
+      else
+        warn "found curses_version but cannot determin whether it is a"
+        warn "function or a variable, so assume a variable in old SVR4"
+        warn "ncurses."
+        function_p = false
       end
     end
     $defs << '-DHAVE_FUNC_CURSES_VERSION' if function_p
