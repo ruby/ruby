@@ -5676,26 +5676,19 @@ rb_daemon(int nochdir, int noclose)
 #else
     int n;
 
-    switch (rb_fork_ruby(NULL)) {
-      case -1:
-	rb_sys_fail("daemon");
-      case 0:
-	break;
-      default:
-	_exit(EXIT_SUCCESS);
+#define fork_daemon() \
+    switch (rb_fork_ruby(NULL)) { \
+      case -1: return -1; \
+      case 0:  break; \
+      default: _exit(EXIT_SUCCESS); \
     }
 
-    proc_setsid();
+    fork_daemon();
+
+    if (setsid() < 0) return -1;
 
     /* must not be process-leader */
-    switch (rb_fork_ruby(NULL)) {
-      case -1:
-	return -1;
-      case 0:
-	break;
-      default:
-	_exit(EXIT_SUCCESS);
-    }
+    fork_daemon();
 
     if (!nochdir)
 	err = chdir("/");
