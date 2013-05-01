@@ -1,3 +1,7 @@
+Wed May  1 12:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/rake/version.rb: Fix RDoc warning with  :include: [Bug #8347]
+
 Wed May  1 11:40:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def (predefined): add "idProc".
