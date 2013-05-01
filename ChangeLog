@@ -1,3 +1,21 @@
+Thu May  2 00:16:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT: correct method name to be used.  [Bug #7982]
+
+	* README.EXT.ja: add notes too.
+
+Thu May  2 00:16:36 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Copy note from r40505 for rb_sprintf() [Bug #7982]
+
+Thu May  2 00:16:36 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Update note from r40504, by Jeremy Evans [Bug #7982]
+
+Thu May  2 00:16:36 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* README.EXT: Add note to warn use of %i in Exceptions [Bug #7982]
+
 Wed May  1 23:35:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ext_int_to_encs, parse_mode_enc): bom-prefixed name is

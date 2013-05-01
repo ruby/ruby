@@ -196,6 +196,10 @@ rb_vsprintf(const char *format, va_list ap) ::
 
   Creates a new Ruby string with printf(3) format.
 
+  Note: In the format string, %i is used for Object#to_s (or Object#inspect if
+  '+' flag is set) output (and related argument must be a VALUE).  For integers
+  in format strings, use %d.
+
 rb_str_cat(VALUE str, const char *ptr, long len) ::
 
   Appends len bytes of data from ptr to the Ruby string.
@@ -1365,6 +1369,10 @@ void rb_bug(const char *fmt, ...) ::
   Terminates the interpreter immediately.  This function should be
   called under the situation caused by the bug in the interpreter.  No
   exception handling nor ensure execution will be done.
+
+Note: In the format string, %i is used for Object#to_s (or Object#inspect if
+'+' flag is set) output (and related argument must be a VALUE).  For integers
+in format strings, use %d.
 
 == Initialize and Start the Interpreter
 
