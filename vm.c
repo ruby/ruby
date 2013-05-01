@@ -1460,7 +1460,7 @@ rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
-	    if (idp) CONST_ID(*idp, "<ifunc>");
+	    if (idp) *idp = idIFUNC;
 	    if (klassp) *klassp = 0;
 	    return 1;
 	}

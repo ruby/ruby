@@ -1,8 +1,12 @@
-Wed May  1 11:38:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May  1 11:40:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def (predefined): add "idProc".
 
+	* eval.c (frame_func_id): use predefined IDs.
+
 	* proc.c (mnew, mproc, mlambda): use predefined IDs.
+
+	* vm.c (rb_vm_control_frame_id_and_class): ditto.
 
 	* vm.c (Init_VM): ditto.
 

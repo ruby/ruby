@@ -860,7 +860,7 @@ frame_func_id(rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(iseq)) {
 	    NODE *ifunc = (NODE *)iseq;
 	    if (ifunc->nd_aid) return ifunc->nd_aid;
-	    return rb_intern("<ifunc>");
+	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
@@ -890,7 +890,7 @@ frame_called_id(rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(iseq)) {
 	    NODE *ifunc = (NODE *)iseq;
 	    if (ifunc->nd_aid) return ifunc->nd_aid;
-	    return rb_intern("<ifunc>");
+	    return idIFUNC;
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
