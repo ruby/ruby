@@ -179,7 +179,6 @@ goto :loop
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
   echo   --disable-install-doc   do not install rdoc indexes during install
-  echo   --disable-win95         disable win95 support
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   del *.tmp
   del ~tmp~.mak
