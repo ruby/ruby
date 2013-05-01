@@ -1,3 +1,8 @@
+Wed May  1 18:59:36 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* enum.c (Enumerable#chunk): fix grammar of error message
+	  for symbols beginning with an underscore [Bug #8351]
+
 Wed May  1 16:47:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/extconf.rb (curses_version): try once for each tests, a

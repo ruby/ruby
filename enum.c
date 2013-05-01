@@ -2358,7 +2358,7 @@ chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
         }
     }
     else if (SYMBOL_P(v) && rb_id2name(SYM2ID(v))[0] == '_') {
-	rb_raise(rb_eRuntimeError, "symbol begins with an underscore is reserved");
+	rb_raise(rb_eRuntimeError, "symbols beginning with an underscore are reserved");
     }
     else {
         if (NIL_P(argp->prev_value)) {
@@ -2447,7 +2447,7 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *  Any other symbols that begin with an underscore will raise an error:
  *
  *    items.chunk { |item| :_underscore }
- *    #=> RuntimeError: symbol begins with an underscore is reserved
+ *    #=> RuntimeError: symbols beginning with an underscore are reserved
  *
  *  +nil+ and +:_separator+ can be used to ignore some elements.
  *
