@@ -1,3 +1,11 @@
+Wed May  1 11:38:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (predefined): add "idProc".
+
+	* proc.c (mnew, mproc, mlambda): use predefined IDs.
+
+	* vm.c (Init_VM): ditto.
+
 Tue Apr 30 23:18:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/benchmark.rb: Update Benchmark results on newer CPU
