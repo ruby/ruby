@@ -1,3 +1,8 @@
+Thu May  2 00:19:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (dir_set_pos): Fix a compilation error when seekdir() is not
+	  exist.
+
 Thu May  2 00:16:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT: correct method name to be used.  [Bug #7982]
