@@ -1,3 +1,14 @@
+Wed May  1 23:35:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_ext_int_to_encs, parse_mode_enc): bom-prefixed name is
+	  not a real encoding name, just a fallback.  so the proper conversion
+	  should take place even if if the internal encoding is equal to the
+	  bom-prefixed name, unless actual encoding is equal to the internal
+	  encoding.  [ruby-core:54563] [Bug #8323]
+
+	* io.c (io_set_encoding_by_bom): reset extenal encoding if no BOM
+	  found.  [ruby-core:54569]
+
 Sat Apr 27 02:12:14 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_fd_fix_cloexec): use rb_update_max_fd().
