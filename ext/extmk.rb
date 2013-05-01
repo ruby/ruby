@@ -144,6 +144,8 @@ def extmake(target)
     $srcs = []
     $compiled[target] = false
     makefile = "./Makefile"
+    static = $static
+    $static = nil if noinstall = File.fnmatch?("-*", target)
     ok = File.exist?(makefile)
     unless $ignore
       rbconfig0 = RbConfig::CONFIG
@@ -216,7 +218,14 @@ def extmake(target)
     end
     ok &&= File.open(makefile){|f| !f.gets[DUMMY_SIGNATURE]}
     ok = yield(ok) if block_given?
-    unless ok
+    if ok
+      open(makefile, "r+") do |f|
+        s = f.read.sub!(/^(static:)\s.*/, '\1 all')
+        f.rewind
+        f.print(s)
+        f.truncate(f.pos)
+      end
+    else
       open(makefile, "w") do |f|
         f.puts "# " + DUMMY_SIGNATURE
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
@@ -236,7 +245,7 @@ def extmake(target)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
     end
-    if $static and ok and !$objs.empty? and !File.fnmatch?("-*", target)
+    if $static and ok and !$objs.empty? and !noinstall
       args += ["static"] unless $clean
       $extlist.push [$static, target, $target, $preload]
     end
@@ -279,6 +288,7 @@ def extmake(target)
     $top_srcdir = top_srcdir
     $topdir = topdir
     $hdrdir = hdrdir
+    $static = static
     Dir.chdir dir
   end
   begin

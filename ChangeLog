@@ -1,3 +1,8 @@
+Wed May  1 16:17:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): extensions not to be installed should not
+	  make static libraries, but make dynamic libraries always.
+
 Wed May  1 12:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/rake/version.rb: Fix RDoc warning with  :include: [Bug #8347]
