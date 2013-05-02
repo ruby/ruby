@@ -14,7 +14,7 @@ YAML = Psych
 
 module Psych # :nodoc:
   # For compatibility, deprecated
-  class EngineManager
+  class EngineManager # :nodoc:
     attr_reader :yamler # :nodoc:
 
     def initialize # :nodoc:
@@ -25,13 +25,13 @@ module Psych # :nodoc:
       false
     end
 
-    # Psych is now always used and this method has no effect.
+    # Psych is always used and this method has no effect.
     #
     # This method is still present for compatibility.
     #
     # You may still use the Syck engine by installing
     # the 'syck' gem and using the Syck constant.
-    def yamler= engine
+    def yamler= engine # :nodoc:
       case engine
       when 'syck' then warn "syck has been removed, psych is used instead"
       when 'psych' then @yamler = 'psych'
@@ -50,9 +50,9 @@ end
 #
 # This module provides a Ruby interface for data serialization in YAML format.
 #
-# The underlying implementation is now always the libyaml wrapper Psych.
+# The underlying implementation is the libyaml wrapper Psych.
 #
-# See Psych::EngineManager#yamler= for details on using Syck.
+# == Usage
 #
 # Working with YAML can be very simple, for example:
 #
@@ -64,9 +64,24 @@ end
 #     YAML.dump("foo")     # => "--- foo\n...\n"
 #     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
 #
+# == Security
+#
 # Do not use YAML to load untrusted data. Doing so is unsafe and could allow
 # malicious input to execute arbitrary code inside your application. Please see
 # doc/security.rdoc for more information.
+#
+# == History
+#
+# Syck was the original for YAML implementation in Ruby's standard library
+# developed by why the lucky stiff.
+#
+# You can still use Syck, if you prefer, for parsing and emitting YAML, but you
+# must install the 'syck' gem now in order to use it.
+#
+# In older Ruby versions, ie. <= 1.9, Syck is still provided, however it was
+# completely removed with the release of Ruby 2.0.0.
+#
+# == More info
 #
 # For more advanced details on the implementation see Psych, and also check out
 # http://yaml.org for spec details and other helpful information.

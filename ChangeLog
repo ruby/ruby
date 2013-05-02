@@ -1,3 +1,7 @@
+Thu May  2 11:24:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/yaml.rb: nodoc EngineManager, add History doc #8344
+
 Wed May  1 21:11:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (localtime_with_gmtoff_zone): musl libc may return NULL for
