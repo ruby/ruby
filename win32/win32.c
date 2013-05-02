@@ -3911,7 +3911,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	if (stat_loc) {
 	    *stat_loc = exitcode << 8;
 	    if (exitcode & 0xC0000000) {
-		static struct {
+		static const struct {
 		    DWORD status;
 		    int sig;
 		} table[] = {
