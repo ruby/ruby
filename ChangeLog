@@ -1,3 +1,7 @@
+Fri May  3 00:15:58 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* common.mk: remove timestamps in distclean-ext realclean-ext.
+
 Thu May  2 23:23:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_is_kind_of): skip prepending modules.

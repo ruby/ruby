@@ -449,7 +449,6 @@ clean-local:: PHONY
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT)
 clean-ext:: PHONY
-	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
@@ -474,13 +473,14 @@ distclean-platform: clean-platform
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
 	$(Q)$(RM) parse.c parse.h lex.c newline.c miniprelude.c revision.h
-realclean-ext::
+realclean-ext:: PHONY
 realclean-golf: distclean-golf
 realclean-capi: PHONY
 realclean-extout: distclean-extout
 
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
+	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
 
 clean-enc distclean-enc realclean-enc: PHONY
 
