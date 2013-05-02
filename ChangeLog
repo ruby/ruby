@@ -1,3 +1,9 @@
+Thu May  2 23:39:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (double2timeval): convert the infinity to TIME_MAX to avoid
+	  SEGV by Thread.new {}.join(Float::INFINITY) on
+	  Debian GNU/Linux (amd64).
+
 Thu May  2 00:30:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (ruby_init_stack): Add STACK_GROW_DIR_DETECTION.
