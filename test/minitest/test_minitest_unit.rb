@@ -6,7 +6,8 @@
 ######################################################################
 
 require 'pathname'
-require 'minitest/metametameta'
+require_relative 'metametameta'
+require 'minitest/parallel_each'
 
 module MyModule; end
 class AnError < StandardError; include MyModule; end
