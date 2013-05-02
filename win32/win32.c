@@ -3908,7 +3908,39 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
         }
 	pid = child->pid;
 	CloseChildHandle(child);
-	if (stat_loc) *stat_loc = exitcode << 8;
+	if (stat_loc) {
+	    *stat_loc = exitcode << 8;
+	    if (exitcode & 0xC0000000) {
+		static struct {
+		    DWORD status;
+		    int sig;
+		} table[] = {
+		    {STATUS_ACCESS_VIOLATION,        SIGSEGV},
+		    {STATUS_ILLEGAL_INSTRUCTION,     SIGILL},
+		    {STATUS_PRIVILEGED_INSTRUCTION,  SIGILL},
+		    {STATUS_FLOAT_DENORMAL_OPERAND,  SIGFPE},
+		    {STATUS_FLOAT_DIVIDE_BY_ZERO,    SIGFPE},
+		    {STATUS_FLOAT_INEXACT_RESULT,    SIGFPE},
+		    {STATUS_FLOAT_INVALID_OPERATION, SIGFPE},
+		    {STATUS_FLOAT_OVERFLOW,          SIGFPE},
+		    {STATUS_FLOAT_STACK_CHECK,       SIGFPE},
+		    {STATUS_FLOAT_UNDERFLOW,         SIGFPE},
+		    {STATUS_FLOAT_MULTIPLE_FAULTS,   SIGFPE},
+		    {STATUS_FLOAT_MULTIPLE_TRAPS,    SIGFPE},
+		    {0, 0}
+		};
+		int i;
+		for (i = 0; table[i].status; i++) {
+		    if (table[i].status == exitcode) {
+			*stat_loc |= table[i].sig;
+			break;
+		    }
+		}
+		// if unknown status, assume SEGV
+		if (!table[i].status)
+		    *stat_loc |= SIGSEGV;
+	    }
+	}
 	return pid;
     }
     return 0;
