@@ -3,6 +3,12 @@ Thu May  2 11:32:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (poll_child_status): [experimental] set the cause of
 	  a child's death to status if its exitcode seems to be an error.
 
+	* test/ruby/test_process.rb (TestProcess#test_no_curdir): maybe now
+	  we can test it.
+
+	* test/ruby/test_thread.rb (TestThread#test_thread_timer_and_interrupt):
+	  ditto.
+
 Thu May  2 11:24:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/yaml.rb: nodoc EngineManager, add History doc #8344

@@ -743,12 +743,9 @@ _eom
     end
     t1 = Time.now.to_f
     assert_equal(pid, s.pid, bug5757)
-    unless /mswin|mingw/ =~ RUBY_PLATFORM
-      # status of signal is not supported on Windows
-      assert_equal([false, true, false, Signal.list["INT"]],
-                   [s.exited?, s.signaled?, s.stopped?, s.termsig],
-                   "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
-    end
+    assert_equal([false, true, false, Signal.list["INT"]],
+                 [s.exited?, s.signaled?, s.stopped?, s.termsig],
+                 "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
     assert_in_delta(t1 - t0, 1, 1, bug5757)
   end
 

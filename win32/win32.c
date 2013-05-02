@@ -3927,6 +3927,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 		    {STATUS_FLOAT_UNDERFLOW,         SIGFPE},
 		    {STATUS_FLOAT_MULTIPLE_FAULTS,   SIGFPE},
 		    {STATUS_FLOAT_MULTIPLE_TRAPS,    SIGFPE},
+		    {STATUS_CONTROL_C_EXIT,          SIGINT},
 		    {0, 0}
 		};
 		int i;

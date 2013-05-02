@@ -1356,7 +1356,7 @@ class TestProcess < Test::Unit::TestCase
       }
       assert(status.success?, "[ruby-dev:38105]")
     }
-  end unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_fallback_to_sh
     feature = '[ruby-core:32745]'
