@@ -1395,7 +1395,6 @@ proc_spawn_cmd_internal(char **argv, char *prog)
 	after_exec();
 	if (status == -1) errno = ENOEXEC;
     }
-    rb_last_status_set(status == -1 ? 127 : status, 0);
     return status;
 }
 #endif
@@ -1431,7 +1430,6 @@ proc_spawn_sh(char *str)
     char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
     before_exec();
     status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
-    rb_last_status_set(status == -1 ? 127 : status, 0);
     after_exec();
     return status;
 }
@@ -3686,10 +3684,8 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
         char **argv = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
 	pid = proc_spawn_cmd(argv, prog, eargp);
     }
-#  if defined(_WIN32)
     if (pid == -1)
 	rb_last_status_set(0x7f << 8, 0);
-#  endif
 # else
     if (!eargp->use_shell) {
         char **argv = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
