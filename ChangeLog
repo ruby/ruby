@@ -1,3 +1,8 @@
+Thu May  2 13:42:42 2013  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 4.7.4 (r8483)
+	* test/minitest/*: ditto
+
 Thu May  2 11:32:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (poll_child_status): [experimental] set the cause of

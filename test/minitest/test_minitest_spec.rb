@@ -6,16 +6,20 @@
 ######################################################################
 
 # encoding: utf-8
-require 'minitest/autorun'
-require 'stringio'
+require "minitest/autorun"
+require "stringio"
 
 class MiniSpecA < MiniTest::Spec; end
-class MiniSpecB < MiniTest::Spec; end
+class MiniSpecB < MiniTest::Unit::TestCase; extend MiniTest::Spec::DSL; end
+class MiniSpecC < MiniSpecB; end
+class NamedExampleA < MiniSpecA; end
+class NamedExampleB < MiniSpecB; end
+class NamedExampleC < MiniSpecC; end
 class ExampleA; end
 class ExampleB < ExampleA; end
 
 describe MiniTest::Spec do
-  # do not parallelize this suite... it just can't handle it.
+  # do not parallelize this suite... it just can"t handle it.
 
   def assert_triggered expected = "blah", klass = MiniTest::Assertion
     @assertion_count += 2
@@ -25,7 +29,7 @@ describe MiniTest::Spec do
     end
 
     msg = e.message.sub(/(---Backtrace---).*/m, '\1')
-    msg.gsub!(/\(oid=[-0-9]+\)/, '(oid=N)')
+    msg.gsub!(/\(oid=[-0-9]+\)/, "(oid=N)")
 
     assert_equal expected, msg
   end
@@ -35,7 +39,7 @@ describe MiniTest::Spec do
   end
 
   after do
-    self._assertions.must_equal @assertion_count
+    self._assertions.must_equal @assertion_count if passed? and not skipped?
   end
 
   it "needs to be able to catch a MiniTest::Assertion exception" do
@@ -84,10 +88,10 @@ describe MiniTest::Spec do
   it "needs to catch an unexpected exception" do
     @assertion_count -= 2 # no positive
 
-    msg = <<-EOM.gsub(/^ {6}/, '').chomp
+    msg = <<-EOM.gsub(/^ {6}/, "").chomp
       [RuntimeError] exception expected, not
       Class: <MiniTest::Assertion>
-      Message: <\"MiniTest::Assertion\">
+      Message: <"MiniTest::Assertion">
       ---Backtrace---
     EOM
 
@@ -140,7 +144,7 @@ describe MiniTest::Spec do
 
     bad = %w[not raise throw send output be_silent]
 
-    expected_wonts = expected_musts.map { |m| m.sub(/^must/, 'wont') }
+    expected_wonts = expected_musts.map { |m| m.sub(/^must/, "wont") }
     expected_wonts.reject! { |m| m =~ /wont_#{Regexp.union(*bad)}/ }
 
     musts.must_equal expected_musts
@@ -162,7 +166,7 @@ describe MiniTest::Spec do
   it "needs to verify binary messages" do
     42.wont_be(:<, 24).must_equal false
 
-    assert_triggered 'Expected 24 to not be < 42.' do
+    assert_triggered "Expected 24 to not be < 42." do
       24.wont_be :<, 42
     end
 
@@ -202,15 +206,16 @@ describe MiniTest::Spec do
 
     24.wont_be_close_to(42).must_equal false
 
-    assert_triggered 'Expected |42 - 42.0| (0.0) to not be < 0.001.' do
+    assert_triggered "Expected |42 - 42.0| (0.0) to not be <= 0.001." do
       (6 * 7.0).wont_be_close_to 42
     end
 
-    assert_triggered 'Expected |42 - 42.0| (0.0) to not be < 1.0e-05.' do
+    x = maglev? ? "1.0000000000000001e-05" : "1.0e-05"
+    assert_triggered "Expected |42 - 42.0| (0.0) to not be <= #{x}." do
       (6 * 7.0).wont_be_close_to 42, 0.00001
     end
 
-    assert_triggered "msg.\nExpected |42 - 42.0| (0.0) to not be < 1.0e-05." do
+    assert_triggered "msg.\nExpected |42 - 42.0| (0.0) to not be <= #{x}." do
       (6 * 7.0).wont_be_close_to 42, 0.00001, "msg"
     end
   end
@@ -220,15 +225,17 @@ describe MiniTest::Spec do
 
     24.wont_be_within_epsilon(42).must_equal false
 
-    assert_triggered 'Expected |42 - 42.0| (0.0) to not be < 0.042.' do
+    x = maglev? ? "0.042000000000000003" : "0.042"
+    assert_triggered "Expected |42 - 42.0| (0.0) to not be <= #{x}." do
       (6 * 7.0).wont_be_within_epsilon 42
     end
 
-    assert_triggered 'Expected |42 - 42.0| (0.0) to not be < 0.00042.' do
+    x = maglev? ? "0.00042000000000000002" : "0.00042"
+    assert_triggered "Expected |42 - 42.0| (0.0) to not be <= #{x}." do
       (6 * 7.0).wont_be_within_epsilon 42, 0.00001
     end
 
-    assert_triggered "msg.\nExpected |42 - 42.0| (0.0) to not be < 0.00042." do
+    assert_triggered "msg.\nExpected |42 - 42.0| (0.0) to not be <= #{x}." do
       (6 * 7.0).wont_be_within_epsilon 42, 0.00001, "msg"
     end
   end
@@ -238,15 +245,16 @@ describe MiniTest::Spec do
 
     (6.0 * 7).must_be_close_to(42.0).must_equal true
 
-    assert_triggered 'Expected |0.0 - 0.01| (0.01) to be < 0.001.' do
+    assert_triggered "Expected |0.0 - 0.01| (0.01) to be <= 0.001." do
       (1.0 / 100).must_be_close_to 0.0
     end
 
-    assert_triggered 'Expected |0.0 - 0.001| (0.001) to be < 1.0e-06.' do
+    x = maglev? ? "9.9999999999999995e-07" : "1.0e-06"
+    assert_triggered "Expected |0.0 - 0.001| (0.001) to be <= #{x}." do
       (1.0 / 1000).must_be_close_to 0.0, 0.000001
     end
 
-    assert_triggered "msg.\nExpected |0.0 - 0.001| (0.001) to be < 1.0e-06." do
+    assert_triggered "msg.\nExpected |0.0 - 0.001| (0.001) to be <= #{x}." do
       (1.0 / 1000).must_be_close_to 0.0, 0.000001, "msg"
     end
   end
@@ -256,15 +264,15 @@ describe MiniTest::Spec do
 
     (6.0 * 7).must_be_within_epsilon(42.0).must_equal true
 
-    assert_triggered 'Expected |0.0 - 0.01| (0.01) to be < 0.0.' do
+    assert_triggered "Expected |0.0 - 0.01| (0.01) to be <= 0.0." do
       (1.0 / 100).must_be_within_epsilon 0.0
     end
 
-    assert_triggered 'Expected |0.0 - 0.001| (0.001) to be < 0.0.' do
+    assert_triggered "Expected |0.0 - 0.001| (0.001) to be <= 0.0." do
       (1.0 / 1000).must_be_within_epsilon 0.0, 0.000001
     end
 
-    assert_triggered "msg.\nExpected |0.0 - 0.001| (0.001) to be < 0.0." do
+    assert_triggered "msg.\nExpected |0.0 - 0.001| (0.001) to be <= 0.0." do
       (1.0 / 1000).must_be_within_epsilon 0.0, 0.000001, "msg"
     end
   end
@@ -296,7 +304,7 @@ describe MiniTest::Spec do
   it "needs to verify instances of a class" do
     42.wont_be_instance_of(String).must_equal false
 
-    assert_triggered 'Expected 42 to not be an instance of Fixnum.' do
+    assert_triggered "Expected 42 to not be an instance of Fixnum." do
       42.wont_be_instance_of Fixnum
     end
 
@@ -308,7 +316,7 @@ describe MiniTest::Spec do
   it "needs to verify kinds of a class" do
     42.wont_be_kind_of(String).must_equal false
 
-    assert_triggered 'Expected 42 to not be a kind of Integer.' do
+    assert_triggered "Expected 42 to not be a kind of Integer." do
       42.wont_be_kind_of Integer
     end
 
@@ -361,7 +369,7 @@ describe MiniTest::Spec do
   it "needs to verify non-emptyness" do
     @assertion_count += 3 # empty is 2 assertions
 
-    ['some item'].wont_be_empty.must_equal false
+    ["some item"].wont_be_empty.must_equal false
 
     assert_triggered "Expected [] to not be empty." do
       [].wont_be_empty
@@ -399,7 +407,7 @@ describe MiniTest::Spec do
   it "needs to verify objects not responding to a message" do
     "".wont_respond_to(:woot!).must_equal false
 
-    assert_triggered 'Expected "" to not respond to to_s.' do
+    assert_triggered "Expected \"\" to not respond to to_s." do
       "".wont_respond_to :to_s
     end
 
@@ -479,7 +487,7 @@ describe MiniTest::Spec do
   end
 
   it "needs to verify using any (negative) predicate" do
-    @assertion_count -= 1 # doesn't take a message
+    @assertion_count -= 1 # doesn"t take a message
 
     "blah".wont_be(:empty?).must_equal false
 
@@ -653,6 +661,26 @@ class TestMeta < MiniTest::Unit::TestCase
     MiniTest::Spec::TYPES.replace original_types
   end
 
+  def test_name
+    spec_a = describe ExampleA do; end
+    spec_b = describe ExampleB, :random_method do; end
+
+    assert_equal "ExampleA", spec_a.name
+    assert_equal "ExampleB::random_method", spec_b.name
+  end
+
+  def test_name2
+    assert_equal "NamedExampleA", NamedExampleA.name
+    assert_equal "NamedExampleB", NamedExampleB.name
+    assert_equal "NamedExampleC", NamedExampleC.name
+
+    spec_a = describe ExampleA do; end
+    spec_b = describe ExampleB, :random_method do; end
+
+    assert_equal "ExampleA", spec_a.name
+    assert_equal "ExampleB::random_method", spec_b.name
+  end
+
   def test_structure
     x, y, z, * = util_structure
 
@@ -700,7 +728,7 @@ class TestMeta < MiniTest::Unit::TestCase
       z = describe "second thingy" do end
     end
 
-    test_methods = ['test_0001_top level it', 'test_0002_не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world'].sort
+    test_methods = ["test_0001_top level it", "test_0002_не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world"].sort
 
     assert_equal test_methods, [x1, x2]
     assert_equal test_methods,
@@ -733,6 +761,51 @@ class TestMeta < MiniTest::Unit::TestCase
       ensure
         MiniTest::Unit.output = STDOUT
       end
+    end
+  end
+end
+
+require "minitest/metametameta"
+
+class TestSpecInTestCase < MetaMetaMetaTestCase
+  def setup
+    super
+
+    @tc = MiniTest::Unit::TestCase.new "fake tc"
+    @assertion_count = 1
+  end
+
+  def util_assert_triggered expected, klass = MiniTest::Assertion # REFACTOR
+    e = assert_raises klass do
+      yield
+    end
+
+    msg = e.message.sub(/(---Backtrace---).*/m, "\1")
+    msg.gsub!(/\(oid=[-0-9]+\)/, "(oid=N)")
+
+    assert_equal expected, msg
+  end
+
+  def teardown # REFACTOR
+    assert_equal(@assertion_count, @tc._assertions,
+                 "expected #{@assertion_count} assertions to be fired during the test, not #{@tc._assertions}") if @tc.passed?
+  end
+
+  def test_expectation
+    @assertion_count = 2
+
+    @tc.assert_equal true, 1.must_equal(1)
+  end
+
+  def test_expectation_triggered
+    util_assert_triggered "Expected: 2\n  Actual: 1" do
+      1.must_equal 2
+    end
+  end
+
+  def test_expectation_with_a_message
+    util_assert_triggered "Expected: 2\n  Actual: 1" do
+      1.must_equal 2, ""
     end
   end
 end

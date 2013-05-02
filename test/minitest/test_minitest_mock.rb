@@ -5,10 +5,7 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-require 'minitest/mock'
-require 'minitest/unit'
-
-MiniTest::Unit.autorun
+require 'minitest/autorun'
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
   parallelize_me! if ENV["PARALLEL"]
@@ -74,6 +71,8 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 
   def test_mock_args_does_not_raise
+    skip "non-opaque use of ==" if maglev?
+
     arg = MiniTest::Mock.new
     mock = MiniTest::Mock.new
     mock.expect(:foo, nil, [arg])
@@ -276,7 +275,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 end
 
-require_relative "metametameta"
+require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
   parallelize_me! if ENV["PARALLEL"]
@@ -305,6 +304,40 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
       end
 
       @tc.assert_operator Time.now.to_i, :>=, t
+    end
+  end
+
+  def test_stub_private_module_method
+    @assertion_count += 1
+
+    t0 = Time.now
+
+    self.stub :sleep, nil do
+      @tc.assert_nil sleep(10)
+    end
+
+    @tc.assert_operator Time.now - t0, :<=, 1
+  end
+
+  def test_stub_private_module_method_indirect
+    @assertion_count += 1
+
+    slow_clapper = Class.new do
+      def slow_clap
+        sleep 3
+        :clap
+      end
+    end.new
+
+    slow_clapper.stub :sleep, nil do |fast_clapper|
+      @tc.assert_equal :clap, fast_clapper.slow_clap # either form works
+      @tc.assert_equal :clap, slow_clapper.slow_clap # yay closures
+    end
+  end
+
+  def test_stub_public_module_method
+    Math.stub(:log10, 42.0) do
+      @tc.assert_in_delta 42.0, Math.log10(1000)
     end
   end
 

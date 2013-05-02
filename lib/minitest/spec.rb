@@ -66,7 +66,7 @@ module Kernel # :nodoc:
   def describe desc, additional_desc = nil, &block # :doc:
     stack = MiniTest::Spec.describe_stack
     name  = [stack.last, desc, additional_desc].compact.join("::")
-    sclas = stack.last || if Class === self && self < MiniTest::Spec then
+    sclas = stack.last || if Class === self && is_a?(MiniTest::Spec::DSL) then
                             self
                           else
                             MiniTest::Spec.spec_type desc
@@ -88,173 +88,184 @@ end
 # For a list of expectations, see MiniTest::Expectations.
 
 class MiniTest::Spec < MiniTest::Unit::TestCase
-  ##
-  # Contains pairs of matchers and Spec classes to be used to
-  # calculate the superclass of a top-level describe. This allows for
-  # automatically customizable spec types.
-  #
-  # See: register_spec_type and spec_type
-
-  TYPES = [[//, MiniTest::Spec]]
 
   ##
-  # Register a new type of spec that matches the spec's description.
-  # This method can take either a Regexp and a spec class or a spec
-  # class and a block that takes the description and returns true if
-  # it matches.
-  #
-  # Eg:
-  #
-  #     register_spec_type(/Controller$/, MiniTest::Spec::Rails)
-  #
-  # or:
-  #
-  #     register_spec_type(MiniTest::Spec::RailsModel) do |desc|
-  #       desc.superclass == ActiveRecord::Base
-  #     end
+  # Oh look! A MiniTest::Spec::DSL module! Eat your heart out DHH.
 
-  def self.register_spec_type(*args, &block)
-    if block then
-      matcher, klass = block, args.first
-    else
-      matcher, klass = *args
-    end
-    TYPES.unshift [matcher, klass]
-  end
+  module DSL
+    ##
+    # Contains pairs of matchers and Spec classes to be used to
+    # calculate the superclass of a top-level describe. This allows for
+    # automatically customizable spec types.
+    #
+    # See: register_spec_type and spec_type
 
-  ##
-  # Figure out the spec class to use based on a spec's description. Eg:
-  #
-  #     spec_type("BlahController") # => MiniTest::Spec::Rails
+    TYPES = [[//, MiniTest::Spec]]
 
-  def self.spec_type desc
-    TYPES.find { |matcher, klass|
-      if matcher.respond_to? :call then
-        matcher.call desc
+    ##
+    # Register a new type of spec that matches the spec's description.
+    # This method can take either a Regexp and a spec class or a spec
+    # class and a block that takes the description and returns true if
+    # it matches.
+    #
+    # Eg:
+    #
+    #     register_spec_type(/Controller$/, MiniTest::Spec::Rails)
+    #
+    # or:
+    #
+    #     register_spec_type(MiniTest::Spec::RailsModel) do |desc|
+    #       desc.superclass == ActiveRecord::Base
+    #     end
+
+    def register_spec_type(*args, &block)
+      if block then
+        matcher, klass = block, args.first
       else
-        matcher === desc.to_s
+        matcher, klass = *args
       end
-    }.last
-  end
-
-  @@describe_stack = []
-  def self.describe_stack # :nodoc:
-    @@describe_stack
-  end
-
-  ##
-  # Returns the children of this spec.
-
-  def self.children
-    @children ||= []
-  end
-
-  def self.nuke_test_methods! # :nodoc:
-    self.public_instance_methods.grep(/^test_/).each do |name|
-      self.send :undef_method, name
-    end
-  end
-
-  ##
-  # Define a 'before' action. Inherits the way normal methods should.
-  #
-  # NOTE: +type+ is ignored and is only there to make porting easier.
-  #
-  # Equivalent to MiniTest::Unit::TestCase#setup.
-
-  def self.before type = nil, &block
-    define_method :setup do
-      super()
-      self.instance_eval(&block)
-    end
-  end
-
-  ##
-  # Define an 'after' action. Inherits the way normal methods should.
-  #
-  # NOTE: +type+ is ignored and is only there to make porting easier.
-  #
-  # Equivalent to MiniTest::Unit::TestCase#teardown.
-
-  def self.after type = nil, &block
-    define_method :teardown do
-      self.instance_eval(&block)
-      super()
-    end
-  end
-
-  ##
-  # Define an expectation with name +desc+. Name gets morphed to a
-  # proper test method name. For some freakish reason, people who
-  # write specs don't like class inheritence, so this goes way out of
-  # its way to make sure that expectations aren't inherited.
-  #
-  # This is also aliased to #specify and doesn't require a +desc+ arg.
-  #
-  # Hint: If you _do_ want inheritence, use minitest/unit. You can mix
-  # and match between assertions and expectations as much as you want.
-
-  def self.it desc = "anonymous", &block
-    block ||= proc { skip "(no tests defined)" }
-
-    @specs ||= 0
-    @specs += 1
-
-    name = "test_%04d_%s" % [ @specs, desc ]
-
-    define_method name, &block
-
-    self.children.each do |mod|
-      mod.send :undef_method, name if mod.public_method_defined? name
+      TYPES.unshift [matcher, klass]
     end
 
-    name
-  end
+    ##
+    # Figure out the spec class to use based on a spec's description. Eg:
+    #
+    #     spec_type("BlahController") # => MiniTest::Spec::Rails
 
-  ##
-  # Essentially, define an accessor for +name+ with +block+.
-  #
-  # Why use let instead of def? I honestly don't know.
-
-  def self.let name, &block
-    define_method name do
-      @_memoized ||= {}
-      @_memoized.fetch(name) { |k| @_memoized[k] = instance_eval(&block) }
-    end
-  end
-
-  ##
-  # Another lazy man's accessor generator. Made even more lazy by
-  # setting the name for you to +subject+.
-
-  def self.subject &block
-    let :subject, &block
-  end
-
-  def self.create name, desc # :nodoc:
-    cls = Class.new(self) do
-      @name = name
-      @desc = desc
-
-      nuke_test_methods!
+    def spec_type desc
+      TYPES.find { |matcher, klass|
+        if matcher.respond_to? :call then
+          matcher.call desc
+        else
+          matcher === desc.to_s
+        end
+      }.last
     end
 
-    children << cls
+    @@describe_stack = []
+    def describe_stack # :nodoc:
+      @@describe_stack
+    end
 
-    cls
-  end
+    ##
+    # Returns the children of this spec.
 
-  def self.to_s # :nodoc:
-    defined?(@name) ? @name : super
-  end
+    def children
+      @children ||= []
+    end
 
-  # :stopdoc:
-  class << self
+    def nuke_test_methods! # :nodoc:
+      self.public_instance_methods.grep(/^test_/).each do |name|
+        self.send :undef_method, name
+      end
+    end
+
+    ##
+    # Define a 'before' action. Inherits the way normal methods should.
+    #
+    # NOTE: +type+ is ignored and is only there to make porting easier.
+    #
+    # Equivalent to MiniTest::Unit::TestCase#setup.
+
+    def before type = nil, &block
+      define_method :setup do
+        super()
+        self.instance_eval(&block)
+      end
+    end
+
+    ##
+    # Define an 'after' action. Inherits the way normal methods should.
+    #
+    # NOTE: +type+ is ignored and is only there to make porting easier.
+    #
+    # Equivalent to MiniTest::Unit::TestCase#teardown.
+
+    def after type = nil, &block
+      define_method :teardown do
+        self.instance_eval(&block)
+        super()
+      end
+    end
+
+    ##
+    # Define an expectation with name +desc+. Name gets morphed to a
+    # proper test method name. For some freakish reason, people who
+    # write specs don't like class inheritance, so this goes way out of
+    # its way to make sure that expectations aren't inherited.
+    #
+    # This is also aliased to #specify and doesn't require a +desc+ arg.
+    #
+    # Hint: If you _do_ want inheritence, use minitest/unit. You can mix
+    # and match between assertions and expectations as much as you want.
+
+    def it desc = "anonymous", &block
+      block ||= proc { skip "(no tests defined)" }
+
+      @specs ||= 0
+      @specs += 1
+
+      name = "test_%04d_%s" % [ @specs, desc ]
+
+      define_method name, &block
+
+      self.children.each do |mod|
+        mod.send :undef_method, name if mod.public_method_defined? name
+      end
+
+      name
+    end
+
+    ##
+    # Essentially, define an accessor for +name+ with +block+.
+    #
+    # Why use let instead of def? I honestly don't know.
+
+    def let name, &block
+      define_method name do
+        @_memoized ||= {}
+        @_memoized.fetch(name) { |k| @_memoized[k] = instance_eval(&block) }
+      end
+    end
+
+    ##
+    # Another lazy man's accessor generator. Made even more lazy by
+    # setting the name for you to +subject+.
+
+    def subject &block
+      let :subject, &block
+    end
+
+    def create name, desc # :nodoc:
+      cls = Class.new(self) do
+        @name = name
+        @desc = desc
+
+        nuke_test_methods!
+      end
+
+      children << cls
+
+      cls
+    end
+
+    def name # :nodoc:
+      defined?(@name) ? @name : super
+    end
+
+    def to_s # :nodoc:
+      name # Can't alias due to 1.8.7, not sure why
+    end
+
+    # :stopdoc:
     attr_reader :desc
     alias :specify :it
-    alias :name :to_s
+    # :startdoc:
   end
-  # :startdoc:
+
+  extend DSL
+
+  TYPES = DSL::TYPES # :nodoc:
 end
 
 ##
