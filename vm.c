@@ -1988,7 +1988,7 @@ ruby_thread_init(VALUE self)
 
     th->vm = vm;
     th_init(th, self);
-    rb_iv_set(self, "locals", rb_hash_new());
+    rb_ivar_set(self, rb_intern("locals"), rb_hash_new());
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();

@@ -1,4 +1,8 @@
-Thu May  2 16:54:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May  2 16:55:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (id_locals): use cached ID.
+
+	* vm.c (ruby_thread_init): ditto.
 
 	* defs/id.def: add more predefined IDs used in core.
 
