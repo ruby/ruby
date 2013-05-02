@@ -555,6 +555,16 @@ class TestMarshal < Test::Unit::TestCase
     alias marshal_load initialize
   end
 
+  class FrozenData < LoadData
+    def marshal_load(data)
+      super
+      data.instance_variables.each do |iv|
+        instance_variable_set(iv, data.instance_variable_get(iv))
+      end
+      freeze
+    end
+  end
+
   def test_marshal_dump_excess_encoding
     bug8276 = '[ruby-core:54334] [Bug #8276]'
     t = Bug8276.new(bug8276)
@@ -574,18 +584,20 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_load_ivar
     s = "data with ivar"
     s.instance_variable_set(:@t, 42)
-    t = LoadData.new(s)
-    s = Marshal.dump(t)
     hook = ->(v) {
       if LoadData === v
-        assert_send([v, :instance_variable_defined?, :@t])
-        assert_equal(42, v.instance_variable_get(:@t))
+        assert_send([v, :instance_variable_defined?, :@t], v.class.name)
+        assert_equal(42, v.instance_variable_get(:@t), v.class.name)
       end
       v
     }
-    v = Marshal.load(s, hook)
-    assert_send([v, :instance_variable_defined?, :@t])
-    assert_equal(42, v.instance_variable_get(:@t))
+    [LoadData, FrozenData].each do |klass|
+      t = klass.new(s)
+      d = Marshal.dump(t)
+      v = assert_nothing_raised(RuntimeError) {break Marshal.load(d, hook)}
+      assert_send([v, :instance_variable_defined?, :@t], klass.name)
+      assert_equal(42, v.instance_variable_get(:@t), klass.name)
+    end
   end
 
   def test_class_ivar

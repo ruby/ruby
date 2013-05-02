@@ -1373,7 +1373,11 @@ r_leave(VALUE v, struct load_arg *arg)
 static int
 copy_ivar_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    rb_ivar_set((VALUE)arg, (ID)key, (VALUE)val);
+    VALUE obj = (VALUE)arg, value = (VALUE)val;
+    ID vid = (ID)key;
+
+    if (!rb_ivar_defined(obj, vid))
+	rb_ivar_set(obj, vid, value);
     return ST_CONTINUE;
 }
 
