@@ -1,3 +1,11 @@
+Thu May  2 23:23:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_is_kind_of): skip prepending modules.
+	  [ruby-core:54742] [Bug #8357]
+
+	* object.c (rb_class_inherited_p): ditto.
+	  [ruby-core:54736] [Bug #8357]
+
 Thu May  2 22:11:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bin/irb: remove dead code from sample/irb.rb.

@@ -1408,6 +1408,13 @@ class TestModule < Test::Unit::TestCase
     c = labeled_class("c") {prepend b}
     assert_operator(c, :<, b, bug6654)
     assert_operator(c, :<, a, bug6654)
+    bug8357 = '[ruby-core:54736] [Bug #8357]'
+    b = labeled_module("b") {prepend a}
+    c = labeled_class("c") {include b}
+    assert_operator(c, :<, b, bug8357)
+    assert_operator(c, :<, a, bug8357)
+    bug8357 = '[ruby-core:54742] [Bug #8357]'
+    assert_kind_of(b, c.new, bug8357)
   end
 
   def test_prepend_instance_methods
@@ -1487,14 +1494,14 @@ class TestModule < Test::Unit::TestCase
 
   def labeled_module(name, &block)
     Module.new do
-      singleton_class.class_eval {define_method(:to_s) {name}}
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
       class_eval(&block) if block
     end
   end
 
   def labeled_class(name, superclass = Object, &block)
     Class.new(superclass) do
-      singleton_class.class_eval {define_method(:to_s) {name}}
+      singleton_class.class_eval {define_method(:to_s) {name}; alias inspect to_s}
       class_eval(&block) if block
     end
   end

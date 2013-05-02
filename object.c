@@ -599,6 +599,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     VALUE cl = CLASS_OF(obj);
 
     c = class_or_module_required(c);
+    c = RCLASS_ORIGIN(c);
     while (cl) {
 	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
 	    return Qtrue;
@@ -1511,6 +1512,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
     if (!CLASS_OR_MODULE_P(arg)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
+    arg = RCLASS_ORIGIN(arg);
     while (mod) {
 	if (RCLASS_M_TBL(mod) == RCLASS_M_TBL(arg))
 	    return Qtrue;
