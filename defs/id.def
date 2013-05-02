@@ -1,7 +1,16 @@
 # -*- mode: ruby; coding: us-ascii -*-
 firstline, predefined = __LINE__+1, %[\
+  inspect
   intern
+  object_id
+  const_missing
   method_missing                                        MethodMissing
+  method_added
+  singleton_method_added
+  method_removed
+  singleton_method_removed
+  method_undefined
+  singleton_method_undefined
   length
   size
   gets
@@ -11,6 +20,7 @@ firstline, predefined = __LINE__+1, %[\
   lambda
   send
   __send__
+  __attached__
   initialize
   initialize_copy
   initialize_clone
@@ -18,6 +28,7 @@ firstline, predefined = __LINE__+1, %[\
   _                                                     UScore
   "/*NULL*/"                                            NULL
   empty?
+  eql?
   respond_to?                                           Respond_to
   respond_to_missing?                                   Respond_to_missing
   <IFUNC>

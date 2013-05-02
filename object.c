@@ -22,6 +22,7 @@
 #include <float.h>
 #include "constant.h"
 #include "internal.h"
+#include "id.h"
 #include "probes.h"
 
 VALUE rb_cBasicObject;
@@ -35,9 +36,14 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
-static ID id_eq, id_eql, id_match, id_inspect;
-static ID id_init_copy, id_init_clone, id_init_dup;
-static ID id_const_missing;
+#define id_eq               idEq
+#define id_eql              idEqlP
+#define id_match            idEqTilde
+#define id_inspect          idInspect
+#define id_init_copy        idInitialize_copy
+#define id_init_clone       idInitialize_clone
+#define id_init_dup         idInitialize_dup
+#define id_const_missing    idConst_missing
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -1425,7 +1431,7 @@ rb_mod_to_s(VALUE klass)
 
     if (FL_TEST(klass, FL_SINGLETON)) {
 	VALUE s = rb_usascii_str_new2("#<Class:");
-	VALUE v = rb_iv_get(klass, "__attached__");
+	VALUE v = rb_ivar_get(klass, id__attached__);
 
 	if (CLASS_OR_MODULE_P(v)) {
 	    rb_str_append(s, rb_inspect(v));
@@ -3250,15 +3256,6 @@ Init_Object(void)
      * An alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
-
-    id_eq = rb_intern("==");
-    id_eql = rb_intern("eql?");
-    id_match = rb_intern("=~");
-    id_inspect = rb_intern("inspect");
-    id_init_copy = rb_intern("initialize_copy");
-    id_init_clone = rb_intern("initialize_clone");
-    id_init_dup = rb_intern("initialize_dup");
-    id_const_missing = rb_intern("const_missing");
 
     for (i=0; conv_method_names[i].method; i++) {
 	conv_method_names[i].id = rb_intern(conv_method_names[i].method);

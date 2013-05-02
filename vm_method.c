@@ -13,9 +13,14 @@
 
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
-static ID object_id;
-static ID removed, singleton_removed, undefined, singleton_undefined;
-static ID added, singleton_added, attached;
+#define object_id           idObject_id
+#define added               idMethod_added
+#define singleton_added     idSingleton_method_added
+#define removed             idMethod_removed
+#define singleton_removed   idSingleton_method_removed
+#define undefined           idMethod_undefined
+#define singleton_undefined idSingleton_method_undefined
+#define attached            id__attached__
 
 struct cache_entry {		/* method hash table. */
     VALUE filled_version;        /* filled state version */
@@ -1673,15 +1678,6 @@ Init_eval_method(void)
 			     "public", top_public, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "private", top_private, -1);
-
-    object_id = rb_intern("object_id");
-    added = rb_intern("method_added");
-    singleton_added = rb_intern("singleton_method_added");
-    removed = rb_intern("method_removed");
-    singleton_removed = rb_intern("singleton_method_removed");
-    undefined = rb_intern("method_undefined");
-    singleton_undefined = rb_intern("singleton_method_undefined");
-    attached = rb_intern("__attached__");
 
     {
 #define REPLICATE_METHOD(klass, id, noex) \

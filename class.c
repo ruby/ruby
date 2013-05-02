@@ -32,7 +32,7 @@
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;
-static ID id_attached;
+#define id_attached id__attached__
 
 /**
  * Allocates a struct RClass for a new class.
@@ -400,8 +400,6 @@ boot_defclass(const char *name, VALUE super)
 void
 Init_class_hierarchy(void)
 {
-    id_attached = rb_intern("__attached__");
-
     rb_cBasicObject = boot_defclass("BasicObject", 0);
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
     rb_cModule = boot_defclass("Module", rb_cObject);

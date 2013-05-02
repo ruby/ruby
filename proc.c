@@ -31,7 +31,7 @@ VALUE rb_cProc;
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
-static ID attached;
+#define attached id__attached__
 
 /* Proc */
 
@@ -2448,6 +2448,5 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "dup", binding_dup, 0);
     rb_define_method(rb_cBinding, "eval", bind_eval, -1);
     rb_define_global_function("binding", rb_f_binding, 0);
-    attached = rb_intern("__attached__");
 }
 

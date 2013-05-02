@@ -18,6 +18,7 @@
 #include "node.h"
 #include "constant.h"
 #include "internal.h"
+#include "id.h"
 
 st_table *rb_global_tbl;
 st_table *rb_class_tbl;
@@ -2300,7 +2301,7 @@ static VALUE
 cvar_front_klass(VALUE klass)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	VALUE obj = rb_iv_get(klass, "__attached__");
+	VALUE obj = rb_ivar_get(klass, id__attached__);
 	if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {
 	    return obj;
 	}
