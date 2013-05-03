@@ -1,3 +1,9 @@
+Fri May  3 13:29:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (INTPTR_MAX, INTPTR_MIN, UINTPTR_MAX): also
+	  should be defined when defining intptr_t and uintptr_t.
+	  bigdecimal.c requires the former two now.
+
 Fri May  3 13:22:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (poll_child_status): fix build error on older mingw.
