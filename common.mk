@@ -1027,6 +1027,8 @@ change: PHONY
 love: sudo-precheck up all test install test-all
 	@echo love is all you need
 
+yes-test-all: sudo-precheck
+
 sudo-precheck:
 	@$(SUDO) echo > $(NULL)
 
