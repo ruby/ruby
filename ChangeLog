@@ -1,3 +1,9 @@
+Fri May  3 14:09:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Make default_ipv6 true for Cygwin.
+	  Cygwin supports IPv6 since Cygwin 1.7.1 (2009-12).
+	  http://cygwin.com/ml/cygwin-announce/2009-12/msg00027.html
+
 Fri May  3 13:35:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/{getaddrinfo,getnameinfo}.c: define socklen_t if not

@@ -427,7 +427,7 @@ EOF
   end
 
   ipv6 = false
-  default_ipv6 = /cygwin|beos|haiku/ !~ RUBY_PLATFORM
+  default_ipv6 = /beos|haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
     if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"
