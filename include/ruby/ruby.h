@@ -1210,7 +1210,7 @@ rb_num2char_inline(VALUE x)
 
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
 
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len);
+void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE((2));
 void rb_free_tmp_buffer(volatile VALUE *store);
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
  * in _v_.  _n_ may be evaluated twice. */

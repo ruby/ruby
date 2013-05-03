@@ -1,3 +1,12 @@
+Sat May  4 04:13:27 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/defines.h (RUBY_ATTR_ALLOC_SIZE): New for
+	  attribute((alloc_size(params))).
+
+	* include/ruby/defines.h (xmalloc, xmalloc2, xcalloc)
+	(xrealloc, xrealloc2): Annotated by RUBY_ATTR_ALLOC_SIZE.
+	* include/ruby/ruby.h (rb_alloc_tmp_buffer): ditto.
+
 Fri May  3 19:32:13 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/util.rb: All class methods moduleized.
