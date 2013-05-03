@@ -1,3 +1,7 @@
+Sat May  4 07:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/security.rdoc: Add note about reporting security vulns
+
 Sat May  4 04:13:27 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/defines.h (RUBY_ATTR_ALLOC_SIZE): New for
