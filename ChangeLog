@@ -1,3 +1,9 @@
+Fri May  3 19:32:13 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/util.rb: All class methods moduleized.
+	  We can use these methods like a function when "include CGI::Util".
+	  [Feature #8354]
+
 Fri May  3 14:09:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Make default_ipv6 true for Cygwin.

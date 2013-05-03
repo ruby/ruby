@@ -4,7 +4,7 @@ require 'stringio'
 
 
 class CGIUtilTest < Test::Unit::TestCase
-
+  include CGI::Util
 
   def setup
     ENV['REQUEST_METHOD'] = 'GET'
@@ -65,4 +65,25 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal(CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"),"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86")
   end
 
+  def test_cgi_include_escape
+    assert_equal('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93', escape(@str1))
+  end
+
+  def test_cgi_include_escapeHTML
+    assert_equal(escapeHTML("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
+  end
+
+  def test_cgi_include_h
+    assert_equal(h("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
+  end
+
+  def test_cgi_include_unescape
+    assert_equal(@str1, unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93'))
+    assert_equal(@str1.encoding, unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93').encoding) if defined?(::Encoding)
+    assert_equal("\u{30E1 30E2 30EA 691C 7D22}", unescape("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
+  end
+
+  def test_cgi_include_unescapeHTML
+    assert_equal(unescapeHTML("&#39;&amp;&quot;&gt;&lt;"),"'&\"><")
+  end
 end

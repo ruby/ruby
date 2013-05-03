@@ -1,9 +1,10 @@
-class CGI
+class CGI; module Util; end; extend Util; end
+module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
-  def CGI::escape(string)
+  def escape(string)
     encoding = string.encoding
     string.dup.force_encoding('ASCII-8BIT').gsub(/([^ a-zA-Z0-9_.-]+)/) do
       '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
@@ -13,7 +14,7 @@ class CGI
   # URL-decode a string with encoding(optional).
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
-  def CGI::unescape(string,encoding=@@accept_charset)
+  def unescape(string,encoding=@@accept_charset)
     str=string.tr('+', ' ').force_encoding(Encoding::ASCII_8BIT).gsub(/((?:%[0-9a-fA-F]{2})+)/) do
       [$1.delete('%')].pack('H*')
     end.force_encoding(encoding)
@@ -32,14 +33,14 @@ class CGI
   # Escape special characters in HTML, namely &\"<>
   #   CGI::escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
-  def CGI::escapeHTML(string)
+  def escapeHTML(string)
     string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
   # Unescape a string that has been HTML-escaped
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
-  def CGI::unescapeHTML(string)
+  def unescapeHTML(string)
     enc = string.encoding
     if [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
       return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
@@ -88,12 +89,12 @@ class CGI
   end
 
   # Synonym for CGI::escapeHTML(str)
-  def CGI::escape_html(str)
+  def escape_html(str)
     escapeHTML(str)
   end
 
   # Synonym for CGI::unescapeHTML(str)
-  def CGI::unescape_html(str)
+  def unescape_html(str)
     unescapeHTML(str)
   end
 
@@ -110,7 +111,7 @@ class CGI
   #
   #   print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
-  def CGI::escapeElement(string, *elements)
+  def escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
@@ -130,11 +131,11 @@ class CGI
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
-  def CGI::unescapeElement(string, *elements)
+  def unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/i) do
-        CGI::unescapeHTML($&)
+        unescapeHTML($&)
       end
     else
       string
@@ -142,12 +143,12 @@ class CGI
   end
 
   # Synonym for CGI::escapeElement(str)
-  def CGI::escape_element(str)
+  def escape_element(str)
     escapeElement(str)
   end
 
   # Synonym for CGI::unescapeElement(str)
-  def CGI::unescape_element(str)
+  def unescape_element(str)
     unescapeElement(str)
   end
 
@@ -161,11 +162,11 @@ class CGI
   #
   #   CGI::rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
-  def CGI::rfc1123_date(time)
+  def rfc1123_date(time)
     t = time.clone.gmtime
     return format("%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
-                RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
-                t.hour, t.min, t.sec)
+                  RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
+                  t.hour, t.min, t.sec)
   end
 
   # Prettify (indent) an HTML string.
@@ -185,7 +186,7 @@ class CGI
   #     #         </BODY>
   #     # </HTML>
   #
-  def CGI::pretty(string, shift = "  ")
+  def pretty(string, shift = "  ")
     lines = string.gsub(/(?!\A)<.*?>/m, "\n\\0").gsub(/<.*?>(?!\n)/m, "\\0\n")
     end_pos = 0
     while end_pos = lines.index(/^<\/(\w+)/, end_pos)
@@ -195,4 +196,6 @@ class CGI
     end
     lines.gsub(/^((?:#{Regexp::quote(shift)})*)__(?=<\/?\w)/, '\1')
   end
+
+  alias h escapeHTML
 end
