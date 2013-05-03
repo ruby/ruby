@@ -1,3 +1,7 @@
+Fri May  3 13:22:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (poll_child_status): fix build error on older mingw.
+
 Fri May  3 00:15:58 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* common.mk: remove timestamps in distclean-ext realclean-ext.
