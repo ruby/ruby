@@ -1,3 +1,7 @@
+Sat May  4 23:48:56 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/security.rdoc: Add note about reporting security vulns
+
 Sat May  4 23:44:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_is_kind_of): skip prepending modules.
