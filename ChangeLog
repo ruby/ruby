@@ -1,3 +1,8 @@
+Sun May  5 16:29:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defined): get method entry from the method top level
+	  frame, not block frame.  [ruby-core:54769] [Bug #8367]
+
 Sun May  5 13:28:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby.pc.in (Cflags): use rubyarchhdrdir for multiarch.

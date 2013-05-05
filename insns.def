@@ -765,6 +765,17 @@ defined
 	break;
       case DEFINED_ZSUPER:{
 	const rb_method_entry_t *me = GET_CFP()->me;
+	if (!me) {
+	    const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(GET_THREAD());
+	    const rb_control_frame_t *cfp = GET_CFP();
+	    const VALUE *const local_ep = rb_vm_ep_local_ep(cfp->ep);
+	    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp), end_cfp)) {
+		if (cfp->ep == local_ep) {
+		    me = cfp->me;
+		    break;
+		}
+	    }
+	}
 	if (me) {
 	    VALUE klass = vm_search_normal_superclass(GET_CFP()->klass);
 	    ID id = me->def ? me->def->original_id : me->called_id;
