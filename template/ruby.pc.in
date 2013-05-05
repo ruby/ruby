@@ -34,6 +34,9 @@ sitearchdir=@sitearchdir@
 rubyhdrdir=@rubyhdrdir@
 vendorhdrdir=@vendorhdrdir@
 sitehdrdir=@sitehdrdir@
+rubyarchhdrdir=@rubyarchhdrdir@
+vendorarchhdrdir=@vendorarchhdrdir@
+sitearchhdrdir=@sitearchhdrdir@
 LIBPATH=@LIBPATH@
 LIBRUBY_A=@LIBRUBY_A@
 LIBRUBY_SO=@LIBRUBY_SO@
@@ -48,6 +51,6 @@ Name: Ruby
 Description: Object Oriented Script Language
 Version: ${ruby_version}
 URL: http://www.ruby-lang.org
-Cflags: -I${rubyhdrdir}/${arch} -I${rubyhdrdir}
+Cflags: -I${rubyarchhdrdir} -I${rubyhdrdir}
 Libs: ${DLDFLAGS} ${LIBRUBYARG_SHARED} ${LIBS}
 Requires:

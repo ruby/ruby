@@ -1,3 +1,8 @@
+Sun May  5 13:28:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/ruby.pc.in (Cflags): use rubyarchhdrdir for multiarch.
+	  [Bug #7874]
+
 Sat May  4 07:20:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/security.rdoc: Add note about reporting security vulns
