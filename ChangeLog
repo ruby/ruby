@@ -1,3 +1,15 @@
+Sun May  5 18:56:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defined): use vm_search_superclass() like as normal super
+	  call.  based on a patch <https://gist.github.com/wanabe/5520026> by
+	  wanabe.
+
+	* vm_insnhelper.c (vm_search_superclass): return error but not raise
+	  exceptions.
+
+	* vm_insnhelper.c (vm_search_super_method): check the result of
+	  vm_search_superclass and raise execptions on error.
+
 Sun May  5 16:29:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defined): get method entry from the method top level

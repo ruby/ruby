@@ -1954,7 +1954,7 @@ vm_super_outside(void)
     rb_raise(rb_eNoMethodError, "super called outside of method");
 }
 
-static void
+static int
 vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval, rb_call_info_t *ci)
 {
     while (iseq && !iseq->klass) {
@@ -1962,7 +1962,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
     }
 
     if (iseq == 0) {
-	vm_super_outside();
+	return -1;
     }
 
     ci->mid = iseq->defined_method_id;
@@ -1973,7 +1973,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
 
 	if (!sigval) {
 	    /* zsuper */
-	    rb_raise(rb_eRuntimeError, "implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
+	    return -2;
 	}
 
 	while (lcfp->iseq != iseq) {
@@ -1982,7 +1982,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
 	    while (1) {
 		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
 		if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, lcfp)) {
-		    vm_super_outside();
+		    return -1;
 		}
 		if (lcfp->ep == tep) {
 		    break;
@@ -1992,7 +1992,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
 
 	/* temporary measure for [Bug #2420] [Bug #3136] */
 	if (!lcfp->me) {
-	    vm_super_outside();
+	    return -1;
 	}
 
 	ci->mid = lcfp->me->def->original_id;
@@ -2001,6 +2001,8 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
     else {
 	ci->klass = vm_search_normal_superclass(reg_cfp->klass);
     }
+
+    return 0;
 }
 
 static void
@@ -2030,7 +2032,15 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 		 rb_obj_classname(ci->recv), rb_class2name(m));
     }
 
-    vm_search_superclass(GET_CFP(), iseq, sigval, ci);
+    switch (vm_search_superclass(GET_CFP(), iseq, sigval, ci)) {
+      case -1:
+	vm_super_outside();
+      case -2:
+	rb_raise(rb_eRuntimeError,
+		 "implicit argument passing of super from method defined"
+		 " by define_method() is not supported."
+		 " Specify all arguments explicitly.");
+    }
 
     /* TODO: use inline cache */
     ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
