@@ -57,7 +57,7 @@ Thu May  2 22:11:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu May  2 17:32:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (copy_ivar_i): get rid of overwriting already copied
-	  instance variales.  c.f. [Bug #8276]
+	  instance variables.  c.f. [Bug #8276]
 
 Thu May  2 16:55:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
