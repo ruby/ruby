@@ -18,7 +18,7 @@ Here is a basic refinement:
 
   class C
     def foo
-      puts "C#foo
+      puts "C#foo"
     end
   end
 
