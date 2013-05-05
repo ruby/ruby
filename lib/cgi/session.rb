@@ -308,7 +308,7 @@ class CGI
       @data[key]
     end
 
-    # Set the session date for key +key+.
+    # Set the session data for key +key+.
     def []=(key, val)
       @write_lock ||= true
       @data ||= @dbman.restore
