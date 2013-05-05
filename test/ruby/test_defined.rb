@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestDefined < Test::Unit::TestCase
   class Foo
@@ -203,5 +204,9 @@ class TestDefined < Test::Unit::TestCase
     o = c.new
     o.extend(m)
     assert_equal("super", o.x)
+  end
+
+  def test_super_toplevel
+    assert_separately([], "assert_nil(defined?(super))")
   end
 end
