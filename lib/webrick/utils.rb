@@ -190,7 +190,7 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
-        @timeout_info[thread] ||= Array.new
+        @timeout_info[thread] ||= []
         @timeout_info[thread] << [time, exception]
         return @timeout_info[thread].last.object_id
       end
