@@ -8,7 +8,7 @@ Sun May  5 18:56:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  exceptions.
 
 	* vm_insnhelper.c (vm_search_super_method): check the result of
-	  vm_search_superclass and raise execptions on error.
+	  vm_search_superclass and raise exceptions on error.
 
 Sun May  5 16:29:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
