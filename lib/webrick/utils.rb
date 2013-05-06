@@ -83,9 +83,7 @@ module WEBrick
 
     ##
     # Characters used to generate random strings
-    RAND_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                 "0123456789" +
-                 "abcdefghijklmnopqrstuvwxyz"
+    RAND_CHARS = (("A".."Z").to_a + (0..9).to_a + ("a".."z").to_a).join
 
     ##
     # Generates a random string of length +len+
