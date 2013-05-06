@@ -76,7 +76,7 @@ cmp_failed(void)
  *  _obj_ and _other_ are the same object.
  *
  *  Even if _obj_ <=> _other_ raised an exception, the exception
- *  is ignoread and returns false.
+ *  is ignored and returns false.
  */
 
 static VALUE
