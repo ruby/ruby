@@ -199,7 +199,7 @@ module WEBrick
       # Cancels the timeout handler +id+
       def cancel(thread, id)
         if ary = @timeout_info[thread]
-          ary.delete_if{|info| info.object_id == id }
+          ary.delete_if { |info| info.object_id == id }
           if ary.empty?
             @timeout_info.delete(thread)
           end
