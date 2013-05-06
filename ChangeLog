@@ -1,3 +1,9 @@
+Mon May  6 20:50:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (socket_s_ip_address_list): Fill sin6_scope_id
+	  if getifaddrs() returns an IPv6 link local address which
+	  sin6_scope_id is zero, such as on OpenIndiana SunOS 5.11.
+
 Sun May  5 18:56:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defined): use vm_search_superclass() like as normal super

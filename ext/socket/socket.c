@@ -1658,6 +1658,26 @@ socket_s_ip_address_list(VALUE self)
     for (p = ifp; p; p = p->ifa_next) {
         if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
             struct sockaddr *addr = p->ifa_addr;
+#if defined(AF_INET6)
+            /*
+             * OpenIndiana SunOS 5.11 getifaddrs() returns IPv6 link local
+             * address with sin6_scope_id == 0.
+             * So fill it from the interface name (ifa_name).
+             */
+            struct sockaddr_in6 addr6;
+            if (addr->sa_family == AF_INET6) {
+                socklen_t len = (socklen_t)sizeof(struct sockaddr_in6);
+                memcpy(&addr6, addr, len);
+                addr = (struct sockaddr *)&addr6;
+                if (IN6_IS_ADDR_LINKLOCAL(&addr6.sin6_addr) &&
+                    addr6.sin6_scope_id == 0) {
+                    unsigned int ifindex = if_nametoindex(p->ifa_name);
+                    if (ifindex != 0) {
+                        addr6.sin6_scope_id = ifindex;
+                    }
+                }
+            }
+#endif
             rb_ary_push(list, sockaddr_obj(addr, sockaddr_len(addr)));
         }
     }
