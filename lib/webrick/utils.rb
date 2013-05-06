@@ -214,7 +214,7 @@ module WEBrick
     # than +seconds+.
     #
     # If +seconds+ is zero or nil, simply executes the block
-    def timeout(seconds, exception=Timeout::Error)
+    def timeout(seconds, exception = Timeout::Error)
       return yield if seconds.nil? or seconds.zero?
       # raise ThreadError, "timeout within critical session" if Thread.critical
       id = TimeoutHandler.register(seconds, exception)
