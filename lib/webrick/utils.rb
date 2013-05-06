@@ -68,7 +68,7 @@ module WEBrick
     # Creates TCP server sockets bound to +address+:+port+ and returns them.
     #
     # It will create IPV4 and IPV6 sockets on all interfaces.
-    def create_listeners(address, port, logger=nil)
+    def create_listeners(address, port, logger = nil)
       unless port
         raise ArgumentError, "must specify port"
       end
@@ -83,9 +83,7 @@ module WEBrick
 
     ##
     # Characters used to generate random strings
-    RAND_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                 "0123456789" +
-                 "abcdefghijklmnopqrstuvwxyz"
+    RAND_CHARS = (("A".."Z").to_a + (0..9).to_a + ("a".."z").to_a).join
 
     ##
     # Generates a random string of length +len+
@@ -192,7 +190,7 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
-        @timeout_info[thread] ||= Array.new
+        @timeout_info[thread] ||= []
         @timeout_info[thread] << [time, exception]
         return @timeout_info[thread].last.object_id
       end
@@ -201,7 +199,7 @@ module WEBrick
       # Cancels the timeout handler +id+
       def cancel(thread, id)
         if ary = @timeout_info[thread]
-          ary.delete_if{|info| info.object_id == id }
+          ary.delete_if { |info| info.object_id == id }
           if ary.empty?
             @timeout_info.delete(thread)
           end
@@ -216,7 +214,7 @@ module WEBrick
     # than +seconds+.
     #
     # If +seconds+ is zero or nil, simply executes the block
-    def timeout(seconds, exception=Timeout::Error)
+    def timeout(seconds, exception = Timeout::Error)
       return yield if seconds.nil? or seconds.zero?
       # raise ThreadError, "timeout within critical session" if Thread.critical
       id = TimeoutHandler.register(seconds, exception)
