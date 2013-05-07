@@ -12,29 +12,24 @@ end
 class TestSyslogRootLogger < Test::Unit::TestCase
 
   module MockSyslog
-    LEVEL_LABEL_MAP = {}
+
+    LEVEL_LABEL_MAP = {
+      Syslog::LOG_ALERT   => 'ALERT',
+      Syslog::LOG_ERR     => 'ERR',
+      Syslog::LOG_WARNING => 'WARNING',
+      Syslog::LOG_NOTICE  => 'NOTICE',
+      Syslog::LOG_INFO    => 'INFO',
+      Syslog::LOG_DEBUG   => 'DEBUG'
+    }
 
     class << self
 
-      @line = nil
-
-      %w[ALERT ERR WARNING NOTICE INFO DEBUG].each do |name|
-        level = Syslog.const_get("LOG_#{name}")
-        LEVEL_LABEL_MAP[level] = name
-
-        eval <<-EOM
-          def #{name.downcase}(format, *args)
-            log(#{level}, format, *args)
-          end
-        EOM
-      end
+      attr_reader :line
+      attr_reader :program_name
 
       def log(level, format, *args)
         @line = "#{LEVEL_LABEL_MAP[level]} - #{format % args}"
       end
-
-      attr_reader :line
-      attr_reader :program_name
 
       def open(program_name)
         @program_name = program_name
