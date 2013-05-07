@@ -253,6 +253,10 @@ def test_recvmsg_with_msg_peek_creates_fds(headers)
     # [ruby-dev:44189]
     # http://bugs.ruby-lang.org/issues/5075
     close_fds = false
+  when /cygwin/
+    # Cygwin doesn't support fd passing.
+    # http://cygwin.com/ml/cygwin/2003-09/msg01808.html
+    close_fds = false
   else
     close_fds = nil
   end

@@ -1,3 +1,9 @@
+Tue May  7 12:09:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Set close_fds false for Cygwin.
+	  Cygwin doesn't support fd passing.
+	  This enables socket extension library cross-compilable by default.
+
 Tue May  7 12:07:35 2013  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (swap32): Don't redefine it if it is already defined.
