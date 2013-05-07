@@ -1,3 +1,9 @@
+Tue May  7 12:12:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (ancillary_inspect): Don't call
+	  anc_inspect_ipv6_pktinfo if !HAVE_TYPE_STRUCT_IN6_PKTINFO.
+	  anc_inspect_ipv6_pktinfo is not defined in the case.
+
 Tue May  7 12:10:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (socket_s_ip_address_list): Cast EXTRA_SPACE as

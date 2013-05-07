@@ -1052,7 +1052,7 @@ ancillary_inspect(VALUE self)
 #        if defined(IPPROTO_IPV6)
           case IPPROTO_IPV6:
             switch (type) {
-#            if defined(IPV6_PKTINFO) /* RFC 3542 */
+#            if defined(IPV6_PKTINFO) && defined(HAVE_TYPE_STRUCT_IN6_PKTINFO) /* RFC 3542 */
               case IPV6_PKTINFO: inspected = anc_inspect_ipv6_pktinfo(level, type, data, ret); break;
 #            endif
             }
