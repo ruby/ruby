@@ -100,9 +100,16 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     return r;				\
 }
 
-#if GCC_VERSION_SINCE(4,3,0)
-# define swap32(x) __builtin_bswap32(x)
-# define swap64(x) __builtin_bswap64(x)
+#ifndef swap32
+# if GCC_VERSION_SINCE(4,3,0)
+#  define swap32(x) __builtin_bswap32(x)
+# endif
+#endif
+
+#ifndef swap64
+# if GCC_VERSION_SINCE(4,3,0)
+#  define swap64(x) __builtin_bswap64(x)
+# endif
 #endif
 
 #ifndef swap16
