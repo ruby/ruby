@@ -1,3 +1,9 @@
+Tue May  7 20:13:12 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (invoke_rec): extend timeout 10 -> 50 sec,
+	  to investigate test failure on rubyci.
+	  http://a.mrkn.jp/~mrkn/chkbuild/mountain_lion/ruby-2.0.0-m64-o0/log/20130507T052909Z.log.html.gz
+
 Sat May  4 23:48:56 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/security.rdoc: Add note about reporting security vulns

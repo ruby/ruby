@@ -881,7 +881,7 @@ Thread.new(Thread.current) {|mth|
     env = {}
     env['RUBY_THREAD_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
     env['RUBY_THREAD_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true)
+    out, = EnvUtil.invoke_ruby([env, '-e', script], '', true, true, :timeout => 50)
     use_length ? out.length : out
   end
 
