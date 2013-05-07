@@ -242,7 +242,7 @@ insert_ignore_escape(VALUE self, VALUE prompt)
 		rb_str_cat(last_prompt, s0, s - s0 - 1);
 		s0 = s - 1;
 		while (++s < e && *s) {
-		    if (ISALPHA(*s)) {
+		    if (ISALPHA(*(unsigned char *)s)) {
 			if (!ignoring) {
 			    ignoring = 1;
 			    rb_str_cat(last_prompt, ignore_code+0, 1);

@@ -1,3 +1,9 @@
+Tue May  7 22:12:34 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (insert_ignore_escape): Add a cast to
+	  unsigned char * before dereference.
+	  This suppress a warning on Cygwin.
+
 Tue May  7 12:15:24 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): Add a cast to
