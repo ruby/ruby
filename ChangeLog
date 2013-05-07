@@ -1,3 +1,27 @@
+Wed May  8 01:18:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (MUL_OVERFLOW_SIGNED_INTEGER_P): New macro.
+	  (MUL_OVERFLOW_FIXNUM_P): Ditto.
+	  (MUL_OVERFLOW_LONG_P): Ditto.
+
+	* array.c (rb_ary_product): Don't overflow on signed integer
+	  multiplication.
+
+	* numeric.c (fix_mul): Ditto.
+	  (int_pow): Ditto.
+
+	* rational.c (f_imul): Ditto.
+
+	* insns.def (opt_mult): Ditto.
+
+	* thread.c (sleep_timeval): Don't overflow on signed integer addition.
+
+	* bignum.c (rb_int2big): Don't overflow on signed integer negation.
+	  (rb_big2ulong): Ditto.
+	  (rb_big2long): Ditto.
+	  (rb_big2ull): Ditto.
+	  (rb_big2ll): Ditto.
+
 Tue May  7 20:13:12 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (invoke_rec): extend timeout 10 -> 50 sec,

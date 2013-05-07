@@ -19,6 +19,15 @@ extern "C" {
 #endif
 #endif
 
+#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
+    (a) == 0 ? 0 : \
+    (a) == -1 ? (b) < -(max) : \
+    (a) > 0 ? \
+      ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
+      ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
+#define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
+#define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
+
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };

@@ -981,10 +981,17 @@ sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
     enum rb_thread_status prev_status = th->status;
 
     getclockofday(&to);
-    to.tv_sec += tv.tv_sec;
+    if (TIMET_MAX - tv.tv_sec < to.tv_sec)
+        to.tv_sec = TIMET_MAX;
+    else
+        to.tv_sec += tv.tv_sec;
     if ((to.tv_usec += tv.tv_usec) >= 1000000) {
-	to.tv_sec++;
-	to.tv_usec -= 1000000;
+        if (to.tv_sec == TIMET_MAX)
+            to.tv_usec = 999999;
+        else {
+            to.tv_sec++;
+            to.tv_usec -= 1000000;
+        }
     }
 
     th->status = THREAD_STOPPED;
