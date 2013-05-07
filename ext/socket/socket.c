@@ -1658,7 +1658,7 @@ socket_s_ip_address_list(VALUE self)
     for (p = ifp; p; p = p->ifa_next) {
         if (p->ifa_addr != NULL && IS_IP_FAMILY(p->ifa_addr->sa_family)) {
             struct sockaddr *addr = p->ifa_addr;
-#if defined(AF_INET6)
+#if defined(AF_INET6) && defined(__sun)
             /*
              * OpenIndiana SunOS 5.11 getifaddrs() returns IPv6 link local
              * address with sin6_scope_id == 0.
