@@ -1,3 +1,11 @@
+Tue May  7 12:15:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): Add a cast to
+	  suppress warning.
+	  Bionic defines socklen_t as int.
+	  Bionic defines msg_controllen as unsigned int (__kernel_size_t)
+	  instead of socklen_t as POSIX.
+
 Tue May  7 12:12:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (ancillary_inspect): Don't call
