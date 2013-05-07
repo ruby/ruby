@@ -1,3 +1,8 @@
+Tue May  7 12:10:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (socket_s_ip_address_list): Cast EXTRA_SPACE as
+	  int.  This suppress a warning.
+
 Tue May  7 12:09:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Set close_fds false for Cygwin.

@@ -1759,7 +1759,7 @@ socket_s_ip_address_list(VALUE self)
 #elif defined(SIOCGIFCONF)
     int fd = -1;
     int ret;
-#define EXTRA_SPACE (sizeof(struct ifconf) + sizeof(union_sockaddr))
+#define EXTRA_SPACE ((int)(sizeof(struct ifconf) + sizeof(union_sockaddr)))
     char initbuf[4096+EXTRA_SPACE];
     char *buf = initbuf;
     int bufsize;
