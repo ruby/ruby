@@ -1,3 +1,20 @@
+Wed May  8 23:07:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defined): use vm_search_superclass() like as normal super
+	  call.  based on a patch <https://gist.github.com/wanabe/5520026> by
+	  wanabe.
+
+	* vm_insnhelper.c (vm_search_superclass): return error but not raise
+	  exceptions.
+
+	* vm_insnhelper.c (vm_search_super_method): check the result of
+	  vm_search_superclass and raise exceptions on error.
+
+Wed May  8 23:07:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defined): get method entry from the method top level
+	  frame, not block frame.  [ruby-core:54769] [Bug #8367]
+
 Wed May  8 01:18:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (MUL_OVERFLOW_SIGNED_INTEGER_P): New macro.
