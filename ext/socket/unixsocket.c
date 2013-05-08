@@ -381,7 +381,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #else
     if (arg.msg.msg_accrightslen != sizeof(fd)) {
 	rb_raise(rb_eSocket,
-		 "file descriptor was not passed (accrightslen) : %d != %d",
+		 "file descriptor was not passed (accrightslen=%d, %d expected)",
 		 arg.msg.msg_accrightslen, (int)sizeof(fd));
     }
 #endif
