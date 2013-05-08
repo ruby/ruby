@@ -1431,7 +1431,6 @@ AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 AC_CHECK_LIB(crypt, crypt)      # GNU/Linux
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
-AC_CHECK_LIB(socket, socketpair)	# SunOS/Solaris
 AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
 
 AS_CASE(["$target_cpu"],
@@ -1697,7 +1696,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
 	      truncate64 ftruncate64 ftello64 fseeko fseeko64 \
 	      link symlink readlink readdir_r fsync fdatasync fchown posix_fadvise\
-	      setitimer setruid seteuid setreuid setresuid socketpair\
+	      setitimer setruid seteuid setreuid setresuid\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf close \

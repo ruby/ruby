@@ -1,3 +1,8 @@
+Thu May  9 01:52:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Don't check socketpair.  socketpair is not used in
+	  ruby command itself.
+
 Thu May  9 01:05:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_included_modules): should not include non-modules.
