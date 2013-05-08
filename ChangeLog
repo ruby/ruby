@@ -1,3 +1,8 @@
+Wed May  8 13:49:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/generator/generator.c (isArrayOrObject): cast char to
+	  unsigned char. [Bug #8378]
+
 Wed May  8 13:46:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/depend: fix dependencies [Bug #8379]
