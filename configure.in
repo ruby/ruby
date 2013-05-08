@@ -1431,6 +1431,7 @@ AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
+AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
 
 AS_CASE(["$target_cpu"],
