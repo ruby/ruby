@@ -39,6 +39,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
+* IO
+  * incompatible changes:
+    * open ignore internal encoding if external encoding is ASCII-8BIT.
+
 * Module#ancestors
 
   The ancestors of a singleton class now include singleton classes,

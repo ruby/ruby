@@ -1,3 +1,8 @@
+Wed May  8 17:43:55 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_ext_int_to_encs): ignore internal encoding if external
+	  encoding is ASCII-8BIT. [Bug #8342]
+
 Wed May  8 13:49:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/generator.c (isArrayOrObject): cast char to

@@ -4868,9 +4868,13 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 	ext = rb_default_external_encoding();
 	default_ext = 1;
     }
-    if (intern == NULL && ext != rb_ascii8bit_encoding())
-	/* If external is ASCII-8BIT, no default transcoding */
+    if (ext == rb_ascii8bit_encoding()) {
+	/* If external is ASCII-8BIT, no transcoding */
+	intern = NULL;
+    }
+    else if (intern == NULL) {
 	intern = rb_default_internal_encoding();
+    }
     if (intern == NULL || intern == (rb_encoding *)Qnil ||
 	(!(fmode & FMODE_SETENC_BY_BOM) && (intern == ext))) {
 	/* No internal encoding => use external + no transcoding */
