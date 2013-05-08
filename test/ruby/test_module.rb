@@ -1552,7 +1552,15 @@ class TestModule < Test::Unit::TestCase
     bug8025 = '[ruby-core:53158] [Bug #8025]'
     mixin = labeled_module("mixin")
     c = labeled_module("c") {prepend mixin}
-    assert_not_include(c.included_modules, c, bug8025)
+    im = c.included_modules
+    assert_not_include(im, c, bug8025)
+    assert_include(im, mixin, bug8025)
+    c1 = labeled_class("c1") {prepend mixin}
+    c2 = labeled_class("c2", c1)
+    im = c2.included_modules
+    assert_not_include(im, c1, bug8025)
+    assert_not_include(im, c2, bug8025)
+    assert_include(im, mixin, bug8025)
   end
 
   def test_class_variables

@@ -1,3 +1,8 @@
+Thu May  9 01:05:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_included_modules): should not include non-modules.
+	  [ruby-core:53158] [Bug #8025]
+
 Wed May  8 22:46:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_included_modules): should not include the original
