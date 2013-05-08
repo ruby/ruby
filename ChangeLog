@@ -1,3 +1,8 @@
+Wed May  8 22:46:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_included_modules): should not include the original
+	  module itself.  [ruby-core:53158] [Bug #8025]
+
 Wed May  8 17:43:55 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_ext_int_to_encs): ignore internal encoding if external

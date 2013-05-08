@@ -1548,6 +1548,13 @@ class TestModule < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, bug8005) {a.send :foo}
   end
 
+  def test_prepend_included_modules
+    bug8025 = '[ruby-core:53158] [Bug #8025]'
+    mixin = labeled_module("mixin")
+    c = labeled_module("c") {prepend mixin}
+    assert_not_include(c.included_modules, c, bug8025)
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)
