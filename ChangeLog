@@ -1,3 +1,7 @@
+Wed May  8 13:06:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ISGRAPH): add missing macro.
+
 Wed May  8 06:42:56 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/socket.c (socket_s_ip_address_list): fix wrongly filled

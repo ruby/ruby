@@ -1617,6 +1617,7 @@ int rb_toupper(int c);
 #define ISASCII(c) rb_isascii((unsigned char)(c))
 #undef ISPRINT
 #define ISPRINT(c) rb_isprint((unsigned char)(c))
+#define ISGRAPH(c) rb_isgraph((unsigned char)(c))
 #define ISSPACE(c) rb_isspace((unsigned char)(c))
 #define ISUPPER(c) rb_isupper((unsigned char)(c))
 #define ISLOWER(c) rb_islower((unsigned char)(c))
