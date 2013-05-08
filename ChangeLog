@@ -1,3 +1,8 @@
+Wed May  8 13:07:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fail if $, @, @@ are not followed by a valid
+	  name character.  [ruby-core:54846] [Bug #8375].
+
 Wed May  8 13:06:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ISGRAPH): add missing macro.

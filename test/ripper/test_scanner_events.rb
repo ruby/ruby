@@ -92,7 +92,7 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_location
     assert_location ""
     assert_location " "
-    assert_location "@"
+    assert_location ":"
     assert_location "\n"
     assert_location "\r\n"
     assert_location "\n\n\n\n\n\r\n\n\n"
@@ -842,8 +842,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_CHAR
     assert_equal [],
                  scan('CHAR', "")
-    assert_equal ["@"],
-                 scan('CHAR', "@")
+    assert_equal ["?a"],
+                 scan('CHAR', "?a")
     assert_equal [],
                  scan('CHAR', "@ivar")
   end

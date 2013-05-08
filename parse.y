@@ -7876,7 +7876,8 @@ parser_yylex(struct parser_params *parser)
 	  default:
 	    if (!parser_is_identchar()) {
 		pushback(c);
-		return '$';
+		compile_error(PARSER_ARG "`$%c' is not allowed as a global variable name", c);
+		return 0;
 	    }
 	  case '0':
 	    tokadd('$');
@@ -7891,7 +7892,8 @@ parser_yylex(struct parser_params *parser)
 	    tokadd('@');
 	    c = nextc();
 	}
-	if (c != -1 && ISDIGIT(c)) {
+	if (c != -1 && (ISDIGIT(c) || !parser_is_identchar())) {
+	    pushback(c);
 	    if (tokidx == 1) {
 		compile_error(PARSER_ARG "`@%c' is not allowed as an instance variable name", c);
 	    }
@@ -7899,10 +7901,6 @@ parser_yylex(struct parser_params *parser)
 		compile_error(PARSER_ARG "`@@%c' is not allowed as a class variable name", c);
 	    }
 	    return 0;
-	}
-	if (!parser_is_identchar()) {
-	    pushback(c);
-	    return '@';
 	}
 	break;
 
