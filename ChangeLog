@@ -1,3 +1,9 @@
+Wed May  8 13:46:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/generator/depend: fix dependencies [Bug #8379]
+
+	* ext/json/parser/depend: ditto.
+
 Wed May  8 13:07:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fail if $, @, @@ are not followed by a valid
