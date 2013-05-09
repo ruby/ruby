@@ -2342,7 +2342,8 @@ str_eql(const VALUE str1, const VALUE str2)
 }
 /*
  *  call-seq:
- *     str == obj   -> true or false
+ *     str == obj    -> true or false
+ *     str === obj   -> true or false
  *
  *  Equality---If <i>obj</i> is not a <code>String</code>, returns
  *  <code>false</code>. Otherwise, returns <code>true</code> if <i>str</i>

@@ -1,3 +1,7 @@
+Thu May  9 11:30:02 2013  Zachary Scott	 <zachary@zacharyscott.net>
+
+	* string.c: Add call-seq alias for String#=== [Bug #8381]
+
 Thu May  9 11:14:18 2013  Zachary Scott	 <zachary@zacharyscott.net>
 
 	* doc/contributing.rdoc: Add guide for contributing to CRuby
