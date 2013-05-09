@@ -1153,7 +1153,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     data = argv[0];
     if (1 < argc) vflags = argv[1];
     if (2 < argc) dest_sockaddr = argv[2];
-    controls_num = argc - 3;
+    controls_num = 3 < argc ? argc - 3 : 0;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (3 < argc) { controls_ptr = &argv[3]; }
 #endif

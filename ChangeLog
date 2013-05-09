@@ -1,3 +1,8 @@
+Thu May  9 22:00:35 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): controls_num should
+	  not be negative.
+
 Thu May  9 21:09:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* file.c, ext/etc/etc.c, ext/socket/unixsocket.c,
