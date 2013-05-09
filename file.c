@@ -531,7 +531,7 @@ rb_stat_gid(VALUE self)
 static VALUE
 rb_stat_rdev(VALUE self)
 {
-#ifdef HAVE_ST_RDEV
+#ifdef HAVE_STRUCT_STAT_ST_RDEV
     return DEVT2NUM(get_stat(self)->st_rdev);
 #else
     return Qnil;
@@ -552,7 +552,7 @@ rb_stat_rdev(VALUE self)
 static VALUE
 rb_stat_rdev_major(VALUE self)
 {
-#if defined(HAVE_ST_RDEV) && defined(major)
+#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
     return DEVT2NUM(major(get_stat(self)->st_rdev));
 #else
     return Qnil;
@@ -573,7 +573,7 @@ rb_stat_rdev_major(VALUE self)
 static VALUE
 rb_stat_rdev_minor(VALUE self)
 {
-#if defined(HAVE_ST_RDEV) && defined(minor)
+#if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
     return DEVT2NUM(minor(get_stat(self)->st_rdev));
 #else
     return Qnil;
@@ -609,7 +609,7 @@ rb_stat_size(VALUE self)
 static VALUE
 rb_stat_blksize(VALUE self)
 {
-#ifdef HAVE_ST_BLKSIZE
+#ifdef HAVE_STRUCT_STAT_ST_BLKSIZE
     return ULONG2NUM(get_stat(self)->st_blksize);
 #else
     return Qnil;

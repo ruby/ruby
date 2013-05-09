@@ -163,7 +163,7 @@ unix_recvfrom(int argc, VALUE *argv, VALUE sock)
 #define FD_PASSING_BY_MSG_CONTROL 0
 #endif
 
-#if defined(HAVE_ST_MSG_ACCRIGHTS)
+#if defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 #define FD_PASSING_BY_MSG_ACCRIGHTS 1
 #else
 #define FD_PASSING_BY_MSG_ACCRIGHTS 0

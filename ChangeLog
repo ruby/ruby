@@ -1,3 +1,9 @@
+Thu May  9 21:09:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* file.c, ext/etc/etc.c, ext/socket/unixsocket.c,
+	  ext/openssl/ossl.h, ext/openssl/openssl_missing.c: Use
+	  HAVE_AGGREGATE_MEMBER instead of HAVE_ST_MEMBER.
+
 Thu May  9 20:43:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): Always set
