@@ -5344,13 +5344,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	rb_iseq_t *is = iseq;
 
 	if (is) {
-	    if (is->body->type == ISEQ_TYPE_TOP) {
-		COMPILE_ERROR(ERROR_ARGS "Invalid return");
+	    enum iseq_type type = is->body->type;
+
+	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN) {
+		ADD_INSN(ret, line, putnil);
+		ADD_INSN(ret, line, leave);
 	    }
 	    else {
 		LABEL *splabel = 0;
 
-		if (is->body->type == ISEQ_TYPE_METHOD) {
+		if (type == ISEQ_TYPE_METHOD) {
 		    splabel = NEW_LABEL(0);
 		    ADD_LABEL(ret, splabel);
 		    ADD_ADJUST(ret, line, 0);
@@ -5358,7 +5361,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 		COMPILE(ret, "return nd_stts (return val)", node->nd_stts);
 
-		if (is->body->type == ISEQ_TYPE_METHOD) {
+		if (type == ISEQ_TYPE_METHOD) {
 		    add_ensure_iseq(ret, iseq, 1);
 		    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
 		    ADD_INSN(ret, line, leave);

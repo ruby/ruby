@@ -832,6 +832,26 @@ eom
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
+  def test_return_toplevel
+    feature4840 = '[ruby-core:36785] [Feature #4840]'
+    code = <<~'CODE'
+    return; raise
+    begin return; rescue SystemExit; exit false; end
+    begin return; ensure exit false; end
+    begin ensure return; end
+    begin raise; ensure; return; end
+    begin raise; rescue; return; end
+    return false; raise
+    return 1; raise
+    CODE
+    all_assertions(feature4840) do |a|
+      code.each_line do |s|
+        s.chomp!
+        a.for(s) {assert_ruby_status([], s)}
+      end
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
