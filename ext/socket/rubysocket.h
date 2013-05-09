@@ -328,7 +328,7 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
-#ifdef HAVE_ST_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 

@@ -1,3 +1,9 @@
+Thu May  9 12:06:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h, ext/socket/unixsocket.c,
+	  ext/socket/ancdata.c: Use HAVE_STRUCT_MSGHDR_MSG_CONTROL instead
+	  of HAVE_ST_MSG_CONTROL.
+
 Thu May  9 11:30:02 2013  Zachary Scott	 <zachary@zacharyscott.net>
 
 	* string.c: Add call-seq alias for String#=== [Bug #8381]

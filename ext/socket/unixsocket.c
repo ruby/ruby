@@ -157,7 +157,7 @@ unix_recvfrom(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_UNIX);
 }
 
-#if defined(HAVE_ST_MSG_CONTROL) && defined(SCM_RIGHTS)
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && defined(SCM_RIGHTS)
 #define FD_PASSING_BY_MSG_CONTROL 1
 #else
 #define FD_PASSING_BY_MSG_CONTROL 0
