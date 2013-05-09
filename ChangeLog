@@ -1,3 +1,7 @@
+Thu May  9 11:14:18 2013  Zachary Scott	 <zachary@zacharyscott.net>
+
+	* doc/contributing.rdoc: Add guide for contributing to CRuby
+
 Thu May  9 04:55:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Check socket library again.  shutdown() is used in
