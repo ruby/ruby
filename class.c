@@ -853,10 +853,13 @@ rb_mod_included_modules(VALUE mod)
 {
     VALUE ary = rb_ary_new();
     VALUE p;
+    VALUE origin = RCLASS_ORIGIN(mod);
 
     for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
-	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    rb_ary_push(ary, RBASIC(p)->klass);
+	if (p != origin && BUILTIN_TYPE(p) == T_ICLASS) {
+	    VALUE m = RBASIC(p)->klass;
+	    if (RB_TYPE_P(m, T_MODULE))
+		rb_ary_push(ary, m);
 	}
     }
     return ary;
