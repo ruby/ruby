@@ -1147,15 +1147,15 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
     data = vflags = dest_sockaddr = Qnil;
-    controls_num = 0;
 
     if (argc == 0)
         rb_raise(rb_eArgError, "mesg argument required");
     data = argv[0];
     if (1 < argc) vflags = argv[1];
     if (2 < argc) dest_sockaddr = argv[2];
+    controls_num = argc - 3;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    if (3 < argc) { controls_ptr = &argv[3]; controls_num = argc - 3; }
+    if (3 < argc) { controls_ptr = &argv[3]; }
 #endif
 
     StringValue(data);
@@ -1490,8 +1490,8 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     VALUE dat_str = Qnil;
     VALUE ret;
     ssize_t ss;
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     int request_scm_rights;
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     struct cmsghdr *cmh;
     size_t maxctllen;
     union {
@@ -1524,10 +1524,12 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     grow_buffer = NIL_P(vmaxdatlen) || NIL_P(vmaxctllen);
 
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     request_scm_rights = 0;
     if (!NIL_P(vopts) && RTEST(rb_hash_aref(vopts, ID2SYM(rb_intern("scm_rights")))))
         request_scm_rights = 1;
+#if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    if (request_scm_rights)
+        rb_raise(rb_eNotImpError, "control message for recvmsg is unimplemented");
 #endif
 
     GetOpenFile(sock, fptr);

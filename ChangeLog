@@ -1,3 +1,11 @@
+Thu May  9 20:43:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): Always set
+	  controls_num to raise NotImplementedError appropriately.
+	  (bsock_recvmsg_internal): Raise NotImplementedError if
+	  :scm_rights=>true is given on platforms which don't have
+	  4.4BSD style control message.
+
 Thu May  9 12:06:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h, ext/socket/unixsocket.c,

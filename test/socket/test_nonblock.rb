@@ -221,7 +221,7 @@ class TestSocketNonblock < Test::Unit::TestCase
           s1.sendmsg_nonblock("a" * 100000)
         }
       rescue NotImplementedError, Errno::ENOSYS
-        skip "sendmsg not implemented on this platform."
+        skip "sendmsg not implemented on this platform: #{$!}"
       rescue Errno::EMSGSIZE
         # UDP has 64K limit (if no Jumbograms).  No problem.
       rescue Errno::EWOULDBLOCK

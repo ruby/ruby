@@ -410,7 +410,7 @@ class TestSocket < Test::Unit::TestCase
         }
       rescue NotImplementedError, Errno::ENOSYS
         skipped = true
-        skip "need sendmsg and recvmsg"
+        skip "need sendmsg and recvmsg: #{$!}"
       ensure
         if th
           if skipped
