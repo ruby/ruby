@@ -1,3 +1,9 @@
+Sat May 11 00:47:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* gc.h (SET_MACHINE_STACK_END): Add !defined(_ILP32) to a defining
+	  condition to avoid compilation error on x32.
+	  https://sites.google.com/site/x32abi/
+
 Fri May 10 23:56:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_peek_variable_name): treat invalid global, class,
