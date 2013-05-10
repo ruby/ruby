@@ -1,3 +1,7 @@
+Fri May 10 20:22:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Move library checks into "Checks for libraries." part.
+
 Fri May 10 19:32:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Reformat arguments of AC_CHECK_HEADERS and
