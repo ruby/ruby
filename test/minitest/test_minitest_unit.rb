@@ -6,15 +6,14 @@
 ######################################################################
 
 require 'pathname'
-require_relative 'metametameta'
-require 'minitest/parallel_each'
+require 'minitest/metametameta'
 
 module MyModule; end
 class AnError < StandardError; include MyModule; end
 class ImmutableString < String; def inspect; super.freeze; end; end
 
 class TestMiniTestUnit < MetaMetaMetaTestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   pwd = Pathname.new File.expand_path Dir.pwd
   basedir = Pathname.new(File.expand_path "lib/minitest") + 'mini'
@@ -1762,7 +1761,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 end
 
 class TestMiniTestGuard < MiniTest::Unit::TestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   def test_mri_eh
     assert self.class.mri? "ruby blah"

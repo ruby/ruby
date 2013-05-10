@@ -8,7 +8,7 @@
 require 'minitest/autorun'
 
 class TestMiniTestMock < MiniTest::Unit::TestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   def setup
     @mock = MiniTest::Mock.new.expect(:foo, nil)
@@ -278,7 +278,7 @@ end
 require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
-  parallelize_me! if ENV["PARALLEL"]
+  parallelize_me!
 
   def setup
     super
