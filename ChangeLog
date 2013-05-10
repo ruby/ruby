@@ -1,3 +1,9 @@
+Fri May 10 23:56:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_peek_variable_name): treat invalid global, class,
+	  and instance variable names as mere strings rather than errors.
+	  [ruby-core:54885] [Bug #8375]
+
 Fri May 10 20:22:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Move library checks into "Checks for libraries." part.
