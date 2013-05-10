@@ -1,3 +1,8 @@
+Fri May 10 19:32:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Reformat arguments of AC_CHECK_HEADERS and
+	  AC_CHECK_FUNCS to track modifications easily.
+
 Fri May 10 12:01:36 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Don't link librt if clock_gettime is available in

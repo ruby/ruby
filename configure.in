@@ -994,12 +994,40 @@ AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
 AC_HEADER_STDBOOL
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h sys/syscall.h\
-		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h grp.h a.out.h utime.h direct.h sys/resource.h \
-		 sys/mkdev.h sys/utime.h float.h ieeefp.h \
-		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
-		 net/socket.h sys/socket.h process.h sys/prctl.h atomic.h)
+AC_CHECK_HEADERS( \
+  limits.h \
+  sys/file.h \
+  sys/ioctl.h \
+  sys/syscall.h \
+  fcntl.h \
+  sys/fcntl.h \
+  sys/select.h \
+  sys/time.h \
+  sys/times.h \
+  sys/param.h \
+  syscall.h \
+  pwd.h \
+  grp.h \
+  a.out.h \
+  utime.h \
+  direct.h \
+  sys/resource.h \
+  sys/mkdev.h \
+  sys/utime.h \
+  float.h \
+  ieeefp.h \
+  ucontext.h \
+  intrinsics.h \
+  langinfo.h \
+  locale.h \
+  sys/sendfile.h \
+  time.h \
+  net/socket.h \
+  sys/socket.h \
+  process.h \
+  sys/prctl.h \
+  atomic.h \
+)
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -1702,21 +1730,110 @@ if test x"$ac_cv_func_clock_gettime" != xyes; then
     AC_CHECK_FUNCS(clock_gettime)
 fi
 
-AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot getcwd eaccess\
-	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
-	      truncate64 ftruncate64 ftello64 fseeko fseeko64 \
-	      link symlink readlink readdir_r fsync fdatasync fchown posix_fadvise\
-	      setitimer setruid seteuid setreuid setresuid\
-	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
-	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit setrlimit sysconf close \
-              getpwnam_r getgrnam_r endgrent \
-	      dlopen sigprocmask sigaction _setjmp _longjmp\
-	      getsid setsid telldir seekdir fchmod cosh sinh tanh log2 round llabs\
-	      setuid setgid daemon select_large_fdset setenv unsetenv\
-              mktime timegm gmtime_r gettimeofday poll ppoll\
-              pread sendfile shutdown sigaltstack dl_iterate_phdr\
-              dup dup3 pipe2 posix_memalign memalign ioctl mblen)
+AC_CHECK_FUNCS( \
+  fmod \
+  killpg \
+  wait4 \
+  waitpid \
+  fork \
+  spawnv \
+  syscall \
+  __syscall \
+  chroot \
+  getcwd \
+  eaccess \
+  truncate \
+  ftruncate \
+  ftello \
+  chsize \
+  times \
+  utimes \
+  utimensat \
+  fcntl \
+  lockf \
+  lstat \
+  truncate64 \
+  ftruncate64 \
+  ftello64 \
+  fseeko \
+  fseeko64 \
+  link \
+  symlink \
+  readlink \
+  readdir_r \
+  fsync \
+  fdatasync \
+  fchown \
+  posix_fadvise \
+  setitimer \
+  setruid \
+  seteuid \
+  setreuid \
+  setresuid \
+  setrgid \
+  setegid \
+  setregid \
+  setresgid \
+  issetugid \
+  pause \
+  lchown \
+  lchmod \
+  getpgrp \
+  setpgrp \
+  getpgid \
+  setpgid \
+  initgroups \
+  getgroups \
+  setgroups \
+  getpriority \
+  getrlimit \
+  setrlimit \
+  sysconf \
+  close \
+  getpwnam_r \
+  getgrnam_r \
+  endgrent \
+  dlopen \
+  sigprocmask \
+  sigaction \
+  _setjmp \
+  _longjmp \
+  getsid \
+  setsid \
+  telldir \
+  seekdir \
+  fchmod \
+  cosh \
+  sinh \
+  tanh \
+  log2 \
+  round \
+  llabs \
+  setuid \
+  setgid \
+  daemon \
+  select_large_fdset \
+  setenv \
+  unsetenv \
+  mktime \
+  timegm \
+  gmtime_r \
+  gettimeofday \
+  poll \
+  ppoll \
+  pread \
+  sendfile \
+  shutdown \
+  sigaltstack \
+  dl_iterate_phdr \
+  dup \
+  dup3 \
+  pipe2 \
+  posix_memalign \
+  memalign \
+  ioctl \
+  mblen \
+)
 
 AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
   [AC_TRY_COMPILE([
