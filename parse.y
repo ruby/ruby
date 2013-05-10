@@ -8006,11 +8006,11 @@ parser_yylex(struct parser_params *parser)
 		if (kw) {
 		    enum lex_state_e state = lex_state;
 		    lex_state = kw->state;
-		    if (state == EXPR_FNAME) {
+		    if (IS_lex_state_for(state, EXPR_FNAME)) {
 			set_yylval_name(rb_intern(kw->name));
 			return kw->id[0];
 		    }
-		    if (lex_state == EXPR_BEG) {
+		    if (IS_lex_state(EXPR_BEG)) {
 			command_start = TRUE;
 		    }
 		    if (kw->id[0] == keyword_do) {
@@ -8020,13 +8020,13 @@ parser_yylex(struct parser_params *parser)
 			    return keyword_do_LAMBDA;
 			}
 			if (COND_P()) return keyword_do_cond;
-			if (CMDARG_P() && state != EXPR_CMDARG)
+			if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
 			    return keyword_do_block;
-			if (state & (EXPR_BEG | EXPR_ENDARG))
+			if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
 			    return keyword_do_block;
 			return keyword_do;
 		    }
-		    if (state & (EXPR_BEG | EXPR_VALUE))
+		    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_VALUE)))
 			return kw->id[0];
 		    else {
 			if (kw->id[0] != kw->id[1])
