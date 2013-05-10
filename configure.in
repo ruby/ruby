@@ -1432,7 +1432,6 @@ AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
-AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
 
 AS_CASE(["$target_cpu"],
 [alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
@@ -1693,6 +1692,16 @@ if test "$rb_cv_have_signbit" = yes; then
 else
   AC_LIBOBJ([signbit])
 fi
+
+AC_CHECK_FUNCS(clock_gettime)
+if test x"$ac_cv_func_clock_gettime" != xyes; then
+    # glibc 2.17 moves clock_* functions from librt to the main C library.
+    # http://sourceware.org/ml/libc-announce/2012/msg00001.html
+    AC_CHECK_LIB(rt, clock_gettime)
+    unset ac_cv_func_clock_gettime
+    AC_CHECK_FUNCS(clock_gettime)
+fi
+
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot getcwd eaccess\
 	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
 	      truncate64 ftruncate64 ftello64 fseeko fseeko64 \
@@ -1705,7 +1714,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      dlopen sigprocmask sigaction _setjmp _longjmp\
 	      getsid setsid telldir seekdir fchmod cosh sinh tanh log2 round llabs\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
-              mktime timegm gmtime_r clock_gettime gettimeofday poll ppoll\
+              mktime timegm gmtime_r gettimeofday poll ppoll\
               pread sendfile shutdown sigaltstack dl_iterate_phdr\
               dup dup3 pipe2 posix_memalign memalign ioctl mblen)
 
