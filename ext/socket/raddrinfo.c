@@ -1189,7 +1189,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                 np = addr->sdl_data;
                 nlen = addr->sdl_nlen;
                 if (endp - np < nlen)
-                    nlen = endp - np;
+                    nlen = (int)(endp - np);
             }
             off = addr->sdl_nlen;
 
@@ -1197,7 +1197,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                 ap = addr->sdl_data + off;
                 alen = addr->sdl_alen;
                 if (endp - ap < alen)
-                    alen = endp - ap;
+                    alen = (int)(endp - ap);
             }
 
 	    CATSEP;
