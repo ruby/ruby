@@ -24,6 +24,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     dp.parse.to_s
   end
 
+  def compile_error(str)
+    parse(str, :compile_error) {|e, msg| return msg}
+  end
+
   def test_program
     thru_program = false
     assert_equal '[void()]', parse('', :on_program) {thru_program = true}
@@ -1167,8 +1171,20 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_unterminated_regexp
-    compile_error = false
-    parse('/', :compile_error) {|e, msg| compile_error = msg}
-    assert_equal("unterminated regexp meets end of file", compile_error)
+    assert_equal("unterminated regexp meets end of file", compile_error('/'))
+  end
+
+  def test_invalid_instance_variable_name
+    assert_equal("`@1' is not allowed as an instance variable name", compile_error('@1'))
+    assert_equal("`@%' is not allowed as an instance variable name", compile_error('@%'))
+  end
+
+  def test_invalid_class_variable_name
+    assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
+    assert_equal("`@@%' is not allowed as a class variable name", compile_error('@@%'))
+  end
+
+  def test_invalid_global_variable_name
+    assert_equal("`$%' is not allowed as a global variable name", compile_error('$%'))
   end
 end if ripper_test
