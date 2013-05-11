@@ -2202,6 +2202,7 @@ End
 
   def test_fcntl_lock_linux
     return if /x86_64-linux/ !~ RUBY_PLATFORM # A binary form of struct flock depend on platform
+    return if [nil].pack("p").bytesize != 8 # Return if x32 platform.
 
     pad=0
     Tempfile.create(self.class.name) do |f|
