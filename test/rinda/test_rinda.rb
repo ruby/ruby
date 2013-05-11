@@ -533,6 +533,9 @@ end
 module RingIPv6
   def prepare_ipv6(r)
     Socket.getifaddrs.each do |ifaddr|
+      p ifaddr
+    end
+    Socket.getifaddrs.each do |ifaddr|
       next unless ifaddr.addr.ipv6_linklocal?
       next if ifaddr.name[0, 2] == "lo"
       r.multicast_interface = ifaddr.ifindex
