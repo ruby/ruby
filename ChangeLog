@@ -1,3 +1,9 @@
+Sat May 11 23:01:58 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/rubysocket.h (HAVE_TYPE_STRUCT_SOCKADDR_DL):
+	  MSVC has struct sockadddr_dl, but its content is broken.
+	  http://ruby-mswin.cloudapp.net/vc10-x64/ruby-trunk/log/20130511T103938Z.log.html.gz
+
 Sat May 11 22:07:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/rinda/test_rinda.rb: Socket.getifaddrs may returns an interface
