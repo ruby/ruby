@@ -980,24 +980,24 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
             struct sockaddr_in *addr;
             int port;
 	    addr = &sockaddr->in;
-	    if (((char*)&addr->sin_addr)-(char*)addr+0+1 <= socklen)
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+0+1) <= socklen)
 		rb_str_catf(ret, "%d", ((unsigned char*)&addr->sin_addr)[0]);
 	    else
 		rb_str_cat2(ret, "?");
-	    if (((char*)&addr->sin_addr)-(char*)addr+1+1 <= socklen)
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+1+1) <= socklen)
 		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[1]);
 	    else
 		rb_str_cat2(ret, ".?");
-	    if (((char*)&addr->sin_addr)-(char*)addr+2+1 <= socklen)
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+2+1) <= socklen)
 		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[2]);
 	    else
 		rb_str_cat2(ret, ".?");
-	    if (((char*)&addr->sin_addr)-(char*)addr+3+1 <= socklen)
+	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+3+1) <= socklen)
 		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[3]);
 	    else
 		rb_str_cat2(ret, ".?");
 
-	    if (((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port) < socklen) {
+	    if ((socklen_t)(((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port)) < socklen) {
 		port = ntohs(addr->sin_port);
 		if (port)
 		    rb_str_catf(ret, ":%d", port);
@@ -1095,11 +1095,11 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 
             rb_str_cat2(ret, "PACKET");
 
-            if (offsetof(struct sockaddr_ll, sll_protocol) + sizeof(addr->sll_protocol) <= socklen) {
+            if (offsetof(struct sockaddr_ll, sll_protocol) + sizeof(addr->sll_protocol) <= (size_t)socklen) {
                 CATSEP;
                 rb_str_catf(ret, "protocol=%d", ntohs(addr->sll_protocol));
             }
-            if (offsetof(struct sockaddr_ll, sll_ifindex) + sizeof(addr->sll_ifindex) <= socklen) {
+            if (offsetof(struct sockaddr_ll, sll_ifindex) + sizeof(addr->sll_ifindex) <= (size_t)socklen) {
                 char buf[IFNAMSIZ];
                 CATSEP;
                 if (if_indextoname(addr->sll_ifindex, buf) == NULL)
@@ -1107,11 +1107,11 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                 else
                     rb_str_catf(ret, "%s", buf);
             }
-            if (offsetof(struct sockaddr_ll, sll_hatype) + sizeof(addr->sll_hatype) <= socklen) {
+            if (offsetof(struct sockaddr_ll, sll_hatype) + sizeof(addr->sll_hatype) <= (size_t)socklen) {
                 CATSEP;
                 rb_str_catf(ret, "hatype=%d", addr->sll_hatype);
             }
-            if (offsetof(struct sockaddr_ll, sll_pkttype) + sizeof(addr->sll_pkttype) <= socklen) {
+            if (offsetof(struct sockaddr_ll, sll_pkttype) + sizeof(addr->sll_pkttype) <= (size_t)socklen) {
                 CATSEP;
                 if (addr->sll_pkttype == PACKET_HOST)
                     rb_str_cat2(ret, "HOST");
@@ -1128,16 +1128,16 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
             }
             if (socklen != (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + addr->sll_halen)) {
                 CATSEP;
-                if (offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen) <= socklen) {
+                if (offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen) <= (size_t)socklen) {
                     rb_str_catf(ret, "halen=%d", addr->sll_halen);
                 }
             }
-            if (offsetof(struct sockaddr_ll, sll_addr) < socklen) {
+            if (offsetof(struct sockaddr_ll, sll_addr) < (size_t)socklen) {
                 socklen_t len, i;
                 CATSEP;
                 rb_str_cat2(ret, "hwaddr");
                 len = addr->sll_halen;
-                if (socklen < offsetof(struct sockaddr_ll, sll_addr) + len)
+                if ((size_t)socklen < offsetof(struct sockaddr_ll, sll_addr) + len)
                     len = socklen - offsetof(struct sockaddr_ll, sll_addr);
                 for (i = 0; i < len; i++) {
                     rb_str_cat2(ret, i == 0 ? "=" : ":");
