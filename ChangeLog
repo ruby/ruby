@@ -1,3 +1,16 @@
+Sun May 12 02:50:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_RM_RECURSIVE): this hack is needed by only
+	  autoconf 2.69 or earlier on darwin.
+
+Sun May 12 02:50:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rm, shvar_to_cpp, unexpand_shvar): local is not
+	  available on old shells.
+
+	* configure.in (shvar_to_cpp): escape quotes for old shells.
+	  [Bug #7959] [Bug #8071]
+
 Thu May  9 23:39:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_included_modules): should not include non-modules.
