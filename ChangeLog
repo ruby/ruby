@@ -1,3 +1,8 @@
+Sat May 11 17:28:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket: New method, Socket.getifaddrs, implemented.
+	  [ruby-core:54777] [Feature #8368]
+
 Sat May 11 00:47:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* gc.h (SET_MACHINE_STACK_END): Add !defined(_ILP32) to a defining

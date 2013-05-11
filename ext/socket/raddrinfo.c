@@ -953,34 +953,62 @@ static VALUE
 inspect_sockaddr(VALUE addrinfo, VALUE ret)
 {
     rb_addrinfo_t *rai = get_addrinfo(addrinfo);
+    union_sockaddr *sockaddr = &rai->addr;
+    socklen_t socklen = rai->sockaddr_len;
+    return rsock_inspect_sockaddr((struct sockaddr *)sockaddr, socklen, ret);
+}
 
-    if (rai->sockaddr_len == 0) {
+VALUE
+rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE ret)
+{
+    union_sockaddr *sockaddr = (union_sockaddr *)sockaddr_arg;
+    if (socklen == 0) {
         rb_str_cat2(ret, "empty-sockaddr");
     }
-    else if ((long)rai->sockaddr_len < ((char*)&rai->addr.addr.sa_family + sizeof(rai->addr.addr.sa_family)) - (char*)&rai->addr)
+    else if ((long)socklen < ((char*)&sockaddr->addr.sa_family + sizeof(sockaddr->addr.sa_family)) - (char*)sockaddr)
         rb_str_cat2(ret, "too-short-sockaddr");
     else {
-        switch (rai->addr.addr.sa_family) {
+        switch (sockaddr->addr.sa_family) {
+          case AF_UNSPEC:
+	  {
+	    rb_str_cat2(ret, "UNSPEC");
+            break;
+	  }
+
           case AF_INET:
           {
             struct sockaddr_in *addr;
             int port;
-            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in)) {
-                rb_str_cat2(ret, "too-short-AF_INET-sockaddr");
-            }
-            else {
-                addr = &rai->addr.in;
-                rb_str_catf(ret, "%d.%d.%d.%d",
-                            ((unsigned char*)&addr->sin_addr)[0],
-                            ((unsigned char*)&addr->sin_addr)[1],
-                            ((unsigned char*)&addr->sin_addr)[2],
-                            ((unsigned char*)&addr->sin_addr)[3]);
-                port = ntohs(addr->sin_port);
-                if (port)
-                    rb_str_catf(ret, ":%d", port);
-                if ((socklen_t)sizeof(struct sockaddr_in) < rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in)));
-            }
+	    addr = &sockaddr->in;
+	    if (((char*)&addr->sin_addr)-(char*)addr+0+1 <= socklen)
+		rb_str_catf(ret, "%d", ((unsigned char*)&addr->sin_addr)[0]);
+	    else
+		rb_str_cat2(ret, "?");
+	    if (((char*)&addr->sin_addr)-(char*)addr+1+1 <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[1]);
+	    else
+		rb_str_cat2(ret, ".?");
+	    if (((char*)&addr->sin_addr)-(char*)addr+2+1 <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[2]);
+	    else
+		rb_str_cat2(ret, ".?");
+	    if (((char*)&addr->sin_addr)-(char*)addr+3+1 <= socklen)
+		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[3]);
+	    else
+		rb_str_cat2(ret, ".?");
+
+	    if (((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port) < socklen) {
+		port = ntohs(addr->sin_port);
+		if (port)
+		    rb_str_catf(ret, ":%d", port);
+	    }
+	    else {
+		rb_str_cat2(ret, ":?");
+	    }
+	    if ((socklen_t)sizeof(struct sockaddr_in) != socklen)
+		rb_str_catf(ret, " (%d bytes for %d bytes sockaddr_in)",
+		  (int)socklen,
+		  (int)sizeof(struct sockaddr_in));
             break;
           }
 
@@ -991,16 +1019,16 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
             char hbuf[1024];
             int port;
             int error;
-            if (rai->sockaddr_len < (socklen_t)sizeof(struct sockaddr_in6)) {
-                rb_str_cat2(ret, "too-short-AF_INET6-sockaddr");
+            if (socklen < (socklen_t)sizeof(struct sockaddr_in6)) {
+                rb_str_catf(ret, "too-short-AF_INET6-sockaddr %d bytes", (int)socklen);
             }
             else {
-                addr = &rai->addr.in6;
+                addr = &sockaddr->in6;
                 /* use getnameinfo for scope_id.
                  * RFC 4007: IPv6 Scoped Address Architecture
                  * draft-ietf-ipv6-scope-api-00.txt: Scoped Address Extensions to the IPv6 Basic Socket API
                  */
-                error = getnameinfo(&rai->addr.addr, rai->sockaddr_len,
+                error = getnameinfo(&sockaddr->addr, socklen,
                                     hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                     NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
@@ -1013,8 +1041,8 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                     port = ntohs(addr->sin6_port);
                     rb_str_catf(ret, "[%s]:%d", hbuf, port);
                 }
-                if ((socklen_t)sizeof(struct sockaddr_in6) < rai->sockaddr_len)
-                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(rai->sockaddr_len - sizeof(struct sockaddr_in6)));
+                if ((socklen_t)sizeof(struct sockaddr_in6) < socklen)
+                    rb_str_catf(ret, "(sockaddr %d bytes too long)", (int)(socklen - sizeof(struct sockaddr_in6)));
             }
             break;
           }
@@ -1023,10 +1051,10 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
 #ifdef HAVE_SYS_UN_H
           case AF_UNIX:
           {
-            struct sockaddr_un *addr = &rai->addr.un;
+            struct sockaddr_un *addr = &sockaddr->un;
             char *p, *s, *e;
             s = addr->sun_path;
-            e = (char*)addr + rai->sockaddr_len;
+            e = (char*)addr + socklen;
             while (s < e && *(e-1) == '\0')
                 e--;
             if (e < s)
@@ -1042,11 +1070,11 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
                 }
                 if (printable_only) { /* only printable, no space */
                     if (s[0] != '/') /* relative path */
-                        rb_str_cat2(ret, "AF_UNIX ");
+                        rb_str_cat2(ret, "UNIX ");
                     rb_str_cat(ret, s, p - s);
                 }
                 else {
-                    rb_str_cat2(ret, "AF_UNIX");
+                    rb_str_cat2(ret, "UNIX");
                     while (s < e)
                         rb_str_catf(ret, ":%02x", (unsigned char)*s++);
                 }
@@ -1055,11 +1083,157 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
           }
 #endif
 
+#ifdef AF_PACKET
+          /* GNU/Linux */
+          case AF_PACKET:
+          {
+            struct sockaddr_ll *addr;
+            const char *sep = "[";
+#define CATSEP do { rb_str_cat2(ret, sep); sep = " "; } while (0);
+
+            addr = (struct sockaddr_ll *)sockaddr;
+
+            rb_str_cat2(ret, "PACKET");
+
+            if (offsetof(struct sockaddr_ll, sll_protocol) + sizeof(addr->sll_protocol) <= socklen) {
+                CATSEP;
+                rb_str_catf(ret, "protocol=%d", ntohs(addr->sll_protocol));
+            }
+            if (offsetof(struct sockaddr_ll, sll_ifindex) + sizeof(addr->sll_ifindex) <= socklen) {
+                char buf[IFNAMSIZ];
+                CATSEP;
+                if (if_indextoname(addr->sll_ifindex, buf) == NULL)
+                    rb_str_catf(ret, "ifindex=%d", addr->sll_ifindex);
+                else
+                    rb_str_catf(ret, "%s", buf);
+            }
+            if (offsetof(struct sockaddr_ll, sll_hatype) + sizeof(addr->sll_hatype) <= socklen) {
+                CATSEP;
+                rb_str_catf(ret, "hatype=%d", addr->sll_hatype);
+            }
+            if (offsetof(struct sockaddr_ll, sll_pkttype) + sizeof(addr->sll_pkttype) <= socklen) {
+                CATSEP;
+                if (addr->sll_pkttype == PACKET_HOST)
+                    rb_str_cat2(ret, "HOST");
+                else if (addr->sll_pkttype == PACKET_BROADCAST)
+                    rb_str_cat2(ret, "BROADCAST");
+                else if (addr->sll_pkttype == PACKET_MULTICAST)
+                    rb_str_cat2(ret, "MULTICAST");
+                else if (addr->sll_pkttype == PACKET_OTHERHOST)
+                    rb_str_cat2(ret, "OTHERHOST");
+                else if (addr->sll_pkttype == PACKET_OUTGOING)
+                    rb_str_cat2(ret, "OUTGOING");
+                else
+                    rb_str_catf(ret, "pkttype=%d", addr->sll_pkttype);
+            }
+            if (socklen != (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + addr->sll_halen)) {
+                CATSEP;
+                if (offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen) <= socklen) {
+                    rb_str_catf(ret, "halen=%d", addr->sll_halen);
+                }
+            }
+            if (offsetof(struct sockaddr_ll, sll_addr) < socklen) {
+                socklen_t len, i;
+                CATSEP;
+                rb_str_cat2(ret, "hwaddr");
+                len = addr->sll_halen;
+                if (socklen < offsetof(struct sockaddr_ll, sll_addr) + len)
+                    len = socklen - offsetof(struct sockaddr_ll, sll_addr);
+                for (i = 0; i < len; i++) {
+                    rb_str_cat2(ret, i == 0 ? "=" : ":");
+                    rb_str_catf(ret, "%02x", addr->sll_addr[i]);
+                }
+            }
+
+            if (socklen < (socklen_t)(offsetof(struct sockaddr_ll, sll_halen) + sizeof(addr->sll_halen)) ||
+                (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + addr->sll_halen) != socklen) {
+                CATSEP;
+                rb_str_catf(ret, "(%d bytes for %d bytes sockaddr_ll)",
+                    (int)socklen, (int)sizeof(struct sockaddr_ll));
+            }
+
+            rb_str_cat2(ret, "]");
+#undef CATSEP
+
+            break;
+          }
+#endif
+
+#ifdef AF_LINK
+	  /* AF_LINK is defined in 4.4BSD derivations since Net2.
+	     link_ntoa is also defined at Net2.
+             However Debian GNU/kFreeBSD defines AF_LINK but
+             don't have link_ntoa.  */
+          case AF_LINK:
+	  {
+	    /*
+	     * Simple implementation using link_ntoa():
+	     * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
+             * Also, the format is bit different.
+	     *
+	     * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
+	     * break;
+	     */
+            struct sockaddr_dl *addr = &sockaddr->dl;
+            char *np = NULL, *ap = NULL, *endp;
+            int nlen = 0, alen = 0;
+            int i, off;
+            const char *sep = "[";
+#define CATSEP do { rb_str_cat2(ret, sep); sep = " "; } while (0);
+
+            rb_str_cat2(ret, "LINK");
+
+            endp = ((char *)addr) + socklen;
+
+            if (offsetof(struct sockaddr_dl, sdl_data) < socklen) {
+                np = addr->sdl_data;
+                nlen = addr->sdl_nlen;
+                if (endp - np < nlen)
+                    nlen = endp - np;
+            }
+            off = addr->sdl_nlen;
+
+            if (offsetof(struct sockaddr_dl, sdl_data) + off < socklen) {
+                ap = addr->sdl_data + off;
+                alen = addr->sdl_alen;
+                if (endp - ap < alen)
+                    alen = endp - ap;
+            }
+
+	    CATSEP;
+            if (np)
+                rb_str_catf(ret, "%.*s", nlen, np);
+            else
+                rb_str_cat2(ret, "?");
+
+            if (ap && 0 < alen) {
+		CATSEP;
+                for (i = 0; i < alen; i++)
+                    rb_str_catf(ret, "%s%02x", i == 0 ? "" : ":", (unsigned char)ap[i]);
+            }
+
+            if (socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_nlen) + sizeof(addr->sdl_nlen)) ||
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_alen) + sizeof(addr->sdl_alen)) ||
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_slen) + sizeof(addr->sdl_slen)) ||
+                /* longer length is possible behavior because struct sockaddr_dl has "minimum work area, can be larger" as the last field.
+                 * cf. Net2:/usr/src/sys/net/if_dl.h. */
+                socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_data) + addr->sdl_nlen + addr->sdl_alen + addr->sdl_slen)) {
+		CATSEP;
+                rb_str_catf(ret, "(%d bytes for %d bytes sockaddr_dl)",
+                    (int)socklen, (int)sizeof(struct sockaddr_dl));
+	    }
+
+            rb_str_cat2(ret, "]");
+#undef CATSEP
+            break;
+          }
+#endif
+
           default:
           {
-            ID id = rsock_intern_family(rai->addr.addr.sa_family);
+            ID id = rsock_intern_family(sockaddr->addr.sa_family);
             if (id == 0)
-                rb_str_catf(ret, "unknown address family %d", rai->addr.addr.sa_family);
+                rb_str_catf(ret, "unknown address family %d", sockaddr->addr.sa_family);
             else
                 rb_str_catf(ret, "%s address format unknown", rb_id2name(id));
             break;

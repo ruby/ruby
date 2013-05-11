@@ -44,6 +44,13 @@
 #  include <netdb.h>
 #endif
 
+#ifdef HAVE_NETPACKET_PACKET_H
+#  include <netpacket/packet.h>
+#endif
+#ifdef HAVE_NET_ETHERNET_H
+#  include <net/ethernet.h>
+#endif
+
 #include <errno.h>
 
 #ifdef HAVE_SYS_UN_H
@@ -86,6 +93,9 @@
 #endif
 #ifdef HAVE_UCRED_H
 #  include <ucred.h>
+#endif
+#ifdef HAVE_NET_IF_DL_H
+#  include <net/if_dl.h>
 #endif
 
 #ifndef HAVE_TYPE_SOCKLEN_T
@@ -168,6 +178,9 @@ typedef union {
 #endif
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
   struct sockaddr_un un;
+#endif
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_DL
+  struct sockaddr_dl dl; /* AF_LINK */
 #endif
   struct sockaddr_storage storage;
   char place_holder[2048]; /* sockaddr_storage is not enough for Unix domain sockets on SunOS and Darwin. */
@@ -267,6 +280,9 @@ VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
 VALUE rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup);
 VALUE rsock_make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, socklen_t));
+VALUE rsock_inspect_sockaddr(struct sockaddr *addr, socklen_t socklen, VALUE ret);
+socklen_t rsock_sockaddr_len(struct sockaddr *addr);
+VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
@@ -344,6 +360,7 @@ void rsock_init_socket_constants(void);
 void rsock_init_ancdata(void);
 void rsock_init_addrinfo(void);
 void rsock_init_sockopt(void);
+void rsock_init_sockifaddr(void);
 void rsock_init_socket_init(void);
 
 NORETURN(void rsock_sys_fail_host_port(const char *, VALUE, VALUE));

@@ -306,6 +306,8 @@ end
   netinet/tcp.h
   netinet/udp.h
   arpa/inet.h
+  netpacket/packet.h
+  net/ethernet.h
   sys/un.h
   ifaddrs.h
   sys/ioctl.h
@@ -314,6 +316,7 @@ end
   sys/param.h
   sys/ucred.h
   ucred.h
+  net/if_dl.h
   arpa/nameser.h
   resolv.h
 ].each {|h|
@@ -328,6 +331,8 @@ have_struct_member("struct sockaddr_in", "sin_len", headers) # 4.4BSD
 if have_type("struct sockaddr_un", headers) # POSIX
   have_struct_member("struct sockaddr_un", "sun_len", headers) # 4.4BSD
 end
+
+have_type("struct sockaddr_dl", headers) # AF_LINK address.  4.4BSD since Net2
 
 have_type("struct sockaddr_storage", headers)
 
@@ -554,7 +559,8 @@ EOS
     "unixserver.#{$OBJEXT}",
     "option.#{$OBJEXT}",
     "ancdata.#{$OBJEXT}",
-    "raddrinfo.#{$OBJEXT}"
+    "raddrinfo.#{$OBJEXT}",
+    "ifaddr.#{$OBJEXT}"
   ]
 
   if getaddr_info_ok == :wide

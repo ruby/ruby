@@ -1584,9 +1584,20 @@ sockaddr_len(struct sockaddr *addr)
         return (socklen_t)sizeof(struct sockaddr_un);
 #endif
 
+#ifdef AF_PACKET
+      case AF_PACKET:
+        return (socklen_t)(offsetof(struct sockaddr_ll, sll_addr) + ((struct sockaddr_ll *)addr)->sll_halen);
+#endif
+
       default:
         return (socklen_t)(offsetof(struct sockaddr, sa_family) + sizeof(addr->sa_family));
     }
+}
+
+socklen_t
+rsock_sockaddr_len(struct sockaddr *addr)
+{
+    return sockaddr_len(addr);
 }
 
 static VALUE
@@ -1620,6 +1631,12 @@ sockaddr_obj(struct sockaddr *addr, socklen_t len)
 #endif
 
     return rsock_addrinfo_new(addr, len, addr->sa_family, 0, 0, Qnil, Qnil);
+}
+
+VALUE
+rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len)
+{
+    return sockaddr_obj(addr, len);
 }
 
 #endif

@@ -627,5 +627,6 @@ rsock_init_socket_init()
     rsock_init_sockopt();
     rsock_init_ancdata();
     rsock_init_addrinfo();
+    rsock_init_sockifaddr();
     rsock_init_socket_constants();
 }

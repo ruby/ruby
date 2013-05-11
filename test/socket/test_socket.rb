@@ -564,4 +564,15 @@ class TestSocket < Test::Unit::TestCase
     accepted.close if accepted
     sock.close if sock && ! sock.closed?
   end
+
+  def test_getifaddrs
+    begin
+      list = Socket.getifaddrs
+    rescue NotImplementedError
+      return
+    end
+    list.each {|ifaddr|
+      assert_instance_of(Socket::Ifaddr, ifaddr)
+    }
+  end
 end if defined?(Socket)
