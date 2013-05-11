@@ -1,3 +1,8 @@
+Sat May 11 22:07:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/rinda/test_rinda.rb: Socket.getifaddrs may returns an interface
+	  which #addr method returns nil for venet0 in OpenVZ.
+
 Sat May 11 21:56:34 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (rsock_inspect_sockaddr): Add casts to
