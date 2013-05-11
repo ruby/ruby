@@ -288,11 +288,6 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The socket is closed when this method returns.
   #
-  # The optional last argument _opts_ is options represented by a hash.
-  # _opts_ may have following options:
-  #
-  # [:timeout] specify the timeout in seconds.
-  #
   # If no block is given, the socket is returned.
   #
   #   Socket.tcp("www.ruby-lang.org", 80) {|sock|
