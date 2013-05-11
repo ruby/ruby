@@ -78,6 +78,10 @@ with all sufficient information, see the ChangeLog file.
   * Rinda now supports multicast sockets.  See Rinda::RingServer and
     Rinda::RingFinger for details.
 
+* Socket
+  * New methods:
+    * Socket.getifaddrs
+
 * Tempfile
   * New methods:
     * Tempfile.create
