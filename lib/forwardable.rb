@@ -31,10 +31,10 @@
 #     # extend Forwardable, but we did that above
 #     def_delegators :@records, :size, :<<, :map
 #   end
-#   f = Foo.new
-#   f.printf ...
-#   f.gets
-#   f.content_at(1)
+#   r = RecordCollection.new
+#   r.size
+#   r << ...
+#   r.map { ... }
 #
 # If the object isn't a Module and Class, You can too extend Forwardable
 # module.
