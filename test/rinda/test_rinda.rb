@@ -532,14 +532,11 @@ end
 
 module RingIPv6
   def prepare_ipv6(r)
-    Socket.ip_address_list.any? do |addrinfo|
-      if /%(?<ifname>\w+)\z/ =~ addrinfo.ip_address
-        next if /\Alo/ =~ ifname
-        _family, _port, _flowinfo, _addr, scope_id =
-          addrinfo.to_sockaddr.unpack("s!S!La16L")
-        r.multicast_interface = scope_id
-        return
-      end
+    Socket.getifaddrs.each do |ifaddr|
+      next unless ifaddr.addr.ipv6_linklocal?
+      next if ifaddr.name[0, 2] == "lo"
+      r.multicast_interface = ifaddr.ifindex
+      return
     end
     skip 'IPv6 not available'
   end
