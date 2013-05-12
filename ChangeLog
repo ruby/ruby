@@ -1,3 +1,7 @@
+Sun May 12 15:50:45 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: adds comments for setjmp check.
+
 Sun May 12 15:38:09 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: move clock_gettime() check into regular place.
