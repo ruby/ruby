@@ -1,3 +1,7 @@
+Sun May 12 22:42:25 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_f_kill): fixes typo. s/HAS_KILLPG/HAVE_KILLPG/.
+
 Sun May 12 04:23:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_peek_variable_name): treat invalid global, class,
