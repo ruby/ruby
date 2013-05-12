@@ -1,3 +1,9 @@
+Wed May  8 13:49:06 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_uint2big, rb_int2big, rb_uint2inum)
+	(rb_int2inum, rb_ll2inum, rb_ull2inum): removed because ruby.h
+	  has a declaration for these.
+
 Sun May 12 17:52:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: removes 'ac_cv_func_fseeko=yes' form MinGW

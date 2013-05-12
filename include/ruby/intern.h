@@ -93,10 +93,6 @@ VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
 void rb_big_resize(VALUE big, long len);
-VALUE rb_uint2big(VALUE);
-VALUE rb_int2big(SIGNED_VALUE);
-VALUE rb_uint2inum(VALUE);
-VALUE rb_int2inum(SIGNED_VALUE);
 VALUE rb_cstr_to_inum(const char*, int, int);
 VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
@@ -109,8 +105,6 @@ VALUE rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
 VALUE rb_big2ulong_pack(VALUE x);
 #if HAVE_LONG_LONG
-VALUE rb_ll2inum(LONG_LONG);
-VALUE rb_ull2inum(unsigned LONG_LONG);
 LONG_LONG rb_big2ll(VALUE);
 unsigned LONG_LONG rb_big2ull(VALUE);
 #endif  /* HAVE_LONG_LONG */
