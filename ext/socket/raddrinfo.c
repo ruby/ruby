@@ -1159,7 +1159,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
           }
 #endif
 
-#ifdef AF_LINK
+#if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
 	  /* AF_LINK is defined in 4.4BSD derivations since Net2.
 	     link_ntoa is also defined at Net2.
              However Debian GNU/kFreeBSD defines AF_LINK but
