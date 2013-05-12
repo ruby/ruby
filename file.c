@@ -4098,10 +4098,16 @@ rb_file_s_join(VALUE klass, VALUE args)
 static VALUE
 rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 {
+#ifdef HAVE_TRUNCATE
+#define NUM2POS(n) NUM2OFFT(n)
     off_t pos;
+#else
+#define NUM2POS(n) NUM2LONG(n)
+    long pos;
+#endif
 
     rb_secure(2);
-    pos = NUM2OFFT(len);
+    pos = NUM2POS(len);
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
 #ifdef HAVE_TRUNCATE
@@ -4123,6 +4129,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     }
 #endif
     return INT2FIX(0);
+#undef NUM2POS
 }
 #else
 #define rb_file_s_truncate rb_f_notimplement

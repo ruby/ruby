@@ -1810,7 +1810,7 @@ AC_CHECK_FUNCS(telldir)
 AC_CHECK_FUNCS(timegm)
 AC_CHECK_FUNCS(times)
 AC_CHECK_FUNCS(truncate)
-AC_CHECK_FUNCS(truncate64)
+AC_CHECK_FUNCS(truncate64)		# used for Win32
 AC_CHECK_FUNCS(unsetenv)
 AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
