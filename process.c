@@ -1356,10 +1356,6 @@ static const rb_data_type_t exec_arg_data_type = {
   {mark_exec_arg, free_exec_arg, memsize_exec_arg},
 };
 
-#if defined(_WIN32)
-#define HAVE_SPAWNV 1
-#endif
-
 #if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
 # define USE_SPAWNV 1
 #else

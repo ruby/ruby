@@ -1,3 +1,8 @@
+Sun May 12 17:18:46 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c: move '#define SPAWNV 1' to win32/Makefile.sub.
+	* win32/Makefile.sub: see above.
+
 Sun May 12 17:13:32 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: removes AC_CHECK_FUNCS(setitimer) because it's
