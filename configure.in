@@ -1756,7 +1756,7 @@ AC_CHECK_FUNCS(getpriority)
 AC_CHECK_FUNCS(getpwnam_r)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(getsid)
-AC_CHECK_FUNCS(gettimeofday)
+AC_CHECK_FUNCS(gettimeofday)		# for making ac_cv_func_gettimeofday
 AC_CHECK_FUNCS(gmtime_r)
 AC_CHECK_FUNCS(initgroups)
 AC_CHECK_FUNCS(ioctl)
@@ -2172,6 +2172,10 @@ if test "$rb_cv_frptr" != "not found"; then
       AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
     fi
   fi
+fi
+
+if test x"$ac_cv_func_gettimeofday" != xyes; then
+    AC_MSG_ERROR(gettimeofday() must exist)
 fi
 
 RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
