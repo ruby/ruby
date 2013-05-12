@@ -67,7 +67,7 @@ char *dln_argv0;
 # include <unistd.h>
 #endif
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !HAVE_DECL_GETENV
 char *getenv();
 #endif
 
