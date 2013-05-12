@@ -972,10 +972,6 @@ main()
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		],
-[bow], [	ac_cv_func_setitimer=no
-		],
-[superux*], [	ac_cv_func_setitimer=no
-		],
 [nacl], [
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
@@ -1789,7 +1785,6 @@ AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(seteuid)
 AC_CHECK_FUNCS(setgid)
 AC_CHECK_FUNCS(setgroups)
-AC_CHECK_FUNCS(setitimer)
 AC_CHECK_FUNCS(setpgid)
 AC_CHECK_FUNCS(setpgrp)
 AC_CHECK_FUNCS(setregid)
