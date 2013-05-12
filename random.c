@@ -1494,6 +1494,9 @@ Init_Random(void)
     {
 	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
 	rb_gc_register_mark_object(rand_default);
+	/* call-seq:
+	 * Direct access to Random::DEFAULT PRNG.
+	 */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
