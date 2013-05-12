@@ -1730,110 +1730,108 @@ else
   AC_LIBOBJ([signbit])
 fi
 
-AC_CHECK_FUNCS( \
-  fmod \
-  killpg \
-  wait4 \
-  waitpid \
-  fork \
-  spawnv \
-  syscall \
-  __syscall \
-  chroot \
-  getcwd \
-  eaccess \
-  truncate \
-  ftruncate \
-  ftello \
-  chsize \
-  times \
-  utimes \
-  utimensat \
-  fcntl \
-  lockf \
-  lstat \
-  truncate64 \
-  ftruncate64 \
-  ftello64 \
-  fseeko \
-  fseeko64 \
-  link \
-  symlink \
-  readlink \
-  readdir_r \
-  fsync \
-  fdatasync \
-  fchown \
-  posix_fadvise \
-  setitimer \
-  setruid \
-  seteuid \
-  setreuid \
-  setresuid \
-  setrgid \
-  setegid \
-  setregid \
-  setresgid \
-  issetugid \
-  pause \
-  lchown \
-  lchmod \
-  getpgrp \
-  setpgrp \
-  getpgid \
-  setpgid \
-  initgroups \
-  getgroups \
-  setgroups \
-  getpriority \
-  getrlimit \
-  setrlimit \
-  sysconf \
-  close \
-  getpwnam_r \
-  getgrnam_r \
-  endgrent \
-  dlopen \
-  sigprocmask \
-  sigaction \
-  _setjmp \
-  _longjmp \
-  getsid \
-  setsid \
-  telldir \
-  seekdir \
-  fchmod \
-  cosh \
-  sinh \
-  tanh \
-  log2 \
-  round \
-  llabs \
-  setuid \
-  setgid \
-  daemon \
-  select_large_fdset \
-  setenv \
-  unsetenv \
-  mktime \
-  timegm \
-  gmtime_r \
-  gettimeofday \
-  poll \
-  ppoll \
-  pread \
-  sendfile \
-  shutdown \
-  sigaltstack \
-  dl_iterate_phdr \
-  dup \
-  dup3 \
-  pipe2 \
-  posix_memalign \
-  memalign \
-  ioctl \
-  mblen \
-)
+AC_CHECK_FUNCS(__syscall)
+AC_CHECK_FUNCS(_longjmp)
+AC_CHECK_FUNCS(_setjmp)
+AC_CHECK_FUNCS(chroot)
+AC_CHECK_FUNCS(chsize)
+AC_CHECK_FUNCS(close)
+AC_CHECK_FUNCS(cosh)
+AC_CHECK_FUNCS(daemon)
+AC_CHECK_FUNCS(dl_iterate_phdr)
+AC_CHECK_FUNCS(dlopen)
+AC_CHECK_FUNCS(dup)
+AC_CHECK_FUNCS(dup3)
+AC_CHECK_FUNCS(eaccess)
+AC_CHECK_FUNCS(endgrent)
+AC_CHECK_FUNCS(fchmod)
+AC_CHECK_FUNCS(fchown)
+AC_CHECK_FUNCS(fcntl)
+AC_CHECK_FUNCS(fdatasync)
+AC_CHECK_FUNCS(fmod)
+AC_CHECK_FUNCS(fork)
+AC_CHECK_FUNCS(fseeko)
+AC_CHECK_FUNCS(fseeko64)
+AC_CHECK_FUNCS(fsync)
+AC_CHECK_FUNCS(ftello)
+AC_CHECK_FUNCS(ftello64)
+AC_CHECK_FUNCS(ftruncate)
+AC_CHECK_FUNCS(ftruncate64)
+AC_CHECK_FUNCS(getcwd)
+AC_CHECK_FUNCS(getgrnam_r)
+AC_CHECK_FUNCS(getgroups)
+AC_CHECK_FUNCS(getpgid)
+AC_CHECK_FUNCS(getpgrp)
+AC_CHECK_FUNCS(getpriority)
+AC_CHECK_FUNCS(getpwnam_r)
+AC_CHECK_FUNCS(getrlimit)
+AC_CHECK_FUNCS(getsid)
+AC_CHECK_FUNCS(gettimeofday)
+AC_CHECK_FUNCS(gmtime_r)
+AC_CHECK_FUNCS(initgroups)
+AC_CHECK_FUNCS(ioctl)
+AC_CHECK_FUNCS(issetugid)
+AC_CHECK_FUNCS(killpg)
+AC_CHECK_FUNCS(lchmod)
+AC_CHECK_FUNCS(lchown)
+AC_CHECK_FUNCS(link)
+AC_CHECK_FUNCS(llabs)
+AC_CHECK_FUNCS(lockf)
+AC_CHECK_FUNCS(log2)
+AC_CHECK_FUNCS(lstat)
+AC_CHECK_FUNCS(mblen)
+AC_CHECK_FUNCS(memalign)
+AC_CHECK_FUNCS(mktime)
+AC_CHECK_FUNCS(pause)
+AC_CHECK_FUNCS(pipe2)
+AC_CHECK_FUNCS(poll)
+AC_CHECK_FUNCS(posix_fadvise)
+AC_CHECK_FUNCS(posix_memalign)
+AC_CHECK_FUNCS(ppoll)
+AC_CHECK_FUNCS(pread)
+AC_CHECK_FUNCS(readdir_r)
+AC_CHECK_FUNCS(readlink)
+AC_CHECK_FUNCS(round)
+AC_CHECK_FUNCS(seekdir)
+AC_CHECK_FUNCS(select_large_fdset)
+AC_CHECK_FUNCS(sendfile)
+AC_CHECK_FUNCS(setegid)
+AC_CHECK_FUNCS(setenv)
+AC_CHECK_FUNCS(seteuid)
+AC_CHECK_FUNCS(setgid)
+AC_CHECK_FUNCS(setgroups)
+AC_CHECK_FUNCS(setitimer)
+AC_CHECK_FUNCS(setpgid)
+AC_CHECK_FUNCS(setpgrp)
+AC_CHECK_FUNCS(setregid)
+AC_CHECK_FUNCS(setresgid)
+AC_CHECK_FUNCS(setresuid)
+AC_CHECK_FUNCS(setreuid)
+AC_CHECK_FUNCS(setrgid)
+AC_CHECK_FUNCS(setrlimit)
+AC_CHECK_FUNCS(setruid)
+AC_CHECK_FUNCS(setsid)
+AC_CHECK_FUNCS(setuid)
+AC_CHECK_FUNCS(shutdown)
+AC_CHECK_FUNCS(sigaction)
+AC_CHECK_FUNCS(sigaltstack)
+AC_CHECK_FUNCS(sigprocmask)
+AC_CHECK_FUNCS(sinh)
+AC_CHECK_FUNCS(spawnv)
+AC_CHECK_FUNCS(symlink)
+AC_CHECK_FUNCS(syscall)
+AC_CHECK_FUNCS(sysconf)
+AC_CHECK_FUNCS(tanh)
+AC_CHECK_FUNCS(telldir)
+AC_CHECK_FUNCS(timegm)
+AC_CHECK_FUNCS(times)
+AC_CHECK_FUNCS(truncate)
+AC_CHECK_FUNCS(truncate64)
+AC_CHECK_FUNCS(unsetenv)
+AC_CHECK_FUNCS(utimensat)
+AC_CHECK_FUNCS(utimes)
+AC_CHECK_FUNCS(wait4)
+AC_CHECK_FUNCS(waitpid)
 
 AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
   [AC_TRY_COMPILE([

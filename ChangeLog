@@ -1,3 +1,7 @@
+Sun May 12 15:33:18 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: sorts AC_CHECK_FUNCS()s as alphabetical order.
+
 Wed May  8 13:41:57 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c: remove redundant decl for big_lshift() big_rshift().
