@@ -46,7 +46,7 @@ class TestRakeTestThreadPool < Rake::TestCase
     pool = ThreadPool.new(2)
     a = 'a'
     b = 'b'
-    c = 5 # 5 throws an execption with 5.dup. It should be ignored
+    c = 5 # 5 throws an exception with 5.dup. It should be ignored
     pool.future(a,c){ |a_var,ignore| a_var.capitalize!; b.capitalize! }
     pool.join
     assert_equal 'a', a
