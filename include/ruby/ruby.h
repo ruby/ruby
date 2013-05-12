@@ -239,12 +239,14 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 #define ULL2NUM(v) rb_ull2inum(v)
 #endif
 
+#ifndef OFFT2NUM
 #if SIZEOF_OFF_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
 # define OFFT2NUM(v) LL2NUM(v)
 #elif SIZEOF_OFF_T == SIZEOF_LONG
 # define OFFT2NUM(v) LONG2NUM(v)
 #else
 # define OFFT2NUM(v) INT2NUM(v)
+#endif
 #endif
 
 #if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
