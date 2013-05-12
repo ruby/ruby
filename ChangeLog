@@ -1,3 +1,12 @@
+Sun May 12 16:31:27 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: adds RUBY_REPLACE_TYPE(off_t) for creating
+	  NUM2OFFT.
+	* file.c (rb_file_truncate): use correct type. chsize() take
+	  a long.
+	* include/ruby/ruby.h (NUM2OFFT): use a definition created by
+	  a configure script by default.
+
 Sun May 12 16:03:41 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: removes AC_CHECK_FUNC(fseeko, fseeko64, ftello,

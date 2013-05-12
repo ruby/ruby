@@ -1246,6 +1246,7 @@ RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@endif
 @%:@include <sys/resource.h>
 ])
+RUBY_REPLACE_TYPE(off_t, [], OFFT)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -1745,7 +1746,7 @@ AC_CHECK_FUNCS(fmod)
 AC_CHECK_FUNCS(fork)
 AC_CHECK_FUNCS(fsync)
 AC_CHECK_FUNCS(ftruncate)
-AC_CHECK_FUNCS(ftruncate64)
+AC_CHECK_FUNCS(ftruncate64)		# used for Win32 platform
 AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(getgrnam_r)
 AC_CHECK_FUNCS(getgroups)

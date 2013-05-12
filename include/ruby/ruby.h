@@ -641,10 +641,12 @@ rb_num2ll_inline(VALUE x)
 # define NUM2ULL(x) rb_num2ull(x)
 #endif
 
-#if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
-# define NUM2OFFT(x) ((off_t)NUM2LL(x))
-#else
-# define NUM2OFFT(x) NUM2LONG(x)
+#if !defined(NUM2OFFT)
+# if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
+#  define NUM2OFFT(x) ((off_t)NUM2LL(x))
+# else
+#  define NUM2OFFT(x) NUM2LONG(x)
+# endif
 #endif
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_SIZE_T > SIZEOF_LONG
