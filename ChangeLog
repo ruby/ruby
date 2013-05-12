@@ -1,3 +1,7 @@
+Sun May 12 17:08:16 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: removes AC_CHECK_FUNCS(pause) because it's unused.
+
 Sun May 12 17:05:18 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_f_kill): fixes typo. s/HAS_KILLPG/HAVE_KILLPG/.
