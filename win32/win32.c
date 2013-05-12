@@ -4889,38 +4889,6 @@ _lseeki64(int fd, off_t offset, int whence)
 #endif
 
 /* License: Ruby's */
-int
-fseeko(FILE *stream, off_t offset, int whence)
-{
-    off_t pos;
-    switch (whence) {
-      case SEEK_CUR:
-	if (fgetpos(stream, (fpos_t *)&pos))
-	    return -1;
-	pos += offset;
-	break;
-      case SEEK_END:
-	if ((pos = _filelengthi64(fileno(stream))) == (off_t)-1)
-	    return -1;
-	pos += offset;
-	break;
-      default:
-	pos = offset;
-	break;
-    }
-    return fsetpos(stream, (fpos_t *)&pos);
-}
-
-/* License: Ruby's */
-off_t
-rb_w32_ftello(FILE *stream)
-{
-    off_t pos;
-    if (fgetpos(stream, (fpos_t *)&pos)) return (off_t)-1;
-    return pos;
-}
-
-/* License: Ruby's */
 static long
 filetime_to_clock(FILETIME *ft)
 {

@@ -385,8 +385,6 @@ scalb(double a, long b)
 
 extern int 	 rb_w32_ftruncate(int fd, off_t length);
 extern int 	 rb_w32_truncate(const char *path, off_t length);
-extern off_t	 rb_w32_ftello(FILE *stream);
-extern int 	 rb_w32_fseeko(FILE *stream, off_t offset, int whence);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
@@ -402,22 +400,6 @@ extern int 	 rb_w32_fseeko(FILE *stream, off_t offset, int whence);
 #define truncate truncate64
 #else
 #define truncate rb_w32_truncate
-#endif
-
-#undef HAVE_FSEEKO
-#define HAVE_FSEEKO 1
-#if defined HAVE_FSEEKO64
-#define fseeko fseeko64
-#else
-#define fseeko rb_w32_fseeko
-#endif
-
-#undef HAVE_FTELLO
-#define HAVE_FTELLO 1
-#if defined HAVE_FTELLO64
-#define ftello ftello64
-#else
-#define ftello rb_w32_ftello
 #endif
 
 /*
