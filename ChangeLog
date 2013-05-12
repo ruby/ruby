@@ -1,3 +1,7 @@
+Sun May 12 15:38:09 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: move clock_gettime() check into regular place.
+
 Wed May  8 13:45:53 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: add getenv() declaration check.

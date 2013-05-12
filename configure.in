@@ -994,15 +994,6 @@ AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
-AC_CHECK_FUNCS(clock_gettime)
-if test x"$ac_cv_func_clock_gettime" != xyes; then
-    # glibc 2.17 moves clock_* functions from librt to the main C library.
-    # http://sourceware.org/ml/libc-announce/2012/msg00001.html
-    AC_CHECK_LIB(rt, clock_gettime)
-    unset ac_cv_func_clock_gettime
-    AC_CHECK_FUNCS(clock_gettime)
-fi
-
 dnl Checks for header files.
 AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
@@ -1737,6 +1728,7 @@ AC_CHECK_FUNCS(_longjmp)
 AC_CHECK_FUNCS(_setjmp)
 AC_CHECK_FUNCS(chroot)
 AC_CHECK_FUNCS(chsize)
+AC_CHECK_FUNCS(clock_gettime)
 AC_CHECK_FUNCS(close)
 AC_CHECK_FUNCS(cosh)
 AC_CHECK_FUNCS(daemon)
@@ -1834,6 +1826,15 @@ AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
+
+# Some platform neet -lrt for clock_gettime, but the other don't.
+if test x"$ac_cv_func_clock_gettime" != xyes; then
+    # glibc 2.17 moves clock_* functions from librt to the main C library.
+    # http://sourceware.org/ml/libc-announce/2012/msg00001.html
+    AC_CHECK_LIB(rt, clock_gettime)
+    unset ac_cv_func_clock_gettime
+    AC_CHECK_FUNCS(clock_gettime)
+fi
 
 AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
   [AC_TRY_COMPILE([
