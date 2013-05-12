@@ -865,8 +865,6 @@ VALUE rb_ivar_set(VALUE, ID, VALUE);
 VALUE rb_ivar_defined(VALUE, ID);
 void rb_ivar_foreach(VALUE, int (*)(ANYARGS), st_data_t);
 st_index_t rb_ivar_count(VALUE);
-VALUE rb_iv_set(VALUE, const char*, VALUE);
-VALUE rb_iv_get(VALUE, const char*);
 VALUE rb_attr_get(VALUE, ID);
 VALUE rb_obj_instance_variables(VALUE);
 VALUE rb_obj_remove_instance_variable(VALUE, VALUE);

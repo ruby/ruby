@@ -1,3 +1,8 @@
+Wed May  8 13:46:52 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_iv_set, rb_iv_get): removed. Bcause
+	  ruby.h has a declaration for that.
+
 Wed May  8 13:49:06 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h (rb_uint2big, rb_int2big, rb_uint2inum)
