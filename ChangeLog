@@ -1,6 +1,6 @@
 Wed May  8 13:46:52 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* include/ruby/intern.h (rb_iv_set, rb_iv_get): removed. Bcause
+	* include/ruby/intern.h (rb_iv_set, rb_iv_get): removed. Because
 	  ruby.h has a declaration for that.
 
 Wed May  8 13:49:06 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -29,7 +29,7 @@ Sun May 12 17:18:46 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sun May 12 17:13:32 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: removes AC_CHECK_FUNCS(setitimer) because it's
-	  unsed.
+	  unused.
 
 Sun May 12 17:08:16 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
