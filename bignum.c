@@ -3055,9 +3055,6 @@ bdigbitsize(BDIGIT x)
     return size;
 }
 
-static VALUE big_lshift(VALUE, unsigned long);
-static VALUE big_rshift(VALUE, unsigned long);
-
 static VALUE
 big_shift(VALUE x, long n)
 {
