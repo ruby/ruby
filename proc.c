@@ -933,18 +933,18 @@ rb_obj_is_method(VALUE m)
 }
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
+mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+	     VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE method;
-    VALUE rclass = klass, defined_class;
+    VALUE rclass = klass;
     ID rid = id;
     struct METHOD *data;
-    rb_method_entry_t *me, meb;
+    rb_method_entry_t meb;
     rb_method_definition_t *def = 0;
     rb_method_flag_t flag = NOEX_UNDEF;
 
   again:
-    me = rb_method_entry_without_refinements(klass, id, &defined_class);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	ID rmiss = idRespond_to_missing;
 	VALUE sym = ID2SYM(id);
@@ -988,6 +988,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(defined_class);
 	id = def->original_id;
+	me = rb_method_entry_without_refinements(klass, id, &defined_class);
 	goto again;
     }
 
@@ -1017,6 +1018,15 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     OBJ_INFECT(method, klass);
 
     return method;
+}
+
+static VALUE
+mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
+{
+    VALUE defined_class;
+    rb_method_entry_t *me =
+	rb_method_entry_without_refinements(klass, id, &defined_class);
+    return mnew_from_me(me, defined_class, klass, obj, id, mclass, scope);
 }
 
 
@@ -1270,6 +1280,48 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 	rb_method_name_error(CLASS_OF(obj), vid);
     }
     return mnew(CLASS_OF(obj), obj, id, rb_cMethod, TRUE);
+}
+
+/*
+ *  call-seq:
+ *     obj.singleton_method(sym)    -> method
+ *
+ *  Similar to _method_, searches singleton method only.
+ *
+ *     class Demo
+ *       def initialize(n)
+ *         @iv = n
+ *       end
+ *       def hello()
+ *         "Hello, @iv = #{@iv}"
+ *       end
+ *     end
+ *
+ *     k = Demo.new(99)
+ *     def k.hi
+ *       "Hi, @iv = #{@iv}"
+ *     end
+ *     m = k.singleton_method(:hi)
+ *     m.call   #=> "Hi, @iv = 99"
+ *     m = k.singleton_method(:hello) #=> NameError
+ */
+
+VALUE
+rb_obj_singleton_method(VALUE obj, VALUE vid)
+{
+    rb_method_entry_t *me;
+    VALUE klass;
+    ID id = rb_check_id(&vid);
+    if (!id) {
+	rb_name_error_str(vid, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
+			  QUOTE(vid), obj);
+    }
+    if (NIL_P(klass = rb_singleton_class_get(obj)) ||
+	!(me = rb_method_entry_at(klass, id))) {
+	rb_name_error(id, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
+		      QUOTE_ID(id), obj);
+    }
+    return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
 }
 
 /*
@@ -2372,6 +2424,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
+    rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
 
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);

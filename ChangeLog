@@ -1,4 +1,10 @@
-Mon May 13 14:51:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 13 14:51:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_obj_singleton_method): new method Kernel#singleton_method
+	  which returns a Method object of the singleton method.
+	  non-singleton method causes NameError, but not aliased or zsuper
+	  method, right now.
+	  [ruby-core:54914] [Feature #8391]
 
 	* vm_method.c (rb_method_entry_at): return the method entry for id at
 	  klass, without ancestors.

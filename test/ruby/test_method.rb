@@ -629,4 +629,16 @@ class TestMethod < Test::Unit::TestCase
     end
     assert_raise(Timeout::Error, bug8100) {raise e if e}
   end
+
+  def test_singleton_method
+    feature8391 = '[ruby-core:54914] [Feature #8391]'
+    c1 = Class.new
+    c1.class_eval { def foo; :foo; end }
+    o = c1.new
+    def o.bar; :bar; end
+    assert_nothing_raised(NameError) {o.method(:foo)}
+    assert_raise(NameError, feature8391) {o.singleton_method(:foo)}
+    m = assert_nothing_raised(NameError, feature8391) {break o.singleton_method(:bar)}
+    assert_equal(:bar, m.call, feature8391)
+  end
 end
