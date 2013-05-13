@@ -8,6 +8,7 @@ Mon May 13 15:31:10 2013  Koichi Sasada  <ko1@atdot.net>
 Mon May 13 15:24:16 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_data_object_alloc): check klass only if klass is not 0.
+	  klass==0 means internal object.
 
 Mon May 13 14:57:28 2013  Koichi Sasada  <ko1@atdot.net>
 
