@@ -275,7 +275,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->defined_method_id = 0;
     iseq->mark_ary = 0;
 
-
     /*
      * iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
      * iseq->cached_special_block_builder = 0;
