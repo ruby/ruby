@@ -682,7 +682,7 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 } while (0)
 
 #ifndef USE_RGENGC
-#define USE_RGENGC 0
+#define USE_RGENGC 1
 #endif
 
 #ifndef RGENGC_WB_PROTECTED_ARRAY
