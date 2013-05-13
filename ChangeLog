@@ -1,3 +1,8 @@
+Tue May 14 03:21:42 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: enable to generate write barrier protected
+	  objects (T_STRING).
+
 Tue May 14 03:19:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: enable to generate write barrier protected
