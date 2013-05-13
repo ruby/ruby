@@ -3737,6 +3737,46 @@ socketpair(int af, int type, int protocol, int *sv)
 }
 
 /* License: Ruby's */
+static void
+str2guid(const char *str, GUID *guid)
+{
+#define hex2byte(str) \
+    ((isdigit(*(str)) ? *(str) - '0' : toupper(*(str)) - 'A' + 10) << 4 | (isdigit(*((str) + 1)) ? *((str) + 1) - '0' : toupper(*((str) + 1)) - 'A' + 10))
+    char *end;
+    int i;
+    if (*str == '{') str++;
+    guid->Data1 = (long)strtoul(str, &end, 16);
+    str += 9;
+    guid->Data2 = (unsigned short)strtoul(str, &end, 16);
+    str += 5;
+    guid->Data3 = (unsigned short)strtoul(str, &end, 16);
+    str += 5;
+    guid->Data4[0] = hex2byte(str);
+    str += 2;
+    guid->Data4[1] = hex2byte(str);
+    str += 3;
+    for (i = 0; i < 6; i++) {
+	guid->Data4[i + 2] = hex2byte(str);
+	str += 2;
+    }
+}
+
+/* License: Ruby's */
+#ifndef _IFDEF_
+    typedef struct {
+	uint64_t Value;
+	struct {
+	    uint64_t Reserved :24;
+	    uint64_t NetLuidIndex :24;
+	    uint64_t IfType :16;
+	} Info;
+    } NET_LUID;
+#endif
+typedef DWORD (WINAPI *cigl_t)(const GUID *, NET_LUID *);
+typedef DWORD (WINAPI *cilnA_t)(const NET_LUID *, char *, size_t);
+static cigl_t pConvertInterfaceGuidToLuid = NULL;
+static cilnA_t pConvertInterfaceLuidToNameA = NULL;
+
 int
 getifaddrs(struct ifaddrs **ifap)
 {
@@ -3758,15 +3798,37 @@ getifaddrs(struct ifaddrs **ifap)
 	return -1;
     }
 
+    if (!pConvertInterfaceGuidToLuid)
+	pConvertInterfaceGuidToLuid =
+	    (cigl_t)get_proc_address("iphlpapi.dll",
+				     "ConvertInterfaceGuidToLuid", NULL);
+    if (!pConvertInterfaceLuidToNameA)
+	pConvertInterfaceLuidToNameA =
+	    (cilnA_t)get_proc_address("iphlpapi.dll",
+				      "ConvertInterfaceLuidToNameA", NULL);
+
     for (prev = NULL, addr = root; addr; addr = addr->Next) {
 	struct ifaddrs *ifa = ruby_xcalloc(1, sizeof(*ifa));
+	char name[IFNAMSIZ];
+	GUID guid;
+	NET_LUID luid;
+
 	if (prev)
 	    prev->ifa_next = ifa;
 	else
 	    *ifap = ifa;
 
-	ifa->ifa_name = ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
-	lstrcpy(ifa->ifa_name, addr->AdapterName);
+	str2guid(addr->AdapterName, &guid);
+	if (pConvertInterfaceGuidToLuid && pConvertInterfaceLuidToNameA &&
+	    pConvertInterfaceGuidToLuid(&guid, &luid) == NO_ERROR &&
+	    pConvertInterfaceLuidToNameA(&luid, name, sizeof(name)) == NO_ERROR) {
+	    ifa->ifa_name = ruby_xmalloc(lstrlen(name) + 1);
+	    lstrcpy(ifa->ifa_name, name);
+	}
+	else {
+	    ifa->ifa_name = ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
+	    lstrcpy(ifa->ifa_name, addr->AdapterName);
+	}
 
 	if (addr->IfType & IF_TYPE_SOFTWARE_LOOPBACK)
 	    ifa->ifa_flags |= IFF_LOOPBACK;
@@ -3786,8 +3848,8 @@ getifaddrs(struct ifaddrs **ifap)
 			ifa = ruby_xcalloc(1, sizeof(*ifa));
 			prev->ifa_next = ifa;
 			ifa->ifa_name =
-			    ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
-			lstrcpy(ifa->ifa_name, addr->AdapterName);
+			    ruby_xmalloc(lstrlen(prev->ifa_name) + 1);
+			lstrcpy(ifa->ifa_name, prev->ifa_name);
 			ifa->ifa_flags = prev->ifa_flags;
 		    }
 		    ifa->ifa_addr = ruby_xmalloc(cur->Address.iSockaddrLength);
