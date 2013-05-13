@@ -231,7 +231,6 @@ typedef struct rb_objspace {
         struct heaps_free_bitmap *free_bitmap;
 	RVALUE *range[2];
 	struct heaps_header *freed;
-	size_t marked_num;
 	size_t free_num;
 	size_t free_min;
 	size_t final_num;
@@ -2011,7 +2010,7 @@ after_gc_sweep(rb_objspace_t *objspace)
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
     if (inc > malloc_limit) {
 	malloc_limit +=
-	  (size_t)((inc - malloc_limit) * (double)objspace->heap.marked_num / (heaps_used * HEAP_OBJ_LIMIT));
+	  (size_t)((inc - malloc_limit) * (double)objspace_live_num(objspace) / (heaps_used * HEAP_OBJ_LIMIT));
 	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
     }
 
@@ -2028,6 +2027,9 @@ lazy_sweep(rb_objspace_t *objspace)
         next = objspace->heap.sweep_slots->next;
 	slot_sweep(objspace, objspace->heap.sweep_slots);
         objspace->heap.sweep_slots = next;
+
+	if (!next) after_gc_sweep(objspace);
+
         if (has_free_object) {
             during_gc = 0;
             return TRUE;
@@ -2043,7 +2045,6 @@ rest_sweep(rb_objspace_t *objspace)
 	while (objspace->heap.sweep_slots) {
 	    lazy_sweep(objspace);
 	}
-	after_gc_sweep(objspace);
     }
 }
 
@@ -2076,7 +2077,6 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
             gc_prof_timer_stop(objspace, Qfalse);
             return res;
         }
-        after_gc_sweep(objspace);
     }
     else {
         if (heaps_increment(objspace)) {
@@ -2088,15 +2088,18 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
     gc_marks(objspace);
 
     before_gc_sweep(objspace);
-    if (objspace->heap.free_min > (heaps_used * HEAP_OBJ_LIMIT - objspace->heap.marked_num)) {
-	set_heaps_increment(objspace);
-    }
 
     if (!(res = lazy_sweep(objspace))) {
-        after_gc_sweep(objspace);
+	/* there is no freespace after slot_sweep() */
+	while (1) {
+	    set_heaps_increment(objspace);
+	    heaps_increment(objspace);
+
         if (has_free_object) {
             res = TRUE;
             during_gc = 0;
+		break;
+	    }
         }
     }
 
@@ -2574,7 +2577,6 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
     register uintptr_t *bits = GET_HEAP_BITMAP(ptr);
     if (MARKED_IN_BITMAP(bits, ptr)) return 0;
     MARK_IN_BITMAP(bits, ptr);
-    objspace->heap.marked_num++;
     return 1;
 }
 
@@ -2935,7 +2937,6 @@ gc_marks(rb_objspace_t *objspace)
     objspace->mark_func_data = 0;
 
     gc_prof_mark_timer_start(objspace);
-    objspace->heap.marked_num = 0;
     objspace->count++;
 
     SET_STACK_END;

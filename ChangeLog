@@ -1,3 +1,24 @@
+Tue May 14 01:54:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove rb_objspace_t::marked_num.
+	  We can use `objspace_live_num()' instead of removed `marked_num'
+	  if it is after `after_gc_sweep()' function call.
+
+	* gc.c (after_gc_sweep): use objspace_live_num() instead of removed
+	  rb_objspace_t::marked_num.
+
+	* gc.c (gc_mark_ptr, gc_marks): remove rb_objspace_t::marked_num code.
+
+	* gc.c (gc_prepare_free_objects): do not call set_heaps_increment()
+	  with checking objspace->heap.marked_num. At this point, we only
+	  need to check availability of free-cell.
+
+	* gc.c (gc_prepare_free_objects): 
+
+	* gc.c (lazy_sweep): call after_gc_sweep() if there are no sweep_able entry.
+
+	* gc.c (rest_sweep, gc_prepare_free_objects): remove after_gc_sweep() call.
+
 Tue May 14 01:50:41 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: disable GC_PROFILE_MORE_DETAIL (fix last commit).
