@@ -670,7 +670,7 @@ VALUE rb_newobj_of(VALUE, VALUE);
 VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define NEWOBJ(obj,type) type *(obj) = (type*)rb_newobj()
 #define NEWOBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_newobj_of(klass, flags)
-#define OBJSETUP(obj,c,t) rb_obj_setup(obj, c, t) /* use NEWOBJ_OF instead of NEWOBJ()+OBJSTUP() */
+#define OBJSETUP(obj,c,t) rb_obj_setup(obj, c, t) /* use NEWOBJ_OF instead of NEWOBJ()+OBJSETUP() */
 #define CLONESETUP(clone,obj) do {\
     OBJSETUP((clone),rb_singleton_class_clone((VALUE)(obj)),RBASIC(obj)->flags);\
     rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)(clone));\
