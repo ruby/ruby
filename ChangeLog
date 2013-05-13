@@ -1,3 +1,8 @@
+Mon May 13 21:49:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: Check socketpair again.
+	  It is required on Unix.
+
 Mon May 13 21:20:32 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (getipaddrs): use alternamtive interface name if

@@ -426,6 +426,7 @@ EOF
   have_func("hsterror", headers)
   have_func('getipnodebyname("", 0, 0, (int *)0)', headers) # RFC 2553
   have_func('gethostbyname2("", 0)', headers) # RFC 2133
+  have_func("socketpair(0, 0, 0, 0)", headers)
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end
