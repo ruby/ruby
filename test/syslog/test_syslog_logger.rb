@@ -22,13 +22,17 @@ class TestSyslogRootLogger < Test::Unit::TestCase
       Syslog::LOG_DEBUG   => 'DEBUG'
     }
 
+    @facility = Syslog::LOG_USER
+
     class << self
 
+      attr_reader :facility
       attr_reader :line
       attr_reader :program_name
 
-      def log(level, format, *args)
-        @line = "#{LEVEL_LABEL_MAP[level]} - #{format % args}"
+      def log(priority, format, *args)
+        level = priority & ((1<<3) - 1) # get last 3 bits from priority
+        @line = "<#{priority}> #{LEVEL_LABEL_MAP[level]} - #{format % args}"
       end
 
       def open(program_name)
@@ -467,6 +471,12 @@ end if defined?(Syslog)
 
 class TestSyslogLogger < TestSyslogRootLogger
 
+  @facility = Syslog::LOG_USER
+
+  def facility
+    self.class.instance_variable_get("@facility")
+  end
+
   def setup
     super
     @logger = Syslog::Logger.new
@@ -481,12 +491,13 @@ class TestSyslogLogger < TestSyslogRootLogger
   }
 
   class Log
-    attr_reader :line, :label, :datetime, :pid, :severity, :progname, :msg
+    attr_reader :line, :label, :datetime, :pid, :severity, :progname, :msg, :priority
     def initialize(line)
       @line = line
-      return unless /\A(\w+) - (.*)\Z/ =~ @line
-      severity, @msg = $1, $2
+      return unless /\A<(\d+)> (\w+) - (.*)\Z/ =~ @line
+      priority, severity, @msg = $1, $2, $3
       @severity = SEVERITY_MAP[severity]
+      @priority = priority.to_i
     end
   end
 
@@ -512,5 +523,48 @@ class TestSyslogLogger < TestSyslogRootLogger
     @logger.level = Logger::UNKNOWN + 1
     assert_equal false, @logger.unknown?
   end
+
+  def test_facility
+    assert_equal facility, @logger.facility
+  end
+
+  def test_priority
+    msg = log_add nil,           'unknown level message' # nil == unknown
+    assert_equal facility|Syslog::LOG_ALERT,   msg.priority
+
+    msg = log_add Logger::FATAL, 'fatal level message'
+    assert_equal facility|Syslog::LOG_ERR,     msg.priority
+
+    msg = log_add Logger::ERROR, 'error level message'
+    assert_equal facility|Syslog::LOG_WARNING, msg.priority
+
+    msg = log_add Logger::WARN,  'warn level message'
+    assert_equal facility|Syslog::LOG_NOTICE,  msg.priority
+
+    msg = log_add Logger::INFO,  'info level message'
+    assert_equal facility|Syslog::LOG_INFO,    msg.priority
+
+    msg = log_add Logger::DEBUG, 'debug level message'
+    assert_equal facility|Syslog::LOG_DEBUG,   msg.priority
+  end
+
+end if defined?(Syslog)
+
+
+# Create test class for each available facility
+
+Syslog::Facility.constants.each do |facility_symb|
+
+  test_syslog_class = Class.new(TestSyslogLogger) do
+
+    @facility = Syslog.const_get(facility_symb)
+
+    def setup
+      super
+      @logger.facility = facility
+    end
+
+  end
+  Object.const_set("TestSyslogLogger_#{facility_symb}", test_syslog_class)
 
 end if defined?(Syslog)
