@@ -426,11 +426,6 @@ EOF
   have_func("hsterror", headers)
   have_func('getipnodebyname("", 0, 0, (int *)0)', headers) # RFC 2553
   have_func('gethostbyname2("", 0)', headers) # RFC 2133
-  if !have_func("socketpair(0, 0, 0, 0)", headers) and
-     have_func("rb_w32_socketpair(0, 0, 0, 0)", headers)
-    $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
-    $defs << "-DHAVE_SOCKETPAIR"
-  end
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end

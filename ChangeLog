@@ -1,3 +1,16 @@
+Mon May 13 20:23:24 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (getipaddrs): [experimental]
+	  emulate getipaddrs(3) on Unix.
+
+	* win32/Makefile.sub, configure.in (LIBS): need iphlpapi.lib for above
+	  function.
+
+	* include/ruby/win32.h (socketpair): rb_w32_socketpair() doesn't
+	  substitute for any function, so use non-prefixed name.
+
+	* ext/socket/extconf.rb (socketpair); follow above change.
+
 Mon May 13 20:11:06 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (prepare_iseq_build): remove additional line braek.

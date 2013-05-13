@@ -1725,8 +1725,6 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 // UNIX compatible directory access functions for NT
 //
 
-#define PATHLEN 1024
-
 //
 // The idea here is to read all the directory names into a string table
 // (separated by nulls) and when one of the other dir functions is called
@@ -3714,7 +3712,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 
 /* License: Ruby's */
 int
-rb_w32_socketpair(int af, int type, int protocol, int *sv)
+socketpair(int af, int type, int protocol, int *sv)
 {
     SOCKET pair[2];
 
@@ -3736,6 +3734,88 @@ rb_w32_socketpair(int af, int type, int protocol, int *sv)
     socklist_insert(pair[1], MAKE_SOCKDATA(af, 0));
 
     return 0;
+}
+
+/* License: Ruby's */
+int
+getifaddrs(struct ifaddrs **ifap)
+{
+    ULONG size = 0;
+    ULONG ret;
+    IP_ADAPTER_ADDRESSES *root, *addr;
+    struct ifaddrs *prev;
+
+    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);
+    if (ret != ERROR_BUFFER_OVERFLOW) {
+	errno = map_errno(ret);
+	return -1;
+    }
+    root = ruby_xmalloc(size);
+    ret = GetAdaptersAddresses(AF_UNSPEC, 0, NULL, root, &size);
+    if (ret != ERROR_SUCCESS) {
+	errno = map_errno(ret);
+	ruby_xfree(root);
+	return -1;
+    }
+
+    for (prev = NULL, addr = root; addr; addr = addr->Next) {
+	struct ifaddrs *ifa = ruby_xcalloc(1, sizeof(*ifa));
+	if (prev)
+	    prev->ifa_next = ifa;
+	else
+	    *ifap = ifa;
+
+	ifa->ifa_name = ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
+	lstrcpy(ifa->ifa_name, addr->AdapterName);
+
+	if (addr->IfType & IF_TYPE_SOFTWARE_LOOPBACK)
+	    ifa->ifa_flags |= IFF_LOOPBACK;
+	if (addr->OperStatus == IfOperStatusUp) {
+	    ifa->ifa_flags |= IFF_UP;
+
+	    if (addr->FirstUnicastAddress) {
+		IP_ADAPTER_UNICAST_ADDRESS *cur;
+		int added = 0;
+		for (cur = addr->FirstUnicastAddress; cur; cur = cur->Next) {
+		    if (cur->Flags & IP_ADAPTER_ADDRESS_TRANSIENT ||
+			cur->DadState == IpDadStateDeprecated) {
+			continue;
+		    }
+		    if (added) {
+			prev = ifa;
+			ifa = ruby_xcalloc(1, sizeof(*ifa));
+			prev->ifa_next = ifa;
+			ifa->ifa_name =
+			    ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
+			lstrcpy(ifa->ifa_name, addr->AdapterName);
+			ifa->ifa_flags = prev->ifa_flags;
+		    }
+		    ifa->ifa_addr = ruby_xmalloc(cur->Address.iSockaddrLength);
+		    memcpy(ifa->ifa_addr, cur->Address.lpSockaddr,
+			   cur->Address.iSockaddrLength);
+		    added = 1;
+		}
+	    }
+	}
+
+	prev = ifa;
+    }
+
+    ruby_xfree(root);
+    return 0;
+}
+
+/* License: Ruby's */
+void
+freeifaddrs(struct ifaddrs *ifp)
+{
+    while (ifp) {
+	struct ifaddrs *next = ifp->ifa_next;
+	if (ifp->ifa_addr) ruby_xfree(ifp->ifa_addr);
+	if (ifp->ifa_name) ruby_xfree(ifp->ifa_name);
+	ruby_xfree(ifp);
+	ifp = next;
+    }
 }
 
 //

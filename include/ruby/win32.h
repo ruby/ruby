@@ -37,6 +37,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 #if defined(__cplusplus) && defined(_MSC_VER)
 }
 #endif
@@ -225,6 +226,26 @@ struct msghdr {
     int msg_flags;
 };
 
+/* for getifaddrs() and others */
+struct ifaddrs {
+    struct ifaddrs *ifa_next;
+    char *ifa_name;
+    u_int ifa_flags;
+    struct sockaddr *ifa_addr;
+    struct sockaddr *ifa_netmask;
+    struct sockaddr *ifa_broadaddr;
+    struct sockaddr *ifa_dstaddr;
+    void *ifa_data;
+};
+#ifdef IF_NAMESIZE
+#define IFNAMSIZ IF_NAMESIZE
+#else
+#define IFNAMSIZ 256
+#endif
+#ifdef IFF_POINTTOPOINT
+#define IFF_POINTOPOINT IFF_POINTTOPOINT
+#endif
+
 extern DWORD  rb_w32_osid(void);
 extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
@@ -260,7 +281,9 @@ extern struct protoent *WSAAPI rb_w32_getprotobyname(const char *);
 extern struct protoent *WSAAPI rb_w32_getprotobynumber(int);
 extern struct servent  *WSAAPI rb_w32_getservbyname(const char *, const char *);
 extern struct servent  *WSAAPI rb_w32_getservbyport(int, const char *);
-extern int    rb_w32_socketpair(int, int, int, int *);
+extern int    socketpair(int, int, int, int *);
+extern int    getifaddrs(struct ifaddrs **);
+extern void   freeifaddrs(struct ifaddrs *);
 extern char * rb_w32_getcwd(char *, int);
 extern char * rb_w32_ugetenv(const char *);
 extern char * rb_w32_getenv(const char *);
@@ -657,9 +680,6 @@ extern char *rb_w32_strerror(int);
 
 #undef getservbyport
 #define getservbyport(p, pr)	rb_w32_getservbyport(p, pr)
-
-#undef socketpair
-#define socketpair(a, t, p, s)	rb_w32_socketpair(a, t, p, s)
 
 #undef get_osfhandle
 #define get_osfhandle(h)	rb_w32_get_osfhandle(h)
