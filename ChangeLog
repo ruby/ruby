@@ -5,7 +5,7 @@ Mon May 13 21:49:17 2013  Tanaka Akira  <akr@fsij.org>
 
 Mon May 13 21:20:32 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (getipaddrs): use alternamtive interface name if
+	* win32/win32.c (getipaddrs): use alternative interface name if
 	  available, because if_nametoindex() requires them.
 
 Mon May 13 20:23:24 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -23,7 +23,7 @@ Mon May 13 20:23:24 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon May 13 20:11:06 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* iseq.c (prepare_iseq_build): remove additional line braek.
+	* iseq.c (prepare_iseq_build): remove additional line break.
 
 Mon May 13 19:29:54 2013  Koichi Sasada  <ko1@atdot.net>
 
@@ -32,7 +32,7 @@ Mon May 13 19:29:54 2013  Koichi Sasada  <ko1@atdot.net>
 	  This change is a part of RGENGC branch [ruby-trunk - Feature #8339].
 
 	* object.c: add new function rb_obj_reveal().
-	  This function reveal interal (hidden) object by rb_obj_hide().
+	  This function reveal internal (hidden) object by rb_obj_hide().
 	  Note that do not change class before and after hiding.
 	  Only permitted example is:
 	    klass = RBASIC_CLASS(obj);
@@ -43,8 +43,8 @@ Mon May 13 19:29:54 2013  Koichi Sasada  <ko1@atdot.net>
 	  TODO: API design. rb_obj_reveal() should be replaced with others.
 
 	  TODO: modify constified variables using cast may be harmful for
-	        compiler's analysis and optimizaton.
-	        Any idea to prohibt inserting RBasic::klass directly?
+	        compiler's analysis and optimization.
+	        Any idea to prohibit inserting RBasic::klass directly?
 	        If rename RBasic::klass and force to use RBASIC_CLASS(obj),
 	        then all codes such as `RBASIC(obj)->klass' will be
 	        compilation error. Is it acceptable? (We have similar
@@ -86,7 +86,7 @@ Mon May 13 15:31:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* object.c (rb_obj_setup): added.
 
-	* include/ruby/ruby.h (OBJSETUP): ues rb_obj_setup() instead of
+	* include/ruby/ruby.h (OBJSETUP): use rb_obj_setup() instead of
 	  a macro.
 
 Mon May 13 15:24:16 2013  Koichi Sasada  <ko1@atdot.net>
