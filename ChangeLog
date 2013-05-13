@@ -1,3 +1,7 @@
+Mon May 13 10:30:04 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* hash.c: Hash[] and {} are not equivalent by @eam [Fixes GH-301]
+
 Mon May 13 10:04:22 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* random.c: Document Random::DEFAULT by @eLobato [Fixes GH-304]
