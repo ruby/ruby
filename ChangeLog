@@ -1,3 +1,8 @@
+Mon May 13 14:50:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_singleton_class_get): get the singleton class if exists,
+	  or nil.
+
 Mon May 13 10:20:59 2013  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* ext/openssl/ossl_ssl.c: Disabled OpenSSL::SSL::SSLSocket if

@@ -1448,6 +1448,26 @@ singleton_class_of(VALUE obj)
     return klass;
 }
 
+/*!
+ * Returns the singleton class of \a obj, or nil if obj is not a
+ * singleton object.
+ *
+ * \param obj an arbitrary object.
+ * \return the singleton class or nil.
+ */
+VALUE
+rb_singleton_class_get(VALUE obj)
+{
+    VALUE klass;
+
+    if (SPECIAL_CONST_P(obj)) {
+	return rb_special_singleton_class(obj);
+    }
+    klass = RBASIC(obj)->klass;
+    if (!FL_TEST(klass, FL_SINGLETON)) return Qnil;
+    if (rb_ivar_get(klass, id_attached) != obj) return Qnil;
+    return klass;
+}
 
 /*!
  * Returns the singleton class of \a obj. Creates it if necessary.
