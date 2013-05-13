@@ -716,7 +716,7 @@ VALUE
 rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
     NEWOBJ_OF(data, struct RData, klass, T_DATA);
-    Check_Type(klass, T_CLASS);
+    if (klass) Check_Type(klass, T_CLASS);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
