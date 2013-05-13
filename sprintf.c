@@ -1239,12 +1239,12 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
     }
     f._bf._base = (unsigned char *)result;
     f._p = (unsigned char *)RSTRING_PTR(result);
-    RBASIC(result)->klass = 0;
+    RBASIC_CLEAR_CLASS(result);
     f.vwrite = ruby__sfvwrite;
     f.vextra = ruby__sfvextra;
     buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
-    RBASIC(result)->klass = rb_cString;
+    RBASIC_SET_CLASS_RAW(result, rb_cString);
     rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
 #undef f
 
@@ -1298,12 +1298,12 @@ rb_str_vcatf(VALUE str, const char *fmt, va_list ap)
     f._bf._base = (unsigned char *)str;
     f._p = (unsigned char *)RSTRING_END(str);
     klass = RBASIC(str)->klass;
-    RBASIC(str)->klass = 0;
+    RBASIC_CLEAR_CLASS(str);
     f.vwrite = ruby__sfvwrite;
     f.vextra = ruby__sfvextra;
     buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
-    RBASIC(str)->klass = klass;
+    RBASIC_SET_CLASS_RAW(str, klass);
     rb_str_resize(str, (char *)f._p - RSTRING_PTR(str));
 #undef f
 

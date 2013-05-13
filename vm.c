@@ -1730,7 +1730,7 @@ vm_init2(rb_vm_t *vm)
     MEMZERO(vm, rb_vm_t, 1);
     vm->src_encoding_index = -1;
     vm->at_exit.basic.flags = (T_ARRAY | RARRAY_EMBED_FLAG) & ~RARRAY_EMBED_LEN_MASK; /* len set 0 */
-    vm->at_exit.basic.klass = 0;
+    rb_obj_hide((VALUE)&vm->at_exit);
 
     vm_default_params_setup(vm);
 }

@@ -1554,7 +1554,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 		if (TYPE(v) != TYPE(tmp)) goto format_error;
 	    }
-	    RBASIC(v)->klass = c;
+	    RBASIC_SET_CLASS(v, c);
 	}
 	break;
 

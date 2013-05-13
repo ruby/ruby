@@ -132,7 +132,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     arg.str = str = rb_tainted_str_new(0, buflen);
     klass = RBASIC(str)->klass;
-    RBASIC(str)->klass = 0;
+    rb_obj_hide(str);
 
     while (rb_io_check_closed(fptr),
 	   rb_thread_wait_fd(arg.fd),
@@ -145,7 +145,7 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
     }
 
-    RBASIC(str)->klass = klass;
+    rb_obj_reveal(str, klass);
     if (slen < RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }

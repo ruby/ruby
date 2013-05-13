@@ -2297,7 +2297,7 @@ rb_ary_sort_bang(VALUE ary)
 	struct ary_sort_data data;
 	long len = RARRAY_LEN(ary);
 
-	RBASIC(tmp)->klass = 0;
+	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
 	data.opt_methods = 0;
 	data.opt_inited = 0;
@@ -2343,7 +2343,7 @@ rb_ary_sort_bang(VALUE ary)
             FL_SET(tmp, FL_FREEZE);
 	}
         /* tmp will be GC'ed. */
-        RBASIC(tmp)->klass = rb_cArray;
+        RBASIC_SET_CLASS_RAW(tmp, rb_cArray); /* rb_cArray must be marked */
     }
     return ary;
 }
@@ -2896,7 +2896,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	}
 	if (len == 0) return rb_ary_new2(0);
 	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
-	RBASIC(arg2)->klass = rb_obj_class(ary);
+	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
 	rb_ary_splice(ary, pos, len, Qundef);
 	return arg2;
     }
@@ -3755,7 +3755,7 @@ ary_tmp_hash_new(void)
 {
     VALUE hash = rb_hash_new();
 
-    RBASIC(hash)->klass = 0;
+    RBASIC_CLEAR_CLASS(hash);
     return hash;
 }
 
@@ -4192,7 +4192,7 @@ flatten(VALUE ary, int level, int *modified)
 
     st_free_table(memo);
 
-    RBASIC(result)->klass = rb_class_of(ary);
+    RBASIC_SET_CLASS(result, rb_class_of(ary));
     return result;
 }
 
@@ -4461,7 +4461,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     else {
 	VALUE *ptr_result;
 	result = rb_ary_new4(len, ptr);
-	RBASIC(result)->klass = 0;
+	RBASIC_CLEAR_CLASS(result);
 	ptr_result = RARRAY_PTR(result);
 	RB_GC_GUARD(ary);
 	for (i=0; i<n; i++) {
@@ -4470,7 +4470,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    ptr_result[j] = ptr_result[i];
 	    ptr_result[i] = nv;
 	}
-	RBASIC(result)->klass = rb_cArray;
+	RBASIC_SET_CLASS_RAW(result, rb_cArray);
     }
     ARY_SET_LEN(result, n);
 
@@ -4538,9 +4538,9 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 }
 
 #define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
-#define tmpbuf_discard(s) (rb_str_resize((s), 0L), RBASIC(s)->klass = rb_cString)
+#define tmpbuf_discard(s) (rb_str_resize((s), 0L), RBASIC_SET_CLASS_RAW(s, rb_cString))
 #define tmpary(n) rb_ary_tmp_new(n)
-#define tmpary_discard(a) (ary_discard(a), RBASIC(a)->klass = rb_cArray)
+#define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
 
 /*
  * Recursively compute permutations of +r+ elements of the set
@@ -4679,14 +4679,14 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	volatile VALUE t1 = tmpbuf(n,sizeof(char));
 	char *used = (char*)RSTRING_PTR(t1);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-	RBASIC(ary0)->klass = 0;
+	RBASIC_CLEAR_CLASS(ary0);
 
 	MEMZERO(used, char, n); /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
 	tmpbuf_discard(t0);
 	tmpbuf_discard(t1);
-	RBASIC(ary0)->klass = rb_cArray;
+	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
 }
@@ -4874,11 +4874,11 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
 	volatile VALUE t0 = tmpbuf(r, sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-	RBASIC(ary0)->klass = 0;
+	RBASIC_CLEAR_CLASS(ary0);
 
 	rpermute0(n, r, p, 0, ary0); /* compute and yield repeated permutations */
 	tmpbuf_discard(t0);
-	RBASIC(ary0)->klass = rb_cArray;
+	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
 }
@@ -4971,11 +4971,11 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 	volatile VALUE t0 = tmpbuf(n, sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-	RBASIC(ary0)->klass = 0;
+	RBASIC_CLEAR_CLASS(ary0);
 
 	rcombinate0(len, n, p, 0, n, ary0); /* compute and yield repeated combinations */
 	tmpbuf_discard(t0);
-	RBASIC(ary0)->klass = rb_cArray;
+	RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
     }
     return ary;
 }
@@ -5013,8 +5013,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     long i,j;
     long resultlen = 1;
 
-    RBASIC(t0)->klass = 0;
-    RBASIC(t1)->klass = 0;
+    RBASIC_CLEAR_CLASS(t0);
+    RBASIC_CLEAR_CLASS(t1);
 
     /* initialize the arrays of arrays */
     ARY_SET_LEN(t0, n);

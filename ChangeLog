@@ -1,3 +1,47 @@
+Mon May 13 19:29:54 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: constify RBasic::klass and add
+	  RBASIC_CLASS(obj) macro which returns a class of `obj'.
+	  This change is a part of RGENGC branch [ruby-trunk - Feature #8339].
+
+	* object.c: add new function rb_obj_reveal().
+	  This function reveal interal (hidden) object by rb_obj_hide().
+	  Note that do not change class before and after hiding.
+	  Only permitted example is:
+	    klass = RBASIC_CLASS(obj);
+	    rb_obj_hide(obj);
+	    ....
+	    rb_obj_reveal(obj, klass);
+
+	  TODO: API design. rb_obj_reveal() should be replaced with others.
+
+	  TODO: modify constified variables using cast may be harmful for
+	        compiler's analysis and optimizaton.
+	        Any idea to prohibt inserting RBasic::klass directly?
+	        If rename RBasic::klass and force to use RBASIC_CLASS(obj),
+	        then all codes such as `RBASIC(obj)->klass' will be
+	        compilation error. Is it acceptable? (We have similar
+	        experience at Ruby 1.9,
+	        for example "RARRAY(ary)->ptr" to "RARRAY_PTR(ary)".
+
+	* internal.h: add some macros.
+	  * RBASIC_CLEAR_CLASS(obj) clear RBasic::klass to make it internal
+	    object.
+	  * RBASIC_SET_CLASS(obj, cls) set RBasic::klass.
+	  * RBASIC_SET_CLASS_RAW(obj, cls) same as RBASIC_SET_CLASS
+	    without write barrier (planned).
+	  * RCLASS_SET_SUPER(a, b) set super class of a.
+
+	* array.c, class.c, compile.c, encoding.c, enum.c, error.c, eval.c, 
+	  file.c, gc.c, hash.c, io.c, iseq.c, marshal.c, object.c, 
+	  parse.y, proc.c, process.c, random.c, ruby.c, sprintf.c,
+	  string.c, thread.c, transcode.c, vm.c, vm_eval.c, win32/file.c: 
+	  Use above macros and functions to access RBasic::klass.
+
+	* ext/coverage/coverage.c, ext/readline/readline.c,
+	  ext/socket/ancdata.c, ext/socket/init.c, 
+	* ext/zlib/zlib.c: ditto.
+
 Mon May 13 18:44:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* *.c, parse.y, insns.def: use RARRAY_AREF/ASET macro

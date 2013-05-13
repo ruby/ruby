@@ -1866,7 +1866,7 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     list = rb_ary_new2(enc_table.count);
-    RBASIC(list)->klass = 0;
+    RBASIC_CLEAR_CLASS(list);
     rb_encoding_list = list;
     rb_gc_register_mark_object(list);
 

@@ -2892,7 +2892,7 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
 	return newstr;
     }
     else {
-	RBASIC(newstr)->klass = rb_obj_class(str);
+	RBASIC_SET_CLASS(newstr, rb_obj_class(str));
     }
     return str_encode_associate(newstr, encidx);
 }

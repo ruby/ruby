@@ -4013,7 +4013,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
     result = rb_str_buf_new(len);
-    RBASIC(result)->klass = 0;
+    RBASIC_CLEAR_CLASS(result);
     OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_AREF(ary, i);
@@ -4057,7 +4057,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	rb_str_buf_append(result, tmp);
 	rb_enc_associate(result, enc);
     }
-    RBASIC(result)->klass = rb_cString;
+    RBASIC_SET_CLASS_RAW(result, rb_cString);
 
     return result;
 }
@@ -5304,7 +5304,7 @@ is_explicit_relative(const char *path)
 static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
-    RBASIC(path)->klass = rb_obj_class(orig);
+    RBASIC_SET_CLASS(path, rb_obj_class(orig));
     OBJ_FREEZE(path);
     return path;
 }
@@ -5360,7 +5360,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
     if (!load_path) return 0;
 
     fname = rb_str_dup(*filep);
-    RBASIC(fname)->klass = 0;
+    RBASIC_CLEAR_CLASS(fname);
     fnlen = RSTRING_LEN(fname);
     tmp = rb_str_tmp_new(MAXPATHLEN + 2);
     rb_enc_associate_index(tmp, rb_usascii_encindex());

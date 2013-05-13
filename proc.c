@@ -427,7 +427,7 @@ proc_new(VALUE klass, int is_lambda)
 	}
 	else {
 	    VALUE newprocval = proc_dup(procval);
-	    RBASIC(newprocval)->klass = klass;
+	    RBASIC_SET_CLASS(newprocval, klass);
 	    return newprocval;
 	}
     }

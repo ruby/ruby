@@ -622,7 +622,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->pending_interrupt_queue = rb_ary_tmp_new(0);
     th->pending_interrupt_queue_checked = 0;
     th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
-    RBASIC(th->pending_interrupt_mask_stack)->klass = 0;
+    RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
 
     th->interrupt_mask = 0;
 

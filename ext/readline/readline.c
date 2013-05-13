@@ -1217,7 +1217,7 @@ readline_s_set_special_prefixes(VALUE self, VALUE str)
     if (!NIL_P(str)) {
 	OutputStringValue(str);
 	str = rb_str_dup_frozen(str);
-	RBASIC(str)->klass = 0;
+	rb_obj_hide(str);
     }
     rb_ivar_set(mReadline, id_special_prefixes, str);
     if (NIL_P(str)) {
@@ -1252,7 +1252,7 @@ readline_s_get_special_prefixes(VALUE self)
     str = rb_ivar_get(mReadline, id_special_prefixes);
     if (!NIL_P(str)) {
 	str = rb_str_dup_frozen(str);
-	RBASIC(str)->klass = rb_cString;
+	rb_obj_reveal(str, rb_cString);
     }
     return str;
 }

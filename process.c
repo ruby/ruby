@@ -1435,7 +1435,7 @@ proc_spawn_sh(char *str)
 static VALUE
 hide_obj(VALUE obj)
 {
-    RBASIC(obj)->klass = 0;
+    RBASIC_CLEAR_CLASS(obj);
     return obj;
 }
 

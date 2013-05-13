@@ -1060,7 +1060,7 @@ hidden_identity_hash_new()
     VALUE hash = rb_hash_new();
 
     rb_funcall(hash, rb_intern("compare_by_identity"), 0);
-    RBASIC(hash)->klass = 0;  /* hide from ObjectSpace */
+    RBASIC_CLEAR_CLASS(hash); /* hide from ObjectSpace */
     return hash;
 }
 
@@ -1097,7 +1097,7 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     module = RCLASS_SUPER(module);
     while (module && module != klass) {
 	FL_SET(module, RMODULE_IS_OVERLAID);
-	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
+	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
 	RCLASS_REFINED_CLASS(c) = klass;
 	module = RCLASS_SUPER(module);
     }
@@ -1156,8 +1156,7 @@ add_activated_refinement(VALUE activated_refinements,
     refinement = RCLASS_SUPER(refinement);
     while (refinement) {
 	FL_SET(refinement, RMODULE_IS_OVERLAID);
-	c = RCLASS_SUPER(c) =
-	    rb_include_class_new(refinement, RCLASS_SUPER(c));
+	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
 	RCLASS_REFINED_CLASS(c) = klass;
 	refinement = RCLASS_SUPER(refinement);
     }
@@ -1210,7 +1209,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	refinement = rb_module_new();
-	RCLASS_SUPER(refinement) = klass;
+	RCLASS_SET_SUPER(refinement, klass);
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);

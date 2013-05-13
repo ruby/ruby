@@ -53,7 +53,16 @@ VALUE
 rb_obj_hide(VALUE obj)
 {
     if (!SPECIAL_CONST_P(obj)) {
-	RBASIC(obj)->klass = 0;
+	RBASIC_CLEAR_CLASS(obj);
+    }
+    return obj;
+}
+
+VALUE
+rb_obj_reveal(VALUE obj, VALUE klass)
+{
+    if (!SPECIAL_CONST_P(obj)) {
+	RBASIC_SET_CLASS(obj, klass);
     }
     return obj;
 }
@@ -62,7 +71,7 @@ VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
     RBASIC(obj)->flags = type;
-    RBASIC(obj)->klass = klass;
+    RBASIC_SET_CLASS(obj, klass);
     if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT | FL_UNTRUSTED);
     return obj;
 }
@@ -327,7 +336,7 @@ rb_obj_clone(VALUE obj)
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     singleton = rb_singleton_class_clone_and_attach(obj, clone);
-    RBASIC(clone)->klass = singleton;
+    RBASIC_SET_CLASS(clone, singleton);
     if (FL_TEST(singleton, FL_SINGLETON)) {
 	rb_singleton_class_attached(singleton, clone);
     }
@@ -1630,7 +1639,7 @@ rb_module_s_alloc(VALUE klass)
 {
     VALUE mod = rb_module_new();
 
-    RBASIC(mod)->klass = klass;
+    RBASIC_SET_CLASS(mod, klass);
     return mod;
 }
 
@@ -1723,7 +1732,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eTypeError, "can't inherit uninitialized class");
 	}
     }
-    RCLASS_SUPER(klass) = super;
+    RCLASS_SET_SUPER(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize(klass);
@@ -1858,7 +1867,7 @@ rb_class_superclass(VALUE klass)
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
-    return RCLASS_SUPER(klass);
+    return RCLASS_EXT(klass)->super;
 }
 
 #define id_for_setter(name, type, message) \

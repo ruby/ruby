@@ -931,7 +931,7 @@ enum_sort_by(VALUE obj)
     else {
 	ary = rb_ary_new();
     }
-    RBASIC(ary)->klass = 0;
+    RBASIC_CLEAR_CLASS(ary);
     buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
     rb_ary_store(buf, SORT_BY_BUFSIZE*2-1, Qnil);
     memo = NEW_MEMO(0, 0, 0);
@@ -958,7 +958,7 @@ enum_sort_by(VALUE obj)
 	RARRAY_ASET(ary, i/2, RARRAY_AREF(ary, i));
     }
     rb_ary_resize(ary, RARRAY_LEN(ary)/2);
-    RBASIC(ary)->klass = rb_cArray;
+    RBASIC_SET_CLASS_RAW(ary, rb_cArray);
     OBJ_INFECT(ary, memo);
 
     return ary;
@@ -2309,7 +2309,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
         if (n <= 0) return Qnil;
     }
     ary = rb_ary_new();
-    RBASIC(ary)->klass = 0;
+    RBASIC_CLEAR_CLASS(ary);
     rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
     len = RARRAY_LEN(ary);
     if (len == 0) return Qnil;

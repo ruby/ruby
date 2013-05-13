@@ -633,7 +633,7 @@ zstream_expand_buffer(struct zstream *z)
 	    VALUE self = (VALUE)z->stream.opaque;
 
 	    rb_str_resize(z->buf, z->buf_filled);
-	    RBASIC(z->buf)->klass = rb_cString;
+	    rb_obj_reveal(z->buf, rb_cString);
 	    OBJ_INFECT(z->buf, self);
 
 	    rb_protect(rb_yield, z->buf, &state);
@@ -678,7 +678,7 @@ zstream_expand_buffer_into(struct zstream *z, unsigned long size)
 	z->buf_filled = 0;
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = MAX_UINT(size);
-	RBASIC(z->buf)->klass = 0;
+	rb_obj_hide(z->buf);
     }
     else if (z->stream.avail_out != size) {
 	rb_str_resize(z->buf, z->buf_filled + size);
@@ -740,7 +740,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 	z->buf_filled = len;
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = 0;
-	RBASIC(z->buf)->klass = 0;
+	rb_obj_hide(z->buf);
 	return;
     }
 
@@ -782,7 +782,7 @@ zstream_detach_buffer(struct zstream *z)
     else {
 	dst = z->buf;
 	rb_str_resize(dst, z->buf_filled);
-	RBASIC(dst)->klass = rb_cString;
+	rb_obj_reveal(dst, rb_cString);
     }
 
     OBJ_INFECT(dst, self);
@@ -811,7 +811,7 @@ zstream_shift_buffer(struct zstream *z, long len)
     }
 
     dst = rb_str_subseq(z->buf, 0, len);
-    RBASIC(dst)->klass = rb_cString;
+    rb_obj_reveal(dst, rb_cString);
     z->buf_filled -= len;
     memmove(RSTRING_PTR(z->buf), RSTRING_PTR(z->buf) + len,
 	    z->buf_filled);
@@ -866,7 +866,7 @@ zstream_append_input(struct zstream *z, const Bytef *src, long len)
     if (NIL_P(z->input)) {
 	z->input = rb_str_buf_new(len);
 	rb_str_buf_cat(z->input, (const char*)src, len);
-	RBASIC(z->input)->klass = 0;
+	rb_obj_hide(z->input);
     }
     else {
 	rb_str_buf_cat(z->input, (const char*)src, len);
@@ -915,10 +915,10 @@ zstream_detach_input(struct zstream *z)
     }
     else {
 	dst = z->input;
-	RBASIC(dst)->klass = rb_cString;
+	rb_obj_reveal(dst, rb_cString);
     }
     z->input = Qnil;
-    RBASIC(dst)->klass = rb_cString;
+    rb_obj_reveal(dst, rb_cString);
     return dst;
 }
 

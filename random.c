@@ -1435,7 +1435,7 @@ Init_RandomSeed2(void)
     VALUE seed = default_rand.seed;
 
     if (RB_TYPE_P(seed, T_BIGNUM)) {
-	RBASIC(seed)->klass = rb_cBignum;
+	rb_obj_reveal(seed, rb_cBignum);
     }
 }
 

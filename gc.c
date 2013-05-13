@@ -1330,7 +1330,7 @@ define_final0(VALUE obj, VALUE block)
     }
     else {
 	table = rb_ary_new3(1, block);
-	RBASIC(table)->klass = 0;
+	RBASIC_CLEAR_CLASS(table);
 	st_add_direct(finalizer_table, obj, table);
     }
     return block;
@@ -1405,7 +1405,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 
     objspace->heap.final_num--;
 
-    RBASIC(obj)->klass = 0;
+    RBASIC_CLEAR_CLASS(obj);
 
     if (RTYPEDDATA_P(obj)) {
 	free_func = RTYPEDDATA_TYPE(obj)->function.dfree;
@@ -2796,7 +2796,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	if (!RCLASS_EXT(obj)) break;
 	mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
-	ptr = RCLASS_SUPER(obj);
+	ptr = RCLASS_SUPER((VALUE)obj);
 	goto again;
 
       case T_ARRAY:

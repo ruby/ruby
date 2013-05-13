@@ -1261,7 +1261,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	    if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */
 		rb_raise(rb_eTypeError, "invalid instance type");
 	    }
-	    RBASIC(self)->klass = klass;
+	    RBASIC_SET_CLASS(self, klass);
 	}
     }
     else {

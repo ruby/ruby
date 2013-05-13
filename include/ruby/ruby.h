@@ -683,12 +683,17 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 
 struct RBasic {
     VALUE flags;
-    VALUE klass;
+    const VALUE klass;
 }
 #ifdef __GNUC__
     __attribute__((aligned(sizeof(VALUE))))
 #endif
 ;
+
+VALUE rb_obj_hide(VALUE obj);
+VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
+
+#define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
 #define ROBJECT_EMBED_LEN_MAX 3
 struct RObject {

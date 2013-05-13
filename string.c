@@ -519,7 +519,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     olen = len;
 
     econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);
-    RBASIC(econv_wrapper)->klass = 0;
+    RBASIC_CLEAR_CLASS(econv_wrapper);
     ec = rb_econv_open_opts(from->name, to->name, ecflags, ecopts);
     if (!ec) return str;
     DATA_PTR(econv_wrapper) = ec;
@@ -1446,7 +1446,7 @@ rb_str_associate(VALUE str, VALUE add)
 	    RESIZE_CAPA(str, RSTRING_LEN(str));
 	}
 	FL_SET(str, STR_ASSOC);
-	RBASIC(add)->klass = 0;
+	RBASIC_CLEAR_CLASS(add);
 	RSTRING(str)->as.heap.aux.shared = add;
     }
 }
@@ -3931,7 +3931,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         rb_str_shared_replace(str, dest);
     }
     else {
-	RBASIC(dest)->klass = rb_obj_class(str);
+	RBASIC_SET_CLASS(dest, rb_obj_class(str));
 	OBJ_INFECT(dest, str);
 	str = dest;
     }

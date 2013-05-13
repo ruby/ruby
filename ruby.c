@@ -542,10 +542,10 @@ add_modules(VALUE *req_list, const char *mod)
 
     if (!list) {
 	*req_list = list = rb_ary_new();
-	RBASIC(list)->klass = 0;
+	RBASIC_CLEAR_CLASS(list);
     }
     feature = rb_str_new2(mod);
-    RBASIC(feature)->klass = 0;
+    RBASIC_CLEAR_CLASS(feature);
     rb_ary_push(list, feature);
 }
 
@@ -565,7 +565,7 @@ require_libraries(VALUE *req_list)
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
 	rb_enc_associate(feature, extenc);
-	RBASIC(feature)->klass = rb_cString;
+	RBASIC_SET_CLASS_RAW(feature, rb_cString);
 	OBJ_FREEZE(feature);
 	rb_funcall2(self, require, 1, &feature);
     }

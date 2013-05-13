@@ -1677,7 +1677,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     else {
         rb_str_resize(dat_str, ss);
         OBJ_TAINT(dat_str);
-        RBASIC(dat_str)->klass = rb_cString;
+	rb_obj_reveal(dat_str, rb_cString);
     }
 
     ret = rb_ary_new3(3, dat_str,

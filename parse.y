@@ -5298,7 +5298,7 @@ coverage(const char *f, int n)
 	VALUE fname = rb_external_str_new_with_enc(f, strlen(f), rb_filesystem_encoding());
 	VALUE lines = rb_ary_new2(n);
 	int i;
-	RBASIC(lines)->klass = 0;
+	RBASIC_CLEAR_CLASS(lines);
 	for (i = 0; i < n; i++) RARRAY_ASET(lines, i, Qnil);
 	RARRAY(lines)->as.heap.len = n;
 	rb_hash_aset(coverages, fname, lines);
@@ -10238,7 +10238,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED;
-    fake_str->basic.klass = rb_cString;
+    RBASIC_SET_CLASS((VALUE)fake_str, rb_cString);
     fake_str->as.heap.len = len;
     fake_str->as.heap.ptr = (char *)name;
     fake_str->as.heap.aux.capa = len;
@@ -10426,7 +10426,7 @@ rb_id2str(ID id)
     if (st_lookup(global_symbols.id_str, id, &data)) {
         VALUE str = (VALUE)data;
         if (RBASIC(str)->klass == 0)
-            RBASIC(str)->klass = rb_cString;
+            RBASIC_SET_CLASS_RAW(str, rb_cString);
 	return str;
     }
 
@@ -10444,7 +10444,7 @@ rb_id2str(ID id)
 	if (st_lookup(global_symbols.id_str, id, &data)) {
             VALUE str = (VALUE)data;
             if (RBASIC(str)->klass == 0)
-                RBASIC(str)->klass = rb_cString;
+                RBASIC_SET_CLASS_RAW(str, rb_cString);
             return str;
         }
     }
