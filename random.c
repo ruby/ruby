@@ -1494,6 +1494,7 @@ Init_Random(void)
     {
 	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
 	rb_gc_register_mark_object(rand_default);
+	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
