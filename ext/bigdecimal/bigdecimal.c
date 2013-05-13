@@ -3228,7 +3228,6 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "truncate",  BigDecimal_truncate, -1);
     rb_define_method(rb_cBigDecimal, "_dump", BigDecimal_dump, -1);
 
-    /* mathematical functions */
     rb_mBigMath = rb_define_module("BigMath");
     rb_define_singleton_method(rb_mBigMath, "exp", BigMath_s_exp, 2);
     rb_define_singleton_method(rb_mBigMath, "log", BigMath_s_log, 2);
