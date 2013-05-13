@@ -1095,6 +1095,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 /*
  * SSLSocket class
  */
+#ifndef OPENSSL_NO_SOCK
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
@@ -1795,7 +1796,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
 /*
  * call-seq:
  *    ssl.npn_protocol => String
@@ -1818,7 +1819,8 @@ ossl_ssl_npn_protocol(VALUE self)
     else
 	return rb_str_new((const char *) out, outlen);
 }
-#endif
+# endif
+#endif /* !defined(OPENSSL_NO_SOCK) */
 
 void
 Init_ossl_ssl()
@@ -2149,6 +2151,9 @@ Init_ossl_ssl()
      *
      */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
+#ifdef OPENSSL_NO_SOCK
+    rb_define_method(cSSLSocket, "initialize", rb_notimplement, -1);
+#else
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     for(i = 0; i < numberof(ossl_ssl_attr_readers); i++)
         rb_attr(cSSLSocket, rb_intern(ossl_ssl_attr_readers[i]), 1, 0, Qfalse);
@@ -2177,8 +2182,9 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
+# endif
 #endif
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
