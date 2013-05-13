@@ -577,7 +577,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
 	    if (index < len) {
-		ptr[index] = val;
+		OBJ_WRITE(obj, &ptr[index], val);
 		return val; /* inline cache hit */
 	    }
 	}

@@ -81,7 +81,7 @@ RCLASS_SUPER(VALUE c)
 
 static inline VALUE
 RCLASS_SET_SUPER(VALUE a, VALUE b) {
-  RCLASS_EXT(a)->super = b;
+  OBJ_WRITE(a, &RCLASS_EXT(a)->super, b);
   return b;
 }
 
@@ -239,7 +239,10 @@ struct RBasicRaw {
 
 #define RBASIC_CLEAR_CLASS(obj)        (((struct RBasicRaw *)((VALUE)(obj)))->klass = 0)
 #define RBASIC_SET_CLASS_RAW(obj, cls) (((struct RBasicRaw *)((VALUE)(obj)))->klass = (cls))
-#define RBASIC_SET_CLASS(obj, cls)     do {((struct RBasicRaw *)(obj))->klass = cls; } while (0)
+#define RBASIC_SET_CLASS(obj, cls)     do { \
+    VALUE _obj_ = (obj); \
+    OBJ_WRITE(_obj_, &((struct RBasicRaw *)(_obj_))->klass, cls); \
+} while (0)
 
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);

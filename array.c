@@ -128,10 +128,12 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 
 #define ARY_SHARED(ary) (assert(ARY_SHARED_P(ary)), RARRAY(ary)->as.heap.aux.shared)
 #define ARY_SET_SHARED(ary, value) do { \
-    assert(!ARY_EMBED_P(ary)); \
-    assert(ARY_SHARED_P(ary)); \
-    assert(ARY_SHARED_ROOT_P(value)); \
-    RARRAY(ary)->as.heap.aux.shared = (value); \
+    const VALUE _ary_ = (ary); \
+    const VALUE _value_ = (value); \
+    assert(!ARY_EMBED_P(_ary_)); \
+    assert(ARY_SHARED_P(_ary_)); \
+    assert(ARY_SHARED_ROOT_P(_value_)); \
+    OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared, _value_); \
 } while (0)
 #define RARRAY_SHARED_ROOT_FLAG FL_USER5
 #define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
@@ -370,7 +372,7 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 static VALUE
 ary_alloc(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY);
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
     FL_SET_EMBED((VALUE)ary);
     ARY_SET_EMBED_LEN((VALUE)ary, 0);
 
@@ -409,6 +411,14 @@ ary_new(VALUE klass, long capa)
         ARY_SET_PTR(ary, ALLOC_N(VALUE, capa));
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
+
+	/* NOTE: `ary' can be old because the following suquence is possible.
+	 *   (1) ary = ary_alloc();
+	 *   (2) GC (for (3))          -> promote ary
+	 *   (3) ALLOC_N(VALUE, capa)
+	 * So that force ary as young object.
+	 */
+	RBASIC(ary)->flags &= ~FL_OLDGEN;
     }
 
     return ary;
@@ -455,7 +465,9 @@ rb_ary_new4(long n, const VALUE *elts)
 
     ary = rb_ary_new2(n);
     if (n > 0 && elts) {
-	MEMCPY(RARRAY_PTR(ary), elts, VALUE, n);
+	RARRAY_PTR_USE(ary, ptr, {
+	    MEMCPY(ptr, elts, VALUE, n); /* new array is not old gen */
+	});
 	ARY_SET_LEN(ary, n);
     }
 
@@ -512,7 +524,7 @@ ary_make_shared(VALUE ary)
 	return ary;
     }
     else {
-	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY);
+	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
         FL_UNSET_EMBED(shared);
 
         ARY_SET_LEN((VALUE)shared, ARY_CAPA(ary));
@@ -649,8 +661,8 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 
     rb_ary_modify(ary);
     if (argc == 0) {
-	if (ARY_OWNS_HEAP_P(ary) && RARRAY_PTR(ary)) {
-	    xfree(RARRAY_PTR(ary));
+	if (ARY_OWNS_HEAP_P(ary) && RARRAY_RAWPTR(ary) != 0) {
+	    xfree(RARRAY_RAWPTR(ary));
 	}
         rb_ary_unshare_safe(ary);
         FL_SET_EMBED(ary);
@@ -690,7 +702,10 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {
-	memfill(RARRAY_PTR(ary), len, val);
+	RARRAY_PTR_USE(ary, ptr, {
+	    memfill(ptr, len, val);
+	});
+	OBJ_WRITTEN(ary, Qundef, val);
 	ARY_SET_LEN(ary, len);
     }
     return ary;

@@ -1,3 +1,49 @@
+Tue May 14 02:47:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: support RGENGC. [ruby-trunk - Feature #8339]
+	  See this ticet about RGENGC.
+
+	* gc.c: Add several flags:
+	  * RGENGC_DEBUG: if >0, then prints debug information.
+	  * RGENGC_CHECK_MODE: if >0, add assertions.
+	  * RGENGC_PROFILE: if >0, add profiling features.
+	    check GC.stat and GC::Profiler.
+
+	* include/ruby/ruby.h: disable RGENGC by default (USE_RGENGC == 0).
+
+	* array.c: add write barriers for T_ARRAY and generate sunny objects.
+
+	* include/ruby/ruby.h (RARRAY_PTR_USE): added. Use this macro if
+	  you want to access raw pointers. If you modify the contents which
+	  pointer pointed, then you need to care write barrier.
+
+	* bignum.c, marshal.c, random.c: generate T_BIGNUM sunny objects.
+
+	* complex.c, include/ruby/ruby.h: add write barriers for T_COMPLEX
+	  and generate sunny objects.
+
+	* rational.c (nurat_s_new_internal), include/ruby/ruby.h: add write
+	  barriers for T_RATIONAL and generate sunny objects.
+
+	* internal.h: add write barriers for RBasic::klass.
+
+	* numeric.c (rb_float_new_in_heap): generate sunny T_FLOAT objects.
+
+	* object.c (rb_class_allocate_instance), range.c:
+	  generate sunny T_OBJECT objects.
+
+	* string.c: add write barriers for T_STRING and generate sunny objects.
+
+	* variable.c: add write barriers for ivars.
+
+	* vm_insnhelper.c (vm_setivar): ditto.
+
+	* include/ruby/ruby.h, debug.c: use two flags
+	  FL_WB_PROTECTED and FL_OLDGEN.
+
+	* node.h (NODE_FL_CREF_PUSHED_BY_EVAL, NODE_FL_CREF_OMOD_SHARED):
+	  move flag bits.
+
 Tue May 14 01:54:48 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remove rb_objspace_t::marked_num.

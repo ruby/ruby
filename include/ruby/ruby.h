@@ -681,6 +681,32 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
     if (FL_TEST((obj), FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(dup),(VALUE)(obj));\
 } while (0)
 
+#ifndef USE_RGENGC
+#define USE_RGENGC 0
+#endif
+
+#ifndef RGENGC_WB_PROTECTED_ARRAY
+#define RGENGC_WB_PROTECTED_ARRAY 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_STRING
+#define RGENGC_WB_PROTECTED_STRING 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_OBJECT
+#define RGENGC_WB_PROTECTED_OBJECT 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_FLOAT
+#define RGENGC_WB_PROTECTED_FLOAT 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_COMPLEX
+#define RGENGC_WB_PROTECTED_COMPLEX 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_RATIONAL
+#define RGENGC_WB_PROTECTED_RATIONAL 0
+#endif
+#ifndef RGENGC_WB_PROTECTED_BIGNUM
+#define RGENGC_WB_PROTECTED_BIGNUM 0
+#endif
+
 struct RBasic {
     VALUE flags;
     const VALUE klass;
@@ -891,14 +917,32 @@ struct RArray {
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)) : \
      RARRAY(a)->as.heap.len)
-#define RARRAY_PTR(a) \
-    ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-     RARRAY(a)->as.ary : \
-     RARRAY(a)->as.heap.ptr)
+
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 
-#define RARRAY_AREF(a, i)    (RARRAY_PTR(a)[i])
-#define RARRAY_ASET(a, i, v) do {RARRAY_PTR(a)[i] = (v);} while (0)
+/* DO NOT USE THIS MACRO DIRECTLY */
+#define RARRAY_RAWPTR(a) \
+  ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
+   RARRAY(a)->as.ary : \
+   RARRAY(a)->as.heap.ptr)
+
+#define RARRAY_PTR_USE_START(a) RARRAY_RAWPTR(a)
+#define RARRAY_PTR_USE_END(a) /* */
+
+#define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
+    const VALUE _ary = (ary); \
+    VALUE *ptr_name = RARRAY_PTR_USE_START(_ary); \
+    expr; \
+    RARRAY_PTR_USE_END(_ary); \
+} while (0)
+
+#define RARRAY_AREF(a, i)    (RARRAY_RAWPTR(a)[i])
+#define RARRAY_ASET(a, i, v) do { \
+    const VALUE _ary_ = (a); \
+    OBJ_WRITE(_ary_, &RARRAY_RAWPTR(_ary_)[i], (v)); \
+} while (0)
+
+#define RARRAY_PTR(a) RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_GIVEUP((VALUE)a) : ((VALUE)a))
 
 struct RRegexp {
     struct RBasic basic;
@@ -935,8 +979,8 @@ struct RRational {
     const VALUE den;
 };
 
-#define RRATIONAL_SET_NUM(rat, n) (*((VALUE *)(&((struct RRational *)(rat))->num)) = (n))
-#define RRATIONAL_SET_DEN(rat, d) (*((VALUE *)(&((struct RRational *)(rat))->den)) = (d))
+#define RRATIONAL_SET_NUM(rat, n) OBJ_WRITE((rat), ((VALUE *)(&((struct RRational *)(rat))->num)),(n))
+#define RRATIONAL_SET_DEN(rat, d) OBJ_WRITE((rat), ((VALUE *)(&((struct RRational *)(rat))->den)),(d))
 
 struct RComplex {
     struct RBasic basic;
@@ -944,8 +988,8 @@ struct RComplex {
     const VALUE imag;
 };
 
-#define RCOMPLEX_SET_REAL(cmp, r) (*((VALUE *)(&((struct RComplex *)(cmp))->real)) = (r))
-#define RCOMPLEX_SET_IMAG(cmp, i) (*((VALUE *)(&((struct RComplex *)(cmp))->imag)) = (i))
+#define RCOMPLEX_SET_REAL(cmp, r) OBJ_WRITE((cmp), ((VALUE *)(&((struct RComplex *)(cmp))->real)),(r))
+#define RCOMPLEX_SET_IMAG(cmp, i) OBJ_WRITE((cmp), ((VALUE *)(&((struct RComplex *)(cmp))->imag)),(i))
 
 struct RData {
     struct RBasic basic;
@@ -1108,8 +1152,8 @@ struct RBignum {
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
 
 #define FL_SINGLETON FL_USER0
-#define FL_RESERVED1 (((VALUE)1)<<5)
-#define FL_RESERVED2 (((VALUE)1)<<6) /* will be used in the future GC */
+#define FL_WB_PROTECTED (((VALUE)1)<<5)
+#define FL_OLDGEN    (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
 #define FL_UNTRUSTED (((VALUE)1)<<9)
@@ -1142,7 +1186,8 @@ struct RBignum {
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
-#define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
+#define FL_TEST_RAW(x,f) (RBASIC(x)->flags&(f))
+#define FL_TEST(x,f) (FL_ABLE(x)?FL_TEST_RAW((x),(f)):0)
 #define FL_ANY(x,f) FL_TEST((x),(f))
 #define FL_ALL(x,f) (FL_TEST((x),(f)) == (f))
 #define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
@@ -1161,6 +1206,77 @@ struct RBignum {
 
 #define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x))))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
+
+#if USE_RGENGC
+#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_OLDGEN))
+#define OBJ_WB_PROTECTED(x)         (SPECIAL_CONST_P(x) ? 1 : FL_TEST_RAW((x), FL_WB_PROTECTED))
+#define OBJ_WB_GIVEUP(x)            rb_obj_wb_giveup(x, __FILE__, __LINE__)
+
+void rb_gc_writebarrier(VALUE a, VALUE b);
+void rb_gc_giveup_promoted_writebarrier(VALUE obj);
+
+#else /* USE_RGENGC */
+#define OBJ_PROMOTED(x)             0
+#define OBJ_WB_PROTECTED(x)         0
+#define OBJ_WB_GIVEUP(x)            rb_obj_wb_giveup(x, __FILE__, __LINE__)
+#define OBJ_SHADE(x)                OBJ_WB_GIVEUP(x) /* RGENGC terminology */
+#endif
+
+#define OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (slot), (VALUE)(b), __FILE__, __LINE__)
+#define OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
+
+static inline VALUE
+rb_obj_wb_giveup(VALUE x, const char *filename, int line)
+{
+#ifdef RGENGC_LOGGING_WB_GIVEUP
+    RGENGC_LOGGING_WB_GIVEUP(x, filename, line);
+#endif
+
+#if USE_RGENGC
+    /* `x' should be an RVALUE object */
+    if (FL_TEST_RAW((x), FL_WB_PROTECTED)) {
+	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
+
+	if (FL_TEST_RAW((x), FL_OLDGEN)) {
+	    rb_gc_giveup_promoted_writebarrier(x);
+	}
+    }
+#endif
+    return x;
+}
+
+static inline VALUE
+rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
+{
+#ifdef RGENGC_LOGGING_OBJ_WRITTEN
+    RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
+#endif
+
+#if USE_RGENGC
+    /* `a' should be an RVALUE object */
+    if (FL_TEST_RAW((a), FL_OLDGEN) &&
+	!SPECIAL_CONST_P(b) && !FL_TEST_RAW((b), FL_OLDGEN)) {
+	rb_gc_writebarrier(a, b);
+    }
+#endif
+
+    return a;
+}
+
+static inline VALUE
+rb_obj_write(VALUE a, VALUE *slot, VALUE b, const char *filename, int line)
+{
+#ifdef RGENGC_LOGGING_WRIET
+    RGENGC_LOGGING_WRIET(a, slot, b, filename, line);
+#endif
+
+    *slot = b;
+
+#if USE_RGENGC
+    rb_obj_written(a, Qundef /* ignore `oldv' now */, b, filename, line);
+#endif
+    return a;
+}
 
 #if SIZEOF_INT < SIZEOF_LONG
 # define INT2NUM(v) INT2FIX((int)(v))

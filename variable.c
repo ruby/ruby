@@ -940,9 +940,11 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 	tbl = st_init_numtable();
 	st_add_direct(generic_iv_tbl, (st_data_t)obj, (st_data_t)tbl);
 	st_add_direct(tbl, (st_data_t)id, (st_data_t)val);
+	if (FL_ABLE(obj)) OBJ_WRITTEN(obj, Qundef, val);
 	return;
     }
     st_insert((st_table *)data, (st_data_t)id, (st_data_t)val);
+    if (FL_ABLE(obj)) OBJ_WRITTEN(obj, data, val);
 }
 
 static VALUE
@@ -1181,12 +1183,13 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                 ROBJECT(obj)->as.heap.iv_index_tbl = iv_index_tbl;
             }
         }
-        ROBJECT_IVPTR(obj)[index] = val;
+        OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
 	break;
       case T_CLASS:
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
 	st_insert(RCLASS_IV_TBL(obj), (st_data_t)id, val);
+	OBJ_WRITTEN(obj, Qundef, val);
         break;
       default:
       generic:
