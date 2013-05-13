@@ -1,3 +1,10 @@
+Tue May 14 01:50:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: disable GC_PROFILE_MORE_DETAIL (fix last commit).
+
+	* gc.c (gc_prof_set_malloc_info): fix "objspace->heap.live_num" to
+	  "objspace_live_num(objspace)". There is no such member variable.
+
 Tue May 14 01:25:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: refactoring GC::Profiler.

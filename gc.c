@@ -96,7 +96,7 @@ static ruby_gc_params_t initial_params = {
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
 #ifndef GC_PROFILE_MORE_DETAIL
-#define GC_PROFILE_MORE_DETAIL 1
+#define GC_PROFILE_MORE_DETAIL 0
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP 1
@@ -4037,7 +4037,7 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 static inline void
 gc_prof_set_heap_info(rb_objspace_t *objspace, gc_profile_record *record)
 {
-    size_t live = objspace->heap.live_num;
+    size_t live = objspace_live_num(objspace);
     size_t total = heaps_used * HEAP_OBJ_LIMIT;
 
     record->heap_total_objects = total;
