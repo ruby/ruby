@@ -892,6 +892,9 @@ struct RArray {
      RARRAY(a)->as.heap.ptr)
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 
+#define RARRAY_AREF(a, i)    (RARRAY_PTR(a)[i])
+#define RARRAY_ASET(a, i, v) do {RARRAY_PTR(a)[i] = (v);} while (0)
+
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;

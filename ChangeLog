@@ -1,3 +1,11 @@
+Mon May 13 16:53:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: add new utility macros to access
+	  Array's element.
+	  * RARRAY_AREF(a, i) returns i-th element of an array `a'
+	  * RARRAY_ASET(a, i, v) set i-th element of `a' to `v'
+	  This change is a part of RGENGC branch [ruby-trunk - Feature #8339].
+
 Mon May 13 15:31:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* object.c (rb_obj_setup): added.
