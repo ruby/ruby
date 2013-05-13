@@ -721,9 +721,6 @@ rb_str_new_frozen(VALUE orig)
     klass = rb_obj_class(orig);
     if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)) {
 	long ofs;
-	if (!OBJ_FROZEN(str)) {
-	    rb_bug("xyzzy");
-	}
 	assert(OBJ_FROZEN(str));
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||

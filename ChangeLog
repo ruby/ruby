@@ -1,3 +1,7 @@
+Tue May 14 03:33:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_str_new_frozen): remove debug print.
+
 Tue May 14 03:22:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: enable to generate write barrier protected
