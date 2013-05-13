@@ -783,7 +783,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 		w_long(len, arg);
 		for (i=0; i<RARRAY_LEN(obj); i++) {
-		    w_object(RARRAY_PTR(obj)[i], arg, limit);
+		    w_object(RARRAY_AREF(obj, i), arg, limit);
 		    if (len != RARRAY_LEN(obj)) {
 			rb_raise(rb_eRuntimeError, "array modified during dump");
 		    }
@@ -820,7 +820,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		w_long(len, arg);
 		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
-		    w_symbol(SYM2ID(RARRAY_PTR(mem)[i]), arg);
+		    w_symbol(SYM2ID(RARRAY_AREF(mem, i)), arg);
 		    w_object(RSTRUCT_PTR(obj)[i], arg, limit);
 		}
 	    }
@@ -1462,7 +1462,7 @@ append_extmod(VALUE obj, VALUE extmod)
 {
     long i = RARRAY_LEN(extmod);
     while (i > 0) {
-	VALUE m = RARRAY_PTR(extmod)[--i];
+	VALUE m = RARRAY_AREF(extmod, --i);
 	rb_extend_object(obj, m);
     }
     return obj;
@@ -1756,11 +1756,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
-		if (RARRAY_PTR(mem)[i] != ID2SYM(slot)) {
+		if (RARRAY_AREF(mem, i) != ID2SYM(slot)) {
 		    rb_raise(rb_eTypeError, "struct %s not compatible (:%s for :%s)",
 			     rb_class2name(klass),
 			     rb_id2name(slot),
-			     rb_id2name(SYM2ID(RARRAY_PTR(mem)[i])));
+			     rb_id2name(SYM2ID(RARRAY_AREF(mem, i))));
 		}
                 rb_ary_push(values, r_object(arg));
 		arg->readable -= 2;

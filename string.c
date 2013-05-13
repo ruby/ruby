@@ -6115,7 +6115,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     if (NIL_P(limit) && lim == 0) {
 	long len;
 	while ((len = RARRAY_LEN(result)) > 0 &&
-	       (tmp = RARRAY_PTR(result)[len-1], RSTRING_LEN(tmp) == 0))
+	       (tmp = RARRAY_AREF(result, len-1), RSTRING_LEN(tmp) == 0))
 	    rb_ary_pop(result);
     }
 

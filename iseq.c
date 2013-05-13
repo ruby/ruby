@@ -1848,7 +1848,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     ti = 0;
 
     for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
-	VALUE ary = RARRAY_PTR(nbody)[i];
+	VALUE ary = RARRAY_AREF(nbody, i);
 	st_data_t label;
 
 	if (st_lookup(labels_table, pos, &label)) {

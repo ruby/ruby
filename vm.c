@@ -2129,7 +2129,7 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
 
     assert(RARRAY_LEN(ary) % 2 == 0);
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
+	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
     }
 
     return hash;
@@ -2142,7 +2142,7 @@ m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 
     assert(RARRAY_LEN(ary) % 2 == 0);
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
+	rb_hash_aset(hash, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
     }
 
     return hash;

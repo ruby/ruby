@@ -421,8 +421,8 @@ pack_pack(VALUE ary, VALUE fmt)
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY_PTR(ary)[idx] : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY_PTR(ary)[idx++] : TOO_FEW)
+#define THISFROM (items > 0 ? RARRAY_AREF(ary, idx) : TOO_FEW)
+#define NEXTFROM (items-- > 0 ? RARRAY_AREF(ary, idx++) : TOO_FEW)
 
     while (p < pend) {
 	int explicit_endian = 0;
@@ -1020,9 +1020,9 @@ pack_pack(VALUE ary, VALUE fmt)
 		    VALUE big128 = rb_uint2big(128);
 		    while (RB_TYPE_P(from, T_BIGNUM)) {
 			from = rb_big_divmod(from, big128);
-			c = castchar(NUM2INT(RARRAY_PTR(from)[1]) | 0x80); /* mod */
+			c = castchar(NUM2INT(RARRAY_AREF(from, 1)) | 0x80); /* mod */
 			rb_str_buf_cat(buf, &c, sizeof(char));
-			from = RARRAY_PTR(from)[0]; /* div */
+			from = RARRAY_AREF(from, 0); /* div */
 		    }
 		}
 

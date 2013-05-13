@@ -760,7 +760,7 @@ rb_vm_bugreport(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "* Loaded features:\n\n");
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    name = RARRAY_PTR(vm->loaded_features)[i];
+	    name = RARRAY_AREF(vm->loaded_features, i);
 	    if (RB_TYPE_P(name, T_STRING)) {
 		fprintf(stderr, " %4d %.*s\n", i,
 			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));

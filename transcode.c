@@ -3057,10 +3057,10 @@ decorate_convpath(VALUE convpath, int ecflags)
 
     len = n = RARRAY_LENINT(convpath);
     if (n != 0) {
-        VALUE pair = RARRAY_PTR(convpath)[n-1];
+        VALUE pair = RARRAY_AREF(convpath, n-1);
 	if (RB_TYPE_P(pair, T_ARRAY)) {
-	    const char *sname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[0]));
-	    const char *dname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[1]));
+	    const char *sname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 0)));
+	    const char *dname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 1)));
 	    transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
 	    const rb_transcoder *tr = load_transcoder_entry(entry);
 	    if (!tr)

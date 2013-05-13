@@ -2342,7 +2342,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-        VALUE str = RARRAY_PTR(ary)[i];
+        VALUE str = RARRAY_AREF(ary, i);
         VALUE buf;
         char *p, *end;
         rb_encoding *src_enc;

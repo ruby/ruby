@@ -252,7 +252,7 @@ apply2files(void (*func)(const char *, VALUE, void *), VALUE vargs, void *arg)
     rb_secure(4);
     for (i=0; i<RARRAY_LEN(vargs); i++) {
 	const char *s;
-	path = rb_get_path(RARRAY_PTR(vargs)[i]);
+	path = rb_get_path(RARRAY_AREF(vargs, i));
 	path = rb_str_encode_ospath(path);
 	s = RSTRING_PTR(path);
 	(*func)(s, path, arg);
@@ -3999,7 +3999,7 @@ rb_file_join(VALUE ary, VALUE sep)
 
     len = 1;
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	tmp = RARRAY_PTR(ary)[i];
+	tmp = RARRAY_AREF(ary, i);
 	if (RB_TYPE_P(tmp, T_STRING)) {
 	    check_path_encoding(tmp);
 	    len += RSTRING_LEN(tmp);
@@ -4016,7 +4016,7 @@ rb_file_join(VALUE ary, VALUE sep)
     RBASIC(result)->klass = 0;
     OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	tmp = RARRAY_PTR(ary)[i];
+	tmp = RARRAY_AREF(ary, i);
 	switch (TYPE(tmp)) {
 	  case T_STRING:
 	    if (!checked) check_path_encoding(tmp);
@@ -5367,7 +5367,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
     for (j=0; ext[j]; j++) {
 	rb_str_cat2(fname, ext[j]);
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
-	    VALUE str = RARRAY_PTR(load_path)[i];
+	    VALUE str = RARRAY_AREF(load_path, i);
 
 	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
 	    if (RSTRING_LEN(str) == 0) continue;
@@ -5428,7 +5428,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	tmp = rb_str_tmp_new(MAXPATHLEN + 2);
 	rb_enc_associate_index(tmp, rb_usascii_encindex());
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
-	    VALUE str = RARRAY_PTR(load_path)[i];
+	    VALUE str = RARRAY_AREF(load_path, i);
 	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
 	    if (RSTRING_LEN(str) > 0) {
 		rb_file_expand_path_internal(path, str, 0, 0, tmp);

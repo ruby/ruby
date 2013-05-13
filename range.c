@@ -327,7 +327,7 @@ range_step_size(VALUE range, VALUE args)
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     VALUE step = INT2FIX(1);
     if (args) {
-	step = RARRAY_PTR(args)[0];
+	step = RARRAY_AREF(args, 0);
 	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
 	    step = rb_to_int(step);
 	}

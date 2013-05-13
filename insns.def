@@ -818,7 +818,7 @@ checkmatch
     if (flag & VM_CHECKMATCH_ARRAY) {
 	int i;
 	for (i = 0; i < RARRAY_LEN(pattern); i++) {
-	    if (RTEST(check_match(RARRAY_PTR(pattern)[i], target, checkmatch_type))) {
+	    if (RTEST(check_match(RARRAY_AREF(pattern, i), target, checkmatch_type))) {
 		result = Qtrue;
 		break;
 	    }

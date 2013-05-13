@@ -1256,15 +1256,15 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		    (bt2 = rb_vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 			if (OBJ_FROZEN(mesg)) {
-			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
+			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_AREF(errat, 0)), ": ", 2);
 			    rb_ivar_set(errinfo, id_mesg, rb_str_append(m, mesg));
 			}
 			else {
 			    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			    rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
+			    rb_str_update(mesg, 0, 0, RARRAY_AREF(errat, 0));
 			}
 		    }
-		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
+		    RARRAY_AREF(errat, 0) = RARRAY_AREF(bt2, 0);
 		}
 	    }
 	    rb_exc_raise(errinfo);

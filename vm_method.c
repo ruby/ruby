@@ -1574,8 +1574,8 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
 			QUOTE_ID(id));
 		if (!NIL_P(location)) {
-		    VALUE path = RARRAY_PTR(location)[0];
-		    VALUE line = RARRAY_PTR(location)[1];
+		    VALUE path = RARRAY_AREF(location, 0);
+		    VALUE line = RARRAY_AREF(location, 1);
 		    if (!NIL_P(path)) {
 			rb_compile_warn(RSTRING_PTR(path), NUM2INT(line),
 					"respond_to? is defined here");

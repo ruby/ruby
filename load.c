@@ -63,7 +63,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 	VALUE path, as_str, expanded_path;
 	int is_string, non_cache;
 	char *as_cstr;
-	as_str = path = RARRAY_PTR(load_path)[i];
+	as_str = path = RARRAY_AREF(load_path, i);
 	is_string = RB_TYPE_P(path, T_STRING) ? 1 : 0;
 	non_cache = !is_string ? 1 : 0;
 	as_str = rb_get_path_check_to_string(path, level);
@@ -76,7 +76,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 		    (!as_cstr[0] || as_cstr[0] != '~')) ||
 		(type == EXPAND_NON_CACHE)) {
 		    /* Use cached expanded path. */
-		    rb_ary_push(ary, RARRAY_PTR(expanded_load_path)[i]);
+		    rb_ary_push(ary, RARRAY_AREF(expanded_load_path, i));
 		    continue;
 	    }
 	}
@@ -337,7 +337,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
        (possibly empty) and prefix is some string of length plen. */
 
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE p = RARRAY_PTR(load_path)[i];
+	VALUE p = RARRAY_AREF(load_path, i);
 	const char *s = StringValuePtr(p);
 	long n = RSTRING_LEN(p);
 
@@ -425,7 +425,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    long index;
 	    if (RB_TYPE_P(this_feature_index, T_ARRAY)) {
 		if (i >= RARRAY_LEN(this_feature_index)) break;
-		entry = RARRAY_PTR(this_feature_index)[i];
+		entry = RARRAY_AREF(this_feature_index, i);
 	    }
 	    else {
 		if (i > 0) break;
@@ -433,7 +433,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    }
 	    index = FIX2LONG(entry);
 
-	    v = RARRAY_PTR(features)[index];
+	    v = RARRAY_AREF(features, index);
 	    f = StringValuePtr(v);
 	    if ((n = RSTRING_LEN(v)) < len) continue;
 	    if (strncmp(f, feature, len) != 0) {

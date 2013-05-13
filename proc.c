@@ -2208,9 +2208,9 @@ static VALUE
 curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
 {
     VALUE proc, passed, arity;
-    proc = RARRAY_PTR(args)[0];
-    passed = RARRAY_PTR(args)[1];
-    arity = RARRAY_PTR(args)[2];
+    proc = RARRAY_AREF(args, 0);
+    passed = RARRAY_AREF(args, 1);
+    arity = RARRAY_AREF(args, 2);
 
     passed = rb_ary_plus(passed, rb_ary_new4(argc, argv));
     rb_ary_freeze(passed);

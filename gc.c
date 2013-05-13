@@ -1387,9 +1387,9 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 
     args[2] = (VALUE)rb_safe_level();
     for (i=0; i<RARRAY_LEN(table); i++) {
-	VALUE final = RARRAY_PTR(table)[i];
-	args[0] = RARRAY_PTR(final)[1];
-	args[2] = FIX2INT(RARRAY_PTR(final)[0]);
+	VALUE final = RARRAY_AREF(table, i);
+	args[0] = RARRAY_AREF(final, 1);
+	args[2] = FIX2INT(RARRAY_AREF(final, 0));
 	status = 0;
 	rb_protect(run_single_final, (VALUE)args, &status);
 	if (status)
@@ -3834,7 +3834,7 @@ wmap_finalize(VALUE self, VALUE objid)
     if (st_delete(w->obj2wmap, &orig, &data)) {
 	rids = (VALUE)data;
 	for (i = 0; i < RARRAY_LEN(rids); ++i) {
-	    wmap = (st_data_t)RARRAY_PTR(rids)[i];
+	    wmap = (st_data_t)RARRAY_AREF(rids, i);
 	    st_delete(w->wmap2obj, &wmap, NULL);
 	}
     }

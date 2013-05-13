@@ -708,8 +708,8 @@ thread_initialize(VALUE thread, VALUE args)
         if (!proc || !RTEST(loc = rb_proc_location(proc))) {
             rb_raise(rb_eThreadError, "already initialized thread");
         }
-	file = RSTRING_PTR(RARRAY_PTR(loc)[0]);
-	if (NIL_P(line = RARRAY_PTR(loc)[1])) {
+	file = RSTRING_PTR(RARRAY_AREF(loc, 0));
+	if (NIL_P(line = RARRAY_AREF(loc, 1))) {
 	    rb_raise(rb_eThreadError, "already initialized thread - %s",
 		     file);
 	}
@@ -1582,7 +1582,7 @@ rb_threadptr_pending_interrupt_include_p(rb_thread_t *th, VALUE err)
 {
     int i;
     for (i=0; i<RARRAY_LEN(th->pending_interrupt_queue); i++) {
-	VALUE e = RARRAY_PTR(th->pending_interrupt_queue)[i];
+	VALUE e = RARRAY_AREF(th->pending_interrupt_queue, i);
 	if (rb_class_inherited_p(e, err)) {
 	    return TRUE;
 	}
@@ -1597,7 +1597,7 @@ rb_threadptr_pending_interrupt_deque(rb_thread_t *th, enum handle_interrupt_timi
     int i;
 
     for (i=0; i<RARRAY_LEN(th->pending_interrupt_queue); i++) {
-	VALUE err = RARRAY_PTR(th->pending_interrupt_queue)[i];
+	VALUE err = RARRAY_AREF(th->pending_interrupt_queue, i);
 
 	enum handle_interrupt_timing mask_timing = rb_threadptr_pending_interrupt_check_mask(th, CLASS_OF(err));
 
@@ -3869,8 +3869,8 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE lines = (VALUE)val;
 
     for (i = 0; i < RARRAY_LEN(lines); i++) {
-	if (RARRAY_PTR(lines)[i] != Qnil) {
-	    RARRAY_PTR(lines)[i] = INT2FIX(0);
+	if (RARRAY_AREF(lines, i) != Qnil) {
+	    RARRAY_ASET(lines, i, INT2FIX(0));
 	}
     }
     return ST_CONTINUE;
@@ -5210,12 +5210,12 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
-	if (RARRAY_PTR(coverage)[line] == Qnil) {
+	if (RARRAY_AREF(coverage, line) == Qnil) {
 	    return;
 	}
-	count = FIX2LONG(RARRAY_PTR(coverage)[line]) + 1;
+	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;
 	if (POSFIXABLE(count)) {
-	    RARRAY_PTR(coverage)[line] = LONG2FIX(count);
+	    RARRAY_ASET(coverage, line, LONG2FIX(count));
 	}
     }
 }

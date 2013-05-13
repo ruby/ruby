@@ -817,8 +817,8 @@ sort_by_i(VALUE i, VALUE _data, int argc, VALUE *argv)
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
 
-    RARRAY_PTR(data->buf)[data->n*2] = v;
-    RARRAY_PTR(data->buf)[data->n*2+1] = i;
+    RARRAY_ASET(data->buf, data->n*2, v);
+    RARRAY_ASET(data->buf, data->n*2+1, i);
     data->n++;
     if (data->n == SORT_BY_BUFSIZE) {
 	rb_ary_concat(ary, data->buf);
@@ -955,7 +955,7 @@ enum_sort_by(VALUE obj)
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
     for (i=1; i<RARRAY_LEN(ary); i+=2) {
-	RARRAY_PTR(ary)[i/2] = RARRAY_PTR(ary)[i];
+	RARRAY_ASET(ary, i/2, RARRAY_AREF(ary, i));
     }
     rb_ary_resize(ary, RARRAY_LEN(ary)/2);
     RBASIC(ary)->klass = rb_cArray;
@@ -1725,7 +1725,7 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
     ary = enum_to_a(argc, argv, obj);
 
     for (i = RARRAY_LEN(ary); --i >= 0; ) {
-	rb_yield(RARRAY_PTR(ary)[i]);
+	rb_yield(RARRAY_AREF(ary, i));
     }
 
     return obj;
@@ -1800,7 +1800,7 @@ static VALUE
 enum_each_slice_size(VALUE obj, VALUE args)
 {
     VALUE n, size;
-    long slice_size = NUM2LONG(RARRAY_PTR(args)[0]);
+    long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0);
@@ -1867,7 +1867,7 @@ static VALUE
 enum_each_cons_size(VALUE obj, VALUE args)
 {
     VALUE n, size;
-    long cons_size = NUM2LONG(RARRAY_PTR(args)[0]);
+    long cons_size = NUM2LONG(RARRAY_AREF(args, 0));
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
 
     size = enum_size(obj, 0);
@@ -1955,13 +1955,13 @@ zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
     rb_ary_store(tmp, 0, rb_enum_values_pack(argc, argv));
     for (i=0; i<RARRAY_LEN(args); i++) {
-	VALUE e = RARRAY_PTR(args)[i];
+	VALUE e = RARRAY_AREF(args, i);
 
 	if (RARRAY_LEN(e) <= n) {
 	    rb_ary_push(tmp, Qnil);
 	}
 	else {
-	    rb_ary_push(tmp, RARRAY_PTR(e)[n]);
+	    rb_ary_push(tmp, RARRAY_AREF(e, n));
 	}
     }
     if (NIL_P(result)) {
@@ -1996,16 +1996,16 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
     rb_ary_store(tmp, 0, rb_enum_values_pack(argc, argv));
     for (i=0; i<RARRAY_LEN(args); i++) {
-	if (NIL_P(RARRAY_PTR(args)[i])) {
+	if (NIL_P(RARRAY_AREF(args, i))) {
 	    rb_ary_push(tmp, Qnil);
 	}
 	else {
 	    VALUE v[2];
 
-	    v[1] = RARRAY_PTR(args)[i];
+	    v[1] = RARRAY_AREF(args, i);
 	    rb_rescue2(call_next, (VALUE)v, call_stop, (VALUE)v, rb_eStopIteration, (VALUE)0);
 	    if (v[0] == Qundef) {
-		RARRAY_PTR(args)[i] = Qnil;
+		RARRAY_ASET(args, i, Qnil);
 		v[0] = Qnil;
 	    }
 	    rb_ary_push(tmp, v[0]);
@@ -2262,7 +2262,7 @@ enum_cycle_size(VALUE self, VALUE args)
     if (size == Qnil) return Qnil;
 
     if (args && (RARRAY_LEN(args) > 0)) {
-	n = RARRAY_PTR(args)[0];
+	n = RARRAY_AREF(args, 0);
     }
     if (n == Qnil) return DBL2NUM(INFINITY);
     mul = NUM2LONG(n);
@@ -2315,7 +2315,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     if (len == 0) return Qnil;
     while (n < 0 || 0 < --n) {
         for (i=0; i<len; i++) {
-            rb_yield(RARRAY_PTR(ary)[i]);
+            rb_yield(RARRAY_AREF(ary, i));
         }
     }
     return Qnil;

@@ -354,7 +354,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     rest = rb_ary_tmp_new(argc);
     for (i=0; i<argc; i++) {
 	id = rb_to_id(argv[i]);
-	RARRAY_PTR(rest)[i] = ID2SYM(id);
+	RARRAY_ASET(rest, i, ID2SYM(id));
 	rb_ary_set_len(rest, i+1);
     }
     if (NIL_P(name)) {

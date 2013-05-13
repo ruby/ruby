@@ -1666,11 +1666,11 @@ nurat_marshal_load(VALUE self, VALUE a)
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
-    if (f_zero_p(RARRAY_PTR(a)[1]))
+    if (f_zero_p(RARRAY_AREF(a, 1)))
 	rb_raise_zerodiv();
 
-    rb_ivar_set(self, id_i_num, RARRAY_PTR(a)[0]);
-    rb_ivar_set(self, id_i_den, RARRAY_PTR(a)[1]);
+    rb_ivar_set(self, id_i_num, RARRAY_AREF(a, 0));
+    rb_ivar_set(self, id_i_den, RARRAY_AREF(a, 1));
 
     return self;
 }

@@ -696,7 +696,7 @@ ary2sv(VALUE args, int dup)
         return Qnil;
 
       case 1:
-        return RARRAY_PTR(args)[0];
+        return RARRAY_AREF(args, 0);
 
       default:
         if (dup)
@@ -1474,7 +1474,7 @@ lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
     else {
 	long i;
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(yielder, id_yield, 1, RARRAY_PTR(ary)[i]);
+	    rb_funcall(yielder, id_yield, 1, RARRAY_AREF(ary, i));
 	}
     }
     return Qnil;
@@ -1487,7 +1487,7 @@ lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
     if (RB_TYPE_P(result, T_ARRAY)) {
 	long i;
 	for (i = 0; i < RARRAY_LEN(result); i++) {
-	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(result)[i]);
+	    rb_funcall(argv[0], id_yield, 1, RARRAY_AREF(result, i));
 	}
     }
     else {
@@ -1641,7 +1641,7 @@ lazy_zip_arrays_func(VALUE val, VALUE arrays, int argc, VALUE *argv)
     ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arrays); i++) {
-	rb_ary_push(ary, rb_ary_entry(RARRAY_PTR(arrays)[i], count));
+	rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
     rb_funcall(yielder, id_yield, 1, ary);
     rb_ivar_set(yielder, id_memo, LONG2NUM(++count));
@@ -1659,7 +1659,7 @@ lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
     if (NIL_P(arg)) {
 	arg = rb_ary_new2(RARRAY_LEN(zip_args));
 	for (i = 0; i < RARRAY_LEN(zip_args); i++) {
-	    rb_ary_push(arg, rb_funcall(RARRAY_PTR(zip_args)[i], id_to_enum, 0));
+	    rb_ary_push(arg, rb_funcall(RARRAY_AREF(zip_args, i), id_to_enum, 0));
 	}
 	rb_ivar_set(yielder, id_memo, arg);
     }
@@ -1667,7 +1667,7 @@ lazy_zip_func(VALUE val, VALUE zip_args, int argc, VALUE *argv)
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_rescue2(call_next, RARRAY_PTR(arg)[i], next_stopped, 0,
+	v = rb_rescue2(call_next, RARRAY_AREF(arg, i), next_stopped, 0,
 		       rb_eStopIteration, (VALUE)0);
 	rb_ary_push(ary, v);
     }
@@ -1731,7 +1731,7 @@ static VALUE
 lazy_take_size(VALUE generator, VALUE args, VALUE lazy)
 {
     VALUE receiver = lazy_size(lazy);
-    long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
+    long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(lazy, id_arguments), 0));
     if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
 	return receiver;
     return LONG2NUM(len);
@@ -1780,7 +1780,7 @@ lazy_take_while(VALUE obj)
 static VALUE
 lazy_drop_size(VALUE generator, VALUE args, VALUE lazy)
 {
-    long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
+    long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(lazy, id_arguments), 0));
     VALUE receiver = lazy_size(lazy);
     if (NIL_P(receiver))
 	return receiver;

@@ -1,3 +1,8 @@
+Mon May 13 18:44:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* *.c, parse.y, insns.def: use RARRAY_AREF/ASET macro
+	  instead of using RARRAY_PTR().
+
 Mon May 13 16:53:53 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: add new utility macros to access

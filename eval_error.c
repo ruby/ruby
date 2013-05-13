@@ -112,7 +112,7 @@ error_print(void)
 	error_pos();
     }
     else {
-	VALUE mesg = RARRAY_PTR(errat)[0];
+	VALUE mesg = RARRAY_AREF(errat, 0);
 
 	if (NIL_P(mesg))
 	    error_pos();
