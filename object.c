@@ -58,6 +58,15 @@ rb_obj_hide(VALUE obj)
     return obj;
 }
 
+VALUE
+rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
+{
+    RBASIC(obj)->flags = type;
+    RBASIC(obj)->klass = klass;
+    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT | FL_UNTRUSTED);
+    return obj;
+}
+
 /*
  *  call-seq:
  *     obj === other   -> true or false

@@ -1,3 +1,10 @@
+Mon May 13 15:31:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* object.c (rb_obj_setup): added.
+
+	* include/ruby/ruby.h (OBJSETUP): ues rb_obj_setup() instead of
+	  a macro.
+
 Mon May 13 15:24:16 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_data_object_alloc): check klass only if klass is not 0.
