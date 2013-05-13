@@ -510,6 +510,12 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
     return me;
 }
 
+rb_method_entry_t *
+rb_method_entry_at(VALUE klass, ID id)
+{
+    return lookup_method_table(klass, id);
+}
+
 /*
  * search method entry without the method cache.
  *

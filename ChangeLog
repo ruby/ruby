@@ -1,4 +1,7 @@
-Mon May 13 14:50:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 13 14:51:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_at): return the method entry for id at
+	  klass, without ancestors.
 
 	* class.c (rb_singleton_class_get): get the singleton class if exists,
 	  or nil.
