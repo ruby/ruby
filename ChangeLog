@@ -1,3 +1,18 @@
+Tue May 14 01:25:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: refactoring GC::Profiler.
+
+	* gc.c (gc_prof_sweep_timer_start/stop): removed because
+	  they doesn't support lazy sweep.
+
+	* gc.c (gc_prof_sweep_slot_timer_start/stop): added.
+	  redefine `sweeping time' to accumulated time of all of
+	  slot_sweep().
+
+	* gc.c (rb_objspace_t::profile::count): renamed to
+	  rb_objspace_t::profile::next_index. `counter' seems ambiguous.
+	  increment it when next record is acquired.
+
 Tue May 14 00:48:55 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: constify RRational::(num,den) and
