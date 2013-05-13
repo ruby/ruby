@@ -1,3 +1,8 @@
+Mon May 13 14:57:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_data_object_alloc, rb_data_typed_object_alloc):
+	  use NEWOBJ_OF() instead of NEWOBJ().
+
 Mon May 13 14:51:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_obj_singleton_method): new method Kernel#singleton_method

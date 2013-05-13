@@ -715,9 +715,8 @@ rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 VALUE
 rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
-    NEWOBJ(data, struct RData);
-    if (klass) Check_Type(klass, T_CLASS);
-    OBJSETUP(data, klass, T_DATA);
+    NEWOBJ_OF(data, struct RData, klass, T_DATA);
+    Check_Type(klass, T_CLASS);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
@@ -728,12 +727,8 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 VALUE
 rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 {
-    NEWOBJ(data, struct RTypedData);
-
+    NEWOBJ_OF(data, struct RTypedData, klass, T_DATA);
     if (klass) Check_Type(klass, T_CLASS);
-
-    OBJSETUP(data, klass, T_DATA);
-
     data->data = datap;
     data->typed_flag = 1;
     data->type = type;
