@@ -1,3 +1,19 @@
+Tue May 14 00:48:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: constify RRational::(num,den) and
+	  RComplex::(real,imag).
+	  Add macro to set these values:
+	    * RRATIONAL_SET_NUM()
+	    * RRATIONAL_SET_DEN()
+	    * RCOMPLEX_SET_REAL()
+	    * RCOMPLEX_SET_IMAG()
+	  This change is a part of RGENGC branch [ruby-trunk - Feature #8339].
+
+	  TODO: API design. RRATIONAL_SET(rat,num,den) is enough?
+	  TODO: Setting constify variable with cast has same issue of r40691.
+
+	* complex.c, rational.c: use above macros.
+
 Mon May 13 21:49:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: Check socketpair again.

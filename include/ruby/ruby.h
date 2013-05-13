@@ -931,15 +931,21 @@ struct RFile {
 
 struct RRational {
     struct RBasic basic;
-    VALUE num;
-    VALUE den;
+    const VALUE num;
+    const VALUE den;
 };
+
+#define RRATIONAL_SET_NUM(rat, n) (*((VALUE *)(&((struct RRational *)(rat))->num)) = (n))
+#define RRATIONAL_SET_DEN(rat, d) (*((VALUE *)(&((struct RRational *)(rat))->den)) = (d))
 
 struct RComplex {
     struct RBasic basic;
-    VALUE real;
-    VALUE imag;
+    const VALUE real;
+    const VALUE imag;
 };
+
+#define RCOMPLEX_SET_REAL(cmp, r) (*((VALUE *)(&((struct RComplex *)(cmp))->real)) = (r))
+#define RCOMPLEX_SET_IMAG(cmp, i) (*((VALUE *)(&((struct RComplex *)(cmp))->imag)) = (i))
 
 struct RData {
     struct RBasic basic;

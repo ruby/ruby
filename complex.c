@@ -315,8 +315,8 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 {
     NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX);
 
-    obj->real = real;
-    obj->imag = imag;
+    RCOMPLEX_SET_REAL(obj, real);
+    RCOMPLEX_SET_IMAG(obj, imag);
 
     return (VALUE)obj;
 }
@@ -1332,8 +1332,8 @@ nucomp_loader(VALUE self, VALUE a)
 {
     get_dat1(self);
 
-    dat->real = rb_ivar_get(a, id_i_real);
-    dat->imag = rb_ivar_get(a, id_i_imag);
+    RCOMPLEX_SET_REAL(dat, rb_ivar_get(a, id_i_real));
+    RCOMPLEX_SET_IMAG(dat, rb_ivar_get(a, id_i_imag));
 
     return self;
 }
