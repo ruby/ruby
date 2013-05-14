@@ -3,10 +3,38 @@ require 'stringio'
 require 'tempfile'
 require 'date'
 require 'psych'
-require_relative '../ruby/envutil'
 
 module Psych
   class TestCase < MiniTest::Unit::TestCase
+    def self.suppress_warning
+      verbose, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def with_default_external(enc)
+      verbose, $VERBOSE = $VERBOSE, nil
+      origenc, Encoding.default_external = Encoding.default_external, enc
+      $VERBOSE = verbose
+      yield
+    ensure
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_external = origenc
+      $VERBOSE = verbose
+    end
+
+    def with_default_internal(enc)
+      verbose, $VERBOSE = $VERBOSE, nil
+      origenc, Encoding.default_internal = Encoding.default_internal, enc
+      $VERBOSE = verbose
+      yield
+    ensure
+      verbose, $VERBOSE = $VERBOSE, nil
+      Encoding.default_internal = origenc
+      $VERBOSE = verbose
+    end
+
     #
     # Convert between Psych and the object to verify correct parsing and
     # emitting

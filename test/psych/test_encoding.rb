@@ -110,8 +110,8 @@ module Psych
     end
 
     def test_to_yaml_is_valid
-      EnvUtil.with_default_external(Encoding::US_ASCII) do
-        EnvUtil.with_default_internal(nil) do
+      with_default_external(Encoding::US_ASCII) do
+        with_default_internal(nil) do
           s = "こんにちは！"
           # If no encoding is specified, use UTF-8
           assert_equal Encoding::UTF_8, Psych.dump(s).encoding
@@ -182,7 +182,7 @@ module Psych
     end
 
     def test_default_internal
-      EnvUtil.with_default_internal(Encoding::EUC_JP) do
+      with_default_internal(Encoding::EUC_JP) do
         str  = "壁に耳あり、障子に目あり"
         assert_equal @utf8, str.encoding
 

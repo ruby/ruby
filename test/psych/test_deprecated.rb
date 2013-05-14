@@ -147,7 +147,7 @@ module Psych
     end
 
     class YamlAs
-      EnvUtil.suppress_warning do
+      TestCase.suppress_warning do
         psych_yaml_as 'helloworld' # this should be yaml_as but to avoid syck
       end
     end
