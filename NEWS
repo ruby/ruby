@@ -22,6 +22,10 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * IO#seek accepts symbols (:CUR, :END, :SET) for 2nd argument.
 
+* Kernel
+  * New methods:
+    * Kernel#singleton_method
+
 * Mutex
   * misc
     * Mutex#owned? is no longer experimental.
