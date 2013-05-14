@@ -31,7 +31,7 @@ Tue May 14 03:10:59 2013  Koichi Sasada  <ko1@atdot.net>
 Tue May 14 02:47:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: support RGENGC. [ruby-trunk - Feature #8339]
-	  See this ticet about RGENGC.
+	  See this ticket about RGENGC.
 
 	* gc.c: Add several flags:
 	  * RGENGC_DEBUG: if >0, then prints debug information.
@@ -88,8 +88,6 @@ Tue May 14 01:54:48 2013  Koichi Sasada  <ko1@atdot.net>
 	* gc.c (gc_prepare_free_objects): do not call set_heaps_increment()
 	  with checking objspace->heap.marked_num. At this point, we only
 	  need to check availability of free-cell.
-
-	* gc.c (gc_prepare_free_objects): 
 
 	* gc.c (lazy_sweep): call after_gc_sweep() if there are no sweep_able entry.
 
