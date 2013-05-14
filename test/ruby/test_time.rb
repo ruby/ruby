@@ -14,6 +14,11 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def no_leap_seconds?
+    # 1972-06-30T23:59:60Z is the first leap second.
+    Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
+  end
+
   def get_t2000
     if no_leap_seconds?
       # Sat Jan 01 00:00:00 UTC 2000
