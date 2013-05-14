@@ -115,9 +115,9 @@ rsock_getifaddrs(void)
 
 /*
  * call-seq:
- *   getifaddr.name => string
+ *   ifaddr.name => string
  *
- * Returns the interface name of _getifaddr_.
+ * Returns the interface name of _ifaddr_.
  */
 
 static VALUE
@@ -130,9 +130,9 @@ ifaddr_name(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.ifindex => integer
+ *   ifaddr.ifindex => integer
  *
- * Returns the interface index of _getifaddr_.
+ * Returns the interface index of _ifaddr_.
  */
 
 static VALUE
@@ -149,9 +149,9 @@ ifaddr_ifindex(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.flags => integer
+ *   ifaddr.flags => integer
  *
- * Returns the flags of _getifaddr_.
+ * Returns the flags of _ifaddr_.
  */
 
 static VALUE
@@ -164,10 +164,10 @@ ifaddr_flags(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.addr => addrinfo
+ *   ifaddr.addr => addrinfo
  *
- * Returns the address of _getifaddr_.
- * nil is returned if address is not available in _getifaddr_.
+ * Returns the address of _ifaddr_.
+ * nil is returned if address is not available in _ifaddr_.
  */
 
 static VALUE
@@ -182,10 +182,10 @@ ifaddr_addr(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.netmask => addrinfo
+ *   ifaddr.netmask => addrinfo
  *
- * Returns the netmask address of _getifaddr_.
- * nil is returned if netmask is not available in _getifaddr_.
+ * Returns the netmask address of _ifaddr_.
+ * nil is returned if netmask is not available in _ifaddr_.
  */
 
 static VALUE
@@ -200,9 +200,9 @@ ifaddr_netmask(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.broadaddr => addrinfo
+ *   ifaddr.broadaddr => addrinfo
  *
- * Returns the broadcast address of _getifaddr_.
+ * Returns the broadcast address of _ifaddr_.
  * nil is returned if the flags doesn't have IFF_BROADCAST.
  */
 
@@ -218,9 +218,9 @@ ifaddr_broadaddr(VALUE self)
 
 /*
  * call-seq:
- *   getifaddr.dstaddr => addrinfo
+ *   ifaddr.dstaddr => addrinfo
  *
- * Returns the destination address of _getifaddr_.
+ * Returns the destination address of _ifaddr_.
  * nil is returned if the flags doesn't have IFF_POINTOPOINT.
  */
 
@@ -305,9 +305,9 @@ ifaddr_inspect_flags(unsigned int flags, VALUE result)
 
 /*
  * call-seq:
- *   getifaddr.inspect => string
+ *   ifaddr.inspect => string
  *
- * Returns a string to show contents of _getifaddr_.
+ * Returns a string to show contents of _ifaddr_.
  */
 
 static VALUE
