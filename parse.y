@@ -6179,7 +6179,7 @@ const unsigned int ruby_global_name_punct_bits[] = {
 #endif
 
 static inline int
-is_global_name_punct(const char c)
+is_global_name_punct(const int c)
 {
     if (c <= 0x20 || 0x7e < c) return 0;
     return (ruby_global_name_punct_bits[(c - 0x20) / 32] >> (c % 32)) & 1;
