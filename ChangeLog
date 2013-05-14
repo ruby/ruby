@@ -1,3 +1,11 @@
+Tue May 14 11:24:22 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_ssl.c: Correct shutdown behavior w.r.t GC.
+
+	* test/openssl/test_ssl.rb: Add tests to verify correct behavior.
+
+	[Bug #8240] Patch provided by Shugo Maeda. Thanks!
+
 Tue May 14 11:22:33 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in (AC_CHECK_HEADERS): atomic.h for Solaris atomic_ops.
