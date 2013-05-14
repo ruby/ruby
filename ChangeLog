@@ -1,7 +1,7 @@
 Tue May 14 14:51:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (INTPTR_MAX, INTPTR_MIN, UINTPTR_MAX): split
-	  from intptr_t and uintptr_t, since VC9 defines the latters only in
+	  from intptr_t and uintptr_t, since VC9 defines the latter only in
 	  crtdefs.h.
 
 Tue May 14 12:21:28 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
