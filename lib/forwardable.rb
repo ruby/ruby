@@ -27,14 +27,24 @@
 # Further, if you wish to provide the methods #size, #<<, and #map,
 # all of which delegate to @records, this is how you can do it:
 #
+#   require 'forwardable'
+#
 #   class RecordCollection
-#     # extend Forwardable, but we did that above
+#     extend Forwardable
+#     def_delegator :@records, :[], :record_number
 #     def_delegators :@records, :size, :<<, :map
+#
+#     def initialize
+#       @records = [1, 2, 3]
+#     end
+#
 #   end
+#
 #   r = RecordCollection.new
-#   r.size
-#   r << ...
-#   r.map { ... }
+#   r.record_number(0)   # => 1
+#   r.size               # => 3
+#   r << 4               # => [1, 2, 3, 4]
+#   r.map { |x| x * 2 }  # => [2, 4, 6, 8]
 #
 # If the object isn't a Module and Class, You can too extend Forwardable
 # module.
