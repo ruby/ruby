@@ -1,3 +1,13 @@
+Tue May 14 10:42:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): ensure symbols for tests to be
+	  preserved.  [ruby-core:53745] [Bug #8169]
+
+Tue May 14 10:42:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): force to refer symbols for tests
+	  to be preserved.  [ruby-core:53745] [Bug #8169]
+
 Tue May 14 10:39:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regexec.c (onig_search): fix problem with optimization of \z.
