@@ -98,10 +98,10 @@ static ruby_gc_params_t initial_params = {
 
 #if USE_RGENGC
 /* RGENGC_DEBUG:
- * 1: 
+ * 1:
  * 2: remember set operation
  * 3: mark
- * 4: 
+ * 4:
  * 5: sweep
  */
 #ifndef RGENGC_DEBUG

@@ -192,14 +192,14 @@ Mon May 13 19:29:54 2013  Koichi Sasada  <ko1@atdot.net>
 	    without write barrier (planned).
 	  * RCLASS_SET_SUPER(a, b) set super class of a.
 
-	* array.c, class.c, compile.c, encoding.c, enum.c, error.c, eval.c, 
-	  file.c, gc.c, hash.c, io.c, iseq.c, marshal.c, object.c, 
+	* array.c, class.c, compile.c, encoding.c, enum.c, error.c, eval.c,
+	  file.c, gc.c, hash.c, io.c, iseq.c, marshal.c, object.c,
 	  parse.y, proc.c, process.c, random.c, ruby.c, sprintf.c,
-	  string.c, thread.c, transcode.c, vm.c, vm_eval.c, win32/file.c: 
+	  string.c, thread.c, transcode.c, vm.c, vm_eval.c, win32/file.c:
 	  Use above macros and functions to access RBasic::klass.
 
 	* ext/coverage/coverage.c, ext/readline/readline.c,
-	  ext/socket/ancdata.c, ext/socket/init.c, 
+	  ext/socket/ancdata.c, ext/socket/init.c,
 	* ext/zlib/zlib.c: ditto.
 
 Mon May 13 18:44:14 2013  Koichi Sasada  <ko1@atdot.net>
