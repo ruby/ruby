@@ -1,3 +1,15 @@
+Tue May 14 23:24:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb: check for if_nametoindex() for
+	  i686-w64-mingw32, and check for declarations of if_indextoname() and
+	  if_nametoindex().
+
+	* ext/socket/ifaddr.c (ifaddr_ifindex): not-implement unless
+	  if_nametoindex() is available.
+
+	* ext/socket/rubysocket.h: declare if_indextoname() and
+	  if_nametoindex() if available but not declared.
+
 Tue May 14 19:58:17 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#call): check tainted when

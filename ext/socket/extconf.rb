@@ -421,7 +421,20 @@ EOF
 
   have_func("getpeerucred(0, (ucred_t **)NULL)", headers) # SunOS
 
-  have_func('if_indextoname(0, "")', headers)
+  have_func_decl = proc do |name, headers|
+    if !checking_for("declaration of #{name}()") {!%w[int void].all? {|ret| try_compile(<<EOF)}}
+#{cpp_include(headers)}
+#{ret} #{name}(void);
+EOF
+      $defs << "-DNEED_#{name.tr_cpp}_DECL"
+    end
+  end
+  if have_func('if_indextoname(0, "")', headers)
+    have_func_decl["if_indextoname"]
+  end
+  if have_func('if_nametoindex("")', headers)
+    have_func_decl["if_nametoindex"]
+  end
 
   have_func("hsterror", headers)
   have_func('getipnodebyname("", 0, 0, (int *)0)', headers) # RFC 2553

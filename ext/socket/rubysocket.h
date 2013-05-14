@@ -106,6 +106,13 @@
 typedef int socklen_t;
 #endif
 
+#ifdef NEED_IF_INDEXTONAME_DECL
+char *if_indextoname(unsigned int, char *);
+#endif
+#ifdef NEED_IF_NAMETOINDEX_DECL
+unsigned int if_nametoindex(const char *);
+#endif
+
 #define SOCKLEN_MAX \
   (0 < (socklen_t)-1 ? \
    ~(socklen_t)0 : \

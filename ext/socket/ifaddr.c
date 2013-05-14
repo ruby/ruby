@@ -135,6 +135,7 @@ ifaddr_name(VALUE self)
  * Returns the interface index of _ifaddr_.
  */
 
+#ifdef HAVE_IF_NAMETOINDEX
 static VALUE
 ifaddr_ifindex(VALUE self)
 {
@@ -146,6 +147,9 @@ ifaddr_ifindex(VALUE self)
     }
     return UINT2NUM(ifindex);
 }
+#else
+#define ifaddr_ifindex rb_f_notimplement
+#endif
 
 /*
  * call-seq:
