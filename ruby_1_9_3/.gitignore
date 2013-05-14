@@ -1,0 +1,131 @@
+*-*-*.def
+*.a
+*.bak
+*.dSYM
+*.dylib
+*.inc
+*.log
+*.o
+*.orig
+*.rej
+*.sav
+*.swp
+*~
+.*-*
+.*.list
+.*.time
+.DS_Store
+.ccmalloc
+.ext
+.pc
+.ppack
+.svn
+Makefile
+extconf.h
+y.output
+y.tab.c
+
+# /
+/*.pc
+/*_prelude.c
+/COPYING.LIB
+/ChangeLog-1.8.0
+/ChangeLog.pre-alpha
+/ChangeLog.pre1_1
+/Doxyfile
+/GNUmakefile
+/README.atheos
+/README.fat-patch
+/README.v6
+/TAGS
+/archive
+/autom4te*.cache
+/automake
+/beos
+/breakpoints.gdb
+/config.cache
+/config.h
+/config.h.in
+/config.status
+/config.status.lineno
+/configure
+/doc/capi
+/enc.mk
+/enc/trans/*.c
+/encdb.h
+/exts.mk
+/goruby
+/id.h
+/largefile.h
+/lex.c
+/libruby*.*
+/miniprelude.c
+/miniruby
+/newdate.rb
+/newline.c
+/newver.rb
+/parse.c
+/parse.h
+/patches
+/patches-master
+/pitest.rb
+/ppack
+/prelude.c
+/preview
+/rbconfig.rb
+/rename2.h
+/repack
+/revision.h
+/riscos
+/rubicon
+/ruby
+/ruby-man.rd.gz
+/test.rb
+/tmp
+/transdb.h
+/uncommon.mk
+/web
+/yasmdata.rb
+
+# /benchmark/
+/benchmark/bmx_*.rb
+
+# /enc/trans/
+/enc/trans/*.c
+
+# /ext/
+/ext/extinit.c
+
+# /ext/dl/
+/ext/dl/*.func
+
+# /ext/dl/callback/
+/ext/dl/callback/*.func
+/ext/dl/callback/callback-*.c
+/ext/dl/callback/callback.c
+
+# /ext/iconv/
+/ext/iconv/config.charset
+/ext/iconv/iconv.rb
+
+# /ext/ripper/
+/ext/ripper/eventids1.c
+/ext/ripper/eventids2table.c
+/ext/ripper/ripper.*
+/ext/ripper/ids1
+/ext/ripper/ids2
+
+# /ext/socket/
+/ext/socket/constants.h
+/ext/socket/constdefs.h
+/ext/socket/constdefs.c
+
+# /ext/tk/
+/ext/tk/config_list
+
+# /spec/
+/spec/mspec
+/spec/rubyspec
+
+# /win32/
+/win32/*.ico
