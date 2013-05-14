@@ -3736,6 +3736,7 @@ socketpair(int af, int type, int protocol, int *sv)
     return 0;
 }
 
+#if !defined(_MSC_VER) || _MSC_VER >= 1400
 /* License: Ruby's */
 static void
 str2guid(const char *str, GUID *guid)
@@ -3879,6 +3880,7 @@ freeifaddrs(struct ifaddrs *ifp)
 	ifp = next;
     }
 }
+#endif
 
 //
 // Networking stubs
