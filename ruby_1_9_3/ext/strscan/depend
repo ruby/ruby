@@ -1,2 +1,0 @@
-strscan.o: strscan.c $(hdrdir)/ruby.h $(hdrdir)/re.h $(hdrdir)/regex.h \
-	   $(hdrdir)/oniguruma.h $(topdir)/config.h $(hdrdir)/defines.h

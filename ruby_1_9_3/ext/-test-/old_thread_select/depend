@@ -1,2 +1,0 @@
-old_thread_select.o: $(top_srcdir)/thread.c \
-  $(hdrdir)/ruby/ruby.h $(hdrdir)/ruby/io.h
