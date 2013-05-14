@@ -2,6 +2,7 @@ ancdata.c
 basicsocket.c
 constants.c
 constdefs.c
+ifaddr.c
 init.c
 ipsocket.c
 option.c
