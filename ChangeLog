@@ -1,3 +1,8 @@
+Wed May 15 03:56:09 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: adding backwards
+	  compatible YAMLTree.new method
+
 Wed May 15 02:22:16 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: Adding Psych.safe_load for loading a user
