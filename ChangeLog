@@ -1,3 +1,11 @@
+Tue May 14 20:25:58 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#call): check tainted when
+	  $SAFE > 0.
+	* ext/fiddle/function.c (function_call): check tainted when $SAFE > 0.
+	* test/fiddle/test_func.rb (module Fiddle): add test for above.
+
+
 Tue May 14 11:36:22 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (getacl_response): parse the mailbox of an ACL
