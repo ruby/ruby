@@ -1,3 +1,11 @@
+Tue May 14 19:58:17 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#call): check tainted when
+	  $SAFE > 0.
+	* ext/fiddle/function.c (function_call): check tainted when $SAFE > 0.
+	* test/fiddle/test_func.rb (module Fiddle): add test for above.
+
+
 Tue May 14 14:51:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (INTPTR_MAX, INTPTR_MIN, UINTPTR_MAX): split

@@ -92,6 +92,9 @@ module DL
         super
       else
         funcs = []
+        if $SAFE >= 1 && args.any? { |x| x.tainted? }
+          raise SecurityError, "tainted parameter not allowed"
+        end
         _args = wrap_args(args, @stack.types, funcs, &block)
         r = @cfunc.call(@stack.pack(_args))
         funcs.each{|f| f.unbind_at_call()}
