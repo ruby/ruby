@@ -127,16 +127,6 @@ class Gem::ConfigFile
   attr_accessor :update_sources
 
   ##
-  # API key for RubyGems.org
-
-  attr_reader :rubygems_api_key
-
-  ##
-  # Hash of RubyGems.org and alternate API keys
-
-  attr_reader :api_keys
-
-  ##
   # True if we want to force specification of gem server when pushing a gem
 
   attr_accessor :disable_default_gem_server
@@ -221,10 +211,20 @@ class Gem::ConfigFile
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
 
-    load_api_keys
+    @api_keys         = nil
+    @rubygems_api_key = nil
 
     Gem.sources = @hash[:sources] if @hash.key? :sources
     handle_arguments arg_list
+  end
+
+  ##
+  # Hash of RubyGems.org and alternate API keys
+
+  def api_keys
+    load_api_keys unless @api_keys
+
+    @api_keys
   end
 
   ##
@@ -273,10 +273,23 @@ if you believe they were disclosed to a third party.
                 end
 
     if @api_keys.key? :rubygems_api_key then
-      @rubygems_api_key = @api_keys[:rubygems_api_key]
-      @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless @api_keys.key? :rubygems
+      @rubygems_api_key    = @api_keys[:rubygems_api_key]
+      @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless
+        @api_keys.key? :rubygems
     end
   end
+
+  ##
+  # Returns the RubyGems.org API key
+
+  def rubygems_api_key
+    load_api_keys unless @rubygems_api_key
+
+    @rubygems_api_key
+  end
+
+  ##
+  # Sets the RubyGems.org API key to +api_key+
 
   def rubygems_api_key= api_key
     check_credentials_permissions

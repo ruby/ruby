@@ -164,6 +164,21 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 2048, @cfg.bulk_threshold
   end
 
+  def test_api_keys
+    assert_nil @cfg.instance_variable_get :@api_keys
+
+    temp_cred = File.join Gem.user_home, '.gem', 'credentials'
+    FileUtils.mkdir File.dirname(temp_cred)
+    File.open temp_cred, 'w', 0600 do |fp|
+      fp.puts ':rubygems_api_key: 701229f217cdf23b1344c7b4b54ca97'
+    end
+
+    util_config_file
+
+    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97'},
+                 @cfg.api_keys)
+  end
+
   def test_check_credentials_permissions
     skip 'chmod not supported' if win_platform?
 
