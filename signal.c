@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include "ruby_atomic.h"
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #if !defined(_WIN32) && !defined(HAVE_GCC_ATOMIC_BUILTINS)
 rb_atomic_t
