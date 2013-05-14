@@ -364,12 +364,12 @@ module Net
 
     # Seconds to wait while attempting to open a connection.
     # If the connection cannot be opened within this time, a
-    # TimeoutError is raised.
+    # TimeoutError is raised. The default value is 30 seconds.
     attr_accessor :open_timeout
 
     # Seconds to wait while reading one block (by one read(2) call).
     # If the read(2) call does not complete within this time, a
-    # TimeoutError is raised.
+    # TimeoutError is raised. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Set the number of seconds to wait until timing-out a read(2)
