@@ -1,3 +1,8 @@
+Tue May 14 11:36:22 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (getacl_response): parse the mailbox of an ACL
+	  response correctly.  [ruby-core:54365] [Bug #8281]
+
 Tue May 14 11:24:22 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/ossl_ssl.c: Correct shutdown behavior w.r.t GC.
