@@ -19,6 +19,9 @@
 #include "ruby_atomic.h"
 #include "eval_intern.h"
 #include "internal.h"
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/signal.h"
