@@ -63,7 +63,7 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
 # endif
 
-#elif defined(__sun)
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
 #include <atomic.h>
 typedef unsigned int rb_atomic_t;
 
