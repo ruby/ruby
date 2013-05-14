@@ -5,7 +5,7 @@ module Psych
     class TestYAMLTree < TestCase
       def setup
         super
-        @v = Visitors::YAMLTree.new
+        @v = Visitors::YAMLTree.create
       end
 
       def test_tree_can_be_called_twice
@@ -18,7 +18,7 @@ module Psych
       def test_yaml_tree_can_take_an_emitter
         io = StringIO.new
         e  = Psych::Emitter.new io
-        v = Visitors::YAMLTree.new({}, e)
+        v = Visitors::YAMLTree.create({}, e)
         v.start
         v << "hello world"
         v.finish

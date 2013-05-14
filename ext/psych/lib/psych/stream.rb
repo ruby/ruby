@@ -32,5 +32,6 @@ module Psych
     end
 
     include Psych::Streaming
+    extend Psych::Streaming::ClassMethods
   end
 end

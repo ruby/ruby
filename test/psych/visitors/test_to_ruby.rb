@@ -6,7 +6,7 @@ module Psych
     class TestToRuby < TestCase
       def setup
         super
-        @visitor = ToRuby.new
+        @visitor = ToRuby.create
       end
 
       def test_object
@@ -88,7 +88,7 @@ description:
       end
 
       def test_exception
-        exc = Exception.new 'hello'
+        exc = ::Exception.new 'hello'
 
         mapping = Nodes::Mapping.new nil, '!ruby/exception'
         mapping.children << Nodes::Scalar.new('message')

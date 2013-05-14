@@ -1,3 +1,7 @@
+require 'psych/tree_builder'
+require 'psych/scalar_scanner'
+require 'psych/class_loader'
+
 module Psych
   module Visitors
     ###
@@ -36,7 +40,14 @@ module Psych
       alias :finished? :finished
       alias :started? :started
 
-      def initialize options = {}, emitter = TreeBuilder.new, ss = ScalarScanner.new
+      def self.create options = {}, emitter = nil
+        emitter      ||= TreeBuilder.new
+        class_loader = ClassLoader.new
+        ss           = ScalarScanner.new class_loader
+        new(emitter, ss, options)
+      end
+
+      def initialize emitter, ss, options
         super()
         @started  = false
         @finished = false
