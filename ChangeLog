@@ -360,8 +360,6 @@ Sun May 12 17:52:23 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun May 12 17:25:46 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* configure.in: removes AC_CHECK_FUNCS(truncate64) because it's
-	  unused.
 	* file.c (rb_file_s_truncate): use correct type. chsize takes
 	  a long.
 
