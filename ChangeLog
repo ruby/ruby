@@ -1,3 +1,8 @@
+Thu May 16 05:47:18 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix syntax error.
+	  Thanks @spastorino! [ruby-core:55011]
+
 Thu May 16 03:05:45 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_node_newnode): use newobj_of() instead of rb_newobj().
