@@ -48,10 +48,10 @@
 #
 # You can even extend regular objects with Forwardable.
 #
-#   printer = String.new
-#   printer.extend Forwardable              # prepare object for delegation
-#   printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
-#   printer.puts "Howdy!"
+#   my_hash = Hash.new
+#   my_hash.extend Forwardable              # prepare object for delegation
+#   my_hash.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
+#   my_hash.puts "Howdy!"
 #
 # == Another example
 #
