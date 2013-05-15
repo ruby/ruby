@@ -169,7 +169,6 @@ $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
 		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
-		$(Q) $(POSTLINK)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
