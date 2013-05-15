@@ -51,7 +51,7 @@ module Psych
         return super if emitter && ss && options
 
         if $VERBOSE
-          warn "This API is deprecated, please pass an emitter, scalar scanner, and options or call #{self.class}.create() (#{caller.first})"
+          warn "This API is deprecated, please pass an emitter, scalar scanner, and options or call #{class}.create() (#{caller.first})"
         end
         create emitter, ss
       end
