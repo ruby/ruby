@@ -699,6 +699,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
+#define RUBY_PLATFORM "$(arch)"
+#define RUBY_SITEARCH "$(sitearch)"
 #if 0
 $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
 config.h: nul
@@ -706,14 +708,13 @@ $(BANG)endif
 #endif
 #endif /* $(guard) */
 <<
-	@echo Creating verconf.h
-	@$(IFCHANGE) verconf.h <<
+	@echo Creating verconf.in
+	@$(IFCHANGE) verconf.in <<
 #define RUBY_LIB_VERSION_STYLE 3	/* full */
-#define RUBY_LIB_PREFIX "/lib/$(RUBY_BASE_NAME)"
-#define RUBY_PLATFORM "$(arch)"
-#define RUBY_SITEARCH "$(sitearch)"
+#define RUBY_EXEC_PREFIX ""
 <<
 	@exit > $(@:/=\)
+	@if exist verconf.h del verconf.h
 
 #!if exist($(RUBY_CONFIG_H))
 #! if exist(config_h.bak)
