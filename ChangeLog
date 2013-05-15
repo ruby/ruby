@@ -1,3 +1,8 @@
+Wed May 15 23:22:09 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* include/ruby/intern.h: should include sys/time.h for struct timeval
+	  if it exists. [ruby-list:49363]
+
 Tue May 14 20:21:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/config_file.rb:  Lazily load .gem/credentials to only
