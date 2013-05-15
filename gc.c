@@ -109,14 +109,19 @@ static ruby_gc_params_t initial_params = {
 #endif
 
 /* RGENGC_CHECK_MODE
- * 0:
- * 1: enable assertions
+ * 0: disable all assertions
+ * 1: enable assertions (to debug RGenGC)
  * 2: enable bits check (for debugging)
  */
 #ifndef RGENGC_CHECK_MODE
 #define RGENGC_CHECK_MODE  0
 #endif
 
+/* RGENGC_PROFILE
+ * 0: disable RGenGC profiling
+ * 1: enable profiling for basic information
+ * 2: enable profiling for each types
+ */
 #ifndef RGENGC_PROFILE
 #define RGENGC_PROFILE     0
 #endif
@@ -297,6 +302,9 @@ typedef struct rb_objspace {
 	size_t shade_operation_count;
 	size_t remembered_sunny_object_count;
 	size_t remembered_shady_object_count;
+#if RGENGC_PROFILE >= 2
+	size_t generated_shady_object_count_types[RUBY_T_MASK];
+#endif
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 
@@ -801,7 +809,12 @@ newobj(VALUE klass, VALUE flags)
 
 #if RGENGC_PROFILE
     if (flags & FL_WB_PROTECTED) objspace->profile.generated_sunny_object_count++;
-    else                    objspace->profile.generated_shady_object_count++;
+    else {
+	objspace->profile.generated_shady_object_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.generated_shady_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
 #endif
 
     MEMZERO((void*)obj, RVALUE, 1);
@@ -2824,9 +2837,9 @@ rb_objspace_markable_object_p(VALUE obj)
 }
 
 static const char *
-obj_type_name(VALUE obj)
+type_name(int type, VALUE obj)
 {
-    switch (TYPE(obj)) {
+    switch (type) {
 #define TYPE_NAME(t) case (t): return #t;
 	    TYPE_NAME(T_NONE);
 	    TYPE_NAME(T_OBJECT);
@@ -2853,13 +2866,19 @@ obj_type_name(VALUE obj)
 	    TYPE_NAME(T_ICLASS);
 	    TYPE_NAME(T_ZOMBIE);
       case T_DATA:
-	if (rb_objspace_data_type_name(obj)) {
+	if (obj && rb_objspace_data_type_name(obj)) {
 	    return rb_objspace_data_type_name(obj);
 	}
 	return "T_DATA";
 #undef TYPE_NAME
     }
     return "unknown";
+}
+
+static const char *
+obj_type_name(VALUE obj)
+{
+    return type_name(TYPE(obj), obj);
 }
 
 static void
@@ -3874,6 +3893,17 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_shade_operation_count, SIZET2NUM(objspace->profile.shade_operation_count));
     rb_hash_aset(hash, sym_remembered_sunny_object_count, SIZET2NUM(objspace->profile.remembered_sunny_object_count));
     rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
+#if RGENGC_PROFILE >= 2
+    {
+	VALUE types = rb_hash_new();
+	int i;
+	for (i=0; i<T_MASK; i++) {
+	    const char *type = type_name(i, 0);
+	    rb_hash_aset(types, ID2SYM(rb_intern(type)), SIZET2NUM(objspace->profile.generated_shady_object_count_types[i]));
+	}
+	rb_hash_aset(hash, ID2SYM(rb_intern("generated_shady_object_count_types")), types);
+    }
+#endif
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 
