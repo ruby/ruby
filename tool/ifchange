@@ -2,6 +2,7 @@
 # usage: ifchange target temporary
 
 timestamp=
+keepsuffix=
 until [ "$0" = 0 ]; do
     case "$1" in
 	--timestamp)
@@ -9,6 +10,12 @@ until [ "$0" = 0 ]; do
 	    ;;
 	--timestamp=*)
 	    timestamp=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
+	--keep)
+	    keepsuffix=.old
+	    ;;
+	--keep=*)
+	    keepsuffix=`expr \( "$1" : '[^=]*=\(.*\)' \)`
 	    ;;
 	*)
 	    break
@@ -30,6 +37,7 @@ if cmp "$target" "$temp" >/dev/null 2>&1; then
     rm -f "$temp"
 else
     echo "$target updated"
+    ${keepsuffix:+ mv -f "$target" "${target}${keepsuffix}" }
     mv -f "$temp" "$target"
 fi
 
