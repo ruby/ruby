@@ -863,15 +863,8 @@ rb_newobj_of(VALUE klass, VALUE flags)
 NODE*
 rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
-    NODE *n = (NODE*)rb_newobj();
-
-    n->flags |= T_NODE;
+    NODE *n = (NODE *)newobj_of(0, T_NODE, a0, a1, a2);
     nd_set_type(n, type);
-
-    n->u1.value = a0;
-    n->u2.value = a1;
-    n->u3.value = a2;
-
     return n;
 }
 
