@@ -4,7 +4,7 @@ Wed May 15 18:58:17 2013  Koichi Sasada  <ko1@atdot.net>
 	  three parameters v1, v2, v3. newobj_of() do OBJSETUP() and
 	  fill values with v1, v2, v3.
 
-	* gc.c (rb_data_object_alloc, rb_data_typed_object_alloc): 
+	* gc.c (rb_data_object_alloc, rb_data_typed_object_alloc):
 	  use newobj_of().
 
 Wed May 15 17:55:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
