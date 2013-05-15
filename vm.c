@@ -682,7 +682,7 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr)
 {
-    volatile VALUE val = Qundef;
+    VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
 
