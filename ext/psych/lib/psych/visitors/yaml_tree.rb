@@ -50,7 +50,9 @@ module Psych
       def self.new emitter = nil, ss = nil, options = nil
         return super if emitter && ss && options
 
-        warn "This API is deprecated, please pass an emitter, scalar scanner, and options or call #{self.class}.create() (#{caller.first})"
+        if $VERBOSE
+          warn "This API is deprecated, please pass an emitter, scalar scanner, and options or call #{self.class}.create() (#{caller.first})"
+        end
         create emitter, ss
       end
 

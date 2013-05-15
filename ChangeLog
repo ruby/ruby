@@ -1,3 +1,8 @@
+Thu May 16 01:25:07 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: only emit warnings when
+	  -w is enabled.
+
 Wed May 15 18:58:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (newobj): rename to `newobj_of' and accept additional
