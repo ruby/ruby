@@ -1,4 +1,11 @@
-Wed May 15 16:56:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 15 16:58:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: save configured load path values into verconf.in.
+
+	* common.mk (verconf.h): create from verconf.in with shvar_to_cpp.rb.
+
+	* tool/shvar_to_cpp.rb: turn shell variables into C macros.
+	  [Bug #7959]
 
 	* loadpath.c: split load path staffs from version.c.
 

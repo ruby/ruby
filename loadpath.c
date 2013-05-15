@@ -37,7 +37,9 @@
 
 typedef char ruby_lib_version_string[(int)sizeof(RUBY_LIB_VERSION) - 2];
 
+#ifndef RUBY_LIB
 #define RUBY_LIB                    RUBY_LIB_PREFIX  "/"RUBY_LIB_VERSION
+#endif
 #define RUBY_SITE_LIB2              RUBY_SITE_LIB    "/"RUBY_LIB_VERSION
 #define RUBY_VENDOR_LIB2            RUBY_VENDOR_LIB  "/"RUBY_LIB_VERSION
 #ifndef RUBY_ARCH_LIB_FOR

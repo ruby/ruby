@@ -834,6 +834,10 @@ newline.$(OBJEXT): $(NEWLINE_C) {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
   {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}subst.h
 
+verconf.h: verconf.in $(PREP) $(srcdir)/tool/verconf.rb $(RBCONFIG)
+	$(ECHO) creating $@
+	$(Q) $(MINIRUBY) "$(srcdir)/tool/shvar_to_cpp.rb" $< > $@
+
 DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		gc.$(OBJEXT) \

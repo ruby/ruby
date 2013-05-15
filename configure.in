@@ -3475,59 +3475,6 @@ AS_CASE(["$target_os"],
     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
     ])
 
-shvar_to_cpp() {
-    var="$1" val="$2"
-    exec_prefix_pat="`echo \"${exec_prefix}\" | sed 's/\\./\\\\./g'`"
-    arch_pat="`echo \"${arch}\" | sed 's/\\./\\\\./g'`"
-    sitearch_pat="`echo \"${sitearch}\" | sed 's/\\./\\\\./g'`"
-    val="`echo '\"'\"${val}\"'\"' |
-	sed \
-	    -e 's/\${\([[A-Z][A-Z_]]*\)}/\"\1\"/g' \
-	    -e 's|\${sitearchlibdir}|'\"${sitearchlibdir}|g\" \
-	    -e 's|\${sitearchincludedir}|'\"${sitearchincludedir}|g\" \
-	    -e 's|\${archlibdir}|'\"${archlibdir}|g\" \
-	    -e 's|\${archincludedir}|'\"${archincludedir}|g\" \
-	    -e 's|\${libdir}|'\"${libdir}|g\" \
-	    -e 's/\${ruby_version}/\"RUBY_LIB_VERSION\"/g' \
-	    -e 's/\${arch}/\"arch\"/g' \
-	    -e 's/\${sitearch}/\"arch\"/g' \
-	    -e 's/\${vendorarchdir}/\"RUBY_VENDOR_ARCH_LIB\"/g' \
-	    -e 's/\${sitearchdir}/\"RUBY_SITE_ARCH_LIB\"/g' \
-	    -e 's/\${vendorlibdir}/\"RUBY_VENDOR_LIB2\"/g' \
-	    -e 's/\${sitelibdir}/\"RUBY_SITE_LIB2\"/g' \
-	    -e 's/\${vendordir}/\"RUBY_VENDOR_LIB\"/g' \
-	    -e 's/\${sitedir}/\"RUBY_SITE_LIB\"/g' \
-	    -e 's/\${rubylibdir}/\"RUBY_LIB\"/g' \
-	    -e 's/\${rubylibprefix}/\"RUBY_LIB_PREFIX\"/g' \
-	    -e 's/\${rubyarchprefix}/\"RUBY_ARCH_PREFIX_FOR(arch)\"/g' \
-	    -e 's/\${rubysitearchprefix}/\"RUBY_SITEARCH_PREFIX_FOR(arch)\"/g' \
-	    -e 's/\${exec_prefix}/\"RUBY_EXEC_PREFIX\"/g' \
-	    -e \"s|${exec_prefix_pat}/|\"'\"RUBY_EXEC_PREFIX\"/|g' \
-	    -e \"s|${arch_pat}|\"'\"arch\"|g' \
-	    -e \"s|${sitearch_pat}|\"'\"sitearch\"|g' \
-	    -e 's|^\\\"NONE/|RUBY_EXEC_PREFIX\\\"/|' \
-	    -e 's|^\\\"NONE\\\"|\\\"'\"${prefix}\"'\\\"|' \
-	    -e 's/^\\\"\\\"\(.\)/\1/;s/\(.\)\\\"\\\"$/\1/'
-	`"
-    eval $var='"$val"'
-}
-
-unexpand_shvar() {
-    var=$1 n="" v="" expr=""
-    shift
-    test "$#" -eq 0 && return
-    for n do
-        eval v='"$'$n'"'
-	v="`echo \"$v\" | sed -e ['s/\${[^${}\"]*}/\"&\"/g'] -e ['s/[][$|.\\?*]/\\\\&/g']`"
-	if test -n "$v"; then
-	    expr=["${expr};s|"'\("[^$"]*\)'"$v|\\1\${$n}\"|g"]
-	    AS_CASE(["$v"], [*'${'*'}'*], [expr=["$expr;s|$v|\"\${$n}\"|g"]])
-	fi
-    done
-    expr=['s/\${[^${}"]*}/"&"/g;'"${expr};"'s/"\(\${[^${}"]*}\)"/\1/g']
-    eval $var='"`echo \"\\\"${'$var'}\\\"\" | sed \"$expr;s/\\\"//g\"`"'
-}
-
 rubylibprefix='${libdir}/${RUBY_BASE_NAME}'
 AC_ARG_WITH(rubylibprefix,
 	    AS_HELP_STRING([--with-rubylibprefix=DIR], [prefix for ruby libraries [[LIBDIR/RUBY_BASE_NAME]]]),
@@ -3612,52 +3559,36 @@ AC_ARG_WITH(vendorarchdir,
             [vendorarchdir=$withval],
             [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
 
-unexpand_shvar rubylibprefix       exec_prefix libdir RUBY_BASE_NAME
-unexpand_shvar rubyarchprefix      exec_prefix libdir arch RUBY_BASE_NAME archlibdir rubylibprefix
-unexpand_shvar rubysitearchprefix  exec_prefix libdir sitearch arch RUBY_BASE_NAME archlibdir sitearchlibdir rubylibprefix
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
-    RUBY_EXEC_PREFIX='""'
+    RUBY_EXEC_PREFIX=''
 else
-    shvar_to_cpp RUBY_EXEC_PREFIX "${exec_prefix}"
+    RUBY_EXEC_PREFIX="${exec_prefix}"
 fi
-shvar_to_cpp RUBY_LIB_PREFIX "${rubylibprefix}"
-shvar_to_cpp RUBY_ARCH_PREFIX_FOR "${rubyarchprefix}"
-shvar_to_cpp RUBY_SITEARCH_PREFIX_FOR "${rubysitearchprefix}"
-shvar_to_cpp RIDIR "${ridir}"
-unexpand_shvar exec_prefix         prefix
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
     AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION] !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, "$RUBY_LIB_VERSION" !<verconf>!)
 fi
-AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, ${RUBY_EXEC_PREFIX} !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX} !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_ARCH_PREFIX_FOR(arch), ${RUBY_ARCH_PREFIX_FOR} !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_SITEARCH_PREFIX_FOR(arch), ${RUBY_SITEARCH_PREFIX_FOR} !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}" !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${rubylibprefix}" !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_ARCH_PREFIX_FOR(arch), "${rubyarchprefix}" !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_SITEARCH_PREFIX_FOR(arch), "${rubysitearchprefix}" !<verconf>!)
 
-shvar_to_cpp RUBY_LIB "${rubylibdir}"
-if test "x${RUBY_LIB}" != 'xRUBY_LIB_PREFIX"/"RUBY_LIB_VERSION'; then
-    AC_DEFINE_UNQUOTED(RUBY_LIB, ${RUBY_LIB} !<verconf>!)
-fi
-shvar_to_cpp RUBY_ARCH_LIB_FOR "${rubyarchdir}"
-AC_DEFINE_UNQUOTED(RUBY_ARCH_LIB_FOR(arch), ${RUBY_ARCH_LIB_FOR} !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${rubylibdir}" !<verconf>!)
+AC_DEFINE_UNQUOTED(RUBY_ARCH_LIB_FOR(arch), "${rubyarchdir}" !<verconf>!)
 if test "x$sitedir" = xno; then
     AC_DEFINE(NO_RUBY_SITE_LIB, [] !<verconf>!)
 else
-    shvar_to_cpp RUBY_SITE_LIB "${sitedir}"
-    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB} !<verconf>!)
-    shvar_to_cpp RUBY_SITE_ARCH_LIB_FOR "${sitearchdir}"
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCH_LIB_FOR(arch), ${RUBY_SITE_ARCH_LIB_FOR} !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${sitedir}" !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCH_LIB_FOR(arch), "${sitearchdir}" !<verconf>!)
 fi
 if test "x$vendordir" = xno; then
     AC_DEFINE(NO_RUBY_VENDOR_LIB, [] !<verconf>!)
 else
-    shvar_to_cpp RUBY_VENDOR_LIB "${vendordir}"
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB} !<verconf>!)
-    shvar_to_cpp RUBY_VENDOR_ARCH_LIB_FOR "${vendorarchdir}"
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), ${RUBY_VENDOR_ARCH_LIB_FOR} !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${vendordir}" !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), "${vendorarchdir}" !<verconf>!)
 fi
 
 AC_SUBST(libdirname, ${multiarch+arch}libdir)
@@ -3796,7 +3727,8 @@ guard=INCLUDE_RUBY_CONFIG_H
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 ${srcdir}/tool/ifchange "${config_h}" -
-sed -n 's/ !<verconf>!$//p' confdefs.h | ${srcdir}/tool/ifchange verconf.h -
+sed -n 's/ !<verconf>!$//p' confdefs.h | ${srcdir}/tool/ifchange verconf.in -
+rm -f verconf.h
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
