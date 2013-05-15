@@ -46,8 +46,7 @@
 #   r << 4               # => [1, 2, 3, 4]
 #   r.map { |x| x * 2 }  # => [2, 4, 6, 8]
 #
-# If the object isn't a Module and Class, You can too extend Forwardable
-# module.
+# You can even extend regular objects with Forwardable.
 #
 #   printer = String.new
 #   printer.extend Forwardable              # prepare object for delegation
