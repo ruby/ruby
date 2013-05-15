@@ -1432,7 +1432,7 @@ VALUE
 rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 {
     int state;
-    VALUE val = Qnil;		/* OK */
+    volatile VALUE val = Qnil;		/* OK */
     volatile int safe = rb_safe_level();
 
     if (OBJ_TAINTED(cmd)) {

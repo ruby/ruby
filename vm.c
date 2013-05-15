@@ -682,7 +682,7 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr)
 {
-    VALUE val = Qundef;
+    volatile VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
 
@@ -1190,7 +1190,7 @@ vm_exec(rb_thread_t *th)
     int state;
     VALUE result, err;
     VALUE initial = 0;
-    VALUE *escape_ep = NULL;
+    VALUE *volatile escape_ep = NULL;
 
     TH_PUSH_TAG(th);
     _tag.retval = Qnil;
