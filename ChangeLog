@@ -1,4 +1,7 @@
-Wed May 15 17:04:11 2013  Koichi Sasada  <ko1@atdot.net>
+Wed May 15 17:55:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_PLATFORM): move to config.h as needed by
+	  version.c.
 
 	* gc.c: add an additional RGENGC_PROFILE mode (2).
 	  Profiling result can be check by GC.stat.
