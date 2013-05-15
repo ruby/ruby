@@ -191,6 +191,12 @@ typedef struct RVALUE {
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
+	struct {
+	    struct RBasic basic;
+	    VALUE v1;
+	    VALUE v2;
+	    VALUE v3;
+	} values;
     } as;
 #ifdef GC_DEBUG
     const char *file;
@@ -775,7 +781,7 @@ heaps_increment(rb_objspace_t *objspace)
 }
 
 static VALUE
-newobj(VALUE klass, VALUE flags)
+newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
@@ -807,6 +813,20 @@ newobj(VALUE klass, VALUE flags)
 	unlink_free_heap_slot(objspace, objspace->heap.free_slots);
     }
 
+    /* OBJSETUP */
+    RBASIC(obj)->flags = flags;
+    RBASIC_SET_CLASS(obj, klass);
+    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT | FL_UNTRUSTED);
+    RANY(obj)->as.values.v1 = v1;
+    RANY(obj)->as.values.v2 = v2;
+    RANY(obj)->as.values.v3 = v3;
+
+#ifdef GC_DEBUG
+    RANY(obj)->file = rb_sourcefile();
+    RANY(obj)->line = rb_sourceline();
+#endif
+    objspace->total_allocated_object_num++;
+
 #if RGENGC_PROFILE
     if (flags & FL_WB_PROTECTED) objspace->profile.generated_sunny_object_count++;
     else {
@@ -816,13 +836,6 @@ newobj(VALUE klass, VALUE flags)
 #endif
     }
 #endif
-
-    MEMZERO((void*)obj, RVALUE, 1);
-#ifdef GC_DEBUG
-    RANY(obj)->file = rb_sourcefile();
-    RANY(obj)->line = rb_sourceline();
-#endif
-    objspace->total_allocated_object_num++;
 
     rgengc_report(5, objspace, "newobj: %p (%s)\n", (void *)obj, obj_type_name(obj));
 
@@ -838,18 +851,13 @@ newobj(VALUE klass, VALUE flags)
 VALUE
 rb_newobj(void)
 {
-    return newobj(0, T_NONE);
+    return newobj_of(0, T_NONE, 0, 0, 0);
 }
 
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
-    VALUE obj;
-
-    obj = newobj(klass, flags);
-    OBJSETUP(obj, klass, flags);
-
-    return obj;
+    return newobj_of(klass, flags, 0, 0, 0);
 }
 
 NODE*
@@ -870,25 +878,15 @@ rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 VALUE
 rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
-    NEWOBJ_OF(data, struct RData, klass, T_DATA);
     if (klass) Check_Type(klass, T_CLASS);
-    data->data = datap;
-    data->dfree = dfree;
-    data->dmark = dmark;
-
-    return (VALUE)data;
+    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap);
 }
 
 VALUE
 rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 {
-    NEWOBJ_OF(data, struct RTypedData, klass, T_DATA);
     if (klass) Check_Type(klass, T_CLASS);
-    data->data = datap;
-    data->typed_flag = 1;
-    data->type = type;
-
-    return (VALUE)data;
+    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap);
 }
 
 size_t
