@@ -1,3 +1,10 @@
+Wed May 15 16:56:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* loadpath.c: split load path staffs from version.c.
+
+	* dmyloadpath.c: miniruby has no builtin load paths, so verconf.h is
+	  not needed.
+
 Wed May 15 03:56:09 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: adding backwards

@@ -33,7 +33,7 @@ MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      =
 DLDOBJS	      = $(DMYEXT)
 EXTSOLIBS     =
-MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyversion.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyloadpath.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
 
 COMMONOBJS    = array.$(OBJEXT) \
@@ -84,6 +84,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		transcode.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
+		version.$(OBJEXT) \
 		compile.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		iseq.$(OBJEXT) \
@@ -99,7 +100,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 
 EXPORTOBJS    = $(DLNOBJ) \
 		encoding.$(OBJEXT) \
-		version.$(OBJEXT) \
+		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
 
 OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
@@ -765,9 +766,12 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h {$(VPATH)}id.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}internal.h {$(VPATH)}constant.h
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
+  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
+loadpath.$(OBJEXT): {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
   $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h \
   verconf.h
-dmyversion.$(OBJEXT): {$(VPATH)}dmyversion.c version.$(OBJEXT)
+dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
+  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}insns.inc \
