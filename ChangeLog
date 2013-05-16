@@ -1,3 +1,9 @@
+Thu May 16 17:15:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_eval.c (rb_catch_obj): add volatile to tag to prevent crash
+	  experimentally.
+	  http://www.rubyist.net/~akr/chkbuild/debian/ruby-trunk/log/20130515T133500Z.log.html.gz
+
 Thu May 16 16:19:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (verconf.in): no longer used.

@@ -1798,12 +1798,13 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
 }
 
 VALUE
-rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
+rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 {
     int state;
     volatile VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
+    volatile VALUE tag = t;
 
     TH_PUSH_TAG(th);
 
