@@ -6,7 +6,7 @@ module CGI::Util
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
     encoding = string.encoding
-    string.dup.force_encoding('ASCII-8BIT').gsub(/([^ a-zA-Z0-9_.-]+)/) do
+    string.b.gsub(/([^ a-zA-Z0-9_.-]+)/) do
       '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
     end.tr(' ', '+').force_encoding(encoding)
   end
