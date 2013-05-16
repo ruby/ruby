@@ -49,9 +49,13 @@
 % R["rubysitearchprefix"] = '"RUBY_SITEARCH_PREFIX_FOR(arch)"'
 % R["exec_prefix"] = '"RUBY_EXEC_PREFIX"'
 % R["prefix"] = '"RUBY_EXEC_PREFIX"'
+% exec_prefix_pat = /\A"#{Regexp.quote(RbConfig::CONFIG['exec_prefix'])}(?=\/|\z)/
 % _erbout.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
 %   pre, name, repl = $1, $2, $3
 %   pat = %["#{name}"]
 %   c = C.merge(R.reject {|key, value| key == name or value.include?(pat)})
-%   pre + RbConfig.expand(repl, c).gsub(/^""(?!$)|(.)""$/, '\1')
+%   RbConfig.expand(repl, c)
+%   repl.gsub!(/^""(?!$)|(.)""$/, '\1')
+%   repl.sub!(exec_prefix_pat, 'RUBY_EXEC_PREFIX"')
+%   pre + repl
 % }
