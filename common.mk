@@ -834,7 +834,7 @@ newline.$(OBJEXT): $(NEWLINE_C) {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
   {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}subst.h
 
-verconf.h: verconf.in $(srcdir)/tool/shvar_to_cpp.rb rbconfig.rb
+verconf.h: verconf.in $(srcdir)/tool/shvar_to_cpp.rb $(RBCONFIG)
 	$(ECHO) creating $@
 	$(Q) $(MINIRUBY) "$(srcdir)/tool/shvar_to_cpp.rb" verconf.in > $@
 
