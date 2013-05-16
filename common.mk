@@ -185,9 +185,6 @@ $(MKMAIN_CMD): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 
 prog: program wprogram
 
-loadpath: $(PREP) PHONY
-	$(MINIRUBY) -e 'p $$:'
-
 $(PREP): $(MKFILES)
 
 miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE) $(DTRACE_OBJ)

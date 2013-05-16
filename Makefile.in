@@ -464,3 +464,8 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/tool/instruction.rb $(srcdir)/tool/insns2vm.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
+
+loadpath: verconf.h
+	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
+	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
+	    -e '/^ /!d;s/ *"\\0"$$//;s/" *"//g'
