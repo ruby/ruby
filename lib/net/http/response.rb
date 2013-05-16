@@ -254,7 +254,7 @@ class Net::HTTPResponse
     when 'deflate', 'gzip', 'x-gzip' then
       self.delete 'content-encoding'
 
-      inflate_body_io = Inflater.new(@socket)
+      inflate_body_io = Inflater.new(@socket, self)
 
       begin
         yield inflate_body_io
@@ -344,8 +344,10 @@ class Net::HTTPResponse
     ##
     # Creates a new Inflater wrapping +socket+
 
-    def initialize socket
+    def initialize(socket, response)
       @socket = socket
+      @response = response
+      @deflated_len = 0
       # zlib with automatic gzip detection
       @inflate = Zlib::Inflate.new(32 + Zlib::MAX_WBITS)
     end
@@ -355,6 +357,7 @@ class Net::HTTPResponse
 
     def finish
       @inflate.finish
+      @response['content-length'] = @deflated_len
     end
 
     ##
@@ -367,6 +370,7 @@ class Net::HTTPResponse
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
           dest << chunk
+          @deflated_len += chunk.bytesize
         end
       end
 

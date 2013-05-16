@@ -96,9 +96,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal '5', res['content-length'], "Bug #8182"
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal '13', res['content-length'], "Bug #8182"
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end

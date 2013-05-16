@@ -1,3 +1,16 @@
+Thu May 16 18:09:03 2013 Duncan Mac-Vicar P. <dmacvicar@suse.de>
+
+	* lib/net/http/response.rb: transparently deflates the response body,
+	  removes the "content-encoding" response header, but does not adjust
+	  the "content-length" header accordingly.
+	  So, pass the context to the Inflater so that we count the
+	  uncompressed data for every chunk inflated, and then on finish we
+	  set the right Content-Length.
+	  [Bug #8182]
+
+	* test/net/http/test_httpresponse.rb: enhance testcase to check
+	  the right Content-Length
+
 Wed May 15 17:55:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_PLATFORM): move to config.h as needed by
