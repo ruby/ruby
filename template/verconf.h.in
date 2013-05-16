@@ -1,18 +1,19 @@
 % require './rbconfig'
-% C = RbConfig::MAKEFILE_CONFIG
-%
-% verconf =
+% C = RbConfig::MAKEFILE_CONFIG.dup
+% def C.[](name) str = super and (str unless str.empty?); end
 #define RUBY_BASE_NAME			"${RUBY_BASE_NAME}"
 #define RUBY_VERSION_NAME		RUBY_BASE_NAME"-"RUBY_LIB_VERSION
 % if C["RUBY_LIB_VERSION_STYLE"]
 #define RUBY_LIB_VERSION_STYLE		${RUBY_LIB_VERSION_STYLE}
+% elsif !C["RUBY_LIB_VERSION"]
+#define RUBY_LIB_VERSION_STYLE		3	/* full */
 % else
 #define RUBY_LIB_VERSION		${RUBY_LIB_VERSION}
 % end
-#define RUBY_EXEC_PREFIX		"${RUBY_EXEC_PREFIX}"
+#define RUBY_EXEC_PREFIX		"<%='${RUBY_EXEC_PREFIX}' if C['RUBY_EXEC_PREFIX']%>"
 #define RUBY_LIB_PREFIX 		"${rubylibprefix}"
-% unless C["sitearch"] == '$(arch)'
-#define RUBY_SITEARCH			"${sitearch}"
+% unless (sitearch = C["sitearch"]) == '$(arch)'
+#define RUBY_SITEARCH			"<%=sitearch%>"
 % end
 #define RUBY_ARCH_PREFIX_FOR(arch)	"${rubyarchprefix}"
 #define RUBY_SITEARCH_PREFIX_FOR(arch)	"${rubysitearchprefix}"
@@ -30,7 +31,7 @@
 #define RUBY_VENDOR_LIB 		"${vendordir}"
 #define RUBY_VENDOR_ARCH_LIB_FOR(arch)	"${vendorarchdir}"
 % end
-% unless C["RUBY_SEARCH_PATH"] == ""
+% if C["RUBY_SEARCH_PATH"]
 #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
 % end
 %
@@ -47,7 +48,8 @@
 % R["rubyarchprefix"] = '"RUBY_ARCH_PREFIX_FOR(arch)"'
 % R["rubysitearchprefix"] = '"RUBY_SITEARCH_PREFIX_FOR(arch)"'
 % R["exec_prefix"] = '"RUBY_EXEC_PREFIX"'
-% verconf.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
+% R["prefix"] = '"RUBY_EXEC_PREFIX"'
+% _erbout.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
 %   pre, name, repl = $1, $2, $3
 %   pat = %["#{name}"]
 %   c = C.merge(R.reject {|key, value| key == name or value.include?(pat)})

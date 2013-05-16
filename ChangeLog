@@ -1,3 +1,8 @@
+Thu May 16 16:15:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, template/verconf.h.in (RUBY_EXEC_PREFIX): fix for
+	  default prefix.
+
 Thu May 16 13:12:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/verconf.h.in: generate verconf.h from the template and

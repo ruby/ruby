@@ -2831,18 +2831,19 @@ else
 fi
 AC_SUBST(setup)
 
-save_prefix="$prefix"
-save_exec_prefix="$exec_prefix"
-test x"$prefix" = xNONE && prefix=$ac_default_prefix
-test x"${exec_prefix}" = xNONE && exec_prefix="$prefix"
-pat=`echo "${exec_prefix}" | tr -c '\012' .`'\(.*\)'
+if test x"${exec_prefix}" != xNONE; then
+    RUBY_EXEC_PREFIX="$exec_prefix"
+elif test x"$prefix" != xNONE; then
+    RUBY_EXEC_PREFIX="$prefix"
+else
+    RUBY_EXEC_PREFIX=$ac_default_prefix
+fi
+pat=`echo "${RUBY_EXEC_PREFIX}" | tr -c '\012' .`'\(.*\)'
 for var in bindir libdir; do
     eval val='"$'$var'"'
-    AS_CASE(["$val"], ["${exec_prefix}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
+    AS_CASE(["$val"], ["${RUBY_EXEC_PREFIX}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
     eval $var='"$val"'
 done
-prefix="$save_prefix"
-exec_prefix="$save_exec_prefix"
 
 BTESTRUBY='$(MINIRUBY)'
 if test x"$cross_compiling" = xyes; then
@@ -3566,8 +3567,6 @@ AC_ARG_WITH(vendorarchdir,
 if test "${LOAD_RELATIVE+set}"; then
     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
     RUBY_EXEC_PREFIX=''
-else
-    RUBY_EXEC_PREFIX="${exec_prefix}"
 fi
 
 AC_SUBST(RUBY_EXEC_PREFIX)
