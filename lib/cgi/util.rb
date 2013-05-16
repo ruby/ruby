@@ -44,7 +44,7 @@ module CGI::Util
     enc = string.encoding
     if [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
       return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
-        case $1.encode("US-ASCII")
+        case $1.encode(Encoding::US_ASCII)
         when 'apos'                then "'".encode(enc)
         when 'amp'                 then '&'.encode(enc)
         when 'quot'                then '"'.encode(enc)
