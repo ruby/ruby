@@ -1,3 +1,8 @@
+Thu May 16 13:12:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/verconf.h.in: generate verconf.h from the template and
+	  rbconfig.rb.
+
 Thu May 16 05:47:18 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: fix syntax error.

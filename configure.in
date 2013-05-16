@@ -231,8 +231,6 @@ RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
 AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
-AC_DEFINE_UNQUOTED(RUBY_BASE_NAME, "${RUBY_BASE_NAME}" !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_VERSION_NAME, RUBY_BASE_NAME"-"RUBY_LIB_VERSION !<verconf>!)
 
 AC_CANONICAL_TARGET
 test x"$target_alias" = x &&
@@ -2833,6 +2831,8 @@ else
 fi
 AC_SUBST(setup)
 
+save_prefix="$prefix"
+save_exec_prefix="$exec_prefix"
 test x"$prefix" = xNONE && prefix=$ac_default_prefix
 test x"${exec_prefix}" = xNONE && exec_prefix="$prefix"
 pat=`echo "${exec_prefix}" | tr -c '\012' .`'\(.*\)'
@@ -2841,6 +2841,8 @@ for var in bindir libdir; do
     AS_CASE(["$val"], ["${exec_prefix}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
     eval $var='"$val"'
 done
+prefix="$save_prefix"
+exec_prefix="$save_exec_prefix"
 
 BTESTRUBY='$(MINIRUBY)'
 if test x"$cross_compiling" = xyes; then
@@ -3534,6 +3536,8 @@ elif test -z "${ruby_version}"; then
 else
     RUBY_LIB_VERSION="\"${ruby_version}\""
 fi
+AC_SUBST(RUBY_LIB_VERSION_STYLE)
+AC_SUBST(RUBY_LIB_VERSION)
 
 AC_ARG_WITH(sitedir,
 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
@@ -3566,30 +3570,7 @@ else
     RUBY_EXEC_PREFIX="${exec_prefix}"
 fi
 
-if test ${RUBY_LIB_VERSION_STYLE+set}; then
-    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)
-else
-    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, "$RUBY_LIB_VERSION" !<verconf>!)
-fi
-AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}" !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, "${rubylibprefix}" !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_ARCH_PREFIX_FOR(arch), "${rubyarchprefix}" !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_SITEARCH_PREFIX_FOR(arch), "${rubysitearchprefix}" !<verconf>!)
-
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${rubylibdir}" !<verconf>!)
-AC_DEFINE_UNQUOTED(RUBY_ARCH_LIB_FOR(arch), "${rubyarchdir}" !<verconf>!)
-if test "x$sitedir" = xno; then
-    AC_DEFINE(NO_RUBY_SITE_LIB, [] !<verconf>!)
-else
-    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${sitedir}" !<verconf>!)
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCH_LIB_FOR(arch), "${sitearchdir}" !<verconf>!)
-fi
-if test "x$vendordir" = xno; then
-    AC_DEFINE(NO_RUBY_VENDOR_LIB, [] !<verconf>!)
-else
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${vendordir}" !<verconf>!)
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCH_LIB_FOR(arch), "${vendorarchdir}" !<verconf>!)
-fi
+AC_SUBST(RUBY_EXEC_PREFIX)
 
 AC_SUBST(libdirname, ${multiarch+arch}libdir)
 AC_SUBST(archlibdir)dnl
@@ -3638,14 +3619,13 @@ fi
 
 unset sitearch
 AS_CASE(["$target_os"],[mingw*],[sitearch="$target_cpu-$rb_cv_msvcrt"])
-test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}" !<verconf>!)
 : ${sitearch='${arch}'}
 
 AC_ARG_WITH(search-path,
 		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
 		[search_path=$withval])
 if test "$search_path" != ""; then
-    AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path" !<verconf>!)
+    AC_SUBST(RUBY_SEARCH_PATH, $search_path)
 fi
 
 AC_ARG_WITH(rubyhdrdir,
@@ -3723,12 +3703,10 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h | grep -v ' !<verconf>!$'
+  grep -v "^#define PACKAGE_" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 ${srcdir}/tool/ifchange "${config_h}" -
-sed -n 's/ !<verconf>!$//p' confdefs.h | ${srcdir}/tool/ifchange verconf.in -
-rm -f verconf.h
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
