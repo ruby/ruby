@@ -1,3 +1,11 @@
+Fri May 17 18:06:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Consider error messages to find out version option of
+	  C compiler.
+	  The C compiler of Sun Studio C emits "Warning: Option -qversion
+	  passed to ld, if ld is invoked, ignored otherwise" and exit
+	  successfully.
+
 Fri May 17 17:34:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_guarded_ptr): unoptimize on other compilers than gcc and

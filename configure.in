@@ -439,7 +439,10 @@ AC_SUBST(COUTFLAG)
 
 cc_version=
 for option in --version -v -V -qversion; do
-    $CC $option > /dev/null 2>&1 || continue
+    cc_version_message=`$CC $option 2>&1`
+    cc_version_status=$?
+    AS_CASE($cc_version_status, [0], [:], [continue])
+    AS_CASE($cc_version_message, [*Warning*], [continue])
     cc_version='$(CC) '$option
 done
 AC_SUBST(CC_VERSION, $cc_version)
