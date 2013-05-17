@@ -506,10 +506,11 @@ static inline int rb_type(VALUE obj);
 #else
 #ifdef _MSC_VER
 #pragma optimize("", off)
-#endif
 static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
-#ifdef _MSC_VER
 #pragma optimize("", on)
+#else
+volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr);
+#define HAVE_RB_GC_GUARDED_PTR 1
 #endif
 #define RB_GC_GUARD_PTR(ptr) rb_gc_guarded_ptr(ptr)
 #endif

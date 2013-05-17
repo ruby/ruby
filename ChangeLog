@@ -1,3 +1,8 @@
+Fri May 17 17:34:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_guarded_ptr): unoptimize on other compilers than gcc and
+	  msvc.
+
 Fri May 17 11:06:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (TH_PUSH_TAG): ensure jmpbuf to be accessible before

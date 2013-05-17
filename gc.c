@@ -67,6 +67,14 @@
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
+#if defined(HAVE_RB_GC_GUARDED_PTR) && HAVE_RB_GC_GUARDED_PTR
+volatile VALUE *
+rb_gc_guarded_ptr(volatile VALUE *ptr)
+{
+    return ptr;
+}
+#endif
+
 #ifndef GC_MALLOC_LIMIT
 #define GC_MALLOC_LIMIT 8000000
 #endif
