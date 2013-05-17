@@ -1,3 +1,8 @@
+Fri May 17 21:47:00 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* cont.c: Typo in constant MAX_MACHINE_STACK_CACHE from '..MAHINE..'
+	  patch by @schmurfy [Fixes GH-307]
+
 Fri May 17 19:18:24 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-matching-char): Do not put
