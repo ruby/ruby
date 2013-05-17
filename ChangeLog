@@ -1,3 +1,8 @@
+Fri May 17 11:06:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (TH_PUSH_TAG): ensure jmpbuf to be accessible before
+	  pushing tag to get rid of unaccessible tag by stack overflow.
+
 Thu May 16 17:15:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_eval.c (rb_catch_obj): add volatile to tag to prevent crash
