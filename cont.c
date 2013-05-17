@@ -86,13 +86,13 @@ enum fiber_status {
 };
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
-#define MAX_MAHINE_STACK_CACHE  10
+#define MAX_MACHINE_STACK_CACHE  10
 static int machine_stack_cache_index = 0;
 typedef struct machine_stack_cache_struct {
     void *ptr;
     size_t size;
 } machine_stack_cache_t;
-static machine_stack_cache_t machine_stack_cache[MAX_MAHINE_STACK_CACHE];
+static machine_stack_cache_t machine_stack_cache[MAX_MACHINE_STACK_CACHE];
 static machine_stack_cache_t terminated_machine_stack;
 #endif
 
@@ -1233,7 +1233,7 @@ fiber_store(rb_fiber_t *next_fib)
 	fiber_setcontext(next_fib, fib);
 #ifndef _WIN32
 	if (terminated_machine_stack.ptr) {
-	    if (machine_stack_cache_index < MAX_MAHINE_STACK_CACHE) {
+	    if (machine_stack_cache_index < MAX_MACHINE_STACK_CACHE) {
 		machine_stack_cache[machine_stack_cache_index].ptr = terminated_machine_stack.ptr;
 		machine_stack_cache[machine_stack_cache_index].size = terminated_machine_stack.size;
 		machine_stack_cache_index++;
