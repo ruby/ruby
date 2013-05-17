@@ -1190,7 +1190,6 @@ vm_exec(rb_thread_t *th)
     int state;
     VALUE result, err;
     VALUE initial = 0;
-    VALUE *volatile escape_ep = NULL;
 
     TH_PUSH_TAG(th);
     _tag.retval = Qnil;
@@ -1210,6 +1209,7 @@ vm_exec(rb_thread_t *th)
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;
 	VALUE type;
+	VALUE *escape_ep;
 
 	err = th->errinfo;
 
@@ -1228,6 +1228,7 @@ vm_exec(rb_thread_t *th)
 	cfp = th->cfp;
 	epc = cfp->pc - cfp->iseq->iseq_encoded;
 
+	escape_ep = NULL;
 	if (state == TAG_BREAK || state == TAG_RETURN) {
 	    escape_ep = GET_THROWOBJ_CATCH_POINT(err);
 
