@@ -252,16 +252,19 @@ strings. Note that you must have Font Lock enabled."
   (interactive "P")
   (ruby-electric-insert
    arg
-   (cond
-    ((and
-      (eq last-command 'ruby-electric-matching-char)
-      (char-equal last-command-event (following-char))) ;; repeated ' or "
-     (setq this-command 'self-insert-command)
-     (delete-forward-char 1))
-    (t
-     (and (ruby-electric-code-at-point-p)
-          (save-excursion (insert (cdr (assoc last-command-event
-                                              ruby-electric-matching-delimeter-alist)))))))))
+   (let ((closing (cdr (assoc last-command-event
+                              ruby-electric-matching-delimeter-alist))))
+     (cond
+      ((char-equal closing last-command-event)
+       (if (and (not (ruby-electric-string-at-point-p))
+                (progn (redisplay) (ruby-electric-string-at-point-p)))
+           (save-excursion (insert closing))
+         (and (eq last-command 'ruby-electric-matching-char)
+              (char-equal (following-char) closing) ;; repeated ' or "
+              (delete-forward-char 1))
+         (setq this-command 'self-insert-command)))
+      ((ruby-electric-code-at-point-p)
+       (save-excursion (insert closing)))))))
 
 (defun ruby-electric-closing-char(arg)
   (interactive "P")

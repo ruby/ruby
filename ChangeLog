@@ -1,3 +1,9 @@
+Fri May 17 19:18:24 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-matching-char): Do not put
+	  a closing quote when the quote typed does not start a string, as
+	  in $', ?\' or ?\".
+
 Fri May 17 18:06:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Consider error messages to find out version option of
