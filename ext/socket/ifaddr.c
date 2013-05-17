@@ -1,6 +1,21 @@
 #include "rubysocket.h"
 
 #ifdef HAVE_GETIFADDRS
+
+/*
+ * ifa_flags is usually unsigned int.
+ * However it is uint64_t on SunOS 5.11 (OpenIndiana).
+ */
+#ifdef HAVE_LONG_LONG
+typedef unsigned LONG_LONG ifa_flags_t;
+#define PRIxIFAFLAGS PRI_LL_PREFIX"x"
+#define IFAFLAGS2NUM(flags) ULL2NUM(flags)
+#else
+typedef unsigned int ifa_flags_t;
+#define PRIxIFAFLAGS "x"
+#define IFAFLAGS2NUM(flags) UINT2NUM(flags)
+#endif
+
 VALUE rb_cSockIfaddr;
 
 typedef struct rb_ifaddr_tag rb_ifaddr_t;
@@ -163,7 +178,7 @@ ifaddr_flags(VALUE self)
 {
     rb_ifaddr_t *rifaddr = get_ifaddr(self);
     struct ifaddrs *ifa = rifaddr->ifaddr;
-    return UINT2NUM(ifa->ifa_flags);
+    return IFAFLAGS2NUM(ifa->ifa_flags);
 }
 
 /*
@@ -239,11 +254,11 @@ ifaddr_dstaddr(VALUE self)
 }
 
 static void
-ifaddr_inspect_flags(unsigned int flags, VALUE result)
+ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 {
     const char *sep = " ";
 #define INSPECT_BIT(bit, name) \
-    if (flags & (bit)) { rb_str_catf(result, "%s" name, sep); flags &= ~(bit); sep = ","; }
+    if (flags & (bit)) { rb_str_catf(result, "%s" name, sep); flags &= ~(ifa_flags_t)(bit); sep = ","; }
 #ifdef IFF_UP
     INSPECT_BIT(IFF_UP, "UP")
 #endif
@@ -303,7 +318,7 @@ ifaddr_inspect_flags(unsigned int flags, VALUE result)
 #endif
 #undef INSPECT_BIT
     if (flags) {
-        rb_str_catf(result, "%s%#x", sep, flags);
+        rb_str_catf(result, "%s%#"PRIxIFAFLAGS, sep, flags);
     }
 }
 

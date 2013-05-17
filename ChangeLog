@@ -1,3 +1,8 @@
+Fri May 17 22:02:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ifaddr.c: Use unsigned LONG_LONG to represent flags
+	  because SunOS 5.11 (OpenIndiana) defines ifa_flags as uint64_t.
+
 Fri May 17 21:47:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* cont.c: Typo in constant MAX_MACHINE_STACK_CACHE from '..MAHINE..'
