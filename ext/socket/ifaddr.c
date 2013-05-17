@@ -128,6 +128,7 @@ ifaddr_name(VALUE self)
     return rb_str_new_cstr(ifa->ifa_name);
 }
 
+#ifdef HAVE_IF_NAMETOINDEX
 /*
  * call-seq:
  *   ifaddr.ifindex => integer
@@ -135,7 +136,6 @@ ifaddr_name(VALUE self)
  * Returns the interface index of _ifaddr_.
  */
 
-#ifdef HAVE_IF_NAMETOINDEX
 static VALUE
 ifaddr_ifindex(VALUE self)
 {
