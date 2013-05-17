@@ -1,3 +1,8 @@
+Sat May 18 00:38:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: Convert integer constants bigger than int
+	  correctly.
+
 Fri May 17 22:02:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ifaddr.c: Use unsigned LONG_LONG to represent flags
