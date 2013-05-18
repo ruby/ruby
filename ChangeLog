@@ -1,3 +1,8 @@
+Sat May 18 16:57:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (INTEGER2VALUE): Suppress a warning:
+	  comparison between signed and unsigned integer expressions
+
 Sat May 18 16:38:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): forward anonymous and first keyword

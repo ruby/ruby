@@ -282,11 +282,11 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 #ifdef HAVE_LONG_LONG
 #define INTEGER2VALUE(n) (0 < (n) ? \
     ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULL2NUM(n)) : \
-    (FIXNUM_MIN <= (n) ? LONG2FIX(n) : LL2NUM(n)))
+    (FIXNUM_MIN <= (LONG_LONG)(n) ? LONG2FIX(n) : LL2NUM(n)))
 #else
 #define INTEGER2VALUE(n) (0 < (n) ? \
     ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULONG2NUM(n)) : \
-    (FIXNUM_MIN <= (n) ? LONG2FIX(n) : LONG2NUM(n)))
+    (FIXNUM_MIN <= (long)(n) ? LONG2FIX(n) : LONG2NUM(n)))
 #endif
 
 static void
