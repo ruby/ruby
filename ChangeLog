@@ -1,3 +1,11 @@
+Sat May 18 23:57:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (setjmp-type): use setjmpex() on w64-mingw32 to get rid
+	  of -Wclobbered warnings.
+
+	* include/ruby/defines.h: include setjmpex.h here becase setjmp.h is
+	  included from win32.h via intrin.h, winnt.h, and so on.
+
 Sat May 18 20:28:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (INTEGER2NUM): Make less comparisons.

@@ -1028,6 +1028,7 @@ AC_CHECK_HEADERS( \
   process.h \
   sys/prctl.h \
   atomic.h \
+  setjmpex.h
 )
 
 dnl check for large file stuff
@@ -1856,36 +1857,45 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
+setjmp_suffix=
 AC_ARG_WITH(setjmp-type,
 	AS_HELP_STRING([--with-setjmp-type], [select setjmp type]),
 	[
 	AS_CASE([$withval],
-	[__builtin_setjmp], [ setjmp_prefix=__builtin_],
+	[__builtin_setjmp], [setjmp=__builtin_setjmp],
 	[_setjmp], [ setjmp_prefix=_],
 	[sigsetjmp], [ setjmp_prefix=sig],
 	[setjmp], [ setjmp_prefix=],
+	[setjmpex], [ setjmp_prefix= setjmp_suffix=ex],
 	[''], [ unset setjmp_prefix],
 	[   AC_MSG_ERROR(invalid setjmp type: $withval)])], [unset setjmp_prefix])
 if test ${setjmp_prefix+set}; then
-    if test "${setjmp_prefix}" && eval test '$ac_cv_func_'${setjmp_prefix}setjmp = no; then
-	AC_MSG_ERROR(${setjmp_prefix}setjmp is not available)
+    if test "${setjmp_prefix}" && eval test '$ac_cv_func_'${setjmp_prefix}setjmp${setjmp_suffix} = no; then
+	AC_MSG_ERROR(${setjmp_prefix}setjmp${setjmp_suffix} is not available)
     fi
 elif test "$ac_cv_func___builtin_setjmp" = yes; then
     setjmp_prefix=__builtin_
+    setjmp_suffix=
+elif test "$ac_cv_header_setjmpex_h" = yes; then
+    setjmp_prefix=
+    setjmp_suffix=ex
 elif test "$ac_cv_func__setjmp" = yes; then
     setjmp_prefix=_
+    setjmp_suffix=
 elif test "$ac_cv_func_sigsetjmp" = yes; then
     AS_CASE([$target_os],[solaris*|cygwin*],[setjmp_prefix=],[setjmp_prefix=sig])
+    setjmp_suffix=
 else
     setjmp_prefix=
+    setjmp_suffix=
 fi
 if test x$setjmp_prefix = xsig; then
     setjmp_sigmask=yes
 else
     unset setjmp_sigmask
 fi
-AC_MSG_RESULT(${setjmp_prefix}setjmp)
-AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp(env${setjmp_sigmask+,0})])
+AC_MSG_RESULT(${setjmp_prefix}setjmp${setjmp_suffix})
+AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp${setjmp_suffix}(env${setjmp_sigmask+,0})])
 AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp(env,val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
 # End of setjmp check.

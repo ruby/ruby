@@ -61,6 +61,10 @@ extern "C" {
 # include <sys/select.h>
 #endif
 
+#ifdef HAVE_SETJMPEX_H
+#include <setjmpex.h>
+#endif
+
 #define RUBY
 
 #ifdef __cplusplus
