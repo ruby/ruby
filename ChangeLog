@@ -1,3 +1,8 @@
+Sun May 19 03:48:26 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI.decode_www_form): scrub string if decoded
+	  bytes are invalid for the encoding.
+
 Sun May 19 02:46:32 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#delete_if, Set#keep_if): Make Set#delete_if and

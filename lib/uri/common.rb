@@ -981,17 +981,9 @@ module URI
         isindex = false
       end
 
-      if use__charset_
-        if key == '_charset_'
-          if e = get_encoding(val)
-            enc = e
-            use__charset_ = false
-            ary.each do |k, v|
-              v.force_encoding(enc)
-              k.force_encoding(enc)
-            end
-          end
-        end
+      if use__charset_ and key == '_charset_' and e = get_encoding(val)
+        enc = e
+        use__charset_ = false
       end
 
       key.gsub!(/\+|%\h\h/, TBLDECWWWCOMP_)
@@ -1001,9 +993,13 @@ module URI
         val = ''
       end
 
-      val.force_encoding(enc)
-      key.force_encoding(enc)
       ary << [key, val]
+    end
+    ary.each do |k, v|
+      k.force_encoding(enc)
+      k.scrub!
+      v.force_encoding(enc)
+      v.scrub!
     end
     ary
   end
