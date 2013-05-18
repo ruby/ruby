@@ -1,4 +1,8 @@
-Sun May 19 02:27:21 2013  Akinori MUSHA  <knu@iDaemons.org>
+Sun May 19 02:30:00 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-delete-backward-char):
+	  Introduce electric DEL that deletes what the previous electric
+	  command has input.
 
 	* misc/ruby-electric.el (ruby-electric-matching-char): Make
 	  electric quotes work again at the end of buffer.
