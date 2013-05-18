@@ -91,20 +91,9 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
       rb_fiber_start(); \
   } while (0)
 
-/*
-  ensure tag to be accessible, `buf' is at the beginning.
-  the end is `prev' which is written in TH_PUSH_TAG().
-*/
-#if defined(__GNUC__) && __GNUC__ >= 4
-/* suppress -Wstrict-aliasing, and should be inlined */
-# define ENSURE_TAG_WRITABLE(tag) MEMZERO((tag).buf, int, 1)
-#else
-# define ENSURE_TAG_WRITABLE(tag) (*(volatile int *)(tag).buf = 0)
-#endif
 #define TH_PUSH_TAG(th) do { \
   rb_thread_t * const _th = (th); \
   struct rb_vm_tag _tag; \
-  ENSURE_TAG_WRITABLE(_tag); \
   _tag.tag = 0; \
   _tag.prev = _th->tag; \
   _th->tag = &_tag;

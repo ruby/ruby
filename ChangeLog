@@ -1,3 +1,8 @@
+Sat May 18 15:49:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_tag): move jmpbuf between tag and prev so ensure to
+	  be accessible.
+
 Sat May 18 11:05:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (inspect_enumerator): use VALUE instead of mere char*
