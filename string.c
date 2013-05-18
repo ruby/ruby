@@ -7770,29 +7770,19 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
     return str;
 }
 
-/*
- *  call-seq:
- *    str.scrub -> new_str
- *    str.scrub(repl) -> new_str
- *    str.scrub{|bytes|} -> new_str
- *
- *  If the string is invalid byte sequence then replace invalid bytes with given replacement
- *  character, else returns self.
- *  If block is given, replace invalid bytes with returned value of the block.
- *
- *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
- *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
- *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
+/**
+ * @param repl the replacement character
+ * @return If given string is invalid, returns a new string. Otherwise, returns Qnil.
  */
-VALUE
-rb_str_scrub(int argc, VALUE *argv, VALUE str)
+static VALUE
+str_scrub0(int argc, VALUE *argv, VALUE str)
 {
     int cr = ENC_CODERANGE(str);
     rb_encoding *enc;
     VALUE repl;
 
     if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
-	return rb_str_dup(str);
+	return Qnil;
 
     enc = STR_ENC_GET(str);
     rb_scan_args(argc, argv, "01", &repl);
@@ -7801,7 +7791,7 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
     }
 
     if (rb_enc_dummy_p(enc)) {
-	return rb_str_dup(str);
+	return Qnil;
     }
 
 #define DEFAULT_REPLACE_CHAR(str) do { \
@@ -7816,7 +7806,7 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	const char *rep;
 	long replen;
 	int rep7bit_p;
-	VALUE buf = rb_str_buf_new(RSTRING_LEN(str));
+	VALUE buf = Qnil;
 	if (rb_block_given_p()) {
 	    rep = NULL;
 	    replen = 0;
@@ -7856,6 +7846,7 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 		 * p ~e: invalid bytes + unknown bytes
 		 */
 		long clen = rb_enc_mbmaxlen(enc);
+		if (NIL_P(buf)) buf = rb_str_buf_new(RSTRING_LEN(str));
 		if (p > p1) {
 		    rb_str_buf_cat(buf, p1, p - p1);
 		}
@@ -7897,6 +7888,13 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 		UNREACHABLE;
 	    }
 	}
+	if (NIL_P(buf)) {
+	    if (p == e) {
+		ENC_CODERANGE_SET(str, cr);
+		return Qnil;
+	    }
+	    buf = rb_str_buf_new(RSTRING_LEN(str));
+	}
 	if (p1 < p) {
 	    rb_str_buf_cat(buf, p1, p - p1);
 	}
@@ -7921,7 +7919,7 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
-	VALUE buf = rb_str_buf_new(RSTRING_LEN(str));
+	VALUE buf = Qnil;
 	const char *rep;
 	long replen;
 	long mbminlen = rb_enc_mbminlen(enc);
@@ -7966,6 +7964,7 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 	    else if (MBCLEN_INVALID_P(ret)) {
 		const char *q = p;
 		long clen = rb_enc_mbmaxlen(enc);
+		if (NIL_P(buf)) buf = rb_str_buf_new(RSTRING_LEN(str));
 		if (p > p1) rb_str_buf_cat(buf, p1, p - p1);
 
 		if (e - p < clen) clen = e - p;
@@ -7996,6 +7995,13 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 		UNREACHABLE;
 	    }
 	}
+	if (NIL_P(buf)) {
+	    if (p == e) {
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+		return Qnil;
+	    }
+	    buf = rb_str_buf_new(RSTRING_LEN(str));
+	}
 	if (p1 < p) {
 	    rb_str_buf_cat(buf, p1, p - p1);
 	}
@@ -8016,6 +8022,27 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
+ *    str.scrub -> new_str
+ *    str.scrub(repl) -> new_str
+ *    str.scrub{|bytes|} -> new_str
+ *
+ *  If the string is invalid byte sequence then replace invalid bytes with given replacement
+ *  character, else returns self.
+ *  If block is given, replace invalid bytes with returned value of the block.
+ *
+ *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
+ *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
+ *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
+ */
+VALUE
+rb_str_scrub(int argc, VALUE *argv, VALUE str)
+{
+    VALUE new = str_scrub0(argc, argv, str);
+    return NIL_P(new) ? rb_str_dup(str): new;
+}
+
+/*
+ *  call-seq:
  *    str.scrub! -> str
  *    str.scrub!(repl) -> str
  *    str.scrub!{|bytes|} -> str
@@ -8028,11 +8055,11 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
  *     "abc\u3042\x81".scrub!("*") #=> "abc\u3042*"
  *     "abc\u3042\xE3\x80".scrub!{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
  */
-VALUE
-rb_str_scrub_bang(int argc, VALUE *argv, VALUE str)
+static VALUE
+str_scrub_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE new = rb_str_scrub(argc, argv, str);
-    rb_str_replace(str, new);
+    VALUE new = str_scrub0(argc, argv, str);
+    if (!NIL_P(new)) rb_str_replace(str, new);
     return str;
 }
 
@@ -8522,7 +8549,7 @@ Init_String(void)
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "scrub", rb_str_scrub, -1);
-    rb_define_method(rb_cString, "scrub!", rb_str_scrub_bang, -1);
+    rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
