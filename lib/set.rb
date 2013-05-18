@@ -272,7 +272,7 @@ class Set
   # true, and returns self.
   def delete_if
     block_given? or return enum_for(__method__)
-    to_a.each { |o| @hash.delete(o) if yield(o) }
+    select(&proc).each(&@hash.method(:delete))
     self
   end
 
@@ -280,7 +280,7 @@ class Set
   # false, and returns self.
   def keep_if
     block_given? or return enum_for(__method__)
-    to_a.each { |o| @hash.delete(o) unless yield(o) }
+    reject(&proc).each(&@hash.method(:delete))
     self
   end
 

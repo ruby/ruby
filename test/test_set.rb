@@ -368,6 +368,18 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[1,2,4,5,7,8,10], set)
   end
 
+  def test_keep_if
+    set = Set.new(1..10)
+    ret = set.keep_if { |i| i <= 10 }
+    assert_same(set, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.keep_if { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+  end
+
   def test_collect!
     set = Set[1,2,3,'a','b','c',-1..1,2..4]
 
