@@ -428,7 +428,7 @@ rb_any_to_s(VALUE obj)
 /*
  * If the default external encoding is ASCII compatible, the encoding of
  * inspected result must be compatible with it.
- * If the default external encoding is ASCII incomapatible,
+ * If the default external encoding is ASCII incompatible,
  * the result must be ASCII only.
  */
 VALUE
@@ -442,7 +442,7 @@ rb_inspect(VALUE obj)
 	return str;
     }
     if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
-	rb_raise(rb_eEncCompatError, "inspected result must be ASCII only or use the same encoding with default external");
+	rb_raise(rb_eEncCompatError, "inspected result must be ASCII only or use the default external encoding");
     return str;
 }
 
