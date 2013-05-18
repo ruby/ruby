@@ -89,9 +89,9 @@ EOS
 ERB.new(<<'EOS', nil, '%').def_method(Object, "gen_const_defs_in_guard(name, default_value)")
 #if defined(<%=name%>)
     /* <%= COMMENTS[name] %> */
-    rb_define_const(rb_cSocket, <%=c_str name%>, INTEGER2VALUE(<%=name%>));
+    rb_define_const(rb_cSocket, <%=c_str name%>, INTEGER2NUM(<%=name%>));
     /* <%= COMMENTS[name] %> */
-    rb_define_const(rb_mSockConst, <%=c_str name%>, INTEGER2VALUE(<%=name%>));
+    rb_define_const(rb_mSockConst, <%=c_str name%>, INTEGER2NUM(<%=name%>));
 #endif
 EOS
 
@@ -280,11 +280,11 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
 #ifdef HAVE_LONG_LONG
-#define INTEGER2VALUE(n) (0 < (n) ? \
+#define INTEGER2NUM(n) (0 < (n) ? \
     ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULL2NUM(n)) : \
     (FIXNUM_MIN <= (LONG_LONG)(n) ? LONG2FIX(n) : LL2NUM(n)))
 #else
-#define INTEGER2VALUE(n) (0 < (n) ? \
+#define INTEGER2NUM(n) (0 < (n) ? \
     ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULONG2NUM(n)) : \
     (FIXNUM_MIN <= (long)(n) ? LONG2FIX(n) : LONG2NUM(n)))
 #endif

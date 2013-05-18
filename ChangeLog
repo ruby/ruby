@@ -1,3 +1,7 @@
+Sat May 18 16:59:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (INTEGER2NUM): Renamed from INTEGER2VALUE.
+
 Sat May 18 16:57:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (INTEGER2VALUE): Suppress a warning:
