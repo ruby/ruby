@@ -1,4 +1,8 @@
-Sun May 19 02:30:00 2013  Akinori MUSHA  <knu@iDaemons.org>
+Sun May 19 02:33:09 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-setup-keymap): Make
+	  backquotes electric as well.  It was listed in
+	  ruby-electric-expand-delimiters-list but not activated.
 
 	* misc/ruby-electric.el (ruby-electric-delete-backward-char):
 	  Introduce electric DEL that deletes what the previous electric

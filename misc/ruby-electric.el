@@ -120,6 +120,7 @@ strings. Note that you must have Font Lock enabled."
   (define-key ruby-mode-map "[" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\"" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "\'" 'ruby-electric-matching-char)
+  (define-key ruby-mode-map "`" 'ruby-electric-matching-char)
   (define-key ruby-mode-map "}" 'ruby-electric-closing-char)
   (define-key ruby-mode-map ")" 'ruby-electric-closing-char)
   (define-key ruby-mode-map "]" 'ruby-electric-closing-char)
@@ -279,7 +280,7 @@ strings. Note that you must have Font Lock enabled."
                  (ruby-electric-string-at-point-p)))
            (save-excursion (insert closing))
          (and (eq last-command 'ruby-electric-matching-char)
-              (char-equal (following-char) closing) ;; repeated ' or "
+              (char-equal (following-char) closing) ;; repeated quotes
               (delete-forward-char 1))
          (setq this-command 'self-insert-command)))
       ((ruby-electric-code-at-point-p)
