@@ -1,3 +1,8 @@
+Sun May 19 02:27:21 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-matching-char): Make
+	  electric quotes work again at the end of buffer.
+
 Sun May 19 01:39:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (setjmp-type): check if setjmpex() is really available.

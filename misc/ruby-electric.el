@@ -248,6 +248,17 @@ strings. Note that you must have Font Lock enabled."
               (insert "{}")
               (backward-char 1))))))
 
+(defmacro ruby-electric-avoid-eob(&rest body)
+  `(if (eobp)
+       (save-excursion
+         (insert "\n")
+         (backward-char)
+         ,@body
+         (prog1
+             (ruby-electric-string-at-point-p)
+           (delete-char 1)))
+     ,@body))
+
 (defun ruby-electric-matching-char(arg)
   (interactive "P")
   (ruby-electric-insert
@@ -257,7 +268,9 @@ strings. Note that you must have Font Lock enabled."
      (cond
       ((char-equal closing last-command-event)
        (if (and (not (ruby-electric-string-at-point-p))
-                (progn (redisplay) (ruby-electric-string-at-point-p)))
+                (ruby-electric-avoid-eob
+                 (redisplay)
+                 (ruby-electric-string-at-point-p)))
            (save-excursion (insert closing))
          (and (eq last-command 'ruby-electric-matching-char)
               (char-equal (following-char) closing) ;; repeated ' or "
