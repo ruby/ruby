@@ -1,4 +1,7 @@
-Sat May 18 11:03:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 18 11:05:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (inspect_enumerator): use VALUE instead of mere char*
+	  by using rb_sprintf() and rb_id2str().
 
 	* enumerator.c (append_method): extract from inspect_enumerator().
 

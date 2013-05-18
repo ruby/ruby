@@ -880,19 +880,18 @@ static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 {
     struct enumerator *e;
-    const char *cname;
-    VALUE eobj, str;
+    VALUE eobj, str, cname;
 
     TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, e);
 
-    cname = rb_obj_classname(obj);
+    cname = rb_obj_class(obj);
 
     if (!e || e->obj == Qundef) {
-	return rb_sprintf("#<%s: uninitialized>", cname);
+	return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(cname));
     }
 
     if (recur) {
-	str = rb_sprintf("#<%s: ...>", cname);
+	str = rb_sprintf("#<%"PRIsVALUE": ...>", rb_class_path(cname));
 	OBJ_TAINT(str);
 	return str;
     }
@@ -903,9 +902,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     }
 
     /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
-    str = rb_sprintf("#<%s: ", cname);
-    rb_str_append(str, rb_inspect(eobj));
-    OBJ_INFECT(str, eobj);
+    str = rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE, rb_class_path(cname), eobj);
     append_method(obj, str, e->meth, e->args);
 
     rb_str_buf_cat2(str, ">");
@@ -919,14 +916,14 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
     VALUE method, eargs;
 
     method = rb_attr_get(obj, id_method);
-    if (NIL_P(method)) {
+    if (method != Qfalse) {
+	ID mid = default_method;
+	if (!NIL_P(method)) {
+	    Check_Type(method, T_SYMBOL);
+	    mid = SYM2ID(method);
+	}
 	rb_str_buf_cat2(str, ":");
-	rb_str_buf_cat2(str, rb_id2name(default_method));
-    }
-    else if (method != Qfalse) {
-	Check_Type(method, T_SYMBOL);
-	rb_str_buf_cat2(str, ":");
-	rb_str_buf_cat2(str, rb_id2name(SYM2ID(method)));
+	rb_str_buf_append(str, rb_id2str(mid));
     }
 
     eargs = rb_attr_get(obj, id_arguments);
@@ -943,7 +940,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 	    while (argc--) {
 		VALUE arg = *argv++;
 
-		rb_str_concat(str, rb_inspect(arg));
+		rb_str_append(str, rb_inspect(arg));
 		rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
 		OBJ_INFECT(str, arg);
 	    }

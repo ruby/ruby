@@ -391,6 +391,14 @@ class TestEnumerator < Test::Unit::TestCase
     assert_warning("", bug6214) { [].lazy.inspect }
   end
 
+  def test_inspect_encoding
+    c = Class.new{define_method("\u{3042}"){}}
+    e = c.new.enum_for("\u{3042}")
+    s = assert_nothing_raised(Encoding::CompatibilityError) {break e.inspect}
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_match(/\A#<Enumerator: .*:\u{3042}>\z/, s)
+  end
+
   def test_generator
     # note: Enumerator::Generator is a class just for internal
     g = Enumerator::Generator.new {|y| y << 1 << 2 << 3; :foo }
