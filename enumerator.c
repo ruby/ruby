@@ -341,7 +341,8 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
             if (NIL_P(argv[0]) || rb_obj_is_proc(argv[0]) ||
                 (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == INFINITY)) {
                 size = argv[0];
-            } else {
+            }
+            else {
                 size = rb_to_int(argv[0]);
             }
             argc = 0;
