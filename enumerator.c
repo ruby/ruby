@@ -874,13 +874,14 @@ enumerator_rewind(VALUE obj)
     return obj;
 }
 
+static VALUE append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args);
+
 static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 {
     struct enumerator *e;
     const char *cname;
-    VALUE eobj, eargs, str, method;
-    int tainted, untrusted;
+    VALUE eobj, str;
 
     TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, e);
 
@@ -901,16 +902,26 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	eobj = e->obj;
     }
 
-    tainted   = OBJ_TAINTED(eobj);
-    untrusted = OBJ_UNTRUSTED(eobj);
-
     /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
     str = rb_sprintf("#<%s: ", cname);
-    rb_str_concat(str, rb_inspect(eobj));
+    rb_str_append(str, rb_inspect(eobj));
+    OBJ_INFECT(str, eobj);
+    append_method(obj, str, e->meth, e->args);
+
+    rb_str_buf_cat2(str, ">");
+
+    return str;
+}
+
+static VALUE
+append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
+{
+    VALUE method, eargs;
+
     method = rb_attr_get(obj, id_method);
     if (NIL_P(method)) {
 	rb_str_buf_cat2(str, ":");
-	rb_str_buf_cat2(str, rb_id2name(e->meth));
+	rb_str_buf_cat2(str, rb_id2name(default_method));
     }
     else if (method != Qfalse) {
 	Check_Type(method, T_SYMBOL);
@@ -920,7 +931,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
     eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
-	eargs = e->args;
+	eargs = default_args;
     }
     if (eargs != Qfalse) {
 	long   argc = RARRAY_LEN(eargs);
@@ -934,17 +945,11 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
 		rb_str_concat(str, rb_inspect(arg));
 		rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
-
-		if (OBJ_TAINTED(arg)) tainted = TRUE;
-		if (OBJ_UNTRUSTED(arg)) untrusted = TRUE;
+		OBJ_INFECT(str, arg);
 	    }
 	}
     }
 
-    rb_str_buf_cat2(str, ">");
-
-    if (tainted) OBJ_TAINT(str);
-    if (untrusted) OBJ_UNTRUST(str);
     return str;
 }
 
