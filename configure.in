@@ -1724,6 +1724,7 @@ fi
 AC_CHECK_FUNCS(__syscall)
 AC_CHECK_FUNCS(_longjmp)		# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(_setjmp)			# used for AC_ARG_WITH(setjmp-type)
+AC_CHECK_FUNCS(_setjmpex)		# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(chroot)
 AC_CHECK_FUNCS(chsize)
 AC_CHECK_FUNCS(clock_gettime)
@@ -1876,7 +1877,7 @@ if test ${setjmp_prefix+set}; then
 elif test "$ac_cv_func___builtin_setjmp" = yes; then
     setjmp_prefix=__builtin_
     setjmp_suffix=
-elif test "$ac_cv_header_setjmpex_h" = yes; then
+elif test "$ac_cv_header_setjmpex_h:$ac_cv_func__setjmpex" = yes:yes; then
     setjmp_prefix=
     setjmp_suffix=ex
 elif test "$ac_cv_func__setjmp" = yes; then

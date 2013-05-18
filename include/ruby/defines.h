@@ -61,7 +61,7 @@ extern "C" {
 # include <sys/select.h>
 #endif
 
-#ifdef HAVE_SETJMPEX_H
+#if defined HAVE_SETJMPEX_H && defined HAVE__SETJMPEX
 #include <setjmpex.h>
 #endif
 

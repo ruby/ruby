@@ -1,3 +1,12 @@
+Sun May 19 01:39:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (setjmp-type): check if setjmpex() is really available.
+	  workaround for i686-w64-mingw32 which declares it but lacks its
+	  definition.
+
+	* include/ruby/defines.h: include setjmpex.h only if also setjmpex()
+	  is available.
+
 Sat May 18 23:57:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (setjmp-type): use setjmpex() on w64-mingw32 to get rid
