@@ -15,12 +15,12 @@ module WEBrick
     # Escapes &, ", > and < in +string+
 
     def escape(string)
-      str = string ? string.dup : ""
+      str = string ? string.b.dup : "".b
       str.gsub!(/&/n, '&amp;')
       str.gsub!(/\"/n, '&quot;')
       str.gsub!(/>/n, '&gt;')
       str.gsub!(/</n, '&lt;')
-      str
+      str.force_encoding(Encoding.default_external)
     end
     module_function :escape
 
