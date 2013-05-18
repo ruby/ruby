@@ -1,3 +1,7 @@
+Sat May 18 20:15:28 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_scrub_bang): add String#scrub!. [Feature #8414]
+
 Sat May 18 16:59:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (INTEGER2NUM): Renamed from INTEGER2VALUE.

@@ -8014,6 +8014,28 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
     }
 }
 
+/*
+ *  call-seq:
+ *    str.scrub! -> str
+ *    str.scrub!(repl) -> str
+ *    str.scrub!{|bytes|} -> str
+ *
+ *  If the string is invalid byte sequence then replace invalid bytes with given replacement
+ *  character, else returns self.
+ *  If block is given, replace invalid bytes with returned value of the block.
+ *
+ *     "abc\u3042\x81".scrub! #=> "abc\u3042\uFFFD"
+ *     "abc\u3042\x81".scrub!("*") #=> "abc\u3042*"
+ *     "abc\u3042\xE3\x80".scrub!{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
+ */
+VALUE
+rb_str_scrub_bang(int argc, VALUE *argv, VALUE str)
+{
+    VALUE new = rb_str_scrub(argc, argv, str);
+    rb_str_replace(str, new);
+    return str;
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -8500,6 +8522,7 @@ Init_String(void)
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "scrub", rb_str_scrub, -1);
+    rb_define_method(rb_cString, "scrub!", rb_str_scrub_bang, -1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
