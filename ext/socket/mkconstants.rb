@@ -280,9 +280,13 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
 #ifdef HAVE_LONG_LONG
-#define INTEGER2VALUE(n) ((n) <= 0 ? LL2NUM(n) : ULL2NUM(n))
+#define INTEGER2VALUE(n) (0 < (n) ? \
+    ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULL2NUM(n)) : \
+    (FIXNUM_MIN <= (n) ? LONG2FIX(n) : LL2NUM(n)))
 #else
-#define INTEGER2VALUE(n) ((n) <= 0 ? LONG2NUM(n) : ULONG2NUM(n))
+#define INTEGER2VALUE(n) (0 < (n) ? \
+    ((n) <= FIXNUM_MAX ? LONG2FIX(n) : ULONG2NUM(n)) : \
+    (FIXNUM_MIN <= (n) ? LONG2FIX(n) : LONG2NUM(n)))
 #endif
 
 static void

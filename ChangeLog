@@ -1,3 +1,7 @@
+Sat May 18 09:00:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (INTEGER2VALUE): Use LONG2FIX if possible.
+
 Sat May 18 00:38:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: Convert integer constants bigger than int
