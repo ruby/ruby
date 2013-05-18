@@ -4485,7 +4485,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    }
 		}
 
-		if (liseq->arg_keyword > 0) {
+		if (liseq->arg_keyword >= 0) {
 		    int local_size = liseq->local_size;
 		    int idx = local_size - liseq->arg_keyword;
 		    argc++;
