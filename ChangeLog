@@ -1,3 +1,7 @@
+Mon May 20 03:16:52 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/pp.rb: Document PP::ObjectMixin [Fixes GH-312]
+
 Sun May 19 23:52:22 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/webrick/test_htmlutils.rb: add test for WEBrick::HTMLUtils.
