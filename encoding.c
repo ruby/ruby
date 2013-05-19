@@ -1700,7 +1700,7 @@ rb_enc_aliases(VALUE klass)
  * All Ruby script code has an associated Encoding which any String literal
  * created in the source code will be associated to.
  *
- * The default script encoding is <code>Encoding::US-ASCII</code>, but it can
+ * The default script encoding is <code>Encoding::UTF-8</code> after v2.0, but it can
  * be changed by a magic comment on the first line of the source code file (or
  * second line, if there is a shebang line on the first). The comment must
  * contain the word <code>coding</code> or <code>encoding</code>, followed
