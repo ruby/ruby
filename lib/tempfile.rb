@@ -261,11 +261,11 @@ class Tempfile < DelegateClass(File)
   end
   alias length size
 
+  # :stopdoc:
   def inspect
     "#<#{self.class}:#{path}>"
   end
 
-  # :stopdoc:
   class Remover
     def initialize(data)
       @pid = $$
