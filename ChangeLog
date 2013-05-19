@@ -1,3 +1,7 @@
+Sun May 19 11:37:36 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/fiddle/extconf.rb: ignore rc version of libffi to fix build failure.
+
 Sun May 19 10:38:50 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-delete-backward-char): Use
