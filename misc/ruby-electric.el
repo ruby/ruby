@@ -341,6 +341,6 @@ strings. Note that you must have Font Lock enabled."
           ((eq last-command 'ruby-electric-hash)
            (and (char-equal (preceding-char) ?{)
                 (delete-char 1))))
-    (delete-backward-char 1)))
+    (delete-char -1)))
 
 (provide 'ruby-electric)
