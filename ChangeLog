@@ -1,3 +1,8 @@
+Mon May 20 04:56:59 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/forwardable.rb: Forwardable examples in overview were broken
+	  Based on patch by @joem [Fixes GH-303] [Bug #8392]
+
 Mon May 20 03:35:26 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/optparse.rb: nodoc Object::Version and SPLAT_PROC
