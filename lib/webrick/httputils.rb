@@ -452,14 +452,14 @@ module WEBrick
     # Escapes HTTP reserved and unwise characters in +str+
 
     def escape(str)
-      _escape(str, UNESCAPED)
+      _escape(str.b, UNESCAPED).force_encoding(Encoding.default_external)
     end
 
     ##
     # Unescapes HTTP reserved and unwise characters in +str+
 
     def unescape(str)
-      _unescape(str, ESCAPED)
+      _unescape(str.b, ESCAPED).force_encoding(Encoding.default_external)
     end
 
     ##

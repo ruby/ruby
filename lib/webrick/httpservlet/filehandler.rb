@@ -463,7 +463,7 @@ module WEBrick
             dname = name
           end
           s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A>"
-          s << " " * (30 - dname.bytesize)
+          s << " " * (30 - dname.bytesize) rescue nil
           s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
           s << (size >= 0 ? size.to_s : "-") << "\n"
           res.body << s
