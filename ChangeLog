@@ -1,3 +1,7 @@
+Mon May 20 08:03:51 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/profiler.rb: Document Profiler__ methods
+
 Mon May 20 08:02:13 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/tempfile.rb: nodoc Tempfile#inspect
