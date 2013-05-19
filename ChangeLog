@@ -1,3 +1,7 @@
+Sun May 19 17:29:07 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#delete_if, Set#keep_if): Add comments.
+
 Sun May 19 11:37:36 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/fiddle/extconf.rb: ignore rc version of libffi to fix build failure.

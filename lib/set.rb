@@ -272,6 +272,8 @@ class Set
   # true, and returns self.
   def delete_if
     block_given? or return enum_for(__method__)
+    # @hash.delete_if should be faster, but using it breaks the order
+    # of enumeration in subclasses.
     select(&proc).each(&@hash.method(:delete))
     self
   end
@@ -280,6 +282,8 @@ class Set
   # false, and returns self.
   def keep_if
     block_given? or return enum_for(__method__)
+    # @hash.keep_if should be faster, but using it breaks the order of
+    # enumeration in subclasses.
     reject(&proc).each(&@hash.method(:delete))
     self
   end
