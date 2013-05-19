@@ -52,7 +52,7 @@ some or all of the following options.
 
  --with-tclConfig-file=<file>/--without-tclConfig-file
  --with-tkConfig-file=<file>/--without-tkConfig-file
-                               file path of tclConfig.sh/tkConfig.sh, or don't 
+                               file path of tclConfig.sh/tkConfig.sh, or don't
                                refer those.
                                If you want use non-standard filenames of config
                                files (e.g. tclConfig-static.sh), you must use
