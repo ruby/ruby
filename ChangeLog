@@ -1,3 +1,7 @@
+Mon May 20 07:48:24 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/stringio/stringio.c: Correct position of method rdoc
+
 Mon May 20 07:27:41 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* math.c: RDoc formatting of Math core docs with domains and codomains

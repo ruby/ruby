@@ -494,16 +494,12 @@ strio_set_lineno(VALUE self, VALUE lineno)
     return lineno;
 }
 
-/* call-seq: strio.binmode -> true */
 #define strio_binmode strio_self
 
-/* call-seq: strio.fcntl */
 #define strio_fcntl strio_unimpl
 
-/* call-seq: strio.flush -> strio */
 #define strio_flush strio_self
 
-/* call-seq: strio.fsync -> 0 */
 #define strio_fsync strio_0
 
 /*
@@ -623,7 +619,6 @@ strio_get_sync(VALUE self)
     return Qtrue;
 }
 
-/* call-seq: strio.sync = boolean -> boolean */
 #define strio_set_sync strio_first
 
 #define strio_tell strio_get_pos
@@ -650,7 +645,7 @@ strio_each_byte(VALUE self)
 }
 
 /*
- *  This is a deprecated alias for <code>each_byte</code>.
+ *  This is a deprecated alias for #each_byte.
  */
 static VALUE
 strio_bytes(VALUE self)
@@ -1349,18 +1344,10 @@ strio_sysread(int argc, VALUE *argv, VALUE self)
 
 #define strio_syswrite rb_io_write
 
-/*
- * call-seq:
- *   strio.isatty -> nil
- *   strio.tty? -> nil
- *
- */
 #define strio_isatty strio_false
 
-/* call-seq: strio.pid -> nil */
 #define strio_pid strio_nil
 
-/* call-seq: strio.fileno -> nil */
 #define strio_fileno strio_nil
 
 /*
@@ -1480,6 +1467,8 @@ Init_stringio()
     rb_define_method(StringIO, "lineno", strio_get_lineno, 0);
     rb_define_method(StringIO, "lineno=", strio_set_lineno, 1);
 
+
+    /* call-seq: strio.binmode -> true */
     rb_define_method(StringIO, "binmode", strio_binmode, 0);
     rb_define_method(StringIO, "close", strio_close, 0);
     rb_define_method(StringIO, "close_read", strio_close_read, 0);
@@ -1489,14 +1478,18 @@ Init_stringio()
     rb_define_method(StringIO, "closed_write?", strio_closed_write, 0);
     rb_define_method(StringIO, "eof", strio_eof, 0);
     rb_define_method(StringIO, "eof?", strio_eof, 0);
+    /* call-seq: strio.fcntl */
     rb_define_method(StringIO, "fcntl", strio_fcntl, -1);
+    /* call-seq: strio.flush -> strio */
     rb_define_method(StringIO, "flush", strio_flush, 0);
+    /* call-seq: strio.fsync -> 0 */
     rb_define_method(StringIO, "fsync", strio_fsync, 0);
     rb_define_method(StringIO, "pos", strio_get_pos, 0);
     rb_define_method(StringIO, "pos=", strio_set_pos, 1);
     rb_define_method(StringIO, "rewind", strio_rewind, 0);
     rb_define_method(StringIO, "seek", strio_seek, -1);
     rb_define_method(StringIO, "sync", strio_get_sync, 0);
+    /* call-seq: strio.sync = boolean -> boolean */
     rb_define_method(StringIO, "sync=", strio_set_sync, 1);
     rb_define_method(StringIO, "tell", strio_tell, 0);
 
@@ -1520,9 +1513,19 @@ Init_stringio()
     rb_define_method(StringIO, "write", strio_write, 1);
     rb_define_method(StringIO, "putc", strio_putc, 1);
 
+    /*
+     * call-seq:
+     *   strio.isatty -> nil
+     *   strio.tty? -> nil
+     *
+     */
     rb_define_method(StringIO, "isatty", strio_isatty, 0);
     rb_define_method(StringIO, "tty?", strio_isatty, 0);
+
+    /* call-seq: strio.pid -> nil */
     rb_define_method(StringIO, "pid", strio_pid, 0);
+
+    /* call-seq: strio.fileno -> nil */
     rb_define_method(StringIO, "fileno", strio_fileno, 0);
     rb_define_method(StringIO, "size", strio_size, 0);
     rb_define_method(StringIO, "length", strio_size, 0);
