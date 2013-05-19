@@ -1,3 +1,8 @@
+Mon May 20 07:27:41 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* math.c: RDoc formatting of Math core docs with domains and codomains
+	  Patch by @eLobato [Fixes GH-309]
+
 Mon May 20 05:58:12 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/bigdecimal/bigdecimal.c: Formatting for BigMath [Fixes GH-306]
