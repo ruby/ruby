@@ -2118,7 +2118,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 		has_meta = 1;
 	}
 	if (!has_meta) {
-            /* avoid shell since no shell meta charactor found. */
+            /* avoid shell since no shell meta character found. */
             eargp->use_shell = 0;
         }
         if (!eargp->use_shell) {
@@ -2346,7 +2346,7 @@ static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *er
  *  If _commandline_ is simple enough,
  *  no meta characters, no shell reserved word and no special built-in,
  *  Ruby invokes the command directly without shell.
- *  You can force shell invocation by adding ";" for _commandline_ (because ";" is a meta characetr).
+ *  You can force shell invocation by adding ";" for _commandline_ (because ";" is a meta character).
  *  Note that this behavior is observable by pid obtained
  *  (return value of spawn() and IO#pid for IO.popen) is the pid of the invoked command, not shell.
  *

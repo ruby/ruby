@@ -413,7 +413,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	path_encoding = rb_filesystem_encoding();
 	cp = path_cp = system_code_page();
 
-	/* ignores dir since we are expading home */
+	/* ignores dir since we are expanding home */
 	ignore_dir = 1;
 
 	/* exclude ~ from the result */

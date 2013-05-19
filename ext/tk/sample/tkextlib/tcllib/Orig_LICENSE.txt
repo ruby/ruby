@@ -2,8 +2,8 @@
   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   >>>  The following text is the original 'license.term' of tklib    <<<
   >>>  extension.                                                    <<<
-  >>>  Original Tcl files are not include in this directry, because  <<<
-  >>>  of all of them are rewrited to Ruby files.                    <<<
+  >>>  Original Tcl files are not include in this directory, because <<<
+  >>>  of all of them are rewritten to Ruby files.                   <<<
   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 This software is copyrighted by Ajuba Solutions and other parties.

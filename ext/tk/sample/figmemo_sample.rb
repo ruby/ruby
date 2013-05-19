@@ -5,7 +5,7 @@ begin
   # try to use Img extension
   require 'tkextlib/tkimg'
 rescue Exception
-  # cannot use Img extention --> ignore
+  # cannot use Img extension --> ignore
 end
 
 

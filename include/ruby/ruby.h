@@ -1782,7 +1782,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
  * @defgroup embed CRuby Embedding APIs
  * CRuby interpreter APIs. These are APIs to embed MRI interpreter into your
  * program.
- * These functions are not a part of Ruby extention library API.
+ * These functions are not a part of Ruby extension library API.
  * Extension libraries of Ruby should not depend on these functions.
  * @{
  */

@@ -40,7 +40,7 @@ VALUE rb_eSysStackError;
 
 /* Initializes the Ruby VM and builtin libraries.
  * @retval 0 if succeeded.
- * @retval non-zero an error occured.
+ * @retval non-zero an error occurred.
  */
 int
 ruby_setup(void)
@@ -69,7 +69,7 @@ ruby_setup(void)
 
 /* Calls ruby_setup() and check error.
  *
- * Prints errors and calls exit(3) if an error occured.
+ * Prints errors and calls exit(3) if an error occurred.
  */
 void
 ruby_init(void)
@@ -84,7 +84,7 @@ ruby_init(void)
 /*! Processes command line arguments and compiles the Ruby source to execute.
  *
  * This function does:
- * \li  Processses the given command line flags and arguments for ruby(1)
+ * \li  Processes the given command line flags and arguments for ruby(1)
  * \li compiles the source code from the given argument, -e or stdin, and
  * \li returns the compiled source as an opaque pointer to an internal data structure
  *
@@ -151,7 +151,7 @@ ruby_finalize(void)
  * resources used by the VM.
  *
  * @param ex Default value to the return value.
- * @return If an error occured returns a non-zero. If otherwise, returns the
+ * @return If an error occurred returns a non-zero. If otherwise, returns the
  *         given ex.
  * @note This function does not raise any exception.
  */
@@ -297,7 +297,7 @@ ruby_executable_node(void *n, int *status)
 }
 
 /*! Runs the given compiled source and exits this process.
- * @retval 0 if successfully run thhe source
+ * @retval 0 if successfully run the source
  * @retval non-zero if an error occurred.
 */
 int

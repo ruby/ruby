@@ -328,7 +328,7 @@ module Gem
   end
 
   ##
-  # The path the the data directory specified by the gem name.  If the
+  # The path to the data directory specified by the gem name.  If the
   # package is not available as a gem, return nil.
 
   def self.datadir(gem_name)

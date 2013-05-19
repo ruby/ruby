@@ -15,7 +15,7 @@
 #ifndef R_OK
 # define R_OK  4        /* test whether readable.  */
 # define W_OK  2        /* test whether writable.  */
-# define X_OK  1        /* test whether execubale. */
+# define X_OK  1        /* test whether executable. */
 # define F_OK  0        /* test whether exist.  */
 #endif
 

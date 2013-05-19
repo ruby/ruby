@@ -649,7 +649,7 @@ StartSockets(void)
     WSADATA retdata;
 
     //
-    // initalize the winsock interface and insure that it's
+    // initialize the winsock interface and insure that it's
     // cleaned up at exit.
     //
     version = MAKEWORD(2, 0);
@@ -1517,8 +1517,8 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     // When we've finished, and it's an input command (meaning that it's
     // the processes argv), we'll do globing and then build the argument
     // vector.
-    // The outer loop does one interation for each element seen.
-    // The inner loop does one interation for each character in the element.
+    // The outer loop does one iteration for each element seen.
+    // The inner loop does one iteration for each character in the element.
     //
 
     while (*(ptr = skipspace(ptr))) {
@@ -1569,7 +1569,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		//
 		// if we're already in a string, see if this is the
 		// terminating close-quote. If it is, we're finished with
-		// the string, but not neccessarily with the element.
+		// the string, but not necessarily with the element.
 		// If we're not already in a string, start one.
 		//
 
@@ -2587,7 +2587,7 @@ is_not_socket(SOCKET sock)
 
 /* License: Ruby's */
 static int
-is_pipe(SOCKET sock) /* DONT call this for SOCKET! it clains it is PIPE. */
+is_pipe(SOCKET sock) /* DONT call this for SOCKET! it claims it is PIPE. */
 {
     int ret;
 
@@ -4030,7 +4030,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
     DWORD err;
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
-	/* If an error occured, return immediatly. */
+	/* If an error occurred, return immediately. */
     error_exit:
 	err = GetLastError();
 	if (err == ERROR_INVALID_PARAMETER)

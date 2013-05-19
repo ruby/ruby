@@ -13763,7 +13763,7 @@ Tue Apr 17 17:33:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (handle_rescue): use === to compare exception match.
 
-	* error.c (syserr_eqq): comparison between SytemCallErrors should
+	* error.c (syserr_eqq): comparison between SystemCallErrors should
 	  based on their error numbers.
 
 Tue Apr 17 16:54:39 2001  K.Kosako  <kosako@sofnec.co.jp>

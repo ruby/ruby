@@ -760,7 +760,7 @@ various conditions.
   check_sizeof(type[, headers[, opts]]): check size of type
   check_signedness(type[, headers[, opts]]): check signedness of type
   convertible_int(type[, headers[, opts]]): find convertible integer type
-  find_executable(bin[, path]): find excutable file path
+  find_executable(bin[, path]): find executable file path
   create_header(header): generate configured header
   create_makefile(target[, target_prefix]): generate Makefile
 
@@ -853,7 +853,7 @@ lex.c    :: automatically generated from keywords
   eval_safe.c
   insns.def           : definition of VM instructions
   iseq.c              : implementation of VM::ISeq
-  thread.c            : thread management and context swiching
+  thread.c            : thread management and context switching
   thread_win32.c      : thread implementation
   thread_pthread.c    : ditto
   vm.c
@@ -882,7 +882,7 @@ lex.c    :: automatically generated from keywords
 
 == Utility Functions
 
-debug.c    :: debug symbols for C debuggger
+debug.c    :: debug symbols for C debugger
 dln.c      :: dynamic loading
 st.c       :: general purpose hash table
 strftime.c :: formatting times
@@ -1312,12 +1312,12 @@ VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   Calls the function func1 with arg1 as the argument, then calls func2
   with arg2 if execution terminated.  The return value from
-  rb_ensure() is that of func1 when no exception occured.
+  rb_ensure() is that of func1 when no exception occurred.
 
 VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state) ::
 
   Calls the function func with arg as the argument.  If no exception
-  occured during func, it returns the result of func and *state is zero.
+  occurred during func, it returns the result of func and *state is zero.
   Otherwise, it returns Qnil and sets *state to nonzero.  If state is
   NULL, it is not set in both cases.
   You have to clear the error info with rb_set_errinfo(Qnil) when

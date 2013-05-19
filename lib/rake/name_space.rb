@@ -1,6 +1,6 @@
 module Rake
 
-  # The NameSpace class will lookup task names in the the scope
+  # The NameSpace class will lookup task names in the scope
   # defined by a +namespace+ command.
   #
   class NameSpace

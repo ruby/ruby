@@ -57,6 +57,6 @@ Based on it, the Tcl interpreter changes auto_path variable's value.
 
 Then, you'll be able to use Tcl/Tk extension libraries included in the
 ActiveTcl package (e.g. call TkPackage.require('BWidget'), and then,
-use functions/widgets of BWidget extention).
+use functions/widgets of BWidget extension).
 
                                   Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

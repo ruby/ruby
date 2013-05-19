@@ -1,7 +1,7 @@
 /*
  * ext/dl/dl.c
  *
- * doumentation:
+ * documentation:
  * - Vincent Batts (vbatts@hashbangbash.com)
  *
  */

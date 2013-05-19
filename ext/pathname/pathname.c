@@ -1155,7 +1155,7 @@ path_unlink(VALUE self)
  * Creates a new Pathname object from the given string, +path+, and returns
  * pathname object.
  *
- * In order to use this constuctor, you must first require the Pathname
+ * In order to use this constructor, you must first require the Pathname
  * standard library extension.
  *
  *	require 'pathname'

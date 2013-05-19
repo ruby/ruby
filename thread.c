@@ -1258,7 +1258,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
 /*
  * rb_thread_call_without_gvl - permit concurrent/parallel execution.
  * rb_thread_call_without_gvl2 - permit concurrent/parallel execution
- *                               without interrupt proceess.
+ *                               without interrupt process.
  *
  * rb_thread_call_without_gvl() does:
  *   (1) Check interrupts.
@@ -1499,7 +1499,7 @@ thread_s_pass(VALUE klass)
 /*
  * rb_threadptr_pending_interrupt_* - manage asynchronous error queue
  *
- * Async events such as an exception throwed by Thread#raise,
+ * Async events such as an exception thrown by Thread#raise,
  * Thread#kill and thread termination (after main thread termination)
  * will be queued to th->pending_interrupt_queue.
  * - clear: clear the queue.
@@ -1699,7 +1699,7 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val)
  * ::handle_interrupt block we can purposefully handle RuntimeError exceptions.
  *
  *   th = Thread.new do
- *     Thead.handle_interrupt(RuntimeError => :never) {
+ *     Thread.handle_interrupt(RuntimeError => :never) {
  *       begin
  *         # You can write resource allocation code safely.
  *         Thread.handle_interrupt(RuntimeError => :immediate) {
@@ -1807,7 +1807,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
  * call-seq:
  *   target_thread.pending_interrupt?(error = nil) -> true/false
  *
- * Returns whether or not the asychronous queue is empty for the target thread.
+ * Returns whether or not the asynchronous queue is empty for the target thread.
  *
  * If +error+ is given, then check only for +error+ type deferred events.
  *
@@ -1960,7 +1960,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (err == Qundef) {
 		/* no error */
 	    }
-	    else if (err == eKillSignal        /* Thread#kill receieved */  ||
+	    else if (err == eKillSignal        /* Thread#kill received */   ||
 		     err == eTerminateSignal   /* Terminate thread */       ||
 		     err == INT2FIX(TAG_FATAL) /* Thread.exit etc. */         ) {
 		rb_threadptr_to_kill(th);
@@ -2749,7 +2749,7 @@ rb_thread_local_aref(VALUE thread, ID id)
  *      thr[sym]   -> obj or nil
  *
  *  Attribute Reference---Returns the value of a fiber-local variable (current thread's root fiber
- *  if not explicitely inside a Fiber), using either a symbol or a string name.
+ *  if not explicitly inside a Fiber), using either a symbol or a string name.
  *  If the specified variable does not exist, returns +nil+.
  *
  *     [
@@ -4880,7 +4880,7 @@ exec_recursive_i(VALUE tag, struct exec_recursive_params *p)
  * to Qtrue, otherwise the outermost func will be called. In the latter case,
  * all inner func are short-circuited by throw.
  * Implementation details: the value thrown is the recursive list which is
- * proper to the current method and unlikely to be catched anywhere else.
+ * proper to the current method and unlikely to be caught anywhere else.
  * list[recursive_key] is used as a flag for the outermost call.
  */
 

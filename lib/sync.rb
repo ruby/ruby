@@ -315,7 +315,7 @@ end
 Synchronizer_m = Sync_m
 
 ##
-# A class that providesa two-phase lock with a counter.  See Sync_m for
+# A class that provides two-phase lock with a counter.  See Sync_m for
 # details.
 
 class Sync

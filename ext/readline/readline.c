@@ -302,7 +302,7 @@ readline_get(VALUE prompt)
  * 1. stdin is not tty.
  * 2. stdin was closed. (errno is EBADF after called isatty(2).)
  *
- * This method supports thread. Switchs the thread context when waits
+ * This method supports thread. Switches the thread context when waits
  * inputting line.
  *
  * Supports line edit when inputs line. Provides VI and Emacs editing mode.

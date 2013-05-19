@@ -320,7 +320,7 @@ class PrettyPrint
 
     # Creates a new text object.
     #
-    # This contructor takes no arguments.
+    # This constructor takes no arguments.
     #
     # The workflow is to append a PrettyPrint::Text object to the buffer, and
     # being able to call the buffer.last() to reference it.
@@ -359,7 +359,7 @@ class PrettyPrint
     # Create a new Breakable object.
     #
     # Arguments:
-    # * +sep+ String of the seperator
+    # * +sep+ String of the separator
     # * +width+ Fixnum width of the +sep+
     # * +q+ parent PrettyPrint object, to base from
     def initialize(sep, width, q)
@@ -371,7 +371,7 @@ class PrettyPrint
       @group.breakables.push self
     end
 
-    # Holds the seperator String
+    # Holds the separator String
     #
     # The +sep+ argument from ::new
     attr_reader :obj
@@ -525,14 +525,14 @@ class PrettyPrint
       @first = [true]
     end
 
-    # Add +obj+ to the text to be outputed.
+    # Add +obj+ to the text to be output.
     #
     # +width+ argument is here for compatibility. It is a noop argument.
     def text(obj, width=nil)
       @output << obj
     end
 
-    # Appends +sep+ to the text to be outputed. By default +sep+ is ' '
+    # Appends +sep+ to the text to be output. By default +sep+ is ' '
     #
     # +width+ argument is here for compatibility. It is a noop argument.
     def breakable(sep=' ', width=nil)

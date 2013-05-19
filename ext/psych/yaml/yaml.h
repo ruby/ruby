@@ -1089,7 +1089,7 @@ typedef struct yaml_parser_s {
     yaml_error_type_t error;
     /** Error description. */
     const char *problem;
-    /** The byte about which the problem occured. */
+    /** The byte about which the problem occurred. */
     size_t problem_offset;
     /** The problematic value (@c -1 is none). */
     int problem_value;

@@ -12,7 +12,7 @@
  * maintainers:
  * - Takaaki Tateishi (ttate@kt.jaist.ac.jp)
  *
- * doumentation:
+ * documentation:
  * - Vincent Batts (vbatts@hashbangbash.com)
  */
 
@@ -465,7 +465,7 @@ curses_beep(VALUE obj)
 /*
  * Document-method: Curses.flash
  *
- * Flashs the screen, for visual alarm on the terminal, if possible;
+ * Flashes the screen, for visual alarm on the terminal, if possible;
  * otherwise it sounds the alert.
  *
  * see also Curses.beep
@@ -1129,7 +1129,7 @@ curses_init_color(VALUE obj, VALUE color, VALUE r, VALUE g, VALUE b)
 /*
  * Document-method: Curses.has_colors?
  *
- * Returns +true+ or +false+ depending on whether the terminal has color capbilities.
+ * Returns +true+ or +false+ depending on whether the terminal has color capabilities.
  */
 static VALUE
 curses_has_colors(VALUE obj)
@@ -1478,7 +1478,7 @@ window_s_allocate(VALUE class)
  * Document-method: Curses::Window.new
  * call-seq: new(height, width, top, left)
  *
- * Contruct a new Curses::Window with constraints of
+ * Construct a new Curses::Window with constraints of
  * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
  *
  * A new window using full screen is called as
@@ -1506,7 +1506,7 @@ window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
  * Document-method: Curses::Window.subwin
  * call-seq: subwin(height, width, top, left)
  *
- * Contruct a new subwindow with constraints of
+ * Construct a new subwindow with constraints of
  * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
  *
  */
@@ -2352,7 +2352,7 @@ window_bkgd(VALUE obj, VALUE ch)
 /*
  * Document-method: Curses::Window.getbkgd
  *
- * Returns an Interer (+ch+) for the character property in the current window.
+ * Returns an Integer (+ch+) for the character property in the current window.
  */
 static VALUE
 window_getbkgd(VALUE obj)
@@ -2501,7 +2501,7 @@ window_timeout(VALUE obj, VALUE delay)
  * call-seq:
  *   new(height, width)
  *
- * Contruct a new Curses::Pad with constraints of +height+ lines, +width+
+ * Construct a new Curses::Pad with constraints of +height+ lines, +width+
  * columns
  *
  */
@@ -2530,7 +2530,7 @@ pad_initialize(VALUE obj, VALUE h, VALUE w)
  * call-seq:
  *   subpad(height, width, begin_x, begin_y)
  *
- * Contruct a new subpad with constraints of +height+ lines, +width+ columns,
+ * Construct a new subpad with constraints of +height+ lines, +width+ columns,
  * begin at +begin_x+ line, and +begin_y+ columns on the pad.
  *
  */
@@ -3581,10 +3581,10 @@ Init_curses(void)
 #endif
 #ifdef KEY_SR
     /* Document-const: KEY_SR
-     * Scroll 1 line backware (reverse)
+     * Scroll 1 line backward (reverse)
      */
     /* Document-const: SR
-     * Scroll 1 line backware (reverse)
+     * Scroll 1 line backward (reverse)
      */
     rb_curses_define_const(KEY_SR);
     rb_define_const(mKey, "SR", INT2NUM(KEY_SR));

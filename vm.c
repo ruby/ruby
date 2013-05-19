@@ -2463,7 +2463,7 @@ Init_VM(void)
 
     /* ::RubyVM::DEFAULT_PARAMS
      * This constant variable shows VM's default parameters.
-     * Note that changing these values does not affect VM exection.
+     * Note that changing these values does not affect VM execution.
      * Specification is not stable and you should not depend on this value.
      * Of course, this constant is MRI specific.
      */

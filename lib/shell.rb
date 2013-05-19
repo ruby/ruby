@@ -48,7 +48,7 @@ require "shell/process-controller"
 #     end
 #   end
 #
-# === Temp file creationg with self
+# === Temp file creation with self
 #
 # This example is identical to the first, except we're using
 # CommandProcessor#transact.

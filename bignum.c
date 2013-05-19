@@ -363,7 +363,7 @@ rb_int2inum(SIGNED_VALUE n)
  * is the sign bit: 1 means negative and 0 means zero or positive.
  *
  * If given size of buf (num_longs) is not enough to represent val,
- * higier words (including a sign bit) are ignored.
+ * higher words (including a sign bit) are ignored.
  */
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)

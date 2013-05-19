@@ -737,7 +737,7 @@ class OptionParser
   # OPTIONAL_ARGUMENT:: The switch requires an optional argument. (:OPTIONAL)
   #
   # Use like --switch=argument (long style) or -Xargument (short style). For
-  # short style, only portion matched to argument pattern is dealed as
+  # short style, only portion matched to argument pattern is treated as
   # argument.
   #
   ArgumentStyle = {}

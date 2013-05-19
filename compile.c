@@ -3429,7 +3429,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 				     redo_label, end_label);
 	}
 	else if (type == NODE_UNTIL) {
-	    /* untile */
+	    /* until */
 	    compile_branch_condition(iseq, ret, node->nd_cond,
 				     end_label, redo_label);
 	}
@@ -4473,7 +4473,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			}
 			ADD_INSN1(args, line, newarray, INT2FIX(j));
 			ADD_INSN (args, line, concatarray);
-			/* argc is setteled at above */
+			/* argc is settled at above */
 		    }
 		    else {
 			int j;

@@ -1795,7 +1795,7 @@ set_arg0(VALUE val, ID id)
 
 /*! Sets the current script name to this value.
  *
- * This is similiar to <code>$0 = name</code> in Ruby level but also affects
+ * This is similar to <code>$0 = name</code> in Ruby level but also affects
  * <code>Method#location</code> and others.
  */
 void

@@ -214,7 +214,7 @@ module Net
       $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
 
-    # Contructs a socket with +host+ and +port+.
+    # Constructs a socket with +host+ and +port+.
     #
     # If SOCKSSocket is defined and the environment (ENV) defines
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a TCPSocket is

@@ -2553,7 +2553,7 @@ BigDecimal_sign(VALUE self)
 /*
  * call-seq: BigDecimal.save_exception_mode { ... }
  *
- * Excecute the provided block, but preserve the exception mode
+ * Execute the provided block, but preserve the exception mode
  *
  *     BigDecimal.save_exception_mode do
  *       BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
@@ -2582,7 +2582,7 @@ BigDecimal_save_exception_mode(VALUE self)
 /*
  * call-seq: BigDecimal.save_rounding_mode { ... }
  *
- * Excecute the provided block, but preserve the rounding mode
+ * Execute the provided block, but preserve the rounding mode
  *
  *     BigDecimal.save_exception_mode do
  *       BigDecimal.mode(BigDecimal::ROUND_MODE, :up)
@@ -2607,7 +2607,7 @@ BigDecimal_save_rounding_mode(VALUE self)
 /*
  * call-seq: BigDecimal.save_limit { ... }
  *
- * Excecute the provided block, but preserve the precision limit
+ * Execute the provided block, but preserve the precision limit
  *
  *      BigDecimal.limit(100)
  *      puts BigDecimal.limit
@@ -3266,7 +3266,7 @@ static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 
 static Real *VpConstOne;    /* constant 1.0 */
 static Real *VpPt5;        /* constant 0.5 */
-#define maxnr 100UL    /* Maximum iterations for calcurating sqrt. */
+#define maxnr 100UL    /* Maximum iterations for calculating sqrt. */
                 /* used in VpSqrt() */
 
 /* ETC */
@@ -3690,7 +3690,7 @@ VpNumOfChars(Real *vp,const char *pszFmt)
  * [Input]
  *   BaseVal: Base value(assigned to BASE) for Vp calculation.
  *   It must be the form BaseVal=10**n.(n=1,2,3,...)
- *   If Base <= 0L,then the BASE will be calcurated so
+ *   If Base <= 0L,then the BASE will be calculated so
  *   that BASE is as large as possible satisfying the
  *   relation MaxVal <= BASE*(BASE+1). Where the value
  *   MaxVal is the largest value which can be represented
@@ -4415,7 +4415,7 @@ VpSetPTR(Real *a, Real *b, Real *c, size_t *a_pos, size_t *b_pos, size_t *c_pos,
 }
 
 /*
- * Return number og significant digits
+ * Return number of significant digits
  *       c = a * b , Where a = a0a1a2 ... an
  *             b = b0b1b2 ... bm
  *             c = c0c1c2 ... cl
@@ -4651,7 +4651,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
 	    }
 	    /* The first few word digits of r and b is the same and */
 	    /* the first different word digit of w is greater than that */
-	    /* of b, so quotinet is 1 and just subtract b from r. */
+	    /* of b, so quotient is 1 and just subtract b from r. */
 	    borrow = 0;        /* quotient=1, then just r-b */
 	    ind_b = b->Prec - 1;
 	    ind_r = ind_c + ind_b;
@@ -4853,7 +4853,7 @@ VpComp(Real *a, Real *b)
 	goto Exit;
     }
 
-    /* a and b have same sign, && signe!=0,then compare exponent */
+    /* a and b have same sign, && sign!=0,then compare exponent */
     if (a->exponent > b->exponent) {
 	val = VpGetSign(a);
 	goto Exit;
@@ -4936,7 +4936,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     j = 0;
     nd = nc = 0;        /*  nd : number of digits in fraction part(every 10 digits, */
     /*    nd<=10). */
-    /*  nc : number of caracters printed  */
+    /*  nc : number of characters printed  */
     ZeroSup = 1;        /* Flag not to print the leading zeros as 0.00xxxxEnn */
     while (*(cntl_chr + j)) {
 	if (*(cntl_chr + j) == '%' && *(cntl_chr + j + 1) != '%') {
@@ -5710,9 +5710,9 @@ Exit:
 VP_EXPORT int
 VpMidRound(Real *y, unsigned short f, ssize_t nf)
 /*
- * Round reletively from the decimal point.
+ * Round relatively from the decimal point.
  *    f: rounding mode
- *   nf: digit location to round from the the decimal point.
+ *   nf: digit location to round from the decimal point.
  */
 {
     /* fracf: any positive digit under rounding position? */
@@ -5782,7 +5782,7 @@ VpMidRound(Real *y, unsigned short f, ssize_t nf)
        */
 
     /* now check all the remaining BDIGITS for zero-ness a whole BDIGIT at a time.
-       if we spot any non-zeroness, that means that we foudn a positive digit under
+       if we spot any non-zeroness, that means that we found a positive digit under
        rounding position, and we also found a positive digit under one further than
        the rounding position, so both searches (to see if any such non-zero digit exists)
        can stop */

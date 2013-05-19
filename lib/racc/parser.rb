@@ -37,7 +37,7 @@ end
 #          [--version] [--copyright] [--help] <var>grammarfile</var>
 #
 # [+filename+]
-#   Racc grammar file. Any extention is permitted.
+#   Racc grammar file. Any extension is permitted.
 # [-o+outfile+, --output-file=+outfile+]
 #   A filename for output. default is <+filename+>.tab.rb
 # [-O+filename+, --log-file=+filename+]
@@ -48,12 +48,12 @@ end
 # [-v, --verbose]
 #   verbose mode. create +filename+.output file, like yacc's y.output file.
 # [-g, --debug]
-#   add debug code to parser class. To display debuggin information,
+#   add debug code to parser class. To display debugging information,
 #   use this '-g' option and set @yydebug true in parser class.
 # [-E, --embedded]
 #   Output parser which doesn't need runtime files (racc/parser.rb).
 # [-C, --check-only]
-#   Check syntax of racc grammer file and quit.
+#   Check syntax of racc grammar file and quit.
 # [-S, --output-status]
 #   Print messages time to time while compiling.
 # [-l, --no-line-convert]
@@ -187,7 +187,7 @@ module Racc
     Racc_Runtime_Core_Revision_R = %w$originalRevision: 1.8 $[1]
     begin
       require 'racc/cparse'
-    # Racc_Runtime_Core_Version_C  = (defined in extention)
+    # Racc_Runtime_Core_Version_C  = (defined in extension)
       Racc_Runtime_Core_Revision_C = Racc_Runtime_Core_Id_C.split[2]
       unless new.respond_to?(:_racc_do_parse_c, true)
         raise LoadError, 'old cparse.so'

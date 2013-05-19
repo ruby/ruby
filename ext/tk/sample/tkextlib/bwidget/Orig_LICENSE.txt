@@ -2,8 +2,8 @@
   ######################################################################
   ###  The following text is the original 'LICENSE.txt' of BWidget   ###
   ###  extension.                                                    ###
-  ###  Original Tcl source files are not include in this directry,   ###
-  ###  because of all of them are rewrited to Ruby files.            ###
+  ###  Original Tcl source files are not include in this directory,  ###
+  ###  because of all of them are rewritten to Ruby files.           ###
   ###  However, the bitmap data files ('bwidgtet.xbm' and 'x1.xbm')  ###
   ###  included in this directory are quoted from BWidget source     ###
   ###  archive. So, those bitmaps are under the following license.   ###

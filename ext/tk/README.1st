@@ -1,7 +1,7 @@
 If you want to use Ruby/Tk (tk.rb and so on), you must have tcltklib.so
 which is working correctly. When you have some troubles on compiling,
 please read README.tcltklib and README.ActiveTcl.
-Even if there is a tcltklib.so on your Ruby library directry, it will not
+Even if there is a tcltklib.so on your Ruby library directory, it will not
 work without Tcl/Tk libraries (e.g. libtcl8.4.so) on your environment.
 You must also check that your Tcl/Tk is installed properly.
 

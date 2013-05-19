@@ -3030,7 +3030,7 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 	}
     }
 
-    /* Given argument has no corresponding time_t. Let's outerpolation. */
+    /* Given argument has no corresponding time_t. Let's extrapolate. */
     /*
      *  `Seconds Since the Epoch' in SUSv3:
      *  tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
@@ -4520,8 +4520,8 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *
  *  This method is similar to strftime() function defined in ISO C and POSIX.
  *
- *  While all directives are locale independant since Ruby 1.9, %Z is platform
- *  dependant.
+ *  While all directives are locale independent since Ruby 1.9, %Z is platform
+ *  dependent.
  *  So, the result may differ even if the same format string is used in other
  *  systems such as C.
  *

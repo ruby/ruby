@@ -1093,7 +1093,7 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 
 /*
  * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
- * bit represention. (see http://en.wikipedia.org/wiki/UTF-8)
+ * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
  * Therefore, following pseudo code can detect UTF-8 leading byte.
  *
  * if (!(byte & 0x80))

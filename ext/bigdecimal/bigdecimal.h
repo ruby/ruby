@@ -97,7 +97,7 @@ extern VALUE rb_cBigDecimal;
 #define VP_EXCEPTION_OVERFLOW   ((unsigned short)0x0001) /* 0x0008) */
 #define VP_EXCEPTION_ZERODIVIDE ((unsigned short)0x0010)
 
-/* Following 2 exceptions cann't controlled by user */
+/* Following 2 exceptions can't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
 #define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
 
