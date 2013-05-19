@@ -1,3 +1,7 @@
+Mon May 20 03:35:26 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/optparse.rb: nodoc Object::Version and SPLAT_PROC
+
 Mon May 20 03:16:52 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/pp.rb: Document PP::ObjectMixin [Fixes GH-312]

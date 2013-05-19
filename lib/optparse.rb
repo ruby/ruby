@@ -1093,7 +1093,7 @@ XXX
   end
   private :notwice
 
-  SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a}
+  SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
@@ -1936,7 +1936,7 @@ end
 ARGV.extend(OptionParser::Arguable)
 
 if $0 == __FILE__
-  Version = OptionParser::Version
+  Version = OptionParser::Version # :nodoc:
   ARGV.options {|q|
     q.parse!.empty? or print "what's #{ARGV.join(' ')}?\n"
   } or abort(ARGV.options.to_s)
