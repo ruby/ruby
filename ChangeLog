@@ -1,3 +1,7 @@
+Sun May 19 23:52:22 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/webrick/test_htmlutils.rb: add test for WEBrick::HTMLUtils.
+
 Sun May 19 23:12:07 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* encoding.c: document fix, change default script encoding.
