@@ -162,7 +162,7 @@ module Test
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
           "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
         }
-        code.force_encoding("us-ascii")
+        code.force_encoding(Encoding::UTF_8)
         verbose, $VERBOSE = $VERBOSE, nil
         yield if defined?(yield)
         case
