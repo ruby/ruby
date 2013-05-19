@@ -496,7 +496,7 @@ Sat Nov 22 10:31:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 2005-04-08  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/treectrl/random.rb: fixed typo. (drop node outside of
-	  widget, or reenter widget while draggging)
+	  widget, or reenter widget while dragging)
 
 2005-04-08  ocean  <ocean@ruby-lang.org>
 

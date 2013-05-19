@@ -3312,7 +3312,7 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     int err, state = 0;
     int ep[2];
     VALUE exc = Qnil;
-    int error_occured;
+    int error_occurred;
 
     if (status) *status = 0;
 
@@ -3358,8 +3358,8 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
 #endif
         }
         close(ep[1]);
-        error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
-        if (state || error_occured) {
+        error_occurred = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
+        if (state || error_occurred) {
             if (status) {
                 rb_protect(proc_syswait, (VALUE)pid, status);
                 if (state) *status = state;

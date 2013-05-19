@@ -15,7 +15,7 @@ verbose  = false
 
 def help_msg
   print "Usage: #{$0} [-l] [-v] [-h] [--] [dir]\n"
-  print "\tIf dir is omitted, check the directry that this command exists.\n"
+  print "\tIf dir is omitted, check the directory that this command exists.\n"
   print "\tAvailable options are \n"
   print "\t  -l : Add dir to $LOAD_PATH\n"
   print "\t       (If dir == '<parent>/tkextlib', add <parent> also.)\n"

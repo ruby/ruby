@@ -215,7 +215,7 @@ module Net
       @started = false
       @open_timeout = 30
       @read_timeout = 60
-      @error_occured = false
+      @error_occurred = false
       @debug_output = nil
       @tls = false
       @starttls = false
@@ -605,17 +605,17 @@ module Net
     rescue SMTPError
       if @esmtp
         @esmtp = false
-        @error_occured = false
+        @error_occurred = false
         retry
       end
       raise
     end
 
     def do_finish
-      quit if @socket and not @socket.closed? and not @error_occured
+      quit if @socket and not @socket.closed? and not @error_occurred
     ensure
       @started = false
-      @error_occured = false
+      @error_occurred = false
       @socket.close if @socket and not @socket.closed?
       @socket = nil
     end
@@ -942,11 +942,11 @@ module Net
     end
 
     def critical
-      return '200 dummy reply code' if @error_occured
+      return '200 dummy reply code' if @error_occurred
       begin
         return yield()
       rescue Exception
-        @error_occured = true
+        @error_occurred = true
         raise
       end
     end
