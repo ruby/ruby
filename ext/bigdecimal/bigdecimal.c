@@ -2630,14 +2630,14 @@ BigDecimal_save_limit(VALUE self)
 }
 
 /* call-seq:
- * BigMath.exp(x, prec)
+ * BigMath.exp(decimal, numeric)    -> BigDecimal
  *
  * Computes the value of e (the base of natural logarithms) raised to the
- * power of x, to the specified number of digits of precision.
+ * power of +decimal+, to the specified number of digits of precision.
  *
- * If x is infinity, returns Infinity.
+ * If +decimal+ is infinity, returns Infinity.
  *
- * If x is NaN, returns NaN.
+ * If +decimal+ is NaN, returns NaN.
  */
 static VALUE
 BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
@@ -2760,16 +2760,16 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 }
 
 /* call-seq:
- * BigMath.log(x, prec)
+ * BigMath.log(decimal, numeric)    -> BigDecimal
  *
- * Computes the natural logarithm of x to the specified number of digits of
- * precision.
+ * Computes the natural logarithm of +decimal+ to the specified number of
+ * digits of precision, +numeric+.
  *
- * If x is zero or negative, raises Math::DomainError.
+ * If +decimal+ is zero or negative, raises Math::DomainError.
  *
- * If x is positive infinity, returns Infinity.
+ * If +decimal+ is positive infinity, returns Infinity.
  *
- * If x is NaN, returns NaN.
+ * If +decimal+ is NaN, returns NaN.
  */
 static VALUE
 BigMath_s_log(VALUE klass, VALUE x, VALUE vprec)
@@ -3228,7 +3228,6 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "truncate",  BigDecimal_truncate, -1);
     rb_define_method(rb_cBigDecimal, "_dump", BigDecimal_dump, -1);
 
-    /* mathematical functions */
     rb_mBigMath = rb_define_module("BigMath");
     rb_define_singleton_method(rb_mBigMath, "exp", BigMath_s_exp, 2);
     rb_define_singleton_method(rb_mBigMath, "log", BigMath_s_log, 2);

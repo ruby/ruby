@@ -1,3 +1,9 @@
+Mon May 20 05:58:12 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/bigdecimal/bigdecimal.c: Formatting for BigMath [Fixes GH-306]
+	  Based on a patch by @eLobato.
+	* ext/bigdecimal/lib/bigdecimal/math.rb: ditto
+
 Mon May 20 04:56:59 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/forwardable.rb: Forwardable examples in overview were broken
