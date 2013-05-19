@@ -1,7 +1,5 @@
 ##
-# The YAML module allows you to use one of the two YAML engines that ship with
-# ruby.  By default Psych is used but the old and unmaintained Syck may be
-# chosen.
+# The YAML module is an alias of Psych, the YAML engine for ruby.
 
 begin
   require 'psych'
@@ -12,14 +10,12 @@ rescue LoadError
   raise
 end
 
-module Psych
-  class EngineManager
-    # Returns the YAML engine in use.
-    #
-    # By default Psych is used but the old and unmaintained Syck may be chosen.
-    #
-    # See #yamler= for more information.
-    attr_reader :yamler
+YAML = Psych
+
+module Psych # :nodoc:
+  # For compatibility, deprecated
+  class EngineManager # :nodoc:
+    attr_reader :yamler # :nodoc:
 
     def initialize # :nodoc:
       @yamler = 'psych'
@@ -29,18 +25,15 @@ module Psych
       false
     end
 
-    # By default Psych is used but the old and unmaintained Syck may be chosen.
+    # Psych is always used and this method has no effect.
     #
-    # After installing the 'syck' gem, you can set the YAML engine to syck:
+    # This method is still present for compatibility.
     #
-    #   YAML::ENGINE.yamler = 'syck'
-    #
-    # To set the YAML engine back to psych:
-    #
-    #   YAML::ENGINE.yamler = 'psych'
-    def yamler= engine
+    # You may still use the Syck engine by installing
+    # the 'syck' gem and using the Syck constant.
+    def yamler= engine # :nodoc:
       case engine
-      when 'syck' then warn "syck has been removed"
+      when 'syck' then warn "syck has been removed, psych is used instead"
       when 'psych' then @yamler = 'psych'
       else
         raise(ArgumentError, "bad engine")
@@ -53,4 +46,44 @@ module Psych
   ENGINE = EngineManager.new # :nodoc:
 end
 
-YAML = Psych
+# YAML Ain't Markup Language
+#
+# This module provides a Ruby interface for data serialization in YAML format.
+#
+# The underlying implementation is the libyaml wrapper Psych.
+#
+# == Usage
+#
+# Working with YAML can be very simple, for example:
+#
+#     require 'yaml' # STEP ONE, REQUIRE YAML!
+#     # Parse a YAML string
+#     YAML.load("--- foo") #=> "foo"
+#
+#     # Emit some YAML
+#     YAML.dump("foo")     # => "--- foo\n...\n"
+#     { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#
+# == Security
+#
+# Do not use YAML to load untrusted data. Doing so is unsafe and could allow
+# malicious input to execute arbitrary code inside your application. Please see
+# doc/security.rdoc for more information.
+#
+# == History
+#
+# Syck was the original for YAML implementation in Ruby's standard library
+# developed by why the lucky stiff.
+#
+# You can still use Syck, if you prefer, for parsing and emitting YAML, but you
+# must install the 'syck' gem now in order to use it.
+#
+# In older Ruby versions, ie. <= 1.9, Syck is still provided, however it was
+# completely removed with the release of Ruby 2.0.0.
+#
+# == More info
+#
+# For more advanced details on the implementation see Psych, and also check out
+# http://yaml.org for spec details and other helpful information.
+module YAML
+end
