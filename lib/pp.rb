@@ -302,21 +302,21 @@ class PP < PrettyPrint
 
   # Allows you to implement pretty print in your own class, for example:
   #     require 'pp'
-  #     
+  #
   #     class Cat
   #       include PP::ObjectMixin
-  #     
+  #
   #       attr_accessor :name, :age, :color
-  #     
+  #
   #       def initialize name
   #         @name = name
   #       end
-  #     
+  #
   #       def pretty_print q
   #         q.pp_object self
   #       end
   #       alias inspect pretty_print_inspect
-  #     
+  #
   #     end
   #
   # In order to use this class, try the following:
