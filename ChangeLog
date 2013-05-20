@@ -1,3 +1,7 @@
+Mon May 20 19:31:49 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/logger.rb (Logger::Application): show namespace in documentation
+
 Mon May 20 11:50:12 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/pp.rb: Revert part of r40834 and nodoc PP::ObjectMixin

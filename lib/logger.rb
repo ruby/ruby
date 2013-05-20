@@ -682,7 +682,7 @@ private
   #
   # == Description
   #
-  # Application --- Add logging support to your application.
+  # Logger::Application --- Add logging support to your application.
   #
   # == Usage
   #
@@ -692,7 +692,7 @@ private
   #
   # == Example
   #
-  #   class FooApp < Application
+  #   class FooApp < Logger::Application
   #     def initialize(foo_app, application_specific, arguments)
   #       super('FooApp') # Name of the application.
   #     end
@@ -717,7 +717,7 @@ private
     #
     # == Synopsis
     #
-    #   Application.new(appname = '')
+    #   Logger::Application.new(appname = '')
     #
     # == Args
     #
