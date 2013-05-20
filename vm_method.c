@@ -546,6 +546,21 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     return me;
 }
 
+#if VM_DEBUG_VERIFY_METHOD_CACHE
+static void
+verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *me)
+{
+    VALUE actual_defined_class;
+    method_cache_entry_t ent;
+    rb_method_entry_t *actual_me =
+	rb_method_entry_get_without_cache(klass, id, &actual_defined_class, &ent);
+
+    if (me != actual_me || defined_class != actual_defined_class) {
+	rb_bug("method cache verification failed");
+    }
+}
+#endif
+
 rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
@@ -566,6 +581,9 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 	ent->mid == id) {
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;
+#if VM_DEBUG_VERIFY_METHOD_CACHE
+	verify_method_cache(klass, id, ent->defined_class, ent->me);
+#endif
 	return ent->me;
     }
 #else
