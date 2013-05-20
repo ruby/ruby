@@ -300,35 +300,7 @@ class PP < PrettyPrint
     include PPMethods
   end
 
-  # Allows you to implement pretty print in your own class, for example:
-  #     require 'pp'
-  #
-  #     class Cat
-  #       include PP::ObjectMixin
-  #
-  #       attr_accessor :name, :age, :color
-  #
-  #       def initialize name
-  #         @name = name
-  #       end
-  #
-  #       def pretty_print q
-  #         q.pp_object self
-  #       end
-  #       alias inspect pretty_print_inspect
-  #
-  #     end
-  #
-  # In order to use this class, try the following:
-  #
-  #     ginger = Cat.new("ginger")
-  #     p ginger
-  #     #=> #<Cat:0x007f8dfb994900 @name="ginger">
-  #     ginger.age = 2
-  #     ginger.color = "red"
-  #     p ginger
-  #     #=> #<Cat:0x007f8dfb994900 @age=2, @color="red", @name="ginger">
-  module ObjectMixin
+  module ObjectMixin # :nodoc:
     # 1. specific pretty_print
     # 2. specific inspect
     # 3. generic pretty_print

@@ -1,3 +1,8 @@
+Mon May 20 11:50:12 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/pp.rb: Revert part of r40834 and nodoc PP::ObjectMixin
+	  [ruby-core:55068]
+
 Mon May 20 10:40:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/htmlutils.rb (WEBrick::HTMLUtils#escape): replace HTML
