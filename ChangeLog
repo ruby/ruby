@@ -1,3 +1,8 @@
+Mon May 20 09:53:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb (set_dir_list): revert r20152
+	  partially and fix misuse of bytesize and regexp repetition operator.
+
 Mon May 20 08:03:51 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/profiler.rb: Document Profiler__ methods
