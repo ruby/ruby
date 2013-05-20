@@ -105,7 +105,7 @@ math_cos(VALUE obj, VALUE x)
  *  call-seq:
  *     Math.sin(x)    -> Float
  *
- *  Computes the cosine of +x+ (expressed in radians).
+ *  Computes the sine of +x+ (expressed in radians).
  *  Returns a Float in the range -1.0..1.0.
  *
  *  Domain: (−INFINITY, INFINITY)
@@ -129,13 +129,12 @@ math_sin(VALUE obj, VALUE x)
  *     Math.tan(x)    -> Float
  *
  *  Computes the tangent of +x+ (expressed in radians).
- *  Returns a Float in the range -1.0..1.0.
  *
- *  Domain: n * (-PI/2, PI/2)
+ *  Domain: (−INFINITY, INFINITY)
  *
  *  Codomain: (−INFINITY, INFINITY)
  *
- *    Math.tan(5 * (Math::PI/2)) #=> 3266247870639074.0
+ *    Math.tan(0) #=> 0.0
  *
  */
 
@@ -418,21 +417,22 @@ math_exp(VALUE obj, VALUE x)
 
 /*
  *  call-seq:
- *     Math.log(x)    -> Float
- *     Math.log(num, base)   -> Float
+ *     Math.log(x)          -> Float
+ *     Math.log(x, base)    -> Float
  *
- *  Returns the natural logarithm of +x+.
+ *  Returns the logarithm of +x+.
  *  If additional second argument is given, it will be the base
- *  of logarithm.
+ *  of logarithm. Otherwise it is +e+ (for the natural logarithm).
  *
  *  Domain: (0, INFINITY)
  *
  *  Codomain: (-INFINITY, INFINITY)
  *
+ *    Math.log(0)          #=> -Infinity
  *    Math.log(1)          #=> 0.0
  *    Math.log(Math::E)    #=> 1.0
  *    Math.log(Math::E**3) #=> 3.0
- *    Math.log(12,3)       #=> 2.2618595071429146
+ *    Math.log(12, 3)      #=> 2.2618595071429146
  *
  */
 

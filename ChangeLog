@@ -1,3 +1,7 @@
+Mon May 20 19:33:55 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* math.c: improve and fix documentation of sin, tan and log
+
 Mon May 20 19:31:49 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/logger.rb (Logger::Application): show namespace in documentation
