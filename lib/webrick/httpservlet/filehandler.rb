@@ -424,11 +424,18 @@ module WEBrick
         }
         list.compact!
 
-        if    d0 = req.query["N"]; idx = 0
-        elsif d0 = req.query["M"]; idx = 1
-        elsif d0 = req.query["S"]; idx = 2
-        else  d0 = "A"           ; idx = 0
+        query = req.query
+
+        d0 = nil
+        idx = nil
+        %w[N M S].each_with_index do |q, i|
+          if d = query.delete(q)
+            idx ||= i
+            d0 ||= d
+          end
         end
+        d0 ||= "A"
+        idx ||= 0
         d1 = (d0 == "A") ? "D" : "A"
 
         if d0 == "A"
@@ -436,6 +443,14 @@ module WEBrick
         else
           list.sort!{|a,b| b[idx] <=> a[idx] }
         end
+
+        namewidth = query["NameWidth"]
+        if namewidth == "*"
+          namewidth = nil
+        elsif !namewidth or (namewidth = namewidth.to_i) < 2
+          namewidth = 25
+        end
+        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
 
         type = "text/html"
         case enc = Encoding.find('filesystem')
@@ -455,6 +470,7 @@ module WEBrick
     <!--
     .name, .mtime { text-align: left; }
     .size { text-align: right; }
+    td { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     table { border-collapse: collapse; }
     tr th { border-bottom: 2px groove; }
     //-->
@@ -465,9 +481,9 @@ module WEBrick
         _end_of_html_
 
         res.body << "<TABLE width=\"100%\"><THEAD><TR>\n"
-        res.body << "<TH class=\"name\"><A HREF=\"?N=#{d1}\">Name</A></TH>"
-        res.body << "<TH class=\"mtime\"><A HREF=\"?M=#{d1}\">Last modified</A></TH>"
-        res.body << "<TH class=\"size\"><A HREF=\"?S=#{d1}\">Size</A></TH>\n"
+        res.body << "<TH class=\"name\"><A HREF=\"?N=#{d1}#{query}\">Name</A></TH>"
+        res.body << "<TH class=\"mtime\"><A HREF=\"?M=#{d1}#{query}\">Last modified</A></TH>"
+        res.body << "<TH class=\"size\"><A HREF=\"?S=#{d1}#{query}\">Size</A></TH>\n"
         res.body << "</TR></THEAD>\n"
         res.body << "<TBODY>\n"
 
@@ -475,8 +491,10 @@ module WEBrick
         list.each{ |name, time, size|
           if name == ".."
             dname = "Parent Directory"
+          elsif namewidth and name.size > namewidth
+            dname = name[0...(namewidth - 2)] << '..'
           else
-            dname = name[0...23] << '..'
+            dname = name
           end
           s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A></TD>"
           s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
