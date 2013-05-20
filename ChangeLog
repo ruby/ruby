@@ -1,3 +1,7 @@
+Mon May 20 20:43:32 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/cmath.rb: Remove duplicate RDoc heading from overview
+
 Mon May 20 20:36:19 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/securerandom.rb: Update position of overview for RDoc

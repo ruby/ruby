@@ -1,6 +1,4 @@
 ##
-# = CMath
-#
 # CMath is a library that provides trigonometric and transcendental
 # functions for complex numbers.
 #
