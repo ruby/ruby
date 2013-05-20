@@ -520,6 +520,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
 
     len = RSTRING_LEN(str);
     newstr = rb_str_new(0, len);
+    OBJ_INFECT(newstr, str);
     olen = len;
 
     econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);

@@ -1,3 +1,7 @@
+Tue May 21 03:07:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_conv_enc_opts): should infect.
+
 Mon May 20 22:24:45 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#delete_if, Set#keep_if): Avoid blockless call of
