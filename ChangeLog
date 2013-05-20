@@ -1,4 +1,10 @@
-Mon May 20 09:53:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 20 10:40:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/htmlutils.rb (WEBrick::HTMLUtils#escape): replace HTML
+	  meta chars even in non-ascii string.  [Bug #8425] [ruby-core:55052]
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#{_escape,_unescape}):
+	  fix %-escape encodings.  [Bug #8425] [ruby-core:55052]
 
 	* lib/webrick/httpservlet/filehandler.rb (set_dir_list): revert r20152
 	  partially and fix misuse of bytesize and regexp repetition operator.
