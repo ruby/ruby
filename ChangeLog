@@ -1,3 +1,7 @@
+Mon May 20 22:00:31 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/e2mmap.rb: Format of E2MM documentation
+
 Mon May 20 21:41:15 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/extmk.rb: nodoc this file
