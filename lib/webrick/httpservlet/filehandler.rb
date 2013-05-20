@@ -451,16 +451,25 @@ module WEBrick
 <HTML>
   <HEAD>
     <TITLE>#{title}</TITLE>
+    <style type="text/css">
+    <!--
+    .name, .mtime { text-align: left; }
+    .size { text-align: right; }
+    table { border-collapse: collapse; }
+    tr th { border-bottom: 2px groove; }
+    //-->
+    </style>
   </HEAD>
   <BODY>
     <H1>#{title}</H1>
         _end_of_html_
 
-        res.body << "<PRE>\n"
-        res.body << " <A HREF=\"?N=#{d1}\">Name</A>                          "
-        res.body << "<A HREF=\"?M=#{d1}\">Last modified</A>         "
-        res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
-        res.body << "<HR>\n"
+        res.body << "<TABLE width=\"100%\"><THEAD><TR>\n"
+        res.body << "<TH class=\"name\"><A HREF=\"?N=#{d1}\">Name</A></TH>"
+        res.body << "<TH class=\"mtime\"><A HREF=\"?M=#{d1}\">Last modified</A></TH>"
+        res.body << "<TH class=\"size\"><A HREF=\"?S=#{d1}\">Size</A></TH>\n"
+        res.body << "</TR></THEAD>\n"
+        res.body << "<TBODY>\n"
 
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
@@ -469,13 +478,13 @@ module WEBrick
           else
             dname = name[0...23] << '..'
           end
-          s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A>"
-          s << " " * (30 - dname.size)
-          s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
-          s << (size >= 0 ? size.to_s : "-") << "\n"
+          s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A></TD>"
+          s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
+          s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
           res.body << s
         }
-        res.body << "</PRE><HR>"
+        res.body << "</TBODY></TABLE>"
+        res.body << "<HR>"
 
         res.body << <<-_end_of_html_
     <ADDRESS>
