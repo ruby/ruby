@@ -19,30 +19,40 @@
 # #record_number(), which simply calls #[] on the <tt>@records</tt>
 # array, like this:
 #
+#   require 'forwardable'
+#
 #   class RecordCollection
+#     attr_accessor :records
 #     extend Forwardable
 #     def_delegator :@records, :[], :record_number
 #   end
 #
+# We can use the lookup method like so:
+#
+#   r = RecordCollection.new
+#   r.records = [4,5,6]
+#   r.record_number(0)  # => 4
+#
 # Further, if you wish to provide the methods #size, #<<, and #map,
 # all of which delegate to @records, this is how you can do it:
 #
-#   class RecordCollection
-#     # extend Forwardable, but we did that above
+#   class RecordCollection # re-open RecordCollection class
 #     def_delegators :@records, :size, :<<, :map
 #   end
-#   f = Foo.new
-#   f.printf ...
-#   f.gets
-#   f.content_at(1)
 #
-# If the object isn't a Module and Class, You can too extend Forwardable
-# module.
+#   r = RecordCollection.new
+#   r.records = [1,2,3]
+#   r.record_number(0)   # => 1
+#   r.size               # => 3
+#   r << 4               # => [1, 2, 3, 4]
+#   r.map { |x| x * 2 }  # => [2, 4, 6, 8]
 #
-#   printer = String.new
-#   printer.extend Forwardable              # prepare object for delegation
-#   printer.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
-#   printer.puts "Howdy!"
+# You can even extend regular objects with Forwardable.
+#
+#   my_hash = Hash.new
+#   my_hash.extend Forwardable              # prepare object for delegation
+#   my_hash.def_delegator "STDOUT", "puts"  # add delegation for STDOUT.puts()
+#   my_hash.puts "Howdy!"
 #
 # == Another example
 #
