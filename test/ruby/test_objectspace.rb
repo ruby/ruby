@@ -67,6 +67,7 @@ End
   end
 
   def test_each_object
+    assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')
     arys = []
@@ -81,5 +82,6 @@ End
         # rescue "can't modify frozen File" error.
       end
     }
+    End
   end
 end
