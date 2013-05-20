@@ -437,7 +437,13 @@ module WEBrick
           list.sort!{|a,b| b[idx] <=> a[idx] }
         end
 
-        res['content-type'] = "text/html"
+        type = "text/html"
+        case enc = Encoding.find('filesystem')
+        when Encoding::US_ASCII, Encoding::ASCII_8BIT
+        else
+          type << "; charset=\"#{enc.name}\""
+        end
+        res['content-type'] = type
 
         title = "Index of #{HTMLUtils::escape(req.path)}"
         res.body = <<-_end_of_html_
