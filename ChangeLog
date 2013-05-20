@@ -28,7 +28,7 @@ Mon May 20 04:56:59 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 Mon May 20 03:35:26 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* lib/optparse.rb: nodoc Object::Version and SPLAT_PROC
+	* lib/optparse.rb: nodoc OptionParser::Version and SPLAT_PROC
 
 Mon May 20 03:16:52 2013  Zachary Scott  <zachary@zacharyscott.net>
 
