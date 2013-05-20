@@ -1,3 +1,9 @@
+Mon May 20 22:24:45 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#delete_if, Set#keep_if): Avoid blockless call of
+	  proc, which is not portable to JRuby.  Replace &method() with
+	  faster and simpler literal blocks while at it.
+
 Mon May 20 22:00:31 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/e2mmap.rb: Format of E2MM documentation
