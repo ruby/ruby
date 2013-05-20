@@ -439,12 +439,15 @@ module WEBrick
 
         res['content-type'] = "text/html"
 
+        title = "Index of #{HTMLUtils::escape(req.path)}"
         res.body = <<-_end_of_html_
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
-  <HEAD><TITLE>Index of #{HTMLUtils::escape(req.path)}</TITLE></HEAD>
+  <HEAD>
+    <TITLE>#{title}</TITLE>
+  </HEAD>
   <BODY>
-    <H1>Index of #{HTMLUtils::escape(req.path)}</H1>
+    <H1>#{title}</H1>
         _end_of_html_
 
         res.body << "<PRE>\n"
