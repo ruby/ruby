@@ -1,6 +1,7 @@
 #! /usr/local/bin/ruby
 # -*- mode: ruby; coding: us-ascii -*-
 
+# :stopdoc:
 $extension = nil
 $extstatic = nil
 $force_static = nil
@@ -721,6 +722,7 @@ elsif !$configure_only
   $mflags.concat(rubies)
   system($make, *sysquote($mflags)) or exit($?.exitstatus)
 end
+# :startdoc:
 
 #Local variables:
 # mode: ruby
