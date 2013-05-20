@@ -305,4 +305,24 @@ class TestDir_M17N < Test::Unit::TestCase
       end
     }
   end
+
+  def test_entries_compose
+    bug7267 = '[ruby-core:48745] [Bug #7267]'
+
+    pp = Object.new.extend(Test::Unit::Assertions)
+    def pp.mu_pp(ary) #:nodoc:
+      '[' << ary.map {|str| "#{str.dump}(#{str.encoding})"}.join(', ') << ']'
+    end
+
+    with_tmpdir {|d|
+      orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+      orig.each {|n| open(n, "w") {}}
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        opts = {:encoding => Encoding.default_external}
+        orig.map! {|o| o.encode(Encoding.find("filesystem")) rescue o.tr("^a-z", "?")}
+      end
+      ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
+      pp.assert_equal(orig, ents, bug7267)
+    }
+  end
 end

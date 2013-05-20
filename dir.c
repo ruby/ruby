@@ -663,12 +663,28 @@ dir_each(VALUE dir)
     struct dir_data *dirp;
     struct dirent *dp;
     IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
+    IF_HAVE_HFS(int hfs_p);
 
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
+    IF_HAVE_HFS(hfs_p = !NIL_P(dirp->path) && is_hfs(RSTRING_PTR(dirp->path)));
     while (READDIR(dirp->dir, dirp->enc, &STRUCT_DIRENT(entry), dp)) {
-	rb_yield(rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc));
+	const char *name = dp->d_name;
+	size_t namlen = NAMLEN(dp);
+	VALUE path;
+#if HAVE_HFS
+	VALUE utf8str = Qnil;
+	rb_encoding *utf8mac = 0;
+	if (hfs_p && has_nonascii(name, namlen) && (utf8mac = rb_utf8mac_encoding()) != 0) {
+	    utf8str = rb_str_conv_enc(rb_tainted_str_new(name, namlen),
+				      utf8mac, rb_utf8_encoding());
+	    RSTRING_GETMEM(utf8str, name, namlen);
+	}
+#endif
+	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
+	IF_HAVE_HFS(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
+	rb_yield(path);
 	if (dirp->dir == NULL) dir_closed();
     }
     return dir;

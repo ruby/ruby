@@ -1,3 +1,8 @@
+Tue May 21 03:11:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_each): compose HFS file names from
+	  UTF8-MAC. [ruby-core:48745] [Bug #7267]
+
 Tue May 21 03:08:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_separately): require envutil in the
