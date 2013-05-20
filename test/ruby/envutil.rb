@@ -1,6 +1,7 @@
 # -*- coding: us-ascii -*-
 require "open3"
 require "timeout"
+require "test/unit"
 
 module EnvUtil
   def rubybin
@@ -283,7 +284,7 @@ module Test
           line ||= loc.lineno
         end
         src = <<eom
-  require 'test/unit';include Test::Unit::Assertions;begin;#{src}
+  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions;begin;#{src}
   ensure
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   end

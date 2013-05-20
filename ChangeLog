@@ -1,3 +1,8 @@
+Tue May 21 03:08:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_separately): require envutil in the
+	  child process too.
+
 Tue May 21 03:07:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_conv_enc_opts): should infect.
