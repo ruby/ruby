@@ -131,7 +131,12 @@ st_index_t st_hash_end(st_index_t h);
 st_index_t st_hash_start(st_index_t h);
 #define st_hash_start(h) ((st_index_t)(h))
 
-typedef uint64_t sa_index_t;
+#if HAVE_UINT32_T
+  typedef uint32_t sa_index_t;
+#else
+  typedef unsigned int sa_index_t;
+#endif
+
 #define SA_STOP     ST_STOP
 #define SA_CONTINUE ST_CONTINUE
 

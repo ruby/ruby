@@ -556,9 +556,9 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 	RCLASS_EXT(klass)->mc_tbl = sa_new_table();
     }
 
-    if (!sa_lookup(RCLASS_EXT(klass)->mc_tbl, id, (st_data_t *)&ent)) {
+    if (!sa_lookup(RCLASS_EXT(klass)->mc_tbl, (sa_index_t)id, (st_data_t *)&ent)) {
 	ent = calloc(1, sizeof(*ent));
-	sa_insert(RCLASS_EXT(klass)->mc_tbl, id, (st_data_t)ent);
+	sa_insert(RCLASS_EXT(klass)->mc_tbl, (sa_index_t)id, (st_data_t)ent);
     }
 
     if (ent->seq == RCLASS_EXT(klass)->seq &&
