@@ -4929,37 +4929,38 @@ static void
 gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
     rb_objspace_t *objspace = &rb_objspace;
-    size_t count = objspace->profile.next_index - 1;
+    int count = (int)objspace->profile.next_index - 1;
 
     if (objspace->profile.run && count) {
-	int index = 1;
-	size_t i;
-	gc_profile_record r;
+	int i, index = 1;
+	const gc_profile_record *record;
+
 	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->count));
 	append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
+
 	for (i = 0; i < count; i++) {
-	    r = objspace->profile.record[i];
+	    record = &objspace->profile.record[i];
 #if !GC_PROFILE_MORE_DETAIL
-            if (r.is_marked) {
+	    if (record->is_marked) {
 #endif
 		append(out, rb_sprintf("%5d %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
-			index++, r.gc_invoke_time, r.heap_use_size,
-			r.heap_total_size, r.heap_total_objects, r.gc_time*1000));
+				       index++, record->gc_invoke_time, record->heap_use_size,
+				       record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
 #if !GC_PROFILE_MORE_DETAIL
-            }
+	    }
 #endif
 	}
 #if GC_PROFILE_MORE_DETAIL
 	append(out, rb_str_new_cstr("\n\n" \
-		"More detail.\n" \
-		"Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n"));
-        index = 1;
+				    "More detail.\n" \
+				    "Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n"));
+	index = 1;
 	for (i = 0; i < count; i++) {
 	    r = objspace->profile.record[i];
 	    append(out, rb_sprintf("%5d %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %14s %25.20f %25.20f\n",
-			index++, r.allocate_increase, r.allocate_limit,
-			r.heap_use_slots, (r.have_finalize ? "true" : "false"),
-			r.gc_mark_time*1000, r.gc_sweep_time*1000));
+				   index++, record->allocate_increase, record->allocate_limit,
+				   record->heap_use_slots, (record->have_finalize ? "true" : "false"),
+				   record->gc_mark_time*1000, record->gc_sweep_time*1000));
 	}
 #endif
     }
