@@ -326,6 +326,7 @@ class TestDir_M17N < Test::Unit::TestCase
         orig.map {|o| o.force_encoding(enc) }
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
+      ents.sort!
       pp.assert_equal(orig, ents, bug7267)
     }
   end
