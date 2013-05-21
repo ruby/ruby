@@ -1,6 +1,6 @@
 Tue May 21 16:25:05 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c (gc_profile_dump_on): `count' should be (int) because it 
+	* gc.c (gc_profile_dump_on): `count' should be (int) because it
 	  can be negative number.
 	  And use pointer for `record' (don't copy).
 
