@@ -1,3 +1,15 @@
+Tue May 21 17:13:40 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix to collect additional information for GC::Profiler.
+	  * major/minor GC
+	  * trigger reason of GC
+
+	* gc.c (gc_profile_dump_on): change reporting format with
+	  added information.
+
+	* gc.c (gc_profile_record_get): return added information by
+	  :GC_FLAGS => array.
+
 Tue May 21 16:45:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: GC::Profiler's sweeping time is accumulated all slot
