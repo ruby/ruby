@@ -38,6 +38,9 @@ struct strscanner
 
     /* the regexp register; legal only when MATCHED_P(s) */
     struct re_registers regs;
+
+    /* regexp used for last scan */
+    VALUE regex;
 };
 
 #define MATCHED_P(s)          ((s)->flags & FLAG_MATCHED)
@@ -456,6 +459,8 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     if (S_RESTLEN(p) < 0) {
         return Qnil;
     }
+
+    p->regex = regex;
     re = rb_reg_prepare_re(regex, p->str);
     tmpreg = re != RREGEXP(regex)->ptr;
     if (!tmpreg) RREGEXP(regex)->usecnt++;
@@ -983,17 +988,45 @@ strscan_matched_size(VALUE self)
  *   s[3]                               # -> "12"
  *   s.post_match                       # -> "1975 14:39"
  *   s.pre_match                        # -> ""
+ *
+ *   s.reset
+ *   s.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)       # -> "Fri Dec 12 "
+ *   s[0]                               # -> "Fri Dec 12 "
+ *   s[1]                               # -> "Fri"
+ *   s[2]                               # -> "Dec"
+ *   s[3]                               # -> "12"
+ *   s[:wday]                           # -> "Fri"
+ *   s[:month]                          # -> "Dec"
+ *   s[:day]                            # -> "12"
+ *   s.post_match                       # -> "1975 14:39"
+ *   s.pre_match                        # -> ""
  */
 static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
+    const char *name, *name_end;
     struct strscanner *p;
     long i;
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p))        return Qnil;
 
-    i = NUM2LONG(idx);
+    switch (TYPE(idx)) {
+        case T_SYMBOL:
+            name = rb_id2name(SYM2ID(idx));
+            goto name_to_backref;
+            break;
+        case T_STRING:
+            name = StringValuePtr(idx);
+        name_to_backref:
+            name_end = name + strlen(name);
+            i = onig_name_to_backref_number(RREGEXP(p->regex)->ptr,
+                (const unsigned char* )name, (const unsigned char* )name_end, &(p->regs));
+            break;
+        default:
+            i = NUM2LONG(idx);
+    }
+
     if (i < 0)
         i += p->regs.num_regs;
     if (i < 0)                 return Qnil;

@@ -457,6 +457,17 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s[2].tainted?
     assert_equal true, s[3].tainted?
     assert_equal true, s[4].tainted?
+
+    s = StringScanner.new("foo bar")
+    s.scan /(?<a>(\w+)) (?<b>(\w+))/
+    assert_equal 'foo', s[1]
+    assert_equal 'bar', s[2]
+    assert_equal 'foo', s[:a]
+    assert_equal 'bar', s[:b]
+    assert_equal nil,   s[:c]
+    assert_equal 'foo', s['a']
+    assert_equal 'bar', s['b']
+    assert_equal nil,   s['c']
   end
 
   def test_pre_match

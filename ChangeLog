@@ -1,3 +1,8 @@
+Tue May 21 22:47:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_aref): support named captures.
+	  patched by Konstantin Haase [ruby-core:54664] [Feature #8343]
+
 Tue May 21 21:48:44 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/ruby/test_dir_m17n.rb (TestDir_M17N#test_entries_compose):
