@@ -1,3 +1,8 @@
+Tue May 21 21:48:44 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/ruby/test_dir_m17n.rb (TestDir_M17N#test_entries_compose):
+	  Use #each instead of #map just for iteration.
+
 Tue May 21 19:57:22 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb (Digest::Class.file): Take optional

@@ -323,7 +323,7 @@ class TestDir_M17N < Test::Unit::TestCase
       else
         enc = Encoding.find("filesystem")
         enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
-        orig.map {|o| o.force_encoding(enc) }
+        orig.each {|o| o.force_encoding(enc) }
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
       ents.sort!
