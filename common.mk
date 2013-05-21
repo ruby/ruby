@@ -424,6 +424,12 @@ rdoc-coverage: PHONY main
 	@echo Generating RDoc coverage report
 	$(Q) $(XRUBY) "$(srcdir)/bin/rdoc" --root "$(srcdir)" --encoding=UTF-8 --all --quiet -C $(RDOCFLAGS) "$(srcdir)"
 
+RDOCBENCHOUT=/tmp/rdocbench
+
+rdoc-bench: PHONY ruby
+	@echo Benchmark with Generating RDoc documentation
+	$(Q) $(XRUBY) "$(srcdir)/tool/rdocbench.rb" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri  --debug $(RDOCFLAGS) --quiet "$(srcdir)"
+
 nodoc: PHONY
 
 what-where-doc: no-install-doc
