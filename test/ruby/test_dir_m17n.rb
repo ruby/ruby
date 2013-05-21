@@ -320,6 +320,10 @@ class TestDir_M17N < Test::Unit::TestCase
       if /mswin|mingw/ =~ RUBY_PLATFORM
         opts = {:encoding => Encoding.default_external}
         orig.map! {|o| o.encode(Encoding.find("filesystem")) rescue o.tr("^a-z", "?")}
+      else
+        enc = Encoding.find("filesystem")
+        enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
+        orig.map {|o| o.force_encoding(enc) }
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
       pp.assert_equal(orig, ents, bug7267)
