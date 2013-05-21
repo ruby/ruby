@@ -1,3 +1,18 @@
+Wed May 22 07:36:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect): all GC is start from garbage_collect()
+	  (or garbage_collect_body()). `garbage_collect()' accept additional
+	  two parameters `full_mark' and `immediate_sweep'.
+	  If `full_mark' is TRUE, then force it full gc (major gc), otherwise,
+	  it depends on status of object space. Now, it will be minor gc.
+	  If `immediate_sweep' is TRUE, then disable lazy sweep.
+	  To allocate free memory, `full_mark' and `immediate_sweep' should be
+	  TRUE. Otherwise, they should be FALSE.
+
+	* gc.c (gc_prepare_free_objects): use `garbage_collect_body()'.
+
+	* gc.c (slot_sweep, before_gc_sweep, after_gc_sweep): add logging code.
+
 Tue May 21 22:47:06 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_aref): support named captures.
