@@ -1,3 +1,7 @@
+Tue May 21 17:21:12 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove gc_profile_record::is_marked. always true.
+
 Tue May 21 17:13:40 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix to collect additional information for GC::Profiler.

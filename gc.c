@@ -170,8 +170,6 @@ typedef struct gc_profile_record {
     size_t heap_use_size;
     size_t heap_total_size;
 
-    int is_marked;
-
 #if GC_PROFILE_MORE_DETAIL
     double gc_mark_time;
     double gc_sweep_time;
@@ -460,7 +458,7 @@ static void gc_mark_stacked_objects(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_timer_start(rb_objspace_t *, int reason);
-static inline void gc_prof_timer_stop(rb_objspace_t *, int);
+static inline void gc_prof_timer_stop(rb_objspace_t *);
 static inline void gc_prof_mark_timer_start(rb_objspace_t *);
 static inline void gc_prof_mark_timer_stop(rb_objspace_t *);
 static inline void gc_prof_sweep_slot_timer_start(rb_objspace_t *);
@@ -2362,7 +2360,7 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 	    }
 	}
     }
-    gc_prof_timer_stop(objspace, Qtrue);
+    gc_prof_timer_stop(objspace);
     return res;
 }
 
@@ -3710,7 +3708,7 @@ garbage_collect(rb_objspace_t *objspace, int reason)
 	gc_marks(objspace, FALSE);
 	gc_sweep(objspace);
     }
-    gc_prof_timer_stop(objspace, Qtrue);
+    gc_prof_timer_stop(objspace);
 
     if (GC_NOTIFY) printf("end garbage_collect()\n");
     return TRUE;
@@ -4690,7 +4688,7 @@ gc_prof_timer_start(rb_objspace_t *objspace, int reason)
 }
 
 static inline void
-gc_prof_timer_stop(rb_objspace_t *objspace, int marked)
+gc_prof_timer_stop(rb_objspace_t *objspace)
 {
     if (objspace->profile.run) {
         double gc_time = 0;
@@ -4700,7 +4698,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace, int marked)
         if (gc_time < 0) gc_time = 0;
 
         record->gc_time = gc_time;
-        record->is_marked = !!(marked);
         gc_prof_set_heap_info(objspace, record);
     }
 }
@@ -4948,7 +4945,7 @@ gc_profile_record_get(void)
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(objspace->profile.record[i].heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(objspace->profile.record[i].heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(objspace->profile.record[i].heap_total_objects));
-        rb_hash_aset(prof, ID2SYM(rb_intern("GC_IS_MARKED")), objspace->profile.record[i].is_marked);
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_IS_MARKED")), Qtrue);
 #if GC_PROFILE_MORE_DETAIL
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_MARK_TIME")), DBL2NUM(objspace->profile.record[i].gc_mark_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_SWEEP_TIME")), DBL2NUM(objspace->profile.record[i].gc_sweep_time));
