@@ -2171,18 +2171,18 @@ static void
 slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
 {
     gc_prof_sweep_slot_timer_start(objspace);
-
+    {
 #if USE_RGENGC
-    if (objspace->rgengc.during_minor_gc) {
-	slot_sweep_minor(objspace, sweep_slot);
-    }
-    else {
-	slot_sweep_major(objspace, sweep_slot);
-    }
+	if (objspace->rgengc.during_minor_gc) {
+	    slot_sweep_minor(objspace, sweep_slot);
+	}
+	else {
+	    slot_sweep_major(objspace, sweep_slot);
+	}
 #else
-    slot_sweep_body(objspace, sweep_slot, FALSE);
+	slot_sweep_body(objspace, sweep_slot, FALSE);
 #endif
-
+    }
     gc_prof_sweep_slot_timer_stop(objspace);
 }
 
@@ -2313,13 +2313,10 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
     if (!ready_to_gc(objspace)) return TRUE;
 
     during_gc++;
-    gc_prof_timer_start(objspace);
 
     if (objspace->heap.sweep_slots) {
         res = lazy_sweep(objspace);
 	if (res) {
-            gc_prof_set_malloc_info(objspace);
-            gc_prof_timer_stop(objspace, Qfalse);
             return res;
         }
     }
@@ -2330,27 +2327,28 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
         }
     }
 
-    gc_marks(objspace, TRUE);
+    gc_prof_timer_start(objspace);
+    {
+	gc_marks(objspace, TRUE);
 
-    before_gc_sweep(objspace);
+	before_gc_sweep(objspace);
+	if (!(res = lazy_sweep(objspace))) {
+	    /* there is no freespace after slot_sweep() */
+	    while (1) {
+		/* There is no empty RVALUE spaces */
+		/* TODO: [RGENGC] Should do major GC before adding hepas */
 
-    if (!(res = lazy_sweep(objspace))) {
-	/* there is no freespace after slot_sweep() */
-	while (1) {
-	    /* There is no empty RVALUE spaces */
-	    /* TODO: [RGENGC] Should do major GC before adding hepas */
+		set_heaps_increment(objspace);
+		heaps_increment(objspace);
 
-	    set_heaps_increment(objspace);
-	    heaps_increment(objspace);
-
-	    if (has_free_object) {
-		res = TRUE;
-		during_gc = 0;
-		break;
+		if (has_free_object) {
+		    res = TRUE;
+		    during_gc = 0;
+		    break;
+		}
 	    }
 	}
     }
-
     gc_prof_timer_stop(objspace, Qtrue);
     return res;
 }
@@ -3339,7 +3337,6 @@ gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th)
     gc_mark_stacked_objects(objspace);
 
     /* cleanup */
-    gc_prof_mark_timer_stop(objspace);
     rgengc_report(1, objspace, "gc_marks_body: end.\n");
 }
 
@@ -3409,28 +3406,31 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
     struct mark_func_data_struct *prev_mark_func_data;
     rb_thread_t *th = GET_THREAD();
 
-    /* setup marking */
-    prev_mark_func_data = objspace->mark_func_data;
-    objspace->mark_func_data = 0;
-
     gc_prof_mark_timer_start(objspace);
-    objspace->count++;
+    {
+	/* setup marking */
+	prev_mark_func_data = objspace->mark_func_data;
+	objspace->mark_func_data = 0;
 
-    SET_STACK_END;
+	objspace->count++;
 
-    if (USE_RGENGC) {
-	objspace->rgengc.parent_object_is_promoted = FALSE;
-	objspace->rgengc.parent_object = Qundef;
-	objspace->rgengc.during_minor_gc = minor_gc;
+	SET_STACK_END;
+
+	if (USE_RGENGC) {
+	    objspace->rgengc.parent_object_is_promoted = FALSE;
+	    objspace->rgengc.parent_object = Qundef;
+	    objspace->rgengc.during_minor_gc = minor_gc;
+	}
+
+	gc_marks_body(objspace, th);
+
+	if (RGENGC_CHECK_MODE > 1 && minor_gc) {
+	    gc_marks_test(objspace, th);
+	}
+
+	objspace->mark_func_data = prev_mark_func_data;
     }
-
-    gc_marks_body(objspace, th);
-
-    if (RGENGC_CHECK_MODE > 1 && minor_gc) {
-	gc_marks_test(objspace, th);
-    }
-
-    objspace->mark_func_data = prev_mark_func_data;
+    gc_prof_mark_timer_stop(objspace);
 }
 
 /* RGENGC */
@@ -3689,16 +3689,16 @@ garbage_collect(rb_objspace_t *objspace)
         return TRUE;
     }
 
-    gc_prof_timer_start(objspace);
-
     rest_sweep(objspace);
 
-    during_gc++;
-    gc_marks(objspace, FALSE);
-
-    gc_sweep(objspace);
-
+    gc_prof_timer_start(objspace);
+    {
+	during_gc++;
+	gc_marks(objspace, FALSE);
+	gc_sweep(objspace);
+    }
     gc_prof_timer_stop(objspace, Qtrue);
+
     if (GC_NOTIFY) printf("end garbage_collect()\n");
     return TRUE;
 }
@@ -4782,7 +4782,7 @@ gc_prof_sweep_slot_timer_stop(rb_objspace_t *objspace)
 
         sweep_time = getrusage_time() - objspace->profile.gc_sweep_start_time;
 	if (sweep_time < 0) sweep_time = 0;
-	record->gc_sweep_time = sweep_time;
+	record->gc_sweep_time += sweep_time;
     }
 }
 
@@ -4956,7 +4956,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 				    "Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n"));
 	index = 1;
 	for (i = 0; i < count; i++) {
-	    r = objspace->profile.record[i];
+	    record = &objspace->profile.record[i];
 	    append(out, rb_sprintf("%5d %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %14s %25.20f %25.20f\n",
 				   index++, record->allocate_increase, record->allocate_limit,
 				   record->heap_use_slots, (record->have_finalize ? "true" : "false"),

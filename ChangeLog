@@ -1,3 +1,11 @@
+Tue May 21 16:45:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: GC::Profiler's sweeping time is accumulated all slot
+	  sweeping time. At lazy GC, GC::Profiler makes new record entry
+	  for each lazy_sweep(). In this change, accumulating all
+	  slot_sweep() time.
+	  And change indentation.
+
 Tue May 21 16:29:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk (rdoc-bench): add a benchmark rule
