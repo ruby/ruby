@@ -819,6 +819,24 @@ enumerator_peek(VALUE obj)
  *
  * This value is cleared after being yielded.
  *
+ *   # Array#map passes the array's elements to "yield" and collects the
+ *   # results of "yield" as an array.
+ *   # Following example shows that "next" returns the passed elements and
+ *   # values passed to "feed" are collected as an array which can be
+ *   # obtained by StopIteration#result.
+ *   e = [1,2,3].map
+ *   p e.next           #=> 1
+ *   e.feed "a"
+ *   p e.next           #=> 2
+ *   e.feed "b"
+ *   p e.next           #=> 3
+ *   e.feed "c"
+ *   begin
+ *     e.next
+ *   rescue StopIteration
+ *     p $!.result      #=> ["a", "b", "c"]
+ *   end
+ *
  *   o = Object.new
  *   def o.each
  *     x = yield         # (2) blocks
