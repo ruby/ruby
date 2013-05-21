@@ -1,3 +1,9 @@
+Tue May 21 19:57:22 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest.rb (Digest::Class.file): Take optional
+	  arguments that are passed to the constructor of the digest
+	  class.
+
 Tue May 21 17:21:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remove gc_profile_record::is_marked. always true.

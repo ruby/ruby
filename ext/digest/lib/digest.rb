@@ -22,11 +22,13 @@ module Digest
 
   class ::Digest::Class
     # creates a digest object and reads a given file, _name_.
+    # Optional arguments are passed to the constructor of the digest
+    # class.
     #
     #   p Digest::SHA256.file("X11R6.8.2-src.tar.bz2").hexdigest
     #   # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
-    def self.file(name)
-      new.file(name)
+    def self.file(name, *args)
+      new(*args).file(name)
     end
 
     # Returns the base64 encoded hash value of a given _string_.  The
