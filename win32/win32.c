@@ -6028,8 +6028,11 @@ setup_overlapped(OVERLAPPED *ol, int fd)
 #define INVALID_SET_FILE_POINTER ((DWORD)-1)
 #endif
 	if (low == INVALID_SET_FILE_POINTER) {
-	    errno = map_errno(GetLastError());
-	    return -1;
+	    DWORD err = GetLastError();
+	    if (err != NO_ERROR) {
+		errno = map_errno(err);
+		return -1;
+	    }
 	}
 	ol->Offset = low;
 	ol->OffsetHigh = high;

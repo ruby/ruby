@@ -1,4 +1,9 @@
-Wed May 22 15:17:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 22 15:18:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (setup_overlapped): check the error code in addition
+	  to the result of SetFilePointer() to determine if an error occurred,
+	  because INVALID_SET_FILE_POINTER is a valid value.
+	  [ruby-core:55098] [Bug #8431]
 
 	* win32/win32.c (setup_overlapped, finish_overlapped): extract from
 	  rb_w32_read() and rb_w32_write().

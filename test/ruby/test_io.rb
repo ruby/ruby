@@ -2673,4 +2673,15 @@ End
       IO.select(tempfiles)
   }, bug8080
   end
+
+  def test_seek_32bit_boundary
+    bug8431 = '[ruby-core:55098] [Bug #8431]'
+    make_tempfile {|t|
+      assert_ruby_status(["-e", <<-"end;", t.path], "", bug8431)
+        f = ARGF.to_io
+        f.seek(0xffff_ffff)
+        f.read(1)
+      end;
+    }
+  end
 end
