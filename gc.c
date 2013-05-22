@@ -534,6 +534,7 @@ void
 rb_objspace_free(rb_objspace_t *objspace)
 {
     rest_sweep(objspace);
+
     if (objspace->profile.record) {
 	free(objspace->profile.record);
 	objspace->profile.record = 0;
@@ -2275,7 +2276,6 @@ lazy_sweep(rb_objspace_t *objspace)
 	if (!next) after_gc_sweep(objspace);
 
         if (has_free_object) {
-            during_gc = 0;
             return TRUE;
         }
     }
@@ -2286,9 +2286,11 @@ static void
 rest_sweep(rb_objspace_t *objspace)
 {
     if (objspace->heap.sweep_slots) {
+	during_gc++;
 	while (objspace->heap.sweep_slots) {
 	    lazy_sweep(objspace);
 	}
+	during_gc = 0;
     }
 }
 
@@ -2341,6 +2343,7 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 
     if (objspace->heap.sweep_slots) {
 	if (lazy_sweep(objspace)) {
+	    during_gc = 0;
 	    return TRUE;
 	}
     }

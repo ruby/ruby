@@ -1,3 +1,8 @@
+Wed May 22 14:19:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prepare_free_objects, rest_sweep, lazy_sweep): fix position
+	  of `during_gc' setting.
+
 Wed May 22 07:36:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect): all GC is start from garbage_collect()
