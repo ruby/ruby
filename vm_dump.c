@@ -765,6 +765,13 @@ rb_vm_bugreport(void)
 		fprintf(stderr, " %4d %.*s\n", i,
 			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    }
+	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
+		const char *const type = RB_TYPE_P(name, T_CLASS) ?
+		    "class" : "module";
+		name = rb_class_name(name);
+		fprintf(stderr, " %4d %s:%.*s\n", i, type,
+			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
+	    }
 	    else {
 		VALUE klass = rb_class_name(CLASS_OF(name));
 		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
