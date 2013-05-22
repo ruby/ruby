@@ -80,7 +80,7 @@ module TestDigest
   end
 
   def test_s_file
-    Tempfile.create("test_digest_file") { |tmpfile|
+    Tempfile.create("test_digest_file", mode: File::BINARY) { |tmpfile|
       str = "hello, world.\r\n"
       tmpfile.print str
       tmpfile.close
