@@ -54,6 +54,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* Digest
+  * extended methods:
+    * Digest::Class.file takes optional arguments for its constructor
+
 * Matrix
   * Added Vector#cross_product.
 
