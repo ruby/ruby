@@ -766,8 +766,10 @@ rb_vm_bugreport(void)
 			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    }
 	    else {
-		fprintf(stderr, " %4d #<%s:%p>\n", i,
-			rb_class2name(CLASS_OF(name)), (void *)name);
+		VALUE klass = rb_class_name(CLASS_OF(name));
+		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
+			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
+			(void *)name);
 	    }
 	}
 	fprintf(stderr, "\n");
