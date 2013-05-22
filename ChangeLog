@@ -1,3 +1,8 @@
+Wed May 22 16:50:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_profile_dump_on): use size_t to get rid of overflow and
+	  show the header when next_index > 0, instead of next_index != 1.
+
 Wed May 22 15:18:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (setup_overlapped): check the error code in addition

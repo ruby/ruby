@@ -4996,10 +4996,10 @@ static void
 gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int count = (int)objspace->profile.next_index - 1;
+    size_t count = objspace->profile.next_index;
 
-    if (objspace->profile.run && count) {
-	int i, index = 1;
+    if (objspace->profile.run && count /* > 1 */) {
+	size_t i;
 	const gc_profile_record *record;
 
 	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->count));
@@ -5007,19 +5007,18 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.record[i];
-	    append(out, rb_sprintf("%5d %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
-				   index++, record->gc_invoke_time, record->heap_use_size,
+	    append(out, rb_sprintf("%5"PRIdSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
+				   i+1, record->gc_invoke_time, record->heap_use_size,
 				   record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
 	}
 #if GC_PROFILE_MORE_DETAIL
 	append(out, rb_str_new_cstr("\n\n" \
 				    "More detail.\n" \
 				    "Index Flags       Allocate Increase    Allocate Limit  Use Slot             Mark Time(ms)            Sweep Time(ms)\n"));
-	index = 1;
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.record[i];
-	    append(out, rb_sprintf("%5d %c/%c/%s%c %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %25.20f %25.20f\n",
-				   index++,
+	    append(out, rb_sprintf("%5"PRIdSIZE" %c/%c/%s%c %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %25.20f %25.20f\n",
+				   i+1,
 				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
 				   (record->flags & GPR_FLAG_NEWOBJ) ? "NEWOBJ" :
