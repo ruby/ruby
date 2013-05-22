@@ -1,3 +1,8 @@
+Wed May 22 15:17:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (setup_overlapped, finish_overlapped): extract from
+	  rb_w32_read() and rb_w32_write().
+
 Wed May 22 14:19:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_prepare_free_objects, rest_sweep, lazy_sweep): fix position
