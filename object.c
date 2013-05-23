@@ -335,13 +335,15 @@ rb_obj_clone(VALUE obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
+    RBASIC(clone)->flags &= (FL_TAINT|FL_UNTRUSTED);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_OLDGEN|FL_FREEZE|FL_FINALIZE);
+
     singleton = rb_singleton_class_clone_and_attach(obj, clone);
     RBASIC_SET_CLASS(clone, singleton);
     if (FL_TEST(singleton, FL_SINGLETON)) {
 	rb_singleton_class_attached(singleton, clone);
     }
-    RBASIC(clone)->flags &= (FL_TAINT|FL_UNTRUSTED);
-    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_FREEZE|FL_FINALIZE);
+
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;

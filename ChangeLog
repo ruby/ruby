@@ -1,3 +1,8 @@
+Fri May 24 02:57:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* object.c (rb_obj_clone): should not propagate OLDGEN status.
+	  This propagation had caused WB miss for class.
+
 Thu May 23 17:35:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (loaded_feature_path): fix invalid read by index underflow.
