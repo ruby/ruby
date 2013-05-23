@@ -5002,6 +5002,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 	size_t i;
 	const gc_profile_record *record;
 
+	--count;		/* do not dump the last record */
 	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->count));
 	append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
 

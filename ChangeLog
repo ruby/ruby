@@ -1,3 +1,8 @@
+Thu May 23 16:58:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_profile_dump_on): do not dump the last record, for some
+	  reason.
+
 Wed May 22 16:50:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_profile_dump_on): use size_t to get rid of overflow and
