@@ -2674,13 +2674,33 @@ End
   }, bug8080
   end
 
-  def test_seek_32bit_boundary
+  def test_read_32bit_boundary
     bug8431 = '[ruby-core:55098] [Bug #8431]'
     make_tempfile {|t|
-      assert_ruby_status(["-e", <<-"end;", t.path], "", bug8431)
-        f = ARGF.to_io
+      assert_separately(["-", bug8431, t.path], <<-"end;")
+        msg = ARGV.shift
+        f = open(ARGV[0], "rb")
         f.seek(0xffff_ffff)
-        f.read(1)
+        assert_nil(f.read(1), msg)
+      end;
+    }
+  end
+
+  def test_write_32bit_boundary
+    bug8431 = '[ruby-core:55098] [Bug #8431]'
+    make_tempfile {|t|
+      assert_separately(["-", bug8431, t.path], <<-"end;", timeout: 30)
+        msg = ARGV.shift
+        f = open(ARGV[0], "wb")
+        f.seek(0xffff_ffff)
+        begin
+          # this will consume very long time or fail by ENOSPC on a
+          # filesystem which sparse file is not supported
+          f.write('1')
+        rescue SystemCallError
+        else
+          assert_equal(0x1_0000_0000, f.tell, msg)
+        end
       end;
     }
   end
