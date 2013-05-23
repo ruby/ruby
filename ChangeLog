@@ -88,7 +88,7 @@ Tue May 21 16:29:09 2013  Koichi Sasada  <ko1@atdot.net>
 	* common.mk (rdoc-bench): add a benchmark rule
 	  using RDoc. Generate all rdoc related files
 	  (same as `make rdoc') in temporary directory
-	  and remove them. Excecution time, GC::Profiler
+	  and remove them. Execution time, GC::Profiler
 	  and results of GC.stat are printed.
 
 	* tool/rdocbench.rb: added for `rdoc-bench'.
