@@ -1,3 +1,8 @@
+Thu May 23 17:35:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (loaded_feature_path): fix invalid read by index underflow.
+	  the beginning of name is also a boundary as well as just after '/'.
+
 Thu May 23 17:21:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_profile_dump_on): revert r40898.  ok to show the record
