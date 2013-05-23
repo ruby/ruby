@@ -20,6 +20,7 @@
 # array, like this:
 #
 #   class RecordCollection
+#     attr_accessor :records
 #     extend Forwardable
 #     def_delegator :@records, :[], :record_number
 #   end
@@ -31,10 +32,12 @@
 #     # extend Forwardable, but we did that above
 #     def_delegators :@records, :size, :<<, :map
 #   end
-#   f = Foo.new
-#   f.printf ...
-#   f.gets
-#   f.content_at(1)
+#   r = RecordCollection.new #=> #<RecordCollection:0x007faa1d13b310>
+#   r.records = [1,2,3] #=> [1, 2, 3]
+#   r.record_number(1) #=> 2
+#   r.size #=> 3
+#   r << 4 #=> [1, 2, 3, 4]
+#   r.map { |i| i * 2 } #=> [2, 4, 6, 8]
 #
 # If the object isn't a Module and Class, You can too extend Forwardable
 # module.
