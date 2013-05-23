@@ -2684,7 +2684,7 @@ End
         assert_nil(f.read(1), msg)
       end;
     }
-  end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_write_32bit_boundary
     bug8431 = '[ruby-core:55098] [Bug #8431]'
@@ -2703,5 +2703,5 @@ End
         end
       end;
     }
-  end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
