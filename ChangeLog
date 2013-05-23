@@ -1,7 +1,7 @@
-Thu May 23 16:58:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 23 17:21:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (gc_profile_dump_on): do not dump the last record, for some
-	  reason.
+	* gc.c (gc_profile_dump_on): revert r40898.  ok to show the record
+	  accumulating while lazy_sweep().
 
 Wed May 22 16:50:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
