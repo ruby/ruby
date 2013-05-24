@@ -79,9 +79,10 @@ void
 rb_secure(int level)
 {
     if (level <= rb_safe_level()) {
-	if (rb_frame_callee()) {
+	ID caller_name = rb_frame_callee();
+	if (caller_name) {
 	    rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
-		     rb_id2name(rb_frame_callee()), rb_safe_level());
+		     rb_id2name(caller_name), rb_safe_level());
 	}
 	else {
 	    rb_raise(rb_eSecurityError, "Insecure operation at level %d",
@@ -100,9 +101,10 @@ rb_secure_update(VALUE obj)
 void
 rb_insecure_operation(void)
 {
-    if (rb_frame_callee()) {
+    ID caller_name = rb_frame_callee();
+    if (caller_name) {
 	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(rb_frame_callee()));
+		 rb_id2name(caller_name));
     }
     else {
 	rb_raise(rb_eSecurityError, "Insecure operation: -r");

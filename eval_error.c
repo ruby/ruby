@@ -25,12 +25,13 @@ error_pos(void)
     int sourceline = rb_sourceline();
 
     if (sourcefile) {
+	ID caller_name;
 	if (sourceline == 0) {
 	    warn_printf("%s", sourcefile);
 	}
-	else if (rb_frame_callee()) {
+	else if ((caller_name = rb_frame_callee()) != 0) {
 	    warn_printf("%s:%d:in `%s'", sourcefile, sourceline,
-			rb_id2name(rb_frame_callee()));
+			rb_id2name(caller_name));
 	}
 	else {
 	    warn_printf("%s:%d", sourcefile, sourceline);
