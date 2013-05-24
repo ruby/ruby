@@ -504,7 +504,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
  *
  * A key can also be loaded from a file.
  *
- *   key2 = OpenSSL::PKey::RSA.new File.read 'private_key.pem'
+ *   key2 = OpenSSL::PKey::RSA.new File.read 'public_key.pem'
  *   key2.public? # => true
  *
  * or
