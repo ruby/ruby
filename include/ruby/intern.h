@@ -156,7 +156,6 @@ VALUE rb_Complex(VALUE, VALUE);
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new(VALUE);
 VALUE rb_mod_init_copy(VALUE, VALUE);
-VALUE rb_class_init_copy(VALUE, VALUE);
 VALUE rb_singleton_class_clone(VALUE);
 void rb_singleton_class_attached(VALUE,VALUE);
 VALUE rb_make_metaclass(VALUE, VALUE);

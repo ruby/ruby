@@ -1,3 +1,8 @@
+Fri May 24 17:07:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* intern.h: remove dangling rb_class_init_copy declaration
+	  [ruby-core:55120] [Bug #8434]
+
 Fri May 24 16:31:23 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_aref): raise error if given
