@@ -144,7 +144,7 @@ Init_fiddle(void)
      *
      * It wraps {libffi}[http://sourceware.org/libffi/], a popular C library
      * which provides a portable interface that allows code written in one
-     * language to clal code written in another language.
+     * language to call code written in another language.
      *
      * == Example
      *
