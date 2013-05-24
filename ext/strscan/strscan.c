@@ -975,6 +975,25 @@ strscan_matched_size(VALUE self)
     return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
+static int
+name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
+{
+    int num;
+
+    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+	(const unsigned char* )name, (const unsigned char* )name_end, regs);
+    if (num >= 1) {
+	return num;
+    }
+    else {
+	VALUE s = rb_str_new(name, (long )(name_end - name));
+	rb_raise(rb_eIndexError, "undefined group name reference: %s",
+				 StringValuePtr(s));
+    }
+
+    UNREACHABLE;
+}
+
 /*
  * call-seq: [](n)
  *
@@ -1019,9 +1038,7 @@ strscan_aref(VALUE self, VALUE idx)
         case T_STRING:
             name = StringValuePtr(idx);
         name_to_backref:
-            name_end = name + strlen(name);
-            i = onig_name_to_backref_number(RREGEXP(p->regex)->ptr,
-                (const unsigned char* )name, (const unsigned char* )name_end, &(p->regs));
+	    i = name_to_backref_number(&(p->regs), p->regex, name, name + strlen(name));
             break;
         default:
             i = NUM2LONG(idx);

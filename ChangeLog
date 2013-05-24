@@ -1,3 +1,8 @@
+Fri May 24 16:31:23 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_aref): raise error if given
+	  name reference is not found.
+
 Fri May 24 15:48:18 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (after_gc_sweep, garbage_collect_body): do major GC (full GC)

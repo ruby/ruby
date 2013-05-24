@@ -402,6 +402,8 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'stra', s[-1]
     assert_equal 'stra', s[0]
     assert_nil           s[1]
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
 
     assert_equal false,  s[-1].tainted?
     assert_equal false,  s[0].tainted?
@@ -458,16 +460,17 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s[3].tainted?
     assert_equal true, s[4].tainted?
 
-    s = StringScanner.new("foo bar")
-    s.scan /(?<a>(\w+)) (?<b>(\w+))/
+    s = StringScanner.new("foo bar baz")
+    s.scan /(?<a>\w+) (?<b>\w+) (\w+)/
     assert_equal 'foo', s[1]
     assert_equal 'bar', s[2]
+    assert_nil s[3]
     assert_equal 'foo', s[:a]
     assert_equal 'bar', s[:b]
-    assert_equal nil,   s[:c]
+    assert_raise(IndexError) { s[:c] }
     assert_equal 'foo', s['a']
     assert_equal 'bar', s['b']
-    assert_equal nil,   s['c']
+    assert_raise(IndexError) { s['c'] }
   end
 
   def test_pre_match
