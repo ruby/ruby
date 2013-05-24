@@ -768,6 +768,12 @@ console_dev(VALUE klass)
     return con;
 }
 
+/*
+ * call-seq:
+ *   io.getch(min: nil, time: nil)       -> char
+ *
+ * See IO#getch.
+ */
 static VALUE
 io_getch(int argc, VALUE *argv, VALUE io)
 {

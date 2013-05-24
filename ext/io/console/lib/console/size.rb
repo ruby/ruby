@@ -1,3 +1,4 @@
+# fallback to console window size
 def IO.default_console_size
   [
     ENV["LINES"].to_i.nonzero? || 25,
@@ -12,6 +13,7 @@ rescue LoadError
     alias console_size default_console_size
   end
 else
+  # returns console window size
   def IO.console_size
     console.winsize
   rescue NoMethodError
