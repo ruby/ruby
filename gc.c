@@ -352,17 +352,17 @@ typedef struct rb_objspace {
     struct {
 	int during_minor_gc;
 	int parent_object_is_promoted;
-	/* need_major_gc is setting at:
-	 *  * free_num < free_min @ after_gc_sweep()
-	 */
-	int need_major_gc;
-	int done_major_gc;
 
 	/* for check mode */
 	VALUE parent_object;
 	VALUE interesting_object;
-    } rgengc;
 
+	int need_major_gc;
+	size_t remembered_shady_object_count;
+	size_t remembered_shady_object_limit;
+	size_t oldgen_object_count;
+	size_t oldgen_object_limit;
+    } rgengc;
 } rb_objspace_t;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -2252,14 +2252,13 @@ after_gc_sweep(rb_objspace_t *objspace)
 		  objspace->heap.free_num, objspace->heap.free_min);
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
-	if (has_free_object && objspace->rgengc.done_major_gc == FALSE) {
+	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.oldgen_object_count > (heaps_used * HEAP_OBJ_LIMIT) / 2) {
+	    /* if [oldgen]+[remembered shady] > [all object count]/2, then do major GC */
 	    objspace->rgengc.need_major_gc = TRUE;
 	}
-	else {
-	    objspace->rgengc.done_major_gc = FALSE;
-	    set_heaps_increment(objspace);
-	    heaps_increment(objspace);
-	}
+
+	set_heaps_increment(objspace);
+	heaps_increment(objspace);
     }
 
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
@@ -2913,7 +2912,11 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
     if (objspace->rgengc.parent_object_is_promoted &&
 	RVALUE_SHADY(obj) && !rgengc_remembered(objspace, obj)) {
 	RVALUE_DEMOTE(obj);
+
 	rgengc_remember(objspace, obj);
+	if (objspace->rgengc.during_minor_gc == FALSE) { /* major/full GC */
+	    objspace->rgengc.remembered_shady_object_count++;
+	}
     }
 #endif
 }
@@ -2988,6 +2991,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    RVALUE_PROMOTE(obj); /* Sunny object can be promoted to OLDGEN object */
 	    rgengc_report(3, objspace, "gc_mark_children: promote %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    objspace->rgengc.parent_object_is_promoted = TRUE;
+	    objspace->rgengc.oldgen_object_count++;
 	}
 	else {
 	    rgengc_report(3, objspace, "gc_mark_children: do not promote shady %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
@@ -3299,7 +3303,7 @@ gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th)
 #if USE_RGENGC
     if (objspace->rgengc.during_minor_gc) {
 	objspace->profile.minor_gc_count++;
-	rgengc_rememberset_mark(objspace);
+	objspace->rgengc.remembered_shady_object_count = rgengc_rememberset_mark(objspace);
     }
     else {
 	objspace->profile.major_gc_count++;
@@ -3432,13 +3436,23 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 
 	SET_STACK_END;
 
-	if (USE_RGENGC) {
-	    objspace->rgengc.parent_object_is_promoted = FALSE;
-	    objspace->rgengc.parent_object = Qundef;
-	    objspace->rgengc.during_minor_gc = minor_gc;
-	}
+	objspace->rgengc.parent_object_is_promoted = FALSE;
+	objspace->rgengc.parent_object = Qundef;
+	objspace->rgengc.during_minor_gc = minor_gc;
 
-	gc_marks_body(objspace, th);
+	if (minor_gc == FALSE) { /* major/full GC */
+	    objspace->rgengc.remembered_shady_object_count = 0;
+	    objspace->rgengc.oldgen_object_count = 0;
+
+	    gc_marks_body(objspace, th);
+
+	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
+	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
+	    objspace->rgengc.oldgen_object_limit = objspace->rgengc.oldgen_object_count * 2;
+	}
+	else { /* minor GC */
+	    gc_marks_body(objspace, th);
+	}
 
 	if (RGENGC_CHECK_MODE > 1 && minor_gc) {
 	    gc_marks_test(objspace, th);
@@ -3505,13 +3519,12 @@ static size_t
 rgengc_rememberset_mark(rb_objspace_t *objspace)
 {
     size_t i;
-    size_t mark_cnt = 0, clear_cnt = 0, skip_cnt = 0;
+    size_t shady_object_count = 0;
     RVALUE *p, *pend;
     uintptr_t *bits;
 
     for (i=0; i<heaps_used; i++) {
 	if (0 /* TODO: optimization - skip it if there are no remembered objects */) {
-	    skip_cnt++;
 	    continue;
 	}
 
@@ -3523,22 +3536,21 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 		gc_mark(objspace, (VALUE)p);
 		rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
 
-		if (RGENGC_CHECK_MODE) mark_cnt++;
-
 		if (RVALUE_SUNNY(p)) {
 		    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 		    CLEAR_IN_BITMAP(bits, p);
-		    if (RGENGC_CHECK_MODE) clear_cnt++;
+		}
+		else {
+		    shady_object_count++;
 		}
 	    }
 	    p++;
 	}
     }
 
-    if (RGENGC_CHECK_MODE && mark_cnt < clear_cnt) rb_bug("rgengc_rememberset_mark: mark_cnt (%"PRIdSIZE") < clear_cnt (%"PRIdSIZE")", mark_cnt, clear_cnt);
-    rgengc_report(2, objspace, "rgengc_rememberset_mark: mark_cnt: %"PRIdSIZE", clear_cnt: %"PRIdSIZE", skip_cnt: %"PRIdSIZE"\n", mark_cnt, clear_cnt, skip_cnt);
+    rgengc_report(2, objspace, "rgengc_rememberset_mark: mark_cnt: %"PRIdSIZE", shady_object_count: %"PRIdSIZE"\n", shady_object_count);
 
-    return mark_cnt - clear_cnt; /* totalc count of objects in remember set */
+    return shady_object_count;
 }
 
 static void
@@ -3707,8 +3719,10 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    minor_gc = FALSE;
 	}
 	else {
-	    if (objspace->rgengc.need_major_gc) {
-		objspace->rgengc.done_major_gc = TRUE;
+	    if (objspace->rgengc.need_major_gc ||
+		objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit ||
+		objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit) {
+
 		objspace->rgengc.need_major_gc = FALSE;
 		minor_gc = FALSE;
 	    }
@@ -3720,6 +3734,10 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
     if (GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	immediate_sweep = TRUE;
+    }
+
+    if (full_mark) {
+	objspace->rgengc.oldgen_object_count = 0;
     }
 
     gc_prof_timer_start(objspace, reason | (minor_gc ? GPR_FLAG_MINOR : 0));

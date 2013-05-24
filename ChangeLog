@@ -1,3 +1,14 @@
+Fri May 24 18:53:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: do major/full GC when:
+	  * number of oldgen object is biggger than twice of
+	    number of oldgen object at last full GC.
+	  * number of remembered shady object is bigger than twice of
+	    number of remembered shady object at last full GC.
+	  * number of oldgen object and remembered shady object is bigger
+	    than half of total object space.
+	  (please fix my English!)
+
 Fri May 24 17:07:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* intern.h: remove dangling rb_class_init_copy declaration
