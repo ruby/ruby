@@ -1,3 +1,11 @@
+Fri May 24 15:48:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (after_gc_sweep, garbage_collect_body): do major GC (full GC)
+	  before extending heaps.
+	  TODO: do major GC when there are many old (promoted) objects.
+
+	* gc.c (after_gc_sweep): remove TODO comments.
+
 Fri May 24 11:04:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBRUBY_RPATHFLAGS): do not append -L option with

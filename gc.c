@@ -352,6 +352,11 @@ typedef struct rb_objspace {
     struct {
 	int during_minor_gc;
 	int parent_object_is_promoted;
+	/* need_major_gc is setting at:
+	 *  * free_num < free_min @ after_gc_sweep()
+	 */
+	int need_major_gc;
+	int done_major_gc;
 
 	/* for check mode */
 	VALUE parent_object;
@@ -2247,8 +2252,14 @@ after_gc_sweep(rb_objspace_t *objspace)
 		  objspace->heap.free_num, objspace->heap.free_min);
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
-        set_heaps_increment(objspace);
-        heaps_increment(objspace);
+	if (has_free_object && objspace->rgengc.done_major_gc == FALSE) {
+	    objspace->rgengc.need_major_gc = TRUE;
+	}
+	else {
+	    objspace->rgengc.done_major_gc = FALSE;
+	    set_heaps_increment(objspace);
+	    heaps_increment(objspace);
+	}
     }
 
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
@@ -2315,10 +2326,9 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
     }
 
     if (!has_free_object) {
-	/* there is no freespace after slot_sweep() */
-	/* TODO: [RGENGC] Should do major GC before adding hepas */
+	/* there is no free after slot_sweep() */
 	set_heaps_increment(objspace);
-	if (!heaps_increment(objspace)) {
+	if (!heaps_increment(objspace)) { /* can't allocate additional free objects */
 	    during_gc = 0;
 	    rb_memerror();
 	}
@@ -3689,7 +3699,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     int minor_gc;
 
     if (ruby_gc_stress && !ruby_disable_gc_stress) {
-	minor_gc = TRUE;
+	minor_gc = FALSE;
 	immediate_sweep = TRUE;
     }
     else {
@@ -3697,8 +3707,14 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    minor_gc = FALSE;
 	}
 	else {
-	    /* TODO: count old object size and so on */
-	    minor_gc = TRUE;
+	    if (objspace->rgengc.need_major_gc) {
+		objspace->rgengc.done_major_gc = TRUE;
+		objspace->rgengc.need_major_gc = FALSE;
+		minor_gc = FALSE;
+	    }
+	    else {
+		minor_gc = TRUE;
+	    }
 	}
     }
 
