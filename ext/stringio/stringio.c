@@ -1536,7 +1536,7 @@ Init_stringio()
     rb_define_method(StringIO, "set_encoding", strio_set_encoding, -1);
 
     {
-	VALUE mReadable = rb_define_module_under(rb_cIO, "readable");
+	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "readchar", strio_readchar, 0);
 	rb_define_method(mReadable, "readbyte", strio_readbyte, 0);
 	rb_define_method(mReadable, "readline", strio_readline, -1);
@@ -1546,7 +1546,7 @@ Init_stringio()
 	rb_include_module(StringIO, mReadable);
     }
     {
-	VALUE mWritable = rb_define_module_under(rb_cIO, "writable");
+	VALUE mWritable = rb_define_module_under(rb_cIO, "generic_writable");
 	rb_define_method(mWritable, "<<", strio_addstr, 1);
 	rb_define_method(mWritable, "print", strio_print, -1);
 	rb_define_method(mWritable, "printf", strio_printf, -1);
