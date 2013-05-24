@@ -3100,7 +3100,8 @@ AS_CASE("$enable_shared", [yes], [
 ])
 if test "$enable_rpath" = yes; then
     test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
-    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix} -L${libprefix}"
+    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${linker_flag}-R ${linker_flag}${libprefix}"
+    test "x$cross_compiling" = xyes || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS -L${libprefix}"
     LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
     LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
 fi

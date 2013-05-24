@@ -1,3 +1,10 @@
+Fri May 24 11:04:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_RPATHFLAGS): do not append -L option with
+	  runtime library directory if cross compiling, but only -R option.
+	  runtime path makes no sense on the host system.  [ruby-dev:47363]
+	  [Bug #8443]
+
 Fri May 24 02:57:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* object.c (rb_obj_clone): should not propagate OLDGEN status.
