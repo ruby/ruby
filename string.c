@@ -8152,8 +8152,10 @@ rb_str_quote_unprintable(VALUE str)
     rb_encoding *enc;
     const char *ptr;
     long len;
-    rb_encoding *resenc = rb_default_internal_encoding();
+    rb_encoding *resenc;
 
+    Check_Type(str, T_STRING);
+    resenc = rb_default_internal_encoding();
     if (resenc == NULL) resenc = rb_default_external_encoding();
     enc = STR_ENC_GET(str);
     ptr = RSTRING_PTR(str);

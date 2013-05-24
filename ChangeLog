@@ -1,3 +1,7 @@
+Sat May 25 08:58:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_quote_unprintable): check if argument is a string.
+
 Fri May 24 19:32:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* variable.c (set_const_visibility): use rb_frame_this_func() instead
