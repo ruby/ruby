@@ -1232,6 +1232,15 @@ class TestModule < Test::Unit::TestCase
     assert_equal("bar", c.class_eval("BAR"))
   end
 
+  def test_private_constant_with_no_args
+    assert_in_out_err([], <<-RUBY, [], ["-:3: warning: private_constant with no argument is just ignored"])
+      $-w = true
+      class X
+        private_constant
+      end
+    RUBY
+  end
+
   class PrivateClass
   end
   private_constant :PrivateClass

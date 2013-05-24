@@ -1,3 +1,10 @@
+Fri May 24 19:32:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* variable.c (set_const_visibility): use rb_frame_this_func() instead
+	  of rb_frame_callee() for getting the name of the called method
+
+	* test/ruby/test_module.rb: add test for private_constant with no args
+
 Fri May 24 18:53:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: do major/full GC when:
