@@ -23,7 +23,7 @@ language: c
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-  - clang
+#  - clang
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
