@@ -22,6 +22,10 @@
 #ifdef HAVE_PTY_H
 #include	<pty.h>
 #endif
+#if defined(HAVE_SYS_PARAM_H)
+  /* for __FreeBSD_version */
+# include <sys/param.h>
+#endif
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #else
@@ -228,9 +232,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     dfl.sa_flags = 0;
     sigemptyset(&dfl.sa_mask);
 
-#if defined(__sun) || defined(__FreeBSD__)
+#if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
-    /* FreeBSD 8 supported O_CLOEXEC for posix_openpt, but FreeBSD 9 removed it.
+    /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;

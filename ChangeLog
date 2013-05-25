@@ -1,3 +1,10 @@
+Sat May 25 21:29:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/pty/pty.c (get_device_once): FreeBSD 10-current and 9-stable
+	  added O_CLOEXEC support to posix_openpt, so assume FreeBSD 9.2 or 
+	  later supports it.
+	  http://www.freebsd.org/cgi/query-pr.cgi?pr=162374
+
 Sat May 25 18:46:23 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (rb_method_entry_min_max_arity): fix missing break in switch.
