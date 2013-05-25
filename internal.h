@@ -76,13 +76,14 @@ struct rb_classext_struct {
 static inline VALUE
 RCLASS_SUPER(VALUE c)
 {
-  return RCLASS_EXT(c)->super;
+    return RCLASS_EXT(c)->super;
 }
 
 static inline VALUE
-RCLASS_SET_SUPER(VALUE a, VALUE b) {
-  OBJ_WRITE(a, &RCLASS_EXT(a)->super, b);
-  return b;
+RCLASS_SET_SUPER(VALUE a, VALUE b)
+{
+    OBJ_WRITE(a, &RCLASS_EXT(a)->super, b);
+    return b;
 }
 
 struct vtm; /* defined by timev.h */
