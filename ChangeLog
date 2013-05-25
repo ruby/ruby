@@ -1,3 +1,12 @@
+Sat May 25 23:22:38 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/fiddle/test_c_struct_entry.rb,
+	  test/fiddle/test_c_union_entity.rb,
+	  test/fiddle/test_cparser.rb, test/fiddle/test_func.rb,
+	  test/fiddle/test_handle.rb, test/fiddle/test_import.rb,
+	  test/fiddle/test_pointer.rb: don't run test if the system
+	  don't support fiddle.
+
 Sat May 25 21:29:34 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/pty/pty.c (get_device_once): FreeBSD 10-current and 9-stable

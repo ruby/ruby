@@ -1,6 +1,9 @@
 # coding: US-ASCII
-require_relative 'helper'
-require 'fiddle/import'
+begin
+  require_relative 'helper'
+  require 'fiddle/import'
+rescue LoadError
+end
 
 module Fiddle
   module LIBC
@@ -134,4 +137,4 @@ module Fiddle
       assert_includes(12.00..13.00, r)
     end
   end
-end
+end if defined?(Fiddle)
