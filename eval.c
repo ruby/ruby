@@ -914,6 +914,12 @@ rb_frame_this_func(void)
     return frame_func_id(GET_THREAD()->cfp);
 }
 
+ID
+rb_frame_callee(void)
+{
+    return frame_called_id(GET_THREAD()->cfp);
+}
+
 static rb_control_frame_t *
 previous_frame(rb_thread_t *th)
 {
@@ -925,8 +931,8 @@ previous_frame(rb_thread_t *th)
     return prev_cfp;
 }
 
-ID
-rb_frame_callee(void)
+static ID
+prev_frame_callee(void)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
     if (!prev_cfp) return 0;
@@ -934,7 +940,7 @@ rb_frame_callee(void)
 }
 
 static ID
-rb_frame_caller(void)
+prev_frame_func(void)
 {
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
     if (!prev_cfp) return 0;
@@ -1471,9 +1477,9 @@ errat_setter(VALUE val, ID id, VALUE *var)
 /*
  *  call-seq:
  *     __method__         -> symbol
- *     __callee__         -> symbol
  *
- *  Returns the name of the current method as a Symbol.
+ *  Returns the name at the definition of the current method as a
+ *  Symbol.
  *  If called outside of a method, it returns <code>nil</code>.
  *
  */
@@ -1481,7 +1487,7 @@ errat_setter(VALUE val, ID id, VALUE *var)
 static VALUE
 rb_f_method_name(void)
 {
-    ID fname = rb_frame_caller(); /* need *caller* ID */
+    ID fname = prev_frame_func(); /* need *method* ID */
 
     if (fname) {
 	return ID2SYM(fname);
@@ -1491,10 +1497,19 @@ rb_f_method_name(void)
     }
 }
 
+/*
+ *  call-seq:
+ *     __callee__         -> symbol
+ *
+ *  Returns the called name of the current method as a Symbol.
+ *  If called outside of a method, it returns <code>nil</code>.
+ *
+ */
+
 static VALUE
 rb_f_callee_name(void)
 {
-    ID fname = rb_frame_callee(); /* need *callee* ID */
+    ID fname = prev_frame_callee(); /* need *callee* ID */
 
     if (fname) {
 	return ID2SYM(fname);

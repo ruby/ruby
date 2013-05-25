@@ -1,3 +1,13 @@
+Sat May 25 11:24:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_frame_callee): returns the called name of the current
+	  frame, not the previous frame.
+
+	* eval.c (prev_frame_callee, prev_frame_func): rename and make static,
+	  as these are used by rb_f_method_name() and rb_f_callee_name() only.
+
+	* variable.c (set_const_visibility): use the called name.
+
 Sat May 25 08:58:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_quote_unprintable): check if argument is a string.
