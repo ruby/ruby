@@ -1,3 +1,7 @@
+Sat May 25 11:27:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (set_method_visibility): quote unprintable method name.
+
 Sat May 25 11:24:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_frame_callee): returns the called name of the current
