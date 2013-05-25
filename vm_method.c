@@ -1276,6 +1276,7 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
     if (argc == 0) {
 	rb_warning("%"PRIsVALUE" with no argument is just ignored",
 		   QUOTE_ID(rb_frame_callee()));
+	return;
     }
 
     for (i = 0; i < argc; i++) {

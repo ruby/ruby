@@ -2232,6 +2232,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     if (argc == 0) {
 	rb_warning("%"PRIsVALUE" with no argument is just ignored",
 		   QUOTE_ID(rb_frame_callee()));
+	return;
     }
 
     for (i = 0; i < argc; i++) {

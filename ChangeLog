@@ -1,3 +1,10 @@
+Sat May 25 11:28:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (set_const_visibility): return without clearing method
+	  cache if no arguments.
+
+	* vm_method.c (set_method_visibility): ditto.
+
 Sat May 25 11:27:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (set_method_visibility): quote unprintable method name.
