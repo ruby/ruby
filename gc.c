@@ -2252,13 +2252,13 @@ after_gc_sweep(rb_objspace_t *objspace)
 		  objspace->heap.free_num, objspace->heap.free_min);
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
-	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.oldgen_object_count > (heaps_used * HEAP_OBJ_LIMIT) / 2) {
+	set_heaps_increment(objspace);
+	heaps_increment(objspace);
+
+	if (objspace->rgengc.remembered_shady_object_count + objspace->rgengc.oldgen_object_count > (heaps_length * HEAP_OBJ_LIMIT) / 2) {
 	    /* if [oldgen]+[remembered shady] > [all object count]/2, then do major GC */
 	    objspace->rgengc.need_major_gc = TRUE;
 	}
-
-	set_heaps_increment(objspace);
-	heaps_increment(objspace);
     }
 
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
