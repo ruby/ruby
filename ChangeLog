@@ -1,3 +1,11 @@
+Sat May 25 18:46:23 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (rb_method_entry_min_max_arity): fix missing break in switch.
+	  This was introduced in r38236, which is not intentional apparently.
+	  This has caused no actual harm because VM_METHOD_TYPE_OPTIMIZED is
+	  not used except for OPTIMIZED_METHOD_TYPE_SEND, but may do in
+	  future.  Coverity Scan found this inadequacy.
+
 Sat May 25 18:08:06 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (bracket): fix copy-paste error.  When the first and last
