@@ -1023,7 +1023,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
-    const char *name, *name_end;
+    const char *name;
     struct strscanner *p;
     long i;
 
