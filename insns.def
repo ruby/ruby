@@ -1272,7 +1272,7 @@ opt_case_dispatch
 				   BIGNUM_REDEFINED_OP_FLAG |
 				   STRING_REDEFINED_OP_FLAG)) {
 	    st_data_t val;
-	    if (st_lookup(RHASH_TBL(hash), key, &val)) {
+	    if (st_lookup(RHASH_TBL_RAW(hash), key, &val)) {
 		JUMP(FIX2INT((VALUE)val));
 	    }
 	    else {

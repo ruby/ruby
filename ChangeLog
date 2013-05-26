@@ -1,3 +1,22 @@
+Mon May 27 01:15:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* hash.c (rb_hash_tbl_raw), internal.h: added.
+	  Returns st_table without shading hash.
+
+	* array.c: use rb_hash_tbl_raw() for read-only purpose.
+
+	* compile.c (iseq_compile_each): ditto.
+
+	* gc.c (count_objects): ditto.
+
+	* insns.def: ditto.
+
+	* process.c: ditto.
+
+	* thread.c (clear_coverage): ditto.
+
+	* vm_insnhelper.c: ditto.
+
 Mon May 27 00:31:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/make-snapshot: use ENV["AUTOCONF"] instead of directly using

@@ -3244,7 +3244,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(body_seq);
 	INIT_ANCHOR(cond_seq);
 
-	RHASH_TBL(literals)->type = &cdhash_type;
+	rb_hash_tbl_raw(literals)->type = &cdhash_type;
 
 	if (node->nd_head == 0) {
 	    COMPILE_(ret, "when", node->nd_body, poped);

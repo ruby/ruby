@@ -189,6 +189,10 @@ void rb_w32_init_file(void);
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
 
+/* hash.c */
+struct st_table *rb_hash_tbl_raw(VALUE hash);
+#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
+
 /* inits.c */
 void rb_call_inits(void);
 

@@ -1884,7 +1884,7 @@ rb_check_exec_options(VALUE opthash, VALUE execarg_obj)
 {
     if (RHASH_EMPTY_P(opthash))
         return;
-    st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)execarg_obj);
+    st_foreach(rb_hash_tbl_raw(opthash), check_exec_options_i, (st_data_t)execarg_obj);
 }
 
 VALUE
@@ -1895,7 +1895,7 @@ rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
         return Qnil;
     args[0] = execarg_obj;
     args[1] = Qnil;
-    st_foreach(RHASH_TBL(opthash), check_exec_options_i_extract, (st_data_t)args);
+    st_foreach(rb_hash_tbl_raw(opthash), check_exec_options_i_extract, (st_data_t)args);
     return args[1];
 }
 
@@ -1925,7 +1925,7 @@ rb_check_exec_env(VALUE hash)
     VALUE env;
 
     env = hide_obj(rb_ary_new());
-    st_foreach(RHASH_TBL(hash), check_exec_env_i, (st_data_t)env);
+    st_foreach(rb_hash_tbl_raw(hash), check_exec_env_i, (st_data_t)env);
 
     return env;
 }

@@ -295,6 +295,12 @@ rb_hash_tbl(VALUE hash)
     return hash_tbl(hash);
 }
 
+struct st_table *
+rb_hash_tbl_raw(VALUE hash)
+{
+    return hash_tbl(hash);
+}
+
 static void
 rb_hash_modify(VALUE hash)
 {

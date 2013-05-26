@@ -1091,7 +1091,7 @@ extract_keywords(VALUE *orighash)
 	*orighash = 0;
 	return hash;
     }
-    st_foreach(RHASH_TBL(hash), separate_symbol, (st_data_t)&parthash);
+    st_foreach(rb_hash_tbl_raw(hash), separate_symbol, (st_data_t)&parthash);
     *orighash = parthash[1];
     return parthash[0];
 }
@@ -1116,7 +1116,7 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	    VALUE missing = Qnil;
 	    for (; i < iseq->arg_keyword_required; i++) {
 		VALUE keyword = ID2SYM(iseq->arg_keyword_table[i]);
-		if (st_lookup(RHASH_TBL(keyword_hash), (st_data_t)keyword, 0))
+		if (st_lookup(rb_hash_tbl_raw(keyword_hash), (st_data_t)keyword, 0))
 		    continue;
 		if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
 		rb_ary_push(missing, keyword);
@@ -1127,9 +1127,9 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	}
 	if (iseq->arg_keyword_check) {
 	    for (j = i; i < iseq->arg_keywords; i++) {
-		if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
+		if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
 	    }
-	    if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
+	    if (RHASH_SIZE(keyword_hash) > j) {
 		unknown_keyword_error(iseq, keyword_hash);
 	    }
 	}

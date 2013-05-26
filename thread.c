@@ -3881,7 +3881,7 @@ clear_coverage(void)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
-	st_foreach(RHASH_TBL(coverages), clear_coverage_i, 0);
+	st_foreach(rb_hash_tbl_raw(coverages), clear_coverage_i, 0);
     }
 }
 
