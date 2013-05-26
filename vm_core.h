@@ -379,6 +379,8 @@ typedef struct rb_vm_struct {
     /* hook */
     rb_hook_list_t event_hooks;
 
+    struct rb_postponed_job_struct *postponed_job;
+
     int src_encoding_index;
 
     VALUE verbose, debug, progname;
@@ -902,15 +904,15 @@ GET_THREAD(void)
 #endif
 
 enum {
-    TIMER_INTERRUPT_MASK	 = 0x01,
-    PENDING_INTERRUPT_MASK = 0x02,
-    FINALIZER_INTERRUPT_MASK     = 0x04,
-    TRAP_INTERRUPT_MASK		 = 0x08
+    TIMER_INTERRUPT_MASK         = 0x01,
+    PENDING_INTERRUPT_MASK       = 0x02,
+    POSTPONED_JOB_INTERRUPT_MASK = 0x04,
+    TRAP_INTERRUPT_MASK	         = 0x08
 };
 
 #define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TIMER_INTERRUPT_MASK)
 #define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, PENDING_INTERRUPT_MASK)
-#define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, FINALIZER_INTERRUPT_MASK)
+#define RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, POSTPONED_JOB_INTERRUPT_MASK)
 #define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TRAP_INTERRUPT_MASK)
 #define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
 #define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
@@ -999,6 +1001,8 @@ int rb_thread_check_trap_pending(void);
 extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE);
 extern void rb_reset_coverages(void);
+
+void rb_postponed_job_flush(rb_vm_t *vm);
 
 RUBY_SYMBOL_EXPORT_END
 

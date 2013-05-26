@@ -17,6 +17,7 @@
 #include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ruby/debug.h"
 #include "eval_intern.h"
 #include "vm_core.h"
 #include "internal.h"
@@ -1644,13 +1645,26 @@ finalize_deferred(rb_objspace_t *objspace)
     }
 }
 
-void
-rb_gc_finalize_deferred(void)
+static void
+gc_finalize_deferred(void *dmy)
 {
     rb_objspace_t *objspace = &rb_objspace;
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
     finalize_deferred(objspace);
     ATOMIC_SET(finalizing, 0);
+}
+
+/* TODO: to keep compatibility, maybe unused. */
+void
+rb_gc_finalize_deferred(void)
+{
+    gc_finalize_deferred(0);
+}
+
+static void
+gc_finalize_deferred_register()
+{
+    rb_postponed_job_register_one(0, gc_finalize_deferred, 0);
 }
 
 struct force_finalize_list {
@@ -2179,7 +2193,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     if (deferred_final_list && !finalizing) {
         rb_thread_t *th = GET_THREAD();
         if (th) {
-            RUBY_VM_SET_FINALIZER_INTERRUPT(th);
+	    gc_finalize_deferred_register();
         }
     }
 

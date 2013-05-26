@@ -1,3 +1,32 @@
+Mon May 27 06:22:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h, vm_trace.c: add rb_postponed_job API.
+	  Postponed jobs are registered with this API. Registered jobs
+	  are invoked at `ruby-running-safe-point' as soon as possible.
+	  This timing is completely same as finalizer timing.
+
+	  There are two APIs:
+	  * rb_postponed_job_register(flags, func, data): register a
+	    postponed job with data. flags are reserved.
+	  * rb_postponed_job_register_one(flags, func, data): same as
+	    `rb_postponed_job_register', but only one `func' job is
+	    registered (skip if `func' is already registered).
+
+	  This change is mostly written by Aman Gupta (tmm1).
+	  https://bugs.ruby-lang.org/issues/8107#note-15
+	  [Feature #8107]
+
+	* gc.c: use postponed job API for finalizer.
+
+	* common.mk: add dependency from vm_trace.c to debug.h.
+
+	* ext/-test-/postponed_job/extconf.rb, postponed_job.c,
+	  test/-ext-/postponed_job/test_postponed_job.rb: add a test.
+
+	* thread.c: implement postponed API.
+
+	* vm_core.h: ditto.
+
 Mon May 27 02:26:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): collect promote_operation_count and
