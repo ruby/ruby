@@ -22,4 +22,4 @@ class TestTask < Test::Unit::TestCase
     assert_match     /postponed_job_call_direct_wrapper/, direct.join
     assert_not_match /postponed_job_register_wrapper/, registered.join
   end
-end 
+end
