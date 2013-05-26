@@ -23,7 +23,7 @@ pjob_call_direct(VALUE self, VALUE obj)
 }
 
 void
-Init_task(VALUE self)
+Init_postponed_job(VALUE self)
 {
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "postponed_job_register", pjob_register, 1);
