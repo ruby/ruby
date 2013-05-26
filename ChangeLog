@@ -1,3 +1,15 @@
+Sun May 26 21:31:46 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* hash.c, include/ruby/ruby.h: support WB protected hash.
+	  * constify RHash::ifnone and make new macro RHASH_SET_IFNONE().
+	  * insert write barrier for st_update().
+
+	* include/ruby/intern.h: declare rb_hash_set_ifnone(hash, ifnone).
+
+	* marshal.c (r_object0): use RHASH_SET_IFNONE().
+
+	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): ditto.
+
 Sat May 25 23:22:38 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/fiddle/test_c_struct_entry.rb,

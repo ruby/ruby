@@ -689,6 +689,11 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_ARRAY
 #define RGENGC_WB_PROTECTED_ARRAY 1
 #endif
+
+#ifndef RGENGC_WB_PROTECTED_HASH
+#define RGENGC_WB_PROTECTED_HASH 1
+#endif
+
 #ifndef RGENGC_WB_PROTECTED_STRING
 #define RGENGC_WB_PROTECTED_STRING 1
 #endif
@@ -960,7 +965,7 @@ struct RHash {
     struct RBasic basic;
     struct st_table *ntbl;      /* possibly 0 */
     int iter_lev;
-    VALUE ifnone;
+    const VALUE ifnone;
 };
 /* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
@@ -968,6 +973,7 @@ struct RHash {
 #define RHASH_IFNONE(h) (RHASH(h)->ifnone)
 #define RHASH_SIZE(h) (RHASH(h)->ntbl ? RHASH(h)->ntbl->num_entries : 0)
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
+#define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 
 struct RFile {
     struct RBasic basic;

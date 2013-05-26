@@ -32,6 +32,16 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
 
+/*
+ * Hash WB strategy:
+ *  1. Check mutate st_* functions
+ *     * st_insert()
+ *     * st_insert2()
+ *     * st_update()
+ *     * st_add_direct()
+ *  2. Insert WBs
+ */
+
 VALUE
 rb_hash_freeze(VALUE hash)
 {
@@ -42,6 +52,13 @@ VALUE rb_cHash;
 
 static VALUE envtbl;
 static ID id_hash, id_yield, id_default;
+
+VALUE
+rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
+{
+    OBJ_WRITE(hash, (VALUE *)(&RHASH(hash)->ifnone), ifnone);
+    return hash;
+}
 
 static int
 rb_any_cmp(VALUE a, VALUE b)
@@ -213,9 +230,9 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 static VALUE
 hash_alloc(VALUE klass)
 {
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0));
 
-    RHASH_IFNONE(hash) = Qnil;
+    RHASH_SET_IFNONE((VALUE)hash, Qnil);
 
     return (VALUE)hash;
 }
@@ -250,7 +267,7 @@ rb_hash_dup(VALUE hash)
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
         FL_SET(ret, HASH_PROC_DEFAULT);
     }
-    RHASH_IFNONE(ret) = RHASH_IFNONE(hash);
+    RHASH_SET_IFNONE(ret, RHASH_IFNONE(hash));
     return (VALUE)ret;
 }
 
@@ -262,8 +279,8 @@ rb_hash_modify_check(VALUE hash)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
-struct st_table *
-rb_hash_tbl(VALUE hash)
+static struct st_table *
+hash_tbl(VALUE hash)
 {
     if (!RHASH(hash)->ntbl) {
         RHASH(hash)->ntbl = st_init_table(&objhash);
@@ -271,11 +288,18 @@ rb_hash_tbl(VALUE hash)
     return RHASH(hash)->ntbl;
 }
 
+struct st_table *
+rb_hash_tbl(VALUE hash)
+{
+    OBJ_WB_GIVEUP(hash);
+    return hash_tbl(hash);
+}
+
 static void
 rb_hash_modify(VALUE hash)
 {
     rb_hash_modify_check(hash);
-    rb_hash_tbl(hash);
+    hash_tbl(hash);
 }
 
 NORETURN(static void no_new_key(void));
@@ -285,20 +309,35 @@ no_new_key(void)
     rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
 }
 
-#define NOINSERT_UPDATE_CALLBACK(func) \
-int \
+struct update_callback_arg {
+    VALUE hash;
+    st_data_t arg;
+};
+
+#define NOINSERT_UPDATE_CALLBACK(func)                                       \
+int                                                                          \
 func##_noinsert(st_data_t *key, st_data_t *val, st_data_t arg, int existing) \
-{ \
-    if (!existing) no_new_key(); \
-    return func(key, val, arg, existing); \
+{                                                                            \
+    struct update_callback_arg *uc_arg = (struct update_callback_arg *)arg;  \
+    if (!existing) no_new_key();                                             \
+    return func(uc_arg->hash, key, val, uc_arg->arg, existing);              \
+}                                                                            \
+int                                                                          \
+func##_insert(st_data_t *key, st_data_t *val, st_data_t arg, int existing)   \
+{                                                                            \
+    struct update_callback_arg *uc_arg = (struct update_callback_arg *)arg;  \
+    return func(uc_arg->hash, key, val, uc_arg->arg, existing);              \
 }
 
-#define UPDATE_CALLBACK(iter_lev, func) ((iter_lev) > 0 ? func##_noinsert : func)
+#define UPDATE_CALLBACK(iter_lev, func) ((iter_lev) > 0 ? func##_noinsert : func##_insert)
 
-#define RHASH_UPDATE_ITER(hash, iter_lev, key, func, arg) \
-    st_update(RHASH(hash)->ntbl, (st_data_t)(key),	  \
-	      UPDATE_CALLBACK((iter_lev), func),	  \
-	      (st_data_t)(arg))
+#define RHASH_UPDATE_ITER(h, iter_lev, key, func, a) do {                \
+    struct update_callback_arg uc_arg; uc_arg.hash = h; uc_arg.arg = a; \
+    st_update(RHASH(h)->ntbl, (st_data_t)(key),	                         \
+	      UPDATE_CALLBACK((iter_lev), func),	                 \
+	      (st_data_t)(&uc_arg));                                     \
+} while (0)
+
 #define RHASH_UPDATE(hash, key, func, arg) \
     RHASH_UPDATE_ITER(hash, RHASH_ITER_LEV(hash), key, func, arg)
 
@@ -358,12 +397,12 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 	rb_check_arity(argc, 0, 0);
 	ifnone = rb_block_proc();
 	default_proc_arity_check(ifnone);
-	RHASH_IFNONE(hash) = ifnone;
+	RHASH_SET_IFNONE(hash, ifnone);
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
     else {
 	rb_scan_args(argc, argv, "01", &ifnone);
-	RHASH_IFNONE(hash) = ifnone;
+	RHASH_SET_IFNONE(hash, ifnone);
     }
 
     return hash;
@@ -709,7 +748,7 @@ static VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
     rb_hash_modify_check(hash);
-    RHASH_IFNONE(hash) = ifnone;
+    RHASH_SET_IFNONE(hash, ifnone);
     FL_UNSET(hash, HASH_PROC_DEFAULT);
     return ifnone;
 }
@@ -759,7 +798,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
     rb_hash_modify_check(hash);
     if (NIL_P(proc)) {
 	FL_UNSET(hash, HASH_PROC_DEFAULT);
-	RHASH_IFNONE(hash) = proc;
+	RHASH_SET_IFNONE(hash, proc);
 	return proc;
     }
     b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
@@ -770,7 +809,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
     }
     proc = b;
     default_proc_arity_check(proc);
-    RHASH_IFNONE(hash) = proc;
+    RHASH_SET_IFNONE(hash, proc);
     FL_SET(hash, HASH_PROC_DEFAULT);
     return proc;
 }
@@ -1146,17 +1185,17 @@ rb_hash_clear(VALUE hash)
 }
 
 static int
-hash_aset(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+hash_aset(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    *val = arg;
+    OBJ_WRITE(hash, (VALUE *)val, arg);
     return ST_CONTINUE;
 }
 
 static int
-hash_aset_str(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+hash_aset_str(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    *key = (st_data_t)rb_str_new_frozen((VALUE)*key);
-    return hash_aset(key, val, arg, existing);
+    OBJ_WRITE(hash, (VALUE *)key, rb_str_new_frozen((VALUE)*key));
+    return hash_aset(hash, key, val, arg, existing);
 }
 
 static NOINSERT_UPDATE_CALLBACK(hash_aset)
@@ -1189,7 +1228,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
     rb_hash_modify(hash);
     if (!tbl) {
 	if (iter_lev > 0) no_new_key();
-	tbl = RHASH_TBL(hash);
+	tbl = hash_tbl(hash);
     }
     if (tbl->type == &identhash || rb_obj_class(key) != rb_cString) {
 	RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
@@ -1227,7 +1266,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     else {
 	FL_UNSET(hash, HASH_PROC_DEFAULT);
     }
-    RHASH_IFNONE(hash) = RHASH_IFNONE(hash2);
+    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
 
     return hash;
 }
@@ -1252,11 +1291,11 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     if (hash == hash2) return hash;
     rb_hash_clear(hash);
     if (RHASH(hash2)->ntbl) {
-	rb_hash_tbl(hash);
+	hash_tbl(hash);
 	RHASH(hash)->ntbl->type = RHASH(hash2)->ntbl->type;
     }
     rb_hash_foreach(hash2, replace_i, hash);
-    RHASH_IFNONE(hash) = RHASH_IFNONE(hash2);
+    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
@@ -1525,7 +1564,7 @@ rb_hash_to_h(VALUE hash)
 	if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	    FL_SET(ret, HASH_PROC_DEFAULT);
 	}
-	RHASH_IFNONE(ret) = RHASH_IFNONE(hash);
+	RHASH_SET_IFNONE(ret, RHASH_IFNONE(hash));
 	return ret;
     }
     return hash;
@@ -1832,9 +1871,9 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
-rb_hash_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+rb_hash_update_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    *value = arg;
+    OBJ_WRITE(hash, (VALUE *)value, (VALUE)arg);
     return ST_CONTINUE;
 }
 
@@ -1848,13 +1887,13 @@ rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 }
 
 static int
-rb_hash_update_block_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+rb_hash_update_block_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE newvalue = (VALUE)arg;
     if (existing) {
 	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
     }
-    *value = (st_data_t)newvalue;
+    OBJ_WRITE(hash, (VALUE *)value, newvalue);
     return ST_CONTINUE;
 }
 
@@ -1911,14 +1950,14 @@ struct update_arg {
 };
 
 static int
-rb_hash_update_func_callback(st_data_t *key, st_data_t *value, st_data_t arg0, int existing)
+rb_hash_update_func_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg0, int existing)
 {
     struct update_arg *arg = (struct update_arg *)arg0;
     VALUE newvalue = arg->value;
     if (existing) {
 	newvalue = (*arg->func)((VALUE)*key, (VALUE)*value, newvalue);
     }
-    *value = (st_data_t)newvalue;
+    OBJ_WRITE(hash, (VALUE *)value, (VALUE)newvalue);
     return ST_CONTINUE;
 }
 
@@ -1931,7 +1970,7 @@ rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
     VALUE hash = arg->hash;
 
     arg->value = value;
-    RHASH_UPDATE(hash, key, rb_hash_update_func_callback, arg);
+    RHASH_UPDATE(hash, key, rb_hash_update_func_callback, (VALUE)arg);
     return ST_CONTINUE;
 }
 

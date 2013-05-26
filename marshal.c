@@ -1725,7 +1725,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    arg->readable += 2;
 	    if (type == TYPE_HASH_DEF) {
-		RHASH_IFNONE(v) = r_object(arg);
+		RHASH_SET_IFNONE(v, r_object(arg));
 	    }
             v = r_leave(v, arg);
 	}
