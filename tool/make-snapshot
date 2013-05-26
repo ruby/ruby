@@ -38,6 +38,7 @@ ENV["MV"] ||= "mv"
 ENV["RM"] ||= "rm -f"
 ENV["MINIRUBY"] ||= "ruby"
 ENV["PROGRAM"] ||= "ruby"
+ENV["AUTOCONF"] ||= "autoconf"
 
 class String
   # for older ruby
@@ -179,7 +180,7 @@ def package(rev, destdir)
     end
     unless File.exist?("configure")
       print "creating configure..."
-      unless system("autoconf")
+      unless system(ENV["AUTOCONF"])
         puts " failed"
         return
       end

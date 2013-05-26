@@ -1,3 +1,8 @@
+Mon May 27 00:31:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/make-snapshot: use ENV["AUTOCONF"] instead of directly using
+	  literal "autoconf".
+
 Sun May 26 21:31:46 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c, include/ruby/ruby.h: support WB protected hash.
