@@ -326,11 +326,13 @@ typedef struct rb_objspace {
 	size_t generated_sunny_object_count;
 	size_t generated_shady_object_count;
 	size_t shade_operation_count;
+	size_t promote_operation_count;
 	size_t remembered_sunny_object_count;
 	size_t remembered_shady_object_count;
 #if RGENGC_PROFILE >= 2
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
 	size_t shade_operation_count_types[RUBY_T_MASK];
+	size_t promote_operation_count_types[RUBY_T_MASK];
 	size_t remembered_sunny_object_count_types[RUBY_T_MASK];
 	size_t remembered_shady_object_count_types[RUBY_T_MASK];
 #endif
@@ -490,7 +492,20 @@ static size_t rgengc_rememberset_mark(rb_objspace_t *objspace);
 #define RVALUE_SHADY(x)       (!RVALUE_SUNNY(x))
 #define RVALUE_PROMOTED(x)    FL_TEST2((x), FL_OLDGEN)
 
-#define RVALUE_PROMOTE(x)     FL_SET2((x), FL_OLDGEN)
+static inline void
+RVALUE_PROMOTE(VALUE obj)
+{
+    FL_SET2(obj, FL_OLDGEN);
+#if RGENGC_PROFILE >= 1
+    {
+	rb_objspace_t *objspace = &rb_objspace;
+	objspace->profile.promote_operation_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.promote_operation_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
+#endif
+}
 #define RVALUE_DEMOTE(x)      FL_UNSET2((x), FL_OLDGEN)
 #endif
 
@@ -2991,7 +3006,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 
 	/* minor/major common */
 	if (RVALUE_SUNNY(obj)) {
-	    RVALUE_PROMOTE(obj); /* Sunny object can be promoted to OLDGEN object */
+	    RVALUE_PROMOTE((VALUE)obj); /* Sunny object can be promoted to OLDGEN object */
 	    rgengc_report(3, objspace, "gc_mark_children: promote %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    objspace->rgengc.parent_object_is_promoted = TRUE;
 	    objspace->rgengc.oldgen_object_count++;
@@ -3877,7 +3892,7 @@ rb_during_gc(void)
 
 #if RGENGC_PROFILE >= 2
 static void
-gc_count_add_each_types(VALUE hash, const char *name, size_t *types)
+gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 {
     VALUE result = rb_hash_new();
     int i;
@@ -3945,7 +3960,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     static VALUE sym_minor_gc_count, sym_major_gc_count;
 #if RGENGC_PROFILE
     static VALUE sym_generated_sunny_object_count, sym_generated_shady_object_count;
-    static VALUE sym_shade_operation_count;
+    static VALUE sym_shade_operation_count, sym_promote_operation_count;
     static VALUE sym_remembered_sunny_object_count, sym_remembered_shady_object_count;
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
@@ -3968,6 +3983,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(generated_sunny_object_count);
 	S(generated_shady_object_count);
 	S(shade_operation_count);
+	S(promote_operation_count);
 	S(remembered_sunny_object_count);
 	S(remembered_shady_object_count);
 #endif /* USE_RGENGC */
@@ -4004,12 +4020,14 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_generated_sunny_object_count, SIZET2NUM(objspace->profile.generated_sunny_object_count));
     rb_hash_aset(hash, sym_generated_shady_object_count, SIZET2NUM(objspace->profile.generated_shady_object_count));
     rb_hash_aset(hash, sym_shade_operation_count, SIZET2NUM(objspace->profile.shade_operation_count));
+    rb_hash_aset(hash, sym_promote_operation_count, SIZET2NUM(objspace->profile.promote_operation_count));
     rb_hash_aset(hash, sym_remembered_sunny_object_count, SIZET2NUM(objspace->profile.remembered_sunny_object_count));
     rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
 #if RGENGC_PROFILE >= 2
     {
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
+	gc_count_add_each_types(hash, "promote_operation_count_types", objspace->profile.promote_operation_count_types);
 	gc_count_add_each_types(hash, "remembered_sunny_object_count_types", objspace->profile.remembered_sunny_object_count_types);
 	gc_count_add_each_types(hash, "remembered_shady_object_count_types", objspace->profile.remembered_shady_object_count_types);
     }

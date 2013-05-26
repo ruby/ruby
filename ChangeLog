@@ -1,3 +1,8 @@
+Mon May 27 02:26:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): collect promote_operation_count and
+	  types (RGENGC_PROFILE >= 2).
+
 Mon May 27 01:40:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): collect shade_operation_count,
