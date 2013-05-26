@@ -1,3 +1,10 @@
+Mon May 27 01:40:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): collect shade_operation_count,
+	  remembered_sunny_object_count and remembered_shady_object_count
+	  for each types when RGENGC_PROFILE >= 2.
+	  They are informative for optimization.
+
 Mon May 27 01:15:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c (rb_hash_tbl_raw), internal.h: added.

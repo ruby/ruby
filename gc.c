@@ -330,6 +330,9 @@ typedef struct rb_objspace {
 	size_t remembered_shady_object_count;
 #if RGENGC_PROFILE >= 2
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
+	size_t shade_operation_count_types[RUBY_T_MASK];
+	size_t remembered_sunny_object_count_types[RUBY_T_MASK];
+	size_t remembered_shady_object_count_types[RUBY_T_MASK];
 #endif
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
@@ -3499,8 +3502,18 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 
     if (RGENGC_PROFILE) {
 	if (!rgengc_remembered(objspace, obj)) {
-	    if (RVALUE_SUNNY(obj)) objspace->profile.remembered_sunny_object_count++;
-	    else                   objspace->profile.remembered_shady_object_count++;
+	    if (RVALUE_SUNNY(obj)) {
+		objspace->profile.remembered_sunny_object_count++;
+#if RGENGC_PROFILE >= 2
+		objspace->profile.remembered_sunny_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+	    }
+	    else {
+		objspace->profile.remembered_shady_object_count++;
+#if RGENGC_PROFILE >= 2
+		objspace->profile.remembered_shady_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+	    }
 	}
     }
 
@@ -3617,6 +3630,9 @@ rb_gc_giveup_promoted_writebarrier(VALUE obj)
 
 #if RGENGC_PROFILE
     objspace->profile.shade_operation_count++;
+#if RGENGC_PROFILE >= 2
+    objspace->profile.shade_operation_count_types[BUILTIN_TYPE(obj)]++;
+#endif /* RGENGC_PROFILE >= 2 */
 #endif
 }
 
@@ -3859,6 +3875,20 @@ rb_during_gc(void)
     return during_gc;
 }
 
+#if RGENGC_PROFILE >= 2
+static void
+gc_count_add_each_types(VALUE hash, const char *name, size_t *types)
+{
+    VALUE result = rb_hash_new();
+    int i;
+    for (i=0; i<T_MASK; i++) {
+	const char *type = type_name(i, 0);
+	rb_hash_aset(result, ID2SYM(rb_intern(type)), SIZET2NUM(types[i]));
+    }
+    rb_hash_aset(hash, ID2SYM(rb_intern(name)), result);
+}
+#endif
+
 /*
  *  call-seq:
  *     GC.count -> Integer
@@ -3978,13 +4008,10 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
 #if RGENGC_PROFILE >= 2
     {
-	VALUE types = rb_hash_new();
-	int i;
-	for (i=0; i<T_MASK; i++) {
-	    const char *type = type_name(i, 0);
-	    rb_hash_aset(types, ID2SYM(rb_intern(type)), SIZET2NUM(objspace->profile.generated_shady_object_count_types[i]));
-	}
-	rb_hash_aset(hash, ID2SYM(rb_intern("generated_shady_object_count_types")), types);
+	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
+	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
+	gc_count_add_each_types(hash, "remembered_sunny_object_count_types", objspace->profile.remembered_sunny_object_count_types);
+	gc_count_add_each_types(hash, "remembered_shady_object_count_types", objspace->profile.remembered_shady_object_count_types);
     }
 #endif
 #endif /* RGENGC_PROFILE */
