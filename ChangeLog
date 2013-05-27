@@ -3,7 +3,7 @@ Tue May 28 00:34:23 2013  Koichi Sasada  <ko1@atdot.net>
 	* include/ruby/ruby.h, gc.c: add new internal event
 	  RUBY_INTERNAL_EVENT_GC_END. This event invokes at the end of
 	  after_sweep().
-	  Time chart with lazy sweep is here:
+	  Time chart with lazy sweep is:
 	    (1) Kick RUBY_INTERNAL_EVENT_GC_START
 	    (2) [gc_marks()]
 	    (3) [lazy_sweep()]
@@ -11,6 +11,13 @@ Tue May 28 00:34:23 2013  Koichi Sasada  <ko1@atdot.net>
 	    (5) [after_sweep()]
 	    (6) Kick RUBY_INTERNAL_EVENT_GC_END
 	    (7) [... run Ruby program (mutator), and go to (1) ...]
+	  Time chart without lazy sweep (GC.start, etc) is:
+	    (1) Kick RUBY_INTERNAL_EVENT_GC_START
+	    (2) [gc_marks()]
+	    (3) [gc_sweep()]
+	    (4) [after_sweep()]
+	    (5) Kick RUBY_INTERNAL_EVENT_GC_END
+	    (6) [... run Ruby program (mutator), and go to (1) ...]
 
 	* ext/-test-/tracepoint/tracepoint.c,
 	  test/-ext-/tracepoint/test_tracepoint.rb: modify a test.
