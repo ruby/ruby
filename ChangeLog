@@ -1,3 +1,8 @@
+Mon May 27 16:16:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_postponed_job_flush, rb_postponed_job_register): use
+	  ruby_xmalloc/xfree. It is safe during GC.
+
 Mon May 27 09:24:03 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/-ext-/postponed_job/test_postponed_job.rb: fix typo and class name.

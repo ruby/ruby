@@ -1390,7 +1390,7 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
 {
     rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
-    rb_postponed_job_t *pjob = (rb_postponed_job_t *)malloc(sizeof(rb_postponed_job_t)); /* postponed_job should be separated with Ruby's GC */
+    rb_postponed_job_t *pjob = (rb_postponed_job_t *)ruby_xmalloc(sizeof(rb_postponed_job_t));
     if (pjob == NULL) return 0; /* failed */
 
     pjob->flags = flags;
@@ -1429,7 +1429,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     while (pjob) {
 	next_pjob = pjob->next;
 	pjob->func(pjob->data);
-	free(pjob); /* postponed_job should be separated with Ruby's GC */
+	ruby_xfree(pjob); /* postponed_job should be separated with Ruby's GC */
 	pjob = next_pjob;
     }
 }
