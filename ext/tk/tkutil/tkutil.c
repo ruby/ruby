@@ -936,7 +936,8 @@ tk_conv_args(argc, argv, self)
     VALUE *argv; /* [0]:base_array, [1]:enc_mode, [2]..[n]:args */
     VALUE self;
 {
-    int idx, size;
+    int idx;
+    long size;
     volatile VALUE dst;
     int thr_crit_bup;
     VALUE old_gc;

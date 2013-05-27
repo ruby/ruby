@@ -42,7 +42,7 @@ newobj_i(VALUE tpval, void *data)
     VALUE obj = rb_tracearg_object(tparg);
     VALUE path = rb_tracearg_path(tparg);
     VALUE line = rb_tracearg_lineno(tparg);
-    int path_len = RSTRING_LEN(path);
+    long path_len = RSTRING_LEN(path);
     struct allocation_info *info = (struct allocation_info *)ruby_xmalloc(sizeof(struct allocation_info));
     char *path_cstr = ruby_xmalloc(path_len + 1);
     char *path_stored_cstr;

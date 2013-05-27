@@ -14,12 +14,14 @@ static VALUE
 pjob_register(VALUE self, VALUE obj)
 {
     rb_postponed_job_register(0, pjob_callback, (void *)obj);
+    return self;
 }
 
 static VALUE
 pjob_call_direct(VALUE self, VALUE obj)
 {
     pjob_callback((void *)obj);
+    return self;
 }
 
 void

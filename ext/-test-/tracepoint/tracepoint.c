@@ -47,7 +47,7 @@ tracepoint_track_objspace_events(VALUE self)
 				    RUBY_INTERNAL_EVENT_GC_START | RUBY_INTERNAL_EVENT_GC_END,
 				    tracepoint_track_objspace_events_i, 0);
     VALUE result = rb_ary_new();
-    int i;
+    size_t i;
 
     newobj_count = free_count = gc_start_count = objects_count = 0;
 
