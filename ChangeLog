@@ -1,3 +1,7 @@
+Mon May 27 09:24:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/-ext-/postponed_job/test_postponed_job.rb: fix typo and class name.
+
 Mon May 27 09:05:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, gc.c, vm_trace.c: add internal events.

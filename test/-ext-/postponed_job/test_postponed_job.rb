@@ -4,7 +4,7 @@ require '-test-/postponed_job'
 
 module Bug
   def self.postponed_job_call_direct_wrapper(*args)
-    postponed_job_call_direct(*arg)
+    postponed_job_call_direct(*args)
   end
 
   def self.postponed_job_register_wrapper(*args)
@@ -12,7 +12,7 @@ module Bug
   end
 end
 
-class TestTask < Test::Unit::TestCase
+class TestPostponed_job < Test::Unit::TestCase
   def test_register
     direct, registered = [], []
 
