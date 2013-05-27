@@ -1379,7 +1379,7 @@ Init_vm_trace(void)
 
 typedef struct rb_postponed_job_struct {
     unsigned long flags; /* reserve */
-    rb_thread_t *th; /* created therad, reserve */
+    rb_thread_t *th; /* created thread, reserve */
     rb_postponed_job_func_t func;
     void *data;
     struct rb_postponed_job_struct *next;
