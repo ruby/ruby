@@ -1,3 +1,10 @@
+Mon May 27 17:33:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (install_recursive): add maxdepth option.
+
+	* tool/rbinstall.rb (bin-comm): limit depth of bindir and reject empty
+	  files.  [ruby-core:55101] [Bug #8432]
+
 Mon May 27 16:16:18 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_postponed_job_flush, rb_postponed_job_register): use

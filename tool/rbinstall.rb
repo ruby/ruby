@@ -198,6 +198,7 @@ def install_recursive(srcdir, dest, options = {})
   opts = options.clone
   noinst = opts.delete(:no_install)
   glob = opts.delete(:glob) || "*"
+  maxdepth = opts.delete(:maxdepth)
   subpath = (srcdir.size+1)..-1
   prune = []
   skip = []
@@ -217,19 +218,21 @@ def install_recursive(srcdir, dest, options = {})
   prune = path_matcher(prune)
   skip = path_matcher(skip)
   File.directory?(srcdir) or return rescue return
-  paths = [[srcdir, dest, true]]
+  paths = [[srcdir, dest, 0]]
   found = []
   while file = paths.shift
     found << file
     file, d, dir = *file
     if dir
+      depth = dir + 1
+      next if maxdepth and maxdepth < depth
       files = []
       Dir.foreach(file) do |f|
         src = File.join(file, f)
         d = File.join(dest, dir = src[subpath])
         stat = File.lstat(src) rescue next
         if stat.directory?
-          files << [src, d, true] if /\A\./ !~ f and !prune[dir]
+          files << [src, d, depth] if maxdepth != depth and /\A\./ !~ f and !prune[dir]
         elsif stat.symlink?
           # skip
         else
@@ -453,7 +456,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
   else
     trans = proc {|base| base}
   end
-  install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
+  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
     cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
     shebang = ''
@@ -462,6 +465,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
       shebang = f.gets
       body = f.read
     end
+    shebang or raise "empty file - #{src}"
     if PROLOG_SCRIPT
       shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
     else
