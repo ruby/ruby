@@ -1,3 +1,7 @@
+Tue May 28 02:56:15 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): remove wrong rest_sweep().
+
 Tue May 28 02:44:23 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_body): fix GC_ENABLE_LAZY_SWEEP condition.

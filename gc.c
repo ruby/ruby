@@ -4051,8 +4051,6 @@ gc_stat(int argc, VALUE *argv, VALUE self)
         hash = rb_hash_new();
     }
 
-    rest_sweep(objspace);
-
     rb_hash_aset(hash, sym_count, SIZET2NUM(objspace->count));
     /* implementation dependent counters */
     rb_hash_aset(hash, sym_heap_used, SIZET2NUM(objspace->heap.used));
