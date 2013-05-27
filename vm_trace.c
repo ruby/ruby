@@ -1429,7 +1429,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     while (pjob) {
 	next_pjob = pjob->next;
 	pjob->func(pjob->data);
-	ruby_xfree(pjob); /* postponed_job should be separated with Ruby's GC */
+	ruby_xfree(pjob);
 	pjob = next_pjob;
     }
 }
