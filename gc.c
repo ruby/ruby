@@ -3805,13 +3805,15 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	}
     }
 
-    if (GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
+    if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	immediate_sweep = TRUE;
     }
 
     if (full_mark) {
 	objspace->rgengc.oldgen_object_count = 0;
     }
+
+    if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
@@ -3824,15 +3826,13 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     }
     gc_prof_timer_stop(objspace);
 
-    if (GC_NOTIFY) printf("end garbage_collect()\n");
+    if (GC_NOTIFY) fprintf(stderr, "end garbage_collect()\n");
     return TRUE;
 }
 
 static int
 garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int reason)
 {
-    if (GC_NOTIFY) printf("start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
-
     if (!heaps) {
 	during_gc = 0;
 	return FALSE;
