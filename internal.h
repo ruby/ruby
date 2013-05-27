@@ -188,6 +188,7 @@ void rb_w32_init_file(void);
 /* gc.c */
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
+void rb_objspace_set_event_hook(const rb_event_flag_t event);
 
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);

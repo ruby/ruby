@@ -72,6 +72,8 @@ recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
 	}
 	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
     }
+
+    rb_objspace_set_event_hook(ruby_vm_event_flags);
 }
 
 static void
@@ -86,6 +88,8 @@ recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
 	}
 	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
     }
+
+    rb_objspace_set_event_hook(ruby_vm_event_flags);
 }
 
 /* add/remove hooks */
@@ -260,7 +264,7 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 	rb_event_hook_t *hook;
 
 	for (hook = list->hooks; hook; hook = hook->next) {
-	    if (LIKELY(!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED)) && (trace_arg->event & hook->events)) {
+	    if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) && (trace_arg->event & hook->events)) {
 		if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_RAW_ARG)) {
 		    (*hook->func)(trace_arg->event, hook->data, trace_arg->self, trace_arg->id, trace_arg->klass);
 		}
@@ -692,6 +696,12 @@ rb_tracearg_from_tracepoint(VALUE tpval)
     return get_trace_arg();
 }
 
+rb_event_flag_t
+rb_tracearg_event_flag(rb_trace_arg_t *trace_arg)
+{
+    return trace_arg->event;
+}
+
 VALUE
 rb_tracearg_event(rb_trace_arg_t *trace_arg)
 {
@@ -802,6 +812,21 @@ VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->event & (RUBY_EVENT_RAISE)) {
+	/* ok */
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    if (trace_arg->data == Qundef) {
+	rb_bug("tp_attr_raised_exception_m: unreachable");
+    }
+    return trace_arg->data;
+}
+
+VALUE
+rb_tracearg_object(rb_trace_arg_t *trace_arg)
+{
+    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREE)) {
 	/* ok */
     }
     else {

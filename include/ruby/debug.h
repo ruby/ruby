@@ -56,6 +56,7 @@ VALUE rb_tracepoint_enabled_p(VALUE tpval);
 typedef struct rb_trace_arg_struct rb_trace_arg_t;
 rb_trace_arg_t *rb_tracearg_from_tracepoint(VALUE tpval);
 
+rb_event_flag_t rb_tracearg_event_flag(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_event(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_lineno(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
@@ -65,6 +66,7 @@ VALUE rb_tracearg_binding(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_self(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_return_value(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
 
 /* Postponed Job API */
 typedef void (*rb_postponed_job_func_t)(void *arg);

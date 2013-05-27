@@ -348,6 +348,7 @@ typedef struct rb_objspace {
     size_t count;
     size_t total_allocated_object_num;
     size_t total_freed_object_num;
+    rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
     int gc_stress;
 
     struct mark_func_data_struct {
@@ -826,6 +827,27 @@ heaps_increment(rb_objspace_t *objspace)
     return FALSE;
 }
 
+void
+rb_objspace_set_event_hook(const rb_event_flag_t event)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    objspace->hook_events = event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK;
+}
+
+static void
+gc_event_hook_body(rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
+{
+    rb_thread_t *th = GET_THREAD();
+    EXEC_EVENT_HOOK(th, event, th->cfp->self, 0, 0, data);
+}
+
+#define gc_event_hook(objspace, event, data) do { \
+    if (UNLIKELY((objspace)->hook_events & (event))) { \
+	gc_event_hook_body((objspace), (event), (data)); \
+    } \
+} while (0)
+
+
 static VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
@@ -870,7 +892,6 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     RANY(obj)->file = rb_sourcefile();
     RANY(obj)->line = rb_sourceline();
 #endif
-    objspace->total_allocated_object_num++;
 
 #if RGENGC_PROFILE
     if (flags & FL_WB_PROTECTED) objspace->profile.generated_sunny_object_count++;
@@ -888,6 +909,9 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     if (RVALUE_PROMOTED(obj)) rb_bug("newobj: %p (%s) is promoted.\n", (void *)obj, obj_type_name(obj));
     if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.\n", (void *)obj, obj_type_name(obj));
 #endif
+
+    objspace->total_allocated_object_num++;
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
 
     return obj;
 }
@@ -1097,6 +1121,8 @@ make_io_deferred(RVALUE *p)
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREE, obj);
+
     switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
@@ -3784,6 +3810,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (full_mark) {
 	objspace->rgengc.oldgen_object_count = 0;
     }
+
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     gc_prof_timer_start(objspace, reason | (minor_gc ? GPR_FLAG_MINOR : 0));
     {

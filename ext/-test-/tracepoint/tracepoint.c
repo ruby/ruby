@@ -1,0 +1,65 @@
+#include "ruby/ruby.h"
+#include "ruby/debug.h"
+
+static size_t newobj_count;
+static size_t free_count;
+static size_t gc_start_count;
+static size_t objects_count;
+static VALUE objects[10];
+
+void
+tracepoint_track_objspace_events_i(VALUE tpval, void *data)
+{
+    rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
+    switch (rb_tracearg_event_flag(tparg)) {
+      case RUBY_INTERNAL_EVENT_NEWOBJ:
+	{
+	    VALUE obj = rb_tracearg_object(tparg);
+	    if (objects_count < sizeof(objects)/sizeof(VALUE)) objects[objects_count++] = obj;
+	    newobj_count++;
+	    break;
+	}
+      case RUBY_INTERNAL_EVENT_FREE:
+	{
+	    free_count++;
+	    break;
+	}
+      case RUBY_INTERNAL_EVENT_GC_START:
+	{
+	    gc_start_count++;
+	    break;
+	}
+      default:
+	rb_raise(rb_eRuntimeError, "unknown event");
+    }
+}
+
+VALUE
+tracepoint_track_objspace_events(VALUE self)
+{
+    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREE | RUBY_INTERNAL_EVENT_GC_START, tracepoint_track_objspace_events_i, 0);
+    VALUE result = rb_ary_new();
+    int i;
+
+    newobj_count = free_count = gc_start_count = objects_count = 0;
+
+    rb_tracepoint_enable(tpval);
+    rb_yield(Qundef);
+    rb_tracepoint_disable(tpval);
+
+    rb_ary_push(result, SIZET2NUM(newobj_count));
+    rb_ary_push(result, SIZET2NUM(free_count));
+    rb_ary_push(result, SIZET2NUM(gc_start_count));
+    for (i=0; i<objects_count; i++) {
+	rb_ary_push(result, objects[i]);
+    }
+
+    return result;
+}
+
+void
+Init_tracepoint(void)
+{
+    VALUE mBug = rb_define_module("Bug");
+    rb_define_module_function(mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
+}
