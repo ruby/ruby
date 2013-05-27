@@ -1,3 +1,9 @@
+Mon May 27 22:09:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (RHASH_SIZE): Add a cast to suppress a
+	  warning, comparison between signed and unsigned integer
+	  expressions [-Wsign-compare], on ILP32.
+
 Mon May 27 19:25:47 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: rename RUBY_INTERNAL_EVENT_FREE to
