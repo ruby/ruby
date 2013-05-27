@@ -6,14 +6,14 @@ Mon May 27 09:05:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, gc.c, vm_trace.c: add internal events.
 	  * RUBY_INTERNAL_EVENT_NEWOBJ: object created.
-	  * RUBY_INTERNAL_EVENT_FREE: object freeed.
+	  * RUBY_INTERNAL_EVENT_FREE: object freed.
 	  * RUBY_INTERNAL_EVENT_GC_START: GC started.
 	  And rename `RUBY_EVENT_SWITCH' to `RUBY_INTERNAL_EVENT_SWITCH'.
 
 	  Internal events can not invoke any Ruby program because the tracing
 	  timing may be critical (under huge restriction).
 	  These events can be hooked only by C-extensions.
-	  We recommend to use rb_potponed_job_register() API to call Ruby
+	  We recommend to use rb_postponed_job_register() API to call Ruby
 	  program safely.
 
 	  This change is mostly written by Aman Gupta (tmm1).
@@ -22,7 +22,7 @@ Mon May 27 09:05:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/debug.h, vm_trace.c: added two new APIs.
 	  * rb_tracearg_event_flag() returns rb_event_flag_t of this event.
-	  * rb_tracearg_object() returns created/freeed object.
+	  * rb_tracearg_object() returns created/freed object.
 
 	* ext/-test-/tracepoint/extconf.rb,
 	  ext/-test-/tracepoint/tracepoint.c,
