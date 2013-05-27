@@ -1,3 +1,10 @@
+Tue May 28 02:07:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_postponed_job_register_one): fix iteration bug.
+
+	* ext/-test-/postponed_job/postponed_job.c,
+	  test/-ext-/postponed_job/test_postponed_job.rb: add a test.
+
 Tue May 28 00:34:23 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, gc.c: add new internal event

@@ -1415,6 +1415,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 	if (pjob->func == func) {
 	    return 2;
 	}
+	pjob = pjob->next;
     }
 
     return rb_postponed_job_register(flags, func, data);
