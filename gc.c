@@ -2328,6 +2328,8 @@ after_gc_sweep(rb_objspace_t *objspace)
     }
 
     free_unused_heaps(objspace);
+
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END, 0 /* TODO: pass minor/immediate flag? */);
 }
 
 static int

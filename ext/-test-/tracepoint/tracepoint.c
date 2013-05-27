@@ -4,6 +4,7 @@
 static size_t newobj_count;
 static size_t free_count;
 static size_t gc_start_count;
+static size_t gc_end_count;
 static size_t objects_count;
 static VALUE objects[10];
 
@@ -29,6 +30,11 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 	    gc_start_count++;
 	    break;
 	}
+      case RUBY_INTERNAL_EVENT_GC_END:
+	{
+	    gc_end_count++;
+	    break;
+	}
       default:
 	rb_raise(rb_eRuntimeError, "unknown event");
     }
@@ -37,7 +43,9 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 VALUE
 tracepoint_track_objspace_events(VALUE self)
 {
-    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ | RUBY_INTERNAL_EVENT_GC_START, tracepoint_track_objspace_events_i, 0);
+    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ |
+				    RUBY_INTERNAL_EVENT_GC_START | RUBY_INTERNAL_EVENT_GC_END,
+				    tracepoint_track_objspace_events_i, 0);
     VALUE result = rb_ary_new();
     int i;
 
@@ -50,6 +58,7 @@ tracepoint_track_objspace_events(VALUE self)
     rb_ary_push(result, SIZET2NUM(newobj_count));
     rb_ary_push(result, SIZET2NUM(free_count));
     rb_ary_push(result, SIZET2NUM(gc_start_count));
+    rb_ary_push(result, SIZET2NUM(gc_end_count));
     for (i=0; i<objects_count; i++) {
 	rb_ary_push(result, objects[i]);
     }
