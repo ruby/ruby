@@ -1129,7 +1129,7 @@ vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, V
 	    for (j = i; i < iseq->arg_keywords; i++) {
 		if (st_lookup(rb_hash_tbl_raw(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
 	    }
-	    if (RHASH_SIZE(keyword_hash) > j) {
+	    if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
 		unknown_keyword_error(iseq, keyword_hash);
 	    }
 	}
