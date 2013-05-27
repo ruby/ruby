@@ -125,7 +125,7 @@ trace_object_allocations(VALUE objspace)
     struct traceobj_arg arg;
 
     arg.newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, &arg);
-    arg.freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREE, freeobj_i, &arg);
+    arg.freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, &arg);
     arg.object_table = st_init_numtable();
     arg.path_table = st_init_strtable();
 

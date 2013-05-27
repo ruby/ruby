@@ -826,7 +826,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_object(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREE)) {
+    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ)) {
 	/* ok */
     }
     else {

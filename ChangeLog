@@ -1,3 +1,12 @@
+Mon May 27 19:25:47 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: rename RUBY_INTERNAL_EVENT_FREE to
+	  RUBY_INTERNAL_EVENT_FREEOBJ.
+
+	* ext/-test-/tracepoint/tracepoint.c,
+	  ext/objspace/object_tracing.c,
+	  gc.c, vm_trace.c: catch up this change.
+
 Mon May 27 18:57:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: support ObjectSpace.trace_object_allocations.

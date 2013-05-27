@@ -1121,7 +1121,7 @@ make_io_deferred(RVALUE *p)
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREE, obj);
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREEOBJ, obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NIL:

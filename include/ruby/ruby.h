@@ -1729,7 +1729,7 @@ int ruby_native_thread_p(void);
 #define RUBY_INTERNAL_EVENT_SWITCH        0x040000
                                        /* 0x080000 */
 #define RUBY_INTERNAL_EVENT_NEWOBJ        0x100000
-#define RUBY_INTERNAL_EVENT_FREE          0x200000
+#define RUBY_INTERNAL_EVENT_FREEOBJ       0x200000
 #define RUBY_INTERNAL_EVENT_GC_START      0x400000
 #define RUBY_INTERNAL_EVENT_OBJSPACE_MASK 0x700000
 #define RUBY_INTERNAL_EVENT_MASK        0xfffe0000

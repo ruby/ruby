@@ -19,7 +19,7 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 	    newobj_count++;
 	    break;
 	}
-      case RUBY_INTERNAL_EVENT_FREE:
+      case RUBY_INTERNAL_EVENT_FREEOBJ:
 	{
 	    free_count++;
 	    break;
@@ -37,7 +37,7 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 VALUE
 tracepoint_track_objspace_events(VALUE self)
 {
-    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREE | RUBY_INTERNAL_EVENT_GC_START, tracepoint_track_objspace_events_i, 0);
+    VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ | RUBY_INTERNAL_EVENT_GC_START, tracepoint_track_objspace_events_i, 0);
     VALUE result = rb_ary_new();
     int i;
 
