@@ -1,3 +1,16 @@
+Tue May 28 03:11:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/gc_hook.c, ext/objspace/objspace.c: add new methods to
+	  hook GC invocation.
+	  * ObjectSpace.after_gc_start_hook=(proc)
+	  * ObjectSpace.after_gc_end_hook=(proc)
+
+	  Note that hooks are not kicked immediately. Procs are kicked
+	  at postponed_job.
+
+	  This feature is a sample of new internal event and
+	  rb_postponed_job API.
+
 Tue May 28 02:56:15 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stat): remove wrong rest_sweep().

@@ -780,6 +780,7 @@ reachable_objects_from(VALUE self, VALUE obj)
 }
 
 void Init_object_tracing(VALUE rb_mObjSpace);
+void Init_gc_hook(VALUE rb_mObjSpace);
 
 /* objspace library extends ObjectSpace module and add several
  * methods to get internal statistic information about
@@ -811,4 +812,5 @@ Init_objspace(void)
     rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 
     Init_object_tracing(rb_mObjSpace);
+    Init_gc_hook(rb_mObjSpace);
 }
