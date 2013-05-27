@@ -443,6 +443,9 @@ void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
 void rb_mark_generic_ivar_tbl(void);
 
+/* gc.c */
+size_t rb_gc_count();
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)

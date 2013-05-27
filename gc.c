@@ -3946,6 +3946,12 @@ gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 }
 #endif
 
+size_t
+rb_gc_count(void)
+{
+    return rb_objspace.count;
+}
+
 /*
  *  call-seq:
  *     GC.count -> Integer
@@ -3959,7 +3965,7 @@ gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 static VALUE
 gc_count(VALUE self)
 {
-    return UINT2NUM(rb_objspace.count);
+    return SIZET2NUM(rb_gc_count());
 }
 
 /*

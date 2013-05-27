@@ -1,3 +1,17 @@
+Mon May 27 18:57:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: support ObjectSpace.trace_object_allocations.
+	  Read the following test to know HOWTO.
+	  This feature is a sample of RUBY_INTERNAL_EVENT.
+
+	* test/objspace/test_objspace.rb: add a test.
+
+	* ext/objspace/object_tracing.c: ditto.
+
+	* gc.c (rb_gc_count): add. THis function returns GC count.
+
+	* internal.h: add decl. of rb_gc_count(). Same as `GC.count'.
+
 Mon May 27 17:33:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (install_recursive): add maxdepth option.
