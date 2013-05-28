@@ -268,6 +268,7 @@ class Socket < BasicSocket
     alias :hostname :gethostname
     alias :get_host_by_name :gethostbyname
     alias :get_host_by_address :gethostbyaddr
+    alias :get_service_by_name :getservbyname
   end
 
   def ipv6only!
