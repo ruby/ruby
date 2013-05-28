@@ -1,3 +1,8 @@
+Tue May 28 11:30:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): leave makefiles untouched if the content is
+	  not changed, to get rid of unnecessary re-linking.
+
 Tue May 28 03:11:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/gc_hook.c, ext/objspace/objspace.c: add new methods to
