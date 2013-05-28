@@ -2,7 +2,7 @@
 
   object_traceing.c - Object Tracing mechanism/ObjectSpace extender for MRI.
 
-  $Author: sorah $
+  $Author$
   created at: Mon May 27 16:27:44 2013
 
   NOTE: This extension library is not expected to exist except C Ruby.

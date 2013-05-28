@@ -2,7 +2,7 @@
 
   gc_hook.c - GC hook mechanism/ObjectSpace extender for MRI.
 
-  $Author: sorah $
+  $Author$
   created at: Tue May 28 01:34:25 2013
 
   NOTE: This extension library is not expected to exist except C Ruby.
