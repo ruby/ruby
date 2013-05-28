@@ -104,7 +104,7 @@ Mon May 27 18:57:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c: ditto.
 
-	* gc.c (rb_gc_count): add. THis function returns GC count.
+	* gc.c (rb_gc_count): add. This function returns GC count.
 
 	* internal.h: add decl. of rb_gc_count(). Same as `GC.count'.
 
