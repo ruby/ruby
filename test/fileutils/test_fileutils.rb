@@ -758,6 +758,10 @@ class TestFileUtils
     assert_directory 'tmp/tmp'
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
+
+    assert_raise(Errno::EISDIR) {
+      mkdir '/'
+    }
   end
 
   def test_mkdir_file_perm
@@ -831,6 +835,8 @@ class TestFileUtils
     # (rm(1) try to chdir to parent directory, it fails to remove directory.)
     Dir.rmdir 'tmp/tmp'
     Dir.rmdir 'tmp'
+
+    mkdir_p '/'
   end
 
   def test_mkdir_p_file_perm
