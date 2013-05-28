@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  object_traceing.c - Object Tracing mechanism/ObjectSpace extender for MRI.
+  object_tracing.c - Object Tracing mechanism/ObjectSpace extender for MRI.
 
   $Author$
   created at: Mon May 27 16:27:44 2013
