@@ -22,17 +22,60 @@ struct traceobj_arg {
     VALUE newobj_trace;
     VALUE freeobj_trace;
     st_table *object_table;
-    st_table *path_table;
+    st_table *str_table;
     struct traceobj_arg *prev_traceobj_arg;
 };
 
 struct traceobj_arg *traceobj_arg; /* TODO: do not use GLOBAL VARIABLE!!! */
 
 struct allocation_info {
-    char *path;
+    const char *path;
     unsigned long line;
+    const char *class_path;
+    VALUE mid;
     size_t generation;
 };
+
+static const char *
+make_unique_str(st_table *tbl, const char *str, int len)
+{
+    if (!str) {
+	return NULL;
+    }
+    else {
+	st_data_t n;
+	char *result;
+
+	if (st_lookup(tbl, (st_data_t)str, &n)) {
+	    st_insert(tbl, (st_data_t)str, n+1);
+	    st_get_key(tbl, (st_data_t)str, (st_data_t *)&result);
+	}
+	else {
+	    result = (char *)ruby_xmalloc(len+1);
+	    strncpy(result, str, len);
+	    result[len] = 0;
+	    st_add_direct(tbl, (st_data_t)result, 1);
+	}
+	return result;
+    }
+}
+
+static void
+delete_unique_str(st_table *tbl, const char *str)
+{
+    if (str) {
+	st_data_t n;
+
+	st_lookup(tbl, (st_data_t)str, &n);
+	if (n == 1) {
+	    st_delete(tbl, (st_data_t *)&str, 0);
+	    ruby_xfree((char *)str);
+	}
+	else {
+	    st_insert(tbl, (st_data_t)str, n-1);
+	}
+    }
+}
 
 static void
 newobj_i(VALUE tpval, void *data)
@@ -42,29 +85,18 @@ newobj_i(VALUE tpval, void *data)
     VALUE obj = rb_tracearg_object(tparg);
     VALUE path = rb_tracearg_path(tparg);
     VALUE line = rb_tracearg_lineno(tparg);
-    long path_len = RSTRING_LEN(path);
+    VALUE mid = rb_tracearg_method_id(tparg);
+    VALUE klass = rb_tracearg_defined_class(tparg);
     struct allocation_info *info = (struct allocation_info *)ruby_xmalloc(sizeof(struct allocation_info));
-    char *path_cstr = ruby_xmalloc(path_len + 1);
-    char *path_stored_cstr;
-
-    strncpy(path_cstr, RSTRING_PTR(path), path_len);
-    path_cstr[path_len] = 0;
-
-    if (st_get_key(arg->path_table, (st_data_t)path_cstr, (st_data_t *)&path_stored_cstr)) {
-	st_data_t n;
-	st_lookup(arg->path_table, (st_data_t)path_stored_cstr, &n);
-	st_insert(arg->path_table, (st_data_t)path_stored_cstr, n+1);
-	ruby_xfree(path_cstr);
-	path_cstr = path_stored_cstr;
-    }
-    else {
-	st_add_direct(arg->path_table, (st_data_t)path_cstr, 1);
-    }
+    const char *path_cstr = RTEST(path) ? make_unique_str(arg->str_table, RSTRING_PTR(path), RSTRING_LEN(path)) : 0;
+    VALUE class_path = RTEST(klass) ? rb_class_path(klass) : Qnil;
+    const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
 
     info->path = path_cstr;
     info->line = NUM2INT(line);
+    info->mid = mid;
+    info->class_path = class_path_cstr;
     info->generation = rb_gc_count();
-    st_insert(arg->path_table, (st_data_t)path_cstr, 0);
     st_insert(arg->object_table, (st_data_t)obj, (st_data_t)info);
 }
 
@@ -75,17 +107,10 @@ freeobj_i(VALUE tpval, void *data)
     rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
     VALUE obj = rb_tracearg_object(tparg);
     struct allocation_info *info;
-    st_data_t n;
-    if (st_delete(arg->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
-	st_lookup(arg->path_table, (st_data_t)info->path, &n);
-	if (n == 1) {
-	    st_delete(arg->path_table, (st_data_t *)&info->path, 0);
-	    ruby_xfree(info->path);
-	}
-	else {
-	    st_insert(arg->path_table, (st_data_t)info->path, n-1);
-	}
 
+    if (st_delete(arg->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
+	delete_unique_str(arg->str_table, info->path);
+	delete_unique_str(arg->str_table, info->class_path);
 	ruby_xfree(info);
     }
 }
@@ -111,9 +136,9 @@ stop_trace_object_allocations(void *data)
     rb_tracepoint_disable(arg->newobj_trace);
     rb_tracepoint_disable(arg->freeobj_trace);
     st_foreach(arg->object_table, free_values_i, 0);
-    st_foreach(arg->path_table, free_keys_i, 0);
+    st_foreach(arg->str_table, free_keys_i, 0);
     st_free_table(arg->object_table);
-    st_free_table(arg->path_table);
+    st_free_table(arg->str_table);
     traceobj_arg = arg->prev_traceobj_arg;
 
     return Qnil;
@@ -127,7 +152,7 @@ trace_object_allocations(VALUE objspace)
     arg.newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, &arg);
     arg.freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, &arg);
     arg.object_table = st_init_numtable();
-    arg.path_table = st_init_strtable();
+    arg.str_table = st_init_strtable();
 
     arg.prev_traceobj_arg = traceobj_arg;
     traceobj_arg = &arg;
@@ -155,7 +180,7 @@ allocation_sourcefile(VALUE objspace, VALUE obj)
 {
     struct allocation_info *info = allocation_info(obj);
     if (info) {
-	return rb_str_new2(info->path);
+	return info->path ? rb_str_new2(info->path) : Qnil;
     }
     else {
 	return Qnil;
@@ -168,6 +193,30 @@ allocation_sourceline(VALUE objspace, VALUE obj)
     struct allocation_info *info = allocation_info(obj);
     if (info) {
 	return INT2FIX(info->line);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+static VALUE
+allocation_class_path(VALUE objspace, VALUE obj)
+{
+    struct allocation_info *info = allocation_info(obj);
+    if (info) {
+	return info->class_path ? rb_str_new2(info->class_path) : Qnil;
+    }
+    else {
+	return Qnil;
+    }
+}
+
+static VALUE
+allocation_method_id(VALUE objspace, VALUE obj)
+{
+    struct allocation_info *info = allocation_info(obj);
+    if (info) {
+	return info->mid;
     }
     else {
 	return Qnil;
@@ -192,5 +241,7 @@ Init_object_tracing(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations", trace_object_allocations, 0);
     rb_define_module_function(rb_mObjSpace, "allocation_sourcefile", allocation_sourcefile, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_sourceline", allocation_sourceline, 1);
+    rb_define_module_function(rb_mObjSpace, "allocation_class_path", allocation_class_path, 1);
+    rb_define_module_function(rb_mObjSpace, "allocation_method_id", allocation_method_id, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_generation", allocation_generation, 1);
 }

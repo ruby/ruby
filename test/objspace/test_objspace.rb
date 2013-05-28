@@ -112,18 +112,31 @@ class TestObjSpace < Test::Unit::TestCase
   def test_traceobject
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
-      o1 = Object.new; line1 = __LINE__
-      o2 = "a"+"b"   ; line2 = __LINE__
-      o3 = [1, 2]    ; line3 = __LINE__
+      o1 = Object.new; line1 = __LINE__; c1 = GC.count
+      o2 = "xyzzy"   ; line2 = __LINE__; c2 = GC.count
+      o3 = [1, 2]    ; line3 = __LINE__; c3 = GC.count
 
       assert_equal(nil, ObjectSpace.allocation_sourcefile(o0))
       assert_equal(nil, ObjectSpace.allocation_sourceline(o0))
-      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
+      assert_equal(nil, ObjectSpace.allocation_generation(o0))
+
       assert_equal(line1,    ObjectSpace.allocation_sourceline(o1))
+      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
+      assert_equal(c1,       ObjectSpace.allocation_generation(o1))
+      assert_equal(Class.name, ObjectSpace.allocation_class_path(o1))
+      assert_equal(:new,       ObjectSpace.allocation_method_id(o1))
+
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o2))
       assert_equal(line2,    ObjectSpace.allocation_sourceline(o2))
+      assert_equal(c2,       ObjectSpace.allocation_generation(o2))
+      assert_equal(self.class.name, ObjectSpace.allocation_class_path(o2))
+      assert_equal(__method__,      ObjectSpace.allocation_method_id(o2))
+
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o3))
       assert_equal(line3,    ObjectSpace.allocation_sourceline(o3))
+      assert_equal(c3,       ObjectSpace.allocation_generation(o3))
+      assert_equal(self.class.name, ObjectSpace.allocation_class_path(o3))
+      assert_equal(__method__,      ObjectSpace.allocation_method_id(o3))
     }
   end
 end

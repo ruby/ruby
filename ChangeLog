@@ -1,3 +1,20 @@
+Tue May 28 12:31:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c: fix a bug reported at
+	  "[ruby-core:55182] [ruby-trunk - Bug #8456][Open] Sugfault in Ruby Head"
+	  Care about the case TracePoint#path #=> `nil'.
+
+	* ext/objspace/object_tracing.c: add two new methods:
+	  * ObjectSpace.allocation_class_path(o)
+	  * ObjectSpace.allocation_method_id(o)
+	  They are not useful for Object.new because they are always
+	  "Class" and :new.
+	  To trace more useful information, we need to maintain call-tree
+	  using call/return hooks, which is implemented by
+	  ll-prof <http://sunagae.net/wiki/doku.php?id=software:llprof>
+
+	* test/objspace/test_objspace.rb: add a test.
+
 Tue May 28 11:30:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): leave makefiles untouched if the content is
