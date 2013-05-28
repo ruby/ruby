@@ -37,7 +37,7 @@ struct allocation_info {
 };
 
 static const char *
-make_unique_str(st_table *tbl, const char *str, int len)
+make_unique_str(st_table *tbl, const char *str, long len)
 {
     if (!str) {
 	return NULL;
