@@ -266,6 +266,7 @@ class Socket < BasicSocket
   # enable the socket option IPV6_V6ONLY if IPV6_V6ONLY is available.
   class << self
     alias :hostname :gethostname
+    alias :get_host_by_name :gethostbyname
   end
 
   def ipv6only!
