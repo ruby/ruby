@@ -142,7 +142,7 @@ static ruby_gc_params_t initial_params = {
 #endif
 
 #ifndef GC_PROFILE_MORE_DETAIL
-#define GC_PROFILE_MORE_DETAIL 0
+#define GC_PROFILE_MORE_DETAIL 1
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP 1
@@ -5254,7 +5254,7 @@ static VALUE
 gc_profile_enable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-
+    rest_sweep(objspace);
     objspace->profile.run = TRUE;
     return Qnil;
 }

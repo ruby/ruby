@@ -1,3 +1,9 @@
+Thu May 30 00:08:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_enable): rest_sweep() to finish last GC.
+	  Profiling record is allocated at first of marking phase.
+	  Enable at lazy sweeping may cause an error (SEGV).
+
 Wed May 29 10:33:27 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c: fix WB bug.
