@@ -1,3 +1,8 @@
+Wed May 29 21:03:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (POSTLINK): default to : command to get rid of flag
+	  only command, since BSD make does not work with it.
+
 Wed May 29 20:59:38 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/yaml.rb: documentation updates, patched by zzak.
