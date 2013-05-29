@@ -24,10 +24,12 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
-    id_floor, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
-    id_to_i, id_to_s, id_truncate, id_i_num, id_i_den;
+    id_floor, id_idiv, id_integer_p, id_negate, id_to_f,
+    id_to_i, id_truncate, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
+#define f_inspect rb_inspect
+#define f_to_s rb_obj_as_string
 
 #define binop(n,op) \
 inline static VALUE \
@@ -134,7 +136,6 @@ f_sub(VALUE x, VALUE y)
 
 fun1(abs)
 fun1(floor)
-fun1(inspect)
 fun1(integer_p)
 fun1(negate)
 
@@ -153,7 +154,6 @@ f_to_f(VALUE x)
     return rb_funcall(x, id_to_f, 0);
 }
 
-fun1(to_s)
 fun1(truncate)
 
 inline static VALUE
@@ -2450,12 +2450,10 @@ Init_Rational(void)
     id_fdiv = rb_intern("fdiv");
     id_floor = rb_intern("floor");
     id_idiv = rb_intern("div");
-    id_inspect = rb_intern("inspect");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
-    id_to_s = rb_intern("to_s");
     id_truncate = rb_intern("truncate");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");
