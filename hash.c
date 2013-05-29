@@ -1193,14 +1193,23 @@ rb_hash_clear(VALUE hash)
 static int
 hash_aset(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    OBJ_WRITE(hash, (VALUE *)val, arg);
+    if (existing) {
+	OBJ_WRITTEN(hash, *val, arg);
+    }
+    else {
+	OBJ_WRITTEN(hash, Qundef, *key);
+	OBJ_WRITTEN(hash, Qundef, arg);
+    }
+    *val = arg;
     return ST_CONTINUE;
 }
 
 static int
 hash_aset_str(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    OBJ_WRITE(hash, (VALUE *)key, rb_str_new_frozen((VALUE)*key));
+    if (!existing) {
+	*key = rb_str_new_frozen((VALUE)*key);
+    }
     return hash_aset(hash, key, val, arg, existing);
 }
 
@@ -1879,7 +1888,14 @@ rb_hash_invert(VALUE hash)
 static int
 rb_hash_update_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    OBJ_WRITE(hash, (VALUE *)value, (VALUE)arg);
+    if (existing) {
+	OBJ_WRITTEN(hash, *value, arg);
+    }
+    else {
+	OBJ_WRITTEN(hash, Qundef, *key);
+	OBJ_WRITTEN(hash, Qundef, arg);
+    }
+    *value = arg;
     return ST_CONTINUE;
 }
 
@@ -1896,10 +1912,16 @@ static int
 rb_hash_update_block_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE newvalue = (VALUE)arg;
+
     if (existing) {
 	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
+	OBJ_WRITTEN(hash, *value, newvalue);
     }
-    OBJ_WRITE(hash, (VALUE *)value, newvalue);
+    else {
+	OBJ_WRITTEN(hash, Qundef, *key);
+	OBJ_WRITTEN(hash, Qundef, newvalue);
+    }
+    *value = newvalue;
     return ST_CONTINUE;
 }
 
@@ -1962,8 +1984,13 @@ rb_hash_update_func_callback(VALUE hash, st_data_t *key, st_data_t *value, st_da
     VALUE newvalue = arg->value;
     if (existing) {
 	newvalue = (*arg->func)((VALUE)*key, (VALUE)*value, newvalue);
+	OBJ_WRITTEN(hash, *value, newvalue);
     }
-    OBJ_WRITE(hash, (VALUE *)value, (VALUE)newvalue);
+    else {
+	OBJ_WRITTEN(hash, Qundef, *key);
+	OBJ_WRITTEN(hash, Qundef, newvalue);
+    }
+    *value = newvalue;
     return ST_CONTINUE;
 }
 
