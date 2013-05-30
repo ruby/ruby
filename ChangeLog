@@ -1435,7 +1435,7 @@ Sat May  4 04:13:27 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Fri May  3 19:32:13 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/util.rb: All class methods moduleized.
+	* lib/cgi/util.rb: All class methods modulized.
 	  We can use these methods like a function when "include CGI::Util".
 	  [Feature #8354]
 
