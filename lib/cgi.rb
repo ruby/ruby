@@ -143,6 +143,11 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 # take particular attributes where the attributes can be directly specified
 # as arguments, rather than via a hash.
 #
+# === Utility HTML escape and other methods like a function.
+#
+# There are some utility tool defined in cgi/util.rb .
+# And when include, you can use utility methods like a function.
+#
 # == Examples of use
 #
 # === Get form values
@@ -267,6 +272,20 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #   CGI.new("html4Tr")  # html4.01 Transitional
 #   CGI.new("html4Fr")  # html4.01 Frameset
 #   CGI.new("html5")    # html5
+#
+# === Some utility methods
+#
+#   require 'cgi/util'
+#   CGI.escapeHTML('Usage: foo "bar" <baz>')
+#
+#
+# === Some utility methods like a function
+#
+#   require 'cgi/util'
+#   include CGI::Util
+#   escapeHTML('Usage: foo "bar" <baz>')
+#   h('Usage: foo "bar" <baz>') # alias
+#
 #
 
 class CGI
