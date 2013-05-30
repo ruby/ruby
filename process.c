@@ -3800,7 +3800,10 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  spawn executes specified command and return its pid.
  *
- *  This method doesn't wait for end of the command.
+ *    pid = spawn("tar xf ruby-2.0.0-p195.tar.bz2")
+ *    Process.wait pid
+ *
+ *  This method is similar to system but it doesn't wait end of the command.
  *  The parent process should
  *  use <code>Process.wait</code> to collect
  *  the termination status of its child or
