@@ -3803,7 +3803,9 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn("tar xf ruby-2.0.0-p195.tar.bz2")
  *    Process.wait pid
  *
- *  This method is similar to system but it doesn't wait end of the command.
+ *  This method is similar to Kernel#system but it doesn't wait for the command
+ *  to finish.
+ *
  *  The parent process should
  *  use <code>Process.wait</code> to collect
  *  the termination status of its child or
