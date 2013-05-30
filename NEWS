@@ -98,6 +98,9 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Tempfile.create
 
+* CGI::Util
+  * All class methods modulized.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * URI
