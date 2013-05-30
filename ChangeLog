@@ -1,3 +1,12 @@
+Thu May 30 19:47:42 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_callee_setup_keyword_arg,
+	  vm_callee_setup_arg_complex): consider a hash argument for keyword
+	  only when the number of arguments is more than the expected
+	  mandatory parameters.  [ruby-core:53199] [ruby-trunk - Bug #8040]
+
+	* test/ruby/test_keyword.rb: update a test for above.
+
 Thu May 30 17:55:04 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* process.c: RDoc on Process.spawn

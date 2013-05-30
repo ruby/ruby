@@ -1097,12 +1097,12 @@ extract_keywords(VALUE *orighash)
 }
 
 static inline int
-vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, VALUE *orig_argv, VALUE *kwd)
+vm_callee_setup_keyword_arg(const rb_iseq_t *iseq, int argc, int m, VALUE *orig_argv, VALUE *kwd)
 {
     VALUE keyword_hash, orig_hash;
     int i, j;
 
-    if (argc > 0 &&
+    if (argc > m &&
 	!NIL_P(orig_hash = rb_check_hash_type(orig_argv[argc-1])) &&
 	(keyword_hash = extract_keywords(&orig_hash)) != 0) {
 	if (!orig_hash) {
@@ -1167,7 +1167,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, orig_argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(iseq, argc, m, orig_argv, &keyword_hash);
     }
 
     /* mandatory */
@@ -2195,7 +2195,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, argv, &keyword_hash);
+	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
     }
 
     /*

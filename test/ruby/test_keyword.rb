@@ -22,7 +22,6 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_f2
     assert_equal([:xyz, "foo", 424242], f2(:xyz))
-    assert_raise(ArgumentError) { f2({}) } # [ruby-dev:46712] [Bug #7529]
     assert_equal([{"bar"=>42}, "foo", 424242], f2("bar"=>42))
   end
 
@@ -378,5 +377,16 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_equal({:bar=>"x"}, a.new.foo(bar: "x"), bug8416)
+  end
+
+  def test_precedence_of_keyword_arguments
+    bug8040 = '[ruby-core:53199] [Bug #8040]'
+    a = Class.new do
+      def foo(x, **h)
+        [x, h]
+      end
+    end
+    assert_equal([{}, {}], a.new.foo({}))
+    assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"))
   end
 end
