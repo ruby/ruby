@@ -1135,7 +1135,7 @@ ossl_ssl_s_alloc(VALUE klass)
  *    SSLSocket.new(io, ctx) => aSSLSocket
  *
  * Creates a new SSL socket from +io+ which must be a real ruby object (not an
- * IO-like object that responds to read/write.
+ * IO-like object that responds to read/write).
  *
  * If +ctx+ is provided the SSL Sockets initial params will be taken from
  * the context.
