@@ -1055,7 +1055,7 @@ big2str_find_n1(VALUE x, int base)
 }
 
 static long
-big2str_orig(VALUE x, int base, char* ptr, long len, long hbase, int hbase_numdigits, int trim)
+big2str_orig(VALUE x, int base, char* ptr, long len, BDIGIT hbase, int hbase_numdigits, int trim)
 {
     long i = RBIGNUM_LEN(x), j = len;
     BDIGIT* ds = BDIGITS(x);
@@ -1088,7 +1088,7 @@ big2str_orig(VALUE x, int base, char* ptr, long len, long hbase, int hbase_numdi
 
 static long
 big2str_karatsuba(VALUE x, int base, char* ptr,
-		  long n1, long len, long hbase, int hbase_numdigits, int trim)
+		  long n1, long len, BDIGIT hbase, int hbase_numdigits, int trim)
 {
     long lh, ll, m1;
     VALUE b, q, r;
@@ -1120,9 +1120,9 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
 }
 
 static void
-calc_hbase(int base, long *hbase_p, int *hbase_numdigits_p)
+calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p)
 {
-    long hbase;
+    BDIGIT hbase;
     int hbase_numdigits;
 
     hbase = base;
@@ -1141,7 +1141,8 @@ rb_big2str0(VALUE x, int base, int trim)
 {
     int off;
     VALUE ss, xx;
-    long n1, n2, len, hbase;
+    long n1, n2, len;
+    BDIGIT hbase;
     int hbase_numdigits;
     char* ptr;
 
