@@ -1,3 +1,7 @@
+Fri May 31 16:03:23 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* object.c, proc.c: s/call_seq/call-seq in rdoc. [Fix GH-322]
+
 Fri May 31 15:56:36 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/openssl/ossl_ssl.c: Add missing paren in rdoc [Fix GH-321]
