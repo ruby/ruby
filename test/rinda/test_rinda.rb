@@ -657,8 +657,8 @@ class TestRingFinger < Test::Unit::TestCase
   def test_make_socket_ipv4_multicast
     v4mc = @rf.make_socket('239.0.0.1')
 
-    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).int)
-    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).int)
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ip_multicast_loop)
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ip_multicast_ttl)
   end
 
   def test_make_socket_ipv6_multicast
@@ -672,7 +672,7 @@ class TestRingFinger < Test::Unit::TestCase
   def test_make_socket_ipv4_multicast_hops
     @rf.multicast_hops = 2
     v4mc = @rf.make_socket('239.0.0.1')
-    assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).int)
+    assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ip_multicast_ttl)
   end
 
   def test_make_socket_ipv6_multicast_hops
