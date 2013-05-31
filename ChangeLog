@@ -1,30 +1,7 @@
-Thu May 30 19:47:42 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+Fri May 31 11:58:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm_insnhelper.c (vm_callee_setup_keyword_arg,
-	  vm_callee_setup_arg_complex): consider a hash argument for keyword
-	  only when the number of arguments is more than the expected
-	  mandatory parameters.  [ruby-core:53199] [ruby-trunk - Bug #8040]
-
-	* test/ruby/test_keyword.rb: update a test for above.
-
-Thu May 30 17:55:04 2013  Zachary Scott  <zachary@zacharyscott.net>
-
-	* process.c: RDoc on Process.spawn
-
-Thu May 30 00:08:14 2013  Koichi Sasada  <ko1@atdot.net>
-
-	* gc.c (gc_profile_enable): rest_sweep() to finish last GC.
-	  Profiling record is allocated at first of marking phase.
-	  Enable at lazy sweeping may cause an error (SEGV).
-
-Wed May 29 10:33:27 2013  Koichi Sasada  <ko1@atdot.net>
-
-	* hash.c: fix WB bug.
-	  (1) Hash's key also needs WB.
-	  (2) callback parameter *key and *value of st_update() is not a
-	      storage of st_table itself (only local variable). So that
-	      OBJ_WRITE() is not suitable, especially for `!existing'.
-	      OBJ_WRITTEN() is used instead of OBJ_WRITE().
+	* vm_method.c (set_visibility): extract from rb_mod_public(),
+	  rb_mod_protected() and rb_mod_private().
 
 Tue May 28 12:31:21 2013  Koichi Sasada  <ko1@atdot.net>
 
@@ -1448,7 +1425,7 @@ Sat May  4 04:13:27 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Fri May  3 19:32:13 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/util.rb: All class methods modulized.
+	* lib/cgi/util.rb: All class methods moduleized.
 	  We can use these methods like a function when "include CGI::Util".
 	  [Feature #8354]
 

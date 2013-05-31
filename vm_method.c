@@ -1290,6 +1290,19 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
     rb_clear_cache_by_class(self);
 }
 
+static VALUE
+set_visibility(int argc, VALUE *argv, VALUE module, int visi)
+{
+    secure_visibility(module);
+    if (argc == 0) {
+	SCOPE_SET(visi);
+    }
+    else {
+	set_method_visibility(module, argc, argv, visi);
+    }
+    return module;
+}
+
 /*
  *  call-seq:
  *     public                 -> self
@@ -1305,14 +1318,7 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 static VALUE
 rb_mod_public(int argc, VALUE *argv, VALUE module)
 {
-    secure_visibility(module);
-    if (argc == 0) {
-	SCOPE_SET(NOEX_PUBLIC);
-    }
-    else {
-	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
-    }
-    return module;
+    return set_visibility(argc, argv, module, NOEX_PUBLIC);
 }
 
 /*
@@ -1330,14 +1336,7 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_protected(int argc, VALUE *argv, VALUE module)
 {
-    secure_visibility(module);
-    if (argc == 0) {
-	SCOPE_SET(NOEX_PROTECTED);
-    }
-    else {
-	set_method_visibility(module, argc, argv, NOEX_PROTECTED);
-    }
-    return module;
+    return set_visibility(argc, argv, module, NOEX_PROTECTED);
 }
 
 /*
@@ -1364,14 +1363,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_private(int argc, VALUE *argv, VALUE module)
 {
-    secure_visibility(module);
-    if (argc == 0) {
-	SCOPE_SET(NOEX_PRIVATE);
-    }
-    else {
-	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
-    }
-    return module;
+    return set_visibility(argc, argv, module, NOEX_PRIVATE);
 }
 
 /*
