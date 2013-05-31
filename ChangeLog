@@ -1,3 +1,7 @@
+Fri May 31 15:56:36 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/openssl/ossl_ssl.c: Add missing paren in rdoc [Fix GH-321]
+
 Fri May 31 11:58:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (set_visibility): extract from rb_mod_public(),
