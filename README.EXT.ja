@@ -277,15 +277,18 @@ rb_ary_new()
   要素が0の配列を生成する．
 
 rb_ary_new2(long len)
+rb_ary_new_capa(long len)
 
   要素が0の配列を生成する．len要素分の領域をあらかじめ割り
   当てておく．
 
 rb_ary_new3(long n, ...)
+rb_ary_new_from_args(long n, ...)
 
   引数で指定したn要素を含む配列を生成する．
 
 rb_ary_new4(long n, VALUE *elts)
+rb_ary_new_from_values(long n, VALUE *elts)
 
   配列で与えたn要素の配列を生成する．
 
