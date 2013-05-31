@@ -1245,7 +1245,7 @@ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
-  Invokes a method, passing arguments by an array of values.
+  Invokes a method, passing arguments as an array of values.
 
 VALUE rb_eval_string(const char *str) ::
 
