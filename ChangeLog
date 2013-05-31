@@ -1,3 +1,8 @@
+Sat Jun 01 01:50:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): use rb_dbl2big
+	  to convert a double value to a Bignum.
+
 Sat Jun  1 00:19:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (calc_hbase): Make hbase the maximum power of base

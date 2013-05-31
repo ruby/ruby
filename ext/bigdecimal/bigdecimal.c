@@ -2183,7 +2183,12 @@ retry:
       case T_FLOAT:
 	d = RFLOAT_VALUE(vexp);
 	if (d == round(d)) {
-	    vexp = LL2NUM((LONG_LONG)round(d));
+	    if (FIXABLE(d)) {
+		vexp = LONG2FIX((long)d);
+	    }
+	    else {
+		vexp = rb_dbl2big(d);
+	    }
 	    goto retry;
 	}
 	exp = GetVpValueWithPrec(vexp, DBL_DIG+1, 1);
