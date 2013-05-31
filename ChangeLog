@@ -1,3 +1,9 @@
+Fri May 31 17:26:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_funcallv): add better names of rb_funcall2.
+
+	* vm_eval.c (rb_funcallv_public): ditto for rb_funcall3.
+
 Fri May 31 17:04:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_new_capa): add better names of rb_ary_new2.

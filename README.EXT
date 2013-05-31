@@ -1242,10 +1242,18 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
   Invokes a method.  To retrieve mid from a method name, use rb_intern().
+  Able to call even private/protected methods.
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
+VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
   Invokes a method, passing arguments as an array of values.
+  Able to call even private/protected methods.
+
+VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, VALUE *argv) ::
+
+  Invokes a method, passing arguments as an array of values.
+  Able to call only public methods.
 
 VALUE rb_eval_string(const char *str) ::
 

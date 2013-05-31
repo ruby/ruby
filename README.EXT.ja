@@ -527,6 +527,7 @@ Cから文字列を経由せずにRubyのメソッドを呼び出すためには
 します．その他に引数の指定の仕方が違う以下の関数もあります．
 
   VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+  VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv)
   VALUE rb_apply(VALUE recv, ID mid, VALUE args)
 
 applyには引数としてRubyの配列を与えます．
@@ -1258,10 +1259,18 @@ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...) ::
 
   メソッド呼び出し．文字列からmidを得るためにはrb_intern()を
   使う．
+  private/protectedなメソッドでも呼び出せる．
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv) ::
+VALUE rb_funcallv(VALUE recv, ID mid, int argc, VALUE *argv) ::
 
   メソッド呼び出し．引数をargc, argv形式で渡す．
+  private/protectedなメソッドでも呼び出せる．
+
+VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, VALUE *argv) ::
+
+  メソッド呼び出し．
+  publicなメソッドしか呼べない．
 
 VALUE rb_eval_string(const char *str)
 

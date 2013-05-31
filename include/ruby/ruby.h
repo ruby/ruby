@@ -1463,8 +1463,10 @@ VALUE rb_eval_string(const char*);
 VALUE rb_eval_string_protect(const char*, int*);
 VALUE rb_eval_string_wrap(const char*, int*);
 VALUE rb_funcall(VALUE, ID, int, ...);
-VALUE rb_funcall2(VALUE, ID, int, const VALUE*);
-VALUE rb_funcall3(VALUE, ID, int, const VALUE*);
+VALUE rb_funcallv(VALUE, ID, int, const VALUE*);
+VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
+#define rb_funcall2 rb_funcallv
+#define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
