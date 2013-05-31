@@ -48,9 +48,9 @@ void rb_mem_clear(register VALUE*, register long);
 VALUE rb_assoc_new(VALUE, VALUE);
 VALUE rb_check_array_type(VALUE);
 VALUE rb_ary_new(void);
-VALUE rb_ary_new2(long);
-VALUE rb_ary_new3(long,...);
-VALUE rb_ary_new4(long, const VALUE *);
+VALUE rb_ary_new_capa(long capa);
+VALUE rb_ary_new_from_args(long n, ...);
+VALUE rb_ary_new_from_values(long n, const VALUE *elts);
 VALUE rb_ary_tmp_new(long);
 void rb_ary_free(VALUE);
 void rb_ary_modify(VALUE);
@@ -86,6 +86,9 @@ VALUE rb_ary_cmp(VALUE, VALUE);
 VALUE rb_ary_replace(VALUE copy, VALUE orig);
 VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 VALUE rb_ary_resize(VALUE ary, long len);
+#define rb_ary_new2 rb_ary_new_capa
+#define rb_ary_new3 rb_ary_new_from_args
+#define rb_ary_new4 rb_ary_new_from_values
 /* bignum.c */
 VALUE rb_big_new(long, int);
 int rb_bigzero_p(VALUE x);

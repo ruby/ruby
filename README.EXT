@@ -250,15 +250,18 @@ rb_ary_new() ::
   Creates an array with no elements.
 
 rb_ary_new2(long len) ::
+rb_ary_new_capa(long len) ::
 
   Creates an array with no elements, allocating internal buffer
   for len elements.
 
 rb_ary_new3(long n, ...) ::
+rb_ary_new_from_args(long n, ...) ::
 
   Creates an n-element array from the arguments.
 
 rb_ary_new4(long n, VALUE *elts) ::
+rb_ary_new_from_values(long n, VALUE *elts) ::
 
   Creates an n-element array from a C array.
 

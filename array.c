@@ -425,11 +425,10 @@ ary_new(VALUE klass, long capa)
 }
 
 VALUE
-rb_ary_new2(long capa)
+rb_ary_new_capa(long capa)
 {
     return ary_new(rb_cArray, capa);
 }
-
 
 VALUE
 rb_ary_new(void)
@@ -437,10 +436,8 @@ rb_ary_new(void)
     return rb_ary_new2(RARRAY_EMBED_LEN_MAX);
 }
 
-#include <stdarg.h>
-
 VALUE
-rb_ary_new3(long n, ...)
+rb_ary_new_from_args(long n, ...)
 {
     va_list ar;
     VALUE ary;
@@ -459,7 +456,7 @@ rb_ary_new3(long n, ...)
 }
 
 VALUE
-rb_ary_new4(long n, const VALUE *elts)
+rb_ary_new_from_values(long n, const VALUE *elts)
 {
     VALUE ary;
 
