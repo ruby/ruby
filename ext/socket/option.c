@@ -144,6 +144,50 @@ sockopt_data(VALUE self)
 
 /*
  * call-seq:
+ *   Socket::Option.byte(family, level, optname, integer) => sockopt
+ *
+ * Creates a new Socket::Option object which contains a byte as data.
+ *
+ * The size and endian is dependent on the platform.
+ *
+ *   p Socket::Option.byte(:INET, :SOCKET, :KEEPALIVE, 1)
+ *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
+ */
+static VALUE
+sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE vint)
+{
+    int family = rsock_family_arg(vfamily);
+    int level = rsock_level_arg(family, vlevel);
+    int optname = rsock_optname_arg(family, level, voptname);
+    unsigned char i = (unsigned char)NUM2CHR(vint);
+    return rsock_sockopt_new(family, level, optname, rb_str_new((char*)&i, sizeof(i)));
+}
+
+/*
+ * call-seq:
+ *   sockopt.byte => integer
+ *
+ * Returns the data in _sockopt_ as an byte.
+ *
+ * The size and endian is dependent on the platform.
+ *
+ *   sockopt = Socket::Option.byte(:INET, :SOCKET, :KEEPALIVE, 1)
+ *   p sockopt.byte => 1
+ */
+static VALUE
+sockopt_byte(VALUE self)
+{
+    unsigned char i;
+    VALUE data = sockopt_data(self);
+    StringValue(data);
+    if (RSTRING_LEN(data) != sizeof(i))
+        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
+                 (int)sizeof(i), (long)RSTRING_LEN(data));
+    return CHR2FIX(*RSTRING_PTR(data));
+}
+
+/*
+ * call-seq:
  *   Socket::Option.int(family, level, optname, integer) => sockopt
  *
  * Creates a new Socket::Option object which contains an int as data.
@@ -294,6 +338,138 @@ sockopt_linger(VALUE self)
     return rb_assoc_new(vonoff, vsecs);
 }
 
+/*
+ * call-seq:
+ *   Socket::Option.ip_multicast_loop(integer) => sockopt
+ *
+ * Creates a new Socket::Option object for IP_MULTICAST_LOOP.
+ *
+ * The size is dependent on the platform.
+ *
+ *   sockopt = Socket::Option.int(:INET, :IPPROTO_IP, :IP_MULTICAST_LOOP, 1)
+ *   p sockopt.int => 1
+ *
+ *   p Socket::Option.ip_multicast_loop(10)
+ *   #=> #<Socket::Option: INET IP MULTICAST_LOOP 10>
+ *
+ */
+static VALUE
+sockopt_s_ip_multicast_loop(VALUE klass, VALUE value)
+{
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
+# ifdef __NetBSD__
+    unsigned char i = NUM2CHR(rb_to_int(value));
+# else
+    int i = NUM2INT(rb_to_int(value));
+# endif
+    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_LOOP,
+	    rb_str_new((char*)&i, sizeof(i)));
+#else
+# error IPPROTO_IP or IP_MULTICAST_LOOP is not implemented
+#endif
+}
+
+/*
+ * call-seq:
+ *   sockopt.ip_multicast_loop => integer
+ *
+ * Returns the ip_multicast_loop data in _sockopt_ as a integer.
+ *
+ *   sockopt = Socket::Option.ip_multicast_loop(10)
+ *   p sockopt.ip_multicast_loop => 10
+ */
+static VALUE
+sockopt_ip_multicast_loop(VALUE self)
+{
+    int family = NUM2INT(sockopt_family_m(self));
+    int level = sockopt_level(self);
+    int optname = sockopt_optname(self);
+
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
+    if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_LOOP) {
+# ifdef __NetBSD__
+	return sockopt_byte(self);
+# else
+	return sockopt_int(self);
+# endif
+    }
+#endif
+    rb_raise(rb_eTypeError, "ip_multicast_loop socket option expected");
+    UNREACHABLE;
+}
+
+#ifdef __NetBSD__
+# define inspect_ip_multicast_loop(a,b,c,d) inspect_byte(a,b,c,d)
+#else
+# define inspect_ip_multicast_loop(a,b,c,d) inspect_int(a,b,c,d)
+#endif
+
+/*
+ * call-seq:
+ *   Socket::Option.ip_multicast_ttl(integer) => sockopt
+ *
+ * Creates a new Socket::Option object for IP_MULTICAST_TTL.
+ *
+ * The size is dependent on the platform.
+ *
+ *   p Socket::Option.ip_multicast_ttl(10)
+ *   #=> #<Socket::Option: INET IP MULTICAST_TTL 10>
+ *
+ */
+static VALUE
+sockopt_s_ip_multicast_ttl(VALUE klass, VALUE value)
+{
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
+# ifdef __NetBSD__
+    unsigned char i = NUM2CHR(rb_to_int(value));
+# else
+    int i = NUM2INT(rb_to_int(value));
+# endif
+    return rsock_sockopt_new(AF_INET, IPPROTO_IP, IP_MULTICAST_TTL,
+	    rb_str_new((char*)&i, sizeof(i)));
+#else
+# error IPPROTO_IP or IP_MULTICAST_TTL is not implemented
+#endif
+}
+
+/*
+ * call-seq:
+ *   sockopt.ip_multicast_ttl => integer
+ *
+ * Returns the ip_multicast_ttl data in _sockopt_ as a integer.
+ *
+ *   sockopt = Socket::Option.ip_multicast_ttl(10)
+ *   p sockopt.ip_multicast_ttl => 10
+ */
+static VALUE
+sockopt_ip_multicast_ttl(VALUE self)
+{
+    int family = NUM2INT(sockopt_family_m(self));
+    int level = sockopt_level(self);
+    int optname = sockopt_optname(self);
+
+#if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
+    if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_TTL) {
+# ifdef __NetBSD__
+	return sockopt_byte(self);
+# else
+	return sockopt_int(self);
+# endif
+    }
+/*
+  defined(IP_MULTICAST_LOOP)
+  */
+#endif
+    rb_raise(rb_eTypeError, "ip_multicast_ttl socket option expected");
+    UNREACHABLE;
+}
+
+#ifdef __NetBSD__
+# define inspect_ip_multicast_ttl(a,b,c,d) inspect_byte(a,b,c,d)
+#else
+# define inspect_ip_multicast_ttl(a,b,c,d) inspect_int(a,b,c,d)
+#endif
+
 static int
 inspect_int(int level, int optname, VALUE data, VALUE ret)
 {
@@ -301,6 +477,18 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
         int i;
         memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
         rb_str_catf(ret, " %d", i);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+static int
+inspect_byte(int level, int optname, VALUE data, VALUE ret)
+{
+    if (RSTRING_LEN(data) == sizeof(unsigned char)) {
+        rb_str_catf(ret, " %d", (unsigned char)*RSTRING_PTR(data));
         return 1;
     }
     else {
@@ -805,6 +993,12 @@ sockopt_inspect(VALUE self)
 #            if defined(IP_DROP_MEMBERSHIP) /* 4.4BSD, GNU/Linux */
               case IP_DROP_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
 #            endif
+#            if defined(IP_MULTICAST_LOOP) /* 4.4BSD, GNU/Linux */
+              case IP_MULTICAST_LOOP: inspected = inspect_ip_multicast_loop(level, optname, data, ret); break;
+#            endif
+#            if defined(IP_MULTICAST_TTL) /* 4.4BSD, GNU/Linux */
+              case IP_MULTICAST_TTL: inspected = inspect_ip_multicast_ttl(level, optname, data, ret); break;
+#            endif
             }
             break;
 #        endif
@@ -912,11 +1106,20 @@ rsock_init_sockopt(void)
     rb_define_singleton_method(rb_cSockOpt, "int", sockopt_s_int, 4);
     rb_define_method(rb_cSockOpt, "int", sockopt_int, 0);
 
+    rb_define_singleton_method(rb_cSockOpt, "byte", sockopt_s_byte, 4);
+    rb_define_method(rb_cSockOpt, "byte", sockopt_byte, 0);
+
     rb_define_singleton_method(rb_cSockOpt, "bool", sockopt_s_bool, 4);
     rb_define_method(rb_cSockOpt, "bool", sockopt_bool, 0);
 
     rb_define_singleton_method(rb_cSockOpt, "linger", sockopt_s_linger, 2);
     rb_define_method(rb_cSockOpt, "linger", sockopt_linger, 0);
+
+    rb_define_singleton_method(rb_cSockOpt, "ip_multicast_ttl", sockopt_s_ip_multicast_ttl, 1);
+    rb_define_method(rb_cSockOpt, "ip_multicast_ttl", sockopt_ip_multicast_ttl, 0);
+
+    rb_define_singleton_method(rb_cSockOpt, "ip_multicast_loop", sockopt_s_ip_multicast_loop, 1);
+    rb_define_method(rb_cSockOpt, "ip_multicast_loop", sockopt_ip_multicast_loop, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);
 

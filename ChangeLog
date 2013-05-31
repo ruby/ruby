@@ -1,3 +1,24 @@
+Sat Jun  1 02:37:35 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/option.c (sockopt_s_byte): constructor of the sockopt
+	  whose value's is byte.
+
+	* ext/socket/option.c (sockopt_byte): getter for above.
+
+	* ext/socket/option.c (inspect_byte): inspect for above.
+
+	* ext/socket/option.c (sockopt_s_ip_multicast_loop): constructor of
+	  the sockopt whose optname is IP_MULTICAST_LOOP.
+
+	* ext/socket/option.c (sockopt_ip_multicast_loop): getter for above.
+
+	* ext/socket/option.c (sockopt_s_ip_multicast_ttl): constructor of
+	  the sockopt whose optname is IP_MULTICAST_TTL.
+
+	* ext/socket/option.c (sockopt_ip_multicast_ttl): getter for above.
+
+	* ext/socket/option.c (sockopt_inspect): use above.
+
 Sat Jun 01 01:50:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): use rb_dbl2big
