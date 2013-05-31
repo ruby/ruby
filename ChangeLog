@@ -1,3 +1,10 @@
+Fri May 31 23:22:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Don't hard code SIZEOF_BDIGITS for log_base(hbase).
+	  (big2str_orig): hbase_numdigits argument added.
+	  (big2str_karatsuba): Ditto.
+	  (rb_big2str0): Calculate hbase_numdigits.
+
 Fri May 31 17:57:21 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* process.c: Improve Process::exec documentation
