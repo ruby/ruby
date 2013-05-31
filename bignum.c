@@ -1119,6 +1119,23 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
     return lh + ll;
 }
 
+static void
+calc_hbase(int base, long *hbase_p, int *hbase_numdigits_p)
+{
+    long hbase;
+    int hbase_numdigits;
+
+    hbase = base*base;
+    hbase_numdigits = 2;
+#if SIZEOF_BDIGITS > 2
+    hbase *= hbase;
+    hbase_numdigits *= 2;
+#endif
+
+    *hbase_p = hbase;
+    *hbase_numdigits_p = hbase_numdigits;
+}
+
 VALUE
 rb_big2str0(VALUE x, int base, int trim)
 {
@@ -1144,12 +1161,7 @@ rb_big2str0(VALUE x, int base, int trim)
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
-    hbase = base*base;
-    hbase_numdigits = 2;
-#if SIZEOF_BDIGITS > 2
-    hbase *= hbase;
-    hbase_numdigits *= 2;
-#endif
+    calc_hbase(base, &hbase, &hbase_numdigits);
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
