@@ -2330,54 +2330,70 @@ static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *er
  *  call-seq:
  *     exec([env,] command... [,options])
  *
- *  Replaces the current process by running the given external _command_.
- *  _command..._ is one of following forms.
+ *  Replaces the current process by running the given external _command_, which
+ *  can take one of the following forms:
  *
- *    commandline                 : command line string which is passed to the standard shell
- *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
- *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
+ *  [<code>exec(commandline)</code>]
+ *	command line string which is passed to the standard shell
+ *  [<code>exec(cmdname, arg1, ...)</code>]
+ *	command name and one or more arguments (no shell)
+ *  [<code>exec([cmdname, argv0], arg1, ...)</code>]
+ *	command name, argv[0] and zero or more arguments (no shell)
  *
- *  If single string is given as the command,
- *  it is taken as a command line that is subject to shell expansion before being executed.
+ *  In the first form, the string is taken as a command line that is subject to
+ *  shell expansion before being executed.
  *
- *  The standard shell means always <code>"/bin/sh"</code> on Unix-like systems,
- *  <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on Windows NT series, and
- *  similar.
- *  If _commandline_ is simple enough,
- *  no meta characters, no shell reserved word and no special built-in,
- *  Ruby invokes the command directly without shell.
- *  You can force shell invocation by adding ";" for _commandline_ (because ";" is a meta character).
+ *  The standard shell always means <code>"/bin/sh"</code> on Unix-like systems,
+ *  same as <code>ENV["RUBYSHELL"]</code>
+ *  (or <code>ENV["COMSPEC"]</code> on Windows NT series), and similar.
+ *
+ *  If the string from the first form (<code>exec("command")</code>) follows
+ *  these simple rules:
+ *
+ *  * no meta characters
+ *  * no shell reserved word and no special built-in
+ *  * Ruby invokes the command directly without shell
+ *
+ *  You can force shell invocation by adding ";" to the string (because ";" is
+ *  a meta character).
+ *
  *  Note that this behavior is observable by pid obtained
- *  (return value of spawn() and IO#pid for IO.popen) is the pid of the invoked command, not shell.
+ *  (return value of spawn() and IO#pid for IO.popen) is the pid of the invoked
+ *  command, not shell.
  *
- *  If two or more +string+ given,
- *  the first is taken as a command name and
- *  the rest are passed as parameters to command with no shell expansion.
+ *  In the second form (<code>exec("command1", "arg1", ...)</code>), the first
+ *  is taken as a command name and the rest are passed as parameters to command
+ *  with no shell expansion.
  *
- *  If a two-element array at the beginning of the command,
- *  the first element is the command to be executed,
- *  and the second argument is used as the <code>argv[0]</code> value,
- *  which may show up in process listings.
+ *  In the third form (<code>exec(["command", "argv0"], "arg1", ...)</code>),
+ *  starting a two-element array at the beginning of the command, the first
+ *  element is the command to be executed, and the second argument is used as
+ *  the <code>argv[0]</code> value, which may show up in process listings.
  *
- *  In order to execute the command, one of the <code>exec(2)</code>
- *  system calls is used, so the running command may inherit some of the environment
+ *  In order to execute the command, one of the <code>exec(2)</code> system
+ *  calls are used, so the running command may inherit some of the environment
  *  of the original program (including open file descriptors).
- *  This behavior is modified by env and options.
- *  See <code>spawn</code> for details.
  *
- *  Raises SystemCallError if the command couldn't execute (typically
- *  <code>Errno::ENOENT</code> when it was not found).
+ *  This behavior is modified by the given +env+ and +options+ parameters. See
+ *  ::spawn for details.
  *
- *  This method modifies process attributes according to _options_
- *  (details described in <code>spawn</code>)
- *  before <code>exec(2)</code> system call.
- *  The modified attributes may be retained when <code>exec(2)</code> system call fails.
- *  For example, hard resource limits is not restorable.
- *  If it is not acceptable, consider to create a child process using <code>spawn</code> or <code>system</code>.
+ *  If the command fails to execute (typically <code>Errno::ENOENT</code> when
+ *  it was not found) a SystemCallError exception is raised.
+ *
+ *  This method modifies process attributes according to given +options+ before
+ *  <code>exec(2)</code> system call. See ::spawn for more details about the
+ *  given +options+.
+ *
+ *  The modified attributes may be retained when <code>exec(2)</code> system
+ *  call fails.
+ *
+ *  For example, hard resource limits are not restorable.
+ *
+ *  Consider to create a child process using ::spawn or Kernel#system if this
+ *  is not acceptable.
  *
  *     exec "echo *"       # echoes list of files in current directory
  *     # never get here
- *
  *
  *     exec "echo", "*"    # echoes an asterisk
  *     # never get here
