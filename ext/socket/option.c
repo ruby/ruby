@@ -484,6 +484,7 @@ inspect_int(int level, int optname, VALUE data, VALUE ret)
     }
 }
 
+#ifdef __NetBSD__
 static int
 inspect_byte(int level, int optname, VALUE data, VALUE ret)
 {
@@ -495,6 +496,7 @@ inspect_byte(int level, int optname, VALUE data, VALUE ret)
         return 0;
     }
 }
+#endif
 
 static int
 inspect_errno(int level, int optname, VALUE data, VALUE ret)
