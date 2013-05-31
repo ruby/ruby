@@ -272,7 +272,7 @@ types are given.
 
 rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
 
-  Equivaelent to Array#[].
+  Equivalent to Array#[].
 
 rb_ary_entry(VALUE ary, long offset) ::
 
