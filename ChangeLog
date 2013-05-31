@@ -1,3 +1,8 @@
+Sat Jun  1 00:19:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (calc_hbase): Make hbase the maximum power of base
+	  representable in BDIGIT.
+
 Fri May 31 23:56:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (calc_hbase): Extracted from rb_big2str0.

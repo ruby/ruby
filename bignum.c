@@ -1125,12 +1125,12 @@ calc_hbase(int base, long *hbase_p, int *hbase_numdigits_p)
     long hbase;
     int hbase_numdigits;
 
-    hbase = base*base;
-    hbase_numdigits = 2;
-#if SIZEOF_BDIGITS > 2
-    hbase *= hbase;
-    hbase_numdigits *= 2;
-#endif
+    hbase = base;
+    hbase_numdigits = 1;
+    while (hbase <= (~(BDIGIT)0) / base) {
+        hbase *= base;
+        hbase_numdigits++;
+    }
 
     *hbase_p = hbase;
     *hbase_numdigits_p = hbase_numdigits;
