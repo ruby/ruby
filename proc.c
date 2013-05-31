@@ -2118,7 +2118,7 @@ method_proc(VALUE method)
 }
 
 /*
- * call_seq:
+ * call-seq:
  *   local_jump_error.exit_value  -> obj
  *
  * Returns the exit value associated with this +LocalJumpError+.
