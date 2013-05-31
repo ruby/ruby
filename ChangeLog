@@ -1,3 +1,8 @@
+Fri May 31 16:35:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (HAVE_ATTRIBUTE_FUNCTION_ALIAS): define to tell if
+	  alias attribute is available.
+
 Fri May 31 16:03:23 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* object.c, proc.c: s/call_seq/call-seq in rdoc. [Fix GH-322]
