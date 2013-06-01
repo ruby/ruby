@@ -1663,6 +1663,8 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
  *
  *  Evaluates the given block in the context of the class/module.
  *  The method defined in the block will belong to the receiver.
+ *  Any arguments passed to the method will be passed to the block.
+ *  This can be used if the block needs to access instance variables.
  *
  *     class Thing
  *     end
