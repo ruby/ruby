@@ -2205,16 +2205,15 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      */
     arg0 = argv[0];
     if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
-	((m + iseq->arg_post_len) > 0 || iseq->arg_opts > 2) &&        /* this process is meaningful */
+	((m + iseq->arg_post_len) > 0 ||			/* positional arguments exist */
+	 iseq->arg_opts > 2 ||					/* multiple optional arguments exist */
+	 0) &&
 	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
 	th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
 	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
-    }
-    else {
-	argv[0] = arg0;
     }
 
     for (i=argc; i<m; i++) {
