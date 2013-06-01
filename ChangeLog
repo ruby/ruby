@@ -1,4 +1,7 @@
-Sat Jun  1 17:21:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun  1 17:24:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_arguments): not a simple single argument if any
+	  keyword arguments exist.  [ruby-core:55203] [Bug #8463]
 
 	* vm_insnhelper.c (vm_yield_setup_block_args): split single parameter
 	  if any keyword arguments exist, and then extract keyword arguments.

@@ -271,6 +271,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(expect, pr.call(expect), bug8463)
     pr = proc {|a, *b, **opt| next a, *b, opt}
     assert_equal(expect, pr.call(expect), bug8463)
+    pr = proc {|a, **opt| next a, opt}
+    assert_equal(expect.values_at(0, -1), pr.call(expect), bug8463)
   end
 
   def test_bare_kwrest
