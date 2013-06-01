@@ -207,8 +207,10 @@ VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, VALUE *, VALUE (*)(ANYARGS))
 #define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
 /* error.c */
 VALUE rb_exc_new(VALUE, const char*, long);
-VALUE rb_exc_new2(VALUE, const char*);
-VALUE rb_exc_new3(VALUE, VALUE);
+VALUE rb_exc_new_cstr(VALUE, const char*);
+VALUE rb_exc_new_str(VALUE, VALUE);
+#define rb_exc_new2 rb_exc_new_cstr
+#define rb_exc_new3 rb_exc_new_str
 PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_loaderror_with_path(VALUE path, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
@@ -786,11 +788,11 @@ VALUE rb_str_ellipsize(VALUE, long);
 	rb_str_cat((str), (ptr), (long)strlen(ptr)) : \
 	rb_str_cat2((str), (ptr));			\
 })
-#define rb_exc_new2(klass, ptr) __extension__ ( \
+#define rb_exc_new_cstr(klass, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
 	rb_exc_new((klass), (ptr), (long)strlen(ptr)) : \
-	rb_exc_new2((klass), (ptr));		\
+	rb_exc_new_cstr((klass), (ptr));		\
 })
 #endif
 #define rb_str_new2 rb_str_new_cstr

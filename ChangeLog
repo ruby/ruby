@@ -1,3 +1,9 @@
+Sat Jun  1 11:16:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_exc_new_cstr): rename from rb_exc_new2.
+
+	* error.c (rb_exc_new_str): rename from rb_exc_new3.
+
 Sat Jun  1 10:13:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_new[2-5], rb_{tainted,usascii}_str_new2),
