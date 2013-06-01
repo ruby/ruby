@@ -38,15 +38,8 @@
 #undef rb_usascii_str_new_cstr
 #undef rb_external_str_new_cstr
 #undef rb_locale_str_new_cstr
-#undef rb_str_new2
-#undef rb_str_new3
-#undef rb_str_new4
-#undef rb_str_new5
-#undef rb_tainted_str_new2
-#undef rb_usascii_str_new2
 #undef rb_str_dup_frozen
 #undef rb_str_buf_new_cstr
-#undef rb_str_buf_new2
 #undef rb_str_buf_cat2
 #undef rb_str_cat2
 
@@ -458,9 +451,6 @@ rb_str_new_cstr(const char *ptr)
     return rb_str_new(ptr, strlen(ptr));
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_new2(const char *ptr), rb_str_new_cstr, (ptr))
-#define rb_str_new2 rb_str_new_cstr
-
 VALUE
 rb_usascii_str_new_cstr(const char *ptr)
 {
@@ -468,9 +458,6 @@ rb_usascii_str_new_cstr(const char *ptr)
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
-
-RUBY_ALIAS_FUNCTION(rb_usascii_str_new2(const char *ptr), rb_usascii_str_new_cstr, (ptr))
-#define rb_usascii_str_new2 rb_usascii_str_new_cstr
 
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
@@ -489,9 +476,6 @@ rb_tainted_str_new_cstr(const char *ptr)
     OBJ_TAINT(str);
     return str;
 }
-
-RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
-#define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
 VALUE
 rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
@@ -688,9 +672,6 @@ rb_str_new_shared(VALUE str)
     return str2;
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_new3(VALUE str), rb_str_new_shared, (str))
-#define rb_str_new3 rb_str_new_shared
-
 static VALUE
 str_new4(VALUE klass, VALUE str)
 {
@@ -754,18 +735,11 @@ rb_str_new_frozen(VALUE orig)
     return str;
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_new4(VALUE orig), rb_str_new_frozen, (orig))
-#define rb_str_new4 rb_str_new_frozen
-
 VALUE
 rb_str_new_with_class(VALUE obj, const char *ptr, long len)
 {
     return str_new(rb_obj_class(obj), ptr, len);
 }
-
-RUBY_ALIAS_FUNCTION(rb_str_new5(VALUE obj, const char *ptr, long len),
-	   rb_str_new_with_class, (obj, ptr, len))
-#define rb_str_new5 rb_str_new_with_class
 
 static VALUE
 str_new_empty(VALUE str)
@@ -805,9 +779,6 @@ rb_str_buf_new_cstr(const char *ptr)
 
     return str;
 }
-
-RUBY_ALIAS_FUNCTION(rb_str_buf_new2(const char *ptr), rb_str_buf_new_cstr, (ptr))
-#define rb_str_buf_new2 rb_str_buf_new_cstr
 
 VALUE
 rb_str_tmp_new(long len)
