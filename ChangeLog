@@ -14,11 +14,6 @@ Sat Jun  1 08:00:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/zlib/zlib.c (gzfile_read, gzfile_read_all, gzfile_getc),
 	  (gzreader_gets): check EOF.  [ruby-core:55220] [Bug #8467]
 
-Sat Jun  1 08:00:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/zlib/zlib.c (gzfile_read, gzfile_read_all, gzfile_getc),
-	  (gzreader_gets): check EOF.  [ruby-core:55220] [Bug #8467]
-
 Sat Jun  1 07:32:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Use BDIGIT type for hbase.
