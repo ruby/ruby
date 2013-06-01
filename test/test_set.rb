@@ -528,6 +528,27 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_taintness
+    orig = set = Set[1,2,3]
+    assert_equal false, set.tainted?
+    assert_same orig, set.taint
+    assert_equal true, set.tainted?
+    assert_same orig, set.untaint
+    assert_equal false, set.tainted?
+  end
+
+  def test_freeze
+    orig = set = Set[1,2,3]
+    assert_equal false, set.frozen?
+    set << 4
+    assert_same orig, set.freeze
+    assert_equal true, set.frozen?
+    assert_raises(RuntimeError) {
+      set << 5
+    }
+    assert_equal 4, set.size
+  end
+
   def test_inspect
     set1 = Set[1]
 

@@ -99,21 +99,18 @@ class Set
   end
 
   def freeze    # :nodoc:
-    super
     @hash.freeze
-    self
+    super
   end
 
   def taint     # :nodoc:
-    super
     @hash.taint
-    self
+    super
   end
 
   def untaint   # :nodoc:
-    super
     @hash.untaint
-    self
+    super
   end
 
   # Returns the number of elements.
