@@ -1,3 +1,9 @@
+Sat Jun  1 17:21:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): split single parameter
+	  if any keyword arguments exist, and then extract keyword arguments.
+	  [ruby-core:55203] [Bug #8463]
+
 Sat Jun  1 11:16:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_exc_new_cstr): rename from rb_exc_new2.

@@ -2193,11 +2193,6 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     th->mark_stack_len = argc;
 
-    /* keyword argument */
-    if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
-    }
-
     /*
      * yield [1, 2]
      *  => {|a|} => a = [1, 2]
@@ -2207,6 +2202,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
 	((m + iseq->arg_post_len) > 0 ||			/* positional arguments exist */
 	 iseq->arg_opts > 2 ||					/* multiple optional arguments exist */
+	 iseq->arg_keyword != -1 ||				/* any keyword arguments */
 	 0) &&
 	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
 	th->mark_stack_len = argc = RARRAY_LENINT(ary);
@@ -2214,6 +2210,11 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
+    }
+
+    /* keyword argument */
+    if (iseq->arg_keyword != -1) {
+	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
     }
 
     for (i=argc; i<m; i++) {

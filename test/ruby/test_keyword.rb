@@ -263,9 +263,14 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_rest_keyrest
     bug7665 = '[ruby-core:51278]'
+    bug8463 = '[ruby-core:55203] [Bug #8463]'
     expect = [*%w[foo bar], {zzz: 42}]
     assert_equal(expect, rest_keyrest(*expect), bug7665)
-    assert_equal(expect, proc {|*args, **opt| next *args, opt}.call(*expect), bug7665)
+    pr = proc {|*args, **opt| next *args, opt}
+    assert_equal(expect, pr.call(*expect), bug7665)
+    assert_equal(expect, pr.call(expect), bug8463)
+    pr = proc {|a, *b, **opt| next a, *b, opt}
+    assert_equal(expect, pr.call(expect), bug8463)
   end
 
   def test_bare_kwrest
