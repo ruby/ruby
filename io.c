@@ -11735,8 +11735,10 @@ Init_IO(void)
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
 #if EAGAIN == EWOULDBLOCK
     rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
+    /* same as IO::EAGAINWaitReadable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
     rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
+    /* same as IO::EAGAINWaitWritable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else
     rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEWOULDBLOCK);
@@ -11838,8 +11840,11 @@ Init_IO(void)
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
     rb_define_method(rb_cIO, "seek", rb_io_seek_m, -1);
+    /* Set I/O position from the beginning */
     rb_define_const(rb_cIO, "SEEK_SET", INT2FIX(SEEK_SET));
+    /* Set I/O position from the current position */
     rb_define_const(rb_cIO, "SEEK_CUR", INT2FIX(SEEK_CUR));
+    /* Set I/O position from the end */
     rb_define_const(rb_cIO, "SEEK_END", INT2FIX(SEEK_END));
     rb_define_method(rb_cIO, "rewind", rb_io_rewind, 0);
     rb_define_method(rb_cIO, "pos", rb_io_tell, 0);

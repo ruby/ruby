@@ -4787,6 +4787,17 @@ obj2uid(VALUE id
 }
 
 # ifdef p_uid_from_name
+/*
+ *  call-seq:
+ *     Process::UID.from_name(name)   -> uid
+ *
+ *  Get the user ID by the _name_.
+ *  If the user is not found, +ArgumentError+ will be raised.
+ *
+ *     Process::UID.from_name("root") #=> 0
+ *     Process::UID.from_name("nosuchuser") #=> can't find user for nosuchuser (ArgumentError)
+ */
+
 static VALUE
 p_uid_from_name(VALUE self, VALUE id)
 {
@@ -4835,6 +4846,17 @@ obj2gid(VALUE id
 }
 
 # ifdef p_gid_from_name
+/*
+ *  call-seq:
+ *     Process::GID.from_name(name)   -> gid
+ *
+ *  Get the group ID by the _name_.
+ *  If the group is not found, +ArgumentError+ will be raised.
+ *
+ *     Process::GID.from_name("wheel") #=> 0
+ *     Process::GID.from_name("nosuchgroup") #=> can't find group for nosuchgroup (ArgumentError)
+ */
+
 static VALUE
 p_gid_from_name(VALUE self, VALUE id)
 {

@@ -1753,6 +1753,7 @@ Init_Exception(void)
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    /* the path failed to load */
     rb_attr(rb_eLoadError, rb_intern("path"), 1, 0, Qfalse);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);

@@ -1262,6 +1262,7 @@ replace_i(VALUE key, VALUE val, VALUE hash)
     return ST_CONTINUE;
 }
 
+/* :nodoc: */
 static VALUE
 rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 {
