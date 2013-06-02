@@ -94,20 +94,6 @@ dln_find_file_r(const char *fname, const char *path, char *buf, size_t size)
     return dln_find_1(fname, path, buf, size, 0);
 }
 
-static char fbuf[MAXPATHLEN];
-
-char *
-dln_find_exe(const char *fname, const char *path)
-{
-    return dln_find_exe_r(fname, path, fbuf, sizeof(fbuf));
-}
-
-char *
-dln_find_file(const char *fname, const char *path)
-{
-    return dln_find_file_r(fname, path, fbuf, sizeof(fbuf));
-}
-
 static char *
 dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	   int exe_flag /* non 0 if looking for executable. */)

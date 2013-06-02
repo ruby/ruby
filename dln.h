@@ -30,8 +30,6 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-DEPRECATED(char *dln_find_exe(const char*,const char*));
-DEPRECATED(char *dln_find_file(const char*,const char*));
 char *dln_find_exe_r(const char*,const char*,char*,size_t);
 char *dln_find_file_r(const char*,const char*,char*,size_t);
 

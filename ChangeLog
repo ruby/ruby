@@ -1,3 +1,8 @@
+Sun Jun  2 16:15:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln_find.c (dln_find_exe, dln_find_file): remove deprecated
+	  non-reentrant functions.
+
 Sun Jun  2 15:04:35 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/cgi/util.rb, lib/erb.rb: Use String#b [Feature #8394] by znz
