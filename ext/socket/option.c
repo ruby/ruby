@@ -340,7 +340,7 @@ sockopt_linger(VALUE self)
 
 /*
  * call-seq:
- *   Socket::Option.ip_multicast_loop(integer) => sockopt
+ *   Socket::Option.ipv4_multicast_loop(integer) => sockopt
  *
  * Creates a new Socket::Option object for IP_MULTICAST_LOOP.
  *
@@ -349,12 +349,12 @@ sockopt_linger(VALUE self)
  *   sockopt = Socket::Option.int(:INET, :IPPROTO_IP, :IP_MULTICAST_LOOP, 1)
  *   p sockopt.int => 1
  *
- *   p Socket::Option.ip_multicast_loop(10)
+ *   p Socket::Option.ipv4_multicast_loop(10)
  *   #=> #<Socket::Option: INET IP MULTICAST_LOOP 10>
  *
  */
 static VALUE
-sockopt_s_ip_multicast_loop(VALUE klass, VALUE value)
+sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
 # ifdef __NetBSD__
@@ -371,15 +371,15 @@ sockopt_s_ip_multicast_loop(VALUE klass, VALUE value)
 
 /*
  * call-seq:
- *   sockopt.ip_multicast_loop => integer
+ *   sockopt.ipv4_multicast_loop => integer
  *
- * Returns the ip_multicast_loop data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_loop data in _sockopt_ as a integer.
  *
- *   sockopt = Socket::Option.ip_multicast_loop(10)
- *   p sockopt.ip_multicast_loop => 10
+ *   sockopt = Socket::Option.ipv4_multicast_loop(10)
+ *   p sockopt.ipv4_multicast_loop => 10
  */
 static VALUE
-sockopt_ip_multicast_loop(VALUE self)
+sockopt_ipv4_multicast_loop(VALUE self)
 {
     int family = NUM2INT(sockopt_family_m(self));
     int level = sockopt_level(self);
@@ -394,30 +394,30 @@ sockopt_ip_multicast_loop(VALUE self)
 # endif
     }
 #endif
-    rb_raise(rb_eTypeError, "ip_multicast_loop socket option expected");
+    rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
     UNREACHABLE;
 }
 
 #ifdef __NetBSD__
-# define inspect_ip_multicast_loop(a,b,c,d) inspect_byte(a,b,c,d)
+# define inspect_ipv4_multicast_loop(a,b,c,d) inspect_byte(a,b,c,d)
 #else
-# define inspect_ip_multicast_loop(a,b,c,d) inspect_int(a,b,c,d)
+# define inspect_ipv4_multicast_loop(a,b,c,d) inspect_int(a,b,c,d)
 #endif
 
 /*
  * call-seq:
- *   Socket::Option.ip_multicast_ttl(integer) => sockopt
+ *   Socket::Option.ipv4_multicast_ttl(integer) => sockopt
  *
  * Creates a new Socket::Option object for IP_MULTICAST_TTL.
  *
  * The size is dependent on the platform.
  *
- *   p Socket::Option.ip_multicast_ttl(10)
+ *   p Socket::Option.ipv4_multicast_ttl(10)
  *   #=> #<Socket::Option: INET IP MULTICAST_TTL 10>
  *
  */
 static VALUE
-sockopt_s_ip_multicast_ttl(VALUE klass, VALUE value)
+sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
 {
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
 # ifdef __NetBSD__
@@ -434,15 +434,15 @@ sockopt_s_ip_multicast_ttl(VALUE klass, VALUE value)
 
 /*
  * call-seq:
- *   sockopt.ip_multicast_ttl => integer
+ *   sockopt.ipv4_multicast_ttl => integer
  *
- * Returns the ip_multicast_ttl data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_ttl data in _sockopt_ as a integer.
  *
- *   sockopt = Socket::Option.ip_multicast_ttl(10)
- *   p sockopt.ip_multicast_ttl => 10
+ *   sockopt = Socket::Option.ipv4_multicast_ttl(10)
+ *   p sockopt.ipv4_multicast_ttl => 10
  */
 static VALUE
-sockopt_ip_multicast_ttl(VALUE self)
+sockopt_ipv4_multicast_ttl(VALUE self)
 {
     int family = NUM2INT(sockopt_family_m(self));
     int level = sockopt_level(self);
@@ -456,18 +456,15 @@ sockopt_ip_multicast_ttl(VALUE self)
 	return sockopt_int(self);
 # endif
     }
-/*
-  defined(IP_MULTICAST_LOOP)
-  */
 #endif
-    rb_raise(rb_eTypeError, "ip_multicast_ttl socket option expected");
+    rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
     UNREACHABLE;
 }
 
 #ifdef __NetBSD__
-# define inspect_ip_multicast_ttl(a,b,c,d) inspect_byte(a,b,c,d)
+# define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_byte(a,b,c,d)
 #else
-# define inspect_ip_multicast_ttl(a,b,c,d) inspect_int(a,b,c,d)
+# define inspect_ipv4_multicast_ttl(a,b,c,d) inspect_int(a,b,c,d)
 #endif
 
 static int
@@ -996,10 +993,10 @@ sockopt_inspect(VALUE self)
               case IP_DROP_MEMBERSHIP: inspected = inspect_ipv4_add_drop_membership(level, optname, data, ret); break;
 #            endif
 #            if defined(IP_MULTICAST_LOOP) /* 4.4BSD, GNU/Linux */
-              case IP_MULTICAST_LOOP: inspected = inspect_ip_multicast_loop(level, optname, data, ret); break;
+              case IP_MULTICAST_LOOP: inspected = inspect_ipv4_multicast_loop(level, optname, data, ret); break;
 #            endif
 #            if defined(IP_MULTICAST_TTL) /* 4.4BSD, GNU/Linux */
-              case IP_MULTICAST_TTL: inspected = inspect_ip_multicast_ttl(level, optname, data, ret); break;
+              case IP_MULTICAST_TTL: inspected = inspect_ipv4_multicast_ttl(level, optname, data, ret); break;
 #            endif
             }
             break;
@@ -1117,11 +1114,11 @@ rsock_init_sockopt(void)
     rb_define_singleton_method(rb_cSockOpt, "linger", sockopt_s_linger, 2);
     rb_define_method(rb_cSockOpt, "linger", sockopt_linger, 0);
 
-    rb_define_singleton_method(rb_cSockOpt, "ip_multicast_ttl", sockopt_s_ip_multicast_ttl, 1);
-    rb_define_method(rb_cSockOpt, "ip_multicast_ttl", sockopt_ip_multicast_ttl, 0);
+    rb_define_singleton_method(rb_cSockOpt, "ipv4_multicast_ttl", sockopt_s_ipv4_multicast_ttl, 1);
+    rb_define_method(rb_cSockOpt, "ipv4_multicast_ttl", sockopt_ipv4_multicast_ttl, 0);
 
-    rb_define_singleton_method(rb_cSockOpt, "ip_multicast_loop", sockopt_s_ip_multicast_loop, 1);
-    rb_define_method(rb_cSockOpt, "ip_multicast_loop", sockopt_ip_multicast_loop, 0);
+    rb_define_singleton_method(rb_cSockOpt, "ipv4_multicast_loop", sockopt_s_ipv4_multicast_loop, 1);
+    rb_define_method(rb_cSockOpt, "ipv4_multicast_loop", sockopt_ipv4_multicast_loop, 0);
 
     rb_define_method(rb_cSockOpt, "unpack", sockopt_unpack, 1);
 

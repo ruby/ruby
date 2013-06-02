@@ -1,3 +1,10 @@
+Sun Jun  2 22:44:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/option.c: rename functions introduced in r41009
+	  s/ip/ipv4/g because they are ipv4 functions.
+	  (there's a policy that the name "ip" is for methods which supports
+	   both ipv4 and ipv6)
+
 Sun Jun  2 16:15:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln_find.c (dln_find_exe, dln_find_file): remove deprecated
