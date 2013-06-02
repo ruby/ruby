@@ -1,3 +1,7 @@
+Sun Jun  2 14:10:21 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/irb/lc/help-message: Apply english updates for irb --help #7510
+
 Sun Jun  2 12:03:58 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* range.c: Fix rdoc on Range#bsearch [Bug #8242] [ruby-core:54143]
