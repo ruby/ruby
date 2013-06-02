@@ -1,3 +1,7 @@
+Mon Jun  3 01:25:25 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/socket/test_sockopt.rb: change test name. follow r41037.
+
 Mon Jun  3 01:08:43 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rinda/test_rinda.rb: rename functions introduced in r41009.
