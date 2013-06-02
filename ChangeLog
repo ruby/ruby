@@ -1,3 +1,7 @@
+Sun Jun  2 22:39:24 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* range.c: Fix rdoc on Range#bsearch [Bug #8242] [ruby-core:54143]
+
 Mon May 20 04:00:48 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/yaml.rb: YAML documentation from #8344 [Bug #8355]
