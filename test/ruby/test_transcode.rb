@@ -2,6 +2,7 @@
 # some of the comments are in UTF-8
 
 require 'test/unit'
+require_relative 'envutil'
 class TestTranscode < Test::Unit::TestCase
   def test_errors
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode('foo', 'bar') }
@@ -29,16 +30,16 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_noargument
-    default_default_internal = Encoding.default_internal
-    Encoding.default_internal = nil
-    assert_equal("\u3042".encode, "\u3042")
-    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
-                 "\xE3\x81\x82\x81".force_encoding("utf-8"))
-    Encoding.default_internal = 'EUC-JP'
-    assert_equal("\u3042".encode, "\xA4\xA2".force_encoding('EUC-JP'))
-    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
-                 "\xA4\xA2?".force_encoding('EUC-JP'))
-    Encoding.default_internal = default_default_internal
+    EnvUtil.with_default_internal(nil) do
+      assert_equal("\u3042".encode, "\u3042")
+      assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                   "\xE3\x81\x82\x81".force_encoding("utf-8"))
+    end
+    EnvUtil.with_default_internal('EUC-JP') do
+      assert_equal("\u3042".encode, "\xA4\xA2".force_encoding('EUC-JP'))
+      assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                   "\xA4\xA2?".force_encoding('EUC-JP'))
+    end
   end
 
   def test_length
