@@ -1,3 +1,7 @@
+Mon Jun  3 01:08:43 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/rinda/test_rinda.rb: rename functions introduced in r41009.
+
 Sun Jun  2 23:33:42 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* enc/trans/japanese_euc.trans, test/ruby/test_transcode.rb,
