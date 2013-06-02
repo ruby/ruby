@@ -1,3 +1,7 @@
+Sun Jun  2 15:04:35 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/cgi/util.rb, lib/erb.rb: Use String#b [Feature #8394] by znz
+
 Sun Jun  2 14:10:21 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/irb/lc/help-message: Apply english updates for irb --help #7510
