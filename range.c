@@ -512,10 +512,10 @@ is_integer_p(VALUE v)
  *     rng.bsearch {|obj| block }  -> value
  *
  *  By using binary search, finds a value in range which meets the given
- *  condition in O(log n) where n is the size of the array.
+ *  condition in O(log n) where n is the size of the range.
  *
  *  You can use this method in two use cases: a find-minimum mode and
- *  a find-any mode.  In either case, the elements of the array must be
+ *  a find-any mode.  In either case, the elements of the range must be
  *  monotone (or sorted) with respect to the block.
  *
  *  In find-minimum mode (this is a good choice for typical use case),

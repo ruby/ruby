@@ -1,3 +1,7 @@
+Sun Jun  2 12:03:58 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* range.c: Fix rdoc on Range#bsearch [Bug #8242] [ruby-core:54143]
+
 Sun Jun  2 02:08:37 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/euc_jp.c: fix typo: the name of EUC-JIS-2004.
