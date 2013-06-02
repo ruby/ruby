@@ -40,7 +40,7 @@ VALUE rb_eMathDomainError;
  *  Computes the arc tangent given +y+ and +x+.
  *  Returns a Float in the range -PI..PI.
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
  *  Codomain: [-PI, PI]
  *
@@ -86,7 +86,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
  *  Computes the cosine of +x+ (expressed in radians).
  *  Returns a Float in the range -1.0..1.0.
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
  *  Codomain: [-1, 1]
  *
@@ -108,7 +108,7 @@ math_cos(VALUE obj, VALUE x)
  *  Computes the sine of +x+ (expressed in radians).
  *  Returns a Float in the range -1.0..1.0.
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
  *  Codomain: [-1, 1]
  *
@@ -130,9 +130,9 @@ math_sin(VALUE obj, VALUE x)
  *
  *  Computes the tangent of +x+ (expressed in radians).
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
- *  Codomain: (−INFINITY, INFINITY)
+ *  Codomain: (-INFINITY, INFINITY)
  *
  *    Math.tan(0) #=> 0.0
  *
@@ -204,7 +204,7 @@ math_asin(VALUE obj, VALUE x)
  *
  *  Computes the arc tangent of +x+. Returns -PI/2..PI/2.
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
  *  Codomain: (-PI/2, PI/2)
  *
@@ -232,7 +232,7 @@ cosh(double x)
  *
  *  Computes the hyperbolic cosine of +x+ (expressed in radians).
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
  *  Codomain: [1, INFINITY)
  *
@@ -261,9 +261,9 @@ sinh(double x)
  *
  *  Computes the hyperbolic sine of +x+ (expressed in radians).
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
- *  Codomain: (−INFINITY, INFINITY)
+ *  Codomain: (-INFINITY, INFINITY)
  *
  *    Math.sinh(0) #=> 0.0
  *
@@ -290,9 +290,9 @@ tanh(double x)
  *
  *  Computes the hyperbolic tangent of +x+ (expressed in radians).
  *
- *  Domain: (−INFINITY, INFINITY)
+ *  Domain: (-INFINITY, INFINITY)
  *
- *  Codomain: (−1, 1)
+ *  Codomain: (-1, 1)
  *
  *    Math.tanh(0) #=> 0.0
  *
