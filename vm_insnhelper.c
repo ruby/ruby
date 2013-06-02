@@ -2211,6 +2211,9 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
+    else {
+	argv[0] = arg0; /* rb_check_array_type(arg0) may change argv */
+    }
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
