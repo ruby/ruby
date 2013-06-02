@@ -1,3 +1,9 @@
+Sun Jun  2 23:33:42 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* enc/trans/japanese_euc.trans, test/ruby/test_transcode.rb,
+	  tool/transcode-tblgen.rb: change EUC-JP-2004 to EUC-JIS-2004.
+	  This is follow up to changes in r41024.
+
 Sun Jun  2 22:44:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/option.c: rename functions introduced in r41009

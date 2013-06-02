@@ -897,55 +897,55 @@ UnitLength = {
 UnitLength.default = 1
 
 ValidEncoding = {
-  '1byte'       => '{00-ff}',
-  '2byte'       => '{00-ff}{00-ff}',
-  '4byte'       => '{00-ff}{00-ff}{00-ff}{00-ff}',
-  'US-ASCII'    => '{00-7f}',
-  'UTF-8'       => '{00-7f}
-                    {c2-df}{80-bf}
-                         e0{a0-bf}{80-bf}
-                    {e1-ec}{80-bf}{80-bf}
-                         ed{80-9f}{80-bf}
-                    {ee-ef}{80-bf}{80-bf}
-                         f0{90-bf}{80-bf}{80-bf}
-                    {f1-f3}{80-bf}{80-bf}{80-bf}
-                         f4{80-8f}{80-bf}{80-bf}',
-  'UTF-16BE'    => '{00-d7,e0-ff}{00-ff}
-                    {d8-db}{00-ff}{dc-df}{00-ff}',
-  'UTF-16LE'    => '{00-ff}{00-d7,e0-ff}
-                    {00-ff}{d8-db}{00-ff}{dc-df}',
-  'UTF-32BE'    => '0000{00-d7,e0-ff}{00-ff}
-                    00{01-10}{00-ff}{00-ff}',
-  'UTF-32LE'    => '{00-ff}{00-d7,e0-ff}0000
-                    {00-ff}{00-ff}{01-10}00',
-  'EUC-JP'      => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-fe}
-                    8f{a1-fe}{a1-fe}',
-  'CP51932'     => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-fe}',
-  'EUC-JP-2004' => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-fe}
-                    8f{a1-fe}{a1-fe}',
-  'Shift_JIS'   => '{00-7f}
-                    {81-9f,e0-fc}{40-7e,80-fc}
-                    {a1-df}',
-  'EUC-KR'      => '{00-7f}
-                    {a1-fe}{a1-fe}',
-  'CP949'       => '{00-7f}
-                    {81-fe}{41-5a,61-7a,81-fe}',
-  'Big5'        => '{00-7f}
-                    {81-fe}{40-7e,a1-fe}',
-  'EUC-TW'      => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-b0}{a1-fe}{a1-fe}',
-  'GBK'         => '{00-80}
-                    {81-fe}{40-7e,80-fe}',
-  'GB18030'     => '{00-7f}
-                    {81-fe}{40-7e,80-fe}
-                    {81-fe}{30-39}{81-fe}{30-39}',
+  '1byte'        => '{00-ff}',
+  '2byte'        => '{00-ff}{00-ff}',
+  '4byte'        => '{00-ff}{00-ff}{00-ff}{00-ff}',
+  'US-ASCII'     => '{00-7f}',
+  'UTF-8'        => '{00-7f}
+                     {c2-df}{80-bf}
+                          e0{a0-bf}{80-bf}
+                     {e1-ec}{80-bf}{80-bf}
+                          ed{80-9f}{80-bf}
+                     {ee-ef}{80-bf}{80-bf}
+                          f0{90-bf}{80-bf}{80-bf}
+                     {f1-f3}{80-bf}{80-bf}{80-bf}
+                          f4{80-8f}{80-bf}{80-bf}',
+  'UTF-16BE'     => '{00-d7,e0-ff}{00-ff}
+                     {d8-db}{00-ff}{dc-df}{00-ff}',
+  'UTF-16LE'     => '{00-ff}{00-d7,e0-ff}
+                     {00-ff}{d8-db}{00-ff}{dc-df}',
+  'UTF-32BE'     => '0000{00-d7,e0-ff}{00-ff}
+                     00{01-10}{00-ff}{00-ff}',
+  'UTF-32LE'     => '{00-ff}{00-d7,e0-ff}0000
+                     {00-ff}{00-ff}{01-10}00',
+  'EUC-JP'       => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}
+                     8f{a1-fe}{a1-fe}',
+  'CP51932'      => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}',
+  'EUC-JIS-2004' => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}
+                     8f{a1-fe}{a1-fe}',
+  'Shift_JIS'    => '{00-7f}
+                     {81-9f,e0-fc}{40-7e,80-fc}
+                     {a1-df}',
+  'EUC-KR'       => '{00-7f}
+                     {a1-fe}{a1-fe}',
+  'CP949'        => '{00-7f}
+                     {81-fe}{41-5a,61-7a,81-fe}',
+  'Big5'         => '{00-7f}
+                     {81-fe}{40-7e,a1-fe}',
+  'EUC-TW'       => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-b0}{a1-fe}{a1-fe}',
+  'GBK'          => '{00-80}
+                     {81-fe}{40-7e,80-fe}',
+  'GB18030'      => '{00-7f}
+                     {81-fe}{40-7e,80-fe}
+                     {81-fe}{30-39}{81-fe}{30-39}',
 }
 
 def ValidEncoding(enc)
