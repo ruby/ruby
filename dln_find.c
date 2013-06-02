@@ -11,19 +11,11 @@
 
 #ifdef RUBY_EXPORT
 #include "ruby/ruby.h"
-#define dln_notimplement rb_notimplement
-#define dln_memerror rb_memerror
-#define dln_exit rb_exit
-#define dln_loaderror rb_loaderror
 #define dln_warning rb_warning
 #define dln_warning_arg
 #else
-#define dln_notimplement --->>> dln not implemented <<<---
-#define dln_memerror abort
-#define dln_exit exit
 #define dln_warning fprintf
 #define dln_warning_arg stderr,
-static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
 
