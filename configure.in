@@ -1777,7 +1777,6 @@ AC_CHECK_FUNCS(posix_fadvise)
 AC_CHECK_FUNCS(posix_memalign)
 AC_CHECK_FUNCS(ppoll)
 AC_CHECK_FUNCS(pread)
-AC_CHECK_FUNCS(readdir_r)
 AC_CHECK_FUNCS(readlink)
 AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(seekdir)
@@ -2185,38 +2184,6 @@ if test x"$ac_cv_func_gettimeofday" != xyes; then
 fi
 
 RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
-
-AC_CACHE_CHECK([whether struct dirent.d_name is too small], rb_cv_sizeof_struct_dirent_too_small,
-  [AC_COMPILE_IFELSE(
-    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([
-@%:@if defined _WIN32
-@%:@ error <<<struct direct in win32/dir.h has variable length d_name>>>
-@%:@elif defined HAVE_DIRENT_H
-@%:@ include <dirent.h>
-@%:@elif defined HAVE_DIRECT_H
-@%:@ include <direct.h>
-@%:@else
-@%:@ define dirent direct
-@%:@ if HAVE_SYS_NDIR_H
-@%:@  include <sys/ndir.h>
-@%:@ endif
-@%:@ if HAVE_SYS_DIR_H
-@%:@  include <sys/dir.h>
-@%:@ endif
-@%:@ if HAVE_NDIR_H
-@%:@  include <ndir.h>
-@%:@ endif
-@%:@endif
-@%:@include <stddef.h>
-@%:@define numberof(array) [(int)(sizeof(array) / sizeof((array)[0]))]
-struct dirent d;
-])],
-      [offsetof(struct dirent, [d_name[numberof(d.d_name)]]) - offsetof(struct dirent, d_name) < 256])],
-    [rb_cv_sizeof_struct_dirent_too_small=yes],
-    [rb_cv_sizeof_struct_dirent_too_small=no])])
-if test "$rb_cv_sizeof_struct_dirent_too_small" = yes; then
-  AC_DEFINE(SIZEOF_STRUCT_DIRENT_TOO_SMALL, 1)
-fi
 
 if test "$ac_cv_func_sysconf" = yes; then
   AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl

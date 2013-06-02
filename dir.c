@@ -561,50 +561,10 @@ dir_path(VALUE dir)
     return rb_str_dup(dirp->path);
 }
 
-#if defined HAVE_READDIR_R
-# define READDIR(dir, enc, entry, dp) (readdir_r((dir), (entry), &(dp)) == 0 && (dp) != 0)
-#elif defined _WIN32
-# define READDIR(dir, enc, entry, dp) (((dp) = rb_w32_readdir((dir), (enc))) != 0)
+#if defined _WIN32
+# define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
 #else
-# define READDIR(dir, enc, entry, dp) (((dp) = readdir(dir)) != 0)
-#endif
-#if defined HAVE_READDIR_R
-# define IF_HAVE_READDIR_R(something) something
-#else
-# define IF_HAVE_READDIR_R(something) /* nothing */
-#endif
-
-#if defined SIZEOF_STRUCT_DIRENT_TOO_SMALL
-# include <limits.h>
-# define NAME_MAX_FOR_STRUCT_DIRENT 255
-# if defined NAME_MAX
-#  if NAME_MAX_FOR_STRUCT_DIRENT < NAME_MAX
-#   undef  NAME_MAX_FOR_STRUCT_DIRENT
-#   define NAME_MAX_FOR_STRUCT_DIRENT NAME_MAX
-#  endif
-# endif
-# if defined _POSIX_NAME_MAX
-#  if NAME_MAX_FOR_STRUCT_DIRENT < _POSIX_NAME_MAX
-#   undef  NAME_MAX_FOR_STRUCT_DIRENT
-#   define NAME_MAX_FOR_STRUCT_DIRENT _POSIX_NAME_MAX
-#  endif
-# endif
-# if defined _XOPEN_NAME_MAX
-#  if NAME_MAX_FOR_STRUCT_DIRENT < _XOPEN_NAME_MAX
-#   undef  NAME_MAX_FOR_STRUCT_DIRENT
-#   define NAME_MAX_FOR_STRUCT_DIRENT _XOPEN_NAME_MAX
-#  endif
-# endif
-# define DEFINE_STRUCT_DIRENT \
-  union { \
-    struct dirent dirent; \
-    char dummy[offsetof(struct dirent, d_name) + \
-	       NAME_MAX_FOR_STRUCT_DIRENT + 1]; \
-  }
-# define STRUCT_DIRENT(entry) ((entry).dirent)
-#else
-# define DEFINE_STRUCT_DIRENT struct dirent
-# define STRUCT_DIRENT(entry) (entry)
+# define READDIR(dir, enc) readdir((dir))
 #endif
 
 /*
@@ -624,11 +584,10 @@ dir_read(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
-    IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
 
     GetDIR(dir, dirp);
     errno = 0;
-    if (READDIR(dirp->dir, dirp->enc, &STRUCT_DIRENT(entry), dp)) {
+    if ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else {
@@ -662,14 +621,13 @@ dir_each(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
-    IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
     IF_HAVE_HFS(int hfs_p);
 
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     IF_HAVE_HFS(hfs_p = !NIL_P(dirp->path) && is_hfs(RSTRING_PTR(dirp->path)));
-    while (READDIR(dirp->dir, dirp->enc, &STRUCT_DIRENT(entry), dp)) {
+    while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
 	VALUE path;
@@ -1440,13 +1398,12 @@ glob_helper(
     if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
-	IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT entry);
 	IF_HAVE_HFS(int hfs_p);
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) return 0;
 	IF_HAVE_HFS(hfs_p = is_hfs(*path ? path : "."));
 
-	while (READDIR(dirp, enc, &STRUCT_DIRENT(entry), dp)) {
+	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
 	    enum answer new_isdir = UNKNOWN;
 	    const char *name;

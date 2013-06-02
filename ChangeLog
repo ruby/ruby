@@ -1,3 +1,26 @@
+Mon Jun  3 07:15:17 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: removes AC_CHECK_FUNCS(readdir_r). readdir_r()
+	  is only used from dir.c and it doesn't need readdir_r().
+	* configure.in (SIZEOF_STRUCT_DIRENT_TOO_SMALL): remvoed. It is
+	  only used for readdir_r.
+	* dir.c: removes NAME_MAX_FOR_STRUCT_DIRENT. It is not right way
+	  to detect maximum length of path len. POSIX require to use
+	  fpathconf(). IOW, it might have lead to make a vulnerability
+	  using stack smashing. Moreover, readdir() works enough for our
+	  usage.
+	* dir.c (READDIR): removes an implementation which uses
+	  readdir_r() and parenthesize in a macro body correctly.
+	* dir.c (dir_read): removes IF_HAVE_READDIR_R(DEFINE_STRUCT_DIRENT
+	  entry), it is used only for readdir_r().
+	* dir.c (dir_each): ditto.
+	* dir.c (glob_helper): ditto.
+
+	* dir.c (READDIR): removes entry and dp argument.
+	* dir.c (dir_read): adjust for the above change.
+	* dir.c (dir_each): ditto.
+	* dir.c (glob_helper): ditto.
+
 Mon Jun  3 03:40:29 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_block_args): partially revert r41019.
