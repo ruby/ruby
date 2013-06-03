@@ -12,7 +12,7 @@ Mon Jun  3 07:15:17 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: removes AC_CHECK_FUNCS(readdir_r). readdir_r()
 	  is only used from dir.c and it doesn't need readdir_r().
-	* configure.in (SIZEOF_STRUCT_DIRENT_TOO_SMALL): remvoed. It is
+	* configure.in (SIZEOF_STRUCT_DIRENT_TOO_SMALL): removed. It is
 	  only used for readdir_r.
 	* dir.c: removes NAME_MAX_FOR_STRUCT_DIRENT. It is not right way
 	  to detect maximum length of path len. POSIX require to use
