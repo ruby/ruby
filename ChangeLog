@@ -1,3 +1,9 @@
+Mon Jun  3 23:11:19 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/fileutils.rb: fix behavior when mkdir/mkdir_p accepted "/".
+	* test/fileutils/test_fileutils.rb: add test for above change.
+	  Patched by Mitsunori Komatsu. [GH-319]
+
 Mon Jun  3 19:02:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (is_hfs): use the file descriptor instead of a path.
