@@ -1,3 +1,13 @@
+Tue Jun  4 00:02:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_tag): move jmpbuf between tag and prev so ensure to
+	  be accessible.
+
+Tue Jun  4 00:02:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (TH_PUSH_TAG): ensure jmpbuf to be accessible before
+	  pushing tag to get rid of unaccessible tag by stack overflow.
+
 Mon Jun  3 23:22:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): forward anonymous and first keyword
