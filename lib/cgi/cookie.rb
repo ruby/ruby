@@ -159,6 +159,11 @@ class CGI
       cookies
     end
 
+    # A summary of cookie string.
+    def inspect
+      "#<CGI::Cookie: #{self.to_s.inspect}>"
+    end
+
   end # class Cookie
 end
 
