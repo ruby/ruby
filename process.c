@@ -3462,6 +3462,9 @@ rb_fork_ruby(int *status)
  *  fork doesn't copy other threads.
  *
  *  If fork is not usable, Process.respond_to?(:fork) returns false.
+ *
+ *  Note that fork(2) is not avaiable on some platforms like Windows and NetBSD 4.
+ *  Therefore you should use spawn() instead of fork().
  */
 
 static VALUE
@@ -3817,6 +3820,9 @@ rb_f_system(int argc, VALUE *argv)
  *  spawn executes specified command and return its pid.
  *
  *    pid = spawn("tar xf ruby-2.0.0-p195.tar.bz2")
+ *    Process.wait pid
+ *
+ *    pid = spawn(RbConfig.ruby, "-eputs'Hello, world!'")
  *    Process.wait pid
  *
  *  This method is similar to Kernel#system but it doesn't wait for the command
