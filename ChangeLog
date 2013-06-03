@@ -1,3 +1,8 @@
+Tue Jun  4 00:44:27 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#test_mkdir): add
+	  EEXIST for Linux. (suggested by nurse)
+
 Mon Jun  3 23:58:19 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/fileutils.rb (FileUtils.rmdir): use remove_tailing_slash.
