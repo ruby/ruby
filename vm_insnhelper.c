@@ -2213,6 +2213,8 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
     }
     else {
 	argv[0] = arg0; /* rb_check_array_type(arg0) may change argv */
+	/* when to_ary method is invoked and the stack is overwritten, */
+	/* so need to restore argv[0]. */
     }
 
     /* keyword argument */
