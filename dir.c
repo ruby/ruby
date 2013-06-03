@@ -97,10 +97,10 @@ rb_utf8mac_encoding(void)
 }
 
 static inline int
-is_hfs(const char *path)
+is_hfs(DIR *dirp)
 {
     struct statfs buf;
-    if (statfs(path, &buf) == 0) {
+    if (fstatfs(dirfd(dirp), &buf) == 0) {
 	return buf.f_type == 17; /* HFS on darwin */
     }
     return FALSE;
@@ -626,7 +626,7 @@ dir_each(VALUE dir)
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
-    IF_HAVE_HFS(hfs_p = !NIL_P(dirp->path) && is_hfs(RSTRING_PTR(dirp->path)));
+    IF_HAVE_HFS(hfs_p = is_hfs(dirp->dir));
     while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
@@ -1401,7 +1401,7 @@ glob_helper(
 	IF_HAVE_HFS(int hfs_p);
 	dirp = do_opendir(*path ? path : ".", flags, enc);
 	if (dirp == NULL) return 0;
-	IF_HAVE_HFS(hfs_p = is_hfs(*path ? path : "."));
+	IF_HAVE_HFS(hfs_p = is_hfs(dirp));
 
 	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
