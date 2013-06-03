@@ -23,7 +23,7 @@ language: c
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-#  - clang
+  - clang
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
@@ -44,7 +44,7 @@ before_script:
   - "make -sj exts"
 script:
   - "make test OPTS=-v"
-  - "make test-all TESTS='-v -n\"/^(?!test_make_socket_ipv6_multicast)/\"'"
+#  - "make test-all TESTS='-v'"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
