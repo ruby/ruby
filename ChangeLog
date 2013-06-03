@@ -1,3 +1,8 @@
+Mon Jun  3 23:47:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bitlength_bdigit): New function.
+	  (rb_big_pow): Use bitlength_bdigit instead of ffs.
+
 Mon Jun  3 23:11:19 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/fileutils.rb: fix behavior when mkdir/mkdir_p accepted "/".
