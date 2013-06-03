@@ -1221,6 +1221,14 @@ class TestFileUtils
 
   def test_rmdir
     check_singleton :rmdir
+
+    begin
+      Dir.rmdir '/'
+    rescue => e
+      assert_raise(e.class) {
+        rmdir '/'
+      }
+    end
   end
 
   def test_rmtree

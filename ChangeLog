@@ -1,3 +1,8 @@
+Mon Jun  3 23:58:19 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/fileutils.rb (FileUtils.rmdir): use remove_tailing_slash.
+	* test/fileutils/test_fileutils.rb: test for above.
+
 Mon Jun  3 23:47:55 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bitlength_bdigit): New function.

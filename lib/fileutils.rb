@@ -270,7 +270,7 @@ module FileUtils
     return if options[:noop]
     list.each do |dir|
       begin
-        Dir.rmdir(dir = dir.chomp(?/))
+        Dir.rmdir(dir = remove_tailing_slash(dir))
         if parents
           until (parent = File.dirname(dir)) == '.' or parent == dir
             Dir.rmdir(dir)
