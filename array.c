@@ -3357,8 +3357,9 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *
  *     [ 1, 2, 3 ] + [ 4, 5 ]    #=> [ 1, 2, 3, 4, 5 ]
  *     a = [ "a", "b", "c" ]
- *     a + [ "d", "e", "f" ]
- *     a                         #=> [ "a", "b", "c", "d", "e", "f" ]
+ *     c = a + [ "d", "e", "f" ]
+ *     c                         #=> [ "a", "b", "c", "d", "e", "f" ]
+ *     a                         #=> [ "a", "b", "c" ]
  *
  *  See also Array#concat.
  */

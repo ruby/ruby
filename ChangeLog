@@ -1,3 +1,8 @@
+Wed Jun  5 01:16:09 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* array.c (Array#+): fix documentation example.
+	  Patch by Logan Serman. [Fixes GH-324]
+
 Wed Jun  5 00:21:54 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/irb/lc/ja/help-message: update help messages.
