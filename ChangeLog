@@ -1,3 +1,7 @@
+Wed Jun  5 07:14:18 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_cmp, d_lite_equal): simplified.
+
 Wed Jun  5 07:07:01 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: fixed a bug [ruby-core:55295].  reported

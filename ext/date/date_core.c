@@ -6285,8 +6285,7 @@ d_lite_cmp(VALUE self, VALUE other)
 	      m_gregorian_p(adat) == m_gregorian_p(bdat)))
 	    return cmp_dd(self, other);
 
-	if (have_jd_p(adat) &&
-	    have_jd_p(bdat)) {
+	{
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
@@ -6308,76 +6307,6 @@ d_lite_cmp(VALUE self, VALUE other)
 		}
 	    }
 	    else if (a_nth < b_nth) {
-		return INT2FIX(-1);
-	    }
-	    else {
-		return INT2FIX(1);
-	    }
-	}
-	else {
-#ifndef USE_PACK
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_mon, b_mon,
-		a_mday, b_mday;
-#else
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_pd, b_pd;
-#endif
-
-	    m_canonicalize_jd(adat);
-	    m_canonicalize_jd(bdat);
-	    a_nth = m_nth(adat);
-	    b_nth = m_nth(bdat);
-	    if (f_eqeq_p(a_nth, b_nth)) {
-		a_year = m_year(adat);
-		b_year = m_year(bdat);
-		if (a_year == b_year) {
-#ifndef USE_PACK
-		    a_mon = m_mon(adat);
-		    b_mon = m_mon(bdat);
-		    if (a_mon == b_mon) {
-			a_mday = m_mday(adat);
-			b_mday = m_mday(bdat);
-			if (a_mday == b_mday) {
-			    return INT2FIX(0);
-			}
-			else if (a_mday < b_mday) {
-			    return INT2FIX(-1);
-			}
-			else {
-			    return INT2FIX(1);
-			}
-		    }
-		    else if (a_mon < b_mon) {
-			return INT2FIX(-1);
-		    }
-		    else {
-			return INT2FIX(1);
-		    }
-#else
-		    a_pd = m_pc(adat);
-		    b_pd = m_pc(bdat);
-		    if (a_pd == b_pd) {
-			return INT2FIX(0);
-		    }
-		    else if (a_pd < b_pd) {
-			return INT2FIX(-1);
-		    }
-		    else {
-			return INT2FIX(1);
-		    }
-#endif
-		}
-		else if (a_year < b_year) {
-		    return INT2FIX(-1);
-		}
-		else {
-		    return INT2FIX(1);
-		}
-	    }
-	    else if (f_lt_p(a_nth, b_nth)) {
 		return INT2FIX(-1);
 	    }
 	    else {
@@ -6428,8 +6357,7 @@ d_lite_equal(VALUE self, VALUE other)
 	if (!(m_gregorian_p(adat) == m_gregorian_p(bdat)))
 	    return equal_gen(self, other);
 
-	if (have_jd_p(adat) &&
-	    have_jd_p(bdat)) {
+	{
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
@@ -6442,47 +6370,6 @@ d_lite_equal(VALUE self, VALUE other)
 	    if (f_eqeq_p(a_nth, b_nth) &&
 		a_jd == b_jd)
 		return Qtrue;
-	    return Qfalse;
-	}
-	else {
-#ifndef USE_PACK
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_mon, b_mon,
-		a_mday, b_mday;
-#else
-	    VALUE a_nth, b_nth;
-	    int a_year, b_year,
-		a_pd, b_pd;
-#endif
-
-	    m_canonicalize_jd(adat);
-	    m_canonicalize_jd(bdat);
-	    a_nth = m_nth(adat);
-	    b_nth = m_nth(bdat);
-	    if (f_eqeq_p(a_nth, b_nth)) {
-		a_year = m_year(adat);
-		b_year = m_year(bdat);
-		if (a_year == b_year) {
-#ifndef USE_PACK
-		    a_mon = m_mon(adat);
-		    b_mon = m_mon(bdat);
-		    if (a_mon == b_mon) {
-			a_mday = m_mday(adat);
-			b_mday = m_mday(bdat);
-			if (a_mday == b_mday)
-			    return Qtrue;
-		    }
-#else
-		    /* mon and mday only */
-		    a_pd = (m_pc(adat) >> MDAY_SHIFT);
-		    b_pd = (m_pc(bdat) >> MDAY_SHIFT);
-		    if (a_pd == b_pd) {
-			return Qtrue;
-		    }
-#endif
-		}
-	    }
 	    return Qfalse;
 	}
     }
