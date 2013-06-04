@@ -1,3 +1,8 @@
+Tue Jun  4 23:08:42 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/objspace/objspace.c: improve wording and remove duplicated comment.
+	  Based on a patch by Dave Goodchild. [Fixes GH-299]
+
 Tue Jun  4 18:41:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bitlength_bdigit): Fix an off-by-one error.
