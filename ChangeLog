@@ -1,3 +1,8 @@
+Wed Jun  5 07:07:01 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: fixed a bug [ruby-core:55295].  reported
+	  by Riley Lynch.
+
 Wed Jun  5 06:44:08 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.0.3
