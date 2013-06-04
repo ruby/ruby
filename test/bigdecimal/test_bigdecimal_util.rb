@@ -14,9 +14,10 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_Float_to_d_without_precision
-    delta = 1.0/10**(Float::DIG + 1)
-    assert_in_delta(BigDecimal(0.5, Float::DIG+1), 0.5.to_d, delta)
-    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG+1), (355.0/113.0).to_d, delta)
+    delta = 1.0/10**(Float::DIG)
+    assert_in_delta(BigDecimal(0.5, Float::DIG), 0.5.to_d, delta)
+    assert_in_delta(BigDecimal(355.0/113.0, Float::DIG), (355.0/113.0).to_d, delta)
+    assert_equal(9.05.to_d.to_s('F'), "9.05")
   end
 
   def test_Float_to_d_with_precision

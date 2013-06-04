@@ -1,3 +1,11 @@
+Tue Jun  4 15:30:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (Float#to_d): fix the number
+	  of figures.  Patch by Vipul A M <vipulnsward@gmail.com>.
+	  https://github.com/ruby/ruby/pull/323  fix GH-323
+
+	* test/bigdecimal/test_bigdecimal_util.rb: fix for the above change.
+
 Tue Jun  4 00:44:27 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#test_mkdir): add
