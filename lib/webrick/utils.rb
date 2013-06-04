@@ -68,7 +68,7 @@ module WEBrick
     # Creates TCP server sockets bound to +address+:+port+ and returns them.
     #
     # It will create IPV4 and IPV6 sockets on all interfaces.
-    def create_listeners(address, port, logger = nil)
+    def create_listeners(address, port, logger=nil)
       unless port
         raise ArgumentError, "must specify port"
       end
@@ -199,7 +199,7 @@ module WEBrick
       # Cancels the timeout handler +id+
       def cancel(thread, id)
         if ary = @timeout_info[thread]
-          ary.delete_if { |info| info.object_id == id }
+          ary.delete_if {|info| info.object_id == id}
           if ary.empty?
             @timeout_info.delete(thread)
           end
@@ -214,7 +214,7 @@ module WEBrick
     # than +seconds+.
     #
     # If +seconds+ is zero or nil, simply executes the block
-    def timeout(seconds, exception = Timeout::Error)
+    def timeout(seconds, exception=Timeout::Error)
       return yield if seconds.nil? or seconds.zero?
       # raise ThreadError, "timeout within critical session" if Thread.critical
       id = TimeoutHandler.register(seconds, exception)
