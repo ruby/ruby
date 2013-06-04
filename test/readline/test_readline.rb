@@ -396,6 +396,8 @@ class TestReadline < Test::Unit::TestCase
         Readline.pre_input_hook = nil
       rescue NotImplementedError
       end
+      stdin.close(true)
+      stdout.close(true)
     end
   end if !/EditLine|\A4\.3\z/n.match(Readline::VERSION)
 

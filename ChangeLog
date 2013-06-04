@@ -1,3 +1,21 @@
+Wed Jun  5 00:32:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_require.rb: Remove temporally files in the tests.
+
+	* test/ruby/test_rubyoptions.rb: Ditto.
+
+	* test/logger/test_logger.rb: Ditto.
+
+	* test/psych/test_psych.rb: Ditto.
+
+	* test/readline/test_readline.rb: Ditto.
+
+	* test/syslog/test_syslog_logger.rb: Ditto.
+
+	* test/webrick/test_httpauth.rb: Ditto.
+
+	* test/zlib/test_zlib.rb: Ditto.
+
 Wed Jun  5 00:08:55 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* dir.c (bracket): fix copy-paste error.  When the first and last

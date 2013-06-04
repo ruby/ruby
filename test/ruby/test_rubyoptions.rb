@@ -524,7 +524,7 @@ class TestRubyOptions < Test::Unit::TestCase
     t.flush
     assert_in_out_err(["-e", "$0=ARGV[0]; Process.kill :SEGV, $$", t.path],
                       "", [], expected_stderr, bug7597, opts)
-    t.close
+    t.close(true)
   end
 
   def test_DATA
