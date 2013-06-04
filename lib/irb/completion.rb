@@ -211,7 +211,7 @@ module IRB
     }
 
     # Set of available operators in Ruby
-    Operators = %W[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
+    Operators = %w[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
 
     def self.select_message(receiver, message, candidates, sep = ".")
       candidates.grep(/^#{message}/).collect do |e|
