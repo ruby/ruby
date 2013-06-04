@@ -1,3 +1,8 @@
+Wed Jun  5 00:21:54 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/irb/lc/ja/help-message: update help messages.
+	  following r41028. [ruby-dev:46707] [Feature #7510]
+
 Wed Jun  5 00:09:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (r_object0): Generalize a round up expression.
