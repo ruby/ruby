@@ -137,7 +137,7 @@ bracket(
 	    p = t2 + (r2 = rb_enc_mbclen(t2, pend, enc));
 	    if (ok) continue;
 	    if ((r <= (send-s) && memcmp(t1, s, r) == 0) ||
-		(r2 <= (send-s) && memcmp(t2, s, r) == 0)) {
+		(r2 <= (send-s) && memcmp(t2, s, r2) == 0)) {
 		ok = 1;
 		continue;
 	    }

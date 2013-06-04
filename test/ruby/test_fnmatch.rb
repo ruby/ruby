@@ -124,4 +124,9 @@ class TestFnmatch < Test::Unit::TestCase
       assert(File.fnmatch("{*,#{pattern_eucjp}}", path, File::FNM_EXTGLOB))
     end
   end
+
+  def test_unicode
+    assert_file.fnmatch("[a-\u3042]*", "\u3042")
+    assert_file.not_fnmatch("[a-\u3042]*", "\u3043")
+  end
 end
