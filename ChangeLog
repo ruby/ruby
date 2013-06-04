@@ -1,3 +1,11 @@
+Wed Jun  5 06:44:08 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.0.3
+
+	* test/rubygems:  Tests for the above.
+
+	* NEWS:  Added RubyGems 2.0.3 note.
+
 Wed Jun  5 06:35:15 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/marshal.rdoc:  Add description of Marshal format.

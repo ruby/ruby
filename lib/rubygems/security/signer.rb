@@ -34,12 +34,12 @@ class Gem::Security::Signer
     @key        = key
 
     unless @key then
-      default_key  = File.join Gem.user_home, 'gem-private_key.pem'
+      default_key  = File.join Gem.default_key_path
       @key = default_key if File.exist? default_key
     end
 
     unless @cert_chain then
-      default_cert = File.join Gem.user_home, 'gem-public_cert.pem'
+      default_cert = File.join Gem.default_cert_path
       @cert_chain = [default_cert] if File.exist? default_cert
     end
 
@@ -110,15 +110,15 @@ class Gem::Security::Signer
   def re_sign_key # :nodoc:
     old_cert = @cert_chain.last
 
-    disk_cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    disk_cert_path = File.join Gem.default_cert_path
     disk_cert = File.read disk_cert_path rescue nil
     disk_key  =
-      File.read File.join(Gem.user_home, 'gem-private_key.pem') rescue nil
+      File.read File.join(Gem.default_key_path) rescue nil
 
     if disk_key == @key.to_pem and disk_cert == old_cert.to_pem then
       expiry = old_cert.not_after.strftime '%Y%m%d%H%M%S'
       old_cert_file = "gem-public_cert.pem.expired.#{expiry}"
-      old_cert_path = File.join Gem.user_home, old_cert_file
+      old_cert_path = File.join Gem.user_home, ".gem", old_cert_file
 
       unless File.exist? old_cert_path then
         Gem::Security.write old_cert, old_cert_path

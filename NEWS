@@ -86,6 +86,11 @@ with all sufficient information, see the ChangeLog file.
   * Rinda now supports multicast sockets.  See Rinda::RingServer and
     Rinda::RingFinger for details.
 
+* RubyGems
+  * Updated to 2.0.3.  See
+    http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.0.3+%2F+2012-03-1
+    for release notes.
+
 * Socket
   * New methods:
     * Socket.getifaddrs

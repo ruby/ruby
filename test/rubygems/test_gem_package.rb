@@ -162,10 +162,12 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_auto_signed
-    private_key_path = File.join Gem.user_home, 'gem-private_key.pem'
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
+
+    private_key_path = File.join Gem.user_home, '.gem', 'gem-private_key.pem'
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    public_cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    public_cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     spec = Gem::Specification.new 'build', '1'
@@ -509,7 +511,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_match /\s-\snonexistent\.gem\z/, e.message
+    assert_match ' - nonexistent.gem', e.message
   end
 
   def test_verify_security_policy

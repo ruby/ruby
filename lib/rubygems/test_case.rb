@@ -1027,7 +1027,7 @@ Also, a list:
   end
 
   ##
-  # Returns the path to the key named +key_name+ from <tt>test/rubygems/</tt>
+  # Returns the path tot he key named +key_name+ from <tt>test/rubygems</tt>
 
   def self.key_path key_name
     File.expand_path "../../../test/rubygems/#{key_name}_key.pem", __FILE__
