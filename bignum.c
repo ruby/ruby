@@ -3193,7 +3193,7 @@ bitlength_bdigit(BDIGIT v)
     v++;
     if (v == 0)
         return SIZEOF_BDIGITS*CHAR_BIT;
-    return ffs(v); /* assumption: sizeof(BDIGIT) <= sizeof(int) */
+    return ffs(v)-1; /* assumption: sizeof(BDIGIT) <= sizeof(int) */
 }
 
 /*
