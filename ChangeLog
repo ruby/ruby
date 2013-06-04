@@ -1,3 +1,7 @@
+Wed Jun  5 06:35:15 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/marshal.rdoc:  Add description of Marshal format.
+
 Wed Jun  5 01:16:09 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* array.c (Array#+): fix documentation example.
