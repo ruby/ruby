@@ -1620,7 +1620,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 #if SIZEOF_BDIGITS == SIZEOF_SHORT
             rb_big_resize((VALUE)big, len);
 #else
-            rb_big_resize((VALUE)big, (len + 1) * 2 / sizeof(BDIGIT));
+            rb_big_resize((VALUE)big, (len * 2 + sizeof(BDIGIT) - 1) / sizeof(BDIGIT));
 #endif
             digits = RBIGNUM_DIGITS(big);
 	    MEMCPY(digits, RSTRING_PTR(data), char, len * 2);
@@ -1638,7 +1638,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		int i;
 
 		for (i=0; i<SIZEOF_BDIGITS; i++) {
-		    num |= (int)p[i] << shift;
+		    num |= (BDIGIT)p[i] << shift;
 		    shift += 8;
 		}
 #else

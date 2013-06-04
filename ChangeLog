@@ -1,3 +1,8 @@
+Wed Jun  5 00:09:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* marshal.c (r_object0): Generalize a round up expression.
+	  Use BDIGIT instead of int.
+
 Tue Jun  4 23:44:02 2013  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* object.c (rb_Hash): fix docs. patched by Stefan Schüßler.
