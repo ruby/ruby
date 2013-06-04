@@ -1,3 +1,8 @@
+Wed Jun  5 00:38:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_read, gzfile_read_all, gzfile_getc),
+	  (gzreader_gets): check EOF.  [ruby-core:55220] [Bug #8467]
+
 Wed Jun  5 00:32:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_require.rb: Remove temporally files in the tests.
