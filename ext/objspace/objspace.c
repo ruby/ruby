@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-/* The objspace library extends ObjectSpace module and adds several
+/* The objspace library extends the ObjectSpace module and adds several
  * methods to get internal statistic information about
  * object/memory management.
  *
