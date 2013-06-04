@@ -2897,7 +2897,7 @@ rb_Hash(VALUE val)
  *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
  *
  *     Hash([])          #=> {}
- *     Hash(nil)         #=> nil
+ *     Hash(nil)         #=> {}
  *     Hash(key: :value) #=> {:key => :value}
  *     Hash([1, 2, 3])   #=> TypeError
  */
