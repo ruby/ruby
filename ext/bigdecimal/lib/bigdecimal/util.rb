@@ -28,7 +28,7 @@ class Float < Numeric
   #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
   #
   def to_d(precision=nil)
-    BigDecimal(self, precision || Float::DIG+1)
+    BigDecimal(self, precision || Float::DIG)
   end
 end
 
