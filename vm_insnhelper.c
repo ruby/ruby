@@ -2212,9 +2212,13 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
     else {
-	argv[0] = arg0; /* rb_check_array_type(arg0) may change argv */
-	/* when to_ary method is invoked and the stack is overwritten, */
-	/* so need to restore argv[0]. */
+	/* vm_push_frame current argv is at the top of sp because vm_invoke_block
+	 * set sp at the first element of argv.
+	 * Therefore when rb_check_array_type(arg0) called to_ary and called to_ary
+	 * or method_missing run vm_push_frame, it initializes local variables.
+	 * see also https://bugs.ruby-lang.org/issues/8484
+	 */
+	argv[0] = arg0;
     }
 
     /* keyword argument */
