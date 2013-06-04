@@ -2191,8 +2191,8 @@ rb_execarg_new(int argc, VALUE *argv, int accept_shell)
     return execarg_obj;
 }
 
-struct rb_execarg
-*rb_execarg_get(VALUE execarg_obj)
+struct rb_execarg *
+rb_execarg_get(VALUE execarg_obj)
 {
     struct rb_execarg *eargp;
     TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
