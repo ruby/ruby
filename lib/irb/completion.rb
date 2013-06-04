@@ -15,7 +15,7 @@ module IRB
 
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
-    ReservedWords = %W[
+    ReservedWords = %w[
       BEGIN END
       alias and
       begin break
