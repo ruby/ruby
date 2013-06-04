@@ -1,3 +1,10 @@
+Tue Jun  4 23:32:12 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* variable.c (set_const_visibility): use rb_frame_this_func() instead
+	  of rb_frame_callee() for getting the name of the called method
+
+	* test/ruby/test_module.rb: add test for private_constant with no args
+
 Tue Jun  4 23:27:24 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_callee_setup_keyword_arg,
