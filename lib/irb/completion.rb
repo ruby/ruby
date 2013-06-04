@@ -15,24 +15,24 @@ module IRB
 
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
-    ReservedWords = [
-      "BEGIN", "END",
-      "alias", "and",
-      "begin", "break",
-      "case", "class",
-      "def", "defined", "do",
-      "else", "elsif", "end", "ensure",
-      "false", "for",
-      "if", "in",
-      "module",
-      "next", "nil", "not",
-      "or",
-      "redo", "rescue", "retry", "return",
-      "self", "super",
-      "then", "true",
-      "undef", "unless", "until",
-      "when", "while",
-      "yield",
+    ReservedWords = %w[
+      BEGIN END
+      alias and
+      begin break
+      case class
+      def defined do
+      else elsif end ensure
+      false for
+      if in
+      module
+      next nil not
+      or
+      redo rescue retry return
+      self super
+      then true
+      undef unless until
+      when while
+      yield
     ]
 
     CompletionProc = proc { |input|
@@ -211,9 +211,7 @@ module IRB
     }
 
     # Set of available operators in Ruby
-    Operators = ["%", "&", "*", "**", "+",  "-",  "/",
-      "<", "<<", "<=", "<=>", "==", "===", "=~", ">", ">=", ">>",
-      "[]", "[]=", "^", "!", "!=", "!~"]
+    Operators = %w[% & * ** + - / < << <= <=> == === =~ > >= >> [] []= ^ ! != !~]
 
     def self.select_message(receiver, message, candidates, sep = ".")
       candidates.grep(/^#{message}/).collect do |e|

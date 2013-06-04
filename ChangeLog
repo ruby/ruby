@@ -1,3 +1,8 @@
+Tue Jun  4 23:16:49 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/irb/completion.rb: Use %w literal construction for long lists.
+	  Patch by Dave Goodchild. [Fixes GH-299]
+
 Tue Jun  4 23:08:42 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/objspace/objspace.c: improve wording and remove duplicated comment.
