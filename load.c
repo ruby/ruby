@@ -315,7 +315,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 
     if (vlen < len+1) return 0;
     if (!strncmp(name+(vlen-len), feature, len)) {
-	plen = vlen - len - 1;
+	plen = vlen - len;
     }
     else {
 	for (e = name + vlen; name != e && *e != '.' && *e != '/'; --e);
@@ -323,16 +323,20 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	    e-name < len ||
 	    strncmp(e-len, feature, len))
 	    return 0;
-	plen = e - name - len - 1;
+	plen = e - name - len;
     }
-    if (type == 's' && !IS_DLEXT(&name[plen+len+1])
-     || type == 'r' && !IS_RBEXT(&name[plen+len+1])
-     || name[plen] != '/') {
-       return 0;
+    if (plen > 0 && name[plen-1] != '/') {
+	return 0;
+    }
+    if (type == 's' ? !IS_DLEXT(&name[plen+len]) :
+	type == 'r' ? !IS_RBEXT(&name[plen+len]) :
+	0) {
+	return 0;
     }
     /* Now name == "#{prefix}/#{feature}#{ext}" where ext is acceptable
        (possibly empty) and prefix is some string of length plen. */
 
+    if (plen > 0) --plen;	/* exclude '.' */
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE p = RARRAY_PTR(load_path)[i];
 	const char *s = StringValuePtr(p);
