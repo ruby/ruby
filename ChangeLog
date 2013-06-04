@@ -1,3 +1,9 @@
+Wed Jun  5 08:13:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_pow): Don't need to multiply SIZEOF_BDIGITS.
+	  Use nlz instead of bitlength_bdigit.
+	  (bitlength_bdigit): Removed.
+
 Wed Jun  5 07:14:18 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (d_lite_cmp, d_lite_equal): simplified.

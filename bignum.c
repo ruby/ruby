@@ -3178,24 +3178,6 @@ bigsqr(VALUE x)
     return bigtrunc(bigmul0(x, x));
 }
 
-static int
-bitlength_bdigit(BDIGIT v)
-{
-    if (v == 0)
-        return 0;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-#if 2 < SIZEOF_BDIGITS
-    v |= v >> 16;
-#endif
-    v++;
-    if (v == 0)
-        return SIZEOF_BDIGITS*CHAR_BIT;
-    return ffs(v)-1; /* assumption: sizeof(BDIGIT) <= sizeof(int) */
-}
-
 /*
  *  call-seq:
  *     big ** exponent   -> numeric
@@ -3236,8 +3218,8 @@ rb_big_pow(VALUE x, VALUE y)
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
-	    const long xlen = RBIGNUM_LEN(x) - 1;
-	    const long xbits = bitlength_bdigit(RBIGNUM_DIGITS(x)[xlen]) + SIZEOF_BDIGITS*BITSPERDIG*xlen;
+	    const long xlen = RBIGNUM_LEN(x);
+            const long xbits = BITSPERDIG*xlen - nlz(RBIGNUM_DIGITS(x)[xlen-1]);
 	    const long BIGLEN_LIMIT = BITSPERDIG*1024*1024;
 
 	    if ((xbits > BIGLEN_LIMIT) || (xbits * yy > BIGLEN_LIMIT)) {
