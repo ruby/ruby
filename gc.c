@@ -2277,8 +2277,7 @@ ready_to_gc(rb_objspace_t *objspace)
 }
 
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-# pragma GCC push_options
-# pragma GCC optimize ("O0")
+__attribute__((optimize("O0"))) 
 #endif
 static void
 before_gc_sweep(rb_objspace_t *objspace)
@@ -2301,9 +2300,6 @@ before_gc_sweep(rb_objspace_t *objspace)
 	rb_sweep_method_entry(GET_VM());
     }
 }
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-# pragma GCC pop_options
-#endif
 
 static void
 after_gc_sweep(rb_objspace_t *objspace)
