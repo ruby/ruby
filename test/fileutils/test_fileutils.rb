@@ -759,8 +759,8 @@ class TestFileUtils
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
 
-    # EISDIR on OS X, FreeBSD; EEXIST on Linux
-    assert_raise(Errno::EISDIR, Errno::EEXIST) {
+    # EISDIR on OS X, FreeBSD; EEXIST on Linux; Errno::EACCES on Windows
+    assert_raise(Errno::EISDIR, Errno::EEXIST, Errno::EACCES) {
       mkdir '/'
     }
   end

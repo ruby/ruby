@@ -1,3 +1,8 @@
+Wed Jun  5 09:46:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#test_mkdir): add
+	  EACCES for Windows.
+
 Wed Jun  5 08:13:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_pow): Don't need to multiply SIZEOF_BDIGITS.
