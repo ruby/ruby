@@ -1,3 +1,9 @@
+Wed Jun  5 15:26:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (before_gc_sweep): don't optimize it to avoid segv on Ubuntu
+	  10.04 gcc 4.4.
+	  http://u32.rubyci.org/~chkbuild/ruby-trunk/log/20130527T190301Z.diff.html.gz
+
 Wed Jun  5 09:46:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#test_mkdir): add
