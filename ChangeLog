@@ -1,3 +1,8 @@
+Wed Jun  5 12:38:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (setup_overlapped, finish_overlapped): extract from
+	  rb_w32_read() and rb_w32_write().
+
 Wed May 29 21:03:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (POSTLINK): default to : command to get rid of flag
