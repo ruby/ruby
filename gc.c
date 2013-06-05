@@ -3591,33 +3591,38 @@ rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
 static size_t
 rgengc_rememberset_mark(rb_objspace_t *objspace)
 {
-    size_t i;
+    size_t i, j;
     size_t shady_object_count = 0;
-    RVALUE *p, *pend;
-    uintptr_t *bits;
+    RVALUE *p, *offset;
+    uintptr_t *bits, bitset;
 
     for (i=0; i<heaps_used; i++) {
-	if (0 /* TODO: optimization - skip it if there are no remembered objects */) {
-	    continue;
-	}
-
-	p = objspace->heap.sorted[i]->start; pend = p + objspace->heap.sorted[i]->limit;
+	p = objspace->heap.sorted[i]->start;
 	bits = GET_HEAP_REMEMBERSET_BITS(p);
 
-	while (p < pend) {
-	    if (MARKED_IN_BITMAP(bits, p)) {
-		gc_mark(objspace, (VALUE)p);
-		rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
+	offset = p - NUM_IN_SLOT(p);
 
-		if (RVALUE_SUNNY(p)) {
-		    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
-		    CLEAR_IN_BITMAP(bits, p);
-		}
-		else {
-		    shady_object_count++;
+	for(j=0;j< HEAP_BITMAP_LIMIT;j++){
+	    if(bits[j]){
+		p = offset  + j * (sizeof(uintptr_t) *  CHAR_BIT);
+		bitset = bits[j];
+		while (bitset) {
+		    if (bitset & 1) {
+			gc_mark(objspace, (VALUE)p);
+			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
+			
+			if (RVALUE_SUNNY(p)) {
+			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
+			    CLEAR_IN_BITMAP(bits, p);
+			}
+			else {
+			    shady_object_count++;
+			}
+		    }
+		    p++;
+		    bitset>>=1;
 		}
 	    }
-	    p++;
 	}
     }
 
