@@ -3763,7 +3763,7 @@ str2guid(const char *str, GUID *guid)
 }
 
 /* License: Ruby's */
-#if !defined(_IFDEF_) && !defined(__MINGW32__)
+#if !defined(_IFDEF_) && !defined(__MINGW64__)
     typedef struct {
 	uint64_t Value;
 	struct {
