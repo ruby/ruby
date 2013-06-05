@@ -6,10 +6,10 @@ Thu Jun  6 00:59:44 2013  Masaya Tarui  <tarui@ruby-lang.org>
 	* gc.c (gc_mark_children): move sunny old check to gc_mark().
 	* gc.c (rgengc_check_shady): remove DEMOTE that already unnecessary.
 	* gc.c (rb_gc_writebarrier): ditto.
-	  
+
 	  change sunny old check point in order to save mark stack and
 	  remove unnatural rest_sweep & demote.
-	
+
 Thu Jun  6 00:52:42 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (rgengc_rememberset_mark): change scan algorithm for performance:
