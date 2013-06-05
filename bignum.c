@@ -3050,27 +3050,6 @@ rb_big_divmod(VALUE x, VALUE y)
     return rb_assoc_new(bignorm(div), bignorm(mod));
 }
 
-static int
-bdigbitsize(BDIGIT x)
-{
-    int size = 1;
-    int nb = BITSPERDIG / 2;
-    BDIGIT bits = (~0 << nb);
-
-    if (!x) return 0;
-    while (x > 1) {
-	if (x & bits) {
-	    size += nb;
-	    x >>= nb;
-	}
-	x &= ~bits;
-	nb /= 2;
-	bits >>= nb;
-    }
-
-    return size;
-}
-
 static VALUE
 big_shift(VALUE x, long n)
 {
@@ -3090,9 +3069,8 @@ big_fdiv(VALUE x, VALUE y)
     int i;
 
     bigtrunc(x);
-    l = RBIGNUM_LEN(x) - 1;
-    ex = l * BITSPERDIG;
-    ex += bdigbitsize(BDIGITS(x)[l]);
+    l = RBIGNUM_LEN(x);
+    ex = l * BITSPERDIG - nlz(BDIGITS(x)[l-1]);
     ex -= 2 * DBL_BIGDIG * BITSPERDIG;
     if (ex) x = big_shift(x, ex);
 
@@ -3101,9 +3079,8 @@ big_fdiv(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
       case T_BIGNUM:
 	bigtrunc(y);
-	l = RBIGNUM_LEN(y) - 1;
-	ey = l * BITSPERDIG;
-	ey += bdigbitsize(BDIGITS(y)[l]);
+	l = RBIGNUM_LEN(y);
+	ey = l * BITSPERDIG - nlz(BDIGITS(y)[l-1]);
 	ey -= DBL_BIGDIG * BITSPERDIG;
 	if (ey) y = big_shift(y, ey);
 	break;
