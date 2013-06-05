@@ -382,7 +382,7 @@ USE_FLONUM
 ...xxxx xx10 Flonum
 ...0000 1100 Symbol
 ...0000 0000 Qfalse  0x00 =  0
-...0000 1000  Qnil   0x08 =  8
+...0000 1000 Qnil    0x08 =  8
 ...0001 0100 Qtrue   0x14 = 20
 ...0011 0100 Qundef  0x34 = 52
  */

@@ -1,3 +1,7 @@
+Wed Jun  5 20:32:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* include/ruby/ruby.h: fix alignment in comment.
+
 Wed Jun  5 20:05:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (int_pair_to_real_inclusive): Add a cast to BDIGIT.
