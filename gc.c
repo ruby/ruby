@@ -3610,7 +3610,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 		    if (bitset & 1) {
 			gc_mark(objspace, (VALUE)p);
 			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
-			
+
 			if (RVALUE_SUNNY(p)) {
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 			    CLEAR_IN_BITMAP(bits, p);
