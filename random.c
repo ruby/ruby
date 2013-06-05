@@ -294,7 +294,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 #if BITSPERDIG < 53
     MEMZERO(xd, BDIGIT, roomof(53, BITSPERDIG) - 1);
 #endif
-    xd[53 / BITSPERDIG] = 1 << 53 % BITSPERDIG;
+    xd[53 / BITSPERDIG] = (BDIGIT)1 << 53 % BITSPERDIG;
     xd[0] |= 1;
     x = rb_big_mul(x, m);
     if (FIXNUM_P(x)) {
@@ -709,54 +709,44 @@ random_load(VALUE obj, VALUE dump)
 	x = FIX2ULONG(state);
 	mt->state[0] = (unsigned int)x;
 #if SIZEOF_LONG / SIZEOF_INT >= 2
-	mt->state[1] = (unsigned int)(x >> BITSPERDIG);
+	mt->state[1] = (unsigned int)(x >> (sizeof(int) * CHAR_BIT));
 #endif
 #if SIZEOF_LONG / SIZEOF_INT >= 3
-	mt->state[2] = (unsigned int)(x >> 2 * BITSPERDIG);
+	mt->state[2] = (unsigned int)(x >> 2 * (sizeof(int) * CHAR_BIT));
 #endif
 #if SIZEOF_LONG / SIZEOF_INT >= 4
-	mt->state[3] = (unsigned int)(x >> 3 * BITSPERDIG);
+	mt->state[3] = (unsigned int)(x >> 3 * (sizeof(int) * CHAR_BIT));
 #endif
     }
     else {
-	BDIGIT *d;
-	long len;
+	BDIGIT *dp, *de;
+        unsigned int *sp, *se;
+	BDIGIT_DBL dd;
+        int numbytes_in_dd;
 	Check_Type(state, T_BIGNUM);
-	len = RBIGNUM_LEN(state);
-	if (len > roomof(sizeof(mt->state), SIZEOF_BDIGITS)) {
-	    len = roomof(sizeof(mt->state), SIZEOF_BDIGITS);
-	}
-#if SIZEOF_BDIGITS < SIZEOF_INT
-	else if (len % DIGSPERINT) {
-	    d = RBIGNUM_DIGITS(state) + len;
-# if DIGSPERINT == 2
-	    --len;
-	    x = *--d;
-# else
-	    x = 0;
-	    do {
-		x = (x << BITSPERDIG) | *--d;
-	    } while (--len % DIGSPERINT);
-# endif
-	    mt->state[len / DIGSPERINT] = (unsigned int)x;
-	}
-#endif
-	if (len > 0) {
-	    d = BDIGITS(state) + len;
-	    do {
-		--len;
-		x = *--d;
-# if DIGSPERINT == 2
-		--len;
-		x = (x << BITSPERDIG) | *--d;
-# elif SIZEOF_BDIGITS < SIZEOF_INT
-		do {
-		    x = (x << BITSPERDIG) | *--d;
-		} while (--len % DIGSPERINT);
-# endif
-		mt->state[len / DIGSPERINT] = (unsigned int)x;
-	    } while (len > 0);
-	}
+        dp = RBIGNUM_DIGITS(state);
+        de = dp + RBIGNUM_LEN(state);
+        sp = mt->state;
+        se = sp + sizeof(mt->state) / sizeof(*mt->state);;
+        dd = 0;
+        numbytes_in_dd = 0;
+        while (dp < de && sp < se) {
+            while (dp < de && SIZEOF_BDIGITS <= (int)sizeof(dd) - numbytes_in_dd) {
+                dd |= (BDIGIT_DBL)(*dp++) << (numbytes_in_dd * CHAR_BIT);
+                numbytes_in_dd += SIZEOF_BDIGITS;
+            }
+            while (sp < se && (int)sizeof(int) <= numbytes_in_dd) {
+                *sp++ = (unsigned int)dd;
+                if (sizeof(dd) == sizeof(int))
+                    dd = 0;
+                else
+                    dd >>= SIZEOF_INT * CHAR_BIT;
+                numbytes_in_dd -= SIZEOF_INT;
+            }
+        }
+        if (numbytes_in_dd && sp < se) {
+            *sp = (unsigned int)dd;
+        }
     }
     x = NUM2ULONG(left);
     if (x > numberof(mt->state)) {

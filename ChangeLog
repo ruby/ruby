@@ -1,3 +1,9 @@
+Wed Jun  5 20:05:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (int_pair_to_real_inclusive): Add a cast to BDIGIT.
+	  (random_load): Fix shift width for fixnums.
+	  Re-implement bignum extraction without ifdefs.
+
 Wed Jun  5 15:26:10 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (before_gc_sweep): don't optimize it to avoid segv on Ubuntu
