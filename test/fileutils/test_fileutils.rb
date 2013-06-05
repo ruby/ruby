@@ -1227,6 +1227,9 @@ class TestFileUtils
       Dir.rmdir '/'
     rescue => e
       assert_raise(e.class) {
+        # Dir.rmdir('') raises Errno::ENOENT.
+        # FileUtils#rmdir ignores it.
+        # And this test failed as expected.
         rmdir '/'
       }
     end
