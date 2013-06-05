@@ -1,3 +1,10 @@
+Wed Jun  5 22:40:42 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (capability_response): should ignore trailing
+	  spaces.  Thanks, Peter Kovacs.  [ruby-core:55024] [Bug #8415]
+
+	* test/net/imap/test_imap_response_parser.rb: related test.
+
 Wed Jun  5 21:17:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_fdiv): Use nlz() instead of bdigbitsize().
