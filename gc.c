@@ -2974,8 +2974,6 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 
     if (objspace->rgengc.parent_object_is_promoted &&
 	RVALUE_SHADY(obj) && !rgengc_remembered(objspace, obj)) {
-	RVALUE_DEMOTE(obj);
-
 	rgengc_remember(objspace, obj);
 	if (objspace->rgengc.during_minor_gc == FALSE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count++;
@@ -2992,6 +2990,15 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr)
     if (LIKELY(objspace->mark_func_data == 0)) {
 	rgengc_check_shady(objspace, ptr);
 	if (!gc_mark_ptr(objspace, ptr)) return; /* already marked */
+#if USE_RGENGC
+	if (objspace->rgengc.during_minor_gc) {
+	    /* only minor gc skip marking promoted objects */
+	    if (RVALUE_PROMOTED(ptr)) {
+		rgengc_report(3, objspace, "gc_mark: %p (%s) was promoted.\n", ptr, obj_type_name((VALUE)ptr));
+		return; /* old gen */
+	    }
+	}
+#endif /* USE_RGENGC */
 	push_mark_stack(&objspace->mark_stack, ptr);
     }
     else {
@@ -3041,13 +3048,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    rb_bug("gc_mark_children: (1) %p (%s) is shady and promoted.\n", (void *)obj, obj_type_name((VALUE)obj));
 	}
 
-	if (objspace->rgengc.during_minor_gc) {
-	    /* only minor gc skip marking promoted objects */
-	    if (RVALUE_PROMOTED(obj)) {
-		rgengc_report(3, objspace, "gc_mark_children: %p (%s) was promoted.\n", obj, obj_type_name((VALUE)obj));
-		return; /* old gen */
-	    }
-	}
 
 	/* minor/major common */
 	if (RVALUE_SUNNY(obj)) {
@@ -3608,7 +3608,8 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 		bitset = bits[j];
 		while (bitset) {
 		    if (bitset & 1) {
-			gc_mark(objspace, (VALUE)p);
+			if (gc_mark_ptr(objspace, (VALUE)p))
+			    push_mark_stack(&objspace->mark_stack, (VALUE) p);
 			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
 
 			if (RVALUE_SUNNY(p)) {
@@ -3657,15 +3658,6 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     if (!rgengc_remembered(objspace, a)) {
 	rgengc_report(2, objspace, "rb_gc_wb: %p (%s) -> %p (%s)\n",
 		      (void *)a, obj_type_name(a), (void *)b, obj_type_name(b));
-
-	/* need to sweep all slots before demote */
-	/* TODO: check delayed sweeping slot or not
-	 *       if delayed sweepling slot, then mark it
-	 *       else demote simple
-	 */
-	rest_sweep(objspace);
-
-	RVALUE_DEMOTE(a);
 	rgengc_remember(objspace, a);
     }
 }
