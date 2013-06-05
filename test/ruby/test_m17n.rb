@@ -1488,6 +1488,8 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(true, s.b.tainted?)
     s.untrust
     assert_equal(true, s.b.untrusted?)
+    s = "abc".b
+    assert_equal(true, s.b.ascii_only?)
   end
 
   def test_scrub

@@ -1,3 +1,9 @@
+Thu Jun  6 00:05:08 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (String#b): Allow code range scan to happen later so
+	  ascii_only? on a result string returns the correct value.
+	  [ruby-core:55315] [Bug #8496]
+
 Wed Jun  5 22:40:42 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (capability_response): should ignore trailing

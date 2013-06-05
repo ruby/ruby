@@ -7624,7 +7624,7 @@ rb_str_b(VALUE str)
     VALUE str2 = str_alloc(rb_cString);
     str_replace_shared_without_enc(str2, str);
     OBJ_INFECT(str2, str);
-    ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
+    ENC_CODERANGE_CLEAR(str2);
     return str2;
 }
 
