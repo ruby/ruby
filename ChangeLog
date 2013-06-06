@@ -9,7 +9,7 @@ Thu Jun  6 09:41:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 Thu Jun  6 00:59:44 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* gc.c (gc_mark): get rid of pushing useless objests.
+	* gc.c (gc_mark): get rid of pushing useless objects.
 	* gc.c (rgengc_rememberset_mark): bypass gc_mark() in order to push
 	  sunny old object at minor gc.
 	* gc.c (gc_mark_children): move sunny old check to gc_mark().
