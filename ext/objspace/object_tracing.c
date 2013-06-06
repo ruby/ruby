@@ -164,7 +164,7 @@ trace_object_allocations(VALUE objspace)
 }
 
 static struct allocation_info *
-allocation_info(VALUE obj)
+lookup_allocation_info(VALUE obj)
 {
     if (traceobj_arg) {
 	struct allocation_info *info;
@@ -178,7 +178,7 @@ allocation_info(VALUE obj)
 static VALUE
 allocation_sourcefile(VALUE objspace, VALUE obj)
 {
-    struct allocation_info *info = allocation_info(obj);
+    struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
 	return info->path ? rb_str_new2(info->path) : Qnil;
     }
@@ -190,7 +190,7 @@ allocation_sourcefile(VALUE objspace, VALUE obj)
 static VALUE
 allocation_sourceline(VALUE objspace, VALUE obj)
 {
-    struct allocation_info *info = allocation_info(obj);
+    struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
 	return INT2FIX(info->line);
     }
@@ -202,7 +202,7 @@ allocation_sourceline(VALUE objspace, VALUE obj)
 static VALUE
 allocation_class_path(VALUE objspace, VALUE obj)
 {
-    struct allocation_info *info = allocation_info(obj);
+    struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
 	return info->class_path ? rb_str_new2(info->class_path) : Qnil;
     }
@@ -214,7 +214,7 @@ allocation_class_path(VALUE objspace, VALUE obj)
 static VALUE
 allocation_method_id(VALUE objspace, VALUE obj)
 {
-    struct allocation_info *info = allocation_info(obj);
+    struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
 	return info->mid;
     }
@@ -226,7 +226,7 @@ allocation_method_id(VALUE objspace, VALUE obj)
 static VALUE
 allocation_generation(VALUE objspace, VALUE obj)
 {
-    struct allocation_info *info = allocation_info(obj);
+    struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
 	return SIZET2NUM(info->generation);
     }

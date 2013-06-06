@@ -1,3 +1,9 @@
+Thu Jun  6 14:16:37 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* ext/objspace/object_tracing.c: rename allocation_info to
+	  lookup_allocation_info. At times I confused "struct
+	  allocation_info" with "function allocation_info".
+
 Thu Jun  6 13:57:06 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* ext/objspace/object_tracing.c: allocation_info function isn't
