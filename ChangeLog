@@ -1,3 +1,12 @@
+Fri Jun  7 06:15:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_int_import): New function.
+	  (int_import_push_bits): Ditto.
+
+	* internal.h (rb_int_import): Declared.
+
+	* pack.c (pack_unpack): Use rb_int_import for BER compressed integer.
+
 Thu Jun  6 22:24:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (num_quo): Use to_r method to convert the receiver to

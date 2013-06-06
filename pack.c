@@ -2137,32 +2137,18 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'w':
 	    {
-		unsigned long ul = 0;
-		unsigned long ulmask = 0xfeUL << ((sizeof(unsigned long) - 1) * 8);
-
-		while (len > 0 && s < send) {
-		    ul <<= 7;
-		    ul |= (*s & 0x7f);
-		    if (!(*s++ & 0x80)) {
-			UNPACK_PUSH(ULONG2NUM(ul));
-			len--;
-			ul = 0;
-		    }
-		    else if (ul & ulmask) {
-			VALUE big = rb_uint2big(ul);
-			VALUE big128 = rb_uint2big(128);
-			while (s < send) {
-			    big = rb_big_mul(big, big128);
-			    big = rb_big_plus(big, rb_uint2big(*s & 0x7f));
-			    if (!(*s++ & 0x80)) {
-				UNPACK_PUSH(big);
-				len--;
-				ul = 0;
-				break;
-			    }
-			}
-		    }
-		}
+                char *s0 = s;
+                while (len > 0 && s < send) {
+                    if (*s & 0x80) {
+                        s++;
+                    }
+                    else {
+                        s++;
+                        UNPACK_PUSH(rb_int_import(1, s0, s-s0, 1, 1, 1, 1));
+                        len--;
+                        s0 = s;
+                    }
+                }
 	    }
 	    break;
 

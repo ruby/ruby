@@ -427,6 +427,7 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 
 /* bignum.c */
 void *rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder, size_t wordsize, int endian, size_t nails);
+VALUE rb_int_import(int sign, const void *bufarg, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

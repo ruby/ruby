@@ -1,3 +1,4 @@
 $(OBJS): $(HDRS) $(ruby_headers)
 
 export.o: export.c $(top_srcdir)/internal.h
+import.o: import.c $(top_srcdir)/internal.h

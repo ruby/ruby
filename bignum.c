@@ -607,7 +607,7 @@ rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder
 #ifdef WORDS_BIGENDIAN
         endian = 1;
 #else
-        endian = 0;
+        endian = -1;
 #endif
     }
 
@@ -768,6 +768,159 @@ rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder
     return buf;
 #undef FILL_DD
 #undef TAKE_LOWBITS
+}
+
+static inline void
+int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_p, BDIGIT **dpp)
+{
+    (*ddp) |= ((BDIGIT_DBL)data) << (*numbits_in_dd_p);
+    *numbits_in_dd_p += numbits;
+    while (SIZEOF_BDIGITS*CHAR_BIT <= *numbits_in_dd_p) {
+        *(*dpp)++ = (*ddp) & (((BDIGIT_DBL)1 << (SIZEOF_BDIGITS*CHAR_BIT))-1);
+        *ddp >>= SIZEOF_BDIGITS*CHAR_BIT;
+        *numbits_in_dd_p -= SIZEOF_BDIGITS*CHAR_BIT;
+    }
+}
+
+/*
+ * Import an integer into a buffer.
+ *
+ * [sign] signedness of the value.
+ *   -1 for non-positive.  0 or 1 for non-negative.
+ * [bufarg] buffer to import.
+ * [wordcount] the size of given buffer as number of words.
+ * [wordorder] order of words: 1 for most significant word first.  -1 for least significant word first.
+ * [wordsize] the size of word as number of bytes.
+ * [endian] order of bytes in a word: 1 for most significant byte first.  -1 for least significant byte first.  0 for native endian.
+ * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
+ *
+ * This function returns the imported integer as Fixnum or Bignum.
+ */
+VALUE
+rb_int_import(int sign, const void *bufarg, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+{
+    VALUE num_bits, num_bdigits;
+    VALUE result;
+    const unsigned char *buf = bufarg;
+
+    BDIGIT *dp;
+    BDIGIT *de;
+
+    int word_num_partialbits;
+    size_t word_num_fullbytes;
+
+    ssize_t word_step;
+    size_t byte_start;
+    int byte_step;
+
+    const unsigned char *bytep, *wordp, *last_wordp;
+    size_t index_in_word;
+    BDIGIT_DBL dd;
+    int numbits_in_dd;
+
+    if (sign != 1 && sign != 0 && sign != -1)
+        rb_raise(rb_eArgError, "unexpected sign: %d", sign);
+    if (wordorder != 1 && wordorder != -1)
+        rb_raise(rb_eArgError, "unexpected wordorder: %d", wordorder);
+    if (endian != 1 && endian != -1 && endian != 0)
+        rb_raise(rb_eArgError, "unexpected endian: %d", endian);
+    if (wordsize == 0)
+        rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    if (SSIZE_MAX < wordsize)
+        rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    if (SIZE_MAX / wordsize < wordcount)
+        rb_raise(rb_eArgError, "too big wordcount * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
+    if (wordsize <= nails / CHAR_BIT)
+        rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
+
+    if (endian == 0) {
+#ifdef WORDS_BIGENDIAN
+        endian = 1;
+#else
+        endian = -1;
+#endif
+    }
+
+    /*
+     * num_bits = (wordsize * CHAR_BIT - nails) * count
+     * num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
+     */
+    num_bits = SIZE2NUM(wordsize);
+    num_bits = rb_funcall(num_bits, '*', 1, LONG2FIX(CHAR_BIT));
+    num_bits = rb_funcall(num_bits, '-', 1, SIZE2NUM(nails));
+    num_bits = rb_funcall(num_bits, '*', 1, SIZE2NUM(wordcount));
+
+    if (num_bits == LONG2FIX(0))
+        return LONG2FIX(0);
+
+    num_bdigits = rb_funcall(num_bits, '+', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT-1));
+    num_bdigits = rb_funcall(num_bdigits, '/', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT));
+
+    result = bignew(NUM2LONG(num_bdigits), 0 <= sign);
+
+    dp = BDIGITS(result);
+    de = dp + RBIGNUM_LEN(result);
+
+    word_num_partialbits = CHAR_BIT - (int)(nails % CHAR_BIT);
+    if (word_num_partialbits == CHAR_BIT)
+        word_num_partialbits = 0;
+    word_num_fullbytes = wordsize - (nails / CHAR_BIT);
+    if (word_num_partialbits != 0) {
+        word_num_fullbytes--;
+    }
+
+    if (wordorder == 1) {
+        word_step = -(ssize_t)wordsize;
+        wordp = buf + wordsize*(wordcount-1);
+        last_wordp = buf;
+    }
+    else {
+        word_step = wordsize;
+        wordp = buf;
+        last_wordp = buf + wordsize*(wordcount-1);
+    }
+
+    if (endian == 1) {
+        byte_step = -1;
+        byte_start = wordsize-1;
+    }
+    else {
+        byte_step = 1;
+        byte_start = 0;
+    }
+
+    dd = 0;
+    numbits_in_dd = 0;
+
+#define PUSH_BITS(data, numbits) \
+    int_import_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
+
+    while (1) {
+        index_in_word = 0;
+        bytep = wordp + byte_start;
+        while (index_in_word < word_num_fullbytes) {
+            PUSH_BITS(*bytep, CHAR_BIT);
+            bytep += byte_step;
+            index_in_word++;
+        }
+        if (word_num_partialbits) {
+            PUSH_BITS(*bytep & ((1 << word_num_partialbits) - 1), word_num_partialbits);
+            bytep += byte_step;
+            index_in_word++;
+        }
+
+        if (wordp == last_wordp)
+            break;
+
+        wordp += word_step;
+    }
+    if (dd)
+        *dp++ = dd;
+    while (dp < de)
+        *dp++ = 0;
+
+    return bignorm(result);
+#undef PUSH_BITS
 }
 
 #define QUAD_SIZE 8
