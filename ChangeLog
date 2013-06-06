@@ -1,3 +1,7 @@
+Fri Jun  7 06:48:17 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* numeric.c: remove unused ID id_to_r introduced in r41109.
+
 Fri Jun  7 06:15:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_int_import): New function.
