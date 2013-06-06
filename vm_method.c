@@ -1291,14 +1291,14 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 }
 
 static VALUE
-set_visibility(int argc, VALUE *argv, VALUE module, int visi)
+set_visibility(int argc, VALUE *argv, VALUE module, rb_method_flag_t ex)
 {
     secure_visibility(module);
     if (argc == 0) {
-	SCOPE_SET(visi);
+	SCOPE_SET(ex);
     }
     else {
-	set_method_visibility(module, argc, argv, visi);
+	set_method_visibility(module, argc, argv, ex);
     }
     return module;
 }
