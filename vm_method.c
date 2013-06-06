@@ -1428,6 +1428,18 @@ top_public(int argc, VALUE *argv)
     return rb_mod_public(argc, argv, rb_cObject);
 }
 
+/*
+ *  call-seq:
+ *     private
+ *     private(symbol, ...)
+ *     private(string, ...)
+ *
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to private. With arguments, sets the named methods to
+ *  have private visibility.
+ *
+ *  String arguments are converted to symbols.
+ */
 static VALUE
 top_private(int argc, VALUE *argv)
 {
