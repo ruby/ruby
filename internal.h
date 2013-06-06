@@ -426,8 +426,8 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
 /* bignum.c */
-void *rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *bufarg, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
-VALUE rb_int_import(int sign, const void *bufarg, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
+void *rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
+VALUE rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

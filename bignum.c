@@ -786,7 +786,7 @@ int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_
  *
  * [sign] signedness of the value.
  *   -1 for non-positive.  0 or 1 for non-negative.
- * [bufarg] buffer to import.
+ * [words] buffer to import.
  * [wordcount] the size of given buffer as number of words.
  * [wordorder] order of words: 1 for most significant word first.  -1 for least significant word first.
  * [wordsize] the size of word as number of bytes.
@@ -796,11 +796,11 @@ int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_
  * This function returns the imported integer as Fixnum or Bignum.
  */
 VALUE
-rb_int_import(int sign, const void *bufarg, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
 {
     VALUE num_bits, num_bdigits;
     VALUE result;
-    const unsigned char *buf = bufarg;
+    const unsigned char *buf = words;
 
     BDIGIT *dp;
     BDIGIT *de;
