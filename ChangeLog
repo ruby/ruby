@@ -1,3 +1,7 @@
+Fri Jun  7 07:15:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: fix style.
+
 Fri Jun  7 06:48:17 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* numeric.c: remove unused ID id_to_r introduced in r41109.

@@ -48,9 +48,8 @@ with all sufficient information, see the ChangeLog file.
     * open ignore internal encoding if external encoding is ASCII-8BIT.
 
 * Module#ancestors
-
-  The ancestors of a singleton class now include singleton classes,
-  in particular itself.
+  * The ancestors of a singleton class now include singleton classes,
+    in particular itself.
 
 === Stdlib updates (outstanding ones only)
 
