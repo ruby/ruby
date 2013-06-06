@@ -54,7 +54,20 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_quo
-    assert_raise(ArgumentError) {DummyNumeric.new.quo(1)}
+    assert_raise(TypeError) {DummyNumeric.new.quo(1)}
+  end
+
+  def test_quo_ruby_core_41575
+    x = DummyNumeric.new
+    rat = 84.quo(1)
+    DummyNumeric.class_eval do
+      define_method(:to_r) { rat }
+    end
+    assert_equal(2.quo(1), x.quo(42), '[ruby-core:41575]')
+  ensure
+    DummyNumeric.class_eval do
+      remove_method :to_r
+    end
   end
 
   def test_divmod

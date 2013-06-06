@@ -101,7 +101,7 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_to_i, id_eq, id_div;
+static ID id_coerce, id_to_i, id_to_r, id_eq, id_div;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -398,7 +398,8 @@ num_quo(VALUE x, VALUE y)
         return num_fdiv(x, y);
     }
 
-    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
+    x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
+    return rb_funcall(x, '/', 1, y);
 }
 
 
@@ -3774,6 +3775,7 @@ Init_Numeric(void)
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
+    id_to_r = rb_intern("to_r");
     id_eq = rb_intern("==");
     id_div = rb_intern("div");
 

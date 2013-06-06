@@ -1,3 +1,10 @@
+Thu Jun  6 22:24:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (num_quo): Use to_r method to convert the receiver to
+	  rational.  [ruby-core:41575] [Bug #5736]
+
+	* test/ruby/test_numeric.rb: add a test for the above change.
+
 Thu Jun  6 20:40:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Invoke RUBY_REPLACE_TYPE for size_t.
