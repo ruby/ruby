@@ -4,7 +4,7 @@ require 'test/unit'
 require "-test-/bignum"
 
 class TestBignum < Test::Unit::TestCase
-  class TestExport < Test::Unit::TestCase
+  class TestImport < Test::Unit::TestCase
     def test_import_zero
       assert_equal(0, Integer.test_import(0, "", 1, 1, 1, 1, 0))
     end
