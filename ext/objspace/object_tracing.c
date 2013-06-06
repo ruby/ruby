@@ -163,7 +163,7 @@ trace_object_allocations(VALUE objspace)
     return rb_ensure(rb_yield, Qnil, stop_trace_object_allocations, (VALUE)&arg);
 }
 
-struct allocation_info *
+static struct allocation_info *
 allocation_info(VALUE obj)
 {
     if (traceobj_arg) {

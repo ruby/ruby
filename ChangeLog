@@ -1,3 +1,8 @@
+Thu Jun  6 13:57:06 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* ext/objspace/object_tracing.c: allocation_info function isn't
+	  called by any other file.
+
 Thu Jun  6 09:41:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* numeric.c (num_quo): should return a Float for a Float argument.
