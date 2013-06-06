@@ -2015,7 +2015,7 @@ civil_to_jd(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2050,7 +2050,7 @@ ordinal_to_jd(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2085,7 +2085,7 @@ commercial_to_jd(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2120,7 +2120,7 @@ weeknum_to_jd(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2155,7 +2155,7 @@ nth_kday_to_jd(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2194,7 +2194,7 @@ valid_ordinal_p(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2233,7 +2233,7 @@ valid_civil_p(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2269,7 +2269,7 @@ valid_commercial_p(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2299,7 +2299,7 @@ valid_weeknum_p(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2330,7 +2330,7 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
