@@ -1,3 +1,21 @@
+Thu Jun  6 20:40:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Invoke RUBY_REPLACE_TYPE for size_t.
+	  Don't invoke RUBY_CHECK_PRINTF_PREFIX for size_t to avoid conflict
+	  with RUBY_REPLACE_TYPE.
+
+	* internal.h (rb_absint_size): Declared.
+	  (rb_absint_size_in_word): Ditto.
+	  (rb_int_export): Ditto.
+
+	* bignum.c (rb_absint_size): New function.
+	  (rb_absint_size_in_word): Ditto.
+	  (int_export_fill_dd): Ditto.
+	  (int_export_take_lowbits): Ditto.
+	  (rb_int_export): Ditto.
+
+	* pack.c (pack_pack): Use rb_int_export for BER compressed integer.
+
 Thu Jun  6 19:31:33 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: fixed coding error [ruby-core:55337].

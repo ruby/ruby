@@ -1234,6 +1234,7 @@ RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
 RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
 RUBY_REPLACE_TYPE(mode_t, ["unsigned int" long], MODET, [@%:@include <sys/stat.h>])
+RUBY_REPLACE_TYPE(size_t, ["unsigned int" "unsigned long" "unsigned long long"], SIZE)
 RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@ifdef HAVE_SYS_TYPES_H
 @%:@include <sys/types.h>
@@ -1482,7 +1483,6 @@ fi
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
-RUBY_CHECK_PRINTF_PREFIX(size_t, z)
 RUBY_CHECK_PRINTF_PREFIX(ptrdiff_t, t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS

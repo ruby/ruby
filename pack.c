@@ -1011,50 +1011,35 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'w':		/* BER compressed integer  */
 	    while (len-- > 0) {
-		unsigned long ul;
 		VALUE buf = rb_str_new(0, 0);
-		char c, *bufs, *bufe;
+                size_t numbytes;
+                int sign;
+                size_t count;
+                char *cp;
 
 		from = NEXTFROM;
-		if (RB_TYPE_P(from, T_BIGNUM)) {
-		    VALUE big128 = rb_uint2big(128);
-		    while (RB_TYPE_P(from, T_BIGNUM)) {
-			from = rb_big_divmod(from, big128);
-			c = castchar(NUM2INT(RARRAY_AREF(from, 1)) | 0x80); /* mod */
-			rb_str_buf_cat(buf, &c, sizeof(char));
-			from = RARRAY_AREF(from, 0); /* div */
-		    }
-		}
+                from = rb_to_int(from);
+                numbytes = rb_absint_size_in_word(from, 7, NULL);
+                if (numbytes == 0)
+                    numbytes = 1;
+                buf = rb_str_new(NULL, numbytes);
 
-		{
-		    long l = NUM2LONG(from);
-		    if (l < 0) {
-			rb_raise(rb_eArgError, "can't compress negative numbers");
-		    }
-		    ul = l;
-		}
+                count = RSTRING_LEN(buf);
+                rb_int_export(from, &sign, RSTRING_PTR(buf), &count, 1, 1, 1, 1);
 
-		while (ul) {
-		    c = castchar((ul & 0x7f) | 0x80);
-		    rb_str_buf_cat(buf, &c, sizeof(char));
-		    ul >>=  7;
-		}
+                if (sign < 0)
+                    rb_raise(rb_eArgError, "can't compress negative numbers");
+                if (sign == 2)
+                    rb_bug("buffer size problem?");
 
-		if (RSTRING_LEN(buf)) {
-		    bufs = RSTRING_PTR(buf);
-		    bufe = bufs + RSTRING_LEN(buf) - 1;
-		    *bufs &= 0x7f; /* clear continue bit */
-		    while (bufs < bufe) { /* reverse */
-			c = *bufs;
-			*bufs++ = *bufe;
-			*bufe-- = c;
-		    }
-		    rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
-		}
-		else {
-		    c = 0;
-		    rb_str_buf_cat(res, &c, sizeof(char));
-		}
+                cp = RSTRING_PTR(buf);
+                while (1 < numbytes) {
+                  *cp |= 0x80;
+                  cp++;
+                  numbytes--;
+                }
+
+                rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
 	    }
 	    break;
 
