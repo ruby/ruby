@@ -1,3 +1,8 @@
+Fri Jun  7 07:17:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: describe a compatibility issue of Numeric#quo
+	  introduced at r41109.
+
 Fri Jun  7 07:15:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: fix style.

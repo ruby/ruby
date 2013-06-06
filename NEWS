@@ -51,6 +51,10 @@ with all sufficient information, see the ChangeLog file.
   * The ancestors of a singleton class now include singleton classes,
     in particular itself.
 
+* Numeric#quo
+  * Raises TypeError instead of ArgumentError if the receiver doesn't have
+    to_r method.
+
 === Stdlib updates (outstanding ones only)
 
 * Digest
