@@ -1,3 +1,12 @@
+Fri Jun  7 07:29:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_int_export): countp argument is split into
+	  wordcount_allocated and wordcount.
+
+	* bignum.c (rb_int_export): Follow the above change.
+
+	* pack.c (pack_pack): Ditto.
+
 Fri Jun  7 07:17:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: describe a compatibility issue of Numeric#quo

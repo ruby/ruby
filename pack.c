@@ -1014,7 +1014,6 @@ pack_pack(VALUE ary, VALUE fmt)
 		VALUE buf = rb_str_new(0, 0);
                 size_t numbytes;
                 int sign;
-                size_t count;
                 char *cp;
 
 		from = NEXTFROM;
@@ -1024,8 +1023,7 @@ pack_pack(VALUE ary, VALUE fmt)
                     numbytes = 1;
                 buf = rb_str_new(NULL, numbytes);
 
-                count = RSTRING_LEN(buf);
-                rb_int_export(from, &sign, RSTRING_PTR(buf), &count, 1, 1, 1, 1);
+                rb_int_export(from, &sign, NULL, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, 1, 1);
 
                 if (sign < 0)
                     rb_raise(rb_eArgError, "can't compress negative numbers");

@@ -565,28 +565,27 @@ int_export_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  *   0 for zero.
  *   -1 for negative without overflow.  1 for positive without overflow.
  *   -2 for negative overflow.  2 for positive overflow.
- * [buf] buffer to export abs(val).  allocated by xmalloc if it is NULL.
- * [countp] the size of given buffer as number of words (only meaningful when buf is not NULL).
- *   *countp is overwritten as the number of allocated words when buf is NULL and allocated.
+ * [wordcount_allocated] the number of words allocated is returned in *wordcount_allocated if it is not NULL.
+ *   It is not modified if words is not NULL.
+ * [words] buffer to export abs(val).  allocated by xmalloc if it is NULL.
+ * [wordcount] the size of given buffer as number of words (only meaningful when words is not NULL).
  * [wordorder] order of words: 1 for most significant word first.  -1 for least significant word first.
  * [wordsize] the size of word as number of bytes.
  * [endian] order of bytes in a word: 1 for most significant byte first.  -1 for least significant byte first.  0 for native endian.
  * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
  *
- * This function returns buf or the allocated buffer if buf is NULL.
+ * This function returns words or the allocated buffer if words is NULL.
  *
  */
 void *
-rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
 {
     int sign;
     BDIGIT *dp;
     BDIGIT *de;
     BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
     int i;
-    unsigned char *buf = bufarg;
-    unsigned char *bufend;
-    size_t wordcount;
+    unsigned char *buf, *bufend;
 
     val = rb_to_int(val);
 
@@ -598,8 +597,8 @@ rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder
         rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
     if (SSIZE_MAX < wordsize)
         rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
-    if (buf && SIZE_MAX / wordsize < *countp)
-        rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", *countp, wordsize);
+    if (words && SIZE_MAX / wordsize < wordcount)
+        rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
     if (wordsize <= nails / CHAR_BIT)
         rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
 
@@ -642,8 +641,8 @@ rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder
         sign = 0;
     }
 
-    if (buf) {
-        wordcount = *countp;
+    if (words) {
+        buf = words;
         bufend = buf + wordcount * wordsize;
     }
     else {
@@ -762,8 +761,8 @@ rb_int_export(VALUE val, int *signp, void *bufarg, size_t *countp, int wordorder
     if (signp)
         *signp = sign;
 
-    if (!bufarg)
-        *countp = wordcount;
+    if (!words && wordcount_allocated)
+        *wordcount_allocated = wordcount;
 
     return buf;
 #undef FILL_DD
