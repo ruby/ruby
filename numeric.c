@@ -371,20 +371,6 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
- *     num.quo(numeric)  ->  real
- *
- *  Returns most exact division (rational for integers, float for floats).
- */
-
-static VALUE
-num_quo(VALUE x, VALUE y)
-{
-    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
-}
-
-
-/*
- *  call-seq:
  *     num.fdiv(numeric)  ->  float
  *
  *  Returns float division.
@@ -394,6 +380,25 @@ static VALUE
 num_fdiv(VALUE x, VALUE y)
 {
     return rb_funcall(rb_Float(x), '/', 1, y);
+}
+
+
+/*
+ *  call-seq:
+ *     num.quo(int_or_rat)   ->  rat
+ *     num.quo(flo)          ->  flo
+ *
+ *  Returns most exact division (rational for integers, float for floats).
+ */
+
+static VALUE
+num_quo(VALUE x, VALUE y)
+{
+    if (RB_TYPE_P(y, T_FLOAT)) {
+        return num_fdiv(x, y);
+    }
+
+    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
 }
 
 

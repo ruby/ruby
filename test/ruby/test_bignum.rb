@@ -413,6 +413,8 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_quo
+    assert_kind_of(Float, T32.quo(1.0))
+
     assert_equal(T32.to_f, T32.quo(1))
     assert_equal(T32.to_f, T32.quo(1.0))
     assert_equal(T32.to_f, T32.quo(T_ONE))
@@ -420,7 +422,7 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError) { T32.quo("foo") }
 
     assert_equal(1024**1024, (1024**1024).quo(1))
-    assert_equal(1024**1024, (1024**1024).quo(1.0))
+    assert_equal(Float::INFINITY, (1024**1024).quo(1.0))
     assert_equal(1024**1024*2, (1024**1024*2).quo(1))
     inf = 1 / 0.0; nan = inf / inf
 

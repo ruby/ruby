@@ -1,3 +1,12 @@
+Thu Jun  6 09:41:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* numeric.c (num_quo): should return a Float for a Float argument.
+	  [ruby-dev:44710] [Bug #5515]
+
+	* test/ruby/test_fixnum.rb: Add an assertion for the above change.
+
+	* test/ruby/test_bignum.rb: ditto.
+
 Thu Jun  6 00:59:44 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_mark): get rid of pushing useless objests.

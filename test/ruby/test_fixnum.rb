@@ -157,6 +157,7 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(0, 1 / (2**32))
     assert_equal(0, 1.div(2**32))
 
+    assert_kind_of(Float, 1.quo(2.0))
     assert_equal(0.5, 1.quo(2.0))
     assert_equal(0.5, 1 / 2.0)
     assert_equal(0, 1.div(2.0))
