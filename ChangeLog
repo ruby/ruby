@@ -1,3 +1,8 @@
+Fri Jun  7 17:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* internal.h (RCLASS_SUPER): use descriptive variable name
+	* internal.h (RCLASS_SET_SUPER): ditto
+
 Fri Jun  7 13:25:27 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/fbuffer/fbuffer.h (fbuffer_append_str): change the place of
