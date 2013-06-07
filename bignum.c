@@ -458,7 +458,7 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
     BDIGIT *dp;
     BDIGIT *de;
     BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
-    int i;
+
     int num_leading_zeros;
 
     val = rb_to_int(val);
@@ -471,9 +471,12 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
 #if SIZEOF_BDIGITS == SIZEOF_LONG
         fixbuf[0] = v;
 #else
-        for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
-            fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-            v >>= SIZEOF_BDIGITS * CHAR_BIT;
+        {
+            int i;
+            for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
+                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
+                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+            }
         }
 #endif
         dp = fixbuf;
@@ -584,7 +587,6 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
     BDIGIT *dp;
     BDIGIT *de;
     BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
-    int i;
     unsigned char *buf, *bufend;
 
     val = rb_to_int(val);
@@ -622,9 +624,12 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
 #if SIZEOF_BDIGITS == SIZEOF_LONG
         fixbuf[0] = v;
 #else
-        for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
-            fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-            v >>= SIZEOF_BDIGITS * CHAR_BIT;
+        {
+            int i;
+            for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
+                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
+                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+            }
         }
 #endif
         dp = fixbuf;
