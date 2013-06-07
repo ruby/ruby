@@ -1,3 +1,8 @@
+Fri Jun  7 13:22:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (before_gc_sweep): noinline can also avoid the segv instead of
+	  -O0 of r41084. this way is expected less slow.
+
 Fri Jun  7 11:45:42 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* rational.c (numeric_quo): move num_quo in numeric.c to numeric_quo

@@ -2288,7 +2288,7 @@ ready_to_gc(rb_objspace_t *objspace)
 }
 
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
-__attribute__((optimize("O0")))
+__attribute__((noinline))
 #endif
 static void
 before_gc_sweep(rb_objspace_t *objspace)
