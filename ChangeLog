@@ -1,3 +1,7 @@
+Sat Jun  8 08:12:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (random_load): Use rb_integer_pack.
+
 Sat Jun  8 06:15:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (numberof): Removed.

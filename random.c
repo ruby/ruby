@@ -690,50 +690,9 @@ random_load(VALUE obj, VALUE dump)
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
     }
-    memset(mt->state, 0, sizeof(mt->state));
-    if (FIXNUM_P(state)) {
-	x = FIX2ULONG(state);
-	mt->state[0] = (unsigned int)x;
-#if SIZEOF_LONG / SIZEOF_INT >= 2
-	mt->state[1] = (unsigned int)(x >> (sizeof(int) * CHAR_BIT));
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 3
-	mt->state[2] = (unsigned int)(x >> 2 * (sizeof(int) * CHAR_BIT));
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 4
-	mt->state[3] = (unsigned int)(x >> 3 * (sizeof(int) * CHAR_BIT));
-#endif
-    }
-    else {
-	BDIGIT *dp, *de;
-        unsigned int *sp, *se;
-	BDIGIT_DBL dd;
-        int numbytes_in_dd;
-	Check_Type(state, T_BIGNUM);
-        dp = RBIGNUM_DIGITS(state);
-        de = dp + RBIGNUM_LEN(state);
-        sp = mt->state;
-        se = sp + sizeof(mt->state) / sizeof(*mt->state);;
-        dd = 0;
-        numbytes_in_dd = 0;
-        while (dp < de && sp < se) {
-            while (dp < de && SIZEOF_BDIGITS <= (int)sizeof(dd) - numbytes_in_dd) {
-                dd |= (BDIGIT_DBL)(*dp++) << (numbytes_in_dd * CHAR_BIT);
-                numbytes_in_dd += SIZEOF_BDIGITS;
-            }
-            while (sp < se && (int)sizeof(int) <= numbytes_in_dd) {
-                *sp++ = (unsigned int)dd;
-                if (sizeof(dd) == sizeof(int))
-                    dd = 0;
-                else
-                    dd >>= SIZEOF_INT * CHAR_BIT;
-                numbytes_in_dd -= SIZEOF_INT;
-            }
-        }
-        if (numbytes_in_dd && sp < se) {
-            *sp = (unsigned int)dd;
-        }
-    }
+    rb_integer_pack(state, NULL, NULL, mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
     if (x > numberof(mt->state)) {
 	rb_raise(rb_eArgError, "wrong value");
