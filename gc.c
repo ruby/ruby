@@ -425,7 +425,12 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define NUM_IN_SLOT(p) (((uintptr_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
 #define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * CHAR_BIT))
 #define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * CHAR_BIT)-1))
-#define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & ((uintptr_t)1 << BITMAP_OFFSET(p)))
+#define BITMAP_BIT(p) ((uintptr_t)1 << BITMAP_OFFSET(p))
+/* Marking */
+#define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & BITMAP_BIT(p))
+#define MARK_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] | BITMAP_BIT(p))
+#define CLEAR_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] & ~BITMAP_BIT(p))
+
 
 #ifndef HEAP_ALIGN_LOG
 /* default tiny heap size: 16KB */
@@ -2560,11 +2565,6 @@ init_mark_stack(mark_stack_t *stack)
     stack->unused_cache_size = stack->cache_size;
 }
 
-
-/* Marking */
-
-#define MARK_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] | ((uintptr_t)1 << BITMAP_OFFSET(p)))
-#define CLEAR_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] & ~((uintptr_t)1 << BITMAP_OFFSET(p)))
 
 
 #ifdef __ia64

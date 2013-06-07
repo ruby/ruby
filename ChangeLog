@@ -1,3 +1,8 @@
+Fri Jun  7 11:20:57 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (MARKED_IN_BITMAP, MARK_IN_BITMAP, CLEAR_IN_BITMAP): bring
+	  bitmap macros in one place, and introduce BITMAP_BIT.
+
 Fri Jun  7 11:18:35 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* array.c (ary_new): change order of allocation in order
