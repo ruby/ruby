@@ -1,3 +1,8 @@
+Fri Jun  7 19:48:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_format): Extracted from rb_int_export and
+	  rb_int_import.
+
 Fri Jun  7 19:23:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_absint_size): Use numberof.

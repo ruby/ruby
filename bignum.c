@@ -537,6 +537,21 @@ rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_lea
     return numwords;
 }
 
+static void
+validate_integer_format(int wordorder, size_t wordsize, int endian, size_t nails)
+{
+    if (wordorder != 1 && wordorder != -1)
+        rb_raise(rb_eArgError, "unexpected wordorder: %d", wordorder);
+    if (endian != 1 && endian != -1 && endian != 0)
+        rb_raise(rb_eArgError, "unexpected endian: %d", endian);
+    if (wordsize == 0)
+        rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    if (SSIZE_MAX < wordsize)
+        rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    if (wordsize <= nails / CHAR_BIT)
+        rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
+}
+
 static inline void
 int_export_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 {
@@ -580,6 +595,7 @@ int_export_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  * This function returns words or the allocated buffer if words is NULL.
  *
  */
+
 void *
 rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
 {
@@ -591,18 +607,9 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
 
     val = rb_to_int(val);
 
-    if (wordorder != 1 && wordorder != -1)
-        rb_raise(rb_eArgError, "unexpected wordorder: %d", wordorder);
-    if (endian != 1 && endian != -1 && endian != 0)
-        rb_raise(rb_eArgError, "unexpected endian: %d", endian);
-    if (wordsize == 0)
-        rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
-    if (SSIZE_MAX < wordsize)
-        rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    validate_integer_format(wordorder, wordsize, endian, nails);
     if (words && SIZE_MAX / wordsize < wordcount)
         rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
-    if (wordsize <= nails / CHAR_BIT)
-        rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
 
     if (endian == 0) {
 #ifdef WORDS_BIGENDIAN
@@ -822,20 +829,11 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    if (sign != 1 && sign != 0 && sign != -1)
-        rb_raise(rb_eArgError, "unexpected sign: %d", sign);
-    if (wordorder != 1 && wordorder != -1)
-        rb_raise(rb_eArgError, "unexpected wordorder: %d", wordorder);
-    if (endian != 1 && endian != -1 && endian != 0)
-        rb_raise(rb_eArgError, "unexpected endian: %d", endian);
-    if (wordsize == 0)
-        rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
-    if (SSIZE_MAX < wordsize)
-        rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
+    validate_integer_format(wordorder, wordsize, endian, nails);
     if (SIZE_MAX / wordsize < wordcount)
         rb_raise(rb_eArgError, "too big wordcount * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
-    if (wordsize <= nails / CHAR_BIT)
-        rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
+    if (sign != 1 && sign != 0 && sign != -1)
+        rb_raise(rb_eArgError, "unexpected sign: %d", sign);
 
     if (endian == 0) {
 #ifdef WORDS_BIGENDIAN
