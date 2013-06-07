@@ -717,7 +717,7 @@ process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}internal.h \
   {$(VPATH)}thread.h {$(VPATH)}vm_opts.h
 random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}siphash.c {$(VPATH)}siphash.h
+  {$(VPATH)}siphash.c {$(VPATH)}siphash.h {$(VPATH)}internal.h
 range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h {$(VPATH)}id.h
 rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h $(hdrdir)/ruby.h

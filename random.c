@@ -60,6 +60,7 @@ The original copyright notice follows.
 */
 
 #include "ruby/ruby.h"
+#include "internal.h"
 
 #include <limits.h>
 #ifdef HAVE_UNISTD_H
@@ -617,23 +618,9 @@ random_copy(VALUE obj, VALUE orig)
 static VALUE
 mt_state(const struct MT *mt)
 {
-    VALUE bigo = rb_big_new(sizeof(mt->state) / sizeof(BDIGIT), 1);
-    BDIGIT *d = RBIGNUM_DIGITS(bigo);
-    int i;
-
-    for (i = 0; i < numberof(mt->state); ++i) {
-	unsigned int x = mt->state[i];
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	int j;
-	for (j = 0; j < SIZEOF_INT32 / SIZEOF_BDIGITS; ++j) {
-	    *d++ = BIGLO(x);
-	    x = BIGDN(x);
-	}
-#else
-	*d++ = (BDIGIT)x;
-#endif
-    }
-    return rb_big_norm(bigo);
+    return rb_integer_unpack(1, mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
 
 /* :nodoc: */

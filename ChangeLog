@@ -1,3 +1,8 @@
+Sat Jun  8 06:00:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c: include internal.h.
+	  (mt_state): Use rb_integer_unpack.
+
 Sat Jun  8 00:55:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (integer_pack_loop_setup): word_num_nailbytes_ret argument
