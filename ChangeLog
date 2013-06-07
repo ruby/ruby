@@ -1,6 +1,6 @@
 Fri Jun  7 18:24:39 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.oc (rb_absint_size): Declare a variable, i, just before used
+	* bignum.c (rb_absint_size): Declare a variable, i, just before used
 	  to suppress a warning.
 	  (rb_int_export): Ditto.
 
