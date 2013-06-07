@@ -1,3 +1,22 @@
+Fri Jun  7 23:58:06 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_pack): Arguments changed.  Use flags to
+	  specify word order and byte order.
+	  (rb_integer_unpack): Ditto.
+	  (validate_integer_format): Follow the above change.
+	  (integer_format_loop_setup): Ditto.
+
+	* pack.c: Ditto.
+
+	* internal.h: Ditto.
+	  (INTEGER_PACK_MSWORD_FIRST): Defined.
+	  (INTEGER_PACK_LSWORD_FIRST): Ditto.
+	  (INTEGER_PACK_MSBYTE_FIRST): Ditto.
+	  (INTEGER_PACK_LSBYTE_FIRST): Ditto.
+	  (INTEGER_PACK_NATIVE_BYTE_ORDER): Ditto.
+	  (INTEGER_PACK_LITTLE_ENDIAN): Ditto.
+	  (INTEGER_PACK_BIG_ENDIAN): Ditto.
+
 Fri Jun  7 22:10:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/specification.rb (Gem::Specification#to_yaml):

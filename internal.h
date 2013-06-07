@@ -53,6 +53,20 @@ extern "C" {
 #define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 #define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 
+/* "MS" in MSWORD and MSBYTE means "most significant" */
+/* "LS" in LSWORD and LSBYTE means "least significant" */
+#define INTEGER_PACK_MSWORD_FIRST       0x01
+#define INTEGER_PACK_LSWORD_FIRST       0x02
+#define INTEGER_PACK_MSBYTE_FIRST       0x10
+#define INTEGER_PACK_LSBYTE_FIRST       0x20
+#define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
+#define INTEGER_PACK_LITTLE_ENDIAN \
+    (INTEGER_PACK_LSWORD_FIRST | \
+     INTEGER_PACK_LSBYTE_FIRST)
+#define INTEGER_PACK_BIG_ENDIAN \
+    (INTEGER_PACK_MSWORD_FIRST | \
+     INTEGER_PACK_MSBYTE_FIRST)
+
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };
@@ -428,8 +442,9 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
 /* bignum.c */
-void *rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
-VALUE rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails);
+
+void *rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+VALUE rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

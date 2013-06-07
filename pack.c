@@ -1023,7 +1023,7 @@ pack_pack(VALUE ary, VALUE fmt)
                     numbytes = 1;
                 buf = rb_str_new(NULL, numbytes);
 
-                rb_integer_pack(from, &sign, NULL, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, 1, 1);
+                rb_integer_pack(from, &sign, NULL, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, INTEGER_PACK_BIG_ENDIAN);
 
                 if (sign < 0)
                     rb_raise(rb_eArgError, "can't compress negative numbers");
@@ -2142,7 +2142,7 @@ pack_unpack(VALUE str, VALUE fmt)
                     }
                     else {
                         s++;
-                        UNPACK_PUSH(rb_integer_unpack(1, s0, s-s0, 1, 1, 1, 1));
+                        UNPACK_PUSH(rb_integer_unpack(1, s0, s-s0, 1, 1, INTEGER_PACK_BIG_ENDIAN));
                         len--;
                         s0 = s;
                     }

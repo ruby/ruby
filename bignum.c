@@ -537,13 +537,26 @@ rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_lea
     return numwords;
 }
 
+#define INTEGER_PACK_WORDORDER_MASK \
+    (INTEGER_PACK_MSWORD_FIRST | \
+     INTEGER_PACK_LSWORD_FIRST)
+#define INTEGER_PACK_BYTEORDER_MASK \
+    (INTEGER_PACK_MSBYTE_FIRST | \
+     INTEGER_PACK_LSBYTE_FIRST | \
+     INTEGER_PACK_NATIVE_BYTE_ORDER)
+
 static void
-validate_integer_format(int wordorder, size_t wordsize, int endian, size_t nails)
+validate_integer_format(size_t wordsize, size_t nails, int flags)
 {
-    if (wordorder != 1 && wordorder != -1)
-        rb_raise(rb_eArgError, "unexpected wordorder: %d", wordorder);
-    if (endian != 1 && endian != -1 && endian != 0)
-        rb_raise(rb_eArgError, "unexpected endian: %d", endian);
+    int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
+    int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
+    if (wordorder_bits != INTEGER_PACK_MSWORD_FIRST &&
+        wordorder_bits != INTEGER_PACK_LSWORD_FIRST)
+        rb_raise(rb_eArgError, "unexpected wordorder");
+    if (byteorder_bits != INTEGER_PACK_MSBYTE_FIRST &&
+        byteorder_bits != INTEGER_PACK_LSBYTE_FIRST &&
+        byteorder_bits != INTEGER_PACK_NATIVE_BYTE_ORDER)
+        rb_raise(rb_eArgError, "unexpected endian");
     if (wordsize == 0)
         rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
     if (SSIZE_MAX < wordsize)
@@ -553,7 +566,8 @@ validate_integer_format(int wordorder, size_t wordsize, int endian, size_t nails
 }
 
 static void
-integer_format_loop_setup(size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails,
+integer_format_loop_setup(
+    size_t numwords, size_t wordsize, size_t nails, int flags,
     size_t *word_num_fullbytes_ret,
     int *word_num_partialbits_ret,
     size_t *word_num_nailbytes_ret,
@@ -563,6 +577,8 @@ integer_format_loop_setup(size_t wordcount, int wordorder, size_t wordsize, int 
     size_t *byte_start_ret,
     int *byte_step_ret)
 {
+    int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
+    int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
     size_t word_num_fullbytes;
     int word_num_partialbits;
     size_t word_num_nailbytes;
@@ -584,25 +600,25 @@ integer_format_loop_setup(size_t wordcount, int wordorder, size_t wordsize, int 
         word_num_nailbytes = wordsize - word_num_fullbytes;
     }
 
-    if (wordorder == 1) {
-        word_start = wordsize*(wordcount-1);
+    if (wordorder_bits == INTEGER_PACK_MSWORD_FIRST) {
+        word_start = wordsize*(numwords-1);
         word_step = -(ssize_t)wordsize;
         word_last = 0;
     }
     else {
         word_start = 0;
         word_step = wordsize;
-        word_last = wordsize*(wordcount-1);
+        word_last = wordsize*(numwords-1);
     }
 
-    if (endian == 0) {
+    if (byteorder_bits == INTEGER_PACK_NATIVE_BYTE_ORDER) {
 #ifdef WORDS_BIGENDIAN
-        endian = 1;
+        byteorder_bits = INTEGER_PACK_MSBYTE_FIRST;
 #else
-        endian = -1;
+        byteorder_bits = INTEGER_PACK_LSBYTE_FIRST;
 #endif
     }
-    if (endian == 1) {
+    if (byteorder_bits == INTEGER_PACK_MSBYTE_FIRST) {
         byte_step = -1;
         byte_start = wordsize-1;
     }
@@ -653,21 +669,20 @@ int_export_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  *   0 for zero.
  *   -1 for negative without overflow.  1 for positive without overflow.
  *   -2 for negative overflow.  2 for positive overflow.
- * [wordcount_allocated] the number of words allocated is returned in *wordcount_allocated if it is not NULL.
+ * [numwords_allocated] the number of words allocated is returned in *numwords_allocated if it is not NULL.
  *   It is not modified if words is not NULL.
  * [words] buffer to export abs(val).  allocated by xmalloc if it is NULL.
- * [wordcount] the size of given buffer as number of words (only meaningful when words is not NULL).
- * [wordorder] order of words: 1 for most significant word first.  -1 for least significant word first.
+ * [numwords] the size of given buffer as number of words (only meaningful when words is not NULL).
  * [wordsize] the size of word as number of bytes.
- * [endian] order of bytes in a word: 1 for most significant byte first.  -1 for least significant byte first.  0 for native endian.
  * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
  *
  * This function returns words or the allocated buffer if words is NULL.
  *
  */
 
 void *
-rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     int sign;
     BDIGIT *dp;
@@ -677,9 +692,9 @@ rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words,
 
     val = rb_to_int(val);
 
-    validate_integer_format(wordorder, wordsize, endian, nails);
-    if (words && SIZE_MAX / wordsize < wordcount)
-        rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
+    validate_integer_format(wordsize, nails, flags);
+    if (words && SIZE_MAX / wordsize < numwords)
+        rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
 
     if (FIXNUM_P(val)) {
         long v = FIX2LONG(val);
@@ -717,15 +732,15 @@ rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words,
 
     if (words) {
         buf = words;
-        bufend = buf + wordcount * wordsize;
+        bufend = buf + numwords * wordsize;
     }
     else {
         /*
          * val_numbits = (de - dp) * SIZEOF_BDIGITS * CHAR_BIT - nlz(de[-1])
          * word_numbits = wordsize * CHAR_BIT - nails
-         * wordcount = (val_numbits + word_numbits - 1) / word_numbits
+         * numwords = (val_numbits + word_numbits - 1) / word_numbits
          */
-        VALUE val_numbits, word_numbits, wordcountv;
+        VALUE val_numbits, word_numbits, numwordsv;
         val_numbits = SIZET2NUM((de - dp) * SIZEOF_BDIGITS);
         val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
         if (dp != de)
@@ -734,12 +749,12 @@ rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words,
         word_numbits = rb_funcall(word_numbits, '*', 1, LONG2FIX(CHAR_BIT));
         if (nails != 0)
             word_numbits = rb_funcall(word_numbits, '-', 1, SIZET2NUM(nails));
-        wordcountv = rb_funcall(val_numbits, '+', 1, word_numbits);
-        wordcountv = rb_funcall(wordcountv, '-', 1, LONG2FIX(1));
-        wordcountv = rb_funcall(wordcountv, rb_intern("div"), 1, word_numbits);
-        wordcount = NUM2SIZET(wordcountv);
-        buf = xmalloc(wordcount * wordsize);
-        bufend = buf + wordcount * wordsize;
+        numwordsv = rb_funcall(val_numbits, '+', 1, word_numbits);
+        numwordsv = rb_funcall(numwordsv, '-', 1, LONG2FIX(1));
+        numwordsv = rb_funcall(numwordsv, rb_intern("div"), 1, word_numbits);
+        numwords = NUM2SIZET(numwordsv);
+        buf = xmalloc(numwords * wordsize);
+        bufend = buf + numwords * wordsize;
     }
 
     if (buf == bufend) {
@@ -763,7 +778,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words,
         BDIGIT_DBL dd;
         int numbits_in_dd;
 
-        integer_format_loop_setup(wordcount, wordorder, wordsize, endian, nails,
+        integer_format_loop_setup(numwords, wordsize, nails, flags,
             &word_num_fullbytes, &word_num_partialbits, &word_num_nailbytes,
             &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
@@ -811,8 +826,8 @@ rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words,
     if (signp)
         *signp = sign;
 
-    if (!words && wordcount_allocated)
-        *wordcount_allocated = wordcount;
+    if (!words && numwords_allocated)
+        *numwords_allocated = numwords;
 
     return buf;
 #undef FILL_DD
@@ -837,16 +852,15 @@ int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_
  * [sign] signedness of the value.
  *   -1 for non-positive.  0 or 1 for non-negative.
  * [words] buffer to import.
- * [wordcount] the size of given buffer as number of words.
- * [wordorder] order of words: 1 for most significant word first.  -1 for least significant word first.
+ * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
- * [endian] order of bytes in a word: 1 for most significant byte first.  -1 for least significant byte first.  0 for native endian.
  * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
  *
  * This function returns the imported integer as Fixnum or Bignum.
  */
 VALUE
-rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     VALUE num_bits, num_bdigits;
     VALUE result;
@@ -868,9 +882,9 @@ rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, 
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    validate_integer_format(wordorder, wordsize, endian, nails);
-    if (SIZE_MAX / wordsize < wordcount)
-        rb_raise(rb_eArgError, "too big wordcount * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
+    validate_integer_format(wordsize, nails, flags);
+    if (SIZE_MAX / wordsize < numwords)
+        rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
     if (sign != 1 && sign != 0 && sign != -1)
         rb_raise(rb_eArgError, "unexpected sign: %d", sign);
 
@@ -878,7 +892,7 @@ rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, 
     num_bits = SIZET2NUM(wordsize);
     num_bits = rb_funcall(num_bits, '*', 1, LONG2FIX(CHAR_BIT));
     num_bits = rb_funcall(num_bits, '-', 1, SIZET2NUM(nails));
-    num_bits = rb_funcall(num_bits, '*', 1, SIZET2NUM(wordcount));
+    num_bits = rb_funcall(num_bits, '*', 1, SIZET2NUM(numwords));
 
     if (num_bits == LONG2FIX(0))
         return LONG2FIX(0);
@@ -892,7 +906,7 @@ rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, 
     dp = BDIGITS(result);
     de = dp + RBIGNUM_LEN(result);
 
-    integer_format_loop_setup(wordcount, wordorder, wordsize, endian, nails,
+    integer_format_loop_setup(numwords, wordsize, nails, flags,
         &word_num_fullbytes, &word_num_partialbits, NULL,
         &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
