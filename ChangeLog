@@ -1,3 +1,10 @@
+Sat Jun  8 00:55:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_pack_loop_setup): word_num_nailbytes_ret argument
+	  removed.
+	  (rb_integer_pack): Follow the above change.
+	  (rb_integer_unpack): Follow the above change.
+
 Sat Jun  8 00:37:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (validate_integer_pack_format): Renamed from

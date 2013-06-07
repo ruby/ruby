@@ -570,7 +570,6 @@ integer_pack_loop_setup(
     size_t numwords, size_t wordsize, size_t nails, int flags,
     size_t *word_num_fullbytes_ret,
     int *word_num_partialbits_ret,
-    size_t *word_num_nailbytes_ret,
     size_t *word_start_ret,
     ssize_t *word_step_ret,
     size_t *word_last_ret,
@@ -581,7 +580,6 @@ integer_pack_loop_setup(
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
     size_t word_num_fullbytes;
     int word_num_partialbits;
-    size_t word_num_nailbytes;
     size_t word_start;
     ssize_t word_step;
     size_t word_last;
@@ -594,10 +592,6 @@ integer_pack_loop_setup(
     word_num_fullbytes = wordsize - (nails / CHAR_BIT);
     if (word_num_partialbits != 0) {
         word_num_fullbytes--;
-        word_num_nailbytes = wordsize - word_num_fullbytes - 1;
-    }
-    else {
-        word_num_nailbytes = wordsize - word_num_fullbytes;
     }
 
     if (wordorder_bits == INTEGER_PACK_MSWORD_FIRST) {
@@ -629,8 +623,6 @@ integer_pack_loop_setup(
 
     *word_num_partialbits_ret = word_num_partialbits;
     *word_num_fullbytes_ret = word_num_fullbytes;
-    if (word_num_nailbytes_ret)
-        *word_num_nailbytes_ret = word_num_nailbytes;
     *word_start_ret = word_start;
     *word_step_ret = word_step;
     *word_last_ret = word_last;
@@ -766,20 +758,18 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
     else if (dp < de && buf < bufend) {
         int word_num_partialbits;
         size_t word_num_fullbytes;
-        size_t word_num_nailbytes;
 
         ssize_t word_step;
         size_t byte_start;
         int byte_step;
 
         size_t word_start, word_last;
-        unsigned char *bytep, *wordp, *last_wordp;
-        size_t index_in_word;
+        unsigned char *wordp, *last_wordp;
         BDIGIT_DBL dd;
         int numbits_in_dd;
 
         integer_pack_loop_setup(numwords, wordsize, nails, flags,
-            &word_num_fullbytes, &word_num_partialbits, &word_num_nailbytes,
+            &word_num_fullbytes, &word_num_partialbits,
             &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
         wordp = buf + word_start;
@@ -794,8 +784,8 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
     integer_pack_take_lowbits(n, &dd, &numbits_in_dd)
 
         while (1) {
-            index_in_word = 0;
-            bytep = wordp + byte_start;
+            size_t index_in_word = 0;
+            unsigned char *bytep = wordp + byte_start;
             while (index_in_word < word_num_fullbytes) {
                 FILL_DD;
                 *bytep = TAKE_LOWBITS(CHAR_BIT);
@@ -808,7 +798,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
                 bytep += byte_step;
                 index_in_word++;
             }
-            while (wordsize - word_num_nailbytes <= index_in_word && index_in_word < wordsize) {
+            while (index_in_word < wordsize) {
                 *bytep = 0;
                 bytep += byte_step;
                 index_in_word++;
@@ -854,7 +844,7 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
  * [words] buffer to import.
  * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
+ * [nails] number of padding bits in a word.  Most significant nails bits of each word are ignored.
  * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
  *
  * This function returns the imported integer as Fixnum or Bignum.
@@ -877,8 +867,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     int byte_step;
 
     size_t word_start, word_last;
-    const unsigned char *bytep, *wordp, *last_wordp;
-    size_t index_in_word;
+    const unsigned char *wordp, *last_wordp;
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
@@ -907,7 +896,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     de = dp + RBIGNUM_LEN(result);
 
     integer_pack_loop_setup(numwords, wordsize, nails, flags,
-        &word_num_fullbytes, &word_num_partialbits, NULL,
+        &word_num_fullbytes, &word_num_partialbits,
         &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
     wordp = buf + word_start;
@@ -920,8 +909,8 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     integer_unpack_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
 
     while (1) {
-        index_in_word = 0;
-        bytep = wordp + byte_start;
+        size_t index_in_word = 0;
+        const unsigned char *bytep = wordp + byte_start;
         while (index_in_word < word_num_fullbytes) {
             PUSH_BITS(*bytep, CHAR_BIT);
             bytep += byte_step;
