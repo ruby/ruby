@@ -1,3 +1,10 @@
+Fri Jun  7 21:39:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_pack): Renamed from rb_int_export.
+	  (rb_integer_unpack): Renamed from rb_int_import.
+
+	* internal.h, pack.c: Follow the above change.
+
 Fri Jun  7 21:05:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (integer_format_loop_setup): Extracted from rb_int_export

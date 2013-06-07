@@ -667,7 +667,7 @@ int_export_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  */
 
 void *
-rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_integer_pack(VALUE val, int *signp, size_t *wordcount_allocated, void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
 {
     int sign;
     BDIGIT *dp;
@@ -846,7 +846,7 @@ int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_
  * This function returns the imported integer as Fixnum or Bignum.
  */
 VALUE
-rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
+rb_integer_unpack(int sign, const void *words, size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails)
 {
     VALUE num_bits, num_bdigits;
     VALUE result;
