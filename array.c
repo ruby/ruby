@@ -412,9 +412,9 @@ ary_new(VALUE klass, long capa)
         ARY_SET_PTR(ary, ptr);
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
-    } else {
+    }
+    else {
 	ary = ary_alloc(klass);
-
     }
 
     return ary;

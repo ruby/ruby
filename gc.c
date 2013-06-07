@@ -2156,9 +2156,9 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
     bits[BITMAP_INDEX(pend)] |= ~(BITMAP_BIT(pend) - 1);
 
-    for(i=0;i<HEAP_BITMAP_LIMIT;i++){
+    for (i=0; i < HEAP_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
-	if(bitset){
+	if (bitset) {
 	    p = offset  + i * (sizeof(uintptr_t) *  CHAR_BIT);
 	    do {
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
@@ -3603,8 +3603,8 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 
 	offset = p - NUM_IN_SLOT(p);
 
-	for(j=0;j< HEAP_BITMAP_LIMIT;j++){
-	    if(bits[j]){
+	for (j=0; j < HEAP_BITMAP_LIMIT; j++) {
+	    if (bits[j]) {
 		p = offset  + j * (sizeof(uintptr_t) *  CHAR_BIT);
 		bitset = bits[j];
 		do {
