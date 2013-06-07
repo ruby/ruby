@@ -2140,7 +2140,7 @@ void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
-    VALUE visibility = CONST_PUBLIC;
+    rb_const_flag_t visibility = CONST_PUBLIC
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
@@ -2189,7 +2189,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     rb_vm_change_state();
 
     ce = ALLOC(rb_const_entry_t);
-    ce->flag = (rb_const_flag_t)visibility;
+    ce->flag = visibility;
     ce->value = val;
     ce->file = rb_sourcefilename();
     ce->line = rb_sourceline();
