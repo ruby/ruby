@@ -385,26 +385,6 @@ num_fdiv(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.quo(int_or_rat)   ->  rat
- *     num.quo(flo)          ->  flo
- *
- *  Returns most exact division (rational for integers, float for floats).
- */
-
-static VALUE
-num_quo(VALUE x, VALUE y)
-{
-    if (RB_TYPE_P(y, T_FLOAT)) {
-        return num_fdiv(x, y);
-    }
-
-    x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
-    return rb_funcall(x, '/', 1, y);
-}
-
-
-/*
- *  call-seq:
  *     num.div(numeric)  ->  integer
  *
  *  Uses <code>/</code> to perform division, then converts the result to
@@ -3792,7 +3772,6 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
-    rb_define_method(rb_cNumeric, "quo", num_quo, 1);
     rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);

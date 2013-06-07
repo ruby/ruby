@@ -1,3 +1,13 @@
+Fri Jun  7 11:45:42 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* rational.c (numeric_quo): move num_quo in numeric.c to numeric_quo
+	  in rational.c to refer canonicalization state for mathn support.
+	  [ruby-core:41575] [Bug #5736]
+
+	* numeric.c (num_quo): ditto.
+
+	* test/test_mathn.rb: add a test for the change at r41109.
+
 Fri Jun  7 11:41:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: revert r41106.  size_t may not be unsigned

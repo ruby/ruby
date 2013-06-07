@@ -1793,6 +1793,32 @@ numeric_denominator(VALUE self)
     return f_denominator(f_to_r(self));
 }
 
+
+/*
+ *  call-seq:
+ *     num.quo(int_or_rat)   ->  rat
+ *     num.quo(flo)          ->  flo
+ *
+ *  Returns most exact division (rational for integers, float for floats).
+ */
+
+static VALUE
+numeric_quo(VALUE x, VALUE y)
+{
+    if (RB_TYPE_P(y, T_FLOAT)) {
+        return f_fdiv(x, y);
+    }
+
+    if (canonicalization) {
+        x = rb_rational_raw1(x);
+    }
+    else {
+        x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
+    }
+    return rb_funcall(x, '/', 1, y);
+}
+
+
 /*
  * call-seq:
  *    int.numerator  ->  self
@@ -2529,6 +2555,7 @@ Init_Rational(void)
 
     rb_define_method(rb_cNumeric, "numerator", numeric_numerator, 0);
     rb_define_method(rb_cNumeric, "denominator", numeric_denominator, 0);
+    rb_define_method(rb_cNumeric, "quo", numeric_quo, 1);
 
     rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
