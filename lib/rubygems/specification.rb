@@ -2270,7 +2270,7 @@ class Gem::Specification
         require 'rubygems/psych_tree'
       end
 
-      builder = Gem::NoAliasYAMLTree.new({})
+      builder = Gem::NoAliasYAMLTree.create
       builder << self
       ast = builder.tree
 

@@ -1,3 +1,9 @@
+Fri Jun  7 22:10:50 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/specification.rb (Gem::Specification#to_yaml):
+	  use Gem::NoAliasYAMLTree.create instead of Gem::NoAliasYAMLTree.new
+	  to suppress deprecated warnings.
+
 Fri Jun  7 21:39:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_pack): Renamed from rb_int_export.
