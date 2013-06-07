@@ -2172,7 +2172,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 			    (FL_TEST(p, FL_FINALIZE))) {
 			    if (!deferred) {
 				p->as.free.flags = T_ZOMBIE;
-				
+
 				RDATA(p)->dfree = 0;
 			    }
 			    p->as.free.next = deferred_final_list;
