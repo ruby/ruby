@@ -874,10 +874,7 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
     if (sign != 1 && sign != 0 && sign != -1)
         rb_raise(rb_eArgError, "unexpected sign: %d", sign);
 
-    /*
-     * num_bits = (wordsize * CHAR_BIT - nails) * count
-     * num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     */
+    /* num_bits = (wordsize * CHAR_BIT - nails) * count */
     num_bits = SIZET2NUM(wordsize);
     num_bits = rb_funcall(num_bits, '*', 1, LONG2FIX(CHAR_BIT));
     num_bits = rb_funcall(num_bits, '-', 1, SIZET2NUM(nails));
@@ -886,6 +883,7 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
     if (num_bits == LONG2FIX(0))
         return LONG2FIX(0);
 
+    /* num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT) */
     num_bdigits = rb_funcall(num_bits, '+', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT-1));
     num_bdigits = rb_funcall(num_bdigits, '/', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT));
 
