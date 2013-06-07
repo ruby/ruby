@@ -16,6 +16,7 @@ Dir.mktmpdir('rdocbench-'){|d|
       r.document args
       GC::Profiler.report
       pp GC.stat
+      puts "GC Total Time:#{GC::Profiler.total_time}"
     }
   }
 }
