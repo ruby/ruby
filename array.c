@@ -392,7 +392,7 @@ empty_ary_alloc(VALUE klass)
 static VALUE
 ary_new(VALUE klass, long capa)
 {
-    VALUE ary;
+    VALUE ary,*ptr;
 
     if (capa < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -405,20 +405,16 @@ ary_new(VALUE klass, long capa)
 	RUBY_DTRACE_ARRAY_CREATE(capa, rb_sourcefile(), rb_sourceline());
     }
 
-    ary = ary_alloc(klass);
     if (capa > RARRAY_EMBED_LEN_MAX) {
+	ptr = ALLOC_N(VALUE, capa);
+	ary = ary_alloc(klass);
         FL_UNSET_EMBED(ary);
-        ARY_SET_PTR(ary, ALLOC_N(VALUE, capa));
+        ARY_SET_PTR(ary, ptr);
         ARY_SET_CAPA(ary, capa);
         ARY_SET_HEAP_LEN(ary, 0);
+    } else {
+	ary = ary_alloc(klass);
 
-	/* NOTE: `ary' can be old because the following suquence is possible.
-	 *   (1) ary = ary_alloc();
-	 *   (2) GC (for (3))          -> promote ary
-	 *   (3) ALLOC_N(VALUE, capa)
-	 * So that force ary as young object.
-	 */
-	RBASIC(ary)->flags &= ~FL_OLDGEN;
     }
 
     return ary;

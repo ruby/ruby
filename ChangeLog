@@ -1,3 +1,8 @@
+Fri Jun  7 11:18:35 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* array.c (ary_new): change order of allocation in order 
+	  to remove FL_OLDGEN operation.
+
 Fri Jun  7 11:16:28 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* tool/rdocbench.rb: add gc total time infomation.
