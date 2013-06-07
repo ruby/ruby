@@ -1,3 +1,7 @@
+Fri Jun  7 11:25:56 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: introduce oldgen bitmap for preparing performance tuning.
+
 Fri Jun  7 11:20:57 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (MARKED_IN_BITMAP, MARK_IN_BITMAP, CLEAR_IN_BITMAP): bring
