@@ -914,7 +914,7 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
         wordp += word_step;
     }
     if (dd)
-        *dp++ = dd;
+        *dp++ = (BDIGIT)dd;
     while (dp < de)
         *dp++ = 0;
 

@@ -1,3 +1,8 @@
+Fri Jun  7 09:29:33 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* bignum.c (rb_int_import): explicitly casting BDIGIT_DBL to BDIGIT
+	  to prevent warning.
+
 Fri Jun  7 07:29:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_int_export): countp argument is split into
