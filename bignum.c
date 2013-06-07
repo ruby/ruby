@@ -552,11 +552,11 @@ validate_integer_pack_format(size_t wordsize, size_t nails, int flags)
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
     if (wordorder_bits != INTEGER_PACK_MSWORD_FIRST &&
         wordorder_bits != INTEGER_PACK_LSWORD_FIRST)
-        rb_raise(rb_eArgError, "unexpected wordorder");
+        rb_raise(rb_eArgError, "unexpected word order");
     if (byteorder_bits != INTEGER_PACK_MSBYTE_FIRST &&
         byteorder_bits != INTEGER_PACK_LSBYTE_FIRST &&
         byteorder_bits != INTEGER_PACK_NATIVE_BYTE_ORDER)
-        rb_raise(rb_eArgError, "unexpected endian");
+        rb_raise(rb_eArgError, "unexpected byte order");
     if (wordsize == 0)
         rb_raise(rb_eArgError, "invalid wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
     if (SSIZE_MAX < wordsize)
