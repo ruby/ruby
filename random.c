@@ -271,7 +271,6 @@ rb_genrand_real(void)
 #define BDIGMAX ((BDIGIT)-1)
 
 #define roomof(n, m) (int)(((n)+(m)-1) / (m))
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
