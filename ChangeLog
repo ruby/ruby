@@ -1,3 +1,10 @@
+Fri Jun  7 17:41:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* bignum.c (rb_absint_size): explicit cast to BDIGIT to avoid implicit
+	  64 bit to 32 bit shortening warning
+	* bignum.c (rb_int_export): ditto
+	* bignum.c (int_import_push_bits): ditto
+
 Fri Jun  7 17:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* internal.h (RCLASS_SUPER): use descriptive variable name

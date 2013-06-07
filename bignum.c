@@ -472,7 +472,7 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
         fixbuf[0] = v;
 #else
         for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
-            fixbuf[i] = v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1);
+            fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
             v >>= SIZEOF_BDIGITS * CHAR_BIT;
         }
 #endif
@@ -623,7 +623,7 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
         fixbuf[0] = v;
 #else
         for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
-            fixbuf[i] = v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1);
+            fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
             v >>= SIZEOF_BDIGITS * CHAR_BIT;
         }
 #endif
@@ -775,7 +775,7 @@ int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_
     (*ddp) |= ((BDIGIT_DBL)data) << (*numbits_in_dd_p);
     *numbits_in_dd_p += numbits;
     while (SIZEOF_BDIGITS*CHAR_BIT <= *numbits_in_dd_p) {
-        *(*dpp)++ = (*ddp) & (((BDIGIT_DBL)1 << (SIZEOF_BDIGITS*CHAR_BIT))-1);
+        *(*dpp)++ = (BDIGIT)((*ddp) & (((BDIGIT_DBL)1 << (SIZEOF_BDIGITS*CHAR_BIT))-1));
         *ddp >>= SIZEOF_BDIGITS*CHAR_BIT;
         *numbits_in_dd_p -= SIZEOF_BDIGITS*CHAR_BIT;
     }
