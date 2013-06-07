@@ -1,3 +1,8 @@
+Fri Jun  7 19:23:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_absint_size): Use numberof.
+	  (rb_int_export): Ditto.
+
 Fri Jun  7 18:58:56 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (numberof): Gathered from various files.

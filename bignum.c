@@ -473,14 +473,14 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
 #else
         {
             int i;
-            for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
+            for (i = 0; i < numberof(fixbuf); i++) {
                 fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
                 v >>= SIZEOF_BDIGITS * CHAR_BIT;
             }
         }
 #endif
         dp = fixbuf;
-        de = fixbuf + sizeof(fixbuf)/sizeof(*fixbuf);
+        de = fixbuf + numberof(fixbuf);
     }
     else {
         dp = BDIGITS(val);
@@ -626,14 +626,14 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
 #else
         {
             int i;
-            for (i = 0; i < (int)(sizeof(fixbuf)/sizeof(*fixbuf)); i++) {
+            for (i = 0; i < numberof(fixbuf); i++) {
                 fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
                 v >>= SIZEOF_BDIGITS * CHAR_BIT;
             }
         }
 #endif
         dp = fixbuf;
-        de = fixbuf + sizeof(fixbuf)/sizeof(*fixbuf);
+        de = fixbuf + numberof(fixbuf);
     }
     else {
         sign = RBIGNUM_POSITIVE_P(val) ? 1 : -1;
