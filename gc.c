@@ -2825,8 +2825,6 @@ mark_const_tbl(rb_objspace_t *objspace, st_table *tbl)
      ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 {

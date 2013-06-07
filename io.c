@@ -119,8 +119,6 @@
 off_t __syscall(quad_t number, ...);
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #define IO_RBUF_CAPA_MIN  8192
 #define IO_CBUF_CAPA_MIN  (128*1024)
 #define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)

@@ -24,8 +24,6 @@
 #endif
 #include <assert.h>
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 VALUE rb_cArray;
 
 static ID id_cmp, id_div, id_power;

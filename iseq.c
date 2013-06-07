@@ -18,8 +18,6 @@
 #include "vm_core.h"
 #include "iseq.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #include "insns.inc"
 #include "insns_info.inc"
 

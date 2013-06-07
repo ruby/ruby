@@ -80,8 +80,6 @@
 #include <grp.h>
 #endif
 
-#define numberof(array) (int)(sizeof(array)/sizeof((array)[0]))
-
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE rb_cProcessTms;
 #endif

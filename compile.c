@@ -19,7 +19,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 

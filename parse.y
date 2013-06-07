@@ -31,8 +31,6 @@
 #include <ctype.h>
 #include "probes.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #define YYMALLOC(size)		rb_parser_malloc(parser, (size))
 #define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))

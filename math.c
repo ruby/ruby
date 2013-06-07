@@ -19,8 +19,6 @@
     extern int signbit(double);
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 

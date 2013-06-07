@@ -11,8 +11,6 @@
 
 VALUE ruby_dln_librefs;
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #ifdef DLEXT2

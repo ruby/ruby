@@ -125,7 +125,6 @@ static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT_PTR(obj)[7];}
 static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT_PTR(obj)[8];}
 static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT_PTR(obj)[9];}
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define N_REF_FUNC numberof(ref_func)
 
 static VALUE (*const ref_func[])(VALUE) = {

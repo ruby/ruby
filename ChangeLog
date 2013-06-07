@@ -1,3 +1,11 @@
+Fri Jun  7 18:58:56 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (numberof): Gathered from various files.
+
+	* array.c, math.c, thread_pthread.c, iseq.c, enum.c, string.c, io.c,
+	  load.c, compile.c, struct.c, eval.c, gc.c, parse.y, process.c,
+	  error.c, ruby.c: Remove the definitions of numberof.
+
 Fri Jun  7 18:24:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_absint_size): Declare a variable, i, just before used

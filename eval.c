@@ -20,8 +20,6 @@
 #include "vm_core.h"
 #include "probes_helper.h"
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 NORETURN(void rb_raise_jump(VALUE));
 
 NODE *rb_vm_get_cref(const rb_iseq_t *, const VALUE *);

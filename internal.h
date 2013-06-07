@@ -19,6 +19,8 @@ extern "C" {
 #endif
 #endif
 
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+
 #define GCC_VERSION_SINCE(major, minor, patchlevel) \
   (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
    ((__GNUC__ > (major)) ||  \

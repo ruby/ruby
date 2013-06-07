@@ -52,8 +52,6 @@
 char *getenv();
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
 #define DEFAULT_RUBYGEMS_ENABLED "disabled"
 #else

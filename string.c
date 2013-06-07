@@ -31,8 +31,6 @@
 
 #define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr

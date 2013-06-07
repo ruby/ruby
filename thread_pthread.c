@@ -64,10 +64,6 @@ static pthread_t timer_thread_id;
 # define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
-#ifndef numberof
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-#endif
-
 static void
 gvl_acquire_common(rb_vm_t *vm)
 {

@@ -17,8 +17,6 @@
 
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
 VALUE rb_mEnumerable;

@@ -25,8 +25,6 @@
 #include <unistd.h>
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
