@@ -1,3 +1,12 @@
+Sat Jun  8 00:37:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_pack_format): Renamed from
+	  validate_integer_format.
+	  (integer_pack_loop_setup): Renamed from integer_format_loop_setup.
+	  (integer_pack_fill_dd): Renamed from int_export_fill_dd.
+	  (integer_pack_take_lowbits): Renamed from int_export_take_lowbits.
+	  (integer_unpack_push_bits): Renamed from int_import_push_bits.
+
 Fri Jun  7 23:58:06 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_pack): Arguments changed.  Use flags to

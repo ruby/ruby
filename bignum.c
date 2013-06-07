@@ -546,7 +546,7 @@ rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_lea
      INTEGER_PACK_NATIVE_BYTE_ORDER)
 
 static void
-validate_integer_format(size_t wordsize, size_t nails, int flags)
+validate_integer_pack_format(size_t wordsize, size_t nails, int flags)
 {
     int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
@@ -566,7 +566,7 @@ validate_integer_format(size_t wordsize, size_t nails, int flags)
 }
 
 static void
-integer_format_loop_setup(
+integer_pack_loop_setup(
     size_t numwords, size_t wordsize, size_t nails, int flags,
     size_t *word_num_fullbytes_ret,
     int *word_num_partialbits_ret,
@@ -619,12 +619,12 @@ integer_format_loop_setup(
 #endif
     }
     if (byteorder_bits == INTEGER_PACK_MSBYTE_FIRST) {
-        byte_step = -1;
         byte_start = wordsize-1;
+        byte_step = -1;
     }
     else {
-        byte_step = 1;
         byte_start = 0;
+        byte_step = 1;
     }
 
     *word_num_partialbits_ret = word_num_partialbits;
@@ -639,7 +639,7 @@ integer_format_loop_setup(
 }
 
 static inline void
-int_export_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
+integer_pack_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 {
     if (*dpp < *dep && SIZEOF_BDIGITS * CHAR_BIT <= (int)sizeof(*ddp) * CHAR_BIT - *numbits_in_dd_p) {
         *ddp |= (BDIGIT_DBL)(*(*dpp)++) << *numbits_in_dd_p;
@@ -652,7 +652,7 @@ int_export_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_
 }
 
 static inline BDIGIT_DBL
-int_export_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
+integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 {
     BDIGIT_DBL ret;
     ret = (*ddp) & (((BDIGIT_DBL)1 << n) - 1);
@@ -692,7 +692,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
 
     val = rb_to_int(val);
 
-    validate_integer_format(wordsize, nails, flags);
+    validate_integer_pack_format(wordsize, nails, flags);
     if (words && SIZE_MAX / wordsize < numwords)
         rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
 
@@ -778,7 +778,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
         BDIGIT_DBL dd;
         int numbits_in_dd;
 
-        integer_format_loop_setup(numwords, wordsize, nails, flags,
+        integer_pack_loop_setup(numwords, wordsize, nails, flags,
             &word_num_fullbytes, &word_num_partialbits, &word_num_nailbytes,
             &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
@@ -789,9 +789,9 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
         numbits_in_dd = 0;
 
 #define FILL_DD \
-    int_export_fill_dd(&dp, &de, &dd, &numbits_in_dd)
+    integer_pack_fill_dd(&dp, &de, &dd, &numbits_in_dd)
 #define TAKE_LOWBITS(n) \
-    int_export_take_lowbits(n, &dd, &numbits_in_dd)
+    integer_pack_take_lowbits(n, &dd, &numbits_in_dd)
 
         while (1) {
             index_in_word = 0;
@@ -835,7 +835,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
 }
 
 static inline void
-int_import_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_p, BDIGIT **dpp)
+integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_p, BDIGIT **dpp)
 {
     (*ddp) |= ((BDIGIT_DBL)data) << (*numbits_in_dd_p);
     *numbits_in_dd_p += numbits;
@@ -882,7 +882,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    validate_integer_format(wordsize, nails, flags);
+    validate_integer_pack_format(wordsize, nails, flags);
     if (SIZE_MAX / wordsize < numwords)
         rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
     if (sign != 1 && sign != 0 && sign != -1)
@@ -906,7 +906,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     dp = BDIGITS(result);
     de = dp + RBIGNUM_LEN(result);
 
-    integer_format_loop_setup(numwords, wordsize, nails, flags,
+    integer_pack_loop_setup(numwords, wordsize, nails, flags,
         &word_num_fullbytes, &word_num_partialbits, NULL,
         &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
@@ -917,7 +917,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     numbits_in_dd = 0;
 
 #define PUSH_BITS(data, numbits) \
-    int_import_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
+    integer_unpack_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
 
     while (1) {
         index_in_word = 0;
