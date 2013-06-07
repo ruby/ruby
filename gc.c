@@ -324,17 +324,17 @@ typedef struct rb_objspace {
 	size_t minor_gc_count;
 	size_t major_gc_count;
 #ifdef RGENGC_PROFILE
-	size_t generated_sunny_object_count;
+	size_t generated_normal_object_count;
 	size_t generated_shady_object_count;
 	size_t shade_operation_count;
 	size_t promote_operation_count;
-	size_t remembered_sunny_object_count;
+	size_t remembered_normal_object_count;
 	size_t remembered_shady_object_count;
 #if RGENGC_PROFILE >= 2
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
 	size_t shade_operation_count_types[RUBY_T_MASK];
 	size_t promote_operation_count_types[RUBY_T_MASK];
-	size_t remembered_sunny_object_count_types[RUBY_T_MASK];
+	size_t remembered_normal_object_count_types[RUBY_T_MASK];
 	size_t remembered_shady_object_count_types[RUBY_T_MASK];
 #endif
 #endif /* RGENGC_PROFILE */
@@ -490,8 +490,7 @@ static size_t rgengc_rememberset_mark(rb_objspace_t *objspace);
 #define FL_SET2(x,f)          do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_SET2: SPECIAL_CONST");   RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET2(x,f)        do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_UNSET2: SPECIAL_CONST"); RBASIC(x)->flags &= ~(f);} while (0)
 
-#define RVALUE_SUNNY(x)       FL_TEST2((x), FL_WB_PROTECTED)
-#define RVALUE_SHADY(x)       (!RVALUE_SUNNY(x))
+#define RVALUE_SHADY(x)       (!FL_TEST2((x), FL_WB_PROTECTED))
 #define RVALUE_PROMOTED(x)    FL_TEST2((x), FL_OLDGEN)
 
 static inline void
@@ -894,7 +893,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 #endif
 
 #if RGENGC_PROFILE
-    if (flags & FL_WB_PROTECTED) objspace->profile.generated_sunny_object_count++;
+    if (flags & FL_WB_PROTECTED) objspace->profile.generated_normal_object_count++;
     else {
 	objspace->profile.generated_shady_object_count++;
 #if RGENGC_PROFILE >= 2
@@ -3048,10 +3047,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    rb_bug("gc_mark_children: (1) %p (%s) is shady and promoted.\n", (void *)obj, obj_type_name((VALUE)obj));
 	}
 
-
 	/* minor/major common */
-	if (RVALUE_SUNNY(obj)) {
-	    RVALUE_PROMOTE((VALUE)obj); /* Sunny object can be promoted to OLDGEN object */
+	if (!RVALUE_SHADY(obj)) {
+	    RVALUE_PROMOTE((VALUE)obj); /* non-shady object can be promoted to OLDGEN object */
 	    rgengc_report(3, objspace, "gc_mark_children: promote %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    objspace->rgengc.parent_object_is_promoted = TRUE;
 	    objspace->rgengc.oldgen_object_count++;
@@ -3557,15 +3555,15 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 
     rgengc_report(0, objspace, "rgengc_remember: %p (%s, %s) %s\n", (void *)obj, obj_type_name(obj),
-		  RVALUE_SUNNY(obj) ? "sunny" : "shady",
+		  RVALUE_SHADY(obj) ? "shady" : "non-shady",
 		  rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");
 
     if (RGENGC_PROFILE) {
 	if (!rgengc_remembered(objspace, obj)) {
-	    if (RVALUE_SUNNY(obj)) {
-		objspace->profile.remembered_sunny_object_count++;
+	    if (!RVALUE_SHADY(obj)) {
+		objspace->profile.remembered_normal_object_count++;
 #if RGENGC_PROFILE >= 2
-		objspace->profile.remembered_sunny_object_count_types[BUILTIN_TYPE(obj)]++;
+		objspace->profile.remembered_normal_object_count_types[BUILTIN_TYPE(obj)]++;
 #endif
 	    }
 	    else {
@@ -3612,7 +3610,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 			    push_mark_stack(&objspace->mark_stack, (VALUE) p);
 			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
 
-			if (RVALUE_SUNNY(p)) {
+			if (!RVALUE_SHADY(p)) {
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 			    CLEAR_IN_BITMAP(bits, p);
 			}
@@ -3669,7 +3667,7 @@ rb_gc_giveup_promoted_writebarrier(VALUE obj)
 
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_PROMOTED(obj)) rb_bug("rb_gc_giveup_promoted_writebarrier: called on non-promoted object");
-	if (RVALUE_SUNNY(obj)) rb_bug("rb_gc_giveup_promoted_writebarrier: called on sunny object");
+	if (!RVALUE_SHADY(obj)) rb_bug("rb_gc_giveup_promoted_writebarrier: called on non-shady object");
     }
 
     rgengc_report(2, objspace, "rb_gc_giveup_writebarrier: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
@@ -4009,9 +4007,9 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 #if USE_RGENGC
     static VALUE sym_minor_gc_count, sym_major_gc_count;
 #if RGENGC_PROFILE
-    static VALUE sym_generated_sunny_object_count, sym_generated_shady_object_count;
+    static VALUE sym_generated_normal_object_count, sym_generated_shady_object_count;
     static VALUE sym_shade_operation_count, sym_promote_operation_count;
-    static VALUE sym_remembered_sunny_object_count, sym_remembered_shady_object_count;
+    static VALUE sym_remembered_normal_object_count, sym_remembered_shady_object_count;
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 
@@ -4030,11 +4028,11 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 	S(minor_gc_count);
 	S(major_gc_count);
 #if RGENGC_PROFILE
-	S(generated_sunny_object_count);
+	S(generated_normal_object_count);
 	S(generated_shady_object_count);
 	S(shade_operation_count);
 	S(promote_operation_count);
-	S(remembered_sunny_object_count);
+	S(remembered_normal_object_count);
 	S(remembered_shady_object_count);
 #endif /* USE_RGENGC */
 #endif /* RGENGC_PROFILE */
@@ -4065,18 +4063,18 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_minor_gc_count, SIZET2NUM(objspace->profile.minor_gc_count));
     rb_hash_aset(hash, sym_major_gc_count, SIZET2NUM(objspace->profile.major_gc_count));
 #if RGENGC_PROFILE
-    rb_hash_aset(hash, sym_generated_sunny_object_count, SIZET2NUM(objspace->profile.generated_sunny_object_count));
+    rb_hash_aset(hash, sym_generated_normal_object_count, SIZET2NUM(objspace->profile.generated_normal_object_count));
     rb_hash_aset(hash, sym_generated_shady_object_count, SIZET2NUM(objspace->profile.generated_shady_object_count));
     rb_hash_aset(hash, sym_shade_operation_count, SIZET2NUM(objspace->profile.shade_operation_count));
     rb_hash_aset(hash, sym_promote_operation_count, SIZET2NUM(objspace->profile.promote_operation_count));
-    rb_hash_aset(hash, sym_remembered_sunny_object_count, SIZET2NUM(objspace->profile.remembered_sunny_object_count));
+    rb_hash_aset(hash, sym_remembered_normal_object_count, SIZET2NUM(objspace->profile.remembered_normal_object_count));
     rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
 #if RGENGC_PROFILE >= 2
     {
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
 	gc_count_add_each_types(hash, "promote_operation_count_types", objspace->profile.promote_operation_count_types);
-	gc_count_add_each_types(hash, "remembered_sunny_object_count_types", objspace->profile.remembered_sunny_object_count_types);
+	gc_count_add_each_types(hash, "remembered_normal_object_count_types", objspace->profile.remembered_normal_object_count_types);
 	gc_count_add_each_types(hash, "remembered_shady_object_count_types", objspace->profile.remembered_shady_object_count_types);
     }
 #endif

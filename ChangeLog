@@ -1,3 +1,9 @@
+Fri Jun  7 10:12:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove "Sunny" terminology.
+	  "Sunny" doesn't mean antonym of "Shady" (questionable, doubtful, etc).
+	  Instead of "Suuny", use "non-shady" or "normal".
+
 Fri Jun  7 09:29:33 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* bignum.c (rb_int_import): explicitly casting BDIGIT_DBL to BDIGIT
