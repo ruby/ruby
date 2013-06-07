@@ -490,7 +490,7 @@ static const char *obj_type_name(VALUE obj);
 #if USE_RGENGC
 static int rgengc_remembered(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_remember(rb_objspace_t *objspace, VALUE obj);
-static void rgengc_rememberset_clear(rb_objspace_t *objspace);
+static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace);
 static size_t rgengc_rememberset_mark(rb_objspace_t *objspace);
 
 #define FL_TEST2(x,f)         ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? (rb_bug("FL_TEST2: SPECIAL_CONST"), 0) : FL_TEST_RAW((x),(f)))
@@ -2122,97 +2122,88 @@ gc_clear_slot_bits(struct heaps_slot *slot)
     memset(slot->header->mark_bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
 }
 
+#if USE_RGENGC
+static void
+gc_setup_mark_bits(struct heaps_slot *slot)
+{
+    memcpy(slot->header->mark_bits, slot->header->oldgen_bits, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+}
+#endif
+
 static size_t
 objspace_live_num(rb_objspace_t *objspace)
 {
     return objspace->total_allocated_object_num - objspace->total_freed_object_num;
 }
 
-static inline int
-living_object_p(rb_objspace_t *objspace, VALUE p, uintptr_t *bits, const int during_minor_gc)
-{
-#if USE_RGENGC
-    int reason = 0;
-
-    if (during_minor_gc) {
-	if (MARKED_IN_BITMAP(bits, p)) {
-	    reason = 1;
-	}
-	else if (RVALUE_PROMOTED(p)) {
-	    reason = 2;
-	}
-    }
-    else {
-	if (MARKED_IN_BITMAP(bits, p)) {
-	    reason = 1;
-	}
-    }
-
-    if (RGENGC_DEBUG && reason > 0) {
-	rgengc_report(5, objspace, "living_object_p: %p (%s) is living (%s).\n",
-		      (void *)p, obj_type_name(p), reason == 1 ? "marked" : "promoted");
-    }
-
-    if (RGENGC_CHECK_MODE && reason == 0 && rgengc_remembered(objspace, p)) {
-	rb_bug("living_object_p: %p (%s) is remembered, but not marked.\n", (void *)p, obj_type_name(p));
-    }
-
-    return reason != 0;
-#else /* USE_RGENGC */
-    return MARKED_IN_BITMAP(bits, p) != 0;
-#endif
-}
-
 static inline void
 slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const int during_minor_gc)
 {
+    int i;
     size_t empty_num = 0, freed_num = 0, final_num = 0;
-    RVALUE *p, *pend;
+    RVALUE *p, *pend,*offset;
     RVALUE *final = deferred_final_list;
     int deferred;
-    uintptr_t *bits;
+    uintptr_t *bits, bitset;
 
     rgengc_report(3, objspace, "slot_sweep_body: start.\n");
 
     p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
+    offset = p - NUM_IN_SLOT(p);
     bits = GET_HEAP_MARK_BITS(p);
-    while (p < pend) {
-	if (!living_object_p(objspace, (VALUE)p, bits, during_minor_gc) && BUILTIN_TYPE(p) != T_ZOMBIE) {
-            if (p->as.basic.flags) {
-		rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 
+    /* create guard : fill 1 out-of-range */
+    bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
+    bits[BITMAP_INDEX(pend)] |= ~(BITMAP_BIT(pend) - 1);
+
+    for(i=0;i<HEAP_BITMAP_LIMIT;i++){
+	bitset = ~bits[i];
+	if(bitset){
+	    p = offset  + i * (sizeof(uintptr_t) *  CHAR_BIT);
+	    do {
+		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
+		    if (p->as.basic.flags) {
+			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-		if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
-		if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
+			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
+			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
+#endif
+			if ((deferred = obj_free(objspace, (VALUE)p)) ||
+			    (FL_TEST(p, FL_FINALIZE))) {
+			    if (!deferred) {
+				p->as.free.flags = T_ZOMBIE;
+				
+				RDATA(p)->dfree = 0;
+			    }
+			    p->as.free.next = deferred_final_list;
+			    deferred_final_list = p;
+			    assert(BUILTIN_TYPE(p) == T_ZOMBIE);
+			    final_num++;
+			}
+			else {
+			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+			    p->as.free.flags = 0;
+			    p->as.free.next = sweep_slot->freelist;
+			    sweep_slot->freelist = p;
+			    rgengc_report(3, objspace, "slot_sweep_body: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
+			    freed_num++;
+			}
+		    }
+		    else {
+			empty_num++;
+		    }
+		}
+		p++;
+		bitset >>= 1;
+	    } while (bitset);
+	}
+    }
+#if USE_RGENGC
+    gc_setup_mark_bits(sweep_slot);
+#else
+    gc_clear_slot_bits(sweep_slot);
 #endif
 
-		if ((deferred = obj_free(objspace, (VALUE)p)) ||
-                    (FL_TEST(p, FL_FINALIZE))) {
-                    if (!deferred) {
-                        p->as.free.flags = T_ZOMBIE;
-                        RDATA(p)->dfree = 0;
-                    }
-                    p->as.free.next = deferred_final_list;
-                    deferred_final_list = p;
-                    assert(BUILTIN_TYPE(p) == T_ZOMBIE);
-                    final_num++;
-                }
-                else {
-                    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-                    p->as.free.flags = 0;
-                    p->as.free.next = sweep_slot->freelist;
-                    sweep_slot->freelist = p;
-		    rgengc_report(3, objspace, "slot_sweep_body: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
-                    freed_num++;
-                }
-            }
-            else {
-                empty_num++;
-            }
-        }
-        p++;
-    }
-    gc_clear_slot_bits(sweep_slot);
     if (final_num + freed_num + empty_num == sweep_slot->header->limit &&
         objspace->heap.free_num > objspace->heap.do_heap_free) {
         RVALUE *pp;
@@ -3005,15 +2996,6 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr)
     if (LIKELY(objspace->mark_func_data == 0)) {
 	rgengc_check_shady(objspace, ptr);
 	if (!gc_mark_ptr(objspace, ptr)) return; /* already marked */
-#if USE_RGENGC
-	if (objspace->rgengc.during_minor_gc) {
-	    /* only minor gc skip marking promoted objects */
-	    if (RVALUE_PROMOTED(ptr)) {
-		rgengc_report(3, objspace, "gc_mark: %p (%s) was promoted.\n", ptr, obj_type_name((VALUE)ptr));
-		return; /* old gen */
-	    }
-	}
-#endif /* USE_RGENGC */
 	push_mark_stack(&objspace->mark_stack, ptr);
     }
     else {
@@ -3386,7 +3368,7 @@ gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th)
     }
     else {
 	objspace->profile.major_gc_count++;
-	rgengc_rememberset_clear(objspace);
+	rgengc_mark_and_rememberset_clear(objspace);
     }
 #endif
 
@@ -3514,7 +3496,6 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	/* setup marking */
 	prev_mark_func_data = objspace->mark_func_data;
 	objspace->mark_func_data = 0;
-
 	objspace->count++;
 
 	SET_STACK_END;
@@ -3626,10 +3607,10 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 	    if(bits[j]){
 		p = offset  + j * (sizeof(uintptr_t) *  CHAR_BIT);
 		bitset = bits[j];
-		while (bitset) {
+		do {
 		    if (bitset & 1) {
-			if (gc_mark_ptr(objspace, (VALUE)p))
-			    push_mark_stack(&objspace->mark_stack, (VALUE) p);
+			gc_mark_ptr(objspace, (VALUE)p);
+			push_mark_stack(&objspace->mark_stack, (VALUE) p);
 			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
 
 			if (!RVALUE_SHADY(p)) {
@@ -3641,8 +3622,8 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 			}
 		    }
 		    p++;
-		    bitset>>=1;
-		}
+		    bitset >>= 1;
+		} while (bitset);
 	    }
 	}
     }
@@ -3653,13 +3634,13 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 }
 
 static void
-rgengc_rememberset_clear(rb_objspace_t *objspace)
+rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace)
 {
     size_t i;
 
     for (i=0; i<heaps_used; i++) {
-	uintptr_t *bits = objspace->heap.sorted[i]->rememberset_bits;
-	memset(bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+	memset(objspace->heap.sorted[i]->mark_bits,        0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+	memset(objspace->heap.sorted[i]->rememberset_bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
     }
 }
 

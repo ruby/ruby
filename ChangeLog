@@ -1,3 +1,10 @@
+Fri Jun  7 11:28:37 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: use oldgen bitmap as initial mark bitmap when mijor gc.
+	  so can skip oldgen bitmap check around mark & sweep.
+	* gc.c (slot_sweep_body): change scan algorithm for performance:
+	  from object's pointer base to bitmap one.
+
 Fri Jun  7 11:25:56 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c: introduce oldgen bitmap for preparing performance tuning.
