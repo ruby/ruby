@@ -2116,13 +2116,13 @@ lazy_sweep_enable(void)
     return Qnil;
 }
 
+#if !USE_RGENGC
 static void
 gc_clear_slot_bits(struct heaps_slot *slot)
 {
     memset(slot->header->mark_bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
 }
-
-#if USE_RGENGC
+#else
 static void
 gc_setup_mark_bits(struct heaps_slot *slot)
 {
