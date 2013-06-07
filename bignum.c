@@ -552,6 +552,76 @@ validate_integer_format(int wordorder, size_t wordsize, int endian, size_t nails
         rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
 }
 
+static void
+integer_format_loop_setup(size_t wordcount, int wordorder, size_t wordsize, int endian, size_t nails,
+    size_t *word_num_fullbytes_ret,
+    int *word_num_partialbits_ret,
+    size_t *word_num_nailbytes_ret,
+    size_t *word_start_ret,
+    ssize_t *word_step_ret,
+    size_t *word_last_ret,
+    size_t *byte_start_ret,
+    int *byte_step_ret)
+{
+    size_t word_num_fullbytes;
+    int word_num_partialbits;
+    size_t word_num_nailbytes;
+    size_t word_start;
+    ssize_t word_step;
+    size_t word_last;
+    size_t byte_start;
+    int byte_step;
+
+    word_num_partialbits = CHAR_BIT - (int)(nails % CHAR_BIT);
+    if (word_num_partialbits == CHAR_BIT)
+        word_num_partialbits = 0;
+    word_num_fullbytes = wordsize - (nails / CHAR_BIT);
+    if (word_num_partialbits != 0) {
+        word_num_fullbytes--;
+        word_num_nailbytes = wordsize - word_num_fullbytes - 1;
+    }
+    else {
+        word_num_nailbytes = wordsize - word_num_fullbytes;
+    }
+
+    if (wordorder == 1) {
+        word_start = wordsize*(wordcount-1);
+        word_step = -(ssize_t)wordsize;
+        word_last = 0;
+    }
+    else {
+        word_start = 0;
+        word_step = wordsize;
+        word_last = wordsize*(wordcount-1);
+    }
+
+    if (endian == 0) {
+#ifdef WORDS_BIGENDIAN
+        endian = 1;
+#else
+        endian = -1;
+#endif
+    }
+    if (endian == 1) {
+        byte_step = -1;
+        byte_start = wordsize-1;
+    }
+    else {
+        byte_step = 1;
+        byte_start = 0;
+    }
+
+    *word_num_partialbits_ret = word_num_partialbits;
+    *word_num_fullbytes_ret = word_num_fullbytes;
+    if (word_num_nailbytes_ret)
+        *word_num_nailbytes_ret = word_num_nailbytes;
+    *word_start_ret = word_start;
+    *word_step_ret = word_step;
+    *word_last_ret = word_last;
+    *byte_start_ret = byte_start;
+    *byte_step_ret = byte_step;
+}
+
 static inline void
 int_export_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 {
@@ -610,14 +680,6 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
     validate_integer_format(wordorder, wordsize, endian, nails);
     if (words && SIZE_MAX / wordsize < wordcount)
         rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
-
-    if (endian == 0) {
-#ifdef WORDS_BIGENDIAN
-        endian = 1;
-#else
-        endian = -1;
-#endif
-    }
 
     if (FIXNUM_P(val)) {
         long v = FIX2LONG(val);
@@ -695,42 +757,18 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
         size_t byte_start;
         int byte_step;
 
+        size_t word_start, word_last;
         unsigned char *bytep, *wordp, *last_wordp;
         size_t index_in_word;
         BDIGIT_DBL dd;
         int numbits_in_dd;
 
-        word_num_partialbits = CHAR_BIT - (int)(nails % CHAR_BIT);
-        if (word_num_partialbits == CHAR_BIT)
-            word_num_partialbits = 0;
-        word_num_fullbytes = wordsize - (nails / CHAR_BIT);
-        if (word_num_partialbits != 0) {
-            word_num_fullbytes--;
-            word_num_nailbytes = wordsize - word_num_fullbytes - 1;
-        }
-        else {
-            word_num_nailbytes = wordsize - word_num_fullbytes;
-        }
+        integer_format_loop_setup(wordcount, wordorder, wordsize, endian, nails,
+            &word_num_fullbytes, &word_num_partialbits, &word_num_nailbytes,
+            &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
-        if (wordorder == 1) {
-            word_step = -(ssize_t)wordsize;
-            wordp = buf + wordsize*(wordcount-1);
-            last_wordp = buf;
-        }
-        else {
-            word_step = wordsize;
-            wordp = buf;
-            last_wordp = buf + wordsize*(wordcount-1);
-        }
-
-        if (endian == 1) {
-            byte_step = -1;
-            byte_start = wordsize-1;
-        }
-        else {
-            byte_step = 1;
-            byte_start = 0;
-        }
+        wordp = buf + word_start;
+        last_wordp = buf + word_last;
 
         dd = 0;
         numbits_in_dd = 0;
@@ -824,6 +862,7 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
     size_t byte_start;
     int byte_step;
 
+    size_t word_start, word_last;
     const unsigned char *bytep, *wordp, *last_wordp;
     size_t index_in_word;
     BDIGIT_DBL dd;
@@ -834,14 +873,6 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
         rb_raise(rb_eArgError, "too big wordcount * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", wordcount, wordsize);
     if (sign != 1 && sign != 0 && sign != -1)
         rb_raise(rb_eArgError, "unexpected sign: %d", sign);
-
-    if (endian == 0) {
-#ifdef WORDS_BIGENDIAN
-        endian = 1;
-#else
-        endian = -1;
-#endif
-    }
 
     /*
      * num_bits = (wordsize * CHAR_BIT - nails) * count
@@ -863,33 +894,12 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
     dp = BDIGITS(result);
     de = dp + RBIGNUM_LEN(result);
 
-    word_num_partialbits = CHAR_BIT - (int)(nails % CHAR_BIT);
-    if (word_num_partialbits == CHAR_BIT)
-        word_num_partialbits = 0;
-    word_num_fullbytes = wordsize - (nails / CHAR_BIT);
-    if (word_num_partialbits != 0) {
-        word_num_fullbytes--;
-    }
+    integer_format_loop_setup(wordcount, wordorder, wordsize, endian, nails,
+        &word_num_fullbytes, &word_num_partialbits, NULL,
+        &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
-    if (wordorder == 1) {
-        word_step = -(ssize_t)wordsize;
-        wordp = buf + wordsize*(wordcount-1);
-        last_wordp = buf;
-    }
-    else {
-        word_step = wordsize;
-        wordp = buf;
-        last_wordp = buf + wordsize*(wordcount-1);
-    }
-
-    if (endian == 1) {
-        byte_step = -1;
-        byte_start = wordsize-1;
-    }
-    else {
-        byte_step = 1;
-        byte_start = 0;
-    }
+    wordp = buf + word_start;
+    last_wordp = buf + word_last;
 
     dd = 0;
     numbits_in_dd = 0;
