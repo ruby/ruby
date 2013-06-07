@@ -1,3 +1,10 @@
+Fri Jun  7 11:41:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: revert r41106.  size_t may not be unsigned
+
+	* bignum.c (rb_absint_size_in_word, rb_int_export, rb_int_import): use
+	  NUM2SIZET() and SIZET2NUM() already defined in ruby/ruby.h.
+
 Fri Jun  7 11:28:37 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c: use oldgen bitmap as initial mark bitmap when mijor gc.

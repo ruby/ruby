@@ -7,7 +7,7 @@ rb_int_export_m(VALUE val, VALUE buf, VALUE wordorder, VALUE wordsize_arg, VALUE
   int sign;
   size_t count = 0;
   void *ret;
-  size_t wordsize = NUM2SIZE(wordsize_arg);
+  size_t wordsize = NUM2SIZET(wordsize_arg);
 
   if (!NIL_P(buf)) {
       StringValue(buf);
@@ -19,7 +19,7 @@ rb_int_export_m(VALUE val, VALUE buf, VALUE wordorder, VALUE wordsize_arg, VALUE
       &sign, &count, NIL_P(buf) ? NULL : RSTRING_PTR(buf), count,
       NUM2INT(wordorder), wordsize, NUM2INT(endian), NUM2INT(nails));
 
-  return rb_ary_new_from_args(3, INT2NUM(sign), ret ? rb_str_new(ret, wordsize * count) : Qnil, SIZE2NUM(count));
+  return rb_ary_new_from_args(3, INT2NUM(sign), ret ? rb_str_new(ret, wordsize * count) : Qnil, SIZET2NUM(count));
 }
 
 void

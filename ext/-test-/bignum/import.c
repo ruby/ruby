@@ -7,8 +7,8 @@ rb_int_import_m(VALUE klass, VALUE sign, VALUE buf, VALUE wordcount, VALUE wordo
     StringValue(buf);
 
     return rb_int_import(NUM2INT(sign), RSTRING_PTR(buf),
-            NUM2SIZE(wordcount), NUM2INT(wordorder), NUM2SIZE(wordsize),
-            NUM2INT(endian), NUM2SIZE(nails));
+            NUM2SIZET(wordcount), NUM2INT(wordorder), NUM2SIZET(wordsize),
+            NUM2INT(endian), NUM2SIZET(nails));
 }
 
 void

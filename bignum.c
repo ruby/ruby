@@ -522,14 +522,14 @@ rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_lea
     div = RARRAY_AREF(div_mod, 0);
     mod = RARRAY_AREF(div_mod, 1);
     if (mod == LONG2FIX(0)) {
-        numwords = NUM2SIZE(div);
+        numwords = NUM2SIZET(div);
         if (number_of_leading_zero_bits)
             *number_of_leading_zero_bits = 0;
     }
     else {
-        numwords = NUM2SIZE(rb_funcall(div, '+', 1, LONG2FIX(1)));
+        numwords = NUM2SIZET(rb_funcall(div, '+', 1, LONG2FIX(1)));
         if (number_of_leading_zero_bits)
-            *number_of_leading_zero_bits = word_numbits_arg - NUM2SIZE(mod);
+            *number_of_leading_zero_bits = word_numbits_arg - NUM2SIZET(mod);
     }
     return numwords;
 }
@@ -663,7 +663,7 @@ rb_int_export(VALUE val, int *signp, size_t *wordcount_allocated, void *words, s
         wordcountv = rb_funcall(val_numbits, '+', 1, word_numbits);
         wordcountv = rb_funcall(wordcountv, '-', 1, LONG2FIX(1));
         wordcountv = rb_funcall(wordcountv, rb_intern("div"), 1, word_numbits);
-        wordcount = NUM2SIZE(wordcountv);
+        wordcount = NUM2SIZET(wordcountv);
         buf = xmalloc(wordcount * wordsize);
         bufend = buf + wordcount * wordsize;
     }
@@ -844,10 +844,10 @@ rb_int_import(int sign, const void *words, size_t wordcount, int wordorder, size
      * num_bits = (wordsize * CHAR_BIT - nails) * count
      * num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
      */
-    num_bits = SIZE2NUM(wordsize);
+    num_bits = SIZET2NUM(wordsize);
     num_bits = rb_funcall(num_bits, '*', 1, LONG2FIX(CHAR_BIT));
-    num_bits = rb_funcall(num_bits, '-', 1, SIZE2NUM(nails));
-    num_bits = rb_funcall(num_bits, '*', 1, SIZE2NUM(wordcount));
+    num_bits = rb_funcall(num_bits, '-', 1, SIZET2NUM(nails));
+    num_bits = rb_funcall(num_bits, '*', 1, SIZET2NUM(wordcount));
 
     if (num_bits == LONG2FIX(0))
         return LONG2FIX(0);
