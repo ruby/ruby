@@ -302,21 +302,11 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 #endif
     }
     else {
-#if 64 % BITSPERDIG == 0
-	long len = RBIGNUM_LEN(x);
-	BDIGIT *xd = BDIGITS(x);
-	MEMMOVE(xd, xd + 64 / BITSPERDIG, BDIGIT, len - 64 / BITSPERDIG);
-	MEMZERO(xd + len - 64 / BITSPERDIG, BDIGIT, 64 / BITSPERDIG);
-	r = rb_big2dbl(x);
-#else
-	x = rb_big_rshift(x, INT2FIX(64));
-	if (FIXNUM_P(x)) {
-	    r = (double)FIX2ULONG(x);
-	}
-	else {
-	    r = rb_big2dbl(x);
-	}
-#endif
+        uint32_t uary[4];
+        rb_integer_pack(x, NULL, NULL, uary, numberof(uary), sizeof(uint32_t), 0,
+                INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        /* r = x >> 64 */
+        r = (double)uary[0] * (0x10000 * (double)0x10000) + (double)uary[1];
     }
     return ldexp(r, -53);
 }
