@@ -142,8 +142,7 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 	return NUMERR_TOOLARGE;
 #else
 	/* long is 32bit */
-#define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
-	if (RBIGNUM_LEN(val) > DIGSPERLONG) return NUMERR_TOOLARGE;
+	if (rb_absint_size(val, NULL) > sizeof(int)) return NUMERR_TOOLARGE;
 	*ret = (unsigned int)rb_big2ulong((VALUE)val);
 	return 0;
 #endif

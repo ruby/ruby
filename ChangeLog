@@ -1,3 +1,8 @@
+Sat Jun  8 23:56:00 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_num_to_uint): Use rb_absint_size instead of
+	  RBIGNUM_LEN.
+
 Sat Jun  8 22:53:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (r_object0): Use rb_integer_unpack.
