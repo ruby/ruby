@@ -741,7 +741,7 @@ limited_big_rand(struct MT *mt, VALUE limit)
 {
     /* mt must be initialized */
 
-    unsigned long mask, lim, rnd;
+    uint32_t mask;
     long i;
     int boundary;
 
@@ -761,8 +761,9 @@ limited_big_rand(struct MT *mt, VALUE limit)
     mask = 0;
     boundary = 1;
     for (i = len-1; 0 <= i; i--) {
-        lim = lim_array[i];
-        mask = mask ? 0xffffffff : make_mask(lim);
+	uint32_t rnd;
+        uint32_t lim = lim_array[i];
+        mask = mask ? 0xffffffff : (uint32_t)make_mask(lim);
         if (mask) {
             rnd = genrand_int32(mt) & mask;
             if (boundary) {

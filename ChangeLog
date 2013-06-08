@@ -1,3 +1,8 @@
+Sat Jun  8 19:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* random.c (limited_big_rand): declare rnd, lim and mask as uint32_t
+	  to avoid 64 bit to 32 bit shorten warnings.
+
 Sat Jun  8 19:23:53 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/Makefile.sub: r41163 changed win32/win32.c and configure.in
