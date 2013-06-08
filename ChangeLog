@@ -1,3 +1,10 @@
+Sat Jun  8 19:23:53 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/Makefile.sub: r41163 changed win32/win32.c and configure.in
+	  but it didn't treat about mswin32/mswin64, so fix it.
+	  NOTE: this needs a review by usa whether additional condition is
+	  required or not.
+
 Sat Jun  8 19:06:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c: Unused RBignum internal accessing macros removed.
