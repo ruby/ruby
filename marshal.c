@@ -1610,44 +1610,15 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_BIGNUM:
 	{
 	    long len;
-	    BDIGIT *digits;
 	    VALUE data;
+            int sign;
 
-	    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-	    RBIGNUM_SET_SIGN(big, (r_byte(arg) == '+'));
+	    sign = r_byte(arg);
 	    len = r_long(arg);
 	    data = r_bytes0(len * 2, arg);
-#if SIZEOF_BDIGITS == SIZEOF_SHORT
-            rb_big_resize((VALUE)big, len);
-#else
-            rb_big_resize((VALUE)big, (len * 2 + sizeof(BDIGIT) - 1) / sizeof(BDIGIT));
-#endif
-            digits = RBIGNUM_DIGITS(big);
-	    MEMCPY(digits, RSTRING_PTR(data), char, len * 2);
+            v = rb_integer_unpack(sign == '-' ? -1 : +1, RSTRING_PTR(data), len, 2, 0,
+                INTEGER_PACK_LITTLE_ENDIAN);
 	    rb_str_resize(data, 0L);
-#if SIZEOF_BDIGITS > SIZEOF_SHORT
-	    MEMZERO((char *)digits + len * 2, char,
-		    RBIGNUM_LEN(big) * sizeof(BDIGIT) - len * 2);
-#endif
-	    len = RBIGNUM_LEN(big);
-	    while (len > 0) {
-		unsigned char *p = (unsigned char *)digits;
-		BDIGIT num = 0;
-#if SIZEOF_BDIGITS > SIZEOF_SHORT
-		int shift = 0;
-		int i;
-
-		for (i=0; i<SIZEOF_BDIGITS; i++) {
-		    num |= (BDIGIT)p[i] << shift;
-		    shift += 8;
-		}
-#else
-		num = p[0] | (p[1] << 8);
-#endif
-		*digits++ = num;
-		len--;
-	    }
-	    v = rb_big_norm((VALUE)big);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
