@@ -89,7 +89,16 @@ rb_hash(VALUE obj)
 	return hval;
 
       case T_BIGNUM:
-	return LONG2FIX(((long*)(RBIGNUM_DIGITS(hval)))[0]);
+        {
+            int sign;
+            unsigned long ul;
+            rb_integer_pack(hval, &sign, NULL, &ul, 1, sizeof(ul), 0,
+                    INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+            ul &= (1UL << (sizeof(long)*CHAR_BIT-1)) - 1;
+            if (sign < 0)
+                return LONG2FIX(-(long)ul);
+            return LONG2FIX((long)ul);
+        }
 
       default:
 	hval = rb_to_int(hval);

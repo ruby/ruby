@@ -1,3 +1,8 @@
+Sun Jun  9 00:59:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (rb_hash): Use rb_integer_pack to obtain least significant
+	  long integer.
+
 Sat Jun  8 23:56:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_num_to_uint): Use rb_absint_size instead of
