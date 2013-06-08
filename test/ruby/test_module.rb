@@ -1759,6 +1759,26 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError, bug8284) {Object.define_method}
   end
 
+  def test_include_module_with_constants_invalidates_method_cache
+    assert_in_out_err([], <<-RUBY, %w(123 456), [])
+      A = 123
+
+      class Foo
+        def self.a
+          A
+        end
+      end
+
+      module M
+        A = 456
+      end
+
+      puts Foo.a
+      Foo.send(:include, M)
+      puts Foo.a
+    RUBY
+  end
+
   private
 
   def assert_top_method_is_private(method)

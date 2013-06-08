@@ -760,6 +760,8 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	}
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;
+	if (RMODULE_CONST_TBL(module) && RMODULE_CONST_TBL(module)->num_entries)
+	    changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }

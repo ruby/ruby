@@ -1,3 +1,10 @@
+Sat Jun  8 19:47:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c (include_modules_at): invalidate method cache if included
+	  module contains constants
+
+	* test/ruby/test_module.rb: add test
+
 Sat Jun  8 19:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* random.c (limited_big_rand): declare rnd, lim and mask as uint32_t
