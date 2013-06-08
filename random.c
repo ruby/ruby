@@ -270,7 +270,6 @@ rb_genrand_real(void)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
-#define roomof(n, m) (int)(((n)+(m)-1) / (m))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
@@ -379,58 +378,34 @@ static VALUE
 rand_init(struct MT *mt, VALUE vseed)
 {
     volatile VALUE seed;
-    long blen = 0;
-    long fixnum_seed;
-    int i, j, len;
-    unsigned int buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    uint32_t buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    size_t len;
+    int sign;
 
     seed = rb_to_int(vseed);
-    switch (TYPE(seed)) {
-      case T_FIXNUM:
-	len = 1;
-	fixnum_seed = FIX2LONG(seed);
-        if (fixnum_seed < 0)
-            fixnum_seed = -fixnum_seed;
-	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
-#if SIZEOF_LONG > SIZEOF_INT32
-	if ((long)(int32_t)fixnum_seed != fixnum_seed) {
-	    if ((buf[1] = (unsigned int)(fixnum_seed >> 32)) != 0) ++len;
-	}
-#endif
-	break;
-      case T_BIGNUM:
-	blen = RBIGNUM_LEN(seed);
-	if (blen == 0) {
-	    len = 1;
-	}
-	else {
-	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
-		blen = MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS;
-	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
-	}
-	/* allocate ints for init_by_array */
-	if (len > numberof(buf0)) buf = ALLOC_N(unsigned int, len);
-	memset(buf, 0, len * sizeof(*buf));
-	len = 0;
-	for (i = (int)(blen-1); 0 <= i; i--) {
-	    j = i * SIZEOF_BDIGITS / SIZEOF_INT32;
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	    buf[j] <<= BITSPERDIG;
-#endif
-	    buf[j] |= RBIGNUM_DIGITS(seed)[i];
-	    if (!len && buf[j]) len = j;
-	}
-	++len;
-	break;
-      default:
-	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-		 rb_obj_classname(vseed));
+
+    len = rb_absint_size_in_word(seed, 32, NULL);
+    if (MT_MAX_STATE < len)
+        len = MT_MAX_STATE;
+    if (len > numberof(buf0))
+        buf = ALLOC_N(unsigned int, len);
+    rb_integer_pack(seed, &sign, NULL, buf, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign < 0)
+        sign = -sign;
+    if (sign != 2) { /* not overflow */
+        while (0 < len && buf[len-1] == 0)
+            len--;
+    }
+    if (len == 0) {
+        buf[0] = 0;
+        len = 1;
     }
     if (len <= 1) {
         init_genrand(mt, buf[0]);
     }
     else {
-        if (buf[len-1] == 1) /* remove leading-zero-guard */
+        if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
         init_by_array(mt, buf, len);
     }
