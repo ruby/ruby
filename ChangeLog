@@ -91,7 +91,7 @@ Sat Jun  8 14:58:32 2013  Tanaka Akira  <akr@fsij.org>
 Sat Jun  8 14:17:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for NET_LUID.  header macro varies across
-	  complier versions.
+	  compiler versions.
 
 	* win32/win32.c: use configured macro.
 
