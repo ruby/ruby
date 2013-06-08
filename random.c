@@ -407,7 +407,7 @@ rand_init(struct MT *mt, VALUE vseed)
     else {
         if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
-        init_by_array(mt, buf, len);
+        init_by_array(mt, buf, (int)len);
     }
     if (buf != buf0) xfree(buf);
     return seed;

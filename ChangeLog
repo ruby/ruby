@@ -1,3 +1,11 @@
+Sat Jun  8 15:58:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (rand_init): Add a cast to fix clang compile error:
+	  random.c:410:32: error: implicit conversion loses integer precision:
+	  'size_t' (aka 'unsigned long') to 'int' [-Werror,-Wshorten-64-to-32]
+	  This cast doesn't cause a problem because len is not bigger than
+	  MT_MAX_STATE.
+
 Sat Jun  8 15:30:03 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (rand_init): Use rb_integer_pack.
