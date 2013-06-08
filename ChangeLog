@@ -1,3 +1,8 @@
+Sat Jun  8 21:47:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (v2w_bignum): Simplified using rb_integer_pack.
+	  (rb_big_abs_find_maxbit): Removed.
+
 Sat Jun  8 21:03:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_absint_singlebit_p): New function.

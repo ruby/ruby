@@ -296,48 +296,25 @@ w2v(wideval_t w)
 }
 
 #if WIDEVALUE_IS_WIDER
-static VALUE
-rb_big_abs_find_maxbit(VALUE big)
-{
-    int num_zeros;
-    size_t bytesize;
-    VALUE res;
-
-    bytesize = rb_absint_size(big, &num_zeros);
-    if (bytesize == 0)
-        return Qnil;
-
-    res = mul(SIZET2NUM(bytesize), LONG2FIX(CHAR_BIT));
-    if (num_zeros)
-        res = sub(res, LONG2FIX(num_zeros));
-    return res;
-}
-
 static wideval_t
 v2w_bignum(VALUE v)
 {
-    long len = RBIGNUM_LEN(v);
-    BDIGIT *ds;
-    wideval_t w;
-    VALUE maxbit;
-    ds = RBIGNUM_DIGITS(v);
-    w = WIDEVAL_WRAP(v);
-    maxbit = rb_big_abs_find_maxbit(v);
-    if (NIL_P(maxbit))
+    int sign;
+    uwideint_t u;
+    wideint_t i;
+    rb_integer_pack(v, &sign, NULL, &u, 1, sizeof(i), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign == 0)
         return WINT2FIXWV(0);
-    if (lt(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) ||
-        (eq(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) &&
-         RBIGNUM_NEGATIVE_P(v) && rb_absint_singlebit_p(v))) {
-        wideint_t i;
-        i = 0;
-        while (len)
-            i = (i << sizeof(BDIGIT)*CHAR_BIT) | ds[--len];
-        if (RBIGNUM_NEGATIVE_P(v)) {
-            i = -i;
-        }
-        w = WINT2FIXWV(i);
+    else if (sign == -1) {
+        if (u <= -FIXWV_MIN)
+            return WINT2FIXWV(-(wideint_t)u);
     }
-    return w;
+    else if (sign == +1) {
+        if (u <= FIXWV_MAX)
+            return WINT2FIXWV((wideint_t)u);
+    }
+    return WIDEVAL_WRAP(v);
 }
 #endif
 
