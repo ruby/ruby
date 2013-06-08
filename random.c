@@ -746,38 +746,31 @@ limited_rand(struct MT *mt, unsigned long limit)
 }
 
 static VALUE
-limited_big_rand(struct MT *mt, struct RBignum *limit)
+limited_big_rand(struct MT *mt, VALUE limit)
 {
     /* mt must be initialized */
+
     unsigned long mask, lim, rnd;
-    struct RBignum *val;
-    long i, len;
+    long i;
     int boundary;
 
-    len = (RBIGNUM_LEN(limit) * SIZEOF_BDIGITS + 3) / 4;
-    val = (struct RBignum *)rb_big_clone((VALUE)limit);
-    RBIGNUM_SET_SIGN(val, 1);
-#if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) \
-    (RBIGNUM_DIGITS(big)[(i)*2] | \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) : \
-      0))
-# define BIG_SET32(big,i,d) \
-    ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) : \
-      0))
-#else
-    /* SIZEOF_BDIGITS == 4 */
-# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[(i)])
-# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[(i)] = (d))
-#endif
+    size_t len;
+    uint32_t *tmp, *lim_array, *rnd_array;
+    VALUE vtmp;
+    VALUE val;
+
+    len = rb_absint_size_in_word(limit, 32, NULL);
+    tmp = ALLOCV_N(uint32_t, vtmp, len*2);
+    lim_array = tmp;
+    rnd_array = tmp + len;
+    rb_integer_pack(limit, NULL, NULL, lim_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+
   retry:
     mask = 0;
     boundary = 1;
     for (i = len-1; 0 <= i; i--) {
-        lim = BIG_GET32(limit, i);
+        lim = lim_array[i];
         mask = mask ? 0xffffffff : make_mask(lim);
         if (mask) {
             rnd = genrand_int32(mt) & mask;
@@ -791,9 +784,13 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
         else {
             rnd = 0;
         }
-        BIG_SET32(val, i, (BDIGIT)rnd);
+        rnd_array[i] = rnd;
     }
-    return rb_big_norm((VALUE)val);
+    val = rb_integer_unpack(+1, rnd_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    ALLOCV_END(vtmp);
+
+    return val;
 }
 
 /*
@@ -967,7 +964,7 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
 	    r = limited_rand(mt, max);
 	    return LONG2NUM(r);
 	}
-	ret = limited_big_rand(mt, RBIGNUM(vmax));
+	ret = limited_big_rand(mt, vmax);
 	RB_GC_GUARD(vmax);
 	return ret;
     }
@@ -1009,7 +1006,7 @@ rand_range(struct MT* mt, VALUE range)
 		excl = 0;
 		goto fixnum;
 	    }
-	    v = limited_big_rand(mt, RBIGNUM(vmax));
+	    v = limited_big_rand(mt, vmax);
 	}
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {

@@ -1,3 +1,8 @@
+Sat Jun  8 19:04:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (limited_big_rand): The argument, limit, is changed to
+	  VALUE.  Use rb_integer_pack and rb_integer_unpack.
+
 Sat Jun  8 17:15:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (make_seed_value): Fix the length given for
