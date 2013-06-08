@@ -932,6 +932,8 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     while (dp < de)
         *dp++ = 0;
 
+    if (flags & INTEGER_PACK_FORCE_BIGNUM)
+        return bigtrunc(result);
     return bignorm(result);
 #undef PUSH_BITS
 }

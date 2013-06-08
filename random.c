@@ -285,15 +285,17 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     xary[0] = a;
     xary[1] = b;
     x = rb_integer_unpack(+1, xary, 2, sizeof(uint32_t), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
 
     /* (1 << 53) | 1 */
     mary[0] = 0x00200000;
     mary[1] = 0x00000001;
     m = rb_integer_unpack(+1, mary, 2, sizeof(uint32_t), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
 
-    x = rb_funcall(x, '*', 1, m);
+    x = rb_big_mul(x, m);
     if (FIXNUM_P(x)) {
 #if CHAR_BIT * SIZEOF_LONG > 64
 	r = (double)(FIX2ULONG(x) >> 64);

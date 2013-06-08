@@ -55,11 +55,15 @@ extern "C" {
 
 /* "MS" in MSWORD and MSBYTE means "most significant" */
 /* "LS" in LSWORD and LSBYTE means "least significant" */
+/* For rb_integer_pack and rb_integer_unpack: */
 #define INTEGER_PACK_MSWORD_FIRST       0x01
 #define INTEGER_PACK_LSWORD_FIRST       0x02
 #define INTEGER_PACK_MSBYTE_FIRST       0x10
 #define INTEGER_PACK_LSBYTE_FIRST       0x20
 #define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
+/* For rb_integer_unpack: */
+#define INTEGER_PACK_FORCE_BIGNUM       0x100
+/* Combinations: */
 #define INTEGER_PACK_LITTLE_ENDIAN \
     (INTEGER_PACK_LSWORD_FIRST | \
      INTEGER_PACK_LSBYTE_FIRST)
