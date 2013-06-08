@@ -293,7 +293,7 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     m = rb_integer_unpack(+1, mary, 2, sizeof(uint32_t), 0,
         INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    x = rb_big_mul(x, m);
+    x = rb_funcall(x, '*', 1, m);
     if (FIXNUM_P(x)) {
 #if CHAR_BIT * SIZEOF_LONG > 64
 	r = (double)(FIX2ULONG(x) >> 64);
