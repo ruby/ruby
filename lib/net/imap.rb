@@ -2954,6 +2954,7 @@ module Net
             break
           when T_SPACE
             shift_token
+            next
           end
           data.push(atom.upcase)
         end

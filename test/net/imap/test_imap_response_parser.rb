@@ -194,4 +194,15 @@ EOF
                  response.data[0].user)
     assert_equal("lrswickxteda", response.data[0].rights)
   end
+
+  # [Bug #8415]
+  def test_capability
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* CAPABILITY st11p00mm-iscream009 1Q49 XAPPLEPUSHSERVICE IMAP4 IMAP4rev1 SASL-IR AUTH=ATOKEN AUTH=PLAIN\r\n")
+    assert_equal("CAPABILITY", response.name)
+    assert_equal("AUTH=PLAIN", response.data.last)
+    response = parser.parse("* CAPABILITY st11p00mm-iscream009 1Q49 XAPPLEPUSHSERVICE IMAP4 IMAP4rev1 SASL-IR AUTH=ATOKEN AUTH=PLAIN \r\n")
+    assert_equal("CAPABILITY", response.name)
+    assert_equal("AUTH=PLAIN", response.data.last)
+  end
 end
