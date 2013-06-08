@@ -953,6 +953,12 @@ main()
 		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
+		AC_CHECK_TYPE([NET_LUID], [], [],
+			      [@%:@include <windows.h>
+		  	      @%:@include <iphlpapi.h>])
+		if test x"$ac_cv_type_NET_LUID" = xyes; then
+		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
+		fi
 		AC_LIBOBJ([langinfo])
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"
