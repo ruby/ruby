@@ -1,3 +1,7 @@
+Sat Jun  8 19:06:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c: Unused RBignum internal accessing macros removed.
+
 Sat Jun  8 19:04:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (limited_big_rand): The argument, limit, is changed to

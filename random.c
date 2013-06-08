@@ -261,15 +261,6 @@ rb_genrand_real(void)
     return genrand_real(mt);
 }
 
-#define BDIGITS(x) (RBIGNUM_DIGITS(x))
-#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERINT (SIZEOF_INT/SIZEOF_BDIGITS)
-#define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT((x),BITSPERDIG)
-#define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
-#define BDIGMAX ((BDIGIT)-1)
-
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
