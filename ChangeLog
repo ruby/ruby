@@ -1,3 +1,8 @@
+Sat Jun  8 17:15:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (make_seed_value): Fix the length given for
+	  rb_integer_unpack.
+
 Sat Jun  8 16:38:02 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_unpack): Don't use rb_funcall if possible.

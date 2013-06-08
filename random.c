@@ -517,7 +517,7 @@ make_seed_value(const uint32_t *ptr)
         len = DEFAULT_SEED_CNT;
     }
 
-    seed = rb_integer_unpack(+1, ptr, DEFAULT_SEED_CNT, sizeof(uint32_t), 0,
+    seed = rb_integer_unpack(+1, ptr, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     return seed;
