@@ -1,3 +1,7 @@
+Sat Jun  8 09:49:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (int_pair_to_real_inclusive): Use rb_integer_unpack.
+
 Sat Jun  8 08:12:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (random_load): Use rb_integer_pack.

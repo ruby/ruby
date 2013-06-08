@@ -205,12 +205,12 @@ genrand_real(struct MT *mt)
 }
 
 /* generates a random number on [0,1] with 53-bit resolution*/
-static double int_pair_to_real_inclusive(unsigned int a, unsigned int b);
+static double int_pair_to_real_inclusive(uint32_t a, uint32_t b);
 static double
 genrand_real2(struct MT *mt)
 {
     /* mt must be initialized */
-    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    uint32_t a = genrand_int32(mt), b = genrand_int32(mt);
     return int_pair_to_real_inclusive(a, b);
 }
 
@@ -274,28 +274,25 @@ rb_genrand_real(void)
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
-int_pair_to_real_inclusive(unsigned int a, unsigned int b)
+int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 {
-    VALUE x = rb_big_new(roomof(64, BITSPERDIG), 1);
-    VALUE m = rb_big_new(roomof(53, BITSPERDIG), 1);
-    BDIGIT *xd = BDIGITS(x);
-    int i = 0;
+    VALUE x;
+    VALUE m;
+    uint32_t xary[2], mary[2];
     double r;
 
-    xd[i++] = (BDIGIT)b;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(b >> BITSPERDIG);
-#endif
-    xd[i++] = (BDIGIT)a;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(a >> BITSPERDIG);
-#endif
-    xd = BDIGITS(m);
-#if BITSPERDIG < 53
-    MEMZERO(xd, BDIGIT, roomof(53, BITSPERDIG) - 1);
-#endif
-    xd[53 / BITSPERDIG] = (BDIGIT)1 << 53 % BITSPERDIG;
-    xd[0] |= 1;
+    /* (a << 32) | b */
+    xary[0] = a;
+    xary[1] = b;
+    x = rb_integer_unpack(+1, xary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+
+    /* (1 << 53) | 1 */
+    mary[0] = 0x00200000;
+    mary[1] = 0x00000001;
+    m = rb_integer_unpack(+1, mary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+
     x = rb_big_mul(x, m);
     if (FIXNUM_P(x)) {
 #if CHAR_BIT * SIZEOF_LONG > 64
@@ -307,7 +304,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
     else {
 #if 64 % BITSPERDIG == 0
 	long len = RBIGNUM_LEN(x);
-	xd = BDIGITS(x);
+	BDIGIT *xd = BDIGITS(x);
 	MEMMOVE(xd, xd + 64 / BITSPERDIG, BDIGIT, len - 64 / BITSPERDIG);
 	MEMZERO(xd + len - 64 / BITSPERDIG, BDIGIT, 64 / BITSPERDIG);
 	r = rb_big2dbl(x);
