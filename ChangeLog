@@ -5,7 +5,7 @@ Sat Jun  8 14:58:32 2013  Tanaka Akira  <akr@fsij.org>
 	* bignum.c (rb_integer_unpack): Support INTEGER_PACK_FORCE_BIGNUM.
 
 	* random.c (int_pair_to_real_inclusive): Use
-	  INTEGER_PACK_FORCE_BIGNUM to use rb_big_mul instead of rb_funcall. 
+	  INTEGER_PACK_FORCE_BIGNUM to use rb_big_mul instead of rb_funcall.
 
 Sat Jun  8 14:17:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
