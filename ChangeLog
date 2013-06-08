@@ -1,3 +1,13 @@
+Sat Jun  8 21:03:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_absint_singlebit_p): New function.
+
+	* internal.h (rb_absint_singlebit_p): Declared.
+
+	* time.c (v2w_bignum): Use rb_absint_singlebit_p instead of
+	  rb_big_abs_find_minbit.
+	  (rb_big_abs_find_minbit): Removed.
+
 Sat Jun  8 20:24:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (rb_big_abs_find_maxbit): Use rb_absint_size.

@@ -537,6 +537,52 @@ rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_lea
     return numwords;
 }
 
+int
+rb_absint_singlebit_p(VALUE val)
+{
+    BDIGIT *dp;
+    BDIGIT *de;
+    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+    BDIGIT d;
+
+    val = rb_to_int(val);
+
+    if (FIXNUM_P(val)) {
+        long v = FIX2LONG(val);
+        if (v < 0) {
+            v = -v;
+        }
+#if SIZEOF_BDIGITS == SIZEOF_LONG
+        fixbuf[0] = v;
+#else
+        {
+            int i;
+            for (i = 0; i < numberof(fixbuf); i++) {
+                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
+                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+            }
+        }
+#endif
+        dp = fixbuf;
+        de = fixbuf + numberof(fixbuf);
+    }
+    else {
+        dp = BDIGITS(val);
+        de = dp + RBIGNUM_LEN(val);
+    }
+    while (dp < de && de[-1] == 0)
+        de--;
+    while (dp < de && dp[0] == 0)
+        dp++;
+    if (dp == de) /* no bit set. */
+        return 0;
+    if (dp != de-1) /* two non-zero words. two bits set, at least. */
+        return 0;
+    d = *dp;
+    d = d & (d - 1); /* Clear the least significant bit set */
+    return d == 0;
+}
+
 #define INTEGER_PACK_WORDORDER_MASK \
     (INTEGER_PACK_MSWORD_FIRST | \
      INTEGER_PACK_LSWORD_FIRST)

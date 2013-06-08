@@ -313,25 +313,6 @@ rb_big_abs_find_maxbit(VALUE big)
     return res;
 }
 
-static VALUE
-rb_big_abs_find_minbit(VALUE big)
-{
-    BDIGIT *ds = RBIGNUM_DIGITS(big);
-    BDIGIT d;
-    long len = RBIGNUM_LEN(big);
-    long i;
-    VALUE res;
-    for (i = 0; i < len; i++)
-        if (ds[i])
-            break;
-    if (i == len)
-        return Qnil;
-    res = mul(LONG2NUM(i), INT2FIX(SIZEOF_BDIGITS * CHAR_BIT));
-    d = ds[i];
-    res = add(res, LONG2FIX(ffs(d)-1));
-    return res;
-}
-
 static wideval_t
 v2w_bignum(VALUE v)
 {
@@ -346,8 +327,7 @@ v2w_bignum(VALUE v)
         return WINT2FIXWV(0);
     if (lt(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) ||
         (eq(maxbit, INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)) &&
-         RBIGNUM_NEGATIVE_P(v) &&
-         eq(rb_big_abs_find_minbit(v), INT2FIX(sizeof(wideint_t) * CHAR_BIT - 2)))) {
+         RBIGNUM_NEGATIVE_P(v) && rb_absint_singlebit_p(v))) {
         wideint_t i;
         i = 0;
         while (len)
