@@ -1,3 +1,9 @@
+Sun Jun  9 01:59:39 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+merge revision 40783 (partially): [Backport #8413]
+
+	* win32/Makefile.sub: fix a typo in config.h.
+
 Sun Jun  9 01:38:55 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* intern.h: remove dangling rb_class_init_copy declaration

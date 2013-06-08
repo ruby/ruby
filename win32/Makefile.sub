@@ -855,7 +855,7 @@ s,@sitedir@,$${rubylibprefix}/site_ruby,;t t
 s,@sitearchdir@,$${sitelibdir}/$${sitearch},;t t
 s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
-s,@vendorarchdir@,$${vendirlibdir}/$${sitearch},;t t
+s,@vendorarchdir@,$${vendorlibdir}/$${sitearch},;t t
 s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
 s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
