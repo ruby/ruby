@@ -296,47 +296,20 @@ w2v(wideval_t w)
 }
 
 #if WIDEVALUE_IS_WIDER
-static int
-bdigit_find_maxbit(BDIGIT d)
-{
-    int res = 0;
-    if (d & ~(BDIGIT)0xffff) {
-        d >>= 16;
-        res += 16;
-    }
-    if (d & ~(BDIGIT)0xff) {
-        d >>= 8;
-        res += 8;
-    }
-    if (d & ~(BDIGIT)0xf) {
-        d >>= 4;
-        res += 4;
-    }
-    if (d & ~(BDIGIT)0x3) {
-        d >>= 2;
-        res += 2;
-    }
-    if (d & ~(BDIGIT)0x1) {
-        d >>= 1;
-        res += 1;
-    }
-    return res;
-}
-
 static VALUE
 rb_big_abs_find_maxbit(VALUE big)
 {
-    BDIGIT *ds = RBIGNUM_DIGITS(big);
-    BDIGIT d;
-    long len = RBIGNUM_LEN(big);
+    int num_zeros;
+    size_t bytesize;
     VALUE res;
-    while (0 < len && ds[len-1] == 0)
-        len--;
-    if (len == 0)
+
+    bytesize = rb_absint_size(big, &num_zeros);
+    if (bytesize == 0)
         return Qnil;
-    res = mul(LONG2NUM(len-1), INT2FIX(SIZEOF_BDIGITS * CHAR_BIT));
-    d = ds[len-1];
-    res = add(res, LONG2FIX(bdigit_find_maxbit(d)));
+
+    res = mul(SIZET2NUM(bytesize), LONG2FIX(CHAR_BIT));
+    if (num_zeros)
+        res = sub(res, LONG2FIX(num_zeros));
     return res;
 }
 

@@ -1,3 +1,8 @@
+Sat Jun  8 20:24:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (rb_big_abs_find_maxbit): Use rb_absint_size.
+	  (bdigit_find_maxbit): Removed.
+
 Sat Jun  8 19:47:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* class.c (include_modules_at): invalidate method cache if included
