@@ -326,7 +326,7 @@ v2w(VALUE v)
         return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);
     }
     else if (RB_TYPE_P(v, T_BIGNUM) &&
-        RBIGNUM_LEN(v) * sizeof(BDIGIT) <= sizeof(WIDEVALUE)) {
+        rb_absint_size(v, NULL) <= sizeof(WIDEVALUE)) {
         return v2w_bignum(v);
     }
 #endif

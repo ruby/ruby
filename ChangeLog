@@ -1,3 +1,7 @@
+Sat Jun  8 22:18:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (v2w): Use rb_absint_size instead of RBIGNUM_LEN.
+
 Sat Jun  8 21:47:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (v2w_bignum): Simplified using rb_integer_pack.
