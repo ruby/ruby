@@ -1,3 +1,8 @@
+Sun Jun  9 01:38:55 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* intern.h: remove dangling rb_class_init_copy declaration
+	  [ruby-core:55120] [Bug #8434]
+
 Sun Jun  9 01:30:57 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (capability_response): should ignore trailing
