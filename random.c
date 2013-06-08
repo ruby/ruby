@@ -440,7 +440,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int))
+#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int32_t))
 
 #if defined(S_ISCHR) && !defined(DOSISH)
 # define USE_DEV_URANDOM 1
@@ -449,7 +449,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
 #endif
 
 static void
-fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
+fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
@@ -500,28 +500,27 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
 }
 
 static VALUE
-make_seed_value(const void *ptr)
+make_seed_value(const uint32_t *ptr)
 {
-    const long len = DEFAULT_SEED_LEN/SIZEOF_BDIGITS;
-    BDIGIT *digits;
-    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+    VALUE seed;
+    size_t len;
 
-    RBIGNUM_SET_SIGN(big, 1);
-    rb_big_resize((VALUE)big, len + 1);
-    digits = RBIGNUM_DIGITS(big);
+    if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
+        /* set leading-zero-guard */
+        uint32_t buf[DEFAULT_SEED_CNT+1];
+        MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
+        buf[DEFAULT_SEED_CNT] = 1;
+        ptr = buf;
+        len = DEFAULT_SEED_CNT+1;
+    }
+    else {
+        len = DEFAULT_SEED_CNT;
+    }
 
-    MEMCPY(digits, ptr, char, DEFAULT_SEED_LEN);
+    seed = rb_integer_unpack(+1, ptr, DEFAULT_SEED_CNT, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    /* set leading-zero-guard if need. */
-    digits[len] =
-#if SIZEOF_INT32 / SIZEOF_BDIGITS > 1
-	digits[len-2] <= 1 && digits[len-1] == 0
-#else
-	digits[len-1] <= 1
-#endif
-	? 1 : 0;
-
-    return rb_big_norm((VALUE)big);
+    return seed;
 }
 
 /*
@@ -535,7 +534,7 @@ make_seed_value(const void *ptr)
 static VALUE
 random_seed(void)
 {
-    unsigned int buf[DEFAULT_SEED_CNT];
+    uint32_t buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
     return make_seed_value(buf);
 }
@@ -1271,7 +1270,7 @@ static union {
 } sipseed;
 
 static VALUE
-init_randomseed(struct MT *mt, unsigned int initial[DEFAULT_SEED_CNT])
+init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
 {
     VALUE seed;
     fill_random_seed(initial);
@@ -1285,7 +1284,7 @@ void
 Init_RandomSeed(void)
 {
     rb_random_t *r = &default_rand;
-    unsigned int initial[DEFAULT_SEED_CNT];
+    uint32_t initial[DEFAULT_SEED_CNT];
     struct MT *mt = &r->mt;
     VALUE seed = init_randomseed(mt, initial);
     int i;

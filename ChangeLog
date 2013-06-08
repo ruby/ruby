@@ -1,3 +1,10 @@
+Sat Jun  8 16:38:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_unpack): Don't use rb_funcall if possible.
+
+	* random.c: Use uint32_t for elements of seed.
+	  (make_seed_value): Use rb_integer_unpack.
+
 Sat Jun  8 15:58:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (rand_init): Add a cast to fix clang compile error:
