@@ -958,7 +958,7 @@ class TestHash < Test::Unit::TestCase
 
     o = Object.new
     def o.hash; 2 << 100; end
-    assert_equal({x=>1}.hash, {x=>1}.hash)
+    assert_equal({o=>1}.hash, {o=>1}.hash)
   end
 
   def test_hash_poped
