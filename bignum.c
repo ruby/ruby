@@ -1684,6 +1684,37 @@ calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p)
     *hbase_numdigits_p = hbase_numdigits;
 }
 
+static VALUE
+big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
+{
+    int word_numbits = ffs(base) - 1;
+    size_t numwords;
+    VALUE result;
+    char *ptr;
+    numwords = trim ? rb_absint_size_in_word(x, word_numbits, NULL) : len;
+    if (RBIGNUM_NEGATIVE_P(x) || !trim) {
+        if (LONG_MAX-1 < numwords)
+            rb_raise(rb_eArgError, "too big number");
+        result = rb_usascii_str_new(0, 1+numwords);
+        ptr = RSTRING_PTR(result);
+        *ptr++ = RBIGNUM_POSITIVE_P(x) ? '+' : '-';
+    }
+    else {
+        if (LONG_MAX < numwords)
+            rb_raise(rb_eArgError, "too big number");
+        result = rb_usascii_str_new(0, numwords);
+        ptr = RSTRING_PTR(result);
+    }
+    rb_integer_pack(x, NULL, NULL, ptr, numwords, 1, CHAR_BIT-word_numbits,
+                    INTEGER_PACK_BIG_ENDIAN);
+    while (0 < numwords) {
+        *ptr = ruby_digitmap[*(unsigned char *)ptr];
+        ptr++;
+        numwords--;
+    }
+    return result;
+}
+
 VALUE
 rb_big2str0(VALUE x, int base, int trim)
 {
@@ -1705,6 +1736,12 @@ rb_big2str0(VALUE x, int base, int trim)
 	rb_raise(rb_eArgError, "invalid radix %d", base);
 
     n2 = big2str_find_n1(x, base);
+
+    if (base & (base - 1) == 0) {
+        /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
+        return big2str_base_powerof2(x, (size_t)n2, base, trim);
+    }
+
     n1 = (n2 + 1) / 2;
     ss = rb_usascii_str_new(0, n2 + 1); /* plus one for sign */
     ptr = RSTRING_PTR(ss);
