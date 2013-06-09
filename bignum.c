@@ -452,8 +452,25 @@ rb_big_unpack(unsigned long *buf, long num_longs)
 }
 
 /* number of bytes of abs(val). additionaly number of leading zeros can be returned. */
+
+/*
+ * Calculate a number of bytes to be required to represent
+ * the absolute value of the integer given as _val_.
+ *
+ * [val] an integer.
+ * [nlz_bits_ret] number of leading zero bits in the most significant byte is returned if not NULL.
+ *
+ * This function returns ((val_numbits * CHAR_BIT + CHAR_BIT - 1) / CHAR_BIT)
+ * where val_numbits is the number of bits of abs(val).
+ * This function should not overflow.
+ *
+ * If nlz_bits_ret is not NULL,
+ * (return_value * CHAR_BIT - val_numbits) is stored in *nlz_bits_ret.
+ * In this case, 0 <= *nlz_bits_ret < CHAR_BIT.
+ *
+ */
 size_t
-rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
+rb_absint_size(VALUE val, int *nlz_bits_ret)
 {
     BDIGIT *dp;
     BDIGIT *de;
@@ -489,51 +506,76 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
     while (dp < de && de[-1] == 0)
         de--;
     if (dp == de) {
-        if (number_of_leading_zero_bits)
-            *number_of_leading_zero_bits = 0;
+        if (nlz_bits_ret)
+            *nlz_bits_ret = 0;
         return 0;
     }
     num_leading_zeros = nlz(de[-1]);
-    if (number_of_leading_zero_bits)
-        *number_of_leading_zero_bits = num_leading_zeros % CHAR_BIT;
+    if (nlz_bits_ret)
+        *nlz_bits_ret = num_leading_zeros % CHAR_BIT;
     return (de - dp) * SIZEOF_BDIGITS - num_leading_zeros / CHAR_BIT;
 }
 
+/*
+ * Calculate a number of words to be required to represent
+ * the absolute value of the integer given as _val_.
+ *
+ * [val] an integer.
+ * [word_numbits] number of bits in a word.
+ * [nlz_bits_ret] number of leading zero bits in the most significant word is returned if not NULL.
+ *
+ * This function returns ((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)
+ * where val_numbits is the number of bits of abs(val).
+ * If it overflows, (size_t)-1 is returned.
+ *
+ * If nlz_bits_ret is not NULL and overflow is not occur,
+ * (return_value * word_numbits - val_numbits) is stored in *nlz_bits_ret.
+ * In this case, 0 <= *nlz_bits_ret < word_numbits.
+ *
+ */
 size_t
-rb_absint_numwords(VALUE val, size_t word_numbits_arg, size_t *number_of_leading_zero_bits)
+rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
 {
     size_t numbytes;
     size_t numwords;
-    int zerobits_in_byte;
-    VALUE val_numbits, word_numbits;
+    size_t nlz_bits;
+    int nlz_bits_in_msbyte;
+    VALUE val_numbits, word_numbits_v;
     VALUE div_mod, div, mod;
+    int sign;
 
-    numbytes = rb_absint_size(val, &zerobits_in_byte);
+    if (word_numbits == 0)
+        return (size_t)-1;
+
+    numbytes = rb_absint_size(val, &nlz_bits_in_msbyte);
 
     /*
-     * val_numbits = numbytes * CHAR_BIT - zerobits_in_byte
+     * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
      * div, mod = val_numbits.divmod(word_numbits)
      * numwords = mod == 0 ? div : div + 1
-     * number_of_leading_zero_bits_in_word = mod == 0 ? 0 : word_numbits - mod
+     * nlz_bits = mod == 0 ? 0 : word_numbits - mod
      */
     val_numbits = SIZET2NUM(numbytes);
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-    if (zerobits_in_byte)
-        val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(zerobits_in_byte));
-    word_numbits = SIZET2NUM(word_numbits_arg);
-    div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits);
+    if (nlz_bits_in_msbyte)
+        val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
+    word_numbits_v = SIZET2NUM(word_numbits);
+    div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
     div = RARRAY_AREF(div_mod, 0);
     mod = RARRAY_AREF(div_mod, 1);
     if (mod == LONG2FIX(0)) {
-        numwords = NUM2SIZET(div);
-        if (number_of_leading_zero_bits)
-            *number_of_leading_zero_bits = 0;
+        nlz_bits = 0;
     }
     else {
-        numwords = NUM2SIZET(rb_funcall(div, '+', 1, LONG2FIX(1)));
-        if (number_of_leading_zero_bits)
-            *number_of_leading_zero_bits = word_numbits_arg - NUM2SIZET(mod);
+        div = rb_funcall(div, '+', 1, LONG2FIX(1));
+        nlz_bits = word_numbits - NUM2SIZET(mod);
     }
+    rb_integer_pack(div, &sign, &numwords, 1, sizeof(numwords), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign == 2)
+        return (size_t)-1;
+    if (nlz_bits_ret)
+        *nlz_bits_ret = nlz_bits;
     return numwords;
 }
 
