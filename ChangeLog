@@ -1,3 +1,20 @@
+Sun Jun  9 14:41:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_pack): numwords_allocated argument removed.
+
+	* internal.h (rb_integer_pack): Follow the above change.
+
+	* hash.c (rb_hash): Ditto.
+
+	* time.c (v2w_bignum): Ditto.
+
+	* pack.c (pack_pack): Ditto.
+
+	* random.c (int_pair_to_real_inclusive): Ditto.
+	  (rand_init): Ditto.
+	  (random_load): Ditto.
+	  (limited_big_rand): Ditto.
+
 Sun Jun  9 09:34:44 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_base_powerof2): New function.

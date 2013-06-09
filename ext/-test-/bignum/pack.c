@@ -9,14 +9,11 @@ rb_integer_pack_m(VALUE val, VALUE buf, VALUE wordsize_arg, VALUE nails, VALUE f
   void *ret;
   size_t wordsize = NUM2SIZET(wordsize_arg);
 
-  if (!NIL_P(buf)) {
-      StringValue(buf);
-      rb_str_modify(buf);
-      count = RSTRING_LEN(buf) / wordsize;
-  }
-
+  StringValue(buf);
+  rb_str_modify(buf);
+  count = wordsize == 0 ? 0 : RSTRING_LEN(buf) / wordsize;
   ret = rb_integer_pack(val,
-      &sign, &count, NIL_P(buf) ? NULL : RSTRING_PTR(buf), count,
+      &sign, RSTRING_PTR(buf), count,
       wordsize, NUM2SIZET(nails), NUM2INT(flags));
 
   return rb_ary_new_from_args(3, INT2NUM(sign), ret ? rb_str_new(ret, wordsize * count) : Qnil, SIZET2NUM(count));

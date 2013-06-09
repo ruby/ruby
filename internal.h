@@ -447,7 +447,7 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
 /* bignum.c */
-void *rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+void *rb_integer_pack(VALUE val, int *signp, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 /* io.c */

@@ -707,10 +707,8 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  *   0 for zero.
  *   -1 for negative without overflow.  1 for positive without overflow.
  *   -2 for negative overflow.  2 for positive overflow.
- * [numwords_allocated] the number of words allocated is returned in *numwords_allocated if it is not NULL.
- *   It is not modified if words is not NULL.
- * [words] buffer to export abs(val).  allocated by xmalloc if it is NULL.
- * [numwords] the size of given buffer as number of words (only meaningful when words is not NULL).
+ * [words] buffer to export abs(val).
+ * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
  * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
  * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
@@ -720,7 +718,7 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  */
 
 void *
-rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+rb_integer_pack(VALUE val, int *signp, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     int sign;
     BDIGIT *dp;
@@ -731,7 +729,7 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
     val = rb_to_int(val);
 
     validate_integer_pack_format(wordsize, nails, flags);
-    if (words && SIZE_MAX / wordsize < numwords)
+    if (SIZE_MAX / wordsize < numwords)
         rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
 
     if (FIXNUM_P(val)) {
@@ -768,32 +766,8 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
         sign = 0;
     }
 
-    if (words) {
-        buf = words;
-        bufend = buf + numwords * wordsize;
-    }
-    else {
-        /*
-         * val_numbits = (de - dp) * SIZEOF_BDIGITS * CHAR_BIT - nlz(de[-1])
-         * word_numbits = wordsize * CHAR_BIT - nails
-         * numwords = (val_numbits + word_numbits - 1) / word_numbits
-         */
-        VALUE val_numbits, word_numbits, numwordsv;
-        val_numbits = SIZET2NUM((de - dp) * SIZEOF_BDIGITS);
-        val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-        if (dp != de)
-            val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz(de[-1])));
-        word_numbits = SIZET2NUM(wordsize);
-        word_numbits = rb_funcall(word_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-        if (nails != 0)
-            word_numbits = rb_funcall(word_numbits, '-', 1, SIZET2NUM(nails));
-        numwordsv = rb_funcall(val_numbits, '+', 1, word_numbits);
-        numwordsv = rb_funcall(numwordsv, '-', 1, LONG2FIX(1));
-        numwordsv = rb_funcall(numwordsv, rb_intern("div"), 1, word_numbits);
-        numwords = NUM2SIZET(numwordsv);
-        buf = xmalloc(numwords * wordsize);
-        bufend = buf + numwords * wordsize;
-    }
+    buf = words;
+    bufend = buf + numwords * wordsize;
 
     if (buf == bufend) {
         sign *= 2; /* overflow if non-zero*/
@@ -861,9 +835,6 @@ rb_integer_pack(VALUE val, int *signp, size_t *numwords_allocated, void *words, 
 
     if (signp)
         *signp = sign;
-
-    if (!words && numwords_allocated)
-        *numwords_allocated = numwords;
 
     return buf;
 #undef FILL_DD
@@ -1705,7 +1676,7 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
         result = rb_usascii_str_new(0, numwords);
         ptr = RSTRING_PTR(result);
     }
-    rb_integer_pack(x, NULL, NULL, ptr, numwords, 1, CHAR_BIT-word_numbits,
+    rb_integer_pack(x, NULL, ptr, numwords, 1, CHAR_BIT-word_numbits,
                     INTEGER_PACK_BIG_ENDIAN);
     while (0 < numwords) {
         *ptr = ruby_digitmap[*(unsigned char *)ptr];
