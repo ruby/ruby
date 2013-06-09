@@ -772,7 +772,7 @@ rb_integer_pack(VALUE val, int *signp, void *words, size_t numwords, size_t word
 
     validate_integer_pack_format(wordsize, nails, flags);
     if (SIZE_MAX / wordsize < numwords)
-        rb_raise(rb_eArgError, "too big count * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
+        rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
 
     if (FIXNUM_P(val)) {
         long v = FIX2LONG(val);
