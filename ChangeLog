@@ -1,3 +1,8 @@
+Mon Jun 10 05:38:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_small): New function.
+	  (absint_numwords_generic): Use absint_numwords_small if possible.
+
 Mon Jun 10 01:07:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (absint_numwords_bytes): New function.
