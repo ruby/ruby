@@ -516,6 +516,94 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
     return (de - dp) * SIZEOF_BDIGITS - num_leading_zeros / CHAR_BIT;
 }
 
+size_t
+absint_numwords_bytes(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
+{
+    /*
+     * word_numbytes = word_numbits / CHAR_BIT
+     * div, mod = val_numbits.divmod(word_numbits)
+     *
+     * q, r = numbytes.divmod(word_numbytes)
+     * s = q        if r * CHAR_BIT >= nlz_bits_in_msbyte
+     *   = q - 1    if otherwise
+     * t = r * CHAR_BIT - nlz_bits_in_msbyte                if r * CHAR_BIT >= nlz_bits_in_msbyte
+     *   = word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte if otherwise
+     *
+     * div = (numbytes * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
+     *     = ((q * word_numbytes + r) * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
+     *     = (q * word_numbytes * CHAR_BIT + r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
+     *     = q + (r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits if r * CHAR_BIT >= nlz_bits_in_msbyte
+     *       q - 1 + (word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits if r * CHAR_BIT < nlz_bits_in_msbyte
+     *     = s + t / word_numbits
+     * mod = (r * CHAR_BIT - nlz_bits_in_msbyte) % word_numbits if r * CHAR_BIT >= nlz_bits_in_msbyte
+     *       (word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte) % word_numbits if r * CHAR_BIT < nlz_bits_in_msbyte
+     *     = t % word_numbits
+     *
+     * numwords = mod == 0 ? div : div + 1
+     * nlz_bits = mod == 0 ? 0 : word_numbits - mod
+     */
+    size_t word_numbytes = word_numbits / CHAR_BIT;
+    size_t q = numbytes / word_numbytes;
+    size_t r = numbytes % word_numbytes;
+    size_t s, t;
+    size_t div, mod;
+    size_t numwords;
+    size_t nlz_bits;
+    if (r * CHAR_BIT >= (size_t)nlz_bits_in_msbyte) {
+        s = q;
+        t = r * CHAR_BIT - nlz_bits_in_msbyte;
+    }
+    else {
+        s = q - 1;
+        t = word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte;
+    }
+    div = s + t / word_numbits;
+    mod = t % word_numbits;
+    numwords = mod == 0 ? div : div + 1;
+    nlz_bits = mod == 0 ? 0 : word_numbits - mod;
+    *nlz_bits_ret = nlz_bits;
+    return numwords;
+}
+
+size_t
+absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
+{
+    VALUE val_numbits, word_numbits_v;
+    VALUE div_mod, div, mod;
+    int sign;
+    size_t numwords;
+    size_t nlz_bits;
+
+    /*
+     * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
+     * div, mod = val_numbits.divmod(word_numbits)
+     * numwords = mod == 0 ? div : div + 1
+     * nlz_bits = mod == 0 ? 0 : word_numbits - mod
+     */
+
+    val_numbits = SIZET2NUM(numbytes);
+    val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
+    if (nlz_bits_in_msbyte)
+        val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
+    word_numbits_v = SIZET2NUM(word_numbits);
+    div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
+    div = RARRAY_AREF(div_mod, 0);
+    mod = RARRAY_AREF(div_mod, 1);
+    if (mod == LONG2FIX(0)) {
+        nlz_bits = 0;
+    }
+    else {
+        div = rb_funcall(div, '+', 1, LONG2FIX(1));
+        nlz_bits = word_numbits - NUM2SIZET(mod);
+    }
+    rb_integer_pack(div, &sign, &numwords, 1, sizeof(numwords), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign == 2)
+        return (size_t)-1;
+    *nlz_bits_ret = nlz_bits;
+    return numwords;
+}
+
 /*
  * Calculate a number of words to be required to represent
  * the absolute value of the integer given as _val_.
@@ -537,45 +625,33 @@ size_t
 rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
 {
     size_t numbytes;
+    int nlz_bits_in_msbyte;
     size_t numwords;
     size_t nlz_bits;
-    int nlz_bits_in_msbyte;
-    VALUE val_numbits, word_numbits_v;
-    VALUE div_mod, div, mod;
-    int sign;
 
     if (word_numbits == 0)
         return (size_t)-1;
 
     numbytes = rb_absint_size(val, &nlz_bits_in_msbyte);
 
-    /*
-     * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
-     * div, mod = val_numbits.divmod(word_numbits)
-     * numwords = mod == 0 ? div : div + 1
-     * nlz_bits = mod == 0 ? 0 : word_numbits - mod
-     */
-    val_numbits = SIZET2NUM(numbytes);
-    val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-    if (nlz_bits_in_msbyte)
-        val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
-    word_numbits_v = SIZET2NUM(word_numbits);
-    div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
-    div = RARRAY_AREF(div_mod, 0);
-    mod = RARRAY_AREF(div_mod, 1);
-    if (mod == LONG2FIX(0)) {
-        nlz_bits = 0;
+    if (word_numbits % CHAR_BIT == 0) {
+        numwords = absint_numwords_bytes(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
+#if 0
+        size_t numwords0, nlz_bits0;
+        numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
+        assert(numwords0 == numwords);
+        assert(nlz_bits0 == nlz_bits);
+#endif
     }
     else {
-        div = rb_funcall(div, '+', 1, LONG2FIX(1));
-        nlz_bits = word_numbits - NUM2SIZET(mod);
+        numwords = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
     }
-    rb_integer_pack(div, &sign, &numwords, 1, sizeof(numwords), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-    if (sign == 2)
-        return (size_t)-1;
+    if (numwords == (size_t)-1)
+        return numwords;
+
     if (nlz_bits_ret)
         *nlz_bits_ret = nlz_bits;
+
     return numwords;
 }
 
