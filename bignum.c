@@ -500,7 +500,7 @@ rb_absint_size(VALUE val, int *number_of_leading_zero_bits)
 }
 
 size_t
-rb_absint_size_in_word(VALUE val, size_t word_numbits_arg, size_t *number_of_leading_zero_bits)
+rb_absint_numwords(VALUE val, size_t word_numbits_arg, size_t *number_of_leading_zero_bits)
 {
     size_t numbytes;
     size_t numwords;
@@ -1662,7 +1662,7 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
     size_t numwords;
     VALUE result;
     char *ptr;
-    numwords = trim ? rb_absint_size_in_word(x, word_numbits, NULL) : len;
+    numwords = trim ? rb_absint_numwords(x, word_numbits, NULL) : len;
     if (RBIGNUM_NEGATIVE_P(x) || !trim) {
         if (LONG_MAX-1 < numwords)
             rb_raise(rb_eArgError, "too big number");

@@ -120,7 +120,7 @@ VALUE rb_big_uminus(VALUE x);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 size_t rb_absint_size(VALUE val, int *number_of_leading_zero_bits);
-size_t rb_absint_size_in_word(VALUE val, size_t word_numbits, size_t *number_of_leading_zero_bits);
+size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *number_of_leading_zero_bits);
 int rb_absint_singlebit_p(VALUE val);
 
 /* class.c */

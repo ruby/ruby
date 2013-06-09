@@ -1018,7 +1018,7 @@ pack_pack(VALUE ary, VALUE fmt)
 
 		from = NEXTFROM;
                 from = rb_to_int(from);
-                numbytes = rb_absint_size_in_word(from, 7, NULL);
+                numbytes = rb_absint_numwords(from, 7, NULL);
                 if (numbytes == 0)
                     numbytes = 1;
                 buf = rb_str_new(NULL, numbytes);

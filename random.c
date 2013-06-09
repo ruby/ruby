@@ -375,7 +375,7 @@ rand_init(struct MT *mt, VALUE vseed)
 
     seed = rb_to_int(vseed);
 
-    len = rb_absint_size_in_word(seed, 32, NULL);
+    len = rb_absint_numwords(seed, 32, NULL);
     if (MT_MAX_STATE < len)
         len = MT_MAX_STATE;
     if (len > numberof(buf0))
@@ -750,7 +750,7 @@ limited_big_rand(struct MT *mt, VALUE limit)
     VALUE vtmp;
     VALUE val;
 
-    len = rb_absint_size_in_word(limit, 32, NULL);
+    len = rb_absint_numwords(limit, 32, NULL);
     tmp = ALLOCV_N(uint32_t, vtmp, len*2);
     lim_array = tmp;
     rnd_array = tmp + len;

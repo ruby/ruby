@@ -1,3 +1,14 @@
+Sun Jun  9 16:51:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_absint_numwords): Renamed from rb_absint_size_in_word.
+
+	* internal.h (rb_absint_numwords): Follow the above change.
+
+	* pack.c (pack_pack): Ditto.
+
+	* random.c (rand_init): Ditto.
+	  (limited_big_rand): Ditto.
+
 Sun Jun  9 14:41:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_pack): numwords_allocated argument removed.
