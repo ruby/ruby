@@ -295,7 +295,7 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     }
     else {
         uint32_t uary[4];
-        rb_integer_pack(x, NULL, uary, numberof(uary), sizeof(uint32_t), 0,
+        rb_integer_pack(x, uary, numberof(uary), sizeof(uint32_t), 0,
                 INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
         /* r = x >> 64 */
         r = (double)uary[0] * (0x10000 * (double)0x10000) + (double)uary[1];
@@ -380,7 +380,7 @@ rand_init(struct MT *mt, VALUE vseed)
         len = MT_MAX_STATE;
     if (len > numberof(buf0))
         buf = ALLOC_N(unsigned int, len);
-    rb_integer_pack(seed, &sign, buf, len, sizeof(uint32_t), 0,
+    sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
         sign = -sign;
@@ -644,7 +644,7 @@ random_load(VALUE obj, VALUE dump)
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
     }
-    rb_integer_pack(state, NULL, mt->state, numberof(mt->state),
+    rb_integer_pack(state, mt->state, numberof(mt->state),
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
@@ -754,7 +754,7 @@ limited_big_rand(struct MT *mt, VALUE limit)
     tmp = ALLOCV_N(uint32_t, vtmp, len*2);
     lim_array = tmp;
     rnd_array = tmp + len;
-    rb_integer_pack(limit, NULL, lim_array, len, sizeof(uint32_t), 0,
+    rb_integer_pack(limit, lim_array, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
   retry:

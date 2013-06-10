@@ -1,3 +1,22 @@
+Mon Jun 10 19:34:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_pack): Returns sign instead of words.
+	  (absint_numwords_generic): Follow the above change.
+	  (big2str_base_powerof2): Follow the above change.
+
+	* internal.h: Ditto.
+
+	* hash.c (rb_hash): Ditto.
+
+	* pack.c (pack_pack): Ditto.
+
+	* random.c (int_pair_to_real_inclusive): Ditto.
+	  (rand_init): Ditto.
+	  (random_load): Ditto.
+	  (limited_big_rand): Ditto.
+
+	* time.c (v2w_bignum): Ditto.
+
 Mon Jun 10 17:20:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_remember): permit promoted object.

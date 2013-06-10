@@ -92,7 +92,7 @@ rb_hash(VALUE obj)
         {
             int sign;
             unsigned long ul;
-            rb_integer_pack(hval, &sign, &ul, 1, sizeof(ul), 0,
+            sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
                     INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
             ul &= (1UL << (sizeof(long)*CHAR_BIT-1)) - 1;
             if (sign < 0)

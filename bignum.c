@@ -454,7 +454,7 @@ rb_big_unpack(unsigned long *buf, long num_longs)
 /* number of bytes of abs(val). additionaly number of leading zeros can be returned. */
 
 /*
- * Calculate a number of bytes to be required to represent
+ * Calculate the number of bytes to be required to represent
  * the absolute value of the integer given as _val_.
  *
  * [val] an integer.
@@ -610,7 +610,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         div = rb_funcall(div, '+', 1, LONG2FIX(1));
         nlz_bits = word_numbits - NUM2SIZET(mod);
     }
-    rb_integer_pack(div, &sign, &numwords, 1, sizeof(numwords), 0,
+    sign = rb_integer_pack(div, &numwords, 1, sizeof(numwords), 0,
         INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign == 2)
         return (size_t)-1;
@@ -619,7 +619,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
 }
 
 /*
- * Calculate a number of words to be required to represent
+ * Calculate the number of words to be required to represent
  * the absolute value of the integer given as _val_.
  *
  * [val] an integer.
@@ -843,23 +843,25 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 /*
  * Export an integer into a buffer.
  *
- * [val] Fixnum, Bignum or another object which has to_int.
- * [signp] signedness is returned in *signp if it is not NULL.
- *   0 for zero.
- *   -1 for negative without overflow.  1 for positive without overflow.
- *   -2 for negative overflow.  2 for positive overflow.
+ * [val] Fixnum, Bignum or another integer like object which has to_int method.
  * [words] buffer to export abs(val).
  * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.  Most significant nails bits of each word are filled by zero.
- * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
+ * [nails] number of padding bits in a word.
+ *   Most significant nails bits of each word are filled by zero.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
+ *   It specifies word order and byte order.
  *
- * This function returns words or the allocated buffer if words is NULL.
- *
+ * This function returns the signedness and overflow condition as follows:
+ *   -2 : negative overflow.
+ *   -1 : negative without overflow.
+ *   0 : zero.
+ *   1 : positive without overflow.
+ *   2 : positive overflow.
  */
 
-void *
-rb_integer_pack(VALUE val, int *signp, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+int
+rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     int sign;
     BDIGIT *dp;
@@ -974,10 +976,7 @@ rb_integer_pack(VALUE val, int *signp, void *words, size_t numwords, size_t word
             sign *= 2; /* overflow */
     }
 
-    if (signp)
-        *signp = sign;
-
-    return buf;
+    return sign;
 #undef FILL_DD
 #undef TAKE_LOWBITS
 }
@@ -1055,8 +1054,12 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
  * [words] buffer to import.
  * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.  Most significant nails bits of each word are ignored.
- * [flags] bitwise or of constants which name starts "INTEGER_PACK_".  It specifies word order and byte order.
+ * [nails] number of padding bits in a word.
+ *   Most significant nails bits of each word are ignored.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
+ *   It specifies word order and byte order.
+ *   Also, INTEGER_PACK_FORCE_BIGNUM specifies that the result will be a Bignum
+ *   even if it is representable as a Fixnum.
  *
  * This function returns the imported integer as Fixnum or Bignum.
  */
@@ -1882,7 +1885,7 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
         result = rb_usascii_str_new(0, numwords);
         ptr = RSTRING_PTR(result);
     }
-    rb_integer_pack(x, NULL, ptr, numwords, 1, CHAR_BIT-word_numbits,
+    rb_integer_pack(x, ptr, numwords, 1, CHAR_BIT-word_numbits,
                     INTEGER_PACK_BIG_ENDIAN);
     while (0 < numwords) {
         *ptr = ruby_digitmap[*(unsigned char *)ptr];

@@ -1023,7 +1023,7 @@ pack_pack(VALUE ary, VALUE fmt)
                     numbytes = 1;
                 buf = rb_str_new(NULL, numbytes);
 
-                rb_integer_pack(from, &sign, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, INTEGER_PACK_BIG_ENDIAN);
+                sign = rb_integer_pack(from, RSTRING_PTR(buf), RSTRING_LEN(buf), 1, 1, INTEGER_PACK_BIG_ENDIAN);
 
                 if (sign < 0)
                     rb_raise(rb_eArgError, "can't compress negative numbers");
