@@ -1,4 +1,7 @@
-Mon Jun 10 15:35:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 10 15:36:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (error_print): use checking functions instead of
+	  catching exceptions.
 
 	* eval_error.c (error_print): restore errinfo for the case new
 	  excecption raised while printing the message.  [ruby-core:55365]

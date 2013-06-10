@@ -127,9 +127,9 @@ error_print(void)
     }
 
     eclass = CLASS_OF(errinfo);
-    if (eclass != Qundef) {
-	e = rb_funcall(errinfo, rb_intern("message"), 0, 0);
-	StringValue(e);
+    if (eclass != Qundef &&
+	(e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0)) != Qundef &&
+	(RB_TYPE_P(e, T_STRING) || !NIL_P(e = rb_check_string_type(e)))) {
 	einfo = RSTRING_PTR(e);
 	elen = RSTRING_LEN(e);
     }
