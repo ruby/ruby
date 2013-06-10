@@ -456,6 +456,7 @@ rb_ary_new_from_values(long n, const VALUE *elts)
 
     ary = rb_ary_new2(n);
     if (n > 0 && elts) {
+	assert(!OBJ_PROMOTED(obj));
 	RARRAY_PTR_USE(ary, ptr, {
 	    MEMCPY(ptr, elts, VALUE, n); /* new array is not old gen */
 	});
