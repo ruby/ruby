@@ -629,7 +629,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
  * This function returns ((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)
  * where val_numbits is the number of bits of abs(val).
  *
- * This function can overflow if _val_ is very big and word_numbits is less than CHAR_BIT.
+ * This function can overflow.
  * When overflow occur, (size_t)-1 is returned.
  *
  * If nlz_bits_ret is not NULL and overflow is not occur,
