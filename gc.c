@@ -516,11 +516,13 @@ RVALUE_PROMOTE(VALUE obj)
     }
 #endif
 }
-#define RVALUE_DEMOTE(x)      do{					\
-	FL_UNSET2((x), FL_OLDGEN);					\
-	CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);		\
-    }while(0)
 
+static inline void
+RVALUE_DEMOTE(VALUE obj)
+{
+    FL_UNSET2(obj, FL_OLDGEN);
+    CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
+}
 #endif
 
 static void

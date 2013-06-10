@@ -1,3 +1,8 @@
+Mon Jun 10 17:14:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RVALUE_PROMOTE): fix parameter name (`x' to `obj')
+	  and make it inline function (like RVALUE_PROMOTE).
+
 Mon Jun 10 16:22:50 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_new_from_values): add assertion
