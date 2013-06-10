@@ -4613,7 +4613,7 @@ static void
 wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
-    st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
+    if (w->obj2wmap) st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
     rb_gc_mark(w->final);
 }
 

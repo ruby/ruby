@@ -1,3 +1,8 @@
+Mon Jun 10 16:05:59 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (wmap_mark): check allocation of `w->obj2wmap'.
+	  (no-allocation `w->obj2wmap' will be NULL pointer reference)
+
 Mon Jun 10 15:36:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (error_print): use checking functions instead of
