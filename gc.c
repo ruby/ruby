@@ -3552,11 +3552,6 @@ rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 static void
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RGENGC_CHECK_MODE && RVALUE_PROMOTED(obj)) {
-	rb_bug("rgengc_remember: %p (%s) is promoted object",
-	       (void *)obj, obj_type_name(obj));
-    }
-
     rgengc_report(0, objspace, "rgengc_remember: %p (%s, %s) %s\n", (void *)obj, obj_type_name(obj),
 		  RVALUE_SHADY(obj) ? "shady" : "non-shady",
 		  rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");

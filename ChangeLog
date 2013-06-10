@@ -1,3 +1,8 @@
+Mon Jun 10 17:20:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_remember): permit promoted object.
+	  (rb_gc_writebarrier -> remember)
+
 Mon Jun 10 17:14:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (RVALUE_PROMOTE): fix parameter name (`x' to `obj')
