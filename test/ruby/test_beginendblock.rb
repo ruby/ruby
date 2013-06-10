@@ -93,6 +93,7 @@ EOW
 
   def test_exitcode_in_at_exit
     bug8501 = '[ruby-core:55365] [Bug #8501]'
+    ruby = EnvUtil.rubybin
     out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
                     '-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
                     '-e', 'at_exit{o.nope}']) {|f|
