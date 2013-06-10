@@ -157,9 +157,18 @@ struct getaddrinfo_arg
 static void *
 nogvl_getaddrinfo(void *arg)
 {
+    int ret;
     struct getaddrinfo_arg *ptr = arg;
-    return (void *)(VALUE)getaddrinfo(ptr->node, ptr->service,
+    getaddrinfo(ptr->node, ptr->service,
 				      ptr->hints, ptr->res);
+#ifdef __linux__
+    /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
+     * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
+     */
+    if (ret == EAI_SYSTEM && errno == ENOENT)
+	ret = EAI_NONAME;
+#endif
+    return (void *)(VALUE)ret;
 }
 #endif
 

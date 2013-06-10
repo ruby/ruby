@@ -1,3 +1,8 @@
+Mon Jun 10 20:58:11 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): work around for Ubuntu
+	  13.04's getaddrinfo issue with mdns4. [ruby-list:49420]
+
 Mon Jun 10 19:34:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_pack): Returns sign instead of words.
