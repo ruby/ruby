@@ -843,6 +843,9 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 /*
  * Export an integer into a buffer.
  *
+ * This function fills the buffer specified by _words_ and _numwords_ as
+ * abs(val) in the format specified by _wordsize_, _nails_ and _flags_.
+ *
  * [val] Fixnum, Bignum or another integer like object which has to_int method.
  * [words] buffer to export abs(val).
  * [numwords] the size of given buffer as number of words.
@@ -853,11 +856,13 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
  *   It specifies word order and byte order.
  *
  * This function returns the signedness and overflow condition as follows:
- *   -2 : negative overflow.
- *   -1 : negative without overflow.
- *   0 : zero.
- *   1 : positive without overflow.
- *   2 : positive overflow.
+ *   -2 : negative overflow.  val <= -2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   -1 : negative without overflow.  -2**(numwords*(wordsize*CHAR_BIT-nails)) < val < 0
+ *   0 : zero.  val == 0
+ *   1 : positive without overflow.  0 < val < 2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   2 : positive overflow.  2**(numwords*(wordsize*CHAR_BIT-nails)) <= val
+ *
+ * The least significant words of abs(val) are filled in the buffer when overflow occur.
  */
 
 int
