@@ -78,11 +78,11 @@ set_backtrace(VALUE info, VALUE bt)
 static void
 error_print(void)
 {
-    volatile VALUE errat = Qnil;		/* OK */
+    volatile VALUE errat = Qundef;
     rb_thread_t *th = GET_THREAD();
     VALUE errinfo = th->errinfo;
     int raised_flag = th->raised_flag;
-    volatile VALUE eclass, e;
+    volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;
     volatile long elen;
 
@@ -94,11 +94,15 @@ error_print(void)
     if (TH_EXEC_TAG() == 0) {
 	errat = get_backtrace(errinfo);
     }
-    else {
+    else if (errat == Qundef) {
 	errat = Qnil;
     }
-    if (TH_EXEC_TAG())
+    else if (eclass == Qundef || e != Qundef) {
 	goto error;
+    }
+    else {
+	goto no_message;
+    }
     if (NIL_P(errat)) {
 	const char *file = rb_sourcefile();
 	int line = rb_sourceline();
@@ -123,18 +127,17 @@ error_print(void)
     }
 
     eclass = CLASS_OF(errinfo);
-    if (TH_EXEC_TAG() == 0) {
+    if (eclass != Qundef) {
 	e = rb_funcall(errinfo, rb_intern("message"), 0, 0);
 	StringValue(e);
 	einfo = RSTRING_PTR(e);
 	elen = RSTRING_LEN(e);
     }
     else {
+      no_message:
 	einfo = "";
 	elen = 0;
     }
-    if (TH_EXEC_TAG())
-	goto error;
     if (eclass == rb_eRuntimeError && elen == 0) {
 	warn_print(": unhandled exception\n");
     }
