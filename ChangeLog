@@ -1,3 +1,9 @@
+Mon Jun 10 23:51:51 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* array.c (rb_ary_new_from_values): fix a typo. pointed out by
+	  nagachika.
+	  http://d.hatena.ne.jp/nagachika/20130610/ruby_trunk_changes_41199_41220
+
 Mon Jun 10 21:51:03 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Fix indent.
