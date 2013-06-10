@@ -89,14 +89,14 @@ EOW
     assert_match(/SomethingElse/, out, "[ruby-core:9675]")
   end
 
-  def test_should_propagate_exit_code
+  def test_propagate_exit_code
     ruby = EnvUtil.rubybin
     assert_equal false, system(ruby, '-e', 'at_exit{exit 2}')
     assert_equal 2, $?.exitstatus
     assert_nil $?.termsig
   end
 
-  def test_should_propagate_signaled
+  def test_propagate_signaled
     ruby = EnvUtil.rubybin
     out = IO.popen(
       [ruby,
