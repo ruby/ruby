@@ -1,3 +1,7 @@
+Mon Jun 10 21:51:03 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Fix indent.
+
 Mon Jun 10 21:49:43 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Add missing return
