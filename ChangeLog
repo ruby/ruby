@@ -1,3 +1,8 @@
+Mon Jun 10 21:49:43 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): Add missing return
+	  value assignment.
+
 Mon Jun 10 20:58:11 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (nogvl_getaddrinfo): work around for Ubuntu

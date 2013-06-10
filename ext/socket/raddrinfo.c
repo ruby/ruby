@@ -159,7 +159,7 @@ nogvl_getaddrinfo(void *arg)
 {
     int ret;
     struct getaddrinfo_arg *ptr = arg;
-    getaddrinfo(ptr->node, ptr->service,
+    ret = getaddrinfo(ptr->node, ptr->service,
 				      ptr->hints, ptr->res);
 #ifdef __linux__
     /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
