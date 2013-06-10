@@ -1,3 +1,8 @@
+Tue Jun 11 07:13:13 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* eval_error.c (error_print): keep that errat is non-shady object.
+	  and guard errat from GC.
+
 Tue Jun 11 05:04:25 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/racc/cparse/cparse.c: use rb_ary_entry() and
