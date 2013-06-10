@@ -1,3 +1,9 @@
+Tue Jun 11 05:04:25 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/racc/cparse/cparse.c: use rb_ary_entry() and
+	  rb_ary_subseq() instead of RARRAY_PTR.
+	  Based on a patch by Dirkjan Bussink. See Bug #8399.
+
 Mon Jun 10 23:51:51 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* array.c (rb_ary_new_from_values): fix a typo. pointed out by

@@ -91,7 +91,7 @@ num_to_long(VALUE n)
 }
 
 #define AREF(s, idx) \
-    ((0 <= idx && idx < RARRAY_LEN(s)) ? RARRAY_PTR(s)[idx] : Qnil)
+    ((0 <= idx && idx < RARRAY_LEN(s)) ? rb_ary_entry(s, idx) : Qnil)
 
 /* -----------------------------------------------------------------------
                         Parser Stack Interfaces
@@ -105,7 +105,7 @@ get_stack_tail(VALUE stack, long len)
 {
     if (len < 0) return Qnil;  /* system error */
     if (len > RARRAY_LEN(stack)) len = RARRAY_LEN(stack);
-    return rb_ary_new4(len, RARRAY_PTR(stack) + RARRAY_LEN(stack) - len);
+    return rb_ary_subseq(stack, RARRAY_LEN(stack) - len, len);
 }
 
 static void
@@ -122,7 +122,7 @@ cut_stack_tail(VALUE stack, long len)
 #define PUSH(s, i) rb_ary_store(s, RARRAY_LEN(s), i)
 #define POP(s) rb_ary_pop(s)
 #define LAST_I(s) \
-    ((RARRAY_LEN(s) > 0) ? RARRAY_PTR(s)[RARRAY_LEN(s) - 1] : Qnil)
+    ((RARRAY_LEN(s) > 0) ? rb_ary_entry(s, RARRAY_LEN(s) - 1) : Qnil)
 #define GET_TAIL(s, len) get_stack_tail(s, len)
 #define CUT_TAIL(s, len) cut_stack_tail(s, len)
 
@@ -334,21 +334,21 @@ initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lex
     Check_Type(arg, T_ARRAY);
     if (!(13 <= RARRAY_LEN(arg) && RARRAY_LEN(arg) <= 14))
         rb_raise(RaccBug, "[Racc Bug] wrong arg.size %ld", RARRAY_LEN(arg));
-    v->action_table   = assert_array  (RARRAY_PTR(arg)[ 0]);
-    v->action_check   = assert_array  (RARRAY_PTR(arg)[ 1]);
-    v->action_default = assert_array  (RARRAY_PTR(arg)[ 2]);
-    v->action_pointer = assert_array  (RARRAY_PTR(arg)[ 3]);
-    v->goto_table     = assert_array  (RARRAY_PTR(arg)[ 4]);
-    v->goto_check     = assert_array  (RARRAY_PTR(arg)[ 5]);
-    v->goto_default   = assert_array  (RARRAY_PTR(arg)[ 6]);
-    v->goto_pointer   = assert_array  (RARRAY_PTR(arg)[ 7]);
-    v->nt_base        = assert_integer(RARRAY_PTR(arg)[ 8]);
-    v->reduce_table   = assert_array  (RARRAY_PTR(arg)[ 9]);
-    v->token_table    = assert_hash   (RARRAY_PTR(arg)[10]);
-    v->shift_n        = assert_integer(RARRAY_PTR(arg)[11]);
-    v->reduce_n       = assert_integer(RARRAY_PTR(arg)[12]);
+    v->action_table   = assert_array  (rb_ary_entry(arg,  0));
+    v->action_check   = assert_array  (rb_ary_entry(arg,  1));
+    v->action_default = assert_array  (rb_ary_entry(arg,  2));
+    v->action_pointer = assert_array  (rb_ary_entry(arg,  3));
+    v->goto_table     = assert_array  (rb_ary_entry(arg,  4));
+    v->goto_check     = assert_array  (rb_ary_entry(arg,  5));
+    v->goto_default   = assert_array  (rb_ary_entry(arg,  6));
+    v->goto_pointer   = assert_array  (rb_ary_entry(arg,  7));
+    v->nt_base        = assert_integer(rb_ary_entry(arg,  8));
+    v->reduce_table   = assert_array  (rb_ary_entry(arg,  9));
+    v->token_table    = assert_hash   (rb_ary_entry(arg, 10));
+    v->shift_n        = assert_integer(rb_ary_entry(arg, 11));
+    v->reduce_n       = assert_integer(rb_ary_entry(arg, 12));
     if (RARRAY_LEN(arg) > 13) {
-        v->use_result_var = RTEST(RARRAY_PTR(arg)[13]);
+        v->use_result_var = RTEST(rb_ary_entry(arg, 13));
     }
     else {
         v->use_result_var = TRUE;
@@ -564,7 +564,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
 
   accept:
     if (v->debug) rb_funcall(v->parser, id_d_accept, 0);
-    v->retval = RARRAY_PTR(v->vstack)[0];
+    v->retval = rb_ary_entry(v->vstack, 0);
     v->fin = CP_FIN_ACCEPT;
     return;
 
@@ -693,9 +693,9 @@ reduce0(VALUE val, VALUE data, VALUE self)
     VALUE goto_state;
 
     Data_Get_Struct(data, struct cparse_params, v);
-    reduce_len = RARRAY_PTR(v->reduce_table)[v->ruleno];
-    reduce_to  = RARRAY_PTR(v->reduce_table)[v->ruleno+1];
-    method_id  = RARRAY_PTR(v->reduce_table)[v->ruleno+2];
+    reduce_len = rb_ary_entry(v->reduce_table, v->ruleno);
+    reduce_to  = rb_ary_entry(v->reduce_table, v->ruleno+1);
+    method_id  = rb_ary_entry(v->reduce_table, v->ruleno+2);
     len = NUM2LONG(reduce_len);
     mid = value_to_id(method_id);
 
@@ -710,10 +710,10 @@ reduce0(VALUE val, VALUE data, VALUE self)
     else {
         if (mid != id_noreduce) {
             tmp_v = GET_TAIL(v->vstack, len);
-            tmp = RARRAY_PTR(tmp_v)[0];
+            tmp = rb_ary_entry(tmp_v, 0);
         }
         else {
-            tmp = RARRAY_PTR(v->vstack)[ RARRAY_LEN(v->vstack) - len ];
+            tmp = rb_ary_entry(v->vstack, RARRAY_LEN(v->vstack) - len);
         }
         CUT_TAIL(v->vstack, len);
         if (v->debug) {
