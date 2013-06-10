@@ -26,7 +26,7 @@ Mon Jun 10 12:10:06 2013  Tanaka Akira  <akr@fsij.org>
 	  (integer_unpack_num_bdigits_generic): Ditto.
 	  (integer_unpack_num_bdigits_bytes): New function.
 	  (rb_integer_unpack): Use above functions.
-	  Return a Bignum for INTEGER_PACK_FORCE_BIGNUM evenwhen the result
+	  Return a Bignum for INTEGER_PACK_FORCE_BIGNUM even when the result
 	  is zero.
 
 Mon Jun 10 05:38:23 2013  Tanaka Akira  <akr@fsij.org>
