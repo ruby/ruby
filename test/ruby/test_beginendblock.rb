@@ -85,8 +85,22 @@ EOW
                      '-e', 'raise %[SomethingElse]']) {|f|
       f.read
     }
+    status = $?
     assert_match(/SomethingBad/, out, "[ruby-core:9675]")
     assert_match(/SomethingElse/, out, "[ruby-core:9675]")
+    assert_not_predicate(status, :success?)
+  end
+
+  def test_exitcode_in_at_exit
+    bug8501 = '[ruby-core:55365] [Bug #8501]'
+    out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
+                    '-e', 'o = Object.new; def o.inspect; raise "[Bug #8501]"; end',
+                    '-e', 'at_exit{o.nope}']) {|f|
+      f.read
+    }
+    status = $?
+    assert_match(/undefined method `nope'/, out, bug8501)
+    assert_not_predicate(status, :success?, bug8501)
   end
 
   def test_propagate_exit_code

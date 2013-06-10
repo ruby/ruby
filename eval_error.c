@@ -197,6 +197,7 @@ error_print(void)
     }
   error:
     TH_POP_TAG();
+    th->errinfo = errinfo;
     rb_thread_raised_set(th, raised_flag);
 }
 
