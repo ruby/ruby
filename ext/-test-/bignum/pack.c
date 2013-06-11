@@ -19,6 +19,24 @@ rb_integer_pack_m(VALUE val, VALUE buf, VALUE wordsize_arg, VALUE nails, VALUE f
 }
 
 static VALUE
+rb_integer_pack_2comp_m(VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
+{
+  int sign;
+  size_t numwords = NUM2SIZET(numwords_arg);
+  size_t wordsize = NUM2SIZET(wordsize_arg);
+  VALUE buf;
+
+  if (numwords != 0 && wordsize != 0 && LONG_MAX / wordsize < numwords)
+      rb_raise(rb_eArgError, "too big numwords * wordsize");
+  buf = rb_str_new(NULL, numwords * wordsize);
+  sign = rb_integer_pack_2comp(val,
+      RSTRING_PTR(buf), numwords,
+      wordsize, NUM2SIZET(nails), NUM2INT(flags));
+
+  return rb_assoc_new(INT2NUM(sign), buf);
+}
+
+static VALUE
 rb_integer_unpack_m(VALUE klass, VALUE sign, VALUE buf, VALUE wordcount, VALUE wordsize, VALUE nails, VALUE flags)
 {
     StringValue(buf);
@@ -32,6 +50,7 @@ void
 Init_pack(VALUE klass)
 {
     rb_define_method(rb_cInteger, "test_pack", rb_integer_pack_m, 4);
+    rb_define_method(rb_cInteger, "test_pack_2comp", rb_integer_pack_2comp_m, 4);
     rb_define_singleton_method(rb_cInteger, "test_unpack", rb_integer_unpack_m, 6);
     rb_define_const(rb_cInteger, "INTEGER_PACK_MSWORD_FIRST", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
     rb_define_const(rb_cInteger, "INTEGER_PACK_LSWORD_FIRST", INT2NUM(INTEGER_PACK_LSWORD_FIRST));

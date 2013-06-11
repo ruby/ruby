@@ -842,37 +842,11 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
     return ret;
 }
 
-/*
- * Export an integer into a buffer.
- *
- * This function fills the buffer specified by _words_ and _numwords_ as
- * abs(val) in the format specified by _wordsize_, _nails_ and _flags_.
- *
- * [val] Fixnum, Bignum or another integer like object which has to_int method.
- * [words] buffer to export abs(val).
- * [numwords] the size of given buffer as number of words.
- * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.
- *   Most significant nails bits of each word are filled by zero.
- * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
- *   It specifies word order and byte order.
- *
- * This function returns the signedness and overflow condition as follows:
- *   -2 : negative overflow.  val <= -2**(numwords*(wordsize*CHAR_BIT-nails))
- *   -1 : negative without overflow.  -2**(numwords*(wordsize*CHAR_BIT-nails)) < val < 0
- *   0 : zero.  val == 0
- *   1 : positive without overflow.  0 < val < 2**(numwords*(wordsize*CHAR_BIT-nails))
- *   2 : positive overflow.  2**(numwords*(wordsize*CHAR_BIT-nails)) <= val
- *
- * The least significant words of abs(val) are filled in the buffer when overflow occur.
- */
-
-int
-rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+static int
+rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int overflow_2comp)
 {
     int sign;
-    BDIGIT *dp;
-    BDIGIT *de;
+    BDIGIT *ds, *dp, *de;
     BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
     unsigned char *buf, *bufend;
 
@@ -902,12 +876,12 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
             }
         }
 #endif
-        dp = fixbuf;
+        ds = dp = fixbuf;
         de = fixbuf + numberof(fixbuf);
     }
     else {
         sign = RBIGNUM_POSITIVE_P(val) ? 1 : -1;
-        dp = BDIGITS(val);
+        ds = dp = BDIGITS(val);
         de = dp + RBIGNUM_LEN(val);
     }
     while (dp < de && de[-1] == 0)
@@ -920,7 +894,15 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
     bufend = buf + numwords * wordsize;
 
     if (buf == bufend) {
-        sign *= 2; /* overflow if non-zero*/
+        /* overflow if non-zero*/
+        if (!overflow_2comp || 0 <= sign)
+            sign *= 2;
+        else {
+            if (de - dp == 1 && dp[0] == 1)
+                sign = -1; /* val == -1 == -2**(numwords*(wordsize*CHAR_BIT-nails)) */
+            else
+                sign = -2; /* val < -1 == -2**(numwords*(wordsize*CHAR_BIT-nails)) */
+        }
     }
     else if (dp == de) {
         memset(buf, '\0', bufend - buf);
@@ -979,13 +961,146 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
 
             wordp += word_step;
         }
-        if (dp != de || dd)
-            sign *= 2; /* overflow */
+        FILL_DD;
+        /* overflow tests */
+        if (dp != de || 1 < dd) {
+            /* 2**(numwords*(wordsize*CHAR_BIT-nails)+1) <= abs(val) */
+            sign *= 2;
+        }
+        else if (dd == 1) {
+            /* 2**(numwords*(wordsize*CHAR_BIT-nails)) <= abs(val) < 2**(numwords*(wordsize*CHAR_BIT-nails)+1) */
+            if (!overflow_2comp || 0 <= sign)
+                sign *= 2;
+            else { /* overflow_2comp && sign == -1 */
+                /* test lower bits are all zero. */
+                dp = ds;
+                while (dp < de && *dp == 0)
+                    dp++;
+                if (de - dp == 1 && /* only one non-zero word. */
+                    (*dp & (*dp-1)) == 0) /* *dp contains only one bit set. */
+                    sign = -1; /* val == -2**(numwords*(wordsize*CHAR_BIT-nails)) */
+                else
+                    sign = -2; /* val < -2**(numwords*(wordsize*CHAR_BIT-nails)) */
+            }
+        }
     }
 
     return sign;
 #undef FILL_DD
 #undef TAKE_LOWBITS
+}
+
+/*
+ * Export an integer into a buffer.
+ *
+ * This function fills the buffer specified by _words_ and _numwords_ as
+ * abs(val) in the format specified by _wordsize_, _nails_ and _flags_.
+ *
+ * [val] Fixnum, Bignum or another integer like object which has to_int method.
+ * [words] buffer to export abs(val).
+ * [numwords] the size of given buffer as number of words.
+ * [wordsize] the size of word as number of bytes.
+ * [nails] number of padding bits in a word.
+ *   Most significant nails bits of each word are filled by zero.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
+ *   It specifies word order and byte order.
+ *
+ * This function returns the signedness and overflow condition as follows:
+ *   -2 : negative overflow.  val <= -2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   -1 : negative without overflow.  -2**(numwords*(wordsize*CHAR_BIT-nails)) < val < 0
+ *   0 : zero.  val == 0
+ *   1 : positive without overflow.  0 < val < 2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   2 : positive overflow.  2**(numwords*(wordsize*CHAR_BIT-nails)) <= val
+ *
+ * The least significant words of abs(val) are filled in the buffer when overflow occur.
+ */
+
+int
+rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    return rb_integer_pack_internal(val, words, numwords, wordsize, nails, flags, 0);
+}
+
+/*
+ * Export an integer into a buffer in 2's comlement representation.
+ *
+ * This function is similar to rb_integer_pack_2comp but
+ * the number is filled as 2's comlement representation and
+ * return value is bit different (because overflow condition
+ * is differnt between absolute value and 2's comlement).
+ *
+ * This function returns the signedness and overflow condition as follows:
+ *   -2 : negative overflow.  val < -2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   -1 : negative without overflow.  -2**(numwords*(wordsize*CHAR_BIT-nails)) <= val < 0
+ *   0 : zero.  val == 0
+ *   1 : positive without overflow.  0 < val < 2**(numwords*(wordsize*CHAR_BIT-nails))
+ *   2 : positive overflow.  2**(numwords*(wordsize*CHAR_BIT-nails)) <= val
+ *
+ * rb_integer_pack_2comp returns -1 for val == -2**(numwords*(wordsize*CHAR_BIT-nails)) but
+ * rb_integer_pack returns -2.
+ *
+ */
+
+int
+rb_integer_pack_2comp(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    int sign;
+
+    sign = rb_integer_pack_internal(val, words, numwords, wordsize, nails, flags, 1);
+
+    if (sign < 0 && numwords != 0) {
+        unsigned char *buf;
+
+        int word_num_partialbits;
+        size_t word_num_fullbytes;
+
+        ssize_t word_step;
+        size_t byte_start;
+        int byte_step;
+
+        size_t word_start, word_last;
+        unsigned char *wordp, *last_wordp;
+
+        unsigned int partialbits_mask;
+        int carry;
+
+        integer_pack_loop_setup(numwords, wordsize, nails, flags,
+            &word_num_fullbytes, &word_num_partialbits,
+            &word_start, &word_step, &word_last, &byte_start, &byte_step);
+
+        partialbits_mask = (1 << word_num_partialbits) - 1;
+
+        buf = words;
+        wordp = buf + word_start;
+        last_wordp = buf + word_last;
+
+        carry = 1;
+        while (1) {
+            size_t index_in_word = 0;
+            unsigned char *bytep = wordp + byte_start;
+            while (index_in_word < word_num_fullbytes) {
+                carry += (unsigned char)~*bytep;
+                *bytep = (unsigned char)carry;
+                carry >>= CHAR_BIT;
+                bytep += byte_step;
+                index_in_word++;
+            }
+            if (word_num_partialbits) {
+                carry += (*bytep & partialbits_mask) ^ partialbits_mask;
+                *bytep = carry & partialbits_mask;
+                carry >>= word_num_partialbits;
+                bytep += byte_step;
+                index_in_word++;
+            }
+
+            if (wordp == last_wordp)
+                break;
+
+            wordp += word_step;
+        }
+    }
+
+    return sign;
 }
 
 static size_t

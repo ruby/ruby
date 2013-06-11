@@ -23,35 +23,10 @@
 #endif
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
-#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#define EXTENDSIGN(n, l) (((~0 << (n)) >> (((n)*(l)) % BITSPERDIG)) & ~(~0 << (n)))
+
+extern const char ruby_digitmap[];
 
 static void fmt_setup(char*,size_t,int,int,int,int);
-
-static char*
-remove_sign_bits(char *str, int base)
-{
-    char *t = str;
-
-    if (base == 16) {
-	while (*t == 'f') {
-	    t++;
-	}
-    }
-    else if (base == 8) {
-	*t |= EXTENDSIGN(3, strlen(t));
-	while (*t == '7') {
-	    t++;
-	}
-    }
-    else if (base == 2) {
-	while (*t == '1') {
-	    t++;
-	}
-    }
-
-    return t;
-}
 
 static char
 sign_bits(int base, const char *p)
@@ -758,6 +733,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'u':
 	    {
 		volatile VALUE val = GETARG();
+                int valsign;
 		char fbuf[32], nbuf[64], *s;
 		const char *prefix = 0;
 		int sign = 0, dots = 0;
@@ -835,96 +811,101 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    base = 10; break;
 		}
 
-		if (!bignum) {
-		    if (base == 2) {
-			val = rb_int2big(v);
-			goto bin_retry;
-		    }
-		    if (sign) {
-			char c = *p;
-			if (c == 'i') c = 'd'; /* %d and %i are identical */
-			if (v < 0) {
-			    v = -v;
-			    sc = '-';
-			    width--;
-			}
-			else if (flags & FPLUS) {
-			    sc = '+';
-			    width--;
-			}
-			else if (flags & FSPACE) {
-			    sc = ' ';
-			    width--;
-			}
-			snprintf(fbuf, sizeof(fbuf), "%%l%c", c);
-			snprintf(nbuf, sizeof(nbuf), fbuf, v);
-			s = nbuf;
-		    }
-		    else {
-			s = nbuf;
-			if (v < 0) {
-			    dots = 1;
-			}
-			snprintf(fbuf, sizeof(fbuf), "%%l%c", *p == 'X' ? 'x' : *p);
-			snprintf(++s, sizeof(nbuf) - 1, fbuf, v);
-			if (v < 0) {
-			    char d = 0;
-
-			    s = remove_sign_bits(s, base);
-			    switch (base) {
-			      case 16:
-				d = 'f'; break;
-			      case 8:
-				d = '7'; break;
-			    }
-			    if (d && *s != d) {
-				*--s = d;
-			    }
-			}
-		    }
+                if (base != 10) {
+                    int numbits = ffs(base)-1;
+                    size_t abs_nlz_bits;
+                    size_t numdigits = rb_absint_numwords(val, numbits, &abs_nlz_bits);
+                    long i;
+                    if (INT_MAX-1 < numdigits) /* INT_MAX is used because rb_long2int is used later. */
+                        rb_raise(rb_eArgError, "size too big");
+                    if (sign) {
+                        if (numdigits == 0)
+                            numdigits = 1;
+                        tmp = rb_str_new(NULL, numdigits);
+                        valsign = rb_integer_pack(val, RSTRING_PTR(tmp), RSTRING_LEN(tmp),
+                                1, CHAR_BIT-numbits, INTEGER_PACK_BIG_ENDIAN);
+                        for (i = 0; i < RSTRING_LEN(tmp); i++)
+                            RSTRING_PTR(tmp)[i] = ruby_digitmap[((unsigned char *)RSTRING_PTR(tmp))[i]];
+                        s = RSTRING_PTR(tmp);
+                        if (valsign < 0) {
+                            sc = '-';
+                            width--;
+                        }
+                        else if (flags & FPLUS) {
+                            sc = '+';
+                            width--;
+                        }
+                        else if (flags & FSPACE) {
+                            sc = ' ';
+                            width--;
+                        }
+                    }
+                    else {
+                        /* Following conditional "numdigits++" guarantees the
+                         * most significant digit as
+                         * - '1'(bin), '7'(oct) or 'f'(hex) for negative numbers
+                         * - '0' for zero
+                         * - not '0' for positive numbers.
+                         *
+                         * It also guarantees the most significant two
+                         * digits will not be '11'(bin), '77'(oct), 'ff'(hex)
+                         * or '00'.  */
+                        if (numdigits == 0 ||
+                                ((abs_nlz_bits != (size_t)(numbits-1) ||
+                                  !rb_absint_singlebit_p(val)) &&
+                                 (!bignum ? v < 0 : RBIGNUM_NEGATIVE_P(val))))
+                            numdigits++;
+                        tmp = rb_str_new(NULL, numdigits);
+                        valsign = rb_integer_pack_2comp(val, RSTRING_PTR(tmp), RSTRING_LEN(tmp),
+                                1, CHAR_BIT-numbits, INTEGER_PACK_BIG_ENDIAN);
+                        for (i = 0; i < RSTRING_LEN(tmp); i++)
+                            RSTRING_PTR(tmp)[i] = ruby_digitmap[((unsigned char *)RSTRING_PTR(tmp))[i]];
+                        s = RSTRING_PTR(tmp);
+                        dots = valsign < 0;
+                    }
+                    len = rb_long2int(RSTRING_END(tmp) - s);
+                }
+                else if (!bignum) {
+                    char c = *p;
+                    if (c == 'i') c = 'd'; /* %d and %i are identical */
+                    valsign = 1;
+                    if (v < 0) {
+                        v = -v;
+                        sc = '-';
+                        width--;
+                        valsign = -1;
+                    }
+                    else if (flags & FPLUS) {
+                        sc = '+';
+                        width--;
+                    }
+                    else if (flags & FSPACE) {
+                        sc = ' ';
+                        width--;
+                    }
+                    snprintf(fbuf, sizeof(fbuf), "%%l%c", c);
+                    snprintf(nbuf, sizeof(nbuf), fbuf, v);
+                    s = nbuf;
 		    len = (int)strlen(s);
 		}
 		else {
-		    if (sign) {
-			tmp = rb_big2str(val, base);
-			s = RSTRING_PTR(tmp);
-			if (s[0] == '-') {
-			    s++;
-			    sc = '-';
-			    width--;
-			}
-			else if (flags & FPLUS) {
-			    sc = '+';
-			    width--;
-			}
-			else if (flags & FSPACE) {
-			    sc = ' ';
-			    width--;
-			}
-		    }
-		    else {
-			if (!RBIGNUM_SIGN(val)) {
-			    val = rb_big_clone(val);
-			    rb_big_2comp(val);
-			}
-			tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
-			s = RSTRING_PTR(tmp);
-			if (*s == '-') {
-			    dots = 1;
-			    if (base == 10) {
-				rb_warning("negative number for %%u specifier");
-			    }
-			    s = remove_sign_bits(++s, base);
-			    switch (base) {
-			      case 16:
-				if (s[0] != 'f') *--s = 'f'; break;
-			      case 8:
-				if (s[0] != '7') *--s = '7'; break;
-			      case 2:
-				if (s[0] != '1') *--s = '1'; break;
-			    }
-			}
-		    }
+                    tmp = rb_big2str(val, base);
+                    s = RSTRING_PTR(tmp);
+                    valsign = 1;
+                    if (s[0] == '-') {
+                        s++;
+                        sc = '-';
+                        width--;
+                        valsign = -1;
+                    }
+                    else if (flags & FPLUS) {
+                        sc = '+';
+                        width--;
+                    }
+                    else if (flags & FSPACE) {
+                        sc = ' ';
+                        width--;
+                    }
 		    len = rb_long2int(RSTRING_END(tmp) - s);
 		}
 
@@ -983,21 +964,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		CHECK(prec - len);
 		if (dots) PUSH("..", 2);
-		if (!bignum && v < 0) {
+		if (!sign && valsign < 0) {
 		    char c = sign_bits(base, p);
 		    while (len < prec--) {
 			buf[blen++] = c;
 		    }
 		}
 		else if ((flags & (FMINUS|FPREC)) != FMINUS) {
-		    char c;
-
-		    if (!sign && bignum && !RBIGNUM_SIGN(val))
-			c = sign_bits(base, p);
-		    else
-			c = '0';
 		    while (len < prec--) {
-			buf[blen++] = c;
+			buf[blen++] = '0';
 		    }
 		}
 		PUSH(s, len);
