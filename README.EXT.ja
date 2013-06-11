@@ -1594,11 +1594,19 @@ dir_config(target[, default_include, default_lib]) ::
   と等価である．追加された include ディレクトリと lib ディレ
   クトリの配列を返す． ([include_dir, lib_dir])
 
-pkg_config(pkg) ::
+pkg_config(pkg, option=nil) ::
 
-  pkg-configコマンドからパッケージpkgの情報を得る．
-  pkg-configの実際のコマンド名は，--with-pkg-configコマンド
-  ラインオプションで指定可能．
+  pkg-configコマンドからパッケージpkgの情報を [cflags, ldflags, libs]
+  の配列として得る．
+  pkg-configの実際のコマンドは，以下の順で試される．
+
+  1. コマンドラインで--with-{pkg}-config={command}オプションが
+     指定された場合: {command} {option}
+  2. {pkg}-config {option}
+  3. pkg-config {option} {pkg}
+
+  optionが指定された場合は、上記の配列の代わりにそのオプションを
+  指定して得られた出力をstripしたものを返す．
 
 /*
  * Local variables:
