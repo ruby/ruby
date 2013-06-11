@@ -2,20 +2,37 @@
 #include "internal.h"
 
 static VALUE
-rb_integer_pack_m(VALUE val, VALUE buf, VALUE wordsize_arg, VALUE nails, VALUE flags)
+rb_integer_pack_raw_m(VALUE val, VALUE buf, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
 {
   int sign;
-  size_t count = 0;
+  size_t numwords = 0;
   size_t wordsize = NUM2SIZET(wordsize_arg);
 
   StringValue(buf);
   rb_str_modify(buf);
-  count = wordsize == 0 ? 0 : RSTRING_LEN(buf) / wordsize;
   sign = rb_integer_pack(val,
-      RSTRING_PTR(buf), count,
+      RSTRING_PTR(buf), NUM2SIZET(numwords_arg),
+      NUM2SIZET(wordsize_arg), NUM2SIZET(nails), NUM2INT(flags));
+
+  return rb_ary_new_from_args(2, INT2NUM(sign), rb_str_new(RSTRING_PTR(buf), wordsize * numwords));
+}
+
+static VALUE
+rb_integer_pack_m(VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE nails, VALUE flags)
+{
+  int sign;
+  size_t numwords = NUM2SIZET(numwords_arg);
+  size_t wordsize = NUM2SIZET(wordsize_arg);
+  VALUE buf;
+
+  if (numwords != 0 && wordsize != 0 && LONG_MAX / wordsize < numwords)
+      rb_raise(rb_eArgError, "too big numwords * wordsize");
+  buf = rb_str_new(NULL, numwords * wordsize);
+  sign = rb_integer_pack(val,
+      RSTRING_PTR(buf), numwords,
       wordsize, NUM2SIZET(nails), NUM2INT(flags));
 
-  return rb_ary_new_from_args(3, INT2NUM(sign), rb_str_new(RSTRING_PTR(buf), wordsize * count), SIZET2NUM(count));
+  return rb_assoc_new(INT2NUM(sign), buf);
 }
 
 static VALUE
@@ -37,18 +54,19 @@ rb_integer_pack_2comp_m(VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE
 }
 
 static VALUE
-rb_integer_unpack_m(VALUE klass, VALUE sign, VALUE buf, VALUE wordcount, VALUE wordsize, VALUE nails, VALUE flags)
+rb_integer_unpack_m(VALUE klass, VALUE sign, VALUE buf, VALUE numwords, VALUE wordsize, VALUE nails, VALUE flags)
 {
     StringValue(buf);
 
     return rb_integer_unpack(NUM2INT(sign), RSTRING_PTR(buf),
-            NUM2SIZET(wordcount), NUM2SIZET(wordsize),
+            NUM2SIZET(numwords), NUM2SIZET(wordsize),
             NUM2SIZET(nails), NUM2INT(flags));
 }
 
 void
 Init_pack(VALUE klass)
 {
+    rb_define_method(rb_cInteger, "test_pack_raw", rb_integer_pack_raw_m, 5);
     rb_define_method(rb_cInteger, "test_pack", rb_integer_pack_m, 4);
     rb_define_method(rb_cInteger, "test_pack_2comp", rb_integer_pack_2comp_m, 4);
     rb_define_singleton_method(rb_cInteger, "test_unpack", rb_integer_unpack_m, 6);
