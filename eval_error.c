@@ -184,8 +184,9 @@ error_print(void)
 #define TRACE_TAIL 5
 
 	for (i = 1; i < len; i++) {
-	    if (RB_TYPE_P(RARRAY_AREF(errat,i), T_STRING)) {
-		warn_printf("\tfrom %s\n", RSTRING_PTR(RARRAY_AREF(errat,i)));
+	    VALUE line = RARRAY_AREF(errat, i);
+	    if (RB_TYPE_P(line, T_STRING)) {
+		warn_printf("\tfrom %s\n", RSTRING_PTR(line));
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
