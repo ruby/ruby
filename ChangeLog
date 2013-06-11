@@ -1,3 +1,8 @@
+Tue Jun 11 23:56:24 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/xmlrpc/test_client.rb (XMLRPC::ClientTest::Fake::HTTP#started):
+	  Add a missing empty line.
+
 Tue Jun 11 23:37:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (validate_integer_pack_format): Don't require a word order

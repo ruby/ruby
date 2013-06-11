@@ -16,6 +16,7 @@ module XMLRPC
         def started?
           @started
         end
+
         def start
           @started = true
           if block_given?
