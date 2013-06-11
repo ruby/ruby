@@ -19,7 +19,7 @@ class TestBignum < Test::Unit::TestCase
     end
 
     def test_pack_argument_check
-      assert_raise(ArgumentError) { 0.test_pack_raw("", 0, 1, 0, MSBYTE_FIRST) }
+      assert_raise(ArgumentError) { 0.test_pack_raw("", 2, 1, 0, MSBYTE_FIRST) }
       assert_raise(ArgumentError) { 0.test_pack_raw("", 0, 1, 0, MSWORD_FIRST) }
       assert_raise(ArgumentError) { 0.test_pack_raw("", 0, 0, 0, BIG_ENDIAN) }
       assert_raise(ArgumentError) { 0.test_pack_raw("", 0, 1, 8, BIG_ENDIAN) }
@@ -121,7 +121,7 @@ class TestBignum < Test::Unit::TestCase
     end
 
     def test_unpack_argument_check
-      assert_raise(ArgumentError) { Integer.test_unpack(1, "x", 1, 1, 0, MSBYTE_FIRST) }
+      assert_raise(ArgumentError) { Integer.test_unpack(1, "x", 2, 1, 0, MSBYTE_FIRST) }
       assert_raise(ArgumentError) { Integer.test_unpack(1, "x", 1, 1, 0, MSWORD_FIRST) }
       assert_raise(ArgumentError) { Integer.test_unpack(1, "x", 1, 0, 0, BIG_ENDIAN) }
       assert_raise(ArgumentError) { Integer.test_unpack(1, "x", 1, 1, 8, BIG_ENDIAN) }

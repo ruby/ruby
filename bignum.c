@@ -611,7 +611,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         nlz_bits = word_numbits - NUM2SIZET(mod);
     }
     sign = rb_integer_pack(div, &numwords, 1, sizeof(numwords), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign == 2)
         return (size_t)-1;
     *nlz_bits_ret = nlz_bits;
@@ -740,7 +740,8 @@ validate_integer_pack_format(size_t numwords, size_t wordsize, size_t nails, int
     int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
     if (wordorder_bits == 0) {
-        rb_raise(rb_eArgError, "word order not specified");
+        if (1 < numwords)
+            rb_raise(rb_eArgError, "word order not specified");
     }
     else if (wordorder_bits != INTEGER_PACK_MSWORD_FIRST &&
         wordorder_bits != INTEGER_PACK_LSWORD_FIRST)

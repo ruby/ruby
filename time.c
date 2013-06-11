@@ -302,8 +302,8 @@ v2w_bignum(VALUE v)
     int sign;
     uwideint_t u;
     wideint_t i;
-    sign = rb_integer_pack(v, &u, 1, sizeof(i), 0,
-        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    sign = rb_integer_pack(v, &u, 1, sizeof(u), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign == 0)
         return WINT2FIXWV(0);
     else if (sign == -1) {

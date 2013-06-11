@@ -1,3 +1,14 @@
+Tue Jun 11 23:37:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_pack_format): Don't require a word order
+	  flag if numwords is 1 or less.
+	  (absint_numwords_generic): Don't specify a word order for
+	  rb_integer_pack.
+
+	* hash.c (rb_hash): Ditto.
+
+	* time.c (v2w_bignum): Ditto.
+
 Tue Jun 11 23:01:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (validate_integer_pack_format): Refine error messages.
