@@ -1,3 +1,11 @@
+Tue Jun 11 16:15:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_shrink_capa): shrink the capacity so it fits just with
+	  the length.
+
+	* array.c (ary_make_shared): release never used elements from frozen
+	  array to be shared.  [ruby-dev:47416] [Bug #8510]
+
 Tue Jun 11 12:49:01 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* doc/re.rdoc: Rename to doc/regexp.rdoc

@@ -180,6 +180,16 @@ ary_resize_capa(VALUE ary, long capacity)
 }
 
 static void
+ary_shrink_capa(VALUE ary)
+{
+    long capacity = ARY_HEAP_LEN(ary);
+    long old_capa = RARRAY(ary)->as.heap.aux.capa;
+    assert(old_capa >= capacity);
+    if (old_capa > capacity)
+	REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity);
+}
+
+static void
 ary_double_capa(VALUE ary, long min)
 {
     long new_capa = ARY_CAPA(ary) / 2;
@@ -510,7 +520,7 @@ ary_make_shared(VALUE ary)
 	return ary;
     }
     else if (OBJ_FROZEN(ary)) {
-	ary_resize_capa(ary, ARY_HEAP_LEN(ary));
+	ary_shrink_capa(ary);
 	FL_SET_SHARED_ROOT(ary);
 	ARY_SET_SHARED_NUM(ary, 1);
 	return ary;
