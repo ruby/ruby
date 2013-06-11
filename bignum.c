@@ -1178,8 +1178,6 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
 /*
  * Import an integer into a buffer.
  *
- * [sign] signedness of the value.
- *   -1 for non-positive.  0 or 1 for non-negative.
  * [words] buffer to import.
  * [numwords] the size of given buffer as number of words.
  * [wordsize] the size of word as number of bytes.
@@ -1187,17 +1185,20 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
  *   Most significant nails bits of each word are ignored.
  * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
  *   It specifies word order and byte order.
- *   Also, INTEGER_PACK_FORCE_BIGNUM specifies that the result will be a Bignum
- *   even if it is representable as a Fixnum.
+ *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
+ *     even if it is representable as a Fixnum.
+ *   [INTEGER_PACK_NEGATIVE] Returns non-positive value.
+ *     (Returns non-negative value if not specified.)
  *
  * This function returns the imported integer as Fixnum or Bignum.
  */
 VALUE
-rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     VALUE result;
     const unsigned char *buf = words;
     size_t num_bdigits;
+    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
 
     BDIGIT *dp;
     BDIGIT *de;
@@ -1215,8 +1216,6 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     int numbits_in_dd;
 
     validate_integer_pack_format(numwords, wordsize, nails, flags);
-    if (sign != 1 && sign != 0 && sign != -1)
-        rb_raise(rb_eArgError, "unexpected sign: %d", sign);
 
     if (numwords <= (SIZE_MAX - (SIZEOF_BDIGITS*CHAR_BIT-1)) / CHAR_BIT / wordsize) {
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails);

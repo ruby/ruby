@@ -54,11 +54,11 @@ rb_integer_pack_2comp_m(VALUE val, VALUE numwords_arg, VALUE wordsize_arg, VALUE
 }
 
 static VALUE
-rb_integer_unpack_m(VALUE klass, VALUE sign, VALUE buf, VALUE numwords, VALUE wordsize, VALUE nails, VALUE flags)
+rb_integer_unpack_m(VALUE klass, VALUE buf, VALUE numwords, VALUE wordsize, VALUE nails, VALUE flags)
 {
     StringValue(buf);
 
-    return rb_integer_unpack(NUM2INT(sign), RSTRING_PTR(buf),
+    return rb_integer_unpack(RSTRING_PTR(buf),
             NUM2SIZET(numwords), NUM2SIZET(wordsize),
             NUM2SIZET(nails), NUM2INT(flags));
 }
@@ -69,7 +69,7 @@ Init_pack(VALUE klass)
     rb_define_method(rb_cInteger, "test_pack_raw", rb_integer_pack_raw_m, 5);
     rb_define_method(rb_cInteger, "test_pack", rb_integer_pack_m, 4);
     rb_define_method(rb_cInteger, "test_pack_2comp", rb_integer_pack_2comp_m, 4);
-    rb_define_singleton_method(rb_cInteger, "test_unpack", rb_integer_unpack_m, 6);
+    rb_define_singleton_method(rb_cInteger, "test_unpack", rb_integer_unpack_m, 5);
     rb_define_const(rb_cInteger, "INTEGER_PACK_MSWORD_FIRST", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
     rb_define_const(rb_cInteger, "INTEGER_PACK_LSWORD_FIRST", INT2NUM(INTEGER_PACK_LSWORD_FIRST));
     rb_define_const(rb_cInteger, "INTEGER_PACK_MSBYTE_FIRST", INT2NUM(INTEGER_PACK_MSBYTE_FIRST));
@@ -77,4 +77,6 @@ Init_pack(VALUE klass)
     rb_define_const(rb_cInteger, "INTEGER_PACK_NATIVE_BYTE_ORDER", INT2NUM(INTEGER_PACK_NATIVE_BYTE_ORDER));
     rb_define_const(rb_cInteger, "INTEGER_PACK_LITTLE_ENDIAN", INT2NUM(INTEGER_PACK_LITTLE_ENDIAN));
     rb_define_const(rb_cInteger, "INTEGER_PACK_BIG_ENDIAN", INT2NUM(INTEGER_PACK_BIG_ENDIAN));
+    rb_define_const(rb_cInteger, "INTEGER_PACK_FORCE_BIGNUM", INT2NUM(INTEGER_PACK_FORCE_BIGNUM));
+    rb_define_const(rb_cInteger, "INTEGER_PACK_NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
 }

@@ -274,14 +274,14 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     /* (a << 32) | b */
     xary[0] = a;
     xary[1] = b;
-    x = rb_integer_unpack(+1, xary, 2, sizeof(uint32_t), 0,
+    x = rb_integer_unpack(xary, 2, sizeof(uint32_t), 0,
         INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
         INTEGER_PACK_FORCE_BIGNUM);
 
     /* (1 << 53) | 1 */
     mary[0] = 0x00200000;
     mary[1] = 0x00000001;
-    m = rb_integer_unpack(+1, mary, 2, sizeof(uint32_t), 0,
+    m = rb_integer_unpack(mary, 2, sizeof(uint32_t), 0,
         INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
         INTEGER_PACK_FORCE_BIGNUM);
 
@@ -508,7 +508,7 @@ make_seed_value(const uint32_t *ptr)
         len = DEFAULT_SEED_CNT;
     }
 
-    seed = rb_integer_unpack(+1, ptr, len, sizeof(uint32_t), 0,
+    seed = rb_integer_unpack(ptr, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     return seed;
@@ -571,7 +571,7 @@ random_copy(VALUE obj, VALUE orig)
 static VALUE
 mt_state(const struct MT *mt)
 {
-    return rb_integer_unpack(1, mt->state, numberof(mt->state),
+    return rb_integer_unpack(mt->state, numberof(mt->state),
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
@@ -778,7 +778,7 @@ limited_big_rand(struct MT *mt, VALUE limit)
         }
         rnd_array[i] = rnd;
     }
-    val = rb_integer_unpack(+1, rnd_array, len, sizeof(uint32_t), 0,
+    val = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     ALLOCV_END(vtmp);
 

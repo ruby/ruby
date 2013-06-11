@@ -63,6 +63,7 @@ extern "C" {
 #define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
 /* For rb_integer_unpack: */
 #define INTEGER_PACK_FORCE_BIGNUM       0x100
+#define INTEGER_PACK_NEGATIVE           0x200
 /* Combinations: */
 #define INTEGER_PACK_LITTLE_ENDIAN \
     (INTEGER_PACK_LSWORD_FIRST | \
@@ -448,7 +449,7 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 
 /* bignum.c */
 int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-VALUE rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 int rb_integer_pack_2comp(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 /* io.c */

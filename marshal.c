@@ -1616,8 +1616,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    sign = r_byte(arg);
 	    len = r_long(arg);
 	    data = r_bytes0(len * 2, arg);
-            v = rb_integer_unpack(sign == '-' ? -1 : +1, RSTRING_PTR(data), len, 2, 0,
-                INTEGER_PACK_LITTLE_ENDIAN);
+            v = rb_integer_unpack(RSTRING_PTR(data), len, 2, 0,
+                INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));
 	    rb_str_resize(data, 0L);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
