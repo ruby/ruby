@@ -735,7 +735,7 @@ rb_absint_singlebit_p(VALUE val)
      INTEGER_PACK_NATIVE_BYTE_ORDER)
 
 static void
-validate_integer_pack_format(size_t wordsize, size_t nails, int flags)
+validate_integer_pack_format(size_t numwords, size_t wordsize, size_t nails, int flags)
 {
     int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
@@ -752,6 +752,8 @@ validate_integer_pack_format(size_t wordsize, size_t nails, int flags)
         rb_raise(rb_eArgError, "too big wordsize: %"PRI_SIZE_PREFIX"u", wordsize);
     if (wordsize <= nails / CHAR_BIT)
         rb_raise(rb_eArgError, "too big nails: %"PRI_SIZE_PREFIX"u", nails);
+    if (SIZE_MAX / wordsize < numwords)
+        rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
 }
 
 static void
@@ -852,9 +854,7 @@ rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsiz
 
     val = rb_to_int(val);
 
-    validate_integer_pack_format(wordsize, nails, flags);
-    if (SIZE_MAX / wordsize < numwords)
-        rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
+    validate_integer_pack_format(numwords, wordsize, nails, flags);
 
     if (FIXNUM_P(val)) {
         long v = FIX2LONG(val);
@@ -1207,9 +1207,7 @@ rb_integer_unpack(int sign, const void *words, size_t numwords, size_t wordsize,
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    validate_integer_pack_format(wordsize, nails, flags);
-    if (SIZE_MAX / wordsize < numwords)
-        rb_raise(rb_eArgError, "too big numwords * wordsize: %"PRI_SIZE_PREFIX"u * %"PRI_SIZE_PREFIX"u", numwords, wordsize);
+    validate_integer_pack_format(numwords, wordsize, nails, flags);
     if (sign != 1 && sign != 0 && sign != -1)
         rb_raise(rb_eArgError, "unexpected sign: %d", sign);
 

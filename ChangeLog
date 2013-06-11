@@ -1,3 +1,10 @@
+Tue Jun 11 22:25:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_pack_format): numwords argument added.
+	  Move a varidation from rb_integer_pack_internal and rb_integer_unpack.
+	  (rb_integer_pack_internal): Follow above change.
+	  (rb_integer_unpack): Ditto.
+
 Tue Jun 11 20:52:43 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_pack_internal): Renamed from rb_integer_pack
