@@ -946,8 +946,7 @@ rand_int(struct MT *mt, VALUE vmax, int restrictive)
 	if (rb_bigzero_p(vmax)) return Qnil;
 	if (!RBIGNUM_SIGN(vmax)) {
 	    if (restrictive) return Qnil;
-	    vmax = rb_big_clone(vmax);
-	    RBIGNUM_SET_SIGN(vmax, 1);
+            vmax = rb_big_uminus(vmax);
 	}
 	vmax = rb_big_minus(vmax, INT2FIX(1));
 	if (FIXNUM_P(vmax)) {
