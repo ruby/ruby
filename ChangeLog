@@ -1,3 +1,9 @@
+Wed Jun 12 00:07:46 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Extract.
+	* test/xmlrpc/test_client.rb (XMLRPC::ClientTest#test_cookie_simple):
+	  Add a test for the extracted method.
+
 Tue Jun 11 23:56:24 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/xmlrpc/test_client.rb (XMLRPC::ClientTest::Fake::HTTP#started):

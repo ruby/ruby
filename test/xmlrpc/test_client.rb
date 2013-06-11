@@ -280,6 +280,13 @@ module XMLRPC
       assert_equal 1, resp.first['blogid']
     end
 
+    def test_cookie_simple
+      client = Fake::Client.new2('http://example.org/cookie')
+      assert_nil(client.cookie)
+      client.send(:parse_set_cookies, ["param1=value1", "param2=value2"])
+      assert_equal("param1=value1; param2=value2", client.cookie)
+    end
+
     private
     def read filename
       File.read File.expand_path(File.join(__FILE__, '..', 'data', filename))
