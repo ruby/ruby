@@ -183,7 +183,7 @@ UNIXであれば +configure+ がほとんどの差異を吸収してくれるは
 
 == 著者
 
-コメント，バグレポートその他は mailto:matz@ruby-lang.jp まで．
+コメント，バグレポートその他は mailto:matz@ruby-lang.org まで．
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995
 --
