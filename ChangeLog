@@ -1,3 +1,7 @@
+Tue Jun 11 23:01:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_pack_format): Refine error messages.
+
 Tue Jun 11 22:25:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (validate_integer_pack_format): numwords argument added.

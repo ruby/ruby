@@ -739,10 +739,16 @@ validate_integer_pack_format(size_t numwords, size_t wordsize, size_t nails, int
 {
     int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
-    if (wordorder_bits != INTEGER_PACK_MSWORD_FIRST &&
+    if (wordorder_bits == 0) {
+        rb_raise(rb_eArgError, "word order not specified");
+    }
+    else if (wordorder_bits != INTEGER_PACK_MSWORD_FIRST &&
         wordorder_bits != INTEGER_PACK_LSWORD_FIRST)
         rb_raise(rb_eArgError, "unexpected word order");
-    if (byteorder_bits != INTEGER_PACK_MSBYTE_FIRST &&
+    if (byteorder_bits == 0) {
+        rb_raise(rb_eArgError, "byte order not specified");
+    }
+    else if (byteorder_bits != INTEGER_PACK_MSBYTE_FIRST &&
         byteorder_bits != INTEGER_PACK_LSBYTE_FIRST &&
         byteorder_bits != INTEGER_PACK_NATIVE_BYTE_ORDER)
         rb_raise(rb_eArgError, "unexpected byte order");
