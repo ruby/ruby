@@ -3520,7 +3520,7 @@ re_warn(const char *s)
  *  <code>%r{...}</code> literals, and by the <code>Regexp::new</code>
  *  constructor.
  *
- *  :include: doc/re.rdoc
+ *  :include: doc/regexp.rdoc
  */
 
 void

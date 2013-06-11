@@ -1,3 +1,8 @@
+Tue Jun 11 12:49:01 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* doc/re.rdoc: Rename to doc/regexp.rdoc
+	* re.c: Update rdoc include for rename of file
+
 Tue Jun 11 07:13:13 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* eval_error.c (error_print): keep that errat is non-shady object.
