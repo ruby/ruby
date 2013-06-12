@@ -65,7 +65,6 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 #define ARY_OWNS_HEAP_P(a) (!FL_TEST((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
-    assert(!OBJ_FROZEN(a)); \
     FL_SET((a), RARRAY_EMBED_FLAG); \
 } while (0)
 #define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
@@ -279,10 +278,10 @@ rb_ary_modify(VALUE ary)
         }
 	else if (ARY_SHARED_NUM(shared) == 1 && len > (RARRAY_LEN(shared)>>1)) {
 	    long shift = RARRAY_PTR(ary) - RARRAY_PTR(shared);
+	    FL_UNSET_SHARED(ary);
 	    ARY_SET_PTR(ary, RARRAY_PTR(shared));
 	    ARY_SET_CAPA(ary, RARRAY_LEN(shared));
 	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+shift, VALUE, len);
-	    FL_UNSET_SHARED(ary);
 	    FL_SET_EMBED(shared);
 	    rb_ary_decrement_share(shared);
 	}
