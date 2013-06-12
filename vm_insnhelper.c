@@ -2166,11 +2166,6 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     th->mark_stack_len = argc;
 
-    /* keyword argument */
-    if (iseq->arg_keyword != -1) {
-	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
-    }
-
     /*
      * yield [1, 2]
      *  => {|a|} => a = [1, 2]
@@ -2178,7 +2173,10 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      */
     arg0 = argv[0];
     if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
-	((m + iseq->arg_post_len) > 0 || iseq->arg_opts > 2) &&        /* this process is meaningful */
+	((m + iseq->arg_post_len) > 0 ||			/* positional arguments exist */
+	 iseq->arg_opts > 2 ||					/* multiple optional arguments exist */
+	 iseq->arg_keyword != -1 ||				/* any keyword arguments */
+	 0) &&
 	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
 	th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
@@ -2187,7 +2185,18 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
     else {
+	/* vm_push_frame current argv is at the top of sp because vm_invoke_block
+	 * set sp at the first element of argv.
+	 * Therefore when rb_check_array_type(arg0) called to_ary and called to_ary
+	 * or method_missing run vm_push_frame, it initializes local variables.
+	 * see also https://bugs.ruby-lang.org/issues/8484
+	 */
 	argv[0] = arg0;
+    }
+
+    /* keyword argument */
+    if (iseq->arg_keyword != -1) {
+	argc = vm_callee_setup_keyword_arg(iseq, argc, m, argv, &keyword_hash);
     }
 
     for (i=argc; i<m; i++) {
