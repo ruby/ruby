@@ -1725,38 +1725,16 @@ pack_unpack(VALUE str, VALUE fmt)
 #endif
 
               default:
-                if (integer_size > MAX_INTEGER_PACK_SIZE)
-                    rb_bug("unexpected integer size for pack: %d", integer_size);
                 PACK_LENGTH_ADJUST_SIZE(integer_size);
                 while (len-- > 0) {
-                    union {
-                        unsigned long i[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG];
-                        char a[(MAX_INTEGER_PACK_SIZE+SIZEOF_LONG)/SIZEOF_LONG*SIZEOF_LONG];
-                    } v;
-                    int num_longs = (integer_size+SIZEOF_LONG)/SIZEOF_LONG;
-                    int i;
-
-                    if (signed_p && (signed char)s[bigendian_p ? 0 : (integer_size-1)] < 0)
-                        memset(v.a, 0xff, sizeof(long)*num_longs);
+                    int flags = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
+                    VALUE val;
+                    if (signed_p)
+                        val = rb_integer_unpack_2comp(s, integer_size, 1, 0, flags);
                     else
-                        memset(v.a, 0, sizeof(long)*num_longs);
-                    if (bigendian_p)
-                        memcpy(v.a + sizeof(long)*num_longs - integer_size, s, integer_size);
-                    else
-                        memcpy(v.a, s, integer_size);
-                    if (bigendian_p) {
-                        for (i = 0; i < num_longs/2; i++) {
-                            unsigned long t = v.i[i];
-                            v.i[i] = v.i[num_longs-1-i];
-                            v.i[num_longs-1-i] = t;
-                        }
-                    }
-                    if (bigendian_p != BIGENDIAN_P()) {
-                        for (i = 0; i < num_longs; i++)
-                            v.i[i] = swapl(v.i[i]);
-                    }
+                        val = rb_integer_unpack(s, integer_size, 1, 0, flags);
+                    UNPACK_PUSH(val);
                     s += integer_size;
-                    UNPACK_PUSH(rb_big_unpack(v.i, num_longs));
                 }
                 PACK_ITEM_ADJUST();
 		break;

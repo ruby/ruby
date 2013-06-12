@@ -1120,15 +1120,17 @@ rb_integer_pack_2comp(VALUE val, void *words, size_t numwords, size_t wordsize, 
 }
 
 static size_t
-integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails)
+integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails, int *nlp_bits_ret)
 {
-    size_t num_bits;
-    num_bits = (wordsize * CHAR_BIT - nails) * numwords;
-    return (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT);
+    /* nlp_bits stands for number of leading padding bits */
+    size_t num_bits = (wordsize * CHAR_BIT - nails) * numwords;
+    size_t num_bdigits = (num_bits + BITSPERDIG - 1) / BITSPERDIG;
+    *nlp_bits_ret = num_bdigits * BITSPERDIG - num_bits;
+    return num_bdigits;
 }
 
 static size_t
-integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nails)
+integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nails, int *nlp_bits_ret)
 {
     /* BITSPERDIG = SIZEOF_BDIGITS * CHAR_BIT */
     /* num_bits = (wordsize * CHAR_BIT - nails) * numwords */
@@ -1172,13 +1174,17 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
     if (CHAR_BIT * r3 >= r1 * r2) {
         size_t tmp1 = CHAR_BIT * BITSPERDIG - (CHAR_BIT * r3 - r1 * r2);
         size_t q4 = tmp1 / BITSPERDIG;
+        int r4 = tmp1 % BITSPERDIG;
         size_t num_digits2 = num_digits1 + CHAR_BIT - q4;
+        *nlp_bits_ret = r4;
         return num_digits2;
     }
     else {
         size_t tmp1 = - (CHAR_BIT * r3 - r1 * r2);
         size_t q4 = tmp1 / BITSPERDIG;
+        int r4 = tmp1 % BITSPERDIG;
         size_t num_digits2 = num_digits1 - q4;
+        *nlp_bits_ret = r4;
         return num_digits2;
     }
 }
@@ -1195,25 +1201,8 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
     }
 }
 
-/*
- * Import an integer into a buffer.
- *
- * [words] buffer to import.
- * [numwords] the size of given buffer as number of words.
- * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.
- *   Most significant nails bits of each word are ignored.
- * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
- *   It specifies word order and byte order.
- *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
- *     even if it is representable as a Fixnum.
- *   [INTEGER_PACK_NEGATIVE] Returns non-positive value.
- *     (Returns non-negative value if not specified.)
- *
- * This function returns the imported integer as Fixnum or Bignum.
- */
-VALUE
-rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+static VALUE
+rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int *nlp_bits_ret)
 {
     VALUE result;
     const unsigned char *buf = words;
@@ -1235,30 +1224,21 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    validate_integer_pack_format(numwords, wordsize, nails, flags,
-            INTEGER_PACK_MSWORD_FIRST|
-            INTEGER_PACK_LSWORD_FIRST|
-            INTEGER_PACK_MSBYTE_FIRST|
-            INTEGER_PACK_LSBYTE_FIRST|
-            INTEGER_PACK_NATIVE_BYTE_ORDER|
-            INTEGER_PACK_FORCE_BIGNUM|
-            INTEGER_PACK_NEGATIVE);
-
     if (numwords <= (SIZE_MAX - (SIZEOF_BDIGITS*CHAR_BIT-1)) / CHAR_BIT / wordsize) {
-        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails);
+        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
 #if 0
         {
-            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails);
+            int nlp_bits1;
+            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
             assert(num_bdigits == num_bdigits1);
+            assert(*nlp_bits_ret == nlp_bits1);
         }
 #endif
     }
     else {
-        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails);
+        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
     }
     if (num_bdigits == 0) {
-        if (flags & INTEGER_PACK_FORCE_BIGNUM)
-            return rb_int2big(0);
         return LONG2FIX(0);
     }
     if (LONG_MAX < num_bdigits)
@@ -1305,10 +1285,117 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     while (dp < de)
         *dp++ = 0;
 
-    if (flags & INTEGER_PACK_FORCE_BIGNUM)
-        return bigtrunc(result);
-    return bignorm(result);
+    return result;
 #undef PUSH_BITS
+}
+
+/*
+ * Import an integer into a buffer.
+ *
+ * [words] buffer to import.
+ * [numwords] the size of given buffer as number of words.
+ * [wordsize] the size of word as number of bytes.
+ * [nails] number of padding bits in a word.
+ *   Most significant nails bits of each word are ignored.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
+ *   It specifies word order and byte order.
+ *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
+ *     even if it is representable as a Fixnum.
+ *   [INTEGER_PACK_NEGATIVE] Returns non-positive value.
+ *     (Returns non-negative value if not specified.)
+ *
+ * This function returns the imported integer as Fixnum or Bignum.
+ */
+VALUE
+rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    int nlp_bits;
+    VALUE val;
+
+    validate_integer_pack_format(numwords, wordsize, nails, flags,
+            INTEGER_PACK_MSWORD_FIRST|
+            INTEGER_PACK_LSWORD_FIRST|
+            INTEGER_PACK_MSBYTE_FIRST|
+            INTEGER_PACK_LSBYTE_FIRST|
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_FORCE_BIGNUM|
+            INTEGER_PACK_NEGATIVE);
+
+    val = rb_integer_unpack_internal(words, numwords, wordsize, nails, flags, &nlp_bits);
+
+    if (val == LONG2FIX(0)) {
+        if (flags & INTEGER_PACK_FORCE_BIGNUM)
+            return rb_int2big(0);
+        return LONG2FIX(0);
+    }
+    if (flags & INTEGER_PACK_FORCE_BIGNUM)
+        return bigtrunc(val);
+    return bignorm(val);
+}
+
+/*
+ * Import an integer into a buffer.
+ *
+ * [words] buffer to import.
+ * [numwords] the size of given buffer as number of words.
+ * [wordsize] the size of word as number of bytes.
+ * [nails] number of padding bits in a word.
+ *   Most significant nails bits of each word are ignored.
+ * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
+ *   It specifies word order and byte order.
+ *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
+ *     even if it is representable as a Fixnum.
+ *   [INTEGER_PACK_NEGATIVE] Assume the higher bits are 1.
+ *     (If INTEGER_PACK_NEGATIVE is not specified, the higher bits are
+ *     assumed same as the most significant bit.
+ *     i.e. sign extension is applied.)
+ *
+ * This function returns the imported integer as Fixnum or Bignum.
+ */
+VALUE
+rb_integer_unpack_2comp(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+{
+    VALUE val;
+    int nlp_bits;
+
+    validate_integer_pack_format(numwords, wordsize, nails, flags,
+            INTEGER_PACK_MSWORD_FIRST|
+            INTEGER_PACK_LSWORD_FIRST|
+            INTEGER_PACK_MSBYTE_FIRST|
+            INTEGER_PACK_LSBYTE_FIRST|
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_FORCE_BIGNUM|
+            INTEGER_PACK_NEGATIVE);
+
+    val = rb_integer_unpack_internal(words, numwords, wordsize, nails,
+            (flags & (INTEGER_PACK_WORDORDER_MASK|INTEGER_PACK_BYTEORDER_MASK) |
+             INTEGER_PACK_FORCE_BIGNUM),
+            &nlp_bits);
+
+    if (val == LONG2FIX(0)) {
+        /* num_bdigits == 0 i.e. num_bits == 0 */
+        int v;
+        if (flags & INTEGER_PACK_NEGATIVE)
+            v = -1;
+        else
+            v = 0;
+        if (flags & INTEGER_PACK_FORCE_BIGNUM)
+            return rb_int2big(v);
+        else
+            return LONG2FIX(v);
+    }
+    else if ((flags & INTEGER_PACK_NEGATIVE) ||
+             (RBIGNUM_LEN(val) != 0 &&
+              (RBIGNUM_DIGITS(val)[RBIGNUM_LEN(val)-1] >> (BITSPERDIG - nlp_bits - 1)))) {
+        if (nlp_bits)
+            RBIGNUM_DIGITS(val)[RBIGNUM_LEN(val)-1] |= (~(BDIGIT)0) << (BITSPERDIG - nlp_bits);
+        rb_big_2comp(val);
+        RBIGNUM_SET_SIGN(val, 0);
+    }
+
+    if (flags & INTEGER_PACK_FORCE_BIGNUM)
+        return bigtrunc(val);
+    return bignorm(val);
 }
 
 #define QUAD_SIZE 8

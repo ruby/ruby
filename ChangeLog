@@ -1,3 +1,17 @@
+Thu Jun 13 00:17:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_unpack_2comp): New function.
+	  (rb_integer_unpack_internal): Extracted from rb_integer_unpack and
+	  nlp_bits_ret argument added.
+	  (integer_unpack_num_bdigits_small): nlp_bits_ret argument added to
+	  return number of leading padding bits.
+	  (integer_unpack_num_bdigits_generic): Ditto.
+
+	* internal.h (rb_integer_unpack_2comp): Declared.
+
+	* pack.c (pack_unpack): Use rb_integer_unpack_2comp and
+	  rb_integer_unpack.
+
 Wed Jun 12 23:27:03 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (mod_using): new method Module#using, which activates
