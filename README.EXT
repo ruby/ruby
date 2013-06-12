@@ -1476,6 +1476,10 @@ RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
   Means that rb_add_event_hook() takes the third argument `data', to be
   passed to the given event hook function.
 
+= Appendix C. Functions available for use in extconf.rb
+
+See documentation for {mkmf}[rdoc-ref:MakeMakefile].
+
 /*
  * Local variables:
  * fill-column: 70
