@@ -1569,6 +1569,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(nil, b)
   end
 
+  def test_uniq_bang_with_freeze
+    ary = [1,2]
+    orig = ary.dup
+    assert_raise(RuntimeError, "frozen during comparison") {
+      ary.uniq! {|v| ary.freeze; 1}
+    }
+    assert_equal(orig, ary, "must not be modified once frozen")
+  end
+
   def test_unshift
     a = @cls[]
     assert_equal(@cls['cat'], a.unshift('cat'))

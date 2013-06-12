@@ -1,3 +1,8 @@
+Wed Jun 12 12:04:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_uniq_bang): must not be modified once frozen even in
+	  a callback method.
+
 Wed Jun 12 12:03:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): must not be modified once frozen even in

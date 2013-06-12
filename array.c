@@ -3981,6 +3981,7 @@ rb_ary_uniq_bang(VALUE ary)
 	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
 	    return Qnil;
 	}
+	rb_ary_modify(ary);
 	ARY_SET_LEN(ary, 0);
 	if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
 	    rb_ary_unshare(ary);
