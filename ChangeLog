@@ -1,3 +1,8 @@
+Thu Jun 13 05:32:13 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
+	  10.7+.  [ruby-trunk - Bug #8517]
+
 Thu Jun 13 00:17:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_unpack_2comp): New function.
