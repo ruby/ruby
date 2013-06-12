@@ -1128,48 +1128,59 @@ integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails)
 }
 
 static size_t
-integer_unpack_num_bdigits_bytes(size_t numwords, size_t wordsize)
-{
-    /*
-     * num_bits = wordsize * CHAR_BIT * numwords
-     *
-     * num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     * = (wordsize * CHAR_BIT * numwords + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     * = ((wordsize * numwords + SIZEOF_BDIGITS)*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     *
-     * q, r = (wordsize * numwords).divmod(SIZEOF_BDIGITS)
-     * q * SIZEOF_BDIGITS + r = wordsize * numwords
-     *
-     * num_bdigits = ((q * SIZEOF_BDIGITS + r + SIZEOF_BDIGITS)*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     * = (q * SIZEOF_BDIGITS * CHAR_BIT + r * CHAR_BIT + SIZEOF_BDIGITS * CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     * = q + (r * CHAR_BIT + SIZEOF_BDIGITS * CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT)
-     */
-    size_t t, q, r;
-    t = wordsize * numwords;
-    q = t / SIZEOF_BDIGITS;
-    r = t % SIZEOF_BDIGITS;
-    return q + (r * CHAR_BIT + SIZEOF_BDIGITS * CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT);
-}
-
-static size_t
 integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nails)
 {
-    VALUE num_bits_v, num_bdigits_v;
-
+    /* BITSPERDIG = SIZEOF_BDIGITS * CHAR_BIT */
     /* num_bits = (wordsize * CHAR_BIT - nails) * numwords */
-    num_bits_v = SIZET2NUM(wordsize);
-    num_bits_v = rb_funcall(num_bits_v, '*', 1, LONG2FIX(CHAR_BIT));
-    num_bits_v = rb_funcall(num_bits_v, '-', 1, SIZET2NUM(nails));
-    num_bits_v = rb_funcall(num_bits_v, '*', 1, SIZET2NUM(numwords));
+    /* num_bdigits = (num_bits + BITSPERDIG - 1) / BITSPERDIG */
 
-    if (num_bits_v == LONG2FIX(0))
-        return 0;
+    /* num_bits = CHAR_BIT * (wordsize * numwords) - nails * numwords = CHAR_BIT * num_bytes1 - nails * numwords */
+    size_t num_bytes1 = wordsize * numwords;
 
-    /* num_bdigits = (num_bits + SIZEOF_BDIGITS*CHAR_BIT - 1) / (SIZEOF_BDIGITS*CHAR_BIT) */
-    num_bdigits_v = rb_funcall(num_bits_v, '+', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT-1));
-    num_bdigits_v = rb_funcall(num_bdigits_v, '/', 1, LONG2FIX(SIZEOF_BDIGITS*CHAR_BIT));
+    /* q1 * CHAR_BIT + r1 = numwords */
+    size_t q1 = numwords / CHAR_BIT;
+    size_t r1 = numwords % CHAR_BIT;
 
-    return NUM2SIZET(num_bdigits_v);
+    /* num_bits = CHAR_BIT * num_bytes1 - nails * (q1 * CHAR_BIT + r1) = CHAR_BIT * num_bytes2 - nails * r1 */
+    size_t num_bytes2 = num_bytes1 - nails * q1;
+
+    /* q2 * CHAR_BIT + r2 = nails */
+    size_t q2 = nails / CHAR_BIT;
+    size_t r2 = nails % CHAR_BIT;
+
+    /* num_bits = CHAR_BIT * num_bytes2 - (q2 * CHAR_BIT + r2) * r1 = CHAR_BIT * num_bytes3 - r1 * r2 */
+    size_t num_bytes3 = num_bytes2 - q2 * r1;
+
+    /* q3 * BITSPERDIG + r3 = num_bytes3 */
+    size_t q3 = num_bytes3 / BITSPERDIG;
+    size_t r3 = num_bytes3 % BITSPERDIG;
+
+    /* num_bits = CHAR_BIT * (q3 * BITSPERDIG + r3) - r1 * r2 = BITSPERDIG * num_digits1 + CHAR_BIT * r3 - r1 * r2 */
+    size_t num_digits1 = CHAR_BIT * q3;
+
+    /*
+     * if CHAR_BIT * r3 >= r1 * r2
+     *   CHAR_BIT * r3 - r1 * r2 = CHAR_BIT * BITSPERDIG - (CHAR_BIT * BITSPERDIG - (CHAR_BIT * r3 - r1 * r2))
+     *   q4 * BITSPERDIG + r4 = CHAR_BIT * BITSPERDIG - (CHAR_BIT * r3 - r1 * r2)
+     *   num_bits = BITSPERDIG * num_digits1 + CHAR_BIT * BITSPERDIG - (q4 * BITSPERDIG + r4) = BITSPERDIG * num_digits2 - r4
+     * else
+     *   q4 * BITSPERDIG + r4 = -(CHAR_BIT * r3 - r1 * r2)
+     *   num_bits = BITSPERDIG * num_digits1 - (q4 * BITSPERDIG + r4) = BITSPERDIG * num_digits2 - r4
+     * end
+     */
+
+    if (CHAR_BIT * r3 >= r1 * r2) {
+        size_t tmp1 = CHAR_BIT * BITSPERDIG - (CHAR_BIT * r3 - r1 * r2);
+        size_t q4 = tmp1 / BITSPERDIG;
+        size_t num_digits2 = num_digits1 + CHAR_BIT - q4;
+        return num_digits2;
+    }
+    else {
+        size_t tmp1 = - (CHAR_BIT * r3 - r1 * r2);
+        size_t q4 = tmp1 / BITSPERDIG;
+        size_t num_digits2 = num_digits1 - q4;
+        return num_digits2;
+    }
 }
 
 static inline void
@@ -1237,27 +1248,8 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails);
 #if 0
         {
-            static int first = 1;
-            if (first)
-                first = 0;
-            else {
-                size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails);
-                assert(num_bdigits == num_bdigits1);
-            }
-        }
-#endif
-    }
-    else if (nails == 0) {
-        num_bdigits = integer_unpack_num_bdigits_bytes(numwords, wordsize);
-#if 0
-        {
-            static int first = 1;
-            if (first)
-                first = 0;
-            else {
-                size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails);
-                assert(num_bdigits == num_bdigits1);
-            }
+            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails);
+            assert(num_bdigits == num_bdigits1);
         }
 #endif
     }

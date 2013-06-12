@@ -1,3 +1,11 @@
+Wed Jun 12 22:18:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_num_bdigits_generic): Rewritten without
+	  rb_funcall.
+	  (integer_unpack_num_bdigits_bytes): Removed.
+	  (rb_integer_unpack): integer_unpack_num_bdigits_bytes invocation
+	  removed.
+
 Wed Jun 12 20:18:03 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Extract.
