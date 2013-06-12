@@ -1,3 +1,7 @@
+Wed Jun 12 12:35:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): Use rb_integer_pack_2comp.
+
 Wed Jun 12 12:07:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* sprintf.c (rb_str_format): Fix a dynamic format string.
