@@ -1,3 +1,8 @@
+Wed Jun 12 23:05:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_getc): fix 7bit coderange condition, check if ascii read
+	  data instead of read length. [ruby-core:55444] [Bug #8516]
+
 Sun Jun  9 02:27:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (install_dirs, with_destdir): prefix with DESTDIR
