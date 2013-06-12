@@ -2690,6 +2690,23 @@ End
   def test_write_32bit_boundary
     bug8431 = '[ruby-core:55098] [Bug #8431]'
     make_tempfile {|t|
+      def t.close(unlink_now = false)
+        # TODO: Tempfile should deal with this delay on Windows?
+        # NOTE: re-opening with O_TEMPORARY does not work.
+        path = self.path
+        ret = super
+        if unlink_now
+          begin
+            File.unlink(path)
+          rescue Errno::ENOENT
+          rescue Errno::EACCES
+            sleep(2)
+            retry
+          end
+        end
+        ret
+      end
+
       assert_separately(["-", bug8431, t.path], <<-"end;", timeout: 30)
         msg = ARGV.shift
         f = open(ARGV[0], "wb")
@@ -2698,9 +2715,12 @@ End
           # this will consume very long time or fail by ENOSPC on a
           # filesystem which sparse file is not supported
           f.write('1')
+          pos = f.tell
+        rescue Errno::ENOSPC
+          skip "non-sparse file system"
         rescue SystemCallError
         else
-          assert_equal(0x1_0000_0000, f.tell, msg)
+          assert_equal(0x1_0000_0000, pos, msg)
         end
       end;
     }
