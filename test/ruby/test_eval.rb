@@ -440,16 +440,6 @@ class TestEval < Test::Unit::TestCase
     assert_raise(RuntimeError) { eval("raise ''") }
   end
 
-  def test_eval_using_untainted_binding_under_safe4
-    assert_raise(SecurityError) do
-      Thread.new do
-        b = binding
-        $SAFE = 4
-        eval("", b)
-      end.join
-    end
-  end
-
   def test_eval_with_toplevel_binding # [ruby-dev:37142]
     ruby("-e", "x = 0; eval('p x', TOPLEVEL_BINDING)") do |f|
       f.close_write

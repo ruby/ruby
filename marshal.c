@@ -130,7 +130,7 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     st_insert(compat_allocator_tbl, (st_data_t)allocator, (st_data_t)compat);
 }
 
-#define MARSHAL_INFECTION (FL_TAINT|FL_UNTRUSTED)
+#define MARSHAL_INFECTION FL_TAINT
 typedef char ruby_check_marshal_viral_flags[MARSHAL_INFECTION == (int)MARSHAL_INFECTION ? 1 : -1];
 
 struct dump_arg {
@@ -1939,7 +1939,7 @@ marshal_load(int argc, VALUE *argv)
     }
     else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	rb_check_funcall(port, s_binmode, 0, 0);
-	infection = (int)(FL_TAINT | FL_TEST(port, FL_UNTRUSTED));
+	infection = (int)FL_TAINT;
     }
     else {
 	io_needed();

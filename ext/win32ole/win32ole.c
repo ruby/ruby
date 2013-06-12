@@ -2725,7 +2725,6 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     void *p;
     IUnknown *pUnknown;
 
-    rb_secure(4);
     /* initialize to use OLE */
     ole_initialize();
 
@@ -2809,7 +2808,6 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
     VALUE file;
     LCID    lcid = cWIN32OLE_lcid;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &klass);
     if (TYPE(klass) != T_CLASS &&
         TYPE(klass) != T_MODULE &&
@@ -2872,7 +2870,6 @@ ole_types_from_typelib(ITypeLib *pTypeLib, VALUE classes)
     ITypeInfo *pTypeInfo;
     VALUE type;
 
-    rb_secure(4);
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
         hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
@@ -3236,7 +3233,6 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     OLECHAR *pBuf;
     IDispatch *pDispatch;
     void *p;
-    rb_secure(4);
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
@@ -3964,7 +3960,6 @@ static VALUE
 fole_free(VALUE self)
 {
     struct oledata *pole;
-    rb_secure(4);
     OLEData_Get_Struct(self, pole);
     OLE_FREE(pole->pDispatch);
     pole->pDispatch = NULL;
@@ -4527,7 +4522,6 @@ fole_respond_to(VALUE self, VALUE method)
     BSTR wcmdname;
     DISPID DispID;
     HRESULT hr;
-    rb_secure(4);
     if(TYPE(method) != T_STRING && TYPE(method) != T_SYMBOL) {
 	rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
@@ -8299,7 +8293,6 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     struct oleeventdata *poleev;
     void *p;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &itf);
 
     if (!rb_obj_is_kind_of(ole, cWIN32OLE)) {
@@ -8507,7 +8500,6 @@ fev_off_event(int argc, VALUE *argv, VALUE self)
     VALUE event = Qnil;
     VALUE events;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "01", &event);
     if(!NIL_P(event)) {
 	if(TYPE(event) != T_STRING && TYPE(event) != T_SYMBOL) {

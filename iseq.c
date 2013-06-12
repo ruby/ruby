@@ -243,7 +243,6 @@ rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj)
 {
     if (!RTEST(iseq->mark_ary)) {
 	iseq->mark_ary = rb_ary_tmp_new(3);
-	OBJ_UNTRUST(iseq->mark_ary);
 	RBASIC_CLEAR_CLASS(iseq->mark_ary);
     }
     rb_ary_push(iseq->mark_ary, obj);

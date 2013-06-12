@@ -397,42 +397,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal(self, ok, bug3921)
   end
 
-  def assert_security_error_safe4(block)
-    assert_raise(SecurityError) do
-      block.call
-    end
-  end
-
-  def test_set_safe4
-    func = proc do
-      $SAFE = 4
-      set_trace_func(lambda {|*|})
-    end
-    assert_security_error_safe4(func)
-  end
-
-  def test_thread_set_safe4
-    th = Thread.start {sleep}
-    func = proc do
-      $SAFE = 4
-      th.set_trace_func(lambda {|*|})
-    end
-    assert_security_error_safe4(func)
-  ensure
-    th.kill
-  end
-
-  def test_thread_add_safe4
-    th = Thread.start {sleep}
-    func = proc do
-      $SAFE = 4
-      th.add_trace_func(lambda {|*|})
-    end
-    assert_security_error_safe4(func)
-  ensure
-    th.kill
-  end
-
   class << self
     define_method(:method_added, Module.method(:method_added))
   end
@@ -922,24 +886,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     rescue
       assert_equal([:b_call, :b_return], ary, bug_7668)
     end
-  end
-
-  def test_trace_point_enable_safe4
-    tp = TracePoint.new {}
-    func = proc do
-      $SAFE = 4
-      tp.enable
-    end
-    assert_security_error_safe4(func)
-  end
-
-  def test_trace_point_disable_safe4
-    tp = TracePoint.new {}
-    func = proc do
-      $SAFE = 4
-      tp.disable
-    end
-    assert_security_error_safe4(func)
   end
 
   def m1_for_test_trace_point_binding_in_ifunc(arg)

@@ -1532,7 +1532,6 @@ top_define_method(int argc, VALUE *argv, VALUE obj)
     rb_thread_t *th = GET_THREAD();
     VALUE klass;
 
-    rb_secure(4);
     klass = th->top_wrapper;
     if (klass) {
 	rb_warning("main.define_method in the wrapped load is effective only in wrapper module");

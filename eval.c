@@ -1331,7 +1331,6 @@ top_include(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_secure(4);
     if (th->top_wrapper) {
 	rb_warning("main.include in the wrapped load is effective only in wrapper module");
 	return rb_mod_include(argc, argv, th->top_wrapper);

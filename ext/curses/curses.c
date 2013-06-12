@@ -145,7 +145,6 @@ prep_window(VALUE class, WINDOW *window)
 static VALUE
 curses_init_screen(void)
 {
-    rb_secure(4);
     if (rb_stdscr) return rb_stdscr;
     initscr();
     if (stdscr == 0) {
@@ -1491,7 +1490,6 @@ window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
     struct windata *winp;
     WINDOW *window;
 
-    rb_secure(4);
     curses_init_screen();
     TypedData_Get_Struct(obj, struct windata, &windata_type, winp);
     if (winp->window) delwin(winp->window);
@@ -2511,7 +2509,6 @@ pad_initialize(VALUE obj, VALUE h, VALUE w)
     struct windata *padp;
     WINDOW *window;
 
-    rb_secure(4);
     curses_init_screen();
     TypedData_Get_Struct(obj, struct windata, &windata_type, padp);
     if (padp->window) delwin(padp->window);

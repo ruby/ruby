@@ -1,3 +1,45 @@
+Wed Jun 12 22:58:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* safe.c (rb_set_safe_level, safe_setter): raise an ArgumentError
+	  when $SAFE is set to 4.  $SAFE=4 is now obsolete.
+	  [ruby-core:55222] [Feature #8468]
+
+	* object.c (rb_obj_untrusted, rb_obj_untrust, rb_obj_trust):
+	  Kernel#untrusted?, untrust, and trust are now deprecated.
+	  Their behavior is same as tainted?, taint, and untaint,
+	  respectively.
+
+	* include/ruby/ruby.h (OBJ_UNTRUSTED, OBJ_UNTRUST): OBJ_UNTRUSTED()
+	  and OBJ_UNTRUST() are aliases of OBJ_TAINTED() and OBJ_TAINT(),
+	  respectively.
+
+	* array.c, class.c, debug.c, dir.c, encoding.c, error.c, eval.c,
+	  ext/curses/curses.c, ext/dbm/dbm.c, ext/dl/cfunc.c,
+	  ext/dl/cptr.c, ext/dl/dl.c, ext/etc/etc.c, ext/fiddle/fiddle.c,
+	  ext/fiddle/pointer.c, ext/gdbm/gdbm.c, ext/readline/readline.c,
+	  ext/sdbm/init.c, ext/socket/ancdata.c, ext/socket/basicsocket.c,
+	  ext/socket/socket.c, ext/socket/udpsocket.c,
+	  ext/stringio/stringio.c, ext/syslog/syslog.c, ext/tk/tcltklib.c,
+	  ext/win32ole/win32ole.c, file.c, gc.c, hash.c, io.c, iseq.c,
+	  load.c, marshal.c, object.c, proc.c, process.c, random.c, re.c,
+	  safe.c, string.c, thread.c, transcode.c, variable.c,
+	  vm_insnhelper.c, vm_method.c, vm_trace.c: remove code for
+	  $SAFE=4.
+
+	* test/dl/test_dl2.rb, test/erb/test_erb.rb,
+	  test/readline/test_readline.rb,
+	  test/readline/test_readline_history.rb, test/ruby/test_alias.rb,
+	  test/ruby/test_array.rb, test/ruby/test_dir.rb,
+	  test/ruby/test_encoding.rb, test/ruby/test_env.rb,
+	  test/ruby/test_eval.rb, test/ruby/test_exception.rb,
+	  test/ruby/test_file_exhaustive.rb, test/ruby/test_hash.rb,
+	  test/ruby/test_io.rb, test/ruby/test_method.rb,
+	  test/ruby/test_module.rb, test/ruby/test_object.rb,
+	  test/ruby/test_pack.rb, test/ruby/test_rand.rb,
+	  test/ruby/test_regexp.rb, test/ruby/test_settracefunc.rb,
+	  test/ruby/test_struct.rb, test/ruby/test_thread.rb,
+	  test/ruby/test_time.rb: remove tests for $SAFE=4.
+
 Wed Jun 12 22:18:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (integer_unpack_num_bdigits_generic): Rewritten without

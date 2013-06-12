@@ -114,12 +114,6 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_aset
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        ENV["test"] = "foo"
-      end.join
-    end
     assert_nothing_raised { ENV["test"] = nil }
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }

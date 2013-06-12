@@ -696,9 +696,6 @@ rb_include_module(VALUE klass, VALUE module)
     int changed = 0;
 
     rb_frozen_class_p(klass);
-    if (!OBJ_UNTRUSTED(klass)) {
-	rb_secure(4);
-    }
 
     if (!RB_TYPE_P(module, T_MODULE)) {
 	Check_Type(module, T_MODULE);
@@ -804,9 +801,6 @@ rb_prepend_module(VALUE klass, VALUE module)
     int changed = 0;
 
     rb_frozen_class_p(klass);
-    if (!OBJ_UNTRUSTED(klass)) {
-	rb_secure(4);
-    }
 
     Check_Type(module, T_MODULE);
 
@@ -1439,12 +1433,6 @@ singleton_class_of(VALUE obj)
     }
     else {
 	FL_UNSET(klass, FL_TAINT);
-    }
-    if (OBJ_UNTRUSTED(obj)) {
-	OBJ_UNTRUST(klass);
-    }
-    else {
-	FL_UNSET(klass, FL_UNTRUSTED);
     }
     if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
 

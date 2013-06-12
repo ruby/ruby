@@ -1109,15 +1109,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_nothing_raised { ENV["PATH"] }
   end
 
-  def test_find_file
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        load(@file)
-      end.join
-    end
-  end
-
   def test_size
     assert_equal(3, File.open(@file) {|f| f.size })
     File.open(@file, "a") do |f|

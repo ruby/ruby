@@ -257,8 +257,6 @@ static inline void
 rb_ary_modify_check(VALUE ary)
 {
     rb_check_frozen(ary);
-    if (!OBJ_UNTRUSTED(ary) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
 void
@@ -1843,7 +1841,6 @@ ary_join_0(VALUE ary, VALUE sep, long max, VALUE result)
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, val);
 	if (OBJ_TAINTED(val)) OBJ_TAINT(result);
-	if (OBJ_UNTRUSTED(val)) OBJ_TAINT(result);
     }
 }
 
@@ -1905,12 +1902,10 @@ rb_ary_join(VALUE ary, VALUE sep)
 {
     long len = 1, i;
     int taint = FALSE;
-    int untrust = FALSE;
     VALUE val, tmp, result;
 
     if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
     if (OBJ_TAINTED(ary)) taint = TRUE;
-    if (OBJ_UNTRUSTED(ary)) untrust = TRUE;
 
     if (!NIL_P(sep)) {
 	StringValue(sep);
@@ -1925,7 +1920,6 @@ rb_ary_join(VALUE ary, VALUE sep)
 	    result = rb_str_buf_new(len + (RARRAY_LEN(ary)-i)*10);
 	    rb_enc_associate(result, rb_usascii_encoding());
 	    if (taint) OBJ_TAINT(result);
-	    if (untrust) OBJ_UNTRUST(result);
 	    ary_join_0(ary, sep, i, result);
 	    first = i == 0;
 	    ary_join_1(ary, ary, sep, i, result, &first);
@@ -1937,7 +1931,6 @@ rb_ary_join(VALUE ary, VALUE sep)
 
     result = rb_str_buf_new(len);
     if (taint) OBJ_TAINT(result);
-    if (untrust) OBJ_UNTRUST(result);
     ary_join_0(ary, sep, RARRAY_LEN(ary), result);
 
     return result;
@@ -1971,7 +1964,6 @@ static VALUE
 inspect_ary(VALUE ary, VALUE dummy, int recur)
 {
     int tainted = OBJ_TAINTED(ary);
-    int untrust = OBJ_UNTRUSTED(ary);
     long i;
     VALUE s, str;
 
@@ -1980,14 +1972,12 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	s = rb_inspect(RARRAY_AREF(ary, i));
 	if (OBJ_TAINTED(s)) tainted = TRUE;
-	if (OBJ_UNTRUSTED(s)) untrust = TRUE;
 	if (i > 0) rb_str_buf_cat2(str, ", ");
 	else rb_enc_copy(str, s);
 	rb_str_buf_append(str, s);
     }
     rb_str_buf_cat2(str, "]");
     if (tainted) OBJ_TAINT(str);
-    if (untrust) OBJ_UNTRUST(str);
     return str;
 }
 

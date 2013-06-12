@@ -1668,7 +1668,6 @@ set_eventloop_window_mode(self, mode)
     VALUE self;
     VALUE mode;
 {
-    rb_secure(4);
 
     if (RTEST(mode)) {
       window_event_mode = ~0;
@@ -1698,7 +1697,6 @@ set_eventloop_tick(self, tick)
     int ttick = NUM2INT(tick);
     int thr_crit_bup;
 
-    rb_secure(4);
 
     if (ttick < 0) {
         rb_raise(rb_eArgError,
@@ -1765,7 +1763,6 @@ set_no_event_wait(self, wait)
 {
     int t_wait = NUM2INT(wait);
 
-    rb_secure(4);
 
     if (t_wait <= 0) {
         rb_raise(rb_eArgError,
@@ -1819,7 +1816,6 @@ set_eventloop_weight(self, loop_max, no_event)
     int lpmax = NUM2INT(loop_max);
     int no_ev = NUM2INT(no_event);
 
-    rb_secure(4);
 
     if (lpmax <= 0 || no_ev <= 0) {
         rb_raise(rb_eArgError, "weight parameters must be positive numbers");
@@ -1938,7 +1934,6 @@ static VALUE
 lib_evloop_abort_on_exc_set(self, val)
     VALUE self, val;
 {
-    rb_secure(4);
     if (RTEST(val)) {
         event_loop_abort_on_exc =  1;
     } else if (NIL_P(val)) {
@@ -1955,7 +1950,6 @@ ip_evloop_abort_on_exc_set(self, val)
 {
     struct tcltkip *ptr = get_ip(self);
 
-    rb_secure(4);
 
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
@@ -6403,7 +6397,6 @@ ip_create_slave_core(interp, argc, argv)
         safe = 1;
     } else if (safemode == Qfalse || NIL_P(safemode)) {
         safe = 0;
-        /* rb_secure(4); */ /* already checked */
     } else {
         safe = 1;
     }
@@ -6510,7 +6503,6 @@ ip_create_slave(argc, argv, self)
     }
     if (Tcl_IsSafe(master->ip) != 1
         && (safemode == Qfalse || NIL_P(safemode))) {
-        rb_secure(4);
     }
 
     StringValue(name);
@@ -6717,7 +6709,6 @@ ip_allow_ruby_exit_set(self, val)
     struct tcltkip *ptr = get_ip(self);
     Tk_Window mainWin;
 
-    rb_secure(4);
 
     /* ip is deleted? */
     if (deleted_ip(ptr)) {
@@ -7821,7 +7812,6 @@ lib_restart_core(interp, argc, argv)
     struct tcltkip *ptr = get_ip(interp);
     int  thr_crit_bup;
 
-    /* rb_secure(4); */ /* already checked */
 
     /* tcl_stubs_check(); */ /* already checked */
 
@@ -7879,7 +7869,6 @@ lib_restart(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
-    rb_secure(4);
 
     tcl_stubs_check();
 
@@ -7898,7 +7887,6 @@ ip_restart(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
-    rb_secure(4);
 
     tcl_stubs_check();
 
@@ -9257,7 +9245,6 @@ ip_invoke_immediate(argc, argv, obj)
     VALUE obj;
 {
     /* POTENTIALY INSECURE : can create infinite loop */
-    rb_secure(4);
     return ip_invoke_with_position(argc, argv, obj, TCL_QUEUE_HEAD);
 }
 
@@ -10061,7 +10048,6 @@ create_dummy_encoding_for_tk_core(interp, name, error_mode)
 {
   get_ip(interp);
 
-  rb_secure(4);
 
   StringValue(name);
 
@@ -10519,7 +10505,6 @@ create_encoding_table_core(arg, interp)
   Tcl_Obj **objv;
   Tcl_Obj *enc_list;
 
-  rb_secure(4);
 
   /* set 'binary' encoding */
   rb_hash_aset(table, ENCODING_NAME_BINARY, ENCODING_NAME_BINARY);
@@ -10555,7 +10540,6 @@ create_encoding_table_core(arg, interp)
      VALUE interp;
 {
   volatile VALUE table = rb_hash_new();
-  rb_secure(4);
   rb_ivar_set(interp, ID_encoding_table, table);
   return table;
 }

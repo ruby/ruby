@@ -86,7 +86,6 @@ rb_dlcfunc_new(void (*func)(), int type, const char *name, ID calltype)
     VALUE val;
     struct cfunc_data *data;
 
-    rb_secure(4);
     if( func ){
 	val = TypedData_Make_Struct(rb_cDLCFunc, struct cfunc_data, &dlcfunc_data_type, data);
 	data->ptr  = (void *)(VALUE)func;
@@ -345,8 +344,6 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     int i;
     DLSTACK_TYPE stack[DLSTACK_SIZE];
     VALUE result = Qnil;
-
-    rb_secure_update(self);
 
     memset(stack, 0, sizeof(DLSTACK_TYPE) * DLSTACK_SIZE);
     Check_Type(ary, T_ARRAY);

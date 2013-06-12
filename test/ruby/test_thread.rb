@@ -88,18 +88,6 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
-  def test_thread_variable_security
-    t = Thread.new { sleep }
-
-    assert_raises(SecurityError) do
-      Thread.new { $SAFE = 4; t.thread_variable_get(:foo) }.join
-    end
-
-    assert_raises(SecurityError) do
-      Thread.new { $SAFE = 4; t.thread_variable_set(:foo, :baz) }.join
-    end
-  end
-
   def test_mutex_synchronize
     m = Mutex.new
     r = 0
@@ -395,14 +383,6 @@ class TestThread < Test::Unit::TestCase
 
   def test_thread_local_security
     t = Thread.new { sleep }
-
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; t[:foo] }.join
-    end
-
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; t[:foo] = :baz }.join
-    end
 
     assert_raise(RuntimeError) do
       Thread.new do

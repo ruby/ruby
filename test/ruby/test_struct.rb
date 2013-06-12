@@ -74,17 +74,6 @@ class TestStruct < Test::Unit::TestCase
     assert_raise(NameError) { o[:b] }
   end
 
-  def test_modify
-    klass = Struct.new(:a)
-    o = klass.new(1)
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        o.a = 2
-      end.value
-    end
-  end
-
   def test_set
     klass = Struct.new(:a)
     o = klass.new(1)
@@ -261,19 +250,6 @@ class TestStruct < Test::Unit::TestCase
       assert x != z
       assert !x.eql?(z)
     }
-  end
-
-  def test_struct_subclass
-    bug5036 = '[ruby-dev:44122]'
-    st = Class.new(Struct)
-    s = st.new("S", :m).new
-    error = assert_raise(SecurityError) do
-      proc do
-        $SAFE = 4
-        s.m = 1
-      end.call
-    end
-    assert_equal("Insecure: can't modify #{st}::S", error.message, bug5036)
   end
 
   def test_to_h

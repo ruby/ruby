@@ -504,18 +504,6 @@ END
     end
   end
 
-  def test_marshal_load_insecure
-    r = Random.new(0)
-    d = r.__send__(:marshal_dump)
-    l = proc do
-      $SAFE = 4
-      r.__send__(:marshal_load, d)
-    end
-    assert_raise(SecurityError, '[Bug #6540]') do
-      l.call
-    end
-  end
-
   def test_random_ulong_limited
     def (gen = Object.new).rand(*) 1 end
     assert_equal([2], (1..100).map {[1,2,3].sample(random: gen)}.uniq)

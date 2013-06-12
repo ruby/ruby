@@ -507,8 +507,6 @@ static struct dir_data *
 dir_check(VALUE dir)
 {
     struct dir_data *dirp;
-    if (!OBJ_UNTRUSTED(dir) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: operation on trusted Dir");
     rb_check_frozen(dir);
     dirp = rb_check_typeddata(dir, &dir_data_type);
     if (!dirp->dir) dir_closed();
@@ -746,9 +744,6 @@ dir_rewind(VALUE dir)
 {
     struct dir_data *dirp;
 
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(dir)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close");
-    }
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     return dir;
@@ -896,7 +891,6 @@ rb_dir_getwd(void)
     char *path;
     VALUE cwd;
 
-    rb_secure(4);
     path = my_getcwd();
     cwd = rb_tainted_str_new2(path);
     rb_enc_associate(cwd, rb_filesystem_encoding());

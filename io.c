@@ -597,8 +597,6 @@ rb_eof_error(void)
 VALUE
 rb_io_taint_check(VALUE io)
 {
-    if (!OBJ_UNTRUSTED(io) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: operation on trusted IO");
     rb_check_frozen(io);
     return io;
 }
@@ -1376,7 +1374,6 @@ io_write(VALUE io, VALUE str, int nosync)
     long n;
     VALUE tmp;
 
-    rb_secure(4);
     io = GetWriteIO(io);
     str = rb_obj_as_string(str);
     tmp = rb_io_check_io(io);
@@ -2610,7 +2607,6 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     rb_io_t *fptr;
     long n;
 
-    rb_secure(4);
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
@@ -4256,9 +4252,6 @@ rb_io_close(VALUE io)
 static VALUE
 rb_io_close_m(VALUE io)
 {
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close");
-    }
     rb_io_check_closed(RFILE(io)->fptr);
     rb_io_close(io);
     return Qnil;
@@ -4339,9 +4332,6 @@ rb_io_close_read(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
 
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close");
-    }
     GetOpenFile(io, fptr);
     if (is_socket(fptr->fd, fptr->pathv)) {
 #ifndef SHUT_RD
@@ -4397,9 +4387,6 @@ rb_io_close_write(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
 
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't close");
-    }
     write_io = GetWriteIO(io);
     GetOpenFile(write_io, fptr);
     if (is_socket(fptr->fd, fptr->pathv)) {
@@ -4486,7 +4473,6 @@ rb_io_syswrite(VALUE io, VALUE str)
     rb_io_t *fptr;
     long n;
 
-    rb_secure(4);
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
@@ -6411,10 +6397,6 @@ io_reopen(VALUE io, VALUE nfile)
     off_t pos = 0;
 
     nfile = rb_io_get_io(nfile);
-    if (rb_safe_level() >= 4 &&
-	(!OBJ_UNTRUSTED(io) || !OBJ_UNTRUSTED(nfile))) {
-	rb_raise(rb_eSecurityError, "Insecure: can't reopen");
-    }
     GetOpenFile(io, fptr);
     GetOpenFile(nfile, orig);
 
@@ -6516,7 +6498,6 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     int oflags;
     rb_io_t *fptr;
 
-    rb_secure(4);
     if (rb_scan_args(argc, argv, "11:", &fname, &nmode, &opt) == 1) {
 	VALUE tmp = rb_io_check_io(fname);
 	if (!NIL_P(tmp)) {
@@ -7308,7 +7289,6 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     struct stat st;
 #endif
 
-    rb_secure(4);
 
     argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
@@ -7436,7 +7416,6 @@ static VALUE
 rb_io_autoclose_p(VALUE io)
 {
     rb_io_t *fptr;
-    rb_secure(4);
     GetOpenFile(io, fptr);
     return (fptr->mode & FMODE_PREP) ? Qfalse : Qtrue;
 }
@@ -7462,7 +7441,6 @@ static VALUE
 rb_io_set_autoclose(VALUE io, VALUE autoclose)
 {
     rb_io_t *fptr;
-    rb_secure(4);
     GetOpenFile(io, fptr);
     if (!RTEST(autoclose))
 	fptr->mode |= FMODE_PREP;

@@ -18,55 +18,6 @@ class TestReadline < Test::Unit::TestCase
     Readline.instance_variable_set("@completion_proc", nil)
   end
 
-  def test_safe_level_4
-    method_args =
-      [
-       ["readline"],
-       ["input=", $stdin],
-       ["output=", $stdout],
-       ["completion_proc=", proc {}],
-       ["completion_proc"],
-       ["completion_case_fold=", true],
-       ["completion_case_fold"],
-       ["vi_editing_mode"],
-       ["vi_editing_mode?"],
-       ["emacs_editing_mode"],
-       ["emacs_editing_mode?"],
-       ["completion_append_character=", "s"],
-       ["completion_append_character"],
-       ["basic_word_break_characters=", "s"],
-       ["basic_word_break_characters"],
-       ["completer_word_break_characters=", "s"],
-       ["completer_word_break_characters"],
-       ["basic_quote_characters=", "\\"],
-       ["basic_quote_characters"],
-       ["completer_quote_characters=", "\\"],
-       ["completer_quote_characters"],
-       ["filename_quote_characters=", "\\"],
-       ["filename_quote_characters"],
-       ["line_buffer"],
-       ["point"],
-       ["set_screen_size", 1, 1],
-       ["get_screen_size"],
-       ["pre_input_hook=", proc {}],
-       ["pre_input_hook"],
-       ["insert_text", ""],
-       ["redisplay"],
-       ["special_prefixes=", "$"],
-       ["special_prefixes"],
-      ]
-    method_args.each do |method_name, *args|
-      assert_raise(SecurityError, NotImplementedError,
-                    "method=<#{method_name}>") do
-        Thread.start {
-          $SAFE = 4
-          Readline.send(method_name.to_sym, *args)
-          assert(true)
-        }.join
-      end
-    end
-  end
-
   if !/EditLine/n.match(Readline::VERSION)
     def test_readline
       with_temp_stdio do |stdin, stdout|
@@ -88,12 +39,6 @@ class TestReadline < Test::Unit::TestCase
             replace_stdio(stdin.path, stdout.path) do
               Readline.readline("> ".taint)
             end
-          }.join
-        end
-        assert_raise(SecurityError) do
-          Thread.start {
-            $SAFE = 4
-            replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }
           }.join
         end
       end

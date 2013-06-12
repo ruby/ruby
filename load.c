@@ -574,7 +574,6 @@ rb_load_internal(VALUE fname, int wrap)
     th->errinfo = Qnil; /* ensure */
 
     if (!wrap) {
-	rb_secure(4);		/* should alter global state */
 	th->top_wrapper = 0;
     }
     else {

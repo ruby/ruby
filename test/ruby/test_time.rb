@@ -312,16 +312,6 @@ class TestTime < Test::Unit::TestCase
       "[ruby-dev:44827] [Bug #5586]")
   end
 
-  def test_security_error
-    assert_raise(SecurityError) do
-      Thread.new do
-        t = Time.gm(2000)
-        $SAFE = 4
-        t.localtime
-      end.join
-    end
-  end
-
   def test_at3
     t2000 = get_t2000
     assert_equal(t2000, Time.at(t2000))
@@ -882,20 +872,6 @@ class TestTime < Test::Unit::TestCase
     end
 
     assert_raise(NoMethodError, bug5012) { t1.m }
-  end
-
-  def test_time_subclass
-    bug5036 = '[ruby-dev:44122]'
-    tc = Class.new(Time)
-    tc.inspect
-    t = tc.now
-    error = assert_raise(SecurityError) do
-      proc do
-        $SAFE = 4
-        t.gmtime
-      end.call
-    end
-    assert_equal("Insecure: can't modify #{tc}", error.message, bug5036)
   end
 
   def test_sec_str

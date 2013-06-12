@@ -60,7 +60,6 @@ etc_getlogin(VALUE obj)
 {
     char *login;
 
-    rb_secure(4);
 #ifdef HAVE_GETLOGIN
     login = getlogin();
     if (!login) login = getenv("USER");
@@ -147,7 +146,6 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
     rb_uid_t uid;
     struct passwd *pwd;
 
-    rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
 	uid = NUM2UIDT(id);
     }
@@ -251,7 +249,6 @@ etc_passwd(VALUE obj)
 #ifdef HAVE_GETPWENT
     struct passwd *pw;
 
-    rb_secure(4);
     if (rb_block_given_p()) {
 	each_passwd();
     }
@@ -391,7 +388,6 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
     gid_t gid;
     struct group *grp;
 
-    rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
 	gid = NUM2GIDT(id);
     }
@@ -428,7 +424,6 @@ etc_getgrnam(VALUE obj, VALUE nam)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    rb_secure(4);
     SafeStringValue(nam);
     grp = getgrnam(RSTRING_PTR(nam));
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING_PTR(nam));
@@ -494,7 +489,6 @@ etc_group(VALUE obj)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    rb_secure(4);
     if (rb_block_given_p()) {
 	each_group();
     }
@@ -624,7 +618,7 @@ etc_systmpdir(void)
 #else
     tmpdir = rb_filesystem_str_new_cstr("/tmp");
 #endif
-    FL_UNSET(tmpdir, FL_TAINT|FL_UNTRUSTED);
+    FL_UNSET(tmpdir, FL_TAINT);
     return tmpdir;
 }
 

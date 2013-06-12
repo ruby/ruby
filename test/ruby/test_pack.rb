@@ -644,16 +644,6 @@ EXPECTED
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
   end
 
-  def test_modify_under_safe4
-    s = "foo"
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        s.clear
-      end.join
-    end
-  end
-
   def test_length_too_big
     assert_raise(RangeError) { [].pack("C100000000000000000000") }
   end

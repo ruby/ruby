@@ -69,7 +69,6 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     struct ptr_data *data;
     VALUE val;
 
-    rb_secure(4);
     val = TypedData_Make_Struct(klass, struct ptr_data, &dlptr_data_type, data);
     data->ptr = ptr;
     data->free = func;
@@ -90,7 +89,6 @@ rb_dlptr_malloc(long size, freefunc_t func)
 {
     void *ptr;
 
-    rb_secure(4);
     ptr = ruby_xmalloc((size_t)size);
     memset(ptr,0,(size_t)size);
     return rb_dlptr_new(ptr, size, func);
@@ -122,7 +120,6 @@ rb_dlptr_s_allocate(VALUE klass)
     VALUE obj;
     struct ptr_data *data;
 
-    rb_secure(4);
     obj = TypedData_Make_Struct(klass, struct ptr_data, &dlptr_data_type, data);
     data->ptr = 0;
     data->size = 0;

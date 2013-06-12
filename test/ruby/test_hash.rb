@@ -722,16 +722,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - vals)
   end
 
-  def test_security_check
-    h = {}
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        h[1] = 1
-      end.join
-    end
-  end
-
   def test_intialize_wrong_arguments
     assert_raise(ArgumentError) do
       Hash.new(0) { }

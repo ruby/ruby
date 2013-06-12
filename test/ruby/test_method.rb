@@ -325,15 +325,6 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.clone.bar)
   end
 
-  def test_call
-    o = Object.new
-    def o.foo; p 1; end
-    def o.bar(x); x; end
-    m = o.method(:foo)
-    m.taint
-    assert_raise(SecurityError) { m.call }
-  end
-
   def test_inspect
     o = Object.new
     def o.foo; end

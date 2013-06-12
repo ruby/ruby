@@ -166,7 +166,6 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     if (argc == 2 || argc == 3) {
 	return rsock_bsock_send(argc, argv, sock);
     }
-    rb_secure(4);
     rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
 
     StringValue(arg.mesg);

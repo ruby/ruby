@@ -1140,7 +1140,6 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     int flags;
     ssize_t ss;
 
-    rb_secure(4);
     GetOpenFile(sock, fptr);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     family = rsock_getfamily(fptr->fd);
@@ -1504,7 +1503,6 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     int gc_done = 0;
 #endif
 
-    rb_secure(4);
 
     rb_scan_args(argc, argv, "03:", &vmaxdatlen, &vflags, &vmaxctllen, &vopts);
 

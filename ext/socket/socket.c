@@ -629,7 +629,6 @@ rsock_sock_listen(VALUE sock, VALUE log)
     rb_io_t *fptr;
     int backlog;
 
-    rb_secure(4);
     backlog = NUM2INT(log);
     GetOpenFile(sock, fptr);
     if (listen(fptr->fd, backlog) < 0)

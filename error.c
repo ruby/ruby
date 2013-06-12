@@ -2039,7 +2039,6 @@ rb_error_untrusted(VALUE obj)
 void
 rb_check_trusted(VALUE obj)
 {
-    rb_check_trusted_internal(obj);
 }
 
 void
@@ -2047,9 +2046,8 @@ rb_check_copyable(VALUE obj, VALUE orig)
 {
     if (!FL_ABLE(obj)) return;
     rb_check_frozen_internal(obj);
-    rb_check_trusted_internal(obj);
     if (!FL_ABLE(orig)) return;
-    if ((~RBASIC(obj)->flags & RBASIC(orig)->flags) & (FL_UNTRUSTED|FL_TAINT)) {
+    if ((~RBASIC(obj)->flags & RBASIC(orig)->flags) & FL_TAINT) {
 	if (rb_safe_level() > 0) {
 	    rb_raise(rb_eSecurityError, "Insecure: can't modify %"PRIsVALUE,
 		     RBASIC(obj)->klass);

@@ -760,13 +760,6 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_undef
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        Class.instance_eval { undef_method(:foo) }
-      end.join
-    end
-
     c = Class.new
     assert_raise(NameError) do
       c.instance_eval { undef_method(:foo) }
@@ -859,19 +852,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal(false, c.private_method_defined?(:foo))
     assert_equal(false, c.private_method_defined?(:bar))
     assert_equal(true, c.private_method_defined?(:baz))
-  end
-
-  def test_change_visibility_under_safe4
-    c = Class.new
-    c.class_eval do
-      def foo; end
-    end
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        c.class_eval { private :foo }
-      end.join
-    end
   end
 
   def test_top_public_private
@@ -968,24 +948,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal(true, c1.include?(m))
     assert_equal(true, c2.include?(m))
     assert_equal(false, m.include?(m))
-  end
-
-  def test_include_under_safe4
-    m = Module.new
-    c1 = Class.new
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        c1.instance_eval { include(m) }
-      }.call
-    end
-    assert_nothing_raised do
-      lambda {
-        $SAFE = 4
-        c2 = Class.new
-        c2.instance_eval { include(m) }
-      }.call
-    end
   end
 
   def test_send

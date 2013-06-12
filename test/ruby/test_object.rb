@@ -52,16 +52,6 @@ class TestObject < Test::Unit::TestCase
     assert_raise(RuntimeError) { o.untaint }
   end
 
-  def test_freeze_under_safe_4
-    o = Object.new
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        o.freeze
-      end.join
-    end
-  end
-
   def test_freeze_immediate
     assert_equal(true, 1.frozen?)
     1.freeze
@@ -282,17 +272,6 @@ class TestObject < Test::Unit::TestCase
     assert_equal(1+3+5+7+9, n)
   end
 
-  def test_add_method_under_safe4
-    o = Object.new
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        def o.foo
-        end
-      end.join
-    end
-  end
-
   def test_redefine_method_under_verbose
     assert_in_out_err([], <<-INPUT, %w(2), /warning: method redefined; discarding old foo$/)
       $VERBOSE = true
@@ -316,20 +295,6 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_method
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        Object.instance_eval { remove_method(:foo) }
-      end.join
-    end
-
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        Class.instance_eval { remove_method(:foo) }
-      end.join
-    end
-
     c = Class.new
     c.freeze
     assert_raise(RuntimeError) do
@@ -687,72 +652,21 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_untrusted
-    obj = lambda {
-      $SAFE = 4
-      x = Object.new
-      x.instance_eval { @foo = 1 }
-      x
-    }.call
+    obj = Object.new
+    assert_equal(false, obj.untrusted?)
+    assert_equal(false, obj.tainted?)
+    obj.untrust
     assert_equal(true, obj.untrusted?)
     assert_equal(true, obj.tainted?)
-
-    x = Object.new
-    assert_equal(false, x.untrusted?)
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    x = Object.new
-    x.taint
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    x.untrust
-    assert_equal(true, x.untrusted?)
-    assert_nothing_raised do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    x.trust
-    assert_equal(false, x.untrusted?)
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        x.instance_eval { @foo = 1 }
-      }.call
-    end
-
-    a = Object.new
-    a.untrust
-    assert_equal(true, a.untrusted?)
-    b = a.dup
-    assert_equal(true, b.untrusted?)
-    c = a.clone
-    assert_equal(true, c.untrusted?)
-
-    a = Object.new
-    b = lambda {
-      $SAFE = 4
-      a.dup
-    }.call
-    assert_equal(true, b.untrusted?)
-
-    a = Object.new
-    b = lambda {
-      $SAFE = 4
-      a.clone
-    }.call
-    assert_equal(true, b.untrusted?)
+    obj.trust
+    assert_equal(false, obj.untrusted?)
+    assert_equal(false, obj.tainted?)
+    obj.taint
+    assert_equal(true, obj.untrusted?)
+    assert_equal(true, obj.tainted?)
+    obj.untaint
+    assert_equal(false, obj.untrusted?)
+    assert_equal(false, obj.tainted?)
   end
 
   def test_to_s
@@ -813,42 +727,6 @@ class TestObject < Test::Unit::TestCase
     assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
   end
 
-  def test_exec_recursive
-    Thread.current[:__recursive_key__] = nil
-    a = [[]]
-    a.inspect
-
-    assert_nothing_raised do
-      -> do
-        $SAFE = 4
-        begin
-          a.hash
-        rescue ArgumentError
-        end
-      end.call
-    end
-
-    -> do
-      assert_nothing_raised do
-        $SAFE = 4
-        a.inspect
-      end
-    end.call
-
-    -> do
-      o = Object.new
-      def o.to_ary(x); end
-      def o.==(x); $SAFE = 4; false; end
-      a = [[o]]
-      b = []
-      b << b
-
-      assert_nothing_raised do
-        b == a
-      end
-    end.call
-  end
-
   def test_singleton_class
     x = Object.new
     xs = class << x; self; end
@@ -895,12 +773,6 @@ class TestObject < Test::Unit::TestCase
     c = a.dup.freeze
     assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
     d = a.dup.trust
-    assert_raise(SecurityError, "untrust") do
-      proc {
-        $SAFE = 4
-        d.instance_eval {initialize_copy(b)}
-      }.call
-    end
     [a, b, c, d]
   end
 

@@ -2165,7 +2165,6 @@ rb_thread_kill(VALUE thread)
     GetThreadPtr(thread, th);
 
     if (th != GET_THREAD() && th->safe_level < 4) {
-	rb_secure(4);
     }
     if (th->to_kill || th->status == THREAD_KILLED) {
 	return thread;
@@ -2474,7 +2473,6 @@ rb_thread_s_abort_exc(void)
 static VALUE
 rb_thread_s_abort_exc_set(VALUE self, VALUE val)
 {
-    rb_secure(4);
     GET_THREAD()->vm->thread_abort_on_exception = RTEST(val);
     return val;
 }
@@ -2523,7 +2521,6 @@ static VALUE
 rb_thread_abort_exc_set(VALUE thread, VALUE val)
 {
     rb_thread_t *th;
-    rb_secure(4);
 
     GetThreadPtr(thread, th);
     th->abort_on_exception = RTEST(val);
@@ -3142,7 +3139,6 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
     int priority;
     GetThreadPtr(thread, th);
 
-    rb_secure(4);
 
 #if USE_NATIVE_THREAD_PRIORITY
     th->priority = NUM2INT(prio);
@@ -4116,7 +4112,6 @@ thgroup_add(VALUE group, VALUE thread)
     rb_thread_t *th;
     struct thgroup *data;
 
-    rb_secure(4);
     GetThreadPtr(thread, th);
 
     if (OBJ_FROZEN(group)) {
@@ -4738,7 +4733,6 @@ recursive_list_access(void)
     VALUE list;
     if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
 	hash = rb_hash_new();
-	OBJ_UNTRUST(hash);
 	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
 	list = Qnil;
     }
@@ -4747,7 +4741,6 @@ recursive_list_access(void)
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
 	list = rb_hash_new();
-	OBJ_UNTRUST(list);
 	rb_hash_aset(hash, sym, list);
     }
     return list;
@@ -4809,7 +4802,6 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
 	if (!RB_TYPE_P(pair_list, T_HASH)){
 	    VALUE other_paired_obj = pair_list;
 	    pair_list = rb_hash_new();
-	    OBJ_UNTRUST(pair_list);
 	    rb_hash_aset(pair_list, other_paired_obj, Qtrue);
 	    rb_hash_aset(list, obj, pair_list);
 	}

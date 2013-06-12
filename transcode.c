@@ -377,7 +377,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
-        FL_UNSET(fn, FL_TAINT|FL_UNTRUSTED);
+        FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
         if (!rb_require_safe(fn, safe > 3 ? 3 : safe))
             return NULL;

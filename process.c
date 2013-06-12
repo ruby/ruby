@@ -3535,7 +3535,6 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     VALUE status;
     int istatus;
 
-    rb_secure(4);
     if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
 	istatus = exit_status_code(status);
     }
@@ -3609,7 +3608,6 @@ rb_f_exit(int argc, VALUE *argv)
     VALUE status;
     int istatus;
 
-    rb_secure(4);
     if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
 	istatus = exit_status_code(status);
     }
@@ -3636,7 +3634,6 @@ rb_f_exit(int argc, VALUE *argv)
 VALUE
 rb_f_abort(int argc, VALUE *argv)
 {
-    rb_secure(4);
     if (argc == 0) {
 	if (!NIL_P(GET_THREAD()->errinfo)) {
 	    ruby_error_print();

@@ -547,7 +547,6 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     int n;
     rb_blocking_function_t *func;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
 
     StringValue(arg.mesg);
@@ -613,7 +612,6 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 {
     rb_io_t *fptr;
 
-    rb_secure(4);
     GetOpenFile(sock, fptr);
     if (RTEST(state)) {
 	fptr->mode |= FMODE_NOREVLOOKUP;
@@ -733,7 +731,6 @@ bsock_do_not_rev_lookup(void)
 static VALUE
 bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 {
-    rb_secure(4);
     rsock_do_not_reverse_lookup = RTEST(val);
     return val;
 }

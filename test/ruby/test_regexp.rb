@@ -340,14 +340,6 @@ class TestRegexp < Test::Unit::TestCase
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
     assert_equal(/foo/, Regexp.new(/foo/, Regexp::IGNORECASE))
-    re = /foo/
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
-    end
-    re.taint
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
-    end
 
     assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
@@ -545,12 +537,12 @@ class TestRegexp < Test::Unit::TestCase
   def test_taint
     m = Thread.new do
       "foo"[/foo/]
-      $SAFE = 4
+      $SAFE = 3
       /foo/.match("foo")
     end.value
     assert(m.tainted?)
     assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 4; %r"#{ }"o}.call
+      m = proc {$SAFE = 3; %r"#{ }"o}.call
     }
     assert(m.tainted?)
   end

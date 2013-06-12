@@ -267,7 +267,7 @@ rb_hash_dup(VALUE hash)
 {
     NEWOBJ_OF(ret, struct RHash,
                 rb_obj_class(hash),
-                (RBASIC(hash)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED));
+                (RBASIC(hash)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT));
     if (FL_TEST((hash), FL_EXIVAR))
         rb_copy_generic_ivar((VALUE)(ret),(VALUE)(hash));
 
@@ -284,8 +284,6 @@ static void
 rb_hash_modify_check(VALUE hash)
 {
     rb_check_frozen(hash);
-    if (!OBJ_UNTRUSTED(hash) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
 static struct st_table *
@@ -2263,7 +2261,6 @@ env_delete(VALUE obj, VALUE name)
 {
     char *nam, *val;
 
-    rb_secure(4);
     SafeStringValue(name);
     nam = RSTRING_PTR(name);
     if (memchr(nam, '\0', RSTRING_LEN(name))) {
@@ -2315,7 +2312,6 @@ rb_f_getenv(VALUE obj, VALUE name)
 {
     char *nam, *env;
 
-    rb_secure(4);
     SafeStringValue(name);
     nam = RSTRING_PTR(name);
     if (memchr(nam, '\0', RSTRING_LEN(name))) {
@@ -2359,7 +2355,6 @@ env_fetch(int argc, VALUE *argv)
     long block_given;
     char *nam, *env;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "11", &key, &if_none);
     block_given = rb_block_given_p();
     if (block_given && argc == 2) {
@@ -2629,7 +2624,6 @@ env_keys(void)
     char **env;
     VALUE ary;
 
-    rb_secure(4);
     ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2648,8 +2642,6 @@ rb_env_size(VALUE ehash)
 {
     char **env;
     long cnt = 0;
-
-    rb_secure(4);
 
     env = GET_ENVIRON(environ);
     for (; *env ; ++env) {
@@ -2677,7 +2669,7 @@ env_each_key(VALUE ehash)
     long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();	/* rb_secure(4); */
+    keys = env_keys();
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	rb_yield(RARRAY_AREF(keys, i));
     }
@@ -2696,7 +2688,6 @@ env_values(void)
     VALUE ary;
     char **env;
 
-    rb_secure(4);
     ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2726,7 +2717,7 @@ env_each_value(VALUE ehash)
     long i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    values = env_values();	/* rb_secure(4); */
+    values = env_values();
     for (i=0; i<RARRAY_LEN(values); i++) {
 	rb_yield(RARRAY_AREF(values, i));
     }
@@ -2753,7 +2744,6 @@ env_each_pair(VALUE ehash)
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
 
-    rb_secure(4);
     ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2789,7 +2779,7 @@ env_reject_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();	/* rb_secure(4); */
+    keys = env_keys();
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
@@ -2835,7 +2825,6 @@ env_values_at(int argc, VALUE *argv)
     VALUE result;
     long i;
 
-    rb_secure(4);
     result = rb_ary_new();
     for (i=0; i<argc; i++) {
 	rb_ary_push(result, rb_f_getenv(Qnil, argv[i]));
@@ -2859,7 +2848,6 @@ env_select(VALUE ehash)
     char **env;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    rb_secure(4);
     result = rb_hash_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2893,7 +2881,7 @@ env_select_bang(VALUE ehash)
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
-    keys = env_keys();	/* rb_secure(4); */
+    keys = env_keys();
     RBASIC_CLEAR_CLASS(keys);
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
@@ -2938,7 +2926,7 @@ rb_env_clear(void)
     volatile VALUE keys;
     long i;
 
-    keys = env_keys();	/* rb_secure(4); */
+    keys = env_keys();
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_AREF(keys, i));
 	if (!NIL_P(val)) {
@@ -2972,7 +2960,6 @@ env_inspect(void)
     char **env;
     VALUE str, i;
 
-    rb_secure(4);
     str = rb_str_buf_new2("{");
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -3012,7 +2999,6 @@ env_to_a(void)
     char **env;
     VALUE ary;
 
-    rb_secure(4);
     ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -3053,7 +3039,6 @@ env_size(void)
     int i;
     char **env;
 
-    rb_secure(4);
     env = GET_ENVIRON(environ);
     for (i=0; env[i]; i++)
 	;
@@ -3072,7 +3057,6 @@ env_empty_p(void)
 {
     char **env;
 
-    rb_secure(4);
     env = GET_ENVIRON(environ);
     if (env[0] == 0) {
 	FREE_ENVIRON(environ);
@@ -3096,7 +3080,6 @@ env_has_key(VALUE env, VALUE key)
 {
     char *s;
 
-    rb_secure(4);
     s = StringValuePtr(key);
     if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -3116,7 +3099,6 @@ env_assoc(VALUE env, VALUE key)
 {
     char *s, *e;
 
-    rb_secure(4);
     s = StringValuePtr(key);
     if (memchr(s, '\0', RSTRING_LEN(key)))
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -3137,7 +3119,6 @@ env_has_value(VALUE dmy, VALUE obj)
 {
     char **env;
 
-    rb_secure(4);
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
     env = GET_ENVIRON(environ);
@@ -3168,7 +3149,6 @@ env_rassoc(VALUE dmy, VALUE obj)
 {
     char **env;
 
-    rb_secure(4);
     obj = rb_check_string_type(obj);
     if (NIL_P(obj)) return Qnil;
     env = GET_ENVIRON(environ);
@@ -3201,7 +3181,6 @@ env_key(VALUE dmy, VALUE value)
     char **env;
     VALUE str;
 
-    rb_secure(4);
     StringValue(value);
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -3247,7 +3226,6 @@ env_to_hash(void)
     char **env;
     VALUE hash;
 
-    rb_secure(4);
     hash = rb_hash_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -3288,7 +3266,6 @@ env_shift(void)
 {
     char **env;
 
-    rb_secure(4);
     env = GET_ENVIRON(environ);
     if (*env) {
 	char *s = strchr(*env, '=');
@@ -3339,7 +3316,7 @@ env_replace(VALUE env, VALUE hash)
     volatile VALUE keys;
     long i;
 
-    keys = env_keys();	/* rb_secure(4); */
+    keys = env_keys();
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_replace_i, keys);
@@ -3373,7 +3350,6 @@ env_update_i(VALUE key, VALUE val)
 static VALUE
 env_update(VALUE env, VALUE hash)
 {
-    rb_secure(4);
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_update_i, 0);

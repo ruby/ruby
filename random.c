@@ -687,7 +687,6 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     VALUE seed, old;
     rb_random_t *r = &default_rand;
 
-    rb_secure(4);
     if (argc == 0) {
 	seed = random_seed();
     }

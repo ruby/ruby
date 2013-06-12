@@ -249,7 +249,6 @@ apply2files(void (*func)(const char *, VALUE, void *), VALUE vargs, void *arg)
     long i;
     volatile VALUE path;
 
-    rb_secure(4);
     for (i=0; i<RARRAY_LEN(vargs); i++) {
 	const char *s;
 	path = rb_get_path(RARRAY_AREF(vargs, i));
@@ -915,7 +914,6 @@ rb_file_s_stat(VALUE klass, VALUE fname)
 {
     struct stat st;
 
-    rb_secure(4);
     FilePathValue(fname);
     if (rb_stat(fname, &st) < 0) {
 	rb_sys_fail_path(fname);
@@ -5376,7 +5374,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 		*filep = copy_path_class(tmp, *filep);
 		return (int)(j+1);
 	    }
-	    FL_UNSET(tmp, FL_TAINT | FL_UNTRUSTED);
+	    FL_UNSET(tmp, FL_TAINT);
 	}
 	rb_str_set_len(fname, fnlen);
     }

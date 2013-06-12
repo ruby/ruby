@@ -136,7 +136,6 @@ writable(VALUE strio)
 	rb_raise(rb_eIOError, "not opened for writing");
     }
     if (!OBJ_TAINTED(ptr->string)) {
-	rb_secure(4);
     }
     return ptr;
 }

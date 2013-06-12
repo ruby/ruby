@@ -36,7 +36,6 @@ const union {
         RUBY_FL_OLDGEN      = FL_OLDGEN,
         RUBY_FL_FINALIZE    = FL_FINALIZE,
         RUBY_FL_TAINT       = FL_TAINT,
-        RUBY_FL_UNTRUSTED   = FL_UNTRUSTED,
         RUBY_FL_EXIVAR      = FL_EXIVAR,
         RUBY_FL_FREEZE      = FL_FREEZE,
         RUBY_FL_SINGLETON   = FL_SINGLETON,

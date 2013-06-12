@@ -255,25 +255,6 @@ class TestException < Test::Unit::TestCase
     INPUT
   end
 
-  def test_safe4
-    cmd = proc{raise SystemExit}
-    safe0_p = proc{|*args| args}
-
-    test_proc = proc {
-      $SAFE = 4
-      begin
-        cmd.call
-      rescue SystemExit => e
-        safe0_p["SystemExit: #{e.inspect}"]
-        raise e
-      rescue Exception => e
-        safe0_p["Exception (NOT SystemExit): #{e.inspect}"]
-        raise e
-      end
-    }
-    assert_raise(SystemExit, '[ruby-dev:38760]') {test_proc.call}
-  end
-
   def test_thread_signal_location
     _, stderr, _ = EnvUtil.invoke_ruby("--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
@@ -474,33 +455,5 @@ end.join
     e = NameError.new(o)
     s = e.to_s
     assert_equal(false, s.tainted?)
-  end
-
-  def test_exception_to_s_should_not_propagate_untrustedness
-    favorite_lang = "Ruby"
-
-    for exc in [Exception, NameError]
-      assert_raise(SecurityError) do
-        lambda {
-          $SAFE = 4
-          exc.new(favorite_lang).to_s
-          favorite_lang.replace("Python")
-        }.call
-      end
-    end
-
-    assert_raise(SecurityError) do
-      lambda {
-        $SAFE = 4
-        o = Object.new
-        o.singleton_class.send(:define_method, :to_str) {
-          favorite_lang
-        }
-        NameError.new(o).to_s
-        favorite_lang.replace("Python")
-      }.call
-    end
-
-    assert_equal("Ruby", favorite_lang)
   end
 end

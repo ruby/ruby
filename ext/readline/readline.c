@@ -382,7 +382,6 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     char *buff;
     int status;
 
-    rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
 	OutputStringValue(tmp);
 #if USE_INSERT_IGNORE_ESCAPE
@@ -454,7 +453,6 @@ readline_s_set_input(VALUE self, VALUE input)
 {
     rb_io_t *ifp;
 
-    rb_secure(4);
     Check_Type(input, T_FILE);
     GetOpenFile(input, ifp);
     rl_instream = rb_io_stdio_file(ifp);
@@ -478,7 +476,6 @@ readline_s_set_output(VALUE self, VALUE output)
 {
     rb_io_t *ofp;
 
-    rb_secure(4);
     Check_Type(output, T_FILE);
     GetOpenFile(output, ofp);
     rl_outstream = rb_io_stdio_file(ofp);
@@ -503,7 +500,6 @@ readline_s_set_output(VALUE self, VALUE output)
 static VALUE
 readline_s_set_pre_input_hook(VALUE self, VALUE proc)
 {
-    rb_secure(4);
     if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument must respond to `call'");
     return rb_ivar_set(mReadline, id_pre_input_hook, proc);
@@ -522,7 +518,6 @@ readline_s_set_pre_input_hook(VALUE self, VALUE proc)
 static VALUE
 readline_s_get_pre_input_hook(VALUE self)
 {
-    rb_secure(4);
     return rb_attr_get(mReadline, id_pre_input_hook);
 }
 
@@ -555,7 +550,6 @@ readline_pre_input_hook(void)
 static VALUE
 readline_s_insert_text(VALUE self, VALUE str)
 {
-    rb_secure(4);
     OutputStringValue(str);
     rl_insert_text(RSTRING_PTR(str));
     return self;
@@ -579,7 +573,6 @@ readline_s_insert_text(VALUE self, VALUE str)
 static VALUE
 readline_s_redisplay(VALUE self)
 {
-    rb_secure(4);
     rl_redisplay();
     return self;
 }
@@ -660,7 +653,6 @@ readline_s_redisplay(VALUE self)
 static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
 {
-    rb_secure(4);
     if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument must respond to `call'");
     return rb_ivar_set(mReadline, completion_proc, proc);
@@ -677,7 +669,6 @@ readline_s_set_completion_proc(VALUE self, VALUE proc)
 static VALUE
 readline_s_get_completion_proc(VALUE self)
 {
-    rb_secure(4);
     return rb_attr_get(mReadline, completion_proc);
 }
 
@@ -692,7 +683,6 @@ readline_s_get_completion_proc(VALUE self)
 static VALUE
 readline_s_set_completion_case_fold(VALUE self, VALUE val)
 {
-    rb_secure(4);
     return rb_ivar_set(mReadline, completion_case_fold, val);
 }
 
@@ -715,7 +705,6 @@ readline_s_set_completion_case_fold(VALUE self, VALUE val)
 static VALUE
 readline_s_get_completion_case_fold(VALUE self)
 {
-    rb_secure(4);
     return rb_attr_get(mReadline, completion_case_fold);
 }
 
@@ -734,7 +723,6 @@ readline_s_get_completion_case_fold(VALUE self)
 static VALUE
 readline_s_get_line_buffer(VALUE self)
 {
-    rb_secure(4);
     if (rl_line_buffer == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_line_buffer);
@@ -760,7 +748,6 @@ readline_s_get_line_buffer(VALUE self)
 static VALUE
 readline_s_get_point(VALUE self)
 {
-    rb_secure(4);
     return INT2NUM(rl_point);
 }
 #else
@@ -857,7 +844,6 @@ readline_attempted_completion_function(const char *text, int start, int end)
 static VALUE
 readline_s_set_screen_size(VALUE self, VALUE rows, VALUE columns)
 {
-    rb_secure(4);
     rl_set_screen_size(NUM2INT(rows), NUM2INT(columns));
     return self;
 }
@@ -884,7 +870,6 @@ readline_s_get_screen_size(VALUE self)
     int rows, columns;
     VALUE res;
 
-    rb_secure(4);
     rl_get_screen_size(&rows, &columns);
     res = rb_ary_new();
     rb_ary_push(res, INT2NUM(rows));
@@ -910,7 +895,6 @@ readline_s_get_screen_size(VALUE self)
 static VALUE
 readline_s_vi_editing_mode(VALUE self)
 {
-    rb_secure(4);
     rl_vi_editing_mode(1,0);
     return Qnil;
 }
@@ -932,7 +916,6 @@ readline_s_vi_editing_mode(VALUE self)
 static VALUE
 readline_s_vi_editing_mode_p(VALUE self)
 {
-    rb_secure(4);
     return rl_editing_mode == 0 ? Qtrue : Qfalse;
 }
 #else
@@ -954,7 +937,6 @@ readline_s_vi_editing_mode_p(VALUE self)
 static VALUE
 readline_s_emacs_editing_mode(VALUE self)
 {
-    rb_secure(4);
     rl_emacs_editing_mode(1,0);
     return Qnil;
 }
@@ -976,7 +958,6 @@ readline_s_emacs_editing_mode(VALUE self)
 static VALUE
 readline_s_emacs_editing_mode_p(VALUE self)
 {
-    rb_secure(4);
     return rl_editing_mode == 1 ? Qtrue : Qfalse;
 }
 #else
@@ -1025,7 +1006,6 @@ readline_s_emacs_editing_mode_p(VALUE self)
 static VALUE
 readline_s_set_completion_append_character(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (NIL_P(str)) {
 	rl_completion_append_character = '\0';
     }
@@ -1060,7 +1040,6 @@ readline_s_get_completion_append_character(VALUE self)
 {
     char buf[1];
 
-    rb_secure(4);
     if (rl_completion_append_character == '\0')
 	return Qnil;
 
@@ -1089,7 +1068,6 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
 {
     static char *basic_word_break_characters = NULL;
 
-    rb_secure(4);
     OutputStringValue(str);
     if (basic_word_break_characters == NULL) {
 	basic_word_break_characters =
@@ -1123,7 +1101,6 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (rl_basic_word_break_characters == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_basic_word_break_characters);
@@ -1150,7 +1127,6 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
 {
     static char *completer_word_break_characters = NULL;
 
-    rb_secure(4);
     OutputStringValue(str);
     if (completer_word_break_characters == NULL) {
 	completer_word_break_characters =
@@ -1184,7 +1160,6 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (rl_completer_word_break_characters == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_completer_word_break_characters);
@@ -1213,7 +1188,6 @@ readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_set_special_prefixes(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (!NIL_P(str)) {
 	OutputStringValue(str);
 	str = rb_str_dup_frozen(str);
@@ -1247,7 +1221,6 @@ static VALUE
 readline_s_get_special_prefixes(VALUE self)
 {
     VALUE str;
-    rb_secure(4);
     if (rl_special_prefixes == NULL) return Qnil;
     str = rb_ivar_get(mReadline, id_special_prefixes);
     if (!NIL_P(str)) {
@@ -1277,7 +1250,6 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
 {
     static char *basic_quote_characters = NULL;
 
-    rb_secure(4);
     OutputStringValue(str);
     if (basic_quote_characters == NULL) {
 	basic_quote_characters =
@@ -1311,7 +1283,6 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_get_basic_quote_characters(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (rl_basic_quote_characters == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_basic_quote_characters);
@@ -1339,7 +1310,6 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
 {
     static char *completer_quote_characters = NULL;
 
-    rb_secure(4);
     OutputStringValue(str);
     if (completer_quote_characters == NULL) {
 	completer_quote_characters =
@@ -1373,7 +1343,6 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_get_completer_quote_characters(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (rl_completer_quote_characters == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_completer_quote_characters);
@@ -1399,7 +1368,6 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
 {
     static char *filename_quote_characters = NULL;
 
-    rb_secure(4);
     OutputStringValue(str);
     if (filename_quote_characters == NULL) {
 	filename_quote_characters =
@@ -1433,7 +1401,6 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 {
-    rb_secure(4);
     if (rl_filename_quote_characters == NULL)
 	return Qnil;
     return rb_locale_str_new_cstr(rl_filename_quote_characters);
@@ -1454,7 +1421,6 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_refresh_line(VALUE self)
 {
-    rb_secure(4);
     rl_refresh_line(0, 0);
     return Qnil;
 }
@@ -1486,7 +1452,6 @@ hist_get(VALUE self, VALUE index)
     HIST_ENTRY *entry = NULL;
     int i;
 
-    rb_secure(4);
     i = NUM2INT(index);
     if (i < 0) {
         i += history_length;
@@ -1507,7 +1472,6 @@ hist_set(VALUE self, VALUE index, VALUE str)
     HIST_ENTRY *entry = NULL;
     int i;
 
-    rb_secure(4);
     i = NUM2INT(index);
     OutputStringValue(str);
     if (i < 0) {
@@ -1528,7 +1492,6 @@ hist_set(VALUE self, VALUE index, VALUE str)
 static VALUE
 hist_push(VALUE self, VALUE str)
 {
-    rb_secure(4);
     OutputStringValue(str);
     add_history(RSTRING_PTR(str));
     return self;
@@ -1539,7 +1502,6 @@ hist_push_method(int argc, VALUE *argv, VALUE self)
 {
     VALUE str;
 
-    rb_secure(4);
     while (argc--) {
 	str = *argv++;
 	OutputStringValue(str);
@@ -1555,7 +1517,6 @@ rb_remove_history(int index)
     HIST_ENTRY *entry;
     VALUE val;
 
-    rb_secure(4);
     entry = remove_history(index);
     if (entry) {
         val = rb_locale_str_new_cstr(entry->line);
@@ -1574,7 +1535,6 @@ rb_remove_history(int index)
 static VALUE
 hist_pop(VALUE self)
 {
-    rb_secure(4);
     if (history_length > 0) {
 	return rb_remove_history(history_length - 1);
     } else {
@@ -1585,7 +1545,6 @@ hist_pop(VALUE self)
 static VALUE
 hist_shift(VALUE self)
 {
-    rb_secure(4);
     if (history_length > 0) {
 	return rb_remove_history(0);
     } else {
@@ -1601,7 +1560,6 @@ hist_each(VALUE self)
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    rb_secure(4);
     for (i = 0; i < history_length; i++) {
         entry = history_get(history_get_offset_func(i));
         if (entry == NULL)
@@ -1614,14 +1572,12 @@ hist_each(VALUE self)
 static VALUE
 hist_length(VALUE self)
 {
-    rb_secure(4);
     return INT2NUM(history_length);
 }
 
 static VALUE
 hist_empty_p(VALUE self)
 {
-    rb_secure(4);
     return history_length == 0 ? Qtrue : Qfalse;
 }
 
@@ -1630,7 +1586,6 @@ hist_delete_at(VALUE self, VALUE index)
 {
     int i;
 
-    rb_secure(4);
     i = NUM2INT(index);
     if (i < 0)
         i += history_length;
@@ -1644,7 +1599,6 @@ hist_delete_at(VALUE self, VALUE index)
 static VALUE
 hist_clear(VALUE self)
 {
-    rb_secure(4);
     clear_history();
     return self;
 }

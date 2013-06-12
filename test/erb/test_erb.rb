@@ -185,11 +185,6 @@ EOS
     assert_equal(ans, erb.result)
   end
 
-  def test_safe_04
-    erb = @erb.new('<%=$SAFE%>', 4)
-    assert_equal('4', erb.result(TOPLEVEL_BINDING.taint))
-  end
-
   class Foo; end
 
   def test_def_class

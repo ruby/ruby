@@ -704,7 +704,7 @@ rb_str_new_frozen(VALUE orig)
 	assert(OBJ_FROZEN(str));
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
-	    ((RBASIC(str)->flags ^ RBASIC(orig)->flags) & (FL_TAINT|FL_UNTRUSTED)) ||
+	    ((RBASIC(str)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
 	    ENCODING_GET(str) != ENCODING_GET(orig)) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;
@@ -1305,8 +1305,6 @@ str_modifiable(VALUE str)
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
     rb_check_frozen(str);
-    if (!OBJ_UNTRUSTED(str) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
 
 static inline int
@@ -3659,7 +3657,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     VALUE pat, repl, hash = Qnil;
     int iter = 0;
     int tainted = 0;
-    int untrusted = 0;
     long plen;
     int min_arity = rb_block_given_p() ? 1 : 2;
 
@@ -3674,7 +3671,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    StringValue(repl);
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
-	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
     }
 
     pat = get_pat(argv[0], 1);
@@ -3720,7 +3716,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(repl)) tainted = 1;
-	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
             if (cr2 == ENC_CODERANGE_BROKEN ||
@@ -3745,7 +3740,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	RSTRING_PTR(str)[len] = '\0';
 	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
-	if (untrusted) OBJ_UNTRUST(str);
 
 	return str;
     }

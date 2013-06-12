@@ -559,10 +559,6 @@ static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 {
 #if USE_IC_FOR_IVAR
-    if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
-    }
-
     rb_check_frozen(obj);
 
     if (RB_TYPE_P(obj, T_OBJECT)) {

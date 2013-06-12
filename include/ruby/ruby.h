@@ -678,7 +678,7 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
     if (FL_TEST((obj), FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(clone),(VALUE)(obj));\
 } while (0)
 #define DUPSETUP(dup,obj) do {\
-    OBJSETUP((dup),rb_obj_class(obj), (RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED)); \
+    OBJSETUP((dup),rb_obj_class(obj), (RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT)); \
     if (FL_TEST((obj), FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(dup),(VALUE)(obj));\
 } while (0)
 
@@ -1163,7 +1163,7 @@ struct RBignum {
 #define FL_OLDGEN    (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
-#define FL_UNTRUSTED (((VALUE)1)<<9)
+#define FL_UNTRUSTED FL_TAINT
 #define FL_EXIVAR    (((VALUE)1)<<10)
 #define FL_FREEZE    (((VALUE)1)<<11)
 
@@ -1203,12 +1203,11 @@ struct RBignum {
 
 #define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
-#define OBJ_UNTRUSTED(x) (!!FL_TEST((x), FL_UNTRUSTED))
-#define OBJ_UNTRUST(x) FL_SET((x), FL_UNTRUSTED)
+#define OBJ_UNTRUSTED(x) OBJ_TAINTED(x)
+#define OBJ_UNTRUST(x) OBJ_TAINT(x)
 #define OBJ_INFECT(x,s) do { \
   if (FL_ABLE(x) && FL_ABLE(s)) \
-    RBASIC(x)->flags |= RBASIC(s)->flags & \
-                        (FL_TAINT | FL_UNTRUSTED); \
+    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT; \
 } while (0)
 
 #define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x))))

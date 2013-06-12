@@ -43,15 +43,6 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
-  def test_JVN_13947696
-    b = lambda {
-      d = Dir.open('.')
-      $SAFE = 4
-      d.close
-    }
-    assert_raise(SecurityError) { b.call }
-  end
-
   def test_nodir
     assert_raise(Errno::ENOENT) { Dir.open(@nodir) }
   end
@@ -90,12 +81,6 @@ class TestDir < Test::Unit::TestCase
     d.rewind
     b = (0..5).map { d.read }
     assert_equal(a, b)
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        d.rewind
-      end.join
-    end
   ensure
     d.close
   end

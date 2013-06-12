@@ -506,7 +506,6 @@ fgdbm_values_at(int argc, VALUE *argv, VALUE obj)
 static void
 rb_gdbm_modify(VALUE obj)
 {
-    rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
 }
 

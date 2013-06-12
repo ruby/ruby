@@ -591,7 +591,7 @@ load_encoding(const char *name)
 	else if (ISUPPER(*s)) *s = (char)TOLOWER(*s);
 	++s;
     }
-    FL_UNSET(enclib, FL_TAINT|FL_UNTRUSTED);
+    FL_UNSET(enclib, FL_TAINT);
     OBJ_FREEZE(enclib);
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;

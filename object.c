@@ -72,7 +72,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
     RBASIC(obj)->flags = type;
     RBASIC_SET_CLASS(obj, klass);
-    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT | FL_UNTRUSTED);
+    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT);
     return obj;
 }
 
@@ -259,7 +259,7 @@ init_copy(VALUE dest, VALUE obj)
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
@@ -335,7 +335,7 @@ rb_obj_clone(VALUE obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    RBASIC(clone)->flags &= (FL_TAINT|FL_UNTRUSTED);
+    RBASIC(clone)->flags &= FL_TAINT;
     RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_OLDGEN|FL_FREEZE|FL_FINALIZE);
 
     singleton = rb_singleton_class_clone_and_attach(obj, clone);
@@ -907,7 +907,6 @@ rb_obj_tainted(VALUE obj)
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    rb_secure(4);
     if (!OBJ_TAINTED(obj)) {
 	rb_check_frozen(obj);
 	OBJ_TAINT(obj);
@@ -940,47 +939,28 @@ rb_obj_untaint(VALUE obj)
  *  call-seq:
  *     obj.untrusted?    -> true or false
  *
- *  Returns true if the object is untrusted.
- *
- *  See #untrust for more information.
+ *  Deprecated method that is equivalent to #tainted?.
  */
 
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    if (OBJ_UNTRUSTED(obj))
-	return Qtrue;
-    return Qfalse;
+    rb_warning("untrusted? is deprecated and its behavior is same as tainted?");
+    return rb_obj_tainted(obj);
 }
 
 /*
  *  call-seq:
  *     obj.untrust -> obj
  *
- *  Mark the object as untrusted.
- *
- *  An untrusted object is not allowed to modify any trusted objects. To check
- *  whether an object is trusted, use #untrusted?
- *
- *  Any object created by untrusted code is marked as both tainted and
- *  untrusted. See #taint for more information.
- *
- *  You should only trust an untrusted object if your code has inspected it and
- *  determined that it is safe. To do so use #trust
- *
- *  In $SAFE level 3 and 4, all objects are tainted and untrusted, any use of
- *  trust or taint methods will raise a SecurityError exception.
+ *  Deprecated method that is equivalent to #taint.
  */
 
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_secure(4);
-    if (!OBJ_UNTRUSTED(obj)) {
-	rb_check_frozen(obj);
-	OBJ_UNTRUST(obj);
-    }
-    return obj;
+    rb_warning("untrust is deprecated and its behavior is same as taint");
+    return rb_obj_taint(obj);
 }
 
 
@@ -988,20 +968,14 @@ rb_obj_untrust(VALUE obj)
  *  call-seq:
  *     obj.trust    -> obj
  *
- *  Removes the untrusted mark from the object.
- *
- *  See #untrust for more information.
+ *  Deprecated method that is equivalent to #untaint.
  */
 
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_secure(3);
-    if (OBJ_UNTRUSTED(obj)) {
-	rb_check_frozen(obj);
-	FL_UNSET(obj, FL_UNTRUSTED);
-    }
-    return obj;
+    rb_warning("trust is deprecated and its behavior is same as untaint");
+    return rb_obj_untaint(obj);
 }
 
 void
@@ -1037,9 +1011,6 @@ VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
-	if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(obj)) {
-	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
-	}
 	OBJ_FREEZE(obj);
 	if (SPECIAL_CONST_P(obj)) {
 	    if (!immediate_frozen_tbl) {

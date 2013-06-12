@@ -11,15 +11,6 @@ class TestDL < TestBase
 
   # TODO: refactor test repetition
 
-  def test_free_secure
-    assert_raises(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        DL.free(0)
-      end.join
-    end
-  end
-
   def test_realloc
     str = "abc"
     ptr_id = DL.realloc(0, 4)
@@ -31,15 +22,6 @@ class TestDL < TestBase
              cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
     assert_equal("abc\0", ptr[0,4])
     DL.free ptr_id
-  end
-
-  def test_realloc_secure
-    assert_raises(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        DL.realloc(0, 4)
-      end.join
-    end
   end
 
   def test_malloc
@@ -54,15 +36,6 @@ class TestDL < TestBase
              cfunc.call([ptr_id,str].pack("l!p").unpack("l!*"))
     assert_equal("abc\0", ptr[0,4])
     DL.free ptr_id
-  end
-
-  def test_malloc_security
-    assert_raises(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        DL.malloc(4)
-      end.join
-    end
   end
 
   def test_call_int()

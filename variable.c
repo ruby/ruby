@@ -645,7 +645,6 @@ rb_f_trace_var(int argc, VALUE *argv)
     struct global_entry *entry;
     struct trace_var *trace;
 
-    rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &var, &cmd) == 1) {
 	cmd = rb_block_proc();
     }
@@ -707,7 +706,6 @@ rb_f_untrace_var(int argc, VALUE *argv)
     struct trace_var *trace;
     st_data_t data;
 
-    rb_secure(4);
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_check_id(&var);
     if (!id) {
@@ -1130,8 +1128,6 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     long i, len;
     int ivar_extended;
 
-    if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     rb_check_frozen(obj);
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
@@ -1404,8 +1400,6 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     struct st_table *iv_index_tbl;
     st_data_t index;
 
-    if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     rb_check_frozen(obj);
     if (!id) {
 	if (rb_is_instance_name(name)) {
@@ -1939,8 +1933,6 @@ rb_const_remove(VALUE mod, ID id)
     VALUE val;
     st_data_t v, n = id;
 
-    if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     rb_check_frozen(mod);
     if (!RCLASS_CONST_TBL(mod) || !st_delete(RCLASS_CONST_TBL(mod), &n, &v)) {
 	if (rb_const_defined_at(mod, id)) {
@@ -2131,8 +2123,6 @@ rb_public_const_defined_at(VALUE klass, ID id)
 static void
 check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
 {
-    if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
     rb_check_frozen(klass);
 }
 
@@ -2206,7 +2196,6 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
 	rb_warn("rb_define_const: invalid name `%s' for constant", name);
     }
     if (klass == rb_cObject) {
-	rb_secure(4);
     }
     rb_const_set(klass, id, val);
 }
@@ -2223,11 +2212,6 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     int i;
     st_data_t v;
     ID id;
-
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(mod)) {
-	rb_raise(rb_eSecurityError,
-		 "Insecure: can't change constant visibility");
-    }
 
     if (argc == 0) {
 	rb_warning("%"PRIsVALUE" with no argument is just ignored",
@@ -2563,8 +2547,6 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %"PRIsVALUE"", QUOTE_ID(id));
     }
-    if (!OBJ_UNTRUSTED(mod) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
     rb_check_frozen(mod);
     if (RCLASS_IV_TBL(mod) && st_delete(RCLASS_IV_TBL(mod), &n, &val)) {
 	return (VALUE)val;

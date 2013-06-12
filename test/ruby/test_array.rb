@@ -1732,19 +1732,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal([3,4,5,0], [1,2,3,4,5,0].drop_while {|i| i < 3 })
   end
 
-  def test_modify_check
-    a = []
-    a.freeze
-    assert_raise(RuntimeError) { a.shift }
-    a = [1, 2]
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-       a.shift
-      end.value
-    end
-  end
-
   LONGP = [127, 63, 31, 15, 7].map {|x| 2**x-1 }.find do |x|
     begin
       [].first(x)
