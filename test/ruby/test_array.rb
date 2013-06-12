@@ -1378,6 +1378,22 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  def test_sort_bang_with_freeze
+    ary = []
+    o1 = Object.new
+    o1.singleton_class.class_eval {
+      define_method(:<=>) {|v|
+        ary.freeze
+        1
+      }
+    }
+    o2 = o1.dup
+    ary << o1 << o2
+    orig = ary.dup
+    assert_raise(RuntimeError, "frozen during comparison") {ary.sort!}
+    assert_equal(orig, ary, "must not be modified once frozen")
+  end
+
   def test_to_a
     a = @cls[ 1, 2, 3 ]
     a_id = a.__id__

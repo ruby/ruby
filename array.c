@@ -2321,6 +2321,7 @@ rb_ary_sort_bang(VALUE ary)
 	ruby_qsort(RARRAY_PTR(tmp), len, sizeof(VALUE),
 		   rb_block_given_p()?sort_1:sort_2, &data);
 
+	rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
             assert(ARY_EMBED_P(tmp));
             if (ARY_SHARED_P(ary)) { /* ary might be destructively operated in the given block */
