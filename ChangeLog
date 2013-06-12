@@ -1,3 +1,7 @@
+Wed Jun 12 20:18:03 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Extract.
+
 Wed Jun 12 18:19:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (validate_integer_pack_format): supported_flags argument
@@ -71,7 +75,6 @@ Wed Jun 12 06:35:01 2013  Tanaka Akira  <akr@fsij.org>
 
 Wed Jun 12 00:07:46 2013  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Extract.
 	* test/xmlrpc/test_client.rb (XMLRPC::ClientTest#test_cookie_simple):
 	  Add a test for the extracted method.
 

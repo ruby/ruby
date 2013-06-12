@@ -506,7 +506,12 @@ module XMLRPC # :nodoc:
         raise "Wrong size. Was #{data.bytesize}, should be #{expected}"
       end
 
-      set_cookies = resp.get_fields("Set-Cookie")
+      parse_set_cookies(resp.get_fields("Set-Cookie"))
+
+      return data
+    end
+
+    def parse_set_cookies(set_cookies)
       if set_cookies and !set_cookies.empty?
         require 'webrick/cookie'
         @cookie = set_cookies.collect do |set_cookie|
@@ -514,8 +519,6 @@ module XMLRPC # :nodoc:
           WEBrick::Cookie.new(cookie.name, cookie.value).to_s
         end.join("; ")
       end
-
-      return data
     end
 
     def gen_multicall(methods=[], async=false)
