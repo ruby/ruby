@@ -1507,53 +1507,62 @@ have_macro(macro, headers) ::
 have_library(lib, func) ::
 
   関数funcを定義しているライブラリlibの存在をチェックする．
-  ライブラリが存在する時，trueを返す．
+  チェックに成功すると，-llibを$libsに追加し，trueを返す．
 
 find_library(lib, func, path...) ::
 
   関数funcを定義しているライブラリlibの存在を -Lpath を追加
-  しながらチェックする．ライブラリが見付かった時，trueを返す．
+  しながらチェックする．チェックに成功すると，-llibを$libsに
+  追加し，trueを返す．
 
 have_func(func, header) ::
 
   ヘッダファイルheaderをインクルードして関数funcの存在をチェ
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
-  く事．関数が存在する時trueを返す．
+  く事．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{FUNC}` を定義し，trueを返す．
 
 have_var(var, header) ::
 
   ヘッダファイルheaderをインクルードして変数varの存在をチェッ
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
-  事．変数が存在する時trueを返す．
+  事．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{VAR}` を定義し，trueを返す．
 
 have_header(header) ::
 
-  ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
-  る時trueを返す．
+  ヘッダファイルの存在をチェックする．チェックに成功すると，
+  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
-  する．ヘッダファイルが見付かった時，trueを返す．
+  する．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
-  ヘッダファイルheaderをインクルードして型typeにメンバmember
-  が存在するかをチェックする．typeが定義されていて，memberを
-  持つする時trueを返す．
+  ヘッダファイルheaderをインクルードして型typeが定義され，
+  なおかつメンバmemberが存在するかをチェックする．チェックに
+  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
-  チェックする．typeが定義されている時trueを返す．
+  チェックする．チェックに成功すると，プリプロセッサマクロ
+  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
-  ズを調べる．typeが定義されている時そのサイズを返す．定義さ
-  れていないときはnilを返す．
+  ズを調べる．チェックに成功すると，プリプロセッサマクロ
+  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  いときはnilを返す．
 
 create_makefile(target[, target_prefix]) ::
 
@@ -1597,7 +1606,9 @@ dir_config(target[, default_include, default_lib]) ::
 pkg_config(pkg, option=nil) ::
 
   pkg-configコマンドからパッケージpkgの情報を [cflags, ldflags, libs]
-  の配列として得る．
+  の配列として得る．$CFLAGS, $LDFLAGS, $libs にはそれぞれの値が
+  追加される．
+
   pkg-configの実際のコマンドは，以下の順で試される．
 
   1. コマンドラインで--with-{pkg}-config={command}オプションが
