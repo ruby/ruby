@@ -735,10 +735,14 @@ rb_absint_singlebit_p(VALUE val)
      INTEGER_PACK_NATIVE_BYTE_ORDER)
 
 static void
-validate_integer_pack_format(size_t numwords, size_t wordsize, size_t nails, int flags)
+validate_integer_pack_format(size_t numwords, size_t wordsize, size_t nails, int flags, int supported_flags)
 {
     int wordorder_bits = flags & INTEGER_PACK_WORDORDER_MASK;
     int byteorder_bits = flags & INTEGER_PACK_BYTEORDER_MASK;
+
+    if (flags & ~supported_flags) {
+        rb_raise(rb_eArgError, "unsupported flags specified");
+    }
     if (wordorder_bits == 0) {
         if (1 < numwords)
             rb_raise(rb_eArgError, "word order not specified");
@@ -861,7 +865,12 @@ rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsiz
 
     val = rb_to_int(val);
 
-    validate_integer_pack_format(numwords, wordsize, nails, flags);
+    validate_integer_pack_format(numwords, wordsize, nails, flags,
+            INTEGER_PACK_MSWORD_FIRST|
+            INTEGER_PACK_LSWORD_FIRST|
+            INTEGER_PACK_MSBYTE_FIRST|
+            INTEGER_PACK_LSBYTE_FIRST|
+            INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     if (FIXNUM_P(val)) {
         long v = FIX2LONG(val);
@@ -1215,7 +1224,14 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    validate_integer_pack_format(numwords, wordsize, nails, flags);
+    validate_integer_pack_format(numwords, wordsize, nails, flags,
+            INTEGER_PACK_MSWORD_FIRST|
+            INTEGER_PACK_LSWORD_FIRST|
+            INTEGER_PACK_MSBYTE_FIRST|
+            INTEGER_PACK_LSBYTE_FIRST|
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_FORCE_BIGNUM|
+            INTEGER_PACK_NEGATIVE);
 
     if (numwords <= (SIZE_MAX - (SIZEOF_BDIGITS*CHAR_BIT-1)) / CHAR_BIT / wordsize) {
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails);

@@ -1,3 +1,10 @@
+Wed Jun 12 18:19:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (validate_integer_pack_format): supported_flags argument
+	  added and validate given flags.
+	  (rb_integer_pack_internal): Specify supported_flags.
+	  (rb_integer_unpack): Ditto.
+
 Wed Jun 12 16:41:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): remove duplicated assertions.
