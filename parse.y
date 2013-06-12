@@ -6562,10 +6562,10 @@ parser_set_encode(struct parser_params *parser, const char *name)
     parser->enc = enc;
 #ifndef RIPPER
     if (ruby_debug_lines) {
-	long i, n = RARRAY_LEN(ruby_debug_lines);
-	const VALUE *p = RARRAY_PTR(ruby_debug_lines);
+	VALUE lines = ruby_debug_lines;
+	long i, n = RARRAY_LEN(lines);
 	for (i = 0; i < n; ++i) {
-	    rb_enc_associate_index(*p, idx);
+	    rb_enc_associate_index(RARRAY_AREF(lines, i), idx);
 	}
     }
 #endif
