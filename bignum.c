@@ -1125,7 +1125,7 @@ integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails,
     /* nlp_bits stands for number of leading padding bits */
     size_t num_bits = (wordsize * CHAR_BIT - nails) * numwords;
     size_t num_bdigits = (num_bits + BITSPERDIG - 1) / BITSPERDIG;
-    *nlp_bits_ret = num_bdigits * BITSPERDIG - num_bits;
+    *nlp_bits_ret = (int)(num_bdigits * BITSPERDIG - num_bits);
     return num_bdigits;
 }
 
@@ -1224,7 +1224,7 @@ rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, 
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    if (numwords <= (SIZE_MAX - (SIZEOF_BDIGITS*CHAR_BIT-1)) / CHAR_BIT / wordsize) {
+    if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
         num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
 #if 0
         {

@@ -1,3 +1,9 @@
+Thu Jun 13 06:12:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_num_bdigits_small): Fix a comple error on
+	  clang -Werror,-Wshorten-64-to-32
+	  Reported by Eric Hodel.  [ruby-core:55467] [Bug #8522]
+
 Thu Jun 13 05:32:13 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
