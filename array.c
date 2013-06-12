@@ -2323,7 +2323,6 @@ rb_ary_sort_bang(VALUE ary)
 
 	rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
-            assert(ARY_EMBED_P(tmp));
             if (ARY_SHARED_P(ary)) { /* ary might be destructively operated in the given block */
                 rb_ary_unshare(ary);
             }
@@ -2332,9 +2331,7 @@ rb_ary_sort_bang(VALUE ary)
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
         else {
-            assert(!ARY_EMBED_P(tmp));
-            if (ARY_HEAP_PTR(ary) == ARY_HEAP_PTR(tmp)) {
-                assert(!ARY_EMBED_P(ary));
+            if (!ARY_EMBED_P(ary) && ARY_HEAP_PTR(ary) == ARY_HEAP_PTR(tmp)) {
                 FL_UNSET_SHARED(ary);
                 ARY_SET_CAPA(ary, RARRAY_LEN(tmp));
             }

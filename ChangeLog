@@ -1,3 +1,9 @@
+Wed Jun 12 16:41:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): remove duplicated assertions.
+	  ARY_HEAP_PTR() implies ary not to be embedded.  [ruby-dev:47419]
+	  [Bug #8518]
+
 Wed Jun 12 12:44:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_getc): fix 7bit coderange condition, check if ascii read
