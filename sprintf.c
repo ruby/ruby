@@ -734,7 +734,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		volatile VALUE val = GETARG();
                 int valsign;
-		char fbuf[32], nbuf[64], *s;
+		char nbuf[64], *s;
 		const char *prefix = 0;
 		int sign = 0, dots = 0;
 		char sc = 0;
@@ -866,8 +866,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     len = rb_long2int(RSTRING_END(tmp) - s);
                 }
                 else if (!bignum) {
-                    char c = *p;
-                    if (c == 'i') c = 'd'; /* %d and %i are identical */
                     valsign = 1;
                     if (v < 0) {
                         v = -v;
@@ -883,13 +881,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         sc = ' ';
                         width--;
                     }
-                    snprintf(fbuf, sizeof(fbuf), "%%l%c", c);
-                    snprintf(nbuf, sizeof(nbuf), fbuf, v);
+                    snprintf(nbuf, sizeof(nbuf), "%ld", v);
                     s = nbuf;
 		    len = (int)strlen(s);
 		}
 		else {
-                    tmp = rb_big2str(val, base);
+                    tmp = rb_big2str(val, 10);
                     s = RSTRING_PTR(tmp);
                     valsign = 1;
                     if (s[0] == '-') {
