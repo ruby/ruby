@@ -1,3 +1,8 @@
+Wed Jun 12 12:44:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_getc): fix 7bit coderange condition, check if ascii read
+	  data instead of read length. [ruby-core:55444] [Bug #8516]
+
 Wed Jun 12 12:35:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): Use rb_integer_pack_2comp.
