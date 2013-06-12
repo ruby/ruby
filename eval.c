@@ -1226,6 +1226,34 @@ rb_mod_refine(VALUE module, VALUE klass)
     return refinement;
 }
 
+/*
+ *  call-seq:
+ *     using(module)    -> self
+ *
+ *  Import class refinements from <i>module</i> into the current class or
+ *  module definition.
+ */
+
+static VALUE
+mod_using(VALUE self, VALUE module)
+{
+    NODE *cref = rb_vm_cref();
+    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+
+    warn_refinements_once();
+    if (prev_frame_func()) {
+	rb_raise(rb_eRuntimeError,
+		 "Module#using is not permitted in methods");
+    }
+    if (prev_cfp && prev_cfp->self != self) {
+	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
+    }
+    Check_Type(module, T_MODULE);
+    rb_using_module(cref, module);
+    rb_clear_cache();
+    return self;
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
 {
@@ -1354,7 +1382,8 @@ top_using(VALUE self, VALUE module)
 
     warn_refinements_once();
     if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
-	rb_raise(rb_eRuntimeError, "using is permitted only at toplevel");
+	rb_raise(rb_eRuntimeError,
+		 "main.using is permitted only at toplevel");
     }
     Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
@@ -1558,6 +1587,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_define_private_method(rb_cModule, "using", mod_using, 1);
     rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");

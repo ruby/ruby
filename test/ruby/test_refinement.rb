@@ -429,14 +429,6 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_no_module_using
-    assert_raise(NoMethodError) do
-      Module.new {
-        using Module.new
-      }
-    end
-  end
-
   class UsingClass
   end
 
@@ -824,6 +816,63 @@ class TestRefinement < Test::Unit::TestCase
     x = eval_using(SuperInBlock::R,
                    "TestRefinement:: SuperInBlock::C.new.foo(#{bug7925.dump})")
     assert_equal([:foo, :ref, bug7925], x, bug7925)
+  end
+
+  module ModuleUsing
+    using FooExt
+
+    def self.invoke_x_on(foo)
+      return foo.x
+    end
+
+    def self.invoke_y_on(foo)
+      return foo.y
+    end
+
+    def self.invoke_z_on(foo)
+      return foo.z
+    end
+
+    def self.send_z_on(foo)
+      return foo.send(:z)
+    end
+
+    def self.method_z(foo)
+      return foo.method(:z)
+    end
+
+    def self.invoke_call_x_on(foo)
+      return foo.call_x
+    end
+  end
+
+  def test_module_using
+    foo = Foo.new
+    assert_equal("Foo#x", foo.x)
+    assert_equal("Foo#y", foo.y)
+    assert_raise(NoMethodError) { foo.z }
+    assert_equal("FooExt#x", ModuleUsing.invoke_x_on(foo))
+    assert_equal("FooExt#y Foo#y", ModuleUsing.invoke_y_on(foo))
+    assert_equal("FooExt#z", ModuleUsing.invoke_z_on(foo))
+    assert_equal("Foo#x", foo.x)
+    assert_equal("Foo#y", foo.y)
+    assert_raise(NoMethodError) { foo.z }
+  end
+
+  def test_module_using_in_method
+    assert_raise(RuntimeError) do
+      Module.new.send(:using, FooExt)
+    end
+  end
+
+  def test_module_using_invalid_self
+    assert_raise(RuntimeError) do
+      eval <<-EOF, TOPLEVEL_BINDING
+        module TestRefinement::TestModuleUsingInvalidSelf
+          Module.new.send(:using, TestRefinement::FooExt)
+        end
+      EOF
+    end
   end
 
   private

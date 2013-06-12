@@ -1,3 +1,11 @@
+Wed Jun 12 23:27:03 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (mod_using): new method Module#using, which activates
+	  refinements of the specified module only in the current class or
+	  module definition.  [ruby-core:55273] [Feature #8481]
+
+	* test/ruby/test_refinement.rb: related test.
+
 Wed Jun 12 22:58:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* safe.c (rb_set_safe_level, safe_setter): raise an ArgumentError
