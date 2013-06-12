@@ -6,7 +6,7 @@ Wed Jun 12 07:12:54 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* struct.c:  Improve documentation: replace "instance variable" with
 	  "member", recommend the use of a block to customize structs, note
-          that member accessors are created, general cleanup.
+	  that member accessors are created, general cleanup.
 
 Wed Jun 12 06:35:01 2013  Tanaka Akira  <akr@fsij.org>
 
