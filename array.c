@@ -179,11 +179,12 @@ ary_resize_capa(VALUE ary, long capacity)
     }
 }
 
-static void
+static inline void
 ary_shrink_capa(VALUE ary)
 {
     long capacity = ARY_HEAP_LEN(ary);
     long old_capa = RARRAY(ary)->as.heap.aux.capa;
+    assert(!ARY_SHARED_P(ary));
     assert(old_capa >= capacity);
     if (old_capa > capacity)
 	REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity);
