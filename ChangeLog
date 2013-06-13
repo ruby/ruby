@@ -1,3 +1,11 @@
+Thu Jun 13 22:44:52 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Support
+	  multiple names in a response. [ruby-core:41711] [Bug #5774]
+	  Reported by Roman Riha. Thanks!!!
+	* test/xmlrpc/test_client.rb (XMLRPC::ClientTest#test_cookie_override):
+	  Add a test of the above case.
+
 Thu Jun 13 22:35:50 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Use

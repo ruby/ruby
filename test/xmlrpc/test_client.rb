@@ -287,6 +287,17 @@ module XMLRPC
       assert_equal("param1=value1; param2=value2", client.cookie)
     end
 
+    def test_cookie_override
+      client = Fake::Client.new2('http://example.org/cookie')
+      client.send(:parse_set_cookies,
+                  [
+                    "param1=value1",
+                    "param2=value2",
+                    "param1=value3",
+                  ])
+      assert_equal("param2=value2; param1=value3", client.cookie)
+    end
+
     private
     def read filename
       File.read File.expand_path(File.join(__FILE__, '..', 'data', filename))
