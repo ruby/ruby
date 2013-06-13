@@ -1,3 +1,8 @@
+Thu Jun 13 14:51:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RUBY_SAFE_LEVEL_CHECK): check constant safe
+	  level at compile time.
+
 Thu Jun 13 14:39:08 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/-ext-/test_printf.rb, test/rss/test_parser.rb,

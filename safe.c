@@ -16,12 +16,15 @@
    3 - all generated objects are tainted
 */
 
-#define SAFE_LEVEL_MAX 3
+#define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
 
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
 /* $SAFE accessor */
+
+#undef rb_secure
+#undef rb_set_safe_level
 
 int
 rb_safe_level(void)
