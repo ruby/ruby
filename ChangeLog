@@ -1,3 +1,7 @@
+Thu Jun 13 23:43:11 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/bigdecimal/*: improve documentation, nodoc samples with @mrkn
+
 Thu Jun 13 23:02:14 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#http): Add reader for raw

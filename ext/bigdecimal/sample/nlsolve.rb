@@ -9,7 +9,7 @@ require "bigdecimal"
 require "bigdecimal/newton"
 include Newton
 
-class Function
+class Function # :nodoc: all
   def initialize()
     @zero = BigDecimal::new("0.0")
     @one  = BigDecimal::new("1.0")

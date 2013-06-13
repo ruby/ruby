@@ -890,17 +890,21 @@ BigDecimal_add(VALUE self, VALUE r)
 }
 
  /* call-seq:
-  * sub(value, digits)
+  * value - digits   -> bigdecimal
   *
   * Subtract the specified value.
   *
   * e.g.
-  *   c = a.sub(b,n)
   *   c = a - b
   *
-  * digits:: If specified and less than the number of significant digits of the
-  * result, the result is rounded to that number of digits, according to
-  * BigDecimal.mode.
+  * The precision of the result value depends on the type of +b+.
+  *
+  * If +b+ is a Float, the precision of the result is Float::DIG+1.
+  *
+  * If +b+ is a BigDecimal, the precision of the result is +b+'s precision of
+  * internal representation from platform. So, it's return value is platform
+  * dependent.
+  *
   */
 static VALUE
 BigDecimal_sub(VALUE self, VALUE r)
@@ -1516,6 +1520,19 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
     }
 }
 
+/*
+ * sub(value, digits)  -> bigdecimal
+ *
+ * Subtract the specified value.
+ *
+ * e.g.
+ *   c = a.sub(b,n)
+ *
+ * digits:: If specified and less than the number of significant digits of the
+ * result, the result is rounded to that number of digits, according to
+ * BigDecimal.mode.
+ *
+ */
 static VALUE
 BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
 {
@@ -1532,6 +1549,7 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
 	return ToValue(cv);
     }
 }
+
 
 static VALUE
 BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
@@ -2492,6 +2510,7 @@ BigDecimal_new(int argc, VALUE *argv)
     return VpAlloc(mf, RSTRING_PTR(iniValue));
 }
 
+/* See also BigDecimal::new */
 static VALUE
 BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
