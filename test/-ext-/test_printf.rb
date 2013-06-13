@@ -37,13 +37,4 @@ class Test_SPrintf < Test::Unit::TestCase
                    inspect: Bug::Printf.v(obj).tainted?,
                  })
   end
-
-  def test_untrust
-    obj = Object.new.untrust
-    assert_equal({to_s: true, inspect: true},
-                 {
-                   to_s: Bug::Printf.s(obj).untrusted?,
-                   inspect: Bug::Printf.v(obj).untrusted?,
-                 })
-  end
 end

@@ -1,3 +1,12 @@
+Thu Jun 13 14:39:08 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/-ext-/test_printf.rb, test/rss/test_parser.rb,
+	  test/ruby/test_array.rb, test/ruby/test_hash.rb,
+	  test/ruby/test_m17n.rb, test/ruby/test_marshal.rb,
+	  test/ruby/test_object.rb, test/ruby/test_string.rb: don't use
+	  untrusted?, untrust, and trust to avoid warnings in case $VERBOSE is
+	  true.
+
 Thu Jun 13 10:47:16 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* bootstraptest/test_autoload.rb, bootstraptest/test_method.rb:

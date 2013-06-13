@@ -1486,8 +1486,6 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, s.b.encoding)
     s.taint
     assert_equal(true, s.b.tainted?)
-    s.untrust
-    assert_equal(true, s.b.untrusted?)
     s = "abc".b
     assert_equal(true, s.b.ascii_only?)
   end

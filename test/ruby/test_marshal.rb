@@ -187,80 +187,55 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
-  def test_taint_and_untrust
+  def test_taint
     x = Object.new
     x.taint
-    x.untrust
     s = Marshal.dump(x)
     assert_equal(true, s.tainted?)
-    assert_equal(true, s.untrusted?)
     y = Marshal.load(s)
     assert_equal(true, y.tainted?)
-    assert_equal(true, y.untrusted?)
   end
 
-  def test_taint_and_untrust_each_object
+  def test_taint_each_object
     x = Object.new
     obj = [[x]]
 
     # clean object causes crean stream
     assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.untrusted?)
     assert_equal(false, obj.first.tainted?)
-    assert_equal(false, obj.first.untrusted?)
     assert_equal(false, obj.first.first.tainted?)
-    assert_equal(false, obj.first.first.untrusted?)
     s = Marshal.dump(obj)
     assert_equal(false, s.tainted?)
-    assert_equal(false, s.untrusted?)
 
-    # tainted/untrusted object causes tainted/untrusted stream
+    # tainted object causes tainted stream
     x.taint
-    x.untrust
     assert_equal(false, obj.tainted?)
-    assert_equal(false, obj.untrusted?)
     assert_equal(false, obj.first.tainted?)
-    assert_equal(false, obj.first.untrusted?)
     assert_equal(true, obj.first.first.tainted?)
-    assert_equal(true, obj.first.first.untrusted?)
     t = Marshal.dump(obj)
     assert_equal(true, t.tainted?)
-    assert_equal(true, t.untrusted?)
 
     # clean stream causes clean objects
     assert_equal(false, s.tainted?)
-    assert_equal(false, s.untrusted?)
     y = Marshal.load(s)
     assert_equal(false, y.tainted?)
-    assert_equal(false, y.untrusted?)
     assert_equal(false, y.first.tainted?)
-    assert_equal(false, y.first.untrusted?)
     assert_equal(false, y.first.first.tainted?)
-    assert_equal(false, y.first.first.untrusted?)
 
-    # tainted/untrusted stream causes tainted/untrusted objects
+    # tainted stream causes tainted objects
     assert_equal(true, t.tainted?)
-    assert_equal(true, t.untrusted?)
     y = Marshal.load(t)
     assert_equal(true, y.tainted?)
-    assert_equal(true, y.untrusted?)
     assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.untrusted?)
     assert_equal(true, y.first.first.tainted?)
-    assert_equal(true, y.first.first.untrusted?)
 
     # same tests by different senario
     s.taint
-    s.untrust
     assert_equal(true, s.tainted?)
-    assert_equal(true, s.untrusted?)
     y = Marshal.load(s)
     assert_equal(true, y.tainted?)
-    assert_equal(true, y.untrusted?)
     assert_equal(true, y.first.tainted?)
-    assert_equal(true, y.first.untrusted?)
     assert_equal(true, y.first.first.tainted?)
-    assert_equal(true, y.first.first.untrusted?)
   end
 
   def test_symbol2
@@ -511,11 +486,9 @@ class TestMarshal < Test::Unit::TestCase
     bug7325 = '[ruby-core:49198]'
     for c in [TestClass, TestModule]
       assert(!c.tainted?)
-      assert(!c.untrusted?)
-      c2 = Marshal.load(Marshal.dump(c).taint.untrust)
+      c2 = Marshal.load(Marshal.dump(c).taint)
       assert_same(c, c2)
       assert(!c.tainted?, bug7325)
-      assert(!c.untrusted?, bug7325)
     end
   end
 

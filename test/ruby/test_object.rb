@@ -652,29 +652,33 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_untrusted
-    obj = Object.new
-    assert_equal(false, obj.untrusted?)
-    assert_equal(false, obj.tainted?)
-    obj.untrust
-    assert_equal(true, obj.untrusted?)
-    assert_equal(true, obj.tainted?)
-    obj.trust
-    assert_equal(false, obj.untrusted?)
-    assert_equal(false, obj.tainted?)
-    obj.taint
-    assert_equal(true, obj.untrusted?)
-    assert_equal(true, obj.tainted?)
-    obj.untaint
-    assert_equal(false, obj.untrusted?)
-    assert_equal(false, obj.tainted?)
+    verbose = $VERBOSE
+    $VERBOSE = false
+    begin
+      obj = Object.new
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+      obj.untrust
+      assert_equal(true, obj.untrusted?)
+      assert_equal(true, obj.tainted?)
+      obj.trust
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+      obj.taint
+      assert_equal(true, obj.untrusted?)
+      assert_equal(true, obj.tainted?)
+      obj.untaint
+      assert_equal(false, obj.untrusted?)
+      assert_equal(false, obj.tainted?)
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   def test_to_s
     x = Object.new
     x.taint
-    x.untrust
     s = x.to_s
-    assert_equal(true, s.untrusted?)
     assert_equal(true, s.tainted?)
 
     x = eval(<<-EOS)

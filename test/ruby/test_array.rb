@@ -476,20 +476,16 @@ class TestArray < Test::Unit::TestCase
 
   def test_clone
     for taint in [ false, true ]
-      for untrust in [ false, true ]
-        for frozen in [ false, true ]
-          a = @cls[*(0..99).to_a]
-          a.taint  if taint
-          a.untrust  if untrust
-          a.freeze if frozen
-          b = a.clone
+      for frozen in [ false, true ]
+        a = @cls[*(0..99).to_a]
+        a.taint  if taint
+        a.freeze if frozen
+        b = a.clone
 
-          assert_equal(a, b)
-          assert_not_equal(a.__id__, b.__id__)
-          assert_equal(a.frozen?, b.frozen?)
-          assert_equal(a.untrusted?, b.untrusted?)
-          assert_equal(a.tainted?, b.tainted?)
-        end
+        assert_equal(a, b)
+        assert_not_equal(a.__id__, b.__id__)
+        assert_equal(a.frozen?, b.frozen?)
+        assert_equal(a.tainted?, b.tainted?)
       end
     end
   end
@@ -756,10 +752,8 @@ class TestArray < Test::Unit::TestCase
 
     a6 = @cls[[1, 2], 3]
     a6.taint
-    a6.untrust
     a7 = a6.flatten
     assert_equal(true, a7.tainted?)
-    assert_equal(true, a7.untrusted?)
 
     a8 = @cls[[1, 2], 3]
     a9 = a8.flatten(0)
@@ -950,23 +944,18 @@ class TestArray < Test::Unit::TestCase
     $, = ""
     a = @cls[1, 2, 3]
     a.taint
-    a.untrust
     s = a.join
     assert_equal(true, s.tainted?)
-    assert_equal(true, s.untrusted?)
 
     bug5902 = '[ruby-core:42161]'
-    sep = ":".taint.untrust
+    sep = ":".taint
 
     s = @cls[].join(sep)
     assert_equal(false, s.tainted?, bug5902)
-    assert_equal(false, s.untrusted?, bug5902)
     s = @cls[1].join(sep)
     assert_equal(false, s.tainted?, bug5902)
-    assert_equal(false, s.untrusted?, bug5902)
     s = @cls[1, 2].join(sep)
     assert_equal(true, s.tainted?, bug5902)
-    assert_equal(true, s.untrusted?, bug5902)
 
     e = ''.force_encoding('EUC-JP')
     u = ''.force_encoding('UTF-8')
@@ -2170,10 +2159,8 @@ class TestArray < Test::Unit::TestCase
   def test_inspect
     a = @cls[1, 2, 3]
     a.taint
-    a.untrust
     s = a.inspect
     assert_equal(true, s.tainted?)
-    assert_equal(true, s.untrusted?)
   end
 
   def test_initialize2
