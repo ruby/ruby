@@ -1233,6 +1233,14 @@ class TestFileUtils
         rmdir '/'
       }
     end
+
+    subdir = 'data/sub/dir'
+    mkdir_p(subdir)
+    assert_nothing_raised(Errno::ENOENT) {
+      rmdir(subdir, parents: true)
+    }
+    assert_file_not_exist('data/sub')
+    assert_directory('data')
   end
 
   def test_rmtree
