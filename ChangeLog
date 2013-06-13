@@ -1,3 +1,9 @@
+Thu Jun 13 23:02:14 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#http): Add reader for raw
+	  Net::HTTP. [ruby-core:55197] [Feature #8461]
+	  Reported by Herwin Weststrate. Thanks!!!
+
 Thu Jun 13 22:44:52 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Support

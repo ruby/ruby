@@ -188,6 +188,13 @@ module XMLRPC # :nodoc:
     end
 
 
+    # Returns the Net::HTTP object for the client. If you want to
+    # change HTTP client options except header, cookie, timeout,
+    # user and password, use Net::HTTP directly.
+    #
+    # Since 2.1.0.
+    attr_reader :http
+
     # Add additional HTTP headers to the request
     attr_accessor :http_header_extra
 
