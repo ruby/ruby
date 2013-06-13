@@ -600,7 +600,7 @@ rb_f_raise(int argc, VALUE *argv)
 static VALUE
 make_exception(int argc, VALUE *argv, int isstr)
 {
-    VALUE mesg;
+    VALUE mesg, exc;
     ID exception;
     int n;
 
@@ -609,10 +609,11 @@ make_exception(int argc, VALUE *argv, int isstr)
       case 0:
 	break;
       case 1:
-	if (NIL_P(argv[0]))
+	exc = argv[0];
+	if (NIL_P(exc))
 	    break;
 	if (isstr) {
-	    mesg = rb_check_string_type(argv[0]);
+	    mesg = rb_check_string_type(exc);
 	    if (!NIL_P(mesg)) {
 		mesg = rb_exc_new3(rb_eRuntimeError, mesg);
 		break;
@@ -623,11 +624,12 @@ make_exception(int argc, VALUE *argv, int isstr)
 
       case 2:
       case 3:
+	exc = argv[0];
 	n = 1;
       exception_call:
-	if (argv[0] == sysstack_error) return argv[0];
+	if (exc == sysstack_error) return exc;
 	CONST_ID(exception, "exception");
-	mesg = rb_check_funcall(argv[0], exception, n, argv+1);
+	mesg = rb_check_funcall(exc, exception, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}
