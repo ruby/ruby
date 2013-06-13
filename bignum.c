@@ -1184,7 +1184,7 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
         return num_digits2;
     }
     else {
-        size_t tmp1 = - (CHAR_BIT * r3 - r1 * r2);
+        size_t tmp1 = r1 * r2 - CHAR_BIT * r3;
         size_t q4 = tmp1 / BITSPERDIG;
         int r4 = (int)(tmp1 % BITSPERDIG);
         size_t num_digits2 = num_digits1 - q4;

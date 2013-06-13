@@ -1,3 +1,9 @@
+Thu Jun 13 18:54:11 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c (integer_unpack_num_bdigits_generic): reorder terms (but not
+	  changed the intention of the expression) because VC++ reports a
+	  warning for it.  reported by ko1 via IRC.
+
 Thu Jun 13 18:53:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_thread.rb (test_thread_local_security): Don't create
