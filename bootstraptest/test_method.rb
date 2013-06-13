@@ -886,50 +886,6 @@ class C0; def m *args; [:C0_m, args]; end; end
 class C1 < C0; def m a, o=:o; super; end; end
 ; C1.new.m 1, 2}
 
-assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
-  $ans = []
-  class Foo
-    def m
-    end
-  end
-
-  c1 = c2 = nil
-
-  lambda{
-    $SAFE = 4
-    c1 = Class.new{
-      def m
-      end
-    }
-    c2 = Class.new(Foo){
-      alias mm m
-    }
-  }.call
-
-  def test
-    begin
-      yield
-    rescue SecurityError
-      $ans << :ok
-    else
-      $ans << :ng
-    end
-  end
-
-  o1 = c1.new
-  o2 = c2.new
-
-  test{o1.m}
-  test{o2.mm}
-  test{o1.send :m}
-  test{o2.send :mm}
-  test{o1.public_send :m}
-  test{o2.public_send :mm}
-  test{o1.method(:m).call}
-  test{o2.method(:mm).call}
-  $ans
-}
-
 assert_equal 'ok', %q{
   class C
     def x=(n)
