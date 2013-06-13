@@ -1,3 +1,8 @@
+Thu Jun 13 22:35:50 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#parse_set_cookies): Use
+	  guard style.
+
 Thu Jun 13 22:12:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils#rmdir): fix traversal loop, not trying

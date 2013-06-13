@@ -512,13 +512,13 @@ module XMLRPC # :nodoc:
     end
 
     def parse_set_cookies(set_cookies)
-      if set_cookies and !set_cookies.empty?
-        require 'webrick/cookie'
-        @cookie = set_cookies.collect do |set_cookie|
-          cookie = WEBrick::Cookie.parse_set_cookie(set_cookie)
-          WEBrick::Cookie.new(cookie.name, cookie.value).to_s
-        end.join("; ")
-      end
+      return if set_cookies.nil?
+      return if set_cookies.empty?
+      require 'webrick/cookie'
+      @cookie = set_cookies.collect do |set_cookie|
+        cookie = WEBrick::Cookie.parse_set_cookie(set_cookie)
+        WEBrick::Cookie.new(cookie.name, cookie.value).to_s
+      end.join("; ")
     end
 
     def gen_multicall(methods=[], async=false)
