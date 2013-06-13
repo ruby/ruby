@@ -2625,8 +2625,10 @@ AC_ARG_WITH(opt-dir,
 			sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
 		    done | tr '\012' ' '`
 		LDFLAGS_OPTDIR="$val"
-		LDFLAGS="$LDFLAGS${LDFLAGS:+ }$val"
-		DLDFLAGS="$DLDFLAGS${DLDFLAGS:+ }$val"
+		test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
+		LDFLAGS="$LDFLAGS$val"
+		test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
+		DLDFLAGS="$DLDFLAGS$val"
 	])
 
 AS_CASE(["$target_cpu-$target_os"],

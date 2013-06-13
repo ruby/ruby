@@ -1,6 +1,7 @@
 #!/bin/sh
 # usage: ifchange target temporary
 
+set -e
 timestamp=
 keepsuffix=
 until [ "$0" = 0 ]; do
@@ -37,7 +38,7 @@ if cmp "$target" "$temp" >/dev/null 2>&1; then
     rm -f "$temp"
 else
     echo "$target updated"
-    ${keepsuffix:+ mv -f "$target" "${target}${keepsuffix}" }
+    [ x"${keepsuffix}" = x ] || mv -f "$target" "${target}${keepsuffix}"
     mv -f "$temp" "$target"
 fi
 

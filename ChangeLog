@@ -1,3 +1,8 @@
+Thu Jun 13 21:30:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (opt-dir), tool/ifchange: get rid of "alternate value"
+	  expansion for legacy sh.  [ruby-dev:47420] [Bug #8524]
+
 Thu Jun 13 21:24:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Refactored to use ALLOCV_N for temporary
