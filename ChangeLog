@@ -1,3 +1,8 @@
+Thu Jun 13 22:12:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#rmdir): fix traversal loop, not trying
+	  remove same directory only.
+
 Thu Jun 13 21:30:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (opt-dir), tool/ifchange: get rid of "alternate value"

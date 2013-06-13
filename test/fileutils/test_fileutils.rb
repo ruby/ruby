@@ -1239,6 +1239,7 @@ class TestFileUtils
     assert_nothing_raised(Errno::ENOENT) {
       rmdir(subdir, parents: true)
     }
+    assert_file_not_exist(subdir)
     assert_file_not_exist('data/sub')
     assert_directory('data')
   end

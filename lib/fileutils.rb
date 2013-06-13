@@ -273,6 +273,7 @@ module FileUtils
         Dir.rmdir(dir = remove_tailing_slash(dir))
         if parents
           until (parent = File.dirname(dir)) == '.' or parent == dir
+            dir = parent
             Dir.rmdir(dir)
           end
         end
