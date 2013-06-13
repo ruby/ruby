@@ -1178,7 +1178,7 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
     if (CHAR_BIT * r3 >= r1 * r2) {
         size_t tmp1 = CHAR_BIT * BITSPERDIG - (CHAR_BIT * r3 - r1 * r2);
         size_t q4 = tmp1 / BITSPERDIG;
-        int r4 = tmp1 % BITSPERDIG;
+        int r4 = (int)(tmp1 % BITSPERDIG);
         size_t num_digits2 = num_digits1 + CHAR_BIT - q4;
         *nlp_bits_ret = r4;
         return num_digits2;
@@ -1186,7 +1186,7 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
     else {
         size_t tmp1 = - (CHAR_BIT * r3 - r1 * r2);
         size_t q4 = tmp1 / BITSPERDIG;
-        int r4 = tmp1 % BITSPERDIG;
+        int r4 = (int)(tmp1 % BITSPERDIG);
         size_t num_digits2 = num_digits1 - q4;
         *nlp_bits_ret = r4;
         return num_digits2;
