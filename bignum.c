@@ -3799,7 +3799,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     dd = nlz(q);
     q <<= dd;
     if (dd) {
-        tds = ALLOCV_N(BDIGIT, tmpy, RBIGNUM_LEN(y));
+        tds = ALLOCV_N(BDIGIT, tmpy, ny);
 	j = 0;
 	t2 = 0;
 	while (j<ny) {
