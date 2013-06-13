@@ -3793,12 +3793,9 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
 
-    dd = 0;
     q = yds[ny-1];
-    while ((q & (BDIGIT)(1UL<<(BITSPERDIG-1))) == 0) {
-	q <<= 1UL;
-	dd++;
-    }
+    dd = nlz(q);
+    q <<= dd;
     if (dd) {
 	yy = rb_big_clone(y);
 	tds = BDIGITS(yy);
