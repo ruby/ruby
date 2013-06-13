@@ -1,6 +1,6 @@
 Thu Jun 13 21:24:09 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.c (bigdivrem): Refactored to use ALLOCV_N for temporally
+	* bignum.c (bigdivrem): Refactored to use ALLOCV_N for temporary
 	  buffers.
 
 Thu Jun 13 18:54:11 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
