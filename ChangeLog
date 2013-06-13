@@ -1,3 +1,8 @@
+Thu Jun 13 18:53:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_thread.rb (test_thread_local_security): Don't create
+	  an unused thread.
+
 Thu Jun 13 18:34:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Use nlz.

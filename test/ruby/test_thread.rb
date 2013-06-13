@@ -382,8 +382,6 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_thread_local_security
-    t = Thread.new { sleep }
-
     assert_raise(RuntimeError) do
       Thread.new do
         Thread.current[:foo] = :bar
