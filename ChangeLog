@@ -1,3 +1,7 @@
+Fri Jun 14 00:14:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Zero test condition simplified.
+
 Thu Jun 13 23:43:11 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/bigdecimal/*: improve documentation, nodoc samples with @mrkn

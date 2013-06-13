@@ -3762,11 +3762,14 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     BDIGIT_DBL t2;
     BDIGIT dd, q;
 
-    if (BIGZEROP(y)) rb_num_zerodiv();
-    xds = BDIGITS(x);
     yds = BDIGITS(y);
+    while (0 < ny && !yds[ny-1]) ny--;
+    if (ny == 0)
+        rb_num_zerodiv();
+
+    xds = BDIGITS(x);
     while (0 < nx && !xds[nx-1]) nx--;
-    while (!yds[ny-1]) ny--;
+
     if (nx < ny || (nx == ny && xds[nx - 1] < yds[ny - 1])) {
 	if (divp) *divp = rb_int2big(0);
 	if (modp) *modp = x;
