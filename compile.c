@@ -482,8 +482,8 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 		ADD_LABEL(ret, start);
 		ADD_TRACE(ret, FIX2INT(iseq->location.first_lineno), RUBY_EVENT_B_CALL);
 		COMPILE(ret, "block body", node->nd_body);
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
 		ADD_LABEL(ret, end);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
 
 		/* wide range catch handler must put at last */
 		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
