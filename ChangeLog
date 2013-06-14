@@ -1,11 +1,17 @@
-Fri Jun 14 13:01:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 14 13:40:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .travis.yml (before_script): update config files.
+
+	* common.mk ($(srcdir)/tool/config.{guess,sub}): use get-config_files.
+
+	* tool/config_files.rb: split get-config_files.
 
 	* common.mk (update-config_files): rule to download config files.
 
 	* tool/config.guess, tool/config.sub: remove and download from the
 	  upstream.
 
-	* tool/get-config_files: download config files from GNU.
+	* tool/config_files.rb: download config files from GNU.
 
 Fri Jun 14 12:21:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

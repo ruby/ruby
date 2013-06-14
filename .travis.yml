@@ -38,6 +38,7 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
+  - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
   - "./configure --with-gcc=$CC"
   - "make -sj encs"

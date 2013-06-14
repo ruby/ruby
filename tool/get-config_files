@@ -1,0 +1,3 @@
+#!/usr/bin/ruby
+require File.expand_path('../config_files', __FILE__)
+ARGV.each {|n| ConfigFiles.download(n)}

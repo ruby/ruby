@@ -1024,9 +1024,9 @@ up:: update-config_files
 
 update-config_files: $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub
 $(srcdir)/tool/config.guess:
-	$(Q) $(BASERUBY) -C $(@D) config_files.rb $(@F)
+	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
 $(srcdir)/tool/config.sub:
-	$(Q) $(BASERUBY) -C $(@D) config_files.rb $(@F)
+	$(Q) $(BASERUBY) -C $(@D) get-config_files $(@F)
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:
