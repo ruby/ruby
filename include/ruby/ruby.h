@@ -566,9 +566,9 @@ int ruby$safe_level$4(void) __attribute__((error("$SAFE=4 is obsolete")));
     __extension__(__builtin_constant_p(level) && \
 		  ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)))
 #define RUBY_SAFE_LEVEL_CHECK(level) \
-    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby$safe_level$4() : 0)
-#define rb_secure(level) (RUBY_SAFE_LEVEL_CHECK(level), rb_secure(level))
-#define rb_set_safe_level(level) (RUBY_SAFE_LEVEL_CHECK(level), rb_set_safe_level(level))
+    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby$safe_level$4() : (level))
+#define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level))
+#define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level))
 #endif
 void rb_set_safe_level_force(int);
 void rb_secure_update(VALUE);

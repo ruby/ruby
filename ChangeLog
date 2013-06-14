@@ -1,3 +1,8 @@
+Fri Jun 14 12:21:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RUBY_SAFE_LEVEL_CHECK): suppress warnings
+	  "left-hand operand of comma expression has no effect", on gcc 4.4.
+
 Fri Jun 14 09:48:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add notes for $SAFE.
