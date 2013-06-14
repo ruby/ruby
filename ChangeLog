@@ -1,3 +1,12 @@
+Fri Jun 14 13:01:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (update-config_files): rule to download config files.
+
+	* tool/config.guess, tool/config.sub: remove and download from the
+	  upstream.
+
+	* tool/get-config_files: download config files from GNU.
+
 Fri Jun 14 12:21:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RUBY_SAFE_LEVEL_CHECK): suppress warnings

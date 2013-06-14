@@ -11,6 +11,7 @@ $exported = nil if $exported == ""
 $archname = nil if $archname == ""
 $keep_temp ||= nil
 $patch_file ||= nil
+$tooldir = File.expand_path("..", __FILE__)
 
 def usage
   <<USAGE
@@ -174,6 +175,11 @@ def package(rev, destdir)
   "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
+    %w[config.guess config.sub].each do |conf|
+      next if File.exist?("tool/#{conf}")
+      require File.expand_path("config_files", $tooldir)
+      ConfigFiles.download(conf, "tool")
+    end
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
