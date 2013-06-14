@@ -3848,11 +3848,11 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
     if (divp) {			/* move quotient down in z */
         j = nz - ny;
+	while (0 < j && !zds[j-1+ny])
+            j--;
 	*divp = zz = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 	qds = BDIGITS(zz);
 	for (i = 0;i < j;i++) qds[i] = zds[i+ny];
-	if (!qds[i-1])
-            RBIGNUM_SET_LEN(zz, i-1);
     }
     if (modp) {			/* normalize remainder */
 	while (ny > 1 && !zds[ny-1]) --ny;

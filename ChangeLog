@@ -1,3 +1,7 @@
+Fri Jun 14 20:47:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Reduce number of digits before bignew() for div.
+
 Fri Jun 14 20:12:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Use bignew when ny == 1.
