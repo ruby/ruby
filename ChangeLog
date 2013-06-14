@@ -1,3 +1,7 @@
+Fri Jun 14 14:33:47 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: add a note for Module#using.
+
 Fri Jun 14 13:40:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .travis.yml (before_script): update config files.

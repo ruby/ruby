@@ -26,6 +26,11 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Kernel#singleton_method
 
+* Module
+  * New methods:
+    * Module#using, which activates refinements of the specified module only
+      in the current class or module definition.
+
 * Mutex
   * misc
     * Mutex#owned? is no longer experimental.
@@ -43,13 +48,13 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
-* Kernel#untrusted?, untrust, and trust
-  * These methods are deprecated and their behavior is same as tainted?,
-    taint, and untaint, respectively.  If $VERBOSE is true, they show warnings.
-
 * IO
   * incompatible changes:
     * open ignore internal encoding if external encoding is ASCII-8BIT.
+
+* Kernel#untrusted?, untrust, and trust
+  * These methods are deprecated and their behavior is same as tainted?,
+    taint, and untaint, respectively.  If $VERBOSE is true, they show warnings.
 
 * Module#ancestors
   * The ancestors of a singleton class now include singleton classes,
