@@ -51,6 +51,7 @@ static VALUE big_three = Qnil;
 		      (RBIGNUM_LEN(x) == 1 || bigzero_p(x))))
 
 static int nlz(BDIGIT x);
+static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -3802,22 +3803,9 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     q <<= dd;
     if (dd) {
         tds = ALLOCV_N(BDIGIT, tmpy, ny);
-	j = 0;
-	t2 = 0;
-	while (j<ny) {
-	    t2 += (BDIGIT_DBL)yds[j]<<dd;
-	    tds[j++] = BIGLO(t2);
-	    t2 = BIGDN(t2);
-	}
+        bdigs_small_lshift(tds, yds, ny, dd);
 	yds = tds;
-	j = 0;
-	t2 = 0;
-	while (j<nx) {
-	    t2 += (BDIGIT_DBL)xds[j]<<dd;
-	    zds[j++] = BIGLO(t2);
-	    t2 = BIGDN(t2);
-	}
-	zds[j] = (BDIGIT)t2;
+        zds[nx] = bdigs_small_lshift(zds, xds, nx, dd);
     }
     else {
 	zds[nx] = 0;
@@ -4559,6 +4547,20 @@ rb_big_lshift(VALUE x, VALUE y)
     return bignorm(x);
 }
 
+static BDIGIT
+bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
+{
+    long i;
+    BDIGIT_DBL num = 0;
+
+    for (i=0; i<n; i++) {
+	num = num | (BDIGIT_DBL)*xds++ << shift;
+	*zds++ = BIGLO(num);
+	num = BIGDN(num);
+    }
+    return BIGLO(num);
+}
+
 static VALUE
 big_lshift(VALUE x, unsigned long shift)
 {
@@ -4566,7 +4568,6 @@ big_lshift(VALUE x, unsigned long shift)
     long s1 = shift/BITSPERDIG;
     int s2 = (int)(shift%BITSPERDIG);
     VALUE z;
-    BDIGIT_DBL num = 0;
     long len, i;
 
     len = RBIGNUM_LEN(x);
@@ -4576,12 +4577,7 @@ big_lshift(VALUE x, unsigned long shift)
 	*zds++ = 0;
     }
     xds = BDIGITS(x);
-    for (i=0; i<len; i++) {
-	num = num | (BDIGIT_DBL)*xds++<<s2;
-	*zds++ = BIGLO(num);
-	num = BIGDN(num);
-    }
-    *zds = BIGLO(num);
+    zds[len] = bdigs_small_lshift(zds, xds, len, s2);
     return z;
 }
 

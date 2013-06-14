@@ -1,3 +1,8 @@
+Sat Jun 15 02:40:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bdigs_small_lshift): Extracted from big_lshift.
+	  (bigdivrem): Use bdigs_small_lshift.
+
 Fri Jun 14 20:47:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Reduce number of digits before bignew() for div.
