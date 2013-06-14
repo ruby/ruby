@@ -50,6 +50,11 @@ else
 fi
 AC_SUBST(BASERUBY)
 
+for conf in config.guess config.sub; do
+    test -f "$srcdir/tool/$conf" && continue
+    $BASERUBY -C "$srcdir/tool" get-config_files $conf
+done
+
 AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
 [cygwin*], [
