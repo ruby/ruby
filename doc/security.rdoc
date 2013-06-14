@@ -21,12 +21,7 @@ Ruby provides a mechanism to restrict what operations can be performed by Ruby
 code in the form of the <code>$SAFE</code> variable.
 
 However, <code>$SAFE</code> does not provide a secure environment for executing
-untrusted code even at its maximum level of +4+. <code>$SAFE</code> is
-inherently flawed as a security mechanism, as it relies on every unsafe
-operation performed by any C method to be guarded by a <code>$SAFE</code>
-check. If this check is ever missed, the entire security of the system is
-compromised. <code>$SAFE</code> also does not offer any protection against
-denial of service attacks.
+untrusted code.
 
 If you need to execute untrusted code, you should use an operating system level
 sandboxing mechanism. On Linux, ptrace or LXC can be used to sandbox
