@@ -1019,7 +1019,7 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
 
-up:: update-config_files
+up::
 	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 update-config_files: $(srcdir)/tool/config.guess $(srcdir)/tool/config.sub

@@ -431,6 +431,11 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 up::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
+up::
+	-$(Q)$(MAKE) $(MFLAGS) after-update
+
+after-update:: update-config_files
+
 update-mspec:
 	@$(CHDIR) $(srcdir); \
 	if [ -d spec/mspec ]; then \
