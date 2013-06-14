@@ -295,7 +295,7 @@ init_copy(VALUE dest, VALUE obj)
 	    RCLASS_CONST_TBL(dest) = 0;
 	}
 	if (RCLASS_IV_TBL(obj)) {
-	    RCLASS_IV_TBL(dest) = st_copy(RCLASS_IV_TBL(obj));
+	    RCLASS_IV_TBL(dest) = rb_st_copy(dest, RCLASS_IV_TBL(obj));
 	}
         break;
     }

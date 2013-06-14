@@ -143,7 +143,8 @@ find_class_path(VALUE klass, ID preferred)
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	st_insert(RCLASS_IV_TBL(klass), (st_data_t)classpath, arg.path);
+	rb_st_insert_id_and_value(klass, RCLASS_IV_TBL(klass), (st_data_t)classpath, arg.path);
+
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
     }
@@ -1184,8 +1185,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
-	st_insert(RCLASS_IV_TBL(obj), (st_data_t)id, val);
-	OBJ_WRITTEN(obj, Qundef, val);
+	rb_st_insert_id_and_value(obj, RCLASS_IV_TBL(obj), (st_data_t)id, val);
         break;
       default:
       generic:
@@ -2180,8 +2180,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 
     ce = ALLOC(rb_const_entry_t);
     ce->flag = visibility;
-    ce->value = val;
-    ce->file = rb_sourcefilename();
+    OBJ_WRITE(klass, (VALUE *)&ce->value, val);
+    OBJ_WRITE(klass, (VALUE *)&ce->file, rb_sourcefilename());
     ce->line = rb_sourceline();
 
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
@@ -2339,7 +2339,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	RCLASS_IV_TBL(target) = st_init_numtable();
     }
 
-    st_insert(RCLASS_IV_TBL(target), (st_data_t)id, (st_data_t)val);
+    rb_st_insert_id_and_value(target, RCLASS_IV_TBL(target), (st_data_t)id, (st_data_t)val);
 }
 
 VALUE
@@ -2575,4 +2575,28 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     ID id = rb_intern(name);
 
     return rb_ivar_set(obj, id, val);
+}
+
+/* tbl = xx(obj); tbl[key] = value; */
+int
+rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value)
+{
+    int result = st_insert(tbl, (st_data_t)key, (st_data_t)value);
+    OBJ_WRITTEN(obj, Qundef, value);
+    return result;
+}
+
+static int
+tbl_copy_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    OBJ_WRITTEN((VALUE)data, Qundef, (VALUE)value);
+    return ST_CONTINUE;
+}
+
+st_table *
+rb_st_copy(VALUE obj, struct st_table *orig_tbl)
+{
+    st_table *new_tbl = st_copy(orig_tbl);
+    st_foreach(new_tbl, tbl_copy_i, (st_data_t)obj);
+    return new_tbl;
 }

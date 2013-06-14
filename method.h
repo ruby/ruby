@@ -68,7 +68,7 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    VALUE location;
+    const VALUE location;
 } rb_method_attr_t;
 
 typedef struct rb_iseq_struct rb_iseq_t;
@@ -77,10 +77,10 @@ typedef struct rb_method_definition_struct {
     rb_method_type_t type; /* method type */
     ID original_id;
     union {
-	rb_iseq_t *iseq;            /* should be mark */
+	rb_iseq_t * const iseq;            /* should be mark */
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
-	VALUE proc;                 /* should be mark */
+	const VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
 	    OPTIMIZED_METHOD_TYPE_CALL,

@@ -1,3 +1,22 @@
+Fri Jun 14 18:18:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c, include/ruby/ruby.h: add write barriers for T_CLASS,
+	  T_MODULE, T_ICLASS.
+
+	* constant.h: constify rb_const_entry_t::value and file to detect
+	  assignment.
+
+	* variable.c, internal.h (rb_st_insert_id_and_value, rb_st_copy): 
+	  added. update table with write barrier.
+
+	* method.h: constify some variables to detect assignment.
+
+	* object.c (init_copy): add WBs.
+
+	* variable.c: ditto.
+
+	* vm_method.c (rb_add_method): ditto.
+
 Fri Jun 14 14:33:47 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add a note for Module#using.

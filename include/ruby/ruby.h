@@ -700,16 +700,17 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_ARRAY
 #define RGENGC_WB_PROTECTED_ARRAY 1
 #endif
-
 #ifndef RGENGC_WB_PROTECTED_HASH
 #define RGENGC_WB_PROTECTED_HASH 1
 #endif
-
 #ifndef RGENGC_WB_PROTECTED_STRING
 #define RGENGC_WB_PROTECTED_STRING 1
 #endif
 #ifndef RGENGC_WB_PROTECTED_OBJECT
 #define RGENGC_WB_PROTECTED_OBJECT 1
+#endif
+#ifndef RGENGC_WB_PROTECTED_CLASS
+#define RGENGC_WB_PROTECTED_CLASS 1
 #endif
 #ifndef RGENGC_WB_PROTECTED_FLOAT
 #define RGENGC_WB_PROTECTED_FLOAT 1
@@ -1228,6 +1229,7 @@ struct RBignum {
 #define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_OLDGEN))
 #define OBJ_WB_PROTECTED(x)         (SPECIAL_CONST_P(x) ? 1 : FL_TEST_RAW((x), FL_WB_PROTECTED))
 #define OBJ_WB_GIVEUP(x)            rb_obj_wb_giveup(x, __FILE__, __LINE__)
+#define OBJ_WB_
 
 void rb_gc_writebarrier(VALUE a, VALUE b);
 void rb_gc_giveup_promoted_writebarrier(VALUE obj);

@@ -411,9 +411,12 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     def->original_id = mid;
     def->alias_count = 0;
     switch (type) {
-      case VM_METHOD_TYPE_ISEQ:
-	def->body.iseq = (rb_iseq_t *)opts;
-	break;
+      case VM_METHOD_TYPE_ISEQ: {
+	  rb_iseq_t *iseq = (rb_iseq_t *)opts;
+	  *(rb_iseq_t **)&def->body.iseq = iseq;
+	  OBJ_WRITTEN(klass, Qundef, iseq->self);
+	  break;
+      }
       case VM_METHOD_TYPE_CFUNC:
 	{
 	    rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
@@ -423,16 +426,16 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	def->body.attr.id = (ID)opts;
-	def->body.attr.location = Qfalse;
+	OBJ_WRITE(klass, (VALUE *)&def->body.attr.location, Qfalse);
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	if (cfp && (line = rb_vm_get_sourceline(cfp))) {
 	    VALUE location = rb_ary_new3(2, cfp->iseq->location.path, INT2FIX(line));
-	    def->body.attr.location = rb_ary_freeze(location);
+	    OBJ_WRITE(klass, (VALUE *)&def->body.attr.location, rb_ary_freeze(location));
 	}
 	break;
       case VM_METHOD_TYPE_BMETHOD:
-	def->body.proc = (VALUE)opts;
+	OBJ_WRITE(klass, (VALUE *)&def->body.proc, (VALUE)opts);
 	break;
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	setup_method_cfunc_struct(&def->body.cfunc, rb_f_notimplement, -1);

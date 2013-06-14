@@ -473,6 +473,9 @@ void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
 void rb_mark_generic_ivar_tbl(void);
 
+int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
+st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
+
 /* gc.c */
 size_t rb_gc_count();
 
