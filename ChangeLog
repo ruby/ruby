@@ -2,7 +2,7 @@ Fri Jun 14 09:48:48 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add notes for $SAFE.
 
-	* doc/security.rd: remove the description of $SAFE=4.
+	* doc/security.rdoc: remove the description of $SAFE=4.
 
 Fri Jun 14 00:14:29 2013  Tanaka Akira  <akr@fsij.org>
 
