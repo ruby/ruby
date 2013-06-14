@@ -544,7 +544,7 @@ class TestMethod < Test::Unit::TestCase
 
   def test___dir__
     assert_instance_of String, __dir__
-    assert_equal(File.expand_path("..", __FILE__), __dir__)
+    assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
   end
 
   def test_alias_owner
