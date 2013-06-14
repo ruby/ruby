@@ -3777,15 +3777,14 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     }
     if (ny == 1) {
 	dd = yds[0];
-	z = rb_big_clone(x);
+	z = bignew(nx, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 	zds = BDIGITS(z);
 	t2 = 0; i = nx;
 	while (i--) {
-	    t2 = BIGUP(t2) + zds[i];
+	    t2 = BIGUP(t2) + xds[i];
 	    zds[i] = (BDIGIT)(t2 / dd);
 	    t2 %= dd;
 	}
-	RBIGNUM_SET_SIGN(z, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 	if (modp) {
 	    *modp = rb_uint2big((VALUE)t2);
 	    RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
