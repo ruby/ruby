@@ -1157,7 +1157,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     int state;
     VALUE result = Qundef;
     VALUE envval;
-    rb_binding_t *bind = 0;
+    VALUE absolute_path = Qnil;
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
@@ -1173,6 +1173,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
+	rb_binding_t *bind = 0;
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
 
@@ -1183,6 +1184,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		if (strcmp(file, "(eval)") == 0 && bind->path != Qnil) {
 		    file = RSTRING_PTR(bind->path);
 		    line = bind->first_lineno;
+		    absolute_path = rb_current_realfilepath();
 		}
 	    }
 	    else {
@@ -1210,7 +1212,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile_on_base(src, rb_str_new2(file), INT2FIX(line), base_block);
+	iseqval = rb_iseq_compile_with_option(src, rb_str_new2(file), absolute_path, INT2FIX(line), base_block, Qnil);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
