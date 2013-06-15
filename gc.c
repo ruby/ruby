@@ -147,6 +147,9 @@ static ruby_gc_params_t initial_params = {
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP 1
 #endif
+#ifndef CALC_EXACT_MALLOC_SIZE
+#define CALC_EXACT_MALLOC_SIZE 0
+#endif
 
 typedef enum {
     GPR_FLAG_NONE            = 0x00,
@@ -181,6 +184,13 @@ typedef struct gc_profile_record {
 
     size_t allocate_increase;
     size_t allocate_limit;
+#if CALC_EXACT_MALLOC_SIZE
+    size_t allocated_size;
+#endif
+
+    double prepare_time;
+    size_t removing_objects;
+    size_t empty_objects;
 #endif
 } gc_profile_record;
 
@@ -273,10 +283,6 @@ typedef struct mark_stack {
     size_t unused_cache_size;
 } mark_stack_t;
 
-#ifndef CALC_EXACT_MALLOC_SIZE
-#define CALC_EXACT_MALLOC_SIZE 0
-#endif
-
 typedef struct rb_objspace {
     struct {
 	size_t limit;
@@ -319,6 +325,9 @@ typedef struct rb_objspace {
 	size_t next_index;
 	size_t size;
 
+#if GC_PROFILE_MORE_DETAIL
+	double prepare_time;
+#endif
 	double invoke_time;
 
 #if USE_RGENGC
@@ -383,6 +392,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
+#define malloc_allocated_size 	objspace->malloc_params.allocated_size
 #define heaps			objspace->heap.ptr
 #define heaps_length		objspace->heap.length
 #define heaps_used		objspace->heap.used
@@ -524,6 +534,14 @@ RVALUE_DEMOTE(VALUE obj)
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 }
 #endif
+
+static inline gc_profile_record *
+gc_prof_record(rb_objspace_t *objspace)
+{
+    size_t index = objspace->profile.next_index - 1;
+    return &objspace->profile.record[index];
+}
+
 
 static void
 rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
@@ -2145,7 +2163,15 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     RVALUE *final = deferred_final_list;
     int deferred;
     uintptr_t *bits, bitset;
+#if GC_PROFILE_MORE_DETAIL
+    gc_profile_record *record=NULL;
+#endif
 
+#if GC_PROFILE_MORE_DETAIL
+    if (objspace->profile.run) {
+	record = gc_prof_record(objspace);
+    }
+#endif
     rgengc_report(3, objspace, "slot_sweep_body: start.\n");
 
     p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
@@ -2163,6 +2189,10 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	    do {
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
 		    if (p->as.basic.flags) {
+#if GC_PROFILE_MORE_DETAIL
+			if(record)
+			    record->removing_objects++;
+#endif
 			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
 			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
@@ -2190,6 +2220,10 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 			}
 		    }
 		    else {
+#if GC_PROFILE_MORE_DETAIL
+			if(record)
+			    record->empty_objects++;
+#endif
 			empty_num++;
 		    }
 		}
@@ -2437,6 +2471,9 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
         }
     }
 
+#if GC_PROFILE_MORE_DETAIL
+    objspace->profile.prepare_time = 0;
+#endif
     return garbage_collect_body(objspace, 0, 0, GPR_FLAG_NEWOBJ);
 }
 
@@ -3836,7 +3873,13 @@ garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int
 	return TRUE;
     }
 
+#if GC_PROFILE_MORE_DETAIL
+    objspace->profile.prepare_time = getrusage_time();
+#endif
     rest_sweep(objspace);
+#if GC_PROFILE_MORE_DETAIL
+    objspace->profile.prepare_time = getrusage_time() - objspace->profile.prepare_time;
+#endif
 
     during_gc++;
 
@@ -4801,12 +4844,6 @@ getrusage_time(void)
 #endif
 }
 
-static inline gc_profile_record *
-gc_prof_record(rb_objspace_t *objspace)
-{
-    size_t index = objspace->profile.next_index - 1;
-    return &objspace->profile.record[index];
-}
 
 static inline void
 gc_prof_timer_start(rb_objspace_t *objspace, int reason)
@@ -4832,6 +4869,9 @@ gc_prof_timer_start(rb_objspace_t *objspace, int reason)
 	record = gc_prof_record(objspace);
 	MEMZERO(record, gc_profile_record, 1);
 
+#if GC_PROFILE_MORE_DETAIL
+	record->prepare_time = objspace->profile.prepare_time;
+#endif
 	record->gc_time = getrusage_time();
 	record->gc_invoke_time = record->gc_time - objspace->profile.invoke_time;
 	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
@@ -4926,6 +4966,9 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
         gc_profile_record *record = gc_prof_record(objspace);
 	record->allocate_increase = malloc_increase;
 	record->allocate_limit = malloc_limit;
+#if CALC_EXACT_MALLOC_SIZE
+	record->allocated_size = malloc_allocated_size;
+#endif
     }
 #endif
 }
@@ -5095,21 +5138,37 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if GC_PROFILE_MORE_DETAIL
 	append(out, rb_str_new_cstr("\n\n" \
 				    "More detail.\n" \
-				    "Index Flags       Allocate Increase    Allocate Limit  Use Slot             Mark Time(ms)            Sweep Time(ms)\n"));
+				    "Prepare Time = Previously GC's rest sweep time\n"
+				    "Index Flags       Allocate Inc.  Allocate Limit"
+#if CALC_EXACT_MALLOC_SIZE
+				    "  Allocated Size"
+#endif
+				    "  Use Slot     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  Removing Obj.  Empty Obj.\n"));
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.record[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %c/%c/%s%c %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %25.20f %25.20f\n",
+	    append(out, rb_sprintf("%5"PRIdSIZE" %c/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
+#if CALC_EXACT_MALLOC_SIZE
+				   " %15"PRIuSIZE
+#endif
+				   " %9"PRIuSIZE" %17.12f %17.12f %17.12f %14"PRIuSIZE" %11"PRIuSIZE" \n",
 				   i+1,
 				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
 				   (record->flags & GPR_FLAG_NEWOBJ) ? "NEWOBJ" :
 				   (record->flags & GPR_FLAG_MALLOC) ? "MALLOC" :
 				   (record->flags & GPR_FLAG_METHOD) ? "METHOD" :
-				   (record->flags & GPR_FLAG_CAPI)   ? "CAPI__" : "?????",
+				   (record->flags & GPR_FLAG_CAPI)   ? "CAPI__" : "??????",
 				   (record->flags & GPR_FLAG_STRESS) ? '!' : ' ',
 				   record->allocate_increase, record->allocate_limit,
+#if CALC_EXACT_MALLOC_SIZE
+				   record->allocated_size,
+#endif
 				   record->heap_use_slots,
-				   record->gc_mark_time*1000, record->gc_sweep_time*1000));
+				   record->gc_mark_time*1000, record->gc_sweep_time*1000,
+				   record->prepare_time*1000,
+				   record->removing_objects,
+				   record->empty_objects
+		       ));
 	}
 #endif
     }

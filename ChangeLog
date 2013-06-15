@@ -1,3 +1,8 @@
+Sun Jun 16 05:15:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c : Add some colums to more detail profile.
+	  new colums: Allocated size, Prepare Time, Removing Objects, Empty Objects
+
 Sun Jun 16 02:04:40 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_prof_timer_stop): Merge function codes of GC_PROFILE_MORE_DETAIL and !GC_PROFILE_MORE_DETAIL.
