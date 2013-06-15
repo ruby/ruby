@@ -1,3 +1,8 @@
+Sun Jun 16 01:22:35 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
+	  10.7+.  [ruby-trunk - Bug #8517]
+
 Sun Jun 16 01:11:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_iseq_compile_node): fix location of a `trace'

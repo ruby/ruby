@@ -23,6 +23,12 @@ else
   have_library("socket", "socket")
 end
 
+if /darwin/ =~ RUBY_PLATFORM
+  # For IPv6 extension header access on OS X 10.7+ [Bug #8517]
+  $CFLAGS << " -D__APPLE_USE_RFC_3542"
+end
+
+headers = []
 unless $mswin or $bccwin or $mingw
   headers = %w<sys/types.h netdb.h string.h sys/socket.h netinet/in.h>
 end
