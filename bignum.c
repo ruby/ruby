@@ -3139,7 +3139,7 @@ bigmul1_single(VALUE x, VALUE y)
 static VALUE
 bigmul1_normal(VALUE x, VALUE y)
 {
-    long xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), i, j = xl + yl + 1;
+    long xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), i, j = xl + yl;
     BDIGIT_DBL n = 0;
     VALUE z = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     BDIGIT *xds, *yds, *zds;

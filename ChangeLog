@@ -1,3 +1,7 @@
+Sat Jun 15 17:14:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_normal): Shrink the result Bignum length.
+
 Sat Jun 15 10:19:42 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/bigdecimal/bigdecimal.c: Update overview formatting of headers
