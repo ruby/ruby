@@ -287,6 +287,7 @@ typedef struct rb_objspace {
     struct {
 	size_t limit;
 	size_t increase;
+	size_t increase2;
 #if CALC_EXACT_MALLOC_SIZE
 	size_t allocated_size;
 	size_t allocations;
@@ -392,6 +393,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
+#define malloc_increase2 	objspace->malloc_params.increase2
 #define malloc_allocated_size 	objspace->malloc_params.allocated_size
 #define heaps			objspace->heap.ptr
 #define heaps_length		objspace->heap.length
@@ -2340,6 +2342,8 @@ before_gc_sweep(rb_objspace_t *objspace)
     objspace->heap.free_num = 0;
     objspace->heap.free_slots = NULL;
 
+    malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
+
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
 	rb_sweep_method_entry(GET_VM());
@@ -2368,6 +2372,8 @@ after_gc_sweep(rb_objspace_t *objspace)
     }
 
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
+    inc += malloc_increase2;
+    malloc_increase2 = 0;
 
     if (inc > malloc_limit) {
 	malloc_limit +=
@@ -4405,8 +4411,9 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
+    ATOMIC_SIZE_ADD(malloc_increase, size);
     if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
-	(malloc_increase+size) > malloc_limit) {
+	malloc_increase > malloc_limit) {
 	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
     }
 
@@ -4416,8 +4423,6 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 static inline void *
 vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
-    ATOMIC_SIZE_ADD(malloc_increase, size);
-
 #if CALC_EXACT_MALLOC_SIZE
     ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size);
     ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
@@ -4964,7 +4969,7 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 #if GC_PROFILE_MORE_DETAIL
     if (objspace->profile.run) {
         gc_profile_record *record = gc_prof_record(objspace);
-	record->allocate_increase = malloc_increase;
+	record->allocate_increase = malloc_increase + malloc_increase2;
 	record->allocate_limit = malloc_limit;
 #if CALC_EXACT_MALLOC_SIZE
 	record->allocated_size = malloc_allocated_size;

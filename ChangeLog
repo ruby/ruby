@@ -1,6 +1,14 @@
+Sun Jun 16 05:51:51 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: Fixup around GC by MALLOC. 
+	  Add allocate size to malloc_increase before GC 
+	  for updating limit in after_gc_sweep.
+	  Reset malloc_increase into garbage_collect() 
+	  for preventing GC again soon.
+
 Sun Jun 16 05:15:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* gc.c : Add some colums to more detail profile.
+	* gc.c: Add some colums to more detail profile.
 	  new colums: Allocated size, Prepare Time, Removing Objects, Empty Objects
 
 Sun Jun 16 02:04:40 2013  Masaya Tarui  <tarui@ruby-lang.org>
