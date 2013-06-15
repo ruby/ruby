@@ -52,6 +52,7 @@ static VALUE big_three = Qnil;
 
 static int nlz(BDIGIT x);
 static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
+static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -3845,13 +3846,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     if (modp) {			/* normalize remainder */
 	while (ny > 1 && !zds[ny-1]) --ny;
 	if (dd) {
-	    t2 = 0; i = ny;
-	    while (i--) {
-		t2 = (t2 | zds[i]) >> dd;
-		q = zds[i];
-		zds[i] = BIGLO(t2);
-		t2 = BIGUP(q);
-	    }
+            bdigs_small_rshift(zds, zds, ny, dd, 0);
 	}
 	if (!zds[ny-1]) ny--;
 	*modp = zz = bignew(ny, RBIGNUM_SIGN(x));
@@ -4621,6 +4616,22 @@ rb_big_rshift(VALUE x, VALUE y)
     return bignorm(x);
 }
 
+static void
+bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
+{
+    BDIGIT_DBL num = 0;
+    BDIGIT x;
+    if (sign_bit) {
+	num = (~(BDIGIT_DBL)0) << BITSPERDIG;
+    }
+    while (n--) {
+	num = (num | xds[n]) >> shift;
+        x = xds[n];
+	zds[n] = BIGLO(num);
+	num = BIGUP(x);
+    }
+}
+
 static VALUE
 big_rshift(VALUE x, unsigned long shift)
 {
@@ -4628,7 +4639,6 @@ big_rshift(VALUE x, unsigned long shift)
     long s1 = shift/BITSPERDIG;
     int s2 = (int)(shift%BITSPERDIG);
     VALUE z;
-    BDIGIT_DBL num = 0;
     long i, j;
     volatile VALUE save_x;
 
@@ -4650,15 +4660,8 @@ big_rshift(VALUE x, unsigned long shift)
 	else return INT2FIX(-1);
     }
     z = bignew(j, RBIGNUM_SIGN(x));
-    if (!RBIGNUM_SIGN(x)) {
-	num = ((BDIGIT_DBL)~0) << BITSPERDIG;
-    }
     zds = BDIGITS(z);
-    while (i--, j--) {
-	num = (num | xds[i]) >> s2;
-	zds[j] = BIGLO(num);
-	num = BIGUP(xds[i]);
-    }
+    bdigs_small_rshift(zds, xds+s1, j, s2, !RBIGNUM_SIGN(x));
     if (!RBIGNUM_SIGN(x)) {
 	get2comp(z);
     }
