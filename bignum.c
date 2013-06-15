@@ -3951,12 +3951,12 @@ bary_divmod(BDIGIT *qds, long nq, BDIGIT *rds, long nr, BDIGIT *xds, long nx, BD
         MEMZERO(zds+nx, BDIGIT, nz-nx);
 
         if ((yds[ny-1] >> (BITSPERDIG-1)) & 1) {
-            /* digits_bigdivrem_multi_sub will not modify y.
+            /* bigdivrem_normal will not modify y.
              * So use yds directly.  */
             tds = yds;
         }
         else {
-            /* digits_bigdivrem_multi_sub will modify y.
+            /* bigdivrem_normal will modify y.
              * So use rds as a temporary buffer.  */
             MEMCPY(rds, yds, BDIGIT, ny);
             tds = rds;
@@ -3986,7 +3986,6 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     VALUE z, zz;
     VALUE tmpy = 0, tmpz = 0;
     BDIGIT *xds, *yds, *zds, *tds;
-    BDIGIT_DBL t2;
     BDIGIT dd;
 
     yds = BDIGITS(y);
@@ -4006,9 +4005,9 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	dd = yds[0];
 	z = bignew(nx, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 	zds = BDIGITS(z);
-        t2 = bigdivrem_single(zds, xds, nx, dd);
+        dd = bigdivrem_single(zds, xds, nx, dd);
 	if (modp) {
-	    *modp = rb_uint2big((VALUE)t2);
+	    *modp = rb_uint2big((VALUE)dd);
 	    RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
 	}
 	if (divp) *divp = z;

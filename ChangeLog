@@ -1,3 +1,8 @@
+Sun Jun 16 08:55:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Use a BDIGIT variable to store the return
+	  value of bigdivrem_single.
+
 Sun Jun 16 08:43:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_divmod): New function.
