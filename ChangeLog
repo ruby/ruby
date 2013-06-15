@@ -1,3 +1,7 @@
+Sun Jun 16 01:32:26 2013  TAKANO Mitsuhiro <tak@no32.tk>
+
+	* insns.def: fix condition.
+
 Sun Jun 16 01:22:35 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
