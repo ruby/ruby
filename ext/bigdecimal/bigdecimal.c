@@ -2948,15 +2948,7 @@ get_vp_value:
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
- * Copyright (C) 2002 by Shigeo Kobayashi <shigeo@tinyforest.gr.jp>.
- *
- * You may distribute under the terms of either the GNU General Public
- * License or the Artistic License, as specified in the README file
- * of the BigDecimal distribution.
- *
- * Documented by mathew <meta@pobox.com>.
- *
- * = Introduction
+ * == Introduction
  *
  * Ruby provides built-in support for arbitrary precision integer arithmetic.
  *
@@ -2996,12 +2988,12 @@ get_vp_value:
  *
  *	(1.2 - 1.0) == 0.2 #=> false
  *
- * = Special features of accurate decimal arithmetic
+ * == Special features of accurate decimal arithmetic
  *
  * Because BigDecimal is more accurate than normal binary floating point
  * arithmetic, it requires some special values.
  *
- * == Infinity
+ * === Infinity
  *
  * BigDecimal sometimes needs to return infinity, for example if you divide
  * a value by zero.
@@ -3013,7 +3005,7 @@ get_vp_value:
  * <code>'Infinity'</code>, <code>'+Infinity'</code> and
  * <code>'-Infinity'</code> (case-sensitive)
  *
- * == Not a Number
+ * === Not a Number
  *
  * When a computation results in an undefined value, the special value +NaN+
  * (for 'not a number') is returned.
@@ -3030,7 +3022,7 @@ get_vp_value:
  *	n == 0.0 #=> nil
  *	n == n #=> nil
  *
- * == Positive and negative zero
+ * === Positive and negative zero
  *
  * If a computation results in a value which is too small to be represented as
  * a BigDecimal within the currently specified limits of precision, zero must
@@ -3052,6 +3044,19 @@ get_vp_value:
  *
  * Note also that in mathematics, there is no particular concept of negative
  * or positive zero; true mathematical zero has no sign.
+ *
+ * == License
+ *
+ * Copyright (C) 2002 by Shigeo Kobayashi <shigeo@tinyforest.gr.jp>.
+ *
+ * You may distribute under the terms of either the GNU General Public
+ * License or the Artistic License, as specified in the README file
+ * of the BigDecimal distribution.
+ *
+ * Maintained by mrkn <mrkn@mrkn.jp> and ruby-core members.
+ *
+ * Documented by zzak <zachary@zacharyscott.net>, mathew <meta@pobox.com>, and
+ * many other contributors.
  */
 void
 Init_bigdecimal(void)
