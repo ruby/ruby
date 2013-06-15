@@ -1,3 +1,10 @@
+Sun Jun 16 01:56:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (FL_SET_EMBED): shared object is frozen even when get
+	  unshared.
+
+	* array.c (rb_ary_modify): ARY_SET_CAPA needs unshared array.
+
 Sun Jun 16 01:32:26 2013  TAKANO Mitsuhiro <tak@no32.tk>
 
 	* insns.def: fix condition.
