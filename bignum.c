@@ -59,6 +59,7 @@ static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
+static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -599,6 +600,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     BDIGIT numbytes_bary[bdigit_roomof(sizeof(numbytes))];
     BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
+    BDIGIT nlz_bits_in_msbyte_bary[1] = { nlz_bits_in_msbyte };
     VALUE v;
 
     /*
@@ -611,15 +613,17 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
     bary_mul(BARY_ARGS(val_numbits_bary), BARY_ARGS(numbytes_bary), BARY_ARGS(char_bit));
+    if (nlz_bits_in_msbyte)
+        bary_sub(BARY_ARGS(val_numbits_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(nlz_bits_in_msbyte_bary));
 
     v = rb_integer_unpack(val_numbits_bary, numberof(val_numbits_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     val_numbits = SIZET2NUM(numbytes);
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-    assert(rb_equal(val_numbits, v));
     if (nlz_bits_in_msbyte)
         val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
+    assert(rb_equal(val_numbits, v));
     word_numbits_v = SIZET2NUM(word_numbits);
     div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
     div = RARRAY_AREF(div_mod, 0);
@@ -2850,6 +2854,8 @@ bigsub_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
 	zds[i++] = BIGLO(num);
 	num = BIGDN(num);
     }
+    if (xds == zds && xn == zn)
+        return;
     while (i < xn) {
 	zds[i] = xds[i];
 	i++;
@@ -2858,6 +2864,15 @@ bigsub_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
     while (i < zn) {
 	zds[i++] = 0;
     }
+}
+
+static void
+bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
+{
+    assert(yn <= xn);
+    assert(xn <= zn);
+
+    bigsub_core(xds, xn, yds, yn, zds, zn);
 }
 
 static VALUE

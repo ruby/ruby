@@ -1,3 +1,9 @@
+Sat Jun 15 23:50:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_sub): New function.
+	  (absint_numwords_generic): Use bary_sub.
+	  (bigsub_core): Skip unnecessary copy.
+
 Sat Jun 15 22:05:30 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): New function.
