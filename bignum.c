@@ -58,6 +58,7 @@ static int nlz(BDIGIT x);
 static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -595,8 +596,10 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     size_t numwords;
     size_t nlz_bits;
 
+    BDIGIT numbytes_bary[bdigit_roomof(sizeof(numbytes))];
+    BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
-    VALUE expected;
+    VALUE v;
 
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
@@ -605,15 +608,16 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
      * nlz_bits = mod == 0 ? 0 : word_numbits - mod
      */
 
-    bary_unpack(BARY_ARGS(val_numbits_bary), &numbytes, 1, sizeof(numbytes), 0,
+    bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
+    bary_mul(BARY_ARGS(val_numbits_bary), BARY_ARGS(numbytes_bary), BARY_ARGS(char_bit));
 
-    val_numbits = rb_integer_unpack(val_numbits_bary, numberof(val_numbits_bary), sizeof(BDIGIT), 0,
+    v = rb_integer_unpack(val_numbits_bary, numberof(val_numbits_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-    expected = SIZET2NUM(numbytes);
-    assert(rb_equal(val_numbits, expected));
 
+    val_numbits = SIZET2NUM(numbytes);
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
+    assert(rb_equal(val_numbits, v));
     if (nlz_bits_in_msbyte)
         val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
     word_numbits_v = SIZET2NUM(word_numbits);
@@ -1279,6 +1283,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
     }
     if (dd)
         *dp++ = (BDIGIT)dd;
+    assert(dp <= de);
     while (dp < de)
         *dp++ = 0;
 #undef PUSH_BITS
@@ -3140,10 +3145,21 @@ big_real_len(VALUE x)
     return i + 1;
 }
 
+static void
+bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
+{
+    BDIGIT_DBL n;
+
+    assert(2 <= zl);
+
+    n = (BDIGIT_DBL)x * y;
+    zds[0] = BIGLO(n);
+    zds[1] = (BDIGIT)BIGDN(n);
+}
+
 static VALUE
 bigmul1_single(VALUE x, VALUE y)
 {
-    BDIGIT_DBL n;
     VALUE z = bignew(2, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     BDIGIT *xds, *yds, *zds;
 
@@ -3151,24 +3167,20 @@ bigmul1_single(VALUE x, VALUE y)
     yds = BDIGITS(y);
     zds = BDIGITS(z);
 
-    n = (BDIGIT_DBL)xds[0] * yds[0];
-    zds[0] = BIGLO(n);
-    zds[1] = (BDIGIT)BIGDN(n);
+    bary_mul_single(zds, 2, xds[0], yds[0]);
 
     return z;
 }
 
-static VALUE
-bigmul1_normal(VALUE x, VALUE y)
+static void
+bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
-    long xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), i, j = xl + yl;
+    size_t i;
+    size_t j = zl;
     BDIGIT_DBL n = 0;
-    VALUE z = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    BDIGIT *xds, *yds, *zds;
 
-    xds = BDIGITS(x);
-    yds = BDIGITS(y);
-    zds = BDIGITS(z);
+    assert(xl + yl <= zl);
+
     while (j--) zds[j] = 0;
     for (i = 0; i < xl; i++) {
 	BDIGIT_DBL dd;
@@ -3185,8 +3197,38 @@ bigmul1_normal(VALUE x, VALUE y)
 	    zds[i + j] = (BDIGIT)n;
 	}
     }
+}
+
+static VALUE
+bigmul1_normal(VALUE x, VALUE y)
+{
+    size_t xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), zl = xl + yl;
+    VALUE z = bignew(zl, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    BDIGIT *xds, *yds, *zds;
+
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
+    zds = BDIGITS(z);
+
+    bary_mul_normal(zds, zl, xds, xl, yds, yl);
+
     rb_thread_check_ints();
     return z;
+}
+
+static void
+bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+{
+    size_t l;
+    if (xl == 1 && yl == 1) {
+        l = 2;
+        bary_mul_single(zds, zl, xds[0], yds[1]);
+    }
+    else {
+        l = xl + yl;
+        bary_mul_normal(zds, zl, xds, xl, yds, yl);
+    }
+    MEMZERO(zds + l, BDIGIT, zl - l);
 }
 
 static VALUE bigmul0(VALUE x, VALUE y);

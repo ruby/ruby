@@ -1,3 +1,10 @@
+Sat Jun 15 22:05:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): New function.
+	  (absint_numwords_generic): Use bary_mul.
+	  (bary_mul_single): Extracted from bigmul1_single.
+	  (bary_mul_normal): Extracted from bigmul1_normal.
+
 Sat Jun 15 20:13:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_unpack): Extracted from rb_integer_unpack_internal.
