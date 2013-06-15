@@ -1,3 +1,12 @@
+Sat Jun 15 20:13:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack): Extracted from rb_integer_unpack_internal.
+	  (absint_numwords_generic): Use bary_unpack.
+	  (roomof): Defined.
+	  (bdigit_roomof): Defined.
+	  (BARY_ARGS): Defined.
+	  (bary_unpack): Declared.
+
 Sat Jun 15 19:35:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (absint_numwords_bytes): Make it static.

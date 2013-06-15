@@ -50,9 +50,14 @@ static VALUE big_three = Qnil;
 		     (BDIGITS(x)[0] == 0 && \
 		      (RBIGNUM_LEN(x) == 1 || bigzero_p(x))))
 
+#define roomof(n, m) ((int)(((n)+(m)-1) / (m)))
+#define bdigit_roomof(n) roomof(n, sizeof(BDIGIT))
+#define BARY_ARGS(ary) ary, numberof(ary)
+
 static int nlz(BDIGIT x);
 static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
+static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -590,6 +595,9 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     size_t numwords;
     size_t nlz_bits;
 
+    BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
+    VALUE expected;
+
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
      * div, mod = val_numbits.divmod(word_numbits)
@@ -597,7 +605,14 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
      * nlz_bits = mod == 0 ? 0 : word_numbits - mod
      */
 
-    val_numbits = SIZET2NUM(numbytes);
+    bary_unpack(BARY_ARGS(val_numbits_bary), &numbytes, 1, sizeof(numbytes), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER);
+
+    val_numbits = rb_integer_unpack(val_numbits_bary, numberof(val_numbits_bary), sizeof(BDIGIT), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    expected = SIZET2NUM(numbytes);
+    assert(rb_equal(val_numbits, expected));
+
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
     if (nlz_bits_in_msbyte)
         val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
@@ -1207,13 +1222,10 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
     }
 }
 
-static VALUE
-rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int *nlp_bits_ret)
+static void
+bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
-    VALUE result;
     const unsigned char *buf = words;
-    size_t num_bdigits;
-    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
 
     BDIGIT *dp;
     BDIGIT *de;
@@ -1230,29 +1242,8 @@ rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, 
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
-        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
-#ifdef DEBUG_INTEGER_PACK
-        {
-            int nlp_bits1;
-            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
-            assert(num_bdigits == num_bdigits1);
-            assert(*nlp_bits_ret == nlp_bits1);
-        }
-#endif
-    }
-    else {
-        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
-    }
-    if (num_bdigits == 0) {
-        return LONG2FIX(0);
-    }
-    if (LONG_MAX < num_bdigits)
-        rb_raise(rb_eArgError, "too big to unpack as an integer");
-    result = bignew((long)num_bdigits, 0 <= sign);
-
-    dp = BDIGITS(result);
-    de = dp + RBIGNUM_LEN(result);
+    dp = bdigits;
+    de = dp + num_bdigits;
 
     integer_pack_loop_setup(numwords, wordsize, nails, flags,
         &word_num_fullbytes, &word_num_partialbits,
@@ -1290,9 +1281,40 @@ rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, 
         *dp++ = (BDIGIT)dd;
     while (dp < de)
         *dp++ = 0;
+#undef PUSH_BITS
+}
+
+static VALUE
+rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int *nlp_bits_ret)
+{
+    VALUE result;
+    size_t num_bdigits;
+    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+
+    if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
+        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
+#ifdef DEBUG_INTEGER_PACK
+        {
+            int nlp_bits1;
+            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
+            assert(num_bdigits == num_bdigits1);
+            assert(*nlp_bits_ret == nlp_bits1);
+        }
+#endif
+    }
+    else {
+        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
+    }
+    if (num_bdigits == 0) {
+        return LONG2FIX(0);
+    }
+    if (LONG_MAX < num_bdigits)
+        rb_raise(rb_eArgError, "too big to unpack as an integer");
+    result = bignew((long)num_bdigits, 0 <= sign);
+
+    bary_unpack(BDIGITS(result), num_bdigits, words, numwords, wordsize, nails, flags);
 
     return result;
-#undef PUSH_BITS
 }
 
 /*
