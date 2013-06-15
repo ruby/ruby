@@ -1,3 +1,13 @@
+Sun Jun 16 02:04:40 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_prof_timer_stop): Merge function codes of GC_PROFILE_MORE_DETAIL and !GC_PROFILE_MORE_DETAIL.
+	* gc.c (gc_prof_mark_timer_start): Ditto. 
+	* gc.c (gc_prof_mark_timer_stop): Ditto.
+	* gc.c (gc_prof_sweep_slot_timer_start): Ditto.
+	* gc.c (gc_prof_sweep_slot_timer_stop): Ditto.
+	* gc.c (gc_prof_set_malloc_info): Ditto.
+	* gc.c (gc_prof_set_heap_info): Ditto.
+
 Sat Jun 15 23:50:24 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_sub): New function.
