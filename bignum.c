@@ -50,6 +50,7 @@ static VALUE big_three = Qnil;
 		     (BDIGITS(x)[0] == 0 && \
 		      (RBIGNUM_LEN(x) == 1 || bigzero_p(x))))
 
+#define BIGDIVREM_EXTRA_WORDS 2
 #define roomof(n, m) ((int)(((n)+(m)-1) / (m)))
 #define bdigit_roomof(n) roomof(n, sizeof(BDIGIT))
 #define BARY_ARGS(ary) ary, numberof(ary)
@@ -60,6 +61,7 @@ static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int 
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static void bary_divmod(BDIGIT *qds, long nq, BDIGIT *rds, long nr, BDIGIT *xds, long nx, BDIGIT *yds, long ny);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -601,7 +603,10 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
     BDIGIT nlz_bits_in_msbyte_bary[1] = { nlz_bits_in_msbyte };
-    VALUE v;
+    BDIGIT word_numbits_bary[bdigit_roomof(sizeof(word_numbits))];
+    BDIGIT div_bary[numberof(val_numbits_bary) + BIGDIVREM_EXTRA_WORDS];
+    BDIGIT mod_bary[numberof(word_numbits_bary)];
+    VALUE vd, vm;
 
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
@@ -615,19 +620,25 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     bary_mul(BARY_ARGS(val_numbits_bary), BARY_ARGS(numbytes_bary), BARY_ARGS(char_bit));
     if (nlz_bits_in_msbyte)
         bary_sub(BARY_ARGS(val_numbits_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(nlz_bits_in_msbyte_bary));
+    bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER);
+    bary_divmod(BARY_ARGS(div_bary), BARY_ARGS(mod_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(word_numbits_bary));
 
-    v = rb_integer_unpack(val_numbits_bary, numberof(val_numbits_bary), sizeof(BDIGIT), 0,
+    vd = rb_integer_unpack(div_bary, numberof(div_bary), sizeof(BDIGIT), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     val_numbits = SIZET2NUM(numbytes);
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
     if (nlz_bits_in_msbyte)
         val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
-    assert(rb_equal(val_numbits, v));
     word_numbits_v = SIZET2NUM(word_numbits);
     div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
     div = RARRAY_AREF(div_mod, 0);
     mod = RARRAY_AREF(div_mod, 1);
+    assert(rb_equal(div, vd));
+    assert(rb_equal(mod, vm));
     if (mod == LONG2FIX(0)) {
         nlz_bits = 0;
     }
@@ -3831,67 +3842,47 @@ rb_big_stop(void *ptr)
     bds->stop = Qtrue;
 }
 
-static VALUE
-bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+static inline int
+bigdivrem_num_extra_words(long nx, long ny)
+{
+    int ret = nx==ny ? 2 : 1;
+    assert(ret <= BIGDIVREM_EXTRA_WORDS);
+    return ret;
+}
+
+static BDIGIT
+bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y)
+{
+    long i;
+    BDIGIT_DBL t2;
+    t2 = 0;
+    i = nx;
+    while (i--) {
+        t2 = BIGUP(t2) + xds[i];
+        qds[i] = (BDIGIT)(t2 / y);
+        t2 %= y;
+    }
+    return (BDIGIT)t2;
+}
+
+static void
+bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long ny, int needs_mod)
 {
     struct big_div_struct bds;
-    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y), nz;
-    long i, j;
-    VALUE z, zz;
-    VALUE tmpy = 0, tmpz = 0;
-    BDIGIT *xds, *yds, *zds, *tds, *qds;
-    BDIGIT_DBL t2;
-    BDIGIT dd, q;
-
-    yds = BDIGITS(y);
-    while (0 < ny && !yds[ny-1]) ny--;
-    if (ny == 0)
-        rb_num_zerodiv();
-
-    xds = BDIGITS(x);
-    while (0 < nx && !xds[nx-1]) nx--;
-
-    if (nx < ny || (nx == ny && xds[nx - 1] < yds[ny - 1])) {
-	if (divp) *divp = rb_int2big(0);
-	if (modp) *modp = x;
-	return Qnil;
-    }
-    if (ny == 1) {
-	dd = yds[0];
-	z = bignew(nx, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-	zds = BDIGITS(z);
-	t2 = 0; i = nx;
-	while (i--) {
-	    t2 = BIGUP(t2) + xds[i];
-	    zds[i] = (BDIGIT)(t2 / dd);
-	    t2 %= dd;
-	}
-	if (modp) {
-	    *modp = rb_uint2big((VALUE)t2);
-	    RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
-	}
-	if (divp) *divp = z;
-	return Qnil;
-    }
-
-    nz = nx==ny ? nx+2 : nx+1;
-    zds = ALLOCV_N(BDIGIT, tmpz, nz);
-    if (nx==ny) zds[nx+1] = 0;
+    BDIGIT q;
+    int shift;
 
     q = yds[ny-1];
-    dd = nlz(q);
-    q <<= dd;
-    if (dd) {
-        tds = ALLOCV_N(BDIGIT, tmpy, ny);
-        bdigs_small_lshift(tds, yds, ny, dd);
-	yds = tds;
-        zds[nx] = bdigs_small_lshift(zds, xds, nx, dd);
+    shift = nlz(q);
+    if (shift) {
+        bdigs_small_lshift(yds, yds, ny, shift);
+        zds[nx] = bdigs_small_lshift(zds, xds, nx, shift);
     }
     else {
+        MEMCPY(zds, xds, BDIGIT, nx);
 	zds[nx] = 0;
-	j = nx;
-	while (j--) zds[j] = xds[j];
     }
+    if (nx+1 < nz) zds[nx+1] = 0;
 
     bds.nx = nx;
     bds.ny = ny;
@@ -3914,20 +3905,136 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	bigdivrem1(&bds);
     }
 
+    if (needs_mod && shift) {
+        bdigs_small_rshift(zds, zds, ny, shift, 0);
+    }
+}
+
+static void
+bary_divmod(BDIGIT *qds, long nq, BDIGIT *rds, long nr, BDIGIT *xds, long nx, BDIGIT *yds, long ny)
+{
+    assert(nx <= nq);
+    assert(ny <= nr);
+
+    while (0 < ny && !yds[ny-1]) ny--;
+    if (ny == 0)
+        rb_num_zerodiv();
+
+    while (0 < nx && !xds[nx-1]) nx--;
+    if (nx == 0) {
+        MEMZERO(qds, BDIGIT, nq);
+        MEMZERO(rds, BDIGIT, nr);
+        return;
+    }
+
+    if (ny == 1) {
+        MEMCPY(qds, xds, BDIGIT, nx);
+        MEMZERO(qds+nx, BDIGIT, nq-nx);
+        rds[0] = bigdivrem_single(qds, xds, nx, yds[0]);
+        MEMZERO(rds+1, BDIGIT, nr-1);
+    }
+    else {
+        int extra_words;
+        long j;
+        long nz;
+        BDIGIT *zds;
+        VALUE tmpz = 0;
+        BDIGIT *tds;
+
+        extra_words = bigdivrem_num_extra_words(nx, ny);
+        nz = nx + extra_words;
+        if (nx + extra_words <= nq)
+            zds = qds;
+        else
+            zds = ALLOCV_N(BDIGIT, tmpz, nx + extra_words);
+        MEMCPY(zds, xds, BDIGIT, nx);
+        MEMZERO(zds+nx, BDIGIT, nz-nx);
+
+        if ((yds[ny-1] >> (BITSPERDIG-1)) & 1) {
+            /* digits_bigdivrem_multi_sub will not modify y.
+             * So use yds directly.  */
+            tds = yds;
+        }
+        else {
+            /* digits_bigdivrem_multi_sub will modify y.
+             * So use rds as a temporary buffer.  */
+            MEMCPY(rds, yds, BDIGIT, ny);
+            tds = rds;
+        }
+
+        bigdivrem_normal(zds, nz, xds, nx, tds, ny, 1);
+
+        /* copy remainder */
+        MEMCPY(rds, zds, BDIGIT, ny);
+        MEMZERO(rds+ny, BDIGIT, nr-ny);
+
+        /* move quotient */
+        j = nz - ny;
+        MEMMOVE(qds, zds+ny, BDIGIT, j);
+        MEMZERO(qds+j, BDIGIT, nq-j);
+
+        if (tmpz)
+            ALLOCV_END(tmpz);
+    }
+}
+
+static VALUE
+bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+{
+    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y), nz;
+    long j;
+    VALUE z, zz;
+    VALUE tmpy = 0, tmpz = 0;
+    BDIGIT *xds, *yds, *zds, *tds;
+    BDIGIT_DBL t2;
+    BDIGIT dd;
+
+    yds = BDIGITS(y);
+    while (0 < ny && !yds[ny-1]) ny--;
+    if (ny == 0)
+        rb_num_zerodiv();
+
+    xds = BDIGITS(x);
+    while (0 < nx && !xds[nx-1]) nx--;
+
+    if (nx < ny || (nx == ny && xds[nx - 1] < yds[ny - 1])) {
+	if (divp) *divp = rb_int2big(0);
+	if (modp) *modp = x;
+	return Qnil;
+    }
+    if (ny == 1) {
+	dd = yds[0];
+	z = bignew(nx, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+	zds = BDIGITS(z);
+        t2 = bigdivrem_single(zds, xds, nx, dd);
+	if (modp) {
+	    *modp = rb_uint2big((VALUE)t2);
+	    RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
+	}
+	if (divp) *divp = z;
+	return Qnil;
+    }
+
+    if (((yds[ny-1] >> (BITSPERDIG-1)) & 1) == 0) {
+        /* Make yds modifiable. */
+        tds = ALLOCV_N(BDIGIT, tmpy, ny);
+        MEMCPY(tds, yds, BDIGIT, ny);
+        yds = tds;
+    }
+
+    nz = nx + bigdivrem_num_extra_words(nx, ny);
+    zds = ALLOCV_N(BDIGIT, tmpz, nz);
+    bigdivrem_normal(zds, nz, xds, nx, yds, ny, modp != NULL);
+
     if (divp) {			/* move quotient down in z */
         j = nz - ny;
 	while (0 < j && !zds[j-1+ny])
             j--;
 	*divp = zz = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-	qds = BDIGITS(zz);
-	for (i = 0;i < j;i++) qds[i] = zds[i+ny];
+        MEMCPY(BDIGITS(zz), zds+ny, BDIGIT, j);
     }
     if (modp) {			/* normalize remainder */
-	while (ny > 1 && !zds[ny-1]) --ny;
-	if (dd) {
-            bdigs_small_rshift(zds, zds, ny, dd, 0);
-	}
-	if (!zds[ny-1]) ny--;
+	while (ny > 0 && !zds[ny-1]) --ny;
 	*modp = zz = bignew(ny, RBIGNUM_SIGN(x));
 	MEMCPY(BDIGITS(zz), zds, BDIGIT, ny);
     }

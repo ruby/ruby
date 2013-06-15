@@ -1,9 +1,18 @@
+Sun Jun 16 08:43:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_divmod): New function.
+	  (absint_numwords_generic): Use bary_divmod.
+	  (bigdivrem_num_extra_words): Extracted from bigdivrem.
+	  (bigdivrem_single): Ditto.
+	  (bigdivrem_normal): Ditto.
+	  (BIGDIVREM_EXTRA_WORDS): Defined.
+
 Sun Jun 16 05:51:51 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* gc.c: Fixup around GC by MALLOC. 
-	  Add allocate size to malloc_increase before GC 
+	* gc.c: Fixup around GC by MALLOC.
+	  Add allocate size to malloc_increase before GC
 	  for updating limit in after_gc_sweep.
-	  Reset malloc_increase into garbage_collect() 
+	  Reset malloc_increase into garbage_collect()
 	  for preventing GC again soon.
 
 Sun Jun 16 05:15:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
@@ -14,7 +23,7 @@ Sun Jun 16 05:15:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
 Sun Jun 16 02:04:40 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_prof_timer_stop): Merge function codes of GC_PROFILE_MORE_DETAIL and !GC_PROFILE_MORE_DETAIL.
-	* gc.c (gc_prof_mark_timer_start): Ditto. 
+	* gc.c (gc_prof_mark_timer_start): Ditto.
 	* gc.c (gc_prof_mark_timer_stop): Ditto.
 	* gc.c (gc_prof_sweep_slot_timer_start): Ditto.
 	* gc.c (gc_prof_sweep_slot_timer_stop): Ditto.
@@ -102,7 +111,7 @@ Fri Jun 14 18:18:07 2013  Koichi Sasada  <ko1@atdot.net>
 	* constant.h: constify rb_const_entry_t::value and file to detect
 	  assignment.
 
-	* variable.c, internal.h (rb_st_insert_id_and_value, rb_st_copy): 
+	* variable.c, internal.h (rb_st_insert_id_and_value, rb_st_copy):
 	  added. update table with write barrier.
 
 	* method.h: constify some variables to detect assignment.
