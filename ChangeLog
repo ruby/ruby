@@ -1,3 +1,7 @@
+Sat Jun 15 10:19:06 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Update authors
+
 Sat Jun 15 10:02:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bdigs_small_rshift): Extracted from big_rshift.
