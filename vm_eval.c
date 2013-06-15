@@ -1164,7 +1164,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     int state;
     VALUE result = Qundef;
     VALUE envval;
-    VALUE absolute_path = Qnil;
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
@@ -1183,6 +1182,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	rb_binding_t *bind = 0;
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
+	VALUE absolute_path = Qnil;
 
 	if (scope != Qnil) {
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
