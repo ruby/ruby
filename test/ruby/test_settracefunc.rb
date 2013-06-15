@@ -1007,4 +1007,17 @@ class TestSetTraceFunc < Test::Unit::TestCase
       set_trace_func(nil)
     end
   end
+
+  def test_tracepoint_b_return_with_next
+    n = 0
+    TracePoint.new(:b_return){
+      n += 1
+    }.enable{
+      3.times{
+        next
+      } # 3 times b_retun
+    }   # 1 time b_return
+
+    assert_equal 4, n
+  end
 end
