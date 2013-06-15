@@ -1,3 +1,9 @@
+Sat Jun 15 19:35:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_bytes): Make it static.
+	  (absint_numwords_small): Ditto.
+	  (absint_numwords_generic): Ditto.
+
 Sat Jun 15 17:14:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigmul1_normal): Shrink the result Bignum length.

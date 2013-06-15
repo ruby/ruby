@@ -518,7 +518,7 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
     return (de - dp) * SIZEOF_BDIGITS - num_leading_zeros / CHAR_BIT;
 }
 
-size_t
+static size_t
 absint_numwords_bytes(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
     /*
@@ -567,7 +567,7 @@ absint_numwords_bytes(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbi
     return numwords;
 }
 
-size_t
+static size_t
 absint_numwords_small(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
     size_t val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte;
@@ -581,7 +581,7 @@ absint_numwords_small(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbi
     return numwords;
 }
 
-size_t
+static size_t
 absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
     VALUE val_numbits, word_numbits_v;
