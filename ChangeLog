@@ -1,3 +1,18 @@
+Sun Jun 16 18:41:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (INTEGER_PACK_2COMP): Defined.
+	  (rb_integer_pack_2comp): Removed.
+
+	* bignum.c (bary_pack): Support INTEGER_PACK_2COMP.
+	  (rb_integer_pack): Invoke bary_pack directly.
+	  (rb_integer_pack_2comp): Removed.
+	  (rb_integer_pack_internal): Ditto.
+	  (absint_numwords_generic): Follow the above change.
+
+	* pack.c (pack_pack): Ditto.
+
+	* sprintf.c (rb_str_format): Ditto.
+
 Sun Jun 16 17:48:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (absint_numwords_generic): rb_funcall invocations removed.

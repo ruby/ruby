@@ -799,8 +799,9 @@ pack_pack(VALUE ary, VALUE fmt)
                     char intbuf[MAX_INTEGER_PACK_SIZE];
 
                     from = NEXTFROM;
-                    rb_integer_pack_2comp(from, intbuf, integer_size, 1, 0,
-                        bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN);
+                    rb_integer_pack(from, intbuf, integer_size, 1, 0,
+                        INTEGER_PACK_2COMP |
+                        (bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN));
                     rb_str_buf_cat(res, intbuf, integer_size);
                 }
                 break;
