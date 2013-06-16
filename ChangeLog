@@ -1,3 +1,12 @@
+Sun Jun 16 23:14:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BARY_ADD): New macro.
+	  (BARY_SUB): Ditto.
+	  (BARY_MUL): Ditto.
+	  (BARY_DIVMOD): Ditto.
+	  (BARY_ZERO_P): Ditto.
+	  (absint_numwords_generic): Use these macros.
+
 Sun Jun 16 21:41:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_2comp): Extracted from get2comp.

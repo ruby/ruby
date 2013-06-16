@@ -55,6 +55,12 @@ static VALUE big_three = Qnil;
 #define bdigit_roomof(n) roomof(n, sizeof(BDIGIT))
 #define BARY_ARGS(ary) ary, numberof(ary)
 
+#define BARY_ADD(z, x, y) bary_add(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_SUB(z, x, y) bary_sub(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_MUL(z, x, y) bary_mul(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_DIVMOD(q, r, x, y) bary_divmod(BARY_ARGS(q), BARY_ARGS(r), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
+
 static int nlz(BDIGIT x);
 static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
@@ -639,17 +645,17 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
 
     bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
-    bary_mul(BARY_ARGS(val_numbits_bary), BARY_ARGS(numbytes_bary), BARY_ARGS(char_bit));
+    BARY_MUL(val_numbits_bary, numbytes_bary, char_bit);
     if (nlz_bits_in_msbyte)
-        bary_sub(BARY_ARGS(val_numbits_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(nlz_bits_in_msbyte_bary));
+        BARY_SUB(val_numbits_bary, val_numbits_bary, nlz_bits_in_msbyte_bary);
     bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
-    bary_divmod(BARY_ARGS(div_bary), BARY_ARGS(mod_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(word_numbits_bary));
-    if (bary_zero_p(BARY_ARGS(mod_bary))) {
+    BARY_DIVMOD(div_bary, mod_bary, val_numbits_bary, word_numbits_bary);
+    if (BARY_ZERO_P(mod_bary)) {
         nlz_bits = 0;
     }
     else {
-        bary_add(BARY_ARGS(div_bary), BARY_ARGS(div_bary), BARY_ARGS(one));
+        BARY_ADD(div_bary, div_bary, one);
         bary_pack(+1, BARY_ARGS(mod_bary), &mod, 1, sizeof(mod), 0,
             INTEGER_PACK_NATIVE_BYTE_ORDER);
         nlz_bits = word_numbits - mod;
