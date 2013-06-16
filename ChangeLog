@@ -1,3 +1,8 @@
+Sun Jun 16 11:01:57 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS (XMLRPC::Client#http): Add.
+	  [ruby-core:55197] [Feature #8461]
+
 Sun Jun 16 10:38:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_add): New function.

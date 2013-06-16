@@ -118,6 +118,14 @@ with all sufficient information, see the ChangeLog file.
 * CGI::Util
   * All class methods modulized.
 
+* XMLRPC::Client
+  * New methods:
+    * XMLRPC::Client#http. It returns Net::HTTP for the client. Normally,
+      it is not needed. It is useful when you want to change minor HTTP client
+      options. You can change major HTTP client options by XMLRPC::Client
+      methods. You should use XMLRPC::Client methods for changing major
+      HTTP client options instead of XMLRPC::Client#http.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * URI
