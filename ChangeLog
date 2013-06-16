@@ -1,3 +1,7 @@
+Sun Jun 16 17:48:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_generic): rb_funcall invocations removed.
+
 Sun Jun 16 16:04:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/config_files.rb: use URI.read to allow it runs with Ruby 1.8.5.

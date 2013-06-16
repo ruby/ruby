@@ -600,12 +600,6 @@ absint_numwords_small(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbi
 static size_t
 absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
-    VALUE val_numbits, word_numbits_v;
-    VALUE div_mod, div, mod;
-    int sign;
-    size_t numwords;
-    size_t nlz_bits;
-
     BDIGIT numbytes_bary[bdigit_roomof(sizeof(numbytes))];
     BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
@@ -614,11 +608,10 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     BDIGIT div_bary[numberof(val_numbits_bary) + BIGDIVREM_EXTRA_WORDS];
     BDIGIT mod_bary[numberof(word_numbits_bary)];
     BDIGIT one[1] = { 1 };
-    size_t nlz_bits0;
-    size_t mod0;
-    int sign0;
-    size_t numwords0;
-    VALUE vm;
+    size_t nlz_bits;
+    size_t mod;
+    int sign;
+    size_t numwords;
 
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
@@ -636,42 +629,17 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         INTEGER_PACK_NATIVE_BYTE_ORDER);
     bary_divmod(BARY_ARGS(div_bary), BARY_ARGS(mod_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(word_numbits_bary));
     if (bary_zero_p(BARY_ARGS(mod_bary))) {
-        nlz_bits0 = 0;
-        vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
-                INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-    }
-    else {
-        bary_add(BARY_ARGS(div_bary), BARY_ARGS(div_bary), BARY_ARGS(one));
-        bary_pack(+1, BARY_ARGS(mod_bary), &mod0, 1, sizeof(mod0), 0,
-            INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
-        vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
-                INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-        assert(NUM2SIZET(vm) == mod0);
-        nlz_bits0 = word_numbits - NUM2SIZET(vm);
-    }
-    sign0 = bary_pack(+1, BARY_ARGS(div_bary), &numwords0, 1, sizeof(numwords), 0,
-        INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
-
-    val_numbits = SIZET2NUM(numbytes);
-    val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
-    if (nlz_bits_in_msbyte)
-        val_numbits = rb_funcall(val_numbits, '-', 1, LONG2FIX(nlz_bits_in_msbyte));
-    word_numbits_v = SIZET2NUM(word_numbits);
-    div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
-    div = RARRAY_AREF(div_mod, 0);
-    mod = RARRAY_AREF(div_mod, 1);
-    if (mod == LONG2FIX(0)) {
         nlz_bits = 0;
     }
     else {
-        div = rb_funcall(div, '+', 1, LONG2FIX(1));
-        nlz_bits = word_numbits - NUM2SIZET(mod);
+        bary_add(BARY_ARGS(div_bary), BARY_ARGS(div_bary), BARY_ARGS(one));
+        bary_pack(+1, BARY_ARGS(mod_bary), &mod, 1, sizeof(mod), 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
+        nlz_bits = word_numbits - mod;
     }
-    sign = rb_integer_pack(div, &numwords, 1, sizeof(numwords), 0,
-        INTEGER_PACK_NATIVE_BYTE_ORDER);
-    assert(nlz_bits == nlz_bits0);
-    assert(sign == sign0);
-    assert(numwords == numwords0);
+    sign = bary_pack(+1, BARY_ARGS(div_bary), &numwords, 1, sizeof(numwords), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
+
     if (sign == 2)
         return (size_t)-1;
     *nlz_bits_ret = nlz_bits;
