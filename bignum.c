@@ -62,8 +62,8 @@ static VALUE big_three = Qnil;
 #define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
 
 static int nlz(BDIGIT x);
-static BDIGIT bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
-static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
+static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
+static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
@@ -3850,8 +3850,8 @@ bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long n
     q = yds[ny-1];
     shift = nlz(q);
     if (shift) {
-        bdigs_small_lshift(yds, yds, ny, shift);
-        zds[nx] = bdigs_small_lshift(zds, xds, nx, shift);
+        bary_small_lshift(yds, yds, ny, shift);
+        zds[nx] = bary_small_lshift(zds, xds, nx, shift);
     }
     else {
         MEMCPY(zds, xds, BDIGIT, nx);
@@ -3881,7 +3881,7 @@ bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long n
     }
 
     if (needs_mod && shift) {
-        bdigs_small_rshift(zds, zds, ny, shift, 0);
+        bary_small_rshift(zds, zds, ny, shift, 0);
     }
 }
 
@@ -4703,7 +4703,7 @@ rb_big_lshift(VALUE x, VALUE y)
 }
 
 static BDIGIT
-bdigs_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
+bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
 {
     long i;
     BDIGIT_DBL num = 0;
@@ -4732,7 +4732,7 @@ big_lshift(VALUE x, unsigned long shift)
 	*zds++ = 0;
     }
     xds = BDIGITS(x);
-    zds[len] = bdigs_small_lshift(zds, xds, len, s2);
+    zds[len] = bary_small_lshift(zds, xds, len, s2);
     return z;
 }
 
@@ -4777,7 +4777,7 @@ rb_big_rshift(VALUE x, VALUE y)
 }
 
 static void
-bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
+bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
 {
     BDIGIT_DBL num = 0;
     BDIGIT x;
@@ -4821,7 +4821,7 @@ big_rshift(VALUE x, unsigned long shift)
     }
     z = bignew(j, RBIGNUM_SIGN(x));
     zds = BDIGITS(z);
-    bdigs_small_rshift(zds, xds+s1, j, s2, !RBIGNUM_SIGN(x));
+    bary_small_rshift(zds, xds+s1, j, s2, !RBIGNUM_SIGN(x));
     if (!RBIGNUM_SIGN(x)) {
 	get2comp(z);
     }

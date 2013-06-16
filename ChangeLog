@@ -1,3 +1,8 @@
+Mon Jun 17 07:56:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_small_lshift): Renamed from bdigs_small_lshift.
+	  (bary_small_rshift): Renamed from bdigs_small_rshift.
+
 Mon Jun 17 07:38:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (absint_numwords_bytes): Removed.
