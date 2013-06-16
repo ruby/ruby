@@ -50,7 +50,7 @@ module MiniTest # :nodoc:
     #   @mock.uses_any_string("foo") # => true
     #   @mock.verify  # => true
     #
-    #   @mock.expect(:uses_one_string, true, ["foo"]
+    #   @mock.expect(:uses_one_string, true, ["foo"])
     #   @mock.uses_one_string("bar") # => true
     #   @mock.verify  # => raises MockExpectationError
 
