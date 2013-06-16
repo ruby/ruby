@@ -1,3 +1,11 @@
+Sun Jun 16 10:38:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_add): New function.
+	  (bary_zero_p): Extracted from bigzero_p.
+	  (absint_numwords_generic): Use bary_zero_p and bary_add.
+	  (bary_mul): Fix an argument for bary_mul_single.
+	  (bary_divmod): Use size_t for arguments.
+
 Sun Jun 16 08:55:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Use a BDIGIT variable to store the return

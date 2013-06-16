@@ -61,7 +61,8 @@ static void bdigs_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int 
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
-static void bary_divmod(BDIGIT *qds, long nq, BDIGIT *rds, long nr, BDIGIT *xds, long nx, BDIGIT *yds, long ny);
+static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
+static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -89,15 +90,20 @@ rb_big_dump(VALUE x)
 #endif
 
 static int
+bary_zero_p(BDIGIT *xds, size_t nx)
+{
+    if (nx == 0)
+        return 1;
+    do {
+	if (xds[--nx]) return 0;
+    } while (nx);
+    return 1;
+}
+
+static int
 bigzero_p(VALUE x)
 {
-    long i;
-    BDIGIT *ds = BDIGITS(x);
-
-    for (i = RBIGNUM_LEN(x) - 1; 0 <= i; i--) {
-	if (ds[i]) return 0;
-    }
-    return 1;
+    return bary_zero_p(BDIGITS(x), RBIGNUM_LEN(x));
 }
 
 int
@@ -606,6 +612,8 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     BDIGIT word_numbits_bary[bdigit_roomof(sizeof(word_numbits))];
     BDIGIT div_bary[numberof(val_numbits_bary) + BIGDIVREM_EXTRA_WORDS];
     BDIGIT mod_bary[numberof(word_numbits_bary)];
+    BDIGIT one[1] = { 1 };
+    size_t nlz_bits0;
     VALUE vd, vm;
 
     /*
@@ -623,10 +631,19 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
     bary_divmod(BARY_ARGS(div_bary), BARY_ARGS(mod_bary), BARY_ARGS(val_numbits_bary), BARY_ARGS(word_numbits_bary));
+    if (bary_zero_p(BARY_ARGS(mod_bary))) {
+        nlz_bits0 = 0;
+        vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
+                INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    }
+    else {
+        bary_add(BARY_ARGS(div_bary), BARY_ARGS(div_bary), BARY_ARGS(one));
+        vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
+                INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        nlz_bits0 = word_numbits - NUM2SIZET(vm);
+    }
 
     vd = rb_integer_unpack(div_bary, numberof(div_bary), sizeof(BDIGIT), 0,
-            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-    vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     val_numbits = SIZET2NUM(numbytes);
@@ -637,8 +654,6 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     div_mod = rb_funcall(val_numbits, rb_intern("divmod"), 1, word_numbits_v);
     div = RARRAY_AREF(div_mod, 0);
     mod = RARRAY_AREF(div_mod, 1);
-    assert(rb_equal(div, vd));
-    assert(rb_equal(mod, vm));
     if (mod == LONG2FIX(0)) {
         nlz_bits = 0;
     }
@@ -646,6 +661,9 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         div = rb_funcall(div, '+', 1, LONG2FIX(1));
         nlz_bits = word_numbits - NUM2SIZET(mod);
     }
+    assert(rb_equal(div, vd));
+    assert(rb_equal(mod, vm));
+    assert(nlz_bits == nlz_bits0);
     sign = rb_integer_pack(div, &numwords, 1, sizeof(numwords), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign == 2)
@@ -3061,6 +3079,12 @@ bigadd_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
     }
 }
 
+static void
+bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
+{
+    bigadd_core(xds, xn, yds, yn, zds, zn);
+}
+
 static VALUE
 bigadd(VALUE x, VALUE y, int sign)
 {
@@ -3248,7 +3272,7 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
     size_t l;
     if (xl == 1 && yl == 1) {
         l = 2;
-        bary_mul_single(zds, zl, xds[0], yds[1]);
+        bary_mul_single(zds, zl, xds[0], yds[0]);
     }
     else {
         l = xl + yl;
@@ -3911,7 +3935,7 @@ bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long n
 }
 
 static void
-bary_divmod(BDIGIT *qds, long nq, BDIGIT *rds, long nr, BDIGIT *xds, long nx, BDIGIT *yds, long ny)
+bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny)
 {
     assert(nx <= nq);
     assert(ny <= nr);
