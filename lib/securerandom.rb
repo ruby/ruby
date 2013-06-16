@@ -62,7 +62,7 @@ module SecureRandom
       return OpenSSL::Random.random_bytes(n)
     end
 
-    unless defined?(@has_urandom) || @has_urandom
+    if !defined?(@has_urandom) || @has_urandom
       flags = File::RDONLY
       flags |= File::NONBLOCK if defined? File::NONBLOCK
       flags |= File::NOCTTY if defined? File::NOCTTY
