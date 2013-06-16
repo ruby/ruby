@@ -1731,9 +1731,8 @@ pack_unpack(VALUE str, VALUE fmt)
                     int flags = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
                     VALUE val;
                     if (signed_p)
-                        val = rb_integer_unpack_2comp(s, integer_size, 1, 0, flags);
-                    else
-                        val = rb_integer_unpack(s, integer_size, 1, 0, flags);
+                        flags |= INTEGER_PACK_2COMP;
+                    val = rb_integer_unpack(s, integer_size, 1, 0, flags);
                     UNPACK_PUSH(val);
                     s += integer_size;
                 }

@@ -451,7 +451,6 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 /* bignum.c */
 int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-VALUE rb_integer_unpack_2comp(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

@@ -1,3 +1,20 @@
+Sun Jun 16 21:41:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_2comp): Extracted from get2comp.
+	  (integer_unpack_num_bdigits): Extracted from
+	  rb_integer_unpack_internal.
+	  (bary_unpack_internal): Renamed from bary_unpack and support
+	  INTEGER_PACK_2COMP.
+	  (bary_unpack): New function to validate arguments and invoke
+	  bary_unpack_internal.
+	  (rb_integer_unpack_internal): Removed.
+	  (rb_integer_unpack): Invoke bary_unpack_internal.
+	  (rb_integer_unpack_2comp): Removed.
+
+	* internal.h (rb_integer_unpack_2comp): Removed.
+
+	* pack.c: Follow the above change.
+
 Sun Jun 16 18:41:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (INTEGER_PACK_2COMP): Defined.

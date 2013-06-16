@@ -64,6 +64,7 @@ static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+static BDIGIT bary_2comp(BDIGIT *ds, size_t n);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -216,6 +217,22 @@ rb_big_clone(VALUE x)
 
     MEMCPY(BDIGITS(z), BDIGITS(x), BDIGIT, len);
     return z;
+}
+
+static BDIGIT
+bary_2comp(BDIGIT *ds, size_t n)
+{
+    size_t i = n;
+    BDIGIT_DBL num;
+    if (!n) return 1;
+    while (i--) ds[i] = ~ds[i];
+    i = 0; num = 1;
+    do {
+	num += ds[i];
+	ds[i++] = BIGLO(num);
+	num = BIGDN(num);
+    } while (i < n);
+    return (BDIGIT)num;
 }
 
 /* modify a bignum by 2's complement */
@@ -1228,6 +1245,28 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
     }
 }
 
+static size_t
+integer_unpack_num_bdigits(size_t numwords, size_t wordsize, size_t nails, int *nlp_bits_ret)
+{
+    size_t num_bdigits;
+
+    if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
+        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
+#ifdef DEBUG_INTEGER_PACK
+        {
+            int nlp_bits1;
+            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
+            assert(num_bdigits == num_bdigits1);
+            assert(*nlp_bits_ret == nlp_bits1);
+        }
+#endif
+    }
+    else {
+        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
+    }
+    return num_bdigits;
+}
+
 static inline void
 integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in_dd_p, BDIGIT **dpp)
 {
@@ -1240,9 +1279,11 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
     }
 }
 
-static void
-bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
+static int
+bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int nlp_bits)
 {
+    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+
     const unsigned char *buf = words;
 
     BDIGIT *dp;
@@ -1260,80 +1301,91 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
     BDIGIT_DBL dd;
     int numbits_in_dd;
 
-    dp = bdigits;
-    de = dp + num_bdigits;
+    if (num_bdigits) {
+        dp = bdigits;
+        de = dp + num_bdigits;
 
-    integer_pack_loop_setup(numwords, wordsize, nails, flags,
-        &word_num_fullbytes, &word_num_partialbits,
-        &word_start, &word_step, &word_last, &byte_start, &byte_step);
+        integer_pack_loop_setup(numwords, wordsize, nails, flags,
+            &word_num_fullbytes, &word_num_partialbits,
+            &word_start, &word_step, &word_last, &byte_start, &byte_step);
 
-    wordp = buf + word_start;
-    last_wordp = buf + word_last;
+        wordp = buf + word_start;
+        last_wordp = buf + word_last;
 
-    dd = 0;
-    numbits_in_dd = 0;
+        dd = 0;
+        numbits_in_dd = 0;
 
 #define PUSH_BITS(data, numbits) \
-    integer_unpack_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
+        integer_unpack_push_bits(data, numbits, &dd, &numbits_in_dd, &dp)
 
-    while (1) {
-        size_t index_in_word = 0;
-        const unsigned char *bytep = wordp + byte_start;
-        while (index_in_word < word_num_fullbytes) {
-            PUSH_BITS(*bytep, CHAR_BIT);
-            bytep += byte_step;
-            index_in_word++;
+        while (1) {
+            size_t index_in_word = 0;
+            const unsigned char *bytep = wordp + byte_start;
+            while (index_in_word < word_num_fullbytes) {
+                PUSH_BITS(*bytep, CHAR_BIT);
+                bytep += byte_step;
+                index_in_word++;
+            }
+            if (word_num_partialbits) {
+                PUSH_BITS(*bytep & ((1 << word_num_partialbits) - 1), word_num_partialbits);
+                bytep += byte_step;
+                index_in_word++;
+            }
+
+            if (wordp == last_wordp)
+                break;
+
+            wordp += word_step;
         }
-        if (word_num_partialbits) {
-            PUSH_BITS(*bytep & ((1 << word_num_partialbits) - 1), word_num_partialbits);
-            bytep += byte_step;
-            index_in_word++;
-        }
-
-        if (wordp == last_wordp)
-            break;
-
-        wordp += word_step;
-    }
-    if (dd)
-        *dp++ = (BDIGIT)dd;
-    assert(dp <= de);
-    while (dp < de)
-        *dp++ = 0;
+        if (dd)
+            *dp++ = (BDIGIT)dd;
+        assert(dp <= de);
+        while (dp < de)
+            *dp++ = 0;
 #undef PUSH_BITS
+    }
+
+    if (flags & INTEGER_PACK_2COMP) {
+        if (num_bdigits == 0) {
+            if (flags & INTEGER_PACK_NEGATIVE)
+                sign = -1;
+            else
+                sign = 0;
+        }
+        else if ((flags & INTEGER_PACK_NEGATIVE) ||
+                 (num_bdigits != 0 &&
+                  (bdigits[num_bdigits-1] >> (BITSPERDIG - nlp_bits - 1)))) {
+            if (nlp_bits)
+                bdigits[num_bdigits-1] |= (~(BDIGIT)0) << (BITSPERDIG - nlp_bits);
+            bary_2comp(bdigits, num_bdigits);
+            sign = -1;
+        }
+    }
+
+    return sign;
 }
 
-static VALUE
-rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int *nlp_bits_ret)
+static void
+bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
-    VALUE result;
-    size_t num_bdigits;
-    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+    size_t num_bdigits0;
+    int nlp_bits;
 
-    if (numwords <= (SIZE_MAX - (BITSPERDIG-1)) / CHAR_BIT / wordsize) {
-        num_bdigits = integer_unpack_num_bdigits_small(numwords, wordsize, nails, nlp_bits_ret);
-#ifdef DEBUG_INTEGER_PACK
-        {
-            int nlp_bits1;
-            size_t num_bdigits1 = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, &nlp_bits1);
-            assert(num_bdigits == num_bdigits1);
-            assert(*nlp_bits_ret == nlp_bits1);
-        }
-#endif
-    }
-    else {
-        num_bdigits = integer_unpack_num_bdigits_generic(numwords, wordsize, nails, nlp_bits_ret);
-    }
-    if (num_bdigits == 0) {
-        return LONG2FIX(0);
-    }
-    if (LONG_MAX < num_bdigits)
-        rb_raise(rb_eArgError, "too big to unpack as an integer");
-    result = bignew((long)num_bdigits, 0 <= sign);
+    validate_integer_pack_format(numwords, wordsize, nails, flags,
+            INTEGER_PACK_MSWORD_FIRST|
+            INTEGER_PACK_LSWORD_FIRST|
+            INTEGER_PACK_MSBYTE_FIRST|
+            INTEGER_PACK_LSBYTE_FIRST|
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP|
+            INTEGER_PACK_FORCE_BIGNUM|
+            INTEGER_PACK_NEGATIVE);
 
-    bary_unpack(BDIGITS(result), num_bdigits, words, numwords, wordsize, nails, flags);
+    num_bdigits0 = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 
-    return result;
+    assert(num_bdigits0 <= num_bdigits);
+
+    bary_unpack_internal(bdigits, num_bdigits, words, numwords, wordsize, nails, flags, nlp_bits);
 }
 
 /*
@@ -1345,19 +1397,48 @@ rb_integer_unpack_internal(const void *words, size_t numwords, size_t wordsize, 
  * [nails] number of padding bits in a word.
  *   Most significant nails bits of each word are ignored.
  * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
- *   It specifies word order and byte order.
- *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
- *     even if it is representable as a Fixnum.
- *   [INTEGER_PACK_NEGATIVE] Returns non-positive value.
- *     (Returns non-negative value if not specified.)
+ *
+ * flags:
+ * [INTEGER_PACK_MSWORD_FIRST] Interpret the first word as the most significant word.
+ * [INTEGER_PACK_LSWORD_FIRST] Interpret the first word as the least significant word.
+ * [INTEGER_PACK_MSBYTE_FIRST] Interpret the first byte in a word as the most significant byte in the word.
+ * [INTEGER_PACK_LSBYTE_FIRST] Interpret the first byte in a word as the least significant byte in the word.
+ * [INTEGER_PACK_NATIVE_BYTE_ORDER] INTEGER_PACK_MSBYTE_FIRST or INTEGER_PACK_LSBYTE_FIRST corresponding to the host's endian.
+ * [INTEGER_PACK_2COMP] Use 2's complement representation.
+ * [INTEGER_PACK_LITTLE_ENDIAN] Same as INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_LSBYTE_FIRST
+ * [INTEGER_PACK_BIG_ENDIAN] Same as INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_MSBYTE_FIRST
+ * [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
+ *   even if it is representable as a Fixnum.
+ * [INTEGER_PACK_NEGATIVE] Returns non-positive value.
+ *   (Returns non-negative value if not specified.)
  *
  * This function returns the imported integer as Fixnum or Bignum.
+ *
+ * The range of the result value depends on INTEGER_PACK_2COMP and INTEGER_PACK_NEGATIVE.
+ *
+ * INTEGER_PACK_2COMP is not set:
+ *   0 <= val < 2**(numwords*(wordsize*CHAR_BIT-nails)) if !INTEGER_PACK_NEGATIVE
+ *   -2**(numwords*(wordsize*CHAR_BIT-nails)) < val <= 0 if INTEGER_PACK_NEGATIVE
+ *
+ * INTEGER_PACK_2COMP is set:
+ *   -2**(numwords*(wordsize*CHAR_BIT-nails)-1) <= val <= 2**(numwords*(wordsize*CHAR_BIT-nails)-1)-1 if !INTEGER_PACK_NEGATIVE
+ *   -2**(numwords*(wordsize*CHAR_BIT-nails)) <= val <= -1 if INTEGER_PACK_NEGATIVE
+ *
+ * INTEGER_PACK_2COMP without INTEGER_PACK_NEGATIVE means sign extension.
+ * INTEGER_PACK_2COMP with INTEGER_PACK_NEGATIVE mean assuming the higher bits are 1.
+ *
+ * Note that this function returns 0 when numwords is zero and
+ * INTEGER_PACK_2COMP is set but INTEGER_PACK_NEGATIVE is not set.
  */
+
 VALUE
 rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
 {
-    int nlp_bits;
     VALUE val;
+    size_t num_bdigits;
+    int sign;
+    int nlp_bits;
+    BDIGIT *ds;
 
     validate_integer_pack_format(numwords, wordsize, nails, flags,
             INTEGER_PACK_MSWORD_FIRST|
@@ -1365,80 +1446,23 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
             INTEGER_PACK_MSBYTE_FIRST|
             INTEGER_PACK_LSBYTE_FIRST|
             INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP|
             INTEGER_PACK_FORCE_BIGNUM|
             INTEGER_PACK_NEGATIVE);
 
-    val = rb_integer_unpack_internal(words, numwords, wordsize, nails, flags, &nlp_bits);
+    num_bdigits = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 
-    if (val == LONG2FIX(0)) {
-        if (flags & INTEGER_PACK_FORCE_BIGNUM)
-            return rb_int2big(0);
-        return LONG2FIX(0);
+    if (LONG_MAX < num_bdigits)
+        rb_raise(rb_eArgError, "too big to unpack as an integer");
+    val = bignew((long)num_bdigits, 0);
+    ds = BDIGITS(val);
+    sign = bary_unpack_internal(ds, num_bdigits, words, numwords, wordsize, nails, flags, nlp_bits);
+
+    if ((flags & INTEGER_PACK_2COMP) && num_bdigits == 0 && sign < 0) {
+        rb_big_resize(val, 1);
+        ds[0] = 1;
     }
-    if (flags & INTEGER_PACK_FORCE_BIGNUM)
-        return bigtrunc(val);
-    return bignorm(val);
-}
-
-/*
- * Import an integer into a buffer.
- *
- * [words] buffer to import.
- * [numwords] the size of given buffer as number of words.
- * [wordsize] the size of word as number of bytes.
- * [nails] number of padding bits in a word.
- *   Most significant nails bits of each word are ignored.
- * [flags] bitwise or of constants which name starts "INTEGER_PACK_".
- *   It specifies word order and byte order.
- *   [INTEGER_PACK_FORCE_BIGNUM] the result will be a Bignum
- *     even if it is representable as a Fixnum.
- *   [INTEGER_PACK_NEGATIVE] Assume the higher bits are 1.
- *     (If INTEGER_PACK_NEGATIVE is not specified, the higher bits are
- *     assumed same as the most significant bit.
- *     i.e. sign extension is applied.)
- *
- * This function returns the imported integer as Fixnum or Bignum.
- */
-VALUE
-rb_integer_unpack_2comp(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
-{
-    VALUE val;
-    int nlp_bits;
-
-    validate_integer_pack_format(numwords, wordsize, nails, flags,
-            INTEGER_PACK_MSWORD_FIRST|
-            INTEGER_PACK_LSWORD_FIRST|
-            INTEGER_PACK_MSBYTE_FIRST|
-            INTEGER_PACK_LSBYTE_FIRST|
-            INTEGER_PACK_NATIVE_BYTE_ORDER|
-            INTEGER_PACK_FORCE_BIGNUM|
-            INTEGER_PACK_NEGATIVE);
-
-    val = rb_integer_unpack_internal(words, numwords, wordsize, nails,
-            (flags & (INTEGER_PACK_WORDORDER_MASK|INTEGER_PACK_BYTEORDER_MASK) |
-             INTEGER_PACK_FORCE_BIGNUM),
-            &nlp_bits);
-
-    if (val == LONG2FIX(0)) {
-        /* num_bdigits == 0 i.e. num_bits == 0 */
-        int v;
-        if (flags & INTEGER_PACK_NEGATIVE)
-            v = -1;
-        else
-            v = 0;
-        if (flags & INTEGER_PACK_FORCE_BIGNUM)
-            return rb_int2big(v);
-        else
-            return LONG2FIX(v);
-    }
-    else if ((flags & INTEGER_PACK_NEGATIVE) ||
-             (RBIGNUM_LEN(val) != 0 &&
-              (RBIGNUM_DIGITS(val)[RBIGNUM_LEN(val)-1] >> (BITSPERDIG - nlp_bits - 1)))) {
-        if (nlp_bits)
-            RBIGNUM_DIGITS(val)[RBIGNUM_LEN(val)-1] |= (~(BDIGIT)0) << (BITSPERDIG - nlp_bits);
-        rb_big_2comp(val);
-        RBIGNUM_SET_SIGN(val, 0);
-    }
+    RBIGNUM_SET_SIGN(val, 0 <= sign);
 
     if (flags & INTEGER_PACK_FORCE_BIGNUM)
         return bigtrunc(val);
