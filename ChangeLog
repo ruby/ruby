@@ -1,3 +1,8 @@
+Sun Jun 16 14:32:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack) Extracted from rb_integer_pack_internal.
+	  (absint_numwords_generic): Use bary_pack.
+
 Sun Jun 16 11:01:57 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS (XMLRPC::Client#http): Add.

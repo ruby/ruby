@@ -63,6 +63,7 @@ static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int overflow_2comp);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -614,7 +615,10 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     BDIGIT mod_bary[numberof(word_numbits_bary)];
     BDIGIT one[1] = { 1 };
     size_t nlz_bits0;
-    VALUE vd, vm;
+    size_t mod0;
+    int sign0;
+    size_t numwords0;
+    VALUE vm;
 
     /*
      * val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte
@@ -638,13 +642,15 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     }
     else {
         bary_add(BARY_ARGS(div_bary), BARY_ARGS(div_bary), BARY_ARGS(one));
+        bary_pack(+1, BARY_ARGS(mod_bary), &mod0, 1, sizeof(mod0), 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
         vm = rb_integer_unpack(mod_bary, numberof(mod_bary), sizeof(BDIGIT), 0,
                 INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        assert(NUM2SIZET(vm) == mod0);
         nlz_bits0 = word_numbits - NUM2SIZET(vm);
     }
-
-    vd = rb_integer_unpack(div_bary, numberof(div_bary), sizeof(BDIGIT), 0,
-            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    sign0 = bary_pack(+1, BARY_ARGS(div_bary), &numwords0, 1, sizeof(numwords), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER, 0);
 
     val_numbits = SIZET2NUM(numbytes);
     val_numbits = rb_funcall(val_numbits, '*', 1, LONG2FIX(CHAR_BIT));
@@ -661,11 +667,11 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         div = rb_funcall(div, '+', 1, LONG2FIX(1));
         nlz_bits = word_numbits - NUM2SIZET(mod);
     }
-    assert(rb_equal(div, vd));
-    assert(rb_equal(mod, vm));
-    assert(nlz_bits == nlz_bits0);
     sign = rb_integer_pack(div, &numwords, 1, sizeof(numwords), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
+    assert(nlz_bits == nlz_bits0);
+    assert(sign == sign0);
+    assert(numwords == numwords0);
     if (sign == 2)
         return (size_t)-1;
     *nlz_bits_ret = nlz_bits;
@@ -914,14 +920,13 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 }
 
 static int
-rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int overflow_2comp)
+bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int overflow_2comp)
 {
-    int sign;
-    BDIGIT *ds, *dp, *de;
-    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+    BDIGIT *dp, *de;
     unsigned char *buf, *bufend;
 
-    val = rb_to_int(val);
+    dp = ds;
+    de = ds + num_bdigits;
 
     validate_integer_pack_format(numwords, wordsize, nails, flags,
             INTEGER_PACK_MSWORD_FIRST|
@@ -930,34 +935,7 @@ rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsiz
             INTEGER_PACK_LSBYTE_FIRST|
             INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    if (FIXNUM_P(val)) {
-        long v = FIX2LONG(val);
-        if (v < 0) {
-            sign = -1;
-            v = -v;
-        }
-        else {
-            sign = 1;
-        }
-#if SIZEOF_BDIGITS == SIZEOF_LONG
-        fixbuf[0] = v;
-#else
-        {
-            int i;
-            for (i = 0; i < numberof(fixbuf); i++) {
-                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-                v >>= SIZEOF_BDIGITS * CHAR_BIT;
-            }
-        }
-#endif
-        ds = dp = fixbuf;
-        de = fixbuf + numberof(fixbuf);
-    }
-    else {
-        sign = RBIGNUM_POSITIVE_P(val) ? 1 : -1;
-        ds = dp = BDIGITS(val);
-        de = dp + RBIGNUM_LEN(val);
-    }
+
     while (dp < de && de[-1] == 0)
         de--;
     if (dp == de) {
@@ -1062,6 +1040,48 @@ rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsiz
     return sign;
 #undef FILL_DD
 #undef TAKE_LOWBITS
+}
+
+static int
+rb_integer_pack_internal(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int overflow_2comp)
+{
+    int sign;
+    BDIGIT *ds;
+    size_t num_bdigits;
+    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+
+    RB_GC_GUARD(val) = rb_to_int(val);
+
+    if (FIXNUM_P(val)) {
+        long v = FIX2LONG(val);
+        if (v < 0) {
+            sign = -1;
+            v = -v;
+        }
+        else {
+            sign = 1;
+        }
+#if SIZEOF_BDIGITS == SIZEOF_LONG
+        fixbuf[0] = v;
+#else
+        {
+            int i;
+            for (i = 0; i < numberof(fixbuf); i++) {
+                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
+                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+            }
+        }
+#endif
+        ds = fixbuf;
+        num_bdigits = numberof(fixbuf);
+    }
+    else {
+        sign = RBIGNUM_POSITIVE_P(val) ? 1 : -1;
+        ds = BDIGITS(val);
+        num_bdigits = RBIGNUM_LEN(val);
+    }
+
+    return bary_pack(sign, ds, num_bdigits, words, numwords, wordsize, nails, flags, overflow_2comp);
 }
 
 /*
