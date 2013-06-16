@@ -1,3 +1,8 @@
+Mon Jun 17 07:38:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_bytes): Removed.
+	  (rb_absint_numwords): Don't call absint_numwords_bytes.
+
 Sun Jun 16 23:14:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BARY_ADD): New macro.

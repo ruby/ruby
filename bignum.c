@@ -558,55 +558,6 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
 }
 
 static size_t
-absint_numwords_bytes(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
-{
-    /*
-     * word_numbytes = word_numbits / CHAR_BIT
-     * div, mod = val_numbits.divmod(word_numbits)
-     *
-     * q, r = numbytes.divmod(word_numbytes)
-     * s = q        if r * CHAR_BIT >= nlz_bits_in_msbyte
-     *   = q - 1    if otherwise
-     * t = r * CHAR_BIT - nlz_bits_in_msbyte                if r * CHAR_BIT >= nlz_bits_in_msbyte
-     *   = word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte if otherwise
-     *
-     * div = (numbytes * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
-     *     = ((q * word_numbytes + r) * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
-     *     = (q * word_numbytes * CHAR_BIT + r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits
-     *     = q + (r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits if r * CHAR_BIT >= nlz_bits_in_msbyte
-     *       q - 1 + (word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte) / word_numbits if r * CHAR_BIT < nlz_bits_in_msbyte
-     *     = s + t / word_numbits
-     * mod = (r * CHAR_BIT - nlz_bits_in_msbyte) % word_numbits if r * CHAR_BIT >= nlz_bits_in_msbyte
-     *       (word_numbits + r * CHAR_BIT - nlz_bits_in_msbyte) % word_numbits if r * CHAR_BIT < nlz_bits_in_msbyte
-     *     = t % word_numbits
-     *
-     * numwords = mod == 0 ? div : div + 1
-     * nlz_bits = mod == 0 ? 0 : word_numbits - mod
-     */
-    size_t word_numbytes = word_numbits / CHAR_BIT;
-    size_t q = numbytes / word_numbytes;
-    size_t r = numbytes % word_numbytes;
-    size_t s, t;
-    size_t div, mod;
-    size_t numwords;
-    size_t nlz_bits;
-    if (r * CHAR_BIT >= (size_t)nlz_bits_in_msbyte) {
-        s = q;
-        t = r * CHAR_BIT - nlz_bits_in_msbyte;
-    }
-    else {
-        s = q - 1;
-        t = word_numbits - nlz_bits_in_msbyte + r * CHAR_BIT;
-    }
-    div = s + t / word_numbits;
-    mod = t % word_numbits;
-    numwords = mod == 0 ? div : div + 1;
-    nlz_bits = mod == 0 ? 0 : word_numbits - mod;
-    *nlz_bits_ret = nlz_bits;
-    return numwords;
-}
-
-static size_t
 absint_numwords_small(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
     size_t val_numbits = numbytes * CHAR_BIT - nlz_bits_in_msbyte;
@@ -703,17 +654,6 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
 
     if (numbytes <= SIZE_MAX / CHAR_BIT) {
         numwords = absint_numwords_small(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
-#ifdef DEBUG_INTEGER_PACK
-        {
-            size_t numwords0, nlz_bits0;
-            numwords0 = absint_numwords_generic(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits0);
-            assert(numwords0 == numwords);
-            assert(nlz_bits0 == nlz_bits);
-        }
-#endif
-    }
-    else if (word_numbits % CHAR_BIT == 0) {
-        numwords = absint_numwords_bytes(numbytes, nlz_bits_in_msbyte, word_numbits, &nlz_bits);
 #ifdef DEBUG_INTEGER_PACK
         {
             size_t numwords0, nlz_bits0;
