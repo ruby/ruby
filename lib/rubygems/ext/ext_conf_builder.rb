@@ -38,7 +38,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         ENV["DESTDIR"] = nil
 
-        make dest_path, results
+        make dest_path, results, true
 
         if tmp_dest
           FileEntry.new(tmp_dest).traverse do |ent|
