@@ -1,3 +1,7 @@
+Sun Jun 16 16:04:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/config_files.rb: use URI.read to allow it runs with Ruby 1.8.5.
+
 Sun Jun 16 14:32:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_pack) Extracted from rb_integer_pack_internal.
