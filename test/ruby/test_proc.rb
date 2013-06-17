@@ -191,7 +191,6 @@ class TestProc < Test::Unit::TestCase
 
   def test_block_given_method_to_proc
     bug8341 = '[Bug #8341]'
-    skip bug8341
     m = method(:m_block_given?).to_proc
     assert(!m.call, "#{bug8341} without block")
     assert(m.call {}, "#{bug8341} with block")

@@ -1,3 +1,8 @@
+Mon Jun 17 22:16:02 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/ruby/test_proc.rb (TestProc#test_block_given_method_to_proc):
+	  run test for r41359.
+
 Mon Jun 17 21:42:18 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* include/ruby/ruby.h, vm_eval.c (rb_funcall_with_block):
