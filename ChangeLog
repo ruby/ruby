@@ -1,3 +1,18 @@
+Mon Jun 17 21:42:18 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* include/ruby/ruby.h, vm_eval.c (rb_funcall_with_block):
+	  new function to invoke a method with a block passed
+	  as an argument.
+
+	* string.c (sym_call): use the above function to avoid
+	  a block sharing. [ruby-dev:47438] [Bug #8531]
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): don't set block
+	  in the frame.
+
+	* test/ruby/test_symbol.rb (TestSymbol#test_block_given_to_proc):
+	  run related tests.
+
 Mon Jun 17 21:33:27 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* include/ruby/intern.h, proc.c (rb_method_call_with_block):

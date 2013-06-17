@@ -128,7 +128,6 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_block_given_to_proc
     bug8531 = '[Bug #8531]'
-    skip bug8531
     m = :m_block_given?.to_proc
     assert(!m.call(self), "#{bug8531} without block")
     assert(m.call(self) {}, "#{bug8531} with block")
