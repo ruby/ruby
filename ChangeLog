@@ -1,3 +1,7 @@
+Mon Jun 17 14:27:54 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_backtrace.c: Update rdoc for Backtrace#label with @_ko1
+
 Mon Jun 17 13:04:01 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* tool/ifchange (until): Fix the condition, although harmless in
