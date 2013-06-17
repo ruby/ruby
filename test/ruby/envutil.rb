@@ -62,7 +62,7 @@ module EnvUtil
     else
       th_stdout = Thread.new { out_p.read } if capture_stdout
       th_stderr = Thread.new { err_p.read } if capture_stderr && capture_stderr != :merge_to_stdout
-      in_p.write stdin_data.to_str
+      in_p.write stdin_data.to_str unless stdin_data.empty?
       in_p.close
       if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         stdout = th_stdout.value if capture_stdout
