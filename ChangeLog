@@ -10,7 +10,7 @@ Mon Jun 17 13:04:01 2013  Akinori MUSHA  <knu@iDaemons.org>
 Mon Jun 17 11:50:29 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_maybe): added. check `is_pointer_to_heap()' and
-	  type is not T_ZOMBE.
+	  type is not T_ZOMBIE.
 
 	* gc.c: use `gc_mark_maybe()'. T_ZOMBIE objects should not be pushed
 	  to the mark stack.
