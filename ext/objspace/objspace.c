@@ -771,7 +771,12 @@ reachable_objects_from(VALUE self, VALUE obj)
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_gc_hook(VALUE rb_mObjSpace);
 
-/* The objspace library extends the ObjectSpace module and adds several
+/*
+ * Document-module: ObjectSpace
+ *
+ * == The objspace library
+ *
+ * The objspace library extends the ObjectSpace module and adds several
  * methods to get internal statistic information about
  * object/memory management.
  *

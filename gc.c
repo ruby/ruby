@@ -5339,7 +5339,7 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 
 
 /*
- * Document-class: ObjectSpace
+ * Document-module: ObjectSpace
  *
  *  The ObjectSpace module contains a number of routines
  *  that interact with the garbage collection facility and allow you to
