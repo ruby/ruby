@@ -1,3 +1,7 @@
+Tue Jun 18 00:43:27 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_backtrace.c: Update rdoc for Backtrace#label with @_ko1
+
 Tue Jun 18 00:34:57 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 merge revision(s) 41347: [Backport #5048] [Backport #5465] [Backport #8319]
