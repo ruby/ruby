@@ -85,10 +85,15 @@ class Tk::Canvas<TkWindow
 
   # create a canvas item without creating a TkcItem object
   def create(type, *args)
-    type = TkcItem.type2class(type.to_s) unless type.kind_of?(TkcItem)
+    if type.kind_of?(Class) && type < TkcItem
+      # do nothing
+    elsif TkcItem.type2class(type.to_s)
+      type = TkcItem.type2class(type.to_s)
+    else
+      fail ArgumentError, "type must a subclass of TkcItem class, or a string in CItemTypeToClass"
+    end
     type.create(self, *args)
   end
-
 
   def addtag(tag, mode, *args)
     mode = mode.to_s
