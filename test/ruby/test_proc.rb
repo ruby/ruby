@@ -200,7 +200,6 @@ class TestProc < Test::Unit::TestCase
 
   def test_block_persist_between_calls
     bug8341 = '[Bug #8341]'
-    skip bug8341
     o = Object.new
     def o.m1(top=true)
       if top

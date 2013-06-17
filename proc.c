@@ -28,7 +28,7 @@ VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
 
-static VALUE bmcall(VALUE, VALUE);
+static VALUE bmcall(VALUE, VALUE, int, VALUE *, VALUE);
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
 #define attached id__attached__
@@ -1593,6 +1593,13 @@ method_clone(VALUE self)
 VALUE
 rb_method_call(int argc, VALUE *argv, VALUE method)
 {
+    VALUE proc = rb_block_given_p() ? rb_block_proc() : Qnil;
+    return rb_method_call_with_block(argc, argv, method, proc);
+}
+
+VALUE
+rb_method_call_with_block(int argc, VALUE *argv, VALUE method, VALUE pass_procval)
+{
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;
     int state;
@@ -1612,8 +1619,15 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     }
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_t *th = GET_THREAD();
+	rb_block_t *block = 0;
 
-	PASS_PASSED_BLOCK_TH(th);
+	if (!NIL_P(pass_procval)) {
+	    rb_proc_t *pass_proc;
+	    GetProcPtr(pass_procval, pass_proc);
+	    block = &pass_proc->block;
+	}
+
+	th->passed_block = block;
 	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me, data->defined_class);
     }
     POP_TAG();
@@ -2062,11 +2076,10 @@ mlambda(VALUE method)
 }
 
 static VALUE
-bmcall(VALUE args, VALUE method)
+bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
 {
     volatile VALUE a;
     VALUE ret;
-    int argc;
 
     if (CLASS_OF(args) != rb_cArray) {
 	args = rb_ary_new3(1, args);
@@ -2075,7 +2088,7 @@ bmcall(VALUE args, VALUE method)
     else {
 	argc = check_argc(RARRAY_LEN(args));
     }
-    ret = rb_method_call(argc, RARRAY_PTR(args), method);
+    ret = rb_method_call_with_block(argc, RARRAY_PTR(args), method, passed_proc);
     RB_GC_GUARD(a) = args;
     return ret;
 }

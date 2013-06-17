@@ -1,3 +1,15 @@
+Mon Jun 17 21:33:27 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* include/ruby/intern.h, proc.c (rb_method_call_with_block):
+	  new function to invoke a Method object with a block passed
+	  as an argument.
+
+	* proc.c (bmcall): use the above function to avoid a block sharing.
+	  [ruby-core:54626] [Bug #8341]
+
+	* test/ruby/test_proc.rb (TestProc#test_block_persist_between_calls):
+	  run related tests.
+
 Mon Jun 17 20:53:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* loadpath.c (RUBY_REVISION): Defined to suppress revision.h
