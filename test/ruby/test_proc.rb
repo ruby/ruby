@@ -191,6 +191,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_block_given_method_to_proc
     bug8341 = '[Bug #8341]'
+    skip bug8341
     m = method(:m_block_given?).to_proc
     assert(!m.call, "#{bug8341} without block")
     assert(m.call {}, "#{bug8341} with block")
@@ -199,6 +200,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_block_persist_between_calls
     bug8341 = '[Bug #8341]'
+    skip bug8341
     o = Object.new
     def o.m1(top=true)
       if top
