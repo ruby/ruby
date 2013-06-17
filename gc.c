@@ -5349,22 +5349,16 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
  *  called when a specific object is about to be destroyed by garbage
  *  collection.
  *
- *     include ObjectSpace
- *
  *     a = "A"
  *     b = "B"
- *     c = "C"
  *
- *     define_finalizer(a, proc {|id| puts "Finalizer one on #{id}" })
- *     define_finalizer(a, proc {|id| puts "Finalizer two on #{id}" })
- *     define_finalizer(b, proc {|id| puts "Finalizer three on #{id}" })
+ *     ObjectSpace.define_finalizer(a, proc {|id| puts "Finalizer one on #{id}" })
+ *     ObjectSpace.define_finalizer(b, proc {|id| puts "Finalizer two on #{id}" })
  *
  *  _produces:_
  *
- *     Finalizer three on 537763470
+ *     Finalizer two on 537763470
  *     Finalizer one on 537763480
- *     Finalizer two on 537763480
- *
  */
 
 /*

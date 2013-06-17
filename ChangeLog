@@ -1,3 +1,7 @@
+Mon Jun 17 17:38:24 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* gc.c: fix example of ObjectSpace.define_finalizer in overview
+
 Mon Jun 17 16:59:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c: use rb_sprintf(), rb_id2str(), and
