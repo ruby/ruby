@@ -1,3 +1,8 @@
+Mon Jun 17 13:04:01 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/ifchange (until): Fix the condition, although harmless in
+	  this case.
+
 Mon Jun 17 11:50:29 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_maybe): added. check `is_pointer_to_heap()' and
