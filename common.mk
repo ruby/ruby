@@ -771,10 +771,9 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
-  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h \
+  $(srcdir)/include/ruby/version.h $(srcdir)/version.h {$(VPATH)}config.h \
   verconf.h
-dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
-  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
+dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}insns.inc \
