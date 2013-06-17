@@ -1,3 +1,14 @@
+Tue Jun 18 00:34:57 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+merge revision(s) 41347: [Backport #5048] [Backport #5465] [Backport #8319]
+
+        * ext/tk/extconf.rb: support s390x (Thanks to bkabrda) [Bug #5465]
+
+	* ext/tk/extconf.rb: apply [Bug #5048]
+
+	* ext/tk/lib/tk/canvas.rb,ext/tk/sample/demos-{en,jp}/{tree.rb,widget}:
+	  fix bug (Thanks to zzak) [ruby-trunk - Bug #8319]
+
 Sun Jun 16 01:56:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (FL_SET_EMBED): shared object is frozen even when get

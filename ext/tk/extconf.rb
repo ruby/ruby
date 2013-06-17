@@ -114,7 +114,7 @@ def is_macosx?
 end
 
 def maybe_64bit?
-  /64|universal/ =~ RUBY_PLATFORM
+  /64|universal|s390x/ =~ RUBY_PLATFORM
 end
 
 def check_tcltk_version(version)
@@ -313,7 +313,9 @@ def find_macosx_framework
   paths.reverse! unless TkLib_Config["ActiveTcl"] # system has higher priority
 
   paths.map{|dir| dir.strip.chomp('/')}.each{|dir|
+    next unless File.exist?(File.join(dir, "Tcl.framework", "Headers"))
     next unless File.directory?(tcldir = File.join(dir, "Tcl.framework"))
+    next unless File.exist?(File.join(dir, "Tk.framework"), "Headers")
     next unless File.directory?(tkdir  = File.join(dir, "Tk.framework"))
     TkLib_Config["tcltk-framework"] = dir
     return [tcldir, tkdir]
