@@ -1,3 +1,8 @@
+Mon Jun 17 18:15:57 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/objspace/objspace.c: let rdoc know about objspace methods.
+	  Specify 'objspace' should be required. See #8537.
+
 Mon Jun 17 17:44:31 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* gc.c (ObjectSpace): is a module not a class.
