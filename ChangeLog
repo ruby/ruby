@@ -1,3 +1,12 @@
+Tue Jun 18 02:21:54 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil.with_default_external): add for
+	  changing Encoding.default_external without warnings.
+
+	* test/ruby/envutil.rb (EnvUtil.with_default_internal): ditto.
+
+	* test/ruby/test_io_m17n.rb: use above with_default_external.
+
 Tue Jun 18 00:43:27 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_backtrace.c: Update rdoc for Backtrace#label with @_ko1
