@@ -1,3 +1,7 @@
+Tue Jun 18 04:20:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_children): don't need to care about T_ZOMBIE here.
+
 Mon Jun 17 22:16:02 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/ruby/test_proc.rb (TestProc#test_block_given_method_to_proc):

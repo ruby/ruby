@@ -3341,7 +3341,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 
       case T_FLOAT:
       case T_BIGNUM:
-      case T_ZOMBIE:
 	break;
 
       case T_MATCH:
