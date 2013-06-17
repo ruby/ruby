@@ -1,3 +1,10 @@
+Mon Jun 17 16:59:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c: use rb_sprintf(), rb_id2str(), and
+	  rb_intern_str() instead of rb_intern() and RSTRING_PTR() with
+	  RB_GC_GUARD(), to prevent temporary objects from GC.
+	  [ruby-core:39000] [Bug #5199]
+
 Mon Jun 17 14:27:54 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* vm_backtrace.c: Update rdoc for Backtrace#label with @_ko1
