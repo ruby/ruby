@@ -423,7 +423,7 @@ class TestRequire < Test::Unit::TestCase
     # in C-level.  And redirecting stderr to a pipe seems to change
     # some blocking timings and causes a deadlock, so run in a
     # separated process for the time being.
-    assert_separately(["-w", "-", path, bug5754], <<-'end;')
+    assert_separately(["-w", "-", path, bug5754], <<-'end;', ignore_stderr: true)
     path, bug5754 = *ARGV
     start = false
 
