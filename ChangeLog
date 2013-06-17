@@ -1,3 +1,8 @@
+Mon Jun 17 20:53:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* loadpath.c (RUBY_REVISION): Defined to suppress revision.h
+	  inclusion actually.  r41352 removes the dependency.
+
 Mon Jun 17 18:15:57 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/objspace/objspace.c: let rdoc know about objspace methods.
