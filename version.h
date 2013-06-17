@@ -26,7 +26,7 @@
 #ifndef RUBY_REVISION
 # include "revision.h"
 #endif
-# ifndef RUBY_REVISION
+#ifndef RUBY_REVISION
 # define RUBY_REVISION 0
 #endif
 
