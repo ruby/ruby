@@ -488,6 +488,10 @@ static void mark_tbl(rb_objspace_t *, st_table *);
 static void rest_sweep(rb_objspace_t *);
 static void gc_mark_stacked_objects(rb_objspace_t *);
 
+static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
+static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
+
 static double getrusage_time(void);
 static inline void gc_prof_timer_start(rb_objspace_t *, int reason);
 static inline void gc_prof_timer_stop(rb_objspace_t *);
@@ -1007,9 +1011,6 @@ rb_objspace_data_type_name(VALUE obj)
 	return 0;
     }
 }
-
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
-static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
@@ -2693,10 +2694,7 @@ mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n
     VALUE v;
     while (n--) {
         v = *x;
-        (void)VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
-	if (is_pointer_to_heap(objspace, (void *)v)) {
-	    gc_mark(objspace, v);
-	}
+	gc_mark_maybe(objspace, v);
 	x++;
     }
 }
@@ -2914,12 +2912,20 @@ rb_mark_tbl(st_table *tbl)
     mark_tbl(&rb_objspace, tbl);
 }
 
+static void
+gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
+{
+    (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
+    if (is_pointer_to_heap(objspace, (void *)obj) &&
+	BUILTIN_TYPE(obj) != T_ZOMBIE) {
+	gc_mark(objspace, obj);
+    }
+}
+
 void
 rb_gc_mark_maybe(VALUE obj)
 {
-    if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-	gc_mark(&rb_objspace, obj);
-    }
+    gc_mark_maybe(&rb_objspace, obj);
 }
 
 static int
@@ -2940,13 +2946,12 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static int
-markable_object_p(rb_objspace_t *objspace, VALUE ptr)
+markable_object_p(rb_objspace_t *objspace, VALUE obj)
 {
-    register RVALUE *obj = RANY(ptr);
-
-    if (rb_special_const_p(ptr)) return 0; /* special const not marked */
-    if (obj->as.basic.flags == 0) return 0 ;       /* free cell */
-
+    if (rb_special_const_p(obj)) return 0; /* special const not marked */
+    if (RBASIC(obj)->flags == 0) return 0; /* free cell */
+    if (RGENGC_CHECK_MODE && BUILTIN_TYPE(obj) == T_ZOMBIE)
+      rb_bug("markable_object_p: %p is T_ZOMBIE", (void *)obj);
     return 1;
 }
 
@@ -3253,15 +3258,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    goto again;
 
 	  default:		/* unlisted NODE */
-	    if (is_pointer_to_heap(objspace, obj->as.node.u1.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u1.node);
-	    }
-	    if (is_pointer_to_heap(objspace, obj->as.node.u2.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u2.node);
-	    }
-	    if (is_pointer_to_heap(objspace, obj->as.node.u3.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u3.node);
-	    }
+	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u1.node);
+	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u2.node);
+	    gc_mark_maybe(objspace, (VALUE)obj->as.node.u3.node);
 	}
 	return;			/* no need to mark class. */
     }
