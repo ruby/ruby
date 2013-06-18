@@ -155,7 +155,6 @@ memsize_of(VALUE obj)
  *  T_DATA may not be correct.
  *
  *  This method is not expected to work except C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  */
 
 static VALUE
@@ -222,7 +221,6 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
  *  end
  *
  *  This method is not expected to work except C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  */
 
 static VALUE
@@ -319,7 +317,6 @@ type2sym(enum ruby_value_type i)
  *  It may be changed in future.
  *
  *  This method is not expected to work except C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  */
 
 static VALUE
@@ -395,7 +392,6 @@ cn_i(void *vstart, void *vend, size_t stride, void *n)
  *  It may be changed in future.
  *
  *  This method is not expected to work except C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  */
 
 static VALUE
@@ -604,7 +600,6 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
  *  name, registered by rb_data_type_struct.
  *
  *  This method is not expected to work except C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  */
 
 static VALUE
@@ -732,7 +727,6 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
  *  With this method, you can find memory leaks.
  *
  *  This method is not expected to work except in C Ruby.
- *  You need to <code>require 'objspace'</code> to use this method.
  *
  *  Example:
  *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
@@ -784,6 +778,8 @@ void Init_gc_hook(VALUE rb_mObjSpace);
  * The objspace library extends the ObjectSpace module and adds several
  * methods to get internal statistic information about
  * object/memory management.
+ *
+ * You need to <code>require 'objspace'</code> to use this extension module.
  *
  * Generally, you *SHOULD NOT* use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
