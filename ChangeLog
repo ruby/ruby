@@ -1,3 +1,9 @@
+Wed Jun 19 06:26:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* hash.c: `st_update()' also has same issue of last fix.
+	  write barriers at callback function are too early.
+	  All write barriers are executed after `st_update()'
+
 Wed Jun 19 04:33:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* variable.c (rb_const_set): fix WB miss.

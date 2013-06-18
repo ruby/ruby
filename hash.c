@@ -331,24 +331,51 @@ struct update_callback_arg {
 int                                                                          \
 func##_noinsert(st_data_t *key, st_data_t *val, st_data_t arg, int existing) \
 {                                                                            \
-    struct update_callback_arg *uc_arg = (struct update_callback_arg *)arg;  \
     if (!existing) no_new_key();                                             \
-    return func(uc_arg->hash, key, val, uc_arg->arg, existing);              \
+    return func(key, val, (struct update_arg *)arg, existing);               \
 }                                                                            \
+                                                                             \
 int                                                                          \
 func##_insert(st_data_t *key, st_data_t *val, st_data_t arg, int existing)   \
 {                                                                            \
-    struct update_callback_arg *uc_arg = (struct update_callback_arg *)arg;  \
-    return func(uc_arg->hash, key, val, uc_arg->arg, existing);              \
+    return func(key, val, (struct update_arg *)arg, existing);               \
+}
+
+struct update_arg {
+    st_data_t arg;
+    VALUE hash;
+    VALUE new_key;
+    VALUE old_key;
+    VALUE new_value;
+    VALUE old_value;
+};
+
+static int
+tbl_update(VALUE hash, VALUE key, int (*func)(st_data_t *key, st_data_t *val, st_data_t arg, int existing), st_data_t optional_arg)
+{
+    struct update_arg arg;
+    int result;
+
+    arg.arg = optional_arg;
+    arg.hash = hash;
+    arg.new_key = 0;
+    arg.old_key = Qundef;
+    arg.new_value = 0;
+    arg.old_value = Qundef;
+
+    result = st_update(RHASH(hash)->ntbl, (st_data_t)key, func, (st_data_t)&arg);
+
+    /* write barrier */
+    if (arg.new_key)   OBJ_WRITTEN(hash, arg.old_key, arg.new_key);
+    if (arg.new_value) OBJ_WRITTEN(hash, arg.old_value, arg.new_value);
+
+    return result;
 }
 
 #define UPDATE_CALLBACK(iter_lev, func) ((iter_lev) > 0 ? func##_noinsert : func##_insert)
 
-#define RHASH_UPDATE_ITER(h, iter_lev, key, func, a) do {                \
-    struct update_callback_arg uc_arg; uc_arg.hash = h; uc_arg.arg = a; \
-    st_update(RHASH(h)->ntbl, (st_data_t)(key),	                         \
-	      UPDATE_CALLBACK((iter_lev), func),	                 \
-	      (st_data_t)(&uc_arg));                                     \
+#define RHASH_UPDATE_ITER(h, iter_lev, key, func, a) do {                        \
+    tbl_update((h), (key), UPDATE_CALLBACK((iter_lev), func), (st_data_t)(a)); \
 } while (0)
 
 #define RHASH_UPDATE(hash, key, func, arg) \
@@ -1198,26 +1225,27 @@ rb_hash_clear(VALUE hash)
 }
 
 static int
-hash_aset(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (existing) {
-	OBJ_WRITTEN(hash, *val, arg);
+	arg->new_value = arg->arg;
+	arg->old_value = *val;
     }
     else {
-	OBJ_WRITTEN(hash, Qundef, *key);
-	OBJ_WRITTEN(hash, Qundef, arg);
+	arg->new_key = *key;
+	arg->new_value = arg->arg;
     }
-    *val = arg;
+    *val = arg->arg;
     return ST_CONTINUE;
 }
 
 static int
-hash_aset_str(VALUE hash, st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (!existing) {
 	*key = rb_str_new_frozen((VALUE)*key);
     }
-    return hash_aset(hash, key, val, arg, existing);
+    return hash_aset(key, val, arg, existing);
 }
 
 static NOINSERT_UPDATE_CALLBACK(hash_aset)
@@ -1894,16 +1922,17 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
-rb_hash_update_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
     if (existing) {
-	OBJ_WRITTEN(hash, *value, arg);
+	arg->old_value = *value;
+	arg->new_value = arg->arg;
     }
     else {
-	OBJ_WRITTEN(hash, Qundef, *key);
-	OBJ_WRITTEN(hash, Qundef, arg);
+	arg->new_key = *key;
+	arg->new_value = arg->arg;
     }
-    *value = arg;
+    *value = arg->arg;
     return ST_CONTINUE;
 }
 
@@ -1917,17 +1946,18 @@ rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 }
 
 static int
-rb_hash_update_block_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
-    VALUE newvalue = (VALUE)arg;
+    VALUE newvalue = (VALUE)arg->arg;
 
     if (existing) {
 	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
-	OBJ_WRITTEN(hash, *value, newvalue);
+	arg->old_value = *value;
+	arg->new_value = newvalue;
     }
     else {
-	OBJ_WRITTEN(hash, Qundef, *key);
-	OBJ_WRITTEN(hash, Qundef, newvalue);
+	arg->new_key = *key;
+	arg->new_value = newvalue;
     }
     *value = newvalue;
     return ST_CONTINUE;
@@ -1979,24 +2009,26 @@ rb_hash_update(VALUE hash1, VALUE hash2)
     return hash1;
 }
 
-struct update_arg {
+struct update_func_arg {
     VALUE hash;
     VALUE value;
     rb_hash_update_func *func;
 };
 
 static int
-rb_hash_update_func_callback(VALUE hash, st_data_t *key, st_data_t *value, st_data_t arg0, int existing)
+rb_hash_update_func_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
-    struct update_arg *arg = (struct update_arg *)arg0;
-    VALUE newvalue = arg->value;
+    struct update_func_arg *uf_arg = (struct update_func_arg *)arg->arg;
+    VALUE newvalue = uf_arg->value;
+
     if (existing) {
-	newvalue = (*arg->func)((VALUE)*key, (VALUE)*value, newvalue);
-	OBJ_WRITTEN(hash, *value, newvalue);
+	newvalue = (*uf_arg->func)((VALUE)*key, (VALUE)*value, newvalue);
+	arg->old_value = *value;
+	arg->new_value = newvalue;
     }
     else {
-	OBJ_WRITTEN(hash, Qundef, *key);
-	OBJ_WRITTEN(hash, Qundef, newvalue);
+	arg->new_key = *key;
+	arg->new_value = newvalue;
     }
     *value = newvalue;
     return ST_CONTINUE;
@@ -2007,7 +2039,7 @@ static NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback)
 static int
 rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
 {
-    struct update_arg *arg = (struct update_arg *)arg0;
+    struct update_func_arg *arg = (struct update_func_arg *)arg0;
     VALUE hash = arg->hash;
 
     arg->value = value;
@@ -2021,7 +2053,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
     rb_hash_modify(hash1);
     hash2 = to_hash(hash2);
     if (func) {
-	struct update_arg arg;
+	struct update_func_arg arg;
 	arg.hash = hash1;
 	arg.func = func;
 	rb_hash_foreach(hash2, rb_hash_update_func_i, (VALUE)&arg);
