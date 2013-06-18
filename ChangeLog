@@ -1,3 +1,9 @@
+Wed Jun 19 07:25:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (make_deferred): clear flags to T_ZOMBIE.
+
+	* gc.c (slot_sweep_body): fix indent.
+
 Wed Jun 19 07:18:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_aref): Apply BIGLO to ~xds[i] for environment which

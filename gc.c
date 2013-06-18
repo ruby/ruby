@@ -1151,7 +1151,7 @@ free_unused_heaps(rb_objspace_t *objspace)
 static inline void
 make_deferred(RVALUE *p)
 {
-    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_ZOMBIE;
+    p->as.basic.flags = T_ZOMBIE;
 }
 
 static inline void
@@ -2200,19 +2200,16 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
 		    if (p->as.basic.flags) {
 #if GC_PROFILE_MORE_DETAIL
-			if(record)
-			    record->removing_objects++;
+			if(record) record->removing_objects++;
 #endif
 			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
 			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
 			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
 #endif
-			if ((deferred = obj_free(objspace, (VALUE)p)) ||
-			    (FL_TEST(p, FL_FINALIZE))) {
+			if ((deferred = obj_free(objspace, (VALUE)p)) || (FL_TEST(p, FL_FINALIZE))) {
 			    if (!deferred) {
 				p->as.free.flags = T_ZOMBIE;
-
 				RDATA(p)->dfree = 0;
 			    }
 			    p->as.free.next = deferred_final_list;
