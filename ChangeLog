@@ -1,3 +1,7 @@
+Tue Jun 18 22:36:23 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_profile_record_flag): reason seems like one-hot encoding.
+
 Tue Jun 18 22:08:53 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/objspace/object_tracing.c: Return for ::allocation_generation

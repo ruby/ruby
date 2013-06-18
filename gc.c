@@ -161,7 +161,7 @@ typedef enum {
     GPR_FLAG_MALLOC          = 0x08,
     GPR_FLAG_METHOD          = 0x10,
     GPR_FLAG_CAPI            = 0x20,
-    GPR_FLAG_STRESS          = 0x30
+    GPR_FLAG_STRESS          = 0x40
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
