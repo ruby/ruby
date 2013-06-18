@@ -1,3 +1,9 @@
+Tue Jun 18 11:02:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_maybe): check to skip T_NONE.
+
+	* gc.c (markable_object_p): do not need to check (flags == 0) here.
+
 Tue Jun 18 10:17:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* variable.c (rb_autoload): fix WB miss.

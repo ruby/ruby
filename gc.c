@@ -2916,9 +2916,11 @@ static void
 gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 {
     (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
-    if (is_pointer_to_heap(objspace, (void *)obj) &&
-	BUILTIN_TYPE(obj) != T_ZOMBIE) {
-	gc_mark(objspace, obj);
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+	int type = BUILTIN_TYPE(obj);
+	if (type != T_ZOMBIE && type != T_NONE) {
+	    gc_mark(objspace, obj);
+	}
     }
 }
 
@@ -2948,17 +2950,21 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
 static int
 markable_object_p(rb_objspace_t *objspace, VALUE obj)
 {
-    if (rb_special_const_p(obj)) return 0; /* special const not marked */
-    if (RBASIC(obj)->flags == 0) return 0; /* free cell */
-    if (RGENGC_CHECK_MODE && BUILTIN_TYPE(obj) == T_ZOMBIE)
-      rb_bug("markable_object_p: %p is T_ZOMBIE", (void *)obj);
+    if (rb_special_const_p(obj)) return 0; /* special const is not markable */
+
+    if (RGENGC_CHECK_MODE) {
+	if (!is_pointer_to_heap(objspace, (void *)obj)) rb_bug("markable_object_p: %p is not pointer to heap", (void *)obj);
+	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("markable_object_p: %p is T_NONE", (void *)obj);
+	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("markable_object_p: %p is T_ZOMBIE", (void *)obj);
+    }
+
     return 1;
 }
 
 int
 rb_objspace_markable_object_p(VALUE obj)
 {
-    return markable_object_p(/* now it doesn't use &rb_objspace */ 0, obj);
+    return markable_object_p(&rb_objspace, obj);
 }
 
 static const char *
