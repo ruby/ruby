@@ -3871,7 +3871,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	immediate_sweep = TRUE;
 
 	if (FIXNUM_P(ruby_gc_stress)) {
-	    int flag = ruby_gc_stress;
+	    int flag = FIX2INT(ruby_gc_stress);
 
 	    if (flag & 0x01) minor_gc = TRUE;
 	    if (flag & 0x02) immediate_sweep = FALSE;

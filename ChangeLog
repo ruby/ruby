@@ -1,3 +1,7 @@
+Wed Jun 19 07:47:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect_body): use FIX2INT for ruby_gc_stress.
+
 Wed Jun 19 07:44:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace::gc_stress): int -> VALUE to store Fixnum object.
