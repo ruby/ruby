@@ -4877,7 +4877,7 @@ rb_big_aref(VALUE x, VALUE y)
     if (!RBIGNUM_SIGN(x)) {
 	xds = BDIGITS(x);
 	i = 0; num = 1;
-	while (num += ~xds[i], ++i <= s1) {
+	while (num += BIGLO(~xds[i]), ++i <= s1) {
 	    num = BIGDN(num);
 	}
     }

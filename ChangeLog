@@ -1,3 +1,8 @@
+Wed Jun 19 07:18:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_aref): Apply BIGLO to ~xds[i] for environment which
+	  BDIGIT is 16bit.
+
 Wed Jun 19 07:09:26 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_remember): fix output level.
