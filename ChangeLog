@@ -1,3 +1,24 @@
+Wed Jun 19 04:33:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* variable.c (rb_const_set): fix WB miss.
+
+	  WBs had located before creating reference between a klass
+	  and constant value. It causes GC bug.
+
+	    # pseudo code:
+	    WB(klass, value); # WB and remember klass
+	    st_insert(klass->const_table, const_id, value);
+
+	  `st_insert()' can cause GC before inserting `value' and
+	  forget `klass' from the remember set. After that, relationship
+	  between `klass' and `value' are created with constant table.
+	  Now, `value' can be young (shady) object and `klass' can be old
+	  object, without remembering `klass' object.
+	  At the next GC, old `klass' object will be skipped and
+	  young (shady) `value' will be miss-collected. -> GC bug
+
+	  Lesson: The place of a WB is important.
+
 Tue Jun 18 22:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): ensure methods of type

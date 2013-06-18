@@ -2155,7 +2155,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		/* for autoloading thread, keep the defined value to autoloading storage */
 		if (load && (ele = check_autoload_data(load)) && (ele->thread == rb_thread_current())) {
 		    rb_vm_change_state();
-		    ele->value = val;
+		    ele->value = val; /* autoload_i is shady */
 		    return;
 		}
 		/* otherwise, allow to override */
@@ -2180,12 +2180,12 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     rb_vm_change_state();
 
     ce = ALLOC(rb_const_entry_t);
+    MEMZERO(ce, rb_const_entry_t, 1);
     ce->flag = visibility;
+    ce->line = rb_sourceline();
+    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
     OBJ_WRITE(klass, (VALUE *)&ce->value, val);
     OBJ_WRITE(klass, (VALUE *)&ce->file, rb_sourcefilename());
-    ce->line = rb_sourceline();
-
-    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
 }
 
 void
