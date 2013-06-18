@@ -5415,7 +5415,7 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 void
 Init_GC(void)
 {
-    VALUE rb_mObSpace;
+    VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
 
     rb_mGC = rb_define_module("GC");
@@ -5438,14 +5438,14 @@ Init_GC(void)
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
 
-    rb_mObSpace = rb_define_module("ObjectSpace");
-    rb_define_module_function(rb_mObSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(rb_mObSpace, "garbage_collect", rb_gc_start, 0);
+    rb_mObjSpace = rb_define_module("ObjectSpace");
+    rb_define_module_function(rb_mObjSpace, "each_object", os_each_obj, -1);
+    rb_define_module_function(rb_mObjSpace, "garbage_collect", rb_gc_start, 0);
 
-    rb_define_module_function(rb_mObSpace, "define_finalizer", define_final, -1);
-    rb_define_module_function(rb_mObSpace, "undefine_finalizer", undefine_final, 1);
+    rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
+    rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
 
-    rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
+    rb_define_module_function(rb_mObjSpace, "_id2ref", id2ref, 1);
 
     nomem_error = rb_exc_new3(rb_eNoMemError,
 			      rb_obj_freeze(rb_str_new2("failed to allocate memory")));
@@ -5455,10 +5455,10 @@ Init_GC(void)
     rb_define_method(rb_cBasicObject, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
-    rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);
+    rb_define_module_function(rb_mObjSpace, "count_objects", count_objects, -1);
 
     {
-	VALUE rb_cWeakMap = rb_define_class_under(rb_mObSpace, "WeakMap", rb_cObject);
+	VALUE rb_cWeakMap = rb_define_class_under(rb_mObjSpace, "WeakMap", rb_cObject);
 	rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
 	rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
 	rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);

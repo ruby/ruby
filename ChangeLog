@@ -1,3 +1,7 @@
+Tue Jun 18 21:58:17 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* gc.c: Rename rb_mObSpace -> rb_mObjSpace
+
 Tue Jun 18 20:55:05 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/objspace/objspace.c: Document ObjectSpace::InternalObjectWrapper.
