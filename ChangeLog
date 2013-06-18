@@ -1,3 +1,16 @@
+Wed Jun 19 03:54:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (predefined): add "idProc".
+
+	* proc.c (mnew, mproc, mlambda): use predefined IDs.
+
+	* vm.c (Init_VM): ditto.
+
+Wed Jun 19 03:54:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_block_lambda): add declaration instead of
+	  deprecated rb_f_lambda.
+
 Wed Jun 19 03:24:07 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* include/ruby/ruby.h, vm_eval.c (rb_funcall_with_block):

@@ -7,6 +7,7 @@ firstline, predefined = __LINE__+1, %[\
   gets
   succ
   each
+  proc
   lambda
   send
   __send__
@@ -48,7 +49,10 @@ const_ids = []
 class_ids = []
 names = {}
 predefined.split(/^/).each_with_index do |line, num|
-  next if /^#/ =~ line or (name, token = line.split; !name)
+  next if /^#/ =~ line
+  line.sub!(/\s+#.*/, '')
+  name, token = line.split
+  next unless name
   token ||= name
   if /#/ =~ token
     token = "_#{token.gsub(/\W+/, '_')}"
