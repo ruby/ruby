@@ -121,6 +121,7 @@ static ruby_gc_params_t initial_params = {
  * 0: disable all assertions
  * 1: enable assertions (to debug RGenGC)
  * 2: enable bits check (for debugging)
+ * 3: show all references
  */
 #ifndef RGENGC_CHECK_MODE
 #define RGENGC_CHECK_MODE  0
@@ -3025,13 +3026,27 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
     if (RGENGC_CHECK_MODE > 1) {
 	if (objspace->rgengc.interesting_object == obj) {
 	    if (FIXNUM_P(objspace->rgengc.parent_object)) {
-		fprintf(stderr, "rgengc_check_shady: points %p (%s) is pointed at line %d\n",
+		fprintf(stderr, "rgengc_check_shady: !!! %p (%s) is pointed at line %d\n",
 			(void *)obj, obj_type_name(obj), FIX2INT(objspace->rgengc.parent_object));
 	    }
 	    else {
-		fprintf(stderr, "rgengc_check_shady: %p (%s) points %p (%s)\n",
-			(void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object),
-			(void *)obj, obj_type_name(obj));
+		fprintf(stderr, "rgengc_check_shady: !!! %p (%s) is pointed by %p (%s)\n",
+			(void *)obj, obj_type_name(obj),
+			(void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object));
+	    }
+	}
+
+	if (RGENGC_CHECK_MODE == 3) {
+	    if (objspace->rgengc.interesting_object) {
+		if (FIXNUM_P(objspace->rgengc.parent_object)) {
+		    fprintf(stderr, "rgengc_check_shady: [line %d] -> %p (%s)\n",
+			    FIX2INT(objspace->rgengc.parent_object), (void *)obj, obj_type_name(obj));
+		}
+		else {
+		    fprintf(stderr, "rgengc_check_shady: %p (%s) -> %p (%s)\n",
+			    (void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object),
+			    (void *)obj, obj_type_name(obj));
+		}
 	    }
 	}
     }
@@ -3520,8 +3535,7 @@ gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th)
 
 		fprintf(stderr, "gc_marks_test: %p (%s) is living, but not marked && not promoted.\n", p, obj_type_name((VALUE)p));
 		objspace->rgengc.interesting_object = (VALUE)p;
-		gc_marks_test(objspace, th);
-		rb_bug("gc_marks_test (again): %p (%s) is living, but not marked && not promoted.\n", p, obj_type_name((VALUE)p));
+		break;
 	    }
 	    p++;
 	}
@@ -3533,6 +3547,17 @@ gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th)
     free(temp_bitmaps);
 
     objspace->rgengc.during_minor_gc = TRUE;
+
+    if (objspace->rgengc.interesting_object) {
+	fprintf(stderr, "!!! restart minor gc\n");
+	objspace->rgengc.during_minor_gc = TRUE;
+	gc_marks_body(objspace, th);
+	fprintf(stderr, "!!! restart major gc\n");
+	objspace->rgengc.during_minor_gc = FALSE;
+	gc_marks_body(objspace, th);
+	rb_bug("gc_marks_test (again): %p (%s) is living, but not marked && not promoted.\n",
+	       (void *)objspace->rgengc.interesting_object, obj_type_name((VALUE)objspace->rgengc.interesting_object));
+    }
 #endif
 }
 

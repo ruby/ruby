@@ -1,3 +1,9 @@
+Wed Jun 19 07:02:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RGENGC_CHECK_MODE): add new check mode `3'.
+	  In this mode, show all references if there is
+	  a miss-corrected object.
+
 Wed Jun 19 06:31:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_stress_set): add special option of GC.stress.
