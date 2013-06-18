@@ -1,3 +1,8 @@
+Wed Jun 19 07:06:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_remember): check T_NONE and T_ZOMBIE
+	  if RGENGC_CHECK_MODE > 0.
+
 Wed Jun 19 07:02:19 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (RGENGC_CHECK_MODE): add new check mode `3'.

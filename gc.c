@@ -3632,6 +3632,19 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 		  RVALUE_SHADY(obj) ? "shady" : "non-shady",
 		  rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");
 
+#if RGENGC_CHECK_MODE > 0
+    {
+	switch (BUILTIN_TYPE(obj)) {
+	  case T_NONE:
+	  case T_ZOMBIE:
+	    rb_bug("rgengc_remember: should not remember %p (%s)\n",
+		   (void *)obj, obj_type_name(obj));
+	  default:
+	    ;
+	}
+    }
+#endif
+
     if (RGENGC_PROFILE) {
 	if (!rgengc_remembered(objspace, obj)) {
 	    if (!RVALUE_SHADY(obj)) {
