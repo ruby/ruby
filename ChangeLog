@@ -1,3 +1,7 @@
+Tue Jun 18 22:08:53 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/object_tracing.c: Return for ::allocation_generation
+
 Tue Jun 18 22:04:35 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/objspace/object_tracing.c: Document object_tracing methods.

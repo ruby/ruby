@@ -302,7 +302,7 @@ allocation_method_id(VALUE objspace, VALUE obj)
 }
 
 /*
- * call-seq: allocation_allocation_generation(object) -> 
+ * call-seq: allocation_generation(object) -> Fixnum
  *
  * Returns garbage collector generation for the given +object+.
  *
