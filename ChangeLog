@@ -1,3 +1,7 @@
+Tue Jun 18 20:29:47 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/.document: add object_tracing.c to document file
+
 Tue Jun 18 20:20:27 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/objspace/objspace.c: rdoc on require to overview from r41355
