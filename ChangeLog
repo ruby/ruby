@@ -1,3 +1,7 @@
+Wed Jun 19 06:29:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (kwmerge_i): add WB.
+
 Wed Jun 19 06:26:49 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c: `st_update()' also has same issue of last fix.

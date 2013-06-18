@@ -2174,7 +2174,9 @@ static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
-    st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value);
+    if (st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
+	OBJ_WRITTEN(hash, Qundef, value);
+    }
     return ST_CONTINUE;
 }
 
