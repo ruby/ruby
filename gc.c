@@ -3628,7 +3628,7 @@ rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 static void
 rgengc_remember(rb_objspace_t *objspace, VALUE obj)
 {
-    rgengc_report(0, objspace, "rgengc_remember: %p (%s, %s) %s\n", (void *)obj, obj_type_name(obj),
+    rgengc_report(2, objspace, "rgengc_remember: %p (%s, %s) %s\n", (void *)obj, obj_type_name(obj),
 		  RVALUE_SHADY(obj) ? "shady" : "non-shady",
 		  rgengc_remembersetbits_get(objspace, obj) ? "was already remembered" : "is remembered now");
 
@@ -3677,7 +3677,7 @@ static size_t
 rgengc_rememberset_mark(rb_objspace_t *objspace)
 {
     size_t i, j;
-    size_t shady_object_count = 0;
+    size_t shady_object_count = 0, clear_count = 0;
     RVALUE *p, *offset;
     uintptr_t *bits, bitset;
 
@@ -3700,6 +3700,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 			if (!RVALUE_SHADY(p)) {
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));
 			    CLEAR_IN_BITMAP(bits, p);
+			    clear_count++;
 			}
 			else {
 			    shady_object_count++;
@@ -3712,7 +3713,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 	}
     }
 
-    rgengc_report(2, objspace, "rgengc_rememberset_mark: mark_cnt: %"PRIdSIZE", shady_object_count: %"PRIdSIZE"\n", shady_object_count);
+    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear_count: %"PRIdSIZE", shady_object_count: %"PRIdSIZE"\n", clear_count, shady_object_count);
 
     return shady_object_count;
 }

@@ -1,3 +1,10 @@
+Wed Jun 19 07:09:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_remember): fix output level.
+
+	* gc.c (rgengc_rememberset_mark): fix to output clear count.
+	  (shady_object_count + clear_count = count of remembered objects)
+
 Wed Jun 19 07:06:21 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_remember): check T_NONE and T_ZOMBIE
