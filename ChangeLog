@@ -1,3 +1,8 @@
+Tue Jun 18 12:53:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (nlz): Cast the result explicitly.
+	  (big2dbl): Don't assign BDIGIT values to int variable.
+
 Tue Jun 18 12:25:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_xor): Non-effective code removed.

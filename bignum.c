@@ -2398,7 +2398,7 @@ nlz(BDIGIT x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return n - x;
+    return (int)(n - x);
 }
 
 static double
@@ -2423,10 +2423,11 @@ big2dbl(VALUE x)
 	    }
 	    dl = ds[i];
 	    if (bits && (dl & (1UL << (bits %= BITSPERDIG)))) {
-		int carry = dl & ~(~(BDIGIT)0 << bits);
+		int carry = (dl & ~(~(BDIGIT)0 << bits)) != 0;
 		if (!carry) {
 		    while (i-- > 0) {
-			if ((carry = ds[i]) != 0) break;
+			carry = ds[i] != 0;
+			if (carry) break;
 		    }
 		}
 		if (carry) {
