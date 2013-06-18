@@ -1,3 +1,12 @@
+Tue Jun 18 22:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): ensure methods of type
+	  VM_METHOD_TYPE_ATTR_SET are called with 1 argument
+
+	* test/ruby/test_module.rb (class TestModule): add test
+
+	[ruby-core:55543] [Bug #8540]
+
 Tue Jun 18 22:36:23 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_profile_record_flag): reason seems like one-hot encoding.
