@@ -89,7 +89,7 @@ typedef struct {
     unsigned int initial_free_min;
     double initial_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-    int gc_stress;
+    VALUE gc_stress;
 #endif
 } ruby_gc_params_t;
 
@@ -362,7 +362,7 @@ typedef struct rb_objspace {
     size_t total_allocated_object_num;
     size_t total_freed_object_num;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
-    int gc_stress;
+    VALUE gc_stress;
 
     struct mark_func_data_struct {
 	void *data;
@@ -388,7 +388,7 @@ typedef struct rb_objspace {
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*GET_VM()->objspace)
 #define ruby_initial_gc_stress	initial_params.gc_stress
-int *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
+VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}};
 int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
