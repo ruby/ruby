@@ -1344,6 +1344,7 @@ VALUE rb_funcall(VALUE, ID, int, ...);
 VALUE rb_funcall2(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall3(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
+VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 
