@@ -650,6 +650,7 @@ iow_newobj(VALUE obj)
     return rb_data_typed_object_alloc(rb_mInternalObjectWrapper, (void *)obj, &iow_data_type);
 }
 
+/* Returns the type of the internal object. */
 static VALUE
 iow_type(VALUE self)
 {
@@ -657,6 +658,7 @@ iow_type(VALUE self)
     return type2sym(BUILTIN_TYPE(obj));
 }
 
+/* See Object#inspect. */
 static VALUE
 iow_inspect(VALUE self)
 {
@@ -666,6 +668,7 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %s>", (void *)obj, rb_id2name(SYM2ID(type)));
 }
 
+/* Returns the Object#object_id of the internal object. */
 static VALUE
 iow_internal_object_id(VALUE self)
 {
@@ -805,6 +808,15 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
 
+    /*
+     * This class is used as a return value from
+     * ObjectSpace::reachable_objects_from.
+     *
+     * When ObjectSpace::reachable_objects_from returns an object with
+     * references to an internal object, an instance of this class is returned.
+     *
+     * You can use the #type method to check the type of the internal object.
+     */
     rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
     rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);

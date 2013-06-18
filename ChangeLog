@@ -1,3 +1,7 @@
+Tue Jun 18 20:55:05 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/objspace.c: Document ObjectSpace::InternalObjectWrapper.
+
 Tue Jun 18 20:39:04 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/objspace/object_tracing.c: Teach rdoc object_tracing.c [Bug #8537]
