@@ -438,8 +438,8 @@ EOS
 
   def test_map_zip
     bug7507 = '[ruby-core:50545]'
-    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip(){}"], bug7507)
-    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip().to_a"], bug7507)
+    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip(){}"], "", bug7507)
+    assert_ruby_status(["-e", "GC.stress = true", "-e", "(1..10).lazy.map{}.zip().to_a"], "", bug7507)
   end
 
   def test_require_block
