@@ -136,11 +136,9 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_block_persist_between_calls
     bug8531 = '[Bug #8531]'
-    skip bug8531
-    m = :m_block_given?.to_proc
     m2 = :m2_block_given?.to_proc
-    assert_equal([true, false], m2.call(self) {}, "#{bug8531} nested with block")
-    assert_equal([false, false], m2.call(self), "#{bug8531} nested without block")
+    assert_equal([true, false], m2.call(self, m2) {}, "#{bug8531} nested with block")
+    assert_equal([false, false], m2.call(self, m2), "#{bug8531} nested without block")
   end
 
   def test_succ
