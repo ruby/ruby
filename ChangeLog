@@ -1,3 +1,9 @@
+Tue Jun 18 16:43:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_heredoc_restore): clear lex_strterm always to get
+	  rid of marking recycled node.  this bug is revealed by r41372 with
+	  GC.stress=true.
+
 Tue Jun 18 12:53:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (nlz): Cast the result explicitly.
