@@ -24,6 +24,7 @@ module GenericParserTest
     @datetime_expected = XMLRPC::DateTime.new(2004, 11, 5, 1, 15, 23)
 
     @fault_doc = File.read(datafile('fault.xml'))
+    @string_fault_code_doc = File.read(datafile('string_fault_code.xml'))
   end
 
   # test parseMethodResponse --------------------------------------------------
@@ -56,14 +57,23 @@ module GenericParserTest
 
   # test fault ----------------------------------------------------------------
 
+  def helper_doc_fault(doc,code)
+    flag, fault = @p.parseMethodResponse(doc)
+    assert_equal(flag, false)
+    unless fault.is_a? XMLRPC::FaultException
+      assert(false, "must be an instance of class XMLRPC::FaultException")
+    end
+    assert_equal(fault.faultCode, code)
+    assert_equal(fault.faultString, "an error message")
+  end
+
   def test_fault
-    flag, fault = @p.parseMethodResponse(@fault_doc)
-     assert_equal(flag, false)
-     unless fault.is_a? XMLRPC::FaultException
-       assert(false, "must be an instance of class XMLRPC::FaultException")
-     end
-     assert_equal(fault.faultCode, 4)
-     assert_equal(fault.faultString, "an error message")
+    helper_doc_fault(@fault_doc,4)
+  end
+
+
+  def test_fault_code_document
+    helper_doc_fault(@string_fault_code_doc, "serverError")
   end
 
   def test_fault_message
@@ -71,6 +81,7 @@ module GenericParserTest
     assert_equal('an error message', fault.to_s)
     assert_equal('#<XMLRPC::FaultException: an error message>', fault.inspect)
   end
+
 end
 
 # create test class for each installed parser
