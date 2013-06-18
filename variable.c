@@ -1621,6 +1621,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	if (!tbl) tbl = RCLASS_IV_TBL(mod) = st_init_numtable();
 	av = (st_data_t)TypedData_Wrap_Struct(0, &autoload_data_type, 0);
 	st_add_direct(tbl, (st_data_t)autoload, av);
+	OBJ_WRITTEN(mod, Qnil, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
     fn = rb_str_new2(file);
