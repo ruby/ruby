@@ -3833,6 +3833,13 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (ruby_gc_stress && !ruby_disable_gc_stress) {
 	minor_gc = FALSE;
 	immediate_sweep = TRUE;
+
+	if (FIXNUM_P(ruby_gc_stress)) {
+	    int flag = ruby_gc_stress;
+
+	    if (flag & 0x01) minor_gc = TRUE;
+	    if (flag & 0x02) immediate_sweep = FALSE;
+	}
     }
     else {
 	if (full_mark) {
@@ -4171,7 +4178,7 @@ gc_stress_set(VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
     rb_secure(2);
-    ruby_gc_stress = RTEST(flag);
+    ruby_gc_stress = FIXNUM_P(flag) ? flag : (RTEST(flag) ? Qtrue : Qfalse);
     return flag;
 }
 
