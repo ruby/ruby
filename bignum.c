@@ -4638,8 +4638,6 @@ rb_big_xor(VALUE xx, VALUE yy)
 	ds2 = BDIGITS(y);
 	sign = RBIGNUM_SIGN(x);
     }
-    RBIGNUM_SET_SIGN(x, RBIGNUM_SIGN(x)?1:0);
-    RBIGNUM_SET_SIGN(y, RBIGNUM_SIGN(y)?1:0);
     z = bignew(l2, !(RBIGNUM_SIGN(x) ^ RBIGNUM_SIGN(y)));
     zds = BDIGITS(z);
 
