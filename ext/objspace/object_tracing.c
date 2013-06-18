@@ -144,6 +144,32 @@ stop_trace_object_allocations(void *data)
     return Qnil;
 }
 
+/*
+ * call-seq: trace_object_allocations { block }
+ *
+ * Starts tracing object allocations from the ObjectSpace extension module.
+ *
+ * For example:
+ *
+ *	require 'objspace'
+ *
+ *	class C
+ *	  include ObjectSpace
+ *
+ *	  def foo
+ *	    trace_object_allocations do
+ *	      obj = Object.new
+ *	      p "#{allocation_sourcefile(obj)}:#{allocation_sourceline(obj)}"
+ *	    end
+ *	  end
+ *	end
+ *
+ *	C.new.foo #=> "objtrace.rb:8"
+ *
+ * This example has included the ObjectSpace module to make it easier to read,
+ * but you can also use the
+ * "<code>ObjectSpace::trace_object_allocations</code>" notation.
+ */
 static VALUE
 trace_object_allocations(VALUE objspace)
 {
@@ -175,6 +201,13 @@ lookup_allocation_info(VALUE obj)
     return NULL;
 }
 
+/*
+ * call-seq: allocation_sourcefile(object) -> string
+ *
+ * Returns the source file origin from the given +object+.
+ *
+ * See ::trace_object_allocations for more information and examples.
+ */
 static VALUE
 allocation_sourcefile(VALUE objspace, VALUE obj)
 {
@@ -187,6 +220,13 @@ allocation_sourcefile(VALUE objspace, VALUE obj)
     }
 }
 
+/*
+ * call-seq: allocation_sourceline(object) -> string
+ *
+ * Returns the original line from source for from the given +object+.
+ *
+ * See ::trace_object_allocations for more information and examples.
+ */
 static VALUE
 allocation_sourceline(VALUE objspace, VALUE obj)
 {
@@ -199,6 +239,24 @@ allocation_sourceline(VALUE objspace, VALUE obj)
     }
 }
 
+/*
+ * call-seq: allocation_class_path(object) -> string
+ *
+ * Returns the class for the given +object+.
+ *
+ *	class A
+ *	  def foo
+ *	    ObjectSpace::trace_object_allocations do
+ *	      obj = Object.new
+ *	      p "#{ObjectSpace::allocation_class_path(obj)}"
+ *	    end
+ *	  end
+ *	end
+ *
+ *	A.new.foo #=> "Class"
+ *
+ * See ::trace_object_allocations for more information and examples.
+ */
 static VALUE
 allocation_class_path(VALUE objspace, VALUE obj)
 {
@@ -211,6 +269,26 @@ allocation_class_path(VALUE objspace, VALUE obj)
     }
 }
 
+/*
+ * call-seq: allocation_method_id(object) -> string
+ *
+ * Returns the method identifier for the given +object+.
+ *
+ *	class A
+ *	  include ObjectSpace
+ *
+ *	  def foo
+ *	    trace_object_allocations do
+ *	      obj = Object.new
+ *	      p "#{allocation_class_path(obj)}##{allocation_method_id(obj)}"
+ *	    end
+ *	  end
+ *	end
+ *
+ *	A.new.foo #=> "Class#new"
+ *
+ * See ::trace_object_allocations for more information and examples.
+ */
 static VALUE
 allocation_method_id(VALUE objspace, VALUE obj)
 {
@@ -223,6 +301,26 @@ allocation_method_id(VALUE objspace, VALUE obj)
     }
 }
 
+/*
+ * call-seq: allocation_allocation_generation(object) -> 
+ *
+ * Returns garbage collector generation for the given +object+.
+ *
+ *	class B
+ *	  include ObjectSpace
+ *
+ *	  def foo
+ *	    trace_object_allocations do
+ *	      obj = Object.new
+ *	      p "Generation is #{allocation_generation(obj)}"
+ *	    end
+ *	  end
+ *	end
+ *
+ *	B.new.foo #=> "Generation is 3"
+ *
+ * See ::trace_object_allocations for more information and examples.
+ */
 static VALUE
 allocation_generation(VALUE objspace, VALUE obj)
 {
