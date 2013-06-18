@@ -342,6 +342,7 @@ typedef struct rb_objspace {
 	size_t remembered_normal_object_count;
 	size_t remembered_shady_object_count;
 #if RGENGC_PROFILE >= 2
+	size_t generated_normal_object_count_types[RUBY_T_MASK];
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
 	size_t shade_operation_count_types[RUBY_T_MASK];
 	size_t promote_operation_count_types[RUBY_T_MASK];
@@ -934,7 +935,12 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 #endif
 
 #if RGENGC_PROFILE
-    if (flags & FL_WB_PROTECTED) objspace->profile.generated_normal_object_count++;
+    if (flags & FL_WB_PROTECTED) {
+	objspace->profile.generated_normal_object_count++;
+#if RGENGC_PROFILE >= 2
+	objspace->profile.generated_normal_object_count_types[BUILTIN_TYPE(obj)]++;
+#endif
+    }
     else {
 	objspace->profile.generated_shady_object_count++;
 #if RGENGC_PROFILE >= 2
@@ -4120,6 +4126,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_remembered_shady_object_count, SIZET2NUM(objspace->profile.remembered_shady_object_count));
 #if RGENGC_PROFILE >= 2
     {
+	gc_count_add_each_types(hash, "generated_normal_object_count_types", objspace->profile.generated_normal_object_count_types);
 	gc_count_add_each_types(hash, "generated_shady_object_count_types", objspace->profile.generated_shady_object_count_types);
 	gc_count_add_each_types(hash, "shade_operation_count_types", objspace->profile.shade_operation_count_types);
 	gc_count_add_each_types(hash, "promote_operation_count_types", objspace->profile.promote_operation_count_types);

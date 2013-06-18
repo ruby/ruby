@@ -1,3 +1,8 @@
+Tue Jun 18 11:26:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): add `generated_normal_object_count_types' for
+	  RGENGC_PROFILE >= 2.
+
 Tue Jun 18 11:02:18 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_maybe): check to skip T_NONE.
