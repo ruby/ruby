@@ -4332,7 +4332,7 @@ rb_big_pow(VALUE x, VALUE y)
 	    SIGNED_VALUE mask;
 	    const long xlen = RBIGNUM_LEN(x);
             const long xbits = BITSPERDIG*xlen - nlz(RBIGNUM_DIGITS(x)[xlen-1]);
-	    const long BIGLEN_LIMIT = BITSPERDIG*1024*1024;
+	    const long BIGLEN_LIMIT = 32*1024*1024;
 
 	    if ((xbits > BIGLEN_LIMIT) || (xbits * yy > BIGLEN_LIMIT)) {
 		rb_warn("in a**b, b may be too big");

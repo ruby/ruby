@@ -1,3 +1,20 @@
+Tue Jun 18 18:39:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check __int128.
+
+	* include/ruby/defines.h (BDIGIT_DBL): Use uint128_t if it is available.
+	  (BDIGIT): Use uint64_t if uint128_t is available.
+	  (SIZEOF_BDIGITS): Defined for above case.
+	  (BDIGIT_DBL_SIGNED): Ditto.
+	  (PRI_BDIGIT_PREFIX): Ditto.
+
+	* include/ruby/ruby.h (PRI_64_PREFIX): Defined.
+
+	* bignum.c (rb_big_pow): Don't use BITSPERDIG for the condition which
+	  rb_big_pow returns Float or Bignum.
+
+	[ruby-dev:47413] [Feature #8509]
+
 Tue Jun 18 16:43:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_heredoc_restore): clear lex_strterm always to get
