@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'timeout'
 require 'tmpdir'
 
 class TestNotImplement < Test::Unit::TestCase
@@ -20,13 +21,15 @@ class TestNotImplement < Test::Unit::TestCase
   end
 
   def test_call_fork
-    if Process.respond_to?(:fork)
-      assert_nothing_raised {
-        pid = fork {}
-        Process.wait pid
-      }
-    end
-  end
+    pid = nil
+    Timeout.timeout(1) {
+      pid = fork {sleep}
+      Process.wait pid
+      pid = nil
+    }
+  ensure
+    Process.kill :KILL, pid if pid
+  end if Process.respond_to?(:fork)
 
   def test_call_lchmod
     if File.respond_to?(:lchmod)
