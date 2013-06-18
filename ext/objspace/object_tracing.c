@@ -238,6 +238,10 @@ allocation_generation(VALUE objspace, VALUE obj)
 void
 Init_object_tracing(VALUE rb_mObjSpace)
 {
+#if 0
+    rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
+#endif
+
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations", trace_object_allocations, 0);
     rb_define_module_function(rb_mObjSpace, "allocation_sourcefile", allocation_sourcefile, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_sourceline", allocation_sourceline, 1);
