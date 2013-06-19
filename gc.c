@@ -5348,10 +5348,11 @@ gc_profile_total_time(VALUE self)
 {
     double time = 0;
     rb_objspace_t *objspace = &rb_objspace;
-    size_t i;
-    size_t count = objspace->profile.next_index - 1;
 
-    if (objspace->profile.run && count > 0) {
+    if (objspace->profile.run && objspace->profile.next_index > 0) {
+	size_t i;
+	size_t count = objspace->profile.next_index - 1;
+
 	for (i = 0; i < count; i++) {
 	    time += objspace->profile.record[i].gc_time;
 	}
