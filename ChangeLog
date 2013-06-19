@@ -1,3 +1,14 @@
+Thu Jun 20 05:38:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: Accumulate sweep time to GC time.
+	  Now [GC time] is [mark time] + [sweep time] + [misc].
+	  ([GC time] >= [mark time] + [sweep time])
+
+	* gc.c (gc_prof_sweep_slot_timer_start/stop): rename to
+	  gc_prof_sweep_timer_start/stop and locate at lazy_sweep().
+
+	* gc.c (elapsed_time_from): add a utility function.
+
 Thu Jun 20 05:08:53 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_marks): fix wrong option. FALSE means major/full GC.
