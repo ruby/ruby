@@ -173,9 +173,10 @@ class TestSignal < Test::Unit::TestCase
   end if Process.respond_to?(:kill)
 
   def test_kill_immediately_before_termination
-    assert_in_out_err(["-e", <<-'end;'], "", %w"foo")
-      Signal.trap(:USR1) { STDOUT.syswrite("foo") }
-      Process.kill :USR1, $$
+    Signal.list[sig = "USR1"] or sig = "INT"
+    assert_in_out_err(["-e", <<-"end;"], "", %w"foo")
+      Signal.trap(:#{sig}) { STDOUT.syswrite("foo") }
+      Process.kill :#{sig}, $$
     end;
   end if Process.respond_to?(:kill)
 
