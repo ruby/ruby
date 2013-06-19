@@ -15,7 +15,7 @@ end if defined? Curses
 
 class TestCurses
   def run_curses(src, input = nil, timeout: 1)
-    PTY.spawn({"TERM"=>ENV["TERM"]||"dumb"}, EnvUtil.rubybin, "-e", <<-"src") {|r, w, pid|
+    r, w, pid = PTY.spawn({"TERM"=>ENV["TERM"]||"dumb"}, EnvUtil.rubybin, "-e", <<-"src")
 require 'timeout'
 require 'curses'
 include Curses
@@ -33,6 +33,7 @@ ensure
   $stdio.flush
 end
 src
+    begin
       wait = r.readpartial(1)
       if wait != "!"
         wait << r.readpartial(1000)
@@ -48,7 +49,11 @@ src
       res, error = Marshal.load(res[/(.*)\Z/, 1].unpack('m')[0])
       raise error if error
       return res
-    }
+    ensure
+      r.close unless r.closed?
+      w.close unless w.closed?
+      Process.wait(pid)
+    end
   end
 
   def test_getch
