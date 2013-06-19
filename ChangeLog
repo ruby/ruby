@@ -1,3 +1,16 @@
+Thu Jun 20 07:30:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: add new rules `gcbench-rdoc', `gcbench-hash'.
+
+	* tool/gcbench.rb: separate GC bench framework and process.
+
+	* tool/hashbench1.rb, tool/hashbench2.rb: add two types GC bench.
+	  hashbench1: many temporal objects (GC by newobj)
+	  hashbench2: hash size becomes bigger and bigger (GC by malloc)
+	  Two benchs are executed by `gcbench-hash' rule.
+
+	* tool/rdocbench.rb: separated.
+
 Thu Jun 20 06:25:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/rdocbench.rb: add summary.
