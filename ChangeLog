@@ -1,3 +1,12 @@
+Wed Jun 19 21:02:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_uint2big): Consider environments BDIGIT is bigger than
+	  long.
+	  (big2ulong): Ditto.
+	  (rb_big_aref): Ditto.
+	  (rb_big_pack): Just call rb_integer_pack.
+	  (rb_big_unpack): Just call rb_integer_unpack.
+
 Wed Jun 19 20:51:21 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* gc.c (gc_stress_get): GC.stress can be Fixnum.

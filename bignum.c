@@ -332,19 +332,25 @@ rb_big_norm(VALUE x)
 VALUE
 rb_uint2big(VALUE n)
 {
-    BDIGIT_DBL num = n;
     long i = 0;
     BDIGIT *digits;
     VALUE big;
 
-    big = bignew(DIGSPERLONG, 1);
+#if SIZEOF_BDIGITS >= SIZEOF_VALUE
+    big = bignew(1, 1);
     digits = BDIGITS(big);
-    while (i < DIGSPERLONG) {
+    digits[0] = n;
+#else
+    BDIGIT_DBL num = n;
+    big = bignew(bdigit_roomof(SIZEOF_VALUE), 1);
+    digits = BDIGITS(big);
+    while (i < bdigit_roomof(SIZEOF_VALUE)) {
 	digits[i++] = BIGLO(num);
 	num = BIGDN(num);
     }
+#endif
 
-    i = DIGSPERLONG;
+    i = bdigit_roomof(SIZEOF_VALUE);;
     while (--i && !digits[i]) ;
     RBIGNUM_SET_LEN(big, i+1);
     return big;
@@ -385,6 +391,7 @@ rb_int2inum(SIGNED_VALUE n)
     return rb_int2big(n);
 }
 
+#if 0
 #if SIZEOF_LONG % SIZEOF_BDIGITS != 0
 # error unexpected SIZEOF_LONG : SIZEOF_BDIGITS ratio
 #endif
@@ -410,6 +417,7 @@ rb_int2inum(SIGNED_VALUE n)
  * If given size of buf (num_longs) is not enough to represent val,
  * higher words (including a sign bit) are ignored.
  */
+
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
 {
@@ -492,6 +500,23 @@ rb_big_unpack(unsigned long *buf, long num_longs)
         }
         return bignorm(big);
     }
+}
+#endif
+
+void
+rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
+{
+    rb_integer_pack(val, buf, num_longs, sizeof(long), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP);
+}
+
+VALUE
+rb_big_unpack(unsigned long *buf, long num_longs)
+{
+    return rb_integer_unpack(buf, num_longs, sizeof(long), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP);
 }
 
 /* number of bytes of abs(val). additionaly number of leading zeros can be returned. */
@@ -2228,10 +2253,10 @@ big2ulong(VALUE x, const char *type, int check)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > DIGSPERLONG) {
+    if (rb_absint_size(x, NULL) > sizeof(long)) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-	len = DIGSPERLONG;
+	len = sizeof(long)/SIZEOF_BDIGITS;
     }
     ds = BDIGITS(x);
     num = 0;
@@ -2239,7 +2264,7 @@ big2ulong(VALUE x, const char *type, int check)
 	num = BIGUP(num);
 	num += ds[len];
     }
-    return (VALUE)num;
+    return (VALUE)(unsigned long)num;
 }
 
 VALUE
@@ -4861,7 +4886,7 @@ rb_big_aref(VALUE x, VALUE y)
 	if (!RBIGNUM_SIGN(y))
 	    return INT2FIX(0);
 	bigtrunc(y);
-	if (RBIGNUM_LEN(y) > DIGSPERLONG) {
+	if (rb_absint_size(y, NULL) > sizeof(long)) {
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
