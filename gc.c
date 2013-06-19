@@ -3809,6 +3809,7 @@ rb_gc_force_recycle(VALUE p)
 
 #if USE_RGENGC
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
+    CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(p), p);
 #endif
 
     objspace->total_freed_object_num++;

@@ -1,3 +1,7 @@
+Wed Jun 19 23:29:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_force_recycle): clear oldgen bitmap, too.
+
 Wed Jun 19 21:02:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_uint2big): Consider environments BDIGIT is bigger than
