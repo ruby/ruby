@@ -112,10 +112,6 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
-#if 0
-	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node);
-	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block);
-#endif
 	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
@@ -171,7 +167,10 @@ static const rb_data_type_t iseq_data_type = {
 	iseq_mark,
 	iseq_free,
 	iseq_memsize,
-    },
+    },              /* functions */
+    0,              /* parent */
+    0,              /* data */
+    FL_WB_PROTECTED /* flags */
 };
 
 static VALUE
@@ -185,15 +184,20 @@ static rb_iseq_location_t *
 iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, size_t first_lineno)
 {
     rb_iseq_location_t *loc = &iseq->location;
-    loc->path = path;
-    if (RTEST(absolute_path) && rb_str_cmp(path, absolute_path) == 0)
-	loc->absolute_path = path;
-    else
-	loc->absolute_path = absolute_path;
-    loc->label = loc->base_label = name;
+    OBJ_WRITE(iseq->self, (VALUE *)&loc->path, path);
+    if (RTEST(absolute_path) && rb_str_cmp(path, absolute_path) == 0) {
+	OBJ_WRITE(iseq->self, (VALUE *)&loc->absolute_path, path);
+    }
+    else {
+	OBJ_WRITE(iseq->self, (VALUE *)&loc->absolute_path, absolute_path);
+    }
+    OBJ_WRITE(iseq->self, (VALUE *)&loc->label, name);
+    OBJ_WRITE(iseq->self, (VALUE *)&loc->base_label, name);
     loc->first_lineno = first_lineno;
     return loc;
 }
+
+#define ISEQ_SET_CREF(iseq, cref) OBJ_WRITE((iseq)->self, (VALUE *)&(iseq)->cref_stack, (cref))
 
 static void
 set_relation(rb_iseq_t *iseq, const VALUE parent)
@@ -205,7 +209,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     /* set class nest stack */
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
-	iseq->cref_stack = NEW_CREF(rb_cObject);
+	OBJ_WRITE(iseq->self, (VALUE *)&iseq->cref_stack, NEW_CREF(rb_cObject));
 	iseq->cref_stack->nd_refinements = Qnil;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
 	if (th->top_wrapper) {
@@ -213,18 +217,18 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	    cref->nd_refinements = Qnil;
 	    cref->nd_visi = NOEX_PRIVATE;
 	    cref->nd_next = iseq->cref_stack;
-	    iseq->cref_stack = cref;
+	    ISEQ_SET_CREF(iseq, cref);
 	}
 	iseq->local_iseq = iseq;
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-	iseq->cref_stack = NEW_CREF(0); /* place holder */
+	ISEQ_SET_CREF(iseq, NEW_CREF(0)); /* place holder */
 	iseq->cref_stack->nd_refinements = Qnil;
 	iseq->local_iseq = iseq;
     }
     else if (RTEST(parent)) {
 	GetISeqPtr(parent, piseq);
-	iseq->cref_stack = piseq->cref_stack;
+	ISEQ_SET_CREF(iseq, piseq->cref_stack);
 	iseq->local_iseq = piseq->local_iseq;
     }
 
@@ -242,7 +246,7 @@ void
 rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj)
 {
     if (!RTEST(iseq->mark_ary)) {
-	iseq->mark_ary = rb_ary_tmp_new(3);
+	OBJ_WRITE(iseq->self, (VALUE *)&iseq->mark_ary, rb_ary_tmp_new(3));
 	RBASIC_CLEAR_CLASS(iseq->mark_ary);
     }
     rb_ary_push(iseq->mark_ary, obj);
@@ -258,7 +262,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->arg_rest = -1;
     iseq->arg_block = -1;
     iseq->arg_keyword = -1;
-    iseq->klass = 0;
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->klass, 0);
     set_relation(iseq, parent);
 
     OBJ_FREEZE(name);
@@ -266,11 +270,11 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq_location_setup(iseq, path, absolute_path, name, first_lineno);
     if (iseq != iseq->local_iseq) {
-	iseq->location.base_label = iseq->local_iseq->location.label;
+	OBJ_WRITE(iseq->self, (VALUE *)&iseq->location.base_label, iseq->local_iseq->location.label);
     }
 
     iseq->defined_method_id = 0;
-    iseq->mark_ary = 0;
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->mark_ary, 0);
 
     /*
      * iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
@@ -280,15 +284,15 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
-    iseq->compile_data->err_info = Qnil;
-    iseq->compile_data->mark_ary = rb_ary_tmp_new(3);
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->compile_data->err_info, Qnil);
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->compile_data->mark_ary, rb_ary_tmp_new(3));
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
       (struct iseq_compile_data_storage *)
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
 		sizeof(struct iseq_compile_data_storage));
 
-    iseq->compile_data->catch_table_ary = rb_ary_new();
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->compile_data->catch_table_ary, rb_ary_new());
     iseq->compile_data->storage_head->pos = 0;
     iseq->compile_data->storage_head->next = 0;
     iseq->compile_data->storage_head->size =
@@ -298,12 +302,12 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
-    iseq->coverage = Qfalse;
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->coverage, Qfalse);
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    iseq->coverage = rb_hash_lookup(coverages, path);
-	    if (NIL_P(iseq->coverage)) iseq->coverage = Qfalse;
+	    OBJ_WRITE(iseq->self, (VALUE *)&iseq->coverage, rb_hash_lookup(coverages, path));
+	    if (NIL_P(iseq->coverage)) OBJ_WRITE(iseq->self, (VALUE *)&iseq->coverage, Qfalse);
 	}
     }
 
@@ -1899,22 +1903,23 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     GetISeqPtr(iseqval, iseq0);
     GetISeqPtr(newiseq, iseq1);
 
-    *iseq1 = *iseq0;
+    MEMCPY(iseq1, iseq0, rb_iseq_t, 1); /* TODO: write barrier? */
+
     iseq1->self = newiseq;
     if (!iseq1->orig) {
-	iseq1->orig = iseqval;
+	OBJ_WRITE(iseq1->self, (VALUE *)&iseq1->orig, iseqval);
     }
     if (iseq0->local_iseq == iseq0) {
 	iseq1->local_iseq = iseq1;
     }
     if (newcbase) {
-	iseq1->cref_stack = NEW_CREF(newcbase);
+	ISEQ_SET_CREF(iseq1, NEW_CREF(newcbase));
 	iseq1->cref_stack->nd_refinements = iseq0->cref_stack->nd_refinements;
 	iseq1->cref_stack->nd_visi = iseq0->cref_stack->nd_visi;
 	if (iseq0->cref_stack->nd_next) {
 	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;
 	}
-	iseq1->klass = newcbase;
+	OBJ_WRITE(iseq1, (VALUE *)&iseq1->klass, newcbase);
     }
 
     return newiseq;
@@ -2065,11 +2070,11 @@ rb_iseq_build_for_ruby2cext(
     GetISeqPtr(iseqval, iseq);
 
     /* copy iseq */
-    *iseq = *iseq_template;
-    iseq->location.label = rb_str_new2(name);
-    iseq->location.path = rb_str_new2(path);
+    MEMCPY(iseq, iseq_template, rb_iseq_t, 1); /* TODO: write barrier, *iseq = *iseq_template; */
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->location.label, rb_str_new2(name));
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->location.path, rb_str_new2(path));
     iseq->location.first_lineno = first_lineno;
-    iseq->mark_ary = 0;
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->mark_ary, 0);
     iseq->self = iseqval;
 
     iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);

@@ -186,10 +186,10 @@ typedef struct rb_call_info_struct {
   GetCoreDataFromValue((obj), rb_iseq_t, (ptr))
 
 typedef struct rb_iseq_location_struct {
-    VALUE path;
-    VALUE absolute_path;
-    VALUE base_label;
-    VALUE label;
+    const VALUE path;
+    const VALUE absolute_path;
+    const VALUE base_label;
+    const VALUE label;
     size_t first_lineno;
 } rb_iseq_location_t;
 
@@ -217,8 +217,8 @@ struct rb_iseq_struct {
     VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
-    VALUE mark_ary;	/* Array: includes operands which should be GC marked */
-    VALUE coverage;     /* coverage array */
+    const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
+    const VALUE coverage;     /* coverage array */
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
@@ -293,7 +293,7 @@ struct rb_iseq_struct {
     /****************/
 
     VALUE self;
-    VALUE orig;			/* non-NULL if its data have origin */
+    const VALUE orig;			/* non-NULL if its data have origin */
 
     /* block inlining */
     /*
@@ -304,8 +304,8 @@ struct rb_iseq_struct {
      */
 
     /* klass/module nest information stack (cref) */
-    NODE *cref_stack;
-    VALUE klass;
+    NODE * const cref_stack;
+    const VALUE klass;
 
     /* misc */
     ID defined_method_id;	/* for define_method */

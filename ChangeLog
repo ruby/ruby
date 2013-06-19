@@ -1,3 +1,16 @@
+Wed Jun 19 15:14:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (struct rb_data_type_struct), gc.c: add
+	  rb_data_type_struct::flags. Now, this flags is passed
+	  at T_DATA object creation. You can specify FL_WB_PROTECTED
+	  on this flag.
+
+	* iseq.c: making non-shady iseq objects.
+
+	* class.c, compile.c, proc.c, vm.c: add WB for iseq objects.
+
+	* vm_core.h, iseq.h: constify fields to detect WB insertion.
+
 Wed Jun 19 15:11:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_mark_children): show more info for broken object.

@@ -79,9 +79,9 @@ struct iseq_compile_data_storage {
 
 struct iseq_compile_data {
     /* GC is needed */
-    VALUE err_info;
+    const VALUE err_info;
     VALUE mark_ary;
-    VALUE catch_table_ary;	/* Array */
+    const VALUE catch_table_ary;	/* Array */
 
     /* GC is not needed */
     struct iseq_label_data *start_label;

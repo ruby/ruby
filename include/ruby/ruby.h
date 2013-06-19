@@ -1037,6 +1037,7 @@ struct rb_data_type_struct {
     const rb_data_type_t *parent;
     void *data;        /* This area can be used for any purpose
                           by a programmer who define the type. */
+    VALUE flags;       /* FL_WB_PROTECTED */
 };
 
 #define HAVE_TYPE_RB_DATA_TYPE_T 1
