@@ -211,6 +211,7 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn(RUBY, '-e', '') {|r, w, pid|
       assert(r.close_on_exec?)
       assert(w.close_on_exec?)
+      Process.wait(pid)
     }
   rescue RuntimeError
     skip $!
