@@ -1,3 +1,9 @@
+Thu Jun 20 02:44:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (waitpid): should not return 0 but wait until exit
+	  unless WNOHANG is given.  waiting huge process may return while
+	  active, for some reason.
+
 Thu Jun 20 01:34:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bdigit_roomof): Use SIZEOF_BDIGITS.

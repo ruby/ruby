@@ -4153,8 +4153,10 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    /* wait... */
 	    if (rb_w32_wait_events_blocking(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
 		/* still active */
-		pid = 0;
-		break;
+		if (options & WNOHANG) {
+		    pid = 0;
+		    break;
+		}
 	    }
 	}
     }
