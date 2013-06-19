@@ -68,10 +68,17 @@ module EnvUtil
         signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
         begin
           Process.kill signal, pid
+          Timeout.timeout((reprieve unless signal == :KILL)) do
+            Process.wait(pid)
+          end
         rescue Errno::ESRCH
           break
+        rescue Timeout::Error
+          raise if signal == :KILL
+          signal = :KILL
         else
-        end until signal == :KILL or (sleep reprieve; signal = :KILL; false)
+          break
+        end while true
         raise Timeout::Error
       end
       out_p.close if capture_stdout
