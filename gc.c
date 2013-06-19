@@ -3634,7 +3634,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 		gc_free_stored_bitmaps(objspace, before_mark_stored_bitmaps);
 	    }
 	    else {
-		gc_marks_body(objspace, th, FALSE);
+		gc_marks_body(objspace, th, TRUE);
 	}
 	}
 
