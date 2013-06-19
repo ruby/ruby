@@ -63,9 +63,9 @@ class XArray < Array
   end
 end
 
-module DRbCore
-  def setup
-    @service_name = 'ut_drb.rb'
+module DRbBase
+  def setup_service(service_name)
+    @service_name = service_name
     @ext = DRbService.ext_service(@service_name)
     @there = @ext.front
   end
@@ -94,6 +94,10 @@ module DRbCore
       end
     }
   end
+end
+
+module DRbCore
+  include DRbBase
 
   def test_00_DRbObject
     ro = DRbObject.new(nil, 'druby://localhost:12345')
@@ -288,36 +292,7 @@ module DRbCore
 end
 
 module DRbAry
-  def setup
-    @service_name = 'ut_array.rb'
-    @ext = DRbService.ext_service(@service_name)
-    @there = @ext.front
-  end
-
-  def teardown
-    @ext.stop_service if defined?(@ext) && @ext
-    DRbService.manager.unregist(@service_name)
-    while (@there&&@there.to_s rescue nil)
-      # nop
-    end
-    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
-    Thread.list.each {|th|
-      if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        10.times do
-          begin
-            Process.kill signal, th.pid
-            break
-          rescue Errno::ESRCH
-            break
-          rescue Errno::EPERM # on Windows
-            sleep 0.1
-            retry
-          end
-        end
-        th.join
-      end
-    }
-  end
+  include DRbBase
 
   def test_01
     assert_kind_of(DRb::DRbObject, @there)

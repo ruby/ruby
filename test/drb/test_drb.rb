@@ -2,16 +2,19 @@ require_relative 'drbtest'
 
 class TestDRbCore < Test::Unit::TestCase
   include DRbCore
+
+  def setup
+    setup_service 'ut_drb.rb'
+    super
+  end
 end
 
 class TestDRbYield < Test::Unit::TestCase
-  def setup
-    @ext = DRbService.ext_service('ut_drb.rb')
-    @there = @ext.front
-  end
+  include DRbBase
 
-  def teardown
-    @ext.stop_service if @ext
+  def setup
+    setup_service 'ut_drb.rb'
+    super
   end
 
   def test_01_one
@@ -177,12 +180,19 @@ end
 
 class TestDRbAry < Test::Unit::TestCase
   include DRbAry
+
+  def setup
+    setup_service 'ut_array.rb'
+    super
+  end
 end
 
 class TestDRbMServer < Test::Unit::TestCase
+  include DRbBase
+
   def setup
-    @ext = DRbService.ext_service('ut_drb.rb')
-    @there = @ext.front
+    setup_service 'ut_drb.rb'
+    super
     @server = (1..3).collect do |n|
       DRb::DRbServer.new(nil, Onecky.new(n.to_s))
     end
@@ -192,7 +202,7 @@ class TestDRbMServer < Test::Unit::TestCase
     @server.each do |s|
       s.stop_service
     end
-    @ext.stop_service if @ext
+    super
   end
 
   def test_01
@@ -202,9 +212,7 @@ end
 
 class TestDRbSafe1 < TestDRbAry
   def setup
-    @service_name = 'ut_safe1.rb'
-    @ext = DRbService.ext_service(@service_name)
-    @there = @ext.front
+    setup_service 'ut_safe1.rb'
   end
 end
 
@@ -258,13 +266,11 @@ class TestDRbEval # < Test::Unit::TestCase
 end
 
 class TestDRbLarge < Test::Unit::TestCase
-  def setup
-    @ext = DRbService.ext_service('ut_large.rb')
-    @there = @ext.front
-  end
+  include DRbBase
 
-  def teardown
-    @ext.stop_service if @ext
+  def setup
+    setup_service 'ut_large.rb'
+    super
   end
 
   def test_01_large_ary
@@ -302,13 +308,11 @@ class TestDRbLarge < Test::Unit::TestCase
 end
 
 class TestBug4409 < Test::Unit::TestCase
-  def setup
-    @ext = DRbService.ext_service('ut_eq.rb')
-    @there = @ext.front
-  end
+  include DRbBase
 
-  def teardown
-    @ext.stop_service if @ext
+  def setup
+    setup_service 'ut_eq.rb'
+    super
   end
 
   def test_bug4409
