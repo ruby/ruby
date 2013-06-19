@@ -2261,25 +2261,18 @@ End
   end
 
   def test_cross_thread_close_stdio
-    with_pipe do |r,w|
-      pid = fork do
+    assert_separately([], <<-'end;')
+      IO.pipe do |r,w|
         $stdin.reopen(r)
         r.close
         read_thread = Thread.new do
-          begin
-            $stdin.read(1)
-          rescue => e
-            e
-          end
+          $stdin.read(1)
         end
         sleep(0.1) until read_thread.stop?
         $stdin.close
-        read_thread.join
-        exit(IOError === read_thread.value)
+        assert_raise(IOError) {read_thread.join}
       end
-      assert Process.waitpid2(pid)[1].success?
-    end
-    rescue NotImplementedError
+    end;
   end
 
   def test_open_mode
