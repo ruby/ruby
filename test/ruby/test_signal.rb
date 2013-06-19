@@ -40,22 +40,23 @@ class TestSignal < Test::Unit::TestCase
     Process.respond_to?(:pgroup) # for mswin32
 
   def test_exit_action
-    begin
-      r, w = IO.pipe
-      r0, w0 = IO.pipe
-      pid = Process.spawn(EnvUtil.rubybin, '-e', <<-'End', 3=>w, 4=>r0)
-        w = IO.new(3, "w")
-        r0 = IO.new(4, "r")
-        Signal.trap(:USR1, "EXIT")
-        w.syswrite("a")
+    if Signal.list[sig = "USR1"]
+      term = :TERM
+    else
+      sig = "INT"
+      term = :KILL
+    end
+    IO.popen([EnvUtil.rubybin, '-e', <<-"End"], 'r+') do |io|
+        Signal.trap(:#{sig}, "EXIT")
+        STDOUT.syswrite("a")
         Thread.start { sleep(2) }
-        r0.sysread(4096)
+        STDIN.sysread(4096)
       End
-      r.sysread(1)
+      pid = io.pid
+      io.sysread(1)
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
-        Process.kill(:USR1, pid)
-        term = :TERM
+        Process.kill(term, pid)
         begin
           Timeout.timeout(3) {
             Process.waitpid pid
@@ -69,11 +70,6 @@ class TestSignal < Test::Unit::TestCase
           raise
         end
       }
-    ensure
-      r.close
-      w.close
-      r0.close
-      w0.close
     end
   end if Process.respond_to?(:kill)
 
