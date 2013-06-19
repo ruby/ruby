@@ -3786,6 +3786,7 @@ void
 rb_gc_writebarrier(VALUE a, VALUE b)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    int type;
 
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_PROMOTED(a)) rb_bug("rb_gc_wb: referer object %p (%s) is not promoted.\n", (void *)a, obj_type_name(a));
@@ -3793,9 +3794,21 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     }
 
     if (!rgengc_remembered(objspace, a)) {
-	rgengc_report(2, objspace, "rb_gc_wb: %p (%s) -> %p (%s)\n",
-		      (void *)a, obj_type_name(a), (void *)b, obj_type_name(b));
-	rgengc_remember(objspace, a);
+        type = BUILTIN_TYPE(a);
+        /* TODO: 2 << 16 is just a magic number. */
+        if ((type == T_ARRAY && RARRAY_LEN(a) >= 2 << 16) ||
+            (type == T_HASH  && RHASH_SIZE(a) >= 2 << 16)) {
+            if (!rgengc_remembered(objspace, b)) {
+                rgengc_report(2, objspace, "rb_gc_wb: %p (%s) -> %p (%s)\n",
+                              (void *)a, obj_type_name(a), (void *)b, obj_type_name(b));
+                rgengc_remember(objspace, b);
+            }
+        }
+        else {
+            rgengc_report(2, objspace, "rb_gc_wb: %p (%s) -> %p (%s)\n",
+                          (void *)a, obj_type_name(a), (void *)b, obj_type_name(b));
+            rgengc_remember(objspace, a);
+        }
     }
 }
 

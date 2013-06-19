@@ -1,3 +1,8 @@
+Thu Jun 20 07:46:48 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (rb_gc_writebarrier): give up rescan A and register B directly
+	  if A has huge number of children.
+
 Thu Jun 20 07:30:35 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: add new rules `gcbench-rdoc', `gcbench-hash'.
