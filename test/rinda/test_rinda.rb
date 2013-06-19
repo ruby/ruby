@@ -518,6 +518,8 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
     Process.kill(signal, write) if write && status.nil?
     Process.kill(signal, take)  if take
+    Process.wait(write) if write && status.nil?
+    Process.wait(take)  if take
   end
 
   def have_fork?
