@@ -1,3 +1,14 @@
+Wed Jun 19 23:39:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect_test): rewrite checking code.
+	  When RGENGC_CHECK_MODE >= 2, all minor marking, run normal minor
+	  marking *and* major/full marking. After that, compare the results
+	  and shows BUG if a object living with major/full marking but dead
+	  with minor marking.
+	  After detecting bugs, print references information.
+	  (RGENGC_CHECK_MODE == 2, show references to dead object)
+	  (RGENGC_CHECK_MODE == 3, show all references)
+
 Wed Jun 19 23:51:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigfixize): Use rb_absint_size.

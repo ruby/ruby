@@ -3437,12 +3437,16 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
 }
 
 static void
-gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th)
+gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th, int minor_gc)
 {
     struct gc_list *list;
 
     /* start marking */
     rgengc_report(1, objspace, "gc_marks_body: start.\n");
+
+    objspace->rgengc.parent_object_is_promoted = FALSE;
+    objspace->rgengc.parent_object = Qundef;
+    objspace->rgengc.during_minor_gc = minor_gc;
 
 #if USE_RGENGC
     if (objspace->rgengc.during_minor_gc) {
@@ -3504,76 +3508,98 @@ gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th)
     rgengc_report(1, objspace, "gc_marks_body: end.\n");
 }
 
+static uintptr_t *
+gc_store_bitmaps(rb_objspace_t *objspace)
+{
+    uintptr_t *stored_bitmaps = (uintptr_t *)malloc((HEAP_BITMAP_LIMIT * sizeof(uintptr_t)) * heaps_used * 3);
+    size_t i;
+
+    if (stored_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
+
+    for (i=0; i<heaps_used; i++) {
+	memcpy(&stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->mark_bits,        sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(&stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->rememberset_bits, sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(&stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->oldgen_bits,      sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+    }
+
+    return stored_bitmaps;
+    }
+
 static void
-gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th)
+gc_restore_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
+{
+    size_t i;
+
+    for (i=0; i<heaps_used; i++) {
+	uintptr_t *oldgen_bits = objspace->heap.sorted[i]->oldgen_bits;
+	RVALUE *p = objspace->heap.sorted[i]->start;
+	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
+
+	/* restore bitmaps */
+	memcpy(objspace->heap.sorted[i]->mark_bits,        &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(objspace->heap.sorted[i]->rememberset_bits, &stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(objspace->heap.sorted[i]->oldgen_bits,      &stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+
+
+	/* resotre oldgen bits */
+	while (p < pend) {
+	    if (MARKED_IN_BITMAP(oldgen_bits, p)) FL_SET2(p, FL_OLDGEN);
+	    else                                  FL_UNSET2(p, FL_OLDGEN);
+	    p++;
+	}
+    }
+}
+
+static void
+gc_free_stored_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
+{
+    free(stored_bitmaps);
+    }
+
+static void
+gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, uintptr_t *before_stored_bitmaps)
 {
 #if USE_RGENGC
+    uintptr_t *stored_bitmaps = gc_store_bitmaps(objspace);
     size_t i;
-    uintptr_t **prev_bitmaps = (uintptr_t **)malloc(sizeof(uintptr_t **) * heaps_used * 3);
-    uintptr_t *temp_bitmaps = (uintptr_t *)malloc((HEAP_BITMAP_LIMIT * sizeof(uintptr_t)) * heaps_used * 3);
 
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
-    if (prev_bitmaps == 0 || temp_bitmaps == 0) {
-	rb_bug("gc_marks_test: not enough memory to test.\n");
-    }
-    memset(temp_bitmaps, 0, (HEAP_BITMAP_LIMIT * sizeof(uintptr_t)) * heaps_used * 3);
-
-    /* swap with temporary bitmaps */
-    for (i=0; i<heaps_used; i++) {
-	prev_bitmaps[3*i+0] = objspace->heap.sorted[i]->mark_bits;
-	prev_bitmaps[3*i+1] = objspace->heap.sorted[i]->rememberset_bits;
-	prev_bitmaps[3*i+2] = objspace->heap.sorted[i]->oldgen_bits;
-	objspace->heap.sorted[i]->mark_bits        = &temp_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
-	objspace->heap.sorted[i]->rememberset_bits = &temp_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT];
-	objspace->heap.sorted[i]->oldgen_bits      = &temp_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT];
-    }
-
     /* run major (full) gc with temporary mark/rememberset */
-    objspace->rgengc.parent_object_is_promoted = FALSE;
-    objspace->rgengc.parent_object = Qundef;
-    objspace->rgengc.during_minor_gc = FALSE; /* major/full GC with temporary bitmaps */
-    gc_marks_body(objspace, th);
+    gc_marks_body(objspace, th, FALSE);
+    objspace->rgengc.during_minor_gc = TRUE;
 
-    /* check & restore */
+    /* check */
     for (i=0; i<heaps_used; i++) {
-	uintptr_t *minor_mark_bits = prev_bitmaps[3*i+0];
-	uintptr_t *minor_rememberset_bits = prev_bitmaps[3*i+1];
-	uintptr_t *minor_oldgen_bits = prev_bitmaps[3*i+2];
+	uintptr_t *minor_mark_bits = &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
 	uintptr_t *major_mark_bits = objspace->heap.sorted[i]->mark_bits;
-	/* uintptr_t *major_rememberset_bits = objspace->heap.sorted[i]->rememberset_bits; */
 	RVALUE *p = objspace->heap.sorted[i]->start;
 	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
 
 	while (p < pend) {
 	    if (MARKED_IN_BITMAP(major_mark_bits, p) && /* should be lived */
-		!MARKED_IN_BITMAP(minor_mark_bits, p) &&
-		!RVALUE_PROMOTED((VALUE)p)) {
-
+		!MARKED_IN_BITMAP(minor_mark_bits, p)) {
 		fprintf(stderr, "gc_marks_test: %p (%s) is living, but not marked && not promoted.\n", p, obj_type_name((VALUE)p));
 		objspace->rgengc.interesting_object = (VALUE)p;
-		break;
 	    }
 	    p++;
 	}
-	objspace->heap.sorted[i]->mark_bits        = minor_mark_bits;
-	objspace->heap.sorted[i]->rememberset_bits = minor_rememberset_bits;
-	objspace->heap.sorted[i]->oldgen_bits      = minor_oldgen_bits;
     }
-    free(prev_bitmaps);
-    free(temp_bitmaps);
-
-    objspace->rgengc.during_minor_gc = TRUE;
 
     if (objspace->rgengc.interesting_object) {
 	fprintf(stderr, "!!! restart minor gc\n");
-	objspace->rgengc.during_minor_gc = TRUE;
-	gc_marks_body(objspace, th);
+	gc_restore_bitmaps(objspace, before_stored_bitmaps);
+	gc_marks_body(objspace, th, FALSE);
+
 	fprintf(stderr, "!!! restart major gc\n");
-	objspace->rgengc.during_minor_gc = FALSE;
-	gc_marks_body(objspace, th);
+	gc_restore_bitmaps(objspace, before_stored_bitmaps);
+	gc_marks_body(objspace, th, TRUE);
 	rb_bug("gc_marks_test (again): %p (%s) is living, but not marked && not promoted.\n",
 	       (void *)objspace->rgengc.interesting_object, obj_type_name((VALUE)objspace->rgengc.interesting_object));
+    }
+    else {
+	gc_restore_bitmaps(objspace, stored_bitmaps);
+	gc_free_stored_bitmaps(objspace, stored_bitmaps);
     }
 #endif
 }
@@ -3589,30 +3615,27 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	/* setup marking */
 	prev_mark_func_data = objspace->mark_func_data;
 	objspace->mark_func_data = 0;
-	objspace->count++;
-
-	SET_STACK_END;
-
-	objspace->rgengc.parent_object_is_promoted = FALSE;
-	objspace->rgengc.parent_object = Qundef;
-	objspace->rgengc.during_minor_gc = minor_gc;
 
 	if (minor_gc == FALSE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.oldgen_object_count = 0;
 
-	    gc_marks_body(objspace, th);
+	    gc_marks_body(objspace, th, FALSE);
 
 	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
 	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
 	    objspace->rgengc.oldgen_object_limit = objspace->rgengc.oldgen_object_count * 2;
 	}
 	else { /* minor GC */
-	    gc_marks_body(objspace, th);
+	    if (RGENGC_CHECK_MODE > 1) {
+		uintptr_t *before_mark_stored_bitmaps = gc_store_bitmaps(objspace);
+		gc_marks_body(objspace, th, TRUE);
+		gc_marks_test(objspace, th, before_mark_stored_bitmaps);
+		gc_free_stored_bitmaps(objspace, before_mark_stored_bitmaps);
+	    }
+	    else {
+		gc_marks_body(objspace, th, FALSE);
 	}
-
-	if (RGENGC_CHECK_MODE > 1 && minor_gc) {
-	    gc_marks_test(objspace, th);
 	}
 
 	objspace->mark_func_data = prev_mark_func_data;
@@ -3920,12 +3943,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	immediate_sweep = TRUE;
     }
 
-    if (full_mark) {
-	objspace->rgengc.oldgen_object_count = 0;
-    }
-
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
-
+    objspace->count++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     gc_prof_timer_start(objspace, reason | (minor_gc ? GPR_FLAG_MINOR : 0));
