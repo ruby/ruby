@@ -1350,7 +1350,7 @@ class TestProcess < Test::Unit::TestCase
       Dir.chdir("vd") {
         dir = "#{d}/vd"
         # OpenSolaris cannot remove the current directory.
-        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}")
+        system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}", err: File::NULL)
         system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
       }
@@ -1397,7 +1397,7 @@ class TestProcess < Test::Unit::TestCase
       assert_raise(*exs, mesg) do
         begin
           loop do
-            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>:close)
+            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>File::NULL)
             min = [cmds.size, min].max
             cmds *= 100
           end
