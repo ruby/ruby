@@ -1,3 +1,13 @@
+Thu Jun 20 01:34:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bdigit_roomof): Use SIZEOF_BDIGITS.
+	  (bigfixize): Refine an ifdef condition.
+	  (rb_absint_size): Use bdigit_roomof.
+	  (rb_absint_singlebit_p): Ditto.
+	  (rb_integer_pack): Ditto.
+	  (integer_pack_fill_dd): Use BITSPERDIG.
+	  (integer_unpack_push_bits): Use BITSPERDIG, BIGLO and BIGDN.
+
 Thu Jun 20 01:07:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (MARKED_IN_BITMAP, FL_TEST2): return boolean value since always

@@ -54,7 +54,7 @@ static VALUE big_three = Qnil;
 
 #define BIGDIVREM_EXTRA_WORDS 2
 #define roomof(n, m) ((int)(((n)+(m)-1) / (m)))
-#define bdigit_roomof(n) roomof(n, sizeof(BDIGIT))
+#define bdigit_roomof(n) roomof(n, SIZEOF_BDIGITS)
 #define BARY_ARGS(ary) ary, numberof(ary)
 
 #define BARY_ADD(z, x, y) bary_add(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
@@ -295,7 +295,7 @@ bigfixize(VALUE x)
     if (len == 0) return INT2FIX(0);
     if (rb_absint_size(x, NULL) <= sizeof(long)) {
 	long num = 0;
-#if 2*SIZEOF_BDIGITS > SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
 	num = (long)ds[0];
 #else
 	while (len--) {
@@ -542,7 +542,7 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
 {
     BDIGIT *dp;
     BDIGIT *de;
-    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+    BDIGIT fixbuf[bdigit_roomof(sizeof(long))];
 
     int num_leading_zeros;
 
@@ -707,7 +707,7 @@ rb_absint_singlebit_p(VALUE val)
 {
     BDIGIT *dp;
     BDIGIT *de;
-    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+    BDIGIT fixbuf[bdigit_roomof(sizeof(long))];
     BDIGIT d;
 
     val = rb_to_int(val);
@@ -857,9 +857,9 @@ integer_pack_loop_setup(
 static inline void
 integer_pack_fill_dd(BDIGIT **dpp, BDIGIT **dep, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
 {
-    if (*dpp < *dep && SIZEOF_BDIGITS * CHAR_BIT <= (int)sizeof(*ddp) * CHAR_BIT - *numbits_in_dd_p) {
+    if (*dpp < *dep && BITSPERDIG <= (int)sizeof(*ddp) * CHAR_BIT - *numbits_in_dd_p) {
         *ddp |= (BDIGIT_DBL)(*(*dpp)++) << *numbits_in_dd_p;
-        *numbits_in_dd_p += SIZEOF_BDIGITS * CHAR_BIT;
+        *numbits_in_dd_p += BITSPERDIG;
     }
     else if (*dpp == *dep) {
         /* higher bits are infinity zeros */
@@ -1112,7 +1112,7 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
     int sign;
     BDIGIT *ds;
     size_t num_bdigits;
-    BDIGIT fixbuf[(sizeof(long) + SIZEOF_BDIGITS - 1) / SIZEOF_BDIGITS];
+    BDIGIT fixbuf[bdigit_roomof(sizeof(long))];
 
     RB_GC_GUARD(val) = rb_to_int(val);
 
@@ -1245,10 +1245,10 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
 {
     (*ddp) |= ((BDIGIT_DBL)data) << (*numbits_in_dd_p);
     *numbits_in_dd_p += numbits;
-    while (SIZEOF_BDIGITS*CHAR_BIT <= *numbits_in_dd_p) {
-        *(*dpp)++ = (BDIGIT)((*ddp) & (((BDIGIT_DBL)1 << (SIZEOF_BDIGITS*CHAR_BIT))-1));
-        *ddp >>= SIZEOF_BDIGITS*CHAR_BIT;
-        *numbits_in_dd_p -= SIZEOF_BDIGITS*CHAR_BIT;
+    while (BITSPERDIG <= *numbits_in_dd_p) {
+        *(*dpp)++ = BIGLO(*ddp);
+        *ddp = BIGDN(*ddp);
+        *numbits_in_dd_p -= BITSPERDIG;
     }
 }
 
