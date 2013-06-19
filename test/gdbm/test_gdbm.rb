@@ -88,7 +88,7 @@ if defined? GDBM
 
     def have_fork?
       begin
-        fork{}
+        Process.wait(fork{})
         true
       rescue NotImplementedError
         false
