@@ -5,9 +5,6 @@ require "test/unit"
 
 module EnvUtil
   def rubybin
-    unless ENV["RUBYOPT"]
-
-    end
     if ruby = ENV["RUBY"]
       return ruby
     end

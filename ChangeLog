@@ -1,3 +1,8 @@
+Wed Jun 19 14:04:41 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/envutil.rb (EnvUtil#rubybin): remove unnecessary
+	  unless expression.
+
 Wed Jun 19 07:47:48 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_body): use FIX2INT for ruby_gc_stress.
