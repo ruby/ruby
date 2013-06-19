@@ -28,7 +28,10 @@ class TestNotImplement < Test::Unit::TestCase
       pid = nil
     }
   ensure
-    Process.kill :KILL, pid if pid
+    if pid
+      Process.kill :KILL, pid
+      Process.wait pid
+    end
   end if Process.respond_to?(:fork)
 
   def test_call_lchmod
