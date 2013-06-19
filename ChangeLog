@@ -1,3 +1,7 @@
+Thu Jun 20 00:05:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RVALUE_PROMOTED): fix type.
+
 Wed Jun 19 23:39:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect_test): rewrite checking code.

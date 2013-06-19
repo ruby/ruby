@@ -526,7 +526,7 @@ RVALUE_PROMOTED(VALUE obj)
     int result = FL_TEST2((obj), FL_OLDGEN);
 
     if (RGENGC_CHECK_MODE > 0) {
-	int bitmap_result = RVALUE_PROMOTED_FROM_BITMAP(obj);
+	int bitmap_result = RVALUE_PROMOTED_FROM_BITMAP(obj) ? TRUE : FALSE;
 	if (!result != !bitmap_result) rb_bug("RVALUE_PROMOTED: %p (%s) flag %d but bitmap is %d\n",
 					      (void *)obj, obj_type_name(obj), !!result, !!bitmap_result);
     }
