@@ -43,7 +43,7 @@ class TestSignal < Test::Unit::TestCase
 
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
-      pid = Process.spawn(EnvUtil.rubybin, '-e', '"sleep 10"', :pgroup => true)
+      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', :pgroup => true)
       Process.kill(:"-TERM", pid)
       Process.waitpid(pid)
       assert_equal(true, $?.signaled?)
