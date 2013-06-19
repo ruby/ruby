@@ -145,7 +145,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 #endif
 
 #ifndef GC_PROFILE_MORE_DETAIL
-#define GC_PROFILE_MORE_DETAIL 1
+#define GC_PROFILE_MORE_DETAIL 0
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP 1
@@ -355,9 +355,8 @@ typedef struct rb_objspace {
 #endif /* RGENGC_PROFILE */
 #endif /* USE_RGENGC */
 
-#if GC_PROFILE_MORE_DETAIL
-	double gc_sweep_start_time; /* temporary profiling space */
-#endif
+	/* temporary profiling space */
+	double gc_sweep_start_time;
     } profile;
     struct gc_list *global_list;
     size_t count;
@@ -5046,6 +5045,8 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 	RUBY_DTRACE_GC_SWEEP_BEGIN();
     }
     if (objspace->profile.run) {
+	gc_profile_record *record = gc_prof_record(objspace);
+
 	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
 	    objspace->profile.gc_sweep_start_time = getrusage_time();
 	}
