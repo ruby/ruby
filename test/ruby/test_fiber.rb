@@ -248,12 +248,13 @@ class TestFiber < Test::Unit::TestCase
 
   def test_fork_from_fiber
     begin
-      Process.fork{}
+      pid = Process.fork{}
     rescue NotImplementedError
       return
+    else
+      Process.wait(pid)
     end
     bug5700 = '[ruby-core:41456]'
-    pid = nil
     assert_nothing_raised(bug5700) do
       Fiber.new{ pid = fork {} }.resume
     end

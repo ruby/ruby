@@ -922,9 +922,14 @@ class TestIO < Test::Unit::TestCase
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
     f = IO.popen([ruby] + args, 'r+')
+    pid = f.pid
     yield(f)
   ensure
     f.close unless !f || f.closed?
+    begin
+      Process.wait(pid)
+    rescue Errno::ECHILD, Errno::ESRCH
+    end
   end
 
   def test_try_convert

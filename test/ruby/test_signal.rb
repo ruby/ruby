@@ -6,7 +6,7 @@ require_relative 'envutil'
 class TestSignal < Test::Unit::TestCase
   def have_fork?
     begin
-      Process.fork {}
+      Process.wait(Process.fork {})
       return true
     rescue NotImplementedError
       return false
@@ -52,7 +52,6 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_exit_action
-    return unless have_fork?	# skip this test
     begin
       r, w = IO.pipe
       r0, w0 = IO.pipe
@@ -68,12 +67,17 @@ class TestSignal < Test::Unit::TestCase
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
         Process.kill(:USR1, pid)
+        term = :TERM
         begin
           Timeout.timeout(3) {
             Process.waitpid pid
           }
         rescue Timeout::Error
-          Process.kill(:TERM, pid)
+          if term
+            Process.kill(term, pid)
+            term = (:KILL if term != :KILL)
+            retry
+          end
           raise
         end
       }
@@ -195,6 +199,8 @@ class TestSignal < Test::Unit::TestCase
     end
     w.close
     assert_equal(r.read, "foo")
+  ensure
+    Process.wait(pid) if pid
   end
 
   def test_signal_requiring
