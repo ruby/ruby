@@ -14,4 +14,16 @@ ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
 require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
 
+module Test::Unit
+  module ZombieHunter
+    def after_teardown
+      super
+      assert_empty(Process.waitall)
+    end
+  end
+  class TestCase
+    include ZombieHunter
+  end
+end
+
 exit Test::Unit::AutoRunner.run(true, src_testdir)
