@@ -56,6 +56,7 @@ class TestOpen3 < Test::Unit::TestCase
     i.close if !i.closed?
     o.close if !o.closed?
     e.close if !e.closed?
+    t.join
   end
 
   def test_commandline
