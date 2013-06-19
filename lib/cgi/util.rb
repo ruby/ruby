@@ -41,8 +41,8 @@ module CGI::Util
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def unescapeHTML(string)
-    enc = string.encoding
     return string unless string.include? '&'
+    enc = string.encoding
     if enc != Encoding::UTF_8 && [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
       return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
         case $1.encode(Encoding::US_ASCII)
