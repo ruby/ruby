@@ -51,6 +51,10 @@ static VALUE big_three = Qnil;
 #define BIGZEROP(x) (RBIGNUM_LEN(x) == 0 || \
 		     (BDIGITS(x)[0] == 0 && \
 		      (RBIGNUM_LEN(x) == 1 || bigzero_p(x))))
+#define BIGSIZE(x) (RBIGNUM_LEN(x) == 0 ? (size_t)0 : \
+    BDIGITS(x)[RBIGNUM_LEN(x)-1] ? \
+        (size_t)(RBIGNUM_LEN(x)*SIZEOF_BDIGITS - nlz(BDIGITS(x)[RBIGNUM_LEN(x)-1])/CHAR_BIT) : \
+    rb_absint_size(x, NULL))
 
 #define BIGDIVREM_EXTRA_WORDS 2
 #define roomof(n, m) ((int)(((n)+(m)-1) / (m)))
@@ -293,7 +297,7 @@ bigfixize(VALUE x)
     BDIGIT *ds = BDIGITS(x);
 
     if (len == 0) return INT2FIX(0);
-    if (rb_absint_size(x, NULL) <= sizeof(long)) {
+    if (BIGSIZE(x) <= sizeof(long)) {
 	long num = 0;
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
 	num = (long)ds[0];
@@ -2253,7 +2257,7 @@ big2ulong(VALUE x, const char *type, int check)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (rb_absint_size(x, NULL) > sizeof(long)) {
+    if (BIGSIZE(x) > sizeof(long)) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
 	len = bdigit_roomof(sizeof(long));
@@ -4684,7 +4688,7 @@ static VALUE
 check_shiftdown(VALUE y, VALUE x)
 {
     if (!RBIGNUM_LEN(x)) return INT2FIX(0);
-    if (rb_absint_size(y, NULL) > SIZEOF_LONG) {
+    if (BIGSIZE(y) > SIZEOF_LONG) {
 	return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(-1);
     }
     return Qnil;
@@ -4886,7 +4890,7 @@ rb_big_aref(VALUE x, VALUE y)
 	if (!RBIGNUM_SIGN(y))
 	    return INT2FIX(0);
 	bigtrunc(y);
-	if (rb_absint_size(y, NULL) > sizeof(long)) {
+	if (BIGSIZE(y) > sizeof(long)) {
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}

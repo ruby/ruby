@@ -1,3 +1,11 @@
+Thu Jun 20 08:07:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BIGSIZE): New macro.
+	  (bigfixize): Use BIGSIZE.
+	  (big2ulong): Ditto.
+	  (check_shiftdown): Ditto.
+	  (rb_big_aref): Ditto.
+
 Thu Jun 20 07:46:48 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (rb_gc_writebarrier): give up rescan A and register B directly
