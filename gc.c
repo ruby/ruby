@@ -445,9 +445,9 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * CHAR_BIT)-1))
 #define BITMAP_BIT(p) ((uintptr_t)1 << BITMAP_OFFSET(p))
 /* Marking */
-#define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & BITMAP_BIT(p))
-#define MARK_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] | BITMAP_BIT(p))
-#define CLEAR_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] & ~BITMAP_BIT(p))
+#define MARKED_IN_BITMAP(bits, p) (((bits)[BITMAP_INDEX(p)] & BITMAP_BIT(p)) != 0)
+#define MARK_IN_BITMAP(bits, p) ((bits)[BITMAP_INDEX(p)] |= BITMAP_BIT(p))
+#define CLEAR_IN_BITMAP(bits, p) ((bits)[BITMAP_INDEX(p)] &= ~BITMAP_BIT(p))
 
 
 #ifndef HEAP_ALIGN_LOG
@@ -513,7 +513,7 @@ static void rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace);
 static size_t rgengc_rememberset_mark(rb_objspace_t *objspace);
 
-#define FL_TEST2(x,f)         ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? (rb_bug("FL_TEST2: SPECIAL_CONST"), 0) : FL_TEST_RAW((x),(f)))
+#define FL_TEST2(x,f)         ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? (rb_bug("FL_TEST2: SPECIAL_CONST"), 0) : FL_TEST_RAW((x),(f)) != 0)
 #define FL_SET2(x,f)          do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_SET2: SPECIAL_CONST");   RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET2(x,f)        do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_UNSET2: SPECIAL_CONST"); RBASIC(x)->flags &= ~(f);} while (0)
 
