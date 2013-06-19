@@ -37,8 +37,10 @@ static VALUE big_three = Qnil;
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define BIGRAD_HALF ((BDIGIT)(BIGRAD >> 1))
-#define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
-#if HAVE_LONG_LONG
+#if SIZEOF_LONG >= SIZEOF_BDIGITS
+#   define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
+#endif
+#if defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG >= SIZEOF_BDIGITS
 # define DIGSPERLL (SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
@@ -526,14 +528,14 @@ rb_absint_size(VALUE val, int *nlz_bits_ret)
         if (v < 0) {
             v = -v;
         }
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
         fixbuf[0] = v;
 #else
         {
             int i;
             for (i = 0; i < numberof(fixbuf); i++) {
-                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+                fixbuf[i] = BIGLO(v);
+                v = BIGDN(v);
             }
         }
 #endif
@@ -690,14 +692,14 @@ rb_absint_singlebit_p(VALUE val)
         if (v < 0) {
             v = -v;
         }
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
         fixbuf[0] = v;
 #else
         {
             int i;
             for (i = 0; i < numberof(fixbuf); i++) {
-                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+                fixbuf[i] = BIGLO(v);
+                v = BIGDN(v);
             }
         }
 #endif
@@ -1098,14 +1100,14 @@ rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t
         else {
             sign = 1;
         }
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
         fixbuf[0] = v;
 #else
         {
             int i;
             for (i = 0; i < numberof(fixbuf); i++) {
-                fixbuf[i] = (BDIGIT)(v & ((1L << (SIZEOF_BDIGITS * CHAR_BIT)) - 1));
-                v >>= SIZEOF_BDIGITS * CHAR_BIT;
+                fixbuf[i] = BIGLO(v);
+                v = BIGDN(v);
             }
         }
 #endif
@@ -2908,7 +2910,7 @@ bigsub_int(VALUE x, long y0)
     z = bignew(xn, RBIGNUM_SIGN(x));
     zds = BDIGITS(z);
 
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     num = (BDIGIT_DBL_SIGNED)xds[0] - y;
     if (xn == 1 && num < 0) {
 	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
@@ -2921,7 +2923,7 @@ bigsub_int(VALUE x, long y0)
     i = 1;
 #else
     num = 0;
-    for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
+    for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
 	num += (BDIGIT_DBL_SIGNED)xds[i] - BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -2965,14 +2967,14 @@ bigadd_int(VALUE x, long y)
     z = bignew(zn, RBIGNUM_SIGN(x));
     zds = BDIGITS(z);
 
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     num = (BDIGIT_DBL)xds[0] + y;
     zds[0] = BIGLO(num);
     num = BIGDN(num);
     i = 1;
 #else
     num = 0;
-    for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
+    for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
 	num += (BDIGIT_DBL)xds[i] + BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -4369,7 +4371,7 @@ bigand_int(VALUE x, long y)
     sign = (y > 0);
     xds = BDIGITS(x);
     zn = xn = RBIGNUM_LEN(x);
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     if (sign) {
 	y &= xds[0];
 	return LONG2NUM(y);
@@ -4379,14 +4381,14 @@ bigand_int(VALUE x, long y)
     z = bignew(zn, RBIGNUM_SIGN(x) || sign);
     zds = BDIGITS(z);
 
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
     zds[0] = xds[0] & y;
 #else
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
+	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
 	    zds[i] = xds[i] & BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -4475,14 +4477,14 @@ bigor_int(VALUE x, long y)
     z = bignew(zn, RBIGNUM_SIGN(x) && sign);
     zds = BDIGITS(z);
 
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
     zds[0] = xds[0] | y;
 #else
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
+	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
 	    zds[i] = xds[i] | BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -4571,14 +4573,14 @@ bigxor_int(VALUE x, long y)
     z = bignew(zn, !(RBIGNUM_SIGN(x) ^ sign));
     zds = BDIGITS(z);
 
-#if SIZEOF_BDIGITS == SIZEOF_LONG
+#if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
     zds[0] = xds[0] ^ y;
 #else
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/sizeof(BDIGIT)); i++) {
+	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
 	    zds[i] = xds[i] ^ BIGLO(num);
 	    num = BIGDN(num);
 	}

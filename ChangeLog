@@ -1,3 +1,18 @@
+Wed Jun 19 19:31:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (DIGSPERLONG): Don't define if BDIGIT is bigger than long.
+	  (DIGSPERLL): Don't define if BDIGIT is bigger than LONG_LONG
+	  (rb_absint_size): Consider environments BDIGIT is bigger than long.
+	  Use BIGLO and BIGDN.
+	  (rb_absint_singlebit_p): Ditto.
+	  (rb_integer_pack): Ditto.
+	  (bigsub_int): Consider environments BDIGIT is bigger than long.
+	  Use SIZEOF_BDIGITS instead of sizeof(BDIGIT).
+	  (bigadd_int): Ditto.
+	  (bigand_int): Ditto.
+	  (bigor_int): Ditto.
+	  (bigxor_int): Ditto.
+
 Wed Jun 19 15:14:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h (struct rb_data_type_struct), gc.c: add
