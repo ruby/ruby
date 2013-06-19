@@ -522,13 +522,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(take)  if take
   end
 
-  def have_fork?
-    Process.fork {}
-    return true
-  rescue NotImplementedError
-    return false
-  end
-
   @server = DRb.primary_server || DRb.start_service
 end
 
