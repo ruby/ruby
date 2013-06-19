@@ -4192,7 +4192,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    GC.stress	    -> true or false
+ *    GC.stress	    -> fixnum, true or false
  *
  *  Returns current status of GC stress mode.
  */
@@ -4201,7 +4201,7 @@ static VALUE
 gc_stress_get(VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return ruby_gc_stress ? Qtrue : Qfalse;
+    return ruby_gc_stress;
 }
 
 /*

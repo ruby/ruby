@@ -1,3 +1,7 @@
+Wed Jun 19 20:51:21 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gc.c (gc_stress_get): GC.stress can be Fixnum.
+
 Wed Jun 19 19:31:30 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (DIGSPERLONG): Don't define if BDIGIT is bigger than long.
