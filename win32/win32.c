@@ -4144,6 +4144,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
     }
     else {
 	struct ChildRecord* child = FindChildSlot(pid);
+	int retried = 0;
 	if (!child) {
 	    errno = ECHILD;
 	    return -1;
@@ -4157,8 +4158,10 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 		    pid = 0;
 		    break;
 		}
+		++retried;
 	    }
 	}
+	if (pid == -1 && retried) pid = 0;
     }
 
     return pid;
