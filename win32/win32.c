@@ -4033,13 +4033,16 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	/* If an error occurred, return immediately. */
     error_exit:
 	err = GetLastError();
-	if (err == ERROR_INVALID_PARAMETER)
+	switch (err) {
+	  case ERROR_INVALID_PARAMETER:
 	    errno = ECHILD;
-	else {
-	    if (GetLastError() == ERROR_INVALID_HANDLE)
-		errno = EINVAL;
-	    else
-		errno = map_errno(GetLastError());
+	    break;
+	  case ERROR_INVALID_HANDLE:
+	    errno = EINVAL;
+	    break;
+	  default:
+	    errno = map_errno(err);
+	    break;
 	}
 	CloseChildHandle(child);
 	return -1;
