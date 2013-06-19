@@ -1,14 +1,13 @@
-require 'test/unit'
-require 'tmpdir'
-
 begin
   require 'gdbm'
 rescue LoadError
 end
 
 if defined? GDBM
+  require 'test/unit'
   require 'tmpdir'
   require 'fileutils'
+  require_relative '../ruby/envutil'
 
   class TestGDBM_RDONLY < Test::Unit::TestCase
     def TestGDBM_RDONLY.uname_s
@@ -86,15 +85,6 @@ if defined? GDBM
       end
     end
 
-    def have_fork?
-      begin
-        Process.wait(fork{})
-        true
-      rescue NotImplementedError
-        false
-      end
-    end
-
     def test_s_new_has_no_block
       # GDBM.new ignore the block
       foo = true
@@ -144,23 +134,31 @@ if defined? GDBM
     def test_s_open_with_block
       assert_equal(GDBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
     end
+
+    def open_db_child(dbname, *opts)
+      opts = [0644, *opts].map(&:inspect).join(', ')
+      args = [EnvUtil.rubybin, "-rgdbm", "-e", <<-SRC, dbname]
+      STDOUT.sync = true
+      gdbm = GDBM.open(ARGV.shift, #{opts})
+      puts gdbm.class
+      gets
+      SRC
+      IO.popen(args, "r+") do |f|
+        dbclass = f.gets
+        assert_equal("GDBM", dbclass.chomp)
+        yield
+      end
+    end
+
     def test_s_open_lock
-      return unless have_fork?	# snip this test
-      pid = fork() {
-        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
-        sleep 2
-      }
-      begin
-        sleep 1
-        assert_raise(Errno::EWOULDBLOCK) {
-          begin
-            assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
-          rescue Errno::EAGAIN, Errno::EACCES
-            raise Errno::EWOULDBLOCK
-          end
+      dbname = "#{@tmpdir}/#{@prefix}"
+
+      open_db_child(dbname) do
+        assert_raise(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
+          GDBM.open(dbname, 0644) {|gdbm|
+            assert_instance_of(GDBM, gdbm)
+          }
         }
-      ensure
-        Process.wait pid
       end
     end
 
@@ -180,47 +178,27 @@ if defined? GDBM
 =end
 
     def test_s_open_nolock
-      # gdbm 1.8.0 specific
-      if not defined? GDBM::NOLOCK
-        return
-      end
-      return unless have_fork?	# snip this test
+      dbname = "#{@tmpdir}/#{@prefix}"
 
-      pid = fork() {
-        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
-                                                  GDBM::NOLOCK))
-        sleep 2
-      }
-      sleep 1
-      begin
-        gdbm2 = nil
+      open_db_child(dbname, GDBM::NOLOCK) do
         assert_nothing_raised(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
-          assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
+          GDBM.open(dbname, 0644) {|gdbm2|
+            assert_instance_of(GDBM, gdbm2)
+          }
         }
-      ensure
-        Process.wait pid
-        gdbm2.close if gdbm2
       end
 
-      STDERR.puts Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
+      STDERR.puts Dir.glob("#{dbname}*") if $DEBUG
 
-      pid = fork() {
-        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
-        sleep 2
-      }
-      begin
-        sleep 1
-        gdbm2 = nil
+      open_db_child(dbname) do
         assert_nothing_raised(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
           # this test is failed on Cygwin98 (???)
-          assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
-                                                     GDBM::NOLOCK))
+          GDBM.open(dbname, 0644, GDBM::NOLOCK) {|gdbm2|
+            assert_instance_of(GDBM, gdbm2)
+          }
         }
-      ensure
-        Process.wait pid
-        gdbm2.close if gdbm2
       end
-    end
+    end if defined? GDBM::NOLOCK # gdbm 1.8.0 specific
 
     def test_s_open_error
       assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0))
