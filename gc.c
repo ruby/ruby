@@ -105,6 +105,8 @@ static ruby_gc_params_t initial_params = {
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
+void rb_gcdebug_print_obj_condition(VALUE obj);
+
 #if USE_RGENGC
 /* RGENGC_DEBUG:
  * 1: basic information
@@ -3397,6 +3399,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	break;
 
       default:
+#ifdef GC_DEBUG
+	rb_gcdebug_print_obj_condition((VALUE)obj);
+#endif
+	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("rb_gc_mark(): %p is T_NONE", (void *)obj);
+	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("rb_gc_mark(): %p is T_ZOMBIE", (void *)obj);
 	rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
 	       BUILTIN_TYPE(obj), (void *)obj,
 	       is_pointer_to_heap(objspace, obj) ? "corrupted object" : "non object");

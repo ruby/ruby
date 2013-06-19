@@ -1,3 +1,7 @@
+Wed Jun 19 15:11:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_mark_children): show more info for broken object.
+
 Wed Jun 19 14:04:41 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/envutil.rb (EnvUtil#rubybin): remove unnecessary
