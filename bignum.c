@@ -293,7 +293,7 @@ bigfixize(VALUE x)
     BDIGIT *ds = BDIGITS(x);
 
     if (len == 0) return INT2FIX(0);
-    if ((size_t)(len*SIZEOF_BDIGITS) <= sizeof(long)) {
+    if (rb_absint_size(x, NULL) <= sizeof(long)) {
 	long num = 0;
 #if 2*SIZEOF_BDIGITS > SIZEOF_LONG
 	num = (long)ds[0];
@@ -2256,7 +2256,7 @@ big2ulong(VALUE x, const char *type, int check)
     if (rb_absint_size(x, NULL) > sizeof(long)) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-	len = sizeof(long)/SIZEOF_BDIGITS;
+	len = bdigit_roomof(sizeof(long));
     }
     ds = BDIGITS(x);
     num = 0;
@@ -4684,7 +4684,7 @@ static VALUE
 check_shiftdown(VALUE y, VALUE x)
 {
     if (!RBIGNUM_LEN(x)) return INT2FIX(0);
-    if (RBIGNUM_LEN(y) > SIZEOF_LONG / SIZEOF_BDIGITS) {
+    if (rb_absint_size(y, NULL) > SIZEOF_LONG) {
 	return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(-1);
     }
     return Qnil;
