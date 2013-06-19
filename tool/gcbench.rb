@@ -18,7 +18,5 @@ puts Benchmark::CAPTION
 puts tms
 puts "GC total time (sec): #{gc_time}"
 puts
-puts "Summary (ruby): #{RUBY_DESCRIPTION} (#{script})"
-puts "Summary (real): #{tms.real} sec"
-puts "Summary (gctm): #{gc_time} sec"
-puts "Summary (gc#) : #{GC.count}"
+puts "Summary #{RUBY_DESCRIPTION}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
+puts "         (real time in sec, GC time in sec, GC count)"
