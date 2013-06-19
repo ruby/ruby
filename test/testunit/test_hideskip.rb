@@ -2,26 +2,15 @@ require 'test/unit'
 
 class TestHideSkip < Test::Unit::TestCase
   def test_hideskip
-    test_out, o = IO.pipe
-    spawn(*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
-          "--verbose", out: o, err: o)
-    o.close
-    assert_match(/assertions\/s.\n\n  1\) Skipped/,test_out.read)
-    test_out.close
+    assert_match(/assertions\/s.\n\n  1\) Skipped/, hideskip)
+    assert_match(/assertions\/s.\n\n  1\) Skipped/, hideskip("--show-skip"))
+    assert_match(/assertions\/s.\n\n1 tests, 0 assertions, 0 failures, 0 errors, 1 skips/, hideskip("--hide-skip"))
+  end
 
-    test_out, o = IO.pipe
-    spawn(*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
-          "--verbose", "--show-skip", out: o, err: o)
-    o.close
-    assert_match(/assertions\/s.\n\n  1\) Skipped/,test_out.read)
-    test_out.close
-
-    test_out, o = IO.pipe
-    spawn(*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
-          "--verbose", "--hide-skip", out: o, err: o)
-    o.close
-    assert_match(/assertions\/s.\n\n1 tests, 0 assertions, 0 failures, 0 errors, 1 skips/,
-                 test_out.read)
-    test_out.close
+  def hideskip(*args)
+    IO.popen([*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
+                       "--verbose", *args], err: [:child, :out]) {|f|
+      f.read
+    }
   end
 end
