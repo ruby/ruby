@@ -3554,7 +3554,7 @@ static void
 gc_free_stored_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
 {
     free(stored_bitmaps);
-    }
+}
 
 static void
 gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, uintptr_t *before_stored_bitmaps)
