@@ -46,7 +46,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    assert_normal_exit %q{
+    assert_normal_exit <<-SRC, timeout: 60
       max = 1000
       @cnt = 0
       (1..100).map{|ti|
@@ -60,7 +60,7 @@ class TestFiber < Test::Unit::TestCase
       }.each{|t|
         t.join
       }
-    }
+    SRC
   end
 
   def test_error
