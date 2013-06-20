@@ -1,3 +1,12 @@
+Thu Jun 20 22:22:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2ulong): Change the return type to unsigned long.
+	  (rb_big2ulong_pack): Follow the above change.
+	  (rb_big2long): Ditto.
+	  (rb_big_lshift): Ditto.
+	  (rb_big_rshift): Ditto.
+	  (rb_big_aref): Ditto.
+
 Thu Jun 20 22:02:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_unpack_internal): Return -2 when negative overflow.

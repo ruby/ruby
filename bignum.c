@@ -2275,7 +2275,7 @@ rb_big_to_s(int argc, VALUE *argv, VALUE x)
     return rb_big2str(x, base);
 }
 
-static VALUE
+static unsigned long
 big2ulong(VALUE x, const char *type, int check)
 {
     long len = RBIGNUM_LEN(x);
@@ -2293,13 +2293,13 @@ big2ulong(VALUE x, const char *type, int check)
 	num = BIGUP(num);
 	num += ds[len];
     }
-    return (VALUE)(unsigned long)num;
+    return (unsigned long)num;
 }
 
 VALUE
 rb_big2ulong_pack(VALUE x)
 {
-    VALUE num = big2ulong(x, "unsigned long", FALSE);
+    unsigned long num = big2ulong(x, "unsigned long", FALSE);
     if (!RBIGNUM_SIGN(x)) {
 	return (VALUE)(-(SIGNED_VALUE)num);
     }
@@ -2309,7 +2309,7 @@ rb_big2ulong_pack(VALUE x)
 VALUE
 rb_big2ulong(VALUE x)
 {
-    VALUE num = big2ulong(x, "unsigned long", TRUE);
+    unsigned long num = big2ulong(x, "unsigned long", TRUE);
 
     if (RBIGNUM_POSITIVE_P(x)) {
         return num;
@@ -2326,7 +2326,7 @@ rb_big2ulong(VALUE x)
 SIGNED_VALUE
 rb_big2long(VALUE x)
 {
-    VALUE num = big2ulong(x, "long", TRUE);
+    unsigned long num = big2ulong(x, "long", TRUE);
 
     if (RBIGNUM_POSITIVE_P(x)) {
         if (num <= LONG_MAX)
@@ -4729,15 +4729,18 @@ check_shiftdown(VALUE y, VALUE x)
 VALUE
 rb_big_lshift(VALUE x, VALUE y)
 {
-    long shift;
+    unsigned long shift;
     int neg = 0;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
-	    shift = FIX2LONG(y);
-	    if (shift < 0) {
+	    long l = FIX2LONG(y);
+	    if (0 <= l) {
+                shift = l;
+            }
+            else {
 		neg = 1;
-		shift = -shift;
+		shift = 1+(unsigned long)(-(l+1));
 	    }
 	    break;
 	}
@@ -4801,15 +4804,18 @@ big_lshift(VALUE x, unsigned long shift)
 VALUE
 rb_big_rshift(VALUE x, VALUE y)
 {
-    long shift;
+    unsigned long shift;
     int neg = 0;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
-	    shift = FIX2LONG(y);
-	    if (shift < 0) {
+	    long l = FIX2LONG(y);
+            if (0 <= l) {
+                shift = l;
+            }
+            else {
 		neg = 1;
-		shift = -shift;
+		shift = 1+(unsigned long)(-(l+1));
 	    }
 	    break;
 	}
@@ -4908,7 +4914,7 @@ rb_big_aref(VALUE x, VALUE y)
 {
     BDIGIT *xds;
     BDIGIT_DBL num;
-    VALUE shift;
+    unsigned long shift;
     long i, s1, s2;
 
     if (RB_TYPE_P(y, T_BIGNUM)) {
@@ -4924,7 +4930,7 @@ rb_big_aref(VALUE x, VALUE y)
     else {
 	i = NUM2LONG(y);
 	if (i < 0) return INT2FIX(0);
-	shift = (VALUE)i;
+	shift = i;
     }
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
