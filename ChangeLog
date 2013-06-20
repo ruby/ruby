@@ -1,3 +1,11 @@
+Thu Jun 20 18:29:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: Do not use GC::Profiler::disable because
+	  GC::Profiler::disable prohibit to access profiling data. It should
+	  be spec bug.
+
+	  Skip GC::Profiler::report if RUBY_VERSION < '2.0.0'
+
 Thu Jun 20 17:59:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: stop GC::Profiler before output results.

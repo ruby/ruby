@@ -12,11 +12,10 @@ GC::Profiler.enable
 tms = Benchmark.measure{|x|
   load script
 }
-GC::Profiler.disable
-GC::Profiler.report
-pp GC.stat
-
 gc_time = GC::Profiler.total_time
+GC::Profiler.report if RUBY_VERSION >= '2.0.0' # before 1.9.3, report() may run infinite loop
+GC::Profiler.disable
+pp GC.stat
 
 puts
 puts script
