@@ -1,3 +1,7 @@
+Thu Jun 20 22:24:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (dump_bignum): Use SIZEOF_BDIGITS.
+
 Thu Jun 20 22:22:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2ulong): Change the return type to unsigned long.

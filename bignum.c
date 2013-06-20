@@ -87,7 +87,7 @@ dump_bignum(VALUE x)
     long i;
     printf("%c0x0", RBIGNUM_SIGN(x) ? '+' : '-');
     for (i = RBIGNUM_LEN(x); i--; ) {
-	printf("_%08"PRIxBDIGIT, BDIGITS(x)[i]);
+        printf("_%0*"PRIxBDIGIT, SIZEOF_BDIGITS*2, BDIGITS(x)[i]);
     }
     printf(", len=%lu", RBIGNUM_LEN(x));
     puts("");
