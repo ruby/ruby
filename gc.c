@@ -5326,7 +5326,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 				   "%10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE"\n"
 #endif
 				   ,
-				   
+
 				   i+1,
 				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
