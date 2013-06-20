@@ -1,4 +1,4 @@
-# AO rebder benchmark 
+# AO rebder benchmark
 # Original program (C) Syoyo Fujita in Javascript (and other languages)
 #      http://lucille.atso-net.jp/blog/?p=642
 #      http://lucille.atso-net.jp/blog/?p=711
@@ -79,8 +79,8 @@ class Sphere
       if t > 0.0 and t < isect.t then
         isect.t = t
         isect.hit = true
-        isect.pl = Vec.new(ray.org.x + ray.dir.x * t, 
-                          ray.org.y + ray.dir.y * t, 
+        isect.pl = Vec.new(ray.org.x + ray.dir.x * t,
+                          ray.org.y + ray.dir.y * t,
                           ray.org.z + ray.dir.z * t)
         n = isect.pl.vsub(@center)
         isect.n = n.vnormalize
@@ -147,9 +147,9 @@ class Isect
   def t=(v); @t = v; end
   def hit; @hit; end
   def hit=(v); @hit = v; end
-  def pl; @pl; end 
+  def pl; @pl; end
   def pl=(v); @pl = v; end
-  def n; @n; end 
+  def n; @n; end
   def n=(v); @n = v; end
 end
 
@@ -203,8 +203,8 @@ class Scene
     eps       = 0.0001
     occlusion = 0.0
 
-    p0 = Vec.new(isect.pl.x + eps * isect.n.x, 
-                isect.pl.y + eps * isect.n.y, 
+    p0 = Vec.new(isect.pl.x + eps * isect.n.x,
+                isect.pl.y + eps * isect.n.y,
                 isect.pl.z + eps * isect.n.z)
     nphi.times do |j|
       ntheta.times do |i|
