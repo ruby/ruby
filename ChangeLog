@@ -1,3 +1,9 @@
+Fri Jun 21 08:08:11 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (lazy_sweep): Use is_lazy_sweeping()
+	* gc.c (rest_sweep): Ditto.
+	* gc.c (gc_prepare_free_objects): Ditto.
+
 Fri Jun 21 07:34:47 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_profile_record::oldgen_objects): added.

@@ -427,6 +427,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define initial_free_min	initial_params.initial_free_min
 #define initial_growth_factor	initial_params.initial_growth_factor
 
+
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -2422,7 +2423,7 @@ lazy_sweep(rb_objspace_t *objspace)
     gc_prof_sweep_timer_start(objspace);
 
     heaps_increment(objspace);
-    while (objspace->heap.sweep_slots) {
+    while (is_lazy_sweeping(objspace)) {
         next = objspace->heap.sweep_slots->next;
 	slot_sweep(objspace, objspace->heap.sweep_slots);
         objspace->heap.sweep_slots = next;
@@ -2443,9 +2444,9 @@ lazy_sweep(rb_objspace_t *objspace)
 static void
 rest_sweep(rb_objspace_t *objspace)
 {
-    if (objspace->heap.sweep_slots) {
+    if (is_lazy_sweeping(objspace)) {
 	during_gc++;
-	while (objspace->heap.sweep_slots) {
+	while (is_lazy_sweeping(objspace)) {
 	    lazy_sweep(objspace);
 	}
 	during_gc = 0;
@@ -2498,7 +2499,7 @@ gc_prepare_free_objects(rb_objspace_t *objspace)
 
     during_gc++;
 
-    if (objspace->heap.sweep_slots) {
+    if (is_lazy_sweeping(objspace)) {
 	if (lazy_sweep(objspace)) {
 	    during_gc = 0;
 	    return TRUE;
