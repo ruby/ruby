@@ -538,5 +538,5 @@ class TestSDBM < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) { @sdbm.update(obj) }
   end
-end
+end if defined? SDBM
 
