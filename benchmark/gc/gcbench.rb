@@ -2,7 +2,11 @@
 require 'benchmark'
 require 'pp'
 
-script = ARGV.shift || raise
+script = File.join(__dir__, ARGV.shift)
+script += '.rb' unless FileTest.exist?(script)
+raise "#{script} not found" unless FileTest.exist?(script)
+
+puts "Script: #{script}"
 
 GC::Profiler.enable
 tms = Benchmark.measure{|x|
@@ -14,6 +18,7 @@ pp GC.stat
 gc_time = GC::Profiler.total_time
 
 puts
+puts script
 puts Benchmark::CAPTION
 puts tms
 puts "GC total time (sec): #{gc_time}"
