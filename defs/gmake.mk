@@ -1,3 +1,4 @@
+# -*- makefile-gmake -*-
 TEST_TARGETS := $(filter check test check% test% btest%,$(MAKECMDGOALS))
 TEST_TARGETS += $(subst check,test-all,$(patsubst check-%,test-%,$(TEST_TARGETS)))
 TEST_TARGETS := $(patsubst test-%,yes-test-%,$(patsubst btest-%,yes-btest-%,$(TEST_TARGETS)))
