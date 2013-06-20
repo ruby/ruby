@@ -1,3 +1,8 @@
+Fri Jun 21 05:37:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prof_sweep_timer_stop): accumulate sweep time only when
+	  record->gc_time > 0.
+
 Fri Jun 21 00:37:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/bigdecimal: Workaround fix for bigdecimal test failures caused

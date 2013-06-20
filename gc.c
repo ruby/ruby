@@ -5086,12 +5086,16 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
     }
     if (objspace->profile.run) {
 	double sweep_time;
+
 	gc_profile_record *record = gc_prof_record(objspace);
 
-	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
-	    /* need to accumulate for lazy sweep */
+	if (record->gc_time > 0) {
 	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
+	    /* need to accumulate GC time for lazy sweep after gc() */
 	    record->gc_time += sweep_time;
+	}
+	else if (GC_PROFILE_MORE_DETAIL) {
+	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
 	}
 
 #if GC_PROFILE_MORE_DETAIL
