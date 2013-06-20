@@ -1,3 +1,9 @@
+Thu Jun 20 16:46:46 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_aobench.rb: added.
+
+	* benchmark/gc/aobench.rb: added.
+
 Thu Jun 20 16:28:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_binary_trees.rb: disable `puts' method
