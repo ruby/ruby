@@ -12,6 +12,7 @@ GC::Profiler.enable
 tms = Benchmark.measure{|x|
   load script
 }
+GC::Profiler.disable
 GC::Profiler.report
 pp GC.stat
 
