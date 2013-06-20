@@ -1,3 +1,7 @@
+Fri Jun 21 08:14:00 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: refactoring bitmaps. introduce bits_t type and some Consts.
+
 Fri Jun 21 08:04:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix to support USE_RGENGC == 0 (disable RGenGC).

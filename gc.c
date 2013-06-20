@@ -247,6 +247,12 @@ typedef struct RVALUE {
 #pragma pack(pop)
 #endif
 
+typedef uintptr_t bits_t;
+enum {
+    BITS_SIZE = sizeof(bits_t),
+    BITS_BITLENGTH = ( BITS_SIZE * CHAR_BIT )
+};
+
 struct heaps_slot {
     struct heaps_header *header;
     RVALUE *freelist;
@@ -257,10 +263,10 @@ struct heaps_slot {
 
 struct heaps_header {
     struct heaps_slot *base;
-    uintptr_t *mark_bits;
+    bits_t *mark_bits;
 #if USE_RGENGC
-    uintptr_t *rememberset_bits;
-    uintptr_t *oldgen_bits;
+    bits_t *rememberset_bits;
+    bits_t *oldgen_bits;
 #endif
     RVALUE *start;
     RVALUE *end;
@@ -398,6 +404,39 @@ typedef struct rb_objspace {
 #endif /* USE_RGENGC */
 } rb_objspace_t;
 
+
+#ifndef HEAP_ALIGN_LOG
+/* default tiny heap size: 16KB */
+#define HEAP_ALIGN_LOG 14
+#endif
+#define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
+enum {
+    HEAP_ALIGN = (1UL << HEAP_ALIGN_LOG),
+    HEAP_ALIGN_MASK = (~(~0UL << HEAP_ALIGN_LOG)),
+    REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
+    HEAP_SIZE = (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC),
+    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE)),
+    HEAP_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), BITS_BITLENGTH),
+    HEAP_BITMAP_SIZE = ( BITS_SIZE * HEAP_BITMAP_LIMIT),
+    HEAP_BITMAP_PLANES = USE_RGENGC ? 3 : 1 /* RGENGC: mark bits, rememberset bits and oldgen bits */
+};
+
+#define HEAP_HEADER(p) ((struct heaps_header *)(p))
+#define GET_HEAP_HEADER(x) (HEAP_HEADER((bits_t)(x) & ~(HEAP_ALIGN_MASK)))
+#define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
+#define GET_HEAP_MARK_BITS(x) (GET_HEAP_HEADER(x)->mark_bits)
+#define GET_HEAP_REMEMBERSET_BITS(x) (GET_HEAP_HEADER(x)->rememberset_bits)
+#define GET_HEAP_OLDGEN_BITS(x) (GET_HEAP_HEADER(x)->oldgen_bits)
+#define NUM_IN_SLOT(p) (((bits_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
+#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / BITS_BITLENGTH )
+#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & (BITS_BITLENGTH-1))
+#define BITMAP_BIT(p) ((bits_t)1 << BITMAP_OFFSET(p))
+/* Bitmap Operations */
+#define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & BITMAP_BIT(p))
+#define MARK_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] | BITMAP_BIT(p))
+#define CLEAR_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] & ~BITMAP_BIT(p))
+
+/* Aliases */
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*GET_VM()->objspace)
 #define ruby_initial_gc_stress	initial_params.gc_stress
@@ -445,38 +484,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define RANY(o) ((RVALUE*)(o))
 #define has_free_object (objspace->heap.free_slots && objspace->heap.free_slots->freelist)
-
-#define HEAP_HEADER(p) ((struct heaps_header *)(p))
-#define GET_HEAP_HEADER(x) (HEAP_HEADER((uintptr_t)(x) & ~(HEAP_ALIGN_MASK)))
-#define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
-#define GET_HEAP_MARK_BITS(x) (GET_HEAP_HEADER(x)->mark_bits)
-#define GET_HEAP_REMEMBERSET_BITS(x) (GET_HEAP_HEADER(x)->rememberset_bits)
-#define GET_HEAP_OLDGEN_BITS(x) (GET_HEAP_HEADER(x)->oldgen_bits)
-#define NUM_IN_SLOT(p) (((uintptr_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
-#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * CHAR_BIT))
-#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * CHAR_BIT)-1))
-#define BITMAP_BIT(p) ((uintptr_t)1 << BITMAP_OFFSET(p))
-/* Marking */
-#define MARKED_IN_BITMAP(bits, p) (((bits)[BITMAP_INDEX(p)] & BITMAP_BIT(p)) != 0)
-#define MARK_IN_BITMAP(bits, p) ((bits)[BITMAP_INDEX(p)] |= BITMAP_BIT(p))
-#define CLEAR_IN_BITMAP(bits, p) ((bits)[BITMAP_INDEX(p)] &= ~BITMAP_BIT(p))
-
-
-#ifndef HEAP_ALIGN_LOG
-/* default tiny heap size: 16KB */
-#define HEAP_ALIGN_LOG 14
-#endif
-
-#define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
-
-enum {
-    HEAP_ALIGN = (1UL << HEAP_ALIGN_LOG),
-    HEAP_ALIGN_MASK = (~(~0UL << HEAP_ALIGN_LOG)),
-    REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
-    HEAP_SIZE = (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC),
-    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE)),
-    HEAP_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t) * CHAR_BIT)
-};
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
@@ -695,8 +702,8 @@ allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 	rb_memerror();
     }
 
-    for (i = 0; i < add * (USE_RGENGC ? 3 : 1) /* mark bits and rememberset bits and oldgen bits */; i++) {
-	bits = (struct heaps_free_bitmap *)malloc(HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+    for (i = 0; i < add * HEAP_BITMAP_PLANES; i++) {
+	bits = (struct heaps_free_bitmap *)malloc(HEAP_BITMAP_SIZE);
         if (bits == 0) {
             during_gc = 0;
             rb_memerror();
@@ -721,18 +728,18 @@ unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
     slot->free_next = NULL;
 }
 
-static uintptr_t *
+static bits_t *
 alloc_bitmap(rb_objspace_t *objspace)
 {
-    uintptr_t *bits = (uintptr_t *)objspace->heap.free_bitmap;
+    bits_t *bits = (bits_t *)objspace->heap.free_bitmap;
     assert(objspace->heap.free_bitmap != NULL);
     objspace->heap.free_bitmap = objspace->heap.free_bitmap->next;
-    memset(bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+    memset(bits, 0, HEAP_BITMAP_SIZE);
     return bits;
 }
 
 static void
-free_bitmap(rb_objspace_t *objspace, uintptr_t *bits)
+free_bitmap(rb_objspace_t *objspace, bits_t *bits)
 {
     ((struct heaps_free_bitmap *)(bits))->next = objspace->heap.free_bitmap;
     objspace->heap.free_bitmap = (struct heaps_free_bitmap *)bits;
@@ -2177,13 +2184,13 @@ lazy_sweep_enable(void)
 static void
 gc_clear_slot_bits(struct heaps_slot *slot)
 {
-    memset(slot->header->mark_bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+    memset(slot->header->mark_bits, 0, HEAP_BITMAP_SIZE);
 }
 #else
 static void
 gc_setup_mark_bits(struct heaps_slot *slot)
 {
-    memcpy(slot->header->mark_bits, slot->header->oldgen_bits, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+    memcpy(slot->header->mark_bits, slot->header->oldgen_bits, HEAP_BITMAP_SIZE);
 }
 #endif
 
@@ -2201,7 +2208,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     RVALUE *p, *pend,*offset;
     RVALUE *final = deferred_final_list;
     int deferred;
-    uintptr_t *bits, bitset;
+    bits_t *bits, bitset;
 #if GC_PROFILE_MORE_DETAIL
     gc_profile_record *record=NULL;
 #endif
@@ -2224,7 +2231,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     for (i=0; i < HEAP_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
 	if (bitset) {
-	    p = offset  + i * (sizeof(uintptr_t) *  CHAR_BIT);
+	    p = offset  + i * BITS_BITLENGTH;
 	    do {
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
 		    if (p->as.basic.flags) {
@@ -2973,7 +2980,7 @@ rb_gc_mark_maybe(VALUE obj)
 static int
 gc_marked(rb_objspace_t *objspace, VALUE ptr)
 {
-    register uintptr_t *bits = GET_HEAP_MARK_BITS(ptr);
+    register bits_t *bits = GET_HEAP_MARK_BITS(ptr);
     if (MARKED_IN_BITMAP(bits, ptr)) return 1;
     return 0;
 }
@@ -2981,7 +2988,7 @@ gc_marked(rb_objspace_t *objspace, VALUE ptr)
 static int
 gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
 {
-    register uintptr_t *bits = GET_HEAP_MARK_BITS(ptr);
+    register bits_t *bits = GET_HEAP_MARK_BITS(ptr);
     if (gc_marked(objspace, ptr)) return 0;
     MARK_IN_BITMAP(bits, ptr);
     return 1;
@@ -3541,37 +3548,37 @@ gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th, int minor_gc)
 }
 
 #if USE_RGENGC
-static uintptr_t *
+static bits_t *
 gc_store_bitmaps(rb_objspace_t *objspace)
 {
-    uintptr_t *stored_bitmaps = (uintptr_t *)malloc((HEAP_BITMAP_LIMIT * sizeof(uintptr_t)) * heaps_used * 3);
+    bits_t *stored_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heaps_used * 3);
     size_t i;
 
     if (stored_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
 
     for (i=0; i<heaps_used; i++) {
-	memcpy(&stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->mark_bits,        sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
-	memcpy(&stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->rememberset_bits, sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
-	memcpy(&stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->oldgen_bits,      sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(&stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->mark_bits,        HEAP_BITMAP_SIZE);
+	memcpy(&stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->rememberset_bits, HEAP_BITMAP_SIZE);
+	memcpy(&stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], objspace->heap.sorted[i]->oldgen_bits,      HEAP_BITMAP_SIZE);
     }
 
     return stored_bitmaps;
     }
 
 static void
-gc_restore_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
+gc_restore_bitmaps(rb_objspace_t *objspace, bits_t *stored_bitmaps)
 {
     size_t i;
 
     for (i=0; i<heaps_used; i++) {
-	uintptr_t *oldgen_bits = objspace->heap.sorted[i]->oldgen_bits;
+	bits_t *oldgen_bits = objspace->heap.sorted[i]->oldgen_bits;
 	RVALUE *p = objspace->heap.sorted[i]->start;
 	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
 
 	/* restore bitmaps */
-	memcpy(objspace->heap.sorted[i]->mark_bits,        &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
-	memcpy(objspace->heap.sorted[i]->rememberset_bits, &stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
-	memcpy(objspace->heap.sorted[i]->oldgen_bits,      &stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], sizeof(uintptr_t) * HEAP_BITMAP_LIMIT);
+	memcpy(objspace->heap.sorted[i]->mark_bits,        &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
+	memcpy(objspace->heap.sorted[i]->rememberset_bits, &stored_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
+	memcpy(objspace->heap.sorted[i]->oldgen_bits,      &stored_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
 
 
 	/* resotre oldgen bits */
@@ -3584,15 +3591,15 @@ gc_restore_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
 }
 
 static void
-gc_free_stored_bitmaps(rb_objspace_t *objspace, uintptr_t *stored_bitmaps)
+gc_free_stored_bitmaps(rb_objspace_t *objspace, bits_t *stored_bitmaps)
 {
     free(stored_bitmaps);
 }
 
 static void
-gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, uintptr_t *before_stored_bitmaps)
+gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, bits_t *before_stored_bitmaps)
 {
-    uintptr_t *stored_bitmaps = gc_store_bitmaps(objspace);
+    bits_t *stored_bitmaps = gc_store_bitmaps(objspace);
     size_t i;
 
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
@@ -3603,8 +3610,8 @@ gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, uintptr_t *before_stored
 
     /* check */
     for (i=0; i<heaps_used; i++) {
-	uintptr_t *minor_mark_bits = &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
-	uintptr_t *major_mark_bits = objspace->heap.sorted[i]->mark_bits;
+	bits_t *minor_mark_bits = &stored_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
+	bits_t *major_mark_bits = objspace->heap.sorted[i]->mark_bits;
 	RVALUE *p = objspace->heap.sorted[i]->start;
 	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
 
@@ -3661,7 +3668,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	}
 	else { /* minor GC */
 	    if (RGENGC_CHECK_MODE > 1) {
-		uintptr_t *before_mark_stored_bitmaps = gc_store_bitmaps(objspace);
+		bits_t *before_mark_stored_bitmaps = gc_store_bitmaps(objspace);
 		gc_marks_body(objspace, th, TRUE);
 		gc_marks_test(objspace, th, before_mark_stored_bitmaps);
 		gc_free_stored_bitmaps(objspace, before_mark_stored_bitmaps);
@@ -3688,14 +3695,14 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 static int
 rgengc_remembersetbits_get(rb_objspace_t *objspace, VALUE obj)
 {
-    uintptr_t *bits = GET_HEAP_REMEMBERSET_BITS(obj);
+    bits_t *bits = GET_HEAP_REMEMBERSET_BITS(obj);
     return MARKED_IN_BITMAP(bits, obj) ? 1 : 0;
 }
 
 static void
 rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
 {
-    uintptr_t *bits = GET_HEAP_REMEMBERSET_BITS(obj);
+    bits_t *bits = GET_HEAP_REMEMBERSET_BITS(obj);
     MARK_IN_BITMAP(bits, obj);
 }
 
@@ -3755,7 +3762,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
     size_t i, j;
     size_t shady_object_count = 0, clear_count = 0;
     RVALUE *p, *offset;
-    uintptr_t *bits, bitset;
+    bits_t *bits, bitset;
 
     for (i=0; i<heaps_used; i++) {
 	p = objspace->heap.sorted[i]->start;
@@ -3765,7 +3772,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 
 	for (j=0; j < HEAP_BITMAP_LIMIT; j++) {
 	    if (bits[j]) {
-		p = offset  + j * (sizeof(uintptr_t) *  CHAR_BIT);
+		p = offset  + j * BITS_BITLENGTH;
 		bitset = bits[j];
 		do {
 		    if (bitset & 1) {
@@ -3803,8 +3810,8 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heaps_used; i++) {
-	memset(objspace->heap.sorted[i]->mark_bits,        0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
-	memset(objspace->heap.sorted[i]->rememberset_bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+	memset(objspace->heap.sorted[i]->mark_bits,        0, HEAP_BITMAP_SIZE);
+	memset(objspace->heap.sorted[i]->rememberset_bits, 0, HEAP_BITMAP_SIZE);
     }
 }
 
