@@ -40,7 +40,7 @@ Thu Jun 20 15:14:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 Thu Jun 20 14:09:54 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* tool/hashbench1.rb: fix paramter too. Increase temporary objects.
+	* tool/hashbench1.rb: fix parameter too. Increase temporary objects.
 
 Thu Jun 20 14:01:35 2013  Koichi Sasada  <ko1@atdot.net>
 
