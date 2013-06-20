@@ -1,3 +1,8 @@
+Fri Jun 21 08:04:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix to support USE_RGENGC == 0 (disable RGenGC).
+	  If USE_RGENGC==0, it caused compilation error.
+
 Fri Jun 21 08:08:11 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (lazy_sweep): Use is_lazy_sweeping()
