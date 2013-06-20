@@ -3684,7 +3684,6 @@ bigmul1_toom3(VALUE x, VALUE y)
     bigadd_core(zds + 2*n, zn - 2*n, BDIGITS(z2), big_real_len(z2), zds + 2*n, zn - 2*n);
     bigadd_core(zds + 3*n, zn - 3*n, BDIGITS(z3), big_real_len(z3), zds + 3*n, zn - 3*n);
     bigadd_core(zds + 4*n, zn - 4*n, BDIGITS(z4), big_real_len(z4), zds + 4*n, zn - 4*n);
-    z = bignorm(z);
 
     return bignorm(z);
 }

@@ -1,3 +1,7 @@
+Thu Jun 20 22:52:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_toom3): Don't call bignorm twice.
+
 Thu Jun 20 22:49:27 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bignorm): Don't call bigtrunc if the result is a fixnum.
