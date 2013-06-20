@@ -568,12 +568,12 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
     method_cache_entry_t *ent;
 
     if (RCLASS_EXT(klass)->mc_tbl == NULL) {
-	RCLASS_EXT(klass)->mc_tbl = sa_new_table();
+	RCLASS_EXT(klass)->mc_tbl = sp_ar_new_table();
     }
 
-    if (!sa_lookup(RCLASS_EXT(klass)->mc_tbl, (sa_index_t)id, (st_data_t *)&ent)) {
+    if (!sp_ar_lookup(RCLASS_EXT(klass)->mc_tbl, (sp_ar_index_t)id, (st_data_t *)&ent)) {
 	ent = calloc(1, sizeof(*ent));
-	sa_insert(RCLASS_EXT(klass)->mc_tbl, (sa_index_t)id, (st_data_t)ent);
+	sp_ar_insert(RCLASS_EXT(klass)->mc_tbl, (sp_ar_index_t)id, (st_data_t)ent);
     }
 
     if (ent->seq == RCLASS_EXT(klass)->seq &&
