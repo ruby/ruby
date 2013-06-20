@@ -194,5 +194,10 @@ class TestBignum < Test::Unit::TestCase
       assert_equal(  -1, Integer.test_unpack("\xFF", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
     end
 
+    def test_unpack2comp_negative_zero
+      0.upto(100) {|n|
+        assert_equal(-(256**n), Integer.test_unpack("\x00"*n, n, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      }
+    end
   end
 end

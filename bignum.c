@@ -1259,26 +1259,26 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
 static int
 bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int nlp_bits)
 {
-    int sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+    int sign;
 
-    const unsigned char *buf = words;
+    if (num_bdigits != 0) {
+        const unsigned char *buf = words;
 
-    BDIGIT *dp;
-    BDIGIT *de;
+        BDIGIT *dp;
+        BDIGIT *de;
 
-    int word_num_partialbits;
-    size_t word_num_fullbytes;
+        int word_num_partialbits;
+        size_t word_num_fullbytes;
 
-    ssize_t word_step;
-    size_t byte_start;
-    int byte_step;
+        ssize_t word_step;
+        size_t byte_start;
+        int byte_step;
 
-    size_t word_start, word_last;
-    const unsigned char *wordp, *last_wordp;
-    BDIGIT_DBL dd;
-    int numbits_in_dd;
+        size_t word_start, word_last;
+        const unsigned char *wordp, *last_wordp;
+        BDIGIT_DBL dd;
+        int numbits_in_dd;
 
-    if (num_bdigits) {
         dp = bdigits;
         de = dp + num_bdigits;
 
@@ -1322,20 +1322,34 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
 #undef PUSH_BITS
     }
 
-    if (flags & INTEGER_PACK_2COMP) {
-        if (num_bdigits == 0) {
-            if (flags & INTEGER_PACK_NEGATIVE)
-                sign = -1;
-            else
-                sign = 0;
-        }
-        else if ((flags & INTEGER_PACK_NEGATIVE) ||
-                 (num_bdigits != 0 &&
-                  (bdigits[num_bdigits-1] >> (BITSPERDIG - nlp_bits - 1)))) {
-            if (nlp_bits)
+    if (!(flags & INTEGER_PACK_2COMP)) {
+        sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+    }
+    else {
+        if (nlp_bits) {
+            if ((flags & INTEGER_PACK_NEGATIVE) ||
+                (bdigits[num_bdigits-1] >> (BITSPERDIG - nlp_bits - 1))) {
                 bdigits[num_bdigits-1] |= (~(BDIGIT)0) << (BITSPERDIG - nlp_bits);
+                sign = -1;
+            }
+            else {
+                sign = 1;
+            }
+        }
+        else {
+            if (flags & INTEGER_PACK_NEGATIVE) {
+                sign = bary_zero_p(bdigits, num_bdigits) ? -2 : -1;
+            }
+            else {
+                if (num_bdigits != 0 &&
+                    (bdigits[num_bdigits-1] >> (BITSPERDIG - 1)))
+                    sign = -1;
+                else
+                    sign = 1;
+            }
+        }
+        if (sign == -1 && num_bdigits != 0) {
             bary_2comp(bdigits, num_bdigits);
-            sign = -1;
         }
     }
 
@@ -1347,6 +1361,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
 {
     size_t num_bdigits0;
     int nlp_bits;
+    int sign;
 
     validate_integer_pack_format(numwords, wordsize, nails, flags,
             INTEGER_PACK_MSWORD_FIRST|
@@ -1362,7 +1377,14 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
 
     assert(num_bdigits0 <= num_bdigits);
 
-    bary_unpack_internal(bdigits, num_bdigits, words, numwords, wordsize, nails, flags, nlp_bits);
+    sign = bary_unpack_internal(bdigits, num_bdigits0, words, numwords, wordsize, nails, flags, nlp_bits);
+
+    if (num_bdigits0 < num_bdigits) {
+        MEMZERO(bdigits + num_bdigits0, BDIGIT, num_bdigits - num_bdigits0);
+        if (sign == -2) {
+            bdigits[num_bdigits0] = 1;
+        }
+    }
 }
 
 /*
@@ -1429,16 +1451,19 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
     num_bdigits = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 
-    if (LONG_MAX < num_bdigits)
+    if (LONG_MAX-1 < num_bdigits)
         rb_raise(rb_eArgError, "too big to unpack as an integer");
     val = bignew((long)num_bdigits, 0);
     ds = BDIGITS(val);
     sign = bary_unpack_internal(ds, num_bdigits, words, numwords, wordsize, nails, flags, nlp_bits);
 
-    if ((flags & INTEGER_PACK_2COMP) && num_bdigits == 0 && sign < 0) {
-        rb_big_resize(val, 1);
-        ds[0] = 1;
+    if (sign == -2) {
+        rb_big_resize(val, (long)num_bdigits+1);
+        BDIGITS(val)[num_bdigits] = 1;
     }
+    if ((flags & INTEGER_PACK_FORCE_BIGNUM) && sign != 0 &&
+        bary_zero_p(BDIGITS(val), RBIGNUM_LEN(val)))
+        sign = 0;
     RBIGNUM_SET_SIGN(val, 0 <= sign);
 
     if (flags & INTEGER_PACK_FORCE_BIGNUM)

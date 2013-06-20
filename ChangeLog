@@ -1,3 +1,9 @@
+Thu Jun 20 22:02:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack_internal): Return -2 when negative overflow.
+	  (bary_unpack): Set the overflowed bit if an extra BDIGIT exists.
+	  (rb_integer_unpack): Set the overflowed bit.
+
 Thu Jun 20 21:17:19 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_rememberset_mark): record
