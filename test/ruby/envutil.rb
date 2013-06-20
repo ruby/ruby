@@ -77,7 +77,8 @@ module EnvUtil
         else
           break
         end while true
-        raise Timeout::Error
+        bt = caller_locations
+        raise Timeout::Error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
       end
       out_p.close if capture_stdout
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
