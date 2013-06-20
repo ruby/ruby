@@ -345,7 +345,6 @@ rb_uint2big(VALUE n)
 #if SIZEOF_BDIGITS >= SIZEOF_VALUE
     digits[0] = n;
 #else
-    i = 0;
     for (i = 0; i < bdigit_roomof(SIZEOF_VALUE); i++) {
 	digits[i] = BIGLO(n);
 	n = BIGDN(n);
@@ -1830,19 +1829,20 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 static VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
-    BDIGIT_DBL num = n;
-    long i = 0;
-    BDIGIT *digits;
-    VALUE big;
+    long i;
+    VALUE big = bignew(DIGSPERLL, bdigit_roomof(SIZEOF_LONG_LONG));
+    BDIGIT *digits = BDIGITS(big);
 
-    big = bignew(DIGSPERLL, 1);
-    digits = BDIGITS(big);
-    while (i < DIGSPERLL) {
-	digits[i++] = BIGLO(num);
-	num = BIGDN(num);
+#if SIZEOF_BDIGITS >= SIZEOF_LONG_LONG
+    digits[0] = n;
+#else
+    for (i = 0; i < bdigit_roomof(SIZEOF_LONG_LONG); i++) {
+	digits[i] = BIGLO(n);
+	n = BIGDN(n);
     }
+#endif
 
-    i = DIGSPERLL;
+    i = bdigit_roomof(SIZEOF_LONG_LONG);
     while (i-- && !digits[i]) ;
     RBIGNUM_SET_LEN(big, i+1);
     return big;

@@ -1,3 +1,8 @@
+Fri Jun 21 06:43:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_ull2big): Refactored.
+	  (rb_uint2big): Useless code removed.
+
 Fri Jun 21 05:37:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_prof_sweep_timer_stop): accumulate sweep time only when
