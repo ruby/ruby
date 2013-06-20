@@ -1,3 +1,7 @@
+Thu Jun 20 14:00:34 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: remove dependency from ruby.
+
 Thu Jun 20 13:14:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_backtrace): evaluate RARRAY_AREF only once.

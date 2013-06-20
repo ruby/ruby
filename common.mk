@@ -426,15 +426,15 @@ rdoc-coverage: PHONY main
 
 RDOCBENCHOUT=/tmp/rdocbench
 
-gcbench-rdoc: PHONY ruby
+gcbench-rdoc: PHONY
 	@echo Benchmark with Generating RDoc documentation
 	$(Q) $(XRUBY) "$(srcdir)/tool/gcbench.rb" "$(srcdir)/tool/rdocbench.rb" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri  --debug $(RDOCFLAGS) --quiet "$(srcdir)"
 
-gcbench-hash1: PHONY ruby
+gcbench-hash1: PHONY
 	@echo "Benchmark with hashbench1 (many temporal objects / obj count intensive)"
 	$(Q) $(XRUBY) "$(srcdir)/tool/gcbench.rb" "$(srcdir)/tool/hashbench1.rb"
 
-gcbench-hash2: PHONY ruby
+gcbench-hash2: PHONY
 	@echo "Benchmark with hashbench2 (increasing hash size / malloc intensive)"
 	$(Q) $(XRUBY) "$(srcdir)/tool/gcbench.rb" "$(srcdir)/tool/hashbench2.rb"
 
