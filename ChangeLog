@@ -1,3 +1,7 @@
+Thu Jun 20 22:29:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_uint2big): Refactored.
+
 Thu Jun 20 22:24:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (dump_bignum): Use SIZEOF_BDIGITS.

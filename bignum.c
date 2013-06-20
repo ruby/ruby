@@ -336,21 +336,17 @@ rb_big_norm(VALUE x)
 VALUE
 rb_uint2big(VALUE n)
 {
-    long i = 0;
-    BDIGIT *digits;
-    VALUE big;
+    long i;
+    VALUE big = bignew(bdigit_roomof(SIZEOF_VALUE), 1);
+    BDIGIT *digits = BDIGITS(big);
 
 #if SIZEOF_BDIGITS >= SIZEOF_VALUE
-    big = bignew(1, 1);
-    digits = BDIGITS(big);
     digits[0] = n;
 #else
-    BDIGIT_DBL num = n;
-    big = bignew(bdigit_roomof(SIZEOF_VALUE), 1);
-    digits = BDIGITS(big);
-    while (i < bdigit_roomof(SIZEOF_VALUE)) {
-	digits[i++] = BIGLO(num);
-	num = BIGDN(num);
+    i = 0;
+    for (i = 0; i < bdigit_roomof(SIZEOF_VALUE); i++) {
+	digits[i] = BIGLO(n);
+	n = BIGDN(n);
     }
 #endif
 
