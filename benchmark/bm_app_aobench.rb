@@ -17,12 +17,7 @@ class Vec
     @z = z
   end
 
-  def x=(v); @x = v; end
-  def y=(v); @y = v; end
-  def z=(v); @z = v; end
-  def x; @x; end
-  def y; @y; end
-  def z; @z; end
+  attr_accessor :x, :y, :z
 
   def vadd(b)
     Vec.new(@x + b.x, @y + b.y, @z + b.z)
@@ -65,8 +60,7 @@ class Sphere
     @radius = radius
   end
 
-  def center; @center; end
-  def radius; @radius; end
+  attr_reader :center, :radius
 
   def intersect(ray, isect)
     rs = ray.org.vsub(@center)
@@ -129,10 +123,7 @@ class Ray
     @dir = dir
   end
 
-  def org; @org; end
-  def org=(v); @org = v; end
-  def dir; @dir; end
-  def dir=(v); @dir = v; end
+  attr_accessor :org, :dir
 end
 
 class Isect
@@ -143,14 +134,7 @@ class Isect
     @n = Vec.new(0.0, 0.0, 0.0)
   end
 
-  def t; @t; end
-  def t=(v); @t = v; end
-  def hit; @hit; end
-  def hit=(v); @hit = v; end
-  def pl; @pl; end
-  def pl=(v); @pl = v; end
-  def n; @n; end
-  def n=(v); @n = v; end
+  attr_accessor :t, :hit, :pl, :n
 end
 
 def clamp(f)
