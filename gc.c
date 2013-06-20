@@ -148,7 +148,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 #define GC_PROFILE_MORE_DETAIL 0
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
-#define GC_ENABLE_LAZY_SWEEP 1
+#define GC_ENABLE_LAZY_SWEEP 0
 #endif
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
@@ -197,6 +197,7 @@ typedef struct gc_profile_record {
 #endif
 
 #if RGENGC_PROFILE > 0
+    size_t oldgen_objects;
     size_t remembered_normal_objects;
     size_t remembered_shady_objects;
 #endif
@@ -5133,6 +5134,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace, gc_profile_record *record)
 #endif
 
 #if RGENGC_PROFILE > 0
+    record->oldgen_objects = objspace->rgengc.oldgen_object_count;
     record->remembered_normal_objects = objspace->profile.remembered_normal_objects;
     record->remembered_shady_objects = objspace->profile.remembered_shady_objects;
 #endif
@@ -5269,6 +5271,7 @@ gc_profile_record_get(void)
 #endif
 
 #if RGENGC_PROFILE > 0
+	rb_hash_aset(prof, ID2SYM(rb_intern("OLDGEN_OBJECTS")), SIZET2NUM(objspace->profile.record[i].oldgen_objects));
 	rb_hash_aset(prof, ID2SYM(rb_intern("REMEMBED_NORMAL_OBJECTS")), SIZET2NUM(objspace->profile.record[i].remembered_normal_objects));
 	rb_hash_aset(prof, ID2SYM(rb_intern("REMEMBED_SHADY_OBJECTS")), SIZET2NUM(objspace->profile.record[i].remembered_shady_objects));
 #endif
@@ -5297,6 +5300,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 				   i+1, record->gc_invoke_time, record->heap_use_size,
 				   record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
 	}
+
 #if GC_PROFILE_MORE_DETAIL
 	append(out, rb_str_new_cstr("\n\n" \
 				    "More detail.\n" \
@@ -5305,14 +5309,24 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if CALC_EXACT_MALLOC_SIZE
 				    "  Allocated Size"
 #endif
-				    "  Use Slot     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  Removing Obj.  Empty Obj.\n"));
+				    "  Use Slot     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  LivingObj    FreeObj RemovedObj   EmptyObj"
+#if RGENGC_PROFILE
+				    " OldgenObj RemNormObj RemShadObj"
+#endif
+				    "\n"));
+
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.record[i];
 	    append(out, rb_sprintf("%5"PRIdSIZE" %c/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
 				   " %15"PRIuSIZE
 #endif
-				   " %9"PRIuSIZE" %17.12f %17.12f %17.12f %14"PRIuSIZE" %11"PRIuSIZE" \n",
+				   " %9"PRIuSIZE" %17.12f %17.12f %17.12f %10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE
+#if RGENGC_PROFILE
+				   "%10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE"\n"
+#endif
+				   ,
+				   
 				   i+1,
 				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
@@ -5326,10 +5340,20 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 				   record->allocated_size,
 #endif
 				   record->heap_use_slots,
-				   record->gc_mark_time*1000, record->gc_sweep_time*1000,
+				   record->gc_mark_time*1000,
+				   record->gc_sweep_time*1000,
 				   record->prepare_time*1000,
+
+				   record->heap_live_objects,
+				   record->heap_free_objects,
 				   record->removing_objects,
 				   record->empty_objects
+#if RGENGC_PROFILE
+				   ,
+				   record->oldgen_objects,
+				   record->remembered_normal_objects,
+				   record->remembered_shady_objects
+#endif
 		       ));
 	}
 #endif
