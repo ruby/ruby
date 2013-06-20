@@ -1,3 +1,7 @@
+Thu Jun 20 14:01:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/hashbench1.rb: fix parameters.
+
 Thu Jun 20 14:00:34 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: remove dependency from ruby.
