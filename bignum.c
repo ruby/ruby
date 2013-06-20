@@ -354,7 +354,7 @@ rb_uint2big(VALUE n)
     }
 #endif
 
-    i = bdigit_roomof(SIZEOF_VALUE);;
+    i = bdigit_roomof(SIZEOF_VALUE);
     while (--i && !digits[i]) ;
     RBIGNUM_SET_LEN(big, i+1);
     return big;
