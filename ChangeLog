@@ -1,3 +1,10 @@
+Thu Jun 20 16:28:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_so_binary_trees.rb: disable `puts' method
+	  and change iteration parameter to increase execution time.
+
+	* benchmark/gc/binarytree.rb: added.
+
 Thu Jun 20 16:06:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/pentomino.rb: added.
