@@ -3646,7 +3646,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	    }
 	    else {
 		gc_marks_body(objspace, th, TRUE);
-	}
+	    }
 	}
 
 	objspace->mark_func_data = prev_mark_func_data;
