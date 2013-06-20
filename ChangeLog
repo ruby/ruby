@@ -2,7 +2,7 @@ Fri Jun 21 07:34:47 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_profile_record::oldgen_objects): added.
 
-	* gc.c (gc_profile_dump_on): print the following infomation:
+	* gc.c (gc_profile_dump_on): print the following information:
 	  * Living object counts
 	  * Free object counts
 	  If RGENGC_PROFILE > 0 then
