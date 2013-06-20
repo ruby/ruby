@@ -86,22 +86,8 @@ static ID id_eq;
 #endif
 
 #ifndef RBIGNUM_ZERO_P
-# define RBIGNUM_ZERO_P(x) (RBIGNUM_LEN(x) == 0 || \
-			    (RBIGNUM_DIGITS(x)[0] == 0 && \
-			     (RBIGNUM_LEN(x) == 1 || bigzero_p(x))))
+# define RBIGNUM_ZERO_P(x) rb_bigzero_p(x)
 #endif
-
-static inline int
-bigzero_p(VALUE x)
-{
-    long i;
-    BDIGIT *ds = RBIGNUM_DIGITS(x);
-
-    for (i = RBIGNUM_LEN(x) - 1; 0 <= i; i--) {
-	if (ds[i]) return 0;
-    }
-    return 1;
-}
 
 #ifndef RRATIONAL_ZERO_P
 # define RRATIONAL_ZERO_P(x) (FIXNUM_P(RRATIONAL(x)->num) && \
@@ -2130,7 +2116,11 @@ is_even(VALUE x)
 	return (FIX2LONG(x) % 2) == 0;
 
       case T_BIGNUM:
-	return (RBIGNUM_DIGITS(x)[0] % 2) == 0;
+        {
+            unsigned long l;
+            rb_big_pack(x, &l, 1);
+            return l % 2 == 0;
+        }
 
       default:
 	break;

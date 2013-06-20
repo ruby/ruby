@@ -1,3 +1,20 @@
+Fri Jun 21 00:37:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/bigdecimal: Workaround fix for bigdecimal test failures caused
+	  by [ruby-dev:47413] [Feature #8509]
+
+	* ext/bigdecimal/bigdecimal.h (BDIGIT): Make it independent from the
+	  definition for bignum.c.
+	  (SIZEOF_BDIGITS): Ditto.
+	  (BDIGIT_DBL): Ditto.
+	  (BDIGIT_DBL_SIGNED): Ditto.
+	  (PRI_BDIGIT_PREFIX): Undefine the definition.
+	  (PRI_BDIGIT_DBL_PREFIX): Ditto.
+
+	* ext/bigdecimal/bigdecimal.c (RBIGNUM_ZERO_P): Use rb_bigzero_p.
+	  (bigzero_p): Removed.
+	  (is_even): Use rb_big_pack.
+
 Thu Jun 20 22:52:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigmul1_toom3): Don't call bignorm twice.
