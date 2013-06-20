@@ -7,7 +7,7 @@ class Ring
   def initialize n = nil
     @next_ring = n
   end
-  
+
 
   def size
     s = 1
