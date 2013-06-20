@@ -1,6 +1,10 @@
 require 'minitest/autorun'
 require 'xmlrpc/client'
 require 'net/http'
+begin
+  require 'openssl'
+rescue LoadError
+end
 
 module XMLRPC
   class ClientTest < MiniTest::Unit::TestCase
