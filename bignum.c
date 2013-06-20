@@ -322,7 +322,9 @@ static VALUE
 bignorm(VALUE x)
 {
     if (RB_TYPE_P(x, T_BIGNUM)) {
-	x = bigfixize(bigtrunc(x));
+	x = bigfixize(x);
+        if (!FIXNUM_P(x))
+            bigtrunc(x);
     }
     return x;
 }
