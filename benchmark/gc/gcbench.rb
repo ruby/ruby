@@ -2,7 +2,7 @@
 require 'benchmark'
 require 'pp'
 
-script = File.join(__dir__, ARGV.shift)
+script = File.join(File.dirname(__FILE__), ARGV.shift)
 script += '.rb' unless FileTest.exist?(script)
 raise "#{script} not found" unless FileTest.exist?(script)
 
