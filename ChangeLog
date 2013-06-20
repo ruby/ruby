@@ -1,3 +1,13 @@
+Thu Jun 20 21:17:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_rememberset_mark): record
+	  (1) normal objects count in remember set
+	  (2) shady objects count in remember set
+	  each GC timing.
+
+	* gc.c (gc_profile_record_get): enable to access above information
+	  and REMOVING_OBJECTS, EMPTY_OBJECTS.
+
 Thu Jun 20 18:29:26 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: Do not use GC::Profiler::disable because

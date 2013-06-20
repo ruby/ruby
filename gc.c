@@ -195,6 +195,11 @@ typedef struct gc_profile_record {
     size_t removing_objects;
     size_t empty_objects;
 #endif
+
+#if RGENGC_PROFILE > 0
+    size_t remembered_normal_objects;
+    size_t remembered_shady_objects;
+#endif
 } gc_profile_record;
 
 #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__CYGWIN__)
@@ -344,6 +349,10 @@ typedef struct rb_objspace {
 	size_t promote_operation_count;
 	size_t remembered_normal_object_count;
 	size_t remembered_shady_object_count;
+
+	/* temporal profiling space */
+	size_t remembered_normal_objects;
+	size_t remembered_shady_objects;
 #if RGENGC_PROFILE >= 2
 	size_t generated_normal_object_count_types[RUBY_T_MASK];
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
@@ -3765,7 +3774,10 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
     }
 
     rgengc_report(2, objspace, "rgengc_rememberset_mark: clear_count: %"PRIdSIZE", shady_object_count: %"PRIdSIZE"\n", clear_count, shady_object_count);
-
+#if RGENGC_PROFILE > 0
+    objspace->profile.remembered_normal_objects = clear_count;
+    objspace->profile.remembered_shady_objects = shady_object_count;
+#endif
     return shady_object_count;
 }
 
@@ -5115,6 +5127,12 @@ gc_prof_set_heap_info(rb_objspace_t *objspace, gc_profile_record *record)
     record->heap_live_objects = live;
     record->heap_free_objects = total - live;
 #endif
+
+#if RGENGC_PROFILE > 0
+    record->remembered_normal_objects = objspace->profile.remembered_normal_objects;
+    record->remembered_shady_objects = objspace->profile.remembered_shady_objects;
+#endif
+
     record->heap_total_objects = total;
     record->heap_use_size = live * sizeof(RVALUE);
     record->heap_total_size = total * sizeof(RVALUE);
@@ -5239,7 +5257,16 @@ gc_profile_record_get(void)
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SLOTS")), SIZET2NUM(objspace->profile.record[i].heap_use_slots));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_LIVE_OBJECTS")), SIZET2NUM(objspace->profile.record[i].heap_live_objects));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_FREE_OBJECTS")), SIZET2NUM(objspace->profile.record[i].heap_free_objects));
+
+	rb_hash_aset(prof, ID2SYM(rb_intern("REMOVING_OBJECTS")), SIZET2NUM(objspace->profile.record[i].removing_objects));
+	rb_hash_aset(prof, ID2SYM(rb_intern("EMPTY_OBJECTS")), SIZET2NUM(objspace->profile.record[i].empty_objects));
+
 	rb_hash_aset(prof, ID2SYM(rb_intern("HAVE_FINALIZE")), (objspace->profile.record[i].flags & GPR_FLAG_HAVE_FINALIZE) ? Qtrue : Qfalse);
+#endif
+
+#if RGENGC_PROFILE > 0
+	rb_hash_aset(prof, ID2SYM(rb_intern("REMEMBED_NORMAL_OBJECTS")), SIZET2NUM(objspace->profile.record[i].remembered_normal_objects));
+	rb_hash_aset(prof, ID2SYM(rb_intern("REMEMBED_SHADY_OBJECTS")), SIZET2NUM(objspace->profile.record[i].remembered_shady_objects));
 #endif
 	rb_ary_push(gc_profile, prof);
     }
