@@ -1,3 +1,8 @@
+Thu Jun 20 16:06:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/pentomino.rb: added.
+	  Simply load pentomino puzzle in the benchmark/ directory.
+
 Thu Jun 20 15:32:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/redblack.rb: import red black tree benchmark from
