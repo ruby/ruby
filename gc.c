@@ -2420,6 +2420,7 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 {
     if (immediate_sweep) {
 	struct heaps_slot *next;
+	gc_prof_sweep_timer_start(objspace);
 	before_gc_sweep(objspace);
 
 	while (objspace->heap.sweep_slots) {
@@ -2429,6 +2430,7 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 	}
 
 	after_gc_sweep(objspace);
+	gc_prof_sweep_timer_stop(objspace);
     }
     else {
 	before_gc_sweep(objspace);
@@ -3553,12 +3555,19 @@ gc_marks_test(rb_objspace_t *objspace, bits_t *before_stored_bitmaps)
 {
     bits_t *stored_bitmaps = gc_store_bitmaps(objspace);
     size_t i;
+    size_t stored_oldgen, stored_shady;
 
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
     /* run major (full) gc with temporary mark/rememberset */
-    gc_marks_body(objspace, FALSE);
+    stored_oldgen = objspace->rgengc.oldgen_object_count;
+    stored_shady = objspace->rgengc.remembered_shady_object_count;
+    {
+	gc_marks_body(objspace, FALSE);
+    }
     objspace->rgengc.during_minor_gc = TRUE;
+    objspace->rgengc.oldgen_object_count = stored_oldgen;
+    objspace->rgengc.remembered_shady_object_count = stored_shady;
 
     /* check */
     for (i=0; i<heaps_used; i++) {
@@ -5064,9 +5073,9 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
     if (RUBY_DTRACE_GC_SWEEP_END_ENABLED()) {
 	RUBY_DTRACE_GC_SWEEP_END();
     }
+
     if (objspace->profile.run) {
 	double sweep_time;
-
 	gc_profile_record *record = gc_prof_record(objspace);
 
 	if (record->gc_time > 0) {

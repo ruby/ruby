@@ -1,3 +1,11 @@
+Fri Jun 21 15:26:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_sweep): profile sweep time correctly when LAZY_SWEEP is
+	  disabled.
+
+	* gc.c (gc_marks_test): store oldgen count and shady count
+	  before test marking and restore them after marking.
+
 Fri Jun 21 15:07:42 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: enable lazy sweep (commit miss).
