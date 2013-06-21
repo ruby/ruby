@@ -486,7 +486,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if !exist("$(arch_hdrdir)/ruby")
 	@md $(arch_hdrdir:/=\)\ruby
 !endif
-	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) <<
+	@$(IFCHANGE) "--timestamp=$(@:/=\)" $(RUBY_CONFIG_H:/=\) <<
 #ifndef $(guard)
 #define $(guard) 1
 #if _MSC_VER != $(MSC_VER)
