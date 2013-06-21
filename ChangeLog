@@ -1,3 +1,7 @@
+Fri Jun 21 11:18:25 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_body): fix to get `th' in this function.
+
 Fri Jun 21 10:21:44 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heaps_header/heaps_slot): embed bitmaps into heaps_slot.

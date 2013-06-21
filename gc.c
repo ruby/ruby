@@ -3416,9 +3416,10 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
 }
 
 static void
-gc_marks_body(rb_objspace_t *objspace, rb_thread_t *th, int minor_gc)
+gc_marks_body(rb_objspace_t *objspace, int minor_gc)
 {
     struct gc_list *list;
+    rb_thread_t *th = GET_THREAD();
 
     /* start marking */
     rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", minor_gc ? "minor" : "major");
@@ -3546,7 +3547,7 @@ gc_free_stored_bitmaps(rb_objspace_t *objspace, bits_t *stored_bitmaps)
 }
 
 static void
-gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, bits_t *before_stored_bitmaps)
+gc_marks_test(rb_objspace_t *objspace, bits_t *before_stored_bitmaps)
 {
     bits_t *stored_bitmaps = gc_store_bitmaps(objspace);
     size_t i;
@@ -3554,7 +3555,7 @@ gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, bits_t *before_stored_bi
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
     /* run major (full) gc with temporary mark/rememberset */
-    gc_marks_body(objspace, th, FALSE);
+    gc_marks_body(objspace, FALSE);
     objspace->rgengc.during_minor_gc = TRUE;
 
     /* check */
@@ -3577,11 +3578,11 @@ gc_marks_test(rb_objspace_t *objspace, rb_thread_t *th, bits_t *before_stored_bi
     if (objspace->rgengc.interesting_object) {
 	fprintf(stderr, "!!! restart minor gc\n");
 	gc_restore_bitmaps(objspace, before_stored_bitmaps);
-	gc_marks_body(objspace, th, FALSE);
+	gc_marks_body(objspace, FALSE);
 
 	fprintf(stderr, "!!! restart major gc\n");
 	gc_restore_bitmaps(objspace, before_stored_bitmaps);
-	gc_marks_body(objspace, th, TRUE);
+	gc_marks_body(objspace, TRUE);
 	rb_bug("gc_marks_test (again): %p (%s) is living, but not marked && not promoted.\n",
 	       (void *)objspace->rgengc.interesting_object, obj_type_name((VALUE)objspace->rgengc.interesting_object));
     }
@@ -3596,7 +3597,6 @@ static void
 gc_marks(rb_objspace_t *objspace, int minor_gc)
 {
     struct mark_func_data_struct *prev_mark_func_data;
-    rb_thread_t *th = GET_THREAD();
 
     gc_prof_mark_timer_start(objspace);
     {
@@ -3609,7 +3609,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.oldgen_object_count = 0;
 
-	    gc_marks_body(objspace, th, FALSE);
+	    gc_marks_body(objspace, FALSE);
 
 	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
 	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
@@ -3618,16 +3618,16 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	else { /* minor GC */
 	    if (RGENGC_CHECK_MODE > 1) {
 		bits_t *before_mark_stored_bitmaps = gc_store_bitmaps(objspace);
-		gc_marks_body(objspace, th, TRUE);
-		gc_marks_test(objspace, th, before_mark_stored_bitmaps);
+		gc_marks_body(objspace, TRUE);
+		gc_marks_test(objspace, before_mark_stored_bitmaps);
 		gc_free_stored_bitmaps(objspace, before_mark_stored_bitmaps);
 	    }
 	    else {
-		gc_marks_body(objspace, th, TRUE);
+		gc_marks_body(objspace, TRUE);
 	    }
 	}
 #else /* USE_RGENGC */
-	gc_marks_body(objspace, th, FALSE);
+	gc_marks_body(objspace, FALSE);
 #endif
 
 	objspace->mark_func_data = prev_mark_func_data;
