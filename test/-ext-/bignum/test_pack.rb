@@ -69,6 +69,55 @@ class TestBignum < Test::Unit::TestCase
       assert_equal([1, "\x00\x12\x00\x34\x00\x56\x00\x78"], 0x12345678.test_pack(4, 2, 8, BIG_ENDIAN))
     end
 
+    def test_pack_overflow
+      assert_equal([-2, "\x1"], (-0x11).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([-2, "\x0"], (-0x10).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([-1, "\xF"], (-0x0F).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+1, "\xF"], (+0x0F).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+2, "\x0"], (+0x10).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+2, "\x1"], (+0x11).test_pack(1, 1, 4, BIG_ENDIAN))
+
+      assert_equal([-2, "\x01"], (-0x101).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-2, "\x00"], (-0x100).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-1, "\xFF"], (-0x0FF).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+1, "\xFF"], (+0x0FF).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00"], (+0x100).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x01"], (+0x101).test_pack(1, 1, 0, BIG_ENDIAN))
+
+      assert_equal([-2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (-0x10000000000000001).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([-2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (-0x10000000000000000).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([-1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (-0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (+0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (+0x10000000000000000).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (+0x10000000000000001).test_pack(2, 4, 0, BIG_ENDIAN))
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\x00"*(w-1)+"\x01"], (-n-1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([-2, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([-1, "\xFF"*w],            (-n+1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+2, "\x00"*(w-1)+"\x01"], (+n+1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+        }
+      }
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\x01"+"\x00"*(w-1)], (-n-1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([-2, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([-1, "\xFF"*w],            (-n+1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+2, "\x01"+"\x00"*(w-1)], (+n+1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+        }
+      }
+    end
+
     def test_pack_sign
       assert_equal([-1, "\x01"], (-1).test_pack(1, 1, 0, BIG_ENDIAN))
       assert_equal([-1, "\x80\x70\x60\x50\x40\x30\x20\x10"], (-0x8070605040302010).test_pack(8, 1, 0, BIG_ENDIAN))
@@ -116,6 +165,33 @@ class TestBignum < Test::Unit::TestCase
       assert_equal([+1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (+0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
       assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (+0x10000000000000000).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
       assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (+0x10000000000000001).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\xFF"*w           ], (-n-1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([-1, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([-1, "\x00"*(w-1)+"\x01"], (-n+1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+2, "\x00"*(w-1)+"\x01"], (+n+1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+        }
+      }
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\xFF"*w           ], (-n-1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([-1, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([-1, "\x01"+"\x00"*(w-1)], (-n+1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+2, "\x01"+"\x00"*(w-1)], (+n+1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+        }
+      }
+
     end
 
     def test_unpack_zero

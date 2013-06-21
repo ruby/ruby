@@ -1,3 +1,17 @@
+Sat Jun 22 02:18:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack): Specialized packers implemented.
+	  (HOST_BIGENDIAN_P): New macro.
+	  (ALIGNOF): New macro.
+	  (CLEAR_LOWBITS): New macro.
+	  (FILL_LOWBITS): New macro.
+	  (swap_bdigit): New macro.
+	  (bary_2comp): Returns an int.
+
+	* internal.h (swap16): Moved from pack.c
+	  (swap32): Ditto.
+	  (swap64): Ditto.
+
 Fri Jun 21 21:29:49 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (typedef enum): Introduce flags of major gc reason.

@@ -33,6 +33,15 @@ static VALUE big_three = Qnil;
 #define USHORT _USHORT
 #endif
 
+#ifdef WORDS_BIGENDIAN
+#   define HOST_BIGENDIAN_P 1
+#else
+#   define HOST_BIGENDIAN_P 0
+#endif
+#define ALIGNOF(type) ((int)offsetof(struct { char f1; type f2; }, f2))
+#define CLEAR_LOWBITS(d, numbits) (sizeof(d) * CHAR_BIT <= (numbits) ? 0 : ((d) >> (numbits)) << (numbits))
+#define FILL_LOWBITS(d, numbits) (sizeof(d) * CHAR_BIT <= (numbits) ? ~((d)*0) : (d) | ((((d)*0+1) << (numbits))-1))
+
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
@@ -47,6 +56,14 @@ static VALUE big_three = Qnil;
 #define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & BDIGMAX))
 #define BDIGMAX ((BDIGIT)(BIGRAD-1))
+
+#if SIZEOF_BDIGITS == 2
+#   define swap_bdigit(x) swap16(x)
+#elif SIZEOF_BDIGITS == 4
+#   define swap_bdigit(x) swap32(x)
+#elif SIZEOF_BDIGITS == 8
+#   define swap_bdigit(x) swap64(x)
+#endif
 
 #define BIGZEROP(x) (RBIGNUM_LEN(x) == 0 || \
 		     (BDIGITS(x)[0] == 0 && \
@@ -76,7 +93,7 @@ static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-static BDIGIT bary_2comp(BDIGIT *ds, size_t n);
+static int bary_2comp(BDIGIT *ds, size_t n);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -231,7 +248,7 @@ rb_big_clone(VALUE x)
     return z;
 }
 
-static BDIGIT
+static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
     size_t i = n;
@@ -244,7 +261,7 @@ bary_2comp(BDIGIT *ds, size_t n)
 	ds[i++] = BIGLO(num);
 	num = BIGDN(num);
     } while (i < n);
-    return (BDIGIT)num;
+    return num != 0;
 }
 
 /* modify a bignum by 2's complement */
@@ -899,6 +916,170 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
         de--;
     if (dp == de) {
         sign = 0;
+    }
+
+    if (nails == 0 && sign == 0) {
+        MEMZERO(words, unsigned char, numwords * wordsize);
+        return 0;
+    }
+    if (nails == 0 && numwords == 1) {
+        int need_swap = wordsize != 1 &&
+            (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_NATIVE_BYTE_ORDER &&
+            ((flags & INTEGER_PACK_MSBYTE_FIRST) ? !HOST_BIGENDIAN_P : HOST_BIGENDIAN_P);
+        if (0 < sign || !(flags & INTEGER_PACK_2COMP)) {
+            BDIGIT d;
+            if (wordsize == 1) {
+                *((unsigned char *)words) = (unsigned char)(d = dp[0]);
+                return ((1 < de - dp || CLEAR_LOWBITS(d, 8) != 0) ? 2 : 1) * sign;
+            }
+#if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGITS
+            if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+                uint16_t u = (uint16_t)(d = dp[0]);
+                if (need_swap) u = swap16(u);
+                *((uint16_t *)words) = u;
+                return ((1 < de - dp || CLEAR_LOWBITS(d, 16) != 0) ? 2 : 1) * sign;
+            }
+#endif
+#if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGITS
+            if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+                uint32_t u = (uint32_t)(d = dp[0]);
+                if (need_swap) u = swap32(u);
+                *((uint32_t *)words) = u;
+                return ((1 < de - dp || CLEAR_LOWBITS(d, 32) != 0) ? 2 : 1) * sign;
+            }
+#endif
+#if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGITS
+            if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+                uint64_t u = (uint64_t)(d = dp[0]);
+                if (need_swap) u = swap64(u);
+                *((uint64_t *)words) = u;
+                return ((1 < de - dp || CLEAR_LOWBITS(d, 64) != 0) ? 2 : 1) * sign;
+            }
+#endif
+        }
+        else { /* sign < 0 && (flags & INTEGER_PACK_2COMP) */
+            BDIGIT_DBL_SIGNED d;
+            if (wordsize == 1) {
+                *((unsigned char *)words) = (unsigned char)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
+                return (1 < de - dp || FILL_LOWBITS(d, 8) != -1) ? -2 : -1;
+            }
+#if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGITS
+            if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+                uint16_t u = (uint16_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
+                if (need_swap) u = swap16(u);
+                *((uint16_t *)words) = u;
+                return (wordsize == SIZEOF_BDIGITS && de - dp == 2 && dp[1] == 1 && dp[0] == 0) ? -1 :
+                    (1 < de - dp || FILL_LOWBITS(d, 16) != -1) ? -2 : -1;
+            }
+#endif
+#if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGITS
+            if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+                uint32_t u = (uint32_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
+                if (need_swap) u = swap32(u);
+                *((uint32_t *)words) = u;
+                return (wordsize == SIZEOF_BDIGITS && de - dp == 2 && dp[1] == 1 && dp[0] == 0) ? -1 :
+                    (1 < de - dp || FILL_LOWBITS(d, 32) != -1) ? -2 : -1;
+            }
+#endif
+#if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGITS
+            if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+                uint64_t u = (uint64_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
+                if (need_swap) u = swap64(u);
+                *((uint64_t *)words) = u;
+                return (wordsize == SIZEOF_BDIGITS && de - dp == 2 && dp[1] == 1 && dp[0] == 0) ? -1 :
+                    (1 < de - dp || FILL_LOWBITS(d, 64) != -1) ? -2 : -1;
+            }
+#endif
+        }
+    }
+#if !defined(WORDS_BIGENDIAN)
+    if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
+        (flags & INTEGER_PACK_WORDORDER_MASK) == INTEGER_PACK_LSWORD_FIRST &&
+        (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_MSBYTE_FIRST) {
+        size_t src_size = num_bdigits * SIZEOF_BDIGITS;
+        size_t dst_size = numwords * wordsize;
+        int overflow = 0;
+        while (0 < src_size && ((unsigned char *)ds)[src_size-1] == 0)
+            src_size--;
+        if (src_size <= dst_size) {
+            MEMCPY(words, dp, char, src_size);
+            MEMZERO((char*)words + src_size, char, dst_size - src_size);
+        }
+        else {
+            MEMCPY(words, dp, char, dst_size);
+            overflow = 1;
+        }
+        if (sign < 0 && (flags & INTEGER_PACK_2COMP)) {
+            unsigned char *p = words, *e = (unsigned char *)words + dst_size;
+            while (p < e && *p == 0)
+                p++;
+            if (p < e) {
+                *p = 1 + (unsigned char)~*p;
+                p++;
+                while (p < e) {
+                    *p = (unsigned char)~*p;
+                    p++;
+                }
+            }
+            else if (overflow) {
+                p = (unsigned char *)dp + dst_size;
+                e = (unsigned char *)dp + src_size;
+                if (p < e && *p++ == 1) {
+                    while (p < e && *p == 0)
+                        p++;
+                    if (p == e)
+                        overflow = 0;
+                }
+            }
+        }
+        if (overflow)
+            sign *= 2;
+        return sign;
+    }
+#endif
+    if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
+        wordsize % SIZEOF_BDIGITS == 0 && (uintptr_t)words % ALIGNOF(BDIGIT) == 0) {
+        size_t buf_num_bdigits = numwords * wordsize / SIZEOF_BDIGITS;
+        int need_swap =
+            (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_NATIVE_BYTE_ORDER &&
+            ((flags & INTEGER_PACK_MSBYTE_FIRST) ? !HOST_BIGENDIAN_P : HOST_BIGENDIAN_P);
+        size_t i;
+        int overflow = 0;
+        if (num_bdigits <= buf_num_bdigits) {
+            MEMCPY(words, dp, BDIGIT, num_bdigits);
+            MEMZERO((BDIGIT*)words + num_bdigits, BDIGIT, buf_num_bdigits - num_bdigits);
+        }
+        else {
+            MEMCPY(words, dp, BDIGIT, buf_num_bdigits);
+            overflow = 1;
+        }
+        if (sign < 0 && (flags & INTEGER_PACK_2COMP)) {
+            int zero_p = bary_2comp(words, buf_num_bdigits);
+            if (overflow &&
+                buf_num_bdigits == num_bdigits-1 &&
+                dp[buf_num_bdigits] == 1 &&
+                zero_p)
+                overflow = 0;
+        }
+        if (need_swap) {
+            for (i = 0; i < buf_num_bdigits; i++) {
+                BDIGIT d = ((BDIGIT*)words)[i];
+                ((BDIGIT*)words)[i] = swap_bdigit(d);
+            }
+        }
+        if (flags & INTEGER_PACK_MSWORD_FIRST) {
+            BDIGIT *p1 = words, *p2 = p1 + buf_num_bdigits - 1;
+            while (p1 < p2) {
+                BDIGIT tmp = *p1;
+                *p1 = *p2;
+                *p2 = tmp;
+                p1++;
+                p2--;
+            }
+        }
+        if (overflow)
+            sign *= 2;
+        return sign;
     }
 
     buf = words;

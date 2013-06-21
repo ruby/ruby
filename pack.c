@@ -100,43 +100,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
     return r;				\
 }
 
-#ifndef swap32
-# if GCC_VERSION_SINCE(4,3,0)
-#  define swap32(x) __builtin_bswap32(x)
-# endif
-#endif
-
-#ifndef swap64
-# if GCC_VERSION_SINCE(4,3,0)
-#  define swap64(x) __builtin_bswap64(x)
-# endif
-#endif
-
-#ifndef swap16
-# define swap16(x)	((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
-#endif
-
-#ifndef swap32
-# define swap32(x)	((uint32_t)((((x)&0xFF)<<24)	\
-			|(((x)>>24)&0xFF)	\
-			|(((x)&0x0000FF00)<<8)	\
-			|(((x)&0x00FF0000)>>8)	))
-#endif
-
-#ifndef swap64
-# ifdef HAVE_INT64_T
-#  define byte_in_64bit(n) ((uint64_t)0xff << (n))
-#  define swap64(x)       ((uint64_t)((((x)&byte_in_64bit(0))<<56) 	\
-			   |(((x)>>56)&0xFF)	                \
-			   |(((x)&byte_in_64bit(8))<<40)	\
-			   |(((x)&byte_in_64bit(48))>>40)	\
-			   |(((x)&byte_in_64bit(16))<<24)	\
-			   |(((x)&byte_in_64bit(40))>>24)	\
-			   |(((x)&byte_in_64bit(24))<<8)	\
-			   |(((x)&byte_in_64bit(32))>>8)))
-# endif
-#endif
-
 #if SIZEOF_SHORT == 2
 # define swaps(x)	swap16(x)
 #elif SIZEOF_SHORT == 4
