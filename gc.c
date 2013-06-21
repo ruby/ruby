@@ -3949,7 +3949,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
 #if USE_RGENGC
     else {
-	if (full_mark) 
+	if (full_mark)
 	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
 	if (objspace->rgengc.need_major_gc) {
 	    objspace->rgengc.need_major_gc = FALSE;
@@ -3959,7 +3959,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
 	if (objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit)
 	    reason |= GPR_FLAG_MAJOR_BY_OLDGEN;
-	
+
 	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	    immediate_sweep = TRUE;
 	}
