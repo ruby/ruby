@@ -1,6 +1,6 @@
 Fri Jun 21 21:29:49 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* gc.c (typedef enum): Introdule flags of major gc reason.
+	* gc.c (typedef enum): Introduce flags of major gc reason.
 	* gc.c (garbage_collect_body): Ditto.
 	* gc.c (gc_profile_flags): Ditto.
 	* gc.c (gc_profile_dump_on): Ditto.
