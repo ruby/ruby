@@ -2975,7 +2975,7 @@ bigsub_int(VALUE x, long y0)
     i = 1;
 #else
     num = 0;
-    for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
+    for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	num += (BDIGIT_DBL_SIGNED)xds[i] - BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -3026,7 +3026,7 @@ bigadd_int(VALUE x, long y)
     i = 1;
 #else
     num = 0;
-    for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
+    for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	num += (BDIGIT_DBL)xds[i] + BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
@@ -4439,7 +4439,7 @@ bigand_int(VALUE x, long y)
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
+	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] & BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -4535,7 +4535,7 @@ bigor_int(VALUE x, long y)
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
+	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] | BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -4631,7 +4631,7 @@ bigxor_int(VALUE x, long y)
     {
 	BDIGIT_DBL num = y;
 
-	for (i=0; i<(int)(sizeof(y)/SIZEOF_BDIGITS); i++) {
+	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] ^ BIGLO(num);
 	    num = BIGDN(num);
 	}
