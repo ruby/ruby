@@ -1,3 +1,9 @@
+Fri Jun 21 09:22:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (slot_sweep_body): add counters at a time.
+
+	* gc.c (gc_profile_dump_on): fix line break position.
+
 Fri Jun 21 08:14:00 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c: refactoring bitmaps. introduce bits_t type and some Consts.

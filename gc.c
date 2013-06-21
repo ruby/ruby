@@ -2209,15 +2209,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     RVALUE *final = deferred_final_list;
     int deferred;
     bits_t *bits, bitset;
-#if GC_PROFILE_MORE_DETAIL
-    gc_profile_record *record=NULL;
-#endif
 
-#if GC_PROFILE_MORE_DETAIL
-    if (objspace->profile.run) {
-	record = gc_prof_record(objspace);
-    }
-#endif
     rgengc_report(3, objspace, "slot_sweep_body: start.\n");
 
     p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
@@ -2235,9 +2227,6 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	    do {
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
 		    if (p->as.basic.flags) {
-#if GC_PROFILE_MORE_DETAIL
-			if(record) record->removing_objects++;
-#endif
 			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
 			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED((VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
@@ -2263,10 +2252,6 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 			}
 		    }
 		    else {
-#if GC_PROFILE_MORE_DETAIL
-			if(record)
-			    record->empty_objects++;
-#endif
 			empty_num++;
 		    }
 		}
@@ -2275,11 +2260,21 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	    } while (bitset);
 	}
     }
+
 #if USE_RGENGC
     gc_setup_mark_bits(sweep_slot);
 #else
     gc_clear_slot_bits(sweep_slot);
 #endif
+
+#if GC_PROFILE_MORE_DETAIL
+    if (objspace->profile.run) {
+	gc_profile_record *record = gc_prof_record(objspace);
+	record->removing_objects += final_num + freed_num;
+	record->empty_objects += empty_num;
+    }
+#endif
+
 
     if (final_num + freed_num + empty_num == sweep_slot->header->limit &&
         objspace->heap.free_num > objspace->heap.do_heap_free) {
@@ -5348,10 +5343,9 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #endif
 				   " %9"PRIuSIZE" %17.12f %17.12f %17.12f %10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE
 #if RGENGC_PROFILE
-				   "%10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE"\n"
+				   "%10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE
 #endif
-				   ,
-
+				   "\n",
 				   i+1,
 				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
