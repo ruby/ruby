@@ -65,7 +65,7 @@ Fri Jun 21 18:56:58 2013  Tanaka Akira  <akr@fsij.org>
 
 Fri Jun 21 17:56:25 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/gc/gcbench.rb: fix summary of benchmark result notaton.
+	* benchmark/gc/gcbench.rb: fix summary of benchmark result notation.
 
 Fri Jun 21 16:38:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
