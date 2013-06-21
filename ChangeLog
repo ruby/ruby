@@ -1,3 +1,8 @@
+Fri Jun 21 19:18:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): Move the implementation for 'c' directive after
+	  pack_integer label.
+
 Fri Jun 21 19:11:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, re.c: support write barrier for T_REGEXP.

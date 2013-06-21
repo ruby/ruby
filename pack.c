@@ -669,14 +669,9 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'c':		/* signed char */
 	  case 'C':		/* unsigned char */
-	    while (len-- > 0) {
-		char c;
-
-		from = NEXTFROM;
-		c = (char)num2i32(from);
-		rb_str_buf_cat(res, &c, sizeof(char));
-	    }
-	    break;
+            integer_size = 1;
+            bigendian_p = BIGENDIAN_P(); /* not effective */
+            goto pack_integer;
 
 	  case 's':		/* s for int16_t, s! for signed short */
             integer_size = NATINT_LEN(short, 2);
@@ -744,6 +739,18 @@ pack_pack(VALUE ary, VALUE fmt)
 	    }
 
             switch (integer_size) {
+#if !defined(FORCE_BIG_PACK)
+              case 1:
+                while (len-- > 0) {
+                    char c;
+
+                    from = NEXTFROM;
+                    c = (char)num2i32(from);
+                    rb_str_buf_cat(res, &c, sizeof(char));
+                }
+		break;
+#endif
+
 #if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
               case SIZEOF_INT16_T:
 		while (len-- > 0) {
