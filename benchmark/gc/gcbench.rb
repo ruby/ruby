@@ -17,11 +17,14 @@ GC::Profiler.report if RUBY_VERSION >= '2.0.0' # before 1.9.3, report() may run 
 GC::Profiler.disable
 pp GC.stat
 
+desc = "#{RUBY_VERSION}#{RUBY_PATCHLEVEL >= 0 ? "p#{RUBY_PATCHLEVEL}" : "dev"}"
+name = File.basename(script, '.rb')
+
 puts
 puts script
 puts Benchmark::CAPTION
 puts tms
 puts "GC total time (sec): #{gc_time}"
 puts
-puts "Summary #{RUBY_DESCRIPTION}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
+puts "Summary of #{name} on #{desc}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
 puts "         (real time in sec, GC time in sec, GC count)"
