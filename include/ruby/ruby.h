@@ -933,9 +933,9 @@ struct RArray {
 		long capa;
 		VALUE shared;
 	    } aux;
-	    VALUE *ptr;
+	    const VALUE *ptr;
 	} heap;
-	VALUE ary[RARRAY_EMBED_LEN_MAX];
+	const VALUE ary[RARRAY_EMBED_LEN_MAX];
     } as;
 };
 #define RARRAY_EMBED_FLAG FL_USER1
@@ -961,7 +961,7 @@ struct RArray {
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
     const VALUE _ary = (ary); \
-    VALUE *ptr_name = RARRAY_PTR_USE_START(_ary); \
+    VALUE *ptr_name = (VALUE *)RARRAY_PTR_USE_START(_ary); \
     expr; \
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
@@ -969,10 +969,10 @@ struct RArray {
 #define RARRAY_AREF(a, i)    (RARRAY_RAWPTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary_ = (a); \
-    OBJ_WRITE(_ary_, &RARRAY_RAWPTR(_ary_)[i], (v)); \
+    OBJ_WRITE(_ary_, (VALUE *)&RARRAY_RAWPTR(_ary_)[i], (v)); \
 } while (0)
 
-#define RARRAY_PTR(a) RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_GIVEUP((VALUE)a) : ((VALUE)a))
+#define RARRAY_PTR(a) ((VALUE *)RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_GIVEUP((VALUE)a) : ((VALUE)a)))
 
 struct RRegexp {
     struct RBasic basic;

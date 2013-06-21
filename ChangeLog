@@ -1,3 +1,10 @@
+Fri Jun 21 20:50:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: constify RArray::as::ary and RArray::heap::ptr.
+	  Use RARRAY_ASET() or RARRAY_PTR_USE() to modify Array objects.
+
+	* array.c, gc.c: catch up above changes.
+
 Fri Jun 21 20:32:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (eval_string_with_cref): fix WB miss.

@@ -170,7 +170,7 @@ ary_resize_capa(VALUE ary, long capacity)
             long len = RARRAY_LEN(ary);
             VALUE *ptr = RARRAY_PTR(ary);
             if (len > capacity) len = capacity;
-            MEMCPY(RARRAY(ary)->as.ary, ptr, VALUE, len);
+            MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
             xfree(ptr);
@@ -267,10 +267,10 @@ rb_ary_modify(VALUE ary)
         long len = RARRAY_LEN(ary);
 	VALUE shared = ARY_SHARED(ary);
         if (len <= RARRAY_EMBED_LEN_MAX) {
-            VALUE *ptr = ARY_HEAP_PTR(ary);
+	    const VALUE *ptr = ARY_HEAP_PTR(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
-            MEMCPY(ARY_EMBED_PTR(ary), ptr, VALUE, len);
+	    MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
             rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
@@ -484,7 +484,7 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	xfree(ARY_HEAP_PTR(ary));
+	xfree((void *)ARY_HEAP_PTR(ary));
     }
 }
 
@@ -545,7 +545,7 @@ ary_make_substitution(VALUE ary)
 {
     if (RARRAY_LEN(ary) <= RARRAY_EMBED_LEN_MAX) {
         VALUE subst = rb_ary_new2(RARRAY_LEN(ary));
-        MEMCPY(ARY_EMBED_PTR(subst), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
+	MEMCPY((VALUE *)ARY_EMBED_PTR(subst), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
         ARY_SET_EMBED_LEN(subst, RARRAY_LEN(ary));
         return subst;
     }
@@ -662,7 +662,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc == 0) {
 	if (ARY_OWNS_HEAP_P(ary) && RARRAY_RAWPTR(ary) != 0) {
-	    xfree(RARRAY_RAWPTR(ary));
+	    xfree((void *)RARRAY_RAWPTR(ary));
 	}
         rb_ary_unshare_safe(ary);
         FL_SET_EMBED(ary);
@@ -703,7 +703,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     }
     else {
 	RARRAY_PTR_USE(ary, ptr, {
-	    memfill(ptr, len, val);
+	    memfill((VALUE *)ptr, len, val);
 	});
 	OBJ_WRITTEN(ary, Qundef, val);
 	ARY_SET_LEN(ary, len);
@@ -769,7 +769,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
         VALUE result = ary_alloc(klass);
-        MEMCPY(ARY_EMBED_PTR(result), RARRAY_PTR(ary) + offset, VALUE, len);
+        MEMCPY((VALUE *)ARY_EMBED_PTR(result), RARRAY_PTR(ary) + offset, VALUE, len);
         ARY_SET_EMBED_LEN(result, len);
         return result;
     }
@@ -1551,7 +1551,7 @@ rb_ary_resize(VALUE ary, long len)
 	VALUE tmp[RARRAY_EMBED_LEN_MAX];
 	MEMCPY(tmp, ARY_HEAP_PTR(ary), VALUE, len);
 	ary_discard(ary);
-	MEMCPY(ARY_EMBED_PTR(ary), tmp, VALUE, len);
+	MEMCPY((VALUE *)ARY_EMBED_PTR(ary), tmp, VALUE, len);
         ARY_SET_EMBED_LEN(ary, len);
     }
     else {
@@ -2335,7 +2335,7 @@ rb_ary_sort_bang(VALUE ary)
                     rb_ary_unshare(ary);
                 }
                 else {
-                    xfree(ARY_HEAP_PTR(ary));
+		    xfree((void *)ARY_HEAP_PTR(ary));
                 }
                 ARY_SET_PTR(ary, RARRAY_PTR(tmp));
                 ARY_SET_HEAP_LEN(ary, len);

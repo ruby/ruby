@@ -3306,7 +3306,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
-	    VALUE *ptr = RARRAY_RAWPTR(obj);
+	    const VALUE *ptr = RARRAY_RAWPTR(obj);
 	    for (i=0; i < len; i++) {
 		gc_mark(objspace, *ptr++);
 	    }
