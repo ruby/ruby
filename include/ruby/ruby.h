@@ -709,6 +709,9 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_HASH
 #define RGENGC_WB_PROTECTED_HASH 1
 #endif
+#ifndef RGENGC_WB_PROTECTED_STRUCT
+#define RGENGC_WB_PROTECTED_STRUCT 1
+#endif
 #ifndef RGENGC_WB_PROTECTED_STRING
 #define RGENGC_WB_PROTECTED_STRING 1
 #endif
@@ -1109,9 +1112,9 @@ struct RStruct {
     union {
 	struct {
 	    long len;
-	    VALUE *ptr;
+	    const VALUE *ptr;
 	} heap;
-	VALUE ary[RSTRUCT_EMBED_LEN_MAX];
+	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
 #define RSTRUCT_EMBED_LEN_MASK (FL_USER2|FL_USER1)
@@ -1121,11 +1124,15 @@ struct RStruct {
      (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
             (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
      RSTRUCT(st)->as.heap.len)
-#define RSTRUCT_PTR(st) \
-    ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-     RSTRUCT(st)->as.ary : \
-     RSTRUCT(st)->as.heap.ptr)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
+#define RSTRUCT_RAWPTR(st) \
+  ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
+   RSTRUCT(st)->as.ary : \
+   RSTRUCT(st)->as.heap.ptr)
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_RAWPTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_GIVEUP((VALUE)st) : (VALUE)st))
+
+#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, (VALUE *)&RSTRUCT_RAWPTR(st)[idx], v)
+#define RSTRUCT_GET(st, idx)    (RSTRUCT_RAWPTR(st)[idx])
 
 #define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
 struct RBignum {

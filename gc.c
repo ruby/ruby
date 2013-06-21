@@ -1283,7 +1283,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
-	    xfree(RANY(obj)->as.rstruct.as.heap.ptr);
+	    xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
 	}
 	break;
 
@@ -3386,7 +3386,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
       case T_STRUCT:
 	{
 	    long len = RSTRUCT_LEN(obj);
-	    VALUE *ptr = RSTRUCT_PTR(obj);
+	    const VALUE *ptr = RSTRUCT_RAWPTR(obj);
 
 	    while (len--) {
 		gc_mark(objspace, *ptr++);

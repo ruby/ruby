@@ -821,7 +821,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY_AREF(mem, i)), arg);
-		    w_object(RSTRUCT_PTR(obj)[i], arg, limit);
+		    w_object(RSTRUCT_GET(obj, i), arg, limit);
 		}
 	    }
 	    break;

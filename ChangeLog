@@ -1,3 +1,17 @@
+Fri Jun 21 20:15:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: support write barrier protection for T_STRUCT.
+	  Introduce the following C APIs:
+	    * RSTRUCT_RAWPTR(st) returns pointer (do WB on your risk).
+	      The type of returned pointer is (const VALUE *).
+	    * RSTRUCT_GET(st, idx) returns idx-th value of struct.
+	    * RSTRUCT_SET(st, idx, v) set idx-th value by v with WB.
+	  And 
+	    * RSTRUCT_PTR(st) returns pointer with shady operation.
+	      The type of returned pointer is (VALUE *).
+
+	* struct.c, re.c, gc.c, marshal.c: rewrite with above APIs.
+
 Fri Jun 21 19:38:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BDIGMAX): Use BIGRAD.
