@@ -2489,8 +2489,7 @@ ruby_setenv(const char *name, const char *value)
     int failed = 0;
     if (strchr(name, '=')) {
       fail:
-	errno = EINVAL;
-	rb_sys_fail("ruby_setenv");
+	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
     }
     if (value) {
 	const char* p = GetEnvironmentStringsA();
@@ -2518,21 +2517,20 @@ ruby_setenv(const char *name, const char *value)
 #undef unsetenv
     if (value) {
 	if (setenv(name, value, 1))
-	    rb_sys_fail("setenv");
+	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
     } else {
 #ifdef VOID_UNSETENV
 	unsetenv(name);
 #else
 	if (unsetenv(name))
-	    rb_sys_fail("unsetenv");
+	    rb_sys_fail_str(rb_sprintf("unsetenv(%s)", name));
 #endif
     }
 #elif defined __sun
     size_t len;
     char **env_ptr, *str;
     if (strchr(name, '=')) {
-	errno = EINVAL;
-	rb_sys_fail("ruby_setenv");
+	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
     }
     len = strlen(name);
     for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
@@ -2546,14 +2544,13 @@ ruby_setenv(const char *name, const char *value)
 	str = malloc(len += strlen(value) + 2);
 	snprintf(str, len, "%s=%s", name, value);
 	if (putenv(str))
-	    rb_sys_fail("putenv");
+	    rb_sys_fail_str(rb_sprintf("putenv(%s)", name));
     }
 #else  /* WIN32 */
     size_t len;
     int i;
     if (strchr(name, '=')) {
-	errno = EINVAL;
-	rb_sys_fail("ruby_setenv");
+	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
     }
     i=envix(name);		        /* where does it go? */
 

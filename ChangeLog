@@ -1,3 +1,8 @@
+Fri Jun 21 14:31:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): refine error message so include the variable
+	  name.
+
 Fri Jun 21 14:15:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix to use total_allocated_object_num and heaps_used
