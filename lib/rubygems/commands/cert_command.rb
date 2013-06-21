@@ -180,7 +180,7 @@ For further reading on signing gems see `ri Gem::Security`.
   end
 
   def load_default_cert
-    cert_file = File.join Gem.user_home, 'gem-public_cert.pem'
+    cert_file = File.join Gem.default_cert_path
     cert = File.read cert_file
     options[:issuer_cert] = OpenSSL::X509::Certificate.new cert
   rescue Errno::ENOENT
@@ -196,7 +196,7 @@ For further reading on signing gems see `ri Gem::Security`.
   end
 
   def load_default_key
-    key_file = File.join Gem.user_home, 'gem-private_key.pem'
+    key_file = File.join Gem.default_key_path
     key = File.read key_file
     options[:key] = OpenSSL::PKey::RSA.new key
   rescue Errno::ENOENT
