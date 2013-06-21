@@ -350,9 +350,6 @@ typedef struct rb_objspace {
 	size_t remembered_normal_object_count;
 	size_t remembered_shady_object_count;
 
-	/* temporal profiling space */
-	size_t remembered_normal_objects;
-	size_t remembered_shady_objects;
 #if RGENGC_PROFILE >= 2
 	size_t generated_normal_object_count_types[RUBY_T_MASK];
 	size_t generated_shady_object_count_types[RUBY_T_MASK];
@@ -532,6 +529,8 @@ static inline void gc_prof_mark_timer_stop(rb_objspace_t *);
 static inline void gc_prof_sweep_timer_start(rb_objspace_t *);
 static inline void gc_prof_sweep_timer_stop(rb_objspace_t *);
 static inline void gc_prof_set_malloc_info(rb_objspace_t *);
+static inline void gc_prof_set_heap_info(rb_objspace_t *);
+
 #define gc_prof_record(objspace) (objspace)->profile.current_record
 
 static const char *obj_type_name(VALUE obj);
@@ -2320,10 +2319,7 @@ after_gc_sweep(rb_objspace_t *objspace)
 {
     size_t inc;
 
-    rgengc_report(1, objspace, "after_gc_sweep\n");
-
-    gc_prof_set_malloc_info(objspace);
-    rgengc_report(5, objspace, "after_gc_sweep: objspace->heap.free_num: %d, objspace->heap.free_min: %d\n",
+    rgengc_report(1, objspace, "after_gc_sweep: objspace->heap.free_num: %d, objspace->heap.free_min: %d\n",
 		  objspace->heap.free_num, objspace->heap.free_min);
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
@@ -2349,6 +2345,9 @@ after_gc_sweep(rb_objspace_t *objspace)
     }
 
     free_unused_heaps(objspace);
+
+    gc_prof_set_malloc_info(objspace);
+    gc_prof_set_heap_info(objspace);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END, 0 /* TODO: pass minor/immediate flag? */);
 }
@@ -3614,6 +3613,14 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 		gc_marks_body(objspace, TRUE);
 	    }
 	}
+
+#if RGENGC_PROFILE > 0
+    if (gc_prof_record(objspace)) {
+	gc_profile_record *record = gc_prof_record(objspace);
+	record->oldgen_objects = objspace->rgengc.oldgen_object_count;
+    }
+#endif
+
 #else /* USE_RGENGC */
 	gc_marks_body(objspace, FALSE);
 #endif
@@ -3736,10 +3743,15 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
     }
 
     rgengc_report(2, objspace, "rgengc_rememberset_mark: clear_count: %"PRIdSIZE", shady_object_count: %"PRIdSIZE"\n", clear_count, shady_object_count);
+
 #if RGENGC_PROFILE > 0
-    objspace->profile.remembered_normal_objects = clear_count;
-    objspace->profile.remembered_shady_objects = shady_object_count;
+    if (gc_prof_record(objspace)) {
+	gc_profile_record *record = gc_prof_record(objspace);
+	record->remembered_normal_objects = clear_count;
+	record->remembered_shady_objects = shady_object_count;
+    }
 #endif
+
     return shady_object_count;
 }
 
@@ -3935,9 +3947,10 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
     objspace->count++;
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
+
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
     objspace->profile.heaps_used_at_gc_start = heaps_used;
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     gc_prof_timer_start(objspace, reason);
     {
@@ -4889,7 +4902,6 @@ wmap_aref(VALUE self, VALUE wmap)
   ------------------------------ GC profiler ------------------------------
 */
 
-static inline void gc_prof_set_heap_info(rb_objspace_t *, gc_profile_record *);
 #define GC_PROFILE_RECORD_DEFAULT_SIZE 100
 
 static double
@@ -4987,7 +4999,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
 	gc_profile_record *record = gc_prof_record(objspace);
 	record->gc_time = elapsed_time_from(record->gc_invoke_time);
 	record->gc_invoke_time -= objspace->profile.invoke_time;
-        gc_prof_set_heap_info(objspace, record);
     }
 }
 
@@ -5076,29 +5087,24 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 }
 
 static inline void
-gc_prof_set_heap_info(rb_objspace_t *objspace, gc_profile_record *record)
+gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
-    size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->total_freed_object_num;
-    size_t total = objspace->profile.heaps_used_at_gc_start * HEAP_OBJ_LIMIT;
+    if (objspace->profile.run) {
+	gc_profile_record *record = gc_prof_record(objspace);
+	size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->total_freed_object_num;
+	size_t total = objspace->profile.heaps_used_at_gc_start * HEAP_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
-    record->heap_use_slots = objspace->profile.heaps_used_at_gc_start;
-    record->heap_live_objects = live;
-    record->heap_free_objects = total - live;
+	record->heap_use_slots = objspace->profile.heaps_used_at_gc_start;
+	record->heap_live_objects = live;
+	record->heap_free_objects = total - live;
 #endif
 
-#if RGENGC_PROFILE > 0
-    record->oldgen_objects = objspace->rgengc.oldgen_object_count;
-    record->remembered_normal_objects = objspace->profile.remembered_normal_objects;
-    record->remembered_shady_objects = objspace->profile.remembered_shady_objects;
-#endif
-
-    record->heap_total_objects = total;
-    record->heap_use_size = live * sizeof(RVALUE);
-    record->heap_total_size = total * sizeof(RVALUE);
+	record->heap_total_objects = total;
+	record->heap_use_size = live * sizeof(RVALUE);
+	record->heap_total_size = total * sizeof(RVALUE);
+    }
 }
-
-
 
 /*
  *  call-seq:

@@ -1,3 +1,17 @@
+Sat Jun 22 07:20:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prof_set_heap_info, after_gc_sweep): call
+	  gc_prof_set_heap_info() just after sweeping to calculate
+	  live object number correctly.
+	  (live object number = total generated number (before marking) -
+                                total freed number (after sweeping))
+
+	* gc.c (gc_marks): record `oldgen_object_count' into current profile`
+	  record directly.
+
+	* gc.c (rgengc_rememberset_mark): same for remembered_normal_objects
+	  and remembered_shady_objects.
+
 Sat Jun 22 06:46:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace::profile): rename rb_objspace::profile::record to
