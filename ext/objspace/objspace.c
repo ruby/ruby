@@ -600,7 +600,6 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
  *  name, registered by rb_data_type_struct.
  *
  *  This method is not expected to work except C Ruby.
- *
  */
 
 static VALUE
@@ -651,6 +650,7 @@ iow_newobj(VALUE obj)
     return rb_data_typed_object_alloc(rb_mInternalObjectWrapper, (void *)obj, &iow_data_type);
 }
 
+/* Returns the type of the internal object. */
 static VALUE
 iow_type(VALUE self)
 {
@@ -658,6 +658,7 @@ iow_type(VALUE self)
     return type2sym(BUILTIN_TYPE(obj));
 }
 
+/* See Object#inspect. */
 static VALUE
 iow_inspect(VALUE self)
 {
@@ -667,6 +668,7 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %s>", (void *)obj, rb_id2name(SYM2ID(type)));
 }
 
+/* Returns the Object#object_id of the internal object. */
 static VALUE
 iow_internal_object_id(VALUE self)
 {
@@ -771,9 +773,16 @@ reachable_objects_from(VALUE self, VALUE obj)
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_gc_hook(VALUE rb_mObjSpace);
 
-/* The objspace library extends the ObjectSpace module and adds several
+/*
+ * Document-module: ObjectSpace
+ *
+ * == The objspace library
+ *
+ * The objspace library extends the ObjectSpace module and adds several
  * methods to get internal statistic information about
  * object/memory management.
+ *
+ * You need to <code>require 'objspace'</code> to use this extension module.
  *
  * Generally, you *SHOULD NOT* use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
@@ -784,7 +793,11 @@ void Init_gc_hook(VALUE rb_mObjSpace);
 void
 Init_objspace(void)
 {
-    VALUE rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
+    VALUE rb_mObjSpace;
+#if 0
+    rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
+#endif
+    rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
 
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
     rb_define_module_function(rb_mObjSpace, "memsize_of_all", memsize_of_all_m, -1);
@@ -795,6 +808,15 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
 
+    /*
+     * This class is used as a return value from
+     * ObjectSpace::reachable_objects_from.
+     *
+     * When ObjectSpace::reachable_objects_from returns an object with
+     * references to an internal object, an instance of this class is returned.
+     *
+     * You can use the #type method to check the type of the internal object.
+     */
     rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
     rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);

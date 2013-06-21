@@ -61,6 +61,7 @@ extern "C" {
 #define INTEGER_PACK_MSBYTE_FIRST       0x10
 #define INTEGER_PACK_LSBYTE_FIRST       0x20
 #define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
+#define INTEGER_PACK_2COMP              0x80
 /* For rb_integer_unpack: */
 #define INTEGER_PACK_FORCE_BIGNUM       0x100
 #define INTEGER_PACK_NEGATIVE           0x200
@@ -71,6 +72,43 @@ extern "C" {
 #define INTEGER_PACK_BIG_ENDIAN \
     (INTEGER_PACK_MSWORD_FIRST | \
      INTEGER_PACK_MSBYTE_FIRST)
+
+#ifndef swap16
+# define swap16(x)      ((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
+#endif
+
+#ifndef swap32
+# if GCC_VERSION_SINCE(4,3,0)
+#  define swap32(x) __builtin_bswap32(x)
+# endif
+#endif
+
+#ifndef swap32
+# define swap32(x)      ((uint32_t)((((x)&0xFF)<<24)    \
+                        |(((x)>>24)&0xFF)       \
+                        |(((x)&0x0000FF00)<<8)  \
+                        |(((x)&0x00FF0000)>>8)  ))
+#endif
+
+#ifndef swap64
+# if GCC_VERSION_SINCE(4,3,0)
+#  define swap64(x) __builtin_bswap64(x)
+# endif
+#endif
+
+#ifndef swap64
+# ifdef HAVE_INT64_T
+#  define byte_in_64bit(n) ((uint64_t)0xff << (n))
+#  define swap64(x)       ((uint64_t)((((x)&byte_in_64bit(0))<<56)      \
+                           |(((x)>>56)&0xFF)                    \
+                           |(((x)&byte_in_64bit(8))<<40)        \
+                           |(((x)&byte_in_64bit(48))>>40)       \
+                           |(((x)&byte_in_64bit(16))<<24)       \
+                           |(((x)&byte_in_64bit(40))>>24)       \
+                           |(((x)&byte_in_64bit(24))<<8)        \
+                           |(((x)&byte_in_64bit(32))>>8)))
+# endif
+#endif
 
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
@@ -450,8 +488,6 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 /* bignum.c */
 int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-int rb_integer_pack_2comp(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-VALUE rb_integer_unpack_2comp(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

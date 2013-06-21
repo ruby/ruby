@@ -1,3 +1,906 @@
+Sat Jun 22 04:37:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (slot_sweep_body): rename to slot_sweep().
+	  No need to separate major/minor GC.
+
+	* gc.c (gc_setup_mark_bits): remove gc_clear_mark_bits() and unify to
+	  this function.
+
+Sat Jun 22 04:20:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (check_bitmap_consistency): add to check flag and bitmap consistency.
+	  Use this function in several places.
+
+Sat Jun 22 02:18:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack): Specialized packers implemented.
+	  (HOST_BIGENDIAN_P): New macro.
+	  (ALIGNOF): New macro.
+	  (CLEAR_LOWBITS): New macro.
+	  (FILL_LOWBITS): New macro.
+	  (swap_bdigit): New macro.
+	  (bary_2comp): Returns an int.
+
+	* internal.h (swap16): Moved from pack.c
+	  (swap32): Ditto.
+	  (swap64): Ditto.
+
+Fri Jun 21 21:29:49 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (typedef enum): Introduce flags of major gc reason.
+	* gc.c (garbage_collect_body): Ditto.
+	* gc.c (gc_profile_flags): Ditto.
+	* gc.c (gc_profile_dump_on): Ditto.
+
+Fri Jun 21 21:11:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (allocate_sorted_heaps): remove unused variable `add'.
+
+Fri Jun 21 20:50:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: constify RArray::as::ary and RArray::heap::ptr.
+	  Use RARRAY_ASET() or RARRAY_PTR_USE() to modify Array objects.
+
+	* array.c, gc.c: catch up above changes.
+
+Fri Jun 21 20:32:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (eval_string_with_cref): fix WB miss.
+
+Fri Jun 21 20:15:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: support write barrier protection for T_STRUCT.
+	  Introduce the following C APIs:
+	    * RSTRUCT_RAWPTR(st) returns pointer (do WB on your risk).
+	      The type of returned pointer is (const VALUE *).
+	    * RSTRUCT_GET(st, idx) returns idx-th value of struct.
+	    * RSTRUCT_SET(st, idx, v) set idx-th value by v with WB.
+	  And
+	    * RSTRUCT_PTR(st) returns pointer with shady operation.
+	      The type of returned pointer is (VALUE *).
+
+	* struct.c, re.c, gc.c, marshal.c: rewrite with above APIs.
+
+Fri Jun 21 19:38:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BDIGMAX): Use BIGRAD.
+	  (BIGLO): Use BDIGMAX.
+	  (bigdivrem1): Ditto.
+	  (bigor_int): Ditto.
+	  (rb_big_or): Ditto.
+
+Fri Jun 21 19:18:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_pack): Move the implementation for 'c' directive after
+	  pack_integer label.
+
+Fri Jun 21 19:11:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, re.c: support write barrier for T_REGEXP.
+
+	   Note: T_MATCH object is also easy to support write barriers.
+	         However, most of T_MATCH objects are short-lived objects.
+	         So I skipped to support non-shady T_MATCH.
+
+Fri Jun 21 18:56:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigsub_int): Use bdigit_roomof.
+	  (bigadd_int): Ditto.
+	  (bigand_int): Ditto.
+	  (bigor_int): Ditto.
+	  (bigxor_int): Ditto.
+
+Fri Jun 21 17:56:25 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: fix summary of benchmark result notation.
+
+Fri Jun 21 16:38:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/openssl/ossl_x509attr.c: change OSSL_X509ATTR_IS_SINGLE and
+	  OSSL_X509ATTR_SET_SINGLE macros to use ->value.set rather than
+	  ->set to fix compile failure
+
+Fri Jun 21 15:26:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_sweep): profile sweep time correctly when LAZY_SWEEP is
+	  disabled.
+
+	* gc.c (gc_marks_test): store oldgen count and shady count
+	  before test marking and restore them after marking.
+
+Fri Jun 21 15:07:42 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: enable lazy sweep (commit miss).
+
+Fri Jun 21 14:31:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (ruby_setenv): refine error message so include the variable
+	  name.
+
+Fri Jun 21 14:15:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix to use total_allocated_object_num and heaps_used
+	  at the GC time for profiler.
+
+Fri Jun 21 12:35:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: RGENGC_CHECK_MODE should be 0.
+
+Fri Jun 21 11:18:25 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_body): fix to get `th' in this function.
+
+Fri Jun 21 10:21:44 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heaps_header/heaps_slot): embed bitmaps into heaps_slot.
+	  no need to maintain allocation/free bitmaps.
+
+Fri Jun 21 09:22:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (slot_sweep_body): add counters at a time.
+
+	* gc.c (gc_profile_dump_on): fix line break position.
+
+Fri Jun 21 08:14:00 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: refactoring bitmaps. introduce bits_t type and some Consts.
+
+Fri Jun 21 08:04:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix to support USE_RGENGC == 0 (disable RGenGC).
+	  If USE_RGENGC==0, it caused compilation error.
+
+Fri Jun 21 08:08:11 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (lazy_sweep): Use is_lazy_sweeping()
+	* gc.c (rest_sweep): Ditto.
+	* gc.c (gc_prepare_free_objects): Ditto.
+
+Fri Jun 21 07:34:47 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_record::oldgen_objects): added.
+
+	* gc.c (gc_profile_dump_on): print the following information:
+	  * Living object counts
+	  * Free object counts
+	  If RGENGC_PROFILE > 0 then
+	  * Oldgen object counts
+	  * Remembered normal object counts
+	  * Remembered shady object counts
+
+Fri Jun 21 06:43:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_ull2big): Refactored.
+	  (rb_uint2big): Useless code removed.
+
+Fri Jun 21 05:37:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prof_sweep_timer_stop): accumulate sweep time only when
+	  record->gc_time > 0.
+
+Fri Jun 21 00:37:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/bigdecimal: Workaround fix for bigdecimal test failures caused
+	  by [ruby-dev:47413] [Feature #8509]
+
+	* ext/bigdecimal/bigdecimal.h (BDIGIT): Make it independent from the
+	  definition for bignum.c.
+	  (SIZEOF_BDIGITS): Ditto.
+	  (BDIGIT_DBL): Ditto.
+	  (BDIGIT_DBL_SIGNED): Ditto.
+	  (PRI_BDIGIT_PREFIX): Undefine the definition.
+	  (PRI_BDIGIT_DBL_PREFIX): Ditto.
+
+	* ext/bigdecimal/bigdecimal.c (RBIGNUM_ZERO_P): Use rb_bigzero_p.
+	  (bigzero_p): Removed.
+	  (is_even): Use rb_big_pack.
+
+Thu Jun 20 22:52:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_toom3): Don't call bignorm twice.
+
+Thu Jun 20 22:49:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bignorm): Don't call bigtrunc if the result is a fixnum.
+
+Thu Jun 20 22:29:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_uint2big): Refactored.
+
+Thu Jun 20 22:24:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (dump_bignum): Use SIZEOF_BDIGITS.
+
+Thu Jun 20 22:22:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2ulong): Change the return type to unsigned long.
+	  (rb_big2ulong_pack): Follow the above change.
+	  (rb_big2long): Ditto.
+	  (rb_big_lshift): Ditto.
+	  (rb_big_rshift): Ditto.
+	  (rb_big_aref): Ditto.
+
+Thu Jun 20 22:02:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack_internal): Return -2 when negative overflow.
+	  (bary_unpack): Set the overflowed bit if an extra BDIGIT exists.
+	  (rb_integer_unpack): Set the overflowed bit.
+
+Thu Jun 20 21:17:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_rememberset_mark): record
+	  (1) normal objects count in remember set
+	  (2) shady objects count in remember set
+	  each GC timing.
+
+	* gc.c (gc_profile_record_get): enable to access above information
+	  and REMOVING_OBJECTS, EMPTY_OBJECTS.
+
+Thu Jun 20 18:29:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: Do not use GC::Profiler::disable because
+	  GC::Profiler::disable prohibit to access profiling data. It should
+	  be spec bug.
+
+	  Skip GC::Profiler::report if RUBY_VERSION < '2.0.0'
+
+Thu Jun 20 17:59:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: stop GC::Profiler before output results.
+	  Generating GC::Profiler result under profiling causes infinite loop.
+
+Thu Jun 20 17:24:24 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: don't use __dir__ to make compatible
+	  with ruby 1.9.3.
+
+Thu Jun 20 16:57:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_aobench.rb: use attr_accessor/reader instead of
+	  defining methods.
+
+Thu Jun 20 16:46:46 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_aobench.rb: added.
+
+	* benchmark/gc/aobench.rb: added.
+
+Thu Jun 20 16:28:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_so_binary_trees.rb: disable `puts' method
+	  and change iteration parameter to increase execution time.
+
+	* benchmark/gc/binarytree.rb: added.
+
+Thu Jun 20 16:06:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/pentomino.rb: added.
+	  Simply load pentomino puzzle in the benchmark/ directory.
+
+Thu Jun 20 15:32:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/redblack.rb: import red black tree benchmark from
+	  https://github.com/jruby/rubybench/blob/master/time/bench_red_black.rb
+
+	* benchmark/gc/ring.rb: add a benchmark. This benchmark create many
+	  old objects.
+
+Thu Jun 20 15:14:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc: create a directory to store GC related benchmark.
+
+	* benchmark/gc/gcbench.rb: moved from tool/gcbench.rb.
+
+	* benchmark/gc/hash(1|2).rb: ditto.
+
+	* benchmark/gc/rdoc.rb: ditto.
+
+	* benchmark/gc/null.rb: added.
+
+	* common.mk: fix rule.
+
+Thu Jun 20 14:09:54 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/hashbench1.rb: fix parameter too. Increase temporary objects.
+
+Thu Jun 20 14:01:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/hashbench1.rb: fix parameters.
+
+Thu Jun 20 14:00:34 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: remove dependency from ruby.
+
+Thu Jun 20 13:14:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_backtrace): evaluate RARRAY_AREF only once.
+	  the first argument of RB_TYPE_P is expanded twice for non-immediate
+	  types.
+
+Thu Jun 20 08:09:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/gcbench.rb: Summary in one line.
+
+	* common.mk: separate gcbench-hash to gcbench-hash1 and gcbench-hash2.
+
+Thu Jun 20 08:07:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BIGSIZE): New macro.
+	  (bigfixize): Use BIGSIZE.
+	  (big2ulong): Ditto.
+	  (check_shiftdown): Ditto.
+	  (rb_big_aref): Ditto.
+
+Thu Jun 20 07:46:48 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (rb_gc_writebarrier): give up rescan A and register B directly
+	  if A has huge number of children.
+
+Thu Jun 20 07:30:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: add new rules `gcbench-rdoc', `gcbench-hash'.
+
+	* tool/gcbench.rb: separate GC bench framework and process.
+
+	* tool/hashbench1.rb, tool/hashbench2.rb: add two types GC bench.
+	  hashbench1: many temporal objects (GC by newobj)
+	  hashbench2: hash size becomes bigger and bigger (GC by malloc)
+	  Two benches are executed by `gcbench-hash' rule.
+
+	* tool/rdocbench.rb: separated.
+
+Thu Jun 20 06:25:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/rdocbench.rb: add summary.
+
+Thu Jun 20 06:18:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_total_time): check objspace->profile.next_index > 0.
+
+Thu Jun 20 05:47:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prof_sweep_timer_start): fix merge miss.
+
+	* gc.c (GC_PROFILE_MORE_DETAIL): set it 0.
+
+Thu Jun 20 05:38:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: Accumulate sweep time to GC time.
+	  Now [GC time] is [mark time] + [sweep time] + [misc].
+	  ([GC time] >= [mark time] + [sweep time])
+
+	* gc.c (gc_prof_sweep_slot_timer_start/stop): rename to
+	  gc_prof_sweep_timer_start/stop and locate at lazy_sweep().
+
+	* gc.c (elapsed_time_from): add a utility function.
+
+Thu Jun 20 05:08:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks): fix wrong option. FALSE means major/full GC.
+	  It should be TRUE (minor marking).
+
+Thu Jun 20 02:44:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (waitpid): should not return 0 but wait until exit
+	  unless WNOHANG is given.  waiting huge process may return while
+	  active, for some reason.
+
+Thu Jun 20 01:34:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bdigit_roomof): Use SIZEOF_BDIGITS.
+	  (bigfixize): Refine an ifdef condition.
+	  (rb_absint_size): Use bdigit_roomof.
+	  (rb_absint_singlebit_p): Ditto.
+	  (rb_integer_pack): Ditto.
+	  (integer_pack_fill_dd): Use BITSPERDIG.
+	  (integer_unpack_push_bits): Use BITSPERDIG, BIGLO and BIGDN.
+
+Thu Jun 20 01:07:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (MARKED_IN_BITMAP, FL_TEST2): return boolean value since always
+	  used as boolean value.
+
+	* gc.c (MARK_IN_BITMAP, CLEAR_IN_BITMAP): evaluate bits once.
+
+Thu Jun 20 00:05:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RVALUE_PROMOTED): fix type.
+
+Wed Jun 19 23:39:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_test): rewrite checking code.
+	  When RGENGC_CHECK_MODE >= 2, all minor marking, run normal minor
+	  marking *and* major/full marking. After that, compare the results
+	  and shows BUG if a object living with major/full marking but dead
+	  with minor marking.
+	  After detecting bugs, print references information.
+	  (RGENGC_CHECK_MODE == 2, show references to dead object)
+	  (RGENGC_CHECK_MODE == 3, show all references)
+
+Wed Jun 19 23:51:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigfixize): Use rb_absint_size.
+	  (check_shiftdown): Ditto.
+	  (big2ulong): Use bdigit_roomof.
+
+Wed Jun 19 23:32:23 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RVALUE_PROMOTED): check consistency between oldgen flag and
+	  oldgen bitmap if RGENGC_CHECK_MODE > 0.
+
+Wed Jun 19 23:29:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_force_recycle): clear oldgen bitmap, too.
+
+Wed Jun 19 21:02:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_uint2big): Consider environments BDIGIT is bigger than
+	  long.
+	  (big2ulong): Ditto.
+	  (rb_big_aref): Ditto.
+	  (rb_big_pack): Just call rb_integer_pack.
+	  (rb_big_unpack): Just call rb_integer_unpack.
+
+Wed Jun 19 20:51:21 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gc.c (gc_stress_get): GC.stress can be Fixnum.
+
+Wed Jun 19 19:31:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (DIGSPERLONG): Don't define if BDIGIT is bigger than long.
+	  (DIGSPERLL): Don't define if BDIGIT is bigger than LONG_LONG
+	  (rb_absint_size): Consider environments BDIGIT is bigger than long.
+	  Use BIGLO and BIGDN.
+	  (rb_absint_singlebit_p): Ditto.
+	  (rb_integer_pack): Ditto.
+	  (bigsub_int): Consider environments BDIGIT is bigger than long.
+	  Use SIZEOF_BDIGITS instead of sizeof(BDIGIT).
+	  (bigadd_int): Ditto.
+	  (bigand_int): Ditto.
+	  (bigor_int): Ditto.
+	  (bigxor_int): Ditto.
+
+Wed Jun 19 15:14:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (struct rb_data_type_struct), gc.c: add
+	  rb_data_type_struct::flags. Now, this flags is passed
+	  at T_DATA object creation. You can specify FL_WB_PROTECTED
+	  on this flag.
+
+	* iseq.c: making non-shady iseq objects.
+
+	* class.c, compile.c, proc.c, vm.c: add WB for iseq objects.
+
+	* vm_core.h, iseq.h: constify fields to detect WB insertion.
+
+Wed Jun 19 15:11:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_mark_children): show more info for broken object.
+
+Wed Jun 19 14:04:41 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/envutil.rb (EnvUtil#rubybin): remove unnecessary
+	  unless expression.
+
+Wed Jun 19 07:47:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect_body): use FIX2INT for ruby_gc_stress.
+
+Wed Jun 19 07:44:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace::gc_stress): int -> VALUE to store Fixnum object.
+
+Wed Jun 19 07:25:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (make_deferred): clear flags to T_ZOMBIE.
+
+	* gc.c (slot_sweep_body): fix indent.
+
+Wed Jun 19 07:18:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_aref): Apply BIGLO to ~xds[i] for environment which
+	  BDIGIT is 16bit.
+
+Wed Jun 19 07:09:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_remember): fix output level.
+
+	* gc.c (rgengc_rememberset_mark): fix to output clear count.
+	  (shady_object_count + clear_count = count of remembered objects)
+
+Wed Jun 19 07:06:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_remember): check T_NONE and T_ZOMBIE
+	  if RGENGC_CHECK_MODE > 0.
+
+Wed Jun 19 07:02:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RGENGC_CHECK_MODE): add new check mode `3'.
+	  In this mode, show all references if there is
+	  a miss-corrected object.
+
+Wed Jun 19 06:31:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stress_set): add special option of GC.stress.
+	  `GC.stress=(flag)' accepts integer to control behavior of GC.
+	  See code for details. Of course, this feature is only for MRI.
+
+	  You can debug RGenGC (WB) using `GC.stress = 1'.
+	  Using this option, do minor marking at all possible places.
+
+	  GC::STRESS_MINOR_MARK = 1 and GC::STRESS_LAZY_SWEEP = 2
+	  seem good to add.
+
+Wed Jun 19 06:29:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (kwmerge_i): add WB.
+
+Wed Jun 19 06:26:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* hash.c: `st_update()' also has same issue of last fix.
+	  write barriers at callback function are too early.
+	  All write barriers are executed after `st_update()'
+
+Wed Jun 19 04:33:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* variable.c (rb_const_set): fix WB miss.
+
+	  WBs had located before creating reference between a klass
+	  and constant value. It causes GC bug.
+
+	    # pseudo code:
+	    WB(klass, value); # WB and remember klass
+	    st_insert(klass->const_table, const_id, value);
+
+	  `st_insert()' can cause GC before inserting `value' and
+	  forget `klass' from the remember set. After that, relationship
+	  between `klass' and `value' are created with constant table.
+	  Now, `value' can be young (shady) object and `klass' can be old
+	  object, without remembering `klass' object.
+	  At the next GC, old `klass' object will be skipped and
+	  young (shady) `value' will be miss-collected. -> GC bug
+
+	  Lesson: The place of a WB is important.
+
+Tue Jun 18 22:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): ensure methods of type
+	  VM_METHOD_TYPE_ATTR_SET are called with 1 argument
+
+	* test/ruby/test_module.rb
+	  (TestModule#test_attr_writer_with_no_arguments): add test
+	  [ruby-core:55543] [Bug #8540]
+
+Tue Jun 18 22:36:23 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_profile_record_flag): fix typo.
+
+Tue Jun 18 22:08:53 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/object_tracing.c: Return for ::allocation_generation
+
+Tue Jun 18 22:04:35 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/object_tracing.c: Document object_tracing methods.
+
+Tue Jun 18 21:58:17 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* gc.c: Rename rb_mObSpace -> rb_mObjSpace
+
+Tue Jun 18 20:55:05 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/objspace.c: Document ObjectSpace::InternalObjectWrapper.
+
+Tue Jun 18 20:39:04 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/object_tracing.c: Teach rdoc object_tracing.c [Bug #8537]
+
+Tue Jun 18 20:29:47 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/.document: add object_tracing.c to document file
+
+Tue Jun 18 20:20:27 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/objspace/objspace.c: rdoc on require to overview from r41355
+
+Tue Jun 18 18:39:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check __int128.
+
+	* include/ruby/defines.h (BDIGIT_DBL): Use uint128_t if it is available.
+	  (BDIGIT): Use uint64_t if uint128_t is available.
+	  (SIZEOF_BDIGITS): Defined for above case.
+	  (BDIGIT_DBL_SIGNED): Ditto.
+	  (PRI_BDIGIT_PREFIX): Ditto.
+
+	* include/ruby/ruby.h (PRI_64_PREFIX): Defined.
+
+	* bignum.c (rb_big_pow): Don't use BITSPERDIG for the condition which
+	  rb_big_pow returns Float or Bignum.
+
+	[ruby-dev:47413] [Feature #8509]
+
+Tue Jun 18 16:43:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_heredoc_restore): clear lex_strterm always to get
+	  rid of marking recycled node.  this bug is revealed by r41372 with
+	  GC.stress=true.
+
+Tue Jun 18 12:53:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (nlz): Cast the result explicitly.
+	  (big2dbl): Don't assign BDIGIT values to int variable.
+
+Tue Jun 18 12:25:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_xor): Non-effective code removed.
+
+Tue Jun 18 11:26:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_stat): add `generated_normal_object_count_types' for
+	  RGENGC_PROFILE >= 2.
+
+Tue Jun 18 11:02:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_maybe): check to skip T_NONE.
+
+	* gc.c (markable_object_p): do not need to check (flags == 0) here.
+
+Tue Jun 18 10:17:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* variable.c (rb_autoload): fix WB miss.
+
+Tue Jun 18 04:20:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_children): don't need to care about T_ZOMBIE here.
+
+Mon Jun 17 22:16:02 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/ruby/test_proc.rb (TestProc#test_block_given_method_to_proc):
+	  run test for r41359.
+
+Mon Jun 17 21:42:18 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* include/ruby/ruby.h, vm_eval.c (rb_funcall_with_block):
+	  new function to invoke a method with a block passed
+	  as an argument.
+
+	* string.c (sym_call): use the above function to avoid
+	  a block sharing. [ruby-dev:47438] [Bug #8531]
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): don't set block
+	  in the frame.
+
+	* test/ruby/test_symbol.rb (TestSymbol#test_block_given_to_proc):
+	  run related tests.
+
+Mon Jun 17 21:33:27 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* include/ruby/intern.h, proc.c (rb_method_call_with_block):
+	  new function to invoke a Method object with a block passed
+	  as an argument.
+
+	* proc.c (bmcall): use the above function to avoid a block sharing.
+	  [ruby-core:54626] [Bug #8341]
+
+	* test/ruby/test_proc.rb (TestProc#test_block_persist_between_calls):
+	  run related tests.
+
+Mon Jun 17 20:53:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* loadpath.c (RUBY_REVISION): Defined to suppress revision.h
+	  inclusion actually.  r41352 removes the dependency.
+
+Mon Jun 17 18:15:57 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/objspace/objspace.c: let rdoc know about objspace methods.
+	  Specify 'objspace' should be required. See #8537.
+
+Mon Jun 17 17:44:31 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* gc.c (ObjectSpace): is a module not a class.
+
+	* ext/objspace/objspace.c: try to include overview in rdoc,
+	  see #8537.
+
+Mon Jun 17 17:38:24 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* gc.c: fix example of ObjectSpace.define_finalizer in overview
+
+Mon Jun 17 16:59:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c: use rb_sprintf(), rb_id2str(), and
+	  rb_intern_str() instead of rb_intern() and RSTRING_PTR() with
+	  RB_GC_GUARD(), to prevent temporary objects from GC.
+	  [ruby-core:39000] [Bug #5199]
+
+Mon Jun 17 14:27:54 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* vm_backtrace.c: Update rdoc for Backtrace#label with @_ko1
+
+Mon Jun 17 13:04:01 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/ifchange (until): Fix the condition, although harmless in
+	  this case.
+
+Mon Jun 17 11:50:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_maybe): added. check `is_pointer_to_heap()' and
+	  type is not T_ZOMBIE.
+
+	* gc.c: use `gc_mark_maybe()'. T_ZOMBIE objects should not be pushed
+	  to the mark stack.
+
+Mon Jun 17 07:56:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_small_lshift): Renamed from bdigs_small_lshift.
+	  (bary_small_rshift): Renamed from bdigs_small_rshift.
+
+Mon Jun 17 07:38:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_bytes): Removed.
+	  (rb_absint_numwords): Don't call absint_numwords_bytes.
+
+Sun Jun 16 23:14:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BARY_ADD): New macro.
+	  (BARY_SUB): Ditto.
+	  (BARY_MUL): Ditto.
+	  (BARY_DIVMOD): Ditto.
+	  (BARY_ZERO_P): Ditto.
+	  (absint_numwords_generic): Use these macros.
+
+Sun Jun 16 21:41:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_2comp): Extracted from get2comp.
+	  (integer_unpack_num_bdigits): Extracted from
+	  rb_integer_unpack_internal.
+	  (bary_unpack_internal): Renamed from bary_unpack and support
+	  INTEGER_PACK_2COMP.
+	  (bary_unpack): New function to validate arguments and invoke
+	  bary_unpack_internal.
+	  (rb_integer_unpack_internal): Removed.
+	  (rb_integer_unpack): Invoke bary_unpack_internal.
+	  (rb_integer_unpack_2comp): Removed.
+
+	* internal.h (rb_integer_unpack_2comp): Removed.
+
+	* pack.c: Follow the above change.
+
+Sun Jun 16 18:41:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (INTEGER_PACK_2COMP): Defined.
+	  (rb_integer_pack_2comp): Removed.
+
+	* bignum.c (bary_pack): Support INTEGER_PACK_2COMP.
+	  (rb_integer_pack): Invoke bary_pack directly.
+	  (rb_integer_pack_2comp): Removed.
+	  (rb_integer_pack_internal): Ditto.
+	  (absint_numwords_generic): Follow the above change.
+
+	* pack.c (pack_pack): Ditto.
+
+	* sprintf.c (rb_str_format): Ditto.
+
+Sun Jun 16 17:48:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_generic): rb_funcall invocations removed.
+
+Sun Jun 16 16:04:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/config_files.rb: use URI.read to allow it runs with Ruby 1.8.5.
+
+Sun Jun 16 14:32:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack) Extracted from rb_integer_pack_internal.
+	  (absint_numwords_generic): Use bary_pack.
+
+Sun Jun 16 11:01:57 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS (XMLRPC::Client#http): Add.
+	  [ruby-core:55197] [Feature #8461]
+
+Sun Jun 16 10:38:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_add): New function.
+	  (bary_zero_p): Extracted from bigzero_p.
+	  (absint_numwords_generic): Use bary_zero_p and bary_add.
+	  (bary_mul): Fix an argument for bary_mul_single.
+	  (bary_divmod): Use size_t for arguments.
+
+Sun Jun 16 08:55:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Use a BDIGIT variable to store the return
+	  value of bigdivrem_single.
+
+Sun Jun 16 08:43:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_divmod): New function.
+	  (absint_numwords_generic): Use bary_divmod.
+	  (bigdivrem_num_extra_words): Extracted from bigdivrem.
+	  (bigdivrem_single): Ditto.
+	  (bigdivrem_normal): Ditto.
+	  (BIGDIVREM_EXTRA_WORDS): Defined.
+
+Sun Jun 16 05:51:51 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: Fixup around GC by MALLOC.
+	  Add allocate size to malloc_increase before GC
+	  for updating limit in after_gc_sweep.
+	  Reset malloc_increase into garbage_collect()
+	  for preventing GC again soon.
+
+Sun Jun 16 05:15:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c: Add some columns to more detail profile.
+	  new columns: Allocated size, Prepare Time, Removing Objects, Empty Objects
+
+Sun Jun 16 02:04:40 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_prof_timer_stop): Merge function codes of GC_PROFILE_MORE_DETAIL and !GC_PROFILE_MORE_DETAIL.
+	* gc.c (gc_prof_mark_timer_start): Ditto.
+	* gc.c (gc_prof_mark_timer_stop): Ditto.
+	* gc.c (gc_prof_sweep_slot_timer_start): Ditto.
+	* gc.c (gc_prof_sweep_slot_timer_stop): Ditto.
+	* gc.c (gc_prof_set_malloc_info): Ditto.
+	* gc.c (gc_prof_set_heap_info): Ditto.
+
+Sat Jun 15 23:50:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_sub): New function.
+	  (absint_numwords_generic): Use bary_sub.
+	  (bigsub_core): Skip unnecessary copy.
+
+Sat Jun 15 22:05:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): New function.
+	  (absint_numwords_generic): Use bary_mul.
+	  (bary_mul_single): Extracted from bigmul1_single.
+	  (bary_mul_normal): Extracted from bigmul1_normal.
+
+Sat Jun 15 20:13:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack): Extracted from rb_integer_unpack_internal.
+	  (absint_numwords_generic): Use bary_unpack.
+	  (roomof): Defined.
+	  (bdigit_roomof): Defined.
+	  (BARY_ARGS): Defined.
+	  (bary_unpack): Declared.
+
+Sat Jun 15 19:35:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_bytes): Make it static.
+	  (absint_numwords_small): Ditto.
+	  (absint_numwords_generic): Ditto.
+
+Sat Jun 15 17:14:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_normal): Shrink the result Bignum length.
+
+Sat Jun 15 10:19:42 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/bigdecimal/bigdecimal.c: Update overview formatting of headers
+
+Sat Jun 15 10:19:06 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Update authors
+
+Sat Jun 15 10:02:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bdigs_small_rshift): Extracted from big_rshift.
+	  (bigdivrem): Use bdigs_small_rshift.
+
+Sat Jun 15 08:37:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (eval_string_with_cref): propagate absolute path from the
+	  binding if it is given explicitly.  patch by Gat (Dawid Janczak) at
+	  [ruby-core:55123]. [Bug #8436]
+
+Sat Jun 15 02:40:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bdigs_small_lshift): Extracted from big_lshift.
+	  (bigdivrem): Use bdigs_small_lshift.
+
 Fri Jun 14 20:47:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Reduce number of digits before bignew() for div.
@@ -23,7 +926,7 @@ Fri Jun 14 18:18:07 2013  Koichi Sasada  <ko1@atdot.net>
 	* constant.h: constify rb_const_entry_t::value and file to detect
 	  assignment.
 
-	* variable.c, internal.h (rb_st_insert_id_and_value, rb_st_copy): 
+	* variable.c, internal.h (rb_st_insert_id_and_value, rb_st_copy):
 	  added. update table with write barrier.
 
 	* method.h: constify some variables to detect assignment.

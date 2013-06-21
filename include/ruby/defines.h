@@ -141,7 +141,13 @@ void xfree(void*);
 # define SIZEOF_LONG_LONG SIZEOF___INT64
 #endif
 
-#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
+# define BDIGIT uint64_t
+# define SIZEOF_BDIGITS SIZEOF_INT64_T
+# define BDIGIT_DBL uint128_t
+# define BDIGIT_DBL_SIGNED int128_t
+# define PRI_BDIGIT_PREFIX PRI_64_PREFIX
+#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 # define BDIGIT unsigned int
 # define SIZEOF_BDIGITS SIZEOF_INT
 # define BDIGIT_DBL unsigned LONG_LONG

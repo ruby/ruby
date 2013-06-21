@@ -219,7 +219,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       if windows?
         fname = nil
         Dir.chdir(config[:DocumentRoot]) do
-          fname = IO.popen("dir /x webrick_long_filename.cgi", "r").read.match(/\s(w.+?cgi)\s/i)[1].downcase
+          fname = `dir /x webrick_long_filename.cgi`.match(/\s(w.+?cgi)\s/i)[1].downcase
         end
       else
         fname = "webric~1.cgi"
@@ -266,8 +266,9 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
         assert_equal("/test", res.body, log.call)
       end
 
+      resok = windows?
       response_assertion = Proc.new do |res|
-        if windows?
+        if resok
           assert_equal("200", res.code, log.call)
           assert_equal("/test", res.body, log.call)
         else
@@ -278,6 +279,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http.request(req, &response_assertion)
       req = Net::HTTP::Get.new("/webrick.cgi./test")
       http.request(req, &response_assertion)
+      resok &&= File.exist?(__FILE__+"::$DATA")
       req = Net::HTTP::Get.new("/webrick.cgi::$DATA/test")
       http.request(req, &response_assertion)
     end

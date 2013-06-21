@@ -4,7 +4,7 @@
 set -e
 timestamp=
 keepsuffix=
-until [ "$0" = 0 ]; do
+until [ $# -eq 0 ]; do
     case "$1" in
 	--timestamp)
 	    timestamp=.

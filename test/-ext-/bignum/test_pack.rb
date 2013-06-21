@@ -11,6 +11,7 @@ class TestBignum < Test::Unit::TestCase
     MSBYTE_FIRST = Integer::INTEGER_PACK_MSBYTE_FIRST
     LSBYTE_FIRST = Integer::INTEGER_PACK_LSBYTE_FIRST
     NATIVE_BYTE_ORDER = Integer::INTEGER_PACK_NATIVE_BYTE_ORDER
+    TWOCOMP = Integer::INTEGER_PACK_2COMP
     LITTLE_ENDIAN = Integer::INTEGER_PACK_LITTLE_ENDIAN
     BIG_ENDIAN = Integer::INTEGER_PACK_BIG_ENDIAN
     NEGATIVE = Integer::INTEGER_PACK_NEGATIVE
@@ -68,53 +69,129 @@ class TestBignum < Test::Unit::TestCase
       assert_equal([1, "\x00\x12\x00\x34\x00\x56\x00\x78"], 0x12345678.test_pack(4, 2, 8, BIG_ENDIAN))
     end
 
+    def test_pack_overflow
+      assert_equal([-2, "\x1"], (-0x11).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([-2, "\x0"], (-0x10).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([-1, "\xF"], (-0x0F).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+1, "\xF"], (+0x0F).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+2, "\x0"], (+0x10).test_pack(1, 1, 4, BIG_ENDIAN))
+      assert_equal([+2, "\x1"], (+0x11).test_pack(1, 1, 4, BIG_ENDIAN))
+
+      assert_equal([-2, "\x01"], (-0x101).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-2, "\x00"], (-0x100).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-1, "\xFF"], (-0x0FF).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+1, "\xFF"], (+0x0FF).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00"], (+0x100).test_pack(1, 1, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x01"], (+0x101).test_pack(1, 1, 0, BIG_ENDIAN))
+
+      assert_equal([-2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (-0x10000000000000001).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([-2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (-0x10000000000000000).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([-1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (-0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (+0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (+0x10000000000000000).test_pack(2, 4, 0, BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (+0x10000000000000001).test_pack(2, 4, 0, BIG_ENDIAN))
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\x00"*(w-1)+"\x01"], (-n-1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([-2, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([-1, "\xFF"*w],            (-n+1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+          assert_equal([+2, "\x00"*(w-1)+"\x01"], (+n+1).test_pack(numwords, wordsize, 0, BIG_ENDIAN))
+        }
+      }
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\x01"+"\x00"*(w-1)], (-n-1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([-2, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([-1, "\xFF"*w],            (-n+1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+          assert_equal([+2, "\x01"+"\x00"*(w-1)], (+n+1).test_pack(numwords, wordsize, 0, LITTLE_ENDIAN))
+        }
+      }
+    end
+
     def test_pack_sign
       assert_equal([-1, "\x01"], (-1).test_pack(1, 1, 0, BIG_ENDIAN))
       assert_equal([-1, "\x80\x70\x60\x50\x40\x30\x20\x10"], (-0x8070605040302010).test_pack(8, 1, 0, BIG_ENDIAN))
     end
 
     def test_pack2comp_zero
-      assert_equal([0, ""], 0.test_pack_2comp(0, 1, 0, BIG_ENDIAN))
+      assert_equal([0, ""], 0.test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
     end
 
     def test_pack2comp_emptybuf
-      assert_equal([-2, ""], (-3).test_pack_2comp(0, 1, 0, BIG_ENDIAN))
-      assert_equal([-2, ""], (-2).test_pack_2comp(0, 1, 0, BIG_ENDIAN))
-      assert_equal([-1, ""], (-1).test_pack_2comp(0, 1, 0, BIG_ENDIAN))
-      assert_equal([ 0, ""], 0.test_pack_2comp(0, 1, 0, BIG_ENDIAN))
-      assert_equal([+2, ""], 1.test_pack_2comp(0, 1, 0, BIG_ENDIAN))
-      assert_equal([+2, ""], 2.test_pack_2comp(0, 1, 0, BIG_ENDIAN))
+      assert_equal([-2, ""], (-3).test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-2, ""], (-2).test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, ""], (-1).test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([ 0, ""], 0.test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, ""], 1.test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, ""], 2.test_pack(0, 1, 0, TWOCOMP|BIG_ENDIAN))
     end
 
     def test_pack2comp_nearly_zero
-      assert_equal([-1, "\xFE"], (-2).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([-1, "\xFF"], (-1).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([ 0, "\x00"], 0.test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([+1, "\x01"], 1.test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([+1, "\x02"], 2.test_pack_2comp(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-1, "\xFE"], (-2).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\xFF"], (-1).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([ 0, "\x00"], 0.test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+1, "\x01"], 1.test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+1, "\x02"], 2.test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
     end
 
     def test_pack2comp_overflow
-      assert_equal([-2, "\xF"], (-0x11).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
-      assert_equal([-1, "\x0"], (-0x10).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
-      assert_equal([-1, "\x1"], (-0x0F).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
-      assert_equal([+1, "\xF"], (+0x0F).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
-      assert_equal([+2, "\x0"], (+0x10).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
-      assert_equal([+2, "\x1"], (+0x11).test_pack_2comp(1, 1, 4, BIG_ENDIAN))
+      assert_equal([-2, "\xF"], (-0x11).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x0"], (-0x10).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x1"], (-0x0F).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+1, "\xF"], (+0x0F).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x0"], (+0x10).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x1"], (+0x11).test_pack(1, 1, 4, TWOCOMP|BIG_ENDIAN))
 
-      assert_equal([-2, "\xFF"], (-0x101).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([-1, "\x00"], (-0x100).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([-1, "\x01"], (-0x0FF).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([+1, "\xFF"], (+0x0FF).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([+2, "\x00"], (+0x100).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
-      assert_equal([+2, "\x01"], (+0x101).test_pack_2comp(1, 1, 0, BIG_ENDIAN))
+      assert_equal([-2, "\xFF"], (-0x101).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x00"], (-0x100).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x01"], (-0x0FF).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+1, "\xFF"], (+0x0FF).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x00"], (+0x100).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x01"], (+0x101).test_pack(1, 1, 0, TWOCOMP|BIG_ENDIAN))
 
-      assert_equal([-2, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (-0x10000000000000001).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
-      assert_equal([-1, "\x00\x00\x00\x00\x00\x00\x00\x00"], (-0x10000000000000000).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
-      assert_equal([-1, "\x00\x00\x00\x00\x00\x00\x00\x01"], (-0x0FFFFFFFFFFFFFFFF).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
-      assert_equal([+1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (+0x0FFFFFFFFFFFFFFFF).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
-      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (+0x10000000000000000).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
-      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (+0x10000000000000001).test_pack_2comp(2, 4, 0, BIG_ENDIAN))
+      assert_equal([-2, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (-0x10000000000000001).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x00\x00\x00\x00\x00\x00\x00\x00"], (-0x10000000000000000).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([-1, "\x00\x00\x00\x00\x00\x00\x00\x01"], (-0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+1, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"], (+0x0FFFFFFFFFFFFFFFF).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x00"], (+0x10000000000000000).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal([+2, "\x00\x00\x00\x00\x00\x00\x00\x01"], (+0x10000000000000001).test_pack(2, 4, 0, TWOCOMP|BIG_ENDIAN))
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\xFF"*w           ], (-n-1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([-1, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([-1, "\x00"*(w-1)+"\x01"], (-n+1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+          assert_equal([+2, "\x00"*(w-1)+"\x01"], (+n+1).test_pack(numwords, wordsize, 0, TWOCOMP|BIG_ENDIAN))
+        }
+      }
+
+      1.upto(16) {|wordsize|
+        1.upto(20) {|numwords|
+          w = numwords*wordsize
+          n = 256**w
+          assert_equal([-2, "\xFF"*w           ], (-n-1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([-1, "\x00"*w],            (-n  ).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([-1, "\x01"+"\x00"*(w-1)], (-n+1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+1, "\xFF"*w],            (+n-1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+2, "\x00"*w],            (+n  ).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+          assert_equal([+2, "\x01"+"\x00"*(w-1)], (+n+1).test_pack(numwords, wordsize, 0, TWOCOMP|LITTLE_ENDIAN))
+        }
+      }
+
     end
 
     def test_unpack_zero
@@ -163,35 +240,40 @@ class TestBignum < Test::Unit::TestCase
     end
 
     def test_unpack2comp_single_byte
-      assert_equal(-128, Integer.test_unpack_2comp("\x80", 1, 1, 0, BIG_ENDIAN))
-      assert_equal(  -2, Integer.test_unpack_2comp("\xFE", 1, 1, 0, BIG_ENDIAN))
-      assert_equal(  -1, Integer.test_unpack_2comp("\xFF", 1, 1, 0, BIG_ENDIAN))
-      assert_equal(   0, Integer.test_unpack_2comp("\x00", 1, 1, 0, BIG_ENDIAN))
-      assert_equal(   1, Integer.test_unpack_2comp("\x01", 1, 1, 0, BIG_ENDIAN))
-      assert_equal(   2, Integer.test_unpack_2comp("\x02", 1, 1, 0, BIG_ENDIAN))
-      assert_equal( 127, Integer.test_unpack_2comp("\x7F", 1, 1, 0, BIG_ENDIAN))
+      assert_equal(-128, Integer.test_unpack("\x80", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(  -2, Integer.test_unpack("\xFE", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(  -1, Integer.test_unpack("\xFF", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(   0, Integer.test_unpack("\x00", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(   1, Integer.test_unpack("\x01", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(   2, Integer.test_unpack("\x02", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal( 127, Integer.test_unpack("\x7F", 1, 1, 0, TWOCOMP|BIG_ENDIAN))
     end
 
     def test_unpack2comp_sequence_of_ff
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*2, 2, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*3, 3, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*4, 4, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*5, 5, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*6, 6, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*7, 7, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*8, 8, 1, 0, BIG_ENDIAN))
-      assert_equal(-1, Integer.test_unpack_2comp("\xFF"*9, 9, 1, 0, BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*2, 2, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*3, 3, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*4, 4, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*5, 5, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*6, 6, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*7, 7, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*8, 8, 1, 0, TWOCOMP|BIG_ENDIAN))
+      assert_equal(-1, Integer.test_unpack("\xFF"*9, 9, 1, 0, TWOCOMP|BIG_ENDIAN))
     end
 
     def test_unpack2comp_negative_single_byte
-      assert_equal(-256, Integer.test_unpack_2comp("\x00", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(-255, Integer.test_unpack_2comp("\x01", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(-254, Integer.test_unpack_2comp("\x02", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(-129, Integer.test_unpack_2comp("\x7F", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(-128, Integer.test_unpack_2comp("\x80", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(  -2, Integer.test_unpack_2comp("\xFE", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
-      assert_equal(  -1, Integer.test_unpack_2comp("\xFF", 1, 1, 0, BIG_ENDIAN|NEGATIVE))
+      assert_equal(-256, Integer.test_unpack("\x00", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(-255, Integer.test_unpack("\x01", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(-254, Integer.test_unpack("\x02", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(-129, Integer.test_unpack("\x7F", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(-128, Integer.test_unpack("\x80", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(  -2, Integer.test_unpack("\xFE", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      assert_equal(  -1, Integer.test_unpack("\xFF", 1, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
     end
 
+    def test_unpack2comp_negative_zero
+      0.upto(100) {|n|
+        assert_equal(-(256**n), Integer.test_unpack("\x00"*n, n, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+      }
+    end
   end
 end

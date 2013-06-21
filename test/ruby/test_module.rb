@@ -1167,6 +1167,14 @@ class TestModule < Test::Unit::TestCase
     assert_equal(1, c.x, bug3406)
   end
 
+  def test_attr_writer_with_no_arguments
+    bug8540 = "[ruby-core:55543]"
+    c = Class.new do
+      attr_writer :foo
+    end
+    assert_raise(ArgumentError) { c.new.send :foo= }
+  end
+
   def test_private_constant
     c = Class.new
     c.const_set(:FOO, "foo")

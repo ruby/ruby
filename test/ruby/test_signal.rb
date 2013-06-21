@@ -4,17 +4,7 @@ require 'tempfile'
 require_relative 'envutil'
 
 class TestSignal < Test::Unit::TestCase
-  def have_fork?
-    begin
-      Process.fork {}
-      return true
-    rescue NotImplementedError
-      return false
-    end
-  end
-
   def test_signal
-    return unless Process.respond_to?(:kill)
     begin
       x = 0
       oldtrap = Signal.trap(:INT) {|sig| x = 2 }
@@ -35,61 +25,57 @@ class TestSignal < Test::Unit::TestCase
     ensure
       Signal.trap :INT, oldtrap if oldtrap
     end
-  end
+  end if Process.respond_to?(:kill)
 
   def test_signal_process_group
-    return unless Process.respond_to?(:kill)
-    return unless Process.respond_to?(:pgroup) # for mswin32
-
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
-      pid = Process.spawn(EnvUtil.rubybin, '-e', '"sleep 10"', :pgroup => true)
+      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', :pgroup => true)
       Process.kill(:"-TERM", pid)
       Process.waitpid(pid)
       assert_equal(true, $?.signaled?)
       assert_equal(Signal.list["TERM"], $?.termsig)
     end
-  end
+  end if Process.respond_to?(:kill) and
+    Process.respond_to?(:pgroup) # for mswin32
 
   def test_exit_action
-    return unless have_fork?	# skip this test
-    begin
-      r, w = IO.pipe
-      r0, w0 = IO.pipe
-      pid = Process.spawn(EnvUtil.rubybin, '-e', <<-'End', 3=>w, 4=>r0)
-        w = IO.new(3, "w")
-        r0 = IO.new(4, "r")
-        Signal.trap(:USR1, "EXIT")
-        w.syswrite("a")
+    if Signal.list[sig = "USR1"]
+      term = :TERM
+    else
+      sig = "INT"
+      term = :KILL
+    end
+    IO.popen([EnvUtil.rubybin, '-e', <<-"End"], 'r+') do |io|
+        Signal.trap(:#{sig}, "EXIT")
+        STDOUT.syswrite("a")
         Thread.start { sleep(2) }
-        r0.sysread(4096)
+        STDIN.sysread(4096)
       End
-      r.sysread(1)
+      pid = io.pid
+      io.sysread(1)
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
-        Process.kill(:USR1, pid)
+        Process.kill(term, pid)
         begin
           Timeout.timeout(3) {
             Process.waitpid pid
           }
         rescue Timeout::Error
-          Process.kill(:TERM, pid)
+          if term
+            Process.kill(term, pid)
+            term = (:KILL if term != :KILL)
+            retry
+          end
           raise
         end
       }
-    ensure
-      r.close
-      w.close
-      r0.close
-      w0.close
     end
-  end
+  end if Process.respond_to?(:kill)
 
   def test_invalid_signal_name
-    return unless Process.respond_to?(:kill)
-
     assert_raise(ArgumentError) { Process.kill(:XXXXXXXXXX, $$) }
-  end
+  end if Process.respond_to?(:kill)
 
   def test_signal_exception
     assert_raise(ArgumentError) { SignalException.new }
@@ -108,7 +94,6 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signal2
-    return unless Process.respond_to?(:kill)
     begin
       x = false
       oldtrap = Signal.trap(:INT) {|sig| x = true }
@@ -141,10 +126,9 @@ class TestSignal < Test::Unit::TestCase
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
-  end
+  end if Process.respond_to?(:kill)
 
   def test_trap
-    return unless Process.respond_to?(:kill)
     begin
       oldtrap = Signal.trap(:INT) {|sig| }
 
@@ -182,20 +166,15 @@ class TestSignal < Test::Unit::TestCase
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
-  end
+  end if Process.respond_to?(:kill)
 
   def test_kill_immediately_before_termination
-    return unless have_fork?	# skip this test
-
-    r, w = IO.pipe
-    pid = Process.fork do
-      r.close
-      Signal.trap(:USR1) { w.syswrite("foo") }
-      Process.kill :USR1, $$
-    end
-    w.close
-    assert_equal(r.read, "foo")
-  end
+    Signal.list[sig = "USR1"] or sig = "INT"
+    assert_in_out_err(["-e", <<-"end;"], "", %w"foo")
+      Signal.trap(:#{sig}) { STDOUT.syswrite("foo") }
+      Process.kill :#{sig}, $$
+    end;
+  end if Process.respond_to?(:kill)
 
   def test_signal_requiring
     t = Tempfile.new(%w"require_ensure_test .rb")
@@ -220,7 +199,7 @@ EOS
     end
     t.close!
     assert_nil(error)
-  end
+  end if Process.respond_to?(:kill)
 
   def test_reserved_signal
     assert_raise(ArgumentError) {
@@ -241,8 +220,6 @@ EOS
   end
 
   def test_signame
-    return unless Process.respond_to?(:kill)
-
     10.times do
       IO.popen([EnvUtil.rubybin, "-e", <<EOS, :err => File::NULL]) do |child|
         Signal.trap("INT") do |signo|
@@ -259,7 +236,7 @@ EOS
         assert_equal(signame, "INT")
       end
     end
-  end
+  end if Process.respond_to?(:kill)
 
   def test_trap_puts
     assert_in_out_err([], <<-INPUT, ["a"*10000], [])
@@ -272,11 +249,9 @@ EOS
       Process.kill :INT, $$
       sleep 0.1
     INPUT
-  end
+  end if Process.respond_to?(:kill)
 
   def test_hup_me
-    return unless Signal.list.has_key?('HUP')
-
     # [Bug #7951] [ruby-core:52864]
     # This is MRI specific spec. ruby has no guarantee
     # that signal will be deliverd synchronously.
@@ -291,5 +266,5 @@ EOS
         Process.kill(0, Process.pid)
       }
     }
-  end
+  end if Process.respond_to?(:kill) and Signal.list.key?('HUP')
 end

@@ -897,8 +897,7 @@ get_eval_string_core(obj, enc_flag, self)
         }
     }
 
-    rb_warning("fail to convert '%s' to string for Tk",
-               RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0, 0)));
+    rb_warning("fail to convert '%+"PRIsVALUE"' to string for Tk", obj);
 
     return obj;
 }
@@ -1248,7 +1247,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(key)) {
     case T_STRING:
-        key_id = rb_intern(RSTRING_PTR(key));
+        key_id = rb_intern_str(key);
         break;
     case T_SYMBOL:
         key_id = SYM2ID(key);
@@ -1260,7 +1259,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(value)) {
     case T_STRING:
-        value_id = rb_intern(RSTRING_PTR(value));
+        value_id = rb_intern_str(value);
         break;
     case T_SYMBOL:
         value_id = SYM2ID(value);
@@ -1300,7 +1299,7 @@ cbsubst_sym_to_subst(self, sym)
     VALUE sym;
 {
     struct cbsubst_info *inf;
-    const char *str;
+    VALUE str;
     char *buf, *ptr;
     int idx;
     long len;
@@ -1313,12 +1312,12 @@ cbsubst_sym_to_subst(self, sym)
                     struct cbsubst_info, inf);
 
     if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
-      str = rb_id2name(SYM2ID(ret));
+	str = rb_id2str(SYM2ID(ret));
     } else {
-      str = rb_id2name(SYM2ID(sym));
+	str = rb_id2str(SYM2ID(sym));
     }
 
-    id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
+    id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
 
     for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
       if (inf->ivar[idx] == id) break;
@@ -1355,7 +1354,7 @@ cbsubst_get_subst_arg(argc, argv, self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    const char *str;
+    VALUE str;
     char *buf, *ptr;
     int i, idx;
     long len;
@@ -1370,28 +1369,28 @@ cbsubst_get_subst_arg(argc, argv, self)
     for(i = 0; i < argc; i++) {
         switch(TYPE(argv[i])) {
         case T_STRING:
-            str = RSTRING_PTR(argv[i]);
-            arg_sym = ID2SYM(rb_intern(str));
+            str = argv[i];
+            arg_sym = ID2SYM(rb_intern_str(argv[i]));
             break;
         case T_SYMBOL:
             arg_sym = argv[i];
-            str = rb_id2name(SYM2ID(arg_sym));
+            str = rb_id2str(SYM2ID(arg_sym));
             break;
         default:
             rb_raise(rb_eArgError, "arg #%d is not a String or a Symbol", i);
         }
 
         if (!NIL_P(ret = rb_hash_aref(inf->aliases, arg_sym))) {
-            str = rb_id2name(SYM2ID(ret));
+            str = rb_id2str(SYM2ID(ret));
         }
 
-        id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
+        id = rb_intern_str(rb_sprintf("@%"PRIsVALUE, str));
 
 	for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
 	  if (inf->ivar[idx] == id) break;
 	}
         if (idx >= CBSUBST_TBL_MAX) {
-            rb_raise(rb_eArgError, "cannot find attribute :%s", str);
+            rb_raise(rb_eArgError, "cannot find attribute :%"PRIsVALUE, str);
         }
 
 	*(ptr++) = '%';
@@ -1573,7 +1572,7 @@ cbsubst_table_setup(argc, argv, self)
     subst_inf->full_subst_length += 3;
 
     id = SYM2ID(RARRAY_PTR(inf)[2]);
-    subst_inf->ivar[chr] = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), rb_id2name(id))));
+    subst_inf->ivar[chr] = rb_intern_str(rb_sprintf("@%"PRIsVALUE, rb_id2str(id)));
 
     rb_attr(self, id, 1, 0, Qtrue);
   }
@@ -1612,7 +1611,7 @@ cbsubst_table_setup(argc, argv, self)
     subst_inf->full_subst_length += (subst_inf->keylen[chr] + 2);
 
     id = SYM2ID(RARRAY_PTR(inf)[2]);
-    subst_inf->ivar[chr] = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), rb_id2name(id))));
+    subst_inf->ivar[chr] = rb_intern_str(rb_sprintf("@%"PRIsVALUE, rb_id2str(id)));
 
     rb_attr(self, id, 1, 0, Qtrue);
   }

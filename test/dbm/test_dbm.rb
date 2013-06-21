@@ -87,15 +87,6 @@ if defined? DBM
       end
     end
 
-    def have_fork?
-      begin
-        fork{}
-        true
-      rescue NotImplementedError
-        false
-      end
-    end
-
     def test_dbmfile_suffix
       @dbm.close
       prefix = File.basename(@path)

@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://www.ruby-lang.org"
   s.email = "mrkn@mrkn.jp"
   s.description = "This library provides arbitrary-precision decimal floating-point number class."
-  s.authors = ["Kenta Murata", "Shigeo Kobayashi"]
+  s.authors = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
   s.require_path = %[.]
   s.files = %w[
     bigdecimal.gemspec

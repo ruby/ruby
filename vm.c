@@ -2031,7 +2031,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     /* dup */
     COPY_CREF(miseq->cref_stack, cref);
     miseq->cref_stack->nd_visi = NOEX_PUBLIC;
-    miseq->klass = klass;
+    OBJ_WRITE(miseq->self, (VALUE *)&miseq->klass, klass);
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
 
@@ -2174,7 +2174,9 @@ static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
     if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
-    st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value);
+    if (st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value) == 0) { /* !existing */
+	OBJ_WRITTEN(hash, Qundef, value);
+    }
     return ST_CONTINUE;
 }
 
@@ -2530,7 +2532,7 @@ rb_vm_set_progname(VALUE filename)
     rb_thread_t *th = GET_VM()->main_thread;
     rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
     --cfp;
-    cfp->iseq->location.path = filename;
+    OBJ_WRITE(cfp->iseq->self, (VALUE *)&cfp->iseq->location.path, filename);
 }
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE

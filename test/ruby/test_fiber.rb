@@ -46,7 +46,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    assert_normal_exit %q{
+    assert_normal_exit <<-SRC, timeout: 60
       max = 1000
       @cnt = 0
       (1..100).map{|ti|
@@ -60,7 +60,7 @@ class TestFiber < Test::Unit::TestCase
       }.each{|t|
         t.join
       }
-    }
+    SRC
   end
 
   def test_error
@@ -248,12 +248,13 @@ class TestFiber < Test::Unit::TestCase
 
   def test_fork_from_fiber
     begin
-      Process.fork{}
+      pid = Process.fork{}
     rescue NotImplementedError
       return
+    else
+      Process.wait(pid)
     end
     bug5700 = '[ruby-core:41456]'
-    pid = nil
     assert_nothing_raised(bug5700) do
       Fiber.new{ pid = fork {} }.resume
     end

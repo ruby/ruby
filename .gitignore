@@ -122,6 +122,10 @@ y.tab.c
 /spec/mspec
 /spec/rubyspec
 
+# /tool/
+/tool/config.guess
+/tool/config.sub
+
 # /win32/
 /win32/*.ico
 /win32/.time

@@ -472,6 +472,7 @@ class TestRubyOptions < Test::Unit::TestCase
       end
       assert_match(/hello world/, ps)
       Process.kill :KILL, pid
+      Process.wait(pid)
     end
   end
 

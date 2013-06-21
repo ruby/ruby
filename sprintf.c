@@ -856,8 +856,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                                  (!bignum ? v < 0 : RBIGNUM_NEGATIVE_P(val))))
                             numdigits++;
                         tmp = rb_str_new(NULL, numdigits);
-                        valsign = rb_integer_pack_2comp(val, RSTRING_PTR(tmp), RSTRING_LEN(tmp),
-                                1, CHAR_BIT-numbits, INTEGER_PACK_BIG_ENDIAN);
+                        valsign = rb_integer_pack(val, RSTRING_PTR(tmp), RSTRING_LEN(tmp),
+                                1, CHAR_BIT-numbits, INTEGER_PACK_2COMP | INTEGER_PACK_BIG_ENDIAN);
                         for (i = 0; i < RSTRING_LEN(tmp); i++)
                             RSTRING_PTR(tmp)[i] = ruby_digitmap[((unsigned char *)RSTRING_PTR(tmp))[i]];
                         s = RSTRING_PTR(tmp);

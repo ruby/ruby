@@ -278,7 +278,7 @@ r_value(VALUE value)
   if (compile_debug) rb_compile_bug strs;          \
   GET_THREAD()->errinfo = iseq->compile_data->err_info;  \
   rb_compile_error strs;                           \
-  iseq->compile_data->err_info = GET_THREAD()->errinfo; \
+  OBJ_WRITE(iseq->self, (VALUE *)&iseq->compile_data->err_info, GET_THREAD()->errinfo); \
   GET_THREAD()->errinfo = tmp;                     \
   ret = 0;                                         \
   break;                                           \
@@ -1706,7 +1706,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	}
     }
 
-    iseq->compile_data->catch_table_ary = 0;	/* free */
+    OBJ_WRITE(iseq->self, (VALUE *)&iseq->compile_data->catch_table_ary, 0); /* free */
     return COMPILE_OK;
 }
 

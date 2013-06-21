@@ -167,11 +167,50 @@ class TestProc < Test::Unit::TestCase
     method(:m2).to_proc
   end
 
+  def m1(var)
+    var
+  end
+
+  def m_block_given?
+    m1(block_given?)
+  end
+
   # [yarv-dev:777] block made by Method#to_proc
   def test_method_to_proc
     b = block()
     assert_equal "OK", b.call
     assert_instance_of(Binding, b.binding, '[ruby-core:25589]')
+  end
+
+  def test_block_given_method
+    m = method(:m_block_given?)
+    assert(!m.call, "without block")
+    assert(m.call {}, "with block")
+    assert(!m.call, "without block second")
+  end
+
+  def test_block_given_method_to_proc
+    bug8341 = '[Bug #8341]'
+    m = method(:m_block_given?).to_proc
+    assert(!m.call, "#{bug8341} without block")
+    assert(m.call {}, "#{bug8341} with block")
+    assert(!m.call, "#{bug8341} without block second")
+  end
+
+  def test_block_persist_between_calls
+    bug8341 = '[Bug #8341]'
+    o = Object.new
+    def o.m1(top=true)
+      if top
+        [block_given?, @m.call(false)]
+      else
+        block_given?
+      end
+    end
+    m = o.method(:m1).to_proc
+    o.instance_variable_set(:@m, m)
+    assert_equal([true, false], m.call {}, "#{bug8341} nested with block")
+    assert_equal([false, false], m.call, "#{bug8341} nested without block")
   end
 
   def test_curry

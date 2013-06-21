@@ -115,6 +115,12 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRI_LONG_PREFIX "l"
 #endif
 
+#if SIZEOF_LONG == 8
+#define PRI_64_PREFIX PRI_LONG_PREFIX
+#elif SIZEOF_LONG_LONG == 8
+#define PRI_64_PREFIX PRI_LL_PREFIX
+#endif
+
 #if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
 #define PRIoVALUE PRIoPTR
@@ -703,11 +709,17 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_HASH
 #define RGENGC_WB_PROTECTED_HASH 1
 #endif
+#ifndef RGENGC_WB_PROTECTED_STRUCT
+#define RGENGC_WB_PROTECTED_STRUCT 1
+#endif
 #ifndef RGENGC_WB_PROTECTED_STRING
 #define RGENGC_WB_PROTECTED_STRING 1
 #endif
 #ifndef RGENGC_WB_PROTECTED_OBJECT
 #define RGENGC_WB_PROTECTED_OBJECT 1
+#endif
+#ifndef RGENGC_WB_PROTECTED_REGEXP
+#define RGENGC_WB_PROTECTED_REGEXP 1
 #endif
 #ifndef RGENGC_WB_PROTECTED_CLASS
 #define RGENGC_WB_PROTECTED_CLASS 1
@@ -921,9 +933,9 @@ struct RArray {
 		long capa;
 		VALUE shared;
 	    } aux;
-	    VALUE *ptr;
+	    const VALUE *ptr;
 	} heap;
-	VALUE ary[RARRAY_EMBED_LEN_MAX];
+	const VALUE ary[RARRAY_EMBED_LEN_MAX];
     } as;
 };
 #define RARRAY_EMBED_FLAG FL_USER1
@@ -949,7 +961,7 @@ struct RArray {
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
     const VALUE _ary = (ary); \
-    VALUE *ptr_name = RARRAY_PTR_USE_START(_ary); \
+    VALUE *ptr_name = (VALUE *)RARRAY_PTR_USE_START(_ary); \
     expr; \
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
@@ -957,15 +969,15 @@ struct RArray {
 #define RARRAY_AREF(a, i)    (RARRAY_RAWPTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary_ = (a); \
-    OBJ_WRITE(_ary_, &RARRAY_RAWPTR(_ary_)[i], (v)); \
+    OBJ_WRITE(_ary_, (VALUE *)&RARRAY_RAWPTR(_ary_)[i], (v)); \
 } while (0)
 
-#define RARRAY_PTR(a) RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_GIVEUP((VALUE)a) : ((VALUE)a))
+#define RARRAY_PTR(a) ((VALUE *)RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_GIVEUP((VALUE)a) : ((VALUE)a)))
 
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    VALUE src;
+    const VALUE src;
     unsigned long usecnt;
 };
 #define RREGEXP_SRC(r) RREGEXP(r)->src
@@ -1031,6 +1043,7 @@ struct rb_data_type_struct {
     const rb_data_type_t *parent;
     void *data;        /* This area can be used for any purpose
                           by a programmer who define the type. */
+    VALUE flags;       /* FL_WB_PROTECTED */
 };
 
 #define HAVE_TYPE_RB_DATA_TYPE_T 1
@@ -1099,9 +1112,9 @@ struct RStruct {
     union {
 	struct {
 	    long len;
-	    VALUE *ptr;
+	    const VALUE *ptr;
 	} heap;
-	VALUE ary[RSTRUCT_EMBED_LEN_MAX];
+	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
 #define RSTRUCT_EMBED_LEN_MASK (FL_USER2|FL_USER1)
@@ -1111,11 +1124,15 @@ struct RStruct {
      (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
             (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
      RSTRUCT(st)->as.heap.len)
-#define RSTRUCT_PTR(st) \
-    ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-     RSTRUCT(st)->as.ary : \
-     RSTRUCT(st)->as.heap.ptr)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
+#define RSTRUCT_RAWPTR(st) \
+  ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
+   RSTRUCT(st)->as.ary : \
+   RSTRUCT(st)->as.heap.ptr)
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_RAWPTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_GIVEUP((VALUE)st) : (VALUE)st))
+
+#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, (VALUE *)&RSTRUCT_RAWPTR(st)[idx], v)
+#define RSTRUCT_GET(st, idx)    (RSTRUCT_RAWPTR(st)[idx])
 
 #define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
 struct RBignum {
@@ -1480,6 +1497,7 @@ VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
 #define rb_funcall2 rb_funcallv
 #define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
+VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 

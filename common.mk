@@ -426,9 +426,13 @@ rdoc-coverage: PHONY main
 
 RDOCBENCHOUT=/tmp/rdocbench
 
-rdoc-bench: PHONY ruby
-	@echo Benchmark with Generating RDoc documentation
-	$(Q) $(XRUBY) "$(srcdir)/tool/rdocbench.rb" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri  --debug $(RDOCFLAGS) --quiet "$(srcdir)"
+GCBENCH_ITEM=null
+
+gcbench: PHONY
+	$(Q) $(XRUBY) "$(srcdir)/benchmark/gc/gcbench.rb" $(GCBENCH_ITEM)
+
+gcbench-rdoc: PHONY
+	$(Q) $(XRUBY) "$(srcdir)/benchmark/gc/gcbench.rb" rdoc
 
 nodoc: PHONY
 
@@ -771,10 +775,9 @@ variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
 version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
-  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h \
+  $(srcdir)/include/ruby/version.h $(srcdir)/version.h {$(VPATH)}config.h \
   verconf.h
-dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
-  $(srcdir)/include/ruby/version.h $(srcdir)/version.h $(srcdir)/revision.h {$(VPATH)}config.h
+dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}insns.inc \

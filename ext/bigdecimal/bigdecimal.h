@@ -19,6 +19,25 @@
 #include "ruby/ruby.h"
 #include <float.h>
 
+#undef BDIGIT
+#undef SIZEOF_BDIGITS
+#undef BDIGIT_DBL
+#undef BDIGIT_DBL_SIGNED
+#undef PRI_BDIGIT_PREFIX
+#undef PRI_BDIGIT_DBL_PREFIX
+
+#ifdef HAVE_INT64_T
+# define BDIGIT uint32_t
+# define BDIGIT_DBL uint64_t
+# define BDIGIT_DBL_SIGNED int64_t
+# define SIZEOF_BDIGITS 4
+#else
+# define BDIGIT uint16_t
+# define BDIGIT_DBL uint32_t
+# define BDIGIT_DBL_SIGNED int32_t
+# define SIZEOF_BDIGITS 2
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
