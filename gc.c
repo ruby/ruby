@@ -3806,13 +3806,6 @@ rb_gc_giveup_promoted_writebarrier(VALUE obj)
     rgengc_report(2, objspace, "rb_gc_giveup_writebarrier: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
 		  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
-    /* need to sweep all slots before demote */
-    /* TODO: check delayed sweeping slot or not
-     *       if delayed sweepling slot, then mark it
-     *       else demote simple
-     */
-    rest_sweep(objspace);
-
     RVALUE_DEMOTE(obj);
     rgengc_remember(objspace, obj);
 

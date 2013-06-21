@@ -1,3 +1,8 @@
+Sat Jun 22 06:05:36 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_giveup_promoted_writebarrier): remove `rest_sweep()'
+	  because all of remembered objects are called for gc_mark_children().
+
 Sat Jun 22 05:08:03 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_rememberset_mark): call gc_mark_children() for
