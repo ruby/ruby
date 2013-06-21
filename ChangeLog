@@ -1,3 +1,12 @@
+Sat Jun 22 06:46:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace::profile): rename rb_objspace::profile::record to
+	  records (because it points a set of records) and add a field
+	  rb_objspace::profile::current_record to point a current profiling
+	  record.
+
+	* gc.c: use above fields.
+
 Sat Jun 22 06:05:36 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_giveup_promoted_writebarrier): remove `rest_sweep()'
