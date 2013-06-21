@@ -126,7 +126,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
  * 3: show all references
  */
 #ifndef RGENGC_CHECK_MODE
-#define RGENGC_CHECK_MODE  2
+#define RGENGC_CHECK_MODE  0
 #endif
 
 /* RGENGC_PROFILE
