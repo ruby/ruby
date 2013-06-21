@@ -715,6 +715,9 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #ifndef RGENGC_WB_PROTECTED_OBJECT
 #define RGENGC_WB_PROTECTED_OBJECT 1
 #endif
+#ifndef RGENGC_WB_PROTECTED_REGEXP
+#define RGENGC_WB_PROTECTED_REGEXP 1
+#endif
 #ifndef RGENGC_WB_PROTECTED_CLASS
 #define RGENGC_WB_PROTECTED_CLASS 1
 #endif
@@ -971,7 +974,7 @@ struct RArray {
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    VALUE src;
+    const VALUE src;
     unsigned long usecnt;
 };
 #define RREGEXP_SRC(r) RREGEXP(r)->src
