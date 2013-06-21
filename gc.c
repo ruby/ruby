@@ -3720,9 +3720,10 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 		bitset = bits[j];
 		do {
 		    if (bitset & 1) {
-			gc_mark_ptr(objspace, (VALUE)p);
-			push_mark_stack(&objspace->mark_stack, (VALUE) p);
 			rgengc_report(2, objspace, "rgengc_rememberset_mark: mark %p (%s)\n", p, obj_type_name((VALUE)p));
+
+			gc_mark_ptr(objspace, (VALUE)p);
+			gc_mark_children(objspace, (VALUE) p);
 
 			if (!RVALUE_SHADY(p)) {
 			    rgengc_report(2, objspace, "rgengc_rememberset_mark: clear %p (%s)\n", p, obj_type_name((VALUE)p));

@@ -1,3 +1,8 @@
+Sat Jun 22 05:08:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_rememberset_mark): call gc_mark_children() for
+	  remembered objects directly instead of pushing on the mark stack.
+
 Sat Jun 22 04:48:53 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h (OBJ_WRITE): cast to (VALUE *) for second
