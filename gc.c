@@ -544,26 +544,39 @@ static size_t rgengc_rememberset_mark(rb_objspace_t *objspace);
 #define FL_SET2(x,f)          do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_SET2: SPECIAL_CONST");   RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET2(x,f)        do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_UNSET2: SPECIAL_CONST"); RBASIC(x)->flags &= ~(f);} while (0)
 
-#define RVALUE_SHADY(x)       (!FL_TEST2((x), FL_WB_PROTECTED))
+#define RVALUE_SHADY(obj)    (!FL_TEST2((check_bitmap_consistency((VALUE)obj)), FL_WB_PROTECTED))
+#define RVALUE_PROMOTED(obj) FL_TEST2(check_bitmap_consistency((VALUE)obj), FL_OLDGEN)
+
 #define RVALUE_PROMOTED_FROM_BITMAP(x) MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(x),x)
 
-static inline int
-RVALUE_PROMOTED(VALUE obj)
+static inline VALUE
+check_bitmap_consistency(VALUE obj)
 {
-    int result = FL_TEST2((obj), FL_OLDGEN);
+#if RUBY_CHECK_MODE > 0
+    int oldgen_bitmap = MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj) != 0;
 
-    if (RGENGC_CHECK_MODE > 0) {
-	int bitmap_result = RVALUE_PROMOTED_FROM_BITMAP(obj) ? TRUE : FALSE;
-	if (!result != !bitmap_result) rb_bug("RVALUE_PROMOTED: %p (%s) flag %d but bitmap is %d\n",
-					      (void *)obj, obj_type_name(obj), !!result, !!bitmap_result);
+    if (FL_TEST2((obj), FL_OLDGEN) != oldgen_bitmap) {
+	rb_bug("check_bitmap_consistency: oldgen flag of %p (%s) is %d, but bitmap is %d",
+	       (void *)obj, obj_type_name(obj), FL_TEST2((obj), FL_OLDGEN), oldgen_bitmap);
     }
-
-    return result;
+    if (FL_TEST2((obj), FL_WB_PROTECTED)) {
+	/* non-shady */
+    }
+    else {
+	/* shady */
+	if (oldgen_bitmap) {
+	    rb_bug("check_bitmap_consistency: %p (%s) is shady, but bitmap specifies oldgen",
+		   (void *)obj, obj_type_name(obj));
+	}
+    }
+#endif
+    return obj;
 }
 
 static inline void
 RVALUE_PROMOTE(VALUE obj)
 {
+    check_bitmap_consistency(obj);
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
     FL_SET2(obj, FL_OLDGEN);
 #if RGENGC_PROFILE >= 1
@@ -580,6 +593,7 @@ RVALUE_PROMOTE(VALUE obj)
 static inline void
 RVALUE_DEMOTE(VALUE obj)
 {
+    check_bitmap_consistency(obj);
     FL_UNSET2(obj, FL_OLDGEN);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 }
@@ -2192,7 +2206,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 		    if (p->as.basic.flags) {
 			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED((VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
+			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
 			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
 #endif
 			if ((deferred = obj_free(objspace, (VALUE)p)) || (FL_TEST(p, FL_FINALIZE))) {
@@ -3109,7 +3123,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
     }
 
 #if USE_RGENGC
-    if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED((VALUE)obj)) {
+    if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED(obj)) {
 	rb_bug("gc_mark_children: (0) %p (%s) is shady and promoted.\n", (void *)obj, obj_type_name((VALUE)obj));
     }
 #endif /* USE_RGENGC */
@@ -3118,13 +3132,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 
 #if USE_RGENGC
     if (LIKELY(objspace->mark_func_data == 0)) {
-	if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED((VALUE)obj)) {
+	if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED(obj)) {
 	    rb_bug("gc_mark_children: (1) %p (%s) is shady and promoted.\n", (void *)obj, obj_type_name((VALUE)obj));
 	}
 
 	/* minor/major common */
 	if (!RVALUE_SHADY(obj)) {
-	    if (!RVALUE_PROMOTED((VALUE)obj)) {
+	    if (!RVALUE_PROMOTED(obj)) {
 		RVALUE_PROMOTE((VALUE)obj); /* non-shady object can be promoted to OLDGEN object */
 		rgengc_report(3, objspace, "gc_mark_children: promote %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    }
@@ -3136,7 +3150,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    objspace->rgengc.parent_object_is_promoted = FALSE;
 	}
 
-	if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED((VALUE)obj)) {
+	if (RGENGC_CHECK_MODE && RVALUE_SHADY(obj) && RVALUE_PROMOTED(obj)) {
 	    rb_bug("gc_mark_children: (2) %p (%s) is shady and promoted.\n", (void *)obj, obj_type_name((VALUE)obj));
 	}
     }
@@ -3721,6 +3735,7 @@ static int
 rgengc_remembered(rb_objspace_t *objspace, VALUE obj)
 {
     int result = rgengc_remembersetbits_get(objspace, obj);
+    check_bitmap_consistency(obj);
     rgengc_report(6, objspace, "gc_remembered: %p (%s) => %d\n", (void *)obj, obj_type_name(obj), result);
     return result;
 }

@@ -1,3 +1,8 @@
+Sat Jun 22 04:20:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (check_bitmap_consistency): add to check flag and bitmap consistency.
+	  Use this function in several places.
+
 Sat Jun 22 02:18:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_pack): Specialized packers implemented.
