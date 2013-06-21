@@ -2157,19 +2157,17 @@ lazy_sweep_enable(void)
     return Qnil;
 }
 
-#if !USE_RGENGC
-static void
-gc_clear_slot_bits(struct heaps_slot *slot)
-{
-    memset(&slot->mark_bits[0], 0, HEAP_BITMAP_SIZE);
-}
-#else
 static void
 gc_setup_mark_bits(struct heaps_slot *slot)
 {
+#if USE_RGENGC
+    /* copy oldgen bitmap to mark bitmap */
     memcpy(&slot->mark_bits[0], &slot->oldgen_bits[0], HEAP_BITMAP_SIZE);
-}
+#else
+    /* clear mark bitmap */
+    memset(&slot->mark_bits[0], 0, HEAP_BITMAP_SIZE);
 #endif
+}
 
 static size_t
 objspace_live_num(rb_objspace_t *objspace)
@@ -2178,7 +2176,7 @@ objspace_live_num(rb_objspace_t *objspace)
 }
 
 static inline void
-slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const int during_minor_gc)
+slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
 {
     int i;
     size_t empty_num = 0, freed_num = 0, final_num = 0;
@@ -2187,7 +2185,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
     int deferred;
     bits_t *bits, bitset;
 
-    rgengc_report(3, objspace, "slot_sweep_body: start.\n");
+    rgengc_report(1, objspace, "slot_sweep: start.\n");
 
     p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
     offset = p - NUM_IN_SLOT(p);
@@ -2204,10 +2202,10 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	    do {
 		if ((bitset & 1) && BUILTIN_TYPE(p) != T_ZOMBIE) {
 		    if (p->as.basic.flags) {
-			rgengc_report(3, objspace, "slot_sweep_body: free %p (%s)\n", p, obj_type_name((VALUE)p));
+			rgengc_report(3, objspace, "slot_sweep: free %p (%s)\n", p, obj_type_name((VALUE)p));
 #if USE_RGENGC && RGENGC_CHECK_MODE
-			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep_body: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
-			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep_body: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
+			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("slot_sweep: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
+			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("slot_sweep: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
 #endif
 			if ((deferred = obj_free(objspace, (VALUE)p)) || (FL_TEST(p, FL_FINALIZE))) {
 			    if (!deferred) {
@@ -2224,7 +2222,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 			    p->as.free.flags = 0;
 			    p->as.free.next = sweep_slot->freelist;
 			    sweep_slot->freelist = p;
-			    rgengc_report(3, objspace, "slot_sweep_body: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
+			    rgengc_report(3, objspace, "slot_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
 			    freed_num++;
 			}
 		    }
@@ -2238,11 +2236,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	}
     }
 
-#if USE_RGENGC
     gc_setup_mark_bits(sweep_slot);
-#else
-    gc_clear_slot_bits(sweep_slot);
-#endif
 
 #if GC_PROFILE_MORE_DETAIL
     if (objspace->profile.run) {
@@ -2251,7 +2245,6 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
 	record->empty_objects += empty_num;
     }
 #endif
-
 
     if (final_num + freed_num + empty_num == sweep_slot->header->limit &&
         objspace->heap.free_num > objspace->heap.do_heap_free) {
@@ -2283,40 +2276,7 @@ slot_sweep_body(rb_objspace_t *objspace, struct heaps_slot *sweep_slot, const in
         }
     }
 
-    rgengc_report(3, objspace, "slot_sweep_body: end.\n");
-}
-
-#if USE_RGENGC
-static void
-slot_sweep_minor(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
-{
-    slot_sweep_body(objspace, sweep_slot, TRUE);
-}
-
-static void
-slot_sweep_major(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
-{
-    slot_sweep_body(objspace, sweep_slot, FALSE);
-}
-#endif
-
-static void
-slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
-{
-    rgengc_report(1, objspace, "slot_sweep: start\n");
-    {
-#if USE_RGENGC
-	if (objspace->rgengc.during_minor_gc) {
-	    slot_sweep_minor(objspace, sweep_slot);
-	}
-	else {
-	    slot_sweep_major(objspace, sweep_slot);
-	}
-#else
-	slot_sweep_body(objspace, sweep_slot, FALSE);
-#endif
-    }
-    rgengc_report(1, objspace, "slot_sweep: end\n");
+    rgengc_report(1, objspace, "slot_sweep: end.\n");
 }
 
 static int

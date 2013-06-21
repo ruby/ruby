@@ -1,3 +1,11 @@
+Sat Jun 22 04:37:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (slot_sweep_body): rename to slot_sweep().
+	  No need to separate major/minor GC.
+
+	* gc.c (gc_setup_mark_bits): remove gc_clear_mark_bits() and unify to
+	  this function.
+
 Sat Jun 22 04:20:21 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (check_bitmap_consistency): add to check flag and bitmap consistency.
