@@ -1,3 +1,7 @@
+Fri Jun 21 21:11:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (allocate_sorted_heaps): remove unused variable `add'.
+
 Fri Jun 21 20:50:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: constify RArray::as::ary and RArray::heap::ptr.

@@ -669,10 +669,9 @@ static void
 allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 {
     struct heaps_header **p;
-    size_t size, add;
+    size_t size;
 
     size = next_heaps_length*sizeof(struct heaps_header *);
-    add = next_heaps_length - heaps_used;
 
     if (heaps_used > 0) {
 	p = (struct heaps_header **)realloc(objspace->heap.sorted, size);
