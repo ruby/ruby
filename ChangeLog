@@ -1,3 +1,7 @@
+Fri Jun 21 20:32:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (eval_string_with_cref): fix WB miss.
+
 Fri Jun 21 20:15:49 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: support write barrier protection for T_STRUCT.

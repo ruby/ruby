@@ -1283,7 +1283,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 			    rb_str_update(mesg, 0, 0, RARRAY_AREF(errat, 0));
 			}
 		    }
-		    RARRAY_AREF(errat, 0) = RARRAY_AREF(bt2, 0);
+		    RARRAY_ASET(errat, 0, RARRAY_AREF(bt2, 0));
 		}
 	    }
 	    rb_exc_raise(errinfo);
