@@ -126,7 +126,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
  * 3: show all references
  */
 #ifndef RGENGC_CHECK_MODE
-#define RGENGC_CHECK_MODE  2
+#define RGENGC_CHECK_MODE  0
 #endif
 
 /* RGENGC_PROFILE
@@ -135,7 +135,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
  * 2: enable profiling for each types
  */
 #ifndef RGENGC_PROFILE
-#define RGENGC_PROFILE     1
+#define RGENGC_PROFILE     0
 #endif
 
 #else /* USE_RGENGC */
@@ -145,10 +145,10 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 #endif
 
 #ifndef GC_PROFILE_MORE_DETAIL
-#define GC_PROFILE_MORE_DETAIL 1
+#define GC_PROFILE_MORE_DETAIL 0
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
-#define GC_ENABLE_LAZY_SWEEP   1
+#define GC_ENABLE_LAZY_SWEEP 0
 #endif
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
@@ -3553,19 +3553,12 @@ gc_marks_test(rb_objspace_t *objspace, bits_t *before_stored_bitmaps)
 {
     bits_t *stored_bitmaps = gc_store_bitmaps(objspace);
     size_t i;
-    size_t stored_oldgen, stored_shady;
 
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
     /* run major (full) gc with temporary mark/rememberset */
-    stored_oldgen = objspace->rgengc.oldgen_object_count;
-    stored_shady = objspace->rgengc.remembered_shady_object_count;
-    {
-	gc_marks_body(objspace, FALSE);
-    }
+    gc_marks_body(objspace, FALSE);
     objspace->rgengc.during_minor_gc = TRUE;
-    objspace->rgengc.oldgen_object_count = stored_oldgen;
-    objspace->rgengc.remembered_shady_object_count = stored_shady;
 
     /* check */
     for (i=0; i<heaps_used; i++) {
@@ -5068,14 +5061,12 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 static inline void
 gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 {
-    fprintf(stderr, "gc_prof_sweep_timer_stop!!\n");
-
     if (RUBY_DTRACE_GC_SWEEP_END_ENABLED()) {
 	RUBY_DTRACE_GC_SWEEP_END();
     }
-
     if (objspace->profile.run) {
 	double sweep_time;
+
 	gc_profile_record *record = gc_prof_record(objspace);
 
 	if (record->gc_time > 0) {
@@ -5086,8 +5077,6 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 	else if (GC_PROFILE_MORE_DETAIL) {
 	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
 	}
-
-	fprintf(stderr, "sweep_time: %g\n", sweep_time);
 
 #if GC_PROFILE_MORE_DETAIL
 	record->gc_sweep_time += sweep_time;
