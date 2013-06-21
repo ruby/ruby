@@ -1,3 +1,9 @@
+Fri Jun 21 16:38:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/openssl/ossl_x509attr.c: change OSSL_X509ATTR_IS_SINGLE and
+	  OSSL_X509ATTR_SET_SINGLE macros to use ->value.set rather than
+	  ->set to fix compile failure
+
 Fri Jun 21 15:26:45 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_sweep): profile sweep time correctly when LAZY_SWEEP is
