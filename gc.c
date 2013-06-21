@@ -148,7 +148,7 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 #define GC_PROFILE_MORE_DETAIL 0
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
-#define GC_ENABLE_LAZY_SWEEP 0
+#define GC_ENABLE_LAZY_SWEEP   1
 #endif
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
