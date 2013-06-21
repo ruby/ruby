@@ -1,3 +1,11 @@
+Fri Jun 21 19:38:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BDIGMAX): Use BIGRAD.
+	  (BIGLO): Use BDIGMAX.
+	  (bigdivrem1): Ditto.
+	  (bigor_int): Ditto.
+	  (rb_big_or): Ditto.
+
 Fri Jun 21 19:18:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_pack): Move the implementation for 'c' directive after

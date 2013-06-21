@@ -45,8 +45,8 @@ static VALUE big_three = Qnil;
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT((x),BITSPERDIG)
-#define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
-#define BDIGMAX ((BDIGIT)-1)
+#define BIGLO(x) ((BDIGIT)((x) & BDIGMAX))
+#define BDIGMAX ((BDIGIT)(BIGRAD-1))
 
 #define BIGZEROP(x) (RBIGNUM_LEN(x) == 0 || \
 		     (BDIGITS(x)[0] == 0 && \
@@ -3834,7 +3834,7 @@ bigdivrem1(void *ptr)
 	    bds->j = j;
 	    return 0;
         }
-	if (zds[j] ==  yds[ny-1]) q = (BDIGIT)BIGRAD-1;
+	if (zds[j] ==  yds[ny-1]) q = BDIGMAX;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
            i = bds->nyzero; num = 0; t2 = 0;
@@ -4542,7 +4542,7 @@ bigor_int(VALUE x, long y)
     }
 #endif
     while (i < xn) {
-	zds[i] = sign?xds[i]:(BDIGIT)(BIGRAD-1);
+	zds[i] = sign?xds[i]:BDIGMAX;
 	i++;
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
@@ -4603,7 +4603,7 @@ rb_big_or(VALUE xx, VALUE yy)
 	zds[i] = ds1[i] | ds2[i];
     }
     for (; i<l2; i++) {
-	zds[i] = sign?ds2[i]:(BDIGIT)(BIGRAD-1);
+	zds[i] = sign?ds2[i]:BDIGMAX;
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
     return bignorm(z);
