@@ -155,16 +155,26 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 #endif
 
 typedef enum {
-    GPR_FLAG_NONE            = 0x00,
-    GPR_FLAG_MINOR           = 0x01, /* not major gc */
-    GPR_FLAG_HAVE_FINALIZE   = 0x02,
+    GPR_FLAG_NONE            = 0x000,
+    /* major reason */
+    GPR_FLAG_MAJOR_BY_NOFREE = 0x001,
+    GPR_FLAG_MAJOR_BY_OLDGEN = 0x002,
+    GPR_FLAG_MAJOR_BY_SHADY  = 0x004,
+    GPR_FLAG_MAJOR_BY_RESCAN = 0x008,
+    GPR_FLAG_MAJOR_BY_STRESS = 0x010,
+    GPR_FLAG_MAJOR_MASK      = 0x01f,
 
-    /* reason */
-    GPR_FLAG_NEWOBJ          = 0x04,
-    GPR_FLAG_MALLOC          = 0x08,
-    GPR_FLAG_METHOD          = 0x10,
-    GPR_FLAG_CAPI            = 0x20,
-    GPR_FLAG_STRESS          = 0x40
+    /* gc reason */
+    GPR_FLAG_NEWOBJ          = 0x020,
+    GPR_FLAG_MALLOC          = 0x040,
+    GPR_FLAG_METHOD          = 0x080,
+    GPR_FLAG_CAPI            = 0x100,
+    GPR_FLAG_STRESS          = 0x200,
+
+    /* others */
+    GPR_FLAG_IMMEDIATE_SWEEP = 0x400,
+    GPR_FLAG_HAVE_FINALIZE   = 0x800
+
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
@@ -3927,54 +3937,49 @@ rb_gc_unregister_address(VALUE *addr)
 static int
 garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int reason)
 {
-    int minor_gc = FALSE;
-
     if (ruby_gc_stress && !ruby_disable_gc_stress) {
-	minor_gc = FALSE;
-	immediate_sweep = TRUE;
+	int flag = FIXNUM_P(ruby_gc_stress) ? FIX2INT(ruby_gc_stress) : 0;
 
-	if (FIXNUM_P(ruby_gc_stress)) {
-	    int flag = FIX2INT(ruby_gc_stress);
-
-	    if (flag & 0x01) minor_gc = TRUE;
-	    if (flag & 0x02) immediate_sweep = FALSE;
-	}
+	if (flag & 0x01)
+	    reason &= ~GPR_FLAG_MAJOR_MASK;
+	else
+	    reason |= GPR_FLAG_MAJOR_BY_STRESS;
+	immediate_sweep = !(flag & 0x02);
     }
 
 #if USE_RGENGC
     else {
-	if (full_mark) {
-	    minor_gc = FALSE;
+	if (full_mark) 
+	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
+	if (objspace->rgengc.need_major_gc) {
+	    objspace->rgengc.need_major_gc = FALSE;
+	    reason |= GPR_FLAG_MAJOR_BY_RESCAN;
 	}
-	else {
-	    if (objspace->rgengc.need_major_gc ||
-		objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit ||
-		objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit) {
-
-		objspace->rgengc.need_major_gc = FALSE;
-		minor_gc = FALSE;
-	    }
-	    else {
-		minor_gc = TRUE;
-	    }
+	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit)
+	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
+	if (objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit)
+	    reason |= GPR_FLAG_MAJOR_BY_OLDGEN;
+	
+	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
+	    immediate_sweep = TRUE;
 	}
     }
 #endif
 
-    if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
-	immediate_sweep = TRUE;
-    }
+    if(immediate_sweep)
+	reason |= GPR_FLAG_IMMEDIATE_SWEEP;
 
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
+
     objspace->count++;
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
     objspace->profile.heaps_used_at_gc_start = heaps_used;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
-    gc_prof_timer_start(objspace, reason | (minor_gc ? GPR_FLAG_MINOR : 0));
+    gc_prof_timer_start(objspace, reason);
     {
 	assert(during_gc > 0);
-	gc_marks(objspace, minor_gc);
+	gc_marks(objspace, (reason & GPR_FLAG_MAJOR_MASK) ? FALSE : TRUE);
 	gc_sweep(objspace, immediate_sweep);
 	during_gc = 0;
     }
@@ -5162,7 +5167,7 @@ static VALUE
 gc_profile_flags(int flags)
 {
     VALUE result = rb_ary_new();
-    rb_ary_push(result, ID2SYM(rb_intern(flags & GPR_FLAG_MINOR ? "minor_gc" : "major_gc")));
+    rb_ary_push(result, ID2SYM(rb_intern(flags & GPR_FLAG_MAJOR_MASK ? "major_gc" : "minor_gc")));
     if (flags & GPR_FLAG_HAVE_FINALIZE) rb_ary_push(result, ID2SYM(rb_intern("HAVE_FINALIZE")));
     if (flags & GPR_FLAG_NEWOBJ)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_NEWOBJ")));
     if (flags & GPR_FLAG_MALLOC)        rb_ary_push(result, ID2SYM(rb_intern("CAUSED_BY_MALLOC")));
@@ -5314,7 +5319,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #endif
 				   "\n",
 				   i+1,
-				   (record->flags & GPR_FLAG_MINOR) ? '-' : '+',
+				   "-+O3S567R9abcdef!"[record->flags & GPR_FLAG_MAJOR_MASK], /* Stress,Rescan,Shady,Oldgen,NoFree */
 				   (record->flags & GPR_FLAG_HAVE_FINALIZE) ? 'F' : '.',
 				   (record->flags & GPR_FLAG_NEWOBJ) ? "NEWOBJ" :
 				   (record->flags & GPR_FLAG_MALLOC) ? "MALLOC" :
