@@ -2184,8 +2184,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     ce->flag = visibility;
     ce->line = rb_sourceline();
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
-    OBJ_WRITE(klass, (VALUE *)&ce->value, val);
-    OBJ_WRITE(klass, (VALUE *)&ce->file, rb_sourcefilename());
+    OBJ_WRITE(klass, &ce->value, val);
+    OBJ_WRITE(klass, &ce->file, rb_sourcefilename());
 }
 
 void

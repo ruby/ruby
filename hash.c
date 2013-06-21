@@ -56,7 +56,7 @@ static ID id_hash, id_yield, id_default;
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
-    OBJ_WRITE(hash, (VALUE *)(&RHASH(hash)->ifnone), ifnone);
+    OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
     return hash;
 }
 

@@ -1,3 +1,11 @@
+Sat Jun 22 04:48:53 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (OBJ_WRITE): cast to (VALUE *) for second
+	  parameter `slot'. You don't need to write a cast (VALUE *) any more.
+
+	* class.c, compile.c, hash.c, iseq.c, proc.c, re.c, variable.c,
+	  vm.c, vm_method.c: remove cast expressions for OBJ_WRITE().
+
 Sat Jun 22 04:37:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (slot_sweep_body): rename to slot_sweep().

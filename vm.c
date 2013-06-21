@@ -2031,7 +2031,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     /* dup */
     COPY_CREF(miseq->cref_stack, cref);
     miseq->cref_stack->nd_visi = NOEX_PUBLIC;
-    OBJ_WRITE(miseq->self, (VALUE *)&miseq->klass, klass);
+    OBJ_WRITE(miseq->self, &miseq->klass, klass);
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
 
@@ -2532,7 +2532,7 @@ rb_vm_set_progname(VALUE filename)
     rb_thread_t *th = GET_VM()->main_thread;
     rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
     --cfp;
-    OBJ_WRITE(cfp->iseq->self, (VALUE *)&cfp->iseq->location.path, filename);
+    OBJ_WRITE(cfp->iseq->self, &cfp->iseq->location.path, filename);
 }
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
