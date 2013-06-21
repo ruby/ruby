@@ -355,6 +355,8 @@ typedef struct rb_objspace {
 
 	/* temporary profiling space */
 	double gc_sweep_start_time;
+	size_t total_allocated_object_num_at_gc_start;
+	size_t heaps_used_at_gc_start;
     } profile;
     struct gc_list *global_list;
     size_t count;
@@ -3957,6 +3959,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
     objspace->count++;
+    objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
+    objspace->profile.heaps_used_at_gc_start = heaps_used;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
     gc_prof_timer_start(objspace, reason | (minor_gc ? GPR_FLAG_MINOR : 0));
@@ -5099,11 +5103,11 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 static inline void
 gc_prof_set_heap_info(rb_objspace_t *objspace, gc_profile_record *record)
 {
-    size_t live = objspace_live_num(objspace);
-    size_t total = heaps_used * HEAP_OBJ_LIMIT;
+    size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->total_freed_object_num;
+    size_t total = objspace->profile.heaps_used_at_gc_start * HEAP_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
-    record->heap_use_slots = heaps_used;
+    record->heap_use_slots = objspace->profile.heaps_used_at_gc_start;
     record->heap_live_objects = live;
     record->heap_free_objects = total - live;
 #endif
