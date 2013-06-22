@@ -673,11 +673,17 @@ Init_etc(void)
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
 
     sPasswd =  rb_struct_define(NULL,
-				"name", "passwd", "uid", "gid",
+				"name",
+#ifdef HAVE_STRUCT_PASSWD_PW_PASSWD
+				"passwd",
+#endif
+				"uid",
+				"gid",
 #ifdef HAVE_STRUCT_PASSWD_PW_GECOS
 				"gecos",
 #endif
-				"dir", "shell",
+				"dir",
+				"shell",
 #ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
 				"change",
 #endif

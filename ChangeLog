@@ -1,3 +1,9 @@
+Sat Jun 22 14:39:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/etc/etc.c (Init_etc): omit 'passwd' from definition of Etc::Passwd
+	  if HAVE_STRUCT_PASSWD_PW_PASSWD is not defined to prevent mismatch of
+	  fields and values in setup_passwd
+
 Sat Jun 22 14:35:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): Use rb_big_pack instead of
