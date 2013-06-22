@@ -1,3 +1,10 @@
+Sat Jun 22 14:35:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): Use rb_big_pack instead of
+	  rb_big2ulong_pack and rb_big2ull.
+
+	* include/ruby/intern.h (rb_big2ulong_pack): Deprecated.
+
 Sat Jun 22 14:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd): pass 0 as VALUE to rb_struct_new to

@@ -106,7 +106,7 @@ SIGNED_VALUE rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
 VALUE rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
-VALUE rb_big2ulong_pack(VALUE x);
+DEPRECATED(VALUE rb_big2ulong_pack(VALUE x));
 #if HAVE_LONG_LONG
 LONG_LONG rb_big2ll(VALUE);
 unsigned LONG_LONG rb_big2ull(VALUE);

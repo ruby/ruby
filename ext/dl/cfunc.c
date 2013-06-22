@@ -366,11 +366,14 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    stack[i] = (DLSTACK_TYPE)FIX2LONG(arg);
 	}
 	else if (RB_TYPE_P(arg, T_BIGNUM)) {
-#if SIZEOF_VOIDP == SIZEOF_LONG
-	    stack[i] = (DLSTACK_TYPE)rb_big2ulong_pack(arg);
-#else
-	    stack[i] = (DLSTACK_TYPE)rb_big2ull(arg);
-#endif
+            unsigned long ls[(sizeof(DLSTACK_TYPE) + sizeof(long) - 1)/sizeof(long)];
+            DLSTACK_TYPE d;
+            int j;
+            rb_big_pack(arg, ls, sizeof(ls)/sizeof(*ls));
+            d = 0;
+            for (j = 0; j < (int)(sizeof(ls)/sizeof(*ls)); j++)
+                d |= ls[j] << (j * sizeof(long) * CHAR_BIT);
+	    stack[i] = d;
 	}
 	else {
 	    Check_Type(arg, T_FIXNUM);
