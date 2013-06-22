@@ -225,20 +225,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 # define VTOHD(x,y)	rb_vtohd(x)
 #endif
 
-static unsigned long
-num2i32(VALUE x)
-{
-    x = rb_to_int(x); /* is nil OK? (should not) */
-
-    if (FIXNUM_P(x)) return FIX2LONG(x);
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-	return rb_big2ulong_pack(x);
-    }
-    rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
-
-    UNREACHABLE;
-}
-
 #define MAX_INTEGER_PACK_SIZE 8
 /* #define FORCE_BIG_PACK */
 
@@ -700,82 +686,17 @@ pack_pack(VALUE ary, VALUE fmt)
 	    if (explicit_endian) {
 		bigendian_p = explicit_endian == '>';
 	    }
+            if (integer_size > MAX_INTEGER_PACK_SIZE)
+                rb_bug("unexpected intger size for pack: %d", integer_size);
+            while (len-- > 0) {
+                char intbuf[MAX_INTEGER_PACK_SIZE];
 
-            switch (integer_size) {
-#if !defined(FORCE_BIG_PACK)
-              case 1:
-                while (len-- > 0) {
-                    char c;
-
-                    from = NEXTFROM;
-                    c = (char)num2i32(from);
-                    rb_str_buf_cat(res, &c, sizeof(char));
-                }
-		break;
-#endif
-
-#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT16_T:
-		while (len-- > 0) {
-                    union {
-                        int16_t i;
-                        char a[sizeof(int16_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = (int16_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int16_t));
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT32_T:
-		while (len-- > 0) {
-		    union {
-                        int32_t i;
-                        char a[sizeof(int32_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = (int32_t)num2i32(from);
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int32_t));
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT64_T) && SIZEOF_LONG == SIZEOF_INT64_T && !defined(FORCE_BIG_PACK)
-              case SIZEOF_INT64_T:
-		while (len-- > 0) {
-		    union {
-                        int64_t i;
-                        char a[sizeof(int64_t)];
-                    } v;
-
-		    from = NEXTFROM;
-		    v.i = num2i32(from); /* can return 64bit value if SIZEOF_LONG == SIZEOF_INT64_T */
-		    if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-		    rb_str_buf_cat(res, v.a, sizeof(int64_t));
-		}
-		break;
-#endif
-
-	      default:
-                if (integer_size > MAX_INTEGER_PACK_SIZE)
-                    rb_bug("unexpected intger size for pack: %d", integer_size);
-                while (len-- > 0) {
-                    char intbuf[MAX_INTEGER_PACK_SIZE];
-
-                    from = NEXTFROM;
-                    rb_integer_pack(from, intbuf, integer_size, 1, 0,
-                        INTEGER_PACK_2COMP |
-                        (bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN));
-                    rb_str_buf_cat(res, intbuf, integer_size);
-                }
-                break;
-	    }
+                from = NEXTFROM;
+                rb_integer_pack(from, intbuf, integer_size, 1, 0,
+                    INTEGER_PACK_2COMP |
+                    (bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN));
+                rb_str_buf_cat(res, intbuf, integer_size);
+            }
 	    break;
 
 	  case 'f':		/* single precision float in native format */

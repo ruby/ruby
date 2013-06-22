@@ -1,3 +1,8 @@
+Sat Jun 22 10:38:03 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (num2i32): Removed.
+	  (pack_pack): Don't use num2i32.
+
 Sat Jun 22 09:55:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (LSHIFTX): Defined to suppress a warning.
