@@ -1,3 +1,8 @@
+Sun Jun 23 00:51:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bytes_zero_p): Extracted from bary_pack.
+	  (bary_pack): Use bytes_zero_p.
+
 Sun Jun 23 00:16:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (MSB): New macro.

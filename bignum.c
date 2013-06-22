@@ -124,6 +124,15 @@ rb_big_dump(VALUE x)
 #endif
 
 static int
+bytes_zero_p(unsigned char *p, size_t n)
+{
+    while (n--)
+        if (*p++)
+            return 0;
+    return 1;
+}
+
+static int
 bary_zero_p(BDIGIT *xds, size_t nx)
 {
     if (nx == 0)
@@ -929,13 +938,11 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
             if (sign < 0 && (flags & INTEGER_PACK_2COMP)) {
                 int zero_p = bytes_2comp(words, dst_size);
                 if (zero_p && overflow) {
-                    unsigned char *p = (unsigned char *)dp + dst_size;
-                    unsigned char *e = (unsigned char *)dp + src_size;
-                    if (p < e && *p++ == 1) {
-                        while (p < e && *p == 0)
-                            p++;
-                        if (p == e)
-                            overflow = 0;
+                    unsigned char *p = (unsigned char *)dp;
+                    if (dst_size < src_size &&
+                        p[dst_size] == 1 &&
+                        bytes_zero_p(p+dst_size+1, src_size-dst_size-1)) {
+                        overflow = 0;
                     }
                 }
             }
