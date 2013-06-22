@@ -1,3 +1,7 @@
+Sat Jun 22 15:25:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/etc/etc.c (setup_passwd): revert r41560, unnecessary
+
 Sat Jun 22 14:39:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/etc/etc.c (Init_etc): omit 'passwd' from definition of Etc::Passwd
