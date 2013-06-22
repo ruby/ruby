@@ -1,3 +1,7 @@
+Sat Jun 22 13:47:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack): MEMZERO can be used even if nails is not zero.
+
 Sat Jun 22 13:43:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getpwnam): use PRIsVALUE in format string instead

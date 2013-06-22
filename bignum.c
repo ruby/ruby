@@ -919,7 +919,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
         sign = 0;
     }
 
-    if (nails == 0 && sign == 0) {
+    if (sign == 0) {
         MEMZERO(words, unsigned char, numwords * wordsize);
         return 0;
     }
