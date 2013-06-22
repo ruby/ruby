@@ -1,3 +1,9 @@
+Sat Jun 22 23:45:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_swap): New function.
+	  (bary_pack): Use bary_swap.
+	  (bary_unpack_internal): Ditto.
+
 Sat Jun 22 23:18:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bytes_2comp): Renamed from quad_buf_complement.

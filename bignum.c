@@ -781,6 +781,18 @@ rb_absint_singlebit_p(VALUE val)
     return d == 0;
 }
 
+static void
+bary_swap(BDIGIT *ds, size_t num_bdigits)
+{
+    BDIGIT *p1 = ds;
+    BDIGIT *p2 = ds + num_bdigits - 1;
+    for (; p1 < p2; p1++, p2--) {
+        BDIGIT tmp = *p1;
+        *p1 = *p2;
+        *p2 = tmp;
+    }
+}
+
 #define INTEGER_PACK_WORDORDER_MASK \
     (INTEGER_PACK_MSWORD_FIRST | \
      INTEGER_PACK_LSWORD_FIRST)
@@ -1046,7 +1058,8 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
 #endif
         if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
             wordsize % SIZEOF_BDIGITS == 0 && (uintptr_t)words % ALIGNOF(BDIGIT) == 0) {
-            size_t buf_num_bdigits = numwords * wordsize / SIZEOF_BDIGITS;
+            size_t bdigits_per_word = wordsize / SIZEOF_BDIGITS;
+            size_t buf_num_bdigits = numwords * bdigits_per_word;
             int overflow = 0;
             int mswordfirst_p = (flags & INTEGER_PACK_MSWORD_FIRST) != 0;
             int msbytefirst_p = (flags & INTEGER_PACK_NATIVE_BYTE_ORDER) ? HOST_BIGENDIAN_P :
@@ -1078,26 +1091,12 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 size_t i;
                 BDIGIT *p = words;
                 for (i = 0; i < numwords; i++) {
-                    BDIGIT *p1 = p, *p2 = p1 + wordsize/SIZEOF_BDIGITS - 1;
-                    while (p1 < p2) {
-                        BDIGIT tmp = *p1;
-                        *p1 = *p2;
-                        *p2 = tmp;
-                        p1++;
-                        p2--;
-                    }
-                    p += wordsize/SIZEOF_BDIGITS;
+                    bary_swap(p, bdigits_per_word);
+                    p += bdigits_per_word;
                 }
             }
             if (mswordfirst_p) {
-                BDIGIT *p1 = words, *p2 = p1 + buf_num_bdigits - 1;
-                while (p1 < p2) {
-                    BDIGIT tmp = *p1;
-                    *p1 = *p2;
-                    *p2 = tmp;
-                    p1++;
-                    p2--;
-                }
+                bary_swap(words, buf_num_bdigits);
             }
             if (overflow)
                 sign *= 2;
@@ -1574,23 +1573,13 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                 (flags & INTEGER_PACK_MSBYTE_FIRST) != 0;
             MEMCPY(dp, words, BDIGIT, numwords*bdigits_per_word);
             if (mswordfirst_p) {
-                BDIGIT *p1 = dp, *p2 = de - 1;
-                for (; p1 < p2; p1++, p2--) {
-                    BDIGIT tmp = *p1;
-                    *p1 = *p2;
-                    *p2 = tmp;
-                }
+                bary_swap(dp, num_bdigits);
             }
             if (mswordfirst_p ? !msbytefirst_p : msbytefirst_p) {
                 size_t i;
                 BDIGIT *p = dp;
                 for (i = 0; i < numwords; i++) {
-                    BDIGIT *p1 = p, *p2 = p1 + bdigits_per_word - 1;
-                    for (; p1 < p2; p1++, p2--) {
-                        BDIGIT tmp = *p1;
-                        *p1 = *p2;
-                        *p2 = tmp;
-                    }
+                    bary_swap(p, bdigits_per_word);
                     p += bdigits_per_word;
                 }
             }
