@@ -1165,6 +1165,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
  * [INTEGER_PACK_2COMP] Use 2's complement representation.
  * [INTEGER_PACK_LITTLE_ENDIAN] Same as INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_LSBYTE_FIRST
  * [INTEGER_PACK_BIG_ENDIAN] Same as INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_MSBYTE_FIRST
+ * [INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION] Use generic implementation (for test and debug).
  *
  * This function fills the buffer specified by _words_
  * as abs(val) if INTEGER_PACK_2COMP is not specified in _flags_.
@@ -1638,6 +1639,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
  *   even if it is representable as a Fixnum.
  * [INTEGER_PACK_NEGATIVE] Returns non-positive value.
  *   (Returns non-negative value if not specified.)
+ * [INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION] Use generic implementation (for test and debug).
  *
  * This function returns the imported integer as Fixnum or Bignum.
  *
