@@ -28,7 +28,7 @@ Sat Jun 22 15:41:25 2013  Koichi Sasada  <ko1@atdot.net>
 	      (a) object        was not oldgen (== newly or shady object) &&
 	      (b) parent object was     oldgen &&
 	      (c) parent object was not remembered &&
-	      (d) object        was not rememberd
+	      (d) object        was not remembered
 	      then, it should be WB miss.
 
 	  This idea of this checker is by Masaya Tarui <tarui@ruby-lang.org>.
