@@ -1,3 +1,8 @@
+Sun Jun 23 08:19:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_single_bdigit): Extracted from
+	  bary_unpack_internal.
+
 Sun Jun 23 07:41:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_unpack_internal): Suppress warnings (C4146) on Visual Studio.

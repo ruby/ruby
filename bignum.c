@@ -1343,6 +1343,23 @@ integer_unpack_push_bits(int data, int numbits, BDIGIT_DBL *ddp, int *numbits_in
 }
 
 static int
+integer_unpack_single_bdigit(BDIGIT u, size_t size, int flags, BDIGIT *dp)
+{
+    int sign;
+    if (flags & INTEGER_PACK_2COMP) {
+        sign = (flags & INTEGER_PACK_NEGATIVE) ?
+            ((size == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
+            ((u >> (size * CHAR_BIT - 1)) ? -1 : 1);
+        if (sign < 0)
+            u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), size * CHAR_BIT));
+    }
+    else
+        sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+    *dp = u;
+    return sign;
+}
+
+static int
 bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int nlp_bits)
 {
     int sign;
@@ -1359,64 +1376,24 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                 (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_NATIVE_BYTE_ORDER &&
                 ((flags & INTEGER_PACK_MSBYTE_FIRST) ? !HOST_BIGENDIAN_P : HOST_BIGENDIAN_P);
             if (wordsize == 1) {
-                BDIGIT u = *(uint8_t *)buf;
-                if (flags & INTEGER_PACK_2COMP) {
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
-                        ((sizeof(uint8_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
-                        ((u >> (sizeof(uint8_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint8_t) * CHAR_BIT));
-                }
-                else
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
-                *dp = u;
-                return sign;
+                return integer_unpack_single_bdigit(*(uint8_t *)buf, sizeof(uint8_t), flags, dp);
             }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGITS
             if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
                 BDIGIT u = *(uint16_t *)buf;
-                if (need_swap) u = swap16(u);
-                if (flags & INTEGER_PACK_2COMP) {
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
-                        ((sizeof(uint16_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
-                        ((u >> (sizeof(uint16_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint16_t) * CHAR_BIT));
-                }
-                else
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
-                *dp = u;
-                return sign;
+                return integer_unpack_single_bdigit(need_swap ? swap16(u) : u, sizeof(uint16_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGITS
             if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
                 BDIGIT u = *(uint32_t *)buf;
-                if (need_swap) u = swap32(u);
-                if (flags & INTEGER_PACK_2COMP) {
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
-                        ((sizeof(uint32_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
-                        ((u >> (sizeof(uint32_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint32_t) * CHAR_BIT));
-                }
-                else
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
-                *dp = u;
-                return sign;
+                return integer_unpack_single_bdigit(need_swap ? swap32(u) : u, sizeof(uint32_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGITS
             if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
                 BDIGIT u = *(uint64_t *)buf;
-                if (need_swap) u = swap64(u);
-                if (flags & INTEGER_PACK_2COMP) {
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
-                        ((sizeof(uint64_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
-                        ((u >> (sizeof(uint64_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint64_t) * CHAR_BIT));
-                }
-                else
-                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
-                *dp = u;
-                return sign;
+                return integer_unpack_single_bdigit(need_swap ? swap64(u) : u, sizeof(uint64_t), flags, dp);
             }
 #endif
         }
