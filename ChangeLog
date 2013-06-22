@@ -1,3 +1,13 @@
+Sun Jun 23 05:41:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (rb_include_class_new), eval.c (rb_using_refinement): 
+	  make classes/modules (who share method table) shady.
+	  If module `a' and `b' shares method table m_tbl and new method
+	  with iseq is added, then write barrier is applied only `a' or `b'.
+	  To avoid this issue, shade such classes/modules.
+
+	* vm_method.c (rb_method_entry_make): add write barriers.
+
 Sun Jun 23 01:27:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bytes_zero_p): Removed.

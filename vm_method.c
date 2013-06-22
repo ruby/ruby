@@ -317,7 +317,24 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     me->called_id = mid;
     me->klass = klass;
     me->def = def;
-    if (def) def->alias_count++;
+
+    if (def) {
+	def->alias_count++;
+
+	switch(def->type) {
+	  case VM_METHOD_TYPE_ISEQ:
+	    OBJ_WRITTEN(klass, Qundef, def->body.iseq);
+	    break;
+	  case VM_METHOD_TYPE_IVAR:
+	    OBJ_WRITTEN(klass, Qundef, def->body.attr.location);
+	    break;
+	  case VM_METHOD_TYPE_BMETHOD:
+	    OBJ_WRITTEN(klass, Qundef, def->body.proc);
+	    break;
+	  default:;
+	    /* ignore */
+	}
+    }
 
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
