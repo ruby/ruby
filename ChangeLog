@@ -1,3 +1,11 @@
+Sat Jun 22 09:55:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (LSHIFTX): Defined to suppress a warning.
+	  (RSHIFTX): Ditto.
+	  (CLEAR_LOWBITS): Use LSHIFTX and RSHIFTX.
+	  (FILL_LOWBITS): Use LSHIFTX.
+	  Reported by ko1 via IRC.
+
 Sat Jun 22 09:11:33 2013  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 4.7.5 (r8724)
