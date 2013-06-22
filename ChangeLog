@@ -1,3 +1,8 @@
+Sat Jun 22 09:11:33 2013  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 4.7.5 (r8724)
+	* test/minitest/*: ditto
+
 Sat Jun 22 07:20:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_prof_set_heap_info, after_gc_sweep): call
