@@ -1,3 +1,10 @@
+Sat Jun 22 13:43:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwnam): use PRIsVALUE in format string instead
+	  of %s and RSTRING_PTR
+
+	* ext/etc/etc.c (etc_getgrnam): ditto
+
 Sat Jun 22 13:07:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (CLEAR_LOWBITS): Rewritten without RSHIFTX.
