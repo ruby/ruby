@@ -1,3 +1,10 @@
+Sun Jun 23 00:16:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (MSB): New macro.
+	  (bary_unpack_internal): Use MSB.
+	  (bary_divmod): Ditto.
+	  (bigdivrem): Ditto.
+
 Sat Jun 22 23:45:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_swap): New function.

@@ -43,6 +43,8 @@ static VALUE big_three = Qnil;
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
 #define FILL_LOWBITS(d, numbits) ((d) | (LSHIFTX(((d)*0+1), (numbits))-1))
 
+#define MSB(d) (RSHIFT((d), sizeof(d) * CHAR_BIT - 1) & 1)
+
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
@@ -1482,7 +1484,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     int zero_p = bary_2comp(dp, num_bdigits);
                     sign = zero_p ? -2 : -1;
                 }
-                else if (de[-1] >> (BITSPERDIG-1)) {
+                else if (MSB(de[-1])) {
                     bary_2comp(dp, num_bdigits);
                     sign = -1;
                 }
@@ -1569,8 +1571,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                 sign = bary_zero_p(bdigits, num_bdigits) ? -2 : -1;
             }
             else {
-                if (num_bdigits != 0 &&
-                    (bdigits[num_bdigits-1] >> (BITSPERDIG - 1)))
+                if (num_bdigits != 0 && MSB(bdigits[num_bdigits-1]))
                     sign = -1;
                 else
                     sign = 1;
@@ -1716,7 +1717,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
             return LONG2FIX(0);
 	if (0 < sign && POSFIXABLE(u))
             return LONG2FIX(u);
-	if (sign < 0 && (fixbuf[1] >> (BITSPERDIG-1)) == 0 &&
+	if (sign < 0 && MSB(fixbuf[1]) == 0 &&
                 NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
             return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
         val = bignew((long)num_bdigits, 0 <= sign);
@@ -4136,7 +4137,7 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
         MEMCPY(zds, xds, BDIGIT, nx);
         MEMZERO(zds+nx, BDIGIT, nz-nx);
 
-        if ((yds[ny-1] >> (BITSPERDIG-1)) & 1) {
+        if (MSB(yds[ny-1])) {
             /* bigdivrem_normal will not modify y.
              * So use yds directly.  */
             tds = yds;
@@ -4200,7 +4201,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	return Qnil;
     }
 
-    if (((yds[ny-1] >> (BITSPERDIG-1)) & 1) == 0) {
+    if (MSB(yds[ny-1]) == 0) {
         /* Make yds modifiable. */
         tds = ALLOCV_N(BDIGIT, tmpy, ny);
         MEMCPY(tds, yds, BDIGIT, ny);
