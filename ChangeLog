@@ -1,3 +1,9 @@
+Sat Jun 22 14:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/etc/etc.c (setup_passwd): pass 0 as VALUE to rb_struct_new to
+	  prevent segfault if the compiler passes it as a 32 bit integer on
+	  a 64 bit ruby
+
 Sat Jun 22 13:47:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_pack): MEMZERO can be used even if nails is not zero.

@@ -116,7 +116,7 @@ setup_passwd(struct passwd *pwd)
 #ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
 			 INT2NUM(pwd->pw_expire),
 #endif
-			 0		/*dummy*/
+			 (VALUE)0		/*dummy*/
 	);
 }
 #endif
