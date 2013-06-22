@@ -1100,7 +1100,7 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
 
-    RCLASS_M_TBL(OBJ_WB_GIVEUP(c)) = RCLASS_M_TBL(OBJ_WB_GIVEUP(module));
+    RCLASS_M_TBL(OBJ_WB_UNPROTECT(c)) = RCLASS_M_TBL(OBJ_WB_UNPROTECT(module));
 
     module = RCLASS_SUPER(module);
     while (module && module != klass) {

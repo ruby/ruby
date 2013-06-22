@@ -3876,16 +3876,16 @@ rb_gc_writebarrier(VALUE a, VALUE b)
 }
 
 void
-rb_gc_giveup_promoted_writebarrier(VALUE obj)
+rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
     if (RGENGC_CHECK_MODE) {
-	if (!RVALUE_PROMOTED(obj)) rb_bug("rb_gc_giveup_promoted_writebarrier: called on non-promoted object");
-	if (!RVALUE_SHADY(obj)) rb_bug("rb_gc_giveup_promoted_writebarrier: called on non-shady object");
+	if (!RVALUE_PROMOTED(obj)) rb_bug("rb_gc_writebarrier_unprotect_promoted: called on non-promoted object");
+	if (!RVALUE_SHADY(obj)) rb_bug("rb_gc_writebarrier_unprotect_promoted: called on non-shady object");
     }
 
-    rgengc_report(2, objspace, "rb_gc_giveup_writebarrier: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
+    rgengc_report(2, objspace, "rb_gc_writebarrier_unprotect_promoted: %p (%s)%s\n", (void *)obj, obj_type_name(obj),
 		  rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
     RVALUE_DEMOTE(obj);

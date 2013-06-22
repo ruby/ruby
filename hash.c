@@ -298,7 +298,7 @@ hash_tbl(VALUE hash)
 struct st_table *
 rb_hash_tbl(VALUE hash)
 {
-    OBJ_WB_GIVEUP(hash);
+    OBJ_WB_UNPROTECT(hash);
     return hash_tbl(hash);
 }
 

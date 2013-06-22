@@ -1,3 +1,13 @@
+Sun Jun 23 06:49:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, gc.c: rename macros and functions:
+	  OBJ_WB_GIVEUP() -> OBJ_WB_UNPROTECT(),
+	  rb_obj_wb_giveup() -> rb_obj_wb_unprotect(),
+	  rb_gc_giveup_promoted_writebarrier() ->
+	  rb_gc_writebarrier_unprotect_promoted(),
+
+	* class.c, eval.c, hash.c: use OBJ_WB_UNPROTECT().
+
 Sun Jun 23 05:41:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (rb_include_class_new), eval.c (rb_using_refinement):
