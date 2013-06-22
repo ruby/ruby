@@ -1,3 +1,10 @@
+Sun Jun 23 00:03:18 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwnam): use PRIsVALUE in format string instead
+	  of %s and RSTRING_PTR
+
+	* ext/etc/etc.c (etc_getgrnam): ditto
+
 Sat Jun 22 00:54:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.0.3

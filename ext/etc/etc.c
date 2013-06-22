@@ -185,7 +185,7 @@ etc_getpwnam(VALUE obj, VALUE nam)
 
     SafeStringValue(nam);
     pwd = getpwnam(RSTRING_PTR(nam));
-    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING_PTR(nam));
+    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
 #else
     return Qnil;
@@ -431,7 +431,7 @@ etc_getgrnam(VALUE obj, VALUE nam)
     rb_secure(4);
     SafeStringValue(nam);
     grp = getgrnam(RSTRING_PTR(nam));
-    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING_PTR(nam));
+    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
 #else
     return Qnil;
