@@ -1,3 +1,7 @@
+Sat Jun 22 21:03:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (pack_unpack): Remove specialized unpackers for integers.
+
 Sat Jun 22 20:36:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_unpack_internal): Specialized unpacker implemented.

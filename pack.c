@@ -226,7 +226,6 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 #endif
 
 #define MAX_INTEGER_PACK_SIZE 8
-/* #define FORCE_BIG_PACK */
 
 static const char toofew[] = "too few arguments";
 
@@ -1421,23 +1420,16 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  case 'c':
-	    PACK_LENGTH_ADJUST_SIZE(sizeof(char));
-	    while (len-- > 0) {
-                int c = *s++;
-                if (c > (char)127) c-=256;
-		UNPACK_PUSH(INT2FIX(c));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 1;
+	    integer_size = 1;
+	    bigendian_p = BIGENDIAN_P(); /* not effective */
+	    goto unpack_integer;
 
 	  case 'C':
-	    PACK_LENGTH_ADJUST_SIZE(sizeof(unsigned char));
-	    while (len-- > 0) {
-		unsigned char c = *s++;
-		UNPACK_PUSH(INT2FIX(c));
-	    }
-	    PACK_ITEM_ADJUST();
-	    break;
+	    signed_p = 0;
+	    integer_size = 1;
+	    bigendian_p = BIGENDIAN_P(); /* not effective */
+	    goto unpack_integer;
 
 	  case 's':
 	    signed_p = 1;
@@ -1515,121 +1507,17 @@ pack_unpack(VALUE str, VALUE fmt)
 	    if (explicit_endian) {
 		bigendian_p = explicit_endian == '>';
 	    }
-
-	    switch (integer_size) {
-#if defined(HAVE_INT16_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT16_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int16_t));
-		    while (len-- > 0) {
-			union {
-                            int16_t i;
-                            char a[sizeof(int16_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int16_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-			s += sizeof(int16_t);
-			UNPACK_PUSH(INT2FIX(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint16_t));
-		    while (len-- > 0) {
-			union {
-                            uint16_t i;
-                            char a[sizeof(uint16_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint16_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap16(v.i);
-			s += sizeof(uint16_t);
-			UNPACK_PUSH(INT2FIX(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT32_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT32_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int32_t));
-		    while (len-- > 0) {
-			union {
-                            int32_t i;
-                            char a[sizeof(int32_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int32_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-			s += sizeof(int32_t);
-			UNPACK_PUSH(INT2NUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint32_t));
-		    while (len-- > 0) {
-			union {
-                            uint32_t i;
-                            char a[sizeof(uint32_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint32_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap32(v.i);
-			s += sizeof(uint32_t);
-			UNPACK_PUSH(UINT2NUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-#if defined(HAVE_INT64_T) && !defined(FORCE_BIG_PACK)
-	      case SIZEOF_INT64_T:
-		if (signed_p) {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(int64_t));
-		    while (len-- > 0) {
-			union {
-                            int64_t i;
-                            char a[sizeof(int64_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(int64_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-			s += sizeof(int64_t);
-			UNPACK_PUSH(INT64toNUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		else {
-		    PACK_LENGTH_ADJUST_SIZE(sizeof(uint64_t));
-		    while (len-- > 0) {
-			union {
-                            uint64_t i;
-                            char a[sizeof(uint64_t)];
-                        } v;
-			memcpy(v.a, s, sizeof(uint64_t));
-			if (bigendian_p != BIGENDIAN_P()) v.i = swap64(v.i);
-			s += sizeof(uint64_t);
-			UNPACK_PUSH(UINT64toNUM(v.i));
-		    }
-		    PACK_ITEM_ADJUST();
-		}
-		break;
-#endif
-
-              default:
-                PACK_LENGTH_ADJUST_SIZE(integer_size);
-                while (len-- > 0) {
-                    int flags = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
-                    VALUE val;
-                    if (signed_p)
-                        flags |= INTEGER_PACK_2COMP;
-                    val = rb_integer_unpack(s, integer_size, 1, 0, flags);
-                    UNPACK_PUSH(val);
-                    s += integer_size;
-                }
-                PACK_ITEM_ADJUST();
-		break;
-	    }
+            PACK_LENGTH_ADJUST_SIZE(integer_size);
+            while (len-- > 0) {
+                int flags = bigendian_p ? INTEGER_PACK_BIG_ENDIAN : INTEGER_PACK_LITTLE_ENDIAN;
+                VALUE val;
+                if (signed_p)
+                    flags |= INTEGER_PACK_2COMP;
+                val = rb_integer_unpack(s, integer_size, 1, 0, flags);
+                UNPACK_PUSH(val);
+                s += integer_size;
+            }
+            PACK_ITEM_ADJUST();
             break;
 
 	  case 'f':
