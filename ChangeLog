@@ -1,3 +1,19 @@
+Sat Jun 22 15:41:25 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rgengc_check_shady): add new WB miss checking
+	  on RGENGC_CHECK_MODE >= 2.
+
+	    (1) Save bitmaps before marking
+	    (2) Run full marking
+	    (3) On each traceable object,
+	      (a) object        was not oldgen (== newly or shady object) &&
+	      (b) parent object was     oldgen &&
+	      (c) parent object was not remembered &&
+	      (d) object        was not rememberd
+	      then, it should be WB miss.
+
+	  This idea of this checker is by Masaya Tarui <tarui@ruby-lang.org>.
+
 Sat Jun 22 15:25:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd): revert r41560, unnecessary
