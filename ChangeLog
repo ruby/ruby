@@ -1,3 +1,8 @@
+Sun Jun 23 01:27:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bytes_zero_p): Removed.
+	  (bary_pack): Don't call bytes_zero_p.
+
 Sun Jun 23 00:51:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bytes_zero_p): Extracted from bary_pack.

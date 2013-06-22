@@ -124,15 +124,6 @@ rb_big_dump(VALUE x)
 #endif
 
 static int
-bytes_zero_p(unsigned char *p, size_t n)
-{
-    while (n--)
-        if (*p++)
-            return 0;
-    return 1;
-}
-
-static int
 bary_zero_p(BDIGIT *xds, size_t nx)
 {
     if (nx == 0)
@@ -922,7 +913,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
         if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
             (flags & INTEGER_PACK_WORDORDER_MASK) == INTEGER_PACK_LSWORD_FIRST &&
             (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_MSBYTE_FIRST) {
-            size_t src_size = num_bdigits * SIZEOF_BDIGITS;
+            size_t src_size = (de - dp) * SIZEOF_BDIGITS;
             size_t dst_size = numwords * wordsize;
             int overflow = 0;
             while (0 < src_size && ((unsigned char *)ds)[src_size-1] == 0)
@@ -939,9 +930,8 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 int zero_p = bytes_2comp(words, dst_size);
                 if (zero_p && overflow) {
                     unsigned char *p = (unsigned char *)dp;
-                    if (dst_size < src_size &&
-                        p[dst_size] == 1 &&
-                        bytes_zero_p(p+dst_size+1, src_size-dst_size-1)) {
+                    if (dst_size == src_size-1 &&
+                        p[dst_size] == 1) {
                         overflow = 0;
                     }
                 }
@@ -954,30 +944,30 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
         if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
             wordsize % SIZEOF_BDIGITS == 0 && (uintptr_t)words % ALIGNOF(BDIGIT) == 0) {
             size_t bdigits_per_word = wordsize / SIZEOF_BDIGITS;
-            size_t buf_num_bdigits = numwords * bdigits_per_word;
+            size_t src_num_bdigits = de - dp;
+            size_t dst_num_bdigits = numwords * bdigits_per_word;
             int overflow = 0;
             int mswordfirst_p = (flags & INTEGER_PACK_MSWORD_FIRST) != 0;
             int msbytefirst_p = (flags & INTEGER_PACK_NATIVE_BYTE_ORDER) ? HOST_BIGENDIAN_P :
                 (flags & INTEGER_PACK_MSBYTE_FIRST) != 0;
-            if (num_bdigits <= buf_num_bdigits) {
-                MEMCPY(words, dp, BDIGIT, num_bdigits);
-                MEMZERO((BDIGIT*)words + num_bdigits, BDIGIT, buf_num_bdigits - num_bdigits);
+            if (src_num_bdigits <= dst_num_bdigits) {
+                MEMCPY(words, dp, BDIGIT, src_num_bdigits);
+                MEMZERO((BDIGIT*)words + src_num_bdigits, BDIGIT, dst_num_bdigits - src_num_bdigits);
             }
             else {
-                MEMCPY(words, dp, BDIGIT, buf_num_bdigits);
+                MEMCPY(words, dp, BDIGIT, dst_num_bdigits);
                 overflow = 1;
             }
             if (sign < 0 && (flags & INTEGER_PACK_2COMP)) {
-                int zero_p = bary_2comp(words, buf_num_bdigits);
-                if (overflow &&
-                    buf_num_bdigits == num_bdigits-1 &&
-                    dp[buf_num_bdigits] == 1 &&
-                    zero_p)
+                int zero_p = bary_2comp(words, dst_num_bdigits);
+                if (zero_p && overflow &&
+                    dst_num_bdigits == src_num_bdigits-1 &&
+                    dp[dst_num_bdigits] == 1)
                     overflow = 0;
             }
             if (msbytefirst_p != HOST_BIGENDIAN_P) {
                 size_t i;
-                for (i = 0; i < buf_num_bdigits; i++) {
+                for (i = 0; i < dst_num_bdigits; i++) {
                     BDIGIT d = ((BDIGIT*)words)[i];
                     ((BDIGIT*)words)[i] = swap_bdigit(d);
                 }
@@ -991,7 +981,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 }
             }
             if (mswordfirst_p) {
-                bary_swap(words, buf_num_bdigits);
+                bary_swap(words, dst_num_bdigits);
             }
             if (overflow)
                 sign *= 2;
