@@ -1457,13 +1457,167 @@ static int
 bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int nlp_bits)
 {
     int sign;
+    const unsigned char *buf = words;
+    BDIGIT *dp;
+    BDIGIT *de;
+
+    dp = bdigits;
+    de = dp + num_bdigits;
+
+    if (!(flags & INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION)) {
+        if (nails == 0 && numwords == 1) {
+            int need_swap = wordsize != 1 &&
+                (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_NATIVE_BYTE_ORDER &&
+                ((flags & INTEGER_PACK_MSBYTE_FIRST) ? !HOST_BIGENDIAN_P : HOST_BIGENDIAN_P);
+            if (wordsize == 1) {
+                BDIGIT u = *(uint8_t *)buf;
+                if (flags & INTEGER_PACK_2COMP) {
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
+                        ((sizeof(uint8_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
+                        ((u >> (sizeof(uint8_t) * CHAR_BIT - 1)) ? -1 : 1);
+                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint8_t) * CHAR_BIT));
+                }
+                else
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+                *dp = u;
+                return sign;
+            }
+#if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGITS
+            if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+                BDIGIT u = *(uint16_t *)buf;
+                if (need_swap) u = swap16(u);
+                if (flags & INTEGER_PACK_2COMP) {
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
+                        ((sizeof(uint16_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
+                        ((u >> (sizeof(uint16_t) * CHAR_BIT - 1)) ? -1 : 1);
+                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint16_t) * CHAR_BIT));
+                }
+                else
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+                *dp = u;
+                return sign;
+            }
+#endif
+#if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGITS
+            if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+                BDIGIT u = *(uint32_t *)buf;
+                if (need_swap) u = swap32(u);
+                if (flags & INTEGER_PACK_2COMP) {
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
+                        ((sizeof(uint32_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
+                        ((u >> (sizeof(uint32_t) * CHAR_BIT - 1)) ? -1 : 1);
+                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint32_t) * CHAR_BIT));
+                }
+                else
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+                *dp = u;
+                return sign;
+            }
+#endif
+#if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGITS
+            if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+                BDIGIT u = *(uint64_t *)buf;
+                if (need_swap) u = swap64(u);
+                if (flags & INTEGER_PACK_2COMP) {
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ?
+                        ((sizeof(uint64_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
+                        ((u >> (sizeof(uint64_t) * CHAR_BIT - 1)) ? -1 : 1);
+                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint64_t) * CHAR_BIT));
+                }
+                else
+                    sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+                *dp = u;
+                return sign;
+            }
+#endif
+        }
+#if !defined(WORDS_BIGENDIAN)
+        if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
+            (flags & INTEGER_PACK_WORDORDER_MASK) == INTEGER_PACK_LSWORD_FIRST &&
+            (flags & INTEGER_PACK_BYTEORDER_MASK) != INTEGER_PACK_MSBYTE_FIRST) {
+            size_t src_size = numwords * wordsize;
+            size_t dst_size = num_bdigits * SIZEOF_BDIGITS;
+            MEMCPY(dp, words, char, src_size);
+            if (flags & INTEGER_PACK_2COMP) {
+                if (flags & INTEGER_PACK_NEGATIVE) {
+                    int zero_p;
+                    memset((char*)dp + src_size, 0xff, dst_size - src_size);
+                    zero_p = bary_2comp(dp, num_bdigits);
+                    sign = zero_p ? -2 : -1;
+                }
+                else if (buf[src_size-1] >> (CHAR_BIT-1)) {
+                    memset((char*)dp + src_size, 0xff, dst_size - src_size);
+                    bary_2comp(dp, num_bdigits);
+                    sign = -1;
+                }
+                else {
+                    MEMZERO((char*)dp + src_size, char, dst_size - src_size);
+                    sign = 1;
+                }
+            }
+            else {
+                MEMZERO((char*)dp + src_size, char, dst_size - src_size);
+                sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+            }
+            return sign;
+        }
+#endif
+        if (nails == 0 && SIZEOF_BDIGITS == sizeof(BDIGIT) &&
+            wordsize % SIZEOF_BDIGITS == 0) {
+            size_t bdigits_per_word = wordsize / SIZEOF_BDIGITS;
+            int mswordfirst_p = (flags & INTEGER_PACK_MSWORD_FIRST) != 0;
+            int msbytefirst_p = (flags & INTEGER_PACK_NATIVE_BYTE_ORDER) ? HOST_BIGENDIAN_P :
+                (flags & INTEGER_PACK_MSBYTE_FIRST) != 0;
+            MEMCPY(dp, words, BDIGIT, numwords*bdigits_per_word);
+            if (mswordfirst_p) {
+                BDIGIT *p1 = dp, *p2 = de - 1;
+                for (; p1 < p2; p1++, p2--) {
+                    BDIGIT tmp = *p1;
+                    *p1 = *p2;
+                    *p2 = tmp;
+                }
+            }
+            if (mswordfirst_p ? !msbytefirst_p : msbytefirst_p) {
+                size_t i;
+                BDIGIT *p = dp;
+                for (i = 0; i < numwords; i++) {
+                    BDIGIT *p1 = p, *p2 = p1 + bdigits_per_word - 1;
+                    for (; p1 < p2; p1++, p2--) {
+                        BDIGIT tmp = *p1;
+                        *p1 = *p2;
+                        *p2 = tmp;
+                    }
+                    p += bdigits_per_word;
+                }
+            }
+            if (msbytefirst_p != HOST_BIGENDIAN_P) {
+                BDIGIT *p;
+                for (p = dp; p < de; p++) {
+                    BDIGIT d = *p;
+                    *p = swap_bdigit(d);
+                }
+            }
+            if (flags & INTEGER_PACK_2COMP) {
+                if (flags & INTEGER_PACK_NEGATIVE) {
+                    int zero_p = bary_2comp(dp, num_bdigits);
+                    sign = zero_p ? -2 : -1;
+                }
+                else if (de[-1] >> (BITSPERDIG-1)) {
+                    bary_2comp(dp, num_bdigits);
+                    sign = -1;
+                }
+                else {
+                    sign = 1;
+                }
+            }
+            else {
+                sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
+            }
+            return sign;
+        }
+    }
 
     if (num_bdigits != 0) {
-        const unsigned char *buf = words;
-
-        BDIGIT *dp;
-        BDIGIT *de;
-
         int word_num_partialbits;
         size_t word_num_fullbytes;
 
@@ -1475,9 +1629,6 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
         const unsigned char *wordp, *last_wordp;
         BDIGIT_DBL dd;
         int numbits_in_dd;
-
-        dp = bdigits;
-        de = dp + num_bdigits;
 
         integer_pack_loop_setup(numwords, wordsize, nails, flags,
             &word_num_fullbytes, &word_num_partialbits,
@@ -1568,7 +1719,8 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
             INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP|
             INTEGER_PACK_FORCE_BIGNUM|
-            INTEGER_PACK_NEGATIVE);
+            INTEGER_PACK_NEGATIVE|
+            INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION);
 
     num_bdigits0 = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 
@@ -1644,7 +1796,8 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
             INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP|
             INTEGER_PACK_FORCE_BIGNUM|
-            INTEGER_PACK_NEGATIVE);
+            INTEGER_PACK_NEGATIVE|
+            INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION);
 
     num_bdigits = integer_unpack_num_bdigits(numwords, wordsize, nails, &nlp_bits);
 

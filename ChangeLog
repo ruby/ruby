@@ -1,3 +1,9 @@
+Sat Jun 22 20:36:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack_internal): Specialized unpacker implemented.
+	  (bary_unpack): Support INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION.
+	  (rb_integer_unpack): Support INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION.
+
 Sat Jun 22 18:53:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_pack): Support
