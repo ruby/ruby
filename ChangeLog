@@ -1,3 +1,7 @@
+Sat Jun 22 21:46:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_unpack): Don't allocate a Bignum if possible.
+
 Sat Jun 22 21:03:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (pack_unpack): Remove specialized unpackers for integers.

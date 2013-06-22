@@ -1787,6 +1787,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
     int sign;
     int nlp_bits;
     BDIGIT *ds;
+    BDIGIT fixbuf[2] = { 0, 0 };
 
     validate_integer_pack_format(numwords, wordsize, nails, flags,
             INTEGER_PACK_MSWORD_FIRST|
@@ -1803,14 +1804,44 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
     if (LONG_MAX-1 < num_bdigits)
         rb_raise(rb_eArgError, "too big to unpack as an integer");
-    val = bignew((long)num_bdigits, 0);
-    ds = BDIGITS(val);
+    if (num_bdigits <= numberof(fixbuf) && !(flags & INTEGER_PACK_FORCE_BIGNUM)) {
+        val = Qfalse;
+        ds = fixbuf;
+    }
+    else {
+        val = bignew((long)num_bdigits, 0);
+        ds = BDIGITS(val);
+    }
     sign = bary_unpack_internal(ds, num_bdigits, words, numwords, wordsize, nails, flags, nlp_bits);
 
     if (sign == -2) {
-        rb_big_resize(val, (long)num_bdigits+1);
-        BDIGITS(val)[num_bdigits] = 1;
+        if (val) {
+            rb_big_resize(val, (long)num_bdigits+1);
+            BDIGITS(val)[num_bdigits] = 1;
+        }
+        else if (num_bdigits == numberof(fixbuf)) {
+            val = bignew((long)num_bdigits+1, 0);
+	    MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
+            BDIGITS(val)[num_bdigits++] = 1;
+        }
+        else {
+            ds[num_bdigits++] = 1;
+        }
     }
+
+    if (!val) {
+        BDIGIT_DBL u = fixbuf[0] + BIGUP(fixbuf[1]);
+        if (u == 0)
+            return LONG2FIX(0);
+	if (0 < sign && POSFIXABLE(u))
+            return LONG2FIX(u);
+	if (sign < 0 && (fixbuf[1] >> (BITSPERDIG-1)) == 0 &&
+                NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
+            return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
+        val = bignew((long)num_bdigits, 0 <= sign);
+        MEMCPY(BDIGITS(val), fixbuf, BDIGIT, num_bdigits);
+    }
+
     if ((flags & INTEGER_PACK_FORCE_BIGNUM) && sign != 0 &&
         bary_zero_p(BDIGITS(val), RBIGNUM_LEN(val)))
         sign = 0;
