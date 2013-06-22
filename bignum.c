@@ -250,6 +250,20 @@ rb_big_clone(VALUE x)
 }
 
 static int
+bytes_2comp(unsigned char *buf, size_t len)
+{
+    size_t i;
+    for (i = 0; i < len; i++)
+        buf[i] = ~buf[i];
+    for (i = 0; i < len; i++) {
+        buf[i]++;
+        if (buf[i] != 0)
+            return 0;
+    }
+    return 1;
+}
+
+static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
     size_t i = n;
@@ -1013,20 +1027,10 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 overflow = 1;
             }
             if (sign < 0 && (flags & INTEGER_PACK_2COMP)) {
-                unsigned char *p = words, *e = (unsigned char *)words + dst_size;
-                while (p < e && *p == 0)
-                    p++;
-                if (p < e) {
-                    *p = 1 + (unsigned char)~*p;
-                    p++;
-                    while (p < e) {
-                        *p = (unsigned char)~*p;
-                        p++;
-                    }
-                }
-                else if (overflow) {
-                    p = (unsigned char *)dp + dst_size;
-                    e = (unsigned char *)dp + src_size;
+                int zero_p = bytes_2comp(words, dst_size);
+                if (zero_p && overflow) {
+                    unsigned char *p = (unsigned char *)dp + dst_size;
+                    unsigned char *e = (unsigned char *)dp + src_size;
                     if (p < e && *p++ == 1) {
                         while (p < e && *p == 0)
                             p++;
@@ -1854,129 +1858,21 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
 #define QUAD_SIZE 8
 
-#if SIZEOF_LONG_LONG == QUAD_SIZE && SIZEOF_BDIGITS*2 == SIZEOF_LONG_LONG
-
 void
 rb_quad_pack(char *buf, VALUE val)
 {
-    LONG_LONG q;
-
-    val = rb_to_int(val);
-    if (FIXNUM_P(val)) {
-	q = FIX2LONG(val);
-    }
-    else {
-	long len = RBIGNUM_LEN(val);
-	BDIGIT *ds;
-
-	if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS) {
-	    len = SIZEOF_LONG_LONG/SIZEOF_BDIGITS;
-	}
-	ds = BDIGITS(val);
-	q = 0;
-	while (len--) {
-	    q = BIGUP(q);
-	    q += ds[len];
-	}
-	if (!RBIGNUM_SIGN(val)) q = -q;
-    }
-    memcpy(buf, (char*)&q, SIZEOF_LONG_LONG);
+    rb_integer_pack(val, buf, 1, QUAD_SIZE, 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP);
 }
 
 VALUE
-rb_quad_unpack(const char *buf, int sign)
+rb_quad_unpack(const char *buf, int signed_p)
 {
-    unsigned LONG_LONG q;
-    long neg = 0;
-    long i;
-    BDIGIT *digits;
-    VALUE big;
-
-    memcpy(&q, buf, SIZEOF_LONG_LONG);
-    if (sign) {
-	if (FIXABLE((LONG_LONG)q)) return LONG2FIX((LONG_LONG)q);
-	if ((LONG_LONG)q < 0) {
-	    q = -(LONG_LONG)q;
-	    neg = 1;
-	}
-    }
-    else {
-	if (POSFIXABLE(q)) return LONG2FIX(q);
-    }
-
-    i = 0;
-    big = bignew(DIGSPERLL, 1);
-    digits = BDIGITS(big);
-    while (i < DIGSPERLL) {
-	digits[i++] = BIGLO(q);
-	q = BIGDN(q);
-    }
-
-    i = DIGSPERLL;
-    while (i-- && !digits[i]) ;
-    RBIGNUM_SET_LEN(big, i+1);
-
-    if (neg) {
-	RBIGNUM_SET_SIGN(big, 0);
-    }
-    return bignorm(big);
+    return rb_integer_unpack(buf, 1, QUAD_SIZE, 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER|
+            (signed_p ? INTEGER_PACK_2COMP : 0));
 }
-
-#else
-
-static int
-quad_buf_complement(char *buf, size_t len)
-{
-    size_t i;
-    for (i = 0; i < len; i++)
-        buf[i] = ~buf[i];
-    for (i = 0; i < len; i++) {
-        buf[i]++;
-        if (buf[i] != 0)
-            return 0;
-    }
-    return 1;
-}
-
-void
-rb_quad_pack(char *buf, VALUE val)
-{
-    long len;
-
-    memset(buf, 0, QUAD_SIZE);
-    val = rb_to_int(val);
-    if (FIXNUM_P(val)) {
-	val = rb_int2big(FIX2LONG(val));
-    }
-    len = RBIGNUM_LEN(val) * SIZEOF_BDIGITS;
-    if (len > QUAD_SIZE) {
-        len = QUAD_SIZE;
-    }
-    memcpy(buf, (char*)BDIGITS(val), len);
-    if (RBIGNUM_NEGATIVE_P(val)) {
-        quad_buf_complement(buf, QUAD_SIZE);
-    }
-}
-
-#define BNEG(b) (RSHIFT(((BDIGIT*)(b))[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
-
-VALUE
-rb_quad_unpack(const char *buf, int sign)
-{
-    VALUE big = bignew(QUAD_SIZE/SIZEOF_BDIGITS, 1);
-
-    memcpy((char*)BDIGITS(big), buf, QUAD_SIZE);
-    if (sign && BNEG(buf)) {
-	char *tmp = (char*)BDIGITS(big);
-
-	RBIGNUM_SET_SIGN(big, 0);
-        quad_buf_complement(tmp, QUAD_SIZE);
-    }
-
-    return bignorm(big);
-}
-
-#endif
 
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)

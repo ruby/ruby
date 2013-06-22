@@ -1,3 +1,10 @@
+Sat Jun 22 23:18:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bytes_2comp): Renamed from quad_buf_complement.
+	  (bary_pack): Use bytes_2comp.
+	  (rb_quad_pack): Use rb_integer_pack.
+	  (rb_quad_unpack): Use rb_integer_unpack.
+
 Sat Jun 22 21:46:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_unpack): Don't allocate a Bignum if possible.
