@@ -62,6 +62,7 @@ extern "C" {
 #define INTEGER_PACK_LSBYTE_FIRST       0x20
 #define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
 #define INTEGER_PACK_2COMP              0x80
+#define INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION     0x400
 /* For rb_integer_unpack: */
 #define INTEGER_PACK_FORCE_BIGNUM       0x100
 #define INTEGER_PACK_NEGATIVE           0x200

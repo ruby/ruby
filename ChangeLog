@@ -1,3 +1,12 @@
+Sat Jun 22 18:53:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_pack): Support
+	  INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION flag.
+	  Fix byte order and word order handling in code specialized for
+	  wordsize % SIZEOF_BDIGITS == 0.
+
+	* internal.h (INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION): Defined.
+
 Sat Jun 22 15:41:25 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rgengc_check_shady): add new WB miss checking

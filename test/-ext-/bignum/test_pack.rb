@@ -15,6 +15,7 @@ class TestBignum < Test::Unit::TestCase
     LITTLE_ENDIAN = Integer::INTEGER_PACK_LITTLE_ENDIAN
     BIG_ENDIAN = Integer::INTEGER_PACK_BIG_ENDIAN
     NEGATIVE = Integer::INTEGER_PACK_NEGATIVE
+    GENERIC = Integer::INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION
 
     def test_pack_zero
       assert_equal([0, ""], 0.test_pack(0, 1, 0, BIG_ENDIAN))
@@ -121,6 +122,25 @@ class TestBignum < Test::Unit::TestCase
     def test_pack_sign
       assert_equal([-1, "\x01"], (-1).test_pack(1, 1, 0, BIG_ENDIAN))
       assert_equal([-1, "\x80\x70\x60\x50\x40\x30\x20\x10"], (-0x8070605040302010).test_pack(8, 1, 0, BIG_ENDIAN))
+    end
+
+    def test_pack_orders
+      [MSWORD_FIRST, LSWORD_FIRST].each {|word_order|
+        [MSBYTE_FIRST, LSBYTE_FIRST, NATIVE_BYTE_ORDER].each {|byte_order|
+          1.upto(16) {|wordsize|
+            1.upto(20) {|numwords|
+              w = numwords*wordsize
+              n = 0;
+              0.upto(w) {|i|
+                n |= ((i+1) % 256) << (i*8)
+              }
+              assert_equal(n.test_pack(numwords, wordsize, 0, word_order|byte_order|GENERIC),
+                           n.test_pack(numwords, wordsize, 0, word_order|byte_order),
+                          "#{'%#x' % n}.test_pack(#{numwords}, #{wordsize}, 0, #{'%#x' % (word_order|byte_order)})")
+            }
+          }
+        }
+      }
     end
 
     def test_pack2comp_zero
@@ -273,6 +293,7 @@ class TestBignum < Test::Unit::TestCase
     def test_unpack2comp_negative_zero
       0.upto(100) {|n|
         assert_equal(-(256**n), Integer.test_unpack("\x00"*n, n, 1, 0, TWOCOMP|BIG_ENDIAN|NEGATIVE))
+        assert_equal(-(256**n), Integer.test_unpack("\x00"*n, n, 1, 0, TWOCOMP|LITTLE_ENDIAN|NEGATIVE))
       }
     end
   end
