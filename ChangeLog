@@ -1,3 +1,8 @@
+Sun Jun 23 07:41:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_unpack_internal): Suppress warnings (C4146) on Visual Studio.
+	  Reported by ko1 via IRC.
+
 Sun Jun 23 06:49:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, gc.c: rename macros and functions:

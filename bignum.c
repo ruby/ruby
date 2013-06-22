@@ -1364,7 +1364,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     sign = (flags & INTEGER_PACK_NEGATIVE) ?
                         ((sizeof(uint8_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
                         ((u >> (sizeof(uint8_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint8_t) * CHAR_BIT));
+                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint8_t) * CHAR_BIT));
                 }
                 else
                     sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
@@ -1379,7 +1379,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     sign = (flags & INTEGER_PACK_NEGATIVE) ?
                         ((sizeof(uint16_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
                         ((u >> (sizeof(uint16_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint16_t) * CHAR_BIT));
+                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint16_t) * CHAR_BIT));
                 }
                 else
                     sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
@@ -1395,7 +1395,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     sign = (flags & INTEGER_PACK_NEGATIVE) ?
                         ((sizeof(uint32_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
                         ((u >> (sizeof(uint32_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint32_t) * CHAR_BIT));
+                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint32_t) * CHAR_BIT));
                 }
                 else
                     sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
@@ -1411,7 +1411,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     sign = (flags & INTEGER_PACK_NEGATIVE) ?
                         ((sizeof(uint64_t) == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
                         ((u >> (sizeof(uint64_t) * CHAR_BIT - 1)) ? -1 : 1);
-                    if (sign < 0) u = -(u | LSHIFTX((~(BDIGIT)0), sizeof(uint64_t) * CHAR_BIT));
+                    if (sign < 0) u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), sizeof(uint64_t) * CHAR_BIT));
                 }
                 else
                     sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
