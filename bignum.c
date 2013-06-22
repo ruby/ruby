@@ -424,118 +424,6 @@ rb_int2inum(SIGNED_VALUE n)
     return rb_int2big(n);
 }
 
-#if 0
-#if SIZEOF_LONG % SIZEOF_BDIGITS != 0
-# error unexpected SIZEOF_LONG : SIZEOF_BDIGITS ratio
-#endif
-
-/*
- * buf is an array of long integers.
- * buf is ordered from least significant word to most significant word.
- * buf[0] is the least significant word and
- * buf[num_longs-1] is the most significant word.
- * This means words in buf is little endian.
- * However each word in buf is native endian.
- * (buf[i]&1) is the least significant bit and
- * (buf[i]&(1<<(SIZEOF_LONG*CHAR_BIT-1))) is the most significant bit
- * for each 0 <= i < num_longs.
- * So buf is little endian at whole on a little endian machine.
- * But buf is mixed endian on a big endian machine.
- *
- * The buf represents negative integers as two's complement.
- * So, the most significant bit of the most significant word,
- * (buf[num_longs-1]>>(SIZEOF_LONG*CHAR_BIT-1)),
- * is the sign bit: 1 means negative and 0 means zero or positive.
- *
- * If given size of buf (num_longs) is not enough to represent val,
- * higher words (including a sign bit) are ignored.
- */
-
-void
-rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
-{
-    val = rb_to_int(val);
-    if (num_longs == 0)
-        return;
-    if (FIXNUM_P(val)) {
-        long i;
-        long tmp = FIX2LONG(val);
-        buf[0] = (unsigned long)tmp;
-        tmp = tmp < 0 ? ~0L : 0;
-        for (i = 1; i < num_longs; i++)
-            buf[i] = (unsigned long)tmp;
-        return;
-    }
-    else {
-        long len = RBIGNUM_LEN(val);
-        BDIGIT *ds = BDIGITS(val), *dend = ds + len;
-        long i, j;
-        for (i = 0; i < num_longs && ds < dend; i++) {
-            unsigned long l = 0;
-            for (j = 0; j < DIGSPERLONG && ds < dend; j++, ds++) {
-                l |= ((unsigned long)*ds << (j * BITSPERDIG));
-            }
-            buf[i] = l;
-        }
-        for (; i < num_longs; i++)
-            buf[i] = 0;
-        if (RBIGNUM_NEGATIVE_P(val)) {
-            for (i = 0; i < num_longs; i++) {
-                buf[i] = ~buf[i];
-            }
-            for (i = 0; i < num_longs; i++) {
-                buf[i]++;
-                if (buf[i] != 0)
-                    return;
-            }
-        }
-    }
-}
-
-/* See rb_big_pack comment for endianness and sign of buf. */
-VALUE
-rb_big_unpack(unsigned long *buf, long num_longs)
-{
-    while (2 <= num_longs) {
-        if (buf[num_longs-1] == 0 && (long)buf[num_longs-2] >= 0)
-            num_longs--;
-        else if (buf[num_longs-1] == ~0UL && (long)buf[num_longs-2] < 0)
-            num_longs--;
-        else
-            break;
-    }
-    if (num_longs == 0)
-        return INT2FIX(0);
-    else if (num_longs == 1)
-        return LONG2NUM((long)buf[0]);
-    else {
-        VALUE big;
-        BDIGIT *ds;
-        long len = num_longs * DIGSPERLONG;
-        long i;
-        big = bignew(len, 1);
-        ds = BDIGITS(big);
-        for (i = 0; i < num_longs; i++) {
-            unsigned long d = buf[i];
-#if SIZEOF_LONG == SIZEOF_BDIGITS
-            *ds++ = d;
-#else
-            int j;
-            for (j = 0; j < DIGSPERLONG; j++) {
-                *ds++ = BIGLO(d);
-                d = BIGDN(d);
-            }
-#endif
-        }
-        if ((long)buf[num_longs-1] < 0) {
-            get2comp(big);
-            RBIGNUM_SET_SIGN(big, 0);
-        }
-        return bignorm(big);
-    }
-}
-#endif
-
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
 {
@@ -551,8 +439,6 @@ rb_big_unpack(unsigned long *buf, long num_longs)
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP);
 }
-
-/* number of bytes of abs(val). additionaly number of leading zeros can be returned. */
 
 /*
  * Calculate the number of bytes to be required to represent
