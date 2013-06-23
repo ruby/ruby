@@ -141,55 +141,61 @@ void xfree(void*);
 # define SIZEOF_LONG_LONG SIZEOF___INT64
 #endif
 
-#if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
-# define BDIGIT uint64_t
-# define SIZEOF_BDIGITS SIZEOF_INT64_T
-# define BDIGIT_DBL uint128_t
-# define BDIGIT_DBL_SIGNED int128_t
-# define PRI_BDIGIT_PREFIX PRI_64_PREFIX
-#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
-# define BDIGIT unsigned int
-# define SIZEOF_BDIGITS SIZEOF_INT
-# define BDIGIT_DBL unsigned LONG_LONG
-# define BDIGIT_DBL_SIGNED LONG_LONG
-# define PRI_BDIGIT_PREFIX ""
-# define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
-#elif SIZEOF_INT*2 <= SIZEOF_LONG
-# define BDIGIT unsigned int
-# define SIZEOF_BDIGITS SIZEOF_INT
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-# define PRI_BDIGIT_PREFIX ""
-# define PRI_BDIGIT_DBL_PREFIX "l"
-#elif SIZEOF_SHORT*2 <= SIZEOF_LONG
-# define BDIGIT unsigned short
-# define SIZEOF_BDIGITS SIZEOF_SHORT
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-# define PRI_BDIGIT_PREFIX "h"
-# define PRI_BDIGIT_DBL_PREFIX "l"
-#else
-# define BDIGIT unsigned short
-# define SIZEOF_BDIGITS (SIZEOF_LONG/2)
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-# define PRI_BDIGIT_PREFIX "h"
-# define PRI_BDIGIT_DBL_PREFIX "l"
+#ifndef BDIGIT
+# if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
+#  define BDIGIT uint64_t
+#  define SIZEOF_BDIGITS SIZEOF_INT64_T
+#  define BDIGIT_DBL uint128_t
+#  define BDIGIT_DBL_SIGNED int128_t
+#  define PRI_BDIGIT_PREFIX PRI_64_PREFIX
+# elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned LONG_LONG
+#  define BDIGIT_DBL_SIGNED LONG_LONG
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# elif SIZEOF_INT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned int
+#  define SIZEOF_BDIGITS SIZEOF_INT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX ""
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# elif SIZEOF_SHORT*2 <= SIZEOF_LONG
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS SIZEOF_SHORT
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# else
+#  define BDIGIT unsigned short
+#  define SIZEOF_BDIGITS (SIZEOF_LONG/2)
+#  define BDIGIT_DBL unsigned long
+#  define BDIGIT_DBL_SIGNED long
+#  define PRI_BDIGIT_PREFIX "h"
+#  define PRI_BDIGIT_DBL_PREFIX "l"
+# endif
 #endif
 
-#define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
-#define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
-#define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
-#define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
-#define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
-#define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#ifdef PRI_BDIGIT_PREFIX
+# define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
+# define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
+# define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
+# define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
+# define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
+# define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#endif
 
-#define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
-#define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
-#define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
-#define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
-#define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
-#define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#ifdef PRI_BDIGIT_DBL_PREFIX
+# define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
+# define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
+# define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
+# define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
+# define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
+# define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#endif
 
 #ifdef __CYGWIN__
 #undef _WIN32

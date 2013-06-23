@@ -1,3 +1,28 @@
+Sun Jun 23 23:05:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/defines.h (BDIGIT): Define it only if it is not defined
+	  yet.  This eases tests and debug.
+	  (SIZEOF_BDIGITS): Ditto.
+	  (BDIGIT_DBL): Ditto.
+	  (BDIGIT_DBL_SIGNED): Ditto.
+	  (PRI_BDIGIT_PREFIX): Ditto.
+	  (PRI_BDIGIT_DBL_PREFIX): Ditto.
+	  (PRIdBDIGIT): Define it only if PRI_BDIGIT_PREFIX is defined.
+	  (PRIiBDIGIT): Ditto.
+	  (PRIoBDIGIT): Ditto.
+	  (PRIuBDIGIT): Ditto.
+	  (PRIxBDIGIT): Ditto.
+	  (PRIXBDIGIT): Ditto.
+	  (PRIdBDIGIT_DBL): Ditto.
+	  (PRIiBDIGIT_DBL): Ditto.
+	  (PRIoBDIGIT_DBL): Ditto.
+	  (PRIuBDIGIT_DBL): Ditto.
+	  (PRIxBDIGIT_DBL): Ditto.
+	  (PRIXBDIGIT_DBL): Ditto.
+
+	* include/ruby/ruby.h (RBIGNUM_EMBED_LEN_MAX): Define it only if it is
+	  not defined yet.
+
 Sun Jun 23 17:29:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (integer_unpack_single_bdigit): Use a cast.

@@ -1134,7 +1134,9 @@ struct RStruct {
 #define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_RAWPTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_RAWPTR(st)[idx])
 
-#define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
+#ifndef RBIGNUM_EMBED_LEN_MAX
+# define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
+#endif
 struct RBignum {
     struct RBasic basic;
     union {
