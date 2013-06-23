@@ -10,7 +10,8 @@ assert_equal %q{ok}, %q{
     :ok
   }.value
 }
-assert_equal %q{20100}, %q{
+assert_equal %q{ok}, %q{
+begin
   v = 0
   (1..200).map{|i|
     Thread.new{
@@ -19,7 +20,10 @@ assert_equal %q{20100}, %q{
   }.each{|t|
     v += t.value
   }
-  v
+  v == 20100 ? :ok : v
+rescue ThreadError => e
+  :ok if e.message =~ "can't create Thread"
+end
 }
 assert_equal %q{5000}, %q{
   5000.times{|e|
@@ -41,13 +45,17 @@ assert_equal %q{5000}, %q{
     }
   }
 }
-assert_equal %q{5000}, %q{
-  5000.times{
+assert_equal %q{ok}, %q{
+begin
+  :ok if 5000 == 5000.times{
     t = Thread.new{}
     while t.alive?
       Thread.pass
     end
   }
+rescue NoMemoryError
+  :ok
+end
 }
 assert_equal %q{100}, %q{
   100.times{
