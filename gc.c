@@ -5049,7 +5049,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 	}
 	record = objspace->profile.current_record = &objspace->profile.records[objspace->profile.next_index - 1];
 	MEMZERO(record, gc_profile_record, 1);
-	
+
 	/* setup before-GC parameter */
 	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
 #if CALC_EXACT_MALLOC_SIZE
