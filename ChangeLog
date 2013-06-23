@@ -1,3 +1,8 @@
+Mon Jun 24 02:53:09 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c: Return value in Array overview example found by @PragTob
+	  [Fix GH-336] https://github.com/ruby/ruby/pull/336
+
 Mon Jun 24 02:45:51 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c (rb_ary_zip): typo by @PragTob [Fix GH-337]
