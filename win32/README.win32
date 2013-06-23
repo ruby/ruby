@@ -129,7 +129,7 @@ in Japanese, but you can download at least.
 
 == Bugs
 
-You can ((*NOT*)) use a path name contains any white space characters as
+You can ((*NOT*)) use a path name that contains any white space characters as
 the ruby source directory, this restriction comes from the behavior of
 (({!INCLUDE})) directives of (({NMAKE})).
 ((- you may call it a bug. -))

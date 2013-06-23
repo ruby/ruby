@@ -1,3 +1,8 @@
+Mon Jun 24 02:42:01 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* win32/README.win32: grammar typo by @blankenshipz [Fix GH-334]
+	  https://github.com/ruby/ruby/pull/334
+
 Mon Jun 24 00:59:35 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BIGUP): Use LSHIFTX and avoid cast to consider the type
