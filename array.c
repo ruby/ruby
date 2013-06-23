@@ -3070,7 +3070,7 @@ take_items(VALUE obj, long n)
  *  corresponding elements from each argument.
  *
  *  This generates a sequence of <code>ary.size</code> _n_-element arrays,
- *  where _n_ is one more that the count of arguments.
+ *  where _n_ is one more than the count of arguments.
  *
  *  If the size of any argument is less than the size of the initial array,
  *  +nil+ values are supplied.
