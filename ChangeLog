@@ -1,3 +1,8 @@
+Mon Jun 24 02:45:51 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* array.c (rb_ary_zip): typo by @PragTob [Fix GH-337]
+	  https://github.com/ruby/ruby/pull/337
+
 Mon Jun 24 02:42:01 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* win32/README.win32: grammar typo by @blankenshipz [Fix GH-334]
