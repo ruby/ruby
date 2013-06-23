@@ -1,3 +1,7 @@
+Sun Jun 23 17:29:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_single_bdigit): Use a cast.
+
 Sun Jun 23 15:38:07 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_thread.rb: rescue resource limitation errors.

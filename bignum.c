@@ -1351,7 +1351,7 @@ integer_unpack_single_bdigit(BDIGIT u, size_t size, int flags, BDIGIT *dp)
             ((size == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
             ((u >> (size * CHAR_BIT - 1)) ? -1 : 1);
         if (sign < 0)
-            u = ((BDIGIT)0) - (u | LSHIFTX((~(BDIGIT)0), size * CHAR_BIT));
+            u = (BDIGIT)(-(u | LSHIFTX((~(BDIGIT)0), size * CHAR_BIT)));
     }
     else
         sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
