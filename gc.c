@@ -530,7 +530,8 @@ static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static double getrusage_time(void);
-static inline void gc_prof_timer_start(rb_objspace_t *, int reason);
+static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, int reason);
+static inline void gc_prof_timer_start(rb_objspace_t *);
 static inline void gc_prof_timer_stop(rb_objspace_t *);
 static inline void gc_prof_mark_timer_start(rb_objspace_t *);
 static inline void gc_prof_mark_timer_stop(rb_objspace_t *);
@@ -2342,6 +2343,9 @@ after_gc_sweep(rb_objspace_t *objspace)
 #endif
     }
 
+    gc_prof_set_malloc_info(objspace);
+    gc_prof_set_heap_info(objspace);
+
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
     inc += malloc_increase2;
     malloc_increase2 = 0;
@@ -2354,8 +2358,6 @@ after_gc_sweep(rb_objspace_t *objspace)
 
     free_unused_heaps(objspace);
 
-    gc_prof_set_malloc_info(objspace);
-    gc_prof_set_heap_info(objspace);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END, 0 /* TODO: pass minor/immediate flag? */);
 }
@@ -4028,7 +4030,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
     objspace->profile.heaps_used_at_gc_start = heaps_used;
 
-    gc_prof_timer_start(objspace, reason);
+    gc_prof_setup_new_record(objspace, reason);
+    gc_prof_timer_start(objspace);
     {
 	assert(during_gc > 0);
 	gc_marks(objspace, (reason & GPR_FLAG_MAJOR_MASK) ? FALSE : TRUE);
@@ -5024,7 +5027,7 @@ getrusage_time(void)
 }
 
 static inline void
-gc_prof_timer_start(rb_objspace_t *objspace, int reason)
+gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 {
     if (objspace->profile.run) {
 	size_t index = objspace->profile.next_index;
@@ -5046,13 +5049,25 @@ gc_prof_timer_start(rb_objspace_t *objspace, int reason)
 	}
 	record = objspace->profile.current_record = &objspace->profile.records[objspace->profile.next_index - 1];
 	MEMZERO(record, gc_profile_record, 1);
+	
+	/* setup before-GC parameter */
+	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
+#if CALC_EXACT_MALLOC_SIZE
+	record->allocated_size = malloc_allocated_size;
+#endif
+    }
+}
 
+static inline void
+gc_prof_timer_start(rb_objspace_t *objspace)
+{
+    if (objspace->profile.run) {
+	gc_profile_record *record = gc_prof_record(objspace);
 #if GC_PROFILE_MORE_DETAIL
 	record->prepare_time = objspace->profile.prepare_time;
 #endif
 	record->gc_time = 0;
 	record->gc_invoke_time = getrusage_time();
-	record->flags = reason | ((ruby_gc_stress && !ruby_disable_gc_stress) ? GPR_FLAG_STRESS : 0);
     }
 }
 
@@ -5155,9 +5170,6 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
         gc_profile_record *record = gc_prof_record(objspace);
 	record->allocate_increase = malloc_increase + malloc_increase2;
 	record->allocate_limit = malloc_limit;
-#if CALC_EXACT_MALLOC_SIZE
-	record->allocated_size = malloc_allocated_size;
-#endif
     }
 #endif
 }

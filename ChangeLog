@@ -1,3 +1,9 @@
+Mon Jun 24 07:57:18 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (after_gc_sweep): Have to record malloc info before reset.
+	* gc.c (gc_prof_timer_start): Pick out part of new record creation as gc_prof_setup_new_record.
+	* gc.c (gc_prof_set_malloc_info): Move point of recording allocation size to front of mark.
+
 Mon Jun 24 02:53:09 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Return value in Array overview example found by @PragTob
