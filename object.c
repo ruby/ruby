@@ -810,7 +810,7 @@ rb_obj_tap(VALUE obj)
  * Document-method: extended
  *
  * call-seq:
- *    extended( othermod )
+ *    extended(othermod)
  *
  * The equivalent of <tt>included</tt>, but for extended modules.
  *
@@ -829,7 +829,7 @@ rb_obj_tap(VALUE obj)
  * Document-method: included
  *
  * call-seq:
- *    included( othermod )
+ *    included(othermod)
  *
  * Callback invoked whenever the receiver is included in another
  * module or class. This should be used in preference to
@@ -851,7 +851,7 @@ rb_obj_tap(VALUE obj)
  * Document-method: prepended
  *
  * call-seq:
- *    prepended( othermod )
+ *    prepended(othermod)
  *
  * The equivalent of <tt>included</tt>, but for prepended modules.
  *
