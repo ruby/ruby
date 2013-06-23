@@ -55,7 +55,7 @@ static VALUE big_three = Qnil;
 #if defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG >= SIZEOF_BDIGITS
 # define DIGSPERLL (SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 #endif
-#define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
+#define BIGUP(x) LSHIFTX(((x) + (BDIGIT_DBL)0), BITSPERDIG)
 #define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & BDIGMAX))
 #define BDIGMAX ((BDIGIT)(BIGRAD-1))
@@ -2409,7 +2409,7 @@ static unsigned long
 big2ulong(VALUE x, const char *type, int check)
 {
     long len = RBIGNUM_LEN(x);
-    BDIGIT_DBL num;
+    unsigned long num;
     BDIGIT *ds;
 
     if (BIGSIZE(x) > sizeof(long)) {
@@ -2423,7 +2423,7 @@ big2ulong(VALUE x, const char *type, int check)
 	num = BIGUP(num);
 	num += ds[len];
     }
-    return (unsigned long)num;
+    return num;
 }
 
 VALUE
@@ -2477,7 +2477,7 @@ static unsigned LONG_LONG
 big2ull(VALUE x, const char *type)
 {
     long len = RBIGNUM_LEN(x);
-    BDIGIT_DBL num;
+    unsigned LONG_LONG num;
     BDIGIT *ds;
 
     if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
@@ -4569,7 +4569,7 @@ bigand_int(VALUE x, long y)
     zds[0] = xds[0] & y;
 #else
     {
-	BDIGIT_DBL num = y;
+	long num = y;
 
 	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] & BIGLO(num);
@@ -4665,7 +4665,7 @@ bigor_int(VALUE x, long y)
     zds[0] = xds[0] | y;
 #else
     {
-	BDIGIT_DBL num = y;
+	long num = y;
 
 	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] | BIGLO(num);
@@ -4761,7 +4761,7 @@ bigxor_int(VALUE x, long y)
     zds[0] = xds[0] ^ y;
 #else
     {
-	BDIGIT_DBL num = y;
+	long num = y;
 
 	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
 	    zds[i] = xds[i] ^ BIGLO(num);

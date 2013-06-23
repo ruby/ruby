@@ -1,3 +1,13 @@
+Mon Jun 24 00:59:35 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BIGUP): Use LSHIFTX and avoid cast to consider the type
+	  of x is bigger than BDIGIT_DBL.
+	  (big2ulong): Use unsigned long to store the result.
+	  (big2ull): Use unsigned LONG_LONG to store the result.
+	  (bigand_int): Use long for num to avoid data loss.
+	  (bigor_int): Ditto.
+	  (bigxor_int): Ditto.
+
 Sun Jun 23 23:05:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h (BDIGIT): Define it only if it is not defined
