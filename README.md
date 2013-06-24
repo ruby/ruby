@@ -1,4 +1,5 @@
-= What's Ruby
+![image](http://www.ruby-lang.org/images/logo.gif)
+# What's Ruby
 
 Ruby is the interpreted scripting language for quick and
 easy object-oriented programming.  It has many features to
@@ -6,7 +7,7 @@ process text files and to do system management tasks (as in
 Perl).  It is simple, straight-forward, and extensible.
 
 
-== Features of Ruby
+## Features of Ruby
 
 *   Simple Syntax
 *   *Normal* Object-Oriented features(ex. class, method calls)
@@ -18,15 +19,15 @@ Perl).  It is simple, straight-forward, and extensible.
 *   Dynamic Loading of Object files(on some architecture)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms
     as well as Windows, Mac OS X, BeOS etc.)
-    cf. http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
+    cf. [http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms](http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms)
 
 
-== How to get Ruby
+## How to get Ruby
 
 For a complete list of ways to install Ruby, including using third party
 tools like rvm, see:
 
-http://www.ruby-lang.org/en/downloads/
+[http://www.ruby-lang.org/en/downloads/](http://www.ruby-lang.org/en/downloads/)
 
 The Ruby distribution files can be found in the following FTP site:
 
@@ -35,29 +36,37 @@ ftp://ftp.ruby-lang.org/pub/ruby/
 The trunk of the Ruby source tree can be checked out with the
 following command:
 
+```bash
   $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+```
 
 Or if you are using git then use the following command:
 
+```bash
   $ git clone git://github.com/ruby/ruby.git
+```
 
 There are some other branches under development.  Try the following
 command and see the list of branches:
 
+```bash
   $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
+```
 
 Or if you are using git then use the following command:
 
+```bash
   $ git ls-remote git://github.com/ruby/ruby.git
+```
 
-== Ruby home-page
+## Ruby home-page
 
 The URL of the Ruby home-page is:
 
-http://www.ruby-lang.org/
+[http://www.ruby-lang.org/](http://www.ruby-lang.org/)
 
 
-== Mailing list
+## Mailing list
 
 There is a mailing list to talk about Ruby.
 To subscribe this list, please send the following phrase
@@ -69,7 +78,7 @@ e.g.
 in the mail body (not subject) to the address <mailto:ruby-talk-ctl@ruby-lang.org>.
 
 
-== How to compile and install
+## How to compile and install
 
 This is what you need to do to compile and install Ruby:
 
@@ -142,11 +151,11 @@ necessary external libraries and/or headers, then you will need to run
 '<tt>make distclean-ext</tt>' to remove old configuration after
 installing them in such case.
 
-== Copying
+## Copying
 
 See the file +COPYING+.
 
-== Feedback
+## Feedback
 
 Questions about the Ruby language can be asked on the Ruby-Talk mailing list
 (http://www.ruby-lang.org/en/community/mailing-lists) or on websites like
@@ -154,13 +163,8 @@ Questions about the Ruby language can be asked on the Ruby-Talk mailing list
 
 Bug reports should be filed at http://bugs.ruby-lang.org
 
-== The Author
+## The Author
 
 Ruby was originally designed and developed by Yukihiro Matsumoto (Matz) in 1995.
 
 <mailto:matz@ruby-lang.org>
-
---
-Local variables:
-mode: rdoc
-end:
