@@ -527,12 +527,18 @@ end
 
 module RingIPv6
   def prepare_ipv6(r)
-    Socket.getifaddrs.each do |ifaddr|
-      next unless ifaddr.addr
-      next unless ifaddr.addr.ipv6_linklocal?
-      next if ifaddr.name[0, 2] == "lo"
-      r.multicast_interface = ifaddr.ifindex
-      return
+    begin
+      Socket.getifaddrs.each do |ifaddr|
+        next unless ifaddr.addr
+        next unless ifaddr.addr.ipv6_linklocal?
+        next if ifaddr.name[0, 2] == "lo"
+        r.multicast_interface = ifaddr.ifindex
+        return
+      end
+    rescue NotImplementedError
+      # ifindex() function may not be implemented on Windows.
+      return if
+        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
     end
     skip 'IPv6 not available'
   end
