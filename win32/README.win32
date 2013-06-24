@@ -40,7 +40,7 @@
     The default ((|<PLATFORM>|)) is `(({i386-mswin32}))'.
 
 (2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
-    if you want to change the name of the executable files. 
+    if you want to change the name of the executable files.
     And add ((|RUBYW_INSTALL_NAME|)) to change the name of the
     executable without console window if also you want.
 
@@ -60,8 +60,8 @@ to their base names.
     $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
     the others                             --> $(RUBY_SO_NAME).dll
 
-Although no icons are distributed with the ruby source or in the official 
-site, you can use anything you like. For example, followings are written 
+Although no icons are distributed with the ruby source or in the official
+site, you can use anything you like. For example, followings are written
 in Japanese, but you can download at least.
 
 * ((<URL:http://homepage1.nifty.com/a_nakata/ruby/>)) or
@@ -129,7 +129,7 @@ in Japanese, but you can download at least.
 
 == Bugs
 
-You can ((*NOT*)) use a path name contains any white space characters as
+You can ((*NOT*)) use a path name that contains any white space characters as
 the ruby source directory, this restriction comes from the behavior of
 (({!INCLUDE})) directives of (({NMAKE})).
 ((- you may call it a bug. -))
