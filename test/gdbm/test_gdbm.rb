@@ -190,6 +190,10 @@ if defined? GDBM
 
       STDERR.puts Dir.glob("#{dbname}*") if $DEBUG
 
+      # The following test fails on Windows because flock() implementation
+      # is different from Unix.
+      return if /mswin|mingw/ =~ RUBY_PLATFORM
+
       open_db_child(dbname) do
         assert_nothing_raised(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
           # this test is failed on Cygwin98 (???)
