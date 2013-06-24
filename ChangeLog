@@ -1,3 +1,11 @@
+Mon Jun 24 22:04:02 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): fix conversion from Bignum to
+	  pointer. sizeof(DLSTACK_TYPE) is larger than sizeof(long) on
+	  Windows x64 and higher bits over sizeof(long) of DLSTACK_TYPE was
+	  zero even if a pointer value was over 32 bits which causes SEGV on
+	  DL::TestCPtr#test_to_ptr_io. Adding a cast solves the bug.
+
 Mon Jun 24 22:04:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* eval_error.c (warn_printf): use rb_vsprintf instead so ruby specific

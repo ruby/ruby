@@ -372,7 +372,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
             rb_big_pack(arg, ls, sizeof(ls)/sizeof(*ls));
             d = 0;
             for (j = 0; j < (int)(sizeof(ls)/sizeof(*ls)); j++)
-                d |= ls[j] << (j * sizeof(long) * CHAR_BIT);
+                d |= (DLSTACK_TYPE)ls[j] << (j * sizeof(long) * CHAR_BIT);
 	    stack[i] = d;
 	}
 	else {
