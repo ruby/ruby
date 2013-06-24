@@ -385,7 +385,8 @@ typedef struct rb_objspace {
 
 	/* for check mode */
 	VALUE parent_object;
-	VALUE interesting_object;
+	unsigned int  monitor_level; 
+	st_table *monitored_object_table;
 
 	int need_major_gc;
 	size_t remembered_shady_object_count;
@@ -481,6 +482,8 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define initial_heap_min_slots	initial_params.initial_heap_min_slots
 #define initial_free_min	initial_params.initial_free_min
 #define initial_growth_factor	initial_params.initial_growth_factor
+#define monitor_level           objspace->rgengc.monitor_level
+#define monitored_object_table  objspace->rgengc.monitored_object_table
 
 
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
@@ -3001,38 +3004,12 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_RGENGC
 #if RGENGC_CHECK_MODE >= 2
-    VALUE parent = objspace->rgengc.parent_object;
-
-    if (objspace->rgengc.interesting_object == obj) {
-	/* output interesting parent->child references */
-	if (FIXNUM_P(parent)) {
-	    fprintf(stderr, "rgengc_check_shady: !!! %p (%s) is pointed at line %d\n",
-		    (void *)obj, obj_type_name(obj), FIX2INT(parent));
-	}
-	else {
-	    fprintf(stderr, "rgengc_check_shady: !!! %p (%s) is pointed by %p (%s)\n",
-		    (void *)obj, obj_type_name(obj), (void *)parent, obj_type_name(parent));
-	}
-    }
-
-#if RGENGC_CHECK_MODE >= 3
-    /* output all parent->child references */
-    if (objspace->rgengc.interesting_object) {
-	if (FIXNUM_P(parent)) {
-	    fprintf(stderr, "rgengc_check_shady: [line %d] -> %p (%s)\n",
-		    FIX2INT(parent), (void *)obj, obj_type_name(obj));
-	}
-	else {
-	    fprintf(stderr, "rgengc_check_shady: %p (%s) -> %p (%s)\n",
-		    (void *)parent, obj_type_name(parent), (void *)obj, obj_type_name(obj));
-	}
-    }
-#endif /* RGENGC_CHECK_MODE >= 3 */
-
-    if (objspace->rgengc.have_saved_bitmaps) {
-	/* check WB sanity */
 #define SAVED_OLD(x) MARKED_IN_BITMAP(GET_HEAP_SLOT(x)->saved_oldgen_bits, (x))
 #define SAVED_REM(x) MARKED_IN_BITMAP(GET_HEAP_SLOT(x)->saved_rememberset_bits, (x))
+    VALUE parent = objspace->rgengc.parent_object;
+    
+    if (objspace->rgengc.have_saved_bitmaps && !monitor_level) {
+	/* check WB sanity */
 	if (!SAVED_OLD(obj) &&                          /* obj is young object (newly created or shady) */
 	    (!FIXNUM_P(parent) && SAVED_OLD(parent)) && /* parent was old */
 	    !SAVED_REM(parent) &&                       /* parent was not remembered */
@@ -3040,12 +3017,51 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 	    fprintf(stderr, "rgengc_check_shady: !!! WB miss: %p (%s) -> %p (%s)\n",
 		    (void *)parent, obj_type_name(parent),
 		    (void *)obj, obj_type_name(obj));
-	    rb_bug("!!!");
-	    objspace->rgengc.interesting_object = obj;
+	    if(!st_lookup(monitored_object_table, (st_data_t)obj, NULL)) {
+		st_insert(monitored_object_table, (st_data_t)obj, 1);
+	    }
 	}
+    } else if (monitor_level) {
+	st_data_t v;
+	if (st_lookup(monitored_object_table, (st_data_t)obj, &v)) {
+	    if (v == monitor_level) {
+		if (FIXNUM_P(parent)) {
+		    fprintf(stderr, "rgengc_check_shady: %14s [line %d] -> %p (%s) %d\n",
+			    "",FIX2INT(parent), (void *)obj, obj_type_name(obj),monitor_level);
+		}
+		else {
+		    if (st_lookup(monitored_object_table, (st_data_t)parent, &v)) {
+			if(parent == obj) {
+			    /* skip self reference infomation */
+			}
+			else
+			    fprintf(stderr, "rgengc_check_shady: %14u %p (%-8s) -> %p (%-8s) %d\n",(unsigned int)v,
+				    (void *)parent, obj_type_name(parent), (void *)obj, obj_type_name(obj),monitor_level);
+		    } else {
+			char const *marker = NULL;
+			if (SAVED_REM(parent)) {
+			    if (SAVED_OLD(parent))
+				marker = "REMEMBERED OLD";
+			    else
+				marker = "REMEMBERED";
+			} else {
+			    if (SAVED_OLD(parent))
+				marker = "!!!!!!!!!!!!! NO REMEMBERED OLD !!!!!!!!!!!!! ";
+			    else {
+				marker = "NO PROMOTED";
+				st_insert(monitored_object_table, (st_data_t)parent, v+1);
+			    }
+			}
+			fprintf(stderr, "rgengc_check_shady: %-14s %p (%-8s) -> %p (%-8s) %d\n",
+				marker,
+				(void *)parent, obj_type_name(parent), (void *)obj, obj_type_name(obj),monitor_level);
+		    }
+		}
+	    }
+	}
+    }
 #undef SAVED_OLD
 #undef SAVED_REM
-    }
 #endif /* RGENGC_CHECK_MODE >= 2 */
 
     if (objspace->rgengc.parent_object_is_promoted &&
@@ -3601,15 +3617,25 @@ gc_load_bitmaps(rb_objspace_t *objspace)
 static void
 gc_marks_test(rb_objspace_t *objspace)
 {
-    bits_t *exported_bitmaps = gc_export_bitmaps(objspace);
+    bits_t *exported_bitmaps;
     size_t i;
     size_t stored_oldgen, stored_shady;
-
     /*
      * Now, we have 2 types bitmaps:
      *   saved_bitmap:    before minor marking
      *   exported_bitmap: after minor marking
      */
+
+
+    if(!monitored_object_table)
+	monitored_object_table = st_init_numtable();
+    gc_save_bitmaps(objspace);
+
+    rgengc_report(1, objspace, "gc_marks_test: minor gc\n");
+    {
+	gc_marks_body(objspace, TRUE);
+    }
+    exported_bitmaps = gc_export_bitmaps(objspace);
 
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
@@ -3634,23 +3660,24 @@ gc_marks_test(rb_objspace_t *objspace)
 	    if (MARKED_IN_BITMAP(major_mark_bits, p) &&  /* should be lived */
 		!MARKED_IN_BITMAP(minor_mark_bits, p)) { /* not marked -> BUG! */
 		fprintf(stderr, "gc_marks_test: %p (%s) is living, but not marked && not promoted.\n", p, obj_type_name((VALUE)p));
-		objspace->rgengc.interesting_object = (VALUE)p;
+		st_insert(monitored_object_table, (st_data_t)p, 1);
 	    }
 	    p++;
 	}
     }
 
-    if (objspace->rgengc.interesting_object) {
-	fprintf(stderr, "!!! restart major gc\n");
-	gc_load_bitmaps(objspace);
-	gc_marks_body(objspace, FALSE);
-
-	fprintf(stderr, "!!! restart minor gc\n");
-	gc_load_bitmaps(objspace);
-	gc_marks_body(objspace, TRUE);
-
-	rb_bug("gc_marks_test (again): %p (%s) is living, but not marked && not promoted.\n",
-	       (void *)objspace->rgengc.interesting_object, obj_type_name((VALUE)objspace->rgengc.interesting_object));
+    if (monitored_object_table->num_entries) {
+	if (RGENGC_CHECK_MODE >= 3) {
+	    st_index_t old_num;
+	    do {
+		old_num = monitored_object_table->num_entries;
+		monitor_level ++;
+		fprintf(stderr, "!!!! restart major gc for get more information !!!!\n");
+		gc_load_bitmaps(objspace);
+		gc_marks_body(objspace, FALSE);
+	    } while (old_num != monitored_object_table->num_entries);
+	}
+	rb_bug("WriteBarrier Error\n");
     }
     else {
 	gc_restore_exported_bitmaps(objspace, exported_bitmaps);
@@ -3684,8 +3711,6 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	}
 	else { /* minor GC */
 #if RGENGC_CHECK_MODE >= 2
-	    gc_save_bitmaps(objspace);
-	    gc_marks_body(objspace, TRUE);
 	    gc_marks_test(objspace);
 #else
 	    gc_marks_body(objspace, TRUE);

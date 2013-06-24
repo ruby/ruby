@@ -1,3 +1,10 @@
+Tue Jun 25 00:55:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (typedef struct rb_objspace): Change members for monitor objects.
+	* gc.c (gc_marks_test): Check all WriteBarrier Errors and track them in obj-tree.
+	* gc.c (rgengc_check_shady): Ditto.
+	* gc.c (gc_marks): Move 2 funtion calls to gc_marks_test for test initialize.
+
 Mon Jun 24 23:30:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (integer_unpack_single_bdigit): Refine code to filling
