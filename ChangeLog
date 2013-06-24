@@ -1,3 +1,9 @@
+Mon Jun 24 22:06:14 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/rubygems/test_gem_installer.rb (test_install_extension_flat):
+	  use ruby in build directory in case ruby is not installed.
+	  [ruby-core:53265] [Bug #8058]
+
 Mon Jun 24 22:04:02 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): fix conversion from Bignum to
