@@ -1,3 +1,8 @@
+Mon Jun 24 23:30:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_single_bdigit): Refine code to filling
+	  higher bits and use BIGLO.
+
 Mon Jun 24 22:26:31 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/rinda/test_rinda.rb (RingIPv6#prepare_ipv6):

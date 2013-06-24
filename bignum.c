@@ -1350,8 +1350,10 @@ integer_unpack_single_bdigit(BDIGIT u, size_t size, int flags, BDIGIT *dp)
         sign = (flags & INTEGER_PACK_NEGATIVE) ?
             ((size == SIZEOF_BDIGITS && u == 0) ? -2 : -1) :
             ((u >> (size * CHAR_BIT - 1)) ? -1 : 1);
-        if (sign < 0)
-            u = (BDIGIT)(-(u | LSHIFTX((~(BDIGIT)0), size * CHAR_BIT)));
+        if (sign < 0) {
+            u |= LSHIFTX(BDIGMAX, size * CHAR_BIT);
+            u = BIGLO(-u);
+        }
     }
     else
         sign = (flags & INTEGER_PACK_NEGATIVE) ? -1 : 1;
