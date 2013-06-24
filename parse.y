@@ -9740,8 +9740,7 @@ reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
     err = rb_reg_check_preprocess(str);
     if (err != Qnil) {
         err = rb_obj_as_string(err);
-        compile_error(PARSER_ARG "%s", RSTRING_PTR(err));
-	RB_GC_GUARD(err);
+        compile_error(PARSER_ARG "%"PRIsVALUE, err);
 	return 0;
     }
     return 1;
@@ -9844,7 +9843,7 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	    rb_str_append(rb_str_cat(rb_attr_get(err, mesg), "\n", 1), m);
 	}
 	else {
-	    compile_error(PARSER_ARG "%s", RSTRING_PTR(m));
+	    compile_error(PARSER_ARG "%"PRIsVALUE, m);
 	}
 	return Qnil;
     }
@@ -11400,7 +11399,7 @@ ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
     if (obj == Qundef) {
-        rb_raise(rb_eArgError, "%s", RSTRING_PTR(msg));
+        rb_raise(rb_eArgError, "%"PRIsVALUE, msg);
     }
     return Qnil;
 }

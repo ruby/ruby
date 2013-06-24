@@ -716,7 +716,7 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 		desc = rb_any_to_s(key);
 	    }
 	    desc = rb_str_ellipsize(desc, 65);
-	    rb_raise(rb_eKeyError, "key not found: %s", RSTRING_PTR(desc));
+	    rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, desc);
 	}
 	return if_none;
     }

@@ -1,3 +1,18 @@
+Mon Jun 24 20:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* compile.c (make_name_for_block): use PRIsVALUE in format string
+	  instead of %s and RSTRING_PTR to protect objects from being garbage
+	  collected too soon
+	* encoding.c (str_to_encindex): ditto
+	* hash.c (rb_hash_fetch_m): ditto
+	* io.c (rb_io_reopen): ditto
+	* parse.y (reg_fragment_check_gen): ditto
+	* parse.y (reg_compile_gen): ditto
+	* parse.y (ripper_assert_Qundef): ditto
+	* re.c (rb_reg_raise): ditto
+	* ruby.c (set_option_encoding_once): ditto
+	* vm_eval.c (rb_throw_obj): ditto
+
 Mon Jun 24 07:57:18 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (after_gc_sweep): Have to record malloc info before reset.

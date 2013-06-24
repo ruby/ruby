@@ -765,7 +765,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     if (*name &&
 	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != INT2FIX(0)) {
 	rb_raise(rb_eRuntimeError,
-		 "%s already set to %s", type, RSTRING_PTR(*name));
+		 "%s already set to %"PRIsVALUE, type, *name);
     }
     *name = ename;
 }

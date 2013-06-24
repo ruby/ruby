@@ -6554,15 +6554,15 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         rb_fd_fix_cloexec(fptr->fd);
 #ifdef USE_SETVBUF
         if (setvbuf(fptr->stdio_file, NULL, _IOFBF, 0) != 0)
-            rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fptr->pathv));
+            rb_warn("setvbuf() can't be honoured for %"PRIsVALUE, fptr->pathv);
 #endif
         if (fptr->stdio_file == stderr) {
             if (setvbuf(fptr->stdio_file, NULL, _IONBF, BUFSIZ) != 0)
-                rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fptr->pathv));
+                rb_warn("setvbuf() can't be honoured for %"PRIsVALUE, fptr->pathv);
         }
         else if (fptr->stdio_file == stdout && isatty(fptr->fd)) {
             if (setvbuf(fptr->stdio_file, NULL, _IOLBF, BUFSIZ) != 0)
-                rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fptr->pathv));
+                rb_warn("setvbuf() can't be honoured for %"PRIsVALUE, fptr->pathv);
         }
     }
     else {

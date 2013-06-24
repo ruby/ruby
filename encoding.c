@@ -179,7 +179,7 @@ str_to_encindex(VALUE enc)
 {
     int idx = str_find_encindex(enc);
     if (idx < 0) {
-	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
+	rb_raise(rb_eArgError, "unknown encoding name - %"PRIsVALUE, enc);
     }
     return idx;
 }

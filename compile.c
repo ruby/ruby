@@ -2999,10 +2999,10 @@ make_name_for_block(rb_iseq_t *iseq)
     }
 
     if (level == 1) {
-	return rb_sprintf("block in %s", RSTRING_PTR(ip->location.label));
+	return rb_sprintf("block in %"PRIsVALUE, ip->location.label);
     }
     else {
-	return rb_sprintf("block (%d levels) in %s", level, RSTRING_PTR(ip->location.label));
+	return rb_sprintf("block (%d levels) in %"PRIsVALUE, level, ip->location.label);
     }
 }
 

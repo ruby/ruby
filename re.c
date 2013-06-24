@@ -610,7 +610,7 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
     volatile VALUE desc = rb_reg_desc(s, len, re);
 
-    rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
+    rb_raise(rb_eRegexpError, "%s: %"PRIsVALUE, err, desc);
 }
 
 static VALUE
