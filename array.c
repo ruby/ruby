@@ -5415,7 +5415,7 @@ rb_ary_drop_while(VALUE ary)
  *
  *     arr = [1, 2, 3, 4, 5, 6]
  *     arr.select { |a| a > 3 }     #=> [4, 5, 6]
- *     arr.reject { |a| a < 3 }     #=> [4, 5, 6]
+ *     arr.reject { |a| a < 3 }     #=> [3, 4, 5, 6]
  *     arr.drop_while { |a| a < 4 } #=> [4, 5, 6]
  *     arr                          #=> [1, 2, 3, 4, 5, 6]
  *
