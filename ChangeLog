@@ -224,7 +224,7 @@ Sat Jun 22 07:20:30 2013  Koichi Sasada  <ko1@atdot.net>
 	  gc_prof_set_heap_info() just after sweeping to calculate
 	  live object number correctly.
 	  (live object number = total generated number (before marking) -
-                                total freed number (after sweeping))
+	                        total freed number (after sweeping))
 
 	* gc.c (gc_marks): record `oldgen_object_count' into current profile`
 	  record directly.
