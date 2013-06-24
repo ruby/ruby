@@ -385,7 +385,7 @@ typedef struct rb_objspace {
 
 	/* for check mode */
 	VALUE parent_object;
-	unsigned int  monitor_level; 
+	unsigned int  monitor_level;
 	st_table *monitored_object_table;
 
 	int need_major_gc;
@@ -3007,7 +3007,7 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 #define SAVED_OLD(x) MARKED_IN_BITMAP(GET_HEAP_SLOT(x)->saved_oldgen_bits, (x))
 #define SAVED_REM(x) MARKED_IN_BITMAP(GET_HEAP_SLOT(x)->saved_rememberset_bits, (x))
     VALUE parent = objspace->rgengc.parent_object;
-    
+
     if (objspace->rgengc.have_saved_bitmaps && !monitor_level) {
 	/* check WB sanity */
 	if (!SAVED_OLD(obj) &&                          /* obj is young object (newly created or shady) */
