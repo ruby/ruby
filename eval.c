@@ -479,19 +479,16 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	if ((status = EXEC_TAG()) == 0) {
 	    RB_GC_GUARD(e) = rb_obj_as_string(e);
 	    if (file && line) {
-		warn_printf("Exception `%s' at %s:%d - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    file, line, RSTRING_PTR(e));
+		warn_printf("Exception `%s' at %s:%d - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), file, line, e);
 	    }
 	    else if (file) {
-		warn_printf("Exception `%s' at %s - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    file, RSTRING_PTR(e));
+		warn_printf("Exception `%s' at %s - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), file, e);
 	    }
 	    else {
-		warn_printf("Exception `%s' - %s\n",
-			    rb_obj_classname(th->errinfo),
-			    RSTRING_PTR(e));
+		warn_printf("Exception `%s' - %"PRIsVALUE"\n",
+			    rb_obj_classname(th->errinfo), e);
 	    }
 	}
 	POP_TAG();

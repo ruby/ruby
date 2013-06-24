@@ -1,3 +1,12 @@
+Mon Jun 24 22:04:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* eval_error.c (warn_printf): use rb_vsprintf instead so ruby specific
+	  extensions like PRIsVALUE can be used in format strings
+	* eval_error.c (error_print): use warn_print_str (alias for
+	  rb_write_error_str) to print a string value instead of using
+	  RSTRING_PTR and RSTRING_LEN manually
+	* eval.c (setup_exception): use PRIsVALUE instead of %s and RSTRING_PTR
+
 Mon Jun 24 20:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c (make_name_for_block): use PRIsVALUE in format string
