@@ -236,7 +236,7 @@ getrusage_time(void)
 #define GC_PROF_SET_MALLOC_INFO do {\
 	if (objspace->profile.run) {\
 	    gc_profile_record *record = &objspace->profile.record[objspace->profile.count];\
-	    record->allocate_increase = malloc_increase;\
+	    record->allocate_increase = malloc_increase + malloc_increase2;\
 	    record->allocate_limit = malloc_limit; \
 	}\
     } while(0)
@@ -352,6 +352,7 @@ typedef struct rb_objspace {
     struct {
 	size_t limit;
 	size_t increase;
+	size_t increase2;
 #if CALC_EXACT_MALLOC_SIZE
 	size_t allocated_size;
 	size_t allocations;
@@ -405,6 +406,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
+#define malloc_increase2 	objspace->malloc_params.increase2
 #define heaps			objspace->heap.ptr
 #define heaps_length		objspace->heap.length
 #define heaps_used		objspace->heap.used
@@ -756,8 +758,9 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
+    malloc_increase += size;
     if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
-	(malloc_increase+size) > malloc_limit) {
+	malloc_increase > malloc_limit) {
 	garbage_collect_with_gvl(objspace);
     }
 
@@ -767,8 +770,6 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 static inline void *
 vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
-    malloc_increase += size;
-
 #if CALC_EXACT_MALLOC_SIZE
     objspace->malloc_params.allocated_size += size;
     objspace->malloc_params.allocations++;
@@ -2211,6 +2212,8 @@ before_gc_sweep(rb_objspace_t *objspace)
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
 
+    malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
+
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
 	rb_sweep_method_entry(GET_VM());
@@ -2227,11 +2230,12 @@ after_gc_sweep(rb_objspace_t *objspace)
         heaps_increment(objspace);
     }
 
-    if (malloc_increase > malloc_limit) {
+    if ((malloc_increase + malloc_increase2) > malloc_limit) {
 	malloc_limit += (size_t)((malloc_increase - malloc_limit) * (double)objspace->heap.live_num / (heaps_used * HEAP_OBJ_LIMIT));
 	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
     }
     malloc_increase = 0;
+    malloc_increase2 = 0;
 
     free_unused_heaps(objspace);
 }
