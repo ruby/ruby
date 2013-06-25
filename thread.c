@@ -4562,6 +4562,9 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
  * the current thread.
  *
+ * When the thread is next woken up, it will attempt to reacquire
+ * the lock.
+ *
  * Note that this method can wakeup without explicit Thread#wakeup call.
  * For example, receiving signal and so on.
  */
