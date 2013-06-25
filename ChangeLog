@@ -14,7 +14,7 @@ Tue Jun 25 12:28:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2ulong): Add code specialized for SIZEOF_LONG <=
 	  SIZEOF_BDIGITS.
-	  This prevents shift witdth warning from "num <<= BITSPERDIG".
+	  This prevents shift width warning from "num <<= BITSPERDIG".
 
 Tue Jun 25 12:23:30 2013  Koichi Sasada  <ko1@atdot.net>
 
