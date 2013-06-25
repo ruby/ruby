@@ -115,7 +115,7 @@ module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 
   ##
-  # An Array of Regexps that match windows ruby platforms.
+  # An Array of Regexps that match windows Ruby platforms.
 
   WIN_PATTERNS = [
     /bccwin/i,
@@ -788,7 +788,7 @@ module Gem
   end
 
   ##
-  # A Gem::Version for the currently running ruby.
+  # A Gem::Version for the currently running Ruby.
 
   def self.ruby_version
     return @ruby_version if defined? @ruby_version
@@ -911,7 +911,7 @@ module Gem
   end
 
   ##
-  # Load +plugins+ as ruby files
+  # Load +plugins+ as Ruby files
 
   def self.load_plugin_files(plugins)
     plugins.each do |plugin|
@@ -1086,7 +1086,7 @@ unless gem_preluded then # TODO: remove guard after 1.9.2 dropped
   if defined?(RUBY_ENGINE) then
     begin
       ##
-      # Defaults the ruby implementation wants to provide for RubyGems
+      # Defaults the Ruby implementation wants to provide for RubyGems
 
       require "rubygems/defaults/#{RUBY_ENGINE}"
     rescue LoadError

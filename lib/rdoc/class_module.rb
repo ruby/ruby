@@ -175,7 +175,7 @@ class RDoc::ClassModule < RDoc::Context
   alias direct_ancestors ancestors
 
   ##
-  # Clears the comment. Used by the ruby parser.
+  # Clears the comment. Used by the Ruby parser.
 
   def clear_comment
     @comment = ''

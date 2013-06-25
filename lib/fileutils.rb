@@ -417,7 +417,7 @@ module FileUtils
   #
   # +src+ can be a list of files.
   #
-  #   # Installing ruby library "mylib" under the site_ruby
+  #   # Installing Ruby library "mylib" under the site_ruby
   #   FileUtils.rm_r site_ruby + '/mylib', :force
   #   FileUtils.cp_r 'lib/', site_ruby + '/mylib'
   #

@@ -41,7 +41,7 @@ require 'psych/handlers/document_stream'
 # Psych provides a range of interfaces for parsing a YAML document ranging from
 # low level to high level, depending on your parsing needs.  At the lowest
 # level, is an event based parser.  Mid level is access to the raw YAML AST,
-# and at the highest level is the ability to unmarshal YAML to ruby objects.
+# and at the highest level is the ability to unmarshal YAML to Ruby objects.
 #
 # == YAML Emitting
 #
@@ -172,7 +172,7 @@ require 'psych/handlers/document_stream'
 #
 # The lowest level parser should be used when the YAML input is already known,
 # and the developer does not want to pay the price of building an AST or
-# automatic detection and conversion to ruby objects.  See Psych::Parser for
+# automatic detection and conversion to Ruby objects.  See Psych::Parser for
 # more information on using the event based parser.
 #
 # ==== Reading to Psych::Nodes::Stream structure
@@ -200,7 +200,7 @@ require 'psych/handlers/document_stream'
 # document.  This interface should be used when document format is known in
 # advance or speed is a concern.  See Psych::Emitter for more information.
 #
-# ==== Writing to a ruby structure
+# ==== Writing to a Ruby structure
 #
 #   Psych.parser.parse("--- a")       # => #<Psych::Parser>
 #
@@ -433,7 +433,7 @@ module Psych
 
   ###
   # Load multiple documents given in +yaml+.  Returns the parsed documents
-  # as a list.  If a block is given, each document will be converted to ruby
+  # as a list.  If a block is given, each document will be converted to Ruby
   # and passed to the block during parsing
   #
   # Example:
@@ -458,7 +458,7 @@ module Psych
 
   ###
   # Load the document contained in +filename+.  Returns the yaml contained in
-  # +filename+ as a ruby object
+  # +filename+ as a Ruby object
   def self.load_file filename
     File.open(filename, 'r:bom|utf-8') { |f| self.load f, filename }
   end
