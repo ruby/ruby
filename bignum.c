@@ -1351,7 +1351,7 @@ integer_unpack_single_bdigit(BDIGIT u, size_t size, int flags, BDIGIT *dp)
             ((u >> (size * CHAR_BIT - 1)) ? -1 : 1);
         if (sign < 0) {
             u |= LSHIFTX(BDIGMAX, size * CHAR_BIT);
-            u = BIGLO(-u);
+            u = BIGLO(1 + ~u);
         }
     }
     else

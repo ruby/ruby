@@ -1,3 +1,9 @@
+Tue Jun 25 12:42:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (integer_unpack_single_bdigit): Use "1 + ~u" instead of
+	  "-u" to suppress warning (C4146) by Visual Studio.
+	  Reported by ko1 via IRC.
+
 Tue Jun 25 12:28:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2ulong): Add code specialized for SIZEOF_LONG <=
