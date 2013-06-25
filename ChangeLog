@@ -1,3 +1,10 @@
+Tue Jun 25 21:26:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix for the cases when
+	  the argument x is not a BigDecimal.
+	  This change is based on the patch made by Garth Snyder.
+	  [Fix GH-332] https://github.com/ruby/ruby/pull/332
+
 Tue Jun 25 20:36:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2ulong): "check" argument removed.
