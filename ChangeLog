@@ -1,3 +1,17 @@
+Tue Jun 25 12:23:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix oldgen/remembered_shady counting algorithm.
+
+	* gc.c (rgengc_check_shady): increment
+	  `objspace->rgengc.remembered_shady_object_count' here.
+
+	* gc.c (rgengc_remember): return FALSE if obj is already remembered.
+
+	* gc.c (rgengc_rememberset_mark): make it void.
+
+	* gc.c (gc_mark_children): fix to double counting oldgen_object_count
+	  at minor GC.
+
 Tue Jun 25 12:07:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (MSB): Removed.
