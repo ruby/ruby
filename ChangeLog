@@ -1,4 +1,7 @@
-Tue Jun 25 11:39:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 25 11:40:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2ulong): suppress shorten-64-to-32 warning.  BDIGIT can
+	  be bigger than long now.
 
 	* bignum.c (LSHIFTX): remove redundant never-true expression.
 

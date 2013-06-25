@@ -2422,8 +2422,8 @@ big2ulong(VALUE x, const char *type, int check)
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
-	num = BIGUP(num);
-	num += ds[len];
+	num <<= BITSPERDIG;
+	num += (unsigned long)ds[len]; /* overflow is already checked */
     }
     return num;
 }
