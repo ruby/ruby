@@ -39,7 +39,7 @@ static VALUE big_three = Qnil;
 #   define HOST_BIGENDIAN_P 0
 #endif
 #define ALIGNOF(type) ((int)offsetof(struct { char f1; type f2; }, f2))
-#define LSHIFTX(d, n) (sizeof(d) * CHAR_BIT <= (n) ? 0 : ((d) << (sizeof(d) * CHAR_BIT <= (n) ? 0 : (n))))
+#define LSHIFTX(d, n) (sizeof(d) * CHAR_BIT <= (n) ? 0 : ((d) << (n)))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
 #define FILL_LOWBITS(d, numbits) ((d) | (LSHIFTX(((d)*0+1), (numbits))-1))
 

@@ -1,3 +1,7 @@
+Tue Jun 25 11:39:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (LSHIFTX): remove redundant never-true expression.
+
 Tue Jun 25 00:55:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (typedef struct rb_objspace): Change members for monitor objects.
