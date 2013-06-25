@@ -1,3 +1,11 @@
+Tue Jun 25 20:36:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2ulong): "check" argument removed.
+	  (rb_big2ulong): Follow above change.
+	  (rb_big2long): Ditto.
+	  (rb_big_rshift): Ditto.
+	  (rb_big_aref): Ditto.
+
 Tue Jun 25 20:08:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2ulong_pack): Use rb_integer_pack.

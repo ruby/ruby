@@ -2408,7 +2408,7 @@ rb_big_to_s(int argc, VALUE *argv, VALUE x)
 }
 
 static unsigned long
-big2ulong(VALUE x, const char *type, int check)
+big2ulong(VALUE x, const char *type)
 {
     long len = RBIGNUM_LEN(x);
     unsigned long num;
@@ -2417,10 +2417,7 @@ big2ulong(VALUE x, const char *type, int check)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > sizeof(long)) {
-	if (check)
-	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-        if (bdigit_roomof(sizeof(long)) < len)
-            len = bdigit_roomof(sizeof(long));
+        rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     }
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGITS
@@ -2447,7 +2444,7 @@ rb_big2ulong_pack(VALUE x)
 VALUE
 rb_big2ulong(VALUE x)
 {
-    unsigned long num = big2ulong(x, "unsigned long", TRUE);
+    unsigned long num = big2ulong(x, "unsigned long");
 
     if (RBIGNUM_POSITIVE_P(x)) {
         return num;
@@ -2464,7 +2461,7 @@ rb_big2ulong(VALUE x)
 SIGNED_VALUE
 rb_big2long(VALUE x)
 {
-    unsigned long num = big2ulong(x, "long", TRUE);
+    unsigned long num = big2ulong(x, "long");
 
     if (RBIGNUM_POSITIVE_P(x)) {
         if (num <= LONG_MAX)
@@ -4892,7 +4889,7 @@ rb_big_lshift(VALUE x, VALUE y)
 		if (!NIL_P(t)) return t;
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", TRUE);
+	    shift = big2ulong(y, "long");
 	    break;
 	}
 	y = rb_to_int(y);
@@ -4969,7 +4966,7 @@ rb_big_rshift(VALUE x, VALUE y)
 	    else {
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", TRUE);
+	    shift = big2ulong(y, "long");
 	    break;
 	}
 	y = rb_to_int(y);
@@ -5067,7 +5064,7 @@ rb_big_aref(VALUE x, VALUE y)
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
-	shift = big2ulong(y, "long", TRUE);
+	shift = big2ulong(y, "long");
     }
     else {
 	i = NUM2LONG(y);
