@@ -11,7 +11,7 @@ class Gem::Ext::Builder
     $1.downcase
   end
 
-  def self.make(dest_path, results)
+  def self.make(dest_path, results, disable_destdir = false)
     unless File.exist? 'Makefile' then
       raise Gem::InstallError, "Makefile not found:\n\n#{results.join "\n"}"
     end
@@ -23,7 +23,13 @@ class Gem::Ext::Builder
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
 
-    ['', ' install'].each do |target|
+    targets = if disable_destdir
+                [' DESTDIR=', ' install DESTDIR=']
+              else
+                ['', ' install']
+              end
+
+    targets.each do |target|
       cmd = "#{make_program}#{target}"
       run(cmd, results, "make#{target}")
     end
