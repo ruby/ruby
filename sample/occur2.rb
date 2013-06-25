@@ -1,5 +1,5 @@
 # word occurrence listing
-# usege: ruby occur2.rb file..
+# usage: ruby occur2.rb file..
 freq = {}
 ARGF.each_line do |line|
   for word in line.split(/\W+/)
