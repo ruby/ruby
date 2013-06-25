@@ -2752,7 +2752,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	    m = rmpd_double_figures();
 	}
 
-	x1 = BigDecimal_mult2(x1, x, SSIZET2NUM(n));
+	x1 = BigDecimal_mult2(x1, ToValue(vx), SSIZET2NUM(n));
 	++i;
 	z = BigDecimal_mult(z, SSIZET2NUM(i));
 	argv[0] = z;
