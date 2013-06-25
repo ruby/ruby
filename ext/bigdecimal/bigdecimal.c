@@ -2598,7 +2598,7 @@ BigDecimal_save_exception_mode(VALUE self)
  *
  * Execute the provided block, but preserve the rounding mode
  *
- *     BigDecimal.save_exception_mode do
+ *     BigDecimal.save_rounding_mode do
  *       BigDecimal.mode(BigDecimal::ROUND_MODE, :up)
  *       puts BigDecimal.mode(BigDecimal::ROUND_MODE)
  *     end
