@@ -2423,7 +2423,7 @@ big2ulong(VALUE x, const char *type, int check)
     }
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGITS
-    num = ds[0];
+    num = (unsigned long)ds[0];
 #else
     num = 0;
     while (len--) {
@@ -2486,16 +2486,21 @@ big2ull(VALUE x, const char *type)
 {
     long len = RBIGNUM_LEN(x);
     unsigned LONG_LONG num;
-    BDIGIT *ds;
+    BDIGIT *ds = BDIGITS(x);
 
-    if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
+    if (len == 0)
+        return 0;
+    if (BIGSIZE(x) > SIZEOF_LONG_LONG)
 	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-    ds = BDIGITS(x);
+#if SIZEOF_LONG_LONG <= SIZEOF_BDIGITS
+    num = (unsigned LONG_LONG)ds[0];
+#else
     num = 0;
     while (len--) {
 	num = BIGUP(num);
 	num += ds[len];
     }
+#endif
     return num;
 }
 
