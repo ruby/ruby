@@ -1,3 +1,10 @@
+Wed Jun 26 01:18:13 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (is_before_sweep): Add new helper function that check the object
+	  is before sweep?
+	* gc.c (rb_gc_force_recycle): Have to clear mark bit if object's slot
+	  already ready to mainor sweep.
+
 Wed Jun 26 01:17:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigsub_int): Fix a buffer over read.

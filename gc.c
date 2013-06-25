@@ -603,6 +603,22 @@ RVALUE_PROMOTE(VALUE obj)
 #endif
 }
 
+static inline int
+is_before_sweep(VALUE obj)
+{
+    struct heaps_slot *slot;
+    rb_objspace_t *objspace = &rb_objspace;
+    if (is_lazy_sweeping(objspace)) {
+	slot = objspace->heap.sweep_slots;
+	while (slot) {
+	    if(slot->header == GET_HEAP_HEADER(obj))
+		return TRUE;
+	    slot = slot->next;
+	}
+    }
+    return FALSE;
+}
+
 static inline void
 RVALUE_DEMOTE(VALUE obj)
 {
@@ -3971,6 +3987,9 @@ rb_gc_force_recycle(VALUE p)
 #if USE_RGENGC
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(p), p);
+    if(!is_before_sweep(p)){
+	CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(p), p);
+    }
 #endif
 
     objspace->total_freed_object_num++;
