@@ -1,3 +1,11 @@
+Wed Jun 26 02:25:52 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make): Pass
+	  DESTDIR via command line to override what's in MAKEFLAGS.  This
+	  fixes an installation problem under a package building
+	  environment where DESTDIR is specified in the (parent) command
+	  line. [Fixes GH-327]
+
 Tue Jun 25 00:12:19 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Return value in Array overview example found by @PragTob

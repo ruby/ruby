@@ -38,8 +38,8 @@ install (FILES test.txt DESTINATION bin)
     assert_match \
       %r%^cmake \. -DCMAKE_INSTALL_PREFIX=#{Regexp.escape @dest_path}%, output
     assert_match %r%#{Regexp.escape @ext}%, output
-    assert_match %r%^#{Regexp.escape make_command}$%, output
-    assert_match %r%^#{Regexp.escape make_command} install$%, output
+    assert_contains_make_command '', output
+    assert_contains_make_command 'install', output
     assert_match %r%test\.txt%, output
   end
 
@@ -82,8 +82,8 @@ install (FILES test.txt DESTINATION bin)
 
     output = output.join "\n"
 
-    assert_match %r%^#{make_command}%,         output
-    assert_match %r%^#{make_command} install%, output
+    assert_contains_make_command '', output
+    assert_contains_make_command 'install', output
   end
 
 end

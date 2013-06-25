@@ -32,14 +32,8 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
     assert_equal "creating Makefile\n", output[1]
-    case RUBY_PLATFORM
-    when /mswin/ then
-      assert_equal "nmake", output[2]
-      assert_equal "nmake install", output[4]
-    else
-      assert_equal "make", output[2]
-      assert_equal "make install", output[4]
-    end
+    assert_contains_make_command '', output[2]
+    assert_contains_make_command 'install', output[4]
   end
 
   def test_class_build_rbconfig_make_prog
@@ -56,8 +50,8 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     end
 
     assert_equal "creating Makefile\n", output[1]
-    assert_equal make_command, output[2]
-    assert_equal "#{make_command} install", output[4]
+    assert_contains_make_command '', output[2]
+    assert_contains_make_command 'install', output[4]
   ensure
     RbConfig::CONFIG['configure_args'] = configure_args
   end
@@ -80,7 +74,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     end
 
     assert_equal "creating Makefile\n", output[1]
-    assert_equal "anothermake", output[2]
+    assert_contains_make_command '', output[2]
   ensure
     RbConfig::CONFIG['configure_args'] = configure_args
     ENV['make'] = env_make
@@ -132,8 +126,8 @@ checking for main\(\) in .*?nonexistent/m, error.message)
       Gem::Ext::ExtConfBuilder.make @ext, output
     end
 
-    assert_equal make_command, output[0]
-    assert_equal "#{make_command} install", output[2]
+    assert_contains_make_command '', output[0]
+    assert_contains_make_command 'install', output[2]
   end
 
   def test_class_make_no_Makefile
