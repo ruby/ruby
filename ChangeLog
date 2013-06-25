@@ -1,3 +1,10 @@
+Tue Jun 25 22:45:43 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_absint_singlebit_p): Use POW2_P.
+	  (bary_pack): Ditto.
+	  (rb_big2str0): Ditto.
+	  (POW2_P): Moved to top.
+
 Tue Jun 25 22:28:07 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make): Pass

@@ -43,6 +43,7 @@ static VALUE big_three = Qnil;
 #define LSHIFTX(d, n) (sizeof(d) * CHAR_BIT <= (n) ? 0 : ((d) << (sizeof(d) * CHAR_BIT <= (n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
 #define FILL_LOWBITS(d, numbits) ((d) | (LSHIFTX(((d)*0+1), (numbits))-1))
+#define POW2_P(x) (((x)&((x)-1))==0)
 
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
@@ -665,8 +666,7 @@ rb_absint_singlebit_p(VALUE val)
     if (dp != de-1) /* two non-zero words. two bits set, at least. */
         return 0;
     d = *dp;
-    d = d & (d - 1); /* Clear the least significant bit set */
-    return d == 0;
+    return POW2_P(d);
 }
 
 static void
@@ -1076,7 +1076,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 while (dp < de && *dp == 0)
                     dp++;
                 if (de - dp == 1 && /* only one non-zero word. */
-                    (*dp & (*dp-1)) == 0) /* *dp contains only one bit set. */
+                    POW2_P(*dp)) /* *dp contains only one bit set. */
                     sign = -1; /* val == -2**(numwords*(wordsize*CHAR_BIT-nails)) */
                 else
                     sign = -2; /* val < -2**(numwords*(wordsize*CHAR_BIT-nails)) */
@@ -2036,8 +2036,6 @@ const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static VALUE bigsqr(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 
-#define POW2_P(x) (((x)&((x)-1))==0)
-
 static inline int
 ones(register unsigned long x)
 {
@@ -2343,7 +2341,7 @@ rb_big2str0(VALUE x, int base, int trim)
 
     n2 = big2str_find_n1(x, base);
 
-    if (base & (base - 1) == 0) {
+    if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
         return big2str_base_powerof2(x, (size_t)n2, base, trim);
     }
