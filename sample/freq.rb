@@ -1,5 +1,5 @@
 # word occurrence listing
-# usege: ruby freq.rb file..
+# usage: ruby freq.rb file..
 freq = Hash.new(0)
 while line = gets()
   line.scan(/\w+/) do |word|
