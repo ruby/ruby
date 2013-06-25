@@ -88,22 +88,14 @@ module OpenSSL
       should_verify_common_name = true
       cert.extensions.each{|ext|
         next if ext.oid != "subjectAltName"
-        id, ostr = OpenSSL::ASN1.decode(ext.to_der).value
-        sequence = OpenSSL::ASN1.decode(ostr.value)
-        sequence.value.each{|san|
-          case san.tag
-          when 2 # dNSName in GeneralName (RFC5280)
+        ext.value.split(/,\s+/).each{|general_name|
+          if /\ADNS:(.*)/ =~ general_name
             should_verify_common_name = false
-            reg = Regexp.escape(san.value).gsub(/\\\*/, "[^.]+")
+            reg = Regexp.escape($1).gsub(/\\\*/, "[^.]+")
             return true if /\A#{reg}\z/i =~ hostname
-          when 7 # iPAddress in GeneralName (RFC5280)
+          elsif /\AIP Address:(.*)/ =~ general_name
             should_verify_common_name = false
-            # follows GENERAL_NAME_print() in x509v3/v3_alt.c
-            if san.value.size == 4
-              return true if san.value.unpack('C*').join('.') == hostname
-            elsif san.value.size == 16
-              return true if san.value.unpack('n*').map { |e| sprintf("%X", e) }.join(':') == hostname
-            end
+            return true if $1 == hostname
           end
         }
       }
