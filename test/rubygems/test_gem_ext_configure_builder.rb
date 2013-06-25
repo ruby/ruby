@@ -30,9 +30,9 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
     assert_equal "sh ./configure --prefix=#{@dest_path}", output.shift
     assert_equal "", output.shift
-    assert_equal make_command, output.shift
+    assert_contains_make_command '', output.shift
     assert_match(/^ok$/m, output.shift)
-    assert_equal make_command + " install", output.shift
+    assert_contains_make_command 'install', output.shift
     assert_match(/^ok$/m, output.shift)
   end
 
@@ -76,8 +76,8 @@ class TestGemExtConfigureBuilder < Gem::TestCase
       Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
     end
 
-    assert_equal make_command, output[0]
-    assert_equal "#{make_command} install", output[2]
+    assert_contains_make_command '', output[0]
+    assert_contains_make_command 'install', output[2]
   end
 
 end
