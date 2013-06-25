@@ -1,3 +1,10 @@
+Tue Jun 25 19:07:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (LSHIFTX): Revert r41611.
+	  The redundant expression suppresses a warning, C4293, by Visual
+	  Studio.
+	  http://ruby-mswin.cloudapp.net/vc10-x64/ruby-trunk/log/20130625T072854Z.log.html.gz#miniruby
+
 Tue Jun 25 19:03:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2ulong): Add a cast.
