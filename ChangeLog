@@ -1,3 +1,7 @@
+Wed Jun 26 07:27:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigand_int): Fix a buffer over read.
+
 Wed Jun 26 06:48:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigadd_int): Fix a buffer over read.

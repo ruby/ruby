@@ -4651,13 +4651,10 @@ bigand_int(VALUE x, long y)
     i = 1;
     zds[0] = xds[0] & y;
 #else
-    {
-	long num = y;
-
-	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
-	    zds[i] = xds[i] & BIGLO(num);
-	    num = BIGDN(num);
-	}
+    for (i=0; i < xn; i++) {
+        if (y == 0 || y == -1) break;
+        zds[i] = xds[i] & BIGLO(y);
+        y = BIGDN(y);
     }
 #endif
     while (i < xn) {
