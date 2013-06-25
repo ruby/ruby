@@ -2618,7 +2618,7 @@ big2dbl(VALUE x)
 		d = ds[i] + BIGRAD*d;
 	    }
 	    dl = ds[i];
-	    if (bits && (dl & (1UL << (bits %= BITSPERDIG)))) {
+	    if (bits && (dl & ((BDIGIT)1 << (bits %= BITSPERDIG)))) {
 		int carry = (dl & ~(BDIGMAX << bits)) != 0;
 		if (!carry) {
 		    while (i-- > 0) {
@@ -3386,7 +3386,7 @@ bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, siz
 	if (dd == 0) continue;
 	n = 0;
 	for (j = 0; j < yl; j++) {
-	    BDIGIT_DBL ee = n + (BDIGIT_DBL)dd * yds[j];
+	    BDIGIT_DBL ee = n + dd * yds[j];
 	    n = zds[i + j] + ee;
 	    if (ee) zds[i + j] = BIGLO(n);
 	    n = BIGDN(n);

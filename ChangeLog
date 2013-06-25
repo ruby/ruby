@@ -1,3 +1,8 @@
+Tue Jun 25 21:43:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2dbl): Use (BDIGIT)1 instead of 1UL.
+	  (bary_mul_normal): Remove a useless cast.
+
 Tue Jun 25 21:26:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix for the cases when
