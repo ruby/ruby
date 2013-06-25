@@ -2438,10 +2438,9 @@ big2ulong(VALUE x, const char *type, int check)
 VALUE
 rb_big2ulong_pack(VALUE x)
 {
-    unsigned long num = big2ulong(x, "unsigned long", FALSE);
-    if (!RBIGNUM_SIGN(x)) {
-	return (VALUE)(-(SIGNED_VALUE)num);
-    }
+    unsigned long num;
+    rb_integer_pack(x, &num, 1, sizeof(num), 0,
+        INTEGER_PACK_NATIVE_BYTE_ORDER|INTEGER_PACK_2COMP);
     return num;
 }
 
@@ -5068,7 +5067,7 @@ rb_big_aref(VALUE x, VALUE y)
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
-	shift = big2ulong(y, "long", FALSE);
+	shift = big2ulong(y, "long", TRUE);
     }
     else {
 	i = NUM2LONG(y);
