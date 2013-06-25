@@ -3091,7 +3091,7 @@ bigsub_int(VALUE x, long y0)
 {
     VALUE z;
     BDIGIT *xds, *zds;
-    long xn;
+    long xn, zn;
     BDIGIT_DBL_SIGNED num;
     long i, y;
 
@@ -3099,10 +3099,19 @@ bigsub_int(VALUE x, long y0)
     xds = BDIGITS(x);
     xn = RBIGNUM_LEN(x);
 
-    z = bignew(xn, RBIGNUM_SIGN(x));
+    if (xn == 0)
+        return LONG2NUM(-y0);
+
+    zn = xn;
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    if (zn < bdigit_roomof(SIZEOF_LONG))
+        zn = bdigit_roomof(SIZEOF_LONG);
+#endif
+    z = bignew(zn, RBIGNUM_SIGN(x));
     zds = BDIGITS(z);
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
+    assert(xn == zn);
     num = (BDIGIT_DBL_SIGNED)xds[0] - y;
     if (xn == 1 && num < 0) {
 	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
@@ -3113,26 +3122,62 @@ bigsub_int(VALUE x, long y0)
     zds[0] = BIGLO(num);
     num = BIGDN(num);
     i = 1;
+    if (i < xn)
+        goto y_is_zero_x;
+    goto finish;
 #else
     num = 0;
-    for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
+    for (i=0; i < xn; i++) {
+        if (y == 0) goto y_is_zero_x;
 	num += (BDIGIT_DBL_SIGNED)xds[i] - BIGLO(y);
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
 	y = BIGDN(y);
     }
+    for (; i < zn; i++) {
+        if (y == 0) goto y_is_zero_z;
+        num -= BIGLO(y);
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        y = BIGDN(y);
+    }
+    goto finish;
 #endif
-    while (num && i < xn) {
+
+    for (; i < xn; i++) {
+      y_is_zero_x:
+        if (num == 0) goto num_is_zero_x;
 	num += xds[i];
-	zds[i++] = BIGLO(num);
+	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
-    while (i < xn) {
-	zds[i] = xds[i];
-	i++;
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    for (; i < zn; i++) {
+      y_is_zero_z:
+        if (num == 0) goto num_is_zero_z;
+        zds[i] = BIGLO(num);
+        num = BIGDN(num);
     }
+#endif
+    goto finish;
+
+    for (; i < xn; i++) {
+      num_is_zero_x:
+	zds[i] = xds[i];
+    }
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    for (; i < zn; i++) {
+      num_is_zero_z:
+        zds[i] = 0;
+    }
+#endif
+    goto finish;
+
+  finish:
+    assert(num == 0 || num == -1);
     if (num < 0) {
-	z = bigsub(x, rb_int2big(y0));
+        get2comp(z);
+	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
     }
     RB_GC_GUARD(x);
     return bignorm(z);
