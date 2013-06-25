@@ -2413,17 +2413,24 @@ big2ulong(VALUE x, const char *type, int check)
     unsigned long num;
     BDIGIT *ds;
 
+    if (len == 0)
+        return 0;
     if (BIGSIZE(x) > sizeof(long)) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-	len = bdigit_roomof(sizeof(long));
+        if (bdigit_roomof(sizeof(long)) < len)
+            len = bdigit_roomof(sizeof(long));
     }
     ds = BDIGITS(x);
+#if SIZEOF_LONG <= SIZEOF_BDIGITS
+    num = ds[0];
+#else
     num = 0;
     while (len--) {
 	num <<= BITSPERDIG;
 	num += (unsigned long)ds[len]; /* overflow is already checked */
     }
+#endif
     return num;
 }
 
