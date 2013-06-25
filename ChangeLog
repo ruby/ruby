@@ -1,3 +1,27 @@
+Tue Jun 25 12:07:18 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (MSB): Removed.
+	  (BDIGIT_MSB): Defined using BIGRAD_HALF.
+	  (bary_2comp): Apply BIGLO after possible over flow of BDIGIT.
+	  (get2comp): Ditto.
+	  (bary_unpack_internal): Use BDIGIT_MSB.
+	  Apply BIGLO after possible over flow of BDIGIT.
+	  (rb_integer_unpack): Use BDIGIT_MSB.
+	  (calc_hbase): Use BDIGMAX.
+	  (big2dbl): Use BDIGMAX.
+	  Apply BIGLO after possible over flow of BDIGIT.
+	  (rb_big_neg): Apply BIGLO after possible over flow of BDIGIT.
+	  (biglsh_bang): Ditto.
+	  (bigrsh_bang): Ditto.
+	  (bary_divmod): Use BDIGIT_MSB.
+	  (bigdivrem): Ditto.
+	  (bigxor_int): Apply BIGLO after possible over flow of BDIGIT.
+
+	* marshal.c (shortlen): Use SIZEOF_BDIGITS instead of sizeof(BDIGIT).
+
+	* ext/openssl/ossl_bn.c (ossl_bn_initialize): Use SIZEOF_BDIGITS
+	  instead of sizeof(BDIGIT).
+
 Tue Jun 25 11:40:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2ulong): suppress shorten-64-to-32 warning.  BDIGIT can

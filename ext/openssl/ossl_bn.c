@@ -147,14 +147,14 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
 	for (i = 0; len > i; i++) {
 	    BDIGIT v = ds[i];
-	    for (j = sizeof(BDIGIT) - 1; 0 <= j; j--) {
-		bin[(len-1-i)*sizeof(BDIGIT)+j] = v&0xff;
+	    for (j = SIZEOF_BDIGITS - 1; 0 <= j; j--) {
+		bin[(len-1-i)*SIZEOF_BDIGITS+j] = v&0xff;
 		v >>= 8;
 	    }
 	}
 
 	GetBN(self, bn);
-	if (!BN_bin2bn(bin, (int)sizeof(BDIGIT)*len, bn)) {
+	if (!BN_bin2bn(bin, (int)SIZEOF_BDIGITS*len, bn)) {
 	    ALLOCV_END(buf);
 	    ossl_raise(eBNError, NULL);
 	}

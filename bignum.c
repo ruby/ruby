@@ -43,12 +43,11 @@ static VALUE big_three = Qnil;
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
 #define FILL_LOWBITS(d, numbits) ((d) | (LSHIFTX(((d)*0+1), (numbits))-1))
 
-#define MSB(d) (RSHIFT((d), sizeof(d) * CHAR_BIT - 1) & 1)
-
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define BIGRAD_HALF ((BDIGIT)(BIGRAD >> 1))
+#define BDIGIT_MSB(d) (((d) & BIGRAD_HALF) != 0)
 #if SIZEOF_LONG >= SIZEOF_BDIGITS
 #   define DIGSPERLONG (SIZEOF_LONG/SIZEOF_BDIGITS)
 #endif
@@ -271,7 +270,7 @@ bary_2comp(BDIGIT *ds, size_t n)
     size_t i = n;
     BDIGIT_DBL num;
     if (!n) return 1;
-    while (i--) ds[i] = ~ds[i];
+    while (i--) ds[i] = BIGLO(~ds[i]);
     i = 0; num = 1;
     do {
 	num += ds[i];
@@ -290,7 +289,7 @@ get2comp(VALUE x)
     BDIGIT_DBL num;
 
     if (!i) return;
-    while (i--) ds[i] = ~ds[i];
+    while (i--) ds[i] = BIGLO(~ds[i]);
     i = 0; num = 1;
     do {
 	num += ds[i];
@@ -1460,7 +1459,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                     int zero_p = bary_2comp(dp, num_bdigits);
                     sign = zero_p ? -2 : -1;
                 }
-                else if (MSB(de[-1])) {
+                else if (BDIGIT_MSB(de[-1])) {
                     bary_2comp(dp, num_bdigits);
                     sign = -1;
                 }
@@ -1535,7 +1534,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
         if (nlp_bits) {
             if ((flags & INTEGER_PACK_NEGATIVE) ||
                 (bdigits[num_bdigits-1] >> (BITSPERDIG - nlp_bits - 1))) {
-                bdigits[num_bdigits-1] |= (~(BDIGIT)0) << (BITSPERDIG - nlp_bits);
+                bdigits[num_bdigits-1] |= BIGLO(BDIGMAX << (BITSPERDIG - nlp_bits));
                 sign = -1;
             }
             else {
@@ -1547,7 +1546,7 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                 sign = bary_zero_p(bdigits, num_bdigits) ? -2 : -1;
             }
             else {
-                if (num_bdigits != 0 && MSB(bdigits[num_bdigits-1]))
+                if (num_bdigits != 0 && BDIGIT_MSB(bdigits[num_bdigits-1]))
                     sign = -1;
                 else
                     sign = 1;
@@ -1693,7 +1692,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
             return LONG2FIX(0);
 	if (0 < sign && POSFIXABLE(u))
             return LONG2FIX(u);
-	if (sign < 0 && MSB(fixbuf[1]) == 0 &&
+	if (sign < 0 && BDIGIT_MSB(fixbuf[1]) == 0 &&
                 NEGFIXABLE(-(BDIGIT_DBL_SIGNED)u))
             return LONG2FIX(-(BDIGIT_DBL_SIGNED)u);
         val = bignew((long)num_bdigits, 0 <= sign);
@@ -2281,7 +2280,7 @@ calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p)
 
     hbase = base;
     hbase_numdigits = 1;
-    while (hbase <= (~(BDIGIT)0) / base) {
+    while (hbase <= BDIGMAX / base) {
         hbase *= base;
         hbase_numdigits++;
     }
@@ -2611,7 +2610,7 @@ big2dbl(VALUE x)
 	    }
 	    dl = ds[i];
 	    if (bits && (dl & (1UL << (bits %= BITSPERDIG)))) {
-		int carry = (dl & ~(~(BDIGIT)0 << bits)) != 0;
+		int carry = (dl & ~(BDIGMAX << bits)) != 0;
 		if (!carry) {
 		    while (i-- > 0) {
 			carry = ds[i] != 0;
@@ -2619,8 +2618,8 @@ big2dbl(VALUE x)
 		    }
 		}
 		if (carry) {
-		    dl &= (BDIGIT)~0 << bits;
-		    dl += (BDIGIT)1 << bits;
+		    dl &= BDIGMAX << bits;
+		    dl = BIGLO(dl + ((BDIGIT)1 << bits));
 		    if (!dl) d += 1;
 		}
 	    }
@@ -2999,7 +2998,7 @@ rb_big_neg(VALUE x)
     i = RBIGNUM_LEN(x);
     if (!i) return INT2FIX(~(SIGNED_VALUE)0);
     while (i--) {
-	ds[i] = ~ds[i];
+	ds[i] = BIGLO(~ds[i]);
     }
     RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(z));
     if (RBIGNUM_SIGN(x)) get2comp(z);
@@ -3603,10 +3602,10 @@ biglsh_bang(BDIGIT *xds, long xn, unsigned long shift)
     }
     zds = xds + xn - 1;
     xn -= s1 + 1;
-    num = xds[xn]<<s2;
+    num = BIGLO(xds[xn]<<s2);
     do {
 	*zds-- = num | xds[--xn]>>s3;
-	num = xds[xn]<<s2;
+	num = BIGLO(xds[xn]<<s2);
     }
     while (xn > 0);
     *zds = num;
@@ -3632,7 +3631,7 @@ bigrsh_bang(BDIGIT* xds, long xn, unsigned long shift)
     zds = xds + s1;
     num = *zds++>>s2;
     do {
-	xds[i++] = (BDIGIT)(*zds<<s3) | num;
+	xds[i++] = BIGLO(*zds<<s3) | num;
 	num = *zds++>>s2;
     }
     while (i < xn - s1 - 1);
@@ -4113,7 +4112,7 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
         MEMCPY(zds, xds, BDIGIT, nx);
         MEMZERO(zds+nx, BDIGIT, nz-nx);
 
-        if (MSB(yds[ny-1])) {
+        if (BDIGIT_MSB(yds[ny-1])) {
             /* bigdivrem_normal will not modify y.
              * So use yds directly.  */
             tds = yds;
@@ -4177,7 +4176,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	return Qnil;
     }
 
-    if (MSB(yds[ny-1]) == 0) {
+    if (BDIGIT_MSB(yds[ny-1]) == 0) {
         /* Make yds modifiable. */
         tds = ALLOCV_N(BDIGIT, tmpy, ny);
         MEMCPY(tds, yds, BDIGIT, ny);
@@ -4772,7 +4771,7 @@ bigxor_int(VALUE x, long y)
     }
 #endif
     while (i < xn) {
-	zds[i] = sign?xds[i]:~xds[i];
+	zds[i] = sign?xds[i]:BIGLO(~xds[i]);
 	i++;
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
@@ -4833,7 +4832,7 @@ rb_big_xor(VALUE xx, VALUE yy)
 	zds[i] = ds1[i] ^ ds2[i];
     }
     for (; i<l2; i++) {
-	zds[i] = sign?ds2[i]:~ds2[i];
+	zds[i] = sign?ds2[i]:BIGLO(~ds2[i]);
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
 

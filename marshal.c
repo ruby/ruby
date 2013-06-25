@@ -42,7 +42,7 @@ shortlen(long len, BDIGIT *ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return (len - 1)*sizeof(BDIGIT)/2 + offset;
+    return (len - 1)*SIZEOF_BDIGITS/2 + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
