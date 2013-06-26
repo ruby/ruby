@@ -1,3 +1,9 @@
+Thu Jun 27 00:23:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_pow): Retry if y is a Bignum and it is
+	  representable as a Fixnum.
+	  Use rb_absint_numwords.
+
 Wed Jun 26 23:53:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_save_rounding_mode): fix typo.

@@ -4578,6 +4578,7 @@ rb_big_pow(VALUE x, VALUE y)
     double d;
     SIGNED_VALUE yy;
 
+  again:
     if (y == INT2FIX(0)) return INT2FIX(1);
     switch (TYPE(y)) {
       case T_FLOAT:
@@ -4587,6 +4588,9 @@ rb_big_pow(VALUE x, VALUE y)
 	break;
 
       case T_BIGNUM:
+	y = bignorm(y);
+	if (FIXNUM_P(y))
+	    goto again;
 	rb_warn("in a**b, b may be too big");
 	d = rb_big2dbl(y);
 	break;
@@ -4599,11 +4603,12 @@ rb_big_pow(VALUE x, VALUE y)
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
-	    const long xlen = RBIGNUM_LEN(x);
-            const long xbits = BITSPERDIG*xlen - nlz(RBIGNUM_DIGITS(x)[xlen-1]);
-	    const long BIGLEN_LIMIT = 32*1024*1024;
+            const size_t xbits = rb_absint_numwords(x, 1, NULL);
+	    const size_t BIGLEN_LIMIT = 32*1024*1024;
 
-	    if ((xbits > BIGLEN_LIMIT) || (xbits * yy > BIGLEN_LIMIT)) {
+	    if (xbits == (size_t)-1 ||
+                (xbits > BIGLEN_LIMIT) ||
+                (xbits * yy > BIGLEN_LIMIT)) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
