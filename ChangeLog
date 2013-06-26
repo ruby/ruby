@@ -1,3 +1,9 @@
+Wed Jun 26 22:42:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: should use expanded values for header directories
+	  unless extmk.  patch by vo.x (Vit Ondruch) at [ruby-core:55653]
+	  [Bug #8115], rhbz#921650.
+
 Wed Jun 26 02:25:52 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make): Pass
