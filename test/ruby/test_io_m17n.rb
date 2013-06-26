@@ -2067,7 +2067,7 @@ EOT
       open("a", "wb") {|f| f.puts "a"}
       open("a", "rt") {|f| f.getc}
     }
-    assert_predicate(c, :ascii_only?, bug4557)
+    assert(c.ascii_only?, bug4557)
   end
 
   def test_getc_conversion
@@ -2076,7 +2076,7 @@ EOT
       open("a", "wb") {|f| f.putc "\xe1"}
       open("a", "r:iso-8859-1:utf-8") {|f| f.getc}
     }
-    assert_not_predicate(c, :ascii_only?, bug8516)
+    refute(c.ascii_only?, bug8516)
     assert_equal(1, c.size, bug8516)
   end
 

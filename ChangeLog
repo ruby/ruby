@@ -1,3 +1,8 @@
+Wed Jun 26 18:28:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_m17n.rb: assert_predicate and assert_not_predicate
+	  is not available on 1.9.3.
+
 Wed Jun 26 17:08:13 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* include/ruby/ruby.h, vm_eval.c (rb_funcall_with_block):
