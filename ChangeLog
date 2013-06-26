@@ -1,3 +1,20 @@
+Wed Jun 26 16:52:57 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/ruby/test_proc.rb (TestProc#test_block_given_method_to_proc):
+	  run test for r41359.
+
+Wed Jun 26 16:52:57 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* include/ruby/intern.h, proc.c (rb_method_call_with_block):
+	  new function to invoke a Method object with a block passed
+	  as an argument.
+
+	* proc.c (bmcall): use the above function to avoid a block sharing.
+	  [ruby-core:54626] [Bug #8341]
+
+	* test/ruby/test_proc.rb (TestProc#test_block_persist_between_calls):
+	  run related tests.
+
 Wed Jun 26 16:36:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def (predefined): add "idProc".
