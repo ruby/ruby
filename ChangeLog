@@ -1,3 +1,9 @@
+Wed Jun 26 21:01:22 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_write_32bit_boundary): skip if
+	  writing a file is slow.
+	  [ruby-core:55541] [Bug #8519]
+
 Wed Jun 26 16:42:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: should use expanded values for header directories

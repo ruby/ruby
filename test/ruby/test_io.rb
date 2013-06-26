@@ -2661,22 +2661,26 @@ End
         ret
       end
 
-      assert_separately(["-", bug8431, t.path], <<-"end;", timeout: 30)
-        msg = ARGV.shift
-        f = open(ARGV[0], "wb")
-        f.seek(0xffff_ffff)
-        begin
-          # this will consume very long time or fail by ENOSPC on a
-          # filesystem which sparse file is not supported
-          f.write('1')
-          pos = f.tell
-        rescue Errno::ENOSPC
-          skip "non-sparse file system"
-        rescue SystemCallError
-        else
-          assert_equal(0x1_0000_0000, pos, msg)
-        end
-      end;
+      begin
+        assert_separately(["-", bug8431, t.path], <<-"end;", timeout: 30)
+          msg = ARGV.shift
+          f = open(ARGV[0], "wb")
+          f.seek(0xffff_ffff)
+          begin
+            # this will consume very long time or fail by ENOSPC on a
+            # filesystem which sparse file is not supported
+            f.write('1')
+            pos = f.tell
+          rescue Errno::ENOSPC
+            skip "non-sparse file system"
+          rescue SystemCallError
+          else
+            assert_equal(0x1_0000_0000, pos, msg)
+          end
+        end;
+      rescue Timeout::Error
+        skip "Timeout because of slow file writing"
+      end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
