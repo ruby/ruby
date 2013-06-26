@@ -33,14 +33,6 @@ Tue Jun 25 00:10:54 2013  Zachary Scott  <zachary@zacharyscott.net>
 	* win32/README.win32: grammar typo by @blankenshipz [Fix GH-334]
 	  https://github.com/ruby/ruby/pull/334
 
-Sun Jun 23 00:09:12 2013  Masaya Tarui  <tarui@ruby-lang.org>
-
-	* gc.c: Fixup around GC by MALLOC.
-	  Add allocate size to malloc_increase before GC
-	  for updating limit in after_gc_sweep.
-	  Reset malloc_increase into garbage_collect()
-	  for preventing GC again soon.
-
 Sun Jun 23 00:03:18 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getpwnam): use PRIsVALUE in format string instead
