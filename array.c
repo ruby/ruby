@@ -1665,6 +1665,12 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_length(VALUE ary);
 
+static VALUE
+ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
+{
+    return rb_ary_length(ary);
+}
+
 /*
  *  call-seq:
  *     ary.each { |item| block }  -> ary
@@ -1689,7 +1695,7 @@ rb_ary_each(VALUE array)
     long i;
     volatile VALUE ary = array;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(RARRAY_AREF(ary, i));
     }
@@ -1718,7 +1724,7 @@ static VALUE
 rb_ary_each_index(VALUE ary)
 {
     long i;
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(LONG2NUM(i));
@@ -1746,7 +1752,7 @@ rb_ary_reverse_each(VALUE ary)
 {
     long len;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     len = RARRAY_LEN(ary);
     while (len--) {
 	rb_yield(RARRAY_AREF(ary, len));
@@ -2507,7 +2513,7 @@ rb_ary_sort_by_bang(VALUE ary)
 {
     VALUE sorted;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
     sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
     rb_ary_replace(ary, sorted);
@@ -2541,7 +2547,7 @@ rb_ary_collect(VALUE ary)
     long i;
     VALUE collect;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     collect = rb_ary_new2(RARRAY_LEN(ary));
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	rb_ary_push(collect, rb_yield(RARRAY_AREF(ary, i)));
@@ -2574,7 +2580,7 @@ rb_ary_collect_bang(VALUE ary)
 {
     long i;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	rb_ary_store(ary, i, rb_yield(RARRAY_AREF(ary, i)));
@@ -2657,7 +2663,7 @@ rb_ary_select(VALUE ary)
     VALUE result;
     long i;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     result = rb_ary_new2(RARRAY_LEN(ary));
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
@@ -2688,7 +2694,7 @@ rb_ary_select_bang(VALUE ary)
 {
     long i1, i2;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
 	VALUE v = RARRAY_AREF(ary, i1);
@@ -2724,7 +2730,7 @@ rb_ary_select_bang(VALUE ary)
 static VALUE
 rb_ary_keep_if(VALUE ary)
 {
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_select_bang(ary);
     return ary;
 }
@@ -2982,7 +2988,7 @@ ary_reject_bang(VALUE ary)
 static VALUE
 rb_ary_reject_bang(VALUE ary)
 {
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     return ary_reject_bang(ary);
 }
 
@@ -3004,7 +3010,7 @@ rb_ary_reject(VALUE ary)
 {
     VALUE rejected_ary;
 
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rejected_ary = rb_ary_new();
     ary_reject(ary, rejected_ary);
     return rejected_ary;
@@ -3031,7 +3037,7 @@ rb_ary_reject(VALUE ary)
 static VALUE
 rb_ary_delete_if(VALUE ary)
 {
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     ary_reject_bang(ary);
     return ary;
 }
@@ -4485,7 +4491,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 }
 
 static VALUE
-rb_ary_cycle_size(VALUE self, VALUE args)
+rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
     long mul;
     VALUE n = Qnil;
@@ -4622,7 +4628,7 @@ binomial_coefficient(long comb, long size)
 }
 
 static VALUE
-rb_ary_permutation_size(VALUE ary, VALUE args)
+rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = (args && (RARRAY_LEN(args) > 0)) ? NUM2LONG(RARRAY_AREF(args, 0)) : n;
@@ -4699,7 +4705,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 }
 
 static VALUE
-rb_ary_combination_size(VALUE ary, VALUE args)
+rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
@@ -4822,7 +4828,7 @@ rpermute0(long n, long r, long *p, long index, VALUE values)
 }
 
 static VALUE
-rb_ary_repeated_permutation_size(VALUE ary, VALUE args)
+rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
@@ -4915,7 +4921,7 @@ rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 }
 
 static VALUE
-rb_ary_repeated_combination_size(VALUE ary, VALUE args)
+rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));

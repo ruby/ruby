@@ -460,6 +460,12 @@ rb_struct_new(VALUE klass, ...)
 static VALUE
 rb_struct_size(VALUE s);
 
+static VALUE
+struct_enum_size(VALUE s, VALUE args, VALUE eobj)
+{
+    return rb_struct_size(s);
+}
+
 /*
  *  call-seq:
  *     struct.each {|obj| block }  -> struct
@@ -484,7 +490,7 @@ rb_struct_each(VALUE s)
 {
     long i;
 
-    RETURN_SIZED_ENUMERATOR(s, 0, 0, rb_struct_size);
+    RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	rb_yield(RSTRUCT_GET(s, i));
     }
@@ -516,7 +522,7 @@ rb_struct_each_pair(VALUE s)
     VALUE members;
     long i;
 
-    RETURN_SIZED_ENUMERATOR(s, 0, 0, rb_struct_size);
+    RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE key = rb_ary_entry(members, i);
@@ -827,7 +833,7 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     long i;
 
     rb_check_arity(argc, 0, 0);
-    RETURN_SIZED_ENUMERATOR(s, 0, 0, rb_struct_size);
+    RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     result = rb_ary_new();
     for (i = 0; i < RSTRUCT_LEN(s); i++) {
 	if (RTEST(rb_yield(RSTRUCT_GET(s, i)))) {

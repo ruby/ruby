@@ -6291,7 +6291,7 @@ rb_str_lines(int argc, VALUE *argv, VALUE str)
 }
 
 static VALUE
-rb_str_each_byte_size(VALUE str, VALUE args)
+rb_str_each_byte_size(VALUE str, VALUE args, VALUE eobj)
 {
     return LONG2FIX(RSTRING_LEN(str));
 }
@@ -6371,7 +6371,7 @@ rb_str_bytes(VALUE str)
 }
 
 static VALUE
-rb_str_each_char_size(VALUE str)
+rb_str_each_char_size(VALUE str, VALUE args, VALUE eobj)
 {
     long len = RSTRING_LEN(str);
     if (!single_byte_optimizable(str)) {

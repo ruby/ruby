@@ -327,7 +327,7 @@ discrete_object_p(VALUE obj)
 }
 
 static VALUE
-range_step_size(VALUE range, VALUE args)
+range_step_size(VALUE range, VALUE args, VALUE eobj)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     VALUE step = INT2FIX(1);
@@ -716,6 +716,12 @@ range_size(VALUE range)
     return Qnil;
 }
 
+static VALUE
+range_enum_size(VALUE range, VALUE args, VALUE eobj)
+{
+    return range_size(range);
+}
+
 /*
  *  call-seq:
  *     rng.each {| i | block } -> rng
@@ -742,7 +748,7 @@ range_each(VALUE range)
 {
     VALUE beg, end;
 
-    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_size);
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);

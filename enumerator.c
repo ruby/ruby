@@ -120,7 +120,7 @@ struct enumerator {
     VALUE feedvalue;
     VALUE stop_exc;
     VALUE size;
-    VALUE (*size_fn)(ANYARGS);
+    rb_enumerator_size_func *size_fn;
 };
 
 static VALUE rb_cGenerator, rb_cYielder;
@@ -474,6 +474,12 @@ enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
 static VALUE
 enumerator_size(VALUE obj);
 
+static VALUE
+enumerator_enum_size(VALUE obj, VALUE args, VALUE eobj)
+{
+    return enumerator_size(obj);
+}
+
 /*
  * call-seq:
  *   e.with_index(offset = 0) {|(*args), idx| ... }
@@ -492,7 +498,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     VALUE memo;
 
     rb_scan_args(argc, argv, "01", &memo);
-    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     if (NIL_P(memo))
 	memo = INT2FIX(0);
     else
@@ -557,7 +563,7 @@ enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
 static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
 {
-    RETURN_SIZED_ENUMERATOR(obj, 1, &memo, enumerator_size);
+    RETURN_SIZED_ENUMERATOR(obj, 1, &memo, enumerator_enum_size);
     enumerator_block_call(obj, enumerator_with_object_i, memo);
 
     return memo;

@@ -1,3 +1,8 @@
+Wed Jun 26 22:43:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_enumerator_size_func): define strict
+	  function declaration for rb_enumeratorize_with_size().
+
 Wed Jun 26 21:01:22 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_write_32bit_boundary): skip if

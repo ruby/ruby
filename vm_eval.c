@@ -998,7 +998,7 @@ loop_i(void)
 }
 
 static VALUE
-rb_f_loop_size(VALUE self, VALUE args)
+rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
 {
     return DBL2NUM(INFINITY);
 }

@@ -1829,7 +1829,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 }
 
 static VALUE
-num_step_size(VALUE from, VALUE args)
+num_step_size(VALUE from, VALUE args, VALUE eobj)
 {
     VALUE to = RARRAY_AREF(args, 0);
     VALUE step = (RARRAY_LEN(args) > 1) ? RARRAY_AREF(args, 1) : INT2FIX(1);
@@ -3473,7 +3473,7 @@ fix_size(VALUE fix)
 }
 
 static VALUE
-int_upto_size(VALUE from, VALUE args)
+int_upto_size(VALUE from, VALUE args, VALUE eobj)
 {
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(1), FALSE);
 }
@@ -3520,7 +3520,7 @@ int_upto(VALUE from, VALUE to)
 }
 
 static VALUE
-int_downto_size(VALUE from, VALUE args)
+int_downto_size(VALUE from, VALUE args, VALUE eobj)
 {
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(-1), FALSE);
 }
@@ -3568,7 +3568,7 @@ int_downto(VALUE from, VALUE to)
 }
 
 static VALUE
-int_dotimes_size(VALUE num)
+int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
 {
     if (FIXNUM_P(num)) {
 	if (NUM2LONG(num) <= 0) return INT2FIX(0);

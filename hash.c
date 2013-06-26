@@ -1014,6 +1014,12 @@ delete_if_i(VALUE key, VALUE value, VALUE hash)
 
 static VALUE rb_hash_size(VALUE hash);
 
+static VALUE
+hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
+{
+    return rb_hash_size(hash);
+}
+
 /*
  *  call-seq:
  *     hsh.delete_if {| key, value | block }  -> hsh
@@ -1032,7 +1038,7 @@ static VALUE rb_hash_size(VALUE hash);
 VALUE
 rb_hash_delete_if(VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl)
 	rb_hash_foreach(hash, delete_if_i, hash);
@@ -1053,7 +1059,7 @@ rb_hash_reject_bang(VALUE hash)
 {
     st_index_t n;
 
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
@@ -1130,7 +1136,7 @@ rb_hash_select(VALUE hash)
 {
     VALUE result;
 
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = rb_hash_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
@@ -1159,7 +1165,7 @@ rb_hash_select_bang(VALUE hash)
 {
     st_index_t n;
 
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
@@ -1184,7 +1190,7 @@ rb_hash_select_bang(VALUE hash)
 VALUE
 rb_hash_keep_if(VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl)
 	rb_hash_foreach(hash, keep_if_i, hash);
@@ -1424,7 +1430,7 @@ each_value_i(VALUE key, VALUE value)
 static VALUE
 rb_hash_each_value(VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_foreach(hash, each_value_i, 0);
     return hash;
 }
@@ -1457,7 +1463,7 @@ each_key_i(VALUE key, VALUE value)
 static VALUE
 rb_hash_each_key(VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_foreach(hash, each_key_i, 0);
     return hash;
 }
@@ -1494,7 +1500,7 @@ each_pair_i(VALUE key, VALUE value)
 static VALUE
 rb_hash_each_pair(VALUE hash)
 {
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, rb_hash_size);
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_foreach(hash, each_pair_i, 0);
     return hash;
 }
@@ -2667,7 +2673,7 @@ env_keys(void)
 }
 
 static VALUE
-rb_env_size(VALUE ehash)
+rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 {
     char **env;
     long cnt = 0;

@@ -312,7 +312,7 @@ find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 }
 
 static VALUE
-enum_size(VALUE self, VALUE args)
+enum_size(VALUE self, VALUE args, VALUE eobj)
 {
     VALUE r;
     r = rb_check_funcall(self, id_size, 0, 0);
@@ -1795,13 +1795,13 @@ each_slice_i(VALUE i, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-enum_each_slice_size(VALUE obj, VALUE args)
+enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
-    size = enum_size(obj, 0);
+    size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
 
     n = rb_funcall(size, '+', 1, LONG2NUM(slice_size-1));
@@ -1862,13 +1862,13 @@ each_cons_i(VALUE i, VALUE args, int argc, VALUE *argv)
 }
 
 static VALUE
-enum_each_cons_size(VALUE obj, VALUE args)
+enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
     long cons_size = NUM2LONG(RARRAY_AREF(args, 0));
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
 
-    size = enum_size(obj, 0);
+    size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
 
     n = rb_funcall(size, '+', 1, LONG2NUM(1 - cons_size));
@@ -2251,11 +2251,11 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 }
 
 static VALUE
-enum_cycle_size(VALUE self, VALUE args)
+enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
     long mul;
     VALUE n = Qnil;
-    VALUE size = enum_size(self, args);
+    VALUE size = enum_size(self, args, 0);
 
     if (size == Qnil) return Qnil;
 
