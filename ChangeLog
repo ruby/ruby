@@ -1,3 +1,18 @@
+Wed Jun 26 17:01:22 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* benchmark/bm_hash_shift.rb: add benchmark for Hash#shift
+
+	* hash.c (rb_hash_shift): use st_shift if hash is not being iterated to
+	  delete element without iterating the whole hash.
+
+	* hash.c (shift_i): remove function
+
+	* include/ruby/st.h (st_shift): add st_shift function
+
+	* st.c (st_shift): ditto
+
+	[Backport #8328] [ruby-core:55250] Patch by funny-falcon
+
 Wed Jun 26 16:52:57 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/ruby/test_proc.rb (TestProc#test_block_given_method_to_proc):
