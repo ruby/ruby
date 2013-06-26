@@ -611,7 +611,7 @@ is_before_sweep(VALUE obj)
     if (is_lazy_sweeping(objspace)) {
 	slot = objspace->heap.sweep_slots;
 	while (slot) {
-	    if(slot->header == GET_HEAP_HEADER(obj))
+	    if (slot->header == GET_HEAP_HEADER(obj))
 		return TRUE;
 	    slot = slot->next;
 	}
@@ -3987,7 +3987,7 @@ rb_gc_force_recycle(VALUE p)
 #if USE_RGENGC
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(p), p);
-    if(!is_before_sweep(p)){
+    if (!is_before_sweep(p)) {
 	CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(p), p);
     }
 #endif
