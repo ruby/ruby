@@ -106,6 +106,8 @@ class TestIntegerComb < Test::Unit::TestCase
   ]
 
   #VS.map! {|v| 0x4000000000000000.coerce(v)[0] }
+  #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }
+  #VS.sort! {|a, b| a.abs <=> b.abs }
 
   min = -1
   min *= 2 while min.class == Fixnum

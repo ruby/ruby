@@ -123,6 +123,12 @@ class TestBignum < Test::Unit::TestCase
   T1024  = b.coerce(2**1024).first
   T1024P = b.coerce(T1024 - 1).first
 
+  f = b
+  while Bignum === f-1
+    f = f >> 1
+  end
+  FIXNUM_MAX = f-1
+
   def test_prepare
     assert_instance_of(Bignum, T_ZERO)
     assert_instance_of(Bignum, T_ONE)
@@ -454,6 +460,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32 + T31, T32 | T31)
     assert_equal(-T31, (-T32) | (-T31))
     assert_equal(T64 + T32, T32 | T64)
+    assert_equal(FIXNUM_MAX, T_ZERO | FIXNUM_MAX)
   end
 
   def test_xor

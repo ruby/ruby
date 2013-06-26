@@ -1,3 +1,12 @@
+Wed Jun 26 12:13:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigand_int): Consider negative values.
+	  (bigor_int): The allocated bignum should have enough size
+	  to store long.
+	  This fixes (bignum fits in a BDIGIT) | (fixnum bigger than BDIGIT)
+	  on platforms which SIZEOF_BDIGITS < SIZEOF_LONG,
+	  such as LP64 with 32bit BDIGIT (no int128).
+
 Wed Jun 26 12:08:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_udp.rb: Close sockets explicitly.

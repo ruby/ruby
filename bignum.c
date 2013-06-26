@@ -4643,6 +4643,10 @@ bigand_int(VALUE x, long y)
 	return LONG2NUM(y);
     }
 #endif
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    if (RBIGNUM_NEGATIVE_P(x) && zn < bdigit_roomof(SIZEOF_LONG))
+        zn = bdigit_roomof(SIZEOF_LONG);
+#endif
 
     z = bignew(zn, RBIGNUM_SIGN(x) || sign);
     zds = BDIGITS(z);
@@ -4656,10 +4660,18 @@ bigand_int(VALUE x, long y)
         zds[i] = xds[i] & BIGLO(y);
         y = BIGDN(y);
     }
+    for (; i < zn; i++) {
+        if (y == 0 || y == -1) break;
+        zds[i] = RBIGNUM_NEGATIVE_P(x) ? BIGLO(y) : 0;
+        y = BIGDN(y);
+    }
+
 #endif
-    while (i < xn) {
+    for (;i < xn; i++) {
 	zds[i] = sign?0:xds[i];
-	i++;
+    }
+    for (;i < zn; i++) {
+	zds[i] = (!sign && RBIGNUM_NEGATIVE_P(x)) ? BDIGMAX : 0;
     }
     if (!RBIGNUM_SIGN(z)) get2comp(z);
     return bignorm(z);
@@ -4737,26 +4749,54 @@ bigor_int(VALUE x, long y)
     sign = (y >= 0);
     xds = BDIGITS(x);
     zn = xn = RBIGNUM_LEN(x);
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    if (zn < bdigit_roomof(SIZEOF_LONG))
+        zn = bdigit_roomof(SIZEOF_LONG);
+#endif
     z = bignew(zn, RBIGNUM_SIGN(x) && sign);
     zds = BDIGITS(z);
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
     i = 1;
     zds[0] = xds[0] | y;
+    if (i < zn)
+        goto y_is_fixed_point;
+    goto finish;
 #else
-    {
-	long num = y;
-
-	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
-	    zds[i] = xds[i] | BIGLO(num);
-	    num = BIGDN(num);
-	}
+    for (i=0; i < xn; i++) {
+        if (y == 0 || y == -1) goto y_is_fixed_point;
+        zds[i] = xds[i] | BIGLO(y);
+        y = BIGDN(y);
     }
+    if (RBIGNUM_NEGATIVE_P(x))
+        goto fill_hibits;
+    for (; i < zn; i++) {
+        if (y == 0 || y == -1) goto y_is_fixed_point;
+        zds[i] = BIGLO(y);
+        y = BIGDN(y);
+    }
+  goto finish;
 #endif
-    while (i < xn) {
-	zds[i] = sign?xds[i]:BDIGMAX;
-	i++;
+
+  y_is_fixed_point:
+    if (!sign)
+        goto fill_hibits;
+    for (; i < xn; i++) {
+        zds[i] = xds[i];
     }
+    if (RBIGNUM_NEGATIVE_P(x))
+        goto fill_hibits;
+    for (; i < zn; i++) {
+        zds[i] = 0;
+    }
+  goto finish;
+
+  fill_hibits:
+    for (; i < zn; i++) {
+        zds[i] = BDIGMAX;
+    }
+
+  finish:
     if (!RBIGNUM_SIGN(z)) get2comp(z);
     return bignorm(z);
 }
