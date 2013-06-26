@@ -1,3 +1,8 @@
+Wed Jun 26 16:13:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_getc): fix 7bit coderange condition, check if ascii read
+	  data instead of read length. [ruby-core:55444] [Bug #8516]
+
 Wed Jun 26 16:10:01 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
