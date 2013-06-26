@@ -235,11 +235,10 @@ module MakeMakefile
     path = dir
   end
   $extmk ||= false
-  if not $extmk and File.exist?(RbConfig::CONFIG["rubyhdrdir"] + "/ruby/ruby.h")
-    $hdrdir = CONFIG["rubyhdrdir"]
+  if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
     $topdir = $hdrdir
     $top_srcdir = $hdrdir
-    $arch_hdrdir = CONFIG["rubyarchhdrdir"]
+    $arch_hdrdir = RbConfig::CONFIG["rubyarchhdrdir"]
   elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h")
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"

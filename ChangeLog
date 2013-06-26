@@ -1,3 +1,9 @@
+Wed Jun 26 16:42:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: should use expanded values for header directories
+	  unless extmk.  patch by vo.x (Vit Ondruch) at [ruby-core:55653]
+	  [Bug #8115], rhbz#921650.
+
 Wed Jun 26 12:48:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigxor_int): Fix a buffer over read.
