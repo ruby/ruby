@@ -683,7 +683,7 @@ def eval_samplecode(code, file=nil)
       end
     }
   }
-  Tk.update
+  Tk.update rescue nil
 end
 
 # invoke --
@@ -699,7 +699,7 @@ def invoke(txt, idx)
 
   cursor = txt.cget('cursor')
   txt.cursor('watch')
-  Tk.update
+  Tk.update rescue nil
   # eval(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join, _null_binding)
   # Tk.update
   eval_samplecode(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join, tag[5..-1] + '.rb')
@@ -1058,7 +1058,7 @@ if ARGV[0] == '-n'
   no_launcher = true if ARGV.size > 0
 else
   # show the root widget to make it lower then demo windows
-  Tk.update
+  Tk.update rescue nil
 end
 ARGV.each{|cmd|
   if cmd =~ /(.*).rb/

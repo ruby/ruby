@@ -68,7 +68,7 @@ def populate_tree(tree, node)
   path = tree.get(node, :fullpath)
   tree.delete(tree.children(node))
   Dir.glob("#{path}/*").sort.each{|f|
-    type = File.ftype(f)
+    type = File.ftype(f) rescue nil
     id = tree.insert(node, :end,
                      :text=>File.basename(f), :values=>[f, type]).id
     if type == 'directory'
