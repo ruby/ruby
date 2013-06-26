@@ -1,3 +1,10 @@
+Wed Jun 26 16:31:49 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (capability_response): should ignore trailing
+	  spaces.  Thanks, Peter Kovacs.  [ruby-core:55024] [Bug #8415]
+
+	* test/net/imap/test_imap_response_parser.rb: related test.
+
 Wed Jun 26 16:29:41 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* intern.h: remove dangling rb_class_init_copy declaration
