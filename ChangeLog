@@ -1,3 +1,16 @@
+Wed Jun 26 16:36:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (predefined): add "idProc".
+
+	* proc.c (mnew, mproc, mlambda): use predefined IDs.
+
+	* vm.c (Init_VM): ditto.
+
+Wed Jun 26 16:36:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_block_lambda): add declaration instead of
+	  deprecated rb_f_lambda.
+
 Wed Jun 26 16:31:49 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (capability_response): should ignore trailing
