@@ -1,3 +1,8 @@
+Wed Jun 26 16:10:01 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/socket/extconf.rb:  Enable RFC 3542 IPV6 socket options for OS X
+	  10.7+.  [ruby-trunk - Bug #8517]
+
 Tue Jun 25 21:54:17 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c: Fixup around GC by MALLOC.
