@@ -1,3 +1,8 @@
+Wed Jun 26 23:53:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_save_rounding_mode): fix typo.
+	Fixes GH-343. Patch by @jgarber.
+
 Wed Jun 26 23:22:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (rb_enumeratorize_with_size): use strict definition
