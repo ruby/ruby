@@ -4873,6 +4873,10 @@ bigxor_int(VALUE x, long y)
     sign = (y >= 0) ? 1 : 0;
     xds = BDIGITS(x);
     zn = xn = RBIGNUM_LEN(x);
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    if (zn < bdigit_roomof(SIZEOF_LONG))
+        zn = bdigit_roomof(SIZEOF_LONG);
+#endif
     z = bignew(zn, !(RBIGNUM_SIGN(x) ^ sign));
     zds = BDIGITS(z);
 
@@ -4880,19 +4884,22 @@ bigxor_int(VALUE x, long y)
     i = 1;
     zds[0] = xds[0] ^ y;
 #else
-    {
-	long num = y;
-
-	for (i=0; i<bdigit_roomof(SIZEOF_LONG); i++) {
-	    zds[i] = xds[i] ^ BIGLO(num);
-	    num = BIGDN(num);
-	}
+    for (i = 0; i < xn; i++) {
+        zds[i] = xds[i] ^ BIGLO(y);
+        y = BIGDN(y);
+    }
+    for (; i < zn; i++) {
+        zds[i] = (RBIGNUM_SIGN(x) ? 0 : BDIGMAX) ^ BIGLO(y);
+        y = BIGDN(y);
     }
 #endif
-    while (i < xn) {
-	zds[i] = sign?xds[i]:BIGLO(~xds[i]);
-	i++;
+    for (; i < xn; i++) {
+        zds[i] = sign ? xds[i] : BIGLO(~xds[i]);
     }
+    for (; i < zn; i++) {
+        zds[i] = sign ^ RBIGNUM_SIGN(x) ? BDIGMAX : 0;
+    }
+
     if (!RBIGNUM_SIGN(z)) get2comp(z);
     return bignorm(z);
 }

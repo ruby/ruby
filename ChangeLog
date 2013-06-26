@@ -1,3 +1,7 @@
+Wed Jun 26 12:48:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigxor_int): Fix a buffer over read.
+
 Wed Jun 26 12:13:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigand_int): Consider negative values.
