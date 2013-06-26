@@ -1220,4 +1220,24 @@ class TestModule < Test::Unit::TestCase
     INPUT
     assert_in_out_err([], src, ["NameError"], [])
   end
+
+  def test_include_module_with_constants_invalidates_method_cache
+    assert_in_out_err([], <<-RUBY, %w(123 456), [])
+      A = 123
+
+      class Foo
+        def self.a
+          A
+        end
+      end
+
+      module M
+        A = 456
+      end
+
+      puts Foo.a
+      Foo.send(:include, M)
+      puts Foo.a
+    RUBY
+  end
 end

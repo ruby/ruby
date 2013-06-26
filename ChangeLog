@@ -1,3 +1,10 @@
+Wed Jun 26 16:22:12 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c (include_modules_at): invalidate method cache if included
+	  module contains constants
+
+	* test/ruby/test_module.rb: add test
+
 Wed Jun 26 16:13:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_getc): fix 7bit coderange condition, check if ascii read
