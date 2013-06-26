@@ -1,3 +1,8 @@
+Wed Jun 26 23:22:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (rb_enumeratorize_with_size): use strict definition
+	  rb_enumerator_size_func.
+
 Wed Jun 26 23:11:14 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* gc.c (is_before_sweep): Add a missing space before a parenthesis.
