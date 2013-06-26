@@ -1,4 +1,7 @@
-Wed Jun 26 22:43:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 26 22:44:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_enumeratorize_with_size): cast for
+	  backward compatibility.
 
 	* include/ruby/intern.h (rb_enumerator_size_func): define strict
 	  function declaration for rb_enumeratorize_with_size().
