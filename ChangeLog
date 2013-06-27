@@ -1,3 +1,12 @@
+Thu Jun 27 20:03:13 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (verify_certificate_identity): fix
+	  hostname verification. Patched by nahi.
+
+	* test/openssl/test_ssl.rb (test_verify_certificate_identity): test for
+	  above.
+
+
 Thu Jun 27 00:23:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_pow): Retry if y is a Bignum and it is
