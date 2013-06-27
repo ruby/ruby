@@ -304,37 +304,24 @@ rb_big_2comp(VALUE x)			/* get 2's complement */
 }
 
 static BDIGIT
-abs2twocomp_bang(VALUE x)
+abs2twocomp(VALUE *xp, long *n_ret)
 {
-    long numbdigits = RBIGNUM_LEN(x);
-    long n;
+    VALUE x = *xp;
+    long n = RBIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
-    BDIGIT hibits;
-
-    n = numbdigits;
+    BDIGIT hibits = 0;
 
     while (0 < n && ds[n-1] == 0)
         n--;
 
-    if (n == 0 || RBIGNUM_POSITIVE_P(x))
-        hibits = 0;
-    else {
+    if (n != 0 && RBIGNUM_NEGATIVE_P(x)) {
+        VALUE z = bignew_1(CLASS_OF(x), n, 0);
+        MEMCPY(BDIGITS(z), ds, BDIGIT, n);
+        bary_2comp(BDIGITS(z), n);
         hibits = BDIGMAX;
-        bary_2comp(ds, numbdigits);
+	*xp = z;
     }
-
-    return hibits;
-}
-
-static BDIGIT
-abs2twocomp(VALUE *xp)
-{
-    VALUE x = *xp;
-    BDIGIT hibits = 0;
-    if (RBIGNUM_NEGATIVE_P(x)) {
-	*xp = x = rb_big_clone(x);
-        hibits = abs2twocomp_bang(x);
-    }
+    *n_ret = n;
     return hibits;
 }
 
@@ -4730,27 +4717,29 @@ rb_big_and(VALUE x, VALUE y)
 {
     VALUE z;
     BDIGIT *ds1, *ds2, *zds;
-    long i, l1, l2;
+    long i, xl, yl, l1, l2;
     BDIGIT hibitsx, hibitsy;
     BDIGIT hibits1, hibits2;
     VALUE tmpv;
     BDIGIT tmph;
+    long tmpl;
 
     if (!FIXNUM_P(y) && !RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_num_coerce_bit(x, y, '&');
     }
 
-    hibitsx = abs2twocomp(&x);
+    hibitsx = abs2twocomp(&x, &xl);
     if (FIXNUM_P(y)) {
 	return bigand_int(x, FIX2LONG(y));
     }
-    hibitsy = abs2twocomp(&y);
-    if (RBIGNUM_LEN(x) > RBIGNUM_LEN(y)) {
+    hibitsy = abs2twocomp(&y, &yl);
+    if (xl > yl) {
         tmpv = x; x = y; y = tmpv;
+        tmpl = xl; xl = yl; yl = tmpl;
         tmph = hibitsx; hibitsx = hibitsy; hibitsy = tmph;
     }
-    l1 = RBIGNUM_LEN(x);
-    l2 = RBIGNUM_LEN(y);
+    l1 = xl;
+    l2 = yl;
     ds1 = BDIGITS(x);
     ds2 = BDIGITS(y);
     hibits1 = hibitsx;
