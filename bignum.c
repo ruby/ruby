@@ -289,17 +289,8 @@ get2comp(VALUE x)
 {
     long i = RBIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
-    BDIGIT_DBL num;
 
-    if (!i) return;
-    while (i--) ds[i] = BIGLO(~ds[i]);
-    i = 0; num = 1;
-    do {
-	num += ds[i];
-	ds[i++] = BIGLO(num);
-	num = BIGDN(num);
-    } while (i < RBIGNUM_LEN(x));
-    if (num != 0) {
+    if (bary_2comp(ds, i)) {
 	rb_big_resize(x, RBIGNUM_LEN(x)+1);
 	ds = BDIGITS(x);
 	ds[RBIGNUM_LEN(x)-1] = 1;
@@ -310,6 +301,50 @@ void
 rb_big_2comp(VALUE x)			/* get 2's complement */
 {
     get2comp(x);
+}
+
+static BDIGIT
+abs2twocomp_bang(VALUE x)
+{
+    long numbdigits = RBIGNUM_LEN(x);
+    long n;
+    BDIGIT *ds = BDIGITS(x);
+    BDIGIT hibits;
+
+    n = numbdigits;
+
+    while (0 < n && ds[n-1] == 0)
+        n--;
+
+    if (n == 0 || RBIGNUM_POSITIVE_P(x))
+        hibits = 0;
+    else {
+        hibits = BDIGMAX;
+        bary_2comp(ds, numbdigits);
+    }
+
+    return hibits;
+}
+
+static BDIGIT
+abs2twocomp(VALUE *xp)
+{
+    VALUE x = *xp;
+    BDIGIT hibits = 0;
+    if (RBIGNUM_NEGATIVE_P(x)) {
+	*xp = x = rb_big_clone(x);
+        hibits = abs2twocomp_bang(x);
+    }
+    return hibits;
+}
+
+static void
+twocomp2abs_bang(VALUE x, int hibits)
+{
+    RBIGNUM_SET_SIGN(x, !hibits);
+    if (hibits) {
+        get2comp(x);
+    }
 }
 
 static inline VALUE
@@ -4691,55 +4726,48 @@ bigand_int(VALUE x, long y)
  */
 
 VALUE
-rb_big_and(VALUE xx, VALUE yy)
+rb_big_and(VALUE x, VALUE y)
 {
-    volatile VALUE x, y, z;
+    VALUE z;
     BDIGIT *ds1, *ds2, *zds;
     long i, l1, l2;
-    char sign;
+    BDIGIT hibitsx, hibitsy;
+    BDIGIT hibits1, hibits2;
+    VALUE tmpv;
+    BDIGIT tmph;
 
-    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
-	return rb_num_coerce_bit(xx, yy, '&');
+    if (!FIXNUM_P(y) && !RB_TYPE_P(y, T_BIGNUM)) {
+	return rb_num_coerce_bit(x, y, '&');
     }
 
-    x = xx;
-    y = yy;
-
-    if (!RBIGNUM_SIGN(x)) {
-	x = rb_big_clone(x);
-	get2comp(x);
-    }
+    hibitsx = abs2twocomp(&x);
     if (FIXNUM_P(y)) {
 	return bigand_int(x, FIX2LONG(y));
     }
-    if (!RBIGNUM_SIGN(y)) {
-	y = rb_big_clone(y);
-	get2comp(y);
-    }
+    hibitsy = abs2twocomp(&y);
     if (RBIGNUM_LEN(x) > RBIGNUM_LEN(y)) {
-	l1 = RBIGNUM_LEN(y);
-	l2 = RBIGNUM_LEN(x);
-	ds1 = BDIGITS(y);
-	ds2 = BDIGITS(x);
-	sign = RBIGNUM_SIGN(y);
+        tmpv = x; x = y; y = tmpv;
+        tmph = hibitsx; hibitsx = hibitsy; hibitsy = tmph;
     }
-    else {
-	l1 = RBIGNUM_LEN(x);
-	l2 = RBIGNUM_LEN(y);
-	ds1 = BDIGITS(x);
-	ds2 = BDIGITS(y);
-	sign = RBIGNUM_SIGN(x);
-    }
-    z = bignew(l2, RBIGNUM_SIGN(x) || RBIGNUM_SIGN(y));
+    l1 = RBIGNUM_LEN(x);
+    l2 = RBIGNUM_LEN(y);
+    ds1 = BDIGITS(x);
+    ds2 = BDIGITS(y);
+    hibits1 = hibitsx;
+    hibits2 = hibitsy;
+
+    z = bignew(l2, 0);
     zds = BDIGITS(z);
 
     for (i=0; i<l1; i++) {
 	zds[i] = ds1[i] & ds2[i];
     }
     for (; i<l2; i++) {
-	zds[i] = sign?0:ds2[i];
+	zds[i] = hibits1 & ds2[i];
     }
-    if (!RBIGNUM_SIGN(z)) get2comp(z);
+    twocomp2abs_bang(z, hibits1 && hibits2);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
     return bignorm(z);
 }
 

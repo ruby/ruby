@@ -1,3 +1,11 @@
+Thu Jun 27 22:52:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (get2comp): Use bary_2comp.
+	  (abs2twocomp_bang): New function.
+	  (abs2twocomp): New function.
+	  (twocomp2abs_bang): New function.
+	  (rb_big_and): Use abs2twocomp and twocomp2abs_bang.
+
 Thu Jun 27 20:03:13 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (verify_certificate_identity): fix
