@@ -337,6 +337,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_verify_certificate_identity
+    # creating NULL byte SAN certificate
+    ef = OpenSSL::X509::ExtensionFactory.new
+    cert = OpenSSL::X509::Certificate.new
+    cert.subject = OpenSSL::X509::Name.parse "/DC=some/DC=site/CN=Some Site"
+    ext = ef.create_ext('subjectAltName', 'DNS:placeholder,IP:192.168.7.1,IP:13::17')
+    ext_asn1 = OpenSSL::ASN1.decode(ext.to_der)
+    san_list_der = ext_asn1.value.reduce(nil) { |memo,val| val.tag == 4 ? val.value : memo }
+    san_list_asn1 = OpenSSL::ASN1.decode(san_list_der)
+    san_list_asn1.value[0].value = 'www.example.com\0.evil.com'
+    ext_asn1.value[1].value = san_list_asn1.to_der
+    real_ext = OpenSSL::X509::Extension.new ext_asn1
+    cert.add_extension(real_ext)
+
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, 'www.example.com'))
+    assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, 'www.example.com\0.evil.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, '192.168.7.255'))
+    assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, '192.168.7.1'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, '13::17'))
+    assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, '13:0:0:0:0:0:0:17'))
+  end
+
   def test_tlsext_hostname
     return unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:hostname)
 
