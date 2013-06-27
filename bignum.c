@@ -4653,30 +4653,32 @@ rb_big_pow(VALUE x, VALUE y)
 }
 
 static VALUE
-bigand_int(VALUE x, long y)
+bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 {
     VALUE z;
     BDIGIT *xds, *zds;
-    long xn, zn;
+    long zn;
     long i;
-    char sign;
+    BDIGIT hibitsy;
 
     if (y == 0) return INT2FIX(0);
-    sign = (y > 0);
+    if (xn == 0) return LONG2NUM((long)(hibitsx & y));
+    hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
-    zn = xn = RBIGNUM_LEN(x);
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
-    if (sign) {
+    if (!hibitsy) {
 	y &= xds[0];
 	return LONG2NUM(y);
     }
 #endif
+
+    zn = xn;
 #if SIZEOF_BDIGITS < SIZEOF_LONG
-    if (RBIGNUM_NEGATIVE_P(x) && zn < bdigit_roomof(SIZEOF_LONG))
+    if (hibitsx && zn < bdigit_roomof(SIZEOF_LONG))
         zn = bdigit_roomof(SIZEOF_LONG);
 #endif
 
-    z = bignew(zn, RBIGNUM_SIGN(x) || sign);
+    z = bignew(zn, 0);
     zds = BDIGITS(z);
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
@@ -4690,18 +4692,18 @@ bigand_int(VALUE x, long y)
     }
     for (; i < zn; i++) {
         if (y == 0 || y == -1) break;
-        zds[i] = RBIGNUM_NEGATIVE_P(x) ? BIGLO(y) : 0;
+        zds[i] = hibitsx & BIGLO(y);
         y = BIGDN(y);
     }
-
 #endif
     for (;i < xn; i++) {
-	zds[i] = sign?0:xds[i];
+	zds[i] = xds[i] & hibitsy;
     }
     for (;i < zn; i++) {
-	zds[i] = (!sign && RBIGNUM_NEGATIVE_P(x)) ? BDIGMAX : 0;
+	zds[i] = hibitsx & hibitsy;
     }
-    if (!RBIGNUM_SIGN(z)) get2comp(z);
+    twocomp2abs_bang(z, hibitsx && hibitsy);
+    RB_GC_GUARD(x);
     return bignorm(z);
 }
 
@@ -4730,7 +4732,7 @@ rb_big_and(VALUE x, VALUE y)
 
     hibitsx = abs2twocomp(&x, &xl);
     if (FIXNUM_P(y)) {
-	return bigand_int(x, FIX2LONG(y));
+	return bigand_int(x, xl, hibitsx, FIX2LONG(y));
     }
     hibitsy = abs2twocomp(&y, &yl);
     if (xl > yl) {

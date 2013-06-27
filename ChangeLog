@@ -1,3 +1,8 @@
+Fri Jun 28 08:06:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigand_int): Add arguments, xn and hibitsx.
+	  Use twocomp2abs_bang.
+
 Thu Jun 27 23:58:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (abs2twocomp_bang): Removed.
