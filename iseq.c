@@ -237,6 +237,17 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     }
 }
 
+void
+rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj)
+{
+    if (!RTEST(iseq->mark_ary)) {
+	iseq->mark_ary = rb_ary_tmp_new(3);
+	OBJ_UNTRUST(iseq->mark_ary);
+	RBASIC(iseq->mark_ary)->klass = 0;
+    }
+    rb_ary_push(iseq->mark_ary, obj);
+}
+
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
@@ -259,9 +270,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     }
 
     iseq->defined_method_id = 0;
-    iseq->mark_ary = rb_ary_tmp_new(3);
-    OBJ_UNTRUST(iseq->mark_ary);
-    RBASIC(iseq->mark_ary)->klass = 0;
+    iseq->mark_ary = 0;
 
 
     /*
@@ -2047,8 +2056,7 @@ rb_iseq_build_for_ruby2cext(
     iseq->location.label = rb_str_new2(name);
     iseq->location.path = rb_str_new2(path);
     iseq->location.first_lineno = first_lineno;
-    iseq->mark_ary = rb_ary_tmp_new(3);
-    OBJ_UNTRUST(iseq->mark_ary);
+    iseq->mark_ary = 0;
     iseq->self = iseqval;
 
     iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);

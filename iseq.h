@@ -23,6 +23,7 @@ VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 			     VALUE exception, VALUE body);
 
 /* iseq.c */
+void rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj);
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);

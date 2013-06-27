@@ -416,7 +416,7 @@ static int
 iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
-	rb_ary_push(iseq->mark_ary, v);
+	rb_iseq_add_mark_object(iseq, v);
     }
     return COMPILE_OK;
 }
