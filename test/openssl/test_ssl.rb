@@ -569,7 +569,6 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     assert_equal(false, OpenSSL::SSL.verify_certificate_identity(cert, '13::17'))
     assert_equal(true,  OpenSSL::SSL.verify_certificate_identity(cert, '13:0:0:0:0:0:0:17'))
   end
-L
 end
 
 end
