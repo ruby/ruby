@@ -1,3 +1,11 @@
+Thu Jun 27 20:11:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl-inernal.rb (verify_certificate_identity):
+	  fix hostname verification. Patched by nahi.
+
+	* test/openssl/test_ssl.rb (test_verify_certificate_identity): test for
+	  above.
+
 Wed Jun 26 18:28:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_m17n.rb: assert_predicate and assert_not_predicate
