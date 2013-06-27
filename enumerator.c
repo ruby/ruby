@@ -413,7 +413,7 @@ rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, VALUE *argv, rb_enum
 	return lazy_to_enum_i(obj, meth, argc, argv, size_fn);
     else
 	return enumerator_init(enumerator_allocate(rb_cEnumerator),
-	    obj, meth, argc, argv, size_fn, Qnil);
+			       obj, meth, argc, argv, size_fn, Qnil);
 }
 
 static VALUE
