@@ -22,16 +22,17 @@ class TestNotImplement < Test::Unit::TestCase
 
   def test_call_fork
     pid = nil
-    GC.start
-    Timeout.timeout(1) {
-      pid = fork {}
+    begin
+      Timeout.timeout(1) {
+        pid = fork {}
+        Process.wait pid
+        pid = nil
+      }
+    rescue Timeout::Error
+      ps = `ps -l #{pid}`
+      Process.kill(:KILL, pid)
       Process.wait pid
-      pid = nil
-    }
-  ensure
-    if pid
-      Process.kill :KILL, pid
-      Process.wait pid
+      assert_equal nil,  pid, ps
     end
   end if Process.respond_to?(:fork)
 
