@@ -1,3 +1,11 @@
+Thu Jun 27 20:21:18 2013  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl-internal.rb (OpenSSL::SSL#verify_certificate_identity):
+	  fix hostname verification. Patch by nahi.
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_verify_certificate_identity):
+	  test for above.
+
 Sat May 18 23:34:50 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb: move entity_expansion_text_limit accessor to ...
