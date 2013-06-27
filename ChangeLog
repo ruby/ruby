@@ -1,3 +1,9 @@
+Thu Jun 27 13:16:40 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/rubygems/test_gem_installer.rb (test_install_extension_flat):
+	  use ruby in build directory in case ruby is not installed.
+	  [ruby-core:53265] [Bug #8058]
+
 Wed Jun 26 23:05:34 2013  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_write_32bit_boundary): skip if
