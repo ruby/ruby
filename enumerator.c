@@ -1260,6 +1260,12 @@ enum_size(VALUE self)
 }
 
 static VALUE
+lazyenum_size(VALUE self, VALUE args, VALUE eobj)
+{
+    return enum_size(self);
+}
+
+static VALUE
 lazy_size(VALUE self)
 {
     return enum_size(rb_ivar_get(self, id_receiver));
@@ -1405,7 +1411,7 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
 static VALUE
 enumerable_lazy(VALUE obj)
 {
-    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, enum_size);
+    VALUE result = lazy_to_enum_i(obj, sym_each, 0, 0, lazyenum_size);
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
     rb_ivar_set(result, id_method, Qfalse);
     return result;
