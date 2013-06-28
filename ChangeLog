@@ -1,3 +1,8 @@
+Fri Jun 28 12:26:53 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_and): Allocate new bignum with same size to shorter
+	  argument if it's high bits are zero.
+
 Fri Jun 28 12:14:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): Don't use local

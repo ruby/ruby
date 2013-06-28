@@ -4747,6 +4747,9 @@ rb_big_and(VALUE x, VALUE y)
     hibits1 = hibitsx;
     hibits2 = hibitsy;
 
+    if (!hibits1)
+        l2 = l1;
+
     z = bignew(l2, 0);
     zds = BDIGITS(z);
 
