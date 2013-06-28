@@ -1,3 +1,8 @@
+Fri Jun 28 12:14:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): Don't use local
+	  addresses which address family is different to remote address.
+
 Fri Jun 28 08:06:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigand_int): Add arguments, xn and hibitsx.

@@ -7,19 +7,21 @@ end
 
 class TestSocket_TCPSocket < Test::Unit::TestCase
   def test_initialize_failure
-    s = TCPServer.new("localhost", nil)
+    addr = '127.0.0.1'
+
+    s = TCPServer.new(addr, nil)
     server_port = s.addr[1]
 
-    c = TCPSocket.new("localhost", server_port)
+    c = TCPSocket.new(addr, server_port)
     client_port = c.addr[1]
 
     begin
       # TCPServer.new uses SO_REUSEADDR so we must create a failure on the
       # local address.
-      TCPSocket.new("localhost", server_port, "localhost", client_port)
+      TCPSocket.new(addr, server_port, addr, client_port)
       flunk "expected SystemCallError"
     rescue SystemCallError => e
-      assert_match "for \"localhost\" port #{client_port}", e.message
+      assert_match "for \"#{addr}\" port #{client_port}", e.message
     end
   end
 
