@@ -187,6 +187,7 @@ class TestIntegerComb < Test::Unit::TestCase
         c = a * b
         check_class(c)
         assert_equal(b * a, c, "#{a} * #{b}")
+        assert_equal(b.send(:*, a), c, "#{a} * #{b}")
         assert_equal(b, c / a, "(#{a} * #{b}) / #{a}") if a != 0
         assert_equal(a.abs * b.abs, (a * b).abs, "(#{a} * #{b}).abs")
         assert_equal((a-100)*(b-100)+(a-100)*100+(b-100)*100+10000, c, "#{a} * #{b}")

@@ -1,3 +1,11 @@
+Fri Jun 29 01:08:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* numeric.c (fix_mul): remove FIT_SQRT_LONG test as it was causing
+	  fix_mul to return an incorrect result for -2147483648*-2147483648
+	  on 64 bit platforms
+
+	* test/ruby/test_integer_comb.rb (class TestIntegerComb): add test case
+
 Fri Jun 28 12:26:53 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_and): Allocate new bignum with same size to shorter

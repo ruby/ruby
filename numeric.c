@@ -2728,8 +2728,6 @@ fix_mul(VALUE x, VALUE y)
 	if (FIXABLE(d)) return LONG2FIX(d);
 	return rb_ll2inum(d);
 #else
-	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
-	    return LONG2FIX(a*b);
 	if (a == 0) return x;
         if (MUL_OVERFLOW_FIXNUM_P(a, b))
 	    r = rb_big_mul(rb_int2big(a), rb_int2big(b));
