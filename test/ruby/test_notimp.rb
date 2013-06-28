@@ -23,7 +23,7 @@ class TestNotImplement < Test::Unit::TestCase
   def test_call_fork
     pid = nil
     begin
-      Timeout.timeout(1) {
+      Timeout.timeout(5) {
         pid = fork {}
         Process.wait pid
         pid = nil
