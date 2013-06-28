@@ -1,3 +1,9 @@
+Sat Jun 29 08:19:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigand_int): Don't apply bitwise and for BDIGIT and long.
+	  (bigor_int): Take xn and hibitsx arguments.  Use twocomp2abs_bang.
+	  (rb_big_or): Use abs2twocomp and twocomp2abs_bang.
+
 Fri Jun 29 01:08:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* numeric.c (fix_mul): remove FIT_SQRT_LONG test as it was causing
