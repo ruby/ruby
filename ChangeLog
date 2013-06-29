@@ -1,3 +1,7 @@
+Sun Jun 30 01:57:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big_rshift): Use abs2twocomp and twocomp2abs_bang.
+
 Sun Jun 30 00:14:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (RBIGNUM_SET_NEGATIVE_SIGN): New macro.

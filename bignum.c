@@ -5163,33 +5163,28 @@ big_rshift(VALUE x, unsigned long shift)
     long s1 = shift/BITSPERDIG;
     int s2 = (int)(shift%BITSPERDIG);
     VALUE z;
-    long i, j;
-    volatile VALUE save_x;
+    long j;
+    long xl;
+    BDIGIT hibitsx;
 
     if (s1 > RBIGNUM_LEN(x)) {
-	if (RBIGNUM_SIGN(x))
+	if (RBIGNUM_POSITIVE_P(x) || bary_zero_p(BDIGITS(x), RBIGNUM_LEN(x)))
 	    return INT2FIX(0);
 	else
 	    return INT2FIX(-1);
     }
-    if (!RBIGNUM_SIGN(x)) {
-	x = rb_big_clone(x);
-	get2comp(x);
-    }
-    save_x = x;
+    hibitsx = abs2twocomp(&x, &xl);
     xds = BDIGITS(x);
-    i = RBIGNUM_LEN(x); j = i - s1;
-    if (j == 0) {
-	if (RBIGNUM_SIGN(x)) return INT2FIX(0);
+    j = xl - s1;
+    if (j <= 0) {
+	if (!hibitsx) return INT2FIX(0);
 	else return INT2FIX(-1);
     }
-    z = bignew(j, RBIGNUM_SIGN(x));
+    z = bignew(j, 0);
     zds = BDIGITS(z);
-    bary_small_rshift(zds, xds+s1, j, s2, !RBIGNUM_SIGN(x));
-    if (!RBIGNUM_SIGN(x)) {
-	get2comp(z);
-    }
-    RB_GC_GUARD(save_x);
+    bary_small_rshift(zds, xds+s1, j, s2, hibitsx != 0);
+    twocomp2abs_bang(z, hibitsx != 0);
+    RB_GC_GUARD(x);
     return z;
 }
 
