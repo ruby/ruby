@@ -271,16 +271,15 @@ static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
     size_t i = n;
-    BDIGIT_DBL num;
     if (!n) return 1;
     while (i--) ds[i] = BIGLO(~ds[i]);
-    i = 0; num = 1;
-    do {
-	num += ds[i];
-	ds[i++] = BIGLO(num);
-	num = BIGDN(num);
-    } while (i < n);
-    return num != 0;
+    i = 0;
+    for (i = 0; i < n; i++) {
+	ds[i] = BIGLO(ds[i]+1);
+        if (ds[i] != 0)
+            return 0;
+    }
+    return 1;
 }
 
 /* modify a bignum by 2's complement */

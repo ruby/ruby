@@ -1,3 +1,7 @@
+Sat Jun 29 22:31:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_2comp): Simplified.
+
 Sat Jun 29 09:33:53 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigor_int): Return -1 if y == -1.
