@@ -4829,6 +4829,7 @@ bigor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 
   finish:
     twocomp2abs_bang(z, hibitsx || hibitsy);
+    RB_GC_GUARD(x);
     return bignorm(z);
 }
 
@@ -4891,22 +4892,22 @@ rb_big_or(VALUE x, VALUE y)
 }
 
 static VALUE
-bigxor_int(VALUE x, long y)
+bigxor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
 {
     VALUE z;
     BDIGIT *xds, *zds;
-    long xn, zn;
+    long zn;
     long i;
-    char sign;
+    BDIGIT hibitsy;
 
-    sign = (y >= 0) ? 1 : 0;
+    hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
-    zn = xn = RBIGNUM_LEN(x);
+    zn = RBIGNUM_LEN(x);
 #if SIZEOF_BDIGITS < SIZEOF_LONG
     if (zn < bdigit_roomof(SIZEOF_LONG))
         zn = bdigit_roomof(SIZEOF_LONG);
 #endif
-    z = bignew(zn, !(RBIGNUM_SIGN(x) ^ sign));
+    z = bignew(zn, 0);
     zds = BDIGITS(z);
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG
@@ -4918,18 +4919,18 @@ bigxor_int(VALUE x, long y)
         y = BIGDN(y);
     }
     for (; i < zn; i++) {
-        zds[i] = (RBIGNUM_SIGN(x) ? 0 : BDIGMAX) ^ BIGLO(y);
+        zds[i] = hibitsx ^ BIGLO(y);
         y = BIGDN(y);
     }
 #endif
     for (; i < xn; i++) {
-        zds[i] = sign ? xds[i] : BIGLO(~xds[i]);
+        zds[i] = xds[i] ^ hibitsy;
     }
     for (; i < zn; i++) {
-        zds[i] = sign ^ RBIGNUM_SIGN(x) ? BDIGMAX : 0;
+        zds[i] = hibitsx ^ hibitsy;
     }
-
-    if (!RBIGNUM_SIGN(z)) get2comp(z);
+    twocomp2abs_bang(z, (hibitsx ^ hibitsy) != 0);
+    RB_GC_GUARD(x);
     return bignorm(z);
 }
 /*
@@ -4940,57 +4941,50 @@ bigxor_int(VALUE x, long y)
  */
 
 VALUE
-rb_big_xor(VALUE xx, VALUE yy)
+rb_big_xor(VALUE x, VALUE y)
 {
-    volatile VALUE x, y;
     VALUE z;
     BDIGIT *ds1, *ds2, *zds;
-    long i, l1, l2;
-    char sign;
+    long i, xl, yl, l1, l2;
+    BDIGIT hibitsx, hibitsy;
+    BDIGIT hibits1, hibits2;
+    VALUE tmpv;
+    BDIGIT tmph;
+    long tmpl;
 
-    if (!FIXNUM_P(yy) && !RB_TYPE_P(yy, T_BIGNUM)) {
-	return rb_num_coerce_bit(xx, yy, '^');
+    if (!FIXNUM_P(y) && !RB_TYPE_P(y, T_BIGNUM)) {
+	return rb_num_coerce_bit(x, y, '^');
     }
 
-    x = xx;
-    y = yy;
-
-    if (!RBIGNUM_SIGN(x)) {
-	x = rb_big_clone(x);
-	get2comp(x);
-    }
+    hibitsx = abs2twocomp(&x, &xl);
     if (FIXNUM_P(y)) {
-	return bigxor_int(x, FIX2LONG(y));
+	return bigxor_int(x, xl, hibitsx, FIX2LONG(y));
     }
-    if (!RBIGNUM_SIGN(y)) {
-	y = rb_big_clone(y);
-	get2comp(y);
+    hibitsy = abs2twocomp(&y, &yl);
+    if (xl > yl) {
+        tmpv = x; x = y; y = tmpv;
+        tmpl = xl; xl = yl; yl = tmpl;
+        tmph = hibitsx; hibitsx = hibitsy; hibitsy = tmph;
     }
-    if (RBIGNUM_LEN(x) > RBIGNUM_LEN(y)) {
-	l1 = RBIGNUM_LEN(y);
-	l2 = RBIGNUM_LEN(x);
-	ds1 = BDIGITS(y);
-	ds2 = BDIGITS(x);
-	sign = RBIGNUM_SIGN(y);
-    }
-    else {
-	l1 = RBIGNUM_LEN(x);
-	l2 = RBIGNUM_LEN(y);
-	ds1 = BDIGITS(x);
-	ds2 = BDIGITS(y);
-	sign = RBIGNUM_SIGN(x);
-    }
-    z = bignew(l2, !(RBIGNUM_SIGN(x) ^ RBIGNUM_SIGN(y)));
+    l1 = xl;
+    l2 = yl;
+    ds1 = BDIGITS(x);
+    ds2 = BDIGITS(y);
+    hibits1 = hibitsx;
+    hibits2 = hibitsy;
+
+    z = bignew(l2, 0);
     zds = BDIGITS(z);
 
     for (i=0; i<l1; i++) {
 	zds[i] = ds1[i] ^ ds2[i];
     }
     for (; i<l2; i++) {
-	zds[i] = sign?ds2[i]:BIGLO(~ds2[i]);
+	zds[i] = hibitsx ^ ds2[i];
     }
-    if (!RBIGNUM_SIGN(z)) get2comp(z);
-
+    twocomp2abs_bang(z, (hibits1 ^ hibits2) != 0);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
     return bignorm(z);
 }
 

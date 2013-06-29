@@ -1,3 +1,9 @@
+Sat Jun 29 09:07:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigor_int): Use RB_GC_GUARD.
+	  (bigxor_int): Take xn and hibitsx arguments.  Use twocomp2abs_bang.
+	  (rb_big_xor): Use abs2twocomp and twocomp2abs_bang.
+
 Sat Jun 29 08:19:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigand_int): Don't apply bitwise and for BDIGIT and long.
