@@ -1,3 +1,9 @@
+Sun Jun 30 00:14:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (RBIGNUM_SET_NEGATIVE_SIGN): New macro.
+	  (RBIGNUM_SET_POSITIVE_SIGN): Ditto.
+	  (rb_big_neg): Inline get2comp to avoid double negation.
+
 Sat Jun 29 23:26:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_neg): Extracted from bary_2comp.

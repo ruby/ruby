@@ -89,6 +89,9 @@ static VALUE big_three = Qnil;
 #define BARY_DIVMOD(q, r, x, y) bary_divmod(BARY_ARGS(q), BARY_ARGS(r), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
 
+#define RBIGNUM_SET_NEGATIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 0)
+#define RBIGNUM_SET_POSITIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 1)
+
 static int nlz(BDIGIT x);
 static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
@@ -3035,16 +3038,24 @@ static VALUE
 rb_big_neg(VALUE x)
 {
     VALUE z = rb_big_clone(x);
-    BDIGIT *ds;
-    long i;
+    BDIGIT *ds = BDIGITS(z);
+    long n = RBIGNUM_LEN(z);
 
-    if (!RBIGNUM_SIGN(x)) get2comp(z);
-    ds = BDIGITS(z);
-    i = RBIGNUM_LEN(x);
-    if (!i) return INT2FIX(~(SIGNED_VALUE)0);
-    bary_neg(ds, i);
-    RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(z));
-    if (RBIGNUM_SIGN(x)) get2comp(z);
+    if (!n) return INT2FIX(-1);
+
+    if (RBIGNUM_POSITIVE_P(z)) {
+        if (bary_plus_one(ds, n)) {
+            big_extend_carry(z);
+        }
+        RBIGNUM_SET_NEGATIVE_SIGN(z);
+    }
+    else {
+        bary_neg(ds, n);
+        if (bary_plus_one(ds, n))
+            return INT2FIX(-1);
+        bary_neg(ds, n);
+        RBIGNUM_SET_POSITIVE_SIGN(z);
+    }
 
     return bignorm(z);
 }
