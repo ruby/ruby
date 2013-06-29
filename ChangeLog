@@ -1,3 +1,7 @@
+Sat Jun 29 09:33:53 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigor_int): Return -1 if y == -1.
+
 Sat Jun 29 09:07:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigor_int): Use RB_GC_GUARD.

@@ -4774,7 +4774,7 @@ bigor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     long i;
     BDIGIT hibitsy;
 
-    if (y == -1) INT2FIX(-1);
+    if (y == -1) return INT2FIX(-1);
     if (xn == 0) return hibitsx ? INT2FIX(-1) : LONG2FIX(y);
     hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
