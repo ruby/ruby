@@ -1,3 +1,13 @@
+Sat Jun 29 23:26:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_neg): Extracted from bary_2comp.
+	  (bary_plus_one): Extracted from bary_2comp.
+	  (bary_2comp): Use bary_neg and bary_plus_one.
+	  (big_extend_carry): Extracted from get2comp.
+	  (get2comp): Use big_extend_carry.
+	  (rb_integer_unpack): Use big_extend_carry.
+	  (rb_big_neg): Use bary_neg.
+
 Sat Jun 29 22:31:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_2comp): Simplified.

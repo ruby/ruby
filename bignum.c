@@ -267,19 +267,38 @@ bytes_2comp(unsigned char *buf, size_t len)
     return 1;
 }
 
-static int
-bary_2comp(BDIGIT *ds, size_t n)
+static void
+bary_neg(BDIGIT *ds, size_t n)
 {
-    size_t i = n;
-    if (!n) return 1;
-    while (i--) ds[i] = BIGLO(~ds[i]);
-    i = 0;
+    while (n--)
+        ds[n] = BIGLO(~ds[n]);
+}
+
+static int
+bary_plus_one(BDIGIT *ds, size_t n)
+{
+    size_t i;
     for (i = 0; i < n; i++) {
 	ds[i] = BIGLO(ds[i]+1);
         if (ds[i] != 0)
             return 0;
     }
     return 1;
+}
+
+static int
+bary_2comp(BDIGIT *ds, size_t n)
+{
+    if (!n) return 1;
+    bary_neg(ds, n);
+    return bary_plus_one(ds, n);
+}
+
+static void
+big_extend_carry(VALUE x)
+{
+    rb_big_resize(x, RBIGNUM_LEN(x)+1);
+    BDIGITS(x)[RBIGNUM_LEN(x)-1] = 1;
 }
 
 /* modify a bignum by 2's complement */
@@ -290,9 +309,7 @@ get2comp(VALUE x)
     BDIGIT *ds = BDIGITS(x);
 
     if (bary_2comp(ds, i)) {
-	rb_big_resize(x, RBIGNUM_LEN(x)+1);
-	ds = BDIGITS(x);
-	ds[RBIGNUM_LEN(x)-1] = 1;
+        big_extend_carry(x);
     }
 }
 
@@ -1696,8 +1713,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
     if (sign == -2) {
         if (val) {
-            rb_big_resize(val, (long)num_bdigits+1);
-            BDIGITS(val)[num_bdigits] = 1;
+            big_extend_carry(val);
         }
         else if (num_bdigits == numberof(fixbuf)) {
             val = bignew((long)num_bdigits+1, 0);
@@ -3026,9 +3042,7 @@ rb_big_neg(VALUE x)
     ds = BDIGITS(z);
     i = RBIGNUM_LEN(x);
     if (!i) return INT2FIX(~(SIGNED_VALUE)0);
-    while (i--) {
-	ds[i] = BIGLO(~ds[i]);
-    }
+    bary_neg(ds, i);
     RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(z));
     if (RBIGNUM_SIGN(x)) get2comp(z);
 
