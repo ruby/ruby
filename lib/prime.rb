@@ -71,20 +71,20 @@ end
 #
 # A "generator" provides an implementation of enumerating pseudo-prime
 # numbers and it remembers the position of enumeration and upper bound.
-# Furthermore, it is a external iterator of prime enumeration which is
-# compatible to an Enumerator.
+# Furthermore, it is an external iterator of prime enumeration which is
+# compatible with an Enumerator.
 #
 # +Prime+::+PseudoPrimeGenerator+ is the base class for generators.
 # There are few implementations of generator.
 #
 # [+Prime+::+EratosthenesGenerator+]
-#   Uses eratosthenes's sieve.
+#   Uses eratosthenes' sieve.
 # [+Prime+::+TrialDivisionGenerator+]
 #   Uses the trial division method.
 # [+Prime+::+Generator23+]
-#   Generates all positive integers which is not divided by 2 nor 3.
+#   Generates all positive integers which are not divisible by either 2 or 3.
 #   This sequence is very bad as a pseudo-prime sequence. But this
-#   is faster and uses much less memory than other generators. So,
+#   is faster and uses much less memory than the other generators. So,
 #   it is suitable for factorizing an integer which is not large but
 #   has many prime factors. e.g. for Prime#prime? .
 
@@ -133,13 +133,13 @@ class Prime
   # a parameter.
   #
   # +ubound+::
-  #   Upper bound of prime numbers. The iterator stops after
+  #   Upper bound of prime numbers. The iterator stops after it
   #   yields all prime numbers p <= +ubound+.
   #
   # == Note
   #
-  # +Prime+.+new+ returns a object extended by +Prime+::+OldCompatibility+
-  # in order to compatibility to Ruby 1.8, and +Prime+#each is overwritten
+  # +Prime+.+new+ returns an object extended by +Prime+::+OldCompatibility+
+  # in order to be compatible with Ruby 1.8, and +Prime+#each is overwritten
   # by +Prime+::+OldCompatibility+#+each+.
   #
   # +Prime+.+new+ is now obsolete. Use +Prime+.+instance+.+each+ or simply
@@ -191,9 +191,9 @@ class Prime
   # +value+:: An arbitrary integer.
   # +generator+:: Optional. A pseudo-prime generator.
   #               +generator+.succ must return the next
-  #               pseudo-prime number in the ascendent
+  #               pseudo-prime number in the ascending
   #               order. It must generate all prime numbers,
-  #               but may generate non prime numbers.
+  #               but may also generate non prime numbers too.
   #
   # === Exceptions
   # +ZeroDivisionError+:: when +value+ is zero.
@@ -209,7 +209,7 @@ class Prime
   #
   #   Prime.prime_division(12) #=> [[2,2], [3,1]]
   #
-  def prime_division(value, generator= Prime::Generator23.new)
+  def prime_division(value, generator = Prime::Generator23.new)
     raise ZeroDivisionError if value == 0
     if value < 0
       value = -value
@@ -272,7 +272,7 @@ class Prime
       raise NotImplementedError, "need to define `rewind'"
     end
 
-    # Iterates the given block for each prime numbers.
+    # Iterates the given block for each prime number.
     def each(&block)
       return self.dup unless block
       if @ubound
@@ -336,11 +336,11 @@ class Prime
     alias next succ
   end
 
-  # Generates all integer which are greater than 2 and
-  # are not divided by 2 nor 3.
+  # Generates all integers which are greater than 2 and
+  # are not divisible by either 2 or 3.
   #
   # This is a pseudo-prime generator, suitable on
-  # checking primality of a integer by brute force
+  # checking primality of an integer by brute force
   # method.
   class Generator23<PseudoPrimeGenerator
     def initialize
@@ -418,7 +418,7 @@ class Prime
     end
   end
 
-  # Internal use. An implementation of eratosthenes's sieve
+  # Internal use. An implementation of eratosthenes' sieve
   class EratosthenesSieve
     include Singleton
 
@@ -456,7 +456,7 @@ class Prime
     end
 
     private
-    # for an odd number +n+, returns (i, j, k) such that @tables[i][j][k] represents primarity of the number
+    # for an odd number +n+, returns (i, j, k) such that @tables[i][j][k] represents primality of the number
     def indices(n)
       #   binary digits of n: |0|1|2|3|4|5|6|7|8|9|10|11|....
       #   indices:            |-|    k  |  j  |     i
@@ -471,7 +471,7 @@ class Prime
     def extend_table
       lbound = NUMS_PER_TABLE * @tables.length
       ubound = lbound + NUMS_PER_TABLE
-      new_table = [FILLED_ENTRY] * ENTRIES_PER_TABLE # which represents primarity in lbound...ubound
+      new_table = [FILLED_ENTRY] * ENTRIES_PER_TABLE # which represents primality in lbound...ubound
       (3..Integer(Math.sqrt(ubound))).step(2) do |p|
         i, j, k = indices(p)
         next if @tables[i][j][k].zero?
