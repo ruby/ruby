@@ -980,7 +980,7 @@ rb_w32_get_osfhandle(int fh)
 
 /* License: Ruby's */
 static int
-join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp)
+join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -1034,6 +1034,11 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp)
 	if (quote) len++;
 	if (q) {
 	    memcpy(q, s, n);
+	    if (backslash > 0) {
+		--backslash;
+		q[n] = 0;
+		translate_char(q, '/', '\\', cp);
+	    }
 	    q += n;
 	    if (quote) *q++ = '"';
 	    *q++ = ' ';
@@ -1205,6 +1210,8 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     rb_pid_t ret = -1;
     VALUE v = 0;
     VALUE v2 = 0;
+    int sep = 0;
+    char *cmd_sep = NULL;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1222,8 +1229,11 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
 	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd, cp))) {
-	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
-	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
+	    size_t shell_len = strlen(shell);
+	    char *tmp = ALLOCV(v, shell_len + strlen(cmd) + sizeof(" -c ") + 2);
+	    memcpy(tmp, shell, shell_len + 1);
+	    translate_char(tmp, '/', '\\', cp);
+	    sprintf(tmp + shell_len, " -c \"%s\"", cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
@@ -1236,27 +1246,44 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
+	    int slash = 0;
 	    for (prog = cmd + !!quote;; prog = CharNextExA(cp, prog, 0)) {
+		if (*prog == '/') slash = 1;
 		if (!*prog) {
 		    len = prog - cmd;
+		    if (slash) {
+			STRNDUPV(p, v2, cmd, len);
+			cmd = p;
+		    }
 		    shell = cmd;
 		    break;
 		}
 		if ((unsigned char)*prog == quote) {
 		    len = prog++ - cmd - 1;
-		    STRNDUPV(p, v2, cmd + 1, len);
+		    STRNDUPV(p, v2, cmd + 1 - slash, len + (slash ? strlen(prog) + 2 : 0));
+		    if (slash) {
+			cmd = p++;
+			sep = *(cmd_sep = &p[len + 1]);
+			*cmd_sep = '\0';
+		    }
 		    shell = p;
 		    break;
 		}
 		if (quote) continue;
 		if (ISSPACE(*prog) || strchr("<>|*?\"", *prog)) {
 		    len = prog - cmd;
-		    STRNDUPV(p, v2, cmd, len);
+		    STRNDUPV(p, v2, cmd, len + (slash ? strlen(prog) : 0));
+		    if (slash) {
+			cmd = p;
+			sep = *(cmd_sep = &p[len]);
+			*cmd_sep = '\0';
+		    }
 		    shell = p;
 		    break;
 		}
 	    }
 	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
+	    if (p && slash) translate_char(p, '/', '\\', cp);
 	    if (!shell) {
 		shell = p ? p : cmd;
 	    }
@@ -1285,10 +1312,11 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	}
     }
 
-    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
-    if (v) ALLOCV_END(v);
     if (!e && shell && !(wshell = mbstr_to_wstr(cp, shell, -1, NULL))) e = E2BIG;
     if (v2) ALLOCV_END(v2);
+    if (cmd_sep) *cmd_sep = sep;
+    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
+    if (v) ALLOCV_END(v);
 
     if (!e) {
 	ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
@@ -1355,20 +1383,20 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
-	len = join_argv(NULL, progs, ntcmd, cp);
+	len = join_argv(NULL, progs, ntcmd, cp, 1);
 	if (c_switch) len += 3;
 	else ++argv;
-	if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp);
+	if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, progs, ntcmd, cp);
+	join_argv(cmd, progs, ntcmd, cp, 1);
 	if (c_switch) strlcat(cmd, " /c", len);
-	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp);
+	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0);
 	prog = c_switch ? shell : 0;
     }
     else {
-	len = join_argv(NULL, argv, FALSE, cp);
+	len = join_argv(NULL, argv, FALSE, cp, 1);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, argv, FALSE, cp);
+	join_argv(cmd, argv, FALSE, cp, 1);
     }
 
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;

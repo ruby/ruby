@@ -1,4 +1,8 @@
-Sun Jun 30 10:59:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 30 10:59:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (join_argv): use backslash instead of slash in program
+	  path, otherwise cannot invoke "./c\u{1ee7}a.exe" for some reason.
+	  [ruby-core:24309] [Bug #1771]
 
 	* io.c (spawnv, spawn): use UTF-8 spawn family.  [Bug #1771]
 
