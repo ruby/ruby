@@ -50,6 +50,7 @@
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
+static char *w32_getenv(const char *name, UINT cp);
 
 #undef stat
 #undef fclose
@@ -4448,8 +4449,8 @@ wait(int *status)
 }
 
 /* License: Ruby's */
-char *
-rb_w32_ugetenv(const char *name)
+static char *
+w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
@@ -4473,7 +4474,7 @@ rb_w32_ugetenv(const char *name)
     }
     for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
 	wlen += lstrlenW(wenv) + 1;
-    uenvarea = wstr_to_mbstr(CP_UTF8, wenvarea, wlen, NULL);
+    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
     FreeEnvironmentStringsW(wenvarea);
     if (!uenvarea)
 	return NULL;
@@ -4487,31 +4488,16 @@ rb_w32_ugetenv(const char *name)
 
 /* License: Ruby's */
 char *
+rb_w32_ugetenv(const char *name)
+{
+    return w32_getenv(name, CP_UTF8);
+}
+
+/* License: Ruby's */
+char *
 rb_w32_getenv(const char *name)
 {
-    int len = strlen(name);
-    char *env;
-
-    if (len == 0) return NULL;
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
-    }
-    if (envarea) {
-	FreeEnvironmentStrings(envarea);
-	envarea = NULL;
-    }
-    envarea = GetEnvironmentStrings();
-    if (!envarea) {
-	map_errno(GetLastError());
-	return NULL;
-    }
-
-    for (env = envarea; *env; env += strlen(env) + 1)
-	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
-	    return env + len + 1;
-
-    return NULL;
+    return w32_getenv(name, CP_ACP);
 }
 
 /* License: Artistic or GPL */

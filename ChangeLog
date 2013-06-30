@@ -1,4 +1,7 @@
-Sun Jun 30 10:58:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 30 10:58:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (w32_getenv): extract codepage aware code from
+	  rb_w32_ugetenv() and rb_w32_getenv().
 
 	* win32/win32.c (w32_stati64): extract codepage aware code from
 	  rb_w32_ustati64() and rb_w32_stati64().
