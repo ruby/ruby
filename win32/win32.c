@@ -1180,7 +1180,7 @@ static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 
 /* License: Artistic or GPL */
 rb_pid_t
-rb_w32_spawn(int mode, const char *cmd, const char *prog)
+w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
     char fbuf[MAXPATHLEN];
     char *p = NULL;
@@ -1270,10 +1270,9 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 	}
     }
 
-    /* assume ACP */
-    if (!e && cmd && !(wcmd = acp_to_wstr(cmd, NULL))) e = E2BIG;
+    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
     if (v) ALLOCV_END(v);
-    if (!e && shell && !(wshell = acp_to_wstr(shell, NULL))) e = E2BIG;
+    if (!e && shell && !(wshell = mbstr_to_wstr(cp, shell, -1, NULL))) e = E2BIG;
     if (v2) ALLOCV_END(v2);
 
     if (!e) {
@@ -1283,6 +1282,21 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     free(wcmd);
     if (e) errno = e;
     return ret;
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_spawn(int mode, const char *cmd, const char *prog)
+{
+    /* assume ACP */
+    return w32_spawn(mode, cmd, prog, filecp());
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uspawn(int mode, const char *cmd, const char *prog)
+{
+    return w32_spawn(mode, cmd, prog, CP_UTF8);
 }
 
 /* License: Artistic or GPL */
