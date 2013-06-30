@@ -5547,8 +5547,8 @@ rb_pipe(int *pipes)
 
 #ifdef _WIN32
 #define HAVE_SPAWNV 1
-#define spawnv(mode, cmd, args) rb_w32_aspawn((mode), (cmd), (args))
-#define spawn(mode, cmd) rb_w32_spawn((mode), (cmd), 0)
+#define spawnv(mode, cmd, args) rb_w32_uaspawn((mode), (cmd), (args))
+#define spawn(mode, cmd) rb_w32_uspawn((mode), (cmd), 0)
 #endif
 
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)

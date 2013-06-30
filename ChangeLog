@@ -1,4 +1,8 @@
-Sun Jun 30 10:59:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 30 10:59:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (spawnv, spawn): use UTF-8 spawn family.  [Bug #1771]
+
+	* process.c (proc_exec_sh, proc_spawn_cmd, proc_spawn_sh): ditto.
 
 	* win32/win32.c (translate_char, join_argv, has_redirection): make
 	  codepage aware.
