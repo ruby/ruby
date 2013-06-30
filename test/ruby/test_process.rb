@@ -1631,6 +1631,8 @@ EOS
         assert_equal("ok\n", `#{exename} /c echo ok`, msg)
         assert_equal("ok\n", IO.popen("#{exename} /c echo ok", &:read), msg)
         assert_equal("ok\n", IO.popen(%W"#{exename} /c echo ok", &:read), msg)
+        File.binwrite("#{name}.txt", "ok")
+        assert_equal("ok", `type #{name}.txt`)
       end
     end
   end if windows?
