@@ -1287,7 +1287,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 
 /* License: Artistic or GPL */
 rb_pid_t
-rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UINT cp)
 {
     int c_switch = 0;
     size_t len;
@@ -1342,10 +1342,9 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 	join_argv(cmd, argv, FALSE);
     }
 
-    /* assume ACP */
-    if (!e && cmd && !(wcmd = acp_to_wstr(cmd, NULL))) e = E2BIG;
+    if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
     if (v) ALLOCV_END(v);
-    if (!e && prog && !(wprog = acp_to_wstr(prog, NULL))) e = E2BIG;
+    if (!e && prog && !(wprog = mbstr_to_wstr(cp, prog, -1, NULL))) e = E2BIG;
 
     if (!e) {
 	ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
@@ -1356,10 +1355,33 @@ rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
     return ret;
 }
 
+/* License: Ruby's */
+rb_pid_t
+rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+{
+    /* assume ACP */
+    return w32_aspawn_flags(mode, prog, argv, flags, filecp());
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uaspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
+{
+    return w32_aspawn_flags(mode, prog, argv, flags, CP_UTF8);
+}
+
+/* License: Ruby's */
 rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
     return rb_w32_aspawn_flags(mode, prog, argv, 0);
+}
+
+/* License: Ruby's */
+rb_pid_t
+rb_w32_uaspawn(int mode, const char *prog, char *const *argv)
+{
+    return rb_w32_uaspawn_flags(mode, prog, argv, 0);
 }
 
 /* License: Artistic or GPL */
