@@ -1,4 +1,9 @@
-Sun Jun 30 10:57:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 30 10:58:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.h (DLN_FIND_EXTRA_ARG, DLN_FIND_EXTRA_ARG_DECL): allow extra
+	  arguments to dln_find_{exe,file}_r().
+
+	* dln_find.c (dln_find_exe_r, dln_find_file_r): add extract arguments.
 
 	* process.c (EXPORT_STR, EXPORT_DUP): convert to default process
 	  encoding if defined.

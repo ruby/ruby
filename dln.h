@@ -30,8 +30,15 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-char *dln_find_exe_r(const char*,const char*,char*,size_t);
-char *dln_find_file_r(const char*,const char*,char*,size_t);
+#ifndef DLN_FIND_EXTRA_ARG
+#define DLN_FIND_EXTRA_ARG
+#endif
+#ifndef DLN_FIND_EXTRA_ARG_DECL
+#define DLN_FIND_EXTRA_ARG_DECL
+#endif
+
+char *dln_find_exe_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
+char *dln_find_file_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;
