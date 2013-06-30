@@ -1,3 +1,12 @@
+Sun Jun 30 10:57:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (EXPORT_STR, EXPORT_DUP): convert to default process
+	  encoding if defined.
+
+	* process.c (check_exec_env_i): convert environment variables too.
+
+	* process.c (rb_exec_fillarg): convert program path and arguments too.
+
 Sun Jun 30 01:57:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_rshift): Use abs2twocomp and twocomp2abs_bang.
