@@ -1350,8 +1350,8 @@ memsize_exec_arg(const void *ptr)
 }
 
 static const rb_data_type_t exec_arg_data_type = {
-  "exec_arg",
-  {mark_exec_arg, free_exec_arg, memsize_exec_arg},
+    "exec_arg",
+    {mark_exec_arg, free_exec_arg, memsize_exec_arg},
 };
 
 #if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
