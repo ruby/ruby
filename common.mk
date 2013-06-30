@@ -831,7 +831,8 @@ unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}missing.h $(RUBY_H_INCLUDES)
 
-win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
+win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}dln.h {$(VPATH)}dln_find.c \
+  $(RUBY_H_INCLUDES) $(PLATFORM_D)
 win32/file.$(OBJEXT): {$(VPATH)}win32/file.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb

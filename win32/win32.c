@@ -21,7 +21,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
-#include "dln.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -51,6 +50,22 @@
 
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
+
+#undef getenv
+#define DLN_FIND_EXTRA_ARG_DECL ,UINT cp
+#define DLN_FIND_EXTRA_ARG ,cp
+#define rb_w32_stati64(path, st) w32_stati64(path, st, cp)
+#define getenv(name) w32_getenv(name, cp)
+#define dln_find_exe_r rb_w32_udln_find_exe_r
+#define dln_find_file_r rb_w32_udln_find_file_r
+#include "dln.h"
+#include "dln_find.c"
+#undef MAXPATHLEN
+#undef rb_w32_stati64
+#undef dln_find_exe_r
+#undef dln_find_file_r
+#define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
+#define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 
 #undef stat
 #undef fclose

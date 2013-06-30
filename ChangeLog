@@ -1,4 +1,9 @@
-Sun Jun 30 10:59:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 30 10:59:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	 rb_w32_udln_find_file_r
+
+	* win32/win32.c (rb_w32_udln_find_exe_r, rb_w32_udln_find_file_r):
+	  codepage independent versions.
 
 	* win32/win32.c (w32_spawn): extract codepage aware code from
 	  rb_w32_spawn().
