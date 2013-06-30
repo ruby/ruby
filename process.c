@@ -2179,8 +2179,8 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         for (i = 0; i < argc; i++) {
 	    VALUE arg = argv[i];
 	    const char *s = StringValueCStr(arg);
-	    arg = EXPORT_STR(arg);
 #ifdef DEFAULT_PROCESS_ENCODING
+	    arg = EXPORT_STR(arg);
 	    s = RSTRING_PTR(arg);
 #endif
 	    rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg) + 1); /* include '\0' */
