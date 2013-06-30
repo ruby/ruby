@@ -1,3 +1,8 @@
+Sun Jun 30 21:53:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Use rb_integer_unpack if base is a power
+	  of 2.
+
 Sun Jun 30 10:59:23 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (join_argv): use backslash instead of slash in program

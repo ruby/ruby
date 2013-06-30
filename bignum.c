@@ -1777,10 +1777,15 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     char sign = 1, nondigit = 0;
     int c;
     BDIGIT_DBL num;
-    long len, blen = 1;
-    long i;
     VALUE z;
     BDIGIT *zds;
+
+    int bits_per_digit;
+    size_t size, len, i;
+    size_t blen = 1;
+    VALUE v = 0;
+    uint8_t *buf;
+    uint8_t *p;
 
 #undef ISDIGIT
 #define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
@@ -1813,15 +1818,19 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    switch (str[1]) {
 	      case 'x': case 'X':
 		base = 16;
+                str += 2;
 		break;
 	      case 'b': case 'B':
 		base = 2;
+                str += 2;
 		break;
 	      case 'o': case 'O':
 		base = 8;
+                str += 2;
 		break;
 	      case 'd': case 'D':
 		base = 10;
+                str += 2;
 		break;
 	      default:
 		base = 8;
@@ -1834,47 +1843,28 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    base = 10;
 	}
     }
-    switch (base) {
-      case 2:
-	len = 1;
+    else if (base == 2) {
 	if (str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
-	break;
-      case 3:
-	len = 2;
-	break;
-      case 8:
+    }
+    else if (base == 8) {
 	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
 	    str += 2;
 	}
-      case 4: case 5: case 6: case 7:
-	len = 3;
-	break;
-      case 10:
+    }
+    else if (base == 10) {
 	if (str[0] == '0' && (str[1] == 'd'||str[1] == 'D')) {
 	    str += 2;
 	}
-      case 9: case 11: case 12: case 13: case 14: case 15:
-	len = 4;
-	break;
-      case 16:
-	len = 4;
+    }
+    else if (base == 16) {
 	if (str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
 	    str += 2;
 	}
-	break;
-      default:
-	if (base < 2 || 36 < base) {
-	    rb_raise(rb_eArgError, "invalid radix %d", base);
-	}
-	if (base <= 32) {
-	    len = 5;
-	}
-	else {
-	    len = 6;
-	}
-	break;
+    }
+    if (base < 2 || 36 < base) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
     }
     if (*str == '0') {		/* squeeze preceding 0s */
 	int us = 0;
@@ -1893,9 +1883,11 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	if (badcheck) goto bad;
 	return INT2FIX(0);
     }
-    len *= strlen(str)*sizeof(char);
 
-    if ((size_t)len <= (sizeof(long)*CHAR_BIT)) {
+    size = strlen(str);
+    bits_per_digit = BITSPERDIG - nlz(base-1);
+    len = bits_per_digit * size;
+    if (len <= (sizeof(long)*CHAR_BIT)) {
 	unsigned long val = STRTOUL(str, &end, base);
 
 	if (str < end && *end == '_') goto bigparse;
@@ -1919,12 +1911,11 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
     }
   bigparse:
-    len = (len/BITSPERDIG)+1;
+    buf = ALLOCV(v, size+1);
+    p = buf;
+
     if (badcheck && *str == '_') goto bad;
 
-    z = bignew(len, sign);
-    zds = BDIGITS(z);
-    for (i=len;i--;) zds[i]=0;
     while ((c = *str++) != 0) {
 	if (c == '_') {
 	    if (nondigit) {
@@ -1939,20 +1930,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
 	if (c >= base) break;
 	nondigit = 0;
-	i = 0;
-	num = c;
-	for (;;) {
-	    while (i<blen) {
-		num += (BDIGIT_DBL)zds[i]*base;
-		zds[i++] = BIGLO(num);
-		num = BIGDN(num);
-	    }
-	    if (num) {
-		blen++;
-		continue;
-	    }
-	    break;
-	}
+        *p++ = (uint8_t)c;
     }
     if (badcheck) {
 	str--;
@@ -1960,10 +1938,45 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	while (*str && ISSPACE(*str)) str++;
 	if (*str) {
 	  bad:
+	    if (v)
+		ALLOCV_END(v);
 	    rb_invalid_str(s, "Integer()");
 	}
     }
 
+    if (POW2_P(base)) {
+        int flags = INTEGER_PACK_BIG_ENDIAN;
+        if (!sign)
+            flags |= INTEGER_PACK_NEGATIVE;
+        z = rb_integer_unpack(buf, p - buf, 1, CHAR_BIT - bits_per_digit, flags);
+    }
+    else {
+        len = (len/BITSPERDIG)+1;
+        z = bignew(len, sign);
+        zds = BDIGITS(z);
+        for (i=len;i--;) zds[i]=0;
+
+        size = p - buf;
+        for (p = buf; p < buf + size; p++) {
+            num = *p;
+            i = 0;
+            for (;;) {
+                while (i<blen) {
+                    num += (BDIGIT_DBL)zds[i]*base;
+                    zds[i++] = BIGLO(num);
+                    num = BIGDN(num);
+                }
+                if (num) {
+                    blen++;
+                    continue;
+                }
+                break;
+            }
+        }
+    }
+
+    if (v)
+        ALLOCV_END(v);
     return bignorm(z);
 }
 
