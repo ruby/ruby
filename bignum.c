@@ -92,7 +92,6 @@ static VALUE big_three = Qnil;
 #define RBIGNUM_SET_NEGATIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 0)
 #define RBIGNUM_SET_POSITIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 1)
 
-static int nlz(BDIGIT x);
 static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
@@ -126,6 +125,91 @@ rb_big_dump(VALUE x)
 }
 #else
 #define ON_DEBUG(x)
+#endif
+
+static int
+nlz16(uint16_t x)
+{
+    uint16_t y;
+    int n = 16;
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+}
+
+static int
+nlz32(uint32_t x)
+{
+    uint32_t y;
+    int n = 32;
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+}
+
+#if defined(HAVE_UINT64_T)
+static int
+nlz64(uint64_t x)
+{
+    uint64_t y;
+    int n = 64;
+    y = x >> 32; if (y) {n -= 32; x = y;}
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+}
+#endif
+
+#if defined(HAVE_UINT128_T)
+static int
+nlz128(uint128_t x)
+{
+    uint128_t y;
+    int n = 128;
+    y = x >> 64; if (y) {n -= 64; x = y;}
+    y = x >> 32; if (y) {n -= 32; x = y;}
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+}
+#endif
+
+#if SIZEOF_BDIGITS == 2
+static int nlz(BDIGIT x) { return nlz16((uint16_t)x); }
+#elif SIZEOF_BDIGITS == 4
+static int nlz(BDIGIT x) { return nlz32((uint32_t)x); }
+#elif SIZEOF_BDIGITS == 8
+static int nlz(BDIGIT x) { return nlz64((uint64_t)x); }
+#elif SIZEOF_BDIGITS == 16
+static int nlz(BDIGIT x) { return nlz128((uint128_t)x); }
+#endif
+
+#if defined(HAVE_UINT128_T)
+#   define bitsize(x) \
+        (sizeof(x) <= 2 ? 16 - nlz16(x) : \
+         sizeof(x) <= 4 ? 32 - nlz32(x) : \
+         sizeof(x) <= 8 ? 64 - nlz64(x) : \
+         128 - nlz128(x))
+#elif defined(HAVE_UINT64_T)
+#   define bitsize(x) \
+        (sizeof(x) <= 2 ? 16 - nlz16(x) : \
+         sizeof(x) <= 4 ? 32 - nlz32(x) : \
+         64 - nlz64(x))
+#else
+#   define bitsize(x) \
+        (sizeof(x) <= 2 ? 16 - nlz16(x) : \
+         32 - nlz32(x))
 #endif
 
 static int
@@ -1885,7 +1969,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
 
     size = strlen(str);
-    bits_per_digit = BITSPERDIG - nlz(base-1);
+    bits_per_digit = bitsize(base-1);
     len = bits_per_digit * size;
     if (len <= (sizeof(long)*CHAR_BIT)) {
 	unsigned long val = STRTOUL(str, &end, base);
@@ -2626,27 +2710,6 @@ VALUE
 rb_dbl2big(double d)
 {
     return bignorm(dbl2big(d));
-}
-
-static int
-nlz(BDIGIT x)
-{
-    BDIGIT y;
-    int n = BITSPERDIG;
-#if BITSPERDIG > 64
-    y = x >> 64; if (y) {n -= 64; x = y;}
-#endif
-#if BITSPERDIG > 32
-    y = x >> 32; if (y) {n -= 32; x = y;}
-#endif
-#if BITSPERDIG > 16
-    y = x >> 16; if (y) {n -= 16; x = y;}
-#endif
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
 }
 
 static double
