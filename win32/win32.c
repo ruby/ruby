@@ -49,6 +49,8 @@
 #include "win32/dir.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
+static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
+
 #undef stat
 #undef fclose
 #undef close
@@ -4892,24 +4894,24 @@ wstati64(const WCHAR *path, struct stati64 *st)
 int
 rb_w32_ustati64(const char *path, struct stati64 *st)
 {
-    WCHAR *wpath;
-    int ret;
-
-    if (!(wpath = utf8_to_wstr(path, NULL)))
-	return -1;
-    ret = wstati64(wpath, st);
-    free(wpath);
-    return ret;
+    return w32_stati64(path, st, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
 rb_w32_stati64(const char *path, struct stati64 *st)
 {
+    return w32_stati64(path, st, filecp());
+}
+
+/* License: Ruby's */
+static int
+w32_stati64(const char *path, struct stati64 *st, UINT cp)
+{
     WCHAR *wpath;
     int ret;
 
-    if (!(wpath = filecp_to_wstr(path, NULL)))
+    if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
 	return -1;
     ret = wstati64(wpath, st);
     free(wpath);
