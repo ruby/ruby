@@ -91,7 +91,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
 static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
-static int has_redirection(const char *);
+static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 static int wstati64(const WCHAR *path, struct stati64 *st);
@@ -371,12 +371,12 @@ translate_wchar(WCHAR *p, int from, int to)
 
 /* License: Ruby's */
 static inline char *
-translate_char(char *p, int from, int to)
+translate_char(char *p, int from, int to, UINT cp)
 {
     while (*p) {
 	if ((unsigned char)*p == from)
 	    *p = to;
-	p = CharNext(p);
+	p = CharNextExA(cp, p, 0);
     }
     return p;
 }
@@ -980,7 +980,7 @@ rb_w32_get_osfhandle(int fh)
 
 /* License: Ruby's */
 static int
-join_argv(char *cmd, char *const *argv, BOOL escape)
+join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -1026,7 +1026,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape)
 		}
 	      default:
 		bs = 0;
-		p = CharNext(p) - 1;
+		p = CharNextExA(cp, p, 0) - 1;
 		break;
 	    }
 	}
@@ -1214,21 +1214,21 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	}
 	else {
 	    shell = p;
-	    translate_char(p, '/', '\\');
+	    translate_char(p, '/', '\\', cp);
 	}
     }
     else {
 	int redir = -1;
 	int nt;
 	while (ISSPACE(*cmd)) cmd++;
-	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
+	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd, cp))) {
 	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" -c ") + 2);
 	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
 		 (nt = !is_command_com(shell),
-		  (redir < 0 ? has_redirection(cmd) : redir) ||
+		  (redir < 0 ? has_redirection(cmd, cp) : redir) ||
 		  is_internal_cmd(cmd, nt))) {
 	    char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0));
 	    sprintf(tmp, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
@@ -1236,7 +1236,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	}
 	else {
 	    int len = 0, quote = (*cmd == '"') ? '"' : (*cmd == '\'') ? '\'' : 0;
-	    for (prog = cmd + !!quote;; prog = CharNext(prog)) {
+	    for (prog = cmd + !!quote;; prog = CharNextExA(cp, prog, 0)) {
 		if (!*prog) {
 		    len = prog - cmd;
 		    shell = cmd;
@@ -1270,7 +1270,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 		    STRNDUPV(p, v2, shell, len);
 		    shell = p;
 		}
-		if (p) translate_char(p, '/', '\\');
+		if (p) translate_char(p, '/', '\\', cp);
 		if (is_batch(shell)) {
 		    int alen = strlen(prog);
 		    cmd = p = ALLOCV(v, len + alen + (quote ? 2 : 0) + 1);
@@ -1339,7 +1339,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     }
     else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
-	translate_char(cmd, '/', '\\');
+	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     else if (strchr(prog, '/')) {
@@ -1348,27 +1348,27 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
 	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
 	else
 	    STRNDUPV(cmd, v, prog, len);
-	translate_char(cmd, '/', '\\');
+	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     if (c_switch || is_batch(prog)) {
 	char *progs[2];
 	progs[0] = (char *)prog;
 	progs[1] = NULL;
-	len = join_argv(NULL, progs, ntcmd);
+	len = join_argv(NULL, progs, ntcmd, cp);
 	if (c_switch) len += 3;
 	else ++argv;
-	if (argv[0]) len += join_argv(NULL, argv, ntcmd);
+	if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, progs, ntcmd);
+	join_argv(cmd, progs, ntcmd, cp);
 	if (c_switch) strlcat(cmd, " /c", len);
-	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd);
+	if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp);
 	prog = c_switch ? shell : 0;
     }
     else {
-	len = join_argv(NULL, argv, FALSE);
+	len = join_argv(NULL, argv, FALSE, cp);
 	cmd = ALLOCV(v, len);
-	join_argv(cmd, argv, FALSE);
+	join_argv(cmd, argv, FALSE, cp);
     }
 
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
@@ -1484,7 +1484,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
 
 /* License: Artistic or GPL */
 static int
-has_redirection(const char *cmd)
+has_redirection(const char *cmd, UINT cp)
 {
     char quote = '\0';
     const char *ptr;
@@ -1524,7 +1524,7 @@ has_redirection(const char *cmd)
 	  case '\\':
 	    ptr++;
 	  default:
-	    ptr = CharNext(ptr);
+	    ptr = CharNextExA(cp, ptr, 0);
 	    break;
 	}
     }
@@ -4297,7 +4297,7 @@ rb_w32_getcwd(char *buffer, int size)
         return NULL;
     }
 
-    translate_char(p, '\\', '/');
+    translate_char(p, '\\', '/', filecp());
 
     return p;
 }
