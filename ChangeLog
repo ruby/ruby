@@ -1,3 +1,11 @@
+Tue Jul  2 03:06:38 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix for the cases when
+	  the argument x is not a BigDecimal.
+	  This change is based on the patch made by Heesob Park and Garth Snyder.
+	  [Bug #6862] [ruby-core:47145]
+	  [Fix GH-332] https://github.com/ruby/ruby/pull/332
+
 Fri Jun 28 02:20:13 2013  Aman Gupta  <ruby@tmm1.net>
 
 	* compile.c (iseq_add_mark_object): Use new rb_iseq_add_mark_object().
