@@ -92,15 +92,23 @@ static VALUE big_three = Qnil;
 #define RBIGNUM_SET_NEGATIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 0)
 #define RBIGNUM_SET_POSITIVE_SIGN(b) RBIGNUM_SET_SIGN(b, 1)
 
+#define KARATSUBA_MUL_DIGITS 70
+#define TOOM3_MUL_DIGITS 150
+
 static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
+static void bary_mul2(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static int bary_2comp(BDIGIT *ds, size_t n);
+
+static void calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p);
+static VALUE bigsqr_fast(VALUE x);
+static VALUE bigmul0(VALUE x, VALUE y);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -2039,26 +2047,93 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
     else {
         len = (len/BITSPERDIG)+1;
-        z = bignew(len, sign);
-        zds = BDIGITS(z);
-        for (i=len;i--;) zds[i]=0;
+        if (len < KARATSUBA_MUL_DIGITS) {
+            z = bignew(len, sign);
+            zds = BDIGITS(z);
+            for (i=len;i--;) zds[i]=0;
 
-        size = p - buf;
-        for (p = buf; p < buf + size; p++) {
-            num = *p;
-            i = 0;
-            for (;;) {
-                while (i<blen) {
-                    num += (BDIGIT_DBL)zds[i]*base;
-                    zds[i++] = BIGLO(num);
-                    num = BIGDN(num);
+            size = p - buf;
+            for (p = buf; p < buf + size; p++) {
+                num = *p;
+                i = 0;
+                for (;;) {
+                    while (i<blen) {
+                        num += (BDIGIT_DBL)zds[i]*base;
+                        zds[i++] = BIGLO(num);
+                        num = BIGDN(num);
+                    }
+                    if (num) {
+                        blen++;
+                        continue;
+                    }
+                    break;
                 }
-                if (num) {
-                    blen++;
-                    continue;
-                }
-                break;
             }
+        }
+        else {
+            BDIGIT hbase;
+            VALUE hbasev;
+            int hbase_numdigits;
+            int j;
+            size_t num_bdigits;
+            size_t unit;
+            VALUE tmpu = 0, tmpv = 0;
+            BDIGIT *uds, *vds, *tds;
+            calc_hbase(base, &hbase, &hbase_numdigits);
+
+            size = p - buf;
+            num_bdigits = roomof(size, hbase_numdigits);
+
+            uds = ALLOCV_N(BDIGIT, tmpu, num_bdigits);
+            vds = ALLOCV_N(BDIGIT, tmpv, num_bdigits);
+
+            hbasev = bignew(1, 1);
+            BDIGITS(hbasev)[0] = hbase;
+
+            i = 0;
+            while (buf < p) {
+                int m;
+                BDIGIT d = 0;
+                if (hbase_numdigits <= p - buf) {
+                    m = hbase_numdigits;
+                }
+                else {
+                    m = (int)(p - buf);
+                }
+                p -= m;
+                for (j = 0; j < m; j++) {
+                    d = d * base + p[j];
+                }
+                uds[i++] = d;
+            }
+            for (unit = 1; unit < num_bdigits; unit *= 2) {
+                for (i = 0; i < num_bdigits; i += unit*2) {
+                    if (2*unit <= num_bdigits - i) {
+                        bary_mul2(vds+i, unit*2, BDIGITS(hbasev), RBIGNUM_LEN(hbasev), uds+i+unit, unit);
+                        bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
+                    }
+                    else if (unit <= num_bdigits - i) {
+                        bary_mul2(vds+i, num_bdigits-i, BDIGITS(hbasev), RBIGNUM_LEN(hbasev), uds+i+unit, num_bdigits-(i+unit));
+                        bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
+                    }
+                    else {
+                        MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
+                    }
+                }
+                hbasev = bigtrunc(bigmul0(hbasev, hbasev));
+                tds = vds;
+                vds = uds;
+                uds = tds;
+            }
+            while (0 < num_bdigits && uds[num_bdigits-1] == 0)
+                num_bdigits--;
+            z = bignew(num_bdigits, sign);
+            MEMCPY(BDIGITS(z), uds, BDIGIT, num_bdigits);
+
+            if (tmpv)
+                ALLOCV_END(tmpv);
+            if (tmpu)
+                ALLOCV_END(tmpu);
         }
     }
 
@@ -3617,6 +3692,9 @@ static void
 bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     size_t l;
+
+    assert(xl + yl <= zl);
+
     if (xl == 1 && yl == 1) {
         l = 2;
         bary_mul_single(zds, zl, xds[0], yds[0]);
@@ -3628,7 +3706,24 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
     MEMZERO(zds + l, BDIGIT, zl - l);
 }
 
-static VALUE bigmul0(VALUE x, VALUE y);
+static void
+bary_mul2(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+{
+    assert(xl + yl <= zl);
+
+    if ((xl < yl ? xl : yl) < KARATSUBA_MUL_DIGITS)
+        bary_mul(zds, zl, xds, xl, yds, yl);
+    else {
+        VALUE x, y, z;
+        x = bignew(xl, 1);
+	MEMCPY(BDIGITS(x), xds, BDIGIT, xl);
+        y = bignew(yl, 1);
+	MEMCPY(BDIGITS(y), yds, BDIGIT, yl);
+        z = bigtrunc(bigmul0(x, y));
+        MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
+        MEMZERO(zds + RBIGNUM_LEN(z), BDIGIT, zl - RBIGNUM_LEN(z));
+    }
+}
 
 /* balancing multiplication by slicing larger argument */
 static VALUE
@@ -4065,10 +4160,6 @@ bigsqr_fast(VALUE x)
     }
     return z;
 }
-
-#define KARATSUBA_MUL_DIGITS 70
-#define TOOM3_MUL_DIGITS 150
-
 
 /* determine whether a bignum is sparse or not by random sampling */
 static inline VALUE

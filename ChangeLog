@@ -1,3 +1,9 @@
+Mon Jul  1 22:57:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul2): New function.
+	  (rb_cstr_to_inum): Use a better algorithm to compose the result
+	  if input length is very long.
+
 Mon Jul  1 20:22:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* ext/bigdecimal/bigdecimal.h (RB_UNUSED_VAR, UNREACHABLE):
