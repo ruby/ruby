@@ -2028,6 +2028,9 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
     }
 
+    while (buf < p && *buf == 0)
+        buf++;
+
     if (POW2_P(base)) {
         int flags = INTEGER_PACK_BIG_ENDIAN;
         if (!sign)

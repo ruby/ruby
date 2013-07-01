@@ -1,3 +1,7 @@
+Mon Jul  1 12:02:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Skip leading zeros.
+
 Mon Jul  1 00:59:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (nlz16): New function.
