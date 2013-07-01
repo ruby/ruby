@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "1.2.0"
+_VERSION = "1.2.1"
 
 Gem::Specification.new do |s|
   s.name = "bigdecimal"

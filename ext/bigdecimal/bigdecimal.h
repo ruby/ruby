@@ -19,6 +19,18 @@
 #include "ruby/ruby.h"
 #include <float.h>
 
+#ifndef RB_UNUSED_VAR
+# ifdef __GNUC__
+#  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
+# else
+#  define RB_UNUSED_VAR(x) x
+# endif
+#endif
+
+#ifndef UNREACHABLE
+# define UNREACHABLE		/* unreachable */
+#endif
+
 #undef BDIGIT
 #undef SIZEOF_BDIGITS
 #undef BDIGIT_DBL

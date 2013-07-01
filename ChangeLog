@@ -1,3 +1,11 @@
+Mon Jul  1 20:22:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* ext/bigdecimal/bigdecimal.h (RB_UNUSED_VAR, UNREACHABLE):
+	  import macros from ruby.h for 1.9.3.
+	  [Bug #8588] [ruby-core:55730]
+
+	* ext/bigdecimal/bigdecimal.gemspec: Bump version to 1.2.1.
+
 Mon Jul  1 20:03:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): Use an address
