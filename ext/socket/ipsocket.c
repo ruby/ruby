@@ -68,8 +68,13 @@ init_inetsock_internal(struct inetsock_arg *arg)
                 if (lres->ai_family == res->ai_family)
                     break;
             }
-            if (!lres)
-                continue;
+            if (!lres) {
+                if (res->ai_next)
+                    continue;
+                /* Use a different family local address if no choice, this
+                 * will cause EAFNOSUPPORT. */
+                lres = arg->local.res;
+            }
         }
 	status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
