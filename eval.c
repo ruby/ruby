@@ -1118,17 +1118,41 @@ using_refinement(VALUE klass, VALUE module, VALUE arg)
     return ST_CONTINUE;
 }
 
-void
-rb_using_module(NODE *cref, VALUE module)
+static void
+using_module_recursive(NODE *cref, VALUE klass)
 {
     ID id_refinements;
-    VALUE refinements;
+    VALUE super, module, refinements;
 
-    Check_Type(module, T_MODULE);
+    super = RCLASS_SUPER(klass);
+    if (super) {
+	using_module_recursive(cref, super);
+    }
+    switch (BUILTIN_TYPE(klass)) {
+    case T_MODULE:
+	module = klass;
+	break;
+
+    case T_ICLASS:
+	module = RBASIC(klass)->klass;
+	break;
+
+    default:
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Module)",
+		 rb_obj_classname(klass));
+	break;
+    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) return;
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
+}
+
+void
+rb_using_module(NODE *cref, VALUE module)
+{
+    Check_Type(module, T_MODULE);
+    using_module_recursive(cref, module);
 }
 
 VALUE rb_refinement_module_get_refined_class(VALUE module)

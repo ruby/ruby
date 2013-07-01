@@ -875,6 +875,60 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  class Bar
+  end
+
+  module BarExt
+    refine Bar do
+      def x
+        return "BarExt#x"
+      end
+    end
+  end
+
+  module FooBarExt
+    include FooExt
+    include BarExt
+  end
+
+  module FooBarExtClient
+    using FooBarExt
+
+    def self.invoke_x_on(foo)
+      return foo.x
+    end
+  end
+
+  def test_module_inclusion
+    foo = Foo.new
+    assert_equal("FooExt#x", FooBarExtClient.invoke_x_on(foo))
+    bar = Bar.new
+    assert_equal("BarExt#x", FooBarExtClient.invoke_x_on(bar))
+  end
+
+  module FooFoo2Ext
+    include FooExt
+    include FooExt2
+  end
+
+  module FooFoo2ExtClient
+    using FooFoo2Ext
+
+    def self.invoke_x_on(foo)
+      return foo.x
+    end
+
+    def self.invoke_y_on(foo)
+      return foo.y
+    end
+  end
+
+  def test_module_inclusion2
+    foo = Foo.new
+    assert_equal("FooExt2#x", FooFoo2ExtClient.invoke_x_on(foo))
+    assert_equal("FooExt2#y Foo#y", FooFoo2ExtClient.invoke_y_on(foo))
+  end
+
   private
 
   def eval_using(mod, s)

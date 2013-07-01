@@ -46,6 +46,11 @@ with all sufficient information, see the ChangeLog file.
 * pack/unpack (Array/String)
   * Q! and q! directives for long long type if platform has the type.
 
+* toplevel
+  * extended methods:
+    * main.using activates refinements in the ancestors of the argument
+      module to support refinement inheritance by Module#include.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * IO

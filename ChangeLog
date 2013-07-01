@@ -1,3 +1,11 @@
+Mon Jul  1 12:56:41 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_using_module): activate refinements in the ancestors of
+	  the argument module to support refinement inheritance by
+	  Module#include.  [ruby-core:55671] [Feature #8571]
+
+	* test/ruby/test_refinement.rb: related test.
+
 Mon Jul  1 12:02:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_cstr_to_inum): Skip leading zeros.
