@@ -1,4 +1,9 @@
-Mon Jul  1 15:04:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul  1 15:05:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV#<<): use StringIO#set_encoding instead of creating
+	  new StringIO instance with String#force_encoding, forcing encoding
+	  discards the cached coderange bits and can make further operations
+	  very slow.  [ruby-core:55714] [Bug #8585]
 
 	* ext/stringio/stringio.c (strio_write): keep coderange of
 	  ptr->string.
