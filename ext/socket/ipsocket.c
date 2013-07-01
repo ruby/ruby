@@ -69,7 +69,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
                     break;
             }
             if (!lres) {
-                if (res->ai_next)
+                if (res->ai_next || status < 0)
                     continue;
                 /* Use a different family local address if no choice, this
                  * will cause EAFNOSUPPORT. */

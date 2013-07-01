@@ -1,3 +1,8 @@
+Tue Jul  2 00:39:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): Don't try mismached
+	  address family if already failed.
+
 Mon Jul  1 23:07:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* template/encdb.h.tmpl: define encoding index macros to use the index
