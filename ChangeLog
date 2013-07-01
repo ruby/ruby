@@ -1,9 +1,3 @@
-Mon Jul  1 23:08:48 2013  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* string.c (rb_str_inspect): use encoding index macros in encdb.h.
-
-	* string.c (str_scrub0): ditto.
-
 Mon Jul  1 23:07:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* template/encdb.h.tmpl: define encoding index macros to use the index
