@@ -1182,7 +1182,7 @@ strio_write(VALUE self, VALUE str)
 	ptr->pos = olen;
     }
     if (ptr->pos == olen) {
-	rb_str_cat(ptr->string, RSTRING_PTR(str), len);
+	rb_enc_str_buf_cat(ptr->string, RSTRING_PTR(str), len, enc);
     }
     else {
 	strio_extend(ptr, ptr->pos, len);

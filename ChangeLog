@@ -1,4 +1,7 @@
-Mon Jul  1 15:03:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul  1 15:04:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): keep coderange of
+	  ptr->string.
 
 	* string.c (rb_enc_cr_str_buf_cat, rb_str_append): consider an empty
 	  string 7bit-clean and should not discard cached coderange of string
