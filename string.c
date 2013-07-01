@@ -1958,7 +1958,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int res_encindex;
     int str_cr, res_cr;
 
-    str_cr = ENC_CODERANGE(str);
+    str_cr = RSTRING_LEN(str) ? ENC_CODERANGE(str) : ENC_CODERANGE_7BIT;
 
     if (str_encindex == ptr_encindex) {
         if (str_cr == ENC_CODERANGE_UNKNOWN)
@@ -2095,7 +2095,8 @@ rb_str_append(VALUE str, VALUE str2)
         long len = RSTRING_LEN(str) + len2;
         enc = rb_enc_check(str, str2);
         cr = ENC_CODERANGE(str);
-        if ((cr2 = ENC_CODERANGE(str2)) > cr) cr = cr2;
+        if ((cr2 = ENC_CODERANGE(str2)) > cr || RSTRING_LEN(str) == 0)
+	    cr = cr2;
         rb_str_modify_expand(str, len2);
         memcpy(RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len,
                RSTRING_PTR(str2), len2+1);
