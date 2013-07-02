@@ -59,10 +59,10 @@
 
 #include "eval_intern.h"
 #include "gc.h"
-#include "internal.h"
 #include "timev.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
+#include "internal.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0

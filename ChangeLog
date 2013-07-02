@@ -1,4 +1,7 @@
-Tue Jul  2 17:22:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_{ascii8bit,utf8,usascii}_encindex): use built-in
+	  encoding indexes for optimization.
 
 	* encoding.c (enc_inspect, rb_locale_encindex),
 	  (enc_set_filesystem_encoding, rb_filesystem_encindex): use built-in

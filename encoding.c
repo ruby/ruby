@@ -24,6 +24,10 @@
 #endif
 #include "ruby/util.h"
 
+#undef rb_ascii8bit_encindex
+#undef rb_utf8_encindex
+#undef rb_usascii_encindex
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
 int rb_enc_register(const char *name, rb_encoding *encoding);

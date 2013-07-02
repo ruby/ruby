@@ -209,6 +209,9 @@ enum ruby_preserved_encindex {
     ENCINDEX_BUILTIN_MAX
 };
 #endif
+#define rb_ascii8bit_encindex() ENCINDEX_ASCII
+#define rb_utf8_encindex()      ENCINDEX_UTF_8
+#define rb_usascii_encindex()   ENCINDEX_US_ASCII
 ID rb_id_encoding(void);
 void rb_gc_mark_encodings(void);
 
