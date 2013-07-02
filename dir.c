@@ -91,9 +91,7 @@ char *strchr(char*,char);
 rb_encoding *
 rb_utf8mac_encoding(void)
 {
-    static rb_encoding *utf8mac;
-    if (!utf8mac) utf8mac = rb_enc_find("UTF8-MAC");
-    return utf8mac;
+    return rb_enc_from_index(ENCINDEX_UTF8_MAC);
 }
 
 static inline int

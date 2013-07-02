@@ -1,4 +1,9 @@
-Tue Jul  2 17:22:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: add UTF8-MAC.
+
+	* dir.c (rb_utf8mac_encoding): use built-in encoding indexes in
+	  internal.h.
 
 	* internal.h: add UTF-{16,32} dummy encodings.
 
