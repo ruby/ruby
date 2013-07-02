@@ -1,3 +1,8 @@
+Tue Jul  2 17:23:33 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* doc/syntax/refinements.rdoc: add description of Module#using and
+	  refinement inheritance by module inclusion.
+
 Tue Jul  2 17:22:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h: add EUC-JP and Windows-31J.
@@ -35,8 +40,6 @@ Tue Jul  2 17:22:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* encoding.c (rb_enc_init): register preserved indexes.
 
 	* internal.h (ruby_preserved_encindex): move from encoding.c.
-
-Tue Jul  2 11:14:36 2013  Shota Fukumori  <sorah@cookpad.com>
 
 Tue Jul  2 11:14:36 2013  Shota Fukumori  <sorah@cookpad.com>
 

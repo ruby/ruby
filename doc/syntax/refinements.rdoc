@@ -48,7 +48,7 @@ Activate the refinement with #using:
 
 == Scope
 
-You may only activate refinements at top-level to the end of the file or in a
+You may activate refinements at top-level to the end of the file or in a
 string passed to Kernel#eval, Kernel#instance_eval or Kernel#module_eval until
 the end of the string.
 
@@ -186,6 +186,25 @@ called:
 
   p [{1=>2}, {3=>4}].to_json # prints "[{\"1\":2},{\"3\":4}]"
 
+You may also activate refinements in a class or module definition, in which
+case the refinements are activated from the point where using is called to
+the end of the class or module definition:
+
+  # not activated here
+  class Foo
+    # not activated here
+    using M
+    # activated here
+    def foo
+      # activated here
+    end
+    # activated here
+  end
+  # not activated here
+
+Note that the refinements in M are not activated automatically even if the class
+Foo is reopened later.
+
 == Method Lookup
 
 When looking up a method for an instance of class +C+ Ruby checks:
@@ -231,6 +250,12 @@ Kernel#respond_to? refinements are not honored for the caller context during
 method lookup.
 
 This behavior may be changed in the future.
+
+== Refinements and module inclusion
+
+Refinements are inherited by module inclusion.  That is, using activates all
+refinements in the ancestors of the specified module.  Refinements in a
+descendant have priority over refinements in an ancestor.
 
 == Further Reading
 
