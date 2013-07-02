@@ -1,4 +1,8 @@
-Tue Jul  2 17:22:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_inspect, rb_locale_encindex),
+	  (enc_set_filesystem_encoding, rb_filesystem_encindex): use built-in
+	  encoding indexes directly.
 
 	* encoding.c (rb_enc_set_index, rb_enc_associate_index): validate
 	  argument encoding index.

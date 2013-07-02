@@ -1005,7 +1005,7 @@ enc_inspect(VALUE self)
     VALUE str = rb_sprintf("#<%s:%s%s>", rb_obj_classname(self),
 		      rb_enc_name((rb_encoding*)DATA_PTR(self)),
 		      (enc_dummy_p(self) ? " (dummy)" : ""));
-    ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+    ENCODING_CODERANGE_SET(str, ENCINDEX_US_ASCII, ENC_CODERANGE_7BIT);
     return str;
 }
 
@@ -1220,9 +1220,9 @@ rb_locale_encindex(void)
     int idx;
 
     if (NIL_P(charmap))
-        idx = rb_usascii_encindex();
+        idx = ENCINDEX_US_ASCII;
     else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
-        idx = rb_ascii8bit_encindex();
+        idx = ENCINDEX_ASCII;
 
     if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
 
@@ -1245,7 +1245,7 @@ enc_set_filesystem_encoding(void)
     char cp[sizeof(int) * 8 / 3 + 4];
     snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
-    if (idx < 0) idx = rb_ascii8bit_encindex();
+    if (idx < 0) idx = ENCINDEX_ASCII;
 #else
     idx = rb_enc_to_index(rb_default_external_encoding());
 #endif
@@ -1259,7 +1259,7 @@ rb_filesystem_encindex(void)
 {
     int idx = rb_enc_registered("filesystem");
     if (idx < 0)
-	idx = rb_ascii8bit_encindex();
+	idx = ENCINDEX_ASCII;
     return idx;
 }
 
