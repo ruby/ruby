@@ -559,6 +559,10 @@ rb_enc_init(void)
 #undef ENC_REGISTER
 #ifndef NO_PRESERVED_ENCODING
 #define ENCDB_REGISTER(name, enc) enc_register_at(ENCINDEX_##enc, name, NULL)
+    ENCDB_REGISTER("UTF-16BE", UTF_16BE);
+    ENCDB_REGISTER("UTF-16LE", UTF_16LE);
+    ENCDB_REGISTER("UTF-32BE", UTF_32BE);
+    ENCDB_REGISTER("UTF-32LE", UTF_32LE);
 #undef ENCDB_REGISTER
 #endif
     enc_table.count = ENCINDEX_BUILTIN_MAX;

@@ -1,4 +1,8 @@
-Tue Jul  2 17:22:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: add UTF-{16,32}{BE,LE}.
+
+	* io.c (io_strip_bom): use built-in encoding indexes in internal.h.
 
 	* internal.h (rb_{ascii8bit,utf8,usascii}_encindex): use built-in
 	  encoding indexes for optimization.

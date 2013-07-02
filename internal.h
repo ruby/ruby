@@ -204,6 +204,10 @@ enum ruby_preserved_encindex {
 
 #ifndef NO_PRESERVED_ENCODING
     /* preserved indexes */
+    ENCINDEX_UTF_16BE,
+    ENCINDEX_UTF_16LE,
+    ENCINDEX_UTF_32BE,
+    ENCINDEX_UTF_32LE,
 #endif
 
     ENCINDEX_BUILTIN_MAX
