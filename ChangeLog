@@ -5,7 +5,7 @@ Tue Jul  2 11:14:36 2013  Shota Fukumori  <sorah@cookpad.com>
 
 Tue Jul  2 00:39:59 2013  Tanaka Akira  <akr@fsij.org>
 
-	* ext/socket/ipsocket.c (init_inetsock_internal): Don't try mismached
+	* ext/socket/ipsocket.c (init_inetsock_internal): Don't try mismatched
 	  address family if already failed.
 
 Mon Jul  1 23:07:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
