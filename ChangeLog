@@ -1,4 +1,10 @@
-Tue Jul  2 17:22:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_set_index, rb_enc_associate_index): validate
+	  argument encoding index.
+
+	* include/ruby/encoding.h (ENCODING_SET): use rb_enc_set_index()
+	  instead of setting inlined bits directly.
 
 	* encoding.c (rb_enc_init): register preserved indexes.
 

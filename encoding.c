@@ -142,6 +142,25 @@ must_encoding(VALUE enc)
     return index;
 }
 
+static rb_encoding *
+must_encindex(int index)
+{
+    rb_encoding *enc = rb_enc_from_index(index);
+    if (!enc) {
+	rb_raise(rb_eEncodingError, "encoding index out of bound: %d",
+		 index);
+    }
+    if (ENC_TO_ENCINDEX(enc) != index) {
+	rb_raise(rb_eEncodingError, "wrong encoding index %d for %s (expected %d)",
+		 index, rb_enc_name(enc), ENC_TO_ENCINDEX(enc));
+    }
+    if (enc_autoload_p(enc) && enc_autoload(enc) == -1) {
+	rb_loaderror("failed to load encoding (%s)",
+		     rb_enc_name(enc));
+    }
+    return enc;
+}
+
 int
 rb_to_encoding_index(VALUE enc)
 {
@@ -736,12 +755,15 @@ void
 rb_enc_set_index(VALUE obj, int idx)
 {
     rb_check_frozen(obj);
+    must_encindex(idx);
     enc_set_index(obj, idx);
 }
 
 VALUE
 rb_enc_associate_index(VALUE obj, int idx)
 {
+    rb_encoding *enc;
+
 /*    enc_check_capable(obj);*/
     rb_check_frozen(obj);
     if (rb_enc_get_index(obj) == idx)
@@ -749,8 +771,9 @@ rb_enc_associate_index(VALUE obj, int idx)
     if (SPECIAL_CONST_P(obj)) {
 	rb_raise(rb_eArgError, "cannot set encoding");
     }
+    enc = must_encindex(idx);
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
-	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
+	!rb_enc_asciicompat(enc)) {
 	ENC_CODERANGE_CLEAR(obj);
     }
     enc_set_index(obj, idx);

@@ -32,14 +32,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
     RBASIC(obj)->flags |= (VALUE)(i) << ENCODING_SHIFT;\
 } while (0)
-#define ENCODING_SET(obj,i) do {\
-    VALUE rb_encoding_set_obj = (obj); \
-    int encoding_set_enc_index = (i); \
-    if (encoding_set_enc_index < ENCODING_INLINE_MAX) \
-        ENCODING_SET_INLINED(rb_encoding_set_obj, encoding_set_enc_index); \
-    else \
-        rb_enc_set_index(rb_encoding_set_obj, encoding_set_enc_index); \
-} while (0)
+#define ENCODING_SET(obj,i) rb_enc_set_index((obj), (i))
 
 #define ENCODING_GET_INLINED(obj) (int)((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 #define ENCODING_GET(obj) \
