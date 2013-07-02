@@ -196,9 +196,20 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 void Init_ext(void);
 
 /* encoding.c */
-ID rb_id_encoding(void);
+#ifdef RUBY_ENCODING_H
+enum ruby_preserved_encindex {
+    ENCINDEX_ASCII,
+    ENCINDEX_UTF_8,
+    ENCINDEX_US_ASCII,
 
-/* encoding.c */
+#ifndef NO_PRESERVED_ENCODING
+    /* preserved indexes */
+#endif
+
+    ENCINDEX_BUILTIN_MAX
+};
+#endif
+ID rb_id_encoding(void);
 void rb_gc_mark_encodings(void);
 
 /* error.c */

@@ -519,13 +519,6 @@ rb_encdb_set_unicode(int index)
     rb_enc_from_index(index)->flags |= ONIGENC_FLAG_UNICODE;
 }
 
-enum {
-    ENCINDEX_ASCII,
-    ENCINDEX_UTF_8,
-    ENCINDEX_US_ASCII,
-    ENCINDEX_BUILTIN_MAX
-};
-
 extern rb_encoding OnigEncodingUTF_8;
 extern rb_encoding OnigEncodingUS_ASCII;
 
@@ -541,6 +534,10 @@ rb_enc_init(void)
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
 #undef ENC_REGISTER
+#ifndef NO_PRESERVED_ENCODING
+#define ENCDB_REGISTER(name, enc) enc_register_at(ENCINDEX_##enc, name, NULL)
+#undef ENCDB_REGISTER
+#endif
     enc_table.count = ENCINDEX_BUILTIN_MAX;
 }
 
