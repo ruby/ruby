@@ -4471,16 +4471,14 @@ VALUE
 rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
+    int encidx = rb_enc_to_index(enc);
     const char *p, *pend, *prev;
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
     rb_encoding *resenc = rb_default_internal_encoding();
     int unicode_p = rb_enc_unicode_p(enc);
     int asciicompat = rb_enc_asciicompat(enc);
-    static rb_encoding *utf16, *utf32;
 
-    if (!utf16) utf16 = rb_enc_find("UTF-16");
-    if (!utf32) utf32 = rb_enc_find("UTF-32");
     if (resenc == NULL) resenc = rb_default_external_encoding();
     if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
     rb_enc_associate(result, resenc);
@@ -4488,21 +4486,21 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
-    if (enc == utf16) {
+    if (encidx == ENCINDEX_UTF_16) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0xFE && q[1] == 0xFF)
-	    enc = rb_enc_find("UTF-16BE");
+	    enc = rb_enc_from_index(ENCINDEX_UTF_16BE);
 	else if (q[0] == 0xFF && q[1] == 0xFE)
-	    enc = rb_enc_find("UTF-16LE");
+	    enc = rb_enc_from_index(ENCINDEX_UTF_16LE);
 	else
 	    unicode_p = 0;
     }
-    else if (enc == utf32) {
+    else if (encidx == ENCINDEX_UTF_32) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF)
-	    enc = rb_enc_find("UTF-32BE");
+	    enc = rb_enc_from_index(ENCINDEX_UTF_32BE);
 	else if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF)
-	    enc = rb_enc_find("UTF-32LE");
+	    enc = rb_enc_from_index(ENCINDEX_UTF_32LE);
 	else
 	    unicode_p = 0;
     }
@@ -7744,6 +7742,7 @@ str_scrub0(int argc, VALUE *argv, VALUE str)
 {
     int cr = ENC_CODERANGE(str);
     rb_encoding *enc;
+    int encidx;
     VALUE repl;
 
     if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
@@ -7758,6 +7757,7 @@ str_scrub0(int argc, VALUE *argv, VALUE str)
     if (rb_enc_dummy_p(enc)) {
 	return Qnil;
     }
+    encidx = rb_enc_to_index(enc);
 
 #define DEFAULT_REPLACE_CHAR(str) do { \
 	static const char replace[sizeof(str)-1] = str; \
@@ -7782,7 +7782,7 @@ str_scrub0(int argc, VALUE *argv, VALUE str)
 	    replen = RSTRING_LEN(repl);
 	    rep7bit_p = (ENC_CODERANGE(repl) == ENC_CODERANGE_7BIT);
 	}
-	else if (enc == rb_utf8_encoding()) {
+	else if (encidx == rb_utf8_encindex()) {
 	    DEFAULT_REPLACE_CHAR("\xEF\xBF\xBD");
 	    rep7bit_p = FALSE;
 	}
@@ -7888,30 +7888,20 @@ str_scrub0(int argc, VALUE *argv, VALUE str)
 	const char *rep;
 	long replen;
 	long mbminlen = rb_enc_mbminlen(enc);
-	static rb_encoding *utf16be;
-	static rb_encoding *utf16le;
-	static rb_encoding *utf32be;
-	static rb_encoding *utf32le;
-	if (!utf16be) {
-	    utf16be = rb_enc_find("UTF-16BE");
-	    utf16le = rb_enc_find("UTF-16LE");
-	    utf32be = rb_enc_find("UTF-32BE");
-	    utf32le = rb_enc_find("UTF-32LE");
-	}
 	if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
 	    replen = RSTRING_LEN(repl);
 	}
-	else if (enc == utf16be) {
+	else if (encidx == ENCINDEX_UTF_16BE) {
 	    DEFAULT_REPLACE_CHAR("\xFF\xFD");
 	}
-	else if (enc == utf16le) {
+	else if (encidx == ENCINDEX_UTF_16LE) {
 	    DEFAULT_REPLACE_CHAR("\xFD\xFF");
 	}
-	else if (enc == utf32be) {
+	else if (encidx == ENCINDEX_UTF_32BE) {
 	    DEFAULT_REPLACE_CHAR("\x00\x00\xFF\xFD");
 	}
-	else if (enc == utf32le) {
+	else if (encidx == ENCINDEX_UTF_32LE) {
 	    DEFAULT_REPLACE_CHAR("\xFD\xFF\x00\x00");
 	}
 	else {

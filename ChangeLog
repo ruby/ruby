@@ -1,4 +1,9 @@
-Tue Jul  2 17:22:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: add UTF-{16,32} dummy encodings.
+
+	* string.c (rb_str_inspect, str_scrub0): use built-in encoding indexes
+	  in internal.h.
 
 	* internal.h: add UTF-{16,32}{BE,LE}.
 
