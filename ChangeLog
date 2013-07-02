@@ -1,7 +1,9 @@
 Tue Jul  2 11:14:36 2013  Shota Fukumori  <sorah@cookpad.com>
 
+Tue Jul  2 11:14:36 2013  Shota Fukumori  <sorah@cookpad.com>
+
 	* lib/mkmf.rb (try_config): Fix to not replace $LDFLAGS with $libs
-          (1.9.3 behavior) [ruby-core:55752] [Bug #8595]
+	  (1.9.3 behavior) [ruby-core:55752] [Bug #8595]
 
 Tue Jul  2 00:39:59 2013  Tanaka Akira  <akr@fsij.org>
 
