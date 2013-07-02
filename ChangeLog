@@ -1,3 +1,8 @@
+Tue Jul  2 23:47:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (roomof): Cast to long.
+	  (rb_ull2big): Fix bignew arguments.
+
 Tue Jul  2 21:17:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_cstr_to_inum): Merge two temporary buffers.

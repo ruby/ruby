@@ -80,7 +80,7 @@ static VALUE big_three = Qnil;
     rb_absint_size(x, NULL))
 
 #define BIGDIVREM_EXTRA_WORDS 2
-#define roomof(n, m) ((int)(((n)+(m)-1) / (m)))
+#define roomof(n, m) ((long)(((n)+(m)-1) / (m)))
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGITS)
 #define BARY_ARGS(ary) ary, numberof(ary)
 
@@ -2199,7 +2199,7 @@ static VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
     long i;
-    VALUE big = bignew(DIGSPERLL, bdigit_roomof(SIZEOF_LONG_LONG));
+    VALUE big = bignew(bdigit_roomof(SIZEOF_LONG_LONG), 1);
     BDIGIT *digits = BDIGITS(big);
 
 #if SIZEOF_BDIGITS >= SIZEOF_LONG_LONG
