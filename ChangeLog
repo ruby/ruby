@@ -1,3 +1,9 @@
+Tue Jul  2 20:25:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Use BDIGIT_DBL to collect adjacent digits.
+	  (BDIGIT_DBL_MAX): New macro.
+	  (maxpow_in_bdigit_dbl): New function.
+
 Tue Jul  2 17:23:33 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* doc/syntax/refinements.rdoc: add description of Module#using and

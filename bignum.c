@@ -61,6 +61,7 @@ static VALUE big_three = Qnil;
 #define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & BDIGMAX))
 #define BDIGMAX ((BDIGIT)(BIGRAD-1))
+#define BDIGIT_DBL_MAX (~(BDIGIT_DBL)0)
 
 #if SIZEOF_BDIGITS == 2
 #   define swap_bdigit(x) swap16(x)
@@ -219,6 +220,23 @@ static int nlz(BDIGIT x) { return nlz128((uint128_t)x); }
         (sizeof(x) <= 2 ? 16 - nlz16(x) : \
          32 - nlz32(x))
 #endif
+
+static BDIGIT_DBL
+maxpow_in_bdigit_dbl(int base, int *exp_ret)
+{
+    BDIGIT_DBL maxpow;
+    int exponent;
+
+    maxpow = base;
+    exponent = 1;
+    while (maxpow <= BDIGIT_DBL_MAX / base) {
+        maxpow *= base;
+        exponent++;
+    }
+
+    *exp_ret = exponent;
+    return maxpow;
+}
 
 static int
 bary_zero_p(BDIGIT *xds, size_t nx)
@@ -2071,31 +2089,33 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             }
         }
         else {
-            BDIGIT hbase;
-            VALUE hbasev;
-            int hbase_numdigits;
+            int digits_per_bdigits_dbl;
+            BDIGIT_DBL power;
+            VALUE powerv;
             int j;
             size_t num_bdigits;
             size_t unit;
             VALUE tmpu = 0, tmpv = 0;
             BDIGIT *uds, *vds, *tds;
-            calc_hbase(base, &hbase, &hbase_numdigits);
+
+            power = maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
 
             size = p - buf;
-            num_bdigits = roomof(size, hbase_numdigits);
+            num_bdigits = roomof(size, digits_per_bdigits_dbl)*2;
 
             uds = ALLOCV_N(BDIGIT, tmpu, num_bdigits);
             vds = ALLOCV_N(BDIGIT, tmpv, num_bdigits);
 
-            hbasev = bignew(1, 1);
-            BDIGITS(hbasev)[0] = hbase;
+            powerv = bignew(2, 1);
+            BDIGITS(powerv)[0] = BIGLO(power);
+            BDIGITS(powerv)[1] = BIGDN(power);
 
             i = 0;
             while (buf < p) {
                 int m;
-                BDIGIT d = 0;
-                if (hbase_numdigits <= p - buf) {
-                    m = hbase_numdigits;
+                BDIGIT_DBL d = 0;
+                if (digits_per_bdigits_dbl <= p - buf) {
+                    m = digits_per_bdigits_dbl;
                 }
                 else {
                     m = (int)(p - buf);
@@ -2104,23 +2124,24 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                 for (j = 0; j < m; j++) {
                     d = d * base + p[j];
                 }
-                uds[i++] = d;
+                uds[i++] = BIGLO(d);
+                uds[i++] = BIGDN(d);
             }
-            for (unit = 1; unit < num_bdigits; unit *= 2) {
+            for (unit = 2; unit < num_bdigits; unit *= 2) {
                 for (i = 0; i < num_bdigits; i += unit*2) {
                     if (2*unit <= num_bdigits - i) {
-                        bary_mul2(vds+i, unit*2, BDIGITS(hbasev), RBIGNUM_LEN(hbasev), uds+i+unit, unit);
+                        bary_mul2(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
                         bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
                     }
                     else if (unit <= num_bdigits - i) {
-                        bary_mul2(vds+i, num_bdigits-i, BDIGITS(hbasev), RBIGNUM_LEN(hbasev), uds+i+unit, num_bdigits-(i+unit));
+                        bary_mul2(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
                         bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
                     }
                     else {
                         MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
                     }
                 }
-                hbasev = bigtrunc(bigmul0(hbasev, hbasev));
+                powerv = bigtrunc(bigmul0(powerv, powerv));
                 tds = vds;
                 vds = uds;
                 uds = tds;
