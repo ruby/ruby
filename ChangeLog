@@ -30,7 +30,7 @@ Mon Jul  1 20:22:00 2013  Kenta Murata  <mrkn@cookpad.com>
 Mon Jul  1 20:03:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): Use an address
-	  family for local address wihch is different to the remote
+	  family for local address which is different to the remote
 	  address if no other choice.
 
 Mon Jul  1 15:05:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
