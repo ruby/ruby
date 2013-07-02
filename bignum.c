@@ -2095,7 +2095,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             int j;
             size_t num_bdigits;
             size_t unit;
-            VALUE tmpu = 0, tmpv = 0;
+            VALUE tmpuv = 0;
             BDIGIT *uds, *vds, *tds;
 
             power = maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
@@ -2103,8 +2103,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             size = p - buf;
             num_bdigits = roomof(size, digits_per_bdigits_dbl)*2;
 
-            uds = ALLOCV_N(BDIGIT, tmpu, num_bdigits);
-            vds = ALLOCV_N(BDIGIT, tmpv, num_bdigits);
+            uds = ALLOCV_N(BDIGIT, tmpuv, 2*num_bdigits);
+            vds = uds + num_bdigits;
 
             powerv = bignew(2, 1);
             BDIGITS(powerv)[0] = BIGLO(power);
@@ -2151,10 +2151,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             z = bignew(num_bdigits, sign);
             MEMCPY(BDIGITS(z), uds, BDIGIT, num_bdigits);
 
-            if (tmpv)
-                ALLOCV_END(tmpv);
-            if (tmpu)
-                ALLOCV_END(tmpu);
+            if (tmpuv)
+                ALLOCV_END(tmpuv);
         }
     }
 

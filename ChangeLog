@@ -1,3 +1,7 @@
+Tue Jul  2 21:17:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Merge two temporary buffers.
+
 Tue Jul  2 20:25:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_cstr_to_inum): Use BDIGIT_DBL to collect adjacent digits.
