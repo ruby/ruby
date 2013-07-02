@@ -2107,8 +2107,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             vds = uds + num_bdigits;
 
             powerv = bignew(2, 1);
-            BDIGITS(powerv)[0] = BIGLO(power);
-            BDIGITS(powerv)[1] = BIGDN(power);
+            BDIGITS(powerv)[0] = (BDIGIT)BIGLO(power);
+            BDIGITS(powerv)[1] = (BDIGIT)BIGDN(power);
 
             i = 0;
             while (buf < p) {
@@ -2124,8 +2124,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                 for (j = 0; j < m; j++) {
                     d = d * base + p[j];
                 }
-                uds[i++] = BIGLO(d);
-                uds[i++] = BIGDN(d);
+                uds[i++] = (BDIGIT)BIGLO(d);
+                uds[i++] = (BDIGIT)BIGDN(d);
             }
             for (unit = 2; unit < num_bdigits; unit *= 2) {
                 for (i = 0; i < num_bdigits; i += unit*2) {
