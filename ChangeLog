@@ -1,4 +1,9 @@
-Tue Jul  2 17:22:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  2 17:22:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: add EUC-JP and Windows-31J.
+
+	* re.c (rb_char_to_option_kcode): use built-in encoding indexes in
+	  internal.h.
 
 	* internal.h: add UTF8-MAC.
 

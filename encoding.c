@@ -566,6 +566,9 @@ rb_enc_init(void)
     ENCDB_REGISTER("UTF-16", UTF_16);
     ENCDB_REGISTER("UTF-32", UTF_32);
     ENCDB_REGISTER("UTF8-MAC", UTF8_MAC);
+
+    ENCDB_REGISTER("EUC-JP", EUC_JP);
+    ENCDB_REGISTER("Windows-31J", Windows_31J);
 #undef ENCDB_REGISTER
 #endif
     enc_table.count = ENCINDEX_BUILTIN_MAX;

@@ -211,6 +211,10 @@ enum ruby_preserved_encindex {
     ENCINDEX_UTF_16,
     ENCINDEX_UTF_32,
     ENCINDEX_UTF8_MAC,
+
+    /* for old options of regexp */
+    ENCINDEX_EUC_JP,
+    ENCINDEX_Windows_31J,
 #endif
 
     ENCINDEX_BUILTIN_MAX

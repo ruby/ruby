@@ -307,10 +307,10 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
         *kcode = rb_ascii8bit_encindex();
         return (*option = ARG_ENCODING_NONE);
       case 'e':
-	*kcode = rb_enc_find_index("EUC-JP");
+	*kcode = ENCINDEX_EUC_JP;
 	break;
       case 's':
-	*kcode = rb_enc_find_index("Windows-31J");
+	*kcode = ENCINDEX_Windows_31J;
 	break;
       case 'u':
 	*kcode = rb_utf8_encindex();
