@@ -2,14 +2,13 @@ require 'test/unit'
 
 require 'tmpdir'
 require 'fileutils'
-require 'pathname'
 
 class TestDir < Test::Unit::TestCase
 
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
-    @root = Pathname.new(Dir.mktmpdir('__test_dir__')).realpath.to_s
+    @root = File.realpath(Dir.mktmpdir('__test_dir__'))
     @nodir = File.join(@root, "dummy")
     for i in ?a..?z
       if i.ord % 2 == 0

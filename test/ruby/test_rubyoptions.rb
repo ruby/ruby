@@ -3,7 +3,6 @@ require 'test/unit'
 
 require 'tmpdir'
 require 'tempfile'
-require 'pathname'
 
 require_relative 'envutil'
 
@@ -16,7 +15,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def with_tmpchdir
     Dir.mktmpdir {|d|
-      d = Pathname.new(d).realpath.to_s
+      d = File.realpath(d)
       Dir.chdir(d) {
         yield d
       }
