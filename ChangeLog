@@ -1,3 +1,8 @@
+Wed Jul  3 12:06:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (maxpow_in_bdigit): Renamed from calc_hbase and return
+	  maxpow.
+
 Tue Jul  2 23:47:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (roomof): Cast to long.

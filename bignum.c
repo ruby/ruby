@@ -107,7 +107,6 @@ static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds
 static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static int bary_2comp(BDIGIT *ds, size_t n);
 
-static void calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p);
 static VALUE bigsqr_fast(VALUE x);
 static VALUE bigmul0(VALUE x, VALUE y);
 
@@ -237,6 +236,24 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
     *exp_ret = exponent;
     return maxpow;
 }
+
+static BDIGIT
+maxpow_in_bdigit(int base, int *exp_ret)
+{
+    BDIGIT maxpow;
+    int exponent;
+
+    maxpow = base;
+    exponent = 1;
+    while (maxpow <= BDIGMAX / base) {
+        maxpow *= base;
+        exponent++;
+    }
+
+    *exp_ret = exponent;
+    return maxpow;
+}
+
 
 static int
 bary_zero_p(BDIGIT *xds, size_t nx)
@@ -2506,23 +2523,6 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
     return lh + ll;
 }
 
-static void
-calc_hbase(int base, BDIGIT *hbase_p, int *hbase_numdigits_p)
-{
-    BDIGIT hbase;
-    int hbase_numdigits;
-
-    hbase = base;
-    hbase_numdigits = 1;
-    while (hbase <= BDIGMAX / base) {
-        hbase *= base;
-        hbase_numdigits++;
-    }
-
-    *hbase_p = hbase;
-    *hbase_numdigits_p = hbase_numdigits;
-}
-
 static VALUE
 big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
 {
@@ -2586,7 +2586,7 @@ rb_big2str0(VALUE x, int base, int trim)
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
-    calc_hbase(base, &hbase, &hbase_numdigits);
+    hbase = maxpow_in_bdigit(base, &hbase_numdigits);
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
