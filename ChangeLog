@@ -1,3 +1,10 @@
+Thu Jul  4 00:13:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (rb_w32_atomic_cas): call InterlockedCompareExchange
+	  directly.
+
+	* ruby_atomic.h (ATOMIC_CAS): fix missing function call.
+
 Wed Jul  3 23:47:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_CAS): suppress C4022 and C4047 warnings in
