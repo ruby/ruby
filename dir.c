@@ -1029,12 +1029,18 @@ sys_warning_1(VALUE mesg)
  */
 #define to_be_ignored(e) ((e) == ENOENT || (e) == ENOTDIR)
 
+#ifdef _WIN32
+#define STAT(p, s)	rb_w32_ustati64((p), (s))
+#else
+#define STAT(p, s)	stat((p), (s))
+#endif
+
 /* System call with warning */
 static int
 do_stat(const char *path, struct stat *pst, int flags)
 
 {
-    int ret = stat(path, pst);
+    int ret = STAT(path, pst);
     if (ret < 0 && !to_be_ignored(errno))
 	sys_warning(path);
 

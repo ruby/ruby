@@ -1,3 +1,9 @@
+Wed Jul  3 14:15:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (do_stat): use rb_w32_ustati64() in win32.c to get rid of
+	  mysterious behavior of FindFirstFile() Windows API which treat "<"
+	  and ">" like as wildcard characters.  [ruby-core:55764] [Bug #8597]
+
 Wed Jul  3 12:06:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (maxpow_in_bdigit): Renamed from calc_hbase and return

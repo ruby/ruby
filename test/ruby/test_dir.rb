@@ -213,4 +213,8 @@ class TestDir < Test::Unit::TestCase
     Dir.glob(File.join(@root, "**/"))
   end
 
+  def test_glob_metachar
+    bug8597 = '[ruby-core:55764] [Bug #8597]'
+    assert_empty(Dir.glob(File.join(@root, "<")), bug8597)
+  end
 end
