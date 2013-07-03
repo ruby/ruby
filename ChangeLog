@@ -1,3 +1,13 @@
+Wed Jul  3 22:29:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (ruby_digit36_to_number_table): Declared.
+
+	* util.c (ruby_digit36_to_number_table): Moved from scan_digits.
+
+	* bignum.c (conv_digit): Use ruby_digit36_to_number_table.
+
+	* pack.c (hex2num): Ditto.
+
 Wed Jul  3 18:12:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (install_dirs): revert DESTDIR prefix by r39841, since

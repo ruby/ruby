@@ -1916,12 +1916,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 
 #undef ISDIGIT
 #define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
-#define conv_digit(c) \
-    (!ISASCII(c) ? -1 : \
-     ISDIGIT(c) ? ((c) - '0') : \
-     ISLOWER(c) ? ((c) - 'a' + 10) : \
-     ISUPPER(c) ? ((c) - 'A' + 10) : \
-     -1)
+#define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
     if (!str) {
 	if (badcheck) goto bad;

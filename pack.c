@@ -1047,19 +1047,11 @@ qpencode(VALUE str, VALUE from, long len)
 static inline int
 hex2num(char c)
 {
-    switch (c) {
-      case '0': case '1': case '2': case '3': case '4':
-      case '5': case '6': case '7': case '8': case '9':
-        return c - '0';
-      case 'a': case 'b': case 'c':
-      case 'd': case 'e': case 'f':
-	return c - 'a' + 10;
-      case 'A': case 'B': case 'C':
-      case 'D': case 'E': case 'F':
-	return c - 'A' + 10;
-      default:
-	return -1;
-    }
+    int n;
+    n = ruby_digit36_to_number_table[(unsigned char)c];
+    if (16 <= n)
+        n = -1;
+    return n;
 }
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\

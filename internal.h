@@ -530,6 +530,9 @@ int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, cha
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 
+/* util.c */
+extern const signed char ruby_digit36_to_number_table[];
+
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
