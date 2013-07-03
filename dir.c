@@ -63,10 +63,6 @@ char *strchr(char*,char);
 
 #include "ruby/util.h"
 
-#if !defined HAVE_LSTAT && !defined lstat
-#define lstat stat
-#endif
-
 /* define system APIs */
 #ifdef _WIN32
 #undef chdir
@@ -1045,6 +1041,7 @@ do_stat(const char *path, struct stat *pst, int flags)
     return ret;
 }
 
+#if defined HAVE_LSTAT || defined lstat
 static int
 do_lstat(const char *path, struct stat *pst, int flags)
 {
@@ -1054,6 +1051,9 @@ do_lstat(const char *path, struct stat *pst, int flags)
 
     return ret;
 }
+#else
+#define do_lstat do_stat
+#endif
 
 static DIR *
 do_opendir(const char *path, int flags, rb_encoding *enc)
