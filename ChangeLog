@@ -1,3 +1,8 @@
+Wed Jul  3 23:47:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_CAS): suppress C4022 and C4047 warnings in
+	  VC6.  only InterlockedCompareExchange is declared using PVOID.
+
 Wed Jul  3 22:29:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (ruby_digit36_to_number_table): Declared.

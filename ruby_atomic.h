@@ -50,6 +50,15 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #endif
 # define ATOMIC_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
 # define ATOMIC_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
+# if defined _MSC_VER && _MSC_VER <= 1200
+static inline rb_atomic_t
+rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t newval)
+{
+    return (rb_atomic_t)ATOMIC_CAS(*(PVOID *)var, (PVOID)oldval, (PVOID)(newval));
+}
+#   undef ATOMIC_CAS
+#   define ATOMIC_CAS(var, oldval, newval) (&(var), (newval), (oldval))
+# endif
 # ifdef _M_AMD64
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64(&(var), -(val))
