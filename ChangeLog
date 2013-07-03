@@ -1,3 +1,8 @@
+Wed Jul  3 18:12:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (install_dirs): revert DESTDIR prefix by r39841, since
+	  it is fixed by r41648.  [ruby-core:55760] [Bug #8115]
+
 Wed Jul  3 14:15:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (do_stat): use rb_w32_ustati64() in win32.c to get rid of
