@@ -29,6 +29,7 @@ extern "C" {
 
 #define SIGNED_INTEGER_TYPE_P(int_type) (0 > ((int_type)0)-1)
 #define SIGNED_INTEGER_MAX(sint_type) \
+  (sint_type) \
   ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) | \
   ((((sint_type)1) << (sizeof(sint_type) * CHAR_BIT - 2)) - 1))
 #define SIGNED_INTEGER_MIN(sint_type) (-SIGNED_INTEGER_MAX(sint_type)-1)
