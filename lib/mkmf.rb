@@ -1084,8 +1084,12 @@ SRC
   # If +fw+ is a pair of the framework name and its header file name
   # that header file is checked, instead of the normally used header
   # file which is named same as the framework.
-  def have_framework((fw, header), &b)
-    header ||= "#{fw}.h"
+  def have_framework(fw, &b)
+    if Array === fw
+      fw, header = *fw
+    else
+      header = "#{fw}.h"
+    end
     checking_for fw do
       src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
       opt = " -framework #{fw}"
