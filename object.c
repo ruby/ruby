@@ -121,9 +121,9 @@ rb_eql(VALUE obj1, VALUE obj2)
  *    obj = "a"
  *    other = obj.dup
  *
- *    a == other      #=> true
- *    a.equal? other  #=> false
- *    a.equal? a      #=> true
+ *    obj == other      #=> true
+ *    obj.equal? other  #=> false
+ *    obj.equal? obj    #=> true
  *
  *  The <code>eql?</code> method returns <code>true</code> if +obj+ and
  *  +other+ refer to the same hash key.  This is used by Hash to test members
