@@ -1,6 +1,6 @@
 Thu Jul  4 00:36:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* internal.h (SIGNED_INTEGER_MAX): supperss warning C4146 on VC6.
+	* internal.h (SIGNED_INTEGER_MAX): suppress warning C4146 on VC6.
 	  seems a logical ORed expression becomes unsigned.
 
 Thu Jul  4 00:13:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
