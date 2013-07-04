@@ -3931,6 +3931,37 @@ bigmul1_normal(VALUE x, VALUE y)
 }
 
 static void
+bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+{
+    VALUE work = 0;
+    size_t r, n;
+    BDIGIT *wds;
+    size_t wl;
+
+    assert(xl + yl <= zl);
+    assert(2 * xl <= yl || 3 * xl <= 2*(yl+2));
+
+    wl = xl * 2;
+    wds = ALLOCV_N(BDIGIT, work, wl);
+
+    MEMZERO(zds, BDIGIT, zl);
+
+    n = 0;
+    while (yl > 0) {
+	r = xl > yl ? yl : xl;
+        bary_mul2(wds, xl + r, xds, xl, yds + n, r);
+        bary_add(zds + n, zl - n,
+                 zds + n, zl - n,
+                 wds, xl + r);
+	yl -= r;
+	n += r;
+    }
+
+    if (work)
+        ALLOCV_END(work);
+}
+
+static void
 bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     size_t l;
@@ -3971,35 +4002,22 @@ bary_mul2(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl
 static VALUE
 bigmul1_balance(VALUE x, VALUE y)
 {
-    VALUE z, t1, t2;
-    long i, xn, yn, r, n;
-    BDIGIT *yds, *zds, *t1ds;
+    VALUE z;
+    long xn, yn, zn;
+    BDIGIT *xds, *yds, *zds;
 
     xn = RBIGNUM_LEN(x);
     yn = RBIGNUM_LEN(y);
     assert(2 * xn <= yn || 3 * xn <= 2*(yn+2));
 
-    z = bignew(xn + yn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    t1 = bignew(xn, 1);
+    zn = xn + yn;
+    z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 
+    xds = BDIGITS(x);
     yds = BDIGITS(y);
     zds = BDIGITS(z);
-    t1ds = BDIGITS(t1);
 
-    for (i = 0; i < xn + yn; i++) zds[i] = 0;
-
-    n = 0;
-    while (yn > 0) {
-	r = xn > yn ? yn : xn;
-	MEMCPY(t1ds, yds + n, BDIGIT, r);
-	RBIGNUM_SET_LEN(t1, r);
-	t2 = bigmul0(x, t1);
-	bigadd_core(zds + n, RBIGNUM_LEN(z) - n,
-		    BDIGITS(t2), big_real_len(t2),
-		    zds + n, RBIGNUM_LEN(z) - n);
-	yn -= r;
-	n += r;
-    }
+    bary_mul_balance(zds, zn, xds, xn, yds, yn);
 
     return z;
 }

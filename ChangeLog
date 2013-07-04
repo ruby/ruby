@@ -1,3 +1,8 @@
+Fri Jul  5 04:58:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_balance): Extracted from bigmul1_balance and
+	  use bary_mul2 and bary_add to decrease allocations.
+
 Fri Jul  5 02:14:00 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#symbolic_modes_to_i): Fix the wrong
