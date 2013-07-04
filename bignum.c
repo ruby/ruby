@@ -220,17 +220,202 @@ static int nlz(BDIGIT x) { return nlz128((uint128_t)x); }
          32 - nlz32(x))
 #endif
 
+#define U16(a) ((uint16_t)(a))
+#define U32(a) ((uint32_t)(a))
+#ifdef HAVE_UINT64_T
+#define U64(a,b) (((uint64_t)(a) << 32) | (b))
+#endif
+#ifdef HAVE_UINT128_T
+#define U128(a,b,c,d) (((uint128_t)U64(a,b) << 64) | U64(c,d))
+#endif
+
+/* The following scirpt, maxpow.rb, generates the tables follows.
+
+def big(n, bits)
+  ns = []
+  ((bits+31)/32).times {
+    ns << sprintf("0x%08x", n & 0xffff_ffff)
+    n >>= 32
+  }
+  "U#{bits}(" + ns.reverse.join(",") + ")"
+end
+def values(ary, width, indent)
+  lines = [""]
+  ary.each {|e|
+    lines << "" if !ary.last.empty? && width < (lines.last + e + ", ").length
+    lines.last << e + ", "
+  }
+  lines.map {|line| " " * indent + line.chomp(" ") + "\n" }.join
+end
+[16,32,64,128].each {|bits|
+  max = 2**bits-1
+  exps = []
+  nums = []
+  2.upto(36) {|base|
+    exp = 0
+    n = 1
+    while n * base <= max
+      exp += 1
+      n *= base
+    end
+    exps << exp.to_s
+    nums << big(n, bits)
+  }
+  puts "#ifdef HAVE_UINT#{bits}_T"
+  puts "static int maxpow#{bits}_exp[35] = {"
+  print values(exps, 70, 4)
+  puts "};"
+  puts "static uint#{bits}_t maxpow#{bits}_num[35] = {"
+  print values(nums, 70, 4)
+  puts "};"
+  puts "#endif"
+}
+
+ */
+
+#ifdef HAVE_UINT16_T
+static int maxpow16_exp[35] = {
+    15, 10, 7, 6, 6, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+};
+static uint16_t maxpow16_num[35] = {
+    U16(0x00008000), U16(0x0000e6a9), U16(0x00004000), U16(0x00003d09),
+    U16(0x0000b640), U16(0x000041a7), U16(0x00008000), U16(0x0000e6a9),
+    U16(0x00002710), U16(0x00003931), U16(0x00005100), U16(0x00006f91),
+    U16(0x00009610), U16(0x0000c5c1), U16(0x00001000), U16(0x00001331),
+    U16(0x000016c8), U16(0x00001acb), U16(0x00001f40), U16(0x0000242d),
+    U16(0x00002998), U16(0x00002f87), U16(0x00003600), U16(0x00003d09),
+    U16(0x000044a8), U16(0x00004ce3), U16(0x000055c0), U16(0x00005f45),
+    U16(0x00006978), U16(0x0000745f), U16(0x00008000), U16(0x00008c61),
+    U16(0x00009988), U16(0x0000a77b), U16(0x0000b640),
+};
+#endif
+#ifdef HAVE_UINT32_T
+static int maxpow32_exp[35] = {
+    31, 20, 15, 13, 12, 11, 10, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7,
+    7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+};
+static uint32_t maxpow32_num[35] = {
+    U32(0x80000000), U32(0xcfd41b91), U32(0x40000000), U32(0x48c27395),
+    U32(0x81bf1000), U32(0x75db9c97), U32(0x40000000), U32(0xcfd41b91),
+    U32(0x3b9aca00), U32(0x8c8b6d2b), U32(0x19a10000), U32(0x309f1021),
+    U32(0x57f6c100), U32(0x98c29b81), U32(0x10000000), U32(0x18754571),
+    U32(0x247dbc80), U32(0x3547667b), U32(0x4c4b4000), U32(0x6b5a6e1d),
+    U32(0x94ace180), U32(0xcaf18367), U32(0x0b640000), U32(0x0e8d4a51),
+    U32(0x1269ae40), U32(0x17179149), U32(0x1cb91000), U32(0x23744899),
+    U32(0x2b73a840), U32(0x34e63b41), U32(0x40000000), U32(0x4cfa3cc1),
+    U32(0x5c13d840), U32(0x6d91b519), U32(0x81bf1000),
+};
+#endif
+#ifdef HAVE_UINT64_T
+static int maxpow64_exp[35] = {
+    63, 40, 31, 27, 24, 22, 21, 20, 19, 18, 17, 17, 16, 16, 15, 15, 15,
+    15, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12,
+    12,
+};
+static uint64_t maxpow64_num[35] = {
+    U64(0x80000000,0x00000000), U64(0xa8b8b452,0x291fe821),
+    U64(0x40000000,0x00000000), U64(0x6765c793,0xfa10079d),
+    U64(0x41c21cb8,0xe1000000), U64(0x36427987,0x50226111),
+    U64(0x80000000,0x00000000), U64(0xa8b8b452,0x291fe821),
+    U64(0x8ac72304,0x89e80000), U64(0x4d28cb56,0xc33fa539),
+    U64(0x1eca170c,0x00000000), U64(0x780c7372,0x621bd74d),
+    U64(0x1e39a505,0x7d810000), U64(0x5b27ac99,0x3df97701),
+    U64(0x10000000,0x00000000), U64(0x27b95e99,0x7e21d9f1),
+    U64(0x5da0e1e5,0x3c5c8000), U64(0xd2ae3299,0xc1c4aedb),
+    U64(0x16bcc41e,0x90000000), U64(0x2d04b7fd,0xd9c0ef49),
+    U64(0x5658597b,0xcaa24000), U64(0xa0e20737,0x37609371),
+    U64(0x0c29e980,0x00000000), U64(0x14adf4b7,0x320334b9),
+    U64(0x226ed364,0x78bfa000), U64(0x383d9170,0xb85ff80b),
+    U64(0x5a3c23e3,0x9c000000), U64(0x8e651373,0x88122bcd),
+    U64(0xdd41bb36,0xd259e000), U64(0x0aee5720,0xee830681),
+    U64(0x10000000,0x00000000), U64(0x172588ad,0x4f5f0981),
+    U64(0x211e44f7,0xd02c1000), U64(0x2ee56725,0xf06e5c71),
+    U64(0x41c21cb8,0xe1000000),
+};
+#endif
+#ifdef HAVE_UINT128_T
+static int maxpow128_exp[35] = {
+    127, 80, 63, 55, 49, 45, 42, 40, 38, 37, 35, 34, 33, 32, 31, 31, 30,
+    30, 29, 29, 28, 28, 27, 27, 27, 26, 26, 26, 26, 25, 25, 25, 25, 24,
+    24,
+};
+static uint128_t maxpow128_num[35] = {
+    U128(0x80000000,0x00000000,0x00000000,0x00000000),
+    U128(0x6f32f1ef,0x8b18a2bc,0x3cea5978,0x9c79d441),
+    U128(0x40000000,0x00000000,0x00000000,0x00000000),
+    U128(0xd0cf4b50,0xcfe20765,0xfff4b4e3,0xf741cf6d),
+    U128(0x6558e2a0,0x921fe069,0x42860000,0x00000000),
+    U128(0x5080c7b7,0xd0e31ba7,0x5911a67d,0xdd3d35e7),
+    U128(0x40000000,0x00000000,0x00000000,0x00000000),
+    U128(0x6f32f1ef,0x8b18a2bc,0x3cea5978,0x9c79d441),
+    U128(0x4b3b4ca8,0x5a86c47a,0x098a2240,0x00000000),
+    U128(0xffd1390a,0x0adc2fb8,0xdabbb817,0x4d95c99b),
+    U128(0x2c6fdb36,0x4c25e6c0,0x00000000,0x00000000),
+    U128(0x384bacd6,0x42c343b4,0xe90c4272,0x13506d29),
+    U128(0x31f5db32,0xa34aced6,0x0bf13a0e,0x00000000),
+    U128(0x20753ada,0xfd1e839f,0x53686d01,0x3143ee01),
+    U128(0x10000000,0x00000000,0x00000000,0x00000000),
+    U128(0x68ca11d6,0xb4f6d1d1,0xfaa82667,0x8073c2f1),
+    U128(0x223e493b,0xb3bb69ff,0xa4b87d6c,0x40000000),
+    U128(0xad62418d,0x14ea8247,0x01c4b488,0x6cc66f59),
+    U128(0x2863c1f5,0xcdae42f9,0x54000000,0x00000000),
+    U128(0xa63fd833,0xb9386b07,0x36039e82,0xbe651b25),
+    U128(0x1d1f7a9c,0xd087a14d,0x28cdf3d5,0x10000000),
+    U128(0x651b5095,0xc2ea8fc1,0xb30e2c57,0x77aaf7e1),
+    U128(0x0ddef20e,0xff760000,0x00000000,0x00000000),
+    U128(0x29c30f10,0x29939b14,0x6664242d,0x97d9f649),
+    U128(0x786a435a,0xe9558b0e,0x6aaf6d63,0xa8000000),
+    U128(0x0c5afe6f,0xf302bcbf,0x94fd9829,0xd87f5079),
+    U128(0x1fce575c,0xe1692706,0x07100000,0x00000000),
+    U128(0x4f34497c,0x8597e144,0x36e91802,0x00528229),
+    U128(0xbf3a8e1d,0x41ef2170,0x7802130d,0x84000000),
+    U128(0x0e7819e1,0x7f1eb0fb,0x6ee4fb89,0x01d9531f),
+    U128(0x20000000,0x00000000,0x00000000,0x00000000),
+    U128(0x4510460d,0xd9e879c0,0x14a82375,0x2f22b321),
+    U128(0x91abce3c,0x4b4117ad,0xe76d35db,0x22000000),
+    U128(0x08973ea3,0x55d75bc2,0x2e42c391,0x727d69e1),
+    U128(0x10e425c5,0x6daffabc,0x35c10000,0x00000000),
+};
+#endif
+
 static BDIGIT_DBL
 maxpow_in_bdigit_dbl(int base, int *exp_ret)
 {
     BDIGIT_DBL maxpow;
     int exponent;
 
-    maxpow = base;
-    exponent = 1;
-    while (maxpow <= BDIGIT_DBL_MAX / base) {
-        maxpow *= base;
-        exponent++;
+    assert(2 <= base && base <= 36);
+
+    switch (sizeof(BDIGIT_DBL)) {
+      case 2:
+        maxpow = maxpow16_num[base-2];
+        exponent = maxpow16_exp[base-2];
+        break;
+      case 4:
+        maxpow = maxpow32_num[base-2];
+        exponent = maxpow32_exp[base-2];
+        break;
+#ifdef HAVE_UINT64_T
+      case 8:
+        maxpow = maxpow64_num[base-2];
+        exponent = maxpow64_exp[base-2];
+        break;
+#endif
+#ifdef HAVE_UINT128_T
+      case 16:
+        maxpow = maxpow128_num[base-2];
+        exponent = maxpow128_exp[base-2];
+        break;
+#endif
+      default:
+        maxpow = base;
+        exponent = 1;
+        while (maxpow <= BDIGIT_DBL_MAX / base) {
+            maxpow *= base;
+            exponent++;
+        }
+        break;
     }
 
     *exp_ret = exponent;
@@ -243,11 +428,35 @@ maxpow_in_bdigit(int base, int *exp_ret)
     BDIGIT maxpow;
     int exponent;
 
-    maxpow = base;
-    exponent = 1;
-    while (maxpow <= BDIGMAX / base) {
-        maxpow *= base;
-        exponent++;
+    switch (SIZEOF_BDIGITS) {
+      case 2:
+        maxpow = maxpow16_num[base-2];
+        exponent = maxpow16_exp[base-2];
+        break;
+      case 4:
+        maxpow = maxpow32_num[base-2];
+        exponent = maxpow32_exp[base-2];
+        break;
+#ifdef HAVE_UINT64_T
+      case 8:
+        maxpow = maxpow64_num[base-2];
+        exponent = maxpow64_exp[base-2];
+        break;
+#endif
+#ifdef HAVE_UINT128_T
+      case 16:
+        maxpow = maxpow128_num[base-2];
+        exponent = maxpow128_exp[base-2];
+        break;
+#endif
+      default:
+        maxpow = base;
+        exponent = 1;
+        while (maxpow <= BDIGMAX / base) {
+            maxpow *= base;
+            exponent++;
+        }
+        break;
     }
 
     *exp_ret = exponent;

@@ -1,3 +1,20 @@
+Thu Jul  4 20:20:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (maxpow_in_bdigit_dbl): Use tables if available.
+	  (maxpow_in_bdigit): Ditto.
+	  (U16): New macro.
+	  (U32): Ditto.
+	  (U64): Ditto.
+	  (U128): Ditto.
+	  (maxpow16_exp): New table.
+	  (maxpow16_num): New table.
+	  (maxpow32_exp): New table.
+	  (maxpow32_num): New table.
+	  (maxpow64_exp): New table.
+	  (maxpow64_num): New table.
+	  (maxpow128_exp): New table.
+	  (maxpow128_num): New table.
+
 Thu Jul  4 18:25:25 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_cstr_to_inum): Avoid temporary buffer allocation except
