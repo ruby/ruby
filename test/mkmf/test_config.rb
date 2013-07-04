@@ -1,3 +1,5 @@
+$extmk = true
+
 require 'test/unit'
 require 'mkmf'
 require_relative '../ruby/envutil'
