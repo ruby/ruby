@@ -86,7 +86,7 @@ static VALUE big_three = Qnil;
 
 #define BARY_ADD(z, x, y) bary_add(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_SUB(z, x, y) bary_sub(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
-#define BARY_MUL(z, x, y) bary_mul(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_MUL1(z, x, y) bary_mul1(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_DIVMOD(q, r, x, y) bary_divmod(BARY_ARGS(q), BARY_ARGS(r), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
 
@@ -99,8 +99,8 @@ static VALUE big_three = Qnil;
 static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+static void bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
-static void bary_mul2(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
@@ -923,7 +923,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
 
     bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
-    BARY_MUL(val_numbits_bary, numbytes_bary, char_bit);
+    BARY_MUL1(val_numbits_bary, numbytes_bary, char_bit);
     if (nlz_bits_in_msbyte)
         BARY_SUB(val_numbits_bary, val_numbits_bary, nlz_bits_in_msbyte_bary);
     bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,
@@ -2372,11 +2372,11 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             for (unit = 2; unit < num_bdigits; unit *= 2) {
                 for (i = 0; i < num_bdigits; i += unit*2) {
                     if (2*unit <= num_bdigits - i) {
-                        bary_mul2(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
+                        bary_mul(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
                         bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
                     }
                     else if (unit <= num_bdigits - i) {
-                        bary_mul2(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
+                        bary_mul(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
                         bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
                     }
                     else {
@@ -3949,7 +3949,7 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
     n = 0;
     while (yl > 0) {
 	r = xl > yl ? yl : xl;
-        bary_mul2(wds, xl + r, xds, xl, yds + n, r);
+        bary_mul(wds, xl + r, xds, xl, yds + n, r);
         bary_add(zds + n, zl - n,
                  zds + n, zl - n,
                  wds, xl + r);
@@ -3962,7 +3962,7 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
 }
 
 static void
-bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     size_t l;
 
@@ -3980,12 +3980,12 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 }
 
 static void
-bary_mul2(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     assert(xl + yl <= zl);
 
     if ((xl < yl ? xl : yl) < KARATSUBA_MUL_DIGITS)
-        bary_mul(zds, zl, xds, xl, yds, yl);
+        bary_mul1(zds, zl, xds, xl, yds, yl);
     else {
         VALUE x, y, z;
         x = bignew(xl, 1);
