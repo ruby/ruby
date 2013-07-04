@@ -1,3 +1,8 @@
+Thu Jul  4 10:04:11 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (): Merge Onigmo 5.13.5 23b523076d6f1161.
+	  https://bugs.ruby-lang.org/issues/8583
+
 Thu Jul  4 00:36:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (SIGNED_INTEGER_MAX): suppress warning C4146 on VC6.
