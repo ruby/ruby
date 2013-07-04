@@ -1900,19 +1900,16 @@ VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
     const char *s = str;
-    char *end;
     char sign = 1, nondigit = 0;
     int c;
-    BDIGIT_DBL num;
     VALUE z;
-    BDIGIT *zds;
 
     int bits_per_digit;
-    size_t size, len, i;
-    size_t blen = 1;
-    VALUE v = 0;
-    uint8_t *buf;
-    uint8_t *p;
+    size_t i;
+
+    const char *digits_start, *digits_end, *p;
+    size_t num_digits;
+    size_t num_bdigits;
 
 #undef ISDIGIT
 #define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
@@ -2006,10 +2003,9 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	return INT2FIX(0);
     }
 
-    size = strlen(str);
     bits_per_digit = bitsize(base-1);
-    len = bits_per_digit * size;
-    if (len <= (sizeof(long)*CHAR_BIT)) {
+    if (bits_per_digit * strlen(str) <= sizeof(long) * CHAR_BIT) {
+        char *end;
 	unsigned long val = STRTOUL(str, &end, base);
 
 	if (str < end && *end == '_') goto bigparse;
@@ -2033,11 +2029,10 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
     }
   bigparse:
-    buf = ALLOCV(v, size+1);
-    p = buf;
-
     if (badcheck && *str == '_') goto bad;
 
+    num_digits = 0;
+    digits_start = digits_end = str;
     while ((c = *str++) != 0) {
 	if (c == '_') {
 	    if (nondigit) {
@@ -2052,7 +2047,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
 	if (c >= base) break;
 	nondigit = 0;
-        *p++ = (uint8_t)c;
+        num_digits++;
+        digits_end = str;
     }
     if (badcheck) {
 	str--;
@@ -2060,31 +2056,54 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	while (*str && ISSPACE(*str)) str++;
 	if (*str) {
 	  bad:
-	    if (v)
-		ALLOCV_END(v);
 	    rb_invalid_str(s, "Integer()");
 	}
     }
 
-    while (buf < p && *buf == 0)
-        buf++;
-
     if (POW2_P(base)) {
-        int flags = INTEGER_PACK_BIG_ENDIAN;
-        if (!sign)
-            flags |= INTEGER_PACK_NEGATIVE;
-        z = rb_integer_unpack(buf, p - buf, 1, CHAR_BIT - bits_per_digit, flags);
+        BDIGIT *dp;
+        BDIGIT_DBL dd;
+        int numbits;
+        num_bdigits = (num_digits / BITSPERDIG) * bits_per_digit + roomof((num_digits % BITSPERDIG) * bits_per_digit, BITSPERDIG);
+        z = bignew(num_bdigits, sign);
+        dp = BDIGITS(z);
+        dd = 0;
+        numbits = 0;
+        for (p = digits_end; digits_start < p; p--) {
+            if ((c = conv_digit(p[-1])) < 0)
+                continue;
+            dd |= (BDIGIT_DBL)c << numbits;
+            numbits += bits_per_digit;
+            if (BITSPERDIG <= numbits) {
+                *dp++ = BIGLO(dd);
+                dd = BIGDN(dd);
+                numbits -= BITSPERDIG;
+            }
+        }
+        if (numbits) {
+            *dp++ = BIGLO(dd);
+        }
+        assert((size_t)(dp - BDIGITS(z)) == num_bdigits);
     }
     else {
-        len = (len/BITSPERDIG)+1;
-        if (len < KARATSUBA_MUL_DIGITS) {
-            z = bignew(len, sign);
-            zds = BDIGITS(z);
-            for (i=len;i--;) zds[i]=0;
+        int digits_per_bdigits_dbl;
+        BDIGIT_DBL power;
+        power = maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+        num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
-            size = p - buf;
-            for (p = buf; p < buf + size; p++) {
-                num = *p;
+        if (num_bdigits < KARATSUBA_MUL_DIGITS) {
+            size_t blen = 1;
+            BDIGIT *zds;
+            BDIGIT_DBL num;
+
+            z = bignew(num_bdigits, sign);
+            zds = BDIGITS(z);
+            MEMZERO(zds, BDIGIT, num_bdigits);
+
+            for (p = digits_start; p < digits_end; p++) {
+                if ((c = conv_digit(*p)) < 0)
+                    continue;
+                num = c;
                 i = 0;
                 for (;;) {
                     while (i<blen) {
@@ -2098,47 +2117,49 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                     }
                     break;
                 }
+                assert(blen <= num_bdigits);
             }
         }
         else {
-            int digits_per_bdigits_dbl;
-            BDIGIT_DBL power;
             VALUE powerv;
-            int j;
-            size_t num_bdigits;
             size_t unit;
             VALUE tmpuv = 0;
             BDIGIT *uds, *vds, *tds;
-
-            power = maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
-
-            size = p - buf;
-            num_bdigits = roomof(size, digits_per_bdigits_dbl)*2;
+            BDIGIT_DBL dd;
+            BDIGIT_DBL current_base;
+            int m;
 
             uds = ALLOCV_N(BDIGIT, tmpuv, 2*num_bdigits);
             vds = uds + num_bdigits;
 
             powerv = bignew(2, 1);
-            BDIGITS(powerv)[0] = (BDIGIT)BIGLO(power);
+            BDIGITS(powerv)[0] = BIGLO(power);
             BDIGITS(powerv)[1] = (BDIGIT)BIGDN(power);
 
             i = 0;
-            while (buf < p) {
-                int m;
-                BDIGIT_DBL d = 0;
-                if (digits_per_bdigits_dbl <= p - buf) {
+            dd = 0;
+            current_base = 1;
+            m = digits_per_bdigits_dbl;
+            if (num_digits < (size_t)m)
+                m = (int)num_digits;
+            for (p = digits_end; digits_start < p; p--) {
+                if ((c = conv_digit(p[-1])) < 0)
+                    continue;
+                dd = dd + c * current_base;
+                current_base *= base;
+                num_digits--;
+                m--;
+                if (m == 0) {
+                    uds[i++] = BIGLO(dd);
+                    uds[i++] = (BDIGIT)BIGDN(dd);
+                    dd = 0;
                     m = digits_per_bdigits_dbl;
+                    if (num_digits < (size_t)m)
+                        m = (int)num_digits;
+                    current_base = 1;
                 }
-                else {
-                    m = (int)(p - buf);
-                }
-                p -= m;
-                for (j = 0; j < m; j++) {
-                    d = d * base + p[j];
-                }
-                uds[i++] = (BDIGIT)BIGLO(d);
-                uds[i++] = (BDIGIT)BIGDN(d);
             }
+            assert(i == num_bdigits);
             for (unit = 2; unit < num_bdigits; unit *= 2) {
                 for (i = 0; i < num_bdigits; i += unit*2) {
                     if (2*unit <= num_bdigits - i) {
@@ -2168,8 +2189,6 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
         }
     }
 
-    if (v)
-        ALLOCV_END(v);
     return bignorm(z);
 }
 

@@ -1,3 +1,8 @@
+Thu Jul  4 18:25:25 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Avoid temporary buffer allocation except
+	  very big base non-power-of-2 numbers.
+
 Thu Jul  4 15:51:56 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_succ): use ONIGENC_MBCLEN_CHARFOUND_P correctly.
