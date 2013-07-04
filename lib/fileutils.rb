@@ -910,8 +910,8 @@ module FileUtils
   def symbolic_modes_to_i(modes, path)  #:nodoc:
     current_mode = (File.stat(path).mode & 07777)
     modes.split(/,/).inject(0) do |mode, mode_sym|
-      mode_sym = "a#{mode_sym}" if mode_sym =~ %r!^[+-=]!
-      target, mode = mode_sym.split %r![+-=]!
+      mode_sym = "a#{mode_sym}" if mode_sym =~ %r!^[=+-]!
+      target, mode = mode_sym.split %r![=+-]!
       user_mask = user_mask(target)
       mode_mask = mode_mask(mode ? mode : "", path)
 

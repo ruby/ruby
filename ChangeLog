@@ -1,3 +1,9 @@
+Fri Jul  5 01:23:33 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#symbolic_modes_to_i): Fix the wrong
+	  character class [+-=], which happened to match all desired
+	  characters but also match undesired characters.
+
 Fri Jul  5 00:25:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_framework): allow header file to check.
