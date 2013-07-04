@@ -2976,7 +2976,9 @@ rb_str_succ(VALUE orig)
 		break;
 	    }
 	}
-	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+	l = rb_enc_precise_mbclen(s, e, enc);
+	if (!ONIGENC_MBCLEN_CHARFOUND_P(l)) continue;
+	l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
         switch (neighbor) {
 	  case NEIGHBOR_NOT_CHAR:
@@ -2995,7 +2997,9 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
-            if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+	    l = rb_enc_precise_mbclen(s, e, enc);
+	    if (!ONIGENC_MBCLEN_CHARFOUND_P(l)) continue;
+	    l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
             neighbor = enc_succ_char(s, l, enc);
             if (neighbor == NEIGHBOR_FOUND)
                 return str;
@@ -4618,9 +4622,9 @@ rb_str_dump(VALUE str)
 		len++;
 	    }
 	    else {
-		if (u8) {	/* \u{NN} */
+		if (u8 && c > 0x7F) {	/* \u{NN} */
 		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
-		    if (MBCLEN_CHARFOUND_P(n-1)) {
+		    if (MBCLEN_CHARFOUND_P(n)) {
 			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
 			while (cc >>= 4) len++;
 			len += 5;
