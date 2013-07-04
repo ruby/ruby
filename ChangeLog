@@ -1,3 +1,9 @@
+Thu Jul  4 22:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* object.c (rb_obj_equal): Fixed an rb_obj_equal documentation typo
+	  where "a" was used instead of "obj".
+	  Fixes GH-349. Patch by @adnandoric
+
 Thu Jul  4 20:39:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* tool/make-snapshot: Exit with EXIT_FAILURE when it fails.
