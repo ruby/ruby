@@ -1081,9 +1081,13 @@ SRC
   # the +HAVE_FRAMEWORK_RUBY+ preprocessor macro would be passed to the
   # compiler.
   #
-  def have_framework(fw, &b)
+  # If +fw+ is a pair of the framework name and its header file name
+  # that header file is checked, instead of the normally used header
+  # file which is named same as the framework.
+  def have_framework((fw, header), &b)
+    header ||= "#{fw}.h"
     checking_for fw do
-      src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
+      src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
       opt = " -framework #{fw}"
       if try_link(src, "-ObjC#{opt}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
