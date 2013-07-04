@@ -262,10 +262,10 @@ end
     nums << big(n, bits)
   }
   puts "#ifdef HAVE_UINT#{bits}_T"
-  puts "static int maxpow#{bits}_exp[35] = {"
+  puts "static const int maxpow#{bits}_exp[35] = {"
   print values(exps, 70, 4)
   puts "};"
-  puts "static uint#{bits}_t maxpow#{bits}_num[35] = {"
+  puts "static const uint#{bits}_t maxpow#{bits}_num[35] = {"
   print values(nums, 70, 4)
   puts "};"
   puts "#endif"
@@ -274,11 +274,11 @@ end
  */
 
 #ifdef HAVE_UINT16_T
-static int maxpow16_exp[35] = {
+static const int maxpow16_exp[35] = {
     15, 10, 7, 6, 6, 5, 5, 5, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3,
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
-static uint16_t maxpow16_num[35] = {
+static const uint16_t maxpow16_num[35] = {
     U16(0x00008000), U16(0x0000e6a9), U16(0x00004000), U16(0x00003d09),
     U16(0x0000b640), U16(0x000041a7), U16(0x00008000), U16(0x0000e6a9),
     U16(0x00002710), U16(0x00003931), U16(0x00005100), U16(0x00006f91),
@@ -291,11 +291,11 @@ static uint16_t maxpow16_num[35] = {
 };
 #endif
 #ifdef HAVE_UINT32_T
-static int maxpow32_exp[35] = {
+static const int maxpow32_exp[35] = {
     31, 20, 15, 13, 12, 11, 10, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7,
     7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
 };
-static uint32_t maxpow32_num[35] = {
+static const uint32_t maxpow32_num[35] = {
     U32(0x80000000), U32(0xcfd41b91), U32(0x40000000), U32(0x48c27395),
     U32(0x81bf1000), U32(0x75db9c97), U32(0x40000000), U32(0xcfd41b91),
     U32(0x3b9aca00), U32(0x8c8b6d2b), U32(0x19a10000), U32(0x309f1021),
@@ -308,12 +308,12 @@ static uint32_t maxpow32_num[35] = {
 };
 #endif
 #ifdef HAVE_UINT64_T
-static int maxpow64_exp[35] = {
+static const int maxpow64_exp[35] = {
     63, 40, 31, 27, 24, 22, 21, 20, 19, 18, 17, 17, 16, 16, 15, 15, 15,
     15, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12,
     12,
 };
-static uint64_t maxpow64_num[35] = {
+static const uint64_t maxpow64_num[35] = {
     U64(0x80000000,0x00000000), U64(0xa8b8b452,0x291fe821),
     U64(0x40000000,0x00000000), U64(0x6765c793,0xfa10079d),
     U64(0x41c21cb8,0xe1000000), U64(0x36427987,0x50226111),
@@ -335,12 +335,12 @@ static uint64_t maxpow64_num[35] = {
 };
 #endif
 #ifdef HAVE_UINT128_T
-static int maxpow128_exp[35] = {
+static const int maxpow128_exp[35] = {
     127, 80, 63, 55, 49, 45, 42, 40, 38, 37, 35, 34, 33, 32, 31, 31, 30,
     30, 29, 29, 28, 28, 27, 27, 27, 26, 26, 26, 26, 25, 25, 25, 25, 24,
     24,
 };
-static uint128_t maxpow128_num[35] = {
+static const uint128_t maxpow128_num[35] = {
     U128(0x80000000,0x00000000,0x00000000,0x00000000),
     U128(0x6f32f1ef,0x8b18a2bc,0x3cea5978,0x9c79d441),
     U128(0x40000000,0x00000000,0x00000000,0x00000000),
