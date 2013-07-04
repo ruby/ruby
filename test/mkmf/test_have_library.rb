@@ -16,8 +16,8 @@ class TestMkmf
       end
       create_tmpsrc("#include \"#{HEADER_NAME}\"\n""void #{FUNC_NAME}(void) {}")
       xsystem(cc_command)
-      xsystem("#{CONFIG['AR']} #{config_string('ARFLAGS') || 'cru '}#{lib} conftest.#{$OBJEXT}")
-      File.unlink("conftest.#{$OBJEXT}")
+      xsystem("#{CONFIG['AR']} #{config_string('ARFLAGS') || 'cru '}#{lib} #{CONFTEST}.#{$OBJEXT}")
+      File.unlink("#{CONFTEST}.#{$OBJEXT}")
       config_string('RANLIB') do |ranlib|
         xsystem("#{ranlib} #{lib}")
       end

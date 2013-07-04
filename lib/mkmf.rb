@@ -246,11 +246,12 @@ module MakeMakefile
     abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
   end
 
+  CONFTEST = "conftest".freeze
+  CONFTEST_C = "#{CONFTEST}.c"
+
   OUTFLAG = CONFIG['OUTFLAG']
   COUTFLAG = CONFIG['COUTFLAG']
-  CPPOUTFILE = CONFIG['CPPOUTFILE']
-
-  CONFTEST_C = "conftest.c".freeze
+  CPPOUTFILE = CONFIG['CPPOUTFILE'].sub(/\bconftest\b/, CONFTEST)
 
   def rm_f(*files)
     opt = (Hash === files.last ? [files.pop] : [])
@@ -462,7 +463,7 @@ MSG
       xsystem(command, *opts)
     ensure
       log_src(src)
-      MakeMakefile.rm_rf 'conftest.dSYM'
+      MakeMakefile.rm_rf "#{CONFTEST}.dSYM"
     end
   end
 
@@ -538,7 +539,7 @@ MSG
       end
     else
       try_do(src, cmd, *opts, &b)
-    end and File.executable?("conftest#{$EXEEXT}")
+    end and File.executable?(CONFTEST+$EXEEXT)
   end
 
   # Returns whether or not the +src+ can be compiled as a C source and linked
@@ -554,7 +555,7 @@ MSG
   def try_link(src, opt="", *opts, &b)
     try_link0(src, opt, *opts, &b)
   ensure
-    MakeMakefile.rm_f "conftest*", "c0x32*"
+    MakeMakefile.rm_f "#{CONFTEST}*", "c0x32*"
   end
 
   # Returns whether or not the +src+ can be compiled as a C source.  +opt+ is
@@ -568,9 +569,9 @@ MSG
   # [+opt+] a String which contains compiler options
   def try_compile(src, opt="", *opts, &b)
     with_werror(opt, *opts) {|_opt, *_opts| try_do(src, cc_command(_opt), *_opts, &b)} and
-      File.file?("conftest.#{$OBJEXT}")
+      File.file?("#{CONFTEST}.#{$OBJEXT}")
   ensure
-    MakeMakefile.rm_f "conftest*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
   # Returns whether or not the +src+ can be preprocessed with the C
@@ -584,9 +585,9 @@ MSG
   # [+opt+] a String which contains preprocessor options
   def try_cpp(src, opt="", *opts, &b)
     try_do(src, cpp_command(CPPOUTFILE, opt), *opts, &b) and
-      File.file?("conftest.i")
+      File.file?("#{CONFTEST}.i")
   ensure
-    MakeMakefile.rm_f "conftest*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
   alias_method :try_header, (config_string('try_header') || :try_cpp)
@@ -700,12 +701,12 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
 }
       begin
         if try_link0(src, opt, &b)
-          xpopen("./conftest") do |f|
+          xpopen("./#{CONFTEST}") do |f|
             return Integer(f.gets)
           end
         end
       ensure
-        MakeMakefile.rm_f "conftest*"
+        MakeMakefile.rm_f "#{CONFTEST}*"
       end
     end
     nil
@@ -800,7 +801,7 @@ SRC
       end
     end
   ensure
-    MakeMakefile.rm_f "conftest*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
     log_src(src)
   end
 
@@ -837,12 +838,12 @@ SRC
   def try_run(src, opt = "", &b)
     raise "cannot run test program while cross compiling" if CROSS_COMPILING
     if try_link0(src, opt, &b)
-      xsystem("./conftest")
+      xsystem("./#{CONFTEST}")
     else
       nil
     end
   ensure
-    MakeMakefile.rm_f "conftest*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
   end
 
   def install_files(mfile, ifiles, map = nil, srcprefix = nil)
@@ -2102,7 +2103,7 @@ RULES
     $target = target
     libpath = $DEFLIBPATH|$LIBPATH
     message "creating Makefile\n"
-    MakeMakefile.rm_f "conftest*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
     if CONFIG["DLEXT"] == $OBJEXT
       for lib in libs = $libs.split
         lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
@@ -2547,7 +2548,7 @@ MESSAGE
   # Command which will compile a program in order to test linking a library
 
   TRY_LINK = config_string('TRY_LINK') ||
-    "$(CC) #{OUTFLAG}conftest#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
+    "$(CC) #{OUTFLAG}#{CONFTEST}#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
     "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 
   ##
@@ -2598,7 +2599,7 @@ distclean-rb::
 distclean-so::
 distclean-static::
 distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
-\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
+\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) #{CONFTEST}.* mkmf.log
 \t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 \t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
 
