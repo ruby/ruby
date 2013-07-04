@@ -1,3 +1,13 @@
+Fri Jul  5 00:55:05 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (): Merge Onigmo 5.13.5 23b523076d6f1161.
+
+	  * [bug]  (thanks Akinori MUSHA and Ippei Obayashi)
+	           Fix a renumbering bug in condition regexp with a named
+	           capture. [Bug #8583]
+	  * [spec] (thanks Akinori MUSHA)
+	    Allow ENCLOSE_OPTION in look-behind.
+
 Wed Jul  3 23:31:26 2013  Shota Fukumori  <sorah@cookpad.com>
 
 	* lib/mkmf.rb (try_config): Fix to not replace $LDFLAGS with $libs
