@@ -671,7 +671,7 @@ module Net   #:nodoc:
     #
     # Sets an output stream for debugging.
     #
-    #   http = Net::HTTP.new
+    #   http = Net::HTTP.new(hostname)
     #   http.set_debug_output $stderr
     #   http.start { .... }
     #
