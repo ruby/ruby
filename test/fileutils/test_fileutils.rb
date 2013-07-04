@@ -932,6 +932,12 @@ class TestFileUtils
     check_singleton :chmod
 
     touch 'tmp/a'
+    chmod "u=wrx,g=rx,o=x", 'tmp/a'
+    assert_equal 0751, File.stat('tmp/a').mode & 07777
+    chmod "g+w-x", 'tmp/a'
+    assert_equal 0761, File.stat('tmp/a').mode & 07777
+    chmod "o+r,g=o+w,o-r,u-o", 'tmp/a' # 761 => 763 => 773 => 771 => 671
+    assert_equal 0671, File.stat('tmp/a').mode & 07777
     chmod "u=wrx,g=,o=", 'tmp/a'
     assert_equal 0700, File.stat('tmp/a').mode & 0777
     chmod "u=rx,go=", 'tmp/a'
@@ -955,6 +961,26 @@ class TestFileUtils
       chmod "a-t,a-s", 'tmp/a'
       assert_equal 0500, File.stat('tmp/a').mode & 07777
     end
+
+    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "a", 'tmp/a'
+    }
+
+    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "x+a", 'tmp/a'
+    }
+
+    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "u+z", 'tmp/a'
+    }
+
+    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod ",+x", 'tmp/a'
+    }
+
+    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+      chmod "755", 'tmp/a'
+    }
 
   end if have_file_perm?
 

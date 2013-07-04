@@ -868,62 +868,78 @@ module FileUtils
   OPT_TABLE['install'] = [:mode, :preserve, :noop, :verbose]
 
   def user_mask(target)  #:nodoc:
-    mask = 0
-    target.each_byte do |byte_chr|
-      case byte_chr.chr
-        when "u"
-          mask |= 04700
-        when "g"
-          mask |= 02070
-        when "o"
-          mask |= 01007
-        when "a"
-          mask |= 07777
+    target.each_char.inject(0) do |mask, chr|
+      case chr
+      when "u"
+        mask | 04700
+      when "g"
+        mask | 02070
+      when "o"
+        mask | 01007
+      when "a"
+        mask | 07777
+      else
+        raise ArgumentError, "invalid `who' symbol in file mode: #{chr}"
       end
     end
-    mask
   end
   private_module_function :user_mask
 
-  def mode_mask(mode, path)  #:nodoc:
-    mask = 0
-    mode.each_byte do |byte_chr|
-      case byte_chr.chr
-        when "r"
-          mask |= 0444
-        when "w"
-          mask |= 0222
-        when "x"
-          mask |= 0111
-        when "X"
-          mask |= 0111 if FileTest::directory? path
-        when "s"
-          mask |= 06000
-        when "t"
-          mask |= 01000
-      end
+  def apply_mask(mode, user_mask, op, mode_mask)
+    case op
+    when '='
+      (mode & ~user_mask) | (user_mask & mode_mask)
+    when '+'
+      mode | (user_mask & mode_mask)
+    when '-'
+      mode & ~(user_mask & mode_mask)
     end
-    mask
   end
-  private_module_function :mode_mask
+  private_module_function :apply_mask
 
-  def symbolic_modes_to_i(modes, path)  #:nodoc:
-    current_mode = (File.stat(path).mode & 07777)
-    modes.split(/,/).inject(0) do |mode, mode_sym|
-      mode_sym = "a#{mode_sym}" if mode_sym =~ %r!^[=+-]!
-      target, mode = mode_sym.split %r![=+-]!
+  def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
+    mode_sym.split(/,/).inject(File.stat(path).mode & 07777) do |current_mode, clause|
+      target, *actions = clause.split(/([=+-])/)
+      raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
+      target = 'a' if target.empty?
       user_mask = user_mask(target)
-      mode_mask = mode_mask(mode ? mode : "", path)
+      actions.each_slice(2) do |op, perm|
+        need_apply = op == '='
+        mode_mask = (perm || '').each_char.inject(0) do |mask, chr|
+          case chr
+          when "r"
+            mask | 0444
+          when "w"
+            mask | 0222
+          when "x"
+            mask | 0111
+          when "X"
+            if FileTest.directory? path
+              mask | 0111
+            else
+              mask
+            end
+          when "s"
+            mask | 06000
+          when "t"
+            mask | 01000
+          when "u", "g", "o"
+            if mask.nonzero?
+              current_mode = apply_mask(current_mode, user_mask, op, mask)
+            end
+            need_apply = false
+            copy_mask = user_mask(chr)
+            (current_mode & copy_mask) / (copy_mask & 0111) * (user_mask & 0111)
+          else
+            raise ArgumentError, "invalid `perm' symbol in file mode: #{chr}"
+          end
+        end
 
-      case mode_sym
-        when /=/
-          current_mode &= ~(user_mask)
-          current_mode |= user_mask & mode_mask
-        when /\+/
-          current_mode |= user_mask & mode_mask
-        when /-/
-          current_mode &= ~(user_mask & mode_mask)
+        if mode_mask.nonzero? || need_apply
+          current_mode = apply_mask(current_mode, user_mask, op, mode_mask)
+        end
       end
+      current_mode
     end
   end
   private_module_function :symbolic_modes_to_i

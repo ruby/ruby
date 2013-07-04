@@ -1,8 +1,14 @@
-Fri Jul  5 01:23:33 2013  Akinori MUSHA  <knu@iDaemons.org>
+Fri Jul  5 02:14:00 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#symbolic_modes_to_i): Fix the wrong
 	  character class [+-=], which happened to match all desired
 	  characters but also match undesired characters.
+
+	* lib/fileutils.rb (FileUtils.chmod{,_R}): Enhance the symbolic
+	  mode parser to support the permission symbols u/g/o and multiple
+	  actions as defined in SUS, so that chmod("g=o+w", file) works as
+	  expected.  Invalid symbolic modes are now rejected with
+	  ArgumentError.
 
 Fri Jul  5 00:25:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
