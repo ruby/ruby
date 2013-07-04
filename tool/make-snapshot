@@ -265,8 +265,12 @@ ensure
   FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
 end
 
+success = true
 revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
-  name or next
+  if !name
+    success = false
+    next
+  end
   str = open(name, "rb") {|f| f.read}
   md5 = Digest::MD5.hexdigest str
   sha = Digest::SHA256.hexdigest str
@@ -276,5 +280,7 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   puts "  SHA256: #{sha}"
   puts
 end
+
+exit false if !success
 
 # vim:fileencoding=US-ASCII sw=2 ts=4 noexpandtab ff=unix
