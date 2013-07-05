@@ -1,3 +1,8 @@
+Fri Jul  5 09:53:15 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb (CONFIG['CPPOUTFILE']): fix r41769; CONFIG['CPPOUTFILE']
+	  may be nil.
+
 Fri Jul  5 05:39:53 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BARY_MUL1): Renamed from BARY_MUL.

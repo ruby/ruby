@@ -251,7 +251,7 @@ module MakeMakefile
 
   OUTFLAG = CONFIG['OUTFLAG']
   COUTFLAG = CONFIG['COUTFLAG']
-  CPPOUTFILE = CONFIG['CPPOUTFILE'].sub(/\bconftest\b/, CONFTEST)
+  CPPOUTFILE = CONFIG['CPPOUTFILE'] ? CONFIG['CPPOUTFILE'].sub(/\bconftest\b/, CONFTEST) : nil
 
   def rm_f(*files)
     opt = (Hash === files.last ? [files.pop] : [])
