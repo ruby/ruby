@@ -1,3 +1,11 @@
+Fri Jul  5 11:08:00 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (w32_spawn): r41710 made that if the command starts with
+	  a quote and includes slash, removed the top quote and NOT removed the
+	  last quote.
+	  this fixes test failures on test/ruby/test_process.rb and
+	  test/webrick.
+
 Fri Jul  5 09:53:15 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb (CONFIG['CPPOUTFILE']): fix r41769; CONFIG['CPPOUTFILE']

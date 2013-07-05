@@ -1260,12 +1260,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 		}
 		if ((unsigned char)*prog == quote) {
 		    len = prog++ - cmd - 1;
-		    STRNDUPV(p, v2, cmd + 1 - slash, len + (slash ? strlen(prog) + 2 : 0));
-		    if (slash) {
-			cmd = p++;
-			sep = *(cmd_sep = &p[len + 1]);
-			*cmd_sep = '\0';
-		    }
+		    STRNDUPV(p, v2, cmd + 1, len);
 		    shell = p;
 		    break;
 		}
