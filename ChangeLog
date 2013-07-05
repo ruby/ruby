@@ -1,3 +1,11 @@
+Fri Jul  5 20:46:39 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic): this
+	  assertion doesn't seems to be checking the unicode string on command
+	  line, but seems to be checking how to treat the unicode string from
+	  stdin.  so, should escape '\' before 'u'.  this fixes a test failure
+	  on Windows.
+
 Fri Jul  5 19:05:40 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#chown, FileUtils#chown_R): Fix the
