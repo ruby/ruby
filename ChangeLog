@@ -1,3 +1,9 @@
+Fri Jul  5 19:05:40 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#chown, FileUtils#chown_R): Fix the
+	  wrong output message when user is nil, which should be "chown
+	  :group file" instead of "chown group file".
+
 Fri Jul  5 16:21:56 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_regexp.rb

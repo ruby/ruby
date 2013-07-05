@@ -1045,7 +1045,7 @@ module FileUtils
     fu_check_options options, OPT_TABLE['chown']
     list = fu_list(list)
     fu_output_message sprintf('chown %s%s',
-                              [user,group].compact.join(':') + ' ',
+                              (group ? [user,group].join(':') : user) + ' ',
                               list.join(' ')) if options[:verbose]
     return if options[:noop]
     uid = fu_get_uid(user)
@@ -1075,7 +1075,7 @@ module FileUtils
     list = fu_list(list)
     fu_output_message sprintf('chown -R%s %s%s',
                               (options[:force] ? 'f' : ''),
-                              [user,group].compact.join(':') + ' ',
+                              (group ? [user,group].join(':') : user) + ' ',
                               list.join(' ')) if options[:verbose]
     return if options[:noop]
     uid = fu_get_uid(user)
