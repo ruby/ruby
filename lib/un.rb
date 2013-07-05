@@ -342,7 +342,7 @@ def help
     open(__FILE__) do |me|
       while me.gets("##\n")
         if help = me.gets("\n\n")
-          if all or argv.delete help[/-e \w+/].sub(/-e /, "")
+          if all or argv.delete help[/^#\s*ruby\s.*-e\s+(\w+)/, 1]
             print help.gsub(/^# ?/, "")
           end
         end
