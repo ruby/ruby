@@ -1,3 +1,20 @@
+Sat Jul  6 06:06:16 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* lib/openssl/ssl.rb: Fix SSL client connection crash for SAN marked
+	  critical.
+	  The patch for CVE-2013-4073 caused SSL crash when a SSL server returns
+	  the certificate that has critical SAN value.  X509 extension could
+	  include 2 or 3 elements in it:
+
+	  [id, criticality, octet_string] if critical,
+	  [id, octet_string] if not.
+
+	  Making sure to pick the last element of X509 extension and use it as
+	  SAN value.
+	  [ruby-core:55685] [Bug #8575]
+
+	  Thank you @nahi for providing the patch!
+
 Sat Jul  6 04:49:38 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: register time objects so

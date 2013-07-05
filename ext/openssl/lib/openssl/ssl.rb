@@ -98,7 +98,7 @@ module OpenSSL
       should_verify_common_name = true
       cert.extensions.each{|ext|
         next if ext.oid != "subjectAltName"
-        id, ostr = OpenSSL::ASN1.decode(ext.to_der).value
+        ostr = OpenSSL::ASN1.decode(ext.to_der).value.last
         sequence = OpenSSL::ASN1.decode(ostr.value)
         sequence.value.each{|san|
           case san.tag
