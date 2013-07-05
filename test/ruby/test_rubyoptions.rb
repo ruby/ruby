@@ -409,12 +409,13 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_notfound
     notexist = "./notexist.rb"
-    rubybin = Regexp.quote(EnvUtil.rubybin)
+    rubybin = EnvUtil.rubybin.dup
+    rubybin.gsub!(%r(/), '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
+    rubybin = Regexp.quote(rubybin)
     pat = Regexp.quote(notexist)
     bug1573 = '[ruby-core:23717]'
     assert_file.not_exist?(notexist)
     assert_in_out_err(["-r", notexist, "-ep"], "", [], /.* -- #{pat} \(LoadError\)/, bug1573)
-    rubybin.gsub!(%r(/), '\\\\') if /mswin|mingw/ =~ RUBY_PLATFORM
     assert_in_out_err([notexist], "", [], /#{rubybin}:.* -- #{pat} \(LoadError\)/, bug1573)
   end
 
