@@ -944,6 +944,38 @@ class TestRegexp < Test::Unit::TestCase
     assert_match_each(/\A((?<x>x)|(?<y>y))(?(<x>)y|x)\z/, conds, bug8583)
   end
 
+  def test_options_in_look_behind
+    assert_nothing_raised {
+      assert_match_at(/(?<=(?i)ab)cd/, "ABcd", [[2,4]])
+      assert_match_at(/(?<=(?i:ab))cd/, "ABcd", [[2,4]])
+      assert_match_at(/(?<!(?i)ab)cd/, "aacd", [[2,4]])
+      assert_match_at(/(?<!(?i:ab))cd/, "aacd", [[2,4]])
+
+      assert_not_match(/(?<=(?i)ab)cd/, "ABCD")
+      assert_not_match(/(?<=(?i:ab))cd/, "ABCD")
+      assert_not_match(/(?<!(?i)ab)cd/, "ABcd")
+      assert_not_match(/(?<!(?i:ab))cd/, "ABcd")
+    }
+  end
+
+  def assert_match_at(re, str, positions, msg = nil)
+    match = re.match(str)
+
+    assert_not_nil match, message(msg) {
+      "Expected #{re.inspect} to match #{str.inspect}"
+    }
+
+    if match
+      actual_positions = (0...match.size).map { |i|
+        [match.begin(i), match.end(i)]
+      }
+
+      assert_equal positions, actual_positions, message(msg) {
+        "Expected #{re.inspect} to match #{str.inspect} at: #{positions.inspect}"
+      }
+    end
+  end
+
   def assert_match_each(re, conds, msg = nil)
     errs = conds.select {|str, match| match ^ (re =~ str)}
     msg = message(msg) {
