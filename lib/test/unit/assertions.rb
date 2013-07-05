@@ -66,6 +66,42 @@ module Test
       end
 
       # :call-seq:
+      #   assert_raise_with_message(exception, expected, msg = nil, &block)
+      #
+      #Tests if the given block raises an exception with the expected
+      #message.
+      #
+      #    assert_raise_with_message(RuntimeError, "foo") do
+      #      nil #Fails, no Exceptions are raised
+      #    end
+      #
+      #    assert_raise_with_message(RuntimeError, "foo") do
+      #      raise ArgumentError, "foo" #Fails, different Exception is raised
+      #    end
+      #
+      #    assert_raise_with_message(RuntimeError, "foo") do
+      #      raise "bar" #Fails, RuntimeError is raised but the message differs
+      #    end
+      #
+      #    assert_raise_with_message(RuntimeError, "foo") do
+      #      raise "foo" #Raises RuntimeError with the message, so assertion succeeds
+      #    end
+      def assert_raise_with_message(exception, expected, msg = nil)
+        case expected
+        when String
+          assert = :assert_equal
+        when Regexp
+          assert = :assert_match
+        else
+          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
+        end
+
+        ex = assert_raise(exception, msg) {yield}
+        msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
+        __send__(assert, expected, ex.message, msg)
+      end
+
+      # :call-seq:
       #   assert_nothing_raised( *args, &block )
       #
       #If any exceptions are given as arguments, the assertion will

@@ -1,3 +1,9 @@
+Fri Jul  5 11:29:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_raise_with_message): move from
+	  test/fileutils/test_fileutils.rb.  this is still experimental and
+	  the interface may be changed.
+
 Fri Jul  5 11:08:00 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (w32_spawn): r41710 made that if the command starts with

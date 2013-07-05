@@ -962,23 +962,23 @@ class TestFileUtils
       assert_equal 0500, File.stat('tmp/a').mode & 07777
     end
 
-    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
       chmod "a", 'tmp/a'
     }
 
-    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
       chmod "x+a", 'tmp/a'
     }
 
-    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
       chmod "u+z", 'tmp/a'
     }
 
-    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
       chmod ",+x", 'tmp/a'
     }
 
-    assert_raises_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
+    assert_raise_with_message(ArgumentError, /invalid\b.*\bfile mode/) {
       chmod "755", 'tmp/a'
     }
 
@@ -1187,28 +1187,10 @@ class TestFileUtils
       uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
     # [Bug #6708] [ruby-core:46256]
-    assert_raises_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
       uptodate?('new',['old', 'oldest'], {})
     }
   end
-
-  def assert_raises_with_message(klass, message)
-    begin
-      yield
-      flunk("Expected Exception #{klass} didn't raise")
-    rescue klass => ex
-      if message.kind_of? String
-        flag = !!(ex.message == message)
-        assert(flag, "Expected Exception(#{klass}) was raised, but the message doesn't match")
-      elsif message.kind_of? Regexp
-        flag = !!(ex.message =~ message)
-        assert(flag, "Expected Exception(#{klass}) was raised, but the message doesn't match")
-      else
-        raise
-      end
-    end
-  end
-  private :assert_raises_with_message
 
   def test_cd
     check_singleton :cd
