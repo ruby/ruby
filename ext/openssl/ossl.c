@@ -458,6 +458,39 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 #endif
 }
 
+/**
+ * Stores locks needed for OpenSSL thread safety
+ */
+static VALUE* ossl_locks;
+
+static void ossl_lock_callback(int mode, int type, char *file, int line)
+{
+    if (mode & CRYPTO_LOCK) {
+	rb_mutex_lock(ossl_locks[type]);
+    } else {
+	rb_mutex_unlock(ossl_locks[type]);
+    }
+}
+
+static unsigned long ossl_thread_id(void)
+{
+    return NUM2ULONG(rb_obj_id(rb_thread_current()));
+}
+
+static void Init_ossl_locks(void)
+{
+    int i;
+
+    ossl_locks = (VALUE*) OPENSSL_malloc(CRYPTO_num_locks() * sizeof(VALUE));
+    for (i = 0; i < CRYPTO_num_locks(); i++) {
+	ossl_locks[i] = rb_mutex_new();
+	rb_global_variable(&(ossl_locks[i]));
+    }
+
+    CRYPTO_set_id_callback((unsigned long (*)())ossl_thread_id);
+    CRYPTO_set_locking_callback((void (*)())ossl_lock_callback);
+}
+
 /*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[http://www.openssl.org/] library.
@@ -977,6 +1010,7 @@ Init_openssl()
      * Init main module
      */
     mOSSL = rb_define_module("OpenSSL");
+    rb_global_variable(&mOSSL);
 
     /*
      * OpenSSL ruby extension version
@@ -1009,6 +1043,7 @@ Init_openssl()
      * common for all classes under OpenSSL module
      */
     eOSSLError = rb_define_class_under(mOSSL,"OpenSSLError",rb_eStandardError);
+    rb_global_variable(&eOSSLError);
 
     /*
      * Verify callback Proc index for ext-data
@@ -1020,6 +1055,8 @@ Init_openssl()
      * Init debug core
      */
     dOSSL = Qfalse;
+    rb_global_variable(&dOSSL);
+
     rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
     rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
     rb_define_module_function(mOSSL, "errors", ossl_get_errors, 0);
@@ -1028,6 +1065,8 @@ Init_openssl()
      * Get ID of to_der
      */
     ossl_s_to_der = rb_intern("to_der");
+
+    Init_ossl_locks();
 
     /*
      * Init components

@@ -1,3 +1,13 @@
+Sat Jul  6 06:37:10 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl.c: Provide CRYPTO_set_locking_callback() and
+	  CRYPTO_set_id_callback() callback functions ossl_thread_id and
+	  ossl_lock_callback to ensure the OpenSSL extension is usable in
+	  multi-threaded environments.
+	  [ruby-core:54900] [Bug #8386]
+
+	  Thanks, Dirkjan Bussink, for the patch!
+
 Sat Jul  6 06:06:16 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* lib/openssl/ssl.rb: Fix SSL client connection crash for SAN marked
