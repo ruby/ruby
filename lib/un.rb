@@ -32,6 +32,7 @@ module FileUtils
   @fileutils_output = $stdout
 end
 
+# :nodoc:
 def setup(options = "", *long_options)
   opt_hash = {}
   argv = []
