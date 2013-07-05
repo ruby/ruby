@@ -414,6 +414,7 @@ class TestRubyOptions < Test::Unit::TestCase
     bug1573 = '[ruby-core:23717]'
     assert_file.not_exist?(notexist)
     assert_in_out_err(["-r", notexist, "-ep"], "", [], /.* -- #{pat} \(LoadError\)/, bug1573)
+    rubybin.gsub!(%r(/), '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
     assert_in_out_err([notexist], "", [], /#{rubybin}:.* -- #{pat} \(LoadError\)/, bug1573)
   end
 

@@ -1,3 +1,9 @@
+Fri Jul  5 12:14:40 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_notfound): after
+	  r41710, the path of command uses backslash as the separator on
+	  Windows.
+
 Fri Jul  5 11:29:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_raise_with_message): move from
