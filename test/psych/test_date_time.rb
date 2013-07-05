@@ -13,5 +13,13 @@ module Psych
       dt = DateTime.now
       assert_cycle dt
     end
+
+    def test_alias_with_time
+      t    = Time.now
+      h    = {:a => t, :b => t}
+      yaml = Psych.dump h
+      assert_match('&', yaml)
+      assert_match('*', yaml)
+    end
   end
 end

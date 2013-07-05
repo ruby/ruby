@@ -216,7 +216,7 @@ module Psych
 
       def visit_Time o
         formatted = format_time o
-        @emitter.scalar formatted, nil, nil, true, false, Nodes::Scalar::ANY
+        register o, @emitter.scalar(formatted, nil, nil, true, false, Nodes::Scalar::ANY)
       end
 
       def visit_Rational o

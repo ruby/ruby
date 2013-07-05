@@ -1,3 +1,9 @@
+Sat Jul  6 04:49:38 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: register time objects so
+	  they are referenced as ids during output.
+	* test/psych/test_date_time.rb: corresponding test.
+
 Fri Jul  5 20:46:39 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic): this
