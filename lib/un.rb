@@ -34,6 +34,7 @@ end
 
 # :nodoc:
 def setup(options = "", *long_options)
+  caller = caller_locations(1, 1)[0].label
   opt_hash = {}
   argv = []
   OptionParser.new do |o|
@@ -54,6 +55,10 @@ def setup(options = "", *long_options)
       end
     end
     o.on("-v") do opt_hash[:verbose] = true end
+    o.on("--help") do
+      UN.help([caller])
+      exit
+    end
     o.order!(ARGV) do |x|
       if /[*?\[{]/ =~ x
         argv.concat(Dir[x])
@@ -338,12 +343,20 @@ end
 
 def help
   setup do |argv,|
+    UN.help(argv)
+  end
+end
+
+module UN # :nodoc:
+  module_function
+  def help(argv, output: $stdout)
     all = argv.empty?
     open(__FILE__) do |me|
       while me.gets("##\n")
         if help = me.gets("\n\n")
           if all or argv.delete help[/^#\s*ruby\s.*-e\s+(\w+)/, 1]
-            print help.gsub(/^# ?/, "")
+            output << help.gsub(/^# ?/, "")
+            break if !all and argv.empty?
           end
         end
       end
