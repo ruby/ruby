@@ -946,19 +946,22 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_options_in_look_behind
     assert_nothing_raised {
-      assert_match_at(/(?<=(?i)ab)cd/, "ABcd", [[2,4]])
-      assert_match_at(/(?<=(?i:ab))cd/, "ABcd", [[2,4]])
-      assert_match_at(/(?<!(?i)ab)cd/, "aacd", [[2,4]])
-      assert_match_at(/(?<!(?i:ab))cd/, "aacd", [[2,4]])
+      assert_match_at("(?<=(?i)ab)cd", "ABcd", [[2,4]])
+      assert_match_at("(?<=(?i:ab))cd", "ABcd", [[2,4]])
+      assert_match_at("(?<!(?i)ab)cd", "aacd", [[2,4]])
+      assert_match_at("(?<!(?i:ab))cd", "aacd", [[2,4]])
 
-      assert_not_match(/(?<=(?i)ab)cd/, "ABCD")
-      assert_not_match(/(?<=(?i:ab))cd/, "ABCD")
-      assert_not_match(/(?<!(?i)ab)cd/, "ABcd")
-      assert_not_match(/(?<!(?i:ab))cd/, "ABcd")
+      assert_not_match("(?<=(?i)ab)cd", "ABCD")
+      assert_not_match("(?<=(?i:ab))cd", "ABCD")
+      assert_not_match("(?<!(?i)ab)cd", "ABcd")
+      assert_not_match("(?<!(?i:ab))cd", "ABcd")
     }
   end
 
+  # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
+    re = Regexp.new(re) unless re.is_a?(Regexp)
+
     match = re.match(str)
 
     assert_not_nil match, message(msg) {
