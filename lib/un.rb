@@ -351,15 +351,25 @@ module UN # :nodoc:
   module_function
   def help(argv, output: $stdout)
     all = argv.empty?
+    cmd = nil
+    if all
+      store = proc {|msg| output << msg}
+    else
+      messages = {}
+      store = proc {|msg| messages[cmd] = msg}
+    end
     open(__FILE__) do |me|
       while me.gets("##\n")
         if help = me.gets("\n\n")
-          if all or argv.delete help[/^#\s*ruby\s.*-e\s+(\w+)/, 1]
-            output << help.gsub(/^# ?/, "")
-            break if !all and argv.empty?
+          if all or argv.include?(cmd = help[/^#\s*ruby\s.*-e\s+(\w+)/, 1])
+            store[help.gsub(/^# ?/, "")]
+            break unless all or argv.size > messages.size
           end
         end
       end
+    end
+    if messages
+      argv.each {|cmd| output << messages[cmd]}
     end
   end
 end
