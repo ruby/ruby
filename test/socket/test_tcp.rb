@@ -21,7 +21,11 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       TCPSocket.new(addr, server_port, addr, client_port)
       flunk "expected SystemCallError"
     rescue SystemCallError => e
-      assert_match "for \"#{addr}\" port #{client_port}", e.message
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        assert_match "for \"#{addr}\" port #{server_port}", e.message
+      else
+        assert_match "for \"#{addr}\" port #{client_port}", e.message
+      end
     end
   end
 
