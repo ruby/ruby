@@ -560,15 +560,19 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
 [AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
 [
- echo "int main(void){ return 0; }" > conftest.c
- echo "provider conftest{};" > conftest_provider.d
+ echo "provider conftest{ probe fire(); };" > conftest_provider.d
+ dtrace -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null
+ cat >conftest.c <<_CONF
+   #include "conftest_provider.h"
+   int main(void){ CONFTEST_FIRE(); return 0; }
+_CONF
  $CC $CFLAGS -c -o conftest.o conftest.c
  if $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null; then
    rb_cv_prog_dtrace_g=yes
  else
    rb_cv_prog_dtrace_g=no
  fi
- rm -f conftest.o conftest.c conftest_provider.d conftest_provider.o
+ rm -f conftest.[co] conftest_provider.[dho]
 ])
 ])
 
