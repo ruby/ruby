@@ -1,3 +1,9 @@
+Sun Jul  7 01:58:25 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#symbolic_modes_to_i): Fix the wrong
+	  character class [+-=], which happened to match all desired
+	  characters but also match undesired characters.
+
 Sun Jul  7 01:54:44 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#chown, FileUtils#chown_R): Fix the
