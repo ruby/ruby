@@ -31,7 +31,7 @@ module OpenSSL
     #
     # === Examples
     #
-    #   OpenSSL::Digest.digest("SHA256, "abc")
+    #   OpenSSL::Digest.digest("SHA256", "abc")
     #
     # which is equivalent to:
     #
