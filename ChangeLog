@@ -1,3 +1,7 @@
+Mon Jul  8 08:03:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): Add a RB_GC_GUARD.
+
 Sun Jul  7 23:56:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_karatsuba): Unreachable code removed.  Remove

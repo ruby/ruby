@@ -1867,6 +1867,7 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
         z = bigtrunc(bigmul1_toom3(x, y));
         MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
         MEMZERO(zds + RBIGNUM_LEN(z), BDIGIT, zl - RBIGNUM_LEN(z));
+        RB_GC_GUARD(z);
     }
 }
 
