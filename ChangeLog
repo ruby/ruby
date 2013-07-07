@@ -1,3 +1,29 @@
+Sun Jul  7 14:41:57 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: (bigsub_core): Use bary_sub.
+	  (bary_sub): Returns a borrow flag.  Use bary_subb.
+	  (bary_subb): New function for actually calculating subtraction with
+	  borrow.
+	  (bary_sub_one): New function.
+	  (bigadd_core): Use bary_add.
+	  (bary_add): Returns a carry flag.  Use bary_addc.
+	  (bary_addc): New function for actually calculating addition with
+	  carry.
+	  (bary_add_one): New function.
+	  (bary_muladd_1xN): Extracted from bary_mul_normal.
+	  (bigmul1_normal): Removed.
+	  (bary_mul_karatsuba): New function.
+	  (bary_mul1): Invoke rb_thread_check_ints after bary_mul_normal.
+	  (bary_mul): Remove most and least significant zeros before actual
+	  multiplication.  Use bary_sq_fast, bary_mul_balance,
+	  bary_mul_karatsuba and bigmul1_toom3 as bigmul0.
+	  (bigmul1_balance): Removed.
+	  (bigmul1_karatsuba): Removed.
+	  (bigsqr_fast): Removed.
+	  (bary_sparse_p): Extracted from big_sparse_p.
+	  (big_sparse_p): Removed.
+	  (bigmul0): Use bary_mul.
+
 Sun Jul  7 11:54:33 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: Add REXML::Text#<< related updates.

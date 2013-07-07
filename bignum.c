@@ -101,14 +101,18 @@ static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int s
 static void bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static void bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
 static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
-static void bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static int bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static int bary_subb(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int borrow);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
-static void bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static int bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn);
+static int bary_addc(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int carry);
 static int bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 static int bary_2comp(BDIGIT *ds, size_t n);
 
-static VALUE bigsqr_fast(VALUE x);
+static void bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn);
+static inline int bary_sparse_p(BDIGIT *ds, size_t n);
 static VALUE bigmul0(VALUE x, VALUE y);
+static VALUE bigmul1_toom3(VALUE x, VALUE y);
 
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
@@ -3459,38 +3463,58 @@ rb_big_neg(VALUE x)
 static void
 bigsub_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
 {
-    BDIGIT_DBL_SIGNED num;
-    long i;
+    bary_sub(zds, zn, xds, xn, yds, yn);
+}
 
-    for (i = 0, num = 0; i < yn; i++) {
+static int
+bary_subb(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int borrow)
+{
+    BDIGIT_DBL_SIGNED num;
+    size_t i;
+
+    assert(yn <= xn);
+    assert(xn <= zn);
+
+    num = borrow ? -1 : 0;
+    for (i = 0; i < yn; i++) {
 	num += (BDIGIT_DBL_SIGNED)xds[i] - yds[i];
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
-    while (num && i < xn) {
+    for (; i < xn; i++) {
+        if (num == 0) goto num_is_zero;
 	num += xds[i];
-	zds[i++] = BIGLO(num);
+	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
+    if (num == 0) goto num_is_zero;
+    for (; i < zn; i++) {
+	zds[i] = BDIGMAX;
+    }
+    return 1;
+
+  num_is_zero:
     if (xds == zds && xn == zn)
-        return;
-    while (i < xn) {
+        return 0;
+    for (; i < xn; i++) {
 	zds[i] = xds[i];
-	i++;
     }
-    assert(i <= zn);
-    while (i < zn) {
-	zds[i++] = 0;
+    for (; i < zn; i++) {
+	zds[i] = 0;
     }
+    return 0;
 }
 
-static void
+static int
 bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
 {
-    assert(yn <= xn);
-    assert(xn <= zn);
+    return bary_subb(zds, zn, xds, xn, yds, yn, 0);
+}
 
-    bigsub_core(xds, xn, yds, yn, zds, zn);
+static int
+bary_sub_one(BDIGIT *zds, size_t zn)
+{
+    return bary_subb(zds, zn, zds, zn, NULL, 0, 1);
 }
 
 static VALUE
@@ -3712,8 +3736,17 @@ bigadd_int(VALUE x, long y)
 static void
 bigadd_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
 {
-    BDIGIT_DBL num = 0;
-    long i;
+    bary_add(zds, zn, xds, xn, yds, yn);
+}
+
+static int
+bary_addc(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int carry)
+{
+    BDIGIT_DBL num;
+    size_t i;
+
+    assert(xn <= zn);
+    assert(yn <= zn);
 
     if (xn > yn) {
 	BDIGIT *tds;
@@ -3721,32 +3754,47 @@ bigadd_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
 	i = xn; xn = yn; yn = i;
     }
 
-    i = 0;
-    while (i < xn) {
+    num = carry ? 1 : 0;
+    for (i = 0; i < xn; i++) {
 	num += (BDIGIT_DBL)xds[i] + yds[i];
-	zds[i++] = BIGLO(num);
+	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
-    while (num && i < yn) {
+    for (; i < yn; i++) {
+        if (num == 0) goto num_is_zero;
 	num += yds[i];
-	zds[i++] = BIGLO(num);
+	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
-    while (i < yn) {
+    for (; i < zn; i++) {
+        if (num == 0) goto num_is_zero;
+	zds[i] = BIGLO(num);
+	num = BIGDN(num);
+    }
+    return num != 0;
+
+  num_is_zero:
+    if (yds == zds && yn == zn)
+        return 0;
+    for (; i < yn; i++) {
 	zds[i] = yds[i];
-	i++;
     }
-    if (num) zds[i++] = (BDIGIT)num;
-    assert(i <= zn);
-    while (i < zn) {
-	zds[i++] = 0;
+    for (; i < zn; i++) {
+	zds[i] = 0;
     }
+    return 0;
 }
 
-static void
+static int
 bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
 {
-    bigadd_core(xds, xn, yds, yn, zds, zn);
+    return bary_addc(zds, zn, xds, xn, yds, yn, 0);
+}
+
+static int
+bary_add_one(BDIGIT *zds, size_t zn)
+{
+    return bary_addc(zds, zn, NULL, 0, zds, zn, 1);
 }
 
 static VALUE
@@ -3871,65 +3919,55 @@ bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
     zds[1] = (BDIGIT)BIGDN(n);
 }
 
-static VALUE
-bigmul1_single(VALUE x, VALUE y)
+static int
+bary_muladd_1xN(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT *yds, size_t yl)
 {
-    VALUE z = bignew(2, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    BDIGIT *xds, *yds, *zds;
+    BDIGIT_DBL n;
+    BDIGIT_DBL dd;
+    size_t j;
 
-    xds = BDIGITS(x);
-    yds = BDIGITS(y);
-    zds = BDIGITS(z);
+    assert(zl > yl);
 
-    bary_mul_single(zds, 2, xds[0], yds[0]);
+    if (x == 0)
+        return 0;
+    dd = x;
+    n = 0;
+    for (j = 0; j < yl; j++) {
+        BDIGIT_DBL ee = n + dd * yds[j];
+        if (ee) {
+            n = zds[j] + ee;
+            zds[j] = BIGLO(n);
+            n = BIGDN(n);
+        }
+        else {
+            n = 0;
+        }
 
-    return z;
+    }
+    for (; j < zl; j++) {
+        if (n == 0)
+            break;
+        n += zds[j];
+        zds[j] = BIGLO(n);
+        n = BIGDN(n);
+    }
+    return n != 0;
 }
 
 static void
 bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     size_t i;
-    size_t j = zl;
-    BDIGIT_DBL n = 0;
 
     assert(xl + yl <= zl);
 
-    while (j--) zds[j] = 0;
+    MEMZERO(zds, BDIGIT, zl);
     for (i = 0; i < xl; i++) {
-	BDIGIT_DBL dd;
-	dd = xds[i];
-	if (dd == 0) continue;
-	n = 0;
-	for (j = 0; j < yl; j++) {
-	    BDIGIT_DBL ee = n + dd * yds[j];
-	    n = zds[i + j] + ee;
-	    if (ee) zds[i + j] = BIGLO(n);
-	    n = BIGDN(n);
-	}
-	if (n) {
-	    zds[i + j] = (BDIGIT)n;
-	}
+        bary_muladd_1xN(zds+i, zl-i, xds[i], yds, yl);
     }
 }
 
-static VALUE
-bigmul1_normal(VALUE x, VALUE y)
-{
-    size_t xl = RBIGNUM_LEN(x), yl = RBIGNUM_LEN(y), zl = xl + yl;
-    VALUE z = bignew(zl, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    BDIGIT *xds, *yds, *zds;
-
-    xds = BDIGITS(x);
-    yds = BDIGITS(y);
-    zds = BDIGITS(z);
-
-    bary_mul_normal(zds, zl, xds, xl, yds, yl);
-
-    rb_thread_check_ints();
-    return z;
-}
-
+/* balancing multiplication by slicing larger argument */
 static void
 bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
@@ -3961,6 +3999,168 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
         ALLOCV_END(work);
 }
 
+/* multiplication by karatsuba method */
+static void
+bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+{
+    VALUE work = 0;
+    BDIGIT *wds;
+    size_t wl;
+
+    size_t n;
+    int sub_p, borrow, carry1, carry2, carry3;
+
+    int odd_x = 0;
+    int odd_y = 0;
+
+    BDIGIT *xds0, *xds1, *yds0, *yds1, *zds0, *zds1, *zds2, *zds3;
+
+    assert(xl + yl <= zl);
+    assert(xl <= yl);
+    assert(yl < 2 * xl);
+
+    if (yl & 1) {
+        odd_y = 1;
+        yl--;
+        if (yl < xl) {
+            odd_x = 1;
+            xl--;
+        }
+    }
+
+    n = yl / 2;
+
+    assert(n < xl);
+
+    wl = n;
+    wds = ALLOCV_N(BDIGIT, work, wl);
+
+    /* Karatsuba algorithm:
+     *
+     * x = x0 + r*x1
+     * y = y0 + r*y1
+     * z = x*y
+     *   = (x0 + r*x1) * (y0 + r*y1)
+     *   = x0*y0 + r*(x1*y0 + x0*y1) + r*r*x1*y1
+     *   = x0*y0 + r*(x0*y0 + x1*y1 - (x1-x0)*(y1-y0)) + r*r*x1*y1
+     *   = x0*y0 + r*(x0*y0 + x1*y1 - (x0-x1)*(y0-y1)) + r*r*x1*y1
+     */
+
+    xds0 = xds;
+    xds1 = xds + n;
+    yds0 = yds;
+    yds1 = yds + n;
+    zds0 = zds;
+    zds1 = zds + n;
+    zds2 = zds + 2*n;
+    zds3 = zds + 3*n;
+
+    sub_p = 1;
+
+    /* zds0:? zds1:? zds2:? zds3:? wds:? */
+
+    if (bary_sub(zds0, n, xds, n, xds+n, xl-n)) {
+        bary_2comp(zds0, n);
+        sub_p = !sub_p;
+    }
+
+    /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:? */
+
+    if (bary_sub(wds, n, yds, n, yds+n, n)) {
+        bary_2comp(wds, n);
+        sub_p = !sub_p;
+    }
+
+    /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:|y1-y0| */
+
+    bary_mul(zds1, 2*n, zds0, n, wds, n);
+
+    /* zds0:|x1-x0| zds1,zds2:|x1-x0|*|y1-y0| zds3:? wds:|y1-y0| */
+
+    borrow = 0;
+    if (sub_p) {
+        borrow = !bary_2comp(zds1, 2*n);
+    }
+    /* zds0:|x1-x0| zds1,zds2:-?|x1-x0|*|y1-y0| zds3:? wds:|y1-y0| */
+
+    MEMCPY(wds, zds1, BDIGIT, n);
+
+    /* zds0:|x1-x0| zds1,zds2:-?|x1-x0|*|y1-y0| zds3:? wds:lo(-?|x1-x0|*|y1-y0|) */
+
+    bary_mul(zds0, 2*n, xds0, n, yds0, n);
+
+    /* zds0,zds1:x0*y0 zds2:hi(-?|x1-x0|*|y1-y0|) zds3:? wds:lo(-?|x1-x0|*|y1-y0|) */
+
+    carry1 = bary_add(wds, n, wds, n, zds0, n);
+    carry1 = bary_addc(zds2, n, zds2, n, zds1, n, carry1);
+
+    /* zds0,zds1:x0*y0 zds2:hi(x0*y0-?|x1-x0|*|y1-y0|) zds3:? wds:lo(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    carry2 = bary_add(zds1, n, zds1, n, wds, n);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|) zds2:hi(x0*y0-?|x1-x0|*|y1-y0|) zds3:? wds:lo(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    MEMCPY(wds, zds2, BDIGIT, n);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|) zds2:_ zds3:? wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    bary_mul(zds2, zl-2*n, xds1, xl-n, yds1, n);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|) zds2,zds3:x1*y1 wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    carry3 = bary_add(zds1, n, zds1, n, zds2, n);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|)+lo(x1*y1) zds2,zds3:x1*y1 wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    carry3 = bary_addc(zds2, n, zds2, n, zds3, (4*n < zl ? n : zl-3*n), carry3);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|)+lo(x1*y1) zds2,zds3:x1*y1+hi(x1*y1) wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
+
+    bary_add(zds2, zl-2*n, zds2, zl-2*n, wds, n);
+
+    /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|)+lo(x1*y1) zds2,zds3:x1*y1+hi(x1*y1)+hi(x0*y0-?|x1-x0|*|y1-y0|) wds:_ */
+
+    if (carry2)
+        bary_add_one(zds2, zl-2*n);
+
+    if (borrow && carry1)
+        borrow = carry1 = 0;
+    if (borrow && carry3)
+        borrow = carry3 = 0;
+
+    if (borrow)
+        bary_sub_one(zds3, zl-3*n);
+    else if (carry1 || carry3) {
+        BDIGIT c = carry1 + carry3;
+        bary_add(zds3, zl-3*n, zds3, zl-3*n, &c, 1);
+    }
+
+    /*
+    if (SIZEOF_BDIGITS * zl <= 16) {
+        uint128_t z, x, y;
+        ssize_t i;
+        for (x = 0, i = xl-1; 0 <= i; i--) { x <<= SIZEOF_BDIGITS*CHAR_BIT; x |= xds[i]; }
+        for (y = 0, i = yl-1; 0 <= i; i--) { y <<= SIZEOF_BDIGITS*CHAR_BIT; y |= yds[i]; }
+        for (z = 0, i = zl-1; 0 <= i; i--) { z <<= SIZEOF_BDIGITS*CHAR_BIT; z |= zds[i]; }
+        assert(z == x * y);
+    }
+    */
+
+    if (odd_x && odd_y) {
+        bary_muladd_1xN(zds+yl, zl-yl, yds[yl], xds, xl);
+        bary_muladd_1xN(zds+xl, zl-xl, xds[xl], yds, yl+1);
+    }
+    else if (odd_x) {
+        bary_muladd_1xN(zds+xl, zl-xl, xds[xl], yds, yl);
+    }
+    else if (odd_y) {
+        bary_muladd_1xN(zds+yl, zl-yl, yds[yl], xds, xl);
+    }
+
+    if (work)
+        ALLOCV_END(work);
+}
+
 static void
 bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
@@ -3975,6 +4175,7 @@ bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl
     else {
         l = xl + yl;
         bary_mul_normal(zds, zl, xds, xl, yds, yl);
+        rb_thread_check_ints();
     }
     MEMZERO(zds + l, BDIGIT, zl - l);
 }
@@ -3982,45 +4183,92 @@ bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl
 static void
 bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
+    size_t nlsz; /* number of least significant zero BDIGITs */
+
     assert(xl + yl <= zl);
 
-    if ((xl < yl ? xl : yl) < KARATSUBA_MUL_DIGITS)
-        bary_mul1(zds, zl, xds, xl, yds, yl);
-    else {
+    while (0 < xl && xds[xl-1] == 0)
+        xl--;
+    while (0 < yl && yds[yl-1] == 0)
+        yl--;
+
+    nlsz = 0;
+    while (0 < xl && xds[0] == 0) {
+        xds++;
+        xl--;
+        nlsz++;
+    }
+    while (0 < yl && yds[0] == 0) {
+        yds++;
+        yl--;
+        nlsz++;
+    }
+    if (nlsz) {
+        MEMZERO(zds, BDIGIT, nlsz);
+        zds += nlsz;
+        zl -= nlsz;
+    }
+
+    /* make sure that y is longer than x */
+    if (xl > yl) {
+        BDIGIT *tds;
+        size_t tl;
+	tds = xds; xds = yds; yds = tds;
+	tl = xl; xl = yl; yl = tl;
+    }
+    assert(xl <= yl);
+
+    if (xl == 0) {
+        MEMZERO(zds, BDIGIT, zl);
+        return;
+    }
+
+    /* normal multiplication when x is small */
+    if (xl < KARATSUBA_MUL_DIGITS) {
+      normal:
+        if (xds == yds && xl == yl)
+            bary_sq_fast(zds, zl, xds, xl);
+        else
+            bary_mul1(zds, zl, xds, xl, yds, yl);
+        return;
+    }
+
+    /* normal multiplication when x or y is a sparse bignum */
+    if (bary_sparse_p(xds, xl)) goto normal;
+    if (bary_sparse_p(yds, yl)) {
+        bary_mul1(zds, zl, yds, yl, xds, xl);
+        return;
+    }
+
+    /* balance multiplication by slicing y when x is much smaller than y */
+    if (2 * xl <= yl) {
+        bary_mul_balance(zds, zl, xds, xl, yds, yl);
+        return;
+    }
+
+    if (xl < TOOM3_MUL_DIGITS) {
+        /* multiplication by karatsuba method */
+        bary_mul_karatsuba(zds, zl, xds, xl, yds, yl);
+        return;
+    }
+
+    if (3*xl <= 2*(yl + 2)) {
+        bary_mul_balance(zds, zl, xds, xl, yds, yl);
+        return;
+    }
+
+    {
         VALUE x, y, z;
         x = bignew(xl, 1);
 	MEMCPY(BDIGITS(x), xds, BDIGIT, xl);
         y = bignew(yl, 1);
 	MEMCPY(BDIGITS(y), yds, BDIGIT, yl);
-        z = bigtrunc(bigmul0(x, y));
+        z = bigtrunc(bigmul1_toom3(x, y));
         MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
         MEMZERO(zds + RBIGNUM_LEN(z), BDIGIT, zl - RBIGNUM_LEN(z));
     }
 }
 
-/* balancing multiplication by slicing larger argument */
-static VALUE
-bigmul1_balance(VALUE x, VALUE y)
-{
-    VALUE z;
-    long xn, yn, zn;
-    BDIGIT *xds, *yds, *zds;
-
-    xn = RBIGNUM_LEN(x);
-    yn = RBIGNUM_LEN(y);
-    assert(2 * xn <= yn || 3 * xn <= 2*(yn+2));
-
-    zn = xn + yn;
-    z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-
-    xds = BDIGITS(x);
-    yds = BDIGITS(y);
-    zds = BDIGITS(z);
-
-    bary_mul_balance(zds, zn, xds, xn, yds, yn);
-
-    return z;
-}
 
 /* split a bignum into high and low bignums */
 static void
@@ -4052,102 +4300,6 @@ big_split(VALUE v, long n, volatile VALUE *ph, volatile VALUE *pl)
 
     *pl = l;
     *ph = h;
-}
-
-/* multiplication by karatsuba method */
-static VALUE
-bigmul1_karatsuba(VALUE x, VALUE y)
-{
-    long i, n, xn, yn, t1n, t2n;
-    VALUE xh, xl, yh, yl, z, t1, t2, t3;
-    BDIGIT *zds;
-
-    xn = RBIGNUM_LEN(x);
-    yn = RBIGNUM_LEN(y);
-    n = yn / 2;
-    big_split(x, n, &xh, &xl);
-    if (x == y) {
-	yh = xh; yl = xl;
-    }
-    else big_split(y, n, &yh, &yl);
-
-    /* x = xh * b + xl
-     * y = yh * b + yl
-     *
-     * Karatsuba method:
-     *   x * y = z2 * b^2 + z1 * b + z0
-     *   where
-     *     z2 = xh * yh
-     *     z0 = xl * yl
-     *     z1 = (xh + xl) * (yh + yl) - z2 - z0
-     *
-     *  ref: http://en.wikipedia.org/wiki/Karatsuba_algorithm
-     */
-
-    /* allocate a result bignum */
-    z = bignew(xn + yn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    zds = BDIGITS(z);
-
-    /* t1 <- xh * yh */
-    t1 = bigmul0(xh, yh);
-    t1n = big_real_len(t1);
-
-    /* copy t1 into high bytes of the result (z2) */
-    MEMCPY(zds + 2 * n, BDIGITS(t1), BDIGIT, t1n);
-    for (i = 2 * n + t1n; i < xn + yn; i++) zds[i] = 0;
-
-    if (!BIGZEROP(xl) && !BIGZEROP(yl)) {
-	/* t2 <- xl * yl */
-	t2 = bigmul0(xl, yl);
-	t2n = big_real_len(t2);
-
-	/* copy t2 into low bytes of the result (z0) */
-	MEMCPY(zds, BDIGITS(t2), BDIGIT, t2n);
-	for (i = t2n; i < 2 * n; i++) zds[i] = 0;
-    }
-    else {
-	t2 = Qundef;
-	t2n = 0;
-
-	/* copy 0 into low bytes of the result (z0) */
-	for (i = 0; i < 2 * n; i++) zds[i] = 0;
-    }
-
-    /* xh <- xh + xl */
-    if (RBIGNUM_LEN(xl) > RBIGNUM_LEN(xh)) {
-	t3 = xl; xl = xh; xh = t3;
-    }
-    /* xh has a margin for carry */
-    bigadd_core(BDIGITS(xh), RBIGNUM_LEN(xh),
-		BDIGITS(xl), RBIGNUM_LEN(xl),
-		BDIGITS(xh), RBIGNUM_LEN(xh));
-
-    /* yh <- yh + yl */
-    if (x != y) {
-	if (RBIGNUM_LEN(yl) > RBIGNUM_LEN(yh)) {
-	    t3 = yl; yl = yh; yh = t3;
-	}
-	/* yh has a margin for carry */
-	bigadd_core(BDIGITS(yh), RBIGNUM_LEN(yh),
-		    BDIGITS(yl), RBIGNUM_LEN(yl),
-		    BDIGITS(yh), RBIGNUM_LEN(yh));
-    }
-    else yh = xh;
-
-    /* t3 <- xh * yh */
-    t3 = bigmul0(xh, yh);
-
-    i = xn + yn - n;
-    /* subtract t1 from t3 */
-    bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t1), t1n, BDIGITS(t3), big_real_len(t3));
-
-    /* subtract t2 from t3; t3 is now the middle term of the product */
-    if (t2 != Qundef) bigsub_core(BDIGITS(t3), big_real_len(t3), BDIGITS(t2), t2n, BDIGITS(t3), big_real_len(t3));
-
-    /* add t3 to middle bytes of the result (z1) */
-    bigadd_core(zds + n, i, BDIGITS(t3), big_real_len(t3), zds + n, i);
-
-    return z;
 }
 
 static void
@@ -4421,70 +4573,41 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
     }
 }
 
-static VALUE
-bigsqr_fast(VALUE x)
-{
-    long xn = RBIGNUM_LEN(x);
-    VALUE z = bignew(2 * xn, 1);
-    BDIGIT *xds = BDIGITS(x), *zds = BDIGITS(z);
-
-    bary_sq_fast(zds, RBIGNUM_LEN(z), xds, xn);
-
-    return z;
-}
-
 /* determine whether a bignum is sparse or not by random sampling */
-static inline VALUE
-big_sparse_p(VALUE x)
+static inline int
+bary_sparse_p(BDIGIT *ds, size_t n)
 {
-    long c = 0, n = RBIGNUM_LEN(x);
+    long c = 0;
 
-    if (          BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
-    if (c <= 1 && BDIGITS(x)[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (          ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
+    if (c <= 1 && ds[rb_genrand_ulong_limited(n / 2) + n / 4]) c++;
 
-    return (c <= 1) ? Qtrue : Qfalse;
+    return (c <= 1) ? 1 : 0;
 }
 
 static VALUE
 bigmul0(VALUE x, VALUE y)
 {
-    long xn, yn;
+    long xn, yn, zn;
+    VALUE z;
+    BDIGIT *xds, *yds, *zds;
 
     xn = RBIGNUM_LEN(x);
     yn = RBIGNUM_LEN(y);
+    zn = xn + yn;
 
-    /* make sure that y is longer than x */
-    if (xn > yn) {
-	VALUE t;
-	long tn;
-	t = x; x = y; y = t;
-	tn = xn; xn = yn; yn = tn;
-    }
-    assert(xn <= yn);
+    z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
 
-    /* normal multiplication when x is small */
-    if (xn < KARATSUBA_MUL_DIGITS) {
-      normal:
-	if (x == y) return bigsqr_fast(x);
-	if (xn == 1 && yn == 1) return bigmul1_single(x, y);
-	return bigmul1_normal(x, y);
-    }
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
+    zds = BDIGITS(z);
 
-    /* normal multiplication when x or y is a sparse bignum */
-    if (big_sparse_p(x)) goto normal;
-    if (big_sparse_p(y)) return bigmul1_normal(y, x);
+    bary_mul(zds, zn, xds, xn, yds, yn);
 
-    /* balance multiplication by slicing y when x is much smaller than y */
-    if (2 * xn <= yn) return bigmul1_balance(x, y);
-
-    if (xn < TOOM3_MUL_DIGITS) {
-	/* multiplication by karatsuba method */
-	return bigmul1_karatsuba(x, y);
-    }
-    else if (3*xn <= 2*(yn + 2))
-	return bigmul1_balance(x, y);
-    return bigmul1_toom3(x, y);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
 }
 
 /*
