@@ -1,3 +1,9 @@
+Mon Jul  8 08:26:15 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* test/openssl/test_pkey_ec.rb: Skip tests for "Oakley" curves as
+	  they are not suitable for ECDSA.
+	  [ruby-core:54881] [Bug #8384]
+
 Mon Jul  8 08:03:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): Add a RB_GC_GUARD.
