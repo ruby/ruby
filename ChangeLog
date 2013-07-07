@@ -1,3 +1,9 @@
+Sun Jul  7 10:07:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_sq_fast): Extracted from bigsqr_fast and
+	  ensure not to access zds[2*xn].
+	  (bigsqr_fast): Allocate the result bignum with 2*xn words.
+
 Sat Jul  6 07:37:43 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/ossl_pkey_ec.c: Ensure compatibility to builds of

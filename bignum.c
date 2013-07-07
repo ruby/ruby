@@ -4388,23 +4388,23 @@ bigmul1_toom3(VALUE x, VALUE y)
  * ref: Handbook of Applied Cryptography, Algorithm 14.16
  *      http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
  */
-static VALUE
-bigsqr_fast(VALUE x)
+static void
+bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 {
-    long len = RBIGNUM_LEN(x), i, j;
-    VALUE z = bignew(2 * len + 1, 1);
-    BDIGIT *xds = BDIGITS(x), *zds = BDIGITS(z);
+    size_t i, j;
     BDIGIT_DBL c, v, w;
 
-    for (i = 2 * len + 1; i--; ) zds[i] = 0;
-    for (i = 0; i < len; i++) {
+    assert(xn * 2 <= zn);
+
+    MEMZERO(zds, BDIGIT, zn);
+    for (i = 0; i < xn; i++) {
 	v = (BDIGIT_DBL)xds[i];
 	if (!v) continue;
 	c = (BDIGIT_DBL)zds[i + i] + v * v;
 	zds[i + i] = BIGLO(c);
 	c = BIGDN(c);
 	v *= 2;
-	for (j = i + 1; j < len; j++) {
+	for (j = i + 1; j < xn; j++) {
 	    w = (BDIGIT_DBL)xds[j];
 	    c += (BDIGIT_DBL)zds[i + j] + BIGLO(v) * w;
 	    zds[i + j] = BIGLO(c);
@@ -4412,12 +4412,24 @@ bigsqr_fast(VALUE x)
 	    if (BIGDN(v)) c += w;
 	}
 	if (c) {
-	    c += (BDIGIT_DBL)zds[i + len];
-	    zds[i + len] = BIGLO(c);
+	    c += (BDIGIT_DBL)zds[i + xn];
+	    zds[i + xn] = BIGLO(c);
 	    c = BIGDN(c);
+            assert(c == 0 || i != xn-1);
+            if (c && i != xn-1) zds[i + xn + 1] += (BDIGIT)c;
 	}
-	if (c) zds[i + len + 1] += (BDIGIT)c;
     }
+}
+
+static VALUE
+bigsqr_fast(VALUE x)
+{
+    long xn = RBIGNUM_LEN(x);
+    VALUE z = bignew(2 * xn, 1);
+    BDIGIT *xds = BDIGITS(x), *zds = BDIGITS(z);
+
+    bary_sq_fast(zds, RBIGNUM_LEN(z), xds, xn);
+
     return z;
 }
 
