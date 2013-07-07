@@ -515,6 +515,9 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 /* bignum.c */
 int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+VALUE rb_big_mul_normal(VALUE x, VALUE y);
+VALUE rb_big_mul_balance(VALUE x, VALUE y);
+VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

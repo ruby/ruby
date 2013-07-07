@@ -1489,6 +1489,17 @@ bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, siz
     }
 }
 
+VALUE
+rb_big_mul_normal(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    bary_mul_normal(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+
 /* efficient squaring (2 times faster than normal multiplication)
  * ref: Handbook of Applied Cryptography, Algorithm 14.16
  *      http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
@@ -1556,6 +1567,19 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
 
     if (work)
         ALLOCV_END(work);
+}
+
+VALUE
+rb_big_mul_balance(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    if (!(2 * xn <= yn || 3 * xn <= 2*(yn+2)))
+        rb_raise(rb_eArgError, "invalid bignum length");
+    bary_mul_balance(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
 }
 
 /* multiplication by karatsuba method */
@@ -1718,6 +1742,19 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     if (work)
         ALLOCV_END(work);
+}
+
+VALUE
+rb_big_mul_karatsuba(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    if (!(xn <= yn && yn < 2 * xn))
+        rb_raise(rb_eArgError, "invalid bignum length");
+    bary_mul_karatsuba(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
 }
 
 static void

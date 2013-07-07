@@ -1,3 +1,13 @@
+Sun Jul  7 22:59:06 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_big_mul_normal): Declared.
+	  (rb_big_mul_balance): Ditto.
+	  (rb_big_mul_karatsuba): Ditto.
+
+	* bignum.c (rb_big_mul_normal): New function for tests.
+	  (rb_big_mul_balance): Ditto.
+	  (rb_big_mul_karatsuba): Ditto.
+
 Sun Jul  7 19:21:30 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Reorder functions to decrease forward reference.
