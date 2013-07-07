@@ -1593,8 +1593,8 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
     size_t n;
     int sub_p, borrow, carry1, carry2, carry3;
 
-    int odd_x = 0;
     int odd_y = 0;
+    int odd_xy = 0;
 
     BDIGIT *xds0, *xds1, *yds0, *yds1, *zds0, *zds1, *zds2, *zds3;
 
@@ -1606,7 +1606,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
         odd_y = 1;
         yl--;
         if (yl < xl) {
-            odd_x = 1;
+            odd_xy = 1;
             xl--;
         }
     }
@@ -1706,15 +1706,10 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
     if (carry2)
         bary_add_one(zds2, zl-2*n);
 
-    if (borrow && carry1)
-        borrow = carry1 = 0;
-    if (borrow && carry3)
-        borrow = carry3 = 0;
-
-    if (borrow)
+    if (carry1 + carry3 - borrow < 0)
         bary_sub_one(zds3, zl-3*n);
-    else if (carry1 || carry3) {
-        BDIGIT c = carry1 + carry3;
+    else if (carry1 + carry3 - borrow > 0) {
+        BDIGIT c = carry1 + carry3 - borrow;
         bary_add(zds3, zl-3*n, zds3, zl-3*n, &c, 1);
     }
 
@@ -1729,12 +1724,9 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
     }
     */
 
-    if (odd_x && odd_y) {
+    if (odd_xy) {
         bary_muladd_1xN(zds+yl, zl-yl, yds[yl], xds, xl);
         bary_muladd_1xN(zds+xl, zl-xl, xds[xl], yds, yl+1);
-    }
-    else if (odd_x) {
-        bary_muladd_1xN(zds+xl, zl-xl, xds[xl], yds, yl);
     }
     else if (odd_y) {
         bary_muladd_1xN(zds+yl, zl-yl, yds[yl], xds, xl);
