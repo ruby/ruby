@@ -1,3 +1,10 @@
+Sun Jul  7 11:43:13 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/text.rb (REXML::Text#<<): Support method chain use by "<<"
+	  like other objects.
+	* test/rexml/test_text.rb (TextTester#test_shift_operator_chain):
+	  Add a test for the above case.
+
 Sun Jul  7 11:34:18 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/text.rb (REXML::Text#clear_cache): Extract common

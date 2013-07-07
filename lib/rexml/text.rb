@@ -186,8 +186,12 @@ module REXML
 
     # Appends text to this text node.  The text is appended in the +raw+ mode
     # of this text node.
+    #
+    # +returns+ the text itself to enable method chain like
+    # 'text << "XXX" << "YYY"'.
     def <<( to_append )
       @string << to_append.gsub( /\r\n?/, "\n" )
+      self
     end
 
 
