@@ -1,3 +1,7 @@
+Sun Jul  7 19:21:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Reorder functions to decrease forward reference.
+
 Sun Jul  7 14:41:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: (bigsub_core): Use bary_sub.
