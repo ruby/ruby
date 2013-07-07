@@ -1,3 +1,7 @@
+Sun Jul  7 11:54:33 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS: Add REXML::Text#<< related updates.
+
 Sun Jul  7 11:49:19 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/text.rb (REXML::Text#<<): Support appending in not
