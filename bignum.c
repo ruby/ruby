@@ -1841,11 +1841,6 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
     }
 }
 
-
-/*
-xxx
-*/
-
 #define BIGNUM_DEBUG 0
 #if BIGNUM_DEBUG
 #define ON_DEBUG(x) do { x; } while (0)
