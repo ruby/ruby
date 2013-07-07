@@ -191,6 +191,7 @@ module REXML
     # 'text << "XXX" << "YYY"'.
     def <<( to_append )
       @string << to_append.gsub( /\r\n?/, "\n" )
+      clear_cache
       self
     end
 

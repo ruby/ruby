@@ -1,3 +1,11 @@
+Sun Jul  7 11:49:19 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/text.rb (REXML::Text#<<): Support appending in not
+	  "raw" mode. [Bug #8602] [ruby-dev:47482]
+	  Reported by Ippei Obayashi. Thanks!!!
+	* test/rexml/test_text.rb (TextTester#test_shift_operator_cache):
+	  Add a test for the above case.
+
 Sun Jul  7 11:43:13 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/text.rb (REXML::Text#<<): Support method chain use by "<<"
