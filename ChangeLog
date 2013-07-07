@@ -1,3 +1,14 @@
+Sun Jul  7 11:01:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_DTRACE_POSTPROCESS): dtrace version SUN D 1.11
+	  introduces a check in the dtrace compiler to ensure that probes
+	  actually exist. If there are no probes, then the -G step will
+	  fail. As this test is only being used to determine whether -G is
+	  necessary (for instance, on OSX it is not), adding a real probe to
+	  the conftest allows it to succeed on newer versions of dtrace.
+	  Patch by Eric Saxby <sax AT livinginthepast.org> at
+	  [ruby-core:55826].  [Fix GH-351], [Bug #8606].
+
 Sun Jul  7 10:07:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_sq_fast): Extracted from bigsqr_fast and
