@@ -103,7 +103,7 @@ module REXML
 
       @raw = raw unless raw.nil?
       @entity_filter = entity_filter
-      @normalized = @unnormalized = nil
+      clear_cache
 
       if arg.kind_of? String
         @string = arg.dup
@@ -256,8 +256,7 @@ module REXML
     #   e[0].value = "<a>"    # <a>&lt;a&gt;</a>
     def value=( val )
       @string = val.gsub( /\r\n?/, "\n" )
-      @unnormalized = nil
-      @normalized = nil
+      clear_cache
       @raw = false
     end
 
@@ -329,6 +328,12 @@ module REXML
       copy.gsub!( SPECIALS[4], SUBSTITUTES[4] )
       copy.gsub!( SPECIALS[5], SUBSTITUTES[5] )
       out << copy
+    end
+
+    private
+    def clear_cache
+      @normalized = nil
+      @unnormalized = nil
     end
 
     # Reads text, substituting entities

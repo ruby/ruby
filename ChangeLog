@@ -1,3 +1,8 @@
+Sun Jul  7 11:34:18 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/text.rb (REXML::Text#clear_cache): Extract common
+	  cache clear code.
+
 Sun Jul  7 11:01:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_DTRACE_POSTPROCESS): dtrace version SUN D 1.11
