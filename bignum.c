@@ -4452,11 +4452,11 @@ bigrsh_bang(BDIGIT* xds, long xn, unsigned long shift)
     i = 0;
     zds = xds + s1;
     num = *zds++>>s2;
-    do {
+    while (i < xn - s1 - 1) {
 	xds[i++] = BIGLO(*zds<<s3) | num;
 	num = *zds++>>s2;
     }
-    while (i < xn - s1 - 1);
+    assert(i < xn);
     xds[i] = num;
     MEMZERO(xds + xn - s1, BDIGIT, s1);
 }
