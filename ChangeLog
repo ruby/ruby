@@ -1,3 +1,8 @@
+Mon Jul  8 23:36:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/win32/lib/win32/registry.rb (Error, API): use WCHAR
+	  interfaces.  c.f. [Bug #8508]
+
 Mon Jul  8 23:13:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_pow): move from win32.h and disable strict

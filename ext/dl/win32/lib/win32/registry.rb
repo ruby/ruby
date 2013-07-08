@@ -63,6 +63,10 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
 =end rdoc
 
+  WCHAR = Encoding::UTF_16LE
+  WCHAR_SPACE = "\0".encode(WCHAR).freeze
+  LOCALE = Encoding.find(Encoding.locale_charmap)
+
   class Registry
 
     #
@@ -164,12 +168,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         extend DL::Importer
         dlload "kernel32.dll"
       end
-      FormatMessageA = Kernel32.extern "int FormatMessageA(int, void *, int, int, void *, int, void *)", :stdcall
+      FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
       def initialize(code)
         @code = code
-        msg = "\0".force_encoding(Encoding::ASCII_8BIT) * 1024
-        len = FormatMessageA.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg[0, len].force_encoding(Encoding.find(Encoding.locale_charmap))
+        msg = WCHAR_SPACE * 1024
+        len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
+        msg = msg[0, len].encode
         super msg.tr("\r", '').chomp
       end
       attr_reader :code
@@ -209,12 +213,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       extend DL::Importer
       dlload "advapi32.dll"
       [
-        "long RegOpenKeyExA(void *, void *, long, long, void *)",
-        "long RegCreateKeyExA(void *, void *, long, long, long, long, void *, void *, void *)",
-        "long RegEnumValueA(void *, long, void *, void *, void *, void *, void *, void *)",
-        "long RegEnumKeyExA(void *, long, void *, void *, void *, void *, void *, void *)",
-        "long RegQueryValueExA(void *, void *, void *, void *, void *, void *)",
-        "long RegSetValueExA(void *, void *, long, long, void *, long)",
+        "long RegOpenKeyExW(void *, void *, long, long, void *)",
+        "long RegCreateKeyExW(void *, void *, long, long, long, long, void *, void *, void *)",
+        "long RegEnumValueW(void *, long, void *, void *, void *, void *, void *, void *)",
+        "long RegEnumKeyExW(void *, long, void *, void *, void *, void *, void *, void *)",
+        "long RegQueryValueExW(void *, void *, void *, void *, void *, void *)",
+        "long RegSetValueExW(void *, void *, long, long, void *, long)",
         "long RegDeleteValue(void *, void *)",
         "long RegDeleteKey(void *, void *)",
         "long RegFlushKey(void *)",
@@ -251,52 +255,58 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
       def OpenKey(hkey, name, opt, desired)
         result = packdw(0)
-        check RegOpenKeyExA.call(hkey, name, opt, desired, result)
+        check RegOpenKeyExW.call(hkey, name.encode(WCHAR), opt, desired, result)
         unpackdw(result)
       end
 
       def CreateKey(hkey, name, opt, desired)
         result = packdw(0)
         disp = packdw(0)
-        check RegCreateKeyExA.call(hkey, name, 0, 0, opt, desired,
+        check RegCreateKeyExW.call(hkey, name.encode(WCHAR), 0, 0, opt, desired,
                                    0, result, disp)
         [ unpackdw(result), unpackdw(disp) ]
       end
 
       def EnumValue(hkey, index)
-        name = ' ' * Constants::MAX_KEY_LENGTH
+        name = WCHAR_SPACE * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
-        check RegEnumValueA.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)]
+        check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
+        name[0, unpackdw(size)].encode
       end
 
       def EnumKey(hkey, index)
-        name = ' ' * Constants::MAX_KEY_LENGTH
+        name = WCHAR_SPACE * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
-        check RegEnumKeyExA.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)], unpackqw(wtime) ]
+        check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
+        [ name[0, unpackdw(size)].encode, unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
         type = packdw(0)
         size = packdw(0)
-        check RegQueryValueExA.call(hkey, name, 0, type, 0, size)
-        data = ' ' * unpackdw(size)
-        check RegQueryValueExA.call(hkey, name, 0, type, data, size)
-        [ unpackdw(type), data[0, unpackdw(size)] ]
+        name = name.encode(WCHAR)
+        check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
+        data = WCHAR_SPACE * unpackdw(size)
+        check RegQueryValueExW.call(hkey, name, 0, type, data, size)
+        [ unpackdw(type), data[0, unpackdw(size)].encode ]
       end
 
       def SetValue(hkey, name, type, data, size)
-        check RegSetValueExA.call(hkey, name, 0, type, data, size)
+        case type
+        when REG_SZ, REG_EXPAND_SZ, REG_MULTI_SZ
+          data = data.encode(WCHAR)
+          size ||= data.size + 1
+        end
+        check RegSetValueExW.call(hkey, name.encode(WCHAR), 0, type, data, size)
       end
 
       def DeleteValue(hkey, name)
-        check RegDeleteValue.call(hkey, name)
+        check RegDeleteValue.call(hkey, name.encode(WCHAR))
       end
 
       def DeleteKey(hkey, name)
-        check RegDeleteKey.call(hkey, name)
+        check RegDeleteKey.call(hkey, name.encode(WCHAR))
       end
 
       def FlushKey(hkey)
