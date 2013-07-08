@@ -30,6 +30,10 @@
 #include <ieeefp.h>
 #endif
 
+#if defined HAVE_FINITE && !defined finite
+extern int finite(double);
+#endif
+
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
 #define FLT_RADIX 2

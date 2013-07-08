@@ -1,4 +1,7 @@
-Mon Jul  8 23:12:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul  8 23:12:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (finite): add declaration for strict ANSI.
+	  [ruby-core:55312] [Bug #8495]
 
 	* thread_win32.c (w32_thread_start_func, thread_start_func_1),
 	  (timer_thread_func): use __stdcall instead of _stdcall which is
