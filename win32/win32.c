@@ -50,6 +50,10 @@
 #include "win32/dir.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
+#if defined _MSC_VER && _MSC_VER <= 1200
+# define CharNextExA(cp, p, flags) CharNextExA((WORD)(cp), (p), (flags))
+#endif
+
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
 
