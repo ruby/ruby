@@ -794,21 +794,7 @@ rb_w32_pow(double x, double y)
     return powl(x, y);
 }
 #elif defined(__MINGW64_VERSION_MAJOR)
-/*
- * Set floating point precision for pow() of mingw-w64 x86.
- * With default precision the result is not proper on WinXP.
- */
-static inline double
-rb_w32_pow(double x, double y)
-{
-    double r;
-    unsigned int default_control = _controlfp(0, 0);
-    _controlfp(_PC_64, _MCW_PC);
-    r = pow(x, y);
-    /* Restore setting */
-    _controlfp(default_control, _MCW_PC);
-    return r;
-}
+double rb_w32_pow(double x, double y);
 #endif
 #if defined(__MINGW64_VERSION_MAJOR) || defined(__MINGW64__)
 #define pow rb_w32_pow

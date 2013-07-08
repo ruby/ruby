@@ -1,4 +1,8 @@
-Mon Jul  8 23:12:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul  8 23:13:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pow): move from win32.h and disable strict
+	  ANSI mode macro to let _controlfp() stuff defined.
+	  [ruby-core:55312] [Bug #8495]
 
 	* numeric.c (finite): add declaration for strict ANSI.
 	  [ruby-core:55312] [Bug #8495]

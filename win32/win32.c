@@ -19,6 +19,8 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
  */
 
+#undef __STRICT_ANSI__
+
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include <fcntl.h>
@@ -6954,3 +6956,21 @@ rb_w32_unwrap_io_handle(int fd)
     }
     return _close(fd);
 }
+
+#if !defined(__MINGW64__) && defined(__MINGW64_VERSION_MAJOR)
+/*
+ * Set floating point precision for pow() of mingw-w64 x86.
+ * With default precision the result is not proper on WinXP.
+ */
+double
+rb_w32_pow(double x, double y)
+{
+    double r;
+    unsigned int default_control = _controlfp(0, 0);
+    _controlfp(_PC_64, _MCW_PC);
+    r = pow(x, y);
+    /* Restore setting */
+    _controlfp(default_control, _MCW_PC);
+    return r;
+}
+#endif
