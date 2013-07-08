@@ -1,3 +1,8 @@
+Tue Jul  9 07:39:45 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.0.4.  See
+	  https://github.com/rubygems/rubygems/blob/2.0/History.txt for changes
+
 Tue Jul  9 01:47:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (biglsh_bang): Don't shift a BDIGIT with BITSPERDIG bits.

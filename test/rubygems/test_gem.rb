@@ -1198,8 +1198,10 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_user_dir
-    assert_equal File.join(@userhome, '.gem', Gem.ruby_engine,
-                           Gem::ConfigMap[:ruby_version]), Gem.user_dir
+    parts = [@userhome, '.gem', Gem.ruby_engine]
+    parts << Gem::ConfigMap[:ruby_version] unless Gem::ConfigMap[:ruby_version].empty?
+
+    assert_equal File.join(parts), Gem.user_dir
   end
 
   def test_self_user_home

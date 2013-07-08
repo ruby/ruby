@@ -94,7 +94,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
     say "Updating #{name}"
     begin
-      @installer.install name, version
+      @installer.install name, Gem::Requirement.new(version)
       success = true
     rescue Gem::InstallError => e
       alert_error "Error installing #{name}:\n\t#{e.message}"

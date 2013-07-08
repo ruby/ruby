@@ -113,7 +113,15 @@ platform.
       format = "#{' ' * margin_width}%-#{desc_width}s%s"
 
       command_manager.command_names.each do |cmd_name|
-        summary = command_manager[cmd_name].summary
+        command = command_manager[cmd_name]
+
+        summary =
+          if command then
+            command.summary
+          else
+            "[No command found for #{cmd_name}, bug?]"
+          end
+
         summary = wrap(summary, summary_width).split "\n"
         out << sprintf(format, cmd_name, summary.shift)
         until summary.empty? do

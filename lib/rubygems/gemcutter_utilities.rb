@@ -38,7 +38,7 @@ module Gem::GemcutterUtilities
 
     say "Enter your #{pretty_host} credentials."
     say "Don't have an account yet? " +
-        "Create one at https://#{sign_in_host}/sign_up"
+        "Create one at #{sign_in_host}/sign_up"
 
     email    =              ask "   Email: "
     password = ask_for_password "Password: "
@@ -60,7 +60,14 @@ module Gem::GemcutterUtilities
     configured_host = Gem.host unless
       Gem.configuration.disable_default_gem_server
 
-    @host ||= ENV['RUBYGEMS_HOST'] || configured_host
+    @host ||=
+      begin
+        env_rubygems_host = ENV['RUBYGEMS_HOST']
+        env_rubygems_host = nil if
+          env_rubygems_host and env_rubygems_host.empty?
+
+        env_rubygems_host|| configured_host
+      end
   end
 
   def rubygems_api_request(method, path, host = nil, &block)
@@ -79,7 +86,7 @@ module Gem::GemcutterUtilities
     Gem::RemoteFetcher.fetcher.request(uri, request_method, &block)
   end
 
-  def with_response(resp)
+  def with_response resp, error_prefix = nil
     case resp
     when Net::HTTPSuccess then
       if block_given? then
@@ -88,7 +95,10 @@ module Gem::GemcutterUtilities
         say resp.body
       end
     else
-      say resp.body
+      message = resp.body
+      message = "#{error_prefix}: #{message}" if error_prefix
+
+      say message
       terminate_interaction 1 # TODO: question this
     end
   end

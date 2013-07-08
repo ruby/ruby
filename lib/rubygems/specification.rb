@@ -5,6 +5,17 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems/version'
+require 'rubygems/requirement'
+require 'rubygems/platform'
+require 'rubygems/deprecate'
+
+# :stopdoc:
+# date.rb can't be loaded for `make install` due to miniruby
+# Date is needed for old gems that stored #date as Date instead of Time.
+class Date; end
+# :startdoc:
+
 ##
 # The Specification class contains the information for a Gem.  Typically
 # defined in a .gemspec file or a Rakefile, and looks like this:
@@ -20,32 +31,19 @@
 #     s.homepage    = 'https://rubygems.org/gems/example'
 #   end
 #
-#   Starting in RubyGems 1.9.0, a Specification can hold arbitrary
-#   metadata. This metadata is accessed via Specification#metadata
-#   and has the following restrictions:
+# Starting in RubyGems 1.9.0, a Specification can hold arbitrary
+# metadata. This metadata is accessed via Specification#metadata
+# and has the following restrictions:
 #
-#     * Must be a Hash object
-#     * All keys and values must be Strings
-#     * Keys can be a maximum of 128 bytes and values can be a
-#       maximum of 1024 bytes
-#     * All strings must be UTF8, no binary data is allowed
+# * Must be a Hash object
+# * All keys and values must be Strings
+# * Keys can be a maximum of 128 bytes and values can be a
+#   maximum of 1024 bytes
+# * All strings must be UTF8, no binary data is allowed
 #
-#   For example, to add metadata for the location of a bugtracker:
+# For example, to add metadata for the location of a bugtracker:
 #
 #   s.metadata = { "bugtracker" => "http://somewhere.com/blah" }
-#
-
-
-require 'rubygems/version'
-require 'rubygems/requirement'
-require 'rubygems/platform'
-require 'rubygems/deprecate'
-
-# :stopdoc:
-# date.rb can't be loaded for `make install` due to miniruby
-# Date is needed for old gems that stored #date as Date instead of Time.
-class Date; end
-# :startdoc:
 
 class Gem::Specification
 
@@ -918,7 +916,7 @@ class Gem::Specification
     result = Hash.new { |h,k| h[k] = {} }
     native = {}
 
-    Gem::Specification._all.reverse_each do |spec|
+    Gem::Specification.reverse_each do |spec|
       next if spec.version.prerelease? unless prerelease
 
       native[spec.name] = spec.version if spec.platform == Gem::Platform::RUBY
@@ -995,7 +993,7 @@ class Gem::Specification
     # TODO: maybe we should switch to rubygems' version service?
     fetcher = Gem::SpecFetcher.fetcher
 
-    latest_specs.each do |local|
+    latest_specs(true).each do |local|
       dependency = Gem::Dependency.new local.name, ">= #{local.version}"
       remotes, _   = fetcher.search_for_dependency dependency
       remotes      = remotes.map { |n, _| n.version }
@@ -1236,7 +1234,7 @@ class Gem::Specification
 
     unless dependency.respond_to?(:name) &&
            dependency.respond_to?(:version_requirements)
-      dependency = Gem::Dependency.new(dependency, requirements, type)
+      dependency = Gem::Dependency.new(dependency.to_s, requirements, type)
     end
 
     dependencies << dependency
@@ -2270,7 +2268,7 @@ class Gem::Specification
         require 'rubygems/psych_tree'
       end
 
-      builder = Gem::NoAliasYAMLTree.create
+      builder = Gem::NoAliasYAMLTree.new({})
       builder << self
       ast = builder.tree
 

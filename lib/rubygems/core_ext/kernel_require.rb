@@ -4,6 +4,8 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'monitor'
+
 module Kernel
 
   if defined?(gem_original_require) then
@@ -31,7 +33,11 @@ module Kernel
   # The normal <tt>require</tt> functionality of returning false if
   # that file has already been loaded is preserved.
 
+  ACTIVATION_MONITOR = Monitor.new
+
   def require path
+    ACTIVATION_MONITOR.enter
+
     spec = Gem.find_unresolved_default_spec(path)
     if spec
       Gem.remove_unresolved_default_spec(spec)
@@ -111,6 +117,8 @@ module Kernel
     end
 
     raise load_error
+  ensure
+    ACTIVATION_MONITOR.exit
   end
 
   private :require

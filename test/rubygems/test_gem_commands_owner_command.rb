@@ -140,4 +140,16 @@ EOF
 
     assert_equal '701229f217cdf23b1344c7b4b54ca97', @fetcher.last_request['Authorization']
   end
+
+  def test_remove_owners_missing
+    response = 'Owner could not be found.'
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 404, 'Not Found']
+
+    use_ui @ui do
+      @cmd.remove_owners("freewill", ["missing@example"])
+    end
+
+    assert_equal "Removing missing@example: #{response}\n", @ui.output
+  end
+
 end

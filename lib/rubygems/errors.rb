@@ -62,10 +62,10 @@ module Gem
     ##
     # A wordy description of the error.
     def wordy
-      "Found %s (%), but was for platform%s %s" %
+      "Found %s (%s), but was for platform%s %s" %
         [@name,
          @version,
-         @platforms.size == 1 ? 's' : '',
+         @platforms.size == 1 ? '' : 's',
          @platforms.join(' ,')]
     end
   end

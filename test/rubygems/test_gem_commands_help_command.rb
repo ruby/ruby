@@ -10,6 +10,9 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     super
 
     @cmd = Gem::Commands::HelpCommand.new
+
+    load File.expand_path('../rubygems_plugin.rb', __FILE__) unless
+      Gem::Commands.const_defined? :InterruptCommand
   end
 
   def test_gem_help_bad
@@ -34,6 +37,8 @@ class TestGemCommandsHelpCommand < Gem::TestCase
         assert_match(/\s+#{cmd}\s+\S+/, out)
       end
       assert_equal '', err
+
+      refute_match 'No command found for ', out
     end
   end
 

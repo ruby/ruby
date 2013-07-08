@@ -54,7 +54,9 @@ module Gem
   # Path for gems in the user's home directory
 
   def self.user_dir
-    File.join Gem.user_home, '.gem', ruby_engine, ConfigMap[:ruby_version]
+    parts = [Gem.user_home, '.gem', ruby_engine]
+    parts << ConfigMap[:ruby_version] unless ConfigMap[:ruby_version].empty?
+    File.join parts
   end
 
   ##

@@ -1365,6 +1365,20 @@ gem 'other', version
     refute_path_exists @spec.build_info_file
   end
 
+  def test_write_build_info_file_install_dir
+    installer = Gem::Installer.new @gem, :install_dir => "#{@gemhome}2"
+
+    installer.build_args = %w[
+      --with-libyaml-dir /usr/local/Cellar/libyaml/0.1.4
+    ]
+
+    installer.write_build_info_file
+
+    refute_path_exists @spec.build_info_file
+    assert_path_exists \
+      File.join("#{@gemhome}2", 'build_info', "#{@spec.full_name}.info")
+  end
+
   def test_write_cache_file
     cache_file = File.join @gemhome, 'cache', @spec.file_name
     gem = File.join @gemhome, @spec.file_name

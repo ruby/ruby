@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.0.3'
+  VERSION = '2.0.4'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -173,7 +173,12 @@ module Gem
     # require will try to activate the more specific version.
 
     spec = Gem::Specification.find_inactive_by_path path
-    return false unless spec
+
+    unless spec
+      spec = Gem::Specification.find_by_path path
+      return true if spec && spec.activated?
+      return false
+    end
 
     begin
       spec.activate

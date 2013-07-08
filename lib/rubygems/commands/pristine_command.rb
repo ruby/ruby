@@ -10,7 +10,8 @@ class Gem::Commands::PristineCommand < Gem::Command
   def initialize
     super 'pristine',
           'Restores installed gems to pristine condition from files located in the gem cache',
-          :version => Gem::Requirement.default, :extensions => true,
+          :version => Gem::Requirement.default,
+          :extensions => true,
           :all => false
 
     add_option('--all',
@@ -37,7 +38,7 @@ class Gem::Commands::PristineCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--all --extensions"
+    '--extensions'
   end
 
   def description # :nodoc:
@@ -52,8 +53,8 @@ for the gem are regenerated.
 If the cached gem cannot be found, you will need to use `gem install` to
 revert the gem.
 
-If --no-extensions is provided pristine will not attempt to restore gems with
-extensions.
+If --no-extensions is provided pristine will not attempt to restore gems
+with extensions.
     EOF
   end
 

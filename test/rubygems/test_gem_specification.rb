@@ -434,6 +434,21 @@ dependencies: []
     assert_equal expected, Gem::Specification.normalize_yaml_input(input)
   end
 
+  def test_self_outdated
+    util_clear_gems
+    util_setup_fake_fetcher true
+
+    a4 = quick_gem @a1.name, '4'
+    util_build_gem a4
+    util_setup_spec_fetcher @a1, @a2, @a3a, a4
+
+    Gem::Specification.remove_spec @a1
+    Gem::Specification.remove_spec @a2
+    Gem::Specification.remove_spec a4
+
+    assert_equal %w[a], Gem::Specification.outdated
+  end
+
   DATA_PATH = File.expand_path "../data", __FILE__
 
   def test_handles_private_null_type
@@ -597,7 +612,16 @@ dependencies: []
     assert @a2.activated?
   end
 
-  def test_add_dependency_with_explicit_type
+  def test_add_dependency_with_type
+    gem = quick_spec "awesome", "1.0" do |awesome|
+      awesome.add_dependency true
+      awesome.add_dependency :gem_name
+    end
+
+    assert_equal %w[true gem_name], gem.dependencies.map { |dep| dep.name }
+  end
+
+  def test_add_dependency_with_type_explicit
     gem = quick_spec "awesome", "1.0" do |awesome|
       awesome.add_development_dependency "monkey"
     end
