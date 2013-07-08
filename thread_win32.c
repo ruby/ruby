@@ -269,7 +269,7 @@ w32_resume_thread(HANDLE handle)
 #ifdef HAVE__BEGINTHREADEX
 #define start_thread (HANDLE)_beginthreadex
 #define thread_errno errno
-typedef unsigned long (_stdcall *w32_thread_start_func)(void*);
+typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
 #else
 #define start_thread CreateThread
 #define thread_errno rb_w32_map_errno(GetLastError())
@@ -587,7 +587,7 @@ native_thread_destroy(rb_thread_t *th)
     w32_close_handle(intr);
 }
 
-static unsigned long _stdcall
+static unsigned long __stdcall
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
@@ -695,7 +695,7 @@ ubf_handle(void *ptr)
 static HANDLE timer_thread_id = 0;
 static HANDLE timer_thread_lock;
 
-static unsigned long _stdcall
+static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
     thread_debug("timer_thread\n");

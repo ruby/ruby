@@ -4274,7 +4274,7 @@ filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
 }
 
 /* License: Ruby's */
-int _cdecl
+int __cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     FILETIME ft;

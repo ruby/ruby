@@ -1,3 +1,11 @@
+Mon Jul  8 23:12:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (w32_thread_start_func, thread_start_func_1),
+	  (timer_thread_func): use __stdcall instead of _stdcall which is
+	  unavailable in strict ANSI mode.  [ruby-core:55312] [Bug #8495]
+
+	* win32/win32.c (gettimeofday): use __cdecl instead of _cdecl.
+
 Mon Jul  8 22:41:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): Arguments for work memory added.
