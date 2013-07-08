@@ -1542,7 +1542,7 @@ static void
 bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     VALUE work = 0;
-    BDIGIT *wds;
+    BDIGIT *wds = NULL;
     size_t yl0 = yl;
     size_t r, n;
     size_t wl = 0;
