@@ -4417,22 +4417,25 @@ biglsh_bang(BDIGIT *xds, long xn, unsigned long shift)
     int const s3 = BITSPERDIG-s2;
     BDIGIT* zds;
     BDIGIT num;
-    long i;
     if (s1 >= xn) {
 	MEMZERO(xds, BDIGIT, xn);
 	return;
     }
-    zds = xds + xn - 1;
-    xn -= s1 + 1;
-    num = BIGLO(xds[xn]<<s2);
-    while (0 < xn) {
-	*zds-- = num | xds[--xn]>>s3;
-	num = BIGLO(xds[xn]<<s2);
+    if (s2 == 0) {
+        MEMMOVE(xds + s1, xds, BDIGIT, xn - s1);
     }
-    assert(xds <= zds);
-    *zds = num;
-    for (i = s1; i > 0; --i)
-	*zds-- = 0;
+    else {
+        zds = xds + xn - 1;
+        xn -= s1 + 1;
+        num = BIGLO(xds[xn]<<s2);
+        while (0 < xn) {
+            *zds-- = num | xds[--xn]>>s3;
+            num = BIGLO(xds[xn]<<s2);
+        }
+        assert(xds <= zds);
+        *zds = num;
+    }
+    MEMZERO(xds, BDIGIT, s1);
 }
 
 static void
@@ -4448,16 +4451,20 @@ bigrsh_bang(BDIGIT* xds, long xn, unsigned long shift)
 	MEMZERO(xds, BDIGIT, xn);
 	return;
     }
-
-    i = 0;
-    zds = xds + s1;
-    num = *zds++>>s2;
-    while (i < xn - s1 - 1) {
-	xds[i++] = BIGLO(*zds<<s3) | num;
-	num = *zds++>>s2;
+    if (s2 == 0) {
+        MEMMOVE(xds, xds + s1, BDIGIT, xn - s1);
     }
-    assert(i < xn);
-    xds[i] = num;
+    else {
+        i = 0;
+        zds = xds + s1;
+        num = *zds++>>s2;
+        while (i < xn - s1 - 1) {
+            xds[i++] = BIGLO(*zds<<s3) | num;
+            num = *zds++>>s2;
+        }
+        assert(i < xn);
+        xds[i] = num;
+    }
     MEMZERO(xds + xn - s1, BDIGIT, s1);
 }
 
