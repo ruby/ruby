@@ -518,6 +518,8 @@ VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, siz
 VALUE rb_big_mul_normal(VALUE x, VALUE y);
 VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
+VALUE rb_big_mul_toom3(VALUE x, VALUE y);
+VALUE rb_big_sq_fast(VALUE x);
 
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);

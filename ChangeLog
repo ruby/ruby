@@ -1,3 +1,11 @@
+Mon Jul  8 22:03:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_sq_fast): New function for testing.
+	  (rb_big_mul_toom3): Ditto.
+
+	* internal.h (rb_big_sq_fast): Declared.
+	  (rb_big_mul_toom3): Ditto.
+
 Mon Jul  8 21:59:34 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_balance): Initialize a local variable to suppress

@@ -1515,7 +1515,8 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
     MEMZERO(zds, BDIGIT, zn);
     for (i = 0; i < xn; i++) {
 	v = (BDIGIT_DBL)xds[i];
-	if (!v) continue;
+	if (!v)
+            continue;
 	c = (BDIGIT_DBL)zds[i + i] + v * v;
 	zds[i + i] = BIGLO(c);
 	c = BIGDN(c);
@@ -1525,16 +1526,28 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 	    c += (BDIGIT_DBL)zds[i + j] + BIGLO(v) * w;
 	    zds[i + j] = BIGLO(c);
 	    c = BIGDN(c);
-	    if (BIGDN(v)) c += w;
+	    if (BIGDN(v))
+                c += w;
 	}
 	if (c) {
 	    c += (BDIGIT_DBL)zds[i + xn];
 	    zds[i + xn] = BIGLO(c);
 	    c = BIGDN(c);
             assert(c == 0 || i != xn-1);
-            if (c && i != xn-1) zds[i + xn + 1] += (BDIGIT)c;
+            if (c && i != xn-1)
+                zds[i + xn + 1] += (BDIGIT)c;
 	}
     }
+}
+
+VALUE
+rb_big_sq_fast(VALUE x)
+{
+    size_t xn = RBIGNUM_LEN(x), zn = 2 * xn;
+    VALUE z = bignew(zn, 1);
+    bary_sq_fast(BDIGITS(z), zn, BDIGITS(x), xn);
+    RB_GC_GUARD(x);
+    return z;
 }
 
 /* balancing multiplication by slicing larger argument */
@@ -4624,6 +4637,12 @@ bigmul1_toom3(VALUE x, VALUE y)
     bigadd_core(zds + 4*n, zn - 4*n, BDIGITS(z4), big_real_len(z4), zds + 4*n, zn - 4*n);
 
     return bignorm(z);
+}
+
+VALUE
+rb_big_mul_toom3(VALUE x, VALUE y)
+{
+    return bigmul1_toom3(x, y);
 }
 
 static VALUE

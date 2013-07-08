@@ -19,6 +19,12 @@ mul_normal(VALUE x, VALUE y)
 }
 
 static VALUE
+sq_fast(VALUE x)
+{
+    return rb_big_norm(rb_big_sq_fast(big(x)));
+}
+
+static VALUE
 mul_balance(VALUE x, VALUE y)
 {
     return rb_big_norm(rb_big_mul_balance(big(x), big(y)));
@@ -30,12 +36,20 @@ mul_karatsuba(VALUE x, VALUE y)
     return rb_big_norm(rb_big_mul_karatsuba(big(x), big(y)));
 }
 
+static VALUE
+mul_toom3(VALUE x, VALUE y)
+{
+    return rb_big_norm(rb_big_mul_toom3(big(x), big(y)));
+}
+
 void
 Init_mul(VALUE klass)
 {
     rb_define_const(rb_cBignum, "SIZEOF_BDIGITS", INT2NUM(SIZEOF_BDIGITS));
     rb_define_const(rb_cBignum, "BITSPERDIG", INT2NUM(SIZEOF_BDIGITS * CHAR_BIT));
     rb_define_method(rb_cInteger, "big_mul_normal", mul_normal, 1);
+    rb_define_method(rb_cInteger, "big_sq_fast", sq_fast, 0);
     rb_define_method(rb_cInteger, "big_mul_balance", mul_balance, 1);
     rb_define_method(rb_cInteger, "big_mul_karatsuba", mul_karatsuba, 1);
+    rb_define_method(rb_cInteger, "big_mul_toom3", mul_toom3, 1);
 }

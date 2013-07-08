@@ -36,6 +36,22 @@ class TestBignum < Test::Unit::TestCase
       assert_equal(z, x.big_mul_normal(y))
     end
 
+    def test_sq_fast
+      x = (1 << BITSPERDIG) | 1
+      z = (1 << 2*BITSPERDIG) | (2 << BITSPERDIG) | 1
+      assert_equal(z, x.big_sq_fast)
+    end
+
+    def test_sq_fast_max2
+      x = (BDIGMAX << BITSPERDIG) | BDIGMAX
+      assert_equal(x.big_mul_normal(x), x.big_sq_fast)
+    end
+
+    def test_sq_fast_zero_in_middle
+      x = (BDIGMAX << 2*BITSPERDIG) | BDIGMAX
+      assert_equal(x.big_mul_normal(x), x.big_sq_fast)
+    end
+
     def test_mul_balance
       x = (1 << BITSPERDIG) | 1
       y = (1 << BITSPERDIG) | 1
@@ -102,6 +118,12 @@ class TestBignum < Test::Unit::TestCase
       x = (BDIGMAX << BITSPERDIG) | 1
       y = (BDIGMAX << BITSPERDIG) | 1
       assert_equal(x.big_mul_normal(y), x.big_mul_karatsuba(y))
+    end
+
+    def test_mul_toom3
+      x = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
+      y = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
+      assert_equal(x.big_mul_normal(y), x.big_mul_toom3(y))
     end
 
   end
