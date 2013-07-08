@@ -1,3 +1,9 @@
+Mon Jul  8 22:41:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): Arguments for work memory added.
+	  (bary_mul_balance): Ditto.
+	  (bary_mul_karatsuba): Ditto.
+
 Mon Jul  8 22:03:30 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_sq_fast): New function for testing.

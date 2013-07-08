@@ -101,7 +101,7 @@ static VALUE big_three = Qnil;
 
 static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
 static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
-static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl);
+static void bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 
 static VALUE bigmul0(VALUE x, VALUE y);
@@ -1552,13 +1552,11 @@ rb_big_sq_fast(VALUE x)
 
 /* balancing multiplication by slicing larger argument */
 static void
-bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     VALUE work = 0;
-    BDIGIT *wds = NULL;
     size_t yl0 = yl;
     size_t r, n;
-    size_t wl = 0;
 
     assert(xl + yl <= zl);
     assert(2 * xl <= yl || 3 * xl <= 2*(yl+2));
@@ -1573,7 +1571,7 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
         tl = xl + r;
         if (2 * (xl + r) <= zl - n) {
             tds = zds + n + xl + r;
-            bary_mul(tds, tl, xds, xl, yds + n, r);
+            bary_mul(tds, tl, xds, xl, yds + n, r, wds, wl);
             MEMZERO(zds + n + xl, BDIGIT, r);
             bary_add(zds + n, tl,
                      zds + n, tl,
@@ -1586,7 +1584,7 @@ bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, si
             }
             tds = zds + n;
             MEMCPY(wds, zds + n, BDIGIT, xl);
-            bary_mul(tds, tl, xds, xl, yds + n, r);
+            bary_mul(tds, tl, xds, xl, yds + n, r, wds-xl, wl-xl);
             bary_add(zds + n, tl,
                      zds + n, tl,
                      wds, xl);
@@ -1607,7 +1605,7 @@ rb_big_mul_balance(VALUE x, VALUE y)
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     if (!(2 * xn <= yn || 3 * xn <= 2*(yn+2)))
         rb_raise(rb_eArgError, "invalid bignum length");
-    bary_mul_balance(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    bary_mul_balance(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
     return z;
@@ -1615,11 +1613,9 @@ rb_big_mul_balance(VALUE x, VALUE y)
 
 /* multiplication by karatsuba method */
 static void
-bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     VALUE work = 0;
-    BDIGIT *wds;
-    size_t wl;
 
     size_t n;
     int sub_p, borrow, carry1, carry2, carry3;
@@ -1646,8 +1642,16 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     assert(n < xl);
 
-    wl = n;
-    wds = ALLOCV_N(BDIGIT, work, wl);
+    if (wl < n) {
+        /* This function itself needs only n BDIGITs for work area.
+         * However this function calls bary_mul_karatsuba and
+         * bary_mul_balance recursively.
+         * 2n BDIGITs are enough to avoid allocations in
+         * the recursively called functions.
+         */
+        wl = 2*n;
+        wds = ALLOCV_N(BDIGIT, work, wl);
+    }
 
     /* Karatsuba algorithm:
      *
@@ -1687,7 +1691,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:|y1-y0| */
 
-    bary_mul(zds1, 2*n, zds0, n, wds, n);
+    bary_mul(zds1, 2*n, zds0, n, wds, n, wds+n, wl-n);
 
     /* zds0:|x1-x0| zds1,zds2:|x1-x0|*|y1-y0| zds3:? wds:|y1-y0| */
 
@@ -1701,7 +1705,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     /* zds0:|x1-x0| zds1,zds2:-?|x1-x0|*|y1-y0| zds3:? wds:lo(-?|x1-x0|*|y1-y0|) */
 
-    bary_mul(zds0, 2*n, xds0, n, yds0, n);
+    bary_mul(zds0, 2*n, xds0, n, yds0, n, wds+n, wl-n);
 
     /* zds0,zds1:x0*y0 zds2:hi(-?|x1-x0|*|y1-y0|) zds3:? wds:lo(-?|x1-x0|*|y1-y0|) */
 
@@ -1718,7 +1722,7 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|) zds2:_ zds3:? wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
 
-    bary_mul(zds2, zl-2*n, xds1, xl-n, yds1, n);
+    bary_mul(zds2, zl-2*n, xds1, xl-n, yds1, n, wds+n, wl-n);
 
     /* zds0:lo(x0*y0) zds1:hi(x0*y0)+lo(x0*y0-?|x1-x0|*|y1-y0|) zds2,zds3:x1*y1 wds:hi(x0*y0-?|x1-x0|*|y1-y0|) */
 
@@ -1774,7 +1778,7 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     if (!(xn <= yn && yn < 2 * xn))
         rb_raise(rb_eArgError, "invalid bignum length");
-    bary_mul_karatsuba(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    bary_mul_karatsuba(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
     return z;
@@ -1813,7 +1817,7 @@ bary_sparse_p(BDIGIT *ds, size_t n)
 }
 
 static void
-bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     size_t nlsz; /* number of least significant zero BDIGITs */
 
@@ -1874,18 +1878,18 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 
     /* balance multiplication by slicing y when x is much smaller than y */
     if (2 * xl <= yl) {
-        bary_mul_balance(zds, zl, xds, xl, yds, yl);
+        bary_mul_balance(zds, zl, xds, xl, yds, yl, wds, wl);
         return;
     }
 
     if (xl < TOOM3_MUL_DIGITS) {
         /* multiplication by karatsuba method */
-        bary_mul_karatsuba(zds, zl, xds, xl, yds, yl);
+        bary_mul_karatsuba(zds, zl, xds, xl, yds, yl, wds, wl);
         return;
     }
 
     if (3*xl <= 2*(yl + 2)) {
-        bary_mul_balance(zds, zl, xds, xl, yds, yl);
+        bary_mul_balance(zds, zl, xds, xl, yds, yl, wds, wl);
         return;
     }
 
@@ -2955,11 +2959,11 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             for (unit = 2; unit < num_bdigits; unit *= 2) {
                 for (i = 0; i < num_bdigits; i += unit*2) {
                     if (2*unit <= num_bdigits - i) {
-                        bary_mul(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
+                        bary_mul(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit, NULL, 0);
                         bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
                     }
                     else if (unit <= num_bdigits - i) {
-                        bary_mul(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
+                        bary_mul(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit), NULL, 0);
                         bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
                     }
                     else {
@@ -4662,7 +4666,7 @@ bigmul0(VALUE x, VALUE y)
     yds = BDIGITS(y);
     zds = BDIGITS(z);
 
-    bary_mul(zds, zn, xds, xn, yds, yn);
+    bary_mul(zds, zn, xds, xn, yds, yn, NULL, 0);
 
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
