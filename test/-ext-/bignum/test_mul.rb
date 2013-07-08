@@ -43,6 +43,18 @@ class TestBignum < Test::Unit::TestCase
       assert_equal(z, x.big_mul_balance(y))
     end
 
+    def test_mul_balance_2x16
+      x = (1 << Bignum::BITSPERDIG) | 1
+      y = (1 << Bignum::BITSPERDIG*16) | 1
+      assert_equal(x.big_mul_normal(y), x.big_mul_balance(y))
+    end
+
+    def test_mul_balance_2x17
+      x = (1 << Bignum::BITSPERDIG) | 1
+      y = (1 << Bignum::BITSPERDIG*17) | 1
+      assert_equal(x.big_mul_normal(y), x.big_mul_balance(y))
+    end
+
     def test_mul_karatsuba
       x = (1 << BITSPERDIG) | 1
       y = (1 << BITSPERDIG) | 1

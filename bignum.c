@@ -1542,28 +1542,46 @@ static void
 bary_mul_balance(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     VALUE work = 0;
-    size_t r, n;
     BDIGIT *wds;
-    size_t wl;
+    size_t yl0 = yl;
+    size_t r, n;
+    size_t wl = 0;
 
     assert(xl + yl <= zl);
     assert(2 * xl <= yl || 3 * xl <= 2*(yl+2));
 
-    wl = xl * 2;
-    wds = ALLOCV_N(BDIGIT, work, wl);
-
-    MEMZERO(zds, BDIGIT, zl);
+    MEMZERO(zds, BDIGIT, xl);
 
     n = 0;
     while (yl > 0) {
+        BDIGIT *tds;
+        size_t tl;
 	r = xl > yl ? yl : xl;
-        bary_mul(wds, xl + r, xds, xl, yds + n, r);
-        bary_add(zds + n, zl - n,
-                 zds + n, zl - n,
-                 wds, xl + r);
+        tl = xl + r;
+        if (2 * (xl + r) <= zl - n) {
+            tds = zds + n + xl + r;
+            bary_mul(tds, tl, xds, xl, yds + n, r);
+            MEMZERO(zds + n + xl, BDIGIT, r);
+            bary_add(zds + n, tl,
+                     zds + n, tl,
+                     tds, tl);
+        }
+        else {
+            if (wl < xl) {
+                wl = xl;
+                wds = ALLOCV_N(BDIGIT, work, wl);
+            }
+            tds = zds + n;
+            MEMCPY(wds, zds + n, BDIGIT, xl);
+            bary_mul(tds, tl, xds, xl, yds + n, r);
+            bary_add(zds + n, tl,
+                     zds + n, tl,
+                     wds, xl);
+        }
 	yl -= r;
 	n += r;
     }
+    MEMZERO(zds+xl+yl0, BDIGIT, zl - (xl+yl0));
 
     if (work)
         ALLOCV_END(work);
