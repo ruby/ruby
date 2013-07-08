@@ -4425,11 +4425,11 @@ biglsh_bang(BDIGIT *xds, long xn, unsigned long shift)
     zds = xds + xn - 1;
     xn -= s1 + 1;
     num = BIGLO(xds[xn]<<s2);
-    do {
+    while (0 < xn) {
 	*zds-- = num | xds[--xn]>>s3;
 	num = BIGLO(xds[xn]<<s2);
     }
-    while (xn > 0);
+    assert(xds <= zds);
     *zds = num;
     for (i = s1; i > 0; --i)
 	*zds-- = 0;

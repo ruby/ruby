@@ -1,3 +1,7 @@
+Tue Jul  9 00:46:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (biglsh_bang): Fix bignum digits under-run.
+
 Mon Jul  8 23:36:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/win32/lib/win32/registry.rb (Error, API): use WCHAR
