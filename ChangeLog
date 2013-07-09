@@ -1,3 +1,7 @@
+Tue Jul  9 17:43:57 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/test_tracer.rb: catch up recent rubygems changes.
+
 Tue Jul  9 16:58:30 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/{dl,fiddle}/win32/lib/win32/registry.rb: hope that the final
