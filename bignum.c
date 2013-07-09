@@ -1856,6 +1856,17 @@ bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl,
         return;
     }
 
+    if (xl == 1 && xds[0] == 1) {
+        MEMCPY(zds, yds, BDIGIT, yl);
+        MEMZERO(zds + yl, BDIGIT, zl - yl);
+        return;
+    }
+    if (yl == 1 && yds[0] == 1) {
+        MEMCPY(zds, xds, BDIGIT, xl);
+        MEMZERO(zds + xl, BDIGIT, zl - xl);
+        return;
+    }
+
     /* normal multiplication when x is small */
     if (xl < KARATSUBA_MUL_DIGITS) {
       normal:

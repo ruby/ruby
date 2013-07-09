@@ -1,3 +1,7 @@
+Wed Jul 10 00:41:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): x*1 is x.
+
 Tue Jul  9 22:24:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul1): No need to invoke MEMZERO at last.
