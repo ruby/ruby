@@ -232,7 +232,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       module_function
 
       def check(result)
-        raise Error, result, caller(2) if result != 0
+        raise Error, result, caller(1) if result != 0
       end
 
       def packdw(dw)
@@ -283,13 +283,18 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def QueryValue(hkey, name)
-        type = packdw(0)
-        size = packdw(0)
-        name = name.encode(WCHAR)
-        check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
-        data = WCHAR_SPACE * unpackdw(size)
-        check RegQueryValueExW.call(hkey, name, 0, type, data, size)
-        [ unpackdw(type), data[0, unpackdw(size)].encode ]
+        prev_gc = GC.disable
+        begin
+          type = packdw(0)
+          size = packdw(0)
+          name = name.encode(WCHAR)
+          check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
+          data = WCHAR_SPACE * unpackdw(size)
+          check RegQueryValueExW.call(hkey, name, 0, type, data, size)
+          [ unpackdw(type), data[0, unpackdw(size)].encode ]
+        ensure
+          GC.enable if prev_gc
+        end
       end
 
       def SetValue(hkey, name, type, data, size)
