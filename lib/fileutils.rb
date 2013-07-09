@@ -1044,8 +1044,8 @@ module FileUtils
   def chown(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown']
     list = fu_list(list)
-    fu_output_message sprintf('chown %s%s',
-                              (group ? [user,group].join(':') : user) + ' ',
+    fu_output_message sprintf('chown %s %s',
+                              (group ? "#{user}:#{group}" : user || ':'),
                               list.join(' ')) if options[:verbose]
     return if options[:noop]
     uid = fu_get_uid(user)
@@ -1073,9 +1073,9 @@ module FileUtils
   def chown_R(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown_R']
     list = fu_list(list)
-    fu_output_message sprintf('chown -R%s %s%s',
+    fu_output_message sprintf('chown -R%s %s %s',
                               (options[:force] ? 'f' : ''),
-                              (group ? [user,group].join(':') : user) + ' ',
+                              (group ? "#{user}:#{group}" : user || ':'),
                               list.join(' ')) if options[:verbose]
     return if options[:noop]
     uid = fu_get_uid(user)
