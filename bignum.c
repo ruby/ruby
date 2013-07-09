@@ -1800,7 +1800,6 @@ bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl
         bary_mul_normal(zds, zl, xds, xl, yds, yl);
         rb_thread_check_ints();
     }
-    MEMZERO(zds + l, BDIGIT, zl - l);
 }
 
 /* determine whether a bignum is sparse or not by random sampling */

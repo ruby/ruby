@@ -1,3 +1,7 @@
+Tue Jul  9 22:17:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul1): No need to invoke MEMZERO at last.
+
 Tue Jul  9 21:40:01 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_text.rb: Add missing tests for Text#<<.
