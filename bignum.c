@@ -1439,6 +1439,8 @@ bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
     n = (BDIGIT_DBL)x * y;
     zds[0] = BIGLO(n);
     zds[1] = (BDIGIT)BIGDN(n);
+
+    MEMZERO(zds + 2, BDIGIT, zl - 2);
 }
 
 static int
@@ -1787,16 +1789,12 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
 static void
 bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
-    size_t l;
-
     assert(xl + yl <= zl);
 
     if (xl == 1 && yl == 1) {
-        l = 2;
         bary_mul_single(zds, zl, xds[0], yds[0]);
     }
     else {
-        l = xl + yl;
         bary_mul_normal(zds, zl, xds, xl, yds, yl);
         rb_thread_check_ints();
     }
