@@ -174,7 +174,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         msg = WCHAR_SPACE * 1024
         len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
         msg = msg[0, len].encode
-        super msg.tr("\r", '').chomp
+        super msg.tr("\r".encode(msg.encoding), '').chomp
       end
       attr_reader :code
     end
