@@ -173,7 +173,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         @code = code
         msg = WCHAR_SPACE * 1024
         len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg[0, len].encode
+        msg = msg[0, len].encode('locale')
         super msg.tr("\r".encode(msg.encoding), '').chomp
       end
       attr_reader :code
@@ -340,7 +340,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
     #
     def self.expand_environ(str)
-      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { (e = ENV[$1.encode(locale)], e.encode(str.encoding) if e) || (e = ENV[$1.encode(locale).upcase], e.encode(str.encoding) if e) || $& }
+      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { (e = ENV[$1.encode('locale')], e.encode(str.encoding) if e) || (e = ENV[$1.encode('locale').upcase], e.encode(str.encoding) if e) || $& }
     end
 
     @@type2name = { }
