@@ -1,3 +1,8 @@
+Tue Jul  9 15:53:51 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#mode_to_s): Define mode_to_s() also
+	  as singleton method, or FileUtils.chmod fails in verbose mode.
+
 Tue Jul  9 15:16:02 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/fileutils/fileasserts.rb

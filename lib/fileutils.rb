@@ -952,6 +952,7 @@ module FileUtils
   def mode_to_s(mode)  #:nodoc:
     mode.is_a?(String) ? mode : "%o" % mode
   end
+  private_module_function :mode_to_s
 
   #
   # Options: noop verbose
