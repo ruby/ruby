@@ -2312,6 +2312,7 @@ str_eql(const VALUE str1, const VALUE str2)
 	return Qtrue;
     return Qfalse;
 }
+
 /*
  *  call-seq:
  *     str == obj    -> true or false
