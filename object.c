@@ -1375,7 +1375,8 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *  call-seq:
  *     obj <=> other -> 0 or nil
  *
- *  Returns 0 if obj.equal?(other) or obj == other, otherwise nil.
+ *  Returns 0 if +obj+ and +other+ are the same object
+ *  or <code>obj == other</code>, otherwise nil.
  *
  *  The <=> is used by various methods to compare objects, for example
  *  Enumerable#sort, Enumerable#max etc.
@@ -1385,7 +1386,7 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *  1 means self is bigger than other. Nil means the two values could not be
  *  compared.
  *
- *  When you defined <=>, you can include Comparable to gain the methods <=, <,
+ *  When you define <=>, you can include Comparable to gain the methods <=, <,
  *  ==, >=, > and between?.
  */
 static VALUE
