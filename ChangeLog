@@ -1,3 +1,9 @@
+Tue Jul  9 17:58:26 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/fileutils/test_fileutils.rb
+	  (TestFileUtils#assert_output_lines): New utility assertion
+	  method for testing verbose output.
+
 Tue Jul  9 17:43:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_tracer.rb: catch up recent rubygems changes.

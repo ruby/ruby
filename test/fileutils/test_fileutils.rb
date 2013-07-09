@@ -9,6 +9,21 @@ require 'test/unit'
 class TestFileUtils < Test::Unit::TestCase
   TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
   include Test::Unit::FileAssertions
+
+  def assert_output_lines(expected, fu = self, message=nil)
+    old = fu.instance_variable_get(:@fileutils_output)
+    read, write = IO.pipe
+    fu.instance_variable_set(:@fileutils_output, write)
+    th = Thread.new { read.read }
+
+    yield
+
+    write.close
+    lines = th.value.lines.map {|l| l.chomp }
+    assert_equal(expected, lines)
+  ensure
+    fu.instance_variable_set(:@fileutils_output, old) if old
+  end
 end
 
 prevdir = Dir.pwd
@@ -1024,38 +1039,21 @@ class TestFileUtils
   def test_chmod_verbose
     check_singleton :chmod
 
-    stderr_back = $stderr
-    read, $stderr = IO.pipe
-    th = Thread.new { read.read }
-
-    touch 'tmp/a'
-    chmod 0700, 'tmp/a', verbose: true
-    assert_equal 0700, File.stat('tmp/a').mode & 0777
-    chmod 0500, 'tmp/a', verbose: true
-    assert_equal 0500, File.stat('tmp/a').mode & 0777
-
-    $stderr.close
-    lines = th.value.lines.map {|l| l.chomp }
-    assert_equal(["chmod 700 tmp/a", "chmod 500 tmp/a"], lines)
-  ensure
-    $stderr = stderr_back if stderr_back
+    assert_output_lines(["chmod 700 tmp/a", "chmod 500 tmp/a"]) {
+      touch 'tmp/a'
+      chmod 0700, 'tmp/a', verbose: true
+      assert_equal 0700, File.stat('tmp/a').mode & 0777
+      chmod 0500, 'tmp/a', verbose: true
+      assert_equal 0500, File.stat('tmp/a').mode & 0777
+    }
   end if have_file_perm?
 
   def test_s_chmod_verbose
-    output_back = FileUtils.instance_variable_get(:@fileutils_output)
-    read, write = IO.pipe
-    FileUtils.instance_variable_set(:@fileutils_output, write)
-    th = Thread.new { read.read }
-
-    touch 'tmp/a'
-    FileUtils.chmod 0700, 'tmp/a', verbose: true
-    assert_equal 0700, File.stat('tmp/a').mode & 0777
-
-    write.close
-    lines = th.value.lines.map {|l| l.chomp }
-    assert_equal(["chmod 700 tmp/a"], lines)
-  ensure
-    FileUtils.instance_variable_set(:@fileutils_output, output_back) if output_back
+    assert_output_lines(["chmod 700 tmp/a"], FileUtils) {
+      touch 'tmp/a'
+      FileUtils.chmod 0700, 'tmp/a', verbose: true
+      assert_equal 0700, File.stat('tmp/a').mode & 0777
+    }
   end if have_file_perm?
 
   # FIXME: How can I test this method?
