@@ -340,7 +340,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
     #
     def self.expand_environ(str)
-      str.gsub(/%([^%]+)%/) { ENV[$1] || ENV[$1.upcase] || $& }
+      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { ENV[$1] || ENV[$1.upcase] || $& }
     end
 
     @@type2name = { }
