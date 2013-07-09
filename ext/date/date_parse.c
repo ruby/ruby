@@ -569,7 +569,7 @@ date_zone_to_diff(VALUE str)
 			if (cl >= 3)
 			    min  = rb_str_new(&cs[1], 2);
 			if (cl >= 5)
-			    min  = rb_str_new(&cs[3], 2);
+			    sec  = rb_str_new(&cs[3], 2);
 		    }
 		    else {
 			if (cl >= 2)

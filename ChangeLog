@@ -1,3 +1,7 @@
+Wed Jul 10 06:22:27 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (date_zone_to_diff): [ruby-core:55831].
+
 Wed Jul 10 00:41:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): x*1 is x.
