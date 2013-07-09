@@ -600,7 +600,7 @@ gems:
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     ssl_server = self.class.start_ssl_server({
-      :SSLVerifyClient => 
+      :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
@@ -617,7 +617,7 @@ gems:
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     ssl_server = self.class.start_ssl_server({
-      :SSLVerifyClient => 
+      :SSLVerifyClient =>
         OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')

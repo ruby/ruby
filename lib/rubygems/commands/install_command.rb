@@ -37,7 +37,7 @@ class Gem::Commands::InstallCommand < Gem::Command
                'install the listed gems') do |v,o|
       o[:gemdeps] = v
     end
-    
+
     add_option(:"Install/Update", '--default',
                'Add the gem\'s full specification to',
                'specifications/default and extract only its bin') do |v,o|
@@ -157,7 +157,7 @@ to write the specification by hand.  For example:
       alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
       terminate_interaction 1
     end
-    
+
     # load post-install hooks appropriate to options
     if options[:install_as_default]
       require 'rubygems/install_default_message'

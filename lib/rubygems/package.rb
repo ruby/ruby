@@ -340,7 +340,7 @@ EOM
     open_tar_gz io do |tar|
       tar.each do |entry|
         next unless File.fnmatch pattern, entry.full_name
-        
+
         destination = install_location entry.full_name, destination_dir
 
         FileUtils.rm_rf destination

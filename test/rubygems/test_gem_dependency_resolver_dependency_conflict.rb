@@ -6,7 +6,7 @@ class TestGemDependencyResolverDependencyConflict < Gem::TestCase
   def test_explanation
     root  =
       dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'
-    child = 
+    child =
       dependency_request dep('net-ssh', '>= 2.6.5'), 'net-ssh', '2.2.2', root
 
     conflict =
@@ -23,7 +23,7 @@ class TestGemDependencyResolverDependencyConflict < Gem::TestCase
   def test_request_path
     root  =
       dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'
-    child = 
+    child =
       dependency_request dep('net-ssh', '>= 2.6.5'), 'net-ssh', '2.2.2', root
 
     conflict =

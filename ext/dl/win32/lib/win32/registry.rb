@@ -278,7 +278,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 
       def CreateKey(hkey, name, opt, desired)
         result = packhandle(0)
-        disp = packdw(0) 
+        disp = packdw(0)
         check RegCreateKeyExW.call(hkey, make_wstr(name), 0, 0, opt, desired,
                                    0, result, disp)
         [ unpackhandle(result), unpackdw(disp) ]

@@ -1112,29 +1112,29 @@ class TestGem < Gem::TestCase
 
     assert_equal '["a-1", "b-1", "c-1"]', out.strip
   end
-  
+
   def test_register_default_spec
     Gem.clear_default_specs
-    
+
     old_style = Gem::Specification.new do |spec|
       spec.files = ["foo.rb", "bar.rb"]
     end
-    
+
     Gem.register_default_spec old_style
-    
+
     assert_equal old_style, Gem.find_unresolved_default_spec("foo.rb")
     assert_equal old_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_equal nil, Gem.find_unresolved_default_spec("baz.rb")
-    
+
     Gem.clear_default_specs
-    
+
     new_style = Gem::Specification.new do |spec|
       spec.files = ["lib/foo.rb", "ext/bar.rb", "bin/exec", "README"]
       spec.require_paths = ["lib", "ext"]
     end
-    
+
     Gem.register_default_spec new_style
-    
+
     assert_equal new_style, Gem.find_unresolved_default_spec("foo.rb")
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_equal nil, Gem.find_unresolved_default_spec("exec")

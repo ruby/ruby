@@ -110,7 +110,7 @@ with extensions.
         Gem::RemoteFetcher.fetcher.download_to_cache dep
       end
 
-      env_shebang = 
+      env_shebang =
         if options.include? :env_shebang then
           options[:env_shebang]
         else
