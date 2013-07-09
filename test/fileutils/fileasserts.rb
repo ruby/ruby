@@ -67,6 +67,27 @@ EOT
         assert_equal(expected.tv_sec, actual.tv_sec, full_message)
       end
 
+      def assert_filemode(expected, file, message=nil, mask: 07777)
+        width = ('%o' % mask).size
+        actual = File.stat(file).mode & mask
+        assert expected == actual, <<EOT
+File mode of "#{file}" unexpected:
+ Expected: <#{'%0*o' % [width, expected]}>
+   Actual: <#{'%0*o' % [width, actual]}>
+EOT
+      end
+
+      def assert_equal_filemode(file1, file2, message=nil, mask: 07777)
+        mode1, mode2 = [file1, file2].map { |file|
+          File.stat(file).mode & mask
+        }
+        width = ('%o' % mask).size
+        assert mode1 == mode2, <<EOT
+File modes expected to be equal:
+ <#{'%0*o' % [width, mode1]}>: "#{file1}"
+ <#{'%0*o' % [width, mode2]}>: "#{file2}"
+EOT
+      end
     end
   end
 end
