@@ -340,7 +340,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
     #
     def self.expand_environ(str)
-      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { ENV[$1] || ENV[$1.upcase] || $& }
+      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { (e = ENV[$1.encode(locale)], e.encode(str.encoding) if e) || (e = ENV[$1.encode(locale).upcase], e.encode(str.encoding) if e) || $& }
     end
 
     @@type2name = { }
@@ -600,9 +600,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
       case type
       when REG_SZ, REG_EXPAND_SZ
-        [ type, data.chop ]
+        [ type, data.encode(name.encoding).rstrip ]
       when REG_MULTI_SZ
-        [ type, data.split(/\0/) ]
+        [ type, data.encode(name.encoding).split(/\0/) ]
       when REG_BINARY
         [ type, data ]
       when REG_DWORD

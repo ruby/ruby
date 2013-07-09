@@ -1,3 +1,13 @@
+Tue Jul  9 10:27:56 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/{dl,fiddle}/win32/lib/win32/registry.rb
+	  (Win32::Registry.expand_environ): use suitable encoding for the
+	  string.
+
+	* ext/{dl,fiddle}/win32/lib/win32/registry.rb (Win32::Registry#read):
+	  should return REG_SZ, REG_EXPAND_SZ and REG_MULTI_SZ values with
+	  the expected encoding -- assumed as the same encoding of name.
+
 Tue Jul  9 10:02:45 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/{dl,fiddle}/win32/lib/win32/registry.rb
