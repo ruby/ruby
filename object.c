@@ -806,12 +806,30 @@ rb_obj_tap(VALUE obj)
  *     Undefining one
  */
 
+/*
+ * Document-method: extended
+ *
+ * call-seq:
+ *    extended(othermod)
+ *
+ * The equivalent of <tt>included</tt>, but for extended modules.
+ *
+ *        module A
+ *          def self.extended(mod)
+ *            puts "#{self} extended in #{mod}"
+ *          end
+ *        end
+ *        module Enumerable
+ *          extend A
+ *        end
+ *         # => prints "A extended in Enumerable"
+ */
 
 /*
  * Document-method: included
  *
  * call-seq:
- *    included( othermod )
+ *    included(othermod)
  *
  * Callback invoked whenever the receiver is included in another
  * module or class. This should be used in preference to
@@ -833,7 +851,7 @@ rb_obj_tap(VALUE obj)
  * Document-method: prepended
  *
  * call-seq:
- *    prepended( othermod )
+ *    prepended(othermod)
  *
  * The equivalent of <tt>included</tt>, but for prepended modules.
  *
