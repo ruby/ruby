@@ -2760,9 +2760,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
         do {
             const char *p, *e;
             int searchlen;
-            if (fptr->cbuf.len) {
-                p = fptr->cbuf.ptr+fptr->cbuf.off;
-                searchlen = fptr->cbuf.len;
+            if (searchlen = READ_CHAR_PENDING_COUNT(fptr)) {
+                p = READ_CHAR_PENDING_PTR(fptr);
                 if (0 < limit && limit < searchlen)
                     searchlen = (int)limit;
                 e = memchr(p, delim, searchlen);
@@ -3037,7 +3036,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    if (c == newline) {
 		if (RSTRING_LEN(str) < rslen) continue;
 		s = RSTRING_PTR(str);
-                e = s + RSTRING_LEN(str);
+                e = RSTRING_END(str);
 		p = e - rslen;
 		pp = rb_enc_left_char_head(s, p, e, enc);
 		if (pp != p) continue;
@@ -3046,7 +3045,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    }
 	    if (limit == 0) {
 		s = RSTRING_PTR(str);
-		p = s + RSTRING_LEN(str);
+		p = RSTRING_END(str);
 		pp = rb_enc_left_char_head(s, p-1, p, enc);
                 if (extra_limit &&
                     MBCLEN_NEEDMORE_P(rb_enc_precise_mbclen(pp, p, enc))) {
@@ -3062,25 +3061,20 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    }
 	}
 
-	if (rspara) {
-	    if (c != EOF) {
-		swallow(fptr, '\n');
-	    }
-	}
+	if (rspara && c != EOF)
+	    swallow(fptr, '\n');
 	if (!NIL_P(str))
             str = io_enc_str(str, fptr);
     }
 
-    if (!NIL_P(str)) {
-	if (!nolimit) {
-	    fptr->lineno++;
-	    if (io == ARGF.current_file) {
-		ARGF.lineno++;
-		ARGF.last_lineno = ARGF.lineno;
-	    }
-	    else {
-		ARGF.last_lineno = fptr->lineno;
-	    }
+    if (!NIL_P(str) && !nolimit) {
+	fptr->lineno++;
+	if (io == ARGF.current_file) {
+	    ARGF.lineno++;
+	    ARGF.last_lineno = ARGF.lineno;
+	}
+	else {
+	    ARGF.last_lineno = fptr->lineno;
 	}
     }
 
