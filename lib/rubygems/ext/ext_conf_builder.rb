@@ -37,6 +37,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         run cmd, results
 
         ENV["DESTDIR"] = nil
+        siteconf.unlink
 
         make dest_path, results
 

@@ -1,3 +1,15 @@
+Wed Jul 10 07:34:34 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/ext/ext_conf_builder.rb:  Remove siteconf file after
+	  building the gem.
+	* test/rubygems/test_gem_ext_ext_conf_builder.rb:  Test for the above.
+
+	* lib/rubygems/psych_tree.rb (module Gem):  Add backward compatibility
+	  for r41148
+
+	* test/rubygems/test_gem_package.rb:  Add backward compatibility for
+	  double-slash elimination.
+
 Wed Jul 10 06:22:27 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (date_zone_to_diff): [ruby-core:55831].

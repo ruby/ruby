@@ -34,6 +34,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_equal "creating Makefile\n", output[1]
     assert_contains_make_command '', output[2]
     assert_contains_make_command 'install', output[4]
+    assert_empty Dir.glob(File.join(@ext, 'siteconf*.rb'))
   end
 
   def test_class_build_rbconfig_make_prog
