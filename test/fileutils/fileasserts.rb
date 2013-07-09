@@ -34,7 +34,7 @@ module Test
         assert(File.symlink?(path), "is not a symlink: #{path}#{message&&': '}#{message||''}")
       end
 
-      def assert_not_symlink(path)
+      def assert_not_symlink(path, message=nil)
         assert(!File.symlink?(path), "is a symlink: #{path}#{message&&': '}#{message||''}")
       end
 
