@@ -1,3 +1,9 @@
+Tue Jul  9 18:02:38 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/fileutils.rb (FileUtils#chown_R): Do not skip traversal even
+	  if user and group are both nil, to be consistent with #chown and
+	  other commands.
+
 Tue Jul  9 17:58:26 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/fileutils/test_fileutils.rb

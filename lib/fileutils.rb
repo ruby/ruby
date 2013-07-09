@@ -1081,7 +1081,6 @@ module FileUtils
     return if options[:noop]
     uid = fu_get_uid(user)
     gid = fu_get_gid(group)
-    return unless uid or gid
     list.each do |root|
       Entry_.new(root).traverse do |ent|
         begin
