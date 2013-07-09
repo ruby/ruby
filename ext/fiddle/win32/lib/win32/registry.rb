@@ -64,7 +64,8 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
 =end rdoc
 
   WCHAR = Encoding::UTF_16LE
-  WCHAR_SPACE = "\0".encode(WCHAR).freeze
+  WCHAR_NUL = "\0".encode(WCHAR).freeze
+  WCHAR_SIZE = WCHAR_NUL.bytesize
   LOCALE = Encoding.find(Encoding.locale_charmap)
 
   class Registry
@@ -171,9 +172,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
       def initialize(code)
         @code = code
-        msg = WCHAR_SPACE * 1024
+        msg = WCHAR_NUL * 1024
         len = FormatMessageW.call(0x1200, 0, code, 0, msg, 1024, 0)
-        msg = msg[0, len].encode('locale')
+        msg = msg[0, len].encode(LOCALE)
         super msg.tr("\r".encode(msg.encoding), '').chomp
       end
       attr_reader :code
@@ -235,6 +236,18 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         raise Error, result, caller(1) if result != 0
       end
 
+      def win64?
+        /^(?:x64|x86_64)/ =~ RUBY_PLATFORM
+      end
+
+      def packhandle(h)
+        win64? ? packqw(h) : packdw(h)
+      end
+
+      def unpackhandle(h)
+        win64? ? unpackqw(h) : unpackdw(h)
+      end
+
       def packdw(dw)
         [dw].pack('V')
       end
@@ -253,48 +266,47 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         (qw[1] << 32) | qw[0]
       end
 
+      def make_wstr(str)
+        str.encode(WCHAR) + WCHAR_NUL
+      end
+
       def OpenKey(hkey, name, opt, desired)
-        result = packdw(0)
-        check RegOpenKeyExW.call(hkey, name.encode(WCHAR), opt, desired, result)
-        unpackdw(result)
+        result = packhandle(0)
+        check RegOpenKeyExW.call(hkey, make_wstr(name), opt, desired, result)
+        unpackhandle(result)
       end
 
       def CreateKey(hkey, name, opt, desired)
-        result = packdw(0)
+        result = packhandle(0)
         disp = packdw(0)
-        check RegCreateKeyExW.call(hkey, name.encode(WCHAR), 0, 0, opt, desired,
+        check RegCreateKeyExW.call(hkey, make_wstr(name), 0, 0, opt, desired,
                                    0, result, disp)
-        [ unpackdw(result), unpackdw(disp) ]
+        [ unpackhandle(result), unpackdw(disp) ]
       end
 
       def EnumValue(hkey, index)
-        name = WCHAR_SPACE * Constants::MAX_KEY_LENGTH
+        name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)].encode
+        name[0, unpackdw(size)/WCHAR_SIZE].encode
       end
 
       def EnumKey(hkey, index)
-        name = WCHAR_SPACE * Constants::MAX_KEY_LENGTH
+        name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)].encode, unpackqw(wtime) ]
+        [ name[0, unpackdw(size)/WCHAR_SIZE].encode, unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
-        prev_gc = GC.disable
-        begin
-          type = packdw(0)
-          size = packdw(0)
-          name = name.encode(WCHAR)
-          check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
-          data = WCHAR_SPACE * unpackdw(size)
-          check RegQueryValueExW.call(hkey, name, 0, type, data, size)
-          [ unpackdw(type), data[0, unpackdw(size)].encode ]
-        ensure
-          GC.enable if prev_gc
-        end
+        type = packdw(0)
+        size = packdw(0)
+        name = make_wstr(name)
+        check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
+        data = "\0".force_encoding('ASCII-8BIT') * unpackdw(size)
+        check RegQueryValueExW.call(hkey, name, 0, type, data, size)
+        [ unpackdw(type), data[0, unpackdw(size)] ]
       end
 
       def SetValue(hkey, name, type, data, size)
@@ -303,15 +315,15 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
           data = data.encode(WCHAR)
           size ||= data.size + 1
         end
-        check RegSetValueExW.call(hkey, name.encode(WCHAR), 0, type, data, size)
+        check RegSetValueExW.call(hkey, make_wstr(name), 0, type, data, size)
       end
 
       def DeleteValue(hkey, name)
-        check RegDeleteValue.call(hkey, name.encode(WCHAR))
+        check RegDeleteValue.call(hkey, make_wstr(name))
       end
 
       def DeleteKey(hkey, name)
-        check RegDeleteKey.call(hkey, name.encode(WCHAR))
+        check RegDeleteKey.call(hkey, make_wstr(name))
       end
 
       def FlushKey(hkey)
@@ -345,7 +357,11 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
     #
     def self.expand_environ(str)
-      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) { (e = ENV[$1.encode('locale')], e.encode(str.encoding) if e) || (e = ENV[$1.encode('locale').upcase], e.encode(str.encoding) if e) || $& }
+      str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) {
+        v = $1.encode(LOCALE)
+        (e = ENV[v] || ENV[v.upcase]; e.encode(str.encoding) if e) ||
+        $&
+      }
     end
 
     @@type2name = { }
@@ -605,9 +621,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
       case type
       when REG_SZ, REG_EXPAND_SZ
-        [ type, data.encode(name.encoding).rstrip ]
+        [ type, data.encode(name.encoding, WCHAR).chop ]
       when REG_MULTI_SZ
-        [ type, data.encode(name.encoding).split(/\0/) ]
+        [ type, data.encode(name.encoding, WCHAR).split(/\0/) ]
       when REG_BINARY
         [ type, data ]
       when REG_DWORD
