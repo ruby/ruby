@@ -246,14 +246,11 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
 #define ONIGENC_MBCLEN_CHARFOUND_P(r)           (0 < (r))
 #define ONIGENC_MBCLEN_CHARFOUND_LEN(r)         (r)
 
-#define ONIGENC_INVALID_NUM                     0x10000
-#define ONIGENC_CONSTRUCT_MBCLEN_INVALID()      (-1-ONIGENC_INVALID_NUM)
-#define ONIGENC_CONSTRUCT_MBCLEN_INVALID2(n)    (-(n)-ONIGENC_INVALID_NUM)
-#define ONIGENC_MBCLEN_INVALID_P(r)             ((r) < -ONIGENC_INVALID_NUM)
-#define ONIGENC_MBCLEN_INVALID_LEN(r)           (-(r)-ONIGENC_INVALID_NUM)
+#define ONIGENC_CONSTRUCT_MBCLEN_INVALID()      (-1)
+#define ONIGENC_MBCLEN_INVALID_P(r)             ((r) == -1)
 
 #define ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n)    (-1-(n))
-#define ONIGENC_MBCLEN_NEEDMORE_P(r)            (-ONIGENC_INVALID_NUM <= (r) && (r) < -1)
+#define ONIGENC_MBCLEN_NEEDMORE_P(r)            ((r) < -1)
 #define ONIGENC_MBCLEN_NEEDMORE_LEN(r)          (-1-(r))
 
 #define ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e)   (enc)->precise_mbc_enc_len(p,e,enc)
