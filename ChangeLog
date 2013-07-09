@@ -1,3 +1,8 @@
+Tue Jul  9 21:40:01 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_text.rb: Add missing tests for Text#<<.
+	  Reported by nagachika. Thanks!!!
+
 Tue Jul  9 18:02:38 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/fileutils.rb (FileUtils#chown_R): Do not skip traversal even
@@ -206,15 +211,11 @@ Sun Jul  7 11:49:19 2013  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rexml/text.rb (REXML::Text#<<): Support appending in not
 	  "raw" mode. [Bug #8602] [ruby-dev:47482]
 	  Reported by Ippei Obayashi. Thanks!!!
-	* test/rexml/test_text.rb (TextTester#test_shift_operator_cache):
-	  Add a test for the above case.
 
 Sun Jul  7 11:43:13 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/text.rb (REXML::Text#<<): Support method chain use by "<<"
 	  like other objects.
-	* test/rexml/test_text.rb (TextTester#test_shift_operator_chain):
-	  Add a test for the above case.
 
 Sun Jul  7 11:34:18 2013  Kouhei Sutou  <kou@cozmixng.org>
 
