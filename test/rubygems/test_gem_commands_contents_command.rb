@@ -140,10 +140,10 @@ lib/foo.rb
       @cmd.execute
     end
 
-    expected = %W[
-      #{Gem::ConfigMap[:bindir]}/default_command
-      #{Gem::ConfigMap[:rubylibdir]}/default/gem.rb
-      #{Gem::ConfigMap[:archdir]}/default_gem.so
+    expected = [
+      File.join(Gem::ConfigMap[:bindir], 'default_command'),
+      File.join(Gem::ConfigMap[:rubylibdir], 'default/gem.rb'),
+      File.join(Gem::ConfigMap[:archdir], 'default_gem.so')
     ].sort.join "\n"
 
     assert_equal expected, @ui.output.chomp

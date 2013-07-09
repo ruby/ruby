@@ -48,7 +48,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
                        options[:update])
 
     if options[:clear_all] then
-      path = File.join Gem.user_home, '.gem', 'specs'
+      path = Gem.spec_cache_dir
       FileUtils.rm_rf path
 
       unless File.exist? path then

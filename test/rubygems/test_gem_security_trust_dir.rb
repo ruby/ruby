@@ -1,5 +1,9 @@
 require 'rubygems/test_case'
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
+end
+
 class TestGemSecurityTrustDir < Gem::TestCase
 
   CHILD_CERT = load_cert 'child'
@@ -90,5 +94,5 @@ class TestGemSecurityTrustDir < Gem::TestCase
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
 
-end
+end if defined?(OpenSSL::SSL)
 

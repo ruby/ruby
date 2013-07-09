@@ -4,6 +4,8 @@
 # See LICENSE.txt for additional licensing information.
 #++
 
+require 'digest'
+
 ##
 # Allows writing of tar files
 
@@ -121,7 +123,8 @@ class Gem::Package::TarWriter
     @io.pos = init_pos
 
     header = Gem::Package::TarHeader.new :name => name, :mode => mode,
-                                         :size => size, :prefix => prefix
+                                         :size => size, :prefix => prefix,
+                                         :mtime => Time.now
 
     @io.write header
     @io.pos = final_pos
@@ -140,7 +143,15 @@ class Gem::Package::TarWriter
   def add_file_digest name, mode, digest_algorithms # :yields: io
     digests = digest_algorithms.map do |digest_algorithm|
       digest = digest_algorithm.new
-      [digest.name, digest]
+      digest_name =
+        if digest.respond_to? :name then
+          digest.name
+        else
+          /::([^:]+)$/ =~ digest_algorithm.name
+          $1
+        end
+
+      [digest_name, digest]
     end
 
     digests = Hash[*digests.flatten]
@@ -165,22 +176,32 @@ class Gem::Package::TarWriter
   def add_file_signed name, mode, signer
     digest_algorithms = [
       signer.digest_algorithm,
-      OpenSSL::Digest::SHA512,
-    ].uniq
+      Digest::SHA512,
+    ].compact.uniq
 
     digests = add_file_digest name, mode, digest_algorithms do |io|
       yield io
     end
 
-    signature_digest = digests.values.find do |digest|
-      digest.name == signer.digest_name
+    signature_digest = digests.values.compact.find do |digest|
+      digest_name =
+        if digest.respond_to? :name then
+          digest.name
+        else
+          /::([^:]+)$/ =~ digest.class.name
+          $1
+        end
+
+      digest_name == signer.digest_name
     end
 
-    signature = signer.sign signature_digest.digest
+    if signer.key then
+      signature = signer.sign signature_digest.digest
 
-    add_file_simple "#{name}.sig", 0444, signature.length do |io|
-      io.write signature
-    end if signature
+      add_file_simple "#{name}.sig", 0444, signature.length do |io|
+        io.write signature
+      end
+    end
 
     digests
   end
@@ -195,7 +216,8 @@ class Gem::Package::TarWriter
     name, prefix = split_name name
 
     header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
-                                         :size => size, :prefix => prefix).to_s
+                                         :size => size, :prefix => prefix,
+                                         :mtime => Time.now).to_s
 
     @io.write header
     os = BoundedStream.new @io, size
@@ -256,7 +278,8 @@ class Gem::Package::TarWriter
 
     header = Gem::Package::TarHeader.new :name => name, :mode => mode,
                                          :typeflag => "5", :size => 0,
-                                         :prefix => prefix
+                                         :prefix => prefix,
+                                         :mtime => Time.now
 
     @io.write header
 

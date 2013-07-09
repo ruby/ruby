@@ -15,7 +15,9 @@ class TestGemDependencyResolver < Gem::TestCase
     exp = expected.sort_by { |s| s.full_name }
     act = actual.map { |a| a.spec }.sort_by { |s| s.full_name }
 
-    assert_equal exp, act
+    msg = "Set of gems was not the same: #{exp.map { |x| x.full_name}.inspect} != #{act.map { |x| x.full_name}.inspect}"
+
+    assert_equal exp, act, msg
   end
 
   def test_no_overlap_specificly
@@ -177,7 +179,8 @@ class TestGemDependencyResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_equal "unable to find any gem matching dependency 'a (>= 0)'", e.message
+    assert_equal "Unable to resolve dependency: (unknown) requires a (>= 0)",
+                 e.message
 
     assert_equal "a (>= 0)", e.dependency.to_s
   end
@@ -215,7 +218,7 @@ class TestGemDependencyResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_equal "detected 1 conflict with dependency 'c (>= 2)'", e.message
+    assert_match "a-1 requires c (>= 2) but it conflicted", e.message
 
     assert_equal "c (>= 2)", e.dependency.to_s
 

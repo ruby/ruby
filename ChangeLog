@@ -1,3 +1,8 @@
+Wed Jul 10 08:21:15 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 2.1
+	* test/rubygems:  Ditto.
+
 Wed Jul 10 07:34:34 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ext/ext_conf_builder.rb:  Remove siteconf file after

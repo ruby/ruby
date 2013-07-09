@@ -1,6 +1,11 @@
 require 'rubygems/command'
 require 'rubygems/security'
-require 'openssl'
+begin
+  require 'openssl'
+rescue LoadError => e
+  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
+               e.message =~ / -- openssl$/
+end
 
 class Gem::Commands::CertCommand < Gem::Command
 
@@ -21,7 +26,8 @@ class Gem::Commands::CertCommand < Gem::Command
 
     OptionParser.accept OpenSSL::PKey::RSA do |key_file|
       begin
-        key = OpenSSL::PKey::RSA.new File.read key_file
+        passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
+        key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
       rescue Errno::ENOENT
         raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
       rescue OpenSSL::PKey::RSAError
@@ -115,16 +121,31 @@ class Gem::Commands::CertCommand < Gem::Command
   end
 
   def build name
-    key = options[:key] || Gem::Security.create_key
+    if options[:key]
+      key = options[:key]
+    else
+      passphrase = ask_for_password 'Passphrase for your Private Key:'
+      say "\n"
 
-    cert = Gem::Security.create_cert_email name, key
+      passphrase_confirmation = ask_for_password 'Please repeat the passphrase for your Private Key:'
+      say "\n"
 
-    key_path  = Gem::Security.write key, "gem-private_key.pem"
+      raise Gem::CommandLineError,
+            "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
+
+      key      = Gem::Security.create_key
+      key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
+    end
+
+    cert      = Gem::Security.create_cert_email name, key
     cert_path = Gem::Security.write cert, "gem-public_cert.pem"
 
     say "Certificate: #{cert_path}"
-    say "Private Key: #{key_path}"
-    say "Don't forget to move the key file to somewhere private!"
+
+    if key_path
+      say "Private Key: #{key_path}"
+      say "Don't forget to move the key file to somewhere private!"
+    end
   end
 
   def certificates_matching filter
@@ -198,7 +219,8 @@ For further reading on signing gems see `ri Gem::Security`.
   def load_default_key
     key_file = File.join Gem.default_key_path
     key = File.read key_file
-    options[:key] = OpenSSL::PKey::RSA.new key
+    passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
+    options[:key] = OpenSSL::PKey::RSA.new key, passphrase
   rescue Errno::ENOENT
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem does not exist"
@@ -225,5 +247,5 @@ For further reading on signing gems see `ri Gem::Security`.
     Gem::Security.write cert, cert_file, permissions
   end
 
-end
+end if defined?(OpenSSL::SSL)
 

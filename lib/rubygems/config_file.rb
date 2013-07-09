@@ -141,6 +141,11 @@ class Gem::ConfigFile
   attr_reader :ssl_ca_cert
 
   ##
+  # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
+
+  attr_reader :ssl_client_cert
+
+  ##
   # Create the config file object.  +args+ is the list of arguments
   # from the command line.
   #
@@ -210,6 +215,7 @@ class Gem::ConfigFile
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
+    @ssl_client_cert  = @hash[:ssl_client_cert]  if @hash.key? :ssl_client_cert
 
     @api_keys         = nil
     @rubygems_api_key = nil
@@ -245,6 +251,10 @@ Your gem push credentials file located at:
 \t#{credentials_path}
 
 has file permissions of 0#{existing_permissions.to_s 8} but 0600 is required.
+
+To fix this error run:
+
+\tchmod 0600 #{credentials_path}
 
 You should reset your credentials at:
 
@@ -309,6 +319,9 @@ if you believe they were disclosed to a third party.
     @rubygems_api_key = api_key
   end
 
+  YAMLErrors = [ArgumentError]
+  YAMLErrors << Psych::SyntaxError if defined?(Psych::SyntaxError)
+
   def load_file(filename)
     Gem.load_yaml
 
@@ -321,8 +334,8 @@ if you believe they were disclosed to a third party.
         return {}
       end
       return content
-    rescue ArgumentError
-      warn "Failed to load #{filename}"
+    rescue *YAMLErrors => e
+      warn "Failed to load #{filename}, #{e.to_s}"
     rescue Errno::EACCES
       warn "Failed to load #{filename} due to permissions problem."
     end

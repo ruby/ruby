@@ -57,7 +57,7 @@ module Kernel
     #--
     # TODO request access to the C implementation of this to speed up RubyGems
 
-    spec = Gem::Specification.find { |s|
+    spec = Gem::Specification.stubs.find { |s|
       s.activated? and s.contains_requirable_file? path
     }
 

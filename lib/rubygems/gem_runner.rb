@@ -33,17 +33,11 @@ class Gem::GemRunner
   ##
   # Run the gem command with the following arguments.
 
-  def run(args)
-    if args.include?('--')
-      # We need to preserve the original ARGV to use for passing gem options
-      # to source gems.  If there is a -- in the line, strip all options after
-      # it...its for the source building process.
-      # TODO use slice!
-      build_args = args[args.index("--") + 1...args.length]
-      args = args[0...args.index("--")]
-    end
+  def run args
+    build_args = extract_build_args args
 
     do_configuration args
+
     cmd = @command_manager_class.instance
 
     cmd.command_names.each do |command_name|
@@ -58,6 +52,20 @@ class Gem::GemRunner
     end
 
     cmd.run Gem.configuration.args, build_args
+  end
+
+  ##
+  # Separates the build arguments (those following <code>--</code>) from the
+  # other arguments in the list.
+
+  def extract_build_args args # :nodoc:
+    return [] unless offset = args.index('--')
+
+    build_args = args.slice!(offset...args.length)
+
+    build_args.shift
+
+    build_args
   end
 
   private

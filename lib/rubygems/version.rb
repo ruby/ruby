@@ -147,13 +147,16 @@ class Gem::Version
 
   # FIX: These are only used once, in .correct?. Do they deserve to be
   # constants?
-  VERSION_PATTERN = '[0-9]+(\.[0-9a-zA-Z]+)*' # :nodoc:
+  VERSION_PATTERN = '[0-9]+(\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
   ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})*\s*\z/ # :nodoc:
 
   ##
   # A string representation of this Version.
 
-  attr_reader :version
+  def version
+    @version.dup
+  end
+
   alias to_s version
 
   ##
@@ -183,6 +186,12 @@ class Gem::Version
     end
   end
 
+  @@all = {}
+
+  def self.new version
+    @@all[version] ||= super
+  end
+
   ##
   # Constructs a Version from the +version+ string.  A version string is a
   # series of digits or ASCII letters separated by dots.
@@ -191,7 +200,8 @@ class Gem::Version
     raise ArgumentError, "Malformed version number string #{version}" unless
       self.class.correct?(version)
 
-    @version = version.to_s.dup.strip
+    @version = version.to_s.strip.gsub("-",".pre.")
+    @segments = nil
   end
 
   ##

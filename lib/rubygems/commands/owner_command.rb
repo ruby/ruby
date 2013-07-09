@@ -31,9 +31,15 @@ class Gem::Commands::OwnerCommand < Gem::Command
     add_option '-r', '--remove EMAIL', 'Remove an owner' do |value, options|
       options[:remove] << value
     end
+
+    add_option '-h', '--host HOST', 'Use another gemcutter-compatible host' do |value, options|
+      options[:host] = value
+    end
   end
 
   def execute
+    @host = options[:host]
+
     sign_in
     name = get_one_gem_name
 

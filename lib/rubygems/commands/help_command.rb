@@ -46,6 +46,10 @@ Some examples of 'gem' usage.
 * Update all gems on your system:
 
     gem update
+    
+* Update your local version of RubyGems
+
+    gem update --system
   EOF
 
   PLATFORMS = <<-'EOF'
@@ -55,8 +59,9 @@ your current platform by running `gem environment`.
 
 RubyGems matches platforms as follows:
 
-  * The CPU must match exactly, unless one of the platforms has
-    "universal" as the CPU.
+  * The CPU must match exactly unless one of the platforms has
+    "universal" as the CPU or the local CPU starts with "arm" and the gem's
+    CPU is exactly "arm" (for gems that support generic ARM architecture).
   * The OS must match exactly.
   * The versions must match exactly unless one of the versions is nil.
 
@@ -66,11 +71,20 @@ you pass must match "#{cpu}-#{os}" or "#{cpu}-#{os}-#{version}".  On mswin
 platforms, the version is the compiler version, not the OS version.  (Ruby
 compiled with VC6 uses "60" as the compiler version, VC8 uses "80".)
 
+For the ARM architecture, gems with a platform of "arm-linux" should run on a
+reasonable set of ARM CPUs and not depend on instructions present on a limited
+subset of the architecture.  For example, the binary should run on platforms
+armv5, armv6hf, armv6l, armv7, etc.  If you use the "arm-linux" platform
+please test your gem on a variety of ARM hardware before release to ensure it
+functions correctly.
+
 Example platforms:
 
   x86-freebsd        # Any FreeBSD version on an x86 CPU
   universal-darwin-8 # Darwin 8 only gems that run on any CPU
   x86-mswin32-80     # Windows gems compiled with VC8
+  armv7-linux        # Gem complied for an ARMv7 CPU running linux
+  arm-linux          # Gem compiled for any ARM CPU running linux
 
 When building platform gems, set the platform in the gem specification to
 Gem::Platform::CURRENT.  This will correctly mark the gem with your ruby's
@@ -119,7 +133,7 @@ platform.
           if command then
             command.summary
           else
-            "[No command found for #{cmd_name}, bug?]"
+            "[No command found for #{cmd_name}]"
           end
 
         summary = wrap(summary, summary_width).split "\n"

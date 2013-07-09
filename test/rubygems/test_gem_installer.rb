@@ -4,6 +4,7 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def setup
     super
+    common_installer_setup
 
     if __name__ =~ /^test_install(_|$)/ then
       FileUtils.rm_r @spec.gem_dir
@@ -14,6 +15,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def teardown
+    common_installer_teardown
+
     super
 
     Gem.configuration = @config
@@ -300,6 +303,8 @@ gem 'other', version
   end
 
   def test_ensure_loadable_spec_security_policy
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
     _, a_gem = util_gem 'a', 2 do |s|
       s.add_dependency 'garbage ~> 5'
     end
@@ -1341,7 +1346,7 @@ gem 'other', version
     assert File.exist?(File.join(dest, 'bin', 'executable'))
   end
 
-  def test_write_build_args
+  def test_write_build_info_file
     refute_path_exists @spec.build_info_file
 
     @installer.build_args = %w[
@@ -1357,7 +1362,7 @@ gem 'other', version
     assert_equal expected, File.read(@spec.build_info_file)
   end
 
-  def test_write_build_args_empty
+  def test_write_build_info_file_empty
     refute_path_exists @spec.build_info_file
 
     @installer.write_build_info_file
@@ -1427,6 +1432,30 @@ gem 'other', version
 
   def test_dir
     assert_match %r!/gemhome/gems/a-2$!, @installer.dir
+  end
+
+  def test_default_gem
+    FileUtils.rm_f File.join(Gem.dir, 'specifications')
+
+    @installer.wrappers = true
+    @installer.options[:install_as_default] = true
+    @installer.gem_dir = util_gem_dir @spec
+    @installer.generate_bin
+
+    use_ui @ui do
+      @installer.install
+    end
+
+    assert File.directory? util_inst_bindir
+    installed_exec = File.join util_inst_bindir, 'executable'
+    assert File.exist? installed_exec
+
+    assert File.directory? File.join(Gem.dir, 'specifications')
+    assert File.directory? File.join(Gem.dir, 'specifications', 'default')
+
+    default_spec = eval File.read File.join(Gem.dir, 'specifications', 'default', 'a-2.gemspec')
+    assert_equal Gem::Version.new("2"), default_spec.version
+    assert_equal ['bin/executable'], default_spec.files
   end
 
   def old_ruby_required

@@ -63,7 +63,7 @@ class TestGemSource < Gem::TestCase
 
   def test_cache_dir_escapes_windows_paths
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
-    root = File.join Gem.user_home, '.gem', 'specs'
+    root = Gem.spec_cache_dir
     cache_dir = @source.cache_dir(uri).gsub(root, '')
     assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
   end
@@ -123,7 +123,7 @@ class TestGemSource < Gem::TestCase
     expected = @released
     assert_equal expected, @source.load_specs(:released)
 
-    cache_dir = File.join Gem.user_home, '.gem', 'specs', 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
     assert File.exist?(cache_dir), "#{cache_dir} does not exist"
 
     cache_file = File.join cache_dir, "specs.#{Gem.marshal_version}"
@@ -138,7 +138,7 @@ class TestGemSource < Gem::TestCase
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}"] =
       ' ' * Marshal.dump(@latest_specs).length
 
-    cache_dir = File.join Gem.user_home, '.gem', 'specs', 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
 
     FileUtils.mkdir_p cache_dir
 
@@ -160,7 +160,7 @@ class TestGemSource < Gem::TestCase
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
           util_gzip(Marshal.dump(@latest_specs))
 
-    cache_dir = File.join Gem.user_home, '.gem', 'specs', 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
 
     FileUtils.mkdir_p cache_dir
 

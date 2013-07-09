@@ -186,6 +186,24 @@ class TestGemPlatform < Gem::TestCase
     assert((x86_darwin8 === Gem::Platform.local), 'universal =~ x86')
   end
 
+  def test_equals3_cpu_arm
+    arm   = Gem::Platform.new 'arm-linux'
+    armv5 = Gem::Platform.new 'armv5-linux'
+    armv7 = Gem::Platform.new 'armv7-linux'
+
+    util_set_arch 'armv5-linux'
+    assert((arm   === Gem::Platform.local), 'arm   === armv5')
+    assert((armv5 === Gem::Platform.local), 'armv5 === armv5')
+    refute((armv7 === Gem::Platform.local), 'armv7 === armv5')
+    refute((Gem::Platform.local ===   arm), 'armv5 === arm')
+
+    util_set_arch 'armv7-linux'
+    assert((arm   === Gem::Platform.local), 'arm   === armv7')
+    refute((armv5 === Gem::Platform.local), 'armv5 === armv7')
+    assert((armv7 === Gem::Platform.local), 'armv7 === armv7')
+    refute((Gem::Platform.local ===   arm), 'armv7 === arm')
+  end
+
   def test_equals3_version
     util_set_arch 'i686-darwin8'
 

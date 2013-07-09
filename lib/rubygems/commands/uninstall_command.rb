@@ -67,6 +67,12 @@ class Gem::Commands::UninstallCommand < Gem::Command
       options[:force] = value
     end
 
+    add_option('--[no-]abort-on-dependent',
+               'Prevent uninstalling gems that are',
+               'depended on by other gems.') do |value, options|
+      options[:abort_on_dependent] = value
+    end
+
     add_version_option
     add_platform_option
   end

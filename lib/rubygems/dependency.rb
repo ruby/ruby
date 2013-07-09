@@ -203,6 +203,8 @@ class Gem::Dependency
     requirement.satisfied_by? version
   end
 
+  alias === =~
+
   # DOC: this method needs either documented or :nodoc'd
 
   def match? obj, version=nil
@@ -250,10 +252,10 @@ class Gem::Dependency
   # DOC: this method needs either documented or :nodoc'd
 
   def matching_specs platform_only = false
-    matches = Gem::Specification.find_all { |spec|
+    matches = Gem::Specification.stubs.find_all { |spec|
       self.name === spec.name and # TODO: == instead of ===
         requirement.satisfied_by? spec.version
-    }
+    }.map(&:to_spec)
 
     if platform_only
       matches.reject! { |spec|

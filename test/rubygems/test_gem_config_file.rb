@@ -201,6 +201,10 @@ ERROR:  Your gem push credentials file located at:
 
 has file permissions of 0644 but 0600 is required.
 
+To fix this error run:
+
+\tchmod 0600 #{@cfg.credentials_path}
+
 You should reset your credentials at:
 
 \thttps://rubygems.org/profile/edit
@@ -426,6 +430,14 @@ if you believe they were disclosed to a third party.
     end
     util_config_file
     assert_equal('/home/me/certs', @cfg.ssl_ca_cert)
+  end
+
+  def test_load_ssl_client_cert_from_config
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":ssl_client_cert: /home/me/mine.pem"
+    end
+    util_config_file
+    assert_equal('/home/me/mine.pem', @cfg.ssl_client_cert)
   end
 
   def util_config_file(args = @cfg_args)

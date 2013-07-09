@@ -4,8 +4,6 @@ require 'rubygems/dependency_installer'
 require 'rubygems/local_remote_options'
 require 'rubygems/validator'
 require 'rubygems/version_option'
-require 'rubygems/install_message' # must come before rdoc for messaging
-require 'rubygems/rdoc'
 
 ##
 # Gem installer command line tool
@@ -38,6 +36,12 @@ class Gem::Commands::InstallCommand < Gem::Command
                'Read from a gem dependencies API file and',
                'install the listed gems') do |v,o|
       o[:gemdeps] = v
+    end
+    
+    add_option(:"Install/Update", '--default',
+               'Add the gem\'s full specification to',
+               'specifications/default and extract only its bin') do |v,o|
+      o[:install_as_default] = v
     end
 
     @installed_specs = nil
@@ -153,7 +157,14 @@ to write the specification by hand.  For example:
       alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
       terminate_interaction 1
     end
-
+    
+    # load post-install hooks appropriate to options
+    if options[:install_as_default]
+      require 'rubygems/install_default_message'
+    else
+      require 'rubygems/install_message'
+    end
+    require 'rubygems/rdoc'
 
     get_all_gem_names_and_versions.each do |gem_name, gem_version|
       gem_version ||= options[:version]

@@ -29,7 +29,7 @@ class Gem::Security::Signer
   # +chain+ containing X509 certificates, encoding certificates or paths to
   # certificates.
 
-  def initialize key, cert_chain
+  def initialize key, cert_chain, passphrase = nil
     @cert_chain = cert_chain
     @key        = key
 
@@ -46,7 +46,7 @@ class Gem::Security::Signer
     @digest_algorithm = Gem::Security::DIGEST_ALGORITHM
     @digest_name      = Gem::Security::DIGEST_NAME
 
-    @key = OpenSSL::PKey::RSA.new File.read @key if
+    @key = OpenSSL::PKey::RSA.new File.read(@key), passphrase if
       @key and not OpenSSL::PKey::RSA === @key
 
     if @cert_chain then

@@ -2,6 +2,10 @@
 
 require 'rubygems/test_case'
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Security::Policy tests.  openssl not found.'
+end
+
 class TestGemSecurityPolicy < Gem::TestCase
 
   ALTERNATE_KEY    = load_key 'alternate'
@@ -11,6 +15,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   INVALIDCHILD_KEY = load_key 'invalidchild'
 
   ALTERNATE_CERT      = load_cert 'alternate'
+  CA_CERT             = load_cert 'ca'
   CHILD_CERT          = load_cert 'child'
   EXPIRED_CERT        = load_cert 'expired'
   FUTURE_CERT         = load_cert 'future'
@@ -285,6 +290,11 @@ class TestGemSecurityPolicy < Gem::TestCase
                  "(root of signing cert #{CHILD_CERT.subject})", e.message
   end
 
+  def test_subject
+    assert_equal 'email:nobody@example', @no.subject(PUBLIC_CERT)
+    assert_equal '/C=JP/O=JIN.GR.JP/OU=RRR/CN=CA', @no.subject(CA_CERT)
+  end
+
   def test_verify
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
@@ -325,6 +335,22 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert_equal 'missing digest for 0', e.message
   end
 
+  def test_verify_no_signatures
+    Gem::Security.trust_dir.trust_cert PUBLIC_CERT
+
+    digests, = dummy_signatures
+
+    use_ui @ui do
+      @no.verify [PUBLIC_CERT], nil, digests, {}, 'some_gem'
+    end
+
+    assert_match "WARNING:  some_gem is not signed\n", @ui.error
+
+    assert_raises Gem::Security::Exception do
+      @almost_no.verify [PUBLIC_CERT], nil, digests, {}
+    end
+  end
+
   def test_verify_not_enough_signatures
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
@@ -339,6 +365,21 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
 
     assert_equal 'missing digest for 1', e.message
+  end
+
+  def test_verify_no_trust
+    digests, signatures = dummy_signatures
+
+    use_ui @ui do
+      @low.verify [PUBLIC_CERT], nil, digests, signatures, 'some_gem'
+    end
+
+    assert_equal "WARNING:  email:nobody@example is not trusted for some_gem\n",
+                 @ui.error
+
+    assert_raises Gem::Security::Exception do
+      @medium.verify [PUBLIC_CERT], nil, digests, signatures
+    end
   end
 
   def test_verify_wrong_digest_type
@@ -484,5 +525,5 @@ class TestGemSecurityPolicy < Gem::TestCase
     return digests, signatures
   end
 
-end
+end if defined?(OpenSSL::SSL)
 

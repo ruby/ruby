@@ -9,7 +9,8 @@ class Gem::Commands::CleanupCommand < Gem::Command
           'Clean up old versions of installed gems in the local repository',
           :force => false, :install_dir => Gem.dir
 
-    add_option('-d', '--dryrun', "") do |value, options|
+    add_option('-n', '-d', '--dryrun',
+               'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
     end
 
@@ -162,4 +163,3 @@ are not removed.
   end
 
 end
-

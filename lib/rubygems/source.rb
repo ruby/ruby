@@ -25,14 +25,21 @@ class Gem::Source
   end
 
   def <=>(other)
-    if !@uri
-      return 0 unless other.uri
-      return -1
+    case other
+    when Gem::Source::Installed, Gem::Source::Local then
+      -1
+    when Gem::Source then
+      if !@uri
+        return 0 unless other.uri
+        return -1
+      end
+
+      return 1 if !other.uri
+
+      @uri.to_s <=> other.uri.to_s
+    else
+      nil
     end
-
-    return 1 if !other.uri
-
-    @uri.to_s <=> other.uri.to_s
   end
 
   include Comparable
@@ -58,8 +65,7 @@ class Gem::Source
   def cache_dir(uri)
     # Correct for windows paths
     escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
-    root = File.join Gem.user_home, '.gem', 'specs'
-    File.join root, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
+    File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
   end
 
   def update_cache?
@@ -141,4 +147,14 @@ class Gem::Source
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.download spec, @uri.to_s, dir
   end
+
+  def pretty_print q # :nodoc:
+    q.group 2, '[Remote:', ']' do
+      q.breakable
+      q.text @uri.to_s
+    end
+  end
+
 end
+
+require 'rubygems/source/installed'

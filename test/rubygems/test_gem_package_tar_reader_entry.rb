@@ -9,7 +9,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     @contents = ('a'..'z').to_a.join * 100
 
     @tar = ''
-    @tar << tar_file_header("lib/foo", "", 0, @contents.size)
+    @tar << tar_file_header("lib/foo", "", 0, @contents.size, Time.now)
     @tar << @contents
     @tar << "\0" * (512 - (@tar.size % 512))
 

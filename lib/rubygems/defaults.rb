@@ -15,6 +15,14 @@ module Gem
   end
 
   ##
+  # Default spec directory path to be used if an alternate value is not
+  # specified in the environment
+
+  def self.default_spec_cache_dir
+    File.join Gem.user_home, '.gem', 'specs'
+  end
+
+  ##
   # Default home directory path to be used if an alternate value is not
   # specified in the environment
 

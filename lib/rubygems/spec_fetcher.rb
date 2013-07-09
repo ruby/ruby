@@ -38,7 +38,6 @@ class Gem::SpecFetcher
   end
 
   def initialize
-    @dir = File.join Gem.user_home, '.gem', 'specs'
     @update_cache = File.stat(Gem.user_home).uid == Process.uid
 
     @specs = {}

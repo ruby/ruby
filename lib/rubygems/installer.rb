@@ -212,16 +212,21 @@ class Gem::Installer
     FileUtils.rm_rf gem_dir
 
     FileUtils.mkdir_p gem_dir
-
-    extract_files
-
-    build_extensions
-    write_build_info_file
-    run_post_build_hooks
-
-    generate_bin
-    write_spec
-    write_cache_file
+    
+    if @options[:install_as_default]
+      extract_bin
+      write_default_spec
+    else
+      extract_files
+      
+      build_extensions
+      write_build_info_file
+      run_post_build_hooks
+      
+      generate_bin
+      write_spec
+      write_cache_file
+    end
 
     say spec.post_install_message unless spec.post_install_message.nil?
 
@@ -327,6 +332,14 @@ class Gem::Installer
   end
 
   ##
+  # The location of of the default spec file for default gems.
+  #
+
+  def default_spec_file
+    File.join gem_home, "specifications/default", "#{spec.full_name}.gemspec"
+  end
+
+  ##
   # Writes the .gemspec specification (in Ruby) to the gem home's
   # specifications directory.
 
@@ -334,6 +347,16 @@ class Gem::Installer
     open spec_file, 'w' do |file|
       file.puts spec.to_ruby_for_cache
       file.fsync rescue nil # for filesystems without fsync(2)
+    end
+  end
+  
+  ##
+  # Writes the full .gemspec specification (in Ruby) to the gem home's
+  # specifications/default directory.
+  
+  def write_default_spec
+    File.open(default_spec_file, "w") do |file|
+      file.puts spec.to_ruby
     end
   end
 
@@ -538,13 +561,13 @@ class Gem::Installer
       :bin_dir      => nil,
       :env_shebang  => false,
       :force        => false,
-      :install_dir  => Gem.dir,
       :only_install_dir => false
     }.merge options
 
     @env_shebang         = options[:env_shebang]
     @force               = options[:force]
-    @gem_home            = options[:install_dir]
+    @install_dir         = options[:install_dir]
+    @gem_home            = options[:install_dir] || Gem.dir
     @ignore_dependencies = options[:ignore_dependencies]
     @format_executable   = options[:format_executable]
     @security_policy     = options[:security_policy]
@@ -715,6 +738,15 @@ EOF
   def extract_files
     @package.extract_files gem_dir
   end
+  
+  ##
+  # Extracts only the bin/ files from the gem into the gem directory.
+  # This is used by default gems to allow a gem-aware stub to function
+  # without the full gem installed.
+  
+  def extract_bin
+    @package.extract_files gem_dir, "bin/*"
+  end
 
   ##
   # Prefix and suffix the program filename the same as ruby.
@@ -756,7 +788,11 @@ EOF
 
     ensure_loadable_spec
 
-    Gem.ensure_gem_subdirectories gem_home
+    if options[:install_as_default]
+      Gem.ensure_default_gem_subdirectories gem_home
+    else
+      Gem.ensure_gem_subdirectories gem_home
+    end
 
     return true if @force
 

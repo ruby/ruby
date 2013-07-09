@@ -38,10 +38,8 @@ Gem::Specification.new do |s|
 end
   EOF
 
-  def setup
-    super
-
-    @a1 = quick_spec 'a', '1' do |s|
+  def make_spec_c1
+    @c1 = quick_spec 'a', '1' do |s|
       s.executable = 'exec'
       s.extensions << 'ext/a/extconf.rb'
       s.test_file = 'test/suite.rb'
@@ -56,6 +54,22 @@ end
       s.mark_version
       s.files = %w[lib/code.rb]
     end
+  end
+
+  def setup
+    super
+
+    @a1 = quick_spec 'a', '1' do |s|
+      s.executable = 'exec'
+      s.extensions << 'ext/a/extconf.rb'
+      s.test_file = 'test/suite.rb'
+      s.requirements << 'A working computer'
+      s.rubyforge_project = 'example'
+      s.license = 'MIT'
+
+      s.mark_version
+      s.files = %w[lib/code.rb]
+    end
 
     @a2 = quick_spec 'a', '2' do |s|
       s.files = %w[lib/code.rb]
@@ -64,6 +78,371 @@ end
     @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
 
     load 'rubygems/syck_hack.rb'
+  end
+
+  def test_self_activate
+    foo = util_spec 'foo', '1'
+
+    assert_activate %w[foo-1], foo
+  end
+
+  def test_self_activate_ambiguous_direct
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec("b", "1", { "c" => ">= 1" }, "lib/d.rb")
+      b2 = new_spec("b", "2", { "c" => ">= 2" }, "lib/d.rb")
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"
+
+      Gem::Specification.reset
+      install_specs a1, b1, b2, c1, c2
+
+      a1.activate
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_indirect
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec "c", "2", nil, "lib/d.rb"
+
+      install_specs a1, b1, b2, c1, c2
+
+      a1.activate
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_indirect_conflict
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      a2 = new_spec "a", "2", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec("c", "2", { "a" => "1" }, "lib/d.rb") # conflicts with a-2
+
+      install_specs a1, a2, b1, b2, c1, c2
+
+      a2.activate
+      assert_equal %w(a-2), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-2 b-1 c-1), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_self_activate_ambiguous_unrelated
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"
+      d1 = new_spec "d", "1", nil, "lib/d.rb"
+
+      install_specs a1, b1, b2, c1, c2, d1
+
+      a1.activate
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      require "d"
+
+      assert_equal %w(a-1 d-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+    end
+  end
+
+  ##
+  # [A] depends on
+  #     [C]  = 1.0 depends on
+  #         [B] = 2.0
+  #     [B] ~> 1.0 (satisfied by 1.0)
+
+  def test_self_activate_checks_dependencies
+    a, _  = util_spec 'a', '1.0'
+            a.add_dependency 'c', '= 1.0'
+            a.add_dependency 'b', '~> 1.0'
+
+            util_spec 'b', '1.0'
+            util_spec 'b', '2.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
+
+    e = assert_raises Gem::LoadError do
+      assert_activate nil, a, c, "b"
+    end
+
+    expected = "can't satisfy 'b (~> 1.0)', already activated 'b-2.0'"
+    assert_equal expected, e.message
+  end
+
+  ##
+  # [A] depends on
+  #     [B] ~> 1.0 (satisfied by 1.0)
+  #     [C]  = 1.0 depends on
+  #         [B] = 2.0
+
+  def test_self_activate_divergent
+    a, _  = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
+            util_spec 'b', '1.0'
+            util_spec 'b', '2.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
+
+    e = assert_raises Gem::LoadError do
+      assert_activate nil, a, c, "b"
+    end
+
+    assert_match(/Unable to activate c-1.0,/, e.message)
+    assert_match(/because b-1.0 conflicts with b .= 2.0/, e.message)
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_old_required
+    e1, = util_spec 'e', '1', 'd' => '= 1'
+    @d1 = util_spec 'd', '1'
+    @d2 = util_spec 'd', '2'
+
+    assert_activate %w[d-1 e-1], e1, "d"
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_platform_alternate
+    @x1_m = util_spec 'x', '1' do |s|
+      s.platform = Gem::Platform.new %w[cpu my_platform 1]
+    end
+
+    @x1_o = util_spec 'x', '1' do |s|
+      s.platform = Gem::Platform.new %w[cpu other_platform 1]
+    end
+
+    @w1 = util_spec 'w', '1', 'x' => nil
+
+    util_set_arch 'cpu-my_platform1'
+
+    assert_activate %w[x-1-cpu-my_platform-1 w-1], @w1, @x1_m
+  end
+
+  ##
+  # DOC
+
+  def test_self_activate_platform_bump
+    @y1 = util_spec 'y', '1'
+
+    @y1_1_p = util_spec 'y', '1.1' do |s|
+      s.platform = Gem::Platform.new %w[cpu my_platform 1]
+    end
+
+    @z1 = util_spec 'z', '1', 'y' => nil
+
+    assert_activate %w[y-1 z-1], @z1, @y1
+  end
+
+  ##
+  # [C] depends on
+  #     [A] = 1.a
+  #     [B] = 1.0 depends on
+  #         [A] >= 0 (satisfied by 1.a)
+
+  def test_self_activate_prerelease
+    @c1_pre = util_spec 'c', '1.a', "a" => "1.a", "b" => "1"
+    @a1_pre = util_spec 'a', '1.a'
+    @b1     = util_spec 'b', '1' do |s|
+      s.add_dependency 'a'
+      s.add_development_dependency 'aa'
+    end
+
+    assert_activate %w[a-1.a b-1 c-1.a], @c1_pre, @a1_pre, @b1
+  end
+
+  def test_self_activate_via_require
+    a1 = new_spec "a", "1", "b" => "= 1"
+    b1 = new_spec "b", "1", nil, "lib/b/c.rb"
+    b2 = new_spec "b", "2", nil, "lib/b/c.rb"
+
+    install_specs a1, b1, b2
+
+    a1.activate
+    save_loaded_features do
+      require "b/c"
+    end
+
+    assert_equal %w(a-1 b-1), loaded_spec_names
+  end
+
+  def test_self_activate_via_require_wtf
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
+      b1 = new_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb"
+      b2 = new_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb" # this
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"                                # this
+      d1 = new_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
+      d2 = new_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
+
+      install_specs a1, b1, b2, c1, c2, d1, d2
+
+      a1.activate
+
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal ["b (> 0)", "d (> 0)"], unresolved_names
+
+      require "b"
+
+      e = assert_raises Gem::LoadError do
+        require "d"
+      end
+
+      assert_equal "unable to find a version of 'd' to activate", e.message
+
+      assert_equal %w(a-1 b-2 c-2), loaded_spec_names
+      assert_equal ["d (> 0)"], unresolved_names
+    end
+  end
+
+  def test_self_activate_deep_unambiguous
+    a1 = new_spec "a", "1", "b" => "= 1"
+    b1 = new_spec "b", "1", "c" => "= 1"
+    b2 = new_spec "b", "2", "c" => "= 2"
+    c1 = new_spec "c", "1"
+    c2 = new_spec "c", "2"
+
+    install_specs a1, b1, b2, c1, c2
+
+    a1.activate
+    assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+  end
+
+  def test_self_activate_loaded
+    foo = util_spec 'foo', '1'
+
+    assert foo.activate
+    refute foo.activate
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 2.0)
+  # [C] depends on nothing
+
+  def test_self_activate_unrelated
+    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+        util_spec 'b', '1.0'
+    c = util_spec 'c', '1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 2.0)
+  #     [C]  = 1.0 depends on
+  #         [B] ~> 1.0
+  #
+  # and should resolve using b-1.0
+  # TODO: move these to specification
+
+  def test_self_activate_over
+    a = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '= 1.0'
+    util_spec 'b', '1.0'
+    util_spec 'b', '1.1'
+    util_spec 'b', '2.0'
+    util_spec 'c', '1.0', 'b' => '~> 1.0'
+
+    a.activate
+
+    assert_equal %w[a-1.0 c-1.0], loaded_spec_names
+    assert_equal ["b (>= 1.0, ~> 1.0)"], unresolved_names
+  end
+
+  ##
+  # [A] depends on
+  #     [B] ~> 1.0 (satisfied by 1.1)
+  #     [C]  = 1.0 depends on
+  #         [B] = 1.0
+  #
+  # and should resolve using b-1.0
+  #
+  # TODO: this is not under, but over... under would require depth
+  # first resolve through a dependency that is later pruned.
+
+  def test_self_activate_under
+    a,   _ = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
+             util_spec 'b', '1.0'
+             util_spec 'b', '1.1'
+    c,   _ = util_spec 'c', '1.0', 'b' => '= 1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  ##
+  # [A1] depends on
+  #    [B] > 0 (satisfied by 2.0)
+  # [B1] depends on
+  #    [C] > 0 (satisfied by 1.0)
+  # [B2] depends on nothing!
+  # [C1] depends on nothing
+
+  def test_self_activate_dropped
+    a1, = util_spec 'a', '1', 'b' => nil
+          util_spec 'b', '1', 'c' => nil
+          util_spec 'b', '2'
+          util_spec 'c', '1'
+
+    assert_activate %w[b-2 a-1], a1, "b"
+  end
+
+  ##
+  # [A] depends on
+  #     [B] >= 1.0 (satisfied by 1.1) depends on
+  #         [Z]
+  #     [C] >= 1.0 depends on
+  #         [B] = 1.0
+  #
+  # and should backtrack to resolve using b-1.0, pruning Z from the
+  # resolve.
+
+  def test_self_activate_raggi_the_edgecase_generator
+    a,  _ = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '>= 1.0'
+            util_spec 'b', '1.0'
+            util_spec 'b', '1.1', 'z' => '>= 1.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 1.0'
+
+    assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
+  end
+
+  def test_self_activate_conflict
+    util_spec 'b', '1.0'
+    util_spec 'b', '2.0'
+
+    gem "b", "= 1.0"
+
+    assert_raises Gem::LoadError do
+      gem "b", "= 2.0"
+    end
   end
 
   def test_self_attribute_names
@@ -915,7 +1294,7 @@ dependencies: []
   end
 
   def test_base_dir_not_loaded
-    @a1.instance_variable_set :@loaded_from, nil
+    @a1.instance_variable_set :@filename, nil
 
     assert_equal Gem.dir, @a1.base_dir
   end
@@ -924,7 +1303,7 @@ dependencies: []
     default_dir =
       File.join Gem::Specification.default_specifications_dir, @a1.spec_name
 
-    @a1.instance_variable_set :@loaded_from, default_dir
+    @a1.instance_variable_set :@filename, default_dir
 
     assert_equal Gem.default_dir, @a1.base_dir
   end
@@ -1022,19 +1401,60 @@ dependencies: []
     assert_equal %w[lib], @a1.require_paths
   end
 
+  def test_require_already_activated
+    save_loaded_features do
+      a1 = new_spec "a", "1", nil, "lib/d.rb"
+
+      install_specs a1 # , a2, b1, b2, c1, c2
+
+      a1.activate
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal [], unresolved_names
+
+      assert require "d"
+
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
+  def test_require_already_activated_indirect_conflict
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      a2 = new_spec "a", "2", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1", nil, "lib/d.rb"
+      c2 = new_spec("c", "2", { "a" => "1" }, "lib/d.rb") # conflicts with a-2
+
+      install_specs a1, a2, b1, b2, c1, c2
+
+      a1.activate
+      c1.activate
+      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      assert require "d"
+
+      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+    end
+  end
+
   def test_requirements
     assert_equal ['A working computer'], @a1.requirements
   end
 
   def test_runtime_dependencies_legacy
+    make_spec_c1
     # legacy gems don't have a type
-    @a1.runtime_dependencies.each do |dep|
+    @c1.runtime_dependencies.each do |dep|
       dep.instance_variable_set :@type, nil
     end
 
     expected = %w[rake jabber4r pqa]
 
-    assert_equal expected, @a1.runtime_dependencies.map { |d| d.name }
+    assert_equal expected, @c1.runtime_dependencies.map { |d| d.name }
   end
 
   def test_spaceship_name
@@ -1088,11 +1508,13 @@ dependencies: []
     @a2.add_runtime_dependency 'b', '1'
     @a2.dependencies.first.instance_variable_set :@type, nil
     @a2.required_rubygems_version = Gem::Requirement.new '> 0'
+    @a2.require_paths << "lib/a/ext"
 
     ruby_code = @a2.to_ruby
 
     expected = <<-SPEC
 # -*- encoding: utf-8 -*-
+# stub: a 2 ruby lib\0lib/a/ext
 
 Gem::Specification.new do |s|
   s.name = "a"
@@ -1105,7 +1527,7 @@ Gem::Specification.new do |s|
   s.email = "example@example.com"
   s.files = ["lib/code.rb"]
   s.homepage = "http://example.com"
-  s.require_paths = ["lib"]
+  s.require_paths = ["lib", "lib/a/ext"]
   s.rubygems_version = "#{Gem::VERSION}"
   s.summary = "this is a summary"
 
@@ -1140,6 +1562,7 @@ end
 
     expected = <<-SPEC
 # -*- encoding: utf-8 -*-
+# stub: a 2 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "a"
@@ -1179,14 +1602,17 @@ end
   end
 
   def test_to_ruby_fancy
-    @a1.platform = Gem::Platform.local
-    ruby_code = @a1.to_ruby
+    make_spec_c1
+
+    @c1.platform = Gem::Platform.local
+    ruby_code = @c1.to_ruby
 
     local = Gem::Platform.local
     expected_platform = "[#{local.cpu.inspect}, #{local.os.inspect}, #{local.version.inspect}]"
 
     expected = <<-SPEC
 # -*- encoding: utf-8 -*-
+# stub: a 1 x86-darwin-8 lib
 
 Gem::Specification.new do |s|
   s.name = "a"
@@ -1234,7 +1660,7 @@ end
 
     same_spec = eval ruby_code
 
-    assert_equal @a1, same_spec
+    assert_equal @c1, same_spec
   end
 
   def test_to_ruby_legacy
@@ -1886,6 +2312,7 @@ end
   def test_metadata_specs
     valid_ruby_spec = <<-EOF
 # -*- encoding: utf-8 -*-
+# stub: m 1 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "m"

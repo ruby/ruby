@@ -99,6 +99,8 @@ lib/rubygems/defaults/operating_system.rb
 
       out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
 
+      out << "  - SPEC CACHE DIRECTORY: #{Gem.spec_cache_dir}\n"
+
       out << "  - RUBYGEMS PLATFORMS:\n"
       Gem.platforms.each do |platform|
         out << "    - #{platform}\n"
@@ -107,11 +109,9 @@ lib/rubygems/defaults/operating_system.rb
       out << "  - GEM PATHS:\n"
       out << "     - #{Gem.dir}\n"
 
-      path = Gem.path.dup
-      path.delete Gem.dir
-      path.each do |p|
-        out << "     - #{p}\n"
-      end
+      gem_path = Gem.path.dup
+      gem_path.delete Gem.dir
+      add_path out, gem_path
 
       out << "  - GEM CONFIGURATION:\n"
       Gem.configuration.each do |name, value|
@@ -124,11 +124,22 @@ lib/rubygems/defaults/operating_system.rb
         out << "     - #{s}\n"
       end
 
+      out << "  - SHELL PATH:\n"
+
+      shell_path = ENV['PATH'].split(File::PATH_SEPARATOR)
+      add_path out, shell_path
+
     else
       raise Gem::CommandLineError, "Unknown environment option [#{arg}]"
     end
     say out
     true
+  end
+
+  def add_path out, path
+    path.each do |component|
+      out << "     - #{component}\n"
+    end
   end
 
 end

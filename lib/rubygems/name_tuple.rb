@@ -43,6 +43,20 @@ class Gem::NameTuple
   end
 
   ##
+  # Returns the full name (name-version) of this Gem.  Platform information is
+  # included if it is not the default Ruby platform.  This mimics the behavior
+  # of Gem::Specification#full_name.
+
+  def full_name
+    case @platform
+    when nil, 'ruby', ''
+      "#{@name}-#{@version}"
+    else
+      "#{@name}-#{@version}-#{@platform}"
+    end
+  end
+
+  ##
   # Indicate if this NameTuple matches the current platform.
 
   def match_platform?
@@ -59,12 +73,7 @@ class Gem::NameTuple
   # Return the name that the gemspec file would be
 
   def spec_name
-    case @platform
-    when nil, 'ruby', ''
-      "#{@name}-#{@version}.gemspec"
-    else
-      "#{@name}-#{@version}-#{@platform}.gemspec"
-    end
+    "#{full_name}.gemspec"
   end
 
   ##
@@ -74,9 +83,11 @@ class Gem::NameTuple
     [@name, @version, @platform]
   end
 
-  def to_s
+  def inspect # :nodoc:
     "#<Gem::NameTuple #{@name}, #{@version}, #{@platform}>"
   end
+
+  alias to_s inspect # :nodoc:
 
   def <=> other
     to_a <=> other.to_a
