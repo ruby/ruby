@@ -1,7 +1,7 @@
 Wed Jul 10 11:35:36 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTP_v1_2#test_get,
-	  TestNetHTTP_v1_2_chunked#test_get): shoudn't check
+	  TestNetHTTP_v1_2_chunked#test_get): shouldn't check
 	  HttpResponse#decode_content if Zlib is not available.
 	  ko1 complained via IRC.
 
