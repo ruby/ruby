@@ -230,6 +230,34 @@ end
 # and even to change the object being delegated to at a later time with
 # #__setobj__.
 #
+#   class User
+#     def born_on
+#       Date.new(1989, 09, 10)
+#     end
+#   end
+#
+#   class UserDecorator < SimpleDelegator
+#     def birth_year
+#       born_on.year
+#     end
+#   end
+#
+#   decorated_user = UserDecorator.new(User.new)
+#   decorated_user.birth_year  #=> 1989
+#   decorated_user.__getobj__  #=> #<User: ...>
+#
+# A SimpleDelegator instance can take advantage of the fact that SimpleDelegator
+# is a subclass of +Delegator+ to call <tt>super</tt> to have methods called on
+# the object being delegated to.
+#
+#   class SuperArray < SimpleDelegator
+#     def [](*args)
+#       super + 1
+#     end
+#   end
+#
+#   SuperArray.new([1])[0]  #=> 2
+#
 # Here's a simple example that takes advantage of the fact that
 # SimpleDelegator's delegation object can be changed at any time.
 #

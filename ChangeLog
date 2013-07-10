@@ -1,3 +1,8 @@
+Thu Jul 11 00:48:29 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/delegate.rb: Add example for __setobj__ and __getobj__
+	  [Bug #8615] Patch by Caleb Thompson
+
 Wed Jul 10 23:29:22 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/logger.rb: Use :call-seq: for method signature rdoc
