@@ -1,3 +1,8 @@
+Wed Jul 10 22:31:25 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_index): cache single byte flag and some
+	  cosmetic changes.
+
 Wed Jul 10 22:03:27 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_2comp): Don't use bary_plus_one.

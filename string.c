@@ -2469,26 +2469,26 @@ rb_str_casecmp(VALUE str1, VALUE str2)
 static long
 rb_str_index(VALUE str, VALUE sub, long offset)
 {
-    long pos;
     char *s, *sptr, *e;
-    long len, slen;
+    long pos, len, slen;
+    int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
-    if (is_broken_string(sub)) {
-	return -1;
-    }
-    len = str_strlen(str, enc);
+    if (is_broken_string(sub)) return -1;
+
+    len = single_byte ? RSTRING_LEN(str) : str_strlen(str, enc);
     slen = str_strlen(sub, enc);
     if (offset < 0) {
 	offset += len;
 	if (offset < 0) return -1;
     }
     if (len - offset < slen) return -1;
+
     s = RSTRING_PTR(str);
-    e = s + RSTRING_LEN(str);
+    e = RSTRING_END(str);
     if (offset) {
-	offset = str_offset(s, RSTRING_END(str), offset, enc, single_byte_optimizable(str));
+	offset = str_offset(s, e, offset, enc, single_byte);
 	s += offset;
     }
     if (slen == 0) return offset;
@@ -2502,7 +2502,8 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 	if (pos < 0) return pos;
 	t = rb_enc_right_char_head(s, s+pos, e, enc);
 	if (t == s + pos) break;
-	if ((len -= t - s) <= 0) return -1;
+	len -= t - s;
+	if (len <= 0) return -1;
 	offset += t - s;
 	s = t;
     }
