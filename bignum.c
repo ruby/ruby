@@ -34,6 +34,14 @@ static VALUE big_three = Qnil;
 #define USHORT _USHORT
 #endif
 
+#if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
+# define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T
+#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+# define SIZEOF_BDIGIT_DBL SIZEOF_LONG_LONG
+#else
+# define SIZEOF_BDIGIT_DBL SIZEOF_LONG
+#endif
+
 #ifdef WORDS_BIGENDIAN
 #   define HOST_BIGENDIAN_P 1
 #else
@@ -364,35 +372,28 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
 
     assert(2 <= base && base <= 36);
 
-    switch (sizeof(BDIGIT_DBL)) {
-      case 2:
+    {
+#if   SIZEOF_BDIGIT_DBL == 0
+#elif SIZEOF_BDIGIT_DBL == 2
         maxpow = maxpow16_num[base-2];
         exponent = maxpow16_exp[base-2];
-        break;
-      case 4:
+#elif SIZEOF_BDIGIT_DBL == 4
         maxpow = maxpow32_num[base-2];
         exponent = maxpow32_exp[base-2];
-        break;
-#ifdef HAVE_UINT64_T
-      case 8:
+#elif SIZEOF_BDIGIT_DBL == 8 && defined HAVE_UINT64_T
         maxpow = maxpow64_num[base-2];
         exponent = maxpow64_exp[base-2];
-        break;
-#endif
-#ifdef HAVE_UINT128_T
-      case 16:
+#elif SIZEOF_BDIGIT_DBL == 16 && defined HAVE_UINT128_T
         maxpow = maxpow128_num[base-2];
         exponent = maxpow128_exp[base-2];
-        break;
-#endif
-      default:
+#else
         maxpow = base;
         exponent = 1;
         while (maxpow <= BDIGIT_DBL_MAX / base) {
             maxpow *= base;
             exponent++;
         }
-        break;
+#endif
     }
 
     *exp_ret = exponent;
@@ -405,35 +406,28 @@ maxpow_in_bdigit(int base, int *exp_ret)
     BDIGIT maxpow;
     int exponent;
 
-    switch (SIZEOF_BDIGITS) {
-      case 2:
+    {
+#if SIZEOF_BDIGITS == 0
+#elif SIZEOF_BDIGITS == 2
         maxpow = maxpow16_num[base-2];
         exponent = maxpow16_exp[base-2];
-        break;
-      case 4:
+#elif SIZEOF_BDIGITS == 4
         maxpow = maxpow32_num[base-2];
         exponent = maxpow32_exp[base-2];
-        break;
-#ifdef HAVE_UINT64_T
-      case 8:
+#elif SIZEOF_BDIGITS == 8 && defined HAVE_UINT64_T
         maxpow = maxpow64_num[base-2];
         exponent = maxpow64_exp[base-2];
-        break;
-#endif
-#ifdef HAVE_UINT128_T
-      case 16:
+#elif SIZEOF_BDIGITS == 16 && defined HAVE_UINT128_T
         maxpow = maxpow128_num[base-2];
         exponent = maxpow128_exp[base-2];
-        break;
-#endif
-      default:
+#else
         maxpow = base;
         exponent = 1;
         while (maxpow <= BDIGMAX / base) {
             maxpow *= base;
             exponent++;
         }
-        break;
+#endif
     }
 
     *exp_ret = exponent;
