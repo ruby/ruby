@@ -1,3 +1,7 @@
+Wed Jul 10 23:29:22 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/logger.rb: Use :call-seq: for method signature rdoc
+
 Wed Jul 10 23:23:18 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/logger.rb (#add): Remove incorrect rdoc for return value
