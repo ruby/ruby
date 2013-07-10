@@ -3,11 +3,6 @@ Wed Jul 10 14:18:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* process.c (fork_daemon): kill the other threads all and abandon the
 	  kept mutexes.
 
-Wed Jul 10 14:14:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* process.c (fork_daemon): kill the other threads all and abandon the
-	  kept mutexes.
-
 Wed Jul 10 11:35:36 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTP_v1_2#test_get,
