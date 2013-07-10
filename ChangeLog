@@ -1,3 +1,8 @@
+Wed Jul 10 23:23:18 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/logger.rb (#add): Remove incorrect rdoc for return value
+	  [Bug #8567] Reported by Tim Pease.
+
 Wed Jul 10 23:12:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_subpos): make public function.

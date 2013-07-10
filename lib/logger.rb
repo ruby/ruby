@@ -341,8 +341,6 @@ class Logger
   #
   # === Return
   #
-  # +true+ if successful, +false+ otherwise.
-  #
   # When the given severity is not high enough (for this particular logger),
   # log no message, and return +true+.
   #
