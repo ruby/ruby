@@ -149,7 +149,7 @@ module WEBrick
     # Updates +listen+ to enable SSL when the SSL configuration is active.
 
     def listen(address, port) # :nodoc:
-      listeners = Utils::create_listeners(address, port, @logger)
+      listeners = Utils::create_listeners(address, port)
       if @config[:SSLEnable]
         unless ssl_context
           @ssl_context = setup_ssl_context(@config)
