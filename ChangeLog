@@ -81,7 +81,7 @@ Tue Jul  9 16:58:30 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jul  9 15:57:20 2013  Akinori MUSHA  <knu@iDaemons.org>
 
-	* object.c: Fix rdoc for Kernel#<=>. [Fix GH-352]
+	* object.c: Fix rdoc for Kernel#<=>. [Fixes GH-352]
 
 Tue Jul  9 15:53:51 2013  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -285,7 +285,7 @@ Sun Jul  7 11:01:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  necessary (for instance, on OSX it is not), adding a real probe to
 	  the conftest allows it to succeed on newer versions of dtrace.
 	  Patch by Eric Saxby <sax AT livinginthepast.org> at
-	  [ruby-core:55826].  [Fix GH-351], [Bug #8606].
+	  [ruby-core:55826].  [Fixes GH-351], [Bug #8606].
 
 Sun Jul  7 10:07:22 2013  Tanaka Akira  <akr@fsij.org>
 
@@ -892,7 +892,7 @@ Tue Jun 25 21:26:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 	  the argument x is not a BigDecimal.
 	  This change is based on the patch made by Heesob Park and Garth Snyder.
 	  [Bug #6862] [ruby-core:47145]
-	  [Fix GH-332] https://github.com/ruby/ruby/pull/332
+	  [Fixes GH-332] https://github.com/ruby/ruby/pull/332
 
 Tue Jun 25 20:36:31 2013  Tanaka Akira  <akr@fsij.org>
 
@@ -1049,16 +1049,16 @@ Mon Jun 24 07:57:18 2013  Masaya Tarui  <tarui@ruby-lang.org>
 Mon Jun 24 02:53:09 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* array.c: Return value in Array overview example found by @PragTob
-	  [Fix GH-336] https://github.com/ruby/ruby/pull/336
+	  [Fixes GH-336] https://github.com/ruby/ruby/pull/336
 
 Mon Jun 24 02:45:51 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* array.c (rb_ary_zip): typo by @PragTob [Fix GH-337]
+	* array.c (rb_ary_zip): typo by @PragTob [Fixes GH-337]
 	  https://github.com/ruby/ruby/pull/337
 
 Mon Jun 24 02:42:01 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* win32/README.win32: grammar typo by @blankenshipz [Fix GH-334]
+	* win32/README.win32: grammar typo by @blankenshipz [Fixes GH-334]
 	  https://github.com/ruby/ruby/pull/334
 
 Mon Jun 24 00:59:35 2013  Tanaka Akira  <akr@fsij.org>
@@ -3410,11 +3410,11 @@ Fri May 31 16:35:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 31 16:03:23 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* object.c, proc.c: s/call_seq/call-seq in rdoc. [Fix GH-322]
+	* object.c, proc.c: s/call_seq/call-seq in rdoc. [Fixes GH-322]
 
 Fri May 31 15:56:36 2013  Zachary Scott  <zachary@zacharyscott.net>
 
-	* ext/openssl/ossl_ssl.c: Add missing paren in rdoc [Fix GH-321]
+	* ext/openssl/ossl_ssl.c: Add missing paren in rdoc [Fixes GH-321]
 
 Fri May 31 11:58:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
