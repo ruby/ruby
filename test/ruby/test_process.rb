@@ -1492,7 +1492,19 @@ class TestProcess < Test::Unit::TestCase
         assert_equal(2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
-    else
+    elsif /freebsd/ =~ RUBY_PLATFORM
+      def test_daemon_no_threads
+        data = Timeout.timeout(3) do
+          IO.popen("-") do |f|
+            break f.readlines.map(&:chomp) if f
+            th = Thread.start {sleep 3}
+            Process.daemon(true, true)
+            puts Thread.list.size, th.status.inspect
+          end
+        end
+        assert_equal(["2", "\"run\""], data)
+      end
+    else # darwin
       def test_daemon_no_threads
         data = Timeout.timeout(3) do
           IO.popen("-") do |f|
