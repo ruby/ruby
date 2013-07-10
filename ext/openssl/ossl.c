@@ -480,9 +480,13 @@ static unsigned long ossl_thread_id(void)
 static void Init_ossl_locks(void)
 {
     int i;
+    int num_locks = CRYPTO_num_locks();
 
-    ossl_locks = (VALUE*) OPENSSL_malloc(CRYPTO_num_locks() * sizeof(VALUE));
-    for (i = 0; i < CRYPTO_num_locks(); i++) {
+    if ((unsigned)num_locks >= INT_MAX / (int)sizeof(VALUE)) {
+	rb_raise(rb_eRuntimeError, "CRYPTO_num_locks() is too big: %d", num_locks);
+    }
+    ossl_locks = (VALUE*) OPENSSL_malloc(num_locks * (int)sizeof(VALUE));
+    for (i = 0; i < num_locks; i++) {
 	ossl_locks[i] = rb_mutex_new();
 	rb_global_variable(&(ossl_locks[i]));
     }
