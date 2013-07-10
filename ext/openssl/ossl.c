@@ -486,6 +486,9 @@ static void Init_ossl_locks(void)
 	rb_raise(rb_eRuntimeError, "CRYPTO_num_locks() is too big: %d", num_locks);
     }
     ossl_locks = (VALUE*) OPENSSL_malloc(num_locks * (int)sizeof(VALUE));
+    if (!ossl_locks) {
+	rb_raise(rb_eNoMemError, "CRYPTO_num_locks() is too big: %d", num_locks);
+    }
     for (i = 0; i < num_locks; i++) {
 	ossl_locks[i] = rb_mutex_new();
 	rb_global_variable(&(ossl_locks[i]));
