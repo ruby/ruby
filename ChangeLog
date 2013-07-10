@@ -1,3 +1,7 @@
+Wed Jul 10 22:44:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Add a static assertion for RBIGNUM_EMBED_LEN_MAX.
+
 Wed Jul 10 22:31:25 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_index): cache single byte flag and some
