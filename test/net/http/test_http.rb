@@ -233,7 +233,7 @@ module TestNetHTTP_version_1_1_methods
       http.get('/', { 'User-Agent' => 'test' }.freeze)
     }
 
-    assert res.decode_content, '[Bug #7924]'
+    assert res.decode_content, '[Bug #7924]' if Net::HTTP::HAVE_ZLIB
   end
 
   def _test_get__iter(http)
@@ -460,7 +460,7 @@ module TestNetHTTP_version_1_2_methods
       assert_equal $test_net_http_data.size, res.body.size
       assert_equal $test_net_http_data, res.body
 
-      refute res.decode_content, 'Bug #7831'
+      refute res.decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
     }
   end
 
