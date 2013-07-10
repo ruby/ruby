@@ -1,3 +1,8 @@
+Thu Jul 11 03:22:10 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* tool/probes_to_wiki.rb: adding a script to convert probes.d to wiki
+	  format for easy wiki updates.
+
 Thu Jul 11 00:54:07 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* man/ri.1: Incorrect use of .Dd macro [Bug #8620] by Tristan Hill
