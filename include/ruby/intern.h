@@ -701,6 +701,7 @@ VALUE rb_str_times(VALUE, VALUE);
 long rb_str_sublen(VALUE, long);
 VALUE rb_str_substr(VALUE, long, long);
 VALUE rb_str_subseq(VALUE, long, long);
+char *rb_str_subpos(VALUE, long, long*);
 void rb_str_modify(VALUE);
 void rb_str_modify_expand(VALUE, long);
 VALUE rb_str_freeze(VALUE);

@@ -1,3 +1,7 @@
+Wed Jul 10 23:12:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_subpos): make public function.
+
 Wed Jul 10 22:44:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Add a static assertion for RBIGNUM_EMBED_LEN_MAX.

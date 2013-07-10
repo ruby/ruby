@@ -1658,7 +1658,7 @@ rb_str_subseq(VALUE str, long beg, long len)
     return str2;
 }
 
-static char *
+char *
 rb_str_subpos(VALUE str, long beg, long *lenp)
 {
     long len = *lenp;
