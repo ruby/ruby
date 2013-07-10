@@ -99,11 +99,11 @@ Tue Jul  9 12:47:08 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 Tue Jul  9 11:04:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/{dl,fiddle}/win32/lib/win32/registry.rb (Win32::Regstry#check):
+	* ext/{dl,fiddle}/win32/lib/win32/registry.rb (Win32::Registry#check):
 	  should report the position of the error.
 
 	* ext/{dl,fiddle}/win32/lib/win32/registry.rb
-	  (Win32::Regstry#QueryValue): workaround for test-all crash.
+	  (Win32::Registry#QueryValue): workaround for test-all crash.
 
 Tue Jul  9 10:27:56 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
