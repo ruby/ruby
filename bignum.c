@@ -458,23 +458,24 @@ bary_neg(BDIGIT *ds, size_t n)
 }
 
 static int
-bary_plus_one(BDIGIT *ds, size_t n)
-{
-    size_t i;
-    for (i = 0; i < n; i++) {
-	ds[i] = BIGLO(ds[i]+1);
-        if (ds[i] != 0)
-            return 0;
-    }
-    return 1;
-}
-
-static int
 bary_2comp(BDIGIT *ds, size_t n)
 {
-    if (!n) return 1;
-    bary_neg(ds, n);
-    return bary_plus_one(ds, n);
+    size_t i;
+    i = 0;
+    for (i = 0; i < n; i++) {
+        if (ds[i] != 0) {
+            goto non_zero;
+        }
+    }
+    return 1;
+
+  non_zero:
+    ds[i] = BIGLO(~ds[i] + 1);
+    i++;
+    for (; i < n; i++) {
+        ds[i] = BIGLO(~ds[i]);
+    }
+    return 0;
 }
 
 static void
@@ -1422,9 +1423,15 @@ bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
 }
 
 static int
-bary_add_one(BDIGIT *zds, size_t zn)
+bary_add_one(BDIGIT *ds, size_t n)
 {
-    return bary_addc(zds, zn, NULL, 0, zds, zn, 1);
+    size_t i;
+    for (i = 0; i < n; i++) {
+	ds[i] = BIGLO(ds[i]+1);
+        if (ds[i] != 0)
+            return 0;
+    }
+    return 1;
 }
 
 static void
@@ -4028,14 +4035,14 @@ rb_big_neg(VALUE x)
     if (!n) return INT2FIX(-1);
 
     if (RBIGNUM_POSITIVE_P(z)) {
-        if (bary_plus_one(ds, n)) {
+        if (bary_add_one(ds, n)) {
             big_extend_carry(z);
         }
         RBIGNUM_SET_NEGATIVE_SIGN(z);
     }
     else {
         bary_neg(ds, n);
-        if (bary_plus_one(ds, n))
+        if (bary_add_one(ds, n))
             return INT2FIX(-1);
         bary_neg(ds, n);
         RBIGNUM_SET_POSITIVE_SIGN(z);
