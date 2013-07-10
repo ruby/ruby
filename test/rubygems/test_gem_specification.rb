@@ -1612,7 +1612,7 @@ end
 
     expected = <<-SPEC
 # -*- encoding: utf-8 -*-
-# stub: a 1 x86-darwin-8 lib
+# stub: a 1 #{win_platform? ? "x86-mswin32-60" : "x86-darwin-8"} lib
 
 Gem::Specification.new do |s|
   s.name = "a"
