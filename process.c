@@ -5742,7 +5742,7 @@ rb_daemon(int nochdir, int noclose)
 #define fork_daemon() \
     switch (rb_fork_ruby(NULL)) { \
       case -1: return -1; \
-      case 0:  break; \
+      case 0:  rb_thread_atfork(); break; \
       default: _exit(EXIT_SUCCESS); \
     }
 
