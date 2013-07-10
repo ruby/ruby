@@ -2784,6 +2784,34 @@ rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
     return chompdirsep(path, end, enc);
 }
 
+char *
+rb_path_next(const char *path)
+{
+    rb_warn("rb_path_next() is deprecated");
+    return rb_enc_path_next(path, path + strlen(path), rb_filesystem_encoding());
+}
+
+char *
+rb_path_skip_prefix(const char *path)
+{
+    rb_warn("rb_path_skip_prefix() is deprecated");
+    return rb_enc_path_skip_prefix(path, path + strlen(path), rb_filesystem_encoding());
+}
+
+char *
+rb_path_last_separator(const char *path)
+{
+    rb_warn("rb_path_last_separator() is deprecated");
+    return rb_enc_path_last_separator(path, path + strlen(path), rb_filesystem_encoding());
+}
+
+char *rb_path_end(const char *path)
+{
+    rb_warn("rb_path_end() is deprecated");
+    return rb_enc_path_end(path, path + strlen(path), rb_filesystem_encoding());
+}
+
+
 #if USE_NTFS
 static char *
 ntfs_tail(const char *path, const char *end, rb_encoding *enc)
@@ -3629,6 +3657,13 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
     return p;
 }
 
+const char *
+ruby_find_basename(const char *name, long *baselen, long *alllen)
+{
+    rb_warn("ruby_find_basename() is deprecated");
+    return ruby_enc_find_basename(name, baselen, alllen, rb_filesystem_encoding());
+}
+
 /*
  *  call-seq:
  *     File.basename(file_name [, suffix] )  ->  base_name
@@ -3816,6 +3851,13 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 	    *len = p - e;
     }
     return e;
+}
+
+const char *
+ruby_find_extname(const char *name, long *len)
+{
+    rb_warn("ruby_find_extname() is deprecated");
+    return ruby_enc_find_extname(name, len, rb_filesystem_encoding());
 }
 
 /*

@@ -1,3 +1,14 @@
+Wed Jul 10 10:27:12 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_path_next, rb_path_skip_prefix,
+	  rb_path_last_separator, rb_path_end, ruby_find_basename,
+	  ruby_find_extname): restore the declarations of these functions for
+	  backword compatibility.
+
+	* filc.c (rb_path_next, rb_path_skip_prefix, rb_path_last_separator,
+	  rb_path_end, ruby_find_basename, ruby_find_extname): implements
+	  these functions as the wrapper of rb_enc_*().
+
 Wed Jul 10 10:05:40 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_f_lambda): restore the declaration of
