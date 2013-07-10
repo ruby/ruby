@@ -491,7 +491,7 @@ static void Init_ossl_locks(void)
     }
     for (i = 0; i < num_locks; i++) {
 	ossl_locks[i] = rb_mutex_new();
-	rb_global_variable(&(ossl_locks[i]));
+	rb_gc_register_mark_object(ossl_locks[i]);
     }
 
     CRYPTO_set_id_callback((unsigned long (*)())ossl_thread_id);
