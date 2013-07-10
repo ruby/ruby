@@ -1,4 +1,6 @@
-Wed Jul 10 20:47:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 10 20:48:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (sizeof_bdigit_dbl): check sizeof(BDIGIT_DBL).
 
 	* internal.h (STATIC_ASSERT): move from enum.c.
 

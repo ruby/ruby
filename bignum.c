@@ -44,6 +44,8 @@ static VALUE big_three = Qnil;
 # endif
 #endif
 
+STATIC_ASSERT(sizeof_bdigit_dbl, sizeof(BDIGIT_DBL) == SIZEOF_BDIGIT_DBL);
+
 #ifdef WORDS_BIGENDIAN
 #   define HOST_BIGENDIAN_P 1
 #else
