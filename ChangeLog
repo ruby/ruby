@@ -1,3 +1,7 @@
+Wed Jul 10 20:08:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (SIZEOF_BDIGIT_DBL): Add a ifdef guard for test.
+
 Wed Jul 10 14:18:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (fork_daemon): kill the other threads all and abandon the

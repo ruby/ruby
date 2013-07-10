@@ -34,12 +34,14 @@ static VALUE big_three = Qnil;
 #define USHORT _USHORT
 #endif
 
-#if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
-# define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T
-#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
-# define SIZEOF_BDIGIT_DBL SIZEOF_LONG_LONG
-#else
-# define SIZEOF_BDIGIT_DBL SIZEOF_LONG
+#ifndef SIZEOF_BDIGIT_DBL
+# if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
+#  define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T
+# elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#  define SIZEOF_BDIGIT_DBL SIZEOF_LONG_LONG
+# else
+#  define SIZEOF_BDIGIT_DBL SIZEOF_LONG
+# endif
 #endif
 
 #ifdef WORDS_BIGENDIAN
