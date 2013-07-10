@@ -463,7 +463,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
  */
 static VALUE* ossl_locks;
 
-static void ossl_lock_callback(int mode, int type, char *file, int line)
+static void ossl_lock_callback(int mode, int type, const char *file, int line)
 {
     if (mode & CRYPTO_LOCK) {
 	rb_mutex_lock(ossl_locks[type]);
@@ -494,8 +494,8 @@ static void Init_ossl_locks(void)
 	rb_gc_register_mark_object(ossl_locks[i]);
     }
 
-    CRYPTO_set_id_callback((unsigned long (*)())ossl_thread_id);
-    CRYPTO_set_locking_callback((void (*)())ossl_lock_callback);
+    CRYPTO_set_id_callback(ossl_thread_id);
+    CRYPTO_set_locking_callback(ossl_lock_callback);
 }
 
 /*
