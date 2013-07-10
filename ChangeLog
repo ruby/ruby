@@ -1,3 +1,8 @@
+Wed Jul 10 10:05:40 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_f_lambda): restore the declaration of
+	  rb_f_lambda() for backword compatibility.
+
 Thu Jun 27 20:11:52 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl-inernal.rb (verify_certificate_identity):
