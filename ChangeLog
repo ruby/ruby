@@ -1,3 +1,7 @@
+Wed Jul 10 20:47:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (STATIC_ASSERT): move from enum.c.
+
 Wed Jul 10 20:08:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (SIZEOF_BDIGIT_DBL): Add a ifdef guard for test.

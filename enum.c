@@ -15,8 +15,6 @@
 #include "id.h"
 #include "internal.h"
 
-#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
-
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
 VALUE rb_mEnumerable;
