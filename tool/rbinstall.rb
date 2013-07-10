@@ -18,6 +18,7 @@ require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
+require 'rubygems'
 
 STDOUT.sync = true
 File.umask(0)
@@ -580,6 +581,10 @@ Gem::Specification.new do |s|
   s.files = #{files.inspect}
 end
         GEMSPEC
+    end
+
+    def self.unresolved_deps
+      []
     end
   end
 end

@@ -1,3 +1,10 @@
+Wed Jul 10 10:20:07 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/rbinstall.rb: always require rubygems to stabilize rubygems
+	  related status like whether Gem::Specification is defined or not.
+
+	* tool/rbinstall.rb (Gem::Specification.unresolved_deps): define stub.
+
 Wed Jul 10 08:21:15 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 2.1
