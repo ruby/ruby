@@ -5406,10 +5406,10 @@ rb_ary_drop_while(VALUE ary)
  *  Another sometimes useful iterator is #reverse_each which will iterate over
  *  the elements in the array in reverse order.
  *
- *     words = %w[rats live on no evil star]
+ *     words = %w[first second third fourth fifth sixth]
  *     str = ""
- *     words.reverse_each { |word| str += "#{word.reverse} " }
- *     str #=> "rats live on no evil star "
+ *     words.reverse_each { |word| str += "#{word} " }
+ *     p str #=> "sixth fifth fourth third second first "
  *
  *  The #map method can be used to create a new array based on the original
  *  array, but with the values modified by the supplied block:
