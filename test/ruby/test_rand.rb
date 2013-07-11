@@ -437,6 +437,7 @@ END
   end
 
   def test_rand_reseed_on_fork
+    GC.start
     bug5661 = '[ruby-core:41209]'
 
     assert_fork_status(1, bug5661) {Random.rand(4)}

@@ -21,6 +21,7 @@ class TestNotImplement < Test::Unit::TestCase
   end
 
   def test_call_fork
+    GC.start
     pid = nil
     begin
       Timeout.timeout(5) {
