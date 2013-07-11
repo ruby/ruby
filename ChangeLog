@@ -1,3 +1,8 @@
+Thu Jul 11 13:00:34 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/securerandom.rb: Refactor conditions by Rafal Chmiel
+	  [Fixes GH-326] https://github.com/ruby/ruby/pull/326
+
 Thu Jul 11 12:04:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Don't use toom3 after once karatsuba is choosen.
