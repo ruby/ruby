@@ -1,3 +1,7 @@
+Fri Jul 12 00:20:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_size): use RHASH_SIZE().
+
 Fri Jul 12 00:08:24 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_values): set array capa to RHASH_SIZE().

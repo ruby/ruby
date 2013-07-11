@@ -1379,9 +1379,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 static VALUE
 rb_hash_size(VALUE hash)
 {
-    if (!RHASH(hash)->ntbl)
-        return INT2FIX(0);
-    return INT2FIX(RHASH(hash)->ntbl->num_entries);
+    return INT2FIX(RHASH_SIZE(hash));
 }
 
 
