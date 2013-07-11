@@ -51,9 +51,9 @@ module SecureRandom
     n = n ? n.to_int : 16
 
     if defined? OpenSSL::Random
-      @pid = 0 if !defined?(@pid)
+      @pid = 0 unless defined?(@pid)
       pid = $$
-      if @pid != pid
+      unless @pid == pid
         now = Time.now
         ary = [now.to_i, now.nsec, @pid, pid]
         OpenSSL::Random.random_add(ary.join("").to_s, 0.0)
@@ -73,7 +73,7 @@ module SecureRandom
           end
           @has_urandom = true
           ret = f.read(n)
-          if ret.length != n
+          unless ret.length == n
             raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n} bytes"
           end
           return ret
@@ -83,7 +83,7 @@ module SecureRandom
       end
     end
 
-    if !defined?(@has_win32)
+    unless defined?(@has_win32)
       begin
         require 'Win32API'
 
@@ -186,7 +186,7 @@ module SecureRandom
     s = [random_bytes(n)].pack("m*")
     s.delete!("\n")
     s.tr!("+/", "-_")
-    s.delete!("=") if !padding
+    s.delete!("=") unless padding
     s
   end
 
