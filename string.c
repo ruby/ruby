@@ -91,6 +91,15 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
+#define TERM_LEN(str) rb_enc_mbminlen(rb_enc_get(str))
+#define TERM_FILL(ptr, termlen) do {\
+    char *const term_fill_ptr = (ptr);\
+    const int term_fill_len = (termlen);\
+    *term_fill_ptr = '\0';\
+    if (UNLIKELY(term_fill_len > 1))\
+	memset(term_fill_ptr, 0, term_fill_len);\
+} while (0)
+
 #define RESIZE_CAPA(str,capacity) do {\
     if (STR_EMBED_P(str)) {\
 	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
@@ -1471,6 +1480,25 @@ str_null_char(const char *s, long len, rb_encoding *enc)
     return 0;
 }
 
+static char *
+str_fill_term(VALUE str, char *s, long len, int termlen, rb_encoding *enc)
+{
+    long capa = rb_str_capacity(str) + 1;
+    int n;
+
+    if (capa < len + termlen) {
+	rb_str_modify_expand(str, len + termlen - capa);
+    }
+    else {
+	const char *e = s + len;
+	if (!rb_enc_ascget(e, e + termlen, &n, enc)) return s;
+	rb_str_modify(str);
+    }
+    s = RSTRING_PTR(str);
+    TERM_FILL(s + len, termlen);
+    return s;
+}
+
 char *
 rb_string_value_cstr(volatile VALUE *ptr)
 {
@@ -1484,8 +1512,8 @@ rb_string_value_cstr(volatile VALUE *ptr)
 	if (str_null_char(s, len, enc)) {
 	    rb_raise(rb_eArgError, "string contains null char");
 	}
+	return str_fill_term(str, s, len, minlen, enc);
     }
-    else
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }

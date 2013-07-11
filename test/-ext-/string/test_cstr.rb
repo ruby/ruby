@@ -19,18 +19,24 @@ class Test_StringCStr < Test::Unit::TestCase
 
   def test_wchar_embed
     WCHARS.each do |enc|
-      s = Bug::String.new("ab".encode(enc))
+      s = Bug::String.new("\u{4022}a".encode(enc))
       assert_nothing_raised(ArgumentError) {s.cstr_term}
+      s.set_len(s.bytesize / 2)
+      assert_equal(1, s.size)
+      assert_equal(0, s.cstr_term)
     end
   end
 
   def test_wchar_long
-    str = "abcdef"
+    str = "\u{4022}abcdef"
     n = 100
     len = str.size * n
     WCHARS.each do |enc|
       s = Bug::String.new(str.encode(enc))*n
       assert_nothing_raised(ArgumentError) {s.cstr_term}
+      s.set_len(s.bytesize / 2)
+      assert_equal(len / 2, s.size)
+      assert_equal(0, s.cstr_term)
     end
   end
 end

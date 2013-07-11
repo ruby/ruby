@@ -1,4 +1,7 @@
-Thu Jul 11 20:17:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 11 20:17:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_string_value_cstr): fill minimum length of the encoding
+	  as the terminator.
 
 	* string.c (rb_string_value_cstr): check null char in char, not in
 	  byte.
