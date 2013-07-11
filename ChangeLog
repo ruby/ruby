@@ -1,3 +1,8 @@
+Thu Jul 11 21:30:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pow): undef pow to get rid of infinite
+	  recursive call.  re-fix [Bug #8495].  [ruby-core:55923] [Bug #8621]
+
 Thu Jul 11 20:18:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/win32/lib/win32/registry.rb (Win32::Registry::API#make_wstr):

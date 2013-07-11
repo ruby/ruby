@@ -6969,6 +6969,7 @@ rb_w32_unwrap_io_handle(int fd)
 double
 rb_w32_pow(double x, double y)
 {
+#undef pow
     double r;
     unsigned int default_control = _controlfp(0, 0);
     _controlfp(_PC_64, _MCW_PC);
