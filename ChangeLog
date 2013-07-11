@@ -1,3 +1,10 @@
+Thu Jul 11 14:22:37 2013  Zachary Scott  <e@zzak.io>
+
+	* test/drb/ut_eq.rb: Use localhost for drb tests [Bug #7311]
+	  Patch by Vit Ondruch [ruby-core:49101]
+	* test/drb/ut_array.rb: ditto
+	* test/drb/ut_array_drbssl.rb: ditto
+
 Thu Jul 11 13:48:03 2013  Zachary Scott  <e@zzak.io>
 
 	* sprintf.c: Fix typo patch by @hynkle [Fixes GH-357]
