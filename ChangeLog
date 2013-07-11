@@ -1,3 +1,11 @@
+Thu Jul 11 10:07:15 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix for the cases when
+	  the argument x is not a BigDecimal.
+	  This change is based on the patch made by Heesob Park and Garth Snyder.
+	  [Bug #6862] [ruby-core:47145]
+	  [Fix GH-332] https://github.com/ruby/ruby/pull/332
+
 Wed Jul 10 10:27:12 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_path_next, rb_path_skip_prefix,

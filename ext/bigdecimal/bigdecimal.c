@@ -2554,7 +2554,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
     else if (vx == NULL) {
 	cannot_be_coerced_into_BigDecimal(rb_eArgError, x);
     }
-    RB_GC_GUARD(vx->obj);
+    x = RB_GC_GUARD(vx->obj);
 
     n = prec + rmpd_double_figures();
     negative = VpGetSign(vx) < 0;

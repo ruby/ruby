@@ -1210,11 +1210,35 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_BigMath_exp
-    n = 20
-    assert_in_epsilon(Math.exp(n), BigMath.exp(BigDecimal("20"), n))
-    assert_in_epsilon(Math.exp(40), BigMath.exp(BigDecimal("40"), n))
-    assert_in_epsilon(Math.exp(-n), BigMath.exp(BigDecimal("-20"), n))
-    assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), n))
+    prec = 20
+    assert_in_epsilon(Math.exp(20), BigMath.exp(BigDecimal("20"), prec))
+    assert_in_epsilon(Math.exp(40), BigMath.exp(BigDecimal("40"), prec))
+    assert_in_epsilon(Math.exp(-20), BigMath.exp(BigDecimal("-20"), prec))
+    assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), prec))
+  end
+
+  def test_BigMath_exp_with_float
+    prec = 20
+    assert_in_epsilon(Math.exp(20), BigMath.exp(20.0, prec))
+    assert_in_epsilon(Math.exp(40), BigMath.exp(40.0, prec))
+    assert_in_epsilon(Math.exp(-20), BigMath.exp(-20.0, prec))
+    assert_in_epsilon(Math.exp(-40), BigMath.exp(-40.0, prec))
+  end
+
+  def test_BigMath_exp_with_fixnum
+    prec = 20
+    assert_in_epsilon(Math.exp(20), BigMath.exp(20, prec))
+    assert_in_epsilon(Math.exp(40), BigMath.exp(40, prec))
+    assert_in_epsilon(Math.exp(-20), BigMath.exp(-20, prec))
+    assert_in_epsilon(Math.exp(-40), BigMath.exp(-40, prec))
+  end
+
+  def test_BigMath_exp_with_rational
+    prec = 20
+    assert_in_epsilon(Math.exp(20), BigMath.exp(Rational(40,2), prec))
+    assert_in_epsilon(Math.exp(40), BigMath.exp(Rational(80,2), prec))
+    assert_in_epsilon(Math.exp(-20), BigMath.exp(Rational(-40,2), prec))
+    assert_in_epsilon(Math.exp(-40), BigMath.exp(Rational(-80,2), prec))
   end
 
   def test_BigMath_exp_under_gc_stress
