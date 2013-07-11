@@ -1,4 +1,12 @@
-Thu Jul 11 20:17:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 11 20:18:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_str_new, rb_str_set_len, rb_str_resize): fill
+	  minimum length of the encoding as the terminator.
+
+	* string.c (str_buf_cat, rb_str_buf_append, rb_str_splice_0): ditto.
+
+	* string.c (str_make_independent_expand, rb_str_modify_expand): make
+	  the capacity enough for multi-byte terminator.
 
 	* string.c (rb_string_value_cstr): fill minimum length of the encoding
 	  as the terminator.
