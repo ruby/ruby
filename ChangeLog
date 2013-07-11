@@ -1,4 +1,7 @@
-Thu Jul 11 20:18:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 11 20:18:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/win32/lib/win32/registry.rb (Win32::Registry::API#make_wstr):
+	  remove workaround to append WCHAR terminator.
 
 	* transcode.c (str_encode_associate): fill terminator after conversion.
 
