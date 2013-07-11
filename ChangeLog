@@ -1,3 +1,27 @@
+Thu Jul 11 12:04:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Don't use toom3 after once karatsuba is choosen.
+	  (mulfunc_t): New type.
+	  (bary_mul_toom3_start): Renamed from bary_mul.
+	  (bary_mul_karatsuba_start): Renamed from bary_mul.
+	  (bary_mul_balance_with_mulfunc): Renamed from bary_mul_balance and
+	  new argument, mulfunc, is added.
+	  (rb_big_mul_balance): Invoke bary_mul_balance_with_mulfunc with
+	  bary_mul_toom3_start.
+	  (bary_mul_karatsuba): Invoke bary_mul_karatsuba_start instead of
+	  bary_mul.
+	  (bary_mul_precheck): Extracted from bary_mul.
+	  (bary_mul_karatsuba_branch): Extracted from bary_mul.
+	  (bary_mul_karatsuba_start): New function to call bary_mul_precheck
+	  and bary_mul_karatsuba_branch.
+	  (bary_mul_toom3_branch): Extracted from bary_mul.
+	  (bary_mul_toom3_start): New function to call bary_mul_precheck and
+	  bary_mul_toom3_branch.
+	  (bary_mul): Just call bary_mul_toom3_start.
+	  Arguments for work memory are removed.
+	  (rb_cstr_to_inum): Follow the bary_mul change.
+	  (bigmul0): Ditto.
+
 Thu Jul 11 10:46:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/probes_to_wiki.rb: fix usage comment.  use Enumerable#grep
