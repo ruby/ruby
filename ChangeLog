@@ -1,4 +1,6 @@
-Thu Jul 11 20:18:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 11 20:18:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode_associate): fill terminator after conversion.
 
 	* string.c (rb_enc_str_new, rb_str_set_len, rb_str_resize): fill
 	  minimum length of the encoding as the terminator.

@@ -441,6 +441,7 @@ VALUE rb_str_quote_unprintable(VALUE);
 VALUE rb_id_quote_unprintable(ID);
 #define QUOTE(str) rb_str_quote_unprintable(str)
 #define QUOTE_ID(id) rb_id_quote_unprintable(id)
+void rb_str_fill_terminator(VALUE str);
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

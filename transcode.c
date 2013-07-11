@@ -2760,6 +2760,7 @@ str_encode_associate(VALUE str, int encidx)
     int cr = 0;
 
     rb_enc_associate_index(str, encidx);
+    rb_str_fill_terminator(str);
 
     /* transcoded string never be broken. */
     if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {

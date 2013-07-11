@@ -1539,6 +1539,16 @@ rb_string_value_cstr(volatile VALUE *ptr)
     return s;
 }
 
+void
+rb_str_fill_terminator(VALUE str)
+{
+    char *s = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
+    rb_encoding *enc = rb_enc_get(str);
+    const int minlen = rb_enc_mbminlen(enc);
+    str_fill_term(str, s, len, minlen, enc);
+}
+
 VALUE
 rb_check_string_type(VALUE str)
 {
