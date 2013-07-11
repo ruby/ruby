@@ -5736,6 +5736,7 @@ rb_daemon(int nochdir, int noclose)
     before_fork();
     err = daemon(nochdir, noclose);
     after_fork();
+    rb_thread_atfork();
 #else
     int n;
 

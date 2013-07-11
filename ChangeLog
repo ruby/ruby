@@ -1,3 +1,8 @@
+Thu Jul 11 10:09:18 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (rb_daemon): daemon(3) is implemented with fork(2).
+	  Therefore it needs rb_thread_atfork(). (and revert r41903)
+
 Thu Jul 11 03:22:10 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* tool/probes_to_wiki.rb: adding a script to convert probes.d to wiki
