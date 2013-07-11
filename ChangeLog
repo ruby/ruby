@@ -1,3 +1,8 @@
+Thu Jul 11 20:17:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_string_value_cstr): check null char in char, not in
+	  byte.
+
 Thu Jul 11 14:48:35 2013  Zachary Scott  <e@zzak.io>
 
 	* array.c: Replace confusing example for #reverse_each in overview

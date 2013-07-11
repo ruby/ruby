@@ -1459,13 +1459,33 @@ rb_string_value_ptr(volatile VALUE *ptr)
     return RSTRING_PTR(str);
 }
 
+static const char *
+str_null_char(const char *s, long len, rb_encoding *enc)
+{
+    int n;
+    const char *e = s + len;
+
+    for (; s < e; s += n) {
+	if (!rb_enc_codepoint_len(s, e, &n, enc)) return s;
+    }
+    return 0;
+}
+
 char *
 rb_string_value_cstr(volatile VALUE *ptr)
 {
     VALUE str = rb_string_value(ptr);
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
+    rb_encoding *enc = rb_enc_get(str);
+    const int minlen = rb_enc_mbminlen(enc);
 
+    if (minlen > 1) {
+	if (str_null_char(s, len, enc)) {
+	    rb_raise(rb_eArgError, "string contains null char");
+	}
+    }
+    else
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
