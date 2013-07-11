@@ -1651,7 +1651,7 @@ rb_hash_keys(VALUE hash)
 {
     VALUE ary;
 
-    ary = rb_ary_new();
+    ary = rb_ary_new_capa(RHASH_SIZE(hash));
     rb_hash_foreach(hash, keys_i, ary);
 
     return ary;
