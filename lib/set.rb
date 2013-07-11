@@ -494,6 +494,28 @@ class Set
 end
 
 #
+# The Set() method will create a new Set with the given argument
+# or will return the given argument if it is already a Set.
+#
+# == Example
+#
+#   require "set"
+#
+#   set = Set.new
+#   set << "new value"
+#
+#   other_set = Set(set)
+#   other_set.equal?(set) # => true
+#
+#   new_set = Set.new(set)
+#   new_set == set # => true
+#   new_set.equal?(set) # => false
+#
+def Set(possible_set)
+  possible_set.is_a?(Set) ? possible_set : Set.new(enum)
+end
+
+#
 # SortedSet implements a Set that guarantees that it's element are
 # yielded in sorted order (according to the return values of their
 # #<=> methods) when iterating over them.
