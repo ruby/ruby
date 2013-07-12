@@ -1,3 +1,7 @@
+Fri Jul 12 11:17:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (recursive_hash): use RHASH_SIZE() to check hash size.
+
 Fri Jul 12 00:20:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_size): use RHASH_SIZE().

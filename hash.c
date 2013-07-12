@@ -1869,12 +1869,9 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 recursive_hash(VALUE hash, VALUE dummy, int recur)
 {
-    st_index_t hval;
+    st_index_t hval = RHASH_SIZE(hash);
 
-    if (!RHASH(hash)->ntbl)
-        return LONG2FIX(0);
-    hval = RHASH(hash)->ntbl->num_entries;
-    if (!hval) return LONG2FIX(0);
+    if (!hval) return INT2FIX(0);
     if (recur)
 	hval = rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval);
     else
