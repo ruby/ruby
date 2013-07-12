@@ -23,6 +23,19 @@
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+# ifndef VALGRIND_MAKE_MEM_DEFINED
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
+# endif
+# ifndef VALGRIND_MAKE_MEM_UNDEFINED
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
+# endif
+#else
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
+#endif
+
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/signal.h"
 #endif
@@ -521,6 +534,7 @@ ruby_signal(int signum, sighandler_t handler)
        )
 	sigact.sa_flags |= SA_ONSTACK;
 #endif
+    VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
 	    rb_bug_errno("sigaction", errno);
