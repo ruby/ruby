@@ -1,3 +1,7 @@
+Sat Jul 13 01:04:43 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rubygems/psych_additions.rb: Ignore Psych docs here
+
 Fri Jul 12 18:10:46 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/fiddle/win32/lib/win32/registry.rb
