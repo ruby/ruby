@@ -1483,12 +1483,12 @@ rb_string_value_ptr(volatile VALUE *ptr)
 }
 
 static const char *
-str_null_char(const char *s, long len, rb_encoding *enc)
+str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 {
     int n;
     const char *e = s + len;
 
-    for (; s < e; s += n) {
+    for (; s + minlen <= e; s += n) {
 	if (!rb_enc_codepoint_len(s, e, &n, enc)) return s;
     }
     return 0;
@@ -1497,7 +1497,8 @@ str_null_char(const char *s, long len, rb_encoding *enc)
 static char *
 str_fill_term(VALUE str, char *s, long len, int termlen, rb_encoding *enc)
 {
-    long capa = rb_str_capacity(str) + 1;
+    int oldtermlen = rb_enc_mbminlen(enc);
+    long capa = rb_str_capacity(str) + oldtermlen;
     int n;
 
     if (capa < len + termlen) {
@@ -1505,8 +1506,13 @@ str_fill_term(VALUE str, char *s, long len, int termlen, rb_encoding *enc)
     }
     else {
 	const char *e = s + len;
-	if (!rb_enc_ascget(e, e + termlen, &n, enc)) return s;
-	rb_str_modify(str);
+	int diff = 0;
+	if (termlen > oldtermlen) diff = termlen - oldtermlen;
+	if (!diff && str_independent(str) &&
+	    !rb_enc_ascget(e, e + oldtermlen, &n, enc)) {
+	    return s;
+	}
+	str_make_independent_expand(str, diff);
     }
     s = RSTRING_PTR(str);
     TERM_FILL(s + len, termlen);
@@ -1523,7 +1529,7 @@ rb_string_value_cstr(volatile VALUE *ptr)
     const int minlen = rb_enc_mbminlen(enc);
 
     if (minlen > 1) {
-	if (str_null_char(s, len, enc)) {
+	if (str_null_char(s, len, minlen, enc)) {
 	    rb_raise(rb_eArgError, "string contains null char");
 	}
 	return str_fill_term(str, s, len, minlen, enc);
@@ -1540,13 +1546,12 @@ rb_string_value_cstr(volatile VALUE *ptr)
 }
 
 void
-rb_str_fill_terminator(VALUE str)
+rb_str_fill_terminator(VALUE str, const int newminlen)
 {
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
     rb_encoding *enc = rb_enc_get(str);
-    const int minlen = rb_enc_mbminlen(enc);
-    str_fill_term(str, s, len, minlen, enc);
+    str_fill_term(str, s, len, newminlen, enc);
 }
 
 VALUE

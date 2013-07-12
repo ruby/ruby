@@ -777,10 +777,12 @@ VALUE
 rb_enc_associate_index(VALUE obj, int idx)
 {
     rb_encoding *enc;
+    int oldidx, oldtermlen, termlen;
 
 /*    enc_check_capable(obj);*/
     rb_check_frozen(obj);
-    if (rb_enc_get_index(obj) == idx)
+    oldidx = rb_enc_get_index(obj);
+    if (oldidx == idx)
 	return obj;
     if (SPECIAL_CONST_P(obj)) {
 	rb_raise(rb_eArgError, "cannot set encoding");
@@ -789,6 +791,11 @@ rb_enc_associate_index(VALUE obj, int idx)
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
 	!rb_enc_asciicompat(enc)) {
 	ENC_CODERANGE_CLEAR(obj);
+    }
+    termlen = rb_enc_mbminlen(enc);
+    oldtermlen = rb_enc_mbminlen(rb_enc_from_index(oldidx));
+    if (oldtermlen < termlen && RB_TYPE_P(obj, T_STRING)) {
+	rb_str_fill_terminator(obj, oldtermlen);
     }
     enc_set_index(obj, idx);
     return obj;

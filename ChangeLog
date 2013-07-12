@@ -1,3 +1,14 @@
+Fri Jul 12 16:28:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_associate_index): refill the terminator if it
+	  becomes longer than before.  [ruby-dev:47500] [Bug #8624]
+
+	* string.c (str_null_char, str_fill_term): get rid of out of bound
+	  access.
+
+	* string.c (rb_str_fill_terminator): add a parameter for the length of
+	  new terminator.
+
 Fri Jul 12 11:26:25 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_reject_bang): do not call rb_hash_foreach() if RHash
