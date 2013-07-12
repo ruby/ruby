@@ -1061,9 +1061,8 @@ rb_hash_reject_bang(VALUE hash)
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify(hash);
-    if (!RHASH(hash)->ntbl)
-        return Qnil;
-    n = RHASH(hash)->ntbl->num_entries;
+    n = RHASH_SIZE(hash);
+    if (!n) return Qnil;
     rb_hash_foreach(hash, delete_if_i, hash);
     if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
     return hash;
