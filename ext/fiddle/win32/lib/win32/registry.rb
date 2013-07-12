@@ -267,7 +267,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def make_wstr(str)
-        str.encode(WCHAR) + WCHAR_NUL
+        str.encode(WCHAR)
       end
 
       def OpenKey(hkey, name, opt, desired)
