@@ -1,3 +1,8 @@
+Sat Jul 13 12:27:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_associate_index): fill new terminator length, not
+	  old one.
+
 Sat Jul 13 12:24:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32: move from ext/dl and ext/fiddle.  since ext/extmk.rb
