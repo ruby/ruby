@@ -289,8 +289,7 @@ class Logger
   def fatal?; @level <= FATAL; end
 
   #
-  # === Synopsis
-  #
+  # :call-seq:
   #   Logger.new(name, shift_age = 7, shift_size = 1048576)
   #   Logger.new(name, shift_age = 'weekly')
   #
@@ -322,8 +321,7 @@ class Logger
   end
 
   #
-  # === Synopsis
-  #
+  # :call-seq:
   #   Logger#add(severity, message = nil, progname = nil) { ... }
   #
   # === Args
@@ -715,8 +713,7 @@ private
     attr_reader :appname
 
     #
-    # == Synopsis
-    #
+    # :call-seq:
     #   Application.new(appname = '')
     #
     # == Args

@@ -1,3 +1,7 @@
+Sun Jul 14 00:15:26 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/logger.rb: Use :call-seq: for method signature rdoc
+
 Sun Jul 14 00:13:01 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTP_v1_2#test_get,
