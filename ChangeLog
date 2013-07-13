@@ -1,3 +1,13 @@
+Sat Jul 13 23:50:00 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: fixed coding error [ruby-core:55337].
+	  reported by Riley Lynch.
+
+Sat Jul 13 23:50:00 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: fixed a bug [ruby-core:55295].  reported
+	  by Riley Lynch.
+
 Sat Jul 13 23:41:25 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (date_zone_to_diff): [ruby-core:55831].
