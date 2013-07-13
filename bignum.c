@@ -5283,7 +5283,7 @@ static VALUE
 big_shift(VALUE x, long n)
 {
     if (n < 0)
-	return big_lshift(x, (unsigned long)-n);
+	return big_lshift(x, 1+(unsigned long)(-(n+1)));
     else if (n > 0)
 	return big_rshift(x, (unsigned long)n);
     return x;
