@@ -1,3 +1,8 @@
+Sun Jul 14 00:14:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_precheck): Use bary_small_lshift or
+	  bary_mul_normal if xl is 1.
+
 Sat Jul 13 22:58:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_shift3): New function.

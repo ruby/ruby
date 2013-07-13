@@ -1903,14 +1903,23 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
         return 1;
     }
 
-    if (xl == 1 && xds[0] == 1) {
-        MEMCPY(zds, yds, BDIGIT, yl);
-        MEMZERO(zds + yl, BDIGIT, zl - yl);
-        return 1;
-    }
-    if (yl == 1 && yds[0] == 1) {
-        MEMCPY(zds, xds, BDIGIT, xl);
-        MEMZERO(zds + xl, BDIGIT, zl - xl);
+    if (xl == 1) {
+        if (xds[0] == 1) {
+            MEMCPY(zds, yds, BDIGIT, yl);
+            MEMZERO(zds+yl, BDIGIT, zl-yl);
+            return 1;
+        }
+        if (POW2_P(xds[0])) {
+            zds[yl] = bary_small_lshift(zds, yds, yl, bitsize(xds[0])-1);
+            MEMZERO(zds+yl+1, BDIGIT, zl-yl-1);
+            return 1;
+        }
+        if (yl == 1 && yds[0] == 1) {
+            zds[0] = xds[0];
+            MEMZERO(zds+1, BDIGIT, zl-1);
+            return 1;
+        }
+        bary_mul_normal(zds, zl, xds, xl, yds, yl);
         return 1;
     }
 
