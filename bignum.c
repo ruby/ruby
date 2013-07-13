@@ -5936,7 +5936,16 @@ rb_big_hash(VALUE x)
 }
 
 /*
- * MISSING: documentation
+ * call-seq:
+ *   big.coerce(numeric)  ->  array
+ *
+ * Returns an array with both <i>aNumeric</i> and <i>big</i> represented
+ * as <code>Bignum</code> objects.
+ * This is achieved by converting <i>aNumeric</i> to a <code>Bignum</code>.
+ * \exception TypeError if <i>aNumeric</i> is not a type of
+ * <code>Fixnum</code> or <code>Bignum</code>.
+ *
+ *     (0x3FFFFFFFFFFFFFFF+1).coerce(42)   #=> [42, 4611686018427387904]
  */
 
 static VALUE
