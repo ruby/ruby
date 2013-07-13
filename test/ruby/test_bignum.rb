@@ -533,6 +533,11 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(-1, -(2**31) >> 32)
   end
 
+  def test_shift_bigshift
+    big = 2**300
+    assert_equal(2**65538 / (2**65537), 2**65538 >> big.coerce(65537).first)
+  end
+
   def test_aref
     assert_equal(0, (2**32)[0])
     assert_equal(0, (2**32)[2**32])

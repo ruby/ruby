@@ -445,6 +445,7 @@ bary_small_lshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift)
 {
     size_t i;
     BDIGIT_DBL num = 0;
+    assert(0 <= shift && shift < BITSPERDIG);
 
     for (i=0; i<n; i++) {
 	num = num | (BDIGIT_DBL)*xds++ << shift;
@@ -459,6 +460,9 @@ bary_small_rshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift, int sign_bit)
 {
     BDIGIT_DBL num = 0;
     BDIGIT x;
+
+    assert(0 <= shift && shift < BITSPERDIG);
+
     if (sign_bit) {
 	num = (~(BDIGIT_DBL)0) << BITSPERDIG;
     }
@@ -3187,6 +3191,104 @@ rb_str2inum(VALUE str, int base)
     return rb_str_to_inum(str, base, base==0);
 }
 
+static VALUE
+big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
+{
+    BDIGIT *xds, *zds;
+    long s1;
+    int s2;
+    VALUE z;
+    long xn;
+
+    if (LONG_MAX < shift_numdigits) {
+        rb_raise(rb_eArgError, "too big number");
+    }
+
+    s1 = shift_numdigits;
+    s2 = shift_numbits;
+
+    if (lshift_p) {
+        xn = RBIGNUM_LEN(x);
+        z = bignew(xn+s1+1, RBIGNUM_SIGN(x));
+        zds = BDIGITS(z);
+        MEMZERO(zds, BDIGIT, s1);
+        xds = BDIGITS(x);
+        zds[xn+s1] = bary_small_lshift(zds+s1, xds, xn, s2);
+    }
+    else {
+        long zn;
+        BDIGIT hibitsx;
+        if (s1 >= RBIGNUM_LEN(x)) {
+            if (RBIGNUM_POSITIVE_P(x) ||
+                bary_zero_p(BDIGITS(x), RBIGNUM_LEN(x)))
+                return INT2FIX(0);
+            else
+                return INT2FIX(-1);
+        }
+        hibitsx = abs2twocomp(&x, &xn);
+        xds = BDIGITS(x);
+        if (xn <= s1) {
+            return hibitsx ? INT2FIX(-1) : INT2FIX(0);
+        }
+        zn = xn - s1;
+        z = bignew(zn, 0);
+        zds = BDIGITS(z);
+        bary_small_rshift(zds, xds+s1, zn, s2, hibitsx != 0);
+        twocomp2abs_bang(z, hibitsx != 0);
+    }
+    RB_GC_GUARD(x);
+    return z;
+}
+
+static VALUE
+big_shift2(VALUE x, int lshift_p, VALUE y)
+{
+    int sign;
+    size_t lens[2];
+    size_t shift_numdigits;
+    int shift_numbits;
+
+    assert(POW2_P(CHAR_BIT));
+    assert(POW2_P(BITSPERDIG));
+
+    if (BIGZEROP(x))
+        return INT2FIX(0);
+    sign = rb_integer_pack(y, lens, numberof(lens), sizeof(size_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign < 0) {
+        lshift_p = !lshift_p;
+        sign = -sign;
+    }
+    if (lshift_p) {
+        if (1 < sign || CHAR_BIT <= lens[1])
+            rb_raise(rb_eRangeError, "shift width too big");
+    }
+    else {
+        if (1 < sign || CHAR_BIT <= lens[1])
+            return RBIGNUM_POSITIVE_P(x) ? INT2FIX(0) : INT2FIX(-1);
+    }
+    shift_numbits = lens[0] & (BITSPERDIG-1);
+    shift_numdigits = (lens[0] >> bitsize(BITSPERDIG-1)) |
+      (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bitsize(BITSPERDIG-1)));
+    return big_shift3(x, lshift_p, shift_numdigits, shift_numbits);
+}
+
+static VALUE
+big_lshift(VALUE x, unsigned long shift)
+{
+    long s1 = shift/BITSPERDIG;
+    int s2 = (int)(shift%BITSPERDIG);
+    return big_shift3(x, 1, s1, s2);
+}
+
+static VALUE
+big_rshift(VALUE x, unsigned long shift)
+{
+    long s1 = shift/BITSPERDIG;
+    int s2 = (int)(shift%BITSPERDIG);
+    return big_shift3(x, 0, s1, s2);
+}
+
 static inline int
 ones(register unsigned long x)
 {
@@ -4516,8 +4618,6 @@ big_split3(VALUE v, long n, volatile VALUE* p0, volatile VALUE* p1, volatile VAL
     *p2 = bigtrunc(v2);
 }
 
-static VALUE big_lshift(VALUE, unsigned long);
-static VALUE big_rshift(VALUE, unsigned long);
 static VALUE bigdivrem(VALUE, VALUE, volatile VALUE*, volatile VALUE*);
 
 static VALUE
@@ -5682,16 +5782,6 @@ rb_big_xor(VALUE x, VALUE y)
     return bignorm(z);
 }
 
-static VALUE
-check_shiftdown(VALUE y, VALUE x)
-{
-    if (!RBIGNUM_LEN(x)) return INT2FIX(0);
-    if (BIGSIZE(y) > SIZEOF_LONG) {
-	return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(-1);
-    }
-    return Qnil;
-}
-
 /*
  * call-seq:
  *     big << numeric   ->  integer
@@ -5702,56 +5792,33 @@ check_shiftdown(VALUE y, VALUE x)
 VALUE
 rb_big_lshift(VALUE x, VALUE y)
 {
-    unsigned long shift;
-    int neg = 0;
+    int lshift_p;
+    size_t shift_numdigits;
+    int shift_numbits;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
 	    long l = FIX2LONG(y);
+            unsigned long shift;
 	    if (0 <= l) {
+		lshift_p = 1;
                 shift = l;
             }
             else {
-		neg = 1;
+		lshift_p = 0;
 		shift = 1+(unsigned long)(-(l+1));
 	    }
-	    break;
+            shift_numbits = shift & (BITSPERDIG-1);
+            shift_numdigits = shift >> bitsize(BITSPERDIG-1);
+            return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_TYPE_P(y, T_BIGNUM)) {
-	    if (!RBIGNUM_SIGN(y)) {
-		VALUE t = check_shiftdown(y, x);
-		if (!NIL_P(t)) return t;
-		neg = 1;
-	    }
-	    shift = big2ulong(y, "long");
-	    break;
+            return bignorm(big_shift2(x, 1, y));
 	}
 	y = rb_to_int(y);
     }
-
-    x = neg ? big_rshift(x, shift) : big_lshift(x, shift);
-    return bignorm(x);
 }
 
-static VALUE
-big_lshift(VALUE x, unsigned long shift)
-{
-    BDIGIT *xds, *zds;
-    long s1 = shift/BITSPERDIG;
-    int s2 = (int)(shift%BITSPERDIG);
-    VALUE z;
-    long len, i;
-
-    len = RBIGNUM_LEN(x);
-    z = bignew(len+s1+1, RBIGNUM_SIGN(x));
-    zds = BDIGITS(z);
-    for (i=0; i<s1; i++) {
-	*zds++ = 0;
-    }
-    xds = BDIGITS(x);
-    zds[len] = bary_small_lshift(zds, xds, len, s2);
-    return z;
-}
 
 /*
  * call-seq:
@@ -5763,69 +5830,31 @@ big_lshift(VALUE x, unsigned long shift)
 VALUE
 rb_big_rshift(VALUE x, VALUE y)
 {
-    unsigned long shift;
-    int neg = 0;
+    int lshift_p;
+    size_t shift_numdigits;
+    int shift_numbits;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
 	    long l = FIX2LONG(y);
+            unsigned long shift;
             if (0 <= l) {
+                lshift_p = 0;
                 shift = l;
             }
             else {
-		neg = 1;
+                lshift_p = 1;
 		shift = 1+(unsigned long)(-(l+1));
 	    }
-	    break;
+            shift_numbits = shift & (BITSPERDIG-1);
+            shift_numdigits = shift >> bitsize(BITSPERDIG-1);
+            return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_TYPE_P(y, T_BIGNUM)) {
-	    if (RBIGNUM_SIGN(y)) {
-		VALUE t = check_shiftdown(y, x);
-		if (!NIL_P(t)) return t;
-	    }
-	    else {
-		neg = 1;
-	    }
-	    shift = big2ulong(y, "long");
-	    break;
+            return bignorm(big_shift2(x, 0, y));
 	}
 	y = rb_to_int(y);
     }
-
-    x = neg ? big_lshift(x, shift) : big_rshift(x, shift);
-    return bignorm(x);
-}
-
-static VALUE
-big_rshift(VALUE x, unsigned long shift)
-{
-    BDIGIT *xds, *zds;
-    long s1 = shift/BITSPERDIG;
-    int s2 = (int)(shift%BITSPERDIG);
-    VALUE z;
-    long j;
-    long xl;
-    BDIGIT hibitsx;
-
-    if (s1 > RBIGNUM_LEN(x)) {
-	if (RBIGNUM_POSITIVE_P(x) || bary_zero_p(BDIGITS(x), RBIGNUM_LEN(x)))
-	    return INT2FIX(0);
-	else
-	    return INT2FIX(-1);
-    }
-    hibitsx = abs2twocomp(&x, &xl);
-    xds = BDIGITS(x);
-    j = xl - s1;
-    if (j <= 0) {
-	if (!hibitsx) return INT2FIX(0);
-	else return INT2FIX(-1);
-    }
-    z = bignew(j, 0);
-    zds = BDIGITS(z);
-    bary_small_rshift(zds, xds+s1, j, s2, hibitsx != 0);
-    twocomp2abs_bang(z, hibitsx != 0);
-    RB_GC_GUARD(x);
-    return z;
 }
 
 /*
