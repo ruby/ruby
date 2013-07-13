@@ -1,3 +1,9 @@
+Sat Jul 13 12:24:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32: move from ext/dl and ext/fiddle.  since ext/extmk.rb
+	  builds extensions in alphabetical order, compiled?('fiddle') under
+	  ext/dl makes no sense.
+
 Sat Jul 13 09:26:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (biglsh_bang): Removed.

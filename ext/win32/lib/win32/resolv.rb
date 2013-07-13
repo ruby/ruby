@@ -3,7 +3,6 @@
 
 =end
 
-require "fiddle/import"
 require 'win32/registry'
 
 module Win32
@@ -35,7 +34,7 @@ module Win32
     end
 
 module Kernel32
-  extend Fiddle::Importer
+  extend Importer
   dlload "kernel32"
 end
 getv = Kernel32.extern "int GetVersionExA(void *)", :stdcall
@@ -261,7 +260,7 @@ else
 
     module WsControl
       module WSock32
-        extend Fiddle::Importer
+        extend Importer
         dlload "wsock32.dll"
       end
       WsControl = WSock32.extern "int WsControl(int, int, void *, void *, void *, void *", :stdcall

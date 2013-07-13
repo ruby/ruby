@@ -1,11 +1,12 @@
-require 'dl/import'
+require 'win32/importer'
+
 module Win32
 
 =begin rdoc
 = Win32 Registry
 
 win32/registry is registry accessor library for Win32 platform.
-It uses dl/import to call Win32 Registry APIs.
+It uses importer to call Win32 Registry APIs.
 
 == example
   Win32::Registry::HKEY_CURRENT_USER.open('SOFTWARE\foo') do |reg|
@@ -166,7 +167,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     class Error < ::StandardError
       module Kernel32
-        extend DL::Importer
+        extend Importer
         dlload "kernel32.dll"
       end
       FormatMessageW = Kernel32.extern "int FormatMessageW(int, void *, int, int, void *, int, void *)", :stdcall
@@ -211,7 +212,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Win32 APIs
     #
     module API
-      extend DL::Importer
+      extend Importer
       dlload "advapi32.dll"
       [
         "long RegOpenKeyExW(void *, void *, long, long, void *)",
