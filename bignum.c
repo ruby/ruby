@@ -441,9 +441,9 @@ maxpow_in_bdigit(int base, int *exp_ret)
 }
 
 static BDIGIT
-bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
+bary_small_lshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift)
 {
-    long i;
+    size_t i;
     BDIGIT_DBL num = 0;
 
     for (i=0; i<n; i++) {
@@ -455,7 +455,7 @@ bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
 }
 
 static void
-bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
+bary_small_rshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift, int sign_bit)
 {
     BDIGIT_DBL num = 0;
     BDIGIT x;
