@@ -4477,65 +4477,6 @@ big_split(VALUE v, long n, volatile VALUE *ph, volatile VALUE *pl)
 }
 
 static void
-biglsh_bang(BDIGIT *xds, long xn, unsigned long shift)
-{
-    long const s1 = shift/BITSPERDIG;
-    int const s2 = (int)(shift%BITSPERDIG);
-    int const s3 = BITSPERDIG-s2;
-    BDIGIT* zds;
-    BDIGIT num;
-    if (s1 >= xn) {
-	MEMZERO(xds, BDIGIT, xn);
-	return;
-    }
-    if (s2 == 0) {
-        MEMMOVE(xds + s1, xds, BDIGIT, xn - s1);
-    }
-    else {
-        zds = xds + xn - 1;
-        xn -= s1 + 1;
-        num = BIGLO(xds[xn]<<s2);
-        while (0 < xn) {
-            *zds-- = num | xds[--xn]>>s3;
-            num = BIGLO(xds[xn]<<s2);
-        }
-        assert(xds <= zds);
-        *zds = num;
-    }
-    MEMZERO(xds, BDIGIT, s1);
-}
-
-static void
-bigrsh_bang(BDIGIT* xds, long xn, unsigned long shift)
-{
-    long s1 = shift/BITSPERDIG;
-    int s2 = (int)(shift%BITSPERDIG);
-    int s3 = BITSPERDIG - s2;
-    int i;
-    BDIGIT num;
-    BDIGIT* zds;
-    if (s1 >= xn) {
-	MEMZERO(xds, BDIGIT, xn);
-	return;
-    }
-    if (s2 == 0) {
-        MEMMOVE(xds, xds + s1, BDIGIT, xn - s1);
-    }
-    else {
-        i = 0;
-        zds = xds + s1;
-        num = *zds++>>s2;
-        while (i < xn - s1 - 1) {
-            xds[i++] = BIGLO(*zds<<s3) | num;
-            num = *zds++>>s2;
-        }
-        assert(i < xn);
-        xds[i] = num;
-    }
-    MEMZERO(xds + xn - s1, BDIGIT, s1);
-}
-
-static void
 big_split3(VALUE v, long n, volatile VALUE* p0, volatile VALUE* p1, volatile VALUE* p2)
 {
     VALUE v0, v12, v1, v2;
@@ -4621,7 +4562,7 @@ bigmul1_toom3(VALUE x, VALUE y)
 	rb_big_resize(u3, RBIGNUM_LEN(u3) + 1);
 	BDIGITS(u3)[RBIGNUM_LEN(u3)-1] = 0;
     }
-    biglsh_bang(BDIGITS(u3), RBIGNUM_LEN(u3), 1);
+    bary_small_lshift(BDIGITS(u3), BDIGITS(u3), RBIGNUM_LEN(u3), 1);
     u3 = bigtrunc(bigadd(bigtrunc(u3), x0, 0));
 
     if (x == y) {
@@ -4643,7 +4584,7 @@ bigmul1_toom3(VALUE x, VALUE y)
 	    rb_big_resize(v3, RBIGNUM_LEN(v3) + 1);
 	    BDIGITS(v3)[RBIGNUM_LEN(v3)-1] = 0;
 	}
-	biglsh_bang(BDIGITS(v3), RBIGNUM_LEN(v3), 1);
+	bary_small_lshift(BDIGITS(v3), BDIGITS(v3), RBIGNUM_LEN(v3), 1);
 	v3 = bigtrunc(bigadd(bigtrunc(v3), y0, 0));
     }
 
@@ -4682,14 +4623,14 @@ bigmul1_toom3(VALUE x, VALUE y)
 
     /* z1 <- (z(1) - z(-1)) / 2 == (u1 - u2) / 2 */
     z1 = bigtrunc(bigadd(u1, u2, 0));
-    bigrsh_bang(BDIGITS(z1), RBIGNUM_LEN(z1), 1);
+    bary_small_rshift(BDIGITS(z1), BDIGITS(z1), RBIGNUM_LEN(z1), 1, 0);
 
     /* z2 <- z(-1) - z(0) == u2 - u0 */
     z2 = bigtrunc(bigadd(u2, u0, 0));
 
     /* z3 <- (z2 - z3) / 2 + 2 * z(inf) == (z2 - z3) / 2 + 2 * u4 */
     z3 = bigtrunc(bigadd(z2, z3, 0));
-    bigrsh_bang(BDIGITS(z3), RBIGNUM_LEN(z3), 1);
+    bary_small_rshift(BDIGITS(z3), BDIGITS(z3), RBIGNUM_LEN(z3), 1, 0);
     t = big_lshift(u4, 1); /* TODO: combining with next addition */
     z3 = bigtrunc(bigadd(z3, t, 1));
 

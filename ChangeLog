@@ -1,3 +1,9 @@
+Sat Jul 13 09:26:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (biglsh_bang): Removed.
+	  (bigrsh_bang): Ditto.
+	  (bigmul1_toom3): Use bary_small_lshift and bary_small_rshift.
+
 Sat Jul 13 01:04:43 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rubygems/psych_additions.rb: Ignore Psych docs here
