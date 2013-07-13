@@ -1,3 +1,7 @@
+Sat Jul 13 23:41:25 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (date_zone_to_diff): [ruby-core:55831].
+
 Sat Jul 13 23:34:13 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c: Fix rdoc for Kernel#<=>. [Fix GH-352]

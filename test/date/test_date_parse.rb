@@ -578,6 +578,15 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal(d2, d1)
   end
 
+  def test__parse_odd_offset
+    h = DateTime._parse('2001-02-03T04:05:06+1')
+    assert_equal(3600, h[:offset])
+    h = DateTime._parse('2001-02-03T04:05:06+123')
+    assert_equal(4980, h[:offset])
+    h = DateTime._parse('2001-02-03T04:05:06+12345')
+    assert_equal(5025, h[:offset])
+  end
+
   require 'time'
 
   def test_parse__time
