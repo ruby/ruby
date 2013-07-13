@@ -1,3 +1,8 @@
+Sun Jul 14 00:18:08 2013  Zachary Scott  <e@zzak.io>
+
+	* sprintf.c: Fix typo patch by @hynkle [Fixes GH-357]
+	  https://github.com/ruby/ruby/pull/357
+
 Sun Jul 14 00:17:07 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* man/ri.1: Incorrect use of .Dd macro [Bug #8620] by Tristan Hill
