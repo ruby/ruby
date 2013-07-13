@@ -1,3 +1,7 @@
+Sun Jul 14 00:17:07 2013  Zachary Scott  <zachary@zacharyscott.net>
+
+	* man/ri.1: Incorrect use of .Dd macro [Bug #8620] by Tristan Hill
+
 Sun Jul 14 00:15:26 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/logger.rb: Use :call-seq: for method signature rdoc
