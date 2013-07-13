@@ -5889,9 +5889,9 @@ static VALUE
 rb_big_aref(VALUE x, VALUE y)
 {
     BDIGIT *xds;
-    BDIGIT_DBL num;
     unsigned long shift;
     long i, s1, s2;
+    BDIGIT bit;
 
     if (RB_TYPE_P(y, T_BIGNUM)) {
 	if (!RBIGNUM_SIGN(y))
@@ -5910,21 +5910,19 @@ rb_big_aref(VALUE x, VALUE y)
     }
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
+    bit = (BDIGIT)1 << s2;
 
     if (s1 >= RBIGNUM_LEN(x)) goto out_of_range;
-    if (!RBIGNUM_SIGN(x)) {
-	xds = BDIGITS(x);
-	i = 0; num = 1;
-	while (num += BIGLO(~xds[i]), ++i <= s1) {
-	    num = BIGDN(num);
-	}
-    }
-    else {
-	num = BDIGITS(x)[s1];
-    }
-    if (num & ((BDIGIT_DBL)1<<s2))
-	return INT2FIX(1);
-    return INT2FIX(0);
+
+    xds = BDIGITS(x);
+    if (RBIGNUM_POSITIVE_P(x))
+        return (xds[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+    if (xds[s1] & (bit-1))
+        return (xds[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+    for (i = 0; i < s1; i++)
+        if (xds[i])
+            return (xds[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
+    return (xds[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
 }
 
 /*
