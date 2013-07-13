@@ -114,8 +114,6 @@ STATIC_ASSERT(rbignum_embed_len_max, RBIGNUM_EMBED_LEN_MAX <= (RBIGNUM_EMBED_LEN
 
 typedef void (mulfunc_t)(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl);
 
-static BDIGIT bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift);
-static void bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit);
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
@@ -442,6 +440,35 @@ maxpow_in_bdigit(int base, int *exp_ret)
     return maxpow;
 }
 
+static BDIGIT
+bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
+{
+    long i;
+    BDIGIT_DBL num = 0;
+
+    for (i=0; i<n; i++) {
+	num = num | (BDIGIT_DBL)*xds++ << shift;
+	*zds++ = BIGLO(num);
+	num = BIGDN(num);
+    }
+    return BIGLO(num);
+}
+
+static void
+bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
+{
+    BDIGIT_DBL num = 0;
+    BDIGIT x;
+    if (sign_bit) {
+	num = (~(BDIGIT_DBL)0) << BITSPERDIG;
+    }
+    while (n--) {
+	num = (num | xds[n]) >> shift;
+        x = xds[n];
+	zds[n] = BIGLO(num);
+	num = BIGUP(x);
+    }
+}
 
 static int
 bary_zero_p(BDIGIT *xds, size_t nx)
@@ -5706,20 +5733,6 @@ rb_big_lshift(VALUE x, VALUE y)
     return bignorm(x);
 }
 
-static BDIGIT
-bary_small_lshift(BDIGIT *zds, BDIGIT *xds, long n, int shift)
-{
-    long i;
-    BDIGIT_DBL num = 0;
-
-    for (i=0; i<n; i++) {
-	num = num | (BDIGIT_DBL)*xds++ << shift;
-	*zds++ = BIGLO(num);
-	num = BIGDN(num);
-    }
-    return BIGLO(num);
-}
-
 static VALUE
 big_lshift(VALUE x, unsigned long shift)
 {
@@ -5781,22 +5794,6 @@ rb_big_rshift(VALUE x, VALUE y)
 
     x = neg ? big_lshift(x, shift) : big_rshift(x, shift);
     return bignorm(x);
-}
-
-static void
-bary_small_rshift(BDIGIT *zds, BDIGIT *xds, long n, int shift, int sign_bit)
-{
-    BDIGIT_DBL num = 0;
-    BDIGIT x;
-    if (sign_bit) {
-	num = (~(BDIGIT_DBL)0) << BITSPERDIG;
-    }
-    while (n--) {
-	num = (num | xds[n]) >> shift;
-        x = xds[n];
-	zds[n] = BIGLO(num);
-	num = BIGUP(x);
-    }
 }
 
 static VALUE
