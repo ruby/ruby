@@ -179,9 +179,10 @@ module JSON
   end
 
   # Generate a JSON document from the Ruby data structure _obj_ and return
-  # it. _state_ is * a JSON::State object,
+  # it. _state_ is
+  # * a JSON::State object,
   # * or a Hash like object (responding to to_hash),
-  # * an object convertible into a hash by a to_h method,
+  # * or an object convertible into a hash by a to_h method,
   # that is used as or to configure a State object.
   #
   # It defaults to a state object, that creates the shortest possible JSON text
