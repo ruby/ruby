@@ -2335,11 +2335,11 @@ biglsh_bang(BDIGIT *xds, long xn, unsigned long shift)
     zds = xds + xn - 1;
     xn -= s1 + 1;
     num = xds[xn]<<s2;
-    do {
+    while (0 < xn) {
 	*zds-- = num | xds[--xn]>>s3;
 	num = xds[xn]<<s2;
     }
-    while (xn > 0);
+    assert(xds <= zds);
     *zds = num;
     for (i = s1; i > 0; --i)
 	*zds-- = 0;
@@ -2362,11 +2362,11 @@ bigrsh_bang(BDIGIT* xds, long xn, unsigned long shift)
     i = 0;
     zds = xds + s1;
     num = *zds++>>s2;
-    do {
+    while (i < xn - s1 - 1) {
 	xds[i++] = (BDIGIT)(*zds<<s3) | num;
 	num = *zds++>>s2;
     }
-    while (i < xn - s1 - 1);
+    assert(i < xn);
     xds[i] = num;
     MEMZERO(xds + xn - s1, BDIGIT, s1);
 }

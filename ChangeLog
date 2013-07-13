@@ -1,3 +1,11 @@
+Sat Jul 13 23:16:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigrsh_bang): Fix bignum digits overrun.
+
+Sat Jul 13 23:16:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (biglsh_bang): Fix bignum digits under-run.
+
 Sat Jul 13 22:45:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_DTRACE_POSTPROCESS): dtrace version SUN D 1.11
