@@ -1,3 +1,10 @@
+Sun Jul 14 00:13:01 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/http/test_http.rb (TestNetHTTP_v1_2#test_get,
+	  TestNetHTTP_v1_2_chunked#test_get): shouldn't check
+	  HttpResponse#decode_content if Zlib is not available.
+	  ko1 complained via IRC.
+
 Sat Jul 13 23:50:00 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: fixed coding error [ruby-core:55337].
