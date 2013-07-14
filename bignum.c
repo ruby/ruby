@@ -1137,19 +1137,19 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
             }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGITS
             if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
-                BDIGIT u = *(uint16_t *)buf;
+                uint16_t u = *(uint16_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap16(u) : u, sizeof(uint16_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGITS
             if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
-                BDIGIT u = *(uint32_t *)buf;
+                uint32_t u = *(uint32_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap32(u) : u, sizeof(uint32_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGITS
             if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
-                BDIGIT u = *(uint64_t *)buf;
+                uint64_t u = *(uint64_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap64(u) : u, sizeof(uint64_t), flags, dp);
             }
 #endif
@@ -3307,7 +3307,7 @@ big_rshift(VALUE x, unsigned long shift)
 static inline int
 ones(register unsigned long x)
 {
-#if GCC_VERSION_SINCE(3, 4, 0)
+#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNTL
     return  __builtin_popcountl(x);
 #else
 #   if SIZEOF_LONG == 8

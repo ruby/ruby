@@ -82,7 +82,7 @@ extern "C" {
 #endif
 
 #ifndef swap32
-# if GCC_VERSION_SINCE(4,3,0)
+# ifdef HAVE_BUILTIN___BUILTIN_BSWAP32
 #  define swap32(x) __builtin_bswap32(x)
 # endif
 #endif
@@ -95,7 +95,7 @@ extern "C" {
 #endif
 
 #ifndef swap64
-# if GCC_VERSION_SINCE(4,3,0)
+# ifdef HAVE_BUILTIN___BUILTIN_BSWAP64
 #  define swap64(x) __builtin_bswap64(x)
 # endif
 #endif

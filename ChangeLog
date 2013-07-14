@@ -1,3 +1,17 @@
+Sun Jul 14 23:21:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Check __builtin_popcountl, __builtin_bswap32 and
+	  __builtin_bswap64.
+
+	* internal.h (swap32): Use the configure result for the condition to
+	  use __builtin_bswap32.
+	  (swap64): Use the configure result for the condition to use
+	  __builtin_bswap64.
+
+	* bignum.c (ones): Use the configure result for the condition to use
+	  __builtin_popcountl.
+	  (bary_unpack_internal): Use appropriate types for swap argument.
+
 Sun Jul 14 22:21:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_subb): Support xn < yn.
