@@ -135,13 +135,20 @@ enc_check_encoding(VALUE obj)
     return check_encoding(RDATA(obj)->data);
 }
 
+NORETURN(static void not_encoding(VALUE enc));
+static void
+not_encoding(VALUE enc)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Encoding)",
+	     rb_obj_class(enc));
+}
+
 static rb_encoding *
 must_encoding(VALUE enc)
 {
     int index = enc_check_encoding(enc);
     if (index < 0) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding)",
-		 rb_obj_classname(enc));
+	not_encoding(enc);
     }
     return DATA_PTR(enc);
 }
@@ -1023,10 +1030,19 @@ rb_enc_tolower(int c, rb_encoding *enc)
 static VALUE
 enc_inspect(VALUE self)
 {
+    rb_encoding *enc;
+
+    if (!is_data_encoding(self)) {
+	not_encoding(self);
+    }
+    if (!(enc = DATA_PTR(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
+	rb_raise(rb_eTypeError, "broken Encoding");
+    }
     return rb_enc_sprintf(rb_usascii_encoding(),
-			  "#<%"PRIsVALUE":%s%s>", rb_obj_class(self),
-			  rb_enc_name((rb_encoding*)DATA_PTR(self)),
-			  (enc_dummy_p(self) ? " (dummy)" : ""));
+			  "#<%"PRIsVALUE":%s%s%s>", rb_obj_class(self),
+			  rb_enc_name(enc),
+			  (ENC_DUMMY_P(enc) ? " (dummy)" : ""),
+			  enc_autoload_p(enc) ? " (autoload)" : "");
 }
 
 /*

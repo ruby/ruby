@@ -1,4 +1,6 @@
-Mon Jul 15 02:31:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 15 02:32:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_inspect): defer loading autoloaded encoding.
 
 	* encoding.c (enc_check_encoding): use is_data_encoding() to check
 	  type consistently.
