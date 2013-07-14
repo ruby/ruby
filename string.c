@@ -1482,6 +1482,15 @@ rb_string_value_ptr(volatile VALUE *ptr)
     return RSTRING_PTR(str);
 }
 
+static int
+zero_filled(const char *s, int n)
+{
+    for (; n > 0; --n) {
+	if (*s++) return 0;
+    }
+    return 1;
+}
+
 static const char *
 str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 {
@@ -1489,30 +1498,22 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
     const char *e = s + len;
 
     for (; s + minlen <= e; s += n) {
-	if (!rb_enc_codepoint_len(s, e, &n, enc)) return s;
+	if (zero_filled(s, minlen)) return s;
     }
     return 0;
 }
 
 static char *
-str_fill_term(VALUE str, char *s, long len, int termlen, rb_encoding *enc)
+str_fill_term(VALUE str, char *s, long len, int oldtermlen, int termlen)
 {
-    int oldtermlen = rb_enc_mbminlen(enc);
-    long capa = rb_str_capacity(str) + oldtermlen;
-    int n;
+    long capa = rb_str_capacity(str) + 1;
 
     if (capa < len + termlen) {
-	rb_str_modify_expand(str, len + termlen - capa);
+	rb_str_modify_expand(str, termlen);
     }
-    else {
-	const char *e = s + len;
-	int diff = 0;
-	if (termlen > oldtermlen) diff = termlen - oldtermlen;
-	if (!diff && str_independent(str) &&
-	    !rb_enc_ascget(e, e + oldtermlen, &n, enc)) {
-	    return s;
-	}
-	str_make_independent_expand(str, diff);
+    else if (!str_independent(str)) {
+	if (zero_filled(s + len, termlen)) return s;
+	str_make_independent(str);
     }
     s = RSTRING_PTR(str);
     TERM_FILL(s + len, termlen);
@@ -1532,7 +1533,7 @@ rb_string_value_cstr(volatile VALUE *ptr)
 	if (str_null_char(s, len, minlen, enc)) {
 	    rb_raise(rb_eArgError, "string contains null char");
 	}
-	return str_fill_term(str, s, len, minlen, enc);
+	return str_fill_term(str, s, len, minlen, minlen);
     }
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
@@ -1551,7 +1552,7 @@ rb_str_fill_terminator(VALUE str, const int newminlen)
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
     rb_encoding *enc = rb_enc_get(str);
-    str_fill_term(str, s, len, newminlen, enc);
+    str_fill_term(str, s, len, rb_enc_mbminlen(enc), newminlen);
 }
 
 VALUE

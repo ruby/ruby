@@ -1,4 +1,8 @@
-Mon Jul 15 02:21:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 15 02:21:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_fill_term): consider old terminator length, and should
+	  not use rb_enc_ascget since it depends on the current encoding which
+	  may not be compatible with the new terminator.  [Bug #8634]
 
 	* encoding.c (enc_inspect): use PRIsVALUE to preserve the result
 	  encoding.
