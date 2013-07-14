@@ -1,4 +1,6 @@
-Mon Jul 15 02:32:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 15 02:32:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_init): no longer needs NO_PRESERVED_ENCODING.
 
 	* encoding.c (enc_inspect): defer loading autoloaded encoding.
 

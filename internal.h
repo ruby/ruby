@@ -205,7 +205,6 @@ enum ruby_preserved_encindex {
     ENCINDEX_UTF_8,
     ENCINDEX_US_ASCII,
 
-#ifndef NO_PRESERVED_ENCODING
     /* preserved indexes */
     ENCINDEX_UTF_16BE,
     ENCINDEX_UTF_16LE,
@@ -218,7 +217,6 @@ enum ruby_preserved_encindex {
     /* for old options of regexp */
     ENCINDEX_EUC_JP,
     ENCINDEX_Windows_31J,
-#endif
 
     ENCINDEX_BUILTIN_MAX
 };

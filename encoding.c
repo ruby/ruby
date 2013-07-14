@@ -564,7 +564,6 @@ rb_enc_init(void)
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
 #undef ENC_REGISTER
-#ifndef NO_PRESERVED_ENCODING
 #define ENCDB_REGISTER(name, enc) enc_register_at(ENCINDEX_##enc, name, NULL)
     ENCDB_REGISTER("UTF-16BE", UTF_16BE);
     ENCDB_REGISTER("UTF-16LE", UTF_16LE);
@@ -577,7 +576,6 @@ rb_enc_init(void)
     ENCDB_REGISTER("EUC-JP", EUC_JP);
     ENCDB_REGISTER("Windows-31J", Windows_31J);
 #undef ENCDB_REGISTER
-#endif
     enc_table.count = ENCINDEX_BUILTIN_MAX;
 }
 
