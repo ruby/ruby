@@ -534,7 +534,7 @@ ruby_signal(int signum, sighandler_t handler)
        )
 	sigact.sa_flags |= SA_ONSTACK;
 #endif
-    VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
+    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
 	    rb_bug_errno("sigaction", errno);
