@@ -755,8 +755,14 @@ rb_enc_get_index(VALUE obj)
 }
 
 static void
-enc_set_index(VALUE obj, int idx)
+enc_set_index(VALUE obj, int oldidx, int idx, rb_encoding *enc)
 {
+    int termlen = rb_enc_mbminlen(enc);
+    int oldtermlen = rb_enc_mbminlen(rb_enc_from_index(oldidx));
+
+    if (oldtermlen < termlen && RB_TYPE_P(obj, T_STRING)) {
+	rb_str_fill_terminator(obj, termlen);
+    }
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET_INLINED(obj, idx);
 	return;
@@ -769,15 +775,14 @@ void
 rb_enc_set_index(VALUE obj, int idx)
 {
     rb_check_frozen(obj);
-    must_encindex(idx);
-    enc_set_index(obj, idx);
+    enc_set_index(obj, ENCODING_GET(obj), idx, must_encindex(idx));
 }
 
 VALUE
 rb_enc_associate_index(VALUE obj, int idx)
 {
     rb_encoding *enc;
-    int oldidx, oldtermlen, termlen;
+    int oldidx;
 
 /*    enc_check_capable(obj);*/
     rb_check_frozen(obj);
@@ -792,12 +797,7 @@ rb_enc_associate_index(VALUE obj, int idx)
 	!rb_enc_asciicompat(enc)) {
 	ENC_CODERANGE_CLEAR(obj);
     }
-    termlen = rb_enc_mbminlen(enc);
-    oldtermlen = rb_enc_mbminlen(rb_enc_from_index(oldidx));
-    if (oldtermlen < termlen && RB_TYPE_P(obj, T_STRING)) {
-	rb_str_fill_terminator(obj, termlen);
-    }
-    enc_set_index(obj, idx);
+    enc_set_index(obj, oldidx, idx, enc);
     return obj;
 }
 

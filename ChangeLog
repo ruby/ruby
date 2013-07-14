@@ -1,3 +1,8 @@
+Mon Jul 15 02:21:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_set_index): deal with terminator so that
+	  rb_enc_set_index also works.
+
 Sun Jul 14 23:21:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Check __builtin_popcountl, __builtin_bswap32 and
