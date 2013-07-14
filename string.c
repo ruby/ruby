@@ -1494,10 +1494,9 @@ zero_filled(const char *s, int n)
 static const char *
 str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 {
-    int n;
     const char *e = s + len;
 
-    for (; s + minlen <= e; s += n) {
+    for (; s + minlen <= e; s += rb_enc_mbclen(s, e, enc)) {
 	if (zero_filled(s, minlen)) return s;
     }
     return 0;
