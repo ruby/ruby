@@ -1,4 +1,7 @@
-Mon Jul 15 02:21:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 15 02:21:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_inspect): use PRIsVALUE to preserve the result
+	  encoding.
 
 	* encoding.c (enc_set_index): deal with terminator so that
 	  rb_enc_set_index also works.

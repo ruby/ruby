@@ -1023,11 +1023,10 @@ rb_enc_tolower(int c, rb_encoding *enc)
 static VALUE
 enc_inspect(VALUE self)
 {
-    VALUE str = rb_sprintf("#<%s:%s%s>", rb_obj_classname(self),
-		      rb_enc_name((rb_encoding*)DATA_PTR(self)),
-		      (enc_dummy_p(self) ? " (dummy)" : ""));
-    ENCODING_CODERANGE_SET(str, ENCINDEX_US_ASCII, ENC_CODERANGE_7BIT);
-    return str;
+    return rb_enc_sprintf(rb_usascii_encoding(),
+			  "#<%"PRIsVALUE":%s%s>", rb_obj_class(self),
+			  rb_enc_name((rb_encoding*)DATA_PTR(self)),
+			  (enc_dummy_p(self) ? " (dummy)" : ""));
 }
 
 /*
