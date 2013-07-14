@@ -129,13 +129,13 @@ check_encoding(rb_encoding *enc)
 static int
 enc_check_encoding(VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj) || !rb_typeddata_is_kind_of(obj, &encoding_data_type)) {
+    if (!is_data_encoding(obj)) {
 	return -1;
     }
     return check_encoding(RDATA(obj)->data);
 }
 
-static int
+static rb_encoding *
 must_encoding(VALUE enc)
 {
     int index = enc_check_encoding(enc);
@@ -143,7 +143,7 @@ must_encoding(VALUE enc)
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding)",
 		 rb_obj_classname(enc));
     }
-    return index;
+    return DATA_PTR(enc);
 }
 
 static rb_encoding *
@@ -456,7 +456,7 @@ rb_encdb_dummy(const char *name)
 static VALUE
 enc_dummy_p(VALUE enc)
 {
-    return ENC_DUMMY_P(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
+    return ENC_DUMMY_P(must_encoding(enc)) ? Qtrue : Qfalse;
 }
 
 /*
@@ -472,7 +472,7 @@ enc_dummy_p(VALUE enc)
 static VALUE
 enc_ascii_compatible_p(VALUE enc)
 {
-    return rb_enc_asciicompat(enc_table.list[must_encoding(enc)].enc) ? Qtrue : Qfalse;
+    return rb_enc_asciicompat(must_encoding(enc)) ? Qtrue : Qfalse;
 }
 
 /*

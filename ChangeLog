@@ -1,3 +1,17 @@
+Mon Jul 15 02:31:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_check_encoding): use is_data_encoding() to check
+	  type consistently.
+
+	* encoding.c (must_encoding): return rb_encoding* instead of encoding
+	  index.
+
+	* encoding.c (enc_check_encoding): use is_data_encoding() to check
+	  type consistently.
+
+	* encoding.c (must_encoding): return rb_encoding* instead of encoding
+	  index.
+
 Mon Jul 15 02:21:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_fill_term): consider old terminator length, and should
