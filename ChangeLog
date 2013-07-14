@@ -1,3 +1,11 @@
+Mon Jul 15 02:47:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* localeinit.c (rb_locale_charmap, Init_enc_set_filesystem_encoding):
+	  move from encoding.c.
+
+	* miniinit.c (rb_locale_charmap, Init_enc_set_filesystem_encoding):
+	  define miniruby specific functions only.
+
 Mon Jul 15 02:32:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_init): no longer needs NO_PRESERVED_ENCODING.

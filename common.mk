@@ -33,7 +33,7 @@ MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      =
 DLDOBJS	      = $(DMYEXT)
 EXTSOLIBS     =
-MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyloadpath.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
 
 COMMONOBJS    = array.$(OBJEXT) \
@@ -43,6 +43,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		complex.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		dln_find.$(OBJEXT) \
+		encoding.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
@@ -99,7 +100,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(MISSING)
 
 EXPORTOBJS    = $(DLNOBJ) \
-		encoding.$(OBJEXT) \
+		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
 		$(COMMONOBJS)
 
@@ -659,9 +660,6 @@ dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
 dln_find.$(OBJEXT): {$(VPATH)}dln_find.c {$(VPATH)}dln.h $(RUBY_H_INCLUDES)
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c $(RUBY_H_INCLUDES)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
-dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c $(RUBY_H_INCLUDES) \
-  {$(VPATH)}regenc.h {$(VPATH)}util.h $(ENCODING_H_INCLUDES) \
-  {$(VPATH)}encoding.c {$(VPATH)}internal.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}regenc.h {$(VPATH)}util.h \
   {$(VPATH)}internal.h
@@ -777,7 +775,10 @@ version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c $(RUBY_H_INCLUDES) \
   $(srcdir)/include/ruby/version.h $(srcdir)/version.h {$(VPATH)}config.h \
   verconf.h
-dmyloadpath.$(OBJEXT): {$(VPATH)}dmyloadpath.c
+localeinit.$(OBJEXT): {$(VPATH)}localeinit.c $(RUBY_H_INCLUDES) \
+  $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
+miniinit.$(OBJEXT): {$(VPATH)}miniinit.c $(RUBY_H_INCLUDES) \
+  $(ENCODING_H_INCLUDES)
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}iseq.h \
   $(RUBY_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}insns.inc \

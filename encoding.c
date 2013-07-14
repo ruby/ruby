@@ -14,14 +14,6 @@
 #include "internal.h"
 #include "regenc.h"
 #include <ctype.h>
-#ifndef NO_LOCALE_CHARMAP
-#ifdef __CYGWIN__
-#include <windows.h>
-#endif
-#ifdef HAVE_LANGINFO_H
-#include <langinfo.h>
-#endif
-#endif
 #include "ruby/util.h"
 
 #undef rb_ascii8bit_encindex
@@ -1269,25 +1261,6 @@ rb_locale_encoding(void)
     return rb_enc_from_index(rb_locale_encindex());
 }
 
-static int
-enc_set_filesystem_encoding(void)
-{
-    int idx;
-#if defined NO_LOCALE_CHARMAP
-    idx = rb_enc_to_index(rb_default_external_encoding());
-#elif defined _WIN32 || defined __CYGWIN__
-    char cp[sizeof(int) * 8 / 3 + 4];
-    snprintf(cp, sizeof cp, "CP%d", AreFileApisANSI() ? GetACP() : GetOEMCP());
-    idx = rb_enc_find_index(cp);
-    if (idx < 0) idx = ENCINDEX_ASCII;
-#else
-    idx = rb_enc_to_index(rb_default_external_encoding());
-#endif
-
-    enc_alias_internal("filesystem", idx);
-    return idx;
-}
-
 int
 rb_filesystem_encindex(void)
 {
@@ -1309,6 +1282,8 @@ struct default_encoding {
 };
 
 static struct default_encoding default_external = {0};
+
+extern int Init_enc_set_filesystem_encoding(void);
 
 static int
 enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
@@ -1332,7 +1307,7 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
     }
 
     if (def == &default_external)
-	enc_set_filesystem_encoding();
+	enc_alias_internal("filesystem", Init_enc_set_filesystem_encoding());
 
     return overridden;
 }
@@ -1529,32 +1504,7 @@ set_default_internal(VALUE klass, VALUE encoding)
  *
  */
 VALUE
-rb_locale_charmap(VALUE klass)
-{
-#if defined NO_LOCALE_CHARMAP
-    return rb_usascii_str_new2("ASCII-8BIT");
-#elif defined _WIN32 || defined __CYGWIN__
-    const char *codeset = 0;
-    char cp[sizeof(int) * 3 + 4];
-# ifdef __CYGWIN__
-    const char *nl_langinfo_codeset(void);
-    codeset = nl_langinfo_codeset();
-# endif
-    if (!codeset) {
-	UINT codepage = GetConsoleCP();
-	if (!codepage) codepage = GetACP();
-	snprintf(cp, sizeof(cp), "CP%d", codepage);
-	codeset = cp;
-    }
-    return rb_usascii_str_new2(codeset);
-#elif defined HAVE_LANGINFO_H
-    char *codeset;
-    codeset = nl_langinfo(CODESET);
-    return rb_usascii_str_new2(codeset);
-#else
-    return Qnil;
-#endif
-}
+rb_locale_charmap(VALUE klass);
 
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
