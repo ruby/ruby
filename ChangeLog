@@ -1,3 +1,10 @@
+Sun Jul 14 22:21:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_subb): Support xn < yn.
+	  (bigsub_core): Removed.
+	  (bigsub): Don't compare before subtraction.  Just subtract and
+	  get the two's complement if the subtraction causes a borrow.
+
 Sun Jul 14 00:36:03 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (DIGSPERLONG): Unused macro removed.

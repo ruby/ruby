@@ -1353,21 +1353,33 @@ bary_subb(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn
 {
     BDIGIT_DBL_SIGNED num;
     size_t i;
+    size_t sn;
 
-    assert(yn <= xn);
     assert(xn <= zn);
+    assert(yn <= zn);
+
+    sn = xn < yn ? xn : yn;
 
     num = borrow ? -1 : 0;
-    for (i = 0; i < yn; i++) {
+    for (i = 0; i < sn; i++) {
 	num += (BDIGIT_DBL_SIGNED)xds[i] - yds[i];
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     }
-    for (; i < xn; i++) {
-        if (num == 0) goto num_is_zero;
-	num += xds[i];
-	zds[i] = BIGLO(num);
-	num = BIGDN(num);
+    if (yn <= xn) {
+        for (; i < xn; i++) {
+            if (num == 0) goto num_is_zero;
+            num += xds[i];
+            zds[i] = BIGLO(num);
+            num = BIGDN(num);
+        }
+    }
+    else {
+        for (; i < yn; i++) {
+            num -= yds[i];
+            zds[i] = BIGLO(num);
+            num = BIGDN(num);
+        }
     }
     if (num == 0) goto num_is_zero;
     for (; i < zn; i++) {
@@ -4237,42 +4249,27 @@ rb_big_neg(VALUE x)
     return bignorm(z);
 }
 
-static void
-bigsub_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
-{
-    bary_sub(zds, zn, xds, xn, yds, yn);
-}
-
 static VALUE
 bigsub(VALUE x, VALUE y)
 {
-    VALUE z = 0;
-    long i = RBIGNUM_LEN(x);
-    BDIGIT *xds, *yds;
+    VALUE z;
+    BDIGIT *xds, *yds, *zds;
+    long xn, yn, zn;
 
-    /* if x is smaller than y, swap */
-    if (RBIGNUM_LEN(x) < RBIGNUM_LEN(y)) {
-	z = x; x = y; y = z;	/* swap x y */
-    }
-    else if (RBIGNUM_LEN(x) == RBIGNUM_LEN(y)) {
-	xds = BDIGITS(x);
-	yds = BDIGITS(y);
-	while (i > 0) {
-	    i--;
-	    if (xds[i] > yds[i]) {
-		break;
-	    }
-	    if (xds[i] < yds[i]) {
-		z = x; x = y; y = z;	/* swap x y */
-		break;
-	    }
-	}
-    }
+    xn = RBIGNUM_LEN(x);
+    yn = RBIGNUM_LEN(y);
+    zn = xn < yn ? yn : xn;
 
-    z = bignew(RBIGNUM_LEN(x), z==0);
-    bigsub_core(BDIGITS(x), RBIGNUM_LEN(x),
-		BDIGITS(y), RBIGNUM_LEN(y),
-		BDIGITS(z), RBIGNUM_LEN(z));
+    z = bignew(zn, 1);
+
+    xds = BDIGITS(x);
+    yds = BDIGITS(y);
+    zds = BDIGITS(z);
+
+    if (bary_sub(zds, zn, xds, xn, yds, yn)) {
+        bary_2comp(zds, zn);
+        RBIGNUM_SET_NEGATIVE_SIGN(z);
+    }
 
     return z;
 }
