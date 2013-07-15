@@ -356,6 +356,7 @@ void rb_gc_mark_symbols(void);
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
+int rb_block_arity(void);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)
