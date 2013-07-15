@@ -1,3 +1,7 @@
+Tue Jul 16 03:23:03 2013  Zachary Scott  <e@zzak.io>
+
+	* numeric.c: [DOC] improve rdoc formatting for parameters and links
+
 Mon Jul 15 14:40:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_big2str0): Deprecated.
