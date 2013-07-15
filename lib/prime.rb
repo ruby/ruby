@@ -306,12 +306,13 @@ class Prime
   # Uses +EratosthenesSieve+.
   class EratosthenesGenerator < PseudoPrimeGenerator
     def initialize
-      @last_prime = nil
+      @last_prime_index = -1
       super
     end
 
     def succ
-      @last_prime = @last_prime ? EratosthenesSieve.instance.next_to(@last_prime) : 2
+      @last_prime_index += 1
+      EratosthenesSieve.instance.get_nth_prime(@last_prime_index)
     end
     def rewind
       initialize
@@ -422,68 +423,48 @@ class Prime
   class EratosthenesSieve
     include Singleton
 
-    BITS_PER_ENTRY = 16  # each entry is a set of 16-bits in a Fixnum
-    NUMS_PER_ENTRY = BITS_PER_ENTRY * 2 # twiced because even numbers are omitted
-    ENTRIES_PER_TABLE = 8
-    NUMS_PER_TABLE = NUMS_PER_ENTRY * ENTRIES_PER_TABLE
-    FILLED_ENTRY = (1 << NUMS_PER_ENTRY) - 1
-
-    def initialize # :nodoc:
-      # bitmap for odd prime numbers less than 256.
-      # For an arbitrary odd number n, @tables[i][j][k] is
-      # * 1 if n is prime,
-      # * 0 if n is composite,
-      # where i,j,k = indices(n)
-      @tables = [[0xcb6e, 0x64b4, 0x129a, 0x816d, 0x4c32, 0x864a, 0x820d, 0x2196].freeze]
+    def initialize
+      @primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101]
+      # @max_checked must be an even number
+      @max_checked = @primes.last + 1
     end
 
-    # returns the least odd prime number which is greater than +n+.
-    def next_to(n)
-      n = (n-1).div(2)*2+3 # the next odd number to given n
-      table_index, integer_index, bit_index = indices(n)
-      loop do
-        extend_table until @tables.length > table_index
-        for j in integer_index...ENTRIES_PER_TABLE
-          if !@tables[table_index][j].zero?
-            for k in bit_index...BITS_PER_ENTRY
-              return NUMS_PER_TABLE*table_index + NUMS_PER_ENTRY*j + 2*k+1 if !@tables[table_index][j][k].zero?
-            end
-          end
-          bit_index = 0
-        end
-        table_index += 1; integer_index = 0
-      end
+    def get_nth_prime(n)
+      compute_primes while @primes.size <= n
+      @primes[n]
     end
 
     private
-    # for an odd number +n+, returns (i, j, k) such that @tables[i][j][k] represents primality of the number
-    def indices(n)
-      #   binary digits of n: |0|1|2|3|4|5|6|7|8|9|10|11|....
-      #   indices:            |-|    k  |  j  |     i
-      # because of NUMS_PER_ENTRY, NUMS_PER_TABLE
+    def compute_primes
+      # max_segment_size must be an even number
+      max_segment_size = 1e6.to_i
+      max_cached_prime = @primes.last
+      # do not double count primes if #compute_primes is interrupted
+      # by Timeout.timeout
+      @max_checked = max_cached_prime + 1 if max_cached_prime > @max_checked
 
-      k = (n & 0b00011111) >> 1
-      j = (n & 0b11100000) >> 5
-      i = n >> 8
-      return i, j, k
-    end
+      segment_min = @max_checked
+      segment_max = [segment_min + max_segment_size, max_cached_prime * 2].min
+      root = Integer(Math.sqrt(segment_max).floor)
 
-    def extend_table
-      lbound = NUMS_PER_TABLE * @tables.length
-      ubound = lbound + NUMS_PER_TABLE
-      new_table = [FILLED_ENTRY] * ENTRIES_PER_TABLE # which represents primality in lbound...ubound
-      (3..Integer(Math.sqrt(ubound))).step(2) do |p|
-        i, j, k = indices(p)
-        next if @tables[i][j][k].zero?
+      sieving_primes = @primes[1 .. -1].take_while { |prime| prime <= root }
+      offsets = Array.new(sieving_primes.size) do |i|
+        (-(segment_min + 1 + sieving_primes[i]) / 2) % sieving_primes[i]
+      end
 
-        start = (lbound.div(p)+1)*p  # least multiple of p which is >= lbound
-        start += p if start.even?
-        (start...ubound).step(2*p) do |n|
-          _, j, k = indices(n)
-          new_table[j] &= FILLED_ENTRY^(1<<k)
+      segment = ((segment_min + 1) .. segment_max).step(2).to_a
+      sieving_primes.each_with_index do |prime, index|
+        composite_index = offsets[index]
+        while composite_index < segment.size do
+          segment[composite_index] = nil
+          composite_index += prime
         end
       end
-      @tables << new_table.freeze
+
+      segment.each do |prime|
+        @primes.push prime unless prime.nil?
+      end
+      @max_checked = segment_max
     end
   end
 

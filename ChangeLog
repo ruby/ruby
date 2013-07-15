@@ -1,3 +1,11 @@
+Mon Jul 15 13:07:27 2013  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* lib/prime.rb (Prime::EratosthenesGenerator,
+	  Prime::EratosthenesSieve): New implementation by
+	  robertjlooby <robertjlooby AT gmail.com>.
+
+	* test/test_prime.rb: updated with new method name
+
 Mon Jul 15 11:32:46 2013  Zachary Scott  <e@zzak.io>
 
 	* numeric.c (rb_cNumeric): [DOC] Added comment for Numeric to fix doc
