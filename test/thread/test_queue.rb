@@ -150,6 +150,23 @@ class TestQueue < Test::Unit::TestCase
     assert_equal [2, 4, 6], results
   end
 
+  def test_queue_each_break
+    q = Queue.new
+    q.push(1)
+    q.push(:stop)
+    q.push(2)
+    results = []
+    doubler = Thread.new do
+      q.each do |n|
+        break if n == :stop
+        results << n + n
+      end
+    end
+    doubler.join
+    assert_equal [2], results
+    assert_equal 2, q.pop
+  end
+
   def test_queue_each_enumerator
     q = Queue.new
     q.push(1)
