@@ -123,6 +123,10 @@ static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *mo
 static int
 nlz16(uint16_t x)
 {
+#if defined(HAVE_BUILTIN___BUILTIN_CLZ) && 2 <= SIZEOF_INT
+    if (x == 0) return 16;
+    return __builtin_clz(x) - (SIZEOF_INT-2)*CHAR_BIT;
+#else
     uint16_t y;
     int n = 16;
     y = x >>  8; if (y) {n -=  8; x = y;}
@@ -130,11 +134,19 @@ nlz16(uint16_t x)
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
     return (int)(n - x);
+#endif
 }
 
 static int
 nlz32(uint32_t x)
 {
+#if defined(HAVE_BUILTIN___BUILTIN_CLZ) && 4 <= SIZEOF_INT
+    if (x == 0) return 32;
+    return __builtin_clz(x) - (SIZEOF_INT-4)*CHAR_BIT;
+#elif defined(HAVE_BUILTIN___BUILTIN_CLZL) && 4 <= SIZEOF_LONG
+    if (x == 0) return 32;
+    return __builtin_clzl(x) - (SIZEOF_LONG-4)*CHAR_BIT;
+#else
     uint32_t y;
     int n = 32;
     y = x >> 16; if (y) {n -= 16; x = y;}
@@ -143,12 +155,20 @@ nlz32(uint32_t x)
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
     return (int)(n - x);
+#endif
 }
 
 #if defined(HAVE_UINT64_T)
 static int
 nlz64(uint64_t x)
 {
+#if defined(HAVE_BUILTIN___BUILTIN_CLZL) && 8 <= SIZEOF_LONG
+    if (x == 0) return 64;
+    return __builtin_clzl(x) - (SIZEOF_LONG-8)*CHAR_BIT;
+#elif defined(HAVE_BUILTIN___BUILTIN_CLZLL) && 8 <= SIZEOF_LONG_LONG
+    if (x == 0) return 64;
+    return __builtin_clzll(x) - (SIZEOF_LONG_LONG-8)*CHAR_BIT;
+#else
     uint64_t y;
     int n = 64;
     y = x >> 32; if (y) {n -= 32; x = y;}
@@ -158,6 +178,7 @@ nlz64(uint64_t x)
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
     return (int)(n - x);
+#endif
 }
 #endif
 
@@ -165,6 +186,10 @@ nlz64(uint64_t x)
 static int
 nlz128(uint128_t x)
 {
+#if defined(HAVE_BUILTIN___BUILTIN_CLZLL) && 16 <= SIZEOF_LONG_LONG
+    if (x == 0) return 128;
+    return __builtin_clzll(x) - (SIZEOF_LONG_LONG-16)*CHAR_BIT;
+#else
     uint128_t y;
     int n = 128;
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -175,6 +200,7 @@ nlz128(uint128_t x)
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
     return (int)(n - x);
+#endif
 }
 #endif
 

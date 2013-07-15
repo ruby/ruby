@@ -1849,6 +1849,9 @@ if test "${AS_TR_SH(rb_cv_builtin_$1)}" != no; then
 fi])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 
 # Some platform neet -lrt for clock_gettime, but the other don't.
 if test x"$ac_cv_func_clock_gettime" != xyes; then

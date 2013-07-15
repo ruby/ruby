@@ -1,3 +1,13 @@
+Mon Jul 15 10:45:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (nlz16): Use __builtin_clz if possible.
+	  (nlz32): Use __builtin_clz or __builtin_clzl if possible.
+	  (nlz64): Use __builtin_clzl or __builtin_clzll if possible.
+	  (nlz128): Use __builtin_clzll if possible.
+
+	* configure.in: Check __builtin_clz, __builtin_clzl and
+	  __builtin_clzll.
+
 Mon Jul 15 09:39:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (power_cache_get_power): Use bitsize instead of ceil_log2.
