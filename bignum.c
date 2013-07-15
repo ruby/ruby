@@ -3540,8 +3540,8 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
     return result;
 }
 
-VALUE
-rb_big2str0(VALUE x, int base, int trim)
+static VALUE
+rb_big2str1(VALUE x, int base, int trim)
 {
     int off;
     VALUE ss, xx;
@@ -3591,10 +3591,17 @@ rb_big2str0(VALUE x, int base, int trim)
     return ss;
 }
 
+/* deprecated */
+VALUE
+rb_big2str0(VALUE x, int base, int trim)
+{
+    return rb_big2str1(x, base, trim);
+}
+
 VALUE
 rb_big2str(VALUE x, int base)
 {
-    return rb_big2str0(x, base, 1);
+    return rb_big2str1(x, base, 1);
 }
 
 /*

@@ -1,3 +1,11 @@
+Mon Jul 15 14:40:00 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_big2str0): Deprecated.
+
+	* bignum.c (rb_big2str1): Renamed from rb_big2str0.
+	  (rb_big2str0): Deprecated wrapper for rb_big2str1.
+	  (rb_big2str): Invoke rb_big2str1 instead of rb_big2str0.
+
 Mon Jul 15 14:13:02 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* struct.c (rb_struct_each_pair): use rb_yield_values(2, key, value)

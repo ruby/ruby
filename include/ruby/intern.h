@@ -101,7 +101,7 @@ VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
 VALUE rb_str2inum(VALUE, int);
 VALUE rb_big2str(VALUE, int);
-VALUE rb_big2str0(VALUE, int, int);
+DEPRECATED(VALUE rb_big2str0(VALUE, int, int));
 SIGNED_VALUE rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
 VALUE rb_big2ulong(VALUE);
