@@ -524,10 +524,19 @@ rb_struct_each_pair(VALUE s)
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-	VALUE key = rb_ary_entry(members, i);
-	VALUE value = RSTRUCT_GET(s, i);
-	rb_yield(rb_assoc_new(key, value));
+    if (rb_block_arity() > 1) {
+	for (i=0; i<RSTRUCT_LEN(s); i++) {
+	    VALUE key = rb_ary_entry(members, i);
+	    VALUE value = RSTRUCT_GET(s, i);
+	    rb_yield_values(2, key, value);
+	}
+    }
+    else {
+	for (i=0; i<RSTRUCT_LEN(s); i++) {
+	    VALUE key = rb_ary_entry(members, i);
+	    VALUE value = RSTRUCT_GET(s, i);
+	    rb_yield(rb_assoc_new(key, value));
+	}
     }
     return s;
 }

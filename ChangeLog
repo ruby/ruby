@@ -1,3 +1,9 @@
+Mon Jul 15 14:13:02 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* struct.c (rb_struct_each_pair): use rb_yield_values(2, key, value)
+	  instead of rb_yield(rb_assoc_new(key, value)) if rb_block_arity()
+	  is greater than 1.
+
 Mon Jul 15 13:46:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Add static assertions.
