@@ -1,3 +1,9 @@
+Mon Jul 15 11:10:46 2013  Zachary Scott  <e@zzak.io>
+
+	* bignum.c (rb_big_coerce): [DOC] Add docs for Bignum#coerce
+	  Based on patch by Juanito Fatas [Fixes GH-360]
+	  https://github.com/ruby/ruby/pull/360
+
 Mon Jul 15 10:56:01 2013  Zachary Scott  <e@zzak.io>
 
 	* thread.c (mutex_sleep): [DOC] Awake thread will reacquire lock
