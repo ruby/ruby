@@ -1,3 +1,8 @@
+Tue Jul 16 08:15:22 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] document top-level
+	  classes from BigDecimal utils native extensions
+
 Tue Jul 16 03:23:03 2013  Zachary Scott  <e@zzak.io>
 
 	* numeric.c: [DOC] improve rdoc formatting for parameters and links
