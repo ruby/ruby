@@ -3304,70 +3304,6 @@ big_rshift(VALUE x, unsigned long shift)
     return big_shift3(x, 0, s1, s2);
 }
 
-static inline int
-ones(register unsigned long x)
-{
-#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNTL
-    return  __builtin_popcountl(x);
-#else
-#   if SIZEOF_LONG == 8
-#       define MASK_55 0x5555555555555555UL
-#       define MASK_33 0x3333333333333333UL
-#       define MASK_0f 0x0f0f0f0f0f0f0f0fUL
-#   else
-#       define MASK_55 0x55555555UL
-#       define MASK_33 0x33333333UL
-#       define MASK_0f 0x0f0f0f0fUL
-#   endif
-    x -= (x >> 1) & MASK_55;
-    x = ((x >> 2) & MASK_33) + (x & MASK_33);
-    x = ((x >> 4) + x) & MASK_0f;
-    x += (x >> 8);
-    x += (x >> 16);
-#   if SIZEOF_LONG == 8
-    x += (x >> 32);
-#   endif
-    return (int)(x & 0x7f);
-#   undef MASK_0f
-#   undef MASK_33
-#   undef MASK_55
-#endif
-}
-
-static inline unsigned long
-next_pow2(register unsigned long x)
-{
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-#if SIZEOF_LONG == 8
-    x |= x >> 32;
-#endif
-    return x + 1;
-}
-
-static inline int
-floor_log2(register unsigned long x)
-{
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-#if SIZEOF_LONG == 8
-    x |= x >> 32;
-#endif
-    return (int)ones(x) - 1;
-}
-
-static inline int
-ceil_log2(register unsigned long x)
-{
-    return floor_log2(x) + !POW2_P(x);
-}
-
 #define LOG2_KARATSUBA_DIGITS 7
 #define KARATSUBA_DIGITS (1L<<LOG2_KARATSUBA_DIGITS)
 #define MAX_BIG2STR_TABLE_ENTRIES 64
@@ -3407,7 +3343,7 @@ power_cache_get_power(int base, long n1, long* m1)
     if (n1 <= KARATSUBA_DIGITS)
 	rb_bug("n1 > KARATSUBA_DIGITS");
 
-    m = ceil_log2(n1);
+    m = bitsize(n1-1); /* ceil(log2(n1)) */
     if (m1) *m1 = 1 << m;
     i = m - LOG2_KARATSUBA_DIGITS;
     if (i >= MAX_BIG2STR_TABLE_ENTRIES)

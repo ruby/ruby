@@ -1847,7 +1847,6 @@ AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
 if test "${AS_TR_SH(rb_cv_builtin_$1)}" != no; then
   AC_DEFINE(AS_TR_CPP(HAVE_BUILTIN_$1))
 fi])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_popcountl, [__builtin_popcountl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
 

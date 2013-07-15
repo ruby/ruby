@@ -1,3 +1,13 @@
+Mon Jul 15 09:39:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (power_cache_get_power): Use bitsize insteadof ceil_log2.
+	  (ones): Removed.
+	  (next_pow2): Removed.
+	  (floor_log2): Removed.
+	  (ceil_log2): Removed.
+
+	* configure.in (__builtin_popcountl): Don't check.
+
 Mon Jul 15 02:47:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* localeinit.c (rb_locale_charmap, Init_enc_set_filesystem_encoding):
