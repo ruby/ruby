@@ -1,3 +1,7 @@
+Mon Jul 15 13:46:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Add static assertions.
+
 Mon Jul 15 13:36:02 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_each_pair): performance improvement by using

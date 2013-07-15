@@ -45,6 +45,12 @@ static VALUE big_three = Qnil;
 #endif
 
 STATIC_ASSERT(sizeof_bdigit_dbl, sizeof(BDIGIT_DBL) == SIZEOF_BDIGIT_DBL);
+STATIC_ASSERT(sizeof_bdigit_dbl_signed, sizeof(BDIGIT_DBL_SIGNED) == SIZEOF_BDIGIT_DBL);
+STATIC_ASSERT(sizeof_bdigit, SIZEOF_BDIGITS <= sizeof(BDIGIT));
+STATIC_ASSERT(sizeof_bdigit_and_dbl, SIZEOF_BDIGITS*2 <= SIZEOF_BDIGIT_DBL);
+STATIC_ASSERT(bdigit_signedness, 0 < (BDIGIT)-1);
+STATIC_ASSERT(bdigit_dbl_signedness, 0 < (BDIGIT_DBL)-1);
+STATIC_ASSERT(bdigit_dbl_signed_signedness, 0 > (BDIGIT_DBL_SIGNED)-1);
 STATIC_ASSERT(rbignum_embed_len_max, RBIGNUM_EMBED_LEN_MAX <= (RBIGNUM_EMBED_LEN_MASK >> RBIGNUM_EMBED_LEN_SHIFT));
 
 #ifdef WORDS_BIGENDIAN
