@@ -402,8 +402,7 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
     assert(2 <= base && base <= 36);
 
     {
-#if   SIZEOF_BDIGIT_DBL == 0
-#elif SIZEOF_BDIGIT_DBL == 2
+#if SIZEOF_BDIGIT_DBL == 2
         maxpow = maxpow16_num[base-2];
         exponent = maxpow16_exp[base-2];
 #elif SIZEOF_BDIGIT_DBL == 4

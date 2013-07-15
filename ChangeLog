@@ -1,3 +1,7 @@
+Mon Jul 15 11:24:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (maxpow_in_bdigit_dbl): Useless #if removed.
+
 Mon Jul 15 11:10:46 2013  Zachary Scott  <e@zzak.io>
 
 	* bignum.c (rb_big_coerce): [DOC] Add docs for Bignum#coerce
