@@ -1,3 +1,7 @@
+Mon Jul 15 11:32:46 2013  Zachary Scott  <e@zzak.io>
+
+	* numeric.c (rb_cNumeric): [DOC] Added comment for Numeric to fix doc
+
 Mon Jul 15 11:24:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (maxpow_in_bdigit_dbl): Useless #if removed.

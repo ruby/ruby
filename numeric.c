@@ -3737,6 +3737,9 @@ fix_even_p(VALUE num)
  *     FloatDomainError: Infinity
  */
 
+/*
+ *  The top-level number class.
+ */
 void
 Init_Numeric(void)
 {
