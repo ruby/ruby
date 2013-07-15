@@ -858,7 +858,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                     ((BDIGIT*)words)[i] = swap_bdigit(d);
                 }
             }
-            if (mswordfirst_p ?  !msbytefirst_p : msbytefirst_p) {
+            if (mswordfirst_p ? !msbytefirst_p : msbytefirst_p) {
                 size_t i;
                 BDIGIT *p = words;
                 for (i = 0; i < numwords; i++) {
@@ -4843,10 +4843,10 @@ bigdivrem1(void *ptr)
 	    bds->j = j;
 	    return 0;
         }
-	if (zds[j] ==  yds[ny-1]) q = BDIGMAX;
+	if (zds[j] == yds[ny-1]) q = BDIGMAX;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
-           i = bds->nyzero; num = 0; t2 = 0;
+            i = bds->nyzero; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
 		BDIGIT_DBL ee;
 		t2 += (BDIGIT_DBL)yds[i] * q;
