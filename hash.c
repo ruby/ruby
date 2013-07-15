@@ -1472,6 +1472,13 @@ each_pair_i(VALUE key, VALUE value)
     return ST_CONTINUE;
 }
 
+static int
+each_pair_i_fast(VALUE key, VALUE value)
+{
+    rb_yield_values(2, key, value);
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hsh.each      {| key, value | block } -> hsh
@@ -1498,7 +1505,10 @@ static VALUE
 rb_hash_each_pair(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_foreach(hash, each_pair_i, 0);
+    if (rb_block_arity() > 1)
+	rb_hash_foreach(hash, each_pair_i_fast, 0);
+    else
+	rb_hash_foreach(hash, each_pair_i, 0);
     return hash;
 }
 
