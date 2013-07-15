@@ -62,6 +62,9 @@ STATIC_ASSERT(rbignum_embed_len_max, RBIGNUM_EMBED_LEN_MAX <= (RBIGNUM_EMBED_LEN
 
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
+#if BITSPERDIG >= INT_MAX
+# error incredible BDIGIT
+#endif
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define BIGRAD_HALF ((BDIGIT)(BIGRAD >> 1))
 #define BDIGIT_MSB(d) (((d) & BIGRAD_HALF) != 0)
@@ -3308,7 +3311,7 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
         if (1 < sign || CHAR_BIT <= lens[1])
             return RBIGNUM_POSITIVE_P(x) ? INT2FIX(0) : INT2FIX(-1);
     }
-    shift_numbits = lens[0] & (BITSPERDIG-1);
+    shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
     shift_numdigits = (lens[0] >> bitsize(BITSPERDIG-1)) |
       (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bitsize(BITSPERDIG-1)));
     return big_shift3(x, lshift_p, shift_numdigits, shift_numbits);
@@ -5770,7 +5773,7 @@ rb_big_lshift(VALUE x, VALUE y)
 		lshift_p = 0;
 		shift = 1+(unsigned long)(-(l+1));
 	    }
-            shift_numbits = shift & (BITSPERDIG-1);
+            shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bitsize(BITSPERDIG-1);
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
@@ -5808,7 +5811,7 @@ rb_big_rshift(VALUE x, VALUE y)
                 lshift_p = 1;
 		shift = 1+(unsigned long)(-(l+1));
 	    }
-            shift_numbits = shift & (BITSPERDIG-1);
+            shift_numbits = (int)(shift & (BITSPERDIG-1));
             shift_numdigits = shift >> bitsize(BITSPERDIG-1);
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
