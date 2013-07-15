@@ -250,6 +250,21 @@ class Queue
   def num_waiting
     @num_waiting
   end
+
+  #
+  # Pops and yields each element in the queue. Blocks when the queue
+  # is empty unless +non_block+ is +true+.
+  #
+  # Returns an +Enumerator+ if no block is given.
+  #
+  def each(non_block=false)
+    return to_enum(:each, non_block){ size } unless block_given?
+    loop do
+      yield pop(non_block)
+    end
+  rescue ThreadError
+    raise unless non_block
+  end
 end
 
 #
