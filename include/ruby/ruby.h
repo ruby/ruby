@@ -1808,7 +1808,11 @@ int rb_toupper(int c);
 #define TOUPPER(c) rb_toupper((unsigned char)(c))
 #define TOLOWER(c) rb_tolower((unsigned char)(c))
 
+#ifdef HAVE_STRCASECMP
+#define st_strcasecmp strcasecmp
+#else
 int st_strcasecmp(const char *s1, const char *s2);
+#endif
 int st_strncasecmp(const char *s1, const char *s2, size_t n);
 #define STRCASECMP(s1, s2) (st_strcasecmp((s1), (s2)))
 #define STRNCASECMP(s1, s2, n) (st_strncasecmp((s1), (s2), (n)))

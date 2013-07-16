@@ -1,3 +1,13 @@
+Tue Jul 16 21:07:04 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* configure.in: check strcasecmp().
+
+	* include/ruby/ruby.h: use strcasecmp() as st_strcasecmp() if it
+	  exists.
+
+	* st.c (st_strcasecmp): define the function only if strcasecmp()
+	  doesn't exist.
+
 Tue Jul 16 20:21:28 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigsq): Renamed from bigsqr.
