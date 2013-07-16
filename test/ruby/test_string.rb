@@ -1320,6 +1320,17 @@ class TestString < Test::Unit::TestCase
       s = S("a:".force_encoding(enc))
       assert_equal([enc]*2, s.split(":", 2).map(&:encoding), bug6206)
     end
+
+    bug8642 = '[ruby-core:56036] [Bug #8642]'
+    [
+     Encoding::UTF_16BE, Encoding::UTF_16LE,
+     Encoding::UTF_32BE, Encoding::UTF_32LE,
+    ].each do |enc|
+      s = S("abc,def".encode(enc))
+      assert_equal(["abc", "def"].map {|c| c.encode(enc)},
+                   s.split(",".encode(enc)),
+                   "#{bug8642} in #{enc.name}")
+    end
   end
 
   def test_squeeze
