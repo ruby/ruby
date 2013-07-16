@@ -1,3 +1,9 @@
+Tue Jul 16 18:35:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_karatsuba): Avoid duplicate calculation when
+	  squaring.
+	  ((bary_mul_toom3_branch): Ditto.
+
 Tue Jul 16 17:43:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (link_free_heap_slot): removed.

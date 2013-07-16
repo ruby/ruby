@@ -1704,12 +1704,15 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     int odd_y = 0;
     int odd_xy = 0;
+    int sq;
 
     BDIGIT *xds0, *xds1, *yds0, *yds1, *zds0, *zds1, *zds2, *zds3;
 
     assert(xl + yl <= zl);
     assert(xl <= yl);
     assert(yl < 2 * xl);
+
+    sq = xds == yds && xl == yl;
 
     if (yl & 1) {
         odd_y = 1;
@@ -1766,14 +1769,20 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
 
     /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:? */
 
-    if (bary_sub(wds, n, yds, n, yds+n, n)) {
-        bary_2comp(wds, n);
-        sub_p = !sub_p;
+    if (sq) {
+        sub_p = 1;
+        bary_mul_karatsuba_start(zds1, 2*n, zds0, n, zds0, n, wds, wl);
     }
+    else {
+        if (bary_sub(wds, n, yds, n, yds+n, n)) {
+            bary_2comp(wds, n);
+            sub_p = !sub_p;
+        }
 
-    /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:|y1-y0| */
+        /* zds0:|x1-x0| zds1:? zds2:? zds3:? wds:|y1-y0| */
 
-    bary_mul_karatsuba_start(zds1, 2*n, zds0, n, wds, n, wds+n, wl-n);
+        bary_mul_karatsuba_start(zds1, 2*n, zds0, n, wds, n, wds+n, wl-n);
+    }
 
     /* zds0:|x1-x0| zds1,zds2:|x1-x0|*|y1-y0| zds3:? wds:|y1-y0| */
 
@@ -2029,8 +2038,13 @@ bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yd
         VALUE x, y, z;
         x = bignew(xl, 1);
 	MEMCPY(BDIGITS(x), xds, BDIGIT, xl);
-        y = bignew(yl, 1);
-	MEMCPY(BDIGITS(y), yds, BDIGIT, yl);
+        if (xds == yds && xl == yl) {
+            y = x;
+        }
+        else {
+            y = bignew(yl, 1);
+            MEMCPY(BDIGITS(y), yds, BDIGIT, yl);
+        }
         z = bigtrunc(bigmul1_toom3(x, y));
         MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
         MEMZERO(zds + RBIGNUM_LEN(z), BDIGIT, zl - RBIGNUM_LEN(z));
