@@ -3263,14 +3263,12 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
     VALUE z;
     long xn;
 
-    if (LONG_MAX < shift_numdigits) {
-        rb_raise(rb_eArgError, "too big number");
-    }
-
-    s1 = shift_numdigits;
-    s2 = shift_numbits;
-
     if (lshift_p) {
+        if (LONG_MAX < shift_numdigits) {
+            rb_raise(rb_eArgError, "too big number");
+        }
+        s1 = shift_numdigits;
+        s2 = shift_numbits;
         xn = RBIGNUM_LEN(x);
         z = bignew(xn+s1+1, RBIGNUM_SIGN(x));
         zds = BDIGITS(z);
@@ -3281,13 +3279,15 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
     else {
         long zn;
         BDIGIT hibitsx;
-        if (s1 >= RBIGNUM_LEN(x)) {
+        if (LONG_MAX < shift_numdigits || (size_t)RBIGNUM_LEN(x) <= shift_numdigits) {
             if (RBIGNUM_POSITIVE_P(x) ||
                 bary_zero_p(BDIGITS(x), RBIGNUM_LEN(x)))
                 return INT2FIX(0);
             else
                 return INT2FIX(-1);
         }
+        s1 = shift_numdigits;
+        s2 = shift_numbits;
         hibitsx = abs2twocomp(&x, &xn);
         xds = BDIGITS(x);
         if (xn <= s1) {
