@@ -372,6 +372,7 @@ typedef struct rb_objspace {
     size_t total_freed_object_num;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
     VALUE gc_stress;
+    RVALUE *freelist;
 
     struct mark_func_data_struct {
 	void *data;
@@ -500,7 +501,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 
 #define RANY(o) ((RVALUE*)(o))
-#define has_free_object (objspace->heap.free_slots && objspace->heap.free_slots->freelist)
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
@@ -523,8 +523,8 @@ static void init_mark_stack(mark_stack_t *stack);
 static VALUE lazy_sweep_enable(void);
 static int garbage_collect(rb_objspace_t *, int full_mark, int immediate_sweep, int reason);
 static int garbage_collect_body(rb_objspace_t *, int full_mark, int immediate_sweep, int reason);
-static int gc_prepare_free_objects(rb_objspace_t *);
 static void mark_tbl(rb_objspace_t *, st_table *);
+static int lazy_sweep(rb_objspace_t *objspace);
 static void rest_sweep(rb_objspace_t *);
 static void gc_mark_stacked_objects(rb_objspace_t *);
 
@@ -732,13 +732,6 @@ allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
     }
 }
 
-static void
-unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
-{
-    objspace->heap.free_slots = slot->free_next;
-    slot->free_next = NULL;
-}
-
 static inline void
 slot_add_freeobj(rb_objspace_t *objspace, struct heaps_slot *slot, VALUE obj)
 {
@@ -919,6 +912,83 @@ heaps_increment(rb_objspace_t *objspace)
     return FALSE;
 }
 
+static int
+ready_to_gc(rb_objspace_t *objspace)
+{
+    if (dont_gc || during_gc) {
+	if (!objspace->freelist && !objspace->heap.free_slots) {
+            if (!heaps_increment(objspace)) {
+		set_heaps_increment(objspace);
+                heaps_increment(objspace);
+            }
+	}
+	return FALSE;
+    }
+    return TRUE;
+}
+
+static struct heaps_slot *
+heaps_prepare_freeslot(rb_objspace_t *objspace)
+{
+    if (!GC_ENABLE_LAZY_SWEEP && objspace->flags.dont_lazy_sweep) {
+	if (heaps_increment(objspace) == 0 &&
+	    garbage_collect(objspace, FALSE, TRUE, GPR_FLAG_NEWOBJ) == 0) {
+	    goto err;
+	}
+	goto ok;
+    }
+
+    if (!ready_to_gc(objspace)) return objspace->heap.free_slots;
+
+    during_gc++;
+
+    if ((is_lazy_sweeping(objspace) && lazy_sweep(objspace)) ||
+	heaps_increment(objspace)) {
+	goto ok;
+    }
+
+#if GC_PROFILE_MORE_DETAIL
+    objspace->profile.prepare_time = 0;
+#endif
+
+    if (garbage_collect_body(objspace, 0, 0, GPR_FLAG_NEWOBJ) == 0) {
+      err:
+	during_gc = 0;
+	rb_memerror();
+    }
+  ok:
+    during_gc = 0;
+    return objspace->heap.free_slots;
+}
+
+static inline struct heaps_slot *
+heaps_get_freeslot(rb_objspace_t *objspace)
+{
+    struct heaps_slot *slot;
+
+    slot = objspace->heap.free_slots;
+    while (slot == NULL) {
+	slot = heaps_prepare_freeslot(objspace);
+    }
+    objspace->heap.free_slots = slot->free_next;
+
+    return slot;
+}
+
+static inline VALUE
+get_freeobj(rb_objspace_t *objspace)
+{
+    RVALUE *p = objspace->freelist;
+
+    while (UNLIKELY(p == NULL)) {
+	struct heaps_slot *slot = heaps_get_freeslot(objspace);
+	p = objspace->freelist = slot->freelist;
+    }
+    objspace->freelist = p->as.free.next;
+
+    return (VALUE)p;
+}
+
 void
 rb_objspace_set_event_hook(const rb_event_flag_t event)
 {
@@ -939,7 +1009,6 @@ gc_event_hook_body(rb_objspace_t *objspace, const rb_event_flag_t event, VALUE d
     } \
 } while (0)
 
-
 static VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
@@ -959,18 +1028,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	}
     }
 
-    if (UNLIKELY(!has_free_object)) {
-	if (!gc_prepare_free_objects(objspace)) {
-	    during_gc = 0;
-	    rb_memerror();
-	}
-    }
-
-    obj = (VALUE)objspace->heap.free_slots->freelist;
-    objspace->heap.free_slots->freelist = RANY(obj)->as.free.next;
-    if (objspace->heap.free_slots->freelist == NULL) {
-	unlink_free_heap_slot(objspace, objspace->heap.free_slots);
-    }
+    obj = get_freeobj(objspace);
 
     /* OBJSETUP */
     RBASIC(obj)->flags = flags;
@@ -1125,23 +1183,6 @@ rb_free_const_table(st_table *tbl)
 {
     st_foreach(tbl, free_const_entry_i, 0);
     st_free_table(tbl);
-}
-
-static int obj_free(rb_objspace_t *, VALUE);
-
-static inline struct heaps_slot *
-add_slot_local_freelist(rb_objspace_t *objspace, RVALUE *p)
-{
-    struct heaps_slot *slot;
-
-    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-    p->as.free.flags = 0;
-    slot = GET_HEAP_SLOT(p);
-    p->as.free.next = slot->freelist;
-    slot->freelist = p;
-    rgengc_report(3, objspace, "add_slot_local_freelist: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
-
-    return slot;
 }
 
 static void
@@ -2218,6 +2259,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
 
     rgengc_report(1, objspace, "slot_sweep: start.\n");
 
+    sweep_slot->freelist = NULL;
     p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
     offset = p - NUM_IN_SLOT(p);
     bits = GET_HEAP_MARK_BITS(p);
@@ -2308,21 +2350,6 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     rgengc_report(1, objspace, "slot_sweep: end.\n");
 }
 
-static int
-ready_to_gc(rb_objspace_t *objspace)
-{
-    if (dont_gc || during_gc) {
-	if (!has_free_object) {
-            if (!heaps_increment(objspace)) {
-		set_heaps_increment(objspace);
-                heaps_increment(objspace);
-            }
-	}
-	return FALSE;
-    }
-    return TRUE;
-}
-
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
 __attribute__((noinline))
 #endif
@@ -2341,6 +2368,7 @@ before_gc_sweep(rb_objspace_t *objspace)
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
     objspace->heap.free_slots = NULL;
+    objspace->freelist = NULL;
 
     malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
 
@@ -2408,7 +2436,7 @@ lazy_sweep(rb_objspace_t *objspace)
 
 	if (!next) after_gc_sweep(objspace);
 
-        if (has_free_object) {
+        if (objspace->heap.free_slots) {
             result = TRUE;
 	    break;
         }
@@ -2455,7 +2483,7 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 	lazy_sweep(objspace);
     }
 
-    if (!has_free_object) {
+    if (!objspace->heap.free_slots) {
 	/* there is no free after slot_sweep() */
 	set_heaps_increment(objspace);
 	if (!heaps_increment(objspace)) { /* can't allocate additional free objects */
@@ -2463,41 +2491,6 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 	    rb_memerror();
 	}
     }
-}
-
-static int
-gc_prepare_free_objects(rb_objspace_t *objspace)
-{
-    if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
-	if (heaps_increment(objspace)) {
-	    return TRUE;
-	}
-	else {
-	    return garbage_collect(objspace, FALSE, TRUE, GPR_FLAG_NEWOBJ);
-	}
-    }
-
-    if (!ready_to_gc(objspace)) return TRUE;
-
-    during_gc++;
-
-    if (is_lazy_sweeping(objspace)) {
-	if (lazy_sweep(objspace)) {
-	    during_gc = 0;
-	    return TRUE;
-	}
-    }
-    else {
-        if (heaps_increment(objspace)) {
-	    during_gc = 0;
-            return TRUE;
-        }
-    }
-
-#if GC_PROFILE_MORE_DETAIL
-    objspace->profile.prepare_time = 0;
-#endif
-    return garbage_collect_body(objspace, 0, 0, GPR_FLAG_NEWOBJ);
 }
 
 /* Marking stack */

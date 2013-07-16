@@ -1,3 +1,25 @@
+Tue Jul 16 19:18:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: slim a path of newobj_of().
+
+	* gc.c (objspace): add a new field objspace::freelist, which contains
+	  available RVALUEs.
+
+	* gc.c (newobj_of): simply call new function `get_freeobj()'.
+	  get_freeobj() returns objspace::freelist. If  objspace::freelist
+	  is not available, refill objspace::freelist with a slot pointed by
+	  objspace::heap::free_slots.
+
+	* gc.c (before_gc_sweep): clear objspace::freelist.
+
+	* gc.c (slot_sweep): clear slot::freelist.
+
+	* gc.c (heaps_prepare_freeslot): renamed to heaps_prepare_freeslot.
+
+	* gc.c (unlink_free_heap_slot): remove unused function.
+
+	* gc.c (rb_free_const_table): remove unused function.
+
 Tue Jul 16 19:05:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_shift3): Big shift width is not a problem for right
