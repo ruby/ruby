@@ -1,3 +1,14 @@
+Tue Jul 16 17:21:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (assign_heap_slot): refactoring variable names.
+
+	* gc.c (slot_add_freeobj): added.
+
+	* gc.c (heaps_add_freeslot): added.
+
+	* gc.c (finalize_list, rb_gc_force_recycle, slot_sweep): use
+	  `slot_add_freeobj' instead of modifying linked list directly.
+
 Tue Jul 16 16:30:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (lazy_sweep): refactoring.

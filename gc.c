@@ -746,18 +746,37 @@ unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
     slot->free_next = NULL;
 }
 
+static inline void
+slot_add_freeobj(rb_objspace_t *objspace, struct heaps_slot *slot, VALUE obj)
+{
+    RVALUE *p = (RVALUE *)obj;
+    p->as.free.flags = 0;
+    p->as.free.next = slot->freelist;
+    slot->freelist = p;
+    rgengc_report(3, objspace, "slot_add_freeobj: %p (%s) is added to freelist\n", p, obj_type_name(obj));
+}
+
+static inline void
+heaps_add_freeslot(rb_objspace_t *objspace, struct heaps_slot *slot)
+{
+    if (slot->freelist) {
+	slot->free_next = objspace->heap.free_slots;
+	objspace->heap.free_slots = slot;
+    }
+}
+
 static void
 assign_heap_slot(rb_objspace_t *objspace)
 {
-    RVALUE *p, *pend, *membase;
+    RVALUE *start, *end, *p;
     struct heaps_slot *slot;
+    struct heaps_header *header = 0;
     size_t hi, lo, mid;
-    size_t objs;
+    size_t limit = HEAP_OBJ_LIMIT;
 
-    objs = HEAP_OBJ_LIMIT;
-
-    p = (RVALUE*)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
-    if (p == 0) {
+    /* assign heaps_header entry (with RVALUEs area) */
+    header = (struct heaps_header *)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
+    if (header == 0) {
 	during_gc = 0;
 	rb_memerror();
     }
@@ -765,66 +784,64 @@ assign_heap_slot(rb_objspace_t *objspace)
     /* assign heaps_slot entry */
     slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
     if (slot == 0) {
-       aligned_free(p);
-       during_gc = 0;
-       rb_memerror();
+	aligned_free(header);
+	during_gc = 0;
+	rb_memerror();
     }
     MEMZERO((void*)slot, struct heaps_slot, 1);
 
-    slot->next = heaps;
-    if (heaps) heaps->prev = slot;
-    heaps = slot;
+    slot->header = header;
+    slot->next = objspace->heap.ptr;
 
-    /* adjust objs (object number available in this slot) */
-    membase = p;
-    p = (RVALUE*)((VALUE)p + sizeof(struct heaps_header));
-    if ((VALUE)p % sizeof(RVALUE) != 0) {
-       p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-       objs = (HEAP_SIZE - (size_t)((VALUE)p - (VALUE)membase))/sizeof(RVALUE);
+    if (objspace->heap.ptr) objspace->heap.ptr->prev = slot;
+    objspace->heap.ptr = slot;
+
+    /* adjust obj_limit (object number available in this slot) */
+    start = (RVALUE*)((VALUE)header + sizeof(struct heaps_header));
+    if ((VALUE)start % sizeof(RVALUE) != 0) {
+	start = (RVALUE*)((VALUE)start + sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
+	limit = (HEAP_SIZE - (size_t)((VALUE)start - (VALUE)header))/sizeof(RVALUE);
     }
 
     /* setup objspace->heap.sorted */
     lo = 0;
     hi = heaps_used;
     while (lo < hi) {
-	register RVALUE *mid_membase;
+	struct heaps_header *mid_header;
+
 	mid = (lo + hi) / 2;
-	mid_membase = (RVALUE *)objspace->heap.sorted[mid];
-	if (mid_membase < membase) {
+	mid_header = objspace->heap.sorted[mid];
+	if (mid_header < header) {
 	    lo = mid + 1;
 	}
-	else if (mid_membase > membase) {
+	else if (mid_header > header) {
 	    hi = mid;
 	}
 	else {
-	    rb_bug("same heap slot is allocated: %p at %"PRIuVALUE, (void *)membase, (VALUE)mid);
+	    rb_bug("same heap slot is allocated: %p at %"PRIuVALUE, (void *)header, (VALUE)mid);
 	}
     }
     if (hi < heaps_used) {
 	MEMMOVE(&objspace->heap.sorted[hi+1], &objspace->heap.sorted[hi], struct heaps_header*, heaps_used - hi);
     }
+    objspace->heap.sorted[hi] = header;
 
     /* setup header */
-    heaps->header = (struct heaps_header *)membase;
-    objspace->heap.sorted[hi] = heaps->header;
-    objspace->heap.sorted[hi]->start = p;
-    objspace->heap.sorted[hi]->end = (p + objs);
-    objspace->heap.sorted[hi]->base = heaps;
-    objspace->heap.sorted[hi]->limit = objs;
-    pend = p + objs;
-    if (lomem == 0 || lomem > p) lomem = p;
-    if (himem < pend) himem = pend;
+    header->start = start;
+    header->end = end = start + limit;
+    header->base = heaps;
+    header->limit = limit;
+
+    if (lomem == 0 || lomem > start) lomem = start;
+    if (himem < end) himem = end;
     heaps_used++;
 
-    while (p < pend) {
-	p->as.free.flags = 0;
+    for (p = start; p != end; p++) {
 	rgengc_report(3, objspace, "assign_heap_slot: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
-	p->as.free.next = heaps->freelist;
-	heaps->freelist = p;
-	p++;
+	slot_add_freeobj(objspace, slot, (VALUE)p);
     }
 
-    link_free_heap_slot(objspace, heaps);
+    heaps_add_freeslot(objspace, heaps);
 }
 
 static void
@@ -1732,7 +1749,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	run_final(objspace, (VALUE)p);
 	objspace->total_freed_object_num++;
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-            add_slot_local_freelist(objspace, p);
+	    slot_add_freeobj(objspace, GET_HEAP_SLOT(p), (VALUE)p);
 	    objspace->heap.free_num++;
 	}
 	else {
@@ -2240,9 +2257,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
 			}
 			else {
 			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			    p->as.free.flags = 0;
-			    p->as.free.next = sweep_slot->freelist;
-			    sweep_slot->freelist = p;
+			    slot_add_freeobj(objspace, sweep_slot, (VALUE)p);
 			    rgengc_report(3, objspace, "slot_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
 			    freed_num++;
 			}
@@ -3987,7 +4002,6 @@ void
 rb_gc_force_recycle(VALUE p)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    struct heaps_slot *slot;
 
 #if USE_RGENGC
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
@@ -3998,15 +4012,10 @@ rb_gc_force_recycle(VALUE p)
 #endif
 
     objspace->total_freed_object_num++;
-    if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
-        add_slot_local_freelist(objspace, (RVALUE *)p);
-    }
-    else {
+    slot_add_freeobj(objspace, GET_HEAP_SLOT(p), p);
+
+    if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
 	objspace->heap.free_num++;
-        slot = add_slot_local_freelist(objspace, (RVALUE *)p);
-        if (slot->free_next == NULL) {
-            link_free_heap_slot(objspace, slot);
-        }
     }
 }
 
