@@ -2759,8 +2759,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
         make_readconv(fptr, 0);
         do {
             const char *p, *e;
-            int searchlen;
-            if (searchlen = READ_CHAR_PENDING_COUNT(fptr)) {
+            int searchlen = READ_CHAR_PENDING_COUNT(fptr);
+            if (searchlen) {
                 p = READ_CHAR_PENDING_PTR(fptr);
                 if (0 < limit && limit < searchlen)
                     searchlen = (int)limit;
