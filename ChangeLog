@@ -1,3 +1,7 @@
+Tue Jul 16 16:30:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (lazy_sweep): refactoring.
+
 Tue Jul 16 13:32:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_set_index): since r41967, old terminator is dealt

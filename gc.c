@@ -2384,16 +2384,19 @@ after_gc_sweep(rb_objspace_t *objspace)
 static int
 lazy_sweep(rb_objspace_t *objspace)
 {
-    struct heaps_slot *next;
+    struct heaps_slot *slot, *next;
     int result = FALSE;
 
     gc_prof_sweep_timer_start(objspace);
 
     heaps_increment(objspace);
-    while (is_lazy_sweeping(objspace)) {
-        next = objspace->heap.sweep_slots->next;
-	slot_sweep(objspace, objspace->heap.sweep_slots);
-        objspace->heap.sweep_slots = next;
+
+    slot = objspace->heap.sweep_slots;
+
+    while (slot) {
+	objspace->heap.sweep_slots = next = slot->next;
+
+	slot_sweep(objspace, slot);
 
 	if (!next) after_gc_sweep(objspace);
 
@@ -2401,6 +2404,8 @@ lazy_sweep(rb_objspace_t *objspace)
             result = TRUE;
 	    break;
         }
+
+	slot = next;
     }
 
     gc_prof_sweep_timer_stop(objspace);
