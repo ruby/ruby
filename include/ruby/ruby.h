@@ -1808,10 +1808,10 @@ int rb_toupper(int c);
 #define TOUPPER(c) rb_toupper((unsigned char)(c))
 #define TOLOWER(c) rb_tolower((unsigned char)(c))
 
-int st_strcasecmp(const char *s1, const char *s2);
-int st_strncasecmp(const char *s1, const char *s2, size_t n);
-#define STRCASECMP(s1, s2) (st_strcasecmp((s1), (s2)))
-#define STRNCASECMP(s1, s2, n) (st_strncasecmp((s1), (s2), (n)))
+int st_locale_insensitive_strcasecmp(const char *s1, const char *s2);
+int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);
+#define STRCASECMP(s1, s2) (st_locale_insensitive_strcasecmp((s1), (s2)))
+#define STRNCASECMP(s1, s2, n) (st_locale_insensitive_strncasecmp((s1), (s2), (n)))
 
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #define STRTOUL(str, endptr, base) (ruby_strtoul((str), (endptr), (base)))

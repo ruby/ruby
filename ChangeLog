@@ -1,3 +1,12 @@
+Wed Jul 17 08:12:41 2013  Tanaka Akira  <akr@fsij.org>
+
+	* st.c (st_locale_insensitive_strcasecmp): Renamed from st_strcasecmp.
+	  (st_locale_insensitive_strncasecmp): Renamed from st_strncasecmp.
+
+	* include/ruby/st.h: Follow above changes.
+
+	* include/ruby/ruby.h: Ditto.
+
 Wed Jul 17 00:14:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigmul1_toom3): Use bigdivrem_single instead of bigdivrem.

@@ -67,7 +67,7 @@ static const struct st_hash_type type_strhash = {
 
 static st_index_t strcasehash(st_data_t);
 static const struct st_hash_type type_strcasehash = {
-    st_strcasecmp,
+    st_locale_insensitive_strcasecmp,
     strcasehash,
 };
 
@@ -1525,7 +1525,7 @@ strhash(st_data_t arg)
 #endif
 
 int
-st_strcasecmp(const char *s1, const char *s2)
+st_locale_insensitive_strcasecmp(const char *s1, const char *s2)
 {
     unsigned int c1, c2;
 
@@ -1549,7 +1549,7 @@ st_strcasecmp(const char *s1, const char *s2)
 }
 
 int
-st_strncasecmp(const char *s1, const char *s2, size_t n)
+st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
 {
     unsigned int c1, c2;
 
