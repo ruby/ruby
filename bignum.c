@@ -30,10 +30,6 @@ const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 static VALUE big_three = Qnil;
 
-#if defined __MINGW32__
-#define USHORT _USHORT
-#endif
-
 #ifndef SIZEOF_BDIGIT_DBL
 # if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
 #  define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T

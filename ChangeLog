@@ -1,3 +1,7 @@
+Tue Jul 16 19:42:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (USHORT): Unused macro removed.
+
 Tue Jul 16 19:18:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: slim a path of newobj_of().
