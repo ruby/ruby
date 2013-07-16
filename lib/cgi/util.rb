@@ -6,8 +6,8 @@ module CGI::Util
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
     encoding = string.encoding
-    string.b.gsub(/([^ a-zA-Z0-9_.-]+)/) do
-      '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
+    string.b.gsub(/([^ a-zA-Z0-9_.-]+)/) do |m|
+      '%' + m.unpack('H2' * m.bytesize).join('%').upcase
     end.tr(' ', '+').force_encoding(encoding)
   end
 
@@ -15,8 +15,8 @@ module CGI::Util
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def unescape(string,encoding=@@accept_charset)
-    str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do
-      [$1.delete('%')].pack('H*')
+    str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
+      [m.delete('%')].pack('H*')
     end.force_encoding(encoding)
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
