@@ -122,7 +122,7 @@ static VALUE bigmul1_toom3(VALUE x, VALUE y);
 static VALUE bignew_1(VALUE klass, long len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
-static VALUE bigsqr(VALUE x);
+static VALUE bigsq(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 
 static int
@@ -3371,7 +3371,7 @@ power_cache_get_power0(int base, int i)
     if (NIL_P(big2str_power_cache[base - 2][i])) {
 	big2str_power_cache[base - 2][i] =
 	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_DIGITS))
-		   : bigsqr(power_cache_get_power0(base, i - 1));
+		   : bigsq(power_cache_get_power0(base, i - 1));
 	rb_gc_register_mark_object(big2str_power_cache[base - 2][i]);
     }
     return big2str_power_cache[base - 2][i];
@@ -3396,7 +3396,7 @@ power_cache_get_power(int base, long n1, long* m1)
 
     j = KARATSUBA_DIGITS*(1 << i);
     while (n1 > j) {
-	t = bigsqr(t);
+	t = bigsq(t);
 	j *= 2;
     }
     return t;
@@ -5357,7 +5357,7 @@ rb_big_fdiv(VALUE x, VALUE y)
 }
 
 static VALUE
-bigsqr(VALUE x)
+bigsq(VALUE x)
 {
     return bigtrunc(bigmul0(x, x));
 }
@@ -5417,7 +5417,7 @@ rb_big_pow(VALUE x, VALUE y)
 		break;
 	    }
 	    for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {
-		if (z) z = bigsqr(z);
+		if (z) z = bigsq(z);
 		if (yy & mask) {
 		    z = z ? bigtrunc(bigmul0(z, x)) : x;
 		}

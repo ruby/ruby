@@ -1,3 +1,7 @@
+Tue Jul 16 20:21:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigsq): Renamed from bigsqr.
+
 Tue Jul 16 19:42:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (USHORT): Unused macro removed.
