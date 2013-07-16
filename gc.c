@@ -733,13 +733,6 @@ allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 }
 
 static void
-link_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
-{
-    slot->free_next = objspace->heap.free_slots;
-    objspace->heap.free_slots = slot;
-}
-
-static void
 unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
 {
     objspace->heap.free_slots = slot->free_next;
@@ -791,8 +784,8 @@ assign_heap_slot(rb_objspace_t *objspace)
     MEMZERO((void*)slot, struct heaps_slot, 1);
 
     slot->header = header;
-    slot->next = objspace->heap.ptr;
 
+    slot->next = objspace->heap.ptr;
     if (objspace->heap.ptr) objspace->heap.ptr->prev = slot;
     objspace->heap.ptr = slot;
 
@@ -841,7 +834,7 @@ assign_heap_slot(rb_objspace_t *objspace)
 	slot_add_freeobj(objspace, slot, (VALUE)p);
     }
 
-    heaps_add_freeslot(objspace, heaps);
+    heaps_add_freeslot(objspace, slot);
 }
 
 static void
@@ -2294,12 +2287,12 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         unlink_heap_slot(objspace, sweep_slot);
     }
     else {
-        if (freed_num + empty_num > 0) {
-            link_free_heap_slot(objspace, sweep_slot);
-        }
-        else {
-            sweep_slot->free_next = NULL;
-        }
+	if (freed_num + empty_num > 0) {
+	    heaps_add_freeslot(objspace, sweep_slot);
+	}
+	else {
+	    sweep_slot->free_next = NULL;
+	}
 	objspace->heap.free_num += freed_num + empty_num;
     }
     objspace->total_freed_object_num += freed_num;

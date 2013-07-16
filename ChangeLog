@@ -1,3 +1,13 @@
+Tue Jul 16 17:43:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (link_free_heap_slot): removed.
+
+	* gc.c (slot_sweep): use `heaps_add_freeslot' instead of
+	  `link_free_heap_slot'.
+
+	* gc.c (assign_heap_slot): use local variable `slot' instead of
+	  `heaps'.
+
 Tue Jul 16 17:21:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (assign_heap_slot): refactoring variable names.
