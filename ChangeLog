@@ -1,3 +1,9 @@
+Tue Jul 16 13:32:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_set_index): since r41967, old terminator is dealt
+	  with in str_fill_term().  should not consider it here because this
+	  function is called before any encoding is set.
+
 Tue Jul 16 11:12:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* proc.c (rb_block_arity): raise ArgumentError if no block given.
@@ -120,9 +126,6 @@ Mon Jul 15 02:21:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_inspect): use PRIsVALUE to preserve the result
 	  encoding.
-
-	* encoding.c (enc_set_index): deal with terminator so that
-	  rb_enc_set_index also works.
 
 Sun Jul 14 23:21:47 2013  Tanaka Akira  <akr@fsij.org>
 
