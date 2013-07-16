@@ -722,9 +722,11 @@ rb_block_arity(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     rb_block_t *block = rb_vm_control_frame_block_ptr(cfp);
-    VALUE proc_value = block->proc;
+    VALUE proc_value;
 
+    if (!block) rb_raise(rb_eArgError, "no block given");
     min = rb_block_min_max_arity(block, &max);
+    proc_value = block->proc;
     if (proc_value) {
 	rb_proc_t *proc;
 	GetProcPtr(proc_value, proc);

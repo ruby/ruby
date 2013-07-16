@@ -1,3 +1,7 @@
+Tue Jul 16 11:12:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* proc.c (rb_block_arity): raise ArgumentError if no block given.
+
 Tue Jul 16 08:15:22 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] document top-level
