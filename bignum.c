@@ -28,8 +28,6 @@
 VALUE rb_cBignum;
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-static VALUE big_three = Qnil;
-
 #ifndef SIZEOF_BDIGIT_DBL
 # if defined(HAVE_INT64_T) && defined(HAVE_INT128_T)
 #  define SIZEOF_BDIGIT_DBL SIZEOF_INT128_T
@@ -115,6 +113,7 @@ typedef void (mulfunc_t)(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT 
 
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
+static BDIGIT bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 
 static VALUE bigmul0(VALUE x, VALUE y);
@@ -4732,7 +4731,7 @@ bigmul1_toom3(VALUE x, VALUE y)
 
     /* z3 <- (z(-2) - z(1)) / 3 == (u3 - u1) / 3 */
     z3 = bigadd(u3, u1, 0);
-    bigdivrem(z3, big_three, &z3, NULL); /* TODO: optimize */
+    bigdivrem_single(BDIGITS(z3), BDIGITS(z3), RBIGNUM_LEN(z3), 3);
     bigtrunc(z3);
 
     /* z1 <- (z(1) - z(-1)) / 2 == (u1 - u2) / 2 */
@@ -6079,7 +6078,4 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
 
     power_cache_init();
-
-    big_three = rb_uint2big(3);
-    rb_gc_register_mark_object(big_three);
 }

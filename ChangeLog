@@ -1,3 +1,9 @@
+Wed Jul 17 00:14:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigmul1_toom3): Use bigdivrem_single instead of bigdivrem.
+	  (big_three): Removed.
+	  (Init_Bignum): Don't initialize big_three.
+
 Tue Jul 16 21:46:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: revert r42008. strcasecmp() uses the current locale.
