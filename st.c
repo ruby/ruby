@@ -1524,7 +1524,6 @@ strhash(st_data_t arg)
 }
 #endif
 
-#ifndef HAVE_STRCASECMP
 int
 st_strcasecmp(const char *s1, const char *s2)
 {
@@ -1548,7 +1547,6 @@ st_strcasecmp(const char *s1, const char *s2)
         }
     }
 }
-#endif
 
 int
 st_strncasecmp(const char *s1, const char *s2, size_t n)

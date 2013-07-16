@@ -1,3 +1,11 @@
+Tue Jul 16 21:46:03 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* configure.in: revert r42008. strcasecmp() uses the current locale.
+
+	* include/ruby/ruby.h: ditto.
+
+	* st.c (st_strcasecmp): ditto.
+
 Tue Jul 16 21:07:04 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* configure.in: check strcasecmp().
