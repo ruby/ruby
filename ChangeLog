@@ -1,3 +1,8 @@
+Tue Jul 16 18:50:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_count): [DOC] fix typo.  Array#count uses ==, not
+	  ===.  a question at asakusa.rb ML.
+
 Tue Jul 16 18:35:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_karatsuba): Avoid duplicate calculation when
