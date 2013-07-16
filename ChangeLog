@@ -299,7 +299,7 @@ Thu Jul 11 13:00:34 2013  Zachary Scott  <e@zzak.io>
 
 Thu Jul 11 12:04:47 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.c: Don't use toom3 after once karatsuba is choosen.
+	* bignum.c: Don't use toom3 after once karatsuba is chosen.
 	  (mulfunc_t): New type.
 	  (bary_mul_toom3_start): Renamed from bary_mul.
 	  (bary_mul_karatsuba_start): Renamed from bary_mul.
