@@ -2384,20 +2384,18 @@ after_gc_sweep(rb_objspace_t *objspace)
 static int
 lazy_sweep(rb_objspace_t *objspace)
 {
-    struct heaps_slot *slot;
+    struct heaps_slot *next;
     int result = FALSE;
 
     gc_prof_sweep_timer_start(objspace);
 
     heaps_increment(objspace);
-    slot = objspace->heap.sweep_slots;
+    while (is_lazy_sweeping(objspace)) {
+        next = objspace->heap.sweep_slots->next;
+	slot_sweep(objspace, objspace->heap.sweep_slots);
+        objspace->heap.sweep_slots = next;
 
-    while (slot) {
-	slot_sweep(objspace, slot);
-
-	if ((objspace->heap.sweep_slots = slot = slot->next) == NULL) {
-	    after_gc_sweep(objspace);
-	}
+	if (!next) after_gc_sweep(objspace);
 
         if (has_free_object) {
             result = TRUE;

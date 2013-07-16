@@ -1,7 +1,3 @@
-Tue Jul 16 14:59:09 2013  Koichi Sasada  <ko1@atdot.net>
-
-	* gc.c (after_gc_sweep): refactoring code.
-
 Tue Jul 16 13:32:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_set_index): since r41967, old terminator is dealt
