@@ -1,3 +1,13 @@
+Wed Jul 17 09:59:33 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: fixed coding error [ruby-core:55337].
+	  reported by Riley Lynch.
+
+Wed Jul 17 09:59:33 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: fixed a bug [ruby-core:55295].  reported
+	  by Riley Lynch.
+
 Thu Jul 11 10:07:15 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): Fix for the cases when

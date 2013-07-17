@@ -1,5 +1,5 @@
 /*
-  date_core.c: Coded by Tadayoshi Funaba 2010, 2011
+  date_core.c: Coded by Tadayoshi Funaba 2010-2013
 */
 
 #include "ruby.h"
@@ -1109,6 +1109,28 @@ m_virtual_sg(union DateData *x)
 	return c_virtual_sg(x);
 }
 
+#define canonicalize_jd(_nth, _jd) \
+{\
+    if (_jd < 0) {\
+	_nth = f_sub(_nth, INT2FIX(1));\
+	_jd += CM_PERIOD;\
+    }\
+    if (_jd >= CM_PERIOD) {\
+	_nth = f_add(_nth, INT2FIX(1));\
+	_jd -= CM_PERIOD;\
+    }\
+}
+
+inline static void
+canonicalize_s_jd(union DateData *x)
+{
+    int j = x->s.jd;
+    assert(have_jd_p(x));
+    canonicalize_jd(x->s.nth, x->s.jd);
+    if (x->s.jd != j)
+	x->flags &= ~HAVE_CIVIL;
+}
+
 inline static void
 get_s_jd(union DateData *x)
 {
@@ -1191,6 +1213,16 @@ get_c_time(union DateData *x)
 	x->c.flags |= HAVE_TIME;
 #endif
     }
+}
+
+inline static void
+canonicalize_c_jd(union DateData *x)
+{
+    int j = x->c.jd;
+    assert(have_jd_p(x));
+    canonicalize_jd(x->c.nth, x->c.jd);
+    if (x->c.jd != j)
+	x->flags &= ~HAVE_CIVIL;
 }
 
 inline static void
@@ -1364,6 +1396,19 @@ guess_style(VALUE y, double sg) /* -/+oo or zero */
 	    style = negative_inf;
     }
     return style;
+}
+
+inline static void
+m_canonicalize_jd(union DateData *x)
+{
+    if (simple_dat_p(x)) {
+	get_s_jd(x);
+	canonicalize_s_jd(x);
+    }
+    else {
+	get_c_jd(x);
+	canonicalize_c_jd(x);
+    }
 }
 
 inline static VALUE
@@ -1972,7 +2017,7 @@ civil_to_jd(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2007,7 +2052,7 @@ ordinal_to_jd(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2042,7 +2087,7 @@ commercial_to_jd(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2077,7 +2122,7 @@ weeknum_to_jd(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2112,7 +2157,7 @@ nth_kday_to_jd(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2151,7 +2196,7 @@ valid_ordinal_p(VALUE y, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2190,7 +2235,7 @@ valid_civil_p(VALUE y, int m, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2226,7 +2271,7 @@ valid_commercial_p(VALUE y, int w, int d, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2256,7 +2301,7 @@ valid_weeknum_p(VALUE y, int w, int d, int f, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -2287,7 +2332,7 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 	    *ry = FIX2INT(y);
 	else {
 	    VALUE nth2;
-	    decode_year(y, ns ? -1 : +1, &nth2, ry);
+	    decode_year(y, *ns ? -1 : +1, &nth2, ry);
 	}
     }
     else {
@@ -5569,15 +5614,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + (int)t;
-
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (simple_dat_p(dat))
@@ -5630,14 +5667,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5744,14 +5774,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5854,14 +5877,7 @@ d_lite_plus(VALUE self, VALUE other)
 		jd = m_jd(dat);
 	    else {
 		jd = m_jd(dat) + jd;
-		if (jd < 0) {
-		    nth = f_sub(nth, INT2FIX(1));
-		    jd += CM_PERIOD;
-		}
-		else if (jd >= CM_PERIOD) {
-		    nth = f_add(nth, INT2FIX(1));
-		    jd -= CM_PERIOD;
-		}
+		canonicalize_jd(nth, jd);
 	    }
 
 	    if (f_zero_p(nth))
@@ -5905,15 +5921,7 @@ minus_dd(VALUE self, VALUE other)
 	d = m_jd(adat) - m_jd(bdat);
 	df = m_df(adat) - m_df(bdat);
 	sf = f_sub(m_sf(adat), m_sf(bdat));
-
-	if (d < 0) {
-	    n = f_sub(n, INT2FIX(1));
-	    d += CM_PERIOD;
-	}
-	else if (d >= CM_PERIOD) {
-	    n = f_add(n, INT2FIX(1));
-	    d -= CM_PERIOD;
-	}
+	canonicalize_jd(n, d);
 
 	if (df < 0) {
 	    d -= 1;
@@ -6299,6 +6307,8 @@ cmp_dd(VALUE self, VALUE other)
 	int a_jd, b_jd,
 	    a_df, b_df;
 
+	m_canonicalize_jd(adat);
+	m_canonicalize_jd(bdat);
 	a_nth = m_nth(adat);
 	b_nth = m_nth(bdat);
 	if (f_eqeq_p(a_nth, b_nth)) {
@@ -6379,6 +6389,8 @@ d_lite_cmp(VALUE self, VALUE other)
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    if (f_eqeq_p(a_nth, b_nth)) {
@@ -6413,6 +6425,8 @@ d_lite_cmp(VALUE self, VALUE other)
 		a_pd, b_pd;
 #endif
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    if (f_eqeq_p(a_nth, b_nth)) {
@@ -6520,6 +6534,8 @@ d_lite_equal(VALUE self, VALUE other)
 	    VALUE a_nth, b_nth;
 	    int a_jd, b_jd;
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    a_jd = m_local_jd(adat);
@@ -6541,6 +6557,8 @@ d_lite_equal(VALUE self, VALUE other)
 		a_pd, b_pd;
 #endif
 
+	    m_canonicalize_jd(adat);
+	    m_canonicalize_jd(bdat);
 	    a_nth = m_nth(adat);
 	    b_nth = m_nth(bdat);
 	    if (f_eqeq_p(a_nth, b_nth)) {
