@@ -1342,21 +1342,35 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 static VALUE
 rb_hash_replace(VALUE hash, VALUE hash2)
 {
+    st_table *table2;
+
     rb_hash_modify_check(hash);
-    hash2 = to_hash(hash2);
     if (hash == hash2) return hash;
-    rb_hash_clear(hash);
-    if (RHASH(hash2)->ntbl) {
-	hash_tbl(hash);
-	RHASH(hash)->ntbl->type = RHASH(hash2)->ntbl->type;
-    }
-    rb_hash_foreach(hash2, replace_i, hash);
+    hash2 = to_hash(hash2);
+
     RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
-    if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
+    if (FL_TEST(hash2, HASH_PROC_DEFAULT))
 	FL_SET(hash, HASH_PROC_DEFAULT);
+    else
+	FL_UNSET(hash, HASH_PROC_DEFAULT);
+
+    table2 = RHASH(hash2)->ntbl;
+
+    if (RHASH_EMPTY_P(hash2)) {
+	rb_hash_clear(hash);
+	if (table2) hash_tbl(hash)->type = table2->type;
+	return hash;
+    }
+
+    if (RHASH_ITER_LEV(hash) > 0) {
+	rb_hash_clear(hash);
+	hash_tbl(hash)->type = table2->type;
+	rb_hash_foreach(hash2, replace_i, hash);
     }
     else {
-	FL_UNSET(hash, HASH_PROC_DEFAULT);
+	st_table *old_table = RHASH(hash)->ntbl;
+	if (old_table) st_free_table(old_table);
+	RHASH(hash)->ntbl = st_copy(table2);
     }
 
     return hash;
