@@ -1,3 +1,15 @@
+Wed Jul 17 15:21:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (unlink_heap_slot): fix memory leak.
+	  free slot itself at free_heap_slot().
+
+	  Reproduce-able code is here:
+	    N1 = 100_000; N2 = 1_000_000
+	    N1.times{ary = []; N2.times{ary << ''}}
+	  Maybe this problem is remaining in Ruby 2.0.0.
+
+	* gc.c (unlink_heap_slot): remove not working code.
+
 Wed Jul 17 14:31:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: re-design the heap structure.

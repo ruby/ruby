@@ -313,7 +313,6 @@ typedef struct rb_objspace {
 	size_t length;
 	size_t used;
 	RVALUE *range[2];
-	struct heap_slot_body *freed;
 	size_t free_num;
 	size_t free_min;
 	size_t final_num;
@@ -477,7 +476,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define lomem			objspace->heap.range[0]
 #define himem			objspace->heap.range[1]
 #define heap_inc		objspace->heap.increment
-#define heap_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
 #define finalizing		objspace->flags.finalizing
@@ -1209,38 +1207,32 @@ unlink_heap_slot(rb_objspace_t *objspace, struct heap_slot *slot)
 }
 
 static void
+free_heap_slot(rb_objspace_t *objspace, struct heap_slot *slot)
+{
+    aligned_free(slot->body);
+    free(slot);
+}
+
+static void
 free_unused_slots(rb_objspace_t *objspace)
 {
     size_t i, j;
-    struct heap_slot_body *last = 0;
 
     for (i = j = 1; j < heap_used; i++) {
-	if (objspace->heap.sorted[i]->limit == 0) {
-	    if (!last) {
-		last = objspace->heap.sorted[i]->body;
-	    }
-	    else {
-		aligned_free(objspace->heap.sorted[i]->body);
-	    }
+	struct heap_slot *slot = objspace->heap.sorted[i];
+	if (slot->limit == 0) {
+	    free_heap_slot(objspace, slot);
 	    heap_used--;
 	}
 	else {
 	    if (i != j) {
-		objspace->heap.sorted[j] = objspace->heap.sorted[i];
+		objspace->heap.sorted[j] = slot;
 	    }
 	    j++;
 	}
     }
-    if (last) {
-	if (last < heap_freed) {
-	    aligned_free(heap_freed);
-	    heap_freed = last;
-	}
-	else {
-	    aligned_free(last);
-	}
-    }
 }
+
 static inline void
 make_deferred(RVALUE *p)
 {
