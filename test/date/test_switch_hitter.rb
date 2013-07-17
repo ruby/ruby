@@ -294,6 +294,8 @@ class TestSH < Test::Unit::TestCase
     assert_raise(Errno::ERANGE) do
       Date.new(1 << 10000).strftime('%Y') 
     end
+    assert_equal('-3786825600', Date.new(1850).strftime('%s'))
+    assert_equal('-3786825600000', Date.new(1850).strftime('%Q'))
   end
 
   def test_cmp
