@@ -1,3 +1,7 @@
+Wed Jul 17 22:57:40 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (delete_if_i): use ST_DELETE.
+
 Wed Jul 17 22:34:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: An static assertion for relation of SIZEOF_LONG and

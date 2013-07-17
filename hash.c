@@ -1007,7 +1007,7 @@ static int
 delete_if_i(VALUE key, VALUE value, VALUE hash)
 {
     if (RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_delete_key(hash, key);
+	return ST_DELETE;
     }
     return ST_CONTINUE;
 }
