@@ -265,9 +265,6 @@ enum {
 
 struct heaps_header {
     struct heaps_slot *base;
-    RVALUE *start;
-    RVALUE *end;
-    size_t limit;
 };
 
 struct gc_list {
@@ -420,6 +417,9 @@ enum {
 
 struct heaps_slot {
     struct heaps_header *header;
+    RVALUE *start;
+    size_t limit;
+
     RVALUE *freelist;
     struct heaps_slot *next;
     struct heaps_slot *prev;
@@ -785,9 +785,11 @@ assign_heap_slot(rb_objspace_t *objspace)
     /* adjust obj_limit (object number available in this slot) */
     start = (RVALUE*)((VALUE)header + sizeof(struct heaps_header));
     if ((VALUE)start % sizeof(RVALUE) != 0) {
-	start = (RVALUE*)((VALUE)start + sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
+	int delta = sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE));
+	start = (RVALUE*)((VALUE)start + delta);
 	limit = (HEAP_SIZE - (size_t)((VALUE)start - (VALUE)header))/sizeof(RVALUE);
     }
+    end = start + limit;
 
     /* setup objspace->heap.sorted */
     lo = 0;
@@ -812,11 +814,10 @@ assign_heap_slot(rb_objspace_t *objspace)
     }
     objspace->heap.sorted[hi] = header;
 
-    /* setup header */
-    header->start = start;
-    header->end = end = start + limit;
-    header->base = heaps;
-    header->limit = limit;
+    /* setup header and slot */
+    header->base = slot;
+    slot->start = start;
+    slot->limit = limit;
 
     if (lomem == 0 || lomem > start) lomem = start;
     if (himem < end) himem = end;
@@ -1143,8 +1144,8 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     while (lo < hi) {
 	mid = (lo + hi) / 2;
 	heap = objspace->heap.sorted[mid];
-	if (heap->start <= p) {
-	    if (p < heap->end)
+	if (heap->base->start <= p) {
+	    if (p < heap->base->start + heap->base->limit)
 		return TRUE;
 	    lo = mid + 1;
 	}
@@ -1207,7 +1208,7 @@ free_unused_heaps(rb_objspace_t *objspace)
     struct heaps_header *last = 0;
 
     for (i = j = 1; j < heaps_used; i++) {
-	if (objspace->heap.sorted[i]->limit == 0) {
+	if (objspace->heap.sorted[i]->base->limit == 0) {
 	    if (!last) {
                 last = objspace->heap.sorted[i];
 	    }
@@ -1423,8 +1424,8 @@ objspace_each_objects(VALUE arg)
 	  break;
 	membase = (RVALUE *)objspace->heap.sorted[i];
 
-	pstart = objspace->heap.sorted[i]->start;
-	pend = pstart + objspace->heap.sorted[i]->limit;
+	pstart = objspace->heap.sorted[i]->base->start;
+	pend = pstart + objspace->heap.sorted[i]->base->limit;
 
 	for (; pstart != pend; pstart++) {
 	    if (pstart->as.basic.flags) {
@@ -1788,7 +1789,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	}
 	else {
 	    struct heaps_slot *slot = (struct heaps_slot *)(VALUE)RDATA(p)->dmark;
-	    slot->header->limit--;
+	    slot->limit--;
 	}
 	p = tmp;
     }
@@ -1885,7 +1886,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
-	p = objspace->heap.sorted[i]->start; pend = p + objspace->heap.sorted[i]->limit;
+	p = objspace->heap.sorted[i]->base->start; pend = p + objspace->heap.sorted[i]->base->limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
@@ -1940,7 +1941,7 @@ is_swept_object(rb_objspace_t *objspace, VALUE ptr)
     struct heaps_slot *slot = objspace->heap.sweep_slots;
 
     while (slot) {
-	if ((VALUE)slot->header->start <= ptr && ptr < (VALUE)(slot->header->end))
+	if ((VALUE)slot->start <= ptr && ptr < (VALUE)(slot->start + slot->limit))
 	    return FALSE;
 	slot = slot->next;
     }
@@ -2154,7 +2155,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     for (i = 0; i < heaps_used; i++) {
         RVALUE *p, *pend;
 
-        p = objspace->heap.sorted[i]->start; pend = p + objspace->heap.sorted[i]->limit;
+        p = objspace->heap.sorted[i]->base->start; pend = p + objspace->heap.sorted[i]->base->limit;
         for (;p < pend; p++) {
             if (p->as.basic.flags) {
                 counts[BUILTIN_TYPE(p)]++;
@@ -2163,7 +2164,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
                 freed++;
             }
         }
-        total += objspace->heap.sorted[i]->limit;
+        total += objspace->heap.sorted[i]->base->limit;
     }
 
     if (hash == Qnil) {
@@ -2260,7 +2261,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     rgengc_report(1, objspace, "slot_sweep: start.\n");
 
     sweep_slot->freelist = NULL;
-    p = sweep_slot->header->start; pend = p + sweep_slot->header->limit;
+    p = sweep_slot->start; pend = p + sweep_slot->limit;
     offset = p - NUM_IN_SLOT(p);
     bits = GET_HEAP_MARK_BITS(p);
 
@@ -2317,15 +2318,15 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     }
 #endif
 
-    if (final_num + freed_num + empty_num == sweep_slot->header->limit &&
-        objspace->heap.free_num > objspace->heap.do_heap_free) {
+    if (final_num + freed_num + empty_num == sweep_slot->limit &&
+	objspace->heap.free_num > objspace->heap.do_heap_free) {
         RVALUE *pp;
 
         for (pp = deferred_final_list; pp != final; pp = pp->as.free.next) {
 	    RDATA(pp)->dmark = (void (*)(void *))(VALUE)sweep_slot;
             pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
         }
-        sweep_slot->header->limit = final_num;
+        sweep_slot->limit = final_num;
         unlink_heap_slot(objspace, sweep_slot);
     }
     else {
@@ -3848,7 +3849,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 #endif
 
     for (i=0; i<heaps_used; i++) {
-	p = objspace->heap.sorted[i]->start;
+	p = objspace->heap.sorted[i]->base->start;
 	bits = GET_HEAP_REMEMBERSET_BITS(p);
 
 	offset = p - NUM_IN_SLOT(p);

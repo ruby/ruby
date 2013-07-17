@@ -1,3 +1,11 @@
+Wed Jul 17 13:29:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix heaps_header and heaps_slot to reduce memory consumption.
+	  (1) move heaps_header::start and limit to  heaps_slot.
+	  (2) remove heaps_header::end which can be calculated by start+limit.
+
+	* gc.c: catch up above change.
+
 Wed Jul 17 12:30:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/st.h (st_strcasecmp): Macro defined for compatibility.
