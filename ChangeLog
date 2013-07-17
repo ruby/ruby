@@ -1,3 +1,8 @@
+Wed Jul 17 12:30:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/st.h (st_strcasecmp): Macro defined for compatibility.
+	  (st_strncasecmp): Ditto.
+
 Wed Jul 17 11:57:45 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/util.rb (CGI::Util#escape, unescape): Avoid use of regexp
