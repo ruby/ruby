@@ -1,3 +1,17 @@
+Thu Jul 18 06:30:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename gc related functions with prefix "gc_".
+	  * before_gc_sweep() -> gc_before_sweep().
+	  * after_gc_sweep()  -> gc_after_sweep().
+	  * lazy_sweep()      -> gc_lazy_sweep().
+	  * rest_sweep()      -> gc_rest_sweep().
+	  * slot_sweep()      -> gc_slot_sweep().
+
+	* gc.c: rename a heap management function with prefix "heap_".
+	  * get_freeobj() -> heap_get_freeobj().
+
+	* gc.c: rename markable_object_p() to is_markable_object().
+
 Wed Jul 17 22:57:40 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (delete_if_i): use ST_DELETE.

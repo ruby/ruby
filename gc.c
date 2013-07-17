@@ -103,10 +103,6 @@ static ruby_gc_params_t initial_params = {
 #endif
 };
 
-#define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
-
-void rb_gcdebug_print_obj_condition(VALUE obj);
-
 #if USE_RGENGC
 /* RGENGC_DEBUG:
  * 1: basic information
@@ -466,6 +462,7 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}};
 VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
+
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
 #define malloc_increase2 	objspace->malloc_params.increase2
@@ -490,7 +487,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
 
-
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -506,10 +502,14 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define RANY(o) ((RVALUE*)(o))
 
+#define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
+
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 extern st_table *rb_class_tbl;
 int ruby_disable_gc_stress = 0;
+
+void rb_gcdebug_print_obj_condition(VALUE obj);
 
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 static VALUE define_final0(VALUE obj, VALUE block);
@@ -524,14 +524,13 @@ static void aligned_free(void *);
 static void init_mark_stack(mark_stack_t *stack);
 
 static VALUE lazy_sweep_enable(void);
+static int ready_to_gc(rb_objspace_t *objspace);
 static int garbage_collect(rb_objspace_t *, int full_mark, int immediate_sweep, int reason);
 static int garbage_collect_body(rb_objspace_t *, int full_mark, int immediate_sweep, int reason);
-static void mark_tbl(rb_objspace_t *, st_table *);
-static int lazy_sweep(rb_objspace_t *objspace);
-static void rest_sweep(rb_objspace_t *);
-static void gc_mark_stacked_objects(rb_objspace_t *);
-static int ready_to_gc(rb_objspace_t *objspace);
+static int gc_lazy_sweep(rb_objspace_t *objspace);
+static void gc_rest_sweep(rb_objspace_t *objspace);
 
+static void gc_mark_stacked_objects(rb_objspace_t *);
 static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
@@ -549,6 +548,8 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #define gc_prof_record(objspace) (objspace)->profile.current_record
 
+#define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
+static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...);
 static const char *obj_type_name(VALUE obj);
 
 #if USE_RGENGC
@@ -633,32 +634,6 @@ RVALUE_DEMOTE(VALUE obj)
 }
 #endif
 
-static void
-rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
-{
-    if (level <= RGENGC_DEBUG) {
-	char buf[1024];
-	FILE *out = stderr;
-	va_list args;
-	const char *status = " ";
-
-#if USE_RGENGC
-	if (during_gc) {
-	    status = objspace->rgengc.during_minor_gc ? "-" : "+";
-	}
-#endif
-
-	va_start(args, fmt);
-	vsnprintf(buf, 1024, fmt, args);
-	va_end(args);
-
-	fprintf(out, "%s|", status);
-	fputs(buf, out);
-    }
-}
-
-#define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
-
 /*
   --------------------------- ObjectSpace -----------------------------
 */
@@ -683,7 +658,7 @@ static void free_heap_slot(rb_objspace_t *objspace, struct heap_slot *slot);
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
-    rest_sweep(objspace);
+    gc_rest_sweep(objspace);
 
     if (objspace->profile.records) {
 	free(objspace->profile.records);
@@ -917,7 +892,7 @@ heap_prepare_freeslot(rb_objspace_t *objspace)
 
     during_gc++;
 
-    if ((is_lazy_sweeping(objspace) && lazy_sweep(objspace)) ||
+    if ((is_lazy_sweeping(objspace) && gc_lazy_sweep(objspace)) ||
 	heap_increment(objspace)) {
 	goto ok;
     }
@@ -951,7 +926,7 @@ heap_get_freeslot(rb_objspace_t *objspace)
 }
 
 static inline VALUE
-get_freeobj(rb_objspace_t *objspace)
+heap_get_freeobj(rb_objspace_t *objspace)
 {
     RVALUE *p = objspace->freelist;
 
@@ -1003,7 +978,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	}
     }
 
-    obj = get_freeobj(objspace);
+    obj = heap_get_freeobj(objspace);
 
     /* OBJSETUP */
     RBASIC(obj)->flags = flags;
@@ -1459,7 +1434,7 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
     struct each_obj_args args;
     rb_objspace_t *objspace = &rb_objspace;
 
-    rest_sweep(objspace);
+    gc_rest_sweep(objspace);
     objspace->flags.dont_lazy_sweep = TRUE;
 
     args.callback = callback;
@@ -1832,7 +1807,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *final_list = 0;
     size_t i;
 
-    rest_sweep(objspace);
+    gc_rest_sweep(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
@@ -1938,6 +1913,26 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
     if (RBASIC(ptr)->klass == 0) return FALSE;
     if (is_dead_object(objspace, ptr)) return FALSE;
     return TRUE;
+}
+
+static inline int
+is_markable_object(rb_objspace_t *objspace, VALUE obj)
+{
+    if (rb_special_const_p(obj)) return 0; /* special const is not markable */
+
+    if (RGENGC_CHECK_MODE) {
+	if (!is_pointer_to_heap(objspace, (void *)obj)) rb_bug("is_markable_object: %p is not pointer to heap", (void *)obj);
+	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("is_markable_object: %p is T_NONE", (void *)obj);
+	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("is_markable_object: %p is T_ZOMBIE", (void *)obj);
+    }
+
+    return 1;
+}
+
+int
+rb_objspace_markable_object_p(VALUE obj)
+{
+    return is_markable_object(&rb_objspace, obj);
 }
 
 /*
@@ -2204,6 +2199,12 @@ lazy_sweep_enable(void)
     return Qnil;
 }
 
+static size_t
+objspace_live_num(rb_objspace_t *objspace)
+{
+    return objspace->total_allocated_object_num - objspace->total_freed_object_num;
+}
+
 static void
 gc_setup_mark_bits(struct heap_slot *slot)
 {
@@ -2216,14 +2217,8 @@ gc_setup_mark_bits(struct heap_slot *slot)
 #endif
 }
 
-static size_t
-objspace_live_num(rb_objspace_t *objspace)
-{
-    return objspace->total_allocated_object_num - objspace->total_freed_object_num;
-}
-
 static inline void
-slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
+gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 {
     int i;
     size_t empty_num = 0, freed_num = 0, final_num = 0;
@@ -2329,7 +2324,7 @@ slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 __attribute__((noinline))
 #endif
 static void
-before_gc_sweep(rb_objspace_t *objspace)
+gc_before_sweep(rb_objspace_t *objspace)
 {
     rgengc_report(1, objspace, "before_gc_sweep\n");
 
@@ -2354,7 +2349,7 @@ before_gc_sweep(rb_objspace_t *objspace)
 }
 
 static void
-after_gc_sweep(rb_objspace_t *objspace)
+gc_after_sweep(rb_objspace_t *objspace)
 {
     size_t inc;
 
@@ -2392,7 +2387,7 @@ after_gc_sweep(rb_objspace_t *objspace)
 }
 
 static int
-lazy_sweep(rb_objspace_t *objspace)
+gc_lazy_sweep(rb_objspace_t *objspace)
 {
     struct heap_slot *slot, *next;
     int result = FALSE;
@@ -2406,11 +2401,11 @@ lazy_sweep(rb_objspace_t *objspace)
     while (slot) {
 	objspace->heap.sweep_slots = next = slot->next;
 
-	slot_sweep(objspace, slot);
+	gc_slot_sweep(objspace, slot);
 
-	if (!next) after_gc_sweep(objspace);
+	if (!next) gc_after_sweep(objspace);
 
-        if (objspace->heap.free_slots) {
+	if (objspace->heap.free_slots) {
             result = TRUE;
 	    break;
         }
@@ -2424,12 +2419,12 @@ lazy_sweep(rb_objspace_t *objspace)
 }
 
 static void
-rest_sweep(rb_objspace_t *objspace)
+gc_rest_sweep(rb_objspace_t *objspace)
 {
     if (is_lazy_sweeping(objspace)) {
 	during_gc++;
 	while (is_lazy_sweeping(objspace)) {
-	    lazy_sweep(objspace);
+	    gc_lazy_sweep(objspace);
 	}
 	during_gc = 0;
     }
@@ -2441,20 +2436,20 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
     if (immediate_sweep) {
 	struct heap_slot *next;
 	gc_prof_sweep_timer_start(objspace);
-	before_gc_sweep(objspace);
+	gc_before_sweep(objspace);
 
 	while (objspace->heap.sweep_slots) {
 	    next = objspace->heap.sweep_slots->next;
-	    slot_sweep(objspace, objspace->heap.sweep_slots);
+	    gc_slot_sweep(objspace, objspace->heap.sweep_slots);
 	    objspace->heap.sweep_slots = next;
 	}
 
-	after_gc_sweep(objspace);
+	gc_after_sweep(objspace);
 	gc_prof_sweep_timer_stop(objspace);
     }
     else {
-	before_gc_sweep(objspace);
-	lazy_sweep(objspace);
+	gc_before_sweep(objspace);
+	gc_lazy_sweep(objspace);
     }
 
     if (!objspace->heap.free_slots) {
@@ -2467,7 +2462,7 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
     }
 }
 
-/* Marking stack */
+/* Marking - Marking stack */
 
 static void push_mark_stack(mark_stack_t *, VALUE);
 static int pop_mark_stack(mark_stack_t *, VALUE *);
@@ -2599,7 +2594,7 @@ init_mark_stack(mark_stack_t *stack)
     stack->unused_cache_size = stack->cache_size;
 }
 
-
+/* Marking */
 
 #ifdef __ia64
 #define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
@@ -2930,71 +2925,6 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
     return 1;
 }
 
-static int
-markable_object_p(rb_objspace_t *objspace, VALUE obj)
-{
-    if (rb_special_const_p(obj)) return 0; /* special const is not markable */
-
-    if (RGENGC_CHECK_MODE) {
-	if (!is_pointer_to_heap(objspace, (void *)obj)) rb_bug("markable_object_p: %p is not pointer to heap", (void *)obj);
-	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("markable_object_p: %p is T_NONE", (void *)obj);
-	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("markable_object_p: %p is T_ZOMBIE", (void *)obj);
-    }
-
-    return 1;
-}
-
-int
-rb_objspace_markable_object_p(VALUE obj)
-{
-    return markable_object_p(&rb_objspace, obj);
-}
-
-static const char *
-type_name(int type, VALUE obj)
-{
-    switch (type) {
-#define TYPE_NAME(t) case (t): return #t;
-	    TYPE_NAME(T_NONE);
-	    TYPE_NAME(T_OBJECT);
-	    TYPE_NAME(T_CLASS);
-	    TYPE_NAME(T_MODULE);
-	    TYPE_NAME(T_FLOAT);
-	    TYPE_NAME(T_STRING);
-	    TYPE_NAME(T_REGEXP);
-	    TYPE_NAME(T_ARRAY);
-	    TYPE_NAME(T_HASH);
-	    TYPE_NAME(T_STRUCT);
-	    TYPE_NAME(T_BIGNUM);
-	    TYPE_NAME(T_FILE);
-	    TYPE_NAME(T_MATCH);
-	    TYPE_NAME(T_COMPLEX);
-	    TYPE_NAME(T_RATIONAL);
-	    TYPE_NAME(T_NIL);
-	    TYPE_NAME(T_TRUE);
-	    TYPE_NAME(T_FALSE);
-	    TYPE_NAME(T_SYMBOL);
-	    TYPE_NAME(T_FIXNUM);
-	    TYPE_NAME(T_UNDEF);
-	    TYPE_NAME(T_NODE);
-	    TYPE_NAME(T_ICLASS);
-	    TYPE_NAME(T_ZOMBIE);
-      case T_DATA:
-	if (obj && rb_objspace_data_type_name(obj)) {
-	    return rb_objspace_data_type_name(obj);
-	}
-	return "T_DATA";
-#undef TYPE_NAME
-    }
-    return "unknown";
-}
-
-static const char *
-obj_type_name(VALUE obj)
-{
-    return type_name(TYPE(obj), obj);
-}
-
 static void
 rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3071,7 +3001,7 @@ rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr)
 {
-    if (!markable_object_p(objspace, ptr)) return;
+    if (!is_markable_object(objspace, ptr)) return;
 
     if (LIKELY(objspace->mark_func_data == 0)) {
 	rgengc_check_shady(objspace, ptr);
@@ -3103,7 +3033,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
   again:
     if (LIKELY(objspace->mark_func_data == 0)) {
 	obj = RANY(ptr);
-	if (!markable_object_p(objspace, ptr)) return;
+	if (!is_markable_object(objspace, ptr)) return;
 	rgengc_check_shady(objspace, ptr);
 	if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
 #if RGENGC_CHECK_MODE >= 2
@@ -3734,6 +3664,30 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 
 /* RGENGC */
 
+static void
+rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
+{
+    if (level <= RGENGC_DEBUG) {
+	char buf[1024];
+	FILE *out = stderr;
+	va_list args;
+	const char *status = " ";
+
+#if USE_RGENGC
+	if (during_gc) {
+	    status = objspace->rgengc.during_minor_gc ? "-" : "+";
+	}
+#endif
+
+	va_start(args, fmt);
+	vsnprintf(buf, 1024, fmt, args);
+	va_end(args);
+
+	fprintf(out, "%s|", status);
+	fputs(buf, out);
+    }
+}
+
 #if USE_RGENGC
 
 /* bit operations */
@@ -4116,7 +4070,7 @@ garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_sweep, int
 #if GC_PROFILE_MORE_DETAIL
     objspace->profile.prepare_time = getrusage_time();
 #endif
-    rest_sweep(objspace);
+    gc_rest_sweep(objspace);
 #if GC_PROFILE_MORE_DETAIL
     objspace->profile.prepare_time = getrusage_time() - objspace->profile.prepare_time;
 #endif
@@ -4508,7 +4462,7 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (markable_object_p(objspace, obj)) {
+    if (is_markable_object(objspace, obj)) {
 	struct mark_func_data_struct mfd;
 	mfd.mark_func = func;
 	mfd.data = data;
@@ -5568,7 +5522,7 @@ static VALUE
 gc_profile_enable(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    rest_sweep(objspace);
+    gc_rest_sweep(objspace);
     objspace->profile.run = TRUE;
     return Qnil;
 }
@@ -5591,11 +5545,56 @@ gc_profile_disable(void)
     return Qnil;
 }
 
-#ifdef GC_DEBUG
-
 /*
   ------------------------------ DEBUG ------------------------------
 */
+
+static const char *
+type_name(int type, VALUE obj)
+{
+    switch (type) {
+#define TYPE_NAME(t) case (t): return #t;
+	    TYPE_NAME(T_NONE);
+	    TYPE_NAME(T_OBJECT);
+	    TYPE_NAME(T_CLASS);
+	    TYPE_NAME(T_MODULE);
+	    TYPE_NAME(T_FLOAT);
+	    TYPE_NAME(T_STRING);
+	    TYPE_NAME(T_REGEXP);
+	    TYPE_NAME(T_ARRAY);
+	    TYPE_NAME(T_HASH);
+	    TYPE_NAME(T_STRUCT);
+	    TYPE_NAME(T_BIGNUM);
+	    TYPE_NAME(T_FILE);
+	    TYPE_NAME(T_MATCH);
+	    TYPE_NAME(T_COMPLEX);
+	    TYPE_NAME(T_RATIONAL);
+	    TYPE_NAME(T_NIL);
+	    TYPE_NAME(T_TRUE);
+	    TYPE_NAME(T_FALSE);
+	    TYPE_NAME(T_SYMBOL);
+	    TYPE_NAME(T_FIXNUM);
+	    TYPE_NAME(T_UNDEF);
+	    TYPE_NAME(T_NODE);
+	    TYPE_NAME(T_ICLASS);
+	    TYPE_NAME(T_ZOMBIE);
+      case T_DATA:
+	if (obj && rb_objspace_data_type_name(obj)) {
+	    return rb_objspace_data_type_name(obj);
+	}
+	return "T_DATA";
+#undef TYPE_NAME
+    }
+    return "unknown";
+}
+
+static const char *
+obj_type_name(VALUE obj)
+{
+    return type_name(TYPE(obj), obj);
+}
+
+#ifdef GC_DEBUG
 
 void
 rb_gcdebug_print_obj_condition(VALUE obj)
