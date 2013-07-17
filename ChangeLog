@@ -1,3 +1,8 @@
+Wed Jul 17 17:12:23 2013  Matthew M. Boedicker  <matthewm@boedicker.org>
+
+	* hash.c (env_fetch): Add key name to message on ENV.fetch KeyError,
+	  as well as Hash#fetch.  [ruby-core:56062] [Feature #8649]
+
 Wed Jul 17 15:59:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: catch up last changes for debugging/checking mode.
