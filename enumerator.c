@@ -1011,7 +1011,7 @@ enumerator_size(VALUE obj)
     if (rb_respond_to(e->size, id_call)) {
         if (e->args) {
             argc = RARRAY_LENINT(e->args);
-	    argv = RARRAY_PTR(e->args);
+            argv = RARRAY_PTR(e->args);
             return rb_funcall2(e->size, id_call, argc, argv);
         } else {
             return rb_funcall(e->size, id_call, 0);
