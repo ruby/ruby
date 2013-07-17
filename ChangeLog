@@ -1,3 +1,12 @@
+Wed Jul 17 15:50:10 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_free): free slot itself.
+
+	* gc.c (objspace_each_objects): fix condition.
+	  Use slot->body instead of slot.
+
+	* gc.c (count_objects): use "slot" variable.
+
 Wed Jul 17 15:21:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (unlink_heap_slot): fix memory leak.

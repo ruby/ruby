@@ -678,6 +678,7 @@ rb_objspace_alloc(void)
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void free_stack_chunks(mark_stack_t *);
+static void free_heap_slot(rb_objspace_t *objspace, struct heap_slot *slot);
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
@@ -698,7 +699,7 @@ rb_objspace_free(rb_objspace_t *objspace)
     if (objspace->heap.sorted) {
 	size_t i;
 	for (i = 0; i < heap_used; ++i) {
-	    aligned_free(objspace->heap.sorted[i]);
+	    free_heap_slot(objspace, objspace->heap.sorted[i]);
 	}
 	free(objspace->heap.sorted);
 	heap_used = 0;
@@ -1220,6 +1221,7 @@ free_unused_slots(rb_objspace_t *objspace)
 
     for (i = j = 1; j < heap_used; i++) {
 	struct heap_slot *slot = objspace->heap.sorted[i];
+
 	if (slot->limit == 0) {
 	    free_heap_slot(objspace, slot);
 	    heap_used--;
@@ -1407,7 +1409,8 @@ static VALUE
 objspace_each_objects(VALUE arg)
 {
     size_t i;
-    RVALUE *membase = 0;
+    struct heap_slot_body *last_body = 0;
+    struct heap_slot *slot;
     RVALUE *pstart, *pend;
     rb_objspace_t *objspace = &rb_objspace;
     struct each_obj_args *args = (struct each_obj_args *)arg;
@@ -1415,16 +1418,18 @@ objspace_each_objects(VALUE arg)
 
     i = 0;
     while (i < heap_used) {
-	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1])
+	while (0 < i && last_body < objspace->heap.sorted[i-1]->body)
 	    i--;
-	while (i < heap_used && (uintptr_t)objspace->heap.sorted[i] <= (uintptr_t)membase)
+	while (i < heap_used && objspace->heap.sorted[i]->body <= last_body)
 	    i++;
 	if (heap_used <= i)
 	  break;
-	membase = (RVALUE *)objspace->heap.sorted[i];
 
-	pstart = objspace->heap.sorted[i]->start;
-	pend = pstart + objspace->heap.sorted[i]->limit;
+	slot = objspace->heap.sorted[i];
+	last_body = slot->body;
+
+	pstart = slot->start;
+	pend = pstart + slot->limit;
 
 	for (; pstart != pend; pstart++) {
 	    if (pstart->as.basic.flags) {
@@ -2152,18 +2157,19 @@ count_objects(int argc, VALUE *argv, VALUE os)
     }
 
     for (i = 0; i < heap_used; i++) {
-        RVALUE *p, *pend;
+	struct heap_slot *slot = objspace->heap.sorted[i];
+	RVALUE *p, *pend;
 
-        p = objspace->heap.sorted[i]->start; pend = p + objspace->heap.sorted[i]->limit;
-        for (;p < pend; p++) {
-            if (p->as.basic.flags) {
-                counts[BUILTIN_TYPE(p)]++;
-            }
-            else {
-                freed++;
-            }
-        }
-        total += objspace->heap.sorted[i]->limit;
+	p = slot->start; pend = p + slot->limit;
+	for (;p < pend; p++) {
+	    if (p->as.basic.flags) {
+		counts[BUILTIN_TYPE(p)]++;
+	    }
+	    else {
+		freed++;
+	    }
+	}
+	total += slot->limit;
     }
 
     if (hash == Qnil) {
