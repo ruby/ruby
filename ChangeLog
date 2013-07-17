@@ -1,3 +1,13 @@
+Wed Jul 17 11:57:45 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/util.rb (CGI::Util#escape, unescape): Avoid use of regexp
+	  special global variable. [Feature #8648] Thanks to fotos.
+
+Wed Jul 17 11:57:10 2013  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Util#url_encode): Avoid use of regexp special global
+	  variable. [Feature #8648] Thanks to fotos.
+
 Wed Jul 17 08:12:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* st.c (st_locale_insensitive_strcasecmp): Renamed from st_strcasecmp.
