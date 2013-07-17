@@ -1,3 +1,7 @@
+Wed Jul 17 15:59:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: catch up last changes for debugging/checking mode.
+
 Wed Jul 17 15:50:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_objspace_free): free slot itself.

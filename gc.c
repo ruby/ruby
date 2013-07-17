@@ -829,7 +829,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     heap_used++;
 
     for (p = start; p != end; p++) {
-	rgengc_report(3, objspace, "assign_heap_slot: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
+	rgengc_report(3, objspace, "assign_heap_slot: %p is added to freelist\n");
 	slot_add_freeobj(objspace, slot, (VALUE)p);
     }
 
@@ -3557,8 +3557,8 @@ static void
 gc_oldgen_bitmap2flag(struct heap_slot *slot)
 {
     bits_t *oldgen_bits = &slot->oldgen_bits[0];
-    RVALUE *p = slot->header->start;
-    RVALUE *pend = p + slot->header->limit;
+    RVALUE *p = slot->start;
+    RVALUE *pend = p + slot->limit;
 
     while (p < pend) {
 	if (MARKED_IN_BITMAP(oldgen_bits, p)) FL_SET2(p, FL_OLDGEN);
@@ -3576,7 +3576,7 @@ gc_export_bitmaps(rb_objspace_t *objspace)
     if (exported_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
 
     for (i=0; i<heap_used; i++) {
-	struct heap_slot *slot = objspace->heap.sorted[i]->base;
+	struct heap_slot *slot = objspace->heap.sorted[i];
 
 	memcpy(&exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], &slot->mark_bits[0],        HEAP_BITMAP_SIZE);
 	memcpy(&exported_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], &slot->rememberset_bits[0], HEAP_BITMAP_SIZE);
@@ -3592,7 +3592,7 @@ gc_restore_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_slot *slot = objspace->heap.sorted[i]->base;
+	struct heap_slot *slot = objspace->heap.sorted[i];
 
 	/* restore bitmaps */
 	memcpy(&slot->mark_bits[0],        &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
@@ -3616,7 +3616,7 @@ gc_save_bitmaps(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_slot *slot = objspace->heap.sorted[i]->base;
+	struct heap_slot *slot = objspace->heap.sorted[i];
 
 	/* save bitmaps */
 	memcpy(&slot->saved_mark_bits[0],        &slot->mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3633,7 +3633,7 @@ gc_load_bitmaps(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_slot *slot = objspace->heap.sorted[i]->base;
+	struct heap_slot *slot = objspace->heap.sorted[i];
 
 	/* load bitmaps */
 	memcpy(&slot->mark_bits[0],        &slot->saved_mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3682,7 +3682,7 @@ gc_marks_test(rb_objspace_t *objspace)
     /* check */
     for (i=0; i<heap_used; i++) {
 	bits_t *minor_mark_bits = &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
-	bits_t *major_mark_bits = objspace->heap.sorted[i]->base->mark_bits;
+	bits_t *major_mark_bits = objspace->heap.sorted[i]->mark_bits;
 	RVALUE *p = objspace->heap.sorted[i]->start;
 	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
 
