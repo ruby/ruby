@@ -1,3 +1,15 @@
+Wed Jul 17 17:19:54 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename heap management functions with prefix "heap_".
+	  * allocate_sorted_array() -> heap_allocate_sorted_array().
+	  * slot_add_freeobj()      -> heap_slot_add_freeobj().
+	  * assign_heap_slot()      -> heap_assign_slot().
+	  * add_heap_slots()        -> heap_add_slots().
+	  * init_heap()             -> heap_init().
+	  * set_heap_increment()    -> heap_set_increment().
+
+	* gc.c (initial_expand_heap): inlined in rb_gc_set_params().
+
 Wed Jul 17 17:12:23 2013  Matthew M. Boedicker  <matthewm@boedicker.org>
 
 	* hash.c (env_fetch): Add key name to message on ENV.fetch KeyError,

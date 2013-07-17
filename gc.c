@@ -516,7 +516,6 @@ static VALUE define_final0(VALUE obj, VALUE block);
 VALUE rb_define_final(VALUE obj, VALUE block);
 VALUE rb_undefine_final(VALUE obj);
 static void run_final(rb_objspace_t *objspace, VALUE obj);
-static void initial_expand_heap(rb_objspace_t *objspace);
 
 static void negative_size_allocation_error(const char *);
 static void *aligned_malloc(size_t, size_t);
@@ -531,6 +530,7 @@ static void mark_tbl(rb_objspace_t *, st_table *);
 static int lazy_sweep(rb_objspace_t *objspace);
 static void rest_sweep(rb_objspace_t *);
 static void gc_mark_stacked_objects(rb_objspace_t *);
+static int ready_to_gc(rb_objspace_t *objspace);
 
 static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
@@ -710,14 +710,8 @@ rb_objspace_free(rb_objspace_t *objspace)
 }
 #endif
 
-void
-rb_global_variable(VALUE *var)
-{
-    rb_gc_register_address(var);
-}
-
 static void
-allocate_sorted_array(rb_objspace_t *objspace, size_t next_heap_length)
+heap_allocate_sorted_array(rb_objspace_t *objspace, size_t next_heap_length)
 {
     struct heap_slot **p;
     size_t size;
@@ -739,13 +733,13 @@ allocate_sorted_array(rb_objspace_t *objspace, size_t next_heap_length)
 }
 
 static inline void
-slot_add_freeobj(rb_objspace_t *objspace, struct heap_slot *slot, VALUE obj)
+heap_slot_add_freeobj(rb_objspace_t *objspace, struct heap_slot *slot, VALUE obj)
 {
     RVALUE *p = (RVALUE *)obj;
     p->as.free.flags = 0;
     p->as.free.next = slot->freelist;
     slot->freelist = p;
-    rgengc_report(3, objspace, "slot_add_freeobj: %p (%s) is added to freelist\n", p, obj_type_name(obj));
+    rgengc_report(3, objspace, "heap_slot_add_freeobj: %p (%s) is added to freelist\n", p, obj_type_name(obj));
 }
 
 static inline void
@@ -758,7 +752,7 @@ heap_add_freeslot(rb_objspace_t *objspace, struct heap_slot *slot)
 }
 
 static void
-assign_heap_slot(rb_objspace_t *objspace)
+heap_assign_slot(rb_objspace_t *objspace)
 {
     RVALUE *start, *end, *p;
     struct heap_slot *slot;
@@ -830,14 +824,14 @@ assign_heap_slot(rb_objspace_t *objspace)
 
     for (p = start; p != end; p++) {
 	rgengc_report(3, objspace, "assign_heap_slot: %p is added to freelist\n");
-	slot_add_freeobj(objspace, slot, (VALUE)p);
+	heap_slot_add_freeobj(objspace, slot, (VALUE)p);
     }
 
     heap_add_freeslot(objspace, slot);
 }
 
 static void
-add_heap_slots(rb_objspace_t *objspace, size_t add)
+heap_add_slots(rb_objspace_t *objspace, size_t add)
 {
     size_t i;
     size_t next_heap_length;
@@ -845,20 +839,20 @@ add_heap_slots(rb_objspace_t *objspace, size_t add)
     next_heap_length = heap_used + add;
 
     if (next_heap_length > heap_length) {
-        allocate_sorted_array(objspace, next_heap_length);
+	heap_allocate_sorted_array(objspace, next_heap_length);
         heap_length = next_heap_length;
     }
 
     for (i = 0; i < add; i++) {
-        assign_heap_slot(objspace);
+	heap_assign_slot(objspace);
     }
     heap_inc = 0;
 }
 
 static void
-init_heap(rb_objspace_t *objspace)
+heap_init(rb_objspace_t *objspace)
 {
-    add_heap_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
+    heap_add_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
     init_mark_stack(&objspace->mark_stack);
 
 #ifdef USE_SIGALTSTACK
@@ -876,17 +870,7 @@ init_heap(rb_objspace_t *objspace)
 }
 
 static void
-initial_expand_heap(rb_objspace_t *objspace)
-{
-    size_t min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
-
-    if (min_size > heap_used) {
-        add_heap_slots(objspace, min_size - heap_used);
-    }
-}
-
-static void
-set_heap_increment(rb_objspace_t *objspace)
+heap_set_increment(rb_objspace_t *objspace)
 {
     size_t next_heap_length = (size_t)(heap_used * initial_growth_factor);
 
@@ -896,12 +880,12 @@ set_heap_increment(rb_objspace_t *objspace)
 
     heap_inc = next_heap_length - heap_used;
 
-    rgengc_report(5, objspace, "set_heap_increment: heap_length: %d, next_heap_length: %d, heap_inc: %d\n",
+    rgengc_report(5, objspace, "heap_set_increment: heap_length: %d, next_heap_length: %d, heap_inc: %d\n",
 		  heap_length, next_heap_length, heap_inc);
 
     if (next_heap_length > heap_length) {
-	allocate_sorted_array(objspace, next_heap_length);
-        heap_length = next_heap_length;
+	heap_allocate_sorted_array(objspace, next_heap_length);
+	heap_length = next_heap_length;
     }
 }
 
@@ -911,26 +895,11 @@ heap_increment(rb_objspace_t *objspace)
     rgengc_report(5, objspace, "heap_increment: heap_inc: %d\n", heap_inc);
 
     if (heap_inc > 0) {
-        assign_heap_slot(objspace);
+        heap_assign_slot(objspace);
 	heap_inc--;
 	return TRUE;
     }
     return FALSE;
-}
-
-static int
-ready_to_gc(rb_objspace_t *objspace)
-{
-    if (dont_gc || during_gc) {
-	if (!objspace->freelist && !objspace->heap.free_slots) {
-            if (!heap_increment(objspace)) {
-		set_heap_increment(objspace);
-                heap_increment(objspace);
-            }
-	}
-	return FALSE;
-    }
-    return TRUE;
 }
 
 static struct heap_slot *
@@ -1395,7 +1364,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 void
 Init_heap(void)
 {
-    init_heap(&rb_objspace);
+    heap_init(&rb_objspace);
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
@@ -1788,7 +1757,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	run_final(objspace, (VALUE)p);
 	objspace->total_freed_object_num++;
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-	    slot_add_freeobj(objspace, GET_HEAP_SLOT(p), (VALUE)p);
+	    heap_slot_add_freeobj(objspace, GET_HEAP_SLOT(p), (VALUE)p);
 	    objspace->heap.free_num++;
 	}
 	else {
@@ -2298,7 +2267,7 @@ slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 			}
 			else {
 			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			    slot_add_freeobj(objspace, sweep_slot, (VALUE)p);
+			    heap_slot_add_freeobj(objspace, sweep_slot, (VALUE)p);
 			    rgengc_report(3, objspace, "slot_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
 			    freed_num++;
 			}
@@ -2393,7 +2362,7 @@ after_gc_sweep(rb_objspace_t *objspace)
 		  objspace->heap.free_num, objspace->heap.free_min);
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
-	set_heap_increment(objspace);
+	heap_set_increment(objspace);
 	heap_increment(objspace);
 
 #if USE_RGENGC
@@ -2490,7 +2459,7 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 
     if (!objspace->heap.free_slots) {
 	/* there is no free after slot_sweep() */
-	set_heap_increment(objspace);
+	heap_set_increment(objspace);
 	if (!heap_increment(objspace)) { /* can't allocate additional free objects */
 	    during_gc = 0;
 	    rb_memerror();
@@ -4003,7 +3972,7 @@ rb_gc_force_recycle(VALUE p)
 #endif
 
     objspace->total_freed_object_num++;
-    slot_add_freeobj(objspace, GET_HEAP_SLOT(p), p);
+    heap_slot_add_freeobj(objspace, GET_HEAP_SLOT(p), p);
 
     if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
 	objspace->heap.free_num++;
@@ -4050,6 +4019,12 @@ rb_gc_unregister_address(VALUE *addr)
 	}
 	tmp = tmp->next;
     }
+}
+
+void
+rb_global_variable(VALUE *var)
+{
+    rb_gc_register_address(var);
 }
 
 #define GC_NOTIFY 0
@@ -4108,6 +4083,21 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     gc_prof_timer_stop(objspace);
 
     if (GC_NOTIFY) fprintf(stderr, "end garbage_collect()\n");
+    return TRUE;
+}
+
+static int
+ready_to_gc(rb_objspace_t *objspace)
+{
+    if (dont_gc || during_gc) {
+	if (!objspace->freelist && !objspace->heap.free_slots) {
+            if (!heap_increment(objspace)) {
+		heap_set_increment(objspace);
+                heap_increment(objspace);
+            }
+	}
+	return FALSE;
+    }
     return TRUE;
 }
 
@@ -4479,8 +4469,15 @@ rb_gc_set_params(void)
 	    fprintf(stderr, "heap_min_slots=%d (%d)\n",
 		    heap_min_slots_i, initial_heap_min_slots);
 	if (heap_min_slots_i > 0) {
+	    size_t min_size;
+	    rb_objspace_t *objspace = &rb_objspace;
+
 	    initial_heap_min_slots = heap_min_slots_i;
-            initial_expand_heap(&rb_objspace);
+	    min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
+
+	    if (min_size > heap_used) {
+		heap_add_slots(objspace, min_size - heap_used);
+	    }
 	}
     }
 
