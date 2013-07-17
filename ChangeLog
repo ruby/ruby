@@ -1,3 +1,13 @@
+Wed Jul 17 22:34:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: An static assertion for relation of SIZEOF_LONG and
+	  SIZEOF_BDIGITS is added.
+	  (bary_mul_precheck): Reduce comparisons.
+	  (bary_mul): Invoke bary_sq_fast or bary_mul1 if the bignum size is
+	  small.
+	  (bigfixize): Resize the argument bignum here.
+	  (bignorm): Don't call bigtrunc after bigfixize.
+
 Wed Jul 17 22:13:26 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_replace): performance improvement by using

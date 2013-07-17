@@ -47,6 +47,12 @@ STATIC_ASSERT(bdigit_dbl_signedness, 0 < (BDIGIT_DBL)-1);
 STATIC_ASSERT(bdigit_dbl_signed_signedness, 0 > (BDIGIT_DBL_SIGNED)-1);
 STATIC_ASSERT(rbignum_embed_len_max, RBIGNUM_EMBED_LEN_MAX <= (RBIGNUM_EMBED_LEN_MASK >> RBIGNUM_EMBED_LEN_SHIFT));
 
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_LONG % SIZEOF_BDIGITS == 0);
+#else
+STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
+#endif
+
 #ifdef WORDS_BIGENDIAN
 #   define HOST_BIGENDIAN_P 1
 #else
@@ -1911,22 +1917,40 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
 
     assert(xl + yl <= zl);
 
-    while (0 < xl && xds[xl-1] == 0)
-        xl--;
-    while (0 < yl && yds[yl-1] == 0)
-        yl--;
-
     nlsz = 0;
-    while (0 < xl && xds[0] == 0) {
-        xds++;
-        xl--;
-        nlsz++;
+
+    while (0 < xl) {
+        if (xds[xl-1] == 0) {
+            xl--;
+        }
+        else {
+            do {
+                if (xds[0] != 0)
+                    break;
+                xds++;
+                xl--;
+                nlsz++;
+            } while (0 < xl);
+            break;
+        }
     }
-    while (0 < yl && yds[0] == 0) {
-        yds++;
-        yl--;
-        nlsz++;
+
+    while (0 < yl) {
+        if (yds[yl-1] == 0) {
+            yl--;
+        }
+        else {
+            do {
+                if (xds[0] != 0)
+                    break;
+                yds++;
+                yl--;
+                nlsz++;
+            } while (0 < yl);
+            break;
+        }
     }
+
     if (nlsz) {
         MEMZERO(zds, BDIGIT, nlsz);
         zds += nlsz;
@@ -1942,12 +1966,12 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
     }
     assert(xl <= yl);
 
-    if (xl == 0) {
-        MEMZERO(zds, BDIGIT, zl);
-        return 1;
-    }
+    if (xl <= 1) {
+        if (xl == 0) {
+            MEMZERO(zds, BDIGIT, zl);
+            return 1;
+        }
 
-    if (xl == 1) {
         if (xds[0] == 1) {
             MEMCPY(zds, yds, BDIGIT, yl);
             MEMZERO(zds+yl, BDIGIT, zl-yl);
@@ -2059,6 +2083,14 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds
 static void
 bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
+    if (xl < KARATSUBA_MUL_DIGITS) {
+        if (xds == yds && xl == yl)
+            bary_sq_fast(zds, zl, xds, xl);
+        else
+            bary_mul1(zds, zl, xds, xl, yds, yl);
+        return;
+    }
+
     bary_mul_toom3_start(zds, zl, xds, xl, yds, yl, NULL, 0);
 }
 
@@ -2275,28 +2307,45 @@ bigtrunc(VALUE x)
 static inline VALUE
 bigfixize(VALUE x)
 {
-    long len = RBIGNUM_LEN(x);
+    size_t len = RBIGNUM_LEN(x);
     BDIGIT *ds = BDIGITS(x);
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    unsigned long u;
+#else
+    BDIGIT u;
+#endif
+
+    while (0 < len && ds[len-1] == 0)
+        len--;
 
     if (len == 0) return INT2FIX(0);
-    if (BIGSIZE(x) <= sizeof(long)) {
-	long num = 0;
-#if SIZEOF_BDIGITS >= SIZEOF_LONG
-	num = (long)ds[0];
-#else
-	while (len--) {
-	    num = (long)(BIGUP(num) + ds[len]);
-	}
-#endif
-	if (num >= 0) {
-	    if (RBIGNUM_SIGN(x)) {
-		if (POSFIXABLE(num)) return LONG2FIX(num);
-	    }
-	    else {
-		if (NEGFIXABLE(-num)) return LONG2FIX(-num);
-	    }
-	}
+
+#if SIZEOF_BDIGITS < SIZEOF_LONG
+    if (sizeof(long)/SIZEOF_BDIGITS < len)
+        goto return_big;
+    else {
+        int i = (int)len;
+        u = 0;
+        while (i--) {
+            u = (long)(BIGUP(u) + ds[i]);
+        }
     }
+#else /* SIZEOF_BDIGITS >= SIZEOF_LONG */
+    if (1 < len || LONG_MAX < ds[0])
+        goto return_big;
+    else
+        u = ds[0];
+#endif
+
+    if (RBIGNUM_POSITIVE_P(x)) {
+        if (POSFIXABLE(u)) return LONG2FIX((long)u);
+    }
+    else {
+        if (u <= -FIXNUM_MIN) return LONG2FIX(-(long)u);
+    }
+
+  return_big:
+    rb_big_resize(x, len);
     return x;
 }
 
@@ -2305,8 +2354,6 @@ bignorm(VALUE x)
 {
     if (RB_TYPE_P(x, T_BIGNUM)) {
 	x = bigfixize(x);
-        if (!FIXNUM_P(x))
-            bigtrunc(x);
     }
     return x;
 }
