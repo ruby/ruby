@@ -1,3 +1,21 @@
+Wed Jul 17 14:31:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: re-design the heap structure.
+
+	  (1) The heap is consists of a set of slots.
+	  (2) Each "slot" has a "slot_body".
+	      slot::start and slot::limit specify RVALUE beginning address
+	      and number of RVALUE in a "slot_body".
+	  (3) "slot_body" contains a pointer to slot (slot_body::header::slot)
+	      and an array of RVALUE.
+	  (4) heap::sorted is an array of "slots", sorted by an address of
+	      slot::body.
+
+	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
+	  for more details (figure).
+
+	* gc.c: Avoid "heaps" terminology. It is ambiguous.
+
 Wed Jul 17 13:29:16 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix heaps_header and heaps_slot to reduce memory consumption.
