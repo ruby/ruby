@@ -112,6 +112,15 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 
 #define bignew(len,sign) bignew_1(rb_cBignum,(len),(sign))
 
+#define BDIGITS_ZERO(ptr, n) do { \
+  BDIGIT *bdigitz_zero_ptr = (ptr); \
+  size_t bdigitz_zero_n = (n); \
+  while (bdigitz_zero_n) { \
+    *bdigitz_zero_ptr++ = 0; \
+    bdigitz_zero_n--; \
+  } \
+} while (0)
+
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
@@ -839,7 +848,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 (flags & INTEGER_PACK_MSBYTE_FIRST) != 0;
             if (src_num_bdigits <= dst_num_bdigits) {
                 MEMCPY(words, dp, BDIGIT, src_num_bdigits);
-                MEMZERO((BDIGIT*)words + src_num_bdigits, BDIGIT, dst_num_bdigits - src_num_bdigits);
+                BDIGITS_ZERO((BDIGIT*)words + src_num_bdigits, dst_num_bdigits - src_num_bdigits);
             }
             else {
                 MEMCPY(words, dp, BDIGIT, dst_num_bdigits);
@@ -1376,7 +1385,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
     sign = bary_unpack_internal(bdigits, num_bdigits0, words, numwords, wordsize, nails, flags, nlp_bits);
 
     if (num_bdigits0 < num_bdigits) {
-        MEMZERO(bdigits + num_bdigits0, BDIGIT, num_bdigits - num_bdigits0);
+        BDIGITS_ZERO(bdigits + num_bdigits0, num_bdigits - num_bdigits0);
         if (sign == -2) {
             bdigits[num_bdigits0] = 1;
         }
@@ -1521,7 +1530,7 @@ bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
     zds[0] = BIGLO(n);
     zds[1] = (BDIGIT)BIGDN(n);
 
-    MEMZERO(zds + 2, BDIGIT, zl - 2);
+    BDIGITS_ZERO(zds + 2, zl - 2);
 }
 
 static int
@@ -1566,7 +1575,7 @@ bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, siz
 
     assert(xl + yl <= zl);
 
-    MEMZERO(zds, BDIGIT, zl);
+    BDIGITS_ZERO(zds, zl);
     for (i = 0; i < xl; i++) {
         bary_muladd_1xN(zds+i, zl-i, xds[i], yds, yl);
     }
@@ -1595,7 +1604,7 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 
     assert(xn * 2 <= zn);
 
-    MEMZERO(zds, BDIGIT, zn);
+    BDIGITS_ZERO(zds, zn);
     for (i = 0; i < xn; i++) {
 	v = (BDIGIT_DBL)xds[i];
 	if (!v)
@@ -1644,7 +1653,7 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BD
     assert(xl + yl <= zl);
     assert(2 * xl <= yl || 3 * xl <= 2*(yl+2));
 
-    MEMZERO(zds, BDIGIT, xl);
+    BDIGITS_ZERO(zds, xl);
 
     n = 0;
     while (yl > 0) {
@@ -1655,7 +1664,7 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BD
         if (2 * (xl + r) <= zl - n) {
             tds = zds + n + xl + r;
             mulfunc(tds, tl, xds, xl, yds + n, r, wds, wl);
-            MEMZERO(zds + n + xl, BDIGIT, r);
+            BDIGITS_ZERO(zds + n + xl, r);
             bary_add(zds + n, tl,
                      zds + n, tl,
                      tds, tl);
@@ -1675,7 +1684,7 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BD
 	yl -= r;
 	n += r;
     }
-    MEMZERO(zds+xl+yl0, BDIGIT, zl - (xl+yl0));
+    BDIGITS_ZERO(zds+xl+yl0, zl - (xl+yl0));
 
     if (work)
         ALLOCV_END(work);
@@ -1952,7 +1961,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
     }
 
     if (nlsz) {
-        MEMZERO(zds, BDIGIT, nlsz);
+        BDIGITS_ZERO(zds, nlsz);
         zds += nlsz;
         zl -= nlsz;
     }
@@ -1968,23 +1977,23 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
 
     if (xl <= 1) {
         if (xl == 0) {
-            MEMZERO(zds, BDIGIT, zl);
+            BDIGITS_ZERO(zds, zl);
             return 1;
         }
 
         if (xds[0] == 1) {
             MEMCPY(zds, yds, BDIGIT, yl);
-            MEMZERO(zds+yl, BDIGIT, zl-yl);
+            BDIGITS_ZERO(zds+yl, zl-yl);
             return 1;
         }
         if (POW2_P(xds[0])) {
             zds[yl] = bary_small_lshift(zds, yds, yl, bitsize(xds[0])-1);
-            MEMZERO(zds+yl+1, BDIGIT, zl-yl-1);
+            BDIGITS_ZERO(zds+yl+1, zl-yl-1);
             return 1;
         }
         if (yl == 1 && yds[0] == 1) {
             zds[0] = xds[0];
-            MEMZERO(zds+1, BDIGIT, zl-1);
+            BDIGITS_ZERO(zds+1, zl-1);
             return 1;
         }
         bary_mul_normal(zds, zl, xds, xl, yds, yl);
@@ -2066,7 +2075,7 @@ bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yd
         }
         z = bigtrunc(bigmul1_toom3(x, y));
         MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
-        MEMZERO(zds + RBIGNUM_LEN(z), BDIGIT, zl - RBIGNUM_LEN(z));
+        BDIGITS_ZERO(zds + RBIGNUM_LEN(z), zl - RBIGNUM_LEN(z));
         RB_GC_GUARD(z);
     }
 }
@@ -3097,7 +3106,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 
             z = bignew(num_bdigits, sign);
             zds = BDIGITS(z);
-            MEMZERO(zds, BDIGIT, num_bdigits);
+            BDIGITS_ZERO(zds, num_bdigits);
 
             for (p = digits_start; p < digits_end; p++) {
                 if ((c = conv_digit(*p)) < 0)
@@ -3314,7 +3323,7 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         xn = RBIGNUM_LEN(x);
         z = bignew(xn+s1+1, RBIGNUM_SIGN(x));
         zds = BDIGITS(z);
-        MEMZERO(zds, BDIGIT, s1);
+        BDIGITS_ZERO(zds, s1);
         xds = BDIGITS(x);
         zds[xn+s1] = bary_small_lshift(zds+s1, xds, xn, s2);
     }
@@ -4809,7 +4818,7 @@ bigmul1_toom3(VALUE x, VALUE y)
     z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     zds = BDIGITS(z);
     MEMCPY(zds, BDIGITS(z0), BDIGIT, RBIGNUM_LEN(z0));
-    MEMZERO(zds + RBIGNUM_LEN(z0), BDIGIT, zn - RBIGNUM_LEN(z0));
+    BDIGITS_ZERO(zds + RBIGNUM_LEN(z0), zn - RBIGNUM_LEN(z0));
     bigadd_core(zds +   n, zn -   n, BDIGITS(z1), big_real_len(z1), zds +   n, zn -   n);
     bigadd_core(zds + 2*n, zn - 2*n, BDIGITS(z2), big_real_len(z2), zds + 2*n, zn - 2*n);
     bigadd_core(zds + 3*n, zn - 3*n, BDIGITS(z3), big_real_len(z3), zds + 3*n, zn - 3*n);
@@ -5016,16 +5025,16 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
 
     while (0 < nx && !xds[nx-1]) nx--;
     if (nx == 0) {
-        MEMZERO(qds, BDIGIT, nq);
-        MEMZERO(rds, BDIGIT, nr);
+        BDIGITS_ZERO(qds, nq);
+        BDIGITS_ZERO(rds, nr);
         return;
     }
 
     if (ny == 1) {
         MEMCPY(qds, xds, BDIGIT, nx);
-        MEMZERO(qds+nx, BDIGIT, nq-nx);
+        BDIGITS_ZERO(qds+nx, nq-nx);
         rds[0] = bigdivrem_single(qds, xds, nx, yds[0]);
-        MEMZERO(rds+1, BDIGIT, nr-1);
+        BDIGITS_ZERO(rds+1, nr-1);
     }
     else {
         int extra_words;
@@ -5042,7 +5051,7 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
         else
             zds = ALLOCV_N(BDIGIT, tmpz, nx + extra_words);
         MEMCPY(zds, xds, BDIGIT, nx);
-        MEMZERO(zds+nx, BDIGIT, nz-nx);
+        BDIGITS_ZERO(zds+nx, nz-nx);
 
         if (BDIGIT_MSB(yds[ny-1])) {
             /* bigdivrem_normal will not modify y.
@@ -5060,12 +5069,12 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
 
         /* copy remainder */
         MEMCPY(rds, zds, BDIGIT, ny);
-        MEMZERO(rds+ny, BDIGIT, nr-ny);
+        BDIGITS_ZERO(rds+ny, nr-ny);
 
         /* move quotient */
         j = nz - ny;
         MEMMOVE(qds, zds+ny, BDIGIT, j);
-        MEMZERO(qds+j, BDIGIT, nq-j);
+        BDIGITS_ZERO(qds+j, nq-j);
 
         if (tmpz)
             ALLOCV_END(tmpz);

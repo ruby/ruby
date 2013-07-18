@@ -1,3 +1,19 @@
+Thu Jul 18 12:57:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BDIGITS_ZERO): Defined.
+	  (bary_pack): Use BDIGITS_ZERO.
+	  (bary_unpack): Ditto.
+	  (bary_mul_single): Ditto.
+	  (bary_mul_normal): Ditto.
+	  (bary_sq_fast): Ditto.
+	  (bary_mul_balance_with_mulfunc): Ditto.
+	  (bary_mul_precheck): Ditto.
+	  (bary_mul_toom3_branch): Ditto.
+	  (rb_cstr_to_inum): Ditto.
+	  (big_shift3): Ditto.
+	  (bigmul1_toom3): Ditto.
+	  (bary_divmod): Ditto.
+
 Thu Jul 18 06:30:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename gc related functions with prefix "gc_".
