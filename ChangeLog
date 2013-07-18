@@ -1,3 +1,8 @@
+Thu Jul 18 16:16:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: add logging feature for RGenGC's write barrier unprotect
+	  event.
+
 Thu Jul 18 15:45:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RUBY_SAFE_LEVEL_CHECK): make only

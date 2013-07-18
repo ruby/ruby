@@ -11,6 +11,12 @@
 
 **********************************************************************/
 
+#define RGENGC_UNPROTECT_LOGGING 0
+#if RGENGC_UNPROTECT_LOGGING
+static void ary_unprotect_logging(unsigned long x, const char *filename, int line);
+#define RGENGC_LOGGING_WB_UNPROTECT ary_unprotect_logging
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/util.h"
 #include "ruby/st.h"
@@ -30,6 +36,45 @@ static ID id_cmp, id_div, id_power;
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
+
+#if RGENGC_UNPROTECT_LOGGING
+static void ary_unprotect_logging(VALUE x, const char *filename, int line);
+static st_table *ary_unprotect_logging_table;
+
+static void
+ary_unprotect_logging(VALUE x, const char *filename, int line)
+{
+    if (OBJ_WB_PROTECTED(x)) {
+	char buff[0x100];
+	st_data_t cnt = 1;
+	char *ptr = buff;
+
+	snprintf(ptr, 0x100 - 1, "%s:%d", filename, line);
+
+	if (st_lookup(ary_unprotect_logging_table, (st_data_t)ptr, &cnt)) {
+	    cnt++;
+	}
+	else {
+	    ptr = (char *)malloc(strlen(buff) + 1);
+	    strcpy(ptr, buff);
+	}
+	st_insert(ary_unprotect_logging_table, (st_data_t)ptr, cnt);
+    }
+}
+
+static int
+ary_unprotect_logging_exit_func_i(st_data_t key, st_data_t val)
+{
+    fprintf(stderr, "%s\t%d\n", (char *)key, (int)val);
+    return ST_CONTINUE;
+}
+
+static void
+ary_unprotect_logging_exit_func(void)
+{
+    st_foreach(ary_unprotect_logging_table, ary_unprotect_logging_exit_func_i, 0);
+}
+#endif
 
 void
 rb_mem_clear(register VALUE *mem, register long size)
@@ -5461,6 +5506,11 @@ Init_Array(void)
 
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
+
+#if RGENGC_UNPROTECT_LOGGING
+    ary_unprotect_logging_table = st_init_strtable();
+    atexit(ary_unprotect_logging_exit_func);
+#endif
 
     rb_define_alloc_func(rb_cArray, empty_ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
