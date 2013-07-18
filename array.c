@@ -3327,7 +3327,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
     VALUE item, arg1, arg2;
     long beg = 0, end = 0, len = 0;
-    VALUE *p, *pend;
+    VALUE *p;
     int block_p = FALSE;
 
     if (rb_block_given_p()) {
@@ -3385,10 +3385,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
     }
     else {
 	p = RARRAY_PTR(ary) + beg;
-	pend = p + len;
-	while (p < pend) {
-	    *p++ = item;
-	}
+	memfill(p, len, item);
     }
     return ary;
 }

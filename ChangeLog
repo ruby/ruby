@@ -1,3 +1,7 @@
+Thu Jul 18 20:44:51 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_fill): use memfill().
+
 Thu Jul 18 20:35:14 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* array.c (rb_ary_count): check length to avoid SEGV
