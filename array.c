@@ -3637,6 +3637,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 	return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
+    if (RARRAY_PTR(ary1) == RARRAY_PTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_equal, ary1, ary2, ary2);
 }
 

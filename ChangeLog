@@ -1,3 +1,8 @@
+Thu Jul 18 21:15:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_equal): compare RARRAY_PTR() for performance
+	  improvement in case of that self and other are shared.
+
 Thu Jul 18 20:44:51 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_fill): use memfill().
