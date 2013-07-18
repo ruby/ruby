@@ -1,3 +1,8 @@
+Thu Jul 18 23:45:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_eql): compare RARRAY_PTR() for performance
+	  improvement in case of that self and other are shared.
+
 Thu Jul 18 22:46:42 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/cgi.rb: [DOC] Capitalize "Ruby" in documentation [Fixes GH-341]
