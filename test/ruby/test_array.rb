@@ -582,6 +582,18 @@ class TestArray < Test::Unit::TestCase
         a2.replace(a1) if i == 0
       end
     EOS
+
+    assert_in_out_err [], <<-EOS, ["[]", "0"], [], bug8654
+      ARY = Array.new(100) { |i| i }
+      class Fixnum
+        def == other
+          ARY.replace([]) if self.equal?(0)
+          p ARY
+          self.equal?(other)
+        end
+      end
+      p ARY.count(42)
+    EOS
   end
 
   def test_delete
