@@ -1605,7 +1605,11 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
     assert(xn * 2 <= zn);
 
     BDIGITS_ZERO(zds, zn);
-    for (i = 0; i < xn; i++) {
+
+    if (xn == 0)
+        return;
+
+    for (i = 0; i < xn-1; i++) {
 	v = (BDIGIT_DBL)xds[i];
 	if (!v)
             continue;
@@ -1625,10 +1629,21 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 	    c += (BDIGIT_DBL)zds[i + xn];
 	    zds[i + xn] = BIGLO(c);
 	    c = BIGDN(c);
-            assert(c == 0 || i != xn-1);
-            if (c && i != xn-1)
+            if (c)
                 zds[i + xn + 1] += (BDIGIT)c;
 	}
+    }
+
+    /* i == xn-1 */
+    v = (BDIGIT_DBL)xds[i];
+    if (!v)
+        return;
+    c = (BDIGIT_DBL)zds[i + i] + v * v;
+    zds[i + i] = BIGLO(c);
+    c = BIGDN(c);
+    if (c) {
+        c += (BDIGIT_DBL)zds[i + xn];
+        zds[i + xn] = BIGLO(c);
     }
 }
 
@@ -2336,11 +2351,11 @@ bigfixize(VALUE x)
         int i = (int)len;
         u = 0;
         while (i--) {
-            u = (long)(BIGUP(u) + ds[i]);
+            u = (unsigned long)(BIGUP(u) + ds[i]);
         }
     }
 #else /* SIZEOF_BDIGITS >= SIZEOF_LONG */
-    if (1 < len || LONG_MAX < ds[0])
+    if (1 < len)
         goto return_big;
     else
         u = ds[0];

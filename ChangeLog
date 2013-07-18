@@ -1,3 +1,9 @@
+Thu Jul 18 21:30:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_sq_fast): Specialize the last iteration of the
+	  outer loop.
+	  (bigfixize): A condition simplified.
+
 Thu Jul 18 21:15:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_equal): compare RARRAY_PTR() for performance
