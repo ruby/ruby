@@ -567,14 +567,19 @@ void rb_secure(int);
 int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
-int ruby_safe_level_4(void) __attribute__((error("$SAFE=4 is obsolete")));
+int ruby_safe_level_4_error(void) __attribute__((error("$SAFE=4 is obsolete")));
+# ifdef RUBY_EXPORT
+#   define ruby_safe_level_4_warning() ruby_safe_level_4_error()
+# else
+int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
+# endif
 #define RUBY_SAFE_LEVEL_INVALID_P(level) \
     __extension__(__builtin_constant_p(level) && \
 		  ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)))
-#define RUBY_SAFE_LEVEL_CHECK(level) \
-    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_4() : (level))
-#define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level))
-#define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level))
+#define RUBY_SAFE_LEVEL_CHECK(level, type) \
+    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_4_##type() : (level))
+#define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level, warning))
+#define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
 #endif
 void rb_set_safe_level_force(int);
 void rb_secure_update(VALUE);

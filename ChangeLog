@@ -1,3 +1,9 @@
+Thu Jul 18 15:45:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RUBY_SAFE_LEVEL_CHECK): make only
+	  rb_set_safe_level(4) an error always but make rb_secure(4) an error
+	  only in the core.  [ruby-dev:47517] [Bug #8652]
+
 Thu Jul 18 15:42:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: fix spell miss.
