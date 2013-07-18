@@ -37,7 +37,7 @@
 #   the_gem.spec # get the spec out of the gem
 #   the_gem.verify # check the gem is OK (contains valid gem specification, contains a not corrupt contents archive)
 #
-# #files are the files in the .gem tar file, not the ruby files in the gem
+# #files are the files in the .gem tar file, not the Ruby files in the gem
 # #extract_files and #contents automatically call #verify
 
 require 'rubygems/security'

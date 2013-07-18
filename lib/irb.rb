@@ -21,16 +21,16 @@ require "irb/locale"
 
 STDOUT.sync = true
 
-# IRB stands for "interactive ruby" and is a tool to interactively execute ruby
+# IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
 #
 # The +irb+ command from your shell will start the interpreter.
 #
 # == Usage
 #
-# Use of irb is easy if you know ruby.
+# Use of irb is easy if you know Ruby.
 #
-# When executing irb, prompts are displayed as follows. Then, enter the ruby
+# When executing irb, prompts are displayed as follows. Then, enter the Ruby
 # expression. An input is executed when it is syntactically complete.
 #
 #     $ irb
@@ -221,7 +221,7 @@ STDOUT.sync = true
 # == Restrictions
 #
 # Because irb evaluates input immediately after it is syntactically complete,
-# the results may be slightly different than directly using ruby.
+# the results may be slightly different than directly using Ruby.
 #
 # == IRB Sessions
 #

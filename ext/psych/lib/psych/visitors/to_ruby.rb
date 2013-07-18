@@ -9,7 +9,7 @@ end
 module Psych
   module Visitors
     ###
-    # This class walks a YAML AST, converting each node to ruby
+    # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
       def self.create
         class_loader = ClassLoader.new

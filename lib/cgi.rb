@@ -164,7 +164,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #   cgi.include?('field_name')
 #
 # CAUTION! cgi['field_name'] returned an Array with the old
-# cgi.rb(included in ruby 1.6)
+# cgi.rb(included in Ruby 1.6)
 #
 # === Get form values as hash
 #

@@ -670,13 +670,13 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # documentation for the particular gem, otherwise a list with results is
   # shown.
   #
-  # === Additional trick - install documentation for ruby core
+  # === Additional trick - install documentation for Ruby core
   #
   # Note: please adjust paths accordingly use for example 'locate yaml.rb' and
   # 'gem environment' to identify directories, that are specific for your
   # local installation
   #
-  # 1. install ruby sources
+  # 1. install Ruby sources
   #      cd /usr/src
   #      sudo apt-get source ruby
   #
@@ -702,7 +702,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
   # name pattern was found.
   #
   # The search is based on the file system content, not on the gems metadata.
-  # This allows additional documentation folders like 'core' for the ruby core
+  # This allows additional documentation folders like 'core' for the Ruby core
   # documentation - just put it underneath the main doc folder.
 
   def show_rdoc_for_pattern(pattern, res)

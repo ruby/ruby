@@ -3,7 +3,7 @@
 
 ##
 #--
-# This set of literals is for ruby 1.9 regular expressions and gives full
+# This set of literals is for Ruby 1.9 regular expressions and gives full
 # unicode support.
 #
 # Unlike peg-markdown, this set of literals recognizes Unicode alphanumeric

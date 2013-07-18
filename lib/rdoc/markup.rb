@@ -127,7 +127,7 @@
 # left, so the amount of indentation of verbatim text is unimportant.
 #
 # For HTML output RDoc makes a small effort to determine if a verbatim section
-# contains ruby source code.  If so, the verbatim block will be marked up as
+# contains Ruby source code.  If so, the verbatim block will be marked up as
 # HTML.  Triggers include "def", "class", "module", "require", the "hash
 # rocket"# (=>) or a block call with a parameter.
 #
@@ -683,7 +683,7 @@
 #
 # [+:markup:+ _type_]
 #   Overrides the default markup type for this comment with the specified
-#   markup type.  For ruby files, if the first comment contains this directive
+#   markup type.  For Ruby files, if the first comment contains this directive
 #   it is applied automatically to all comments in the file.
 #
 #   Unless you are converting between markup formats you should use a

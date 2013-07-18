@@ -12,7 +12,7 @@ require "thread"
 #
 # == Example
 #
-# Consider the following ruby script
+# Consider the following Ruby script
 #
 #   class A
 #     def square(a)

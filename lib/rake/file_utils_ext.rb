@@ -90,7 +90,7 @@ module Rake
       oldvalue
     end
 
-    # Use this function to prevent potentially destructive ruby code
+    # Use this function to prevent potentially destructive Ruby code
     # from running when the :nowrite flag is set.
     #
     # Example:

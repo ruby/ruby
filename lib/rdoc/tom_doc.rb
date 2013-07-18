@@ -147,7 +147,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   end
 
   # Internal: Builds a verbatim from the token stream.  A verbatim in the
-  # Examples section will be marked as in ruby format.
+  # Examples section will be marked as in Ruby format.
   #
   # margin - The indentation from the margin for lines that belong to this
   #          verbatim section.

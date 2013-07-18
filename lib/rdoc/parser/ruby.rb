@@ -1393,7 +1393,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # The core of the ruby parser.
+  # The core of the Ruby parser.
 
   def parse_statements(container, single = NORMAL, current_method = nil,
                        comment = new_comment(''))
@@ -1826,7 +1826,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # Scans this ruby file for ruby constructs
+  # Scans this Ruby file for Ruby constructs
 
   def scan
     reset
