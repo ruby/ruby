@@ -1,3 +1,8 @@
+Thu Jul 18 15:11:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ruby_safe_level_4): get rid of special
+	  character.  [ruby-dev:47512] [misc #8646]
+
 Thu Jul 18 14:51:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_alloc): slim setup process.
