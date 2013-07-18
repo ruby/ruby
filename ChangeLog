@@ -1,3 +1,7 @@
+Thu Jul 18 15:42:01 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: fix spell miss.
+
 Thu Jul 18 15:11:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_safe_level_4): get rid of special

@@ -1302,8 +1302,8 @@ rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
 static inline VALUE
 rb_obj_write(VALUE a, VALUE *slot, VALUE b, const char *filename, int line)
 {
-#ifdef RGENGC_LOGGING_WRIET
-    RGENGC_LOGGING_WRIET(a, slot, b, filename, line);
+#ifdef RGENGC_LOGGING_WRITE
+    RGENGC_LOGGING_WRITE(a, slot, b, filename, line);
 #endif
 
     *slot = b;
