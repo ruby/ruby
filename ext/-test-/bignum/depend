@@ -1,4 +1,4 @@
 $(OBJS): $(HDRS) $(ruby_headers)
 
-pack.o: pack.c $(top_srcdir)/internal.h
+intpack.o: intpack.c $(top_srcdir)/internal.h
 mul.o: mul.c $(top_srcdir)/internal.h

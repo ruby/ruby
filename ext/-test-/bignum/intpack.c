@@ -46,7 +46,7 @@ rb_integer_unpack_m(VALUE klass, VALUE buf, VALUE numwords, VALUE wordsize, VALU
 }
 
 void
-Init_pack(VALUE klass)
+Init_intpack(VALUE klass)
 {
     rb_define_method(rb_cInteger, "test_pack_raw", rb_integer_pack_raw_m, 5);
     rb_define_method(rb_cInteger, "test_pack", rb_integer_pack_m, 4);
