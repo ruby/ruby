@@ -382,11 +382,6 @@ static inline VALUE
 str_alloc(VALUE klass)
 {
     NEWOBJ_OF(str, struct RString, klass, T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0));
-
-    str->as.heap.ptr = 0;
-    str->as.heap.len = 0;
-    str->as.heap.aux.capa = 0;
-
     return (VALUE)str;
 }
 
