@@ -1,3 +1,23 @@
+Thu Jul 18 22:46:42 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/cgi.rb: [DOC] Capitalize "Ruby" in documentation [Fixes GH-341]
+	  Patch by Dave Worth https://github.com/ruby/ruby/pull/341
+	* lib/webrick.rb: ditto
+	* lib/scanf.rb: ditto
+	* lib/xmlrpc/config.rb: ditto
+	* lib/resolv.rb: ditto
+	* lib/e2mmap.rb: ditto
+	* lib/fileutils.rb: ditto
+	* lib/mkmf.rb: ditto
+	* lib/cgi/session.rb: ditto
+	* lib/yaml.rb: ditto
+	* lib/erb.rb: ditto
+	* lib/irb.rb: ditto
+	* lib/tracer.rb: ditto
+	* lib/net/http.rb: ditto
+	* ext/syslog/lib/syslog/logger.rb: ditto
+	* sample/pty/expect_sample.rb: ditto
+
 Thu Jul 18 21:30:50 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_sq_fast): Specialize the last iteration of the

@@ -63,9 +63,9 @@ class Syslog::Logger
   ##
   # Maps Logger warning types to syslog(3) warning types.
   #
-  # Messages from ruby applications are not considered as critical as messages
+  # Messages from Ruby applications are not considered as critical as messages
   # from other system daemons using syslog(3), so most messages are reduced by
-  # one level.  For example, a fatal message for ruby's Logger is considered
+  # one level.  For example, a fatal message for Ruby's Logger is considered
   # an error for syslog(3).
 
   LEVEL_MAP = {

@@ -41,8 +41,8 @@ end
 # :startdoc:
 
 ##
-# mkmf.rb is used by ruby C extensions to generate a Makefile which will
-# correctly compile and link the C extension to ruby and a third-party
+# mkmf.rb is used by Ruby C extensions to generate a Makefile which will
+# correctly compile and link the C extension to Ruby and a third-party
 # library.
 module MakeMakefile
   #### defer until this module become global-state free.
@@ -57,7 +57,7 @@ module MakeMakefile
   # end
 
   ##
-  # The makefile configuration using the defaults from when ruby was built.
+  # The makefile configuration using the defaults from when Ruby was built.
 
   CONFIG = RbConfig::MAKEFILE_CONFIG
   ORIG_LIBPATH = ENV['LIB']
@@ -2527,12 +2527,12 @@ MESSAGE
   end
 
   ##
-  # Common headers for ruby C extensions
+  # Common headers for Ruby C extensions
 
   COMMON_HEADERS = hdr.join("\n")
 
   ##
-  # Common libraries for ruby C extensions
+  # Common libraries for Ruby C extensions
 
   COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 

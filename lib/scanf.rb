@@ -10,7 +10,7 @@
 # == Description
 #
 # scanf is an implementation of the C function scanf(3), modified as necessary
-# for ruby compatibility.
+# for Ruby compatibility.
 #
 # the methods provided are String#scanf, IO#scanf, and
 # Kernel#scanf. Kernel#scanf is a wrapper around STDIN.scanf.  IO#scanf
