@@ -572,6 +572,16 @@ class TestArray < Test::Unit::TestCase
     assert_equal(3, a.count {|x| x % 2 == 1 })
     assert_equal(2, a.count(1) {|x| x % 2 == 1 })
     assert_raise(ArgumentError) { a.count(0, 1) }
+
+    bug8654 = '[ruby-core:56072]'
+    assert_in_out_err [], <<-EOS, ["0"], [], bug8654
+      a1 = []
+      a2 = Array.new(100) { |i| i }
+      r = a2.count do |i|
+        p i
+        a2.replace(a1) if i == 0
+      end
+    EOS
   end
 
   def test_delete
