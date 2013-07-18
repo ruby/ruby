@@ -1,3 +1,7 @@
+Thu Jul 18 14:51:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_alloc): slim setup process.
+
 Thu Jul 18 14:37:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (str_alloc): no need to clear RString (already cleared).

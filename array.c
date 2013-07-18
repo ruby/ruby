@@ -378,10 +378,11 @@ rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 static VALUE
 ary_alloc(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
-    FL_SET_EMBED((VALUE)ary);
-    ARY_SET_EMBED_LEN((VALUE)ary, 0);
-
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+    /* Created array is:
+     *   FL_SET_EMBED((VALUE)ary);
+     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+     */
     return (VALUE)ary;
 }
 
