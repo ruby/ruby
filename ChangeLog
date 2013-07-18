@@ -1,3 +1,8 @@
+Thu Jul 18 17:35:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_flatten): performance improvement by not using
+	  rb_hash_to_a() to avoid array creation with rb_assoc_new().
+
 Thu Jul 18 16:16:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: add logging feature for RGenGC's write barrier unprotect

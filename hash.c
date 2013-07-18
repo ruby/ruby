@@ -2187,6 +2187,18 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
     return args[1];
 }
 
+static int
+flatten_i(VALUE key, VALUE val, VALUE ary)
+{
+    VALUE pair[2];
+
+    pair[0] = key;
+    pair[1] = val;
+    rb_ary_cat(ary, pair, 2);
+
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hash.flatten -> an_array
@@ -2206,15 +2218,17 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
 static VALUE
 rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ary, tmp;
+    VALUE ary;
 
-    ary = rb_hash_to_a(hash);
-    if (argc == 0) {
-	argc = 1;
-	tmp = INT2FIX(1);
-	argv = &tmp;
+    ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
+    rb_hash_foreach(hash, flatten_i, ary);
+    if (argc) {
+	int level = FIX2INT(*argv) - 1;
+	if (level > 0) {
+	    *argv = INT2FIX(level);
+	    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
+	}
     }
-    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
     return ary;
 }
 
