@@ -1,3 +1,8 @@
+Thu Jul 18 18:14:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_count): iterate items appropriately.
+	  [Bug #8654]
+
 Thu Jul 18 17:35:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_flatten): performance improvement by not using

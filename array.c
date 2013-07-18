@@ -4177,13 +4177,15 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
     long n = 0;
 
     if (argc == 0) {
-	VALUE *p, *pend;
+	long i;
+	VALUE v;
 
 	if (!rb_block_given_p())
 	    return LONG2NUM(RARRAY_LEN(ary));
 
-	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
-	    if (RTEST(rb_yield(*p))) n++;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    v = RARRAY_AREF(ary, i);
+	    if (RTEST(rb_yield(v))) n++;
 	}
     }
     else {
