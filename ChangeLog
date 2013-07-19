@@ -1,3 +1,8 @@
+Fri Jul 19 11:10:23 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rake/*: [DOC] Capitalize "Ruby" in documentation
+	  Patch by Dave Worth https://github.com/ruby/ruby/pull/341
+
 Fri Jul 19 01:04:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/bignum/intpack.c: Renamed from ext/-test-/bignum/pack.c.
