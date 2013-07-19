@@ -349,7 +349,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
 	    if (ARY_SHARED_NUM(shared) == 1) {
-		if (RARRAY_PTR(ary) - RARRAY_PTR(shared) + new_len <= RARRAY_LEN(shared)) {
+		if (RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
 		}
 		else {
@@ -3584,12 +3584,12 @@ static VALUE
 recursive_equal(VALUE ary1, VALUE ary2, int recur)
 {
     long i, len1;
-    VALUE *p1, *p2;
+    const VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
 
-    p1 = RARRAY_PTR(ary1);
-    p2 = RARRAY_PTR(ary2);
+    p1 = RARRAY_RAWPTR(ary1);
+    p2 = RARRAY_RAWPTR(ary2);
     len1 = RARRAY_LEN(ary1);
 
     for (i = 0; i < len1; i++) {
@@ -3600,8 +3600,8 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 		    return Qfalse;
 		if (len1 < i)
 		    return Qtrue;
-		p1 = RARRAY_PTR(ary1) + i;
-		p2 = RARRAY_PTR(ary2) + i;
+		p1 = RARRAY_RAWPTR(ary1) + i;
+		p2 = RARRAY_RAWPTR(ary2) + i;
 	    }
 	    else {
 		return Qfalse;
@@ -3638,7 +3638,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 	return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    if (RARRAY_PTR(ary1) == RARRAY_PTR(ary2)) return Qtrue;
+    if (RARRAY_RAWPTR(ary1) == RARRAY_RAWPTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_equal, ary1, ary2, ary2);
 }
 

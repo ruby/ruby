@@ -1,3 +1,12 @@
+Fri Jul 19 15:19:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_ensure_room_for_push): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR. In this code, there are no "write" operation.
+
+	* array.c (rb_ary_equal): ditto.
+
+	* array.c (recursive_equal): ditto.
+
 Fri Jul 19 15:09:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, internal.h (rb_gc_writebarrier_remember_promoted): add a new
