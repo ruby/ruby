@@ -8,7 +8,8 @@ TkLib_Config = {}
 TkLib_Config['search_versions'] =
   # %w[8.9 8.8 8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6 4.2]
   # %w[8.7 8.6 8.5 8.4 8.3 8.2 8.1 8.0]
-  %w[8.7 8.6 8.5 8.4 8.0] # to shorten search steps
+  # %w[8.7 8.6 8.5 8.4 8.0] # to shorten search steps
+  %w[8.5 8.4] # At present, Tcl/Tk8.6 is not supported.
 
 TkLib_Config['major_nums'] = '87'
 
@@ -315,7 +316,7 @@ def find_macosx_framework
   paths.map{|dir| dir.strip.chomp('/')}.each{|dir|
     next unless File.exist?(File.join(dir, "Tcl.framework", "Headers"))
     next unless File.directory?(tcldir = File.join(dir, "Tcl.framework"))
-    next unless File.exist?(File.join(dir, "Tk.framework"), "Headers")
+    next unless File.exist?(File.join(dir, "Tk.framework", "Headers"))
     next unless File.directory?(tkdir  = File.join(dir, "Tk.framework"))
     TkLib_Config["tcltk-framework"] = dir
     return [tcldir, tkdir]
@@ -2046,4 +2047,6 @@ if (TkLib_Config["tcltk-framework"] ||
   puts "\nFind Tcl/Tk libraries. Make tcltklib.so which is required by Ruby/Tk."
 else
   puts "\nCan't find proper Tcl/Tk libraries. So, can't make tcltklib.so which is required by Ruby/Tk."
+  puts "If you have Tcl/Tk libraries on your environment, you may be able to use them with configure options (see ext/tk/README.tcltklib)."
+  puts "At present, Tcl/Tk8.6 is not supported. Although you can try to use Tcl/Tk8.6 with configure options, it will not work correctly. I recommend you to use Tcl/Tk8.5 or 8.4."
 end
