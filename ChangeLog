@@ -1,3 +1,14 @@
+Fri Jul 19 19:55:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_mem_clear): added. This operation doesn't need WB
+	  because this operation creates a reference to Qnil.
+
+	* array.c (ary_make_shared, rb_ary_store, rb_ary_shift_m,
+	  rb_ary_splice, rb_ary_resize, rb_ary_fill): use ary_mem_clear()
+	  instead of rb_mem_clear().
+
+	* array.c (ary_make_shared): use RARRAY_RAWPTR() instead of RARRAY_PTR().
+
 Fri Jul 19 19:18:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: fix commit miss.
