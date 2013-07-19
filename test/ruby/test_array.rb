@@ -577,7 +577,7 @@ class TestArray < Test::Unit::TestCase
     assert_in_out_err [], <<-EOS, ["0"], [], bug8654
       a1 = []
       a2 = Array.new(100) { |i| i }
-      r = a2.count do |i|
+      a2.count do |i|
         p i
         a2.replace(a1) if i == 0
       end
@@ -586,6 +586,7 @@ class TestArray < Test::Unit::TestCase
     assert_in_out_err [], <<-EOS, ["[]", "0"], [], bug8654
       ARY = Array.new(100) { |i| i }
       class Fixnum
+        alias old_equal ==
         def == other
           ARY.replace([]) if self.equal?(0)
           p ARY
