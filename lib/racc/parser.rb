@@ -44,7 +44,7 @@ end
 #   Place logging output in file +filename+.
 #   Default log file name is <+filename+>.output.
 # [-e+rubypath+, --executable=+rubypath+]
-#   output executable file(mode 755). where +path+ is the ruby interpreter.
+#   output executable file(mode 755). where +path+ is the Ruby interpreter.
 # [-v, --verbose]
 #   verbose mode. create +filename+.output file, like yacc's y.output file.
 # [-g, --debug]
@@ -75,7 +75,7 @@ end
 #
 #   $ racc parse.y
 #
-# This creates ruby script file "parse.tab.y". The -o option can change the output filename.
+# This creates Ruby script file "parse.tab.y". The -o option can change the output filename.
 #
 # == Writing A Racc Grammar File
 #

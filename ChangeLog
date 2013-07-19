@@ -1,3 +1,8 @@
+Fri Jul 19 11:27:38 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/racc/parser.rb: [DOC] Capitalize "Ruby" in documentation
+	  Patch by Dave Worth https://github.com/ruby/ruby/pull/341
+
 Fri Jul 19 11:26:28 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/psych/lib/psych*: [DOC] Capitalize "Ruby" in documentation
