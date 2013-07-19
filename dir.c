@@ -416,8 +416,12 @@ dir_s_alloc(VALUE klass)
 /*
  *  call-seq:
  *     Dir.new( string ) -> aDir
+ *     Dir.new( string, encoding: enc ) -> aDir
  *
  *  Returns a new directory object for the named directory.
+ *
+ *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  If not specified, the filesystem encoding is used.
  */
 static VALUE
 dir_initialize(int argc, VALUE *argv, VALUE dir)
@@ -469,7 +473,12 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 /*
  *  call-seq:
  *     Dir.open( string ) -> aDir
+ *     Dir.open( string, encoding: enc ) -> aDir
  *     Dir.open( string ) {| aDir | block } -> anObject
+ *     Dir.open( string, encoding: enc ) {| aDir | block } -> anObject
+ *
+ *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  If not specified, the filesystem encoding is used.
  *
  *  With no block, <code>open</code> is a synonym for
  *  <code>Dir::new</code>. If a block is present, it is passed
@@ -1900,8 +1909,10 @@ dir_open_dir(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     Dir.foreach( dirname ) {| filename | block }  -> nil
- *     Dir.foreach( dirname )                        -> an_enumerator
+ *     Dir.foreach( dirname ) {| filename | block }                 -> nil
+ *     Dir.foreach( dirname, encoding: enc ) {| filename | block }  -> nil
+ *     Dir.foreach( dirname )                                       -> an_enumerator
+ *     Dir.foreach( dirname, encoding: enc )                        -> an_enumerator
  *
  *  Calls the block once for each entry in the named directory, passing
  *  the filename of each entry as a parameter to the block.
@@ -1931,11 +1942,15 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     Dir.entries( dirname ) -> array
+ *     Dir.entries( dirname )                -> array
+ *     Dir.entries( dirname, encoding: enc ) -> array
  *
  *  Returns an array containing all of the filenames in the given
  *  directory. Will raise a <code>SystemCallError</code> if the named
  *  directory doesn't exist.
+ *
+ *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  If not specified, the filesystem encoding is used.
  *
  *     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
  *
