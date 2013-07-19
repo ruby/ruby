@@ -53,6 +53,14 @@ class TC_Set < Test::Unit::TestCase
     assert_equal([2,4,6], s.sort)
   end
 
+  def test_coerce
+    set1 = Set.new
+    set2 = Set(set1)
+    set3 = Set(nil)
+    assert set1.equal?(set2)
+    assert_instance_of(Set, set3)
+  end
+
   def test_clone
     set1 = Set.new
     set2 = set1.clone
