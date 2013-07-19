@@ -1,3 +1,23 @@
+Fri Jul 19 21:35:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: reduce shady operations.
+
+	* array.c (rb_ary_modify, ary_make_partial, rb_ary_splice,
+	  rb_ary_replace, rb_ary_eql, rb_ary_compact_bang):
+	  use RARRAY_RAWPTR() instead of RARRAY_PTR().
+
+	* array.c (rb_ary_shift): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
+	* array.c (ary_ensure_room_for_unshift): ditto.
+
+	* array.c (rb_ary_sort_bang): ditto.
+
+	* array.c (rb_ary_delete_at): ditto.
+
+	* array.c (rb_ary_reverse_m): use RARRAY_RAWPTR() because
+	  there are not new relations.
+
 Fri Jul 19 20:58:20 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: reduce shade operations.
