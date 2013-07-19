@@ -1709,8 +1709,8 @@ class TestArray < Test::Unit::TestCase
                       [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]],
                  a.repeated_combination(4).to_a.sort)
     assert_equal(@cls[], a.repeated_combination(-1).to_a)
-    assert_equal("abcde".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort,
-                 "edcba".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort)
+    assert_equal("abcde".each_char.to_a.repeated_combination(5).map{|e|e.sort}.sort,
+                 "edcba".each_char.to_a.repeated_combination(5).map{|e|e.sort}.sort)
     assert_equal(@cls[].repeated_combination(0).to_a, @cls[[]])
     assert_equal(@cls[].repeated_combination(1).to_a, @cls[])
 
