@@ -761,7 +761,7 @@ heap_assign_slot(rb_objspace_t *objspace)
     /* adjust obj_limit (object number available in this slot) */
     start = (RVALUE*)((VALUE)slot_body + sizeof(struct heap_slot_header));
     if ((VALUE)start % sizeof(RVALUE) != 0) {
-	int delta = sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE));
+	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
 	start = (RVALUE*)((VALUE)start + delta);
 	limit = (HEAP_SIZE - (size_t)((VALUE)start - (VALUE)slot_body))/sizeof(RVALUE);
     }
