@@ -52,7 +52,7 @@ module Gem
   end
 
   ##
-  # Allows setting path to ruby.  This method is available when requiring
+  # Allows setting path to Ruby.  This method is available when requiring
   # 'rubygems/test_case'
 
   def self.ruby= ruby
@@ -1010,7 +1010,7 @@ Also, a list:
   end
 
   ##
-  # Finds the path to the ruby executable
+  # Finds the path to the Ruby executable
 
   def self.rubybin
     ruby = ENV["RUBY"]

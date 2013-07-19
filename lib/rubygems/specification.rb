@@ -452,7 +452,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # For example, the rake gem has rake as an executable. You don’t specify the
   # full path (as in bin/rake); all application-style files are expected to be
-  # found in bindir.  These files must be executable ruby files.  Files that
+  # found in bindir.  These files must be executable Ruby files.  Files that
   # use bash or other interpreters will not work.
   #
   # Usage:
@@ -538,7 +538,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The version of ruby required by this gem
+  # The version of Ruby required by this gem
   #
   # Usage:
   #
@@ -607,7 +607,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_writer :original_platform # :nodoc:
 
   ##
-  # The version of ruby required by this gem
+  # The version of Ruby required by this gem
 
   attr_reader :required_ruby_version
 

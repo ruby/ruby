@@ -181,13 +181,13 @@ class Gem::Platform
   end
 
   ##
-  # A pure-ruby gem that may use Gem::Specification#extensions to build
+  # A pure-Ruby gem that may use Gem::Specification#extensions to build
   # binary files.
 
   RUBY = 'ruby'
 
   ##
-  # A platform-specific gem that is built for the packaging ruby's platform.
+  # A platform-specific gem that is built for the packaging Ruby's platform.
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'

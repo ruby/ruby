@@ -1,3 +1,8 @@
+Fri Jul 19 11:23:55 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rubygems*: [DOC] Capitalize "Ruby" in documentation
+	  Patch by Dave Worth https://github.com/ruby/ruby/pull/341
+
 Fri Jul 19 11:16:54 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#to_set): Define Set#to_set so that aSet.to_set
