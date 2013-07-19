@@ -371,7 +371,7 @@ rb_ary_modify(VALUE ary)
 	}
         else {
             VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, RARRAY_PTR(ary), VALUE, len);
+            MEMCPY(ptr, RARRAY_RAWPTR(ary), VALUE, len);
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
             ARY_SET_PTR(ary, ptr);
@@ -627,10 +627,12 @@ ary_make_shared(VALUE ary)
 static VALUE
 ary_make_substitution(VALUE ary)
 {
-    if (RARRAY_LEN(ary) <= RARRAY_EMBED_LEN_MAX) {
-        VALUE subst = rb_ary_new2(RARRAY_LEN(ary));
-	MEMCPY((VALUE *)ARY_EMBED_PTR(subst), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
-        ARY_SET_EMBED_LEN(subst, RARRAY_LEN(ary));
+    long len = RARRAY_LEN(ary);
+
+    if (len <= RARRAY_EMBED_LEN_MAX) {
+	VALUE subst = rb_ary_new2(len);
+	ary_memcpy(subst, 0, len, RARRAY_RAWPTR(ary));
+        ARY_SET_EMBED_LEN(subst, len);
         return subst;
     }
     else {
@@ -808,7 +810,7 @@ rb_ary_s_create(int argc, VALUE *argv, VALUE klass)
 {
     VALUE ary = ary_new(klass, argc);
     if (argc > 0 && argv) {
-        MEMCPY(RARRAY_PTR(ary), argv, VALUE, argc);
+        ary_memcpy(ary, 0, argc, argv);
         ARY_SET_LEN(ary, argc);
     }
 
@@ -854,7 +856,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
         VALUE result = ary_alloc(klass);
-        MEMCPY((VALUE *)ARY_EMBED_PTR(result), RARRAY_PTR(ary) + offset, VALUE, len);
+	ary_memcpy(result, 0, len, RARRAY_RAWPTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
         return result;
     }
@@ -1564,7 +1566,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = beg + rlen;
 	ary_mem_clear(ary, RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
 	if (rlen > 0) {
-	    MEMCPY(RARRAY_PTR(ary) + beg, RARRAY_PTR(rpl), VALUE, rlen);
+	    ary_memcpy(ary, beg, rlen, RARRAY_PTR(rpl));
 	}
 	ARY_SET_LEN(ary, len);
     }
@@ -1636,7 +1638,7 @@ rb_ary_resize(VALUE ary, long len)
 	VALUE tmp[RARRAY_EMBED_LEN_MAX];
 	MEMCPY(tmp, ARY_HEAP_PTR(ary), VALUE, len);
 	ary_discard(ary);
-	MEMCPY((VALUE *)ARY_EMBED_PTR(ary), tmp, VALUE, len);
+	ary_memcpy(ary, 0, len, tmp);
         ARY_SET_EMBED_LEN(ary, len);
     }
     else {
@@ -2273,7 +2275,8 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE rotated, *ptr, *ptr2;
+    VALUE rotated;
+    const VALUE *ptr;
     long len, cnt = 1;
 
     switch (argc) {
@@ -2286,11 +2289,10 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     rotated = rb_ary_new2(len);
     if (len > 0) {
 	cnt = rotate_count(cnt, len);
-	ptr = RARRAY_PTR(ary);
-	ptr2 = RARRAY_PTR(rotated);
+	ptr = RARRAY_RAWPTR(ary);
 	len -= cnt;
-	MEMCPY(ptr2, ptr + cnt, VALUE, len);
-	MEMCPY(ptr2 + len, ptr, VALUE, cnt);
+	ary_memcpy(rotated, 0, len, ptr + cnt);
+	ary_memcpy(rotated, len, cnt, ptr);
     }
     ARY_SET_LEN(rotated, RARRAY_LEN(ary));
     return rotated;
@@ -3508,7 +3510,8 @@ rb_ary_concat(VALUE x, VALUE y)
 static VALUE
 rb_ary_times(VALUE ary, VALUE times)
 {
-    VALUE ary2, tmp, *ptr, *ptr2;
+    VALUE ary2, tmp;
+    const VALUE *ptr;
     long t, len;
 
     tmp = rb_check_string_type(times);
@@ -3532,17 +3535,16 @@ rb_ary_times(VALUE ary, VALUE times)
     ary2 = ary_new(rb_obj_class(ary), len);
     ARY_SET_LEN(ary2, len);
 
-    ptr = RARRAY_PTR(ary);
-    ptr2 = RARRAY_PTR(ary2);
+    ptr = RARRAY_RAWPTR(ary);
     t = RARRAY_LEN(ary);
     if (0 < t) {
-        MEMCPY(ptr2, ptr, VALUE, t);
-        while (t <= len/2) {
-            MEMCPY(ptr2+t, ptr2, VALUE, t);
+	ary_memcpy(ary2, 0, t, ptr);
+	while (t <= len/2) {
+	    ary_memcpy(ary2, t, t, RARRAY_RAWPTR(ary2));
             t *= 2;
         }
         if (t < len) {
-            MEMCPY(ptr2+t, ptr2, VALUE, len-t);
+	    ary_memcpy(ary2, t, len-t, RARRAY_RAWPTR(ary2));
         }
     }
   out:

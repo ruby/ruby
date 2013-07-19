@@ -1,3 +1,13 @@
+Fri Jul 19 20:58:20 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: reduce shade operations.
+
+	* array.c (rb_ary_modify): use RARRAY_RAWPTR().
+
+	* array.c (ary_make_substitution, rb_ary_s_create, ary_make_partial,
+	  rb_ary_splice, rb_ary_resize, rb_ary_rotate_m, rb_ary_times):
+	  use ary_memcpy().
+
 Fri Jul 19 19:55:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_mem_clear): added. This operation doesn't need WB
