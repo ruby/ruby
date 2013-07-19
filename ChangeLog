@@ -1,3 +1,8 @@
+Fri Jul 19 15:32:57 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_store): use RARRAY_PTR_USE() intead of RARRAY_PTR().
+	  Clearing memory space doesn't need WBs.
+
 Fri Jul 19 15:19:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_ensure_room_for_push): use RARRAY_RAWPTR() instead of

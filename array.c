@@ -797,8 +797,10 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 	ary_double_capa(ary, idx);
     }
     if (idx > RARRAY_LEN(ary)) {
-	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary),
+	RARRAY_PTR_USE(ary, ptr, {
+	    rb_mem_clear(ptr + RARRAY_LEN(ary),
 		     idx-RARRAY_LEN(ary) + 1);
+	});
     }
 
     if (idx >= RARRAY_LEN(ary)) {
