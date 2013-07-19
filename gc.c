@@ -3894,6 +3894,13 @@ rb_gc_writebarrier_unprotect_promoted(VALUE obj)
 #endif
 }
 
+void
+rb_gc_writebarrier_remember_promoted(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    rgengc_remember(objspace, obj);
+}
+
 #endif /* USE_RGENGC */
 
 /* RGENGC analysis information */

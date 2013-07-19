@@ -1,3 +1,9 @@
+Fri Jul 19 15:09:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, internal.h (rb_gc_writebarrier_remember_promoted): add a new
+	  function to remember an specified object. This api is only
+	  experimental (strongly depend on WB/rgengc strategy).
+
 Fri Jul 19 14:56:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_unprotect_logging): use (void *) for first parameter
