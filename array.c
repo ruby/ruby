@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define RGENGC_UNPROTECT_LOGGING 1
+#define RGENGC_UNPROTECT_LOGGING 0
 #if RGENGC_UNPROTECT_LOGGING
 static void ary_unprotect_logging(void *x, const char *filename, int line);
 #define RGENGC_LOGGING_WB_UNPROTECT(x, f, l) ary_unprotect_logging((void *)x, f, l)

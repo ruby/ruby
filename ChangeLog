@@ -1,3 +1,8 @@
+Fri Jul 19 19:18:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: fix commit miss.
+	  RGENGC_UNPROTECT_LOGGING should be 0.
+
 Fri Jul 19 19:15:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_resurrect): use RARRAY_RAWPTR() because there is no
