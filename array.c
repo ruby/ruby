@@ -13,8 +13,8 @@
 
 #define RGENGC_UNPROTECT_LOGGING 0
 #if RGENGC_UNPROTECT_LOGGING
-static void ary_unprotect_logging(unsigned long x, const char *filename, int line);
-#define RGENGC_LOGGING_WB_UNPROTECT ary_unprotect_logging
+static void ary_unprotect_logging(void *x, const char *filename, int line);
+#define RGENGC_LOGGING_WB_UNPROTECT(x, f, l) ary_unprotect_logging((void *)x, f, l)
 #endif
 
 #include "ruby/ruby.h"
@@ -38,13 +38,14 @@ static ID id_cmp, id_div, id_power;
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
 
 #if RGENGC_UNPROTECT_LOGGING
-static void ary_unprotect_logging(VALUE x, const char *filename, int line);
 static st_table *ary_unprotect_logging_table;
 
 static void
-ary_unprotect_logging(VALUE x, const char *filename, int line)
+ary_unprotect_logging(void *objptr, const char *filename, int line)
 {
-    if (OBJ_WB_PROTECTED(x)) {
+    VALUE obj = (VALUE)objptr;
+
+    if (OBJ_WB_PROTECTED(obj)) {
 	char buff[0x100];
 	st_data_t cnt = 1;
 	char *ptr = buff;

@@ -1,3 +1,8 @@
+Fri Jul 19 14:56:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_unprotect_logging): use (void *) for first parameter
+	  because VALUE is not defined before including ruby/ruby.h.
+
 Fri Jul 19 14:19:48 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/pathname/pathname.c (path_inspect): use PRIsVALUE to preserve
