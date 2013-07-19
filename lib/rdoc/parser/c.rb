@@ -123,7 +123,7 @@ class RDoc::Parser::C < RDoc::Parser
   include RDoc::Text
 
   ##
-  # Maps C variable names to names of ruby classes or modules
+  # Maps C variable names to names of Ruby classes or modules
 
   attr_reader :classes
 
@@ -139,7 +139,7 @@ class RDoc::Parser::C < RDoc::Parser
   attr_reader :enclosure_dependencies
 
   ##
-  # Maps C variable names to names of ruby classes (and singleton classes)
+  # Maps C variable names to names of Ruby classes (and singleton classes)
 
   attr_reader :known_classes
 
@@ -150,7 +150,7 @@ class RDoc::Parser::C < RDoc::Parser
   attr_reader :missing_dependencies
 
   ##
-  # Maps C variable names to names of ruby singleton classes
+  # Maps C variable names to names of Ruby singleton classes
 
   attr_reader :singleton_classes
 

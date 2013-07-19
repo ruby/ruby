@@ -47,7 +47,7 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
       end
     end
 
-    # TODO use Enumerable#chunk when ruby 1.8 support is dropped
+    # TODO use Enumerable#chunk when Ruby 1.8 support is dropped
     #parts = paragraph.parts.chunk do |part|
     #  String === part
     #end.map do |string, chunk|
