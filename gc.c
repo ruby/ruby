@@ -550,6 +550,7 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #define rgengc_report if (RGENGC_DEBUG) rgengc_report_body
 static void rgengc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...);
+static const char * type_name(int type, VALUE obj);
 static const char *obj_type_name(VALUE obj);
 
 #if USE_RGENGC
