@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#define RGENGC_UNPROTECT_LOGGING 0
+#define RGENGC_UNPROTECT_LOGGING 1
 #if RGENGC_UNPROTECT_LOGGING
 static void ary_unprotect_logging(void *x, const char *filename, int line);
 #define RGENGC_LOGGING_WB_UNPROTECT(x, f, l) ary_unprotect_logging((void *)x, f, l)
@@ -543,10 +543,7 @@ rb_ary_new_from_values(long n, const VALUE *elts)
 
     ary = rb_ary_new2(n);
     if (n > 0 && elts) {
-	assert(!OBJ_PROMOTED(ary));
-	RARRAY_PTR_USE(ary, ptr, {
-	    MEMCPY(ptr, elts, VALUE, n); /* new array is not old gen */
-	});
+	ary_memcpy(ary, 0, n, elts);
 	ARY_SET_LEN(ary, n);
     }
 
@@ -1891,7 +1888,7 @@ rb_ary_dup(VALUE ary)
 VALUE
 rb_ary_resurrect(VALUE ary)
 {
-    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_PTR(ary));
+    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_RAWPTR(ary));
 }
 
 extern VALUE rb_output_fs;

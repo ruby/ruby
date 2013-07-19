@@ -1,3 +1,10 @@
+Fri Jul 19 19:15:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_resurrect): use RARRAY_RAWPTR() because there is no
+	  writing.
+
+	* array.c (rb_ary_new_from_values): use ary_memcpy().
+
 Fri Jul 19 19:07:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_memcpy): add a function to copy VALUEs into ary
