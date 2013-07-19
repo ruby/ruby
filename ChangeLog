@@ -1,3 +1,8 @@
+Fri Jul 19 11:16:54 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#to_set): Define Set#to_set so that aSet.to_set
+	  returns self. [Fixes GH-359]
+
 Fri Jul 19 11:10:23 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rake/*: [DOC] Capitalize "Ruby" in documentation

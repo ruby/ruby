@@ -625,6 +625,9 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_instance_of(Set, set)
     assert_equal([-10,-8,-6,-4,-2], set.sort)
 
+    assert_same set, set.to_set
+    assert_not_same set, set.to_set { |o| o }
+
     set = ary.to_set(SortedSet)
     assert_instance_of(SortedSet, set)
     assert_equal([1,2,3,4,5], set.to_a)

@@ -148,6 +148,16 @@ class Set
     @hash.keys
   end
 
+  # Returns self if no arguments are given.  Otherwise, converts the
+  # set to another with klass.new(self, *args, &block).
+  #
+  # In subclasses, returns klass.new(self, *args, &block) unless
+  # overridden.
+  def to_set(klass = Set, *args, &block)
+    return self if instance_of?(Set) && klass == Set && block.nil? && args.empty?
+    klass.new(self, *args, &block)
+  end
+
   def flatten_merge(set, seen = Set.new) # :nodoc:
     set.each { |e|
       if e.is_a?(Set)

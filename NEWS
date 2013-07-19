@@ -137,6 +137,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Set
+  * incompatible changes:
+    * Set#to_set now returns self instead of generating a copy.
+
 * URI
   * incompatible changes:
     * URI.decode_www_form follows current WHATWG URL Standard.
