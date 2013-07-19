@@ -183,7 +183,7 @@ path_inspect(VALUE self)
 {
     const char *c = rb_obj_classname(self);
     VALUE str = get_strpath(self);
-    return rb_sprintf("#<%s:%s>", c, RSTRING_PTR(str));
+    return rb_sprintf("#<%s:%"PRIsVALUE">", c, str);
 }
 
 /*

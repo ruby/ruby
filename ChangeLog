@@ -1,3 +1,8 @@
+Fri Jul 19 14:19:48 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/pathname/pathname.c (path_inspect): use PRIsVALUE to preserve
+	  the result encoding.
+
 Fri Jul 19 12:35:41 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_tcp.rb (test_initialize_failure): Use EADDRNOTAVAIL
