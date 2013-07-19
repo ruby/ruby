@@ -11,7 +11,7 @@ class TupleSpace
       @list = list
       @check_idx = []
       @list.each_with_index do |x, i|
-	@check_idx.push i if x
+        @check_idx.push i if x
       end
       @size = @list.size
     end
@@ -22,9 +22,9 @@ class TupleSpace
     def match(tuple)
       return nil if tuple.size != self.size
       @check_idx.each do |i|
-	unless @list[i] === tuple[i]
-	  return false
-	end
+        unless @list[i] === tuple[i]
+          return false
+        end
       end
       return true
     end
@@ -47,13 +47,13 @@ class TupleSpace
     found = false
     @waiting[sz] = @waiting[sz].find_all { |x|
       if x[0].match(tuple)
-	begin
-	  x[1].wakeup
-	rescue ThreadError
-	end
-	false
+        begin
+          x[1].wakeup
+        rescue ThreadError
+        end
+        false
       else
-	true
+        true
       end
     }
   end
@@ -77,8 +77,8 @@ class TupleSpace
     found = false
     @que[sz].each_with_index do |x, i|
       if template.match(x)
-	found = true
-	break
+        found = true
+        break
       end
     end
     return nil unless found
@@ -110,17 +110,17 @@ class TupleSpace
   def in(template, non_block=false)
     begin
       loop do
-	Thread.critical = true
-	tuple = get_que(template)
-	unless tuple
-	  if non_block
-	    raise ThreadError, "queue empty"
-	  end
-	  put_waiting(template, Thread.current)
-	  Thread.stop
-	else
-	  return tuple
-	end
+        Thread.critical = true
+        tuple = get_que(template)
+        unless tuple
+          if non_block
+            raise ThreadError, "queue empty"
+          end
+          put_waiting(template, Thread.current)
+          Thread.stop
+        else
+          return tuple
+        end
       end
     ensure
       Thread.critical = false
@@ -155,11 +155,11 @@ if __FILE__ == $0
   def server(ts, id)
     Thread.start {
       loop do
-	req = ts.in(['req', nil, nil])
-	ac = req[1]
-	num = req[2]
-	sleep id
-	ts.out([ac, id, num, num * num])
+        req = ts.in(['req', nil, nil])
+        ac = req[1]
+        num = req[2]
+        sleep id
+        ts.out([ac, id, num, num * num])
       end
     }
   end
@@ -168,14 +168,14 @@ if __FILE__ == $0
     Thread.start {
       ac = Object.new
       tuples = (1..10).collect { |i|
-	['req', ac, i * 10 + n]
+        ['req', ac, i * 10 + n]
       }
       ts.out(*tuples)
       ts.out(tuples[0])
       puts "out: #{n}"
       11.times do |i|
-	ans = ts.in([ac, nil, nil, nil])
-	puts "client(#{n}) server(#{ans[1]}) #{ans[2]} #{ans[3]}"
+        ans = ts.in([ac, nil, nil, nil])
+        puts "client(#{n}) server(#{ans[1]}) #{ans[2]} #{ans[3]}"
       end
     }
   end
@@ -183,12 +183,12 @@ if __FILE__ == $0
   def watcher(ts)
     Thread.start {
       loop do
-	begin
-	  sleep 1
-	  p ts.rd(['req', nil, nil], true)
-	rescue ThreadError
-	  puts "'req' not found."
-	end
+        begin
+          sleep 1
+          p ts.rd(['req', nil, nil], true)
+        rescue ThreadError
+          puts "'req' not found."
+        end
       end
     }
   end

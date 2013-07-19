@@ -54,13 +54,13 @@ class CHashDir
       OpenSSL::X509::Certificate.new(str)
     rescue
       begin
-	OpenSSL::X509::CRL.new(str)
+        OpenSSL::X509::CRL.new(str)
       rescue
-	begin
-	  OpenSSL::X509::Request.new(str)
-	rescue
-	  nil
-	end
+        begin
+          OpenSSL::X509::Request.new(str)
+        rescue
+          nil
+        end
       end
     end
   end
@@ -75,15 +75,15 @@ private
     Dir.chdir(@dirpath) do
       delete_symlink
       Dir.glob('*.pem') do |pemfile|
-	cert = load_pem_file(pemfile)
-	case cert
-	when OpenSSL::X509::Certificate
-	  link_hash_cert(pemfile, cert)
-	when OpenSSL::X509::CRL
-	  link_hash_crl(pemfile, cert)
-	else
-	  STDERR.puts("WARNING: #{pemfile} does not contain a certificate or CRL: skipping") unless @silent
-	end
+        cert = load_pem_file(pemfile)
+        case cert
+        when OpenSSL::X509::Certificate
+          link_hash_cert(pemfile, cert)
+        when OpenSSL::X509::CRL
+          link_hash_crl(pemfile, cert)
+        else
+          STDERR.puts("WARNING: #{pemfile} does not contain a certificate or CRL: skipping") unless @silent
+        end
       end
     end
   end
@@ -103,7 +103,7 @@ private
     }
     unless filepath
       unless @silent
-	STDERR.puts("WARNING: Skipping duplicate certificate #{org_filename}")
+        STDERR.puts("WARNING: Skipping duplicate certificate #{org_filename}")
       end
     else
       (@cert_cache[name_hash] ||= []) << path(filepath)
@@ -118,7 +118,7 @@ private
     }
     unless filepath
       unless @silent
-	STDERR.puts("WARNING: Skipping duplicate CRL #{org_filename}")
+        STDERR.puts("WARNING: Skipping duplicate CRL #{org_filename}")
       end
     else
       (@crl_cache[name_hash] ||= []) << path(filepath)
@@ -132,7 +132,7 @@ private
       filepath = yield(idx)
       break unless FileTest.symlink?(filepath) or FileTest.exist?(filepath)
       if @fingerprint_cache[filepath] == fingerprint
-	return false
+        return false
       end
       idx += 1
     end
@@ -147,7 +147,7 @@ private
       File.symlink(from, to)
     rescue
       File.open(to, "w") do |f|
-	f << File.read(from)
+        f << File.read(from)
       end
     end
   end

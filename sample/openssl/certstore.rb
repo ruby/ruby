@@ -76,27 +76,27 @@ private
     result = @x509store.verify(cert) do |ok, ctx|
       cert = ctx.current_cert
       if ctx.current_crl
-	crl_map[cert.subject] = true
+        crl_map[cert.subject] = true
       end
       if ok
-	if !ctx.current_crl
-	  if crl = @crl_store.find_crl(cert)
-	    crl_map[cert.subject] = true
-	    if crl.revoked.find { |revoked| revoked.serial == cert.serial }
-	      ok = false
-	      error_string = 'certification revoked'
-	    end
-	  end
-	end
+        if !ctx.current_crl
+          if crl = @crl_store.find_crl(cert)
+            crl_map[cert.subject] = true
+            if crl.revoked.find { |revoked| revoked.serial == cert.serial }
+              ok = false
+              error_string = 'certification revoked'
+            end
+          end
+        end
       end
       error_map[cert.subject] = error_string if error_string
       ok
     end
     error = if result
-	nil
-      else
-	error_map[cert.subject] || @x509store.error_string
-      end
+      nil
+    else
+      error_map[cert.subject] || @x509store.error_string
+    end
     return error, crl_map
   end
 
@@ -105,13 +105,13 @@ private
       cert = generate_cert(certfile)
       case guess_cert_type(cert)
       when CERT_TYPE_SELF_SIGNED
-	@self_signed_ca << cert
+        @self_signed_ca << cert
       when CERT_TYPE_OTHER
-	@other_ca << cert
+        @other_ca << cert
       when CERT_TYPE_EE
-	@ee << cert
+        @ee << cert
       else
-	raise "Unknown cert type."
+        raise "Unknown cert type."
       end
     end
     @c_store.get_crls.each do |crlfile|
@@ -128,21 +128,21 @@ private
       # Ignores criticality of extensions.  It's 'guess'ing.
       case ext.oid
       when 'basicConstraints'
-	/CA:(TRUE|FALSE), pathlen:(\d+)/ =~ ext.value
-	ca = ($1 == 'TRUE') unless ca
+        /CA:(TRUE|FALSE), pathlen:(\d+)/ =~ ext.value
+        ca = ($1 == 'TRUE') unless ca
       when 'keyUsage'
-	usage = ext.value.split(/\s*,\s*/)
-	ca = usage.include?('Certificate Sign') unless ca
+        usage = ext.value.split(/\s*,\s*/)
+        ca = usage.include?('Certificate Sign') unless ca
       when 'nsCertType'
-	usage = ext.value.split(/\s*,\s*/)
-	ca = usage.include?('SSL CA') unless ca
+        usage = ext.value.split(/\s*,\s*/)
+        ca = usage.include?('SSL CA') unless ca
       end
     end
     if ca
       if self_signed
-	CERT_TYPE_SELF_SIGNED
+        CERT_TYPE_SELF_SIGNED
       else
-	CERT_TYPE_OTHER
+        CERT_TYPE_OTHER
       end
     else
       CERT_TYPE_EE

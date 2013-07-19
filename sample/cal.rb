@@ -71,7 +71,7 @@ class Cal
     ta = gr.collect{|xs| xs.join(' ')}
 
     ca = %w(January February March April May June July
-	    August September October November December)[m - 1]
+      August September October November December)[m - 1]
     ca = ca + ' ' + y.to_s if !@opt_y
     ca = ca.center(@mw)
 
@@ -132,10 +132,10 @@ if __FILE__ == $0
 
   begin
     GetoptLong.new(['-c', GetoptLong::REQUIRED_ARGUMENT],
-		   ['-j', GetoptLong::NO_ARGUMENT],
-		   ['-m', GetoptLong::NO_ARGUMENT],
-		   ['-t', GetoptLong::NO_ARGUMENT],
-		   ['-y', GetoptLong::NO_ARGUMENT]).
+      ['-j', GetoptLong::NO_ARGUMENT],
+      ['-m', GetoptLong::NO_ARGUMENT],
+      ['-t', GetoptLong::NO_ARGUMENT],
+      ['-y', GetoptLong::NO_ARGUMENT]).
     each do |opt, arg|
       case opt
       when '-c'; cal.opt_c(arg) || raise
