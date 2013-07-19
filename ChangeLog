@@ -1,3 +1,11 @@
+Fri Jul 19 19:07:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_memcpy): add a function to copy VALUEs into ary
+	  with write barrier. If ary is promoted, use write barrier correctly.
+
+	* array.c (rb_ary_cat, rb_ary_unshift_m, rb_ary_dup,
+	  rb_ary_sort_bang, rb_ary_replace, rb_ary_plus): use ary_memcpy().
+
 Fri Jul 19 15:32:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_store): use RARRAY_PTR_USE() intead of RARRAY_PTR().
