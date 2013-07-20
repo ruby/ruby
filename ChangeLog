@@ -1,3 +1,9 @@
+Sun Jul 21 01:07:45 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk (help): Fix environment variable name and argument.
+	  Actually it can also be a directory or any argument for
+	  test/unit runner. [Fixes GH-363]
+
 Sat Jul 20 22:44:50 2013  Zachary Scott  <e@zzak.io>
 
 	* common.mk: Document running a single test [Fixes GH-363]

@@ -1071,7 +1071,7 @@ help: PHONY
 	"  gdb-ruby:        runs test.rb by ruby under gdb" \
 	"  check:           equals make test test-all" \
 	"  test:            ruby core tests" \
-	"  test-all:        all ruby tests [TEST=<specific_test_file.rb>]" \
+	"  test-all:        all ruby tests [TESTS=<test files>]" \
 	"  test-rubyspec:   run RubySpec test suite" \
 	"  update-rubyspec: update local copy of RubySpec" \
 	"  benchmark:       benchmark this ruby and COMPARE_RUBY" \
