@@ -996,6 +996,13 @@ rb_enc_codelen(int c, rb_encoding *enc)
     return n;
 }
 
+#undef rb_enc_code_to_mbclen
+int
+rb_enc_code_to_mbclen(int code, rb_encoding *enc)
+{
+    return ONIGENC_CODE_TO_MBCLEN(enc, code);
+}
+
 int
 rb_enc_toupper(int c, rb_encoding *enc)
 {

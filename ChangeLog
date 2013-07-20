@@ -1,3 +1,12 @@
+Sat Jul 20 12:13:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_code_to_mbclen): add new function which returns
+	  mbclen from codepoint like as rb_enc_codelen() but 0 for invalid
+	  char.
+
+	* include/ruby/encoding.h (rb_enc_code_to_mbclen): declaration and
+	  shortcut macro.
+
 Fri Jul 19 21:59:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: declare type_name() at the beggining of file.

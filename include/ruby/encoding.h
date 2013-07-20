@@ -147,6 +147,9 @@ unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 
 /* -> codelen>0 or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
+/* -> 0 for invalid codepoint */
+int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
+#define rb_enc_code_to_mbclen(c, enc) ONIGENC_CODE_TO_MBCLEN((enc), (c));
 
 /* code,ptr,encoding -> write buf */
 #define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC((enc),(c),(UChar*)(buf))
