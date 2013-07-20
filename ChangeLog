@@ -1,3 +1,9 @@
+Sat Jul 20 14:38:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_make_shared): make shared array shady.
+	  Making non-shady shared array causes SEGV (see rubyci).
+	  It seems a bug around shared array.
+
 Sat Jul 20 12:14:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (enc_succ_char, enc_pred_char): consider wchar case.

@@ -612,8 +612,8 @@ ary_make_shared(VALUE ary)
         FL_UNSET_EMBED(shared);
 
         ARY_SET_LEN((VALUE)shared, ARY_CAPA(ary));
-	ARY_SET_PTR((VALUE)shared, RARRAY_RAWPTR(ary));
-	ary_mem_clear((VALUE)shared, RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
+	ARY_SET_PTR((VALUE)shared, RARRAY_PTR(ary));
+	rb_mem_clear(RARRAY_PTR(shared) + RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
 	FL_SET_SHARED_ROOT(shared);
 	ARY_SET_SHARED_NUM((VALUE)shared, 1);
 	FL_SET_SHARED(ary);
