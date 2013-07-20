@@ -879,6 +879,15 @@ class TestHash < Test::Unit::TestCase
 
   def test_flatten
     assert_equal([[1], [2]], {[1] => [2]}.flatten)
+
+    a =  {1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]}
+    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten)
+    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(-1))
+    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(0))
+    assert_equal([1, "one", 2, [2, "two"], 3, [3, ["three"]]], a.flatten(1))
+    assert_equal([1, "one", 2, 2, "two", 3, 3, ["three"]], a.flatten(2))
+    assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(3))
+    assert_raise(TypeError){ a.flatten(Object) }
   end
 
   def test_callcc

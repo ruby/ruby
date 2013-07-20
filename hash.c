@@ -2223,7 +2223,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
     rb_hash_foreach(hash, flatten_i, ary);
     if (argc) {
-	int level = FIX2INT(*argv) - 1;
+	int level = NUM2INT(*argv) - 1;
 	if (level > 0) {
 	    *argv = INT2FIX(level);
 	    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
