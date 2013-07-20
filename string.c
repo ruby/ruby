@@ -2870,6 +2870,24 @@ enc_succ_char(char *p, long len, rb_encoding *enc)
 {
     long i;
     int l;
+
+    if (rb_enc_mbminlen(enc) > 1) {
+	/* wchar, trivial case */
+	int r = rb_enc_precise_mbclen(p, p + len, enc), c;
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	c = rb_enc_mbc_to_codepoint(p, p + len, enc) + 1;
+	l = rb_enc_code_to_mbclen(c, enc);
+	if (!l) return NEIGHBOR_NOT_CHAR;
+	if (l != len) return NEIGHBOR_WRAPPED;
+	rb_enc_mbcput(c, p, enc);
+	r = rb_enc_precise_mbclen(p, p + len, enc);
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	return NEIGHBOR_FOUND;
+    }
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0xff; i--)
             p[i] = '\0';
@@ -2904,6 +2922,25 @@ enc_pred_char(char *p, long len, rb_encoding *enc)
 {
     long i;
     int l;
+    if (rb_enc_mbminlen(enc) > 1) {
+	/* wchar, trivial case */
+	int r = rb_enc_precise_mbclen(p, p + len, enc), c;
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	c = rb_enc_mbc_to_codepoint(p, p + len, enc);
+	if (!c) return NEIGHBOR_NOT_CHAR;
+	--c;
+	l = rb_enc_code_to_mbclen(c, enc);
+	if (!l) return NEIGHBOR_NOT_CHAR;
+	if (l != len) return NEIGHBOR_WRAPPED;
+	rb_enc_mbcput(c, p, enc);
+	r = rb_enc_precise_mbclen(p, p + len, enc);
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	return NEIGHBOR_FOUND;
+    }
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0; i--)
             p[i] = '\xff';
@@ -3074,12 +3111,16 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
+	    char tmp[ONIGENC_CODE_TO_MBC_MAXLEN];
 	    l = rb_enc_precise_mbclen(s, e, enc);
 	    if (!ONIGENC_MBCLEN_CHARFOUND_P(l)) continue;
 	    l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
-            neighbor = enc_succ_char(s, l, enc);
-            if (neighbor == NEIGHBOR_FOUND)
+	    MEMCPY(tmp, s, char, l);
+	    neighbor = enc_succ_char(tmp, l, enc);
+	    if (neighbor == NEIGHBOR_FOUND) {
+		MEMCPY(s, tmp, char, l);
                 return str;
+	    }
             if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);

@@ -50,10 +50,12 @@ class TestM17NComb < Test::Unit::TestCase
     # for transitivity test
     u("\xe0\xa0\xa1"), e("\xe0\xa0\xa1"), s("\xe0\xa0\xa1"), # [ruby-dev:32693]
     e("\xa1\xa1"), a("\xa1\xa1"), s("\xa1\xa1"), # [ruby-dev:36484]
+  ]
 
-    #"aa".force_encoding("utf-16be"),
-    #"aaaa".force_encoding("utf-32be"),
-    #"aaa".force_encoding("utf-32be"),
+  WSTRINGS = [
+    "aa".force_encoding("utf-16be"),
+    "aaaa".force_encoding("utf-32be"),
+    "aaa".force_encoding("utf-32be"),
   ]
 
   def combination(*args, &b)
@@ -84,7 +86,7 @@ class TestM17NComb < Test::Unit::TestCase
     r
   end
 
-  def enccall(recv, meth, *args, &block)
+  def assert_enccall(recv, meth, *args, &block)
     desc = ''
     if String === recv
       desc << encdump(recv)
@@ -113,6 +115,7 @@ class TestM17NComb < Test::Unit::TestCase
     }
     result
   end
+  alias enccall assert_enccall
 
   def assert_str_enc_propagation(t, s1, s2)
     if !s1.ascii_only?
@@ -1327,6 +1330,14 @@ class TestM17NComb < Test::Unit::TestCase
         s = t
       }
     }
+
+    Encoding.list.each do |enc|
+      next if enc.dummy?
+      {"A"=>"B", "A1"=>"A2", "A9"=>"B0", "9"=>"10", "Z"=>"AA"}.each do |orig, expected|
+        s = orig.encode(enc)
+        assert_strenc(expected.encode(enc), enc, s.succ, proc {"#{orig.dump}.encode(#{enc}).succ"})
+      end
+    end
   end
 
   def test_str_hash

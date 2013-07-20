@@ -1,4 +1,9 @@
-Sat Jul 20 12:13:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 20 12:14:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (enc_succ_char, enc_pred_char): consider wchar case.
+	  [ruby-core:56071] [Bug #8653]
+
+	* string.c (rb_str_succ): do not replace with invalid char.
 
 	* encoding.c (rb_enc_code_to_mbclen): add new function which returns
 	  mbclen from codepoint like as rb_enc_codelen() but 0 for invalid
