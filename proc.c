@@ -883,9 +883,8 @@ proc_to_s(VALUE self)
 	if (iseq->line_info_table) {
 	    first_lineno = rb_iseq_first_lineno(iseq);
 	}
-	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
-			 RSTRING_PTR(iseq->location.path),
-			 first_lineno, is_lambda);
+	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
+			 iseq->location.path, first_lineno, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,

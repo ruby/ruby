@@ -1,3 +1,7 @@
+Sun Jul 21 08:12:16 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* proc.c (proc_to_s): use PRIsVALUE to preserve the result encoding.
+
 Sun Jul 21 03:36:18 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* hash.c (rb_hash_flatten): use NUM2INT to raise TypeError on 32bit
