@@ -4722,7 +4722,7 @@ bigmul1_toom3(VALUE x, VALUE y)
      *   z(-2)  = x(-2)  * y(-2)  = (x0 - 2 * (x1 - 2 * x2)) * (y0 - 2 * (y1 - 2 * y2))
      *   z(inf) = x(inf) * y(inf) = x2 * y2
      *
-     * (Step2) interpolating z0, z1, z2, z3, z4, and z5.
+     * (Step2) interpolating z0, z1, z2, z3 and z4.
      *
      * (Step3) Substituting base value into b of the polynomial z(b),
      */
@@ -4791,7 +4791,7 @@ bigmul1_toom3(VALUE x, VALUE y)
     v1 = v2 = v3 = Qnil;
 
     /*
-     * [Step2] interpolating z0, z1, z2, z3, z4, and z5.
+     * [Step2] interpolating z0, z1, z2, z3 and z4.
      */
 
     /* z0 <- z(0) == u0 */
