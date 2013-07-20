@@ -1,3 +1,8 @@
+Sat Jul 20 22:44:50 2013  Zachary Scott  <e@zzak.io>
+
+	* common.mk: Document running a single test [Fixes GH-363]
+	  Patch by Avdi Grimm https://github.com/ruby/ruby/pull/363
+
 Sat Jul 20 22:39:56 2013  Zachary Scott  <e@zzak.io>
 
 	* sample/*: whitespace patch by Sergio Campama [Fixes GH-364]
