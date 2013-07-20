@@ -1,3 +1,8 @@
+Sat Jul 20 15:02:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* safe.c (ruby_safe_level_4_warning): define for old extension
+	  libraries.  [Bug #8652]
+
 Sat Jul 20 14:38:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_make_shared): make shared array shady.

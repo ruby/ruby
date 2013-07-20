@@ -25,6 +25,13 @@
 
 #undef rb_secure
 #undef rb_set_safe_level
+#undef ruby_safe_level_4_warning
+
+int
+ruby_safe_level_4_warning(void)
+{
+    return 4;
+}
 
 int
 rb_safe_level(void)
