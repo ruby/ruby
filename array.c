@@ -623,7 +623,6 @@ ary_make_shared(VALUE ary)
     }
 }
 
-
 static VALUE
 ary_make_substitution(VALUE ary)
 {
@@ -1642,7 +1641,7 @@ rb_ary_resize(VALUE ary, long len)
 	VALUE tmp[RARRAY_EMBED_LEN_MAX];
 	MEMCPY(tmp, ARY_HEAP_PTR(ary), VALUE, len);
 	ary_discard(ary);
-	ary_memcpy(ary, 0, len, tmp);
+	MEMCPY((VALUE *)ARY_EMBED_PTR(ary), tmp, VALUE, len); /* WB: no new reference */
         ARY_SET_EMBED_LEN(ary, len);
     }
     else {
