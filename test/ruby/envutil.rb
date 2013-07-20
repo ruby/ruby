@@ -31,20 +31,18 @@ module EnvUtil
 
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
-  def invoke_ruby(args, stdin_data="", capture_stdout=false, capture_stderr=false, opt={})
+  def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
+                  encoding: nil, timeout: 10, reprieve: 1, **opt)
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
     err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
-    opt = opt.dup
     opt[:in] = in_c
     opt[:out] = out_c if capture_stdout
     opt[:err] = capture_stderr == :merge_to_stdout ? out_c : err_c if capture_stderr
-    if enc = opt.delete(:encoding)
-      out_p.set_encoding(enc) if out_p
-      err_p.set_encoding(enc) if err_p
+    if encoding
+      out_p.set_encoding(encoding) if out_p
+      err_p.set_encoding(encoding) if err_p
     end
-    timeout = opt.delete(:timeout) || 10
-    reprieve = opt.delete(:reprieve) || 1
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -52,7 +50,7 @@ module EnvUtil
       child_env.update(args.shift)
     end
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, EnvUtil.rubybin, *args, opt)
+    pid = spawn(child_env, EnvUtil.rubybin, *args, **opt)
     in_c.close
     out_c.close if capture_stdout
     err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
@@ -204,11 +202,10 @@ module Test
         $VERBOSE = verbose
       end
 
-      def assert_normal_exit(testsrc, message = '', opt = {})
+      def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
         assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
-        if opt.include?(:child_env)
-          opt = opt.dup
-          child_env = [opt.delete(:child_env)] || []
+        if child_env
+          child_env = [child_env]
         else
           child_env = []
         end
@@ -242,7 +239,7 @@ module Test
         faildesc
       end
 
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, opt={})
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, opt)
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
@@ -267,7 +264,7 @@ module Test
         end
       end
 
-      def assert_ruby_status(args, test_stdin="", message=nil, opt={})
+      def assert_ruby_status(args, test_stdin="", message=nil, **opt)
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, opt)
         message ||= "ruby exit status is not success:"
         assert(status.success?, FailDesc[status, message, out])
@@ -275,7 +272,7 @@ module Test
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV")
 
-      def assert_separately(args, file = nil, line = nil, src, **opt)
+      def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
         unless file and line
           loc, = caller_locations(1,1)
           file ||= loc.path
@@ -292,7 +289,6 @@ module Test
 eom
         args = args.dup
         $:.each{|l| args.unshift "-I#{l}" }
-        ignore_stderr = opt.delete(:ignore_stderr)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, stderr])
