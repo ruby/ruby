@@ -1,3 +1,8 @@
+Sat Jul 20 22:33:13 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/regexp.rdoc: [DOC] Fix typo in example [Fixes GH-365]
+	  Patch by Juanito Fatas https://github.com/ruby/ruby/pull/365
+
 Sat Jul 20 17:46:03 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_succ): add missing case NEIGHBOR_WRAPPED.

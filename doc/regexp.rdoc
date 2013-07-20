@@ -611,7 +611,7 @@ The following patterns match instantly as you would expect:
 
     /(b|a)/ =~ s #=> 0
     /(b|a+)/ =~ s #=> 0
-    /(b|a+)*\/ =~ s #=> 0
+    /(b|a+)*/ =~ s #=> 0
 
 However, the following pattern takes appreciably longer:
 
