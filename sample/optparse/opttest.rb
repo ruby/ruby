@@ -22,13 +22,13 @@ ARGV.options do
 
   # mandatory argument
   opts.on("-r", "--require=LIBRARY", String,
-	  "require the LIBRARY, before",
-	  "executing your script") {|lib|@library=lib}
+    "require the LIBRARY, before",
+    "executing your script") {|lib|@library=lib}
 
   # optional argument
   opts.on("-i", "--inplace=[EXTENSION]",
-	  "edit ARGV files in place", # multiline description
-	  "(make backup if EXTENSION supplied)") {|inplace| @inplace = inplace || ''}
+    "edit ARGV files in place", # multiline description
+    "(make backup if EXTENSION supplied)") {|inplace| @inplace = inplace || ''}
 
   opts.on("-N=[NUM]", Integer) {|num|@number=num}
 
@@ -37,7 +37,7 @@ ARGV.options do
 
   # limit argument syntax
   opts.on("-[0-7]", "-F", "--irs=[OCTAL]", OptionParser::OctalInteger,
-	  "specify record separator", "(\\0, if no argument)") {|irs|@irs=irs}
+    "specify record separator", "(\\0, if no argument)") {|irs|@irs=irs}
 
   # boolean switch(default true)
   @exec = true
@@ -51,7 +51,7 @@ ARGV.options do
 
   # keyword completion
   opts.on("--code=CODE", CODES, CODE_ALIASES, "select coding system",
-	  "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") {|c|@code=c}
+    "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") {|c|@code=c}
 
   # optional argument with keyword completion
   opts.on("--type[=TYPE]", [:text, :binary], "select type(text, binary)") {|t|@type=t}

@@ -38,7 +38,7 @@ at_exit do
             end
             cov
           else
-	    p line
+            p line
             warn("coverage file corrupted, ignoring: #{ cfile }")
             break []
           end

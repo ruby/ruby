@@ -21,8 +21,8 @@ class Logger
   def flush
     begin
       while(1)
-	@fp.puts(@queue.pop)
-	@fp.flush
+        @fp.puts(@queue.pop)
+        @fp.flush
       end
     ensure
       @fp.close

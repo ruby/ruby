@@ -1,3 +1,8 @@
+Sat Jul 20 22:39:56 2013  Zachary Scott  <e@zzak.io>
+
+	* sample/*: whitespace patch by Sergio Campama [Fixes GH-364]
+	  https://github.com/ruby/ruby/pull/364
+
 Sat Jul 20 22:33:13 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/regexp.rdoc: [DOC] Fix typo in example [Fixes GH-365]

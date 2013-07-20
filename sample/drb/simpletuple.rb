@@ -58,10 +58,10 @@ if __FILE__ == $0
   def server(ts)
     Thread.start {
       loop do
-	req = ts.in('req')
-	ac = req[0]
-	num = req[1]
-	ts.out(ac, num * num)
+        req = ts.in('req')
+        ac = req[0]
+        num = req[1]
+        ts.out(ac, num * num)
       end
     }
   end
