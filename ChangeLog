@@ -1,3 +1,9 @@
+Sat Jul 20 23:49:33 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/drb/drbtest.rb (Drb{Core,Ary}#teardown): retry Process.kill
+	  if it fails with Errno::EPERM on Windows (workaround).
+	  [ruby-dev:47245] [Bug #8251]
+
 Sat Jul 20 23:31:11 2013  Aman Gupta  <tmm1@ruby-lang.org>
 
 	* iseq.c (iseq_location_setup): re-use existing string when iseq has

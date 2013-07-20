@@ -79,9 +79,16 @@ module DRbCore
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        begin
-          Process.kill signal, th.pid
-        rescue Errno::ESRCH
+        10.times do
+          begin
+            Process.kill signal, th.pid
+            break
+          rescue Errno::ESRCH
+            break
+          rescue Errno::EPERM # on Windows
+            sleep 0.1
+            retry
+          end
         end
         th.join
       end
@@ -300,9 +307,16 @@ module DRbAry
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        begin
-          Process.kill signal, th.pid
-        rescue Errno::ESRCH
+        10.times do
+          begin
+            Process.kill signal, th.pid
+            break
+          rescue Errno::ESRCH
+            break
+          rescue Errno::EPERM # on Windows
+            sleep 0.1
+            retry
+          end
         end
         th.join
       end
