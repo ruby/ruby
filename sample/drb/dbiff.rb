@@ -19,18 +19,18 @@ class Biff
     last = Time.now
     while true
       begin
-	sleep(@interval)
-	current = File::mtime(@filename)
-	if current > last
-	  changed
-	  begin
-	    notify_observers(@filename, current)
-	  rescue Error
-	  end
-	  last = current
-	end
+        sleep(@interval)
+        current = File::mtime(@filename)
+        if current > last
+          changed
+          begin
+            notify_observers(@filename, current)
+          rescue Error
+          end
+          last = current
+        end
       rescue
-	next
+        next
       end
     end
   end

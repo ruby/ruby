@@ -7,7 +7,7 @@ for dir in path
     for f in d = Dir.open(dir)
       fpath = File.join(dir, f)
       if File.file?(fpath) && (File.stat(fpath).mode & 022) != 0
-	printf("file %s is writable from other users\n", fpath)
+        printf("file %s is writable from other users\n", fpath)
       end
     end
     d.close

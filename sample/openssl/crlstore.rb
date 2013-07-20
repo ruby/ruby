@@ -24,22 +24,22 @@ private
     end
     unless crlfiles = @c_store.get_crls(ca.subject)
       if crl = renew_crl(cert, ca)
-	@c_store.add_crl(crl)
-	return crl
+        @c_store.add_crl(crl)
+        return crl
       end
       return nil
     end
     crlfiles.each do |crlfile|
       next unless crl = load_crl(crlfile)
       if crl.next_update < Time.now
-	if new_crl = renew_crl(cert, ca)
-	  @c_store.delete_crl(crl)
-	  @c_store.add_crl(new_crl)
-	  crl = new_crl
-	end
+        if new_crl = renew_crl(cert, ca)
+          @c_store.delete_crl(crl)
+          @c_store.add_crl(new_crl)
+          crl = new_crl
+        end
       end
       if check_valid(crl, ca)
-	return crl
+        return crl
       end
     end
     nil
@@ -49,7 +49,7 @@ private
     @c_store.get_certs(cert.issuer).each do |cafile|
       ca = load_cert(cafile)
       if cert.verify(ca.public_key)
-	return ca
+        return ca
       end
     end
     nil
@@ -58,10 +58,10 @@ private
   def fetch(location)
     if /\AURI:(.*)\z/ =~ location
       begin
-	c = HTTPAccess2::Client.new(ENV['http_proxy'] || ENV['HTTP_PROXY'])
-	c.get_content($1)
+        c = HTTPAccess2::Client.new(ENV['http_proxy'] || ENV['HTTP_PROXY'])
+        c.get_content($1)
       rescue NameError, StandardError
-	nil
+        nil
       end
     else
       nil
@@ -103,10 +103,10 @@ private
   def renew_crl(cert, ca)
     if cdp = get_cdp(cert)
       if new_crl_str = fetch(cdp)
-	new_crl = load_crl_str(new_crl_str)
-	if check_valid(new_crl, ca)
-	  return new_crl
-	end
+        new_crl = load_crl_str(new_crl_str)
+        if check_valid(new_crl, ca)
+          return new_crl
+        end
       end
     end
     false
