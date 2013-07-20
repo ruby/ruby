@@ -1,3 +1,8 @@
+Sat Jul 20 17:46:03 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_succ): add missing case NEIGHBOR_WRAPPED.
+	  r42078 caused buggy behavior like "\xFF".b -> "\x01\xFF".b
+
 Sat Jul 20 15:22:38 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_resize): use simple memcpy because there are no new

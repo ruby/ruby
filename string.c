@@ -3117,9 +3117,16 @@ rb_str_succ(VALUE orig)
 	    l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
 	    MEMCPY(tmp, s, char, l);
 	    neighbor = enc_succ_char(tmp, l, enc);
-	    if (neighbor == NEIGHBOR_FOUND) {
+	    switch (neighbor) {
+	      case NEIGHBOR_FOUND:
 		MEMCPY(s, tmp, char, l);
                 return str;
+		break;
+	      case NEIGHBOR_WRAPPED:
+		MEMCPY(s, tmp, char, l);
+		break;
+	      case NEIGHBOR_NOT_CHAR:
+		break;
 	    }
             if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
                 /* wrapped to \0...\0.  search next valid char. */

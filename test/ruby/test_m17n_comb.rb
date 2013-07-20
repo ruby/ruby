@@ -1340,6 +1340,11 @@ class TestM17NComb < Test::Unit::TestCase
     end
   end
 
+  def test_str_succ2
+    assert_equal("\x01\x00".force_encoding("US-ASCII"), "\x7f".force_encoding("US-ASCII").succ)
+    assert_equal("\x01\x00".b, "\xff".b.succ)
+  end
+
   def test_str_hash
     combination(STRINGS, STRINGS) {|s1, s2|
       if s1.eql?(s2)
