@@ -11,18 +11,21 @@ require 'weakref'
 require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
-  def have_close_on_exec?
-    begin
+  module Feature
+    def have_close_on_exec?
       $stdin.close_on_exec?
       true
     rescue NotImplementedError
       false
     end
+
+    def have_nonblock?
+      IO.method_defined?("nonblock=")
+    end
   end
 
-  def have_nonblock?
-    IO.method_defined?("nonblock=")
-  end
+  include Feature
+  extend Feature
 
   def pipe(wp, rp)
     re, we = nil, nil
@@ -282,63 +285,100 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
-  def test_copy_stream
+  def with_srccontent(content = "baz")
+    src = "src"
     mkcdtmpdir {
+      File.open(src, "w") {|f| f << content }
+      yield src, content
+    }
+  end
 
-      content = "foobar"
-      File.open("src", "w") {|f| f << content }
-      ret = IO.copy_stream("src", "dst")
+  def test_copy_stream_small
+    with_srccontent("foobar") {|src, content|
+      ret = IO.copy_stream(src, "dst")
       assert_equal(content.bytesize, ret)
       assert_equal(content, File.read("dst"))
+    }
+  end
+
+  def test_copy_stream_smaller
+    with_srccontent {|src, content|
 
       # overwrite by smaller file.
-      content = "baz"
-      File.open("src", "w") {|f| f << content }
-      ret = IO.copy_stream("src", "dst")
+      dst = "dst"
+      File.open(dst, "w") {|f| f << "foobar"}
+
+      ret = IO.copy_stream(src, dst)
       assert_equal(content.bytesize, ret)
-      assert_equal(content, File.read("dst"))
+      assert_equal(content, File.read(dst))
 
-      ret = IO.copy_stream("src", "dst", 2)
+      ret = IO.copy_stream(src, dst, 2)
       assert_equal(2, ret)
-      assert_equal(content[0,2], File.read("dst"))
+      assert_equal(content[0,2], File.read(dst))
 
-      ret = IO.copy_stream("src", "dst", 0)
+      ret = IO.copy_stream(src, dst, 0)
       assert_equal(0, ret)
-      assert_equal("", File.read("dst"))
+      assert_equal("", File.read(dst))
 
-      ret = IO.copy_stream("src", "dst", nil, 1)
+      ret = IO.copy_stream(src, dst, nil, 1)
       assert_equal(content.bytesize-1, ret)
-      assert_equal(content[1..-1], File.read("dst"))
+      assert_equal(content[1..-1], File.read(dst))
+    }
+  end
 
+  def test_copy_stream_noent
+    with_srccontent {|src, content|
       assert_raise(Errno::ENOENT) {
         IO.copy_stream("nodir/foo", "dst")
       }
 
       assert_raise(Errno::ENOENT) {
-        IO.copy_stream("src", "nodir/bar")
+        IO.copy_stream(src, "nodir/bar")
       }
+    }
+  end
 
+  def test_copy_stream_pipe
+    with_srccontent {|src, content|
       pipe(proc do |w|
-        ret = IO.copy_stream("src", w)
+        ret = IO.copy_stream(src, w)
         assert_equal(content.bytesize, ret)
         w.close
       end, proc do |r|
         assert_equal(content, r.read)
       end)
+    }
+  end
 
+  def test_copy_stream_write_pipe
+    with_srccontent {|src, content|
       with_pipe {|r, w|
         w.close
-        assert_raise(IOError) { IO.copy_stream("src", w) }
+        assert_raise(IOError) { IO.copy_stream(src, w) }
       }
+    }
+  end
 
-      pipe_content = "abc"
+  def with_pipecontent
+    mkcdtmpdir {
+      yield "abc"
+    }
+  end
+
+  def test_copy_stream_pipe_to_file
+    with_pipecontent {|pipe_content|
+      dst = "dst"
       with_read_pipe(pipe_content) {|r|
-        ret = IO.copy_stream(r, "dst")
+        ret = IO.copy_stream(r, dst)
         assert_equal(pipe_content.bytesize, ret)
-        assert_equal(pipe_content, File.read("dst"))
+        assert_equal(pipe_content, File.read(dst))
       }
+    }
+  end
 
-      with_read_pipe("abc") {|r1|
+  def test_copy_stream_read_pipe
+    with_pipecontent {|pipe_content|
+      with_read_pipe(pipe_content) {|r1|
         assert_equal("a", r1.getc)
         pipe(proc do |w2|
           w2.sync = false
@@ -351,7 +391,7 @@ class TestIO < Test::Unit::TestCase
         end)
       }
 
-      with_read_pipe("abc") {|r1|
+      with_read_pipe(pipe_content) {|r1|
         assert_equal("a", r1.getc)
         pipe(proc do |w2|
           w2.sync = false
@@ -364,7 +404,7 @@ class TestIO < Test::Unit::TestCase
         end)
       }
 
-      with_read_pipe("abc") {|r1|
+      with_read_pipe(pipe_content) {|r1|
         assert_equal("a", r1.getc)
         pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2)
@@ -375,7 +415,7 @@ class TestIO < Test::Unit::TestCase
         end)
       }
 
-      with_read_pipe("abc") {|r1|
+      with_read_pipe(pipe_content) {|r1|
         assert_equal("a", r1.getc)
         pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2, 1)
@@ -386,7 +426,7 @@ class TestIO < Test::Unit::TestCase
         end)
       }
 
-      with_read_pipe("abc") {|r1|
+      with_read_pipe(pipe_content) {|r1|
         assert_equal("a", r1.getc)
         pipe(proc do |w2|
           ret = IO.copy_stream(r1, w2, 0)
@@ -411,16 +451,24 @@ class TestIO < Test::Unit::TestCase
           assert_equal("bcdef", r2.read)
         end)
       end)
+    }
+  end
 
+  def test_copy_stream_file_to_pipe
+    with_srccontent {|src, content|
       pipe(proc do |w|
-        ret = IO.copy_stream("src", w, 1, 1)
+        ret = IO.copy_stream(src, w, 1, 1)
         assert_equal(1, ret)
         w.close
       end, proc do |r|
         assert_equal(content[1,1], r.read)
       end)
+    }
+  end
 
-      if have_nonblock?
+  if have_nonblock?
+    def test_copy_stream_pipe_nonblock
+      mkcdtmpdir {
         with_read_pipe("abc") {|r1|
           assert_equal("a", r1.getc)
           with_pipe {|r2, w2|
@@ -438,25 +486,51 @@ class TestIO < Test::Unit::TestCase
             assert_equal("a" * s + "bc", t.value)
           }
         }
-      end
+      }
+    end
+  end
 
-      bigcontent = "abc" * 123456
-      File.open("bigsrc", "w") {|f| f << bigcontent }
-      ret = IO.copy_stream("bigsrc", "bigdst")
+  def with_bigcontent
+    yield "abc" * 123456
+  end
+
+  def with_bigsrc
+    mkcdtmpdir {
+      with_bigcontent {|bigcontent|
+        bigsrc = "bigsrc"
+        File.open("bigsrc", "w") {|f| f << bigcontent }
+        yield bigsrc, bigcontent
+      }
+    }
+  end
+
+  def test_copy_stream_bigcontent
+    with_bigsrc {|bigsrc, bigcontent|
+      ret = IO.copy_stream(bigsrc, "bigdst")
       assert_equal(bigcontent.bytesize, ret)
       assert_equal(bigcontent, File.read("bigdst"))
+    }
+  end
 
-      File.unlink("bigdst")
-      ret = IO.copy_stream("bigsrc", "bigdst", nil, 100)
+  def test_copy_stream_bigcontent_chop
+    with_bigsrc {|bigsrc, bigcontent|
+      ret = IO.copy_stream(bigsrc, "bigdst", nil, 100)
       assert_equal(bigcontent.bytesize-100, ret)
       assert_equal(bigcontent[100..-1], File.read("bigdst"))
+    }
+  end
 
-      File.unlink("bigdst")
-      ret = IO.copy_stream("bigsrc", "bigdst", 30000, 100)
+  def test_copy_stream_bigcontent_mid
+    with_bigsrc {|bigsrc, bigcontent|
+      ret = IO.copy_stream(bigsrc, "bigdst", 30000, 100)
       assert_equal(30000, ret)
       assert_equal(bigcontent[100, 30000], File.read("bigdst"))
+    }
+  end
 
-      File.open("bigsrc") {|f|
+  def test_copy_stream_bigcontent
+    with_bigsrc {|bigsrc, bigcontent|
+      File.open(bigsrc) {|f|
         begin
           assert_equal(0, f.pos)
           ret = IO.copy_stream(f, "bigdst", nil, 10)
@@ -471,16 +545,35 @@ class TestIO < Test::Unit::TestCase
           #skip "pread(2) is not implemtented."
         end
       }
+    }
+  end
 
+  def test_copy_stream_closed_pipe
+    with_srccontent {|src,|
       with_pipe {|r, w|
         w.close
-        assert_raise(IOError) { IO.copy_stream("src", w) }
+        assert_raise(IOError) { IO.copy_stream(src, w) }
       }
+    }
+  end
 
-      megacontent = "abc" * 1234567
-      File.open("megasrc", "w") {|f| f << megacontent }
+  def with_megacontent
+    yield "abc" * 1234567
+  end
 
-      if have_nonblock?
+  def with_megasrc
+    mkcdtmpdir {
+      with_megacontent {|megacontent|
+        megasrc = "megasrc"
+        File.open(megasrc, "w") {|f| f << megacontent }
+        yield megasrc, megacontent
+      }
+    }
+  end
+
+  if have_nonblock?
+    def test_copy_stream_megacontent_nonblock
+      with_megacontent {|megacontent|
         with_pipe {|r1, w1|
           with_pipe {|r2, w2|
             begin
@@ -498,8 +591,12 @@ class TestIO < Test::Unit::TestCase
             assert_equal(megacontent, t2.value)
           }
         }
-      end
+      }
+    end
+  end
 
+  def test_copy_stream_megacontent_pipe_to_file
+    with_megasrc {|megasrc, megacontent|
       with_pipe {|r1, w1|
         with_pipe {|r2, w2|
           t1 = Thread.new { w1 << megacontent; w1.close }
@@ -511,10 +608,14 @@ class TestIO < Test::Unit::TestCase
           assert_equal(megacontent, t2.value)
         }
       }
+    }
+  end
 
+  def test_copy_stream_megacontent_file_to_pipe
+    with_megasrc {|megasrc, megacontent|
       with_pipe {|r, w|
         t = Thread.new { r.read }
-        ret = IO.copy_stream("megasrc", w)
+        ret = IO.copy_stream(megasrc, w)
         assert_equal(megacontent.bytesize, ret)
         w.close
         assert_equal(megacontent, t.value)
@@ -552,12 +653,9 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket1
-    mkcdtmpdir {
-      content = "foobar"
-      File.open("src", "w") {|f| f << content }
-
+    with_srccontent("foobar") {|src, content|
       with_socketpair {|s1, s2|
-        ret = IO.copy_stream("src", s1)
+        ret = IO.copy_stream(src, s1)
         assert_equal(content.bytesize, ret)
         s1.close
         assert_equal(content, s2.read)
@@ -566,13 +664,10 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket2
-    mkcdtmpdir {
-      bigcontent = "abc" * 123456
-      File.open("bigsrc", "w") {|f| f << bigcontent }
-
+    with_bigsrc {|bigsrc, bigcontent|
       with_socketpair {|s1, s2|
         t = Thread.new { s2.read }
-        ret = IO.copy_stream("bigsrc", s1)
+        ret = IO.copy_stream(bigsrc, s1)
         assert_equal(bigcontent.bytesize, ret)
         s1.close
         result = t.value
@@ -582,13 +677,10 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket3
-    mkcdtmpdir {
-      bigcontent = "abc" * 123456
-      File.open("bigsrc", "w") {|f| f << bigcontent }
-
+    with_bigsrc {|bigsrc, bigcontent|
       with_socketpair {|s1, s2|
         t = Thread.new { s2.read }
-        ret = IO.copy_stream("bigsrc", s1, 10000)
+        ret = IO.copy_stream(bigsrc, s1, 10000)
         assert_equal(10000, ret)
         s1.close
         result = t.value
@@ -598,11 +690,8 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket4
-    mkcdtmpdir {
-      bigcontent = "abc" * 123456
-      File.open("bigsrc", "w") {|f| f << bigcontent }
-
-      File.open("bigsrc") {|f|
+    with_bigsrc {|bigsrc, bigcontent|
+      File.open(bigsrc) {|f|
         assert_equal(0, f.pos)
         with_socketpair {|s1, s2|
           t = Thread.new { s2.read }
@@ -618,11 +707,8 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket5
-    mkcdtmpdir {
-      bigcontent = "abc" * 123456
-      File.open("bigsrc", "w") {|f| f << bigcontent }
-
-      File.open("bigsrc") {|f|
+    with_bigsrc {|bigsrc, bigcontent|
+      File.open(bigsrc) {|f|
         assert_equal(bigcontent[0,100], f.read(100))
         assert_equal(100, f.pos)
         with_socketpair {|s1, s2|
