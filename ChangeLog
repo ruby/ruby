@@ -1,3 +1,7 @@
+Mon Jul 22 00:15:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_sq_fast): Refine expressions.
+
 Sun Jul 21 21:08:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): Use simple multiplication if yl is small.

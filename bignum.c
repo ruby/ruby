@@ -1601,6 +1601,8 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 {
     size_t i, j;
     BDIGIT_DBL c, v, w;
+    BDIGIT vl;
+    int vh;
 
     assert(xn * 2 <= zn);
 
@@ -1617,12 +1619,14 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
 	zds[i + i] = BIGLO(c);
 	c = BIGDN(c);
 	v *= 2;
+        vl = BIGLO(v);
+        vh = (int)BIGDN(v);
 	for (j = i + 1; j < xn; j++) {
 	    w = (BDIGIT_DBL)xds[j];
-	    c += (BDIGIT_DBL)zds[i + j] + BIGLO(v) * w;
+	    c += (BDIGIT_DBL)zds[i + j] + vl * w;
 	    zds[i + j] = BIGLO(c);
 	    c = BIGDN(c);
-	    if (BIGDN(v))
+	    if (vh)
                 c += w;
 	}
 	if (c) {
@@ -1642,8 +1646,7 @@ bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
     zds[i + i] = BIGLO(c);
     c = BIGDN(c);
     if (c) {
-        c += (BDIGIT_DBL)zds[i + xn];
-        zds[i + xn] = BIGLO(c);
+        zds[i + xn] += BIGLO(c);
     }
 }
 
