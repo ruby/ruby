@@ -1,3 +1,10 @@
+Sun Jul 21 21:08:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): Use simple multiplication if yl is small.
+	  (rb_cstr_to_inum): Invoke bigsq instead of bigmul0.
+	  (bigsq): Re-implemented.
+	  (bigmul0): Invoke bigsq if two arguments are identical.
+
 Sun Jul 21 09:58:19 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_toom3): New function based on bigmul1_toom3.

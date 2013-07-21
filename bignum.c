@@ -2496,7 +2496,7 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds
 static void
 bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
-    if (xl < KARATSUBA_MUL_DIGITS) {
+    if (xl < KARATSUBA_MUL_DIGITS || yl < KARATSUBA_MUL_DIGITS) {
         if (xds == yds && xl == yl)
             bary_sq_fast(zds, zl, xds, xl);
         else
@@ -3586,7 +3586,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                         MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
                     }
                 }
-                powerv = bigtrunc(bigmul0(powerv, powerv));
+                powerv = bigtrunc(bigsq(powerv));
                 tds = vds;
                 vds = uds;
                 uds = tds;
@@ -5013,11 +5013,38 @@ rb_big_minus(VALUE x, VALUE y)
 static VALUE bigdivrem(VALUE, VALUE, volatile VALUE*, volatile VALUE*);
 
 static VALUE
+bigsq(VALUE x)
+{
+    long xn, zn;
+    VALUE z;
+    BDIGIT *xds, *zds;
+
+    xn = RBIGNUM_LEN(x);
+    zn = 2 * xn;
+
+    z = bignew(zn, 1);
+
+    xds = BDIGITS(x);
+    zds = BDIGITS(z);
+
+    if (xn < KARATSUBA_MUL_DIGITS)
+        bary_sq_fast(zds, zn, xds, xn);
+    else
+        bary_mul(zds, zn, xds, xn, xds, xn);
+
+    RB_GC_GUARD(x);
+    return z;
+}
+
+static VALUE
 bigmul0(VALUE x, VALUE y)
 {
     long xn, yn, zn;
     VALUE z;
     BDIGIT *xds, *yds, *zds;
+
+    if (x == y)
+        return bigsq(x);
 
     xn = RBIGNUM_LEN(x);
     yn = RBIGNUM_LEN(y);
@@ -5588,12 +5615,6 @@ rb_big_fdiv(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
     }
     return DBL2NUM(dx / dy);
-}
-
-static VALUE
-bigsq(VALUE x)
-{
-    return bigtrunc(bigmul0(x, x));
 }
 
 /*
