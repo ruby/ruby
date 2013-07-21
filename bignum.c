@@ -132,7 +132,7 @@ static BDIGIT bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y);
 static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
 
 static VALUE bigmul0(VALUE x, VALUE y);
-static VALUE bigmul1_toom3(VALUE x, VALUE y);
+static void bary_mul_toom3(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, long len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
@@ -1901,6 +1901,410 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
 }
 
 static void
+bary_mul_toom3(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn)
+{
+    size_t n;
+    size_t wnc;
+    VALUE work = 0;
+
+    /* "p" means "positive".  Actually "non-negative", though. */
+    size_t x0n; BDIGIT *x0ds;
+    size_t x1n; BDIGIT *x1ds;
+    size_t x2n; BDIGIT *x2ds;
+    size_t y0n; BDIGIT *y0ds;
+    size_t y1n; BDIGIT *y1ds;
+    size_t y2n; BDIGIT *y2ds;
+
+    size_t u1n; BDIGIT *u1ds; int u1p;
+    size_t u2n; BDIGIT *u2ds; int u2p;
+    size_t u3n; BDIGIT *u3ds; int u3p;
+
+    size_t v1n; BDIGIT *v1ds; int v1p;
+    size_t v2n; BDIGIT *v2ds; int v2p;
+    size_t v3n; BDIGIT *v3ds; int v3p;
+
+    size_t t0n; BDIGIT *t0ds; int t0p;
+    size_t t1n; BDIGIT *t1ds; int t1p;
+    size_t t2n; BDIGIT *t2ds; int t2p;
+    size_t t3n; BDIGIT *t3ds; int t3p;
+    size_t t4n; BDIGIT *t4ds; int t4p;
+
+    size_t z0n; BDIGIT *z0ds;
+    size_t z1n; BDIGIT *z1ds; int z1p;
+    size_t z2n; BDIGIT *z2ds; int z2p;
+    size_t z3n; BDIGIT *z3ds; int z3p;
+    size_t z4n; BDIGIT *z4ds; int z4p;
+
+    size_t zzn; BDIGIT *zzds;
+
+    int sq = xds == yds && xn == yn;
+
+    assert(xn <= yn);  /* assume y >= x */
+    assert(xn + yn <= zn);
+
+    n = (yn + 2) / 3;
+    assert(2*n < xn);
+
+    wnc = 0;
+
+    wnc += (u1n = n+1); /* BITSPERDIG*n+2 bits */
+    wnc += (u2n = n+1); /* BITSPERDIG*n+1 bits */
+    wnc += (u3n = n+1); /* BITSPERDIG*n+3 bits */
+    wnc += (v1n = n+1); /* BITSPERDIG*n+2 bits */
+    wnc += (v2n = n+1); /* BITSPERDIG*n+1 bits */
+    wnc += (v3n = n+1); /* BITSPERDIG*n+3 bits */
+
+    wnc += (t0n = 2*n); /* BITSPERDIG*2*n bits */
+    wnc += (t1n = 2*n+2); /* BITSPERDIG*2*n+4 bits but bary_mul needs u1n+v1n */
+    wnc += (t2n = 2*n+2); /* BITSPERDIG*2*n+2 bits but bary_mul needs u2n+v2n */
+    wnc += (t3n = 2*n+2); /* BITSPERDIG*2*n+6 bits but bary_mul needs u3n+v3n */
+    wnc += (t4n = 2*n); /* BITSPERDIG*2*n bits */
+
+    wnc += (z1n = 2*n+1); /* BITSPERDIG*2*n+5 bits */
+    wnc += (z2n = 2*n+1); /* BITSPERDIG*2*n+6 bits */
+    wnc += (z3n = 2*n+1); /* BITSPERDIG*2*n+8 bits */
+
+    if (wn < wnc) {
+        wn = wnc * 3 / 2; /* Allocate working memory for whole recursion at once. */
+        wds = ALLOCV_N(BDIGIT, work, wn);
+    }
+
+    u1ds = wds; wds += u1n;
+    u2ds = wds; wds += u2n;
+    u3ds = wds; wds += u3n;
+
+    v1ds = wds; wds += v1n;
+    v2ds = wds; wds += v2n;
+    v3ds = wds; wds += v3n;
+
+    t0ds = wds; wds += t0n;
+    t1ds = wds; wds += t1n;
+    t2ds = wds; wds += t2n;
+    t3ds = wds; wds += t3n;
+    t4ds = wds; wds += t4n;
+
+    z1ds = wds; wds += z1n;
+    z2ds = wds; wds += z2n;
+    z3ds = wds; wds += z3n;
+
+    wn -= wnc;
+
+    zzds = u1ds;
+    zzn = 6*n+1;
+
+    x0n = n;
+    x1n = n;
+    x2n = xn - 2*n;
+    x0ds = xds;
+    x1ds = xds + n;
+    x2ds = xds + 2*n;
+
+    if (sq) {
+        y0n = x0n;
+        y1n = x1n;
+        y2n = x2n;
+        y0ds = x0ds;
+        y1ds = x1ds;
+        y2ds = x2ds;
+    }
+    else {
+        y0n = n;
+        y1n = n;
+        y2n = yn - 2*n;
+        y0ds = yds;
+        y1ds = yds + n;
+        y2ds = yds + 2*n;
+    }
+
+    /*
+     * ref. http://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+     *
+     * x(b) = x0 * b^0 + x1 * b^1 + x2 * b^2
+     * y(b) = y0 * b^0 + y1 * b^1 + y2 * b^2
+     *
+     * z(b) = x(b) * y(b)
+     * z(b) = z0 * b^0 + z1 * b^1 + z2 * b^2 + z3 * b^3 + z4 * b^4
+     * where:
+     *   z0 = x0 * y0
+     *   z1 = x0 * y1 + x1 * y0
+     *   z2 = x0 * y2 + x1 * y1 + x2 * y0
+     *   z3 = x1 * y2 + x2 * y1
+     *   z4 = x2 * y2
+     *
+     * Toom3 method (a.k.a. Toom-Cook method):
+     * (Step1) calculating 5 points z(b0), z(b1), z(b2), z(b3), z(b4),
+     * where:
+     *   b0 = 0, b1 = 1, b2 = -1, b3 = -2, b4 = inf,
+     *   z(0)   = x(0)   * y(0)   = x0 * y0
+     *   z(1)   = x(1)   * y(1)   = (x0 + x1 + x2) * (y0 + y1 + y2)
+     *   z(-1)  = x(-1)  * y(-1)  = (x0 - x1 + x2) * (y0 - y1 + y2)
+     *   z(-2)  = x(-2)  * y(-2)  = (x0 - 2 * (x1 - 2 * x2)) * (y0 - 2 * (y1 - 2 * y2))
+     *   z(inf) = x(inf) * y(inf) = x2 * y2
+     *
+     * (Step2) interpolating z0, z1, z2, z3 and z4.
+     *
+     * (Step3) Substituting base value into b of the polynomial z(b),
+     */
+
+    /*
+     * [Step1] calculating 5 points z(b0), z(b1), z(b2), z(b3), z(b4)
+     */
+
+    /* u1 <- x0 + x2 */
+    bary_add(u1ds, u1n, x0ds, x0n, x2ds, x2n);
+    u1p = 1;
+
+    /* x(-1) : u2 <- u1 - x1 = x0 - x1 + x2 */
+    if (bary_sub(u2ds, u2n, u1ds, u1n, x1ds, x1n)) {
+        bary_2comp(u2ds, u2n);
+        u2p = 0;
+    }
+    else {
+        u2p = 1;
+    }
+
+    /* x(1) : u1 <- u1 + x1 = x0 + x1 + x2 */
+    bary_add(u1ds, u1n, u1ds, u1n, x1ds, x1n);
+
+    /* x(-2) : u3 <- 2 * (u2 + x2) - x0 = x0 - 2 * (x1 - 2 * x2) */
+    u3p = 1;
+    if (u2p) {
+        bary_add(u3ds, u3n, u2ds, u2n, x2ds, x2n);
+    }
+    else if (bary_sub(u3ds, u3n, x2ds, x2n, u2ds, u2n)) {
+        bary_2comp(u3ds, u3n);
+        u3p = 0;
+    }
+    bary_small_lshift(u3ds, u3ds, u3n, 1);
+    if (!u3p) {
+        bary_add(u3ds, u3n, u3ds, u3n, x0ds, x0n);
+    }
+    else if (bary_sub(u3ds, u3n, u3ds, u3n, x0ds, x0n)) {
+        bary_2comp(u3ds, u3n);
+        u3p = 0;
+    }
+
+    if (sq) {
+        v1n = u1n; v1ds = u1ds; v1p = u1p;
+        v2n = u2n; v2ds = u2ds; v2p = u2p;
+        v3n = u3n; v3ds = u3ds; v3p = u3p;
+    }
+    else {
+	/* v1 <- y0 + y2 */
+        bary_add(v1ds, v1n, y0ds, y0n, y2ds, y2n);
+        v1p = 1;
+
+	/* y(-1) : v2 <- v1 - y1 = y0 - y1 + y2 */
+        v2p = 1;
+        if (bary_sub(v2ds, v2n, v1ds, v1n, y1ds, y1n)) {
+            bary_2comp(v2ds, v2n);
+            v2p = 0;
+        }
+
+	/* y(1) : v1 <- v1 + y1 = y0 + y1 + y2 */
+        bary_add(v1ds, v1n, v1ds, v1n, y1ds, y1n);
+
+	/* y(-2) : v3 <- 2 * (v2 + y2) - y0 = y0 - 2 * (y1 - 2 * y2) */
+        v3p = 1;
+        if (v2p) {
+            bary_add(v3ds, v3n, v2ds, v2n, y2ds, y2n);
+        }
+        else if (bary_sub(v3ds, v3n, y2ds, y2n, v2ds, v2n)) {
+            bary_2comp(v3ds, v3n);
+            v3p = 0;
+        }
+        bary_small_lshift(v3ds, v3ds, v3n, 1);
+        if (!v3p) {
+            bary_add(v3ds, v3n, v3ds, v3n, y0ds, y0n);
+        }
+        else if (bary_sub(v3ds, v3n, v3ds, v3n, y0ds, y0n)) {
+            bary_2comp(v3ds, v3n);
+            v3p = 0;
+        }
+    }
+
+    /* z(0) : t0 <- x0 * y0 */
+    bary_mul_toom3_start(t0ds, t0n, x0ds, x0n, y0ds, y0n, wds, wn);
+    t0p = 1;
+
+    /* z(1) : t1 <- u1 * v1 */
+    bary_mul_toom3_start(t1ds, t1n, u1ds, u1n, v1ds, v1n, wds, wn);
+    t1p = u1p == v1p;
+    assert(t1ds[t1n-1] == 0);
+    t1n--;
+
+    /* z(-1) : t2 <- u2 * v2 */
+    bary_mul_toom3_start(t2ds, t2n, u2ds, u2n, v2ds, v2n, wds, wn);
+    t2p = u2p == v2p;
+    assert(t2ds[t2n-1] == 0);
+    t2n--;
+
+    /* z(-2) : t3 <- u3 * v3 */
+    bary_mul_toom3_start(t3ds, t3n, u3ds, u3n, v3ds, v3n, wds, wn);
+    t3p = u3p == v3p;
+    assert(t3ds[t3n-1] == 0);
+    t3n--;
+
+    /* z(inf) : t4 <- x2 * y2 */
+    bary_mul_toom3_start(t4ds, t4n, x2ds, x2n, y2ds, y2n, wds, wn);
+    t4p = 1;
+
+    /*
+     * [Step2] interpolating z0, z1, z2, z3 and z4.
+     */
+
+    /* z0 <- z(0) == t0 */
+    z0n = t0n; z0ds = t0ds;
+
+    /* z4 <- z(inf) == t4 */
+    z4n = t4n; z4ds = t4ds; z4p = t4p;
+
+    /* z3 <- (z(-2) - z(1)) / 3 == (t3 - t1) / 3 */
+    if (t3p == t1p) {
+        z3p = t3p;
+        if (bary_sub(z3ds, z3n, t3ds, t3n, t1ds, t1n)) {
+            bary_2comp(z3ds, z3n);
+            z3p = !z3p;
+        }
+    }
+    else {
+        z3p = t3p;
+        bary_add(z3ds, z3n, t3ds, t3n, t1ds, t1n);
+    }
+    bigdivrem_single(z3ds, z3ds, z3n, 3);
+
+    /* z1 <- (z(1) - z(-1)) / 2 == (t1 - t2) / 2 */
+    if (t1p == t2p) {
+        z1p = t1p;
+        if (bary_sub(z1ds, z1n, t1ds, t1n, t2ds, t2n)) {
+            bary_2comp(z1ds, z1n);
+            z1p = !z1p;
+        }
+    }
+    else {
+        z1p = t1p;
+        bary_add(z1ds, z1n, t1ds, t1n, t2ds, t2n);
+    }
+    bary_small_rshift(z1ds, z1ds, z1n, 1, 0);
+
+    /* z2 <- z(-1) - z(0) == t2 - t0 */
+    if (t2p == t0p) {
+        z2p = t2p;
+        if (bary_sub(z2ds, z2n, t2ds, t2n, t0ds, t0n)) {
+            bary_2comp(z2ds, z2n);
+            z2p = !z2p;
+        }
+    }
+    else {
+        z2p = t2p;
+        bary_add(z2ds, z2n, t2ds, t2n, t0ds, t0n);
+    }
+
+    /* z3 <- (z2 - z3) / 2 + 2 * z(inf) == (z2 - z3) / 2 + 2 * t4 */
+    if (z2p == z3p) {
+        z3p = z2p;
+        if (bary_sub(z3ds, z3n, z2ds, z2n, z3ds, z3n)) {
+            bary_2comp(z3ds, z3n);
+            z3p = !z3p;
+        }
+    }
+    else {
+        z3p = z2p;
+        bary_add(z3ds, z3n, z2ds, z2n, z3ds, z3n);
+    }
+    bary_small_rshift(z3ds, z3ds, z3n, 1, 0);
+    if (z3p == t4p) {
+        bary_muladd_1xN(z3ds, z3n, 2, t4ds, t4n);
+    }
+    else {
+        /* TODO: combining with next addition */
+        t1ds[t4n] = bary_small_lshift(t1ds, t4ds, t4n, 1);
+        t1n = t4n+1;
+        t1p = t4p;
+        if (bary_sub(z3ds, z3n, z3ds, z3n, t1ds, t1n)) {
+            bary_2comp(z3ds, z3n);
+            z3p = !z3p;
+        }
+    }
+
+    /* z2 <- z2 + z1 - z(inf) == z2 + z1 - t4 */
+    if (z2p == z1p) {
+        bary_add(z2ds, z2n, z2ds, z2n, z1ds, z1n);
+    }
+    else {
+        if (bary_sub(z2ds, z2n, z2ds, z2n, z1ds, z1n)) {
+            bary_2comp(z2ds, z2n);
+            z2p = !z2p;
+        }
+    }
+
+    if (z2p == t4p) {
+        if (bary_sub(z2ds, z2n, z2ds, z2n, t4ds, t4n)) {
+            bary_2comp(z2ds, z2n);
+            z2p = !z2p;
+        }
+    }
+    else {
+        bary_add(z2ds, z2n, z2ds, z2n, t4ds, t4n);
+    }
+
+    /* z1 <- z1 - z3 */
+    if (z1p == z3p) {
+        if (bary_sub(z1ds, z1n, z1ds, z1n, z3ds, z3n)) {
+            bary_2comp(z1ds, z1n);
+            z1p = !z1p;
+        }
+    }
+    else {
+        bary_add(z1ds, z1n, z1ds, z1n, z3ds, z3n);
+    }
+
+    /*
+     * [Step3] Substituting base value into b of the polynomial z(b),
+     */
+
+    MEMCPY(zzds, z0ds, BDIGIT, z0n);
+    BDIGITS_ZERO(zzds + z0n, zzn - z0n);
+    if (z1p)
+        bary_add(zzds +   n, zzn -   n, zzds +   n, zzn -   n, z1ds, z1n);
+    else
+        bary_sub(zzds +   n, zzn -   n, zzds +   n, zzn -   n, z1ds, z1n);
+    if (z2p)
+        bary_add(zzds + 2*n, zzn - 2*n, zzds + 2*n, zzn - 2*n, z2ds, z2n);
+    else
+        bary_sub(zzds + 2*n, zzn - 2*n, zzds + 2*n, zzn - 2*n, z2ds, z2n);
+    if (z3p)
+        bary_add(zzds + 3*n, zzn - 3*n, zzds + 3*n, zzn - 3*n, z3ds, z3n);
+    else
+        bary_sub(zzds + 3*n, zzn - 3*n, zzds + 3*n, zzn - 3*n, z3ds, z3n);
+    if (z4p)
+        bary_add(zzds + 4*n, zzn - 4*n, zzds + 4*n, zzn - 4*n, z4ds, z4n);
+    else
+        bary_sub(zzds + 4*n, zzn - 4*n, zzds + 4*n, zzn - 4*n, z4ds, z4n);
+
+    while (0 < zzn && zzds[zzn-1] == 0)
+        zzn--;
+    MEMCPY(zds, zzds, BDIGIT, zzn);
+    BDIGITS_ZERO(zds + zzn, zn - zzn);
+
+    if (work)
+        ALLOCV_END(work);
+}
+
+VALUE
+rb_big_mul_toom3(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    if (xn > yn || yn < 3 || !((yn+2)/3 * 2 < xn))
+        rb_raise(rb_eArgError, "invalid bignum length");
+    bary_mul_toom3(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+
+static void
 bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
     assert(xl + yl <= zl);
@@ -2077,22 +2481,7 @@ bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yd
         return;
     }
 
-    {
-        VALUE x, y, z;
-        x = bignew(xl, 1);
-	MEMCPY(BDIGITS(x), xds, BDIGIT, xl);
-        if (xds == yds && xl == yl) {
-            y = x;
-        }
-        else {
-            y = bignew(yl, 1);
-            MEMCPY(BDIGITS(y), yds, BDIGIT, yl);
-        }
-        z = bigtrunc(bigmul1_toom3(x, y));
-        MEMCPY(zds, BDIGITS(z), BDIGIT, RBIGNUM_LEN(z));
-        BDIGITS_ZERO(zds + RBIGNUM_LEN(z), zl - RBIGNUM_LEN(z));
-        RB_GC_GUARD(z);
-    }
+    bary_mul_toom3(zds, zl, xds, xl, yds, yl, wds, wl);
 }
 
 static void
@@ -4620,233 +5009,8 @@ rb_big_minus(VALUE x, VALUE y)
     }
 }
 
-static long
-big_real_len(VALUE x)
-{
-    long i = RBIGNUM_LEN(x);
-    BDIGIT *xds = BDIGITS(x);
-    while (--i && !xds[i]);
-    return i + 1;
-}
-
-
-/* split a bignum into high and low bignums */
-static void
-big_split(VALUE v, long n, volatile VALUE *ph, volatile VALUE *pl)
-{
-    long hn = 0, ln = RBIGNUM_LEN(v);
-    VALUE h, l;
-    BDIGIT *vds = BDIGITS(v);
-
-    if (ln > n) {
-	hn = ln - n;
-	ln = n;
-    }
-
-    if (!hn) {
-	h = rb_uint2big(0);
-    }
-    else {
-	while (--hn && !vds[hn + ln]);
-	h = bignew(hn += 2, 1);
-	MEMCPY(BDIGITS(h), vds + ln, BDIGIT, hn - 1);
-	BDIGITS(h)[hn - 1] = 0; /* margin for carry */
-    }
-
-    while (--ln && !vds[ln]);
-    l = bignew(ln += 2, 1);
-    MEMCPY(BDIGITS(l), vds, BDIGIT, ln - 1);
-    BDIGITS(l)[ln - 1] = 0; /* margin for carry */
-
-    *pl = l;
-    *ph = h;
-}
-
-static void
-big_split3(VALUE v, long n, volatile VALUE* p0, volatile VALUE* p1, volatile VALUE* p2)
-{
-    VALUE v0, v12, v1, v2;
-
-    big_split(v, n, &v12, &v0);
-    big_split(v12, n, &v2, &v1);
-
-    *p0 = bigtrunc(v0);
-    *p1 = bigtrunc(v1);
-    *p2 = bigtrunc(v2);
-}
 
 static VALUE bigdivrem(VALUE, VALUE, volatile VALUE*, volatile VALUE*);
-
-static VALUE
-bigmul1_toom3(VALUE x, VALUE y)
-{
-    long n, xn, yn, zn;
-    VALUE x0, x1, x2, y0, y1, y2;
-    VALUE u0, u1, u2, u3, u4, v1, v2, v3;
-    VALUE z0, z1, z2, z3, z4, z, t;
-    BDIGIT* zds;
-
-    xn = RBIGNUM_LEN(x);
-    yn = RBIGNUM_LEN(y);
-    assert(xn <= yn);  /* assume y >= x */
-
-    n = (yn + 2) / 3;
-    big_split3(x, n, &x0, &x1, &x2);
-    if (x == y) {
-	y0 = x0; y1 = x1; y2 = x2;
-    }
-    else big_split3(y, n, &y0, &y1, &y2);
-
-    /*
-     * ref. http://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
-     *
-     * x(b) = x0 * b^0 + x1 * b^1 + x2 * b^2
-     * y(b) = y0 * b^0 + y1 * b^1 + y2 * b^2
-     *
-     * z(b) = x(b) * y(b)
-     * z(b) = z0 * b^0 + z1 * b^1 + z2 * b^2 + z3 * b^3 + z4 * b^4
-     * where:
-     *   z0 = x0 * y0
-     *   z1 = x0 * y1 + x1 * y0
-     *   z2 = x0 * y2 + x1 * y1 + x2 * y0
-     *   z3 = x1 * y2 + x2 * y1
-     *   z4 = x2 * y2
-     *
-     * Toom3 method (a.k.a. Toom-Cook method):
-     * (Step1) calculating 5 points z(b0), z(b1), z(b2), z(b3), z(b4),
-     * where:
-     *   b0 = 0, b1 = 1, b2 = -1, b3 = -2, b4 = inf,
-     *   z(0)   = x(0)   * y(0)   = x0 * y0
-     *   z(1)   = x(1)   * y(1)   = (x0 + x1 + x2) * (y0 + y1 + y2)
-     *   z(-1)  = x(-1)  * y(-1)  = (x0 - x1 + x2) * (y0 - y1 + y2)
-     *   z(-2)  = x(-2)  * y(-2)  = (x0 - 2 * (x1 - 2 * x2)) * (y0 - 2 * (y1 - 2 * y2))
-     *   z(inf) = x(inf) * y(inf) = x2 * y2
-     *
-     * (Step2) interpolating z0, z1, z2, z3 and z4.
-     *
-     * (Step3) Substituting base value into b of the polynomial z(b),
-     */
-
-    /*
-     * [Step1] calculating 5 points z(b0), z(b1), z(b2), z(b3), z(b4)
-     */
-
-    /* u1 <- x0 + x2 */
-    u1 = bigtrunc(bigadd(x0, x2, 1));
-
-    /* x(-1) : u2 <- u1 - x1 = x0 - x1 + x2 */
-    u2 = bigtrunc(bigsub(u1, x1));
-
-    /* x(1) : u1 <- u1 + x1 = x0 + x1 + x2 */
-    u1 = bigtrunc(bigadd(u1, x1, 1));
-
-    /* x(-2) : u3 <- 2 * (u2 + x2) - x0 = x0 - 2 * (x1 - 2 * x2) */
-    u3 = bigadd(u2, x2, 1);
-    if (BDIGITS(u3)[RBIGNUM_LEN(u3)-1] & BIGRAD_HALF) {
-	rb_big_resize(u3, RBIGNUM_LEN(u3) + 1);
-	BDIGITS(u3)[RBIGNUM_LEN(u3)-1] = 0;
-    }
-    bary_small_lshift(BDIGITS(u3), BDIGITS(u3), RBIGNUM_LEN(u3), 1);
-    u3 = bigtrunc(bigadd(bigtrunc(u3), x0, 0));
-
-    if (x == y) {
-	v1 = u1; v2 = u2; v3 = u3;
-    }
-    else {
-	/* v1 <- y0 + y2 */
-	v1 = bigtrunc(bigadd(y0, y2, 1));
-
-	/* y(-1) : v2 <- v1 - y1 = y0 - y1 + y2 */
-	v2 = bigtrunc(bigsub(v1, y1));
-
-	/* y(1) : v1 <- v1 + y1 = y0 + y1 + y2 */
-	v1 = bigtrunc(bigadd(v1, y1, 1));
-
-	/* y(-2) : v3 <- 2 * (v2 + y2) - y0 = y0 - 2 * (y1 - 2 * y2) */
-	v3 = bigadd(v2, y2, 1);
-	if (BDIGITS(v3)[RBIGNUM_LEN(v3)-1] & BIGRAD_HALF) {
-	    rb_big_resize(v3, RBIGNUM_LEN(v3) + 1);
-	    BDIGITS(v3)[RBIGNUM_LEN(v3)-1] = 0;
-	}
-	bary_small_lshift(BDIGITS(v3), BDIGITS(v3), RBIGNUM_LEN(v3), 1);
-	v3 = bigtrunc(bigadd(bigtrunc(v3), y0, 0));
-    }
-
-    /* z(0) : u0 <- x0 * y0 */
-    u0 = bigtrunc(bigmul0(x0, y0));
-
-    /* z(1) : u1 <- u1 * v1 */
-    u1 = bigtrunc(bigmul0(u1, v1));
-
-    /* z(-1) : u2 <- u2 * v2 */
-    u2 = bigtrunc(bigmul0(u2, v2));
-
-    /* z(-2) : u3 <- u3 * v3 */
-    u3 = bigtrunc(bigmul0(u3, v3));
-
-    /* z(inf) : u4 <- x2 * y2 */
-    u4 = bigtrunc(bigmul0(x2, y2));
-
-    /* for GC */
-    v1 = v2 = v3 = Qnil;
-
-    /*
-     * [Step2] interpolating z0, z1, z2, z3 and z4.
-     */
-
-    /* z0 <- z(0) == u0 */
-    z0 = u0;
-
-    /* z4 <- z(inf) == u4 */
-    z4 = u4;
-
-    /* z3 <- (z(-2) - z(1)) / 3 == (u3 - u1) / 3 */
-    z3 = bigadd(u3, u1, 0);
-    bigdivrem_single(BDIGITS(z3), BDIGITS(z3), RBIGNUM_LEN(z3), 3);
-    bigtrunc(z3);
-
-    /* z1 <- (z(1) - z(-1)) / 2 == (u1 - u2) / 2 */
-    z1 = bigtrunc(bigadd(u1, u2, 0));
-    bary_small_rshift(BDIGITS(z1), BDIGITS(z1), RBIGNUM_LEN(z1), 1, 0);
-
-    /* z2 <- z(-1) - z(0) == u2 - u0 */
-    z2 = bigtrunc(bigadd(u2, u0, 0));
-
-    /* z3 <- (z2 - z3) / 2 + 2 * z(inf) == (z2 - z3) / 2 + 2 * u4 */
-    z3 = bigtrunc(bigadd(z2, z3, 0));
-    bary_small_rshift(BDIGITS(z3), BDIGITS(z3), RBIGNUM_LEN(z3), 1, 0);
-    t = big_lshift(u4, 1); /* TODO: combining with next addition */
-    z3 = bigtrunc(bigadd(z3, t, 1));
-
-    /* z2 <- z2 + z1 - z(inf) == z2 + z1 - u4 */
-    z2 = bigtrunc(bigadd(z2, z1, 1));
-    z2 = bigtrunc(bigadd(z2, u4, 0));
-
-    /* z1 <- z1 - z3 */
-    z1 = bigtrunc(bigadd(z1, z3, 0));
-
-    /*
-     * [Step3] Substituting base value into b of the polynomial z(b),
-     */
-
-    zn = 6*n + 1;
-    z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    zds = BDIGITS(z);
-    MEMCPY(zds, BDIGITS(z0), BDIGIT, RBIGNUM_LEN(z0));
-    BDIGITS_ZERO(zds + RBIGNUM_LEN(z0), zn - RBIGNUM_LEN(z0));
-    bigadd_core(zds +   n, zn -   n, BDIGITS(z1), big_real_len(z1), zds +   n, zn -   n);
-    bigadd_core(zds + 2*n, zn - 2*n, BDIGITS(z2), big_real_len(z2), zds + 2*n, zn - 2*n);
-    bigadd_core(zds + 3*n, zn - 3*n, BDIGITS(z3), big_real_len(z3), zds + 3*n, zn - 3*n);
-    bigadd_core(zds + 4*n, zn - 4*n, BDIGITS(z4), big_real_len(z4), zds + 4*n, zn - 4*n);
-
-    return bignorm(z);
-}
-
-VALUE
-rb_big_mul_toom3(VALUE x, VALUE y)
-{
-    return bigmul1_toom3(x, y);
-}
 
 static VALUE
 bigmul0(VALUE x, VALUE y)

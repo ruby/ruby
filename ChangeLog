@@ -1,3 +1,13 @@
+Sun Jul 21 09:58:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_toom3): New function based on bigmul1_toom3.
+	  (bary_mul_toom3_branch): Call bary_mul_toom3.
+	  (rb_big_mul_toom3): Ditto.
+	  (bigmul1_toom3): Removed.
+	  (big_real_len): Ditto.
+	  (big_split): Ditto.
+	  (big_split3): Ditto.
+
 Sun Jul 21 08:12:16 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* proc.c (proc_to_s): use PRIsVALUE to preserve the result encoding.
