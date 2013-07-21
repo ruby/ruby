@@ -1,3 +1,8 @@
+Mon Jul 22 03:15:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_parse.c (rfc2822_cb): check if wday is given, since it
+	  can be omitted.
+
 Mon Jul 22 00:15:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_sq_fast): Refine expressions.
