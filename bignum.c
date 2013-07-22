@@ -1571,6 +1571,46 @@ bary_muladd_1xN(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT *yds, size_t yl)
     return n != 0;
 }
 
+static BDIGIT_DBL_SIGNED
+bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
+{
+    size_t i;
+    BDIGIT_DBL t2;
+    BDIGIT_DBL_SIGNED num;
+
+    assert(zn == yn + 1);
+
+    num = 0;
+    t2 = 0;
+    i = 0;
+
+    do {
+        BDIGIT_DBL ee;
+        t2 += (BDIGIT_DBL)yds[i] * x;
+        ee = num - BIGLO(t2);
+        num = (BDIGIT_DBL)zds[i] + ee;
+        if (ee) zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        t2 = BIGDN(t2);
+    } while (++i < yn);
+    num += zds[i] - t2; /* borrow from high digit; don't update */
+    return num;
+}
+
+static int
+bary_mulsub_1xN(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
+{
+    BDIGIT_DBL_SIGNED num;
+
+    assert(zn == yn + 1);
+
+    num = bigdivrem_mulsub(zds, zn, x, yds, yn);
+    zds[yn] = BIGLO(num);
+    if (BIGDN(num))
+        return 1;
+    return 0;
+}
+
 static void
 bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
 {
@@ -2222,11 +2262,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size
         bary_muladd_1xN(z3ds, z3n, 2, t4ds, t4n);
     }
     else {
-        /* TODO: combining with next addition */
-        t1ds[t4n] = bary_small_lshift(t1ds, t4ds, t4n, 1);
-        t1n = t4n+1;
-        t1p = t4p;
-        if (bary_sub(z3ds, z3n, z3ds, z3n, t1ds, t1n)) {
+        if (bary_mulsub_1xN(z3ds, z3n, 2, t4ds, t4n)) {
             bary_2comp(z3ds, z3n);
             z3p = !z3p;
         }
@@ -5101,32 +5137,6 @@ struct big_div_struct {
     BDIGIT *yds, *zds;
     volatile VALUE stop;
 };
-
-static BDIGIT_DBL_SIGNED
-bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
-{
-    size_t i;
-    BDIGIT_DBL t2;
-    BDIGIT_DBL_SIGNED num;
-
-    assert(zn == yn + 1);
-
-    num = 0;
-    t2 = 0;
-    i = 0;
-
-    do {
-        BDIGIT_DBL ee;
-        t2 += (BDIGIT_DBL)yds[i] * x;
-        ee = num - BIGLO(t2);
-        num = (BDIGIT_DBL)zds[i] + ee;
-        if (ee) zds[i] = BIGLO(num);
-        num = BIGDN(num);
-        t2 = BIGDN(t2);
-    } while (++i < yn);
-    num += zds[i] - t2; /* borrow from high digit; don't update */
-    return num;
-}
 
 static void *
 bigdivrem1(void *ptr)
