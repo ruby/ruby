@@ -578,7 +578,9 @@ readline_s_insert_text(VALUE self, VALUE str)
 static VALUE
 readline_s_delete_text(int argc, VALUE *argv, VALUE self)
 {
-    rb_secure(RUBY_SAFE_LEVEL_MAX);
+#if RUBY_SAFE_LEVEL_MAX >= 4
+    rb_secure(4);
+#endif
     rb_check_arity(argc, 0, 2);
     if (rl_line_buffer) {
 	char *p, *ptr = rl_line_buffer;
