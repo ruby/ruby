@@ -1,3 +1,15 @@
+Tue Jul 23 03:32:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (KARATSUBA_BALANCED): New macro.
+	  (TOOM3_BALANCED): Ditto.
+	  (bary_mul_balance_with_mulfunc): Use KARATSUBA_BALANCED and
+	  TOOM3_BALANCED.
+	  (rb_big_mul_balance): Relax a condition.
+	  (rb_big_mul_karatsuba): Use KARATSUBA_BALANCED.
+	  (rb_big_mul_toom3): Use TOOM3_BALANCED.
+	  (bary_mul_karatsuba_branch): Use KARATSUBA_BALANCED.
+	  (bary_mul_toom3_branch): Use TOOM3_BALANCED.
+
 Tue Jul 23 01:34:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_mulsub): Extracted from bigdivrem1.

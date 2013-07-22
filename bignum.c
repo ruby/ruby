@@ -121,6 +121,9 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
   } \
 } while (0)
 
+#define KARATSUBA_BALANCED(xn, yn) ((yn)/2 < (xn))
+#define TOOM3_BALANCED(xn, yn) (((yn)+2)/3 * 2 < (xn))
+
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
@@ -1669,7 +1672,8 @@ bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BD
     size_t r, n;
 
     assert(xl + yl <= zl);
-    assert(2 * xl <= yl || 3 * xl <= 2*(yl+2));
+    assert(xl <= yl);
+    assert(!KARATSUBA_BALANCED(xl, yl) || !TOOM3_BALANCED(xl, yl));
 
     BDIGITS_ZERO(zds, xl);
 
@@ -1713,8 +1717,6 @@ rb_big_mul_balance(VALUE x, VALUE y)
 {
     size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    if (!(2 * xn <= yn || 3 * xn <= 2*(yn+2)))
-        rb_raise(rb_eArgError, "invalid bignum length");
     bary_mul_balance_with_mulfunc(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0, bary_mul_toom3_start);
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
@@ -1895,8 +1897,8 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
 {
     size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    if (!(xn <= yn && yn < 2 * xn))
-        rb_raise(rb_eArgError, "invalid bignum length");
+    if (!(xn <= yn && yn < 2 || KARATSUBA_BALANCED(xn, yn)))
+        rb_raise(rb_eArgError, "unexpected bignum length for karatsuba");
     bary_mul_karatsuba(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
@@ -2299,8 +2301,8 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 {
     size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    if (xn > yn || yn < 3 || !((yn+2)/3 * 2 < xn))
-        rb_raise(rb_eArgError, "invalid bignum length");
+    if (xn > yn || yn < 3 || !TOOM3_BALANCED(xn,yn))
+        rb_raise(rb_eArgError, "unexpected bignum length for toom3");
     bary_mul_toom3(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
     RB_GC_GUARD(x);
     RB_GC_GUARD(y);
@@ -2453,7 +2455,7 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT
     }
 
     /* balance multiplication by slicing y when x is much smaller than y */
-    if (2 * xl <= yl) {
+    if (!KARATSUBA_BALANCED(xl, yl)) {
         bary_mul_balance_with_mulfunc(zds, zl, xds, xl, yds, yl, wds, wl, bary_mul_karatsuba_start);
         return;
     }
@@ -2479,7 +2481,7 @@ bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yd
         return;
     }
 
-    if (3*xl <= 2*(yl + 2)) {
+    if (!TOOM3_BALANCED(xl, yl)) {
         bary_mul_balance_with_mulfunc(zds, zl, xds, xl, yds, yl, wds, wl, bary_mul_toom3_start);
         return;
     }
