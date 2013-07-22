@@ -688,6 +688,8 @@ typedef struct {
     rb_block_t block;
 } rb_env_t;
 
+extern const rb_data_type_t ruby_binding_data_type;
+
 #define GetBindingPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_binding_t, (ptr))
 

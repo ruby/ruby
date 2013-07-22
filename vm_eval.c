@@ -1202,8 +1202,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	VALUE absolute_path = Qnil;
 
 	if (scope != Qnil) {
-	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
-		GetBindingPtr(scope, bind);
+	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
+	    {
 		envval = bind->env;
 		if (strcmp(file, "(eval)") != 0) {
 		    absolute_path = rb_str_new_cstr(file);
@@ -1213,11 +1213,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();
 		}
-	    }
-	    else {
-		rb_raise(rb_eTypeError,
-			 "wrong argument type %s (expected Binding)",
-			 rb_obj_classname(scope));
 	    }
 	    GetEnvPtr(envval, env);
 	    base_block = &env->block;

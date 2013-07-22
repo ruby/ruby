@@ -269,7 +269,7 @@ binding_memsize(const void *ptr)
     return ptr ? sizeof(rb_binding_t) : 0;
 }
 
-static const rb_data_type_t binding_data_type = {
+const rb_data_type_t ruby_binding_data_type = {
     "binding",
     {
 	binding_mark,
@@ -283,7 +283,7 @@ binding_alloc(VALUE klass)
 {
     VALUE obj;
     rb_binding_t *bind;
-    obj = TypedData_Make_Struct(klass, rb_binding_t, &binding_data_type, bind);
+    obj = TypedData_Make_Struct(klass, rb_binding_t, &ruby_binding_data_type, bind);
     return obj;
 }
 

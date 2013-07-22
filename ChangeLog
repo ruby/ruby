@@ -1,3 +1,8 @@
+Mon Jul 22 16:32:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (eval_string_with_cref): check by Check_TypedStruct
+	  instead of rb_obj_is_kind_of.
+
 Mon Jul 22 13:19:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_resize_capa): use RARRAY_RAWPTR() because
