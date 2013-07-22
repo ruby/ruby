@@ -1,3 +1,7 @@
+Mon Jul 22 10:09:46 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_slot_sweep): need to add empty RVALUE as freeobj.
+
 Mon Jul 22 09:48:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): use the given file name unless

@@ -2269,6 +2269,7 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 			}
 		    }
 		    else {
+			heap_slot_add_freeobj(objspace, sweep_slot, (VALUE)p);
 			empty_num++;
 		    }
 		}
