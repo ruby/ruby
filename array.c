@@ -263,12 +263,12 @@ ary_resize_capa(VALUE ary, long capacity)
     else {
         if (!ARY_EMBED_P(ary)) {
             long len = RARRAY_LEN(ary);
-            VALUE *ptr = RARRAY_PTR(ary);
+	    const VALUE *ptr = RARRAY_RAWPTR(ary);
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
-            xfree(ptr);
+            xfree((VALUE *)ptr);
         }
     }
 }
