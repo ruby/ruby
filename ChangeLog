@@ -1,3 +1,9 @@
+Tue Jul 23 08:44:37 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_asn1.c (asn1time_to_time):  Implement YYMMDDhhmmZ
+	  format for ASN.1 UTCTime.  [ruby-trunk - Bug #8664]
+	* test/openssl/test_asn1.rb:  Test for the above.
+
 Tue Jul 23 08:11:32 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rexml/streamlistener.rb: [DOC] Fix examples in
