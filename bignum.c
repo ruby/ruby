@@ -5100,14 +5100,40 @@ struct big_div_struct {
     volatile VALUE stop;
 };
 
+static BDIGIT_DBL_SIGNED
+bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
+{
+    size_t i;
+    BDIGIT_DBL t2;
+    BDIGIT_DBL_SIGNED num;
+
+    assert(zn == yn + 1);
+
+    num = 0;
+    t2 = 0;
+    i = 0;
+
+    do {
+        BDIGIT_DBL ee;
+        t2 += (BDIGIT_DBL)yds[i] * x;
+        ee = num - BIGLO(t2);
+        num = (BDIGIT_DBL)zds[i] + ee;
+        if (ee) zds[i] = BIGLO(num);
+        num = BIGDN(num);
+        t2 = BIGDN(t2);
+    } while (++i < yn);
+    num += zds[i] - t2; /* borrow from high digit; don't update */
+    return num;
+}
+
 static void *
 bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
     long ny = bds->ny;
-    long i, j;
+    long j;
+    long nyzero = bds->nyzero;
     BDIGIT *yds = bds->yds, *zds = bds->zds;
-    BDIGIT_DBL t2;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
@@ -5120,26 +5146,15 @@ bigdivrem1(void *ptr)
 	if (zds[j] == yds[ny-1]) q = BDIGMAX;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
-            i = bds->nyzero; num = 0; t2 = 0;
-	    do {			/* multiply and subtract */
-		BDIGIT_DBL ee;
-		t2 += (BDIGIT_DBL)yds[i] * q;
-		ee = num - BIGLO(t2);
-		num = (BDIGIT_DBL)zds[j - ny + i] + ee;
-		if (ee) zds[j - ny + i] = BIGLO(num);
-		num = BIGDN(num);
-		t2 = BIGDN(t2);
-	    } while (++i < ny);
-	    num += zds[j - ny + i] - t2;/* borrow from high digit; don't update */
-	    while (num) {		/* "add back" required */
-		i = 0; num = 0; q--;
-		do {
-		    BDIGIT_DBL ee = num + yds[i];
-		    num = (BDIGIT_DBL)zds[j - ny + i] + ee;
-		    if (ee) zds[j - ny + i] = BIGLO(num);
-		    num = BIGDN(num);
-		} while (++i < ny);
-		num--;
+            num = bigdivrem_mulsub(zds+j-(ny-nyzero), ny-nyzero+1,
+                                   q,
+                                   yds+nyzero, ny-nyzero);
+	    while (num) { /* "add back" required */
+		q--;
+                num = bary_add(zds+j-(ny-nyzero), ny-nyzero,
+                               zds+j-(ny-nyzero), ny-nyzero,
+                               yds+nyzero, ny-nyzero);
+                num--;
 	    }
 	}
 	zds[j] = q;

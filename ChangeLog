@@ -1,3 +1,8 @@
+Tue Jul 23 01:34:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_mulsub): Extracted from bigdivrem1.
+	  (bigdivrem1): Use bary_add.
+
 Mon Jul 22 18:39:52 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_enumerate_chars): specify array capa
