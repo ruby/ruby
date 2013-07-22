@@ -6518,7 +6518,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	if (wantarray) {
 #if STRING_ENUMERATORS_WANTARRAY
 	    rb_warn("given block not used");
-	    ary = rb_ary_new();
+	    ary = rb_ary_new_capa(rb_str_strlen(str));
 #else
 	    rb_warning("passing a block to String#chars is deprecated");
 	    wantarray = 0;
@@ -6527,7 +6527,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     }
     else {
 	if (wantarray)
-	    ary = rb_ary_new();
+	    ary = rb_ary_new_capa(rb_str_strlen(str));
 	else
 	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
