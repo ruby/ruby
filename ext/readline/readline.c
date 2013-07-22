@@ -558,6 +558,58 @@ readline_s_insert_text(VALUE self, VALUE str)
 #define readline_s_insert_text rb_f_notimplement
 #endif
 
+#if defined(HAVE_RL_DELETE_TEXT)
+/*
+ * call-seq:
+ *   Readline.delete_text([start[, length]]) -> self
+ *   Readline.delete_text(start..end)        -> self
+ *   Readline.delete_text()                  -> self
+ *
+ * Delete text between start and end in the current line.
+ *
+ * See GNU Readline's rl_delete_text function.
+ *
+ * Raises SecurityError if $SAFE is 4.
+ */
+static VALUE
+readline_s_delete_text(int argc, VALUE *argv, VALUE self)
+{
+    rb_secure(4);
+    rb_check_arity(argc, 0, 2);
+    if (rl_line_buffer) {
+	char *p, *ptr = rl_line_buffer;
+	long beg = 0, len = strlen(rl_line_buffer);
+	struct RString fakestr;
+	VALUE str = (VALUE)&fakestr;
+
+	fakestr.basic.flags = T_STRING | RSTRING_NOEMBED;
+	fakestr.as.heap.ptr = ptr;
+	fakestr.as.heap.len = len;
+	rb_enc_associate(str, rb_locale_encoding());
+	OBJ_FREEZE(str);
+	if (argc == 2) {
+	    beg = NUM2LONG(argv[0]);
+	    len = NUM2LONG(argv[1]);
+	  num_pos:
+	    p = rb_str_subpos(str, beg, &len);
+	    if (!p) rb_raise(rb_eArgError, "invalid index");
+	    beg = p - ptr;
+	}
+	else if (argc == 1) {
+	    len = rb_str_strlen(str);
+	    if (!rb_range_beg_len(argv[0], &beg, &len, len, 1)) {
+		beg = NUM2LONG(argv[0]);
+		goto num_pos;
+	    }
+	}
+	rl_delete_text(rb_long2int(beg), rb_long2int(beg + len));
+    }
+    return self;
+}
+#else
+#define readline_s_delete_text rb_f_notimplement
+#endif
+
 #if defined(HAVE_RL_REDISPLAY)
 /*
  * call-seq:
@@ -1747,6 +1799,8 @@ Init_readline()
 			       readline_s_get_pre_input_hook, 0);
     rb_define_singleton_method(mReadline, "insert_text",
 			       readline_s_insert_text, 1);
+    rb_define_singleton_method(mReadline, "delete_text",
+			       readline_s_delete_text, -1);
     rb_define_singleton_method(mReadline, "redisplay",
 			       readline_s_redisplay, 0);
     rb_define_singleton_method(mReadline, "special_prefixes=",

@@ -1,3 +1,11 @@
+Mon Jul 22 09:24:19 2013  Kouji Takao  <kouji@takao7.net>
+
+	* ext/readline/readline.c (Init_readline): added
+	  Readline.delete_text. [ruby-dev:45789] [Feature #6626]
+	* ext/readline/extconf.rb: check for rl_delete_text() in Readline library.
+
+	  Thanks, Nobuyoshi Nakada, for the patch.
+
 Mon Jul 22 03:15:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_parse.c (rfc2822_cb): check if wday is given, since it

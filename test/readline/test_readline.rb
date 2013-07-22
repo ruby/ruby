@@ -317,6 +317,25 @@ class TestReadline < Test::Unit::TestCase
       assert_equal(str, Readline.line_buffer)
       assert_equal(get_default_internal_encoding,
                    Readline.line_buffer.encoding)
+
+      Readline.delete_text(1, 3)
+      assert_equal("t_insert_text", Readline.line_buffer)
+      Readline.delete_text(11)
+      assert_equal("t_insert_te", Readline.line_buffer)
+      Readline.delete_text(-3...-1)
+      assert_equal("t_inserte", Readline.line_buffer)
+      Readline.delete_text(-3..-1)
+      assert_equal("t_inse", Readline.line_buffer)
+      Readline.delete_text(3..-3)
+      assert_equal("t_ise", Readline.line_buffer)
+      Readline.delete_text(3, 1)
+      assert_equal("t_ie", Readline.line_buffer)
+      Readline.delete_text(1..1)
+      assert_equal("tie", Readline.line_buffer)
+      Readline.delete_text(1...2)
+      assert_equal("te", Readline.line_buffer)
+      Readline.delete_text
+      assert_equal("", Readline.line_buffer)
     rescue NotImplementedError
     end
   end if !/EditLine/n.match(Readline::VERSION)
@@ -358,7 +377,7 @@ class TestReadline < Test::Unit::TestCase
     assert_equal("hello", line, bug6601)
   ensure
     wo.close
-    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline.delete_text
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
@@ -384,7 +403,7 @@ class TestReadline < Test::Unit::TestCase
       end
     end
   ensure
-    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline.delete_text
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
