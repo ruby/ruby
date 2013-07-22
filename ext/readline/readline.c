@@ -44,6 +44,10 @@
 #include <sys/stat.h>
 #endif
 
+#ifndef RUBY_SAFE_LEVEL_MAX
+#define RUBY_SAFE_LEVEL_MAX 4	/* 2.0 or earlier */
+#endif
+
 static VALUE mReadline;
 
 #define EDIT_LINE_LIBRARY_VERSION "EditLine wrapper"
@@ -574,7 +578,7 @@ readline_s_insert_text(VALUE self, VALUE str)
 static VALUE
 readline_s_delete_text(int argc, VALUE *argv, VALUE self)
 {
-    rb_secure(4);
+    rb_secure(RUBY_SAFE_LEVEL_MAX);
     rb_check_arity(argc, 0, 2);
     if (rl_line_buffer) {
 	char *p, *ptr = rl_line_buffer;
