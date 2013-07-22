@@ -1,4 +1,5 @@
 require 'net/http'
+require 'thread'
 require 'time'
 require 'rubygems/user_interaction'
 
@@ -14,6 +15,7 @@ class Gem::Request
     @last_modified = last_modified
     @requests = Hash.new 0
     @connections = {}
+    @connections_mutex = Mutex.new
     @user_agent = user_agent
 
     @proxy_uri =
@@ -82,8 +84,11 @@ class Gem::Request
     end
 
     connection_id = [Thread.current.object_id, *net_http_args].join ':'
-    @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
-    connection = @connections[connection_id]
+
+    connection = @connections_mutex.synchronize do
+      @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
+      @connections[connection_id]
+    end
 
     if https?(uri) and not connection.started? then
       configure_connection_for_https(connection)

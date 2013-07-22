@@ -16,6 +16,20 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @executable = File.join(@gemhome, 'bin', 'executable')
   end
 
+  def test_execute_all_gem_names
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:all] = true
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "ERROR:  Gem names and --all may not be used together\n",
+                 @ui.error
+  end
+
   def test_execute_dependency_order
     c = quick_gem 'c' do |spec|
       spec.add_dependency 'a'
@@ -43,6 +57,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
   def test_execute_removes_executable
     ui = Gem::MockGemUi.new
+
     util_setup_gem ui
 
     build_rake_in do
@@ -173,6 +188,24 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     assert Gem::Specification.find_all_by_name('dep_x').length > 0
     assert Gem::Specification.find_all_by_name('x').length == 0
+  end
+
+  def test_execute_all
+    ui = Gem::MockGemUi.new "y\n"
+
+    util_make_gems
+    util_setup_gem ui
+
+    assert Gem::Specification.find_all_by_name('a').length > 1
+
+    @cmd.options[:all] = true
+    @cmd.options[:args] = []
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    refute_includes Gem::Specification.all_names, 'a'
   end
 
 end

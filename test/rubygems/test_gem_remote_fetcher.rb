@@ -580,6 +580,17 @@ gems:
     end
   end
 
+  def test_request_block
+    fetcher = Gem::RemoteFetcher.new nil
+
+    assert_throws :block_called do
+      fetcher.request URI('http://example'), Net::HTTP::Get do |req|
+        assert_kind_of Net::HTTPGenericRequest, req
+        throw :block_called
+      end
+    end
+  end
+
   def test_yaml_error_on_size
     use_ui @ui do
       self.class.enable_yaml = false

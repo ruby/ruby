@@ -27,7 +27,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      result =
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+
+      assert_same result, output
     end
 
     assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
@@ -106,6 +109,42 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 checking for main\(\) in .*?nonexistent/m, error.message)
 
     assert_equal("#{Gem.ruby} extconf.rb", output[0])
+  end
+
+  def test_class_build_unconventional
+    if vc_windows? && !nmake_found?
+      skip("test_class_build skipped - nmake not found")
+    end
+
+    File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+      extconf.puts <<-'EXTCONF'
+include RbConfig
+
+ruby_exe = "#{CONFIG['RUBY_INSTALL_NAME']}#{CONFIG['EXEEXT']}"
+ruby = File.join CONFIG['bindir'], ruby_exe
+
+open 'Makefile', 'w' do |io|
+  io.write <<-Makefile
+all: ruby
+install: ruby
+
+ruby:
+\t#{ruby} -e0
+
+  Makefile
+end
+      EXTCONF
+    end
+
+    output = []
+
+    Dir.chdir @ext do
+      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+    end
+
+    assert_contains_make_command '', output[2]
+    assert_contains_make_command 'install', output[4]
+    assert_empty Dir.glob(File.join(@ext, 'siteconf*.rb'))
   end
 
   def test_class_make

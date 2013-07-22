@@ -324,7 +324,11 @@ class Gem::RemoteFetcher
   # connections to reduce connect overhead.
 
   def request(uri, request_class, last_modified = nil)
-    Gem::Request.new(uri, request_class, last_modified, @proxy).fetch
+    request = Gem::Request.new uri, request_class, last_modified, @proxy
+    
+    request.fetch do |req|
+      yield req if block_given?
+    end
   end
 
   def https?(uri)

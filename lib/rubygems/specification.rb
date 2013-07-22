@@ -954,7 +954,7 @@ class Gem::Specification < Gem::BasicSpecification
     result.map(&:last).map(&:values).flatten.reject { |spec|
       minimum = native[spec.name]
       minimum && spec.version < minimum
-    }
+    }.sort_by{ |tup| tup.name }
   end
 
   ##
@@ -1853,11 +1853,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  # Prevent ruby hitting spec.method_missing when [[spec]].flatten is called
-  def to_ary # :nodoc:
-    nil
-  end
-
   ##
   # Normalize the list of files so that:
   # * All file lists have redundancies removed.
@@ -2006,6 +2001,10 @@ class Gem::Specification < Gem::BasicSpecification
   def requirements= req
     # TODO: warn about setting instead of pushing
     @requirements = Array req
+  end
+
+  def respond_to_missing? m, include_private = false # :nodoc:
+    false
   end
 
   ##

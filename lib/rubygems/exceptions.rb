@@ -7,7 +7,13 @@
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
 # subclass of this one.
 class Gem::Exception < RuntimeError
-  attr_accessor :source_exception
+
+  ##
+  #--
+  # TODO: remove in RubyGems 3, nobody sets this
+
+  attr_accessor :source_exception # :nodoc:
+
 end
 
 class Gem::CommandLineError < Gem::Exception; end

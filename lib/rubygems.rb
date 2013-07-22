@@ -446,18 +446,48 @@ module Gem
   # $LOAD_PATH for files as well as gems.
   #
   # Note that find_files will return all files even if they are from different
-  # versions of the same gem.
+  # versions of the same gem.  See also find_latest_files
 
   def self.find_files(glob, check_load_path=true)
     files = []
 
-    if check_load_path
-      files = $LOAD_PATH.map { |load_path|
-        Dir["#{File.expand_path glob, load_path}#{Gem.suffix_pattern}"]
-      }.flatten.select { |file| File.file? file.untaint }
-    end
+    files = find_files_from_load_path glob if check_load_path
 
     files.concat Gem::Specification.map { |spec|
+      spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
+    }.flatten
+
+    # $LOAD_PATH might contain duplicate entries or reference
+    # the spec dirs directly, so we prune.
+    files.uniq! if check_load_path
+
+    return files
+  end
+
+  def self.find_files_from_load_path glob # :nodoc:
+    $LOAD_PATH.map { |load_path|
+      Dir["#{File.expand_path glob, load_path}#{Gem.suffix_pattern}"]
+    }.flatten.select { |file| File.file? file.untaint }
+  end
+
+  ##
+  # Returns a list of paths matching +glob+ from the latest gems that can be
+  # used by a gem to pick up features from other gems.  For example:
+  #
+  #   Gem.find_latest_files('rdoc/discover').each do |path| load path end
+  #
+  # if +check_load_path+ is true (the default), then find_latest_files also
+  # searches $LOAD_PATH for files as well as gems.
+  #
+  # Unlike find_files, find_latest_files will return only files from the
+  # latest version of a gem.
+
+  def self.find_latest_files(glob, check_load_path=true)
+    files = []
+
+    files = find_files_from_load_path glob if check_load_path
+
+    files.concat Gem::Specification.latest_specs(true).map { |spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -947,7 +977,7 @@ module Gem
   ##
   # Load +plugins+ as Ruby files
 
-  def self.load_plugin_files(plugins)
+  def self.load_plugin_files plugins # :nodoc:
     plugins.each do |plugin|
 
       # Skip older versions of the GemCutter plugin: Its commands are in
@@ -965,10 +995,16 @@ module Gem
   end
 
   ##
-  # Find all 'rubygems_plugin' files in installed gems and load them
+  # Find the 'rubygems_plugin' files in the latest installed gems and load
+  # them
 
   def self.load_plugins
-    load_plugin_files find_files('rubygems_plugin', false)
+    # Remove this env var by at least 3.0
+    if ENV['RUBYGEMS_LOAD_ALL_PLUGINS']
+      load_plugin_files find_files('rubygems_plugin', false)
+    else
+      load_plugin_files find_latest_files('rubygems_plugin', false)
+    end
   end
 
   ##

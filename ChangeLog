@@ -1,3 +1,8 @@
+Tue Jul 23 07:44:59 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems from master as of commit b165260
+	* test/rubygems:  ditto.
+
 Tue Jul 23 07:14:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mulsub_1xN): New function.

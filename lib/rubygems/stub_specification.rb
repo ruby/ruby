@@ -6,6 +6,13 @@ module Gem
     # :nodoc:
     PREFIX = "# stub: "
 
+    OPEN_MODE = # :nodoc:
+      if Object.const_defined? :Encoding then
+        'r:UTF-8:-'
+      else
+        'r'
+      end
+
     # :nodoc:
     class StubLine
       attr_reader :parts
@@ -96,7 +103,7 @@ module Gem
 
     def data
       unless @data
-        File.open(filename, "r:UTF-8:-") do |file|
+        open filename, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp

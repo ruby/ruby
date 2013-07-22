@@ -39,6 +39,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         run cmd, results
 
         ENV["DESTDIR"] = nil
+        ENV["RUBYOPT"] = rubyopt
         siteconf.unlink
 
         make dest_path, results
@@ -49,14 +50,14 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
             destent.exist? or File.rename(ent.path, destent.path)
           end
         end
-
-        results
       ensure
         ENV["RUBYOPT"] = rubyopt
         ENV["DESTDIR"] = destdir
       end
     end
-    t.unlink if t
+    t.unlink if t and t.path
+
+    results
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end

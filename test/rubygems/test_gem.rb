@@ -13,8 +13,13 @@ end
 
 class TestGem < Gem::TestCase
 
+  PLUGINS_LOADED = []
+
   def setup
     super
+
+    PLUGINS_LOADED.clear
+
     common_installer_setup
 
     ENV.delete 'RUBYGEMS_GEMDEPS'
@@ -345,9 +350,7 @@ class TestGem < Gem::TestCase
       spec
     }
 
-    # HACK should be Gem.refresh
-    Gem.searcher = nil
-    Gem::Specification.reset
+    Gem.refresh
 
     expected = [
       File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
@@ -357,6 +360,37 @@ class TestGem < Gem::TestCase
 
     assert_equal expected, Gem.find_files('sff/discover')
     assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
+  ensure
+    assert_equal cwd, $LOAD_PATH.shift
+  end
+
+  def test_self_find_latest_files
+    cwd = File.expand_path("test/rubygems", @@project_dir)
+    $LOAD_PATH.unshift cwd
+
+    discover_path = File.join 'lib', 'sff', 'discover.rb'
+
+    _, foo2 = %w(1 2).map { |version|
+      spec = quick_gem 'sff', version do |s|
+        s.files << discover_path
+      end
+
+      write_file(File.join 'gems', spec.full_name, discover_path) do |fp|
+        fp.puts "# #{spec.full_name}"
+      end
+
+      spec
+    }
+
+    Gem.refresh
+
+    expected = [
+      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.join(foo2.full_gem_path, discover_path),
+    ]
+
+    assert_equal expected, Gem.find_latest_files('sff/discover')
+    assert_equal expected, Gem.find_latest_files('sff/**.rb'), '[ruby-core:31730]'
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
@@ -883,14 +917,20 @@ class TestGem < Gem::TestCase
     Dir.chdir @tempdir do
       FileUtils.mkdir_p 'lib'
       File.open plugin_path, "w" do |fp|
-        fp.puts "class TestGem; TEST_SPEC_PLUGIN_LOAD = :loaded; end"
+        fp.puts "class TestGem; PLUGINS_LOADED << 'plugin'; end"
       end
 
-      foo = quick_spec 'foo', '1' do |s|
+      foo1 = quick_spec 'foo', '1' do |s|
         s.files << plugin_path
       end
 
-      install_gem foo
+      install_gem foo1
+
+      foo2 = quick_spec 'foo', '2' do |s|
+        s.files << plugin_path
+      end
+
+      install_gem foo2
     end
 
     Gem.searcher = nil
@@ -900,7 +940,7 @@ class TestGem < Gem::TestCase
 
     Gem.load_plugins
 
-    assert_equal :loaded, TEST_SPEC_PLUGIN_LOAD
+    assert_equal %w[plugin], PLUGINS_LOADED
   end
 
   def test_load_env_plugins

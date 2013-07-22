@@ -18,7 +18,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
   def test_gem_help_bad
     util_gem 'bad' do |out, err|
       assert_equal('', out)
-      assert_match(/Unknown command bad. Try gem help commands\n/, err)
+      assert_match "Unknown command bad", err
     end
   end
 

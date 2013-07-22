@@ -1,6 +1,7 @@
 require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/uninstaller'
+require 'fileutils'
 
 ##
 # Gem uninstaller command line tool
@@ -14,7 +15,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
   def initialize
     super 'uninstall', 'Uninstall gems from the local repository',
           :version => Gem::Requirement.default, :user_install => true,
-          :check_dev => false
+          :install_dir => Gem.dir, :check_dev => false
 
     add_option('-a', '--[no-]all',
       'Uninstall all matching versions'
@@ -92,8 +93,31 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def execute
-    # REFACTOR: stolen from cleanup_command
+    if options[:all] and not options[:args].empty? then
+      alert_error 'Gem names and --all may not be used together'
+      terminate_interaction 1
+    elsif options[:all] then
+      uninstall_all
+    else
+      uninstall_specific
+    end
+  end
+
+  def uninstall_all
+    install_dir = options[:install_dir]
+
+    dirs_to_be_emptied = Dir[File.join(install_dir, '*')]
+    dirs_to_be_emptied.delete_if { |dir| dir.end_with? 'build_info' }
+
+    dirs_to_be_emptied.each do |dir|
+      FileUtils.rm_rf Dir[File.join(dir, '*')]
+    end
+    alert("Successfully uninstalled all gems in #{install_dir}")
+  end
+
+  def uninstall_specific
     deplist = Gem::DependencyList.new
+
     get_all_gem_names.uniq.each do |name|
       Gem::Specification.find_all_by_name(name).each do |spec|
         deplist.add spec

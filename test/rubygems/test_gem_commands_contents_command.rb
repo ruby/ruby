@@ -91,6 +91,34 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_missing_single
+    @cmd.options[:args] = %w[foo]
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "Unable to find gem 'foo'", @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_execute_missing_multiple
+    @cmd.options[:args] = %w[foo bar]
+
+    gem 'foo'
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match "lib/foo.rb",               @ui.output
+    assert_match "Unable to find gem 'bar'", @ui.output
+
+    assert_empty @ui.error
+  end
+
   def test_execute_multiple
     @cmd.options[:args] = %w[foo bar]
 

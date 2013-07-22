@@ -195,6 +195,34 @@ pl (1)
     assert_equal '', @ui.error
   end
 
+  def test_execute_installed_inverse
+    @cmd.handle_options %w[-n a --no-installed]
+
+    e = assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "false\n", @ui.output
+    assert_equal '', @ui.error
+
+    assert_equal 1, e.exit_code
+  end
+
+  def test_execute_installed_inverse_not_installed
+    @cmd.handle_options %w[-n not_installed --no-installed]
+
+    assert_raises Gem::MockGemUi::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "true\n", @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_installed_no_name
     @cmd.handle_options %w[--installed]
 
