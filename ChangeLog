@@ -125,7 +125,7 @@ Sat Jul 20 12:14:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jul 19 21:59:12 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: declare type_name() at the beggining of file.
+	* gc.c: declare type_name() at the beginning of file.
 
 Fri Jul 19 21:35:09 2013  Koichi Sasada  <ko1@atdot.net>
 
@@ -190,7 +190,7 @@ Fri Jul 19 19:07:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 Fri Jul 19 15:32:57 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* array.c (rb_ary_store): use RARRAY_PTR_USE() intead of RARRAY_PTR().
+	* array.c (rb_ary_store): use RARRAY_PTR_USE() instead of RARRAY_PTR().
 	  Clearing memory space doesn't need WBs.
 
 Fri Jul 19 15:19:37 2013  Koichi Sasada  <ko1@atdot.net>
