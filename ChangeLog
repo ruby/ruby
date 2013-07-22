@@ -1,3 +1,8 @@
+Tue Jul 23 08:11:32 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rexml/streamlistener.rb: [DOC] Fix examples in
+	  REXML::StreamListener#entitydecl patch by Ippei Obayashi [Bug #8665]
+
 Tue Jul 23 07:44:59 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems from master as of commit b165260
