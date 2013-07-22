@@ -8,12 +8,10 @@ class TestTracer < Test::Unit::TestCase
   def test_tracer_with_option_r
     assert_in_out_err(%w[-rtracer -e 1]) do |(*lines),|
       case lines.size
-      when 2
-        assert_match(%r{rubygems/core_ext/kernel_require\.rb:\d+:Kernel:<:}, lines[0])
       when 1
         # do nothing
       else
-        flunk "unexpected output from `ruby -rtracer -e 1`: #{lines.inspect}"
+        assert_match(%r{rubygems/core_ext/kernel_require\.rb:\d+:Kernel:-:}, lines[0])
       end
       assert_equal "#0:-e:1::-: 1", lines.last
     end

@@ -1,3 +1,7 @@
+Tue Jul 23 01:34:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/test_tracer.rb: catch up recent rubygems changes.
+
 Tue Jul 23 01:28:54 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.0.5.
