@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require 'rubygems/test_case'
 require 'rubygems/commands/setup_command'
 
@@ -71,6 +73,56 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_path_exists securerandom_rb
     assert_path_exists engine_defaults_rb
     assert_path_exists os_defaults_rb
+  end
+
+  def test_show_release_notes
+    @default_external = nil
+    capture_io do
+      @default_external, Encoding.default_external =
+        Encoding.default_external, Encoding::US_ASCII
+    end if Object.const_defined? :Encoding
+
+    @cmd.options[:previous_version] = Gem::Version.new '2.0.2'
+
+    open 'History.txt', 'w' do |io|
+      io.puts <<-History_txt
+# coding: UTF-8
+
+=== #{Gem::VERSION} / 2013-03-26
+
+* Bug fixes:
+  * Fixed release note display for LANG=C when installing rubygems
+  * π is tasty
+
+=== 2.0.2 / 2013-03-06
+
+* Bug fixes:
+  * Other bugs fixed
+
+=== 2.0.1 / 2013-03-05
+
+* Bug fixes:
+  * Yet more bugs fixed
+      History_txt
+    end
+
+    use_ui @ui do
+      @cmd.show_release_notes
+    end
+
+    expected = <<-EXPECTED
+=== 2.0.2 / 2013-03-06
+
+* Bug fixes:
+  * Other bugs fixed
+
+    EXPECTED
+
+    assert_equal expected, @ui.output
+  ensure
+    capture_io do
+      Encoding.default_external = @default_external
+    end if @default_external
   end
 
 end

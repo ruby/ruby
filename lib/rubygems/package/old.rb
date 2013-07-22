@@ -23,9 +23,10 @@ class Gem::Package::Old < Gem::Package
     require 'zlib'
     Gem.load_yaml
 
-    @gem      = gem
-    @contents = nil
-    @spec     = nil
+    @contents        = nil
+    @gem             = gem
+    @security_policy = nil
+    @spec            = nil
   end
 
   ##
@@ -142,7 +143,7 @@ class Gem::Package::Old < Gem::Package
       end
     end
 
-    yaml_error = if RUBY_VERSION < '1.8' then
+    yaml_error = if RUBY_VERSION < '1.9' then
                    YAML::ParseError
                  elsif YAML::ENGINE.yamler == 'syck' then
                    YAML::ParseError

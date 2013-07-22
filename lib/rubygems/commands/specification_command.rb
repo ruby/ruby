@@ -28,7 +28,7 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       options[:format] = :ruby
     end
 
-    add_option('--yaml', 'Output RUBY format') do |value, options|
+    add_option('--yaml', 'Output YAML format') do |value, options|
       options[:format] = :yaml
     end
 

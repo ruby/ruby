@@ -1,6 +1,10 @@
 module Gem
   if defined? ::Psych::Visitors
     class NoAliasYAMLTree < Psych::Visitors::YAMLTree
+      def self.create
+        new({})
+      end unless respond_to? :create
+
       def visit_String(str)
         return super unless str == '=' # or whatever you want
 

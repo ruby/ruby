@@ -20,7 +20,8 @@ class Gem::Commands::PushCommand < Gem::Command
   end
 
   def initialize
-    super 'push', description
+    super 'push', description, :host => self.host
+
     add_proxy_option
     add_key_option
 

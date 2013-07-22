@@ -1,3 +1,11 @@
+Tue Jul 23 01:28:54 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.0.5.
+	  The patch provided by drbrain (Eric Hodel). [ruby-core:55896]
+	  [Backport #8617]
+
+	* test/rubygems:  Tests for the above.
+
 Tue Jul 23 00:00:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): use the given file name unless

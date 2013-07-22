@@ -15,7 +15,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   def self.build(extension, directory, dest_path, results, args=[])
     tmp_dest = Dir.mktmpdir(".gem.", ".")
 
+    t = nil
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
+      t = siteconf
       siteconf.puts "require 'rbconfig'"
       siteconf.puts "dest_path = #{(tmp_dest || dest_path).dump}"
       %w[sitearchdir sitelibdir].each do |dir|
@@ -37,6 +39,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         run cmd, results
 
         ENV["DESTDIR"] = nil
+        ENV["RUBYOPT"] = rubyopt
+        siteconf.unlink
 
         make dest_path, results
 
@@ -53,6 +57,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         ENV["DESTDIR"] = destdir
       end
     end
+    t.unlink if t and t.path
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end

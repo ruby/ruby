@@ -336,7 +336,6 @@ EOM
 
         open destination, 'wb', entry.header.mode do |out|
           out.write entry.read
-          out.fsync rescue nil # for filesystems without fsync(2)
         end
 
         say destination if Gem.configuration.really_verbose

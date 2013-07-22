@@ -335,6 +335,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_install_location_extra_slash
+    skip 'no File.realpath on 1.8' if RUBY_VERSION < '1.9'
     package = Gem::Package.new @gem
 
     file = 'foo//file.rb'
@@ -511,7 +512,8 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_match ' - nonexistent.gem', e.message
+    assert_match %r%^No such file or directory%, e.message
+    assert_match %r%nonexistent.gem$%,           e.message
   end
 
   def test_verify_security_policy

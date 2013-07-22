@@ -349,7 +349,7 @@ module Gem
         when Dependency
           @dependency == other
         when DependencyRequest
-          @dependency == other.dep && @requester == other.requester
+          @dependency == other.dependency && @requester == other.requester
         else
           false
         end

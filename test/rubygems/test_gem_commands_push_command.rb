@@ -61,6 +61,22 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match @response, @ui.output
   end
 
+  def test_execute
+    open 'example', 'w' do |io| io.write 'hello' end
+
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, 'OK']
+
+    @cmd.options[:args] = %w[example]
+
+    @cmd.execute
+
+    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal 'hello', @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
+  end
+
   def test_execute_host
     host = 'https://other.example'
 

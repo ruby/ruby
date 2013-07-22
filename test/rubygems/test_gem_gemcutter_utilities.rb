@@ -15,6 +15,13 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @cmd.extend Gem::GemcutterUtilities
   end
 
+  def teardown
+    ENV['RUBYGEMS_HOST'] = nil
+    Gem.configuration.rubygems_api_key = nil
+
+    super
+  end
+
   def test_alternate_key_alternate_host
     keys = {
       :rubygems_api_key => 'KEY',
@@ -61,6 +68,22 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @cmd.handle_options %w[--key other]
 
     assert_equal 'OTHER', @cmd.api_key
+  end
+
+  def test_host
+    assert_equal 'https://rubygems.org', @cmd.host
+  end
+
+  def test_host_RUBYGEMS_HOST
+    ENV['RUBYGEMS_HOST'] = 'https://other.example'
+
+    assert_equal 'https://other.example', @cmd.host
+  end
+
+  def test_host_RUBYGEMS_HOST_empty
+    ENV['RUBYGEMS_HOST'] = ''
+
+    assert_equal 'https://rubygems.org', @cmd.host
   end
 
   def test_sign_in
