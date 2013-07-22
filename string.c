@@ -6501,16 +6501,7 @@ rb_str_bytes(VALUE str)
 static VALUE
 rb_str_each_char_size(VALUE str, VALUE args, VALUE eobj)
 {
-    long len = RSTRING_LEN(str);
-    if (!single_byte_optimizable(str)) {
-	const char *ptr = RSTRING_PTR(str);
-	rb_encoding *enc = rb_enc_get(str);
-	const char *end_ptr = ptr + len;
-	for (len = 0; ptr < end_ptr; ++len) {
-	    ptr += rb_enc_mbclen(ptr, end_ptr, enc);
-	}
-    }
-    return LONG2FIX(len);
+    return rb_str_length(str);
 }
 
 static VALUE
