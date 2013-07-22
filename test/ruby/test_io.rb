@@ -528,7 +528,7 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_copy_stream_bigcontent
+  def test_copy_stream_bigcontent_fpos
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         begin
