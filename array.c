@@ -102,6 +102,15 @@ memfill(register VALUE *mem, register long size, register VALUE val)
 }
 
 static void
+ary_memfill(VALUE ary, long beg, long size, VALUE val)
+{
+    RARRAY_PTR_USE(ary, ptr, {
+	memfill(ptr + beg, size, val);
+	OBJ_WRITTEN(ary, Qundef, val);
+    });
+}
+
+static void
 ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 {
 #if 1
@@ -787,10 +796,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {
-	RARRAY_PTR_USE(ary, ptr, {
-	    memfill((VALUE *)ptr, len, val);
-	});
-	OBJ_WRITTEN(ary, Qundef, val);
+	ary_memfill(ary, 0, len, val);
 	ARY_SET_LEN(ary, len);
     }
     return ary;
@@ -2999,7 +3005,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	    len = orig_len - pos;
 	}
 	if (len == 0) return rb_ary_new2(0);
-	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
+	arg2 = rb_ary_new4(len, RARRAY_RAWPTR(ary)+pos);
 	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
 	rb_ary_splice(ary, pos, len, Qundef);
 	return arg2;
@@ -3372,7 +3378,6 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
     VALUE item, arg1, arg2;
     long beg = 0, end = 0, len = 0;
-    VALUE *p;
     int block_p = FALSE;
 
     if (rb_block_given_p()) {
@@ -3429,8 +3434,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {
-	p = RARRAY_PTR(ary) + beg;
-	memfill(p, len, item);
+	ary_memfill(ary, beg, len, item);
     }
     return ary;
 }
