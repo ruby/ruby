@@ -1205,7 +1205,10 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
-		if (strcmp(file, "(eval)") == 0 && bind->path != Qnil) {
+		if (strcmp(file, "(eval)") != 0) {
+		    absolute_path = rb_str_new_cstr(file);
+		}
+		else if (bind->path != Qnil) {
 		    file = RSTRING_PTR(bind->path);
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();

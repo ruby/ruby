@@ -1,3 +1,9 @@
+Mon Jul 22 09:48:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (eval_string_with_cref): use the given file name unless
+	  eval even if scope is given.  additional fix for [Bug #8436].
+	  based on the patch by srawlins at [ruby-core:56099] [Bug #8662].
+
 Mon Jul 22 09:24:19 2013  Kouji Takao  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Init_readline): added

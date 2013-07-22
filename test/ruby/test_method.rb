@@ -547,6 +547,8 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(File.dirname(File.realpath(__FILE__)), __dir__)
     bug8436 = '[ruby-core:55123] [Bug #8436]'
     assert_equal(__dir__, eval("__dir__", binding), bug8436)
+    bug8662 = '[ruby-core:56099] [Bug #8662]'
+    assert_equal("arbitrary", eval("__dir__", binding, "arbitrary/file.rb"), bug8662)
   end
 
   def test_alias_owner
