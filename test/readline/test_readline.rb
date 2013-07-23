@@ -312,33 +312,51 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def test_insert_text
-    begin
-      str = "test_insert_text"
-      assert_equal(Readline, Readline.insert_text(str))
-      assert_equal(str, Readline.line_buffer)
-      assert_equal(get_default_internal_encoding,
-                   Readline.line_buffer.encoding)
+    str = "test_insert_text"
+    with_pipe {|r, w| w.write("\C-a\n")} # reset rl_point
+    assert_equal(0, Readline.point)
+    assert_equal(Readline, Readline.insert_text(str))
+    assert_equal(str, Readline.line_buffer)
+    assert_equal(16, Readline.point)
+    assert_equal(get_default_internal_encoding,
+                 Readline.line_buffer.encoding)
 
-      Readline.delete_text(1, 3)
-      assert_equal("t_insert_text", Readline.line_buffer)
-      Readline.delete_text(11)
-      assert_equal("t_insert_te", Readline.line_buffer)
-      Readline.delete_text(-3...-1)
-      assert_equal("t_inserte", Readline.line_buffer)
-      Readline.delete_text(-3..-1)
-      assert_equal("t_inse", Readline.line_buffer)
-      Readline.delete_text(3..-3)
-      assert_equal("t_ise", Readline.line_buffer)
-      Readline.delete_text(3, 1)
-      assert_equal("t_ie", Readline.line_buffer)
-      Readline.delete_text(1..1)
-      assert_equal("tie", Readline.line_buffer)
-      Readline.delete_text(1...2)
-      assert_equal("te", Readline.line_buffer)
+    Readline.delete_text(1, 3)
+    assert_equal("t_insert_text", Readline.line_buffer)
+    Readline.delete_text(11)
+    assert_equal("t_insert_te", Readline.line_buffer)
+    Readline.delete_text(-3...-1)
+    assert_equal("t_inserte", Readline.line_buffer)
+    Readline.delete_text(-3..-1)
+    assert_equal("t_inse", Readline.line_buffer)
+    Readline.delete_text(3..-3)
+    assert_equal("t_ise", Readline.line_buffer)
+    Readline.delete_text(3, 1)
+    assert_equal("t_ie", Readline.line_buffer)
+    Readline.delete_text(1..1)
+    assert_equal("tie", Readline.line_buffer)
+    Readline.delete_text(1...2)
+    assert_equal("te", Readline.line_buffer)
+    Readline.delete_text
+    assert_equal("", Readline.line_buffer)
+  rescue NotImplementedError
+  end if !/EditLine/n.match(Readline::VERSION)
+
+  def test_delete_text
+      str = "test_insert_text"
+      assert_equal(0, Readline.point)
+      assert_equal(Readline, Readline.insert_text(str))
+      assert_equal(16, Readline.point)
+      assert_equal(str, Readline.line_buffer)
       Readline.delete_text
+
+      # NOTE: unexpected but GNU Readline's spec
+      assert_equal(16, Readline.point)
       assert_equal("", Readline.line_buffer)
-    rescue NotImplementedError
-    end
+      assert_equal(Readline, Readline.insert_text(str))
+      assert_equal(32, Readline.point)
+      assert_equal("", Readline.line_buffer)
+  rescue NotImplementedError
   end if !/EditLine/n.match(Readline::VERSION)
 
   def test_modify_text_in_pre_input_hook
