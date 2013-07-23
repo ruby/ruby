@@ -1,3 +1,11 @@
+Tue Jul 23 18:56:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/openssl/ossl.c: use system native (system provided)
+	  thread locking APIs added by last commit.
+	  This patch fixes [Bug #8386].
+	  "rb_mutex_*" APIs control only "Ruby" threads.
+	  Not for native threads.
+
 Tue Jul 23 18:44:15 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_native.h: added.

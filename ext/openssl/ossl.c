@@ -461,14 +461,15 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 /**
  * Stores locks needed for OpenSSL thread safety
  */
-static VALUE* ossl_locks;
+#include "../../thread_native.h"
+static rb_nativethread_lock_t *ossl_locks;
 
 static void ossl_lock_callback(int mode, int type, const char *file, int line)
 {
     if (mode & CRYPTO_LOCK) {
-	rb_mutex_lock(ossl_locks[type]);
+	rb_nativethread_lock_lock(&ossl_locks[type]);
     } else {
-	rb_mutex_unlock(ossl_locks[type]);
+	rb_nativethread_lock_unlock(&ossl_locks[type]);
     }
 }
 
@@ -485,13 +486,12 @@ static void Init_ossl_locks(void)
     if ((unsigned)num_locks >= INT_MAX / (int)sizeof(VALUE)) {
 	rb_raise(rb_eRuntimeError, "CRYPTO_num_locks() is too big: %d", num_locks);
     }
-    ossl_locks = (VALUE*) OPENSSL_malloc(num_locks * (int)sizeof(VALUE));
+    ossl_locks = (rb_nativethread_lock_t *) OPENSSL_malloc(num_locks * sizeof(rb_nativethread_lock_t));
     if (!ossl_locks) {
 	rb_raise(rb_eNoMemError, "CRYPTO_num_locks() is too big: %d", num_locks);
     }
     for (i = 0; i < num_locks; i++) {
-	ossl_locks[i] = rb_mutex_new();
-	rb_gc_register_mark_object(ossl_locks[i]);
+	rb_nativethread_lock_initialize(&ossl_locks[i]);
     }
 
     CRYPTO_set_id_callback(ossl_thread_id);
