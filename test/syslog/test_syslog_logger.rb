@@ -13,6 +13,8 @@ class TestSyslogRootLogger < Test::Unit::TestCase
 
   module MockSyslog
 
+    PRIMASK = Syslog::Level.constants.inject(0) { |mask, name| mask | Syslog::Level.const_get(name) }
+
     LEVEL_LABEL_MAP = {
       Syslog::LOG_ALERT   => 'ALERT',
       Syslog::LOG_ERR     => 'ERR',
@@ -31,7 +33,7 @@ class TestSyslogRootLogger < Test::Unit::TestCase
       attr_reader :program_name
 
       def log(priority, format, *args)
-        level = priority & ((1<<3) - 1) # get last 3 bits from priority
+        level = priority & PRIMASK
         @line = "<#{priority}> #{LEVEL_LABEL_MAP[level]} - #{format % args}"
       end
 
