@@ -473,10 +473,19 @@ static void ossl_lock_callback(int mode, int type, const char *file, int line)
     }
 }
 
+#ifdef HAVE_CRYPTO_THREADID_PTR
+static void ossl_threadid_func(CRYPTO_THREADID *id)
+{
+    /* register native thread id */
+    CRYPTO_THREADID_set_pointer(id, (void *)rb_nativethread_self());
+}
+#else
 static unsigned long ossl_thread_id(void)
 {
-    return NUM2ULONG(rb_obj_id(rb_thread_current()));
+    /* before OpenSSL 1.0, this is 'unsigned long' */
+    return (unsigned long)rb_nativethread_self();
 }
+#endif
 
 static void Init_ossl_locks(void)
 {
@@ -494,7 +503,11 @@ static void Init_ossl_locks(void)
 	rb_nativethread_lock_initialize(&ossl_locks[i]);
     }
 
+#ifdef HAVE_CRYPTO_THREADID_PTR
+    CRYPTO_THREADID_set_callback(ossl_threadid_func);
+#else
     CRYPTO_set_id_callback(ossl_thread_id);
+#endif
     CRYPTO_set_locking_callback(ossl_lock_callback);
 }
 

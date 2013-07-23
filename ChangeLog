@@ -1,3 +1,20 @@
+Tue Jul 23 23:19:24 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/extconf.rb (CRYPTO_THREADID): check exist or not.
+
+	* ext/openssl/ossl.c (ossl_thread_id): use rb_nativethread_self()
+	  implemented at r42137 to allow threads which doesn't associated with
+	  Ruby thread to use openssl functions.
+
+	* ext/openssl/ossl.c (Init_ossl_locks): If CRYPTO_THREADID is defined
+	  (OpenSSL 1.0.0 or later has it) use CRYPTO_THREADID_set_callback()
+	  instead of CRYPTO_set_id_callback() because its argument is
+	  unsigned long; it may cause id collision on mswin64
+	  whose sizeof(unsigned long) < sizeof(void*).
+	  http://www.openssl.org/docs/crypto/threads.html
+
+	* ext/openssl/ossl.c (ossl_threadid_func): defined for above.
+
 Tue Jul 23 20:47:36 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Move functions.

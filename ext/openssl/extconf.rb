@@ -144,6 +144,7 @@ if checking_for('OpenSSL version is 0.9.7 or later') {
   }
   have_header("openssl/ocsp.h")
 end
+have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
 have_struct_member("EVP_CIPHER_CTX", "engine", "openssl/evp.h")
 have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
