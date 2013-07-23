@@ -22,7 +22,7 @@
   * dqout.rb --- client. pop DQEntry objects.
   * dqlib.rb --- define DQEntry
 
-* IdConv customize demo: reference by name 
+* IdConv customize demo: reference by name
   * name.rb --- server
   * namec.rb --- client
 
@@ -46,7 +46,7 @@
 * drbssl
   * drbssl_s.rb
   * drbssl_c.rb
-  
+
 * add DRbProtocl
   * http0.rb
   * http0serv.rb
