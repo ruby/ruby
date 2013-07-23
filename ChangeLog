@@ -1,3 +1,7 @@
+Tue Jul 23 09:28:05 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/drb/invokemethod.rb: [DOC] nodoc InvokeMethod18Mixin
+
 Tue Jul 23 08:44:37 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_asn1.c (asn1time_to_time):  Implement YYMMDDhhmmZ
