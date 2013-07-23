@@ -2347,7 +2347,6 @@ gc_before_sweep(rb_objspace_t *objspace)
 	objspace->heap.using_slot = NULL;
     }
     objspace->freelist = NULL;
-    
 
     malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
 
