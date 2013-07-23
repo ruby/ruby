@@ -766,4 +766,11 @@ rb_reserved_fd_p(int fd)
 {
     return 0;
 }
+
+rb_nativethread_id_t
+rb_nativethread_self(void)
+{
+    return GetCurrentThread();
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

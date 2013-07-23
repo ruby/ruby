@@ -1,3 +1,10 @@
+Tue Jul 23 19:44:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_native.h: add rb_nativethread_self() which returns
+	  current running native thread identifier.
+
+	* thread_[pthread|win32].c: implement rb_nativethread_self().
+
 Tue Jul 23 19:34:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.h, thread_win32.h: rename rb_thread_id_t to

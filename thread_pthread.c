@@ -1535,4 +1535,10 @@ rb_reserved_fd_p(int fd)
 #endif
 }
 
+rb_nativethread_id_t
+rb_nativethread_self(void)
+{
+    return pthread_self();
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
