@@ -1,3 +1,8 @@
+Wed Jul 24 01:13:02 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_f_lambde): restore the declaration of
+	  rb_f_lambda() for backword compatibility. and mark it as deprecated.
+
 Tue Jul 23 01:36:43 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rubygems/psych_additions.rb: Ignore Psych docs here
