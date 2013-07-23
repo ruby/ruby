@@ -25,11 +25,15 @@ class TestTracepointObj < Test::Unit::TestCase
 
     stat1 = {}
     stat2 = {}
+    GC.disable
     GC.stat(stat1)
     result = Bug.tracepoint_track_objspace_events{
+      GC.enable
       1_000_000.times{''}
+      GC.disable
     }
     GC.stat(stat2)
+    GC.enable
 
     newobj_count, free_count, gc_start_count, gc_end_count, *newobjs = *result
 

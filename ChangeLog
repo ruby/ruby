@@ -1,3 +1,8 @@
+Wed Jul 24 08:04:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/-ext-/tracepoint/test_tracepoint.rb: add GC on/off to count
+	  GC events strictly.
+
 Tue Jul 23 23:19:24 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/extconf.rb (CRYPTO_THREADID): check exist or not.
