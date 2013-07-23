@@ -42,7 +42,7 @@
   * rindas.rb --- TupleSpaceのclientでアプリケーションのserver
 
 * observerの使用例
-  cdbiff - ((<URI:http://namazu.org/~satoru/cdbiff/>))
+  cdbiff - http://namazu.org/~satoru/cdbiff/
   * dbiff.rb --- dcdbiff server
   * dcdbiff.rb --- dcdbiff client
 

@@ -1,3 +1,7 @@
+Tue Jul 23 09:34:49 2013  Zachary Scott  <e@zzak.io>
+
+	* sample/drb/README*.rdoc: [DOC] migrate DRb sample READMEs to rdoc
+
 Tue Jul 23 09:28:05 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/drb/invokemethod.rb: [DOC] nodoc InvokeMethod18Mixin
