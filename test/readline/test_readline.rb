@@ -399,7 +399,7 @@ class TestReadline < Test::Unit::TestCase
         w << "\cr\u3042\u3093"
         w.reopen(IO::NULL)
         assert_equal("\u3046\u3093", Readline.readline("", true), bug6602)
-        Timeout.(2) do
+        Timeout.timeout(2) do
           assert_equal("\u3042\u3093", Readline.readline("", true), bug6602)
         end
         assert_equal(nil,            Readline.readline("", true), bug6602)
