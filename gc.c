@@ -305,6 +305,7 @@ typedef struct rb_objspace {
 	struct heap_slot *slots;
 	struct heap_slot *sweep_slots;
 	struct heap_slot *free_slots;
+	struct heap_slot *using_slot;
 	struct heap_slot **sorted;
 	size_t length;
 	size_t used;
@@ -933,7 +934,9 @@ heap_get_freeobj(rb_objspace_t *objspace)
 
     while (UNLIKELY(p == NULL)) {
 	struct heap_slot *slot = heap_get_freeslot(objspace);
+	objspace->heap.using_slot = slot;
 	p = objspace->freelist = slot->freelist;
+	slot->freelist = NULL;
     }
     objspace->freelist = p->as.free.next;
 
@@ -2230,7 +2233,6 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 
     rgengc_report(1, objspace, "slot_sweep: start.\n");
 
-    sweep_slot->freelist = NULL;
     p = sweep_slot->start; pend = p + sweep_slot->limit;
     offset = p - NUM_IN_SLOT(p);
     bits = GET_HEAP_MARK_BITS(p);
@@ -2269,7 +2271,6 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 			}
 		    }
 		    else {
-			heap_slot_add_freeobj(objspace, sweep_slot, (VALUE)p);
 			empty_num++;
 		    }
 		}
@@ -2340,7 +2341,13 @@ gc_before_sweep(rb_objspace_t *objspace)
     objspace->heap.sweep_slots = heap_slots;
     objspace->heap.free_num = 0;
     objspace->heap.free_slots = NULL;
+
+    if (objspace->heap.using_slot) {
+	objspace->heap.using_slot->freelist = objspace->freelist;
+	objspace->heap.using_slot = NULL;
+    }
     objspace->freelist = NULL;
+    
 
     malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
 

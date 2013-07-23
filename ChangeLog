@@ -1,3 +1,16 @@
+Tue Jul 23 15:57:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_get_freeobj): clear slot->freelist here.
+	  This means that this slot doesn't have any free objects.
+	  And store this slot with objspace->heap.using_slot.
+
+	* gc.c (gc_before_sweep): restore objspace->freelist
+	  into objspace->heap.using_slot->freelist.
+	  This means that using_slot has free objects which are
+	  pointed from objspace->freelist.
+
+	* gc.c (gc_slot_sweep): do not need to clear slot->freelist.
+
 Tue Jul 23 09:34:49 2013  Zachary Scott  <e@zzak.io>
 
 	* sample/drb/README*.rdoc: [DOC] migrate DRb sample READMEs to rdoc
