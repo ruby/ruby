@@ -418,7 +418,7 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 #ifdef USE_SIGNAL_THREAD_LIST
 static void add_signal_thread_list(rb_thread_t *th);
 static void remove_signal_thread_list(rb_thread_t *th);
-static rb_thread_lock_t signal_thread_list_lock;
+static rb_nativethread_lock_t signal_thread_list_lock;
 #endif
 
 static pthread_key_t ruby_native_thread_key;

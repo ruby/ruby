@@ -26,7 +26,7 @@ typedef HANDLE rb_thread_id_t;
 typedef union rb_thread_lock_union {
     HANDLE mutex;
     CRITICAL_SECTION crit;
-} rb_thread_lock_t;
+} rb_nativethread_lock_t;
 
 typedef struct rb_thread_cond_struct {
     struct cond_event_entry *next;

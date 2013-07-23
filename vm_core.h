@@ -24,13 +24,7 @@
 #include "method.h"
 #include "ruby_atomic.h"
 
-#if   defined(_WIN32)
-#include "thread_win32.h"
-#elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.h"
-#else
-#error "unsupported thread type"
-#endif
+#include "thread_native.h"
 
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32
@@ -341,7 +335,7 @@ typedef struct rb_vm_struct {
     VALUE self;
 
     rb_global_vm_lock_t gvl;
-    rb_thread_lock_t    thread_destruct_lock;
+    rb_nativethread_lock_t    thread_destruct_lock;
 
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
@@ -558,7 +552,7 @@ typedef struct rb_thread_struct {
 
     rb_atomic_t interrupt_flag;
     unsigned long interrupt_mask;
-    rb_thread_lock_t interrupt_lock;
+    rb_nativethread_lock_t interrupt_lock;
     rb_thread_cond_t interrupt_cond;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
@@ -930,9 +924,6 @@ void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
-
-void rb_thread_lock_unlock(rb_thread_lock_t *);
-void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_BLOCKING(th) do {				\
 	if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {	\

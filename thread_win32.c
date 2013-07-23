@@ -24,8 +24,8 @@
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
-static int native_mutex_lock(rb_thread_lock_t *lock);
-static int native_mutex_unlock(rb_thread_lock_t *lock);
+static int native_mutex_lock(rb_nativethread_lock_t *lock);
+static int native_mutex_unlock(rb_nativethread_lock_t *lock);
 
 static void
 w32_error(const char *func)
@@ -331,7 +331,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 }
 
 static int
-native_mutex_lock(rb_thread_lock_t *lock)
+native_mutex_lock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     w32_mutex_lock(lock->mutex);
@@ -342,7 +342,7 @@ native_mutex_lock(rb_thread_lock_t *lock)
 }
 
 static int
-native_mutex_unlock(rb_thread_lock_t *lock)
+native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     thread_debug("release mutex: %p\n", lock->mutex);
@@ -354,7 +354,7 @@ native_mutex_unlock(rb_thread_lock_t *lock)
 }
 
 static int
-native_mutex_trylock(rb_thread_lock_t *lock)
+native_mutex_trylock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     int result;
@@ -374,7 +374,7 @@ native_mutex_trylock(rb_thread_lock_t *lock)
 }
 
 static void
-native_mutex_initialize(rb_thread_lock_t *lock)
+native_mutex_initialize(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     lock->mutex = w32_mutex_create();
@@ -385,7 +385,7 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 }
 
 static void
-native_mutex_destroy(rb_thread_lock_t *lock)
+native_mutex_destroy(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     w32_close_handle(lock->mutex);
@@ -442,7 +442,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 
 
 static int
-native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long msec)
+native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -473,7 +473,7 @@ native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsign
 }
 
 static int
-native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
+native_cond_wait(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex)
 {
     return native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
@@ -495,7 +495,7 @@ abs_timespec_to_timeout_ms(struct timespec *ts)
 }
 
 static int
-native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, struct timespec *ts)
 {
     unsigned long timeout_ms;
 
