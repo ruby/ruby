@@ -1,3 +1,7 @@
+Tue Jul 23 20:47:36 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Move functions.
+
 Tue Jul 23 20:14:55 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_divmod): Add special cases for x < y easily detected
