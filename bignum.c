@@ -5266,11 +5266,28 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
         return;
     }
 
-    if (ny == 1) {
+    if (nx < ny || (nx == ny && xds[nx - 1] < yds[ny - 1])) {
+        MEMCPY(rds, xds, BDIGIT, nx);
+        BDIGITS_ZERO(rds+nx, nr-nx);
+        BDIGITS_ZERO(qds, nq);
+    }
+    else if (ny == 1) {
         MEMCPY(qds, xds, BDIGIT, nx);
         BDIGITS_ZERO(qds+nx, nq-nx);
         rds[0] = bigdivrem_single(qds, xds, nx, yds[0]);
         BDIGITS_ZERO(rds+1, nr-1);
+    }
+    else if (nx == 2 && ny == 2) {
+        BDIGIT_DBL x = xds[0] | BIGUP(xds[1]);
+        BDIGIT_DBL y = yds[0] | BIGUP(yds[1]);
+        BDIGIT_DBL q = x / y;
+        BDIGIT_DBL r = x % y;
+        qds[0] = BIGLO(q);
+        qds[1] = BIGLO(BIGDN(q));
+        BDIGITS_ZERO(qds+2, nq-2);
+        rds[0] = BIGLO(r);
+        rds[1] = BIGLO(BIGDN(r));
+        BDIGITS_ZERO(rds+2, nr-2);
     }
     else {
         int extra_words;

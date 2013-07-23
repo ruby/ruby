@@ -1,3 +1,8 @@
+Tue Jul 23 20:14:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_divmod): Add special cases for x < y easily detected
+	  and nx == 2 && ny == 2.
+
 Tue Jul 23 19:48:38 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_(pthread|win32).h: rename rb_thread_cond_t to
