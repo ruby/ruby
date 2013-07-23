@@ -39,11 +39,11 @@ static void native_mutex_unlock(pthread_mutex_t *lock);
 static int native_mutex_trylock(pthread_mutex_t *lock);
 static void native_mutex_initialize(pthread_mutex_t *lock);
 static void native_mutex_destroy(pthread_mutex_t *lock);
-static void native_cond_signal(rb_thread_cond_t *cond);
-static void native_cond_broadcast(rb_thread_cond_t *cond);
-static void native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex);
-static void native_cond_initialize(rb_thread_cond_t *cond, int flags);
-static void native_cond_destroy(rb_thread_cond_t *cond);
+static void native_cond_signal(rb_nativethread_cond_t *cond);
+static void native_cond_broadcast(rb_nativethread_cond_t *cond);
+static void native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex);
+static void native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
+static void native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
 static pthread_t timer_thread_id;
 
@@ -253,7 +253,7 @@ native_mutex_destroy(pthread_mutex_t *lock)
 }
 
 static void
-native_cond_initialize(rb_thread_cond_t *cond, int flags)
+native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
 #ifdef HAVE_PTHREAD_COND_INIT
     int r;
@@ -284,7 +284,7 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
 }
 
 static void
-native_cond_destroy(rb_thread_cond_t *cond)
+native_cond_destroy(rb_nativethread_cond_t *cond)
 {
 #ifdef HAVE_PTHREAD_COND_INIT
     int r = pthread_cond_destroy(&cond->cond);
@@ -305,7 +305,7 @@ native_cond_destroy(rb_thread_cond_t *cond)
  */
 
 static void
-native_cond_signal(rb_thread_cond_t *cond)
+native_cond_signal(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
@@ -317,7 +317,7 @@ native_cond_signal(rb_thread_cond_t *cond)
 }
 
 static void
-native_cond_broadcast(rb_thread_cond_t *cond)
+native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
@@ -329,7 +329,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 }
 
 static void
-native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex)
+native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 {
     int r = pthread_cond_wait(&cond->cond, mutex);
     if (r != 0) {
@@ -338,7 +338,7 @@ native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex)
 }
 
 static int
-native_cond_timedwait(rb_thread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
 {
     int r;
 
@@ -360,7 +360,7 @@ native_cond_timedwait(rb_thread_cond_t *cond, pthread_mutex_t *mutex, struct tim
 }
 
 static struct timespec
-native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
+native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
     struct timeval tv;
@@ -764,7 +764,7 @@ thread_start_func_1(void *th_ptr)
 
 struct cached_thread_entry {
     volatile rb_thread_t **th_area;
-    rb_thread_cond_t *cond;
+    rb_nativethread_cond_t *cond;
     struct cached_thread_entry *next;
 };
 
@@ -776,7 +776,7 @@ struct cached_thread_entry *cached_thread_root;
 static rb_thread_t *
 register_cached_thread_and_wait(void)
 {
-    rb_thread_cond_t cond = { PTHREAD_COND_INITIALIZER, };
+    rb_nativethread_cond_t cond = { PTHREAD_COND_INITIALIZER, };
     volatile rb_thread_t *th_area = 0;
     struct timeval tv;
     struct timespec ts;
@@ -957,7 +957,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 {
     struct timespec timeout;
     pthread_mutex_t *lock = &th->interrupt_lock;
-    rb_thread_cond_t *cond = &th->native_thread_data.sleep_cond;
+    rb_nativethread_cond_t *cond = &th->native_thread_data.sleep_cond;
 
     if (timeout_tv) {
 	struct timespec timeout_rel;
@@ -1344,7 +1344,7 @@ void rb_thread_wakeup_timer_thread(void) {}
 static void rb_thread_wakeup_timer_thread_low(void) {}
 
 static pthread_mutex_t timer_thread_lock;
-static rb_thread_cond_t timer_thread_cond;
+static rb_nativethread_cond_t timer_thread_cond;
 
 static inline void
 timer_thread_sleep(rb_global_vm_lock_t* unused)

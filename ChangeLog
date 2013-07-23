@@ -1,3 +1,11 @@
+Tue Jul 23 19:48:38 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_(pthread|win32).h: rename rb_thread_cond_t to
+	  rb_nativethread_cond_t.
+
+	* thread.c, thread_pthread.c, thread_win32.c, vm_core.h: catch up
+	  renaming.
+
 Tue Jul 23 19:44:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_native.h: add rb_nativethread_self() which returns

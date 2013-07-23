@@ -553,7 +553,7 @@ typedef struct rb_thread_struct {
     rb_atomic_t interrupt_flag;
     unsigned long interrupt_mask;
     rb_nativethread_lock_t interrupt_lock;
-    rb_thread_cond_t interrupt_cond;
+    rb_nativethread_cond_t interrupt_cond;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;

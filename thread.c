@@ -388,7 +388,7 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
 typedef struct rb_mutex_struct
 {
     rb_nativethread_lock_t lock;
-    rb_thread_cond_t cond;
+    rb_nativethread_cond_t cond;
     struct rb_thread_struct volatile *th;
     int cond_waiting;
     struct rb_mutex_struct *next_mutex;

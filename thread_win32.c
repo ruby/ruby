@@ -401,7 +401,7 @@ struct cond_event_entry {
 };
 
 static void
-native_cond_signal(rb_thread_cond_t *cond)
+native_cond_signal(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
@@ -420,7 +420,7 @@ native_cond_signal(rb_thread_cond_t *cond)
 }
 
 static void
-native_cond_broadcast(rb_thread_cond_t *cond)
+native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
     struct cond_event_entry *e = cond->next;
@@ -442,7 +442,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 
 
 static int
-native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
+native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -473,7 +473,7 @@ native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, 
 }
 
 static int
-native_cond_wait(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex)
+native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
 {
     return native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
@@ -495,7 +495,7 @@ abs_timespec_to_timeout_ms(struct timespec *ts)
 }
 
 static int
-native_cond_timedwait(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, struct timespec *ts)
 {
     unsigned long timeout_ms;
 
@@ -507,7 +507,7 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_nativethread_lock_t *mutex, str
 }
 
 static struct timespec
-native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
+native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
     struct timeval tv;
@@ -537,14 +537,14 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
 }
 
 static void
-native_cond_initialize(rb_thread_cond_t *cond, int flags)
+native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
     cond->next = (struct cond_event_entry *)cond;
     cond->prev = (struct cond_event_entry *)cond;
 }
 
 static void
-native_cond_destroy(rb_thread_cond_t *cond)
+native_cond_destroy(rb_nativethread_cond_t *cond)
 {
     /* */
 }
