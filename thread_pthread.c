@@ -572,7 +572,7 @@ get_stack(void **addr, size_t *size)
 #endif
 
 static struct {
-    rb_thread_id_t id;
+    rb_nativethread_id_t id;
     size_t stack_maxsize;
     VALUE *stack_start;
 #ifdef __ia64
@@ -694,7 +694,7 @@ ruby_init_stack(volatile VALUE *addr
 static int
 native_thread_init_stack(rb_thread_t *th)
 {
-    rb_thread_id_t curr = pthread_self();
+    rb_nativethread_id_t curr = pthread_self();
 
     if (pthread_equal(curr, native_main_thread.id)) {
 	th->machine_stack_start = native_main_thread.stack_start;

@@ -21,7 +21,7 @@
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-typedef HANDLE rb_thread_id_t;
+typedef HANDLE rb_nativethread_id_t;
 
 typedef union rb_thread_lock_union {
     HANDLE mutex;

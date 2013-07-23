@@ -526,7 +526,7 @@ typedef struct rb_thread_struct {
     VALUE root_svar;
 
     /* thread control */
-    rb_thread_id_t thread_id;
+    rb_nativethread_id_t thread_id;
     enum rb_thread_status status;
     int to_kill;
     int priority;
