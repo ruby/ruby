@@ -70,9 +70,9 @@ Tue Jul 23 18:44:15 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: add functions "rb_nativethread_lock_*".
 
-	* thraed.c, thread_[pthread,win32].[ch]: rename rb_thread_lock_t
+	* thread.c, thread_[pthread,win32].[ch]: rename rb_thread_lock_t
 	  to rb_nativethread_lock_t to make it clear that this lock is for
-	  native thraeds, not for ruby threads.
+	  native threads, not for ruby threads.
 
 Tue Jul 23 16:14:57 2013  Koichi Sasada  <ko1@atdot.net>
 
