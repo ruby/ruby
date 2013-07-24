@@ -1,3 +1,12 @@
+Wed Jul 24 18:56:06 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_expandarray): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR() because there is no new reference.
+
+	* vm_insnhelper.c (vm_caller_setup_args): ditto.
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): ditto.
+
 Wed Jul 24 18:40:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, gc.c: move ary_unprotect_logging() into
