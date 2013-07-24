@@ -1,3 +1,8 @@
+Wed Jul 24 19:49:54 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (find_proxy): raise BadURIError if the URI is
+	  a relative URI. [Bug #8645]
+
 Wed Jul 24 18:56:06 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_expandarray): use RARRAY_RAWPTR() instead of
