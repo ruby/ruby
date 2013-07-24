@@ -3909,6 +3909,49 @@ rb_gc_writebarrier_remember_promoted(VALUE obj)
     rgengc_remember(objspace, obj);
 }
 
+static st_table *rgengc_unprotect_logging_table;
+
+static int
+rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val)
+{
+    fprintf(stderr, "%s\t%d\n", (char *)key, (int)val);
+    return ST_CONTINUE;
+}
+
+static void
+rgengc_unprotect_logging_exit_func(void)
+{
+    st_foreach(rgengc_unprotect_logging_table, rgengc_unprotect_logging_exit_func_i, 0);
+}
+
+void
+rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
+{
+    VALUE obj = (VALUE)objptr;
+
+    if (rgengc_unprotect_logging_table == 0) {
+	rgengc_unprotect_logging_table = st_init_strtable();
+	atexit(rgengc_unprotect_logging_exit_func);
+    }
+
+    if (OBJ_WB_PROTECTED(obj)) {
+	char buff[0x100];
+	st_data_t cnt = 1;
+	char *ptr = buff;
+
+	snprintf(ptr, 0x100 - 1, "%s|%s:%d", obj_type_name(obj), filename, line);
+
+	if (st_lookup(rgengc_unprotect_logging_table, (st_data_t)ptr, &cnt)) {
+	    cnt++;
+	}
+	else {
+	    ptr = (char *)malloc(strlen(buff) + 1);
+	    strcpy(ptr, buff);
+	}
+	st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
+    }
+}
+
 #endif /* USE_RGENGC */
 
 /* RGENGC analysis information */
