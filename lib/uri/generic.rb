@@ -1611,6 +1611,7 @@ module URI
     # http_proxy is not used too if the variable is case insensitive.
     # CGI_HTTP_PROXY can be used instead.
     def find_proxy
+      raise BadURIError, "relative URI: #{self}" if self.relative?
       name = self.scheme.downcase + '_proxy'
       proxy_uri = nil
       if name == 'http_proxy' && ENV.include?('REQUEST_METHOD') # CGI?

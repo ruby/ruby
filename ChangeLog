@@ -1,3 +1,8 @@
+Wed Jul 24 22:35:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (find_proxy): raise BadURIError if the URI is
+	  a relative URI. [Bug #8645]
+
 Wed Jul 24 01:13:02 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_f_lambde): restore the declaration of
