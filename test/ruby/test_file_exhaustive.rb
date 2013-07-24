@@ -669,6 +669,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(ArgumentError, bug) { File.expand_path("~anything") }
   end if DRIVE
 
+  def test_expand_path_error_for_nonexistent_username
+    user = "\u{3086 3046 3066 3044}:\u{307F 3084 304A 3046}"
+    assert_raise_with_message(ArgumentError, /#{user}/) {File.expand_path("~#{user}")}
+  end unless DRIVE
+
+  def test_expand_path_error_for_non_absolute_home
+    old_home = ENV["HOME"]
+    ENV["HOME"] = "./UserHome"
+    assert_raise_with_message(ArgumentError, /non-absolute home/) {File.expand_path("~")}
+  ensure
+    ENV["HOME"] = old_home
+  end
+
   def test_expand_path_raises_a_type_error_if_not_passed_a_string_type
     assert_raise(TypeError) { File.expand_path(1) }
     assert_raise(TypeError) { File.expand_path(nil) }

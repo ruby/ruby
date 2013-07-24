@@ -1,3 +1,8 @@
+Wed Jul 24 17:37:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_expand_path_internal): preserve the file name
+	  encoding in an exception message.
+
 Wed Jul 24 08:04:49 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/-ext-/tracepoint/test_tracepoint.rb: add GC on/off to count

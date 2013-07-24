@@ -2909,7 +2909,7 @@ rb_home_dir(const char *user, VALUE result)
 	struct passwd *pwPtr = getpwnam(user);
 	if (!pwPtr) {
 	    endpwent();
-	    rb_raise(rb_eArgError, "user %s doesn't exist", user);
+	    return Qnil;
 	}
 	dirlen = strlen(pwPtr->pw_dir);
 	rb_str_resize(result, dirlen);
@@ -2991,11 +2991,13 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    p += userlen;
 	}
 	if (NIL_P(rb_home_dir(buf, result))) {
-	    rb_raise(rb_eArgError, "can't find user %s", buf);
+	    rb_enc_raise(enc, rb_eArgError, "%.0"PRIsVALUE"user %s doesn't exist", fname,
+			 buf);
 	}
 	if (!rb_is_absolute_path(RSTRING_PTR(result))) {
 	    if (userlen) {
-		rb_raise(rb_eArgError, "non-absolute home of %.*s", (int)userlen, b);
+		rb_enc_raise(enc, rb_eArgError, "non-absolute home of %.*s%.0"PRIsVALUE,
+			     (int)userlen, b, fname);
 	    }
 	    else {
 		rb_raise(rb_eArgError, "non-absolute home");
