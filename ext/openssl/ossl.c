@@ -495,7 +495,7 @@ static void Init_ossl_locks(void)
     if ((unsigned)num_locks >= INT_MAX / (int)sizeof(VALUE)) {
 	rb_raise(rb_eRuntimeError, "CRYPTO_num_locks() is too big: %d", num_locks);
     }
-    ossl_locks = (rb_nativethread_lock_t *) OPENSSL_malloc(num_locks * sizeof(rb_nativethread_lock_t));
+    ossl_locks = (rb_nativethread_lock_t *) OPENSSL_malloc(num_locks * (int)sizeof(rb_nativethread_lock_t));
     if (!ossl_locks) {
 	rb_raise(rb_eNoMemError, "CRYPTO_num_locks() is too big: %d", num_locks);
     }
