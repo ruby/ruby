@@ -1,3 +1,10 @@
+Wed Jul 24 20:57:44 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_set_arguments): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR() because there is no new reference.
+
+	* compile.c (iseq_set_exception_table): ditto.
+
 Wed Jul 24 19:49:54 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (find_proxy): raise BadURIError if the URI is

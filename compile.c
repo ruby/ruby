@@ -1169,7 +1169,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 
 	    iseq->arg_opts = i;
 	    iseq->arg_opt_table = ALLOC_N(VALUE, i);
-	    MEMCPY(iseq->arg_opt_table, RARRAY_PTR(labels), VALUE, i);
+	    MEMCPY(iseq->arg_opt_table, RARRAY_RAWPTR(labels), VALUE, i);
 	    for (j = 0; j < i; j++) {
 		iseq->arg_opt_table[j] &= ~1;
 	    }
@@ -1665,18 +1665,18 @@ label_get_sp(LABEL *lobj)
 static int
 iseq_set_exception_table(rb_iseq_t *iseq)
 {
-    VALUE *tptr, *ptr;
+    const VALUE *tptr, *ptr;
     int tlen, i;
     struct iseq_catch_table_entry *entry;
 
     tlen = (int)RARRAY_LEN(iseq->compile_data->catch_table_ary);
-    tptr = RARRAY_PTR(iseq->compile_data->catch_table_ary);
+    tptr = RARRAY_RAWPTR(iseq->compile_data->catch_table_ary);
 
     iseq->catch_table = tlen ? ALLOC_N(struct iseq_catch_table_entry, tlen) : 0;
     iseq->catch_table_size = tlen;
 
     for (i = 0; i < tlen; i++) {
-	ptr = RARRAY_PTR(tptr[i]);
+	ptr = RARRAY_RAWPTR(tptr[i]);
 	entry = &iseq->catch_table[i];
 	entry->type = (enum catch_type)(ptr[0] & 0xffff);
 	entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
