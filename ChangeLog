@@ -1,3 +1,8 @@
+Thu Jul 25 07:15:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems from master as of commit 4ff70cc
+	* test/rubygems:  ditto.
+
 Wed Jul 24 20:57:44 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_set_arguments): use RARRAY_RAWPTR() instead of
