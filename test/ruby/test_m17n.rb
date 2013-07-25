@@ -1465,6 +1465,8 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(1, a.force_encoding("utf-8").size, '[ruby-core:22437]')
     b = "".force_encoding("ascii-8bit") << 0xC3.chr << 0xB6.chr
     assert_equal(1, b.force_encoding("utf-8").size, '[ruby-core:22437]')
+
+    assert_raise(TypeError){ ''.force_encoding(nil) }
   end
 
   def test_combchar_codepoint
