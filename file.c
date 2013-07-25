@@ -2993,6 +2993,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    userlen = s - b;
 	    BUFCHECK(bdiff + userlen >= buflen);
 	    memcpy(p, b, userlen);
+	    ENC_CODERANGE_CLEAR(result);
 	    rb_str_set_len(result, userlen);
 	    rb_enc_associate(result, enc);
 	    rb_home_dir_of(result, result);
