@@ -14,7 +14,7 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
-SPEC_GIT_BASE = git://github.com/rubyspec
+SPEC_GIT_BASE = git://github.com/nurse
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
 RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/rubyspec.git
 
