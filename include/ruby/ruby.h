@@ -1266,7 +1266,7 @@ void rb_gc_writebarrier_unprotect_promoted(VALUE obj);
 #define OBJ_WRITE(a, slot, b)       rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__)
 #define OBJ_WRITTEN(a, oldv, b)     rb_obj_written((VALUE)(a), (VALUE)(oldv), (VALUE)(b), __FILE__, __LINE__)
 
-#if USE_RGENGC_LOGGING_WB_UNPROTECT
+#if defined(USE_RGENGC_LOGGING_WB_UNPROTECT) && USE_RGENGC_LOGGING_WB_UNPROTECT
 void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #define RGENGC_LOGGING_WB_UNPROTECT rb_gc_unprotect_logging
 #endif
