@@ -533,7 +533,7 @@ module RingIPv6
         next unless ifaddr.addr.ipv6_linklocal?
         next if ifaddr.name[0, 2] == "lo"
         r.multicast_interface = ifaddr.ifindex
-        return
+        return ifaddr
       end
     rescue NotImplementedError
       # ifindex() function may not be implemented on Windows.
@@ -663,8 +663,13 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
-    prepare_ipv6(@rf)
-    v6mc = @rf.make_socket('ff02::1')
+    ifaddr = prepare_ipv6(@rf)
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
 
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
@@ -679,7 +684,12 @@ class TestRingFinger < Test::Unit::TestCase
   def test_make_socket_ipv6_multicast_hops
     prepare_ipv6(@rf)
     @rf.multicast_hops = 2
-    v6mc = @rf.make_socket('ff02::1')
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
     assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
   end
 
