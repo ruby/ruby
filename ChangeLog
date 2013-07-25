@@ -1,3 +1,8 @@
+Thu Jul 25 12:32:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/openssl/ossl.c: support additional three thread synchronization
+	  functions. [ruby-trunk - Bug #8386]
+
 Thu Jul 25 07:15:58 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems from master as of commit 4ff70cc

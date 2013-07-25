@@ -464,13 +464,45 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 #include "../../thread_native.h"
 static rb_nativethread_lock_t *ossl_locks;
 
-static void ossl_lock_callback(int mode, int type, const char *file, int line)
+static void
+ossl_lock_unlock(int mode, rb_nativethread_lock_t *lock)
 {
     if (mode & CRYPTO_LOCK) {
-	rb_nativethread_lock_lock(&ossl_locks[type]);
+	rb_nativethread_lock_lock(lock);
     } else {
-	rb_nativethread_lock_unlock(&ossl_locks[type]);
+	rb_nativethread_lock_unlock(lock);
     }
+}
+
+static void
+ossl_lock_callback(int mode, int type, const char *file, int line)
+{
+    ossl_lock_unlock(mode, &ossl_locks[type]);
+}
+
+struct CRYPTO_dynlock_value {
+    rb_nativethread_lock_t lock;
+};
+
+static struct CRYPTO_dynlock_value *
+ossl_dyn_create_callback(const char *file, int line)
+{
+    struct CRYPTO_dynlock_value *dynlock = (struct CRYPTO_dynlock_value *)OPENSSL_malloc((int)sizeof(struct CRYPTO_dynlock_value));
+    rb_nativethread_lock_initialize(&dynlock->lock);
+    return dynlock;
+}
+
+static void
+ossl_dyn_lock_callback(int mode, struct CRYPTO_dynlock_value *l, const char *file, int line)
+{
+    ossl_lock_unlock(mode, &l->lock);
+}
+
+static void
+ossl_dyn_destroy_callback(struct CRYPTO_dynlock_value *l, const char *file, int line)
+{
+    rb_nativethread_lock_destroy(&l->lock);
+    OPENSSL_free(l);
 }
 
 #ifdef HAVE_CRYPTO_THREADID_PTR
@@ -509,6 +541,9 @@ static void Init_ossl_locks(void)
     CRYPTO_set_id_callback(ossl_thread_id);
 #endif
     CRYPTO_set_locking_callback(ossl_lock_callback);
+    CRYPTO_set_dynlock_create_callback(ossl_dyn_create_callback);
+    CRYPTO_set_dynlock_lock_callback(ossl_dyn_lock_callback);
+    CRYPTO_set_dynlock_destroy_callback(ossl_dyn_destroy_callback);
 }
 
 /*
