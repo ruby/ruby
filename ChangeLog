@@ -1,3 +1,8 @@
+Thu Jul 25 17:49:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_to_s): convert closing parenthes to the target encoding
+	  if it is ASCII incompatible encoding. [ruby-core:56063] [Bug #8650]
+
 Thu Jul 25 17:21:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (is_obj_encoding): new macro to check if obj is an

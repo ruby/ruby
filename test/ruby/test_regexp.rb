@@ -64,6 +64,14 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_to_s
     assert_equal '(?-mix:\x00)', Regexp.new("\0").to_s
+
+    str = "abcd\u3042"
+    [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
+      enc = Encoding.const_get(es)
+      rs = Regexp.new(str.encode(enc)).to_s
+      assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
+      assert_equal(enc, rs.encoding)
+    end
   end
 
   def test_union

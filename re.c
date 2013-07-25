@@ -597,8 +597,30 @@ rb_reg_to_s(VALUE re)
     }
 
     rb_str_buf_cat2(str, ":");
-    rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
-    rb_str_buf_cat2(str, ")");
+    if (rb_enc_asciicompat(enc)) {
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_str_buf_cat2(str, ")");
+    }
+    else {
+	const char *s, *e;
+	char *paren;
+	ptrdiff_t n;
+	rb_str_buf_cat2(str, ")");
+	rb_enc_associate(str, rb_usascii_encoding());
+	str = rb_str_encode(str, rb_enc_from_encoding(enc), 0, Qnil);
+
+	/* backup encoded ")" to paren */
+	s = RSTRING_PTR(str);
+	e = RSTRING_END(str);
+	s = rb_enc_left_char_head(s, e-1, e, enc);
+	n = e - s;
+	paren = ALLOCA_N(char, n);
+	memcpy(paren, s, n);
+	rb_str_resize(str, RSTRING_LEN(str) - n);
+
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_str_buf_cat(str, paren, n);
+    }
     rb_enc_copy(str, re);
 
     OBJ_INFECT(str, re);
