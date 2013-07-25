@@ -285,8 +285,11 @@ module Test
           file ||= loc.path
           line ||= loc.lineno
         end
+        line -= 2
         src = <<eom
-  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions;begin;#{src}
+# -*- coding: #{src.encoding}; -*-
+  require #{__dir__.dump}'/envutil';include Test::Unit::Assertions;begin
+#{src}
   ensure
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   end
