@@ -1,3 +1,9 @@
+Thu Jul 25 17:21:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (is_obj_encoding): new macro to check if obj is an
+	  Encoding.  obj can be any type while is_data_encoding expects T_DATA
+	  only.
+
 Thu Jul 25 17:17:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_expand_path_internal): should clear coderange after

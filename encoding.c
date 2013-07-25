@@ -73,6 +73,7 @@ static const rb_data_type_t encoding_data_type = {
 };
 
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
+#define is_obj_encoding(obj) (RB_TYPE_P((obj), T_DATA) && is_data_encoding(obj))
 
 static VALUE
 enc_new(rb_encoding *encoding)
@@ -121,7 +122,7 @@ check_encoding(rb_encoding *enc)
 static int
 enc_check_encoding(VALUE obj)
 {
-    if (!RB_TYPE_P(obj, T_DATA) || !is_data_encoding(obj)) {
+    if (!is_obj_encoding(obj)) {
 	return -1;
     }
     return check_encoding(RDATA(obj)->data);
@@ -1143,7 +1144,7 @@ static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
     int idx;
-    if (RB_TYPE_P(enc, T_DATA) && is_data_encoding(enc))
+    if (is_obj_encoding(enc))
 	return enc;
     idx = str_to_encindex(enc);
     if (idx == UNSPECIFIED_ENCODING) return Qnil;
