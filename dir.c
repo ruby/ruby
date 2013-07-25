@@ -2126,7 +2126,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
     const char *u = 0;
 
     rb_check_arity(argc, 0, 1);
-    user = (argc > 0) argv[0] : Qnil;
+    user = (argc > 0) ? argv[0] : Qnil;
     if (!NIL_P(user)) {
 	SafeStringValue(user);
 	rb_must_asciicompat(user);
