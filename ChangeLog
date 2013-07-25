@@ -1,3 +1,8 @@
+Fri Jul 26 00:38:58 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.0.6. [ruby-core:56160]
+	  [Backport #8682]
+
 Wed Jul 24 22:35:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (find_proxy): raise BadURIError if the URI is

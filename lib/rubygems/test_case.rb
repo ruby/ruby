@@ -1,5 +1,11 @@
 # TODO: $SAFE = 1
 
+begin
+  gem 'minitest', '~> 4.0'
+rescue NoMethodError
+  # for ruby tests
+end
+
 if defined? Gem::QuickLoader
   Gem::QuickLoader.load_full_rubygems_library
 else

@@ -27,7 +27,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      result =
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+
+      assert_same result, output
     end
 
     assert_match(/^#{Gem.ruby} extconf.rb/, output[0])

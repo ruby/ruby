@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'rubygems/user_interaction'
+require 'thread'
 require 'uri'
 require 'resolv'
 
@@ -72,6 +73,7 @@ class Gem::RemoteFetcher
     Socket.do_not_reverse_lookup = true
 
     @connections = {}
+    @connections_mutex = Mutex.new
     @requests = Hash.new 0
     @proxy_uri =
       case proxy
@@ -391,8 +393,11 @@ class Gem::RemoteFetcher
     end
 
     connection_id = [Thread.current.object_id, *net_http_args].join ':'
-    @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
-    connection = @connections[connection_id]
+
+    connection = @connections_mutex.synchronize do
+      @connections[connection_id] ||= Net::HTTP.new(*net_http_args)
+      @connections[connection_id]
+    end
 
     if https?(uri) and not connection.started? then
       configure_connection_for_https(connection)

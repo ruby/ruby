@@ -14,7 +14,7 @@ class Gem::Commands::QueryCommand < Gem::Command
                  summary = 'Query gem information in local or remote repositories')
     super name, summary,
          :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => false, :version => Gem::Requirement.default
+         :installed => nil, :version => Gem::Requirement.default
 
     add_option('-i', '--[no-]installed',
                'Check for installed gem') do |value, options|
@@ -67,15 +67,20 @@ class Gem::Commands::QueryCommand < Gem::Command
     name = options[:name]
     prerelease = options[:prerelease]
 
-    if options[:installed] then
+    unless options[:installed].nil? then
       if name.source.empty? then
         alert_error "You must specify a gem name"
         exit_code |= 4
-      elsif installed? name, options[:version] then
-        say "true"
       else
-        say "false"
-        exit_code |= 1
+        installed = installed? name, options[:version]
+        installed = !installed unless options[:installed]
+
+        if installed then
+          say "true"
+        else
+          say "false"
+          exit_code |= 1
+        end
       end
 
       terminate_interaction exit_code
