@@ -1,3 +1,8 @@
+Thu Jul 25 16:17:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* encoding.c (check_encoding): Check T_DATA or not.
+	  is_data_encoding(obj) assumes that `obj' is T_DATA.
+
 Thu Jul 25 13:06:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_s_home): use rb_home_dir_of and rb_default_home_dir.

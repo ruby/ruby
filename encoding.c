@@ -121,7 +121,7 @@ check_encoding(rb_encoding *enc)
 static int
 enc_check_encoding(VALUE obj)
 {
-    if (!is_data_encoding(obj)) {
+    if (!RB_TYPE_P(obj, T_DATA) || !is_data_encoding(obj)) {
 	return -1;
     }
     return check_encoding(RDATA(obj)->data);
