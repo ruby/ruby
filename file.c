@@ -2990,6 +2990,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 	else {
 	    s = nextdirsep(b = s, fend, enc);
+	    b++; /* b[0] is '~' */
 	    userlen = s - b;
 	    BUFCHECK(bdiff + userlen >= buflen);
 	    memcpy(p, b, userlen);
