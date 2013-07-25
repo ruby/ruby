@@ -217,4 +217,26 @@ class TestDir < Test::Unit::TestCase
     bug8597 = '[ruby-core:55764] [Bug #8597]'
     assert_empty(Dir.glob(File.join(@root, "<")), bug8597)
   end
+
+  def test_home
+    env_home = ENV["HOME"]
+    env_logdir = ENV["LOGDIR"]
+    ENV.delete("HOME")
+    ENV.delete("LOGDIR")
+
+    assert_raise(ArgumentError) { Dir.home }
+    assert_raise(ArgumentError) { Dir.home("") }
+    ENV["HOME"] = @nodir
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(@nodir, Dir.home)
+      assert_equal(@nodir, Dir.home(""))
+    }
+    %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
+      assert_raise_with_message(ArgumentError, /#{user}/) {Dir.home(user)}
+    end
+  ensure
+    ENV["HOME"] = env_home
+    ENV["LOGDIR"] = env_logdir
+  end
+
 end

@@ -2885,10 +2885,9 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
     buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
-VALUE
-rb_home_dir(const char *user, VALUE result)
+static VALUE
+copy_home_path(VALUE result, const char *dir)
 {
-    const char *dir;
     char *buf;
 #if defined DOSISH || defined __CYGWIN__
     char *p, *bend;
@@ -2896,29 +2895,9 @@ rb_home_dir(const char *user, VALUE result)
     long dirlen;
     rb_encoding *enc;
 
-    if (!user || !*user) {
-	if (!(dir = getenv("HOME"))) {
-	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
-	}
-	dirlen = strlen(dir);
-	rb_str_resize(result, dirlen);
-	memcpy(buf = RSTRING_PTR(result), dir, dirlen);
-    }
-    else {
-#ifdef HAVE_PWD_H
-	struct passwd *pwPtr = getpwnam(user);
-	if (!pwPtr) {
-	    endpwent();
-	    return Qnil;
-	}
-	dirlen = strlen(pwPtr->pw_dir);
-	rb_str_resize(result, dirlen);
-	memcpy(buf = RSTRING_PTR(result), pwPtr->pw_dir, dirlen + 1);
-	endpwent();
-#else
-	return Qnil;
-#endif
-    }
+    dirlen = strlen(dir);
+    rb_str_resize(result, dirlen);
+    memcpy(buf = RSTRING_PTR(result), dir, dirlen);
     enc = rb_filesystem_encoding();
     rb_enc_associate(result, enc);
 #if defined DOSISH || defined __CYGWIN__
@@ -2929,6 +2908,33 @@ rb_home_dir(const char *user, VALUE result)
     }
 #endif
     return result;
+}
+
+VALUE
+rb_home_dir_of(VALUE user, VALUE result)
+{
+#ifdef HAVE_PWD_H
+    struct passwd *pwPtr = getpwnam(RSTRING_PTR(user));
+    if (!pwPtr) {
+	endpwent();
+#endif
+	rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
+#ifdef HAVE_PWD_H
+    }
+    copy_home_path(result, pwPtr->pw_dir);
+    endpwent();
+#endif
+    return result;
+}
+
+VALUE
+rb_default_home_dir(VALUE result)
+{
+    const char *dir = getenv("HOME");
+    if (!dir) {
+	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+    }
+    return copy_home_path(result, dir);
 }
 
 #ifndef _WIN32
@@ -2980,6 +2986,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    b = 0;
 	    rb_str_set_len(result, 0);
 	    if (*++s) ++s;
+	    rb_default_home_dir(result);
 	}
 	else {
 	    s = nextdirsep(b = s, fend, enc);
@@ -2987,12 +2994,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    BUFCHECK(bdiff + userlen >= buflen);
 	    memcpy(p, b, userlen);
 	    rb_str_set_len(result, userlen);
+	    rb_enc_associate(result, enc);
+	    rb_home_dir_of(result, result);
 	    buf = p + 1;
 	    p += userlen;
-	}
-	if (NIL_P(rb_home_dir(buf, result))) {
-	    rb_enc_raise(enc, rb_eArgError, "%.0"PRIsVALUE"user %s doesn't exist", fname,
-			 buf);
 	}
 	if (!rb_is_absolute_path(RSTRING_PTR(result))) {
 	    if (userlen) {

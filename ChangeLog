@@ -1,3 +1,14 @@
+Thu Jul 25 13:06:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_s_home): use rb_home_dir_of and rb_default_home_dir.
+
+	* file.c (rb_home_dir_of): split from rb_home_dir() for the home
+	  directry of the given user, and the user name is a VALUE, not a bare
+	  pointer.  should raise if the user does not exist.
+
+	* file.c (rb_default_home_dir): split from rb_home_dir() for the home
+	  directry of the current user.
+
 Thu Jul 25 12:32:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/openssl/ossl.c: support additional three thread synchronization

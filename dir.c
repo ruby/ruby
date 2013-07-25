@@ -2125,12 +2125,18 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
     VALUE user;
     const char *u = 0;
 
-    rb_scan_args(argc, argv, "01", &user);
+    rb_check_arity(argc, 0, 1);
+    user = (argc > 0) argv[0] : Qnil;
     if (!NIL_P(user)) {
 	SafeStringValue(user);
+	rb_must_asciicompat(user);
 	u = StringValueCStr(user);
+	if (*u) {
+	    return rb_home_dir_of(user, rb_str_new(0, 0));
+	}
     }
-    return rb_home_dir(u, rb_str_new(0, 0));
+    return rb_default_home_dir(rb_str_new(0, 0));
+
 }
 
 #if 0
