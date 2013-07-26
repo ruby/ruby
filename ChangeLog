@@ -1,3 +1,9 @@
+Fri Jul 26 11:42:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (f_round_common): Rational is expected to be returned by
+	  Rational#*, but mathn.rb breaks that assumption.  [ruby-core:56177]
+	  [Bug #8687]
+
 Fri Jul 26 01:37:45 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h: check defined(USE_RGENGC_LOGGING_WB_UNPROTECT)
