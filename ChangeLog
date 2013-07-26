@@ -1,3 +1,11 @@
+Fri Jul 26 19:25:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_exec.h, tool/instruction.rb: not an error, but a BUG if stack
+	  overflow checking failed just before/after the beginning of an
+	  instruction. It should be treated as a BUG.
+	  Please tell us if your code cause BUG with this problem.
+	  This check will removed soon (for performance).
+
 Fri Jul 26 18:30:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_memcpy): cast to int to suppress a warning.

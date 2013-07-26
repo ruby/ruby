@@ -692,7 +692,7 @@ class RubyVM
 
       n = 0
       push_ba.each {|pushs| n += pushs.length}
-      commit "  CHECK_VM_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
       push_ba.each{|pushs|
         pushs.each{|r|
           commit "  PUSH(SCREG(#{r}));"
@@ -842,7 +842,7 @@ class RubyVM
       each_footer_stack_val(insn){|v|
         n += 1 unless v[2]
       }
-      commit "  CHECK_VM_STACK_OVERFLOW(REG_CFP, #{n});" if n > 0
+      commit "  CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, #{n});" if n > 0
       each_footer_stack_val(insn){|v|
         if v[2]
           commit "  SCREG(#{v[2]}) = #{v[1]};"
