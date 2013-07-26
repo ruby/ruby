@@ -61,8 +61,12 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_nonascii_path
     bug8165 = '[ruby-core:53733] [Bug #8165]'
+    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? 'filesystem' : 'UTF-8'
+    assert_require_nonascii_path(encoding, bug8165)
+  end
+
+  def assert_require_nonascii_path(encoding, bug)
     Dir.mktmpdir {|tmp|
-      encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? 'filesystem' : 'UTF-8'
       dir = "\u3042" * 5
       begin
         require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
@@ -73,7 +77,7 @@ class TestRequire < Test::Unit::TestCase
       open(require_path, "wb") {}
       assert_separately(%w[--disable=gems], <<-INPUT)
         # leave paths for require encoding objects
-        bug = "#{bug8165} require #{encoding} path"
+        bug = "#{bug} require #{encoding} path"
         require_path = "#{require_path}"
         enc_path = Regexp.new(Regexp.escape(RUBY_PLATFORM))
         $:.replace([IO::NULL] + $:.reject {|path| enc_path !~ path})
