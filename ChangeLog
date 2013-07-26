@@ -1,3 +1,9 @@
+Fri Jul 26 17:49:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (fix_string_encoding): fix target encoding.  the
+	  parameter `encoding' is not the target encoding but the original
+	  encoding.
+
 Fri Jul 26 14:05:19 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/fiddle/*: [DOC] More doc on dlopen and RTLD_DEFAULT from r42184

@@ -235,7 +235,7 @@ code_page(rb_encoding *enc)
     return INVALID_CODE_PAGE;
 }
 
-#define fix_string_encoding(str, encoding) rb_str_conv_enc((str), NULL, (encoding))
+#define fix_string_encoding(str, encoding) rb_str_conv_enc((str), (encoding), rb_utf8_encoding())
 
 /*
   Replace the last part of the path to long name.
