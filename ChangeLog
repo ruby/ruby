@@ -1,4 +1,14 @@
-Fri Jul 26 13:01:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 26 13:04:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_load_internal): use rb_load_file_str() to keep path
+	  encoding.
+
+	* load.c (rb_require_safe): search in OS path encoding for Windows.
+
+	* ruby.c (rb_load_file_str): load file with keeping path encoding.
+
+	* win32/file.c (rb_file_load_ok): use WCHAR type API assuming incoming
+	  path is encoded in UTF-8.  [ruby-core:56136] [Bug #8676]
 
 	* file.c (rb_str_encode_ospath): simplify using rb_str_conv_enc().
 

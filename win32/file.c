@@ -681,16 +681,22 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 int
 rb_file_load_ok(const char *path)
 {
+    DWORD attr;
     int ret = 1;
-    DWORD attr = GetFileAttributes(path);
+    size_t len;
+    wchar_t* wpath;
+
+    convert_mb_to_wchar(path, &wpath, &len, CP_UTF8);
+
+    attr = GetFileAttributesW(wpath);
     if (attr == INVALID_FILE_ATTRIBUTES ||
-	attr & FILE_ATTRIBUTE_DIRECTORY) {
+	(attr & FILE_ATTRIBUTE_DIRECTORY)) {
 	ret = 0;
     }
     else {
-	HANDLE h = CreateFile(path, GENERIC_READ,
-			      FILE_SHARE_READ | FILE_SHARE_WRITE,
-			      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE h = CreateFileW(wpath, GENERIC_READ,
+			       FILE_SHARE_READ | FILE_SHARE_WRITE,
+			       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (h != INVALID_HANDLE_VALUE) {
 	    CloseHandle(h);
 	}
@@ -698,6 +704,7 @@ rb_file_load_ok(const char *path)
 	    ret = 0;
 	}
     }
+    xfree(wpath);
     return ret;
 }
 

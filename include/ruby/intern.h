@@ -644,6 +644,7 @@ int rb_reg_options(VALUE);
 RUBY_EXTERN VALUE rb_argv0;
 VALUE rb_get_argv(void);
 void *rb_load_file(const char*);
+void *rb_load_file_str(VALUE);
 /* signal.c */
 VALUE rb_f_kill(int, VALUE*);
 #ifdef POSIX_SIGNAL

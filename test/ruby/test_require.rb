@@ -61,8 +61,15 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_nonascii_path
     bug8165 = '[ruby-core:53733] [Bug #8165]'
-    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? 'filesystem' : 'UTF-8'
+    encoding = 'filesystem'
     assert_require_nonascii_path(encoding, bug8165)
+  end
+
+  def test_require_nonascii_path_utf8
+    bug8676 = '[ruby-core:56136] [Bug #8676]'
+    encoding = Encoding::UTF_8
+    return if Encoding.find('filesystem') == encoding
+    assert_require_nonascii_path(encoding, bug8676)
   end
 
   def assert_require_nonascii_path(encoding, bug)

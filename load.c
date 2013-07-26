@@ -591,7 +591,7 @@ rb_load_internal(VALUE fname, int wrap)
 	VALUE iseq;
 
 	th->mild_compile_error++;
-	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
+	node = (NODE *)rb_load_file_str(fname);
 	loaded = TRUE;
 	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), Qfalse);
 	th->mild_compile_error--;
@@ -941,7 +941,8 @@ rb_require_safe(VALUE fname, int safe)
 					   rb_sourceline());
 	}
 
-	found = search_required(fname, &path, safe);
+	path = rb_str_encode_ospath(fname);
+	found = search_required(path, &path, safe);
 
 	if (RUBY_DTRACE_FIND_REQUIRE_RETURN_ENABLED()) {
 	    RUBY_DTRACE_FIND_REQUIRE_RETURN(StringValuePtr(fname),

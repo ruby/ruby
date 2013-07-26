@@ -1768,8 +1768,14 @@ load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
 void *
 rb_load_file(const char *fname)
 {
-    struct cmdline_options opt;
     VALUE fname_v = rb_str_new_cstr(fname);
+    return rb_load_file_str(fname_v);
+}
+
+void *
+rb_load_file_str(VALUE fname_v)
+{
+    struct cmdline_options opt;
 
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
