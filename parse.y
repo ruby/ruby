@@ -7542,14 +7542,18 @@ parser_yylex(struct parser_params *parser)
 		    if (seen_e) {
 			goto decode_num;
 		    }
-		    tokadd(c);
-		    seen_e++;
-		    is_float++;
 		    nondigit = c;
 		    c = nextc();
-		    if (c != '-' && c != '+') continue;
+		    if (c != '-' && c != '+' && !ISDIGIT(c)) {
+			pushback(c);
+			nondigit = 0;
+			goto decode_num;
+		    }
+		    tokadd(nondigit);
+		    seen_e++;
+		    is_float++;
 		    tokadd(c);
-		    nondigit = c;
+		    nondigit = (c == '-' || c == '+') ? c : 0;
 		    break;
 
 		  case '_':	/* `_' in number just ignored */

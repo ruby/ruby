@@ -363,6 +363,13 @@ eom
     assert_constant_reassignment_toplevel("11",    "+",  %w[53], already)
   end
 
+  def test_integer_suffix
+    ["1if true", "begin 1end"].each do |src|
+      assert_valid_syntax(src)
+      assert_equal(1, eval(src), src)
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

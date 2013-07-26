@@ -1,3 +1,9 @@
+Fri Jul 26 23:05:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): separate numeric literal from succeeding
+	  token, and treat 'e' as floating point number only if followed by
+	  exponent part.
+
 Fri Jul 26 22:14:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_exec.h (CHECK_VM_STACK_OVERFLOW_FOR_INSN): surround with
