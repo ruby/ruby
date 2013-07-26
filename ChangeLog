@@ -1,3 +1,9 @@
+Fri Jul 26 18:21:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_memcpy): try to enable optimization.
+	  At least on my environments, I don't see any errors
+	  with many trials. Please tell us if you find any GC bugs.
+
 Fri Jul 26 17:49:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (fix_string_encoding): fix target encoding.  the

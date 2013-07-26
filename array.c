@@ -69,8 +69,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 {
 #if 1
     if (OBJ_PROMOTED(ary)) {
-	if (0 /* disalbe now, because it cause mysterious error. */
-	    && argc > 32 /* 32 is magic number */) {
+	if (argc > (128/sizeof(VALUE)) /* is magic number (cache line size) */) {
 	    rb_gc_writebarrier_remember_promoted(ary);
 	    RARRAY_PTR_USE(ary, ptr, {
 		MEMCPY(ptr+beg, argv, VALUE, argc);
