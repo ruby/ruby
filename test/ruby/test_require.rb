@@ -78,17 +78,21 @@ class TestRequire < Test::Unit::TestCase
       end
       Dir.mkdir(File.dirname(require_path))
       open(require_path, "wb") {}
-      assert_separately(%w[--disable=gems], <<-INPUT)
+      begin
+        load_path = $:.dup
+        features = $".dup
         # leave paths for require encoding objects
         bug = "#{bug} require #{encoding} path"
         require_path = "#{require_path}"
-        enc_path = Regexp.new(Regexp.escape(RUBY_PLATFORM))
-        $:.replace([IO::NULL] + $:.reject {|path| enc_path !~ path})
+        $:.clear
         assert_nothing_raised(LoadError, bug) {
           assert(require(require_path), bug)
           assert(!require(require_path), bug)
         }
-      INPUT
+      ensure
+        $:.replace(load_path)
+        $".replace(features)
+      end
     }
   end
 
