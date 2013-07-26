@@ -1,3 +1,8 @@
+Fri Jul 26 13:08:53 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/fiddle/lib/fiddle.rb: [DOC] Document Fiddle.dlopen(nil)
+	* ext/fiddle/handle.c: [DOC] Document Fiddle::Handle.new(nil)
+
 Fri Jul 26 13:04:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_load_internal): use rb_load_file_str() to keep path

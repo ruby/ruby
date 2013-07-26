@@ -32,6 +32,11 @@ module Fiddle
   # Creates a new handler that opens +library+, and returns an instance of
   # Fiddle::Handle.
   #
+  # If +nil+ is given for the +library+, Fiddle::Handle::DEFAULT is used, which
+  # usually means +libc+.
+  #
+  #   libc = Fiddle.dlopen(nil)
+  #
   # See Fiddle::Handle.new for more.
   def dlopen library
     Fiddle::Handle.new library

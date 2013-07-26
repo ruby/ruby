@@ -113,10 +113,15 @@ predefined_fiddle_handle(void *handle)
 
 /*
  * call-seq:
- *    new(lib = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
+ *    new(library = nil, flags = Fiddle::RTLD_LAZY | Fiddle::RTLD_GLOBAL)
  *
- * Create a new handler that opens library named +lib+ with +flags+.  If no
- * library is specified, RTLD_DEFAULT is used.
+ * Create a new handler that opens +library+ with +flags+.
+ *
+ * If no +library+ is specified or +nil+ is given, RTLD_DEFAULT is used, which
+ * usually means +libc+.
+ *
+ *	libc = Fiddle::Handle.new
+ *
  */
 static VALUE
 rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
