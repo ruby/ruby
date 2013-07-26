@@ -3413,13 +3413,13 @@ ip_ruby_eval(clientData, interp, argc, argv)
     if (argc != 2) {
 #if 0
         rb_raise(rb_eArgError,
-                 "wrong number of arguments (%d for 1)", argc - 1);
+                 "wrong number of arguments (%d instead of 1)", argc - 1);
 #else
         char buf[sizeof(int)*8 + 1];
         Tcl_ResetResult(interp);
         sprintf(buf, "%d", argc-1);
         Tcl_AppendResult(interp, "wrong number of arguments (",
-                         buf, " for 1)", (char *)NULL);
+                         buf, " instead of 1)", (char *)NULL);
         rbtk_pending_exception = rb_exc_new2(rb_eArgError,
                                              Tcl_GetStringResult(interp));
         return TCL_ERROR;

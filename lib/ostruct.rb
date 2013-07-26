@@ -178,7 +178,7 @@ class OpenStruct
     len = args.length
     if mname.chomp!('=')
       if len != 1
-        raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
+        raise ArgumentError, "wrong number of arguments (#{len} instead of 1)", caller(1)
       end
       modifiable[new_ostruct_member(mname)] = args[0]
     elsif len == 0
