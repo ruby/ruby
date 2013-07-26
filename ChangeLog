@@ -1,3 +1,12 @@
+Fri Jul 26 23:14:31 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/streamparser.rb
+	  (REXML::Parsers::StreamParser#parse): Add "entity" event support to
+	  listener. [Bug #8689] [ruby-dev:47542]
+	  Reported by Ippei Obayashi.
+	* test/rexml/test_stream.rb (StreamTester#entity): Add a test for
+	  the above case.
+
 Fri Jul 26 23:05:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): separate numeric literal from succeeding
