@@ -33,9 +33,13 @@ module Fiddle
   # Fiddle::Handle.
   #
   # If +nil+ is given for the +library+, Fiddle::Handle::DEFAULT is used, which
-  # usually means +libc+.
+  # is the equivalent to RTLD_DEFAULT. See <code>man 3 dlopen</code> for more.
   #
-  #   libc = Fiddle.dlopen(nil)
+  #   lib = Fiddle.dlopen(nil)
+  #
+  # The default is dependent on OS, and provide a handle for all libraries
+  # already loaded. For example, in most cases you can use this to access
+  # +libc+ functions, or ruby functions like +rb_str_new+.
   #
   # See Fiddle::Handle.new for more.
   def dlopen library
