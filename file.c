@@ -229,15 +229,12 @@ rb_str_encode_ospath(VALUE path)
 {
 #ifdef _WIN32
     rb_encoding *enc = rb_enc_get(path);
-    if (enc != rb_ascii8bit_encoding()) {
-	rb_encoding *utf8 = rb_utf8_encoding();
-	if (enc != utf8)
-	    path = rb_str_encode(path, rb_enc_from_encoding(utf8), 0, Qnil);
+    rb_encoding *utf8 = rb_utf8_encoding();
+    if (enc == rb_ascii8bit_encoding()) {
+	enc = rb_filesystem_encoding();
     }
-    else if (RSTRING_LEN(path) > 0) {
-	path = rb_str_dup(path);
-	rb_enc_associate(path, rb_filesystem_encoding());
-	path = rb_str_encode(path, rb_enc_from_encoding(rb_utf8_encoding()), 0, Qnil);
+    if (enc != utf8) {
+	path = rb_str_conv_enc(path, enc, utf8);
     }
 #endif
     return path;

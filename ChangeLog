@@ -1,4 +1,6 @@
-Fri Jul 26 13:01:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 26 13:01:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_encode_ospath): simplify using rb_str_conv_enc().
 
 	* win32/file.c (fix_string_encoding): simplify with rb_str_conv_enc().
 
