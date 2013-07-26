@@ -1,3 +1,8 @@
+Fri Jul 26 23:18:13 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS: Add a new feature that REXML::Parsers::StreamParser
+	  supports "entity" event.
+
 Fri Jul 26 23:14:31 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/streamparser.rb

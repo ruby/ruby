@@ -134,6 +134,9 @@ with all sufficient information, see the ChangeLog file.
       methods. You should use XMLRPC::Client methods for changing major
       HTTP client options instead of XMLRPC::Client#http.
 
+* REXML::Parsers::StreamParser
+  * Supports "entity" event.
+
 * REXML::Text
   * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
   * REXML::Text#<< supports not "raw" mode.
