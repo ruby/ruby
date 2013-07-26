@@ -1,6 +1,6 @@
 Fri Jul 26 14:05:19 2013  Zachary Scott  <e@zzak.io>
 
-	* ext/fiddle/*: [DOC] More doc on dlopen and RTLD_DEFAULT from r42186
+	* ext/fiddle/*: [DOC] More doc on dlopen and RTLD_DEFAULT from r42184
 
 Fri Jul 26 13:08:53 2013  Zachary Scott  <e@zzak.io>
 
