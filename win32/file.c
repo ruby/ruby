@@ -37,9 +37,6 @@ convert_mb_to_wchar(const char *str, wchar_t **wstr, size_t *wstr_len, UINT code
 {
     size_t len;
 
-    if (!str)
-	return;
-
     len = MultiByteToWideChar(code_page, 0, str, -1, NULL, 0) + 1;
     *wstr = (wchar_t *)xmalloc(len * sizeof(wchar_t));
 
