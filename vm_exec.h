@@ -169,9 +169,12 @@ default:                        \
 #endif
 
 #define SCREG(r) (reg_##r)
-#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) \
-  if ((VALUE *)((char *)(((VALUE *)(cfp)->sp) + (margin)) + sizeof(rb_control_frame_t)) >= ((VALUE *)(cfp))) { \
-      rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. Please contact ruby-core/dev with your (a part of) script. This check will be removed soon."); \
-  } while (0);
+#define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin) do { \
+    if (((rb_control_frame_t *)(((cfp)->sp) + (margin)) + 1) >= (cfp)) { \
+	rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. " \
+	       "Please contact ruby-core/dev with your (a part of) script. " \
+	       "This check will be removed soon."); \
+    } \
+} while (0)
 
 #endif /* RUBY_VM_EXEC_H */
