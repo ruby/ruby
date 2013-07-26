@@ -317,7 +317,7 @@ get_user_from_path(wchar_t **wpath, int offset, UINT cp, UINT path_cp, rb_encodi
     size_t size;
 
     while (!IS_DIR_SEPARATOR_P(*pos) && *pos != '\0')
-     pos++;
+	pos++;
 
     *pos = '\0';
     convert_wchar_to_mb(wuser, &user, &size, cp);
