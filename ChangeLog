@@ -1,3 +1,7 @@
+Fri Jul 26 18:30:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_memcpy): cast to int to suppress a warning.
+
 Fri Jul 26 18:21:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_memcpy): try to enable optimization.
