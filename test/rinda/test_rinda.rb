@@ -682,7 +682,7 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast_hops
-    prepare_ipv6(@rf)
+    ifaddr = prepare_ipv6(@rf)
     @rf.multicast_hops = 2
     begin
       v6mc = @rf.make_socket("ff02::1")
