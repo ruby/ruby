@@ -1,3 +1,8 @@
+Fri Jul 26 13:00:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (convert_mb_to_wchar): use bare pointer instead of
+	  VALUE, and remove useless argument.
+
 Fri Jul 26 11:42:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rational.c (f_round_common): Rational is expected to be returned by
