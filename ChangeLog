@@ -1,4 +1,6 @@
-Fri Jul 26 13:00:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 26 13:01:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (fix_string_encoding): simplify with rb_str_conv_enc().
 
 	* win32/file.c (convert_mb_to_wchar): use bare pointer instead of
 	  VALUE, and remove useless argument.

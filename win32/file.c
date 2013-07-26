@@ -235,16 +235,7 @@ code_page(rb_encoding *enc)
     return INVALID_CODE_PAGE;
 }
 
-static inline VALUE
-fix_string_encoding(VALUE str, rb_encoding *encoding)
-{
-    VALUE result, tmp;
-
-    tmp = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), encoding);
-    result = rb_str_encode(tmp, rb_enc_from_encoding(rb_utf8_encoding()), 0, Qnil);
-
-    return result;
-}
+#define fix_string_encoding(str, encoding) rb_str_conv_enc((str), NULL, (encoding))
 
 /*
   Replace the last part of the path to long name.
