@@ -116,6 +116,9 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * StringScanner#[] supports named captures.
 
+* Syslog::Logger
+  * Added facility.
+
 * Tempfile
   * New methods:
     * Tempfile.create

@@ -1,3 +1,9 @@
+Fri Jul 26 20:12:07 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/lib/syslog/logger.rb (Syslog::Logger): Add facility
+	  to Syslog::Logger. [Fixes GH-305] patch by Max Shytikov
+	  https://github.com/ruby/ruby/pull/305
+
 Fri Jul 26 19:25:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.h, tool/instruction.rb: not an error, but a BUG if stack
