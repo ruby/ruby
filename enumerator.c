@@ -336,6 +336,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 1);
+	rb_check_frozen(obj);
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
 	if (argc) {
             if (NIL_P(argv[0]) || rb_obj_is_proc(argv[0]) ||
@@ -350,6 +351,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
     }
     else {
 	rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+	rb_check_frozen(obj);
 	rb_warn("Enumerator.new without a block is deprecated; use Object#to_enum");
 	recv = *argv++;
 	if (--argc) {
