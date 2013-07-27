@@ -37,7 +37,7 @@ src
       wait = r.readpartial(1)
       if wait != "!"
         wait << r.readpartial(1000)
-        raise wait
+        raise "TERM: '#{ENV["TERM"]}'; #{wait}"
       end
       if input
         w.print(input)
