@@ -56,27 +56,6 @@ extern "C" {
 #define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 #define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 
-/* "MS" in MSWORD and MSBYTE means "most significant" */
-/* "LS" in LSWORD and LSBYTE means "least significant" */
-/* For rb_integer_pack and rb_integer_unpack: */
-#define INTEGER_PACK_MSWORD_FIRST       0x01
-#define INTEGER_PACK_LSWORD_FIRST       0x02
-#define INTEGER_PACK_MSBYTE_FIRST       0x10
-#define INTEGER_PACK_LSBYTE_FIRST       0x20
-#define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
-#define INTEGER_PACK_2COMP              0x80
-#define INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION     0x400
-/* For rb_integer_unpack: */
-#define INTEGER_PACK_FORCE_BIGNUM       0x100
-#define INTEGER_PACK_NEGATIVE           0x200
-/* Combinations: */
-#define INTEGER_PACK_LITTLE_ENDIAN \
-    (INTEGER_PACK_LSWORD_FIRST | \
-     INTEGER_PACK_LSBYTE_FIRST)
-#define INTEGER_PACK_BIG_ENDIAN \
-    (INTEGER_PACK_MSWORD_FIRST | \
-     INTEGER_PACK_MSBYTE_FIRST)
-
 #ifndef swap16
 # define swap16(x)      ((uint16_t)((((x)&0xFF)<<8) | (((x)>>8)&0xFF)))
 #endif
@@ -517,8 +496,6 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
 /* bignum.c */
-int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
-VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_big_mul_normal(VALUE x, VALUE y);
 VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);

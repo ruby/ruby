@@ -1,3 +1,10 @@
+Sun Jul 28 00:07:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_integer_pack): Declaration moved from
+	  internal.h.
+	  (rb_integer_unpack): Ditto.
+	  [ruby-core:42813] [Feature #6065]
+
 Fri Jul 26 23:18:13 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: Add a new feature that REXML::Parsers::StreamParser
