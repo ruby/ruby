@@ -102,7 +102,7 @@ Thu Jul 25 17:53:18 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Thu Jul 25 17:49:42 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* re.c (rb_reg_to_s): convert closing parenthes to the target encoding
+	* re.c (rb_reg_to_s): convert closing parenthesis to the target encoding
 	  if it is ASCII incompatible encoding. [ruby-core:56063] [Bug #8650]
 
 Thu Jul 25 17:21:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
