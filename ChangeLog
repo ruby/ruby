@@ -1,3 +1,9 @@
+Sun Jul 28 00:35:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_size): Return the bignum "bytewise" size.
+	  [ruby-core:55578] [Feature #8553]
+	  This is accepted by matz on DevelopersMeeting20130727Japan.
+
 Sun Jul 28 00:07:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_integer_pack): Declaration moved from

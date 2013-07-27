@@ -6284,7 +6284,7 @@ rb_big_abs(VALUE x)
 static VALUE
 rb_big_size(VALUE big)
 {
-    return LONG2FIX(RBIGNUM_LEN(big)*SIZEOF_BDIGITS);
+    return SIZET2NUM(BIGSIZE(big));
 }
 
 /*
