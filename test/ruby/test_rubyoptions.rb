@@ -477,7 +477,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
-  def test_segv_test
+  module SEGVTest
     opts = {}
     if /mswin|mingw/ =~ RUBY_PLATFORM
       additional = '[\s\w\.\']*'
@@ -485,7 +485,9 @@ class TestRubyOptions < Test::Unit::TestCase
       opts[:rlimit_core] = 0
       additional = ""
     end
-    expected_stderr =
+    ExecOptions = opts.freeze
+
+    ExpectedStderr =
       %r(\A
       -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault\n
       #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
@@ -511,7 +513,17 @@ class TestRubyOptions < Test::Unit::TestCase
       (?:#{additional})
       \z
       )x
+  end
+
+  def test_segv_test
+    opts = SEGVTest::ExecOptions.dup
+    expected_stderr = SEGVTest::ExpectedStderr
+
     assert_in_out_err(["--disable-gems", "-e", "Process.kill :SEGV, $$"], "", [], expected_stderr, nil, opts)
+  end
+
+  def test_segv_loaded_features
+    opts = SEGVTest::ExecOptions.dup
 
     bug7402 = '[ruby-core:49573]'
     status = assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
@@ -521,6 +533,11 @@ class TestRubyOptions < Test::Unit::TestCase
                                nil,
                                opts)
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")
+  end
+
+  def test_segv_setproctitle
+    opts = SEGVTest::ExecOptions.dup
+    expected_stderr = SEGVTest::ExpectedStderr
 
     bug7597 = '[ruby-dev:46786]'
     Tempfile.create(["test_ruby_test_bug7597", ".rb"]) {|t|
