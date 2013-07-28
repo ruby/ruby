@@ -5399,6 +5399,27 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	if (divp) *divp = z;
 	return Qnil;
     }
+    if (nx == 2 && ny == 2) {
+        BDIGIT_DBL x0 = xds[0] | BIGUP(xds[1]);
+        BDIGIT_DBL y0 = yds[0] | BIGUP(yds[1]);
+        BDIGIT_DBL q0 = x0 / y0;
+        BDIGIT_DBL r0 = x0 % y0;
+        if (divp) {
+            z = bignew(bdigit_roomof(sizeof(BDIGIT_DBL)), RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+            zds = BDIGITS(z);
+            zds[0] = BIGLO(q0);
+            zds[1] = BIGLO(BIGDN(q0));
+            *divp = z;
+        }
+        if (modp) {
+            z = bignew(bdigit_roomof(sizeof(BDIGIT_DBL)), RBIGNUM_SIGN(x));
+            zds = BDIGITS(z);
+            zds[0] = BIGLO(r0);
+            zds[1] = BIGLO(BIGDN(r0));
+            *modp = z;
+        }
+        return Qnil;
+    }
 
     if (BDIGIT_MSB(yds[ny-1]) == 0) {
         /* Make yds modifiable. */

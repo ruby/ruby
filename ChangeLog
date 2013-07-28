@@ -1,3 +1,8 @@
+Mon Jul 29 00:11:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Specialized implementation added for
+	  nx == 2 && ny == 2
+
 Sun Jul 28 20:28:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_getpartial): use rb_str_locktmp_ensure().
