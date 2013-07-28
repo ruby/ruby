@@ -1,3 +1,12 @@
+Sun Jul 28 20:28:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_getpartial): use rb_str_locktmp_ensure().
+	  [ruby-core:56121] [Bug #8669]
+
+	* io.c (rb_io_sysread): ditto.
+
+	* test/ruby/test_io.rb: add tests for above.
+
 Sun Jul 28 20:10:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): should make static libraries for extensions

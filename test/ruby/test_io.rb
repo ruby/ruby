@@ -2815,4 +2815,32 @@ End
   ensure
     t.kill
   end
+
+  def test_readpartial_unlocktmp_ensure
+    bug8669 = '[ruby-core:56121] [Bug #8669]'
+
+    str = ""
+    r, = IO.pipe
+    t = Thread.new { r.readpartial(4096, str) }
+    sleep 0.1 until t.stop?
+    t.raise
+    sleep 0.1 while t.alive?
+    assert_nothing_raised(RuntimeError, bug8669) { str.clear }
+  ensure
+    t.kill
+  end
+
+  def test_sysread_unlocktmp_ensure
+    bug8669 = '[ruby-core:56121] [Bug #8669]'
+
+    str = ""
+    r, = IO.pipe
+    t = Thread.new { r.sysread(4096, str) }
+    sleep 0.1 until t.stop?
+    t.raise
+    sleep 0.1 while t.alive?
+    assert_nothing_raised(RuntimeError, bug8669) { str.clear }
+  ensure
+    t.kill
+  end
 end
