@@ -1,3 +1,11 @@
+Sun Jul 28 13:04:39 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (interpret_seek_whence): support SEEK_DATA and SEEK_HOLE.
+	  These are whences for lseek(2) supported by Linux since version 3.1.
+	  [ruby-core:56123] [Feature #8671]
+
+	* test/ruby/test_io.rb: Add tests for above.
+
 Sun Jul 28 12:41:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (absint_numwords_generic): The char_bit variable changed

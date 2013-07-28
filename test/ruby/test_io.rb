@@ -1565,6 +1565,22 @@ class TestIO < Test::Unit::TestCase
         f.seek(2, IO::SEEK_CUR)
         assert_equal("r\nbaz\n", f.read)
       }
+
+      if defined?(IO::SEEK_DATA)
+        open(t.path) { |f|
+          assert_equal("foo\n", f.gets)
+          f.seek(0, IO::SEEK_DATA)
+          assert_equal("foo\nbar\nbaz\n", f.read)
+        }
+      end
+
+      if defined?(IO::SEEK_HOLE)
+        open(t.path) { |f|2
+          assert_equal("foo\n", f.gets)
+          f.seek(0, IO::SEEK_HOLE)
+          assert_equal("", f.read)
+        }
+      end
     }
   end
 
@@ -1585,6 +1601,22 @@ class TestIO < Test::Unit::TestCase
         f.seek(2, :CUR)
         assert_equal("r\nbaz\n", f.read)
       }
+
+      if defined?(IO::SEEK_DATA)
+        open(t.path) { |f|
+          assert_equal("foo\n", f.gets)
+          f.seek(0, :DATA)
+          assert_equal("foo\nbar\nbaz\n", f.read)
+        }
+      end
+
+      if defined?(IO::SEEK_HOLE)
+        open(t.path) { |f|
+          assert_equal("foo\n", f.gets)
+          f.seek(0, :HOLE)
+          assert_equal("", f.read)
+        }
+      end
     }
   end
 
