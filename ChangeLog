@@ -1,3 +1,9 @@
+Sun Jul 28 22:00:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (f_round_common): Rational is expected to be returned by
+	  Rational#*, but mathn.rb breaks that assumption.  [ruby-core:56177]
+	  [Bug #8687]
+
 Sun Jul 28 21:50:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_getpartial): use rb_str_locktmp_ensure().

@@ -1279,6 +1279,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 	return self;
     }
 
+    if (!k_rational_p(s)) {
+	s = f_rational_new_bang1(CLASS_OF(self), s);
+    }
+
     s = (*func)(s);
 
     s = f_div(f_rational_new_bang1(CLASS_OF(self), s), b);
