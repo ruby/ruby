@@ -127,15 +127,15 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
-typedef void (mulfunc_t)(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl);
+typedef void (mulfunc_t)(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl);
 
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
-static BDIGIT bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y);
-static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny);
+static BDIGIT bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, long nx, BDIGIT y);
+static void bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, const BDIGIT *xds, size_t nx, const BDIGIT *yds, size_t ny);
 
 static VALUE bigmul0(VALUE x, VALUE y);
-static void bary_mul_toom3(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
+static void bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 static VALUE bignew_1(VALUE klass, long len, int sign);
 static inline VALUE bigtrunc(VALUE x);
 
@@ -482,7 +482,7 @@ maxpow_in_bdigit(int base, int *exp_ret)
 }
 
 static BDIGIT
-bary_small_lshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift)
+bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 {
     size_t i;
     BDIGIT_DBL num = 0;
@@ -497,7 +497,7 @@ bary_small_lshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift)
 }
 
 static void
-bary_small_rshift(BDIGIT *zds, BDIGIT *xds, size_t n, int shift, int sign_bit)
+bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, int sign_bit)
 {
     BDIGIT_DBL num = 0;
     BDIGIT x;
@@ -1396,7 +1396,7 @@ bary_unpack(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwo
 }
 
 static int
-bary_subb(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int borrow)
+bary_subb(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, int borrow)
 {
     BDIGIT_DBL_SIGNED num;
     size_t i;
@@ -1447,7 +1447,7 @@ bary_subb(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn
 }
 
 static int
-bary_sub(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
+bary_sub(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
     return bary_subb(zds, zn, xds, xn, yds, yn, 0);
 }
@@ -1459,7 +1459,7 @@ bary_sub_one(BDIGIT *zds, size_t zn)
 }
 
 static int
-bary_addc(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int carry)
+bary_addc(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, int carry)
 {
     BDIGIT_DBL num;
     size_t i;
@@ -1468,7 +1468,7 @@ bary_addc(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn
     assert(yn <= zn);
 
     if (xn > yn) {
-	BDIGIT *tds;
+	const BDIGIT *tds;
 	tds = xds; xds = yds; yds = tds;
 	i = xn; xn = yn; yn = i;
     }
@@ -1505,7 +1505,7 @@ bary_addc(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn
 }
 
 static int
-bary_add(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn)
+bary_add(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
     return bary_addc(zds, zn, xds, xn, yds, yn, 0);
 }
@@ -1537,7 +1537,7 @@ bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
 }
 
 static int
-bary_muladd_1xN(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT *yds, size_t yl)
+bary_muladd_1xN(BDIGIT *zds, size_t zl, BDIGIT x, const BDIGIT *yds, size_t yl)
 {
     BDIGIT_DBL n;
     BDIGIT_DBL dd;
@@ -1572,7 +1572,7 @@ bary_muladd_1xN(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT *yds, size_t yl)
 }
 
 static BDIGIT_DBL_SIGNED
-bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
+bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
 {
     size_t i;
     BDIGIT_DBL t2;
@@ -1598,7 +1598,7 @@ bigdivrem_mulsub(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
 }
 
 static int
-bary_mulsub_1xN(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
+bary_mulsub_1xN(BDIGIT *zds, size_t zn, BDIGIT x, const BDIGIT *yds, size_t yn)
 {
     BDIGIT_DBL_SIGNED num;
 
@@ -1612,7 +1612,7 @@ bary_mulsub_1xN(BDIGIT *zds, size_t zn, BDIGIT x, BDIGIT *yds, size_t yn)
 }
 
 static void
-bary_mul_normal(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul_normal(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl)
 {
     size_t i;
 
@@ -1640,7 +1640,7 @@ rb_big_mul_normal(VALUE x, VALUE y)
  *      http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
  */
 static void
-bary_sq_fast(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn)
+bary_sq_fast(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn)
 {
     size_t i, j;
     BDIGIT_DBL c, v, w;
@@ -1705,7 +1705,7 @@ rb_big_sq_fast(VALUE x)
 
 /* balancing multiplication by slicing larger argument */
 static void
-bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl, mulfunc_t *mulfunc)
+bary_mul_balance_with_mulfunc(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl, mulfunc_t *mulfunc)
 {
     VALUE work = 0;
     size_t yl0 = yl;
@@ -1765,7 +1765,7 @@ rb_big_mul_balance(VALUE x, VALUE y)
 
 /* multiplication by karatsuba method */
 static void
-bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
+bary_mul_karatsuba(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     VALUE work = 0;
 
@@ -1776,7 +1776,8 @@ bary_mul_karatsuba(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, 
     int odd_xy = 0;
     int sq;
 
-    BDIGIT *xds0, *xds1, *yds0, *yds1, *zds0, *zds1, *zds2, *zds3;
+    const BDIGIT *xds0, *xds1, *yds0, *yds1;
+    BDIGIT *zds0, *zds1, *zds2, *zds3;
 
     assert(xl + yl <= zl);
     assert(xl <= yl);
@@ -1946,19 +1947,19 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
 }
 
 static void
-bary_mul_toom3(BDIGIT *zds, size_t zn, BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn)
+bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn)
 {
     size_t n;
     size_t wnc;
     VALUE work = 0;
 
     /* "p" means "positive".  Actually "non-negative", though. */
-    size_t x0n; BDIGIT *x0ds;
-    size_t x1n; BDIGIT *x1ds;
-    size_t x2n; BDIGIT *x2ds;
-    size_t y0n; BDIGIT *y0ds;
-    size_t y1n; BDIGIT *y1ds;
-    size_t y2n; BDIGIT *y2ds;
+    size_t x0n; const BDIGIT *x0ds;
+    size_t x1n; const BDIGIT *x1ds;
+    size_t x2n; const BDIGIT *x2ds;
+    size_t y0n; const BDIGIT *y0ds;
+    size_t y1n; const BDIGIT *y1ds;
+    size_t y2n; const BDIGIT *y2ds;
 
     size_t u1n; BDIGIT *u1ds; int u1p;
     size_t u2n; BDIGIT *u2ds; int u2p;
@@ -2346,7 +2347,7 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 }
 
 static void
-bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul1(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl)
 {
     assert(xl + yl <= zl);
 
@@ -2361,7 +2362,7 @@ bary_mul1(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl
 
 /* determine whether a bignum is sparse or not by random sampling */
 static inline int
-bary_sparse_p(BDIGIT *ds, size_t n)
+bary_sparse_p(const BDIGIT *ds, size_t n)
 {
     long c = 0;
 
@@ -2373,15 +2374,15 @@ bary_sparse_p(BDIGIT *ds, size_t n)
 }
 
 static int
-bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT **ydsp, size_t *ylp)
+bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, const BDIGIT **xdsp, size_t *xlp, const BDIGIT **ydsp, size_t *ylp)
 {
     size_t nlsz; /* number of least significant zero BDIGITs */
 
     BDIGIT *zds = *zdsp;
     size_t zl = *zlp;
-    BDIGIT *xds = *xdsp;
+    const BDIGIT *xds = *xdsp;
     size_t xl = *xlp;
-    BDIGIT *yds = *ydsp;
+    const BDIGIT *yds = *ydsp;
     size_t yl = *ylp;
 
     assert(xl + yl <= zl);
@@ -2428,7 +2429,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
 
     /* make sure that y is longer than x */
     if (xl > yl) {
-        BDIGIT *tds;
+        const BDIGIT *tds;
         size_t tl;
 	tds = xds; xds = yds; yds = tds;
 	tl = xl; xl = yl; yl = tl;
@@ -2471,7 +2472,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *zlp, BDIGIT **xdsp, size_t *xlp, BDIGIT
 }
 
 static void
-bary_mul_karatsuba_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
+bary_mul_karatsuba_branch(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     /* normal multiplication when x is small */
     if (xl < KARATSUBA_MUL_DIGITS) {
@@ -2501,7 +2502,7 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT
 }
 
 static void
-bary_mul_karatsuba_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
+bary_mul_karatsuba_start(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     if (bary_mul_precheck(&zds, &zl, &xds, &xl, &yds, &yl))
         return;
@@ -2510,7 +2511,7 @@ bary_mul_karatsuba_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT 
 }
 
 static void
-bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
+bary_mul_toom3_branch(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     if (yl < TOOM3_MUL_DIGITS) {
         bary_mul_karatsuba_branch(zds, zl, xds, xl, yds, yl, wds, wl);
@@ -2526,7 +2527,7 @@ bary_mul_toom3_branch(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yd
 }
 
 static void
-bary_mul_toom3_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
+bary_mul_toom3_start(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
     if (bary_mul_precheck(&zds, &zl, &xds, &xl, &yds, &yl))
         return;
@@ -2535,7 +2536,7 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds
 }
 
 static void
-bary_mul(BDIGIT *zds, size_t zl, BDIGIT *xds, size_t xl, BDIGIT *yds, size_t yl)
+bary_mul(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl)
 {
     if (xl < KARATSUBA_MUL_DIGITS || yl < KARATSUBA_MUL_DIGITS) {
         if (xds == yds && xl == yl)
@@ -2606,7 +2607,7 @@ bigdivrem_num_extra_words(long nx, long ny)
 }
 
 static BDIGIT
-bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y)
+bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, long nx, BDIGIT y)
 {
     long i;
     BDIGIT_DBL t2;
@@ -2621,7 +2622,7 @@ bigdivrem_single(BDIGIT *qds, BDIGIT *xds, long nx, BDIGIT y)
 }
 
 static void
-bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long ny, int needs_mod)
+bigdivrem_normal(BDIGIT *zds, long nz, const BDIGIT *xds, long nx, BDIGIT *yds, long ny, int needs_mod)
 {
     struct big_div_struct bds;
     BDIGIT q;
@@ -2666,7 +2667,7 @@ bigdivrem_normal(BDIGIT *zds, long nz, BDIGIT *xds, long nx, BDIGIT *yds, long n
 }
 
 static void
-bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t nx, BDIGIT *yds, size_t ny)
+bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, const BDIGIT *xds, size_t nx, const BDIGIT *yds, size_t ny)
 {
     assert(nx <= nq);
     assert(ny <= nr);
@@ -2725,7 +2726,7 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, BDIGIT *xds, size_t 
         if (BDIGIT_MSB(yds[ny-1])) {
             /* bigdivrem_normal will not modify y.
              * So use yds directly.  */
-            tds = yds;
+            tds = (BDIGIT *)yds;
         }
         else {
             /* bigdivrem_normal will modify y.

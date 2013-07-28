@@ -1,3 +1,7 @@
+Sun Jul 28 12:03:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Constify bary_* functions.
+
 Sun Jul 28 11:12:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_absint_size): Declaration moved from
