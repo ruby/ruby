@@ -3175,8 +3175,8 @@ absint_numwords_small(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbi
 static size_t
 absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_numbits, size_t *nlz_bits_ret)
 {
+    static const BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT numbytes_bary[bdigit_roomof(sizeof(numbytes))];
-    BDIGIT char_bit[1] = { CHAR_BIT };
     BDIGIT val_numbits_bary[bdigit_roomof(sizeof(numbytes) + 1)];
     BDIGIT nlz_bits_in_msbyte_bary[1] = { nlz_bits_in_msbyte };
     BDIGIT word_numbits_bary[bdigit_roomof(sizeof(word_numbits))];

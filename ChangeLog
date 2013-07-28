@@ -1,3 +1,8 @@
+Sun Jul 28 12:41:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (absint_numwords_generic): The char_bit variable changed
+	  to static constant.
+
 Sun Jul 28 12:03:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Constify bary_* functions.
