@@ -2061,15 +2061,32 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 
 static void io_setstrbuf(VALUE *str, long len);
 
+struct bufread_arg {
+    char *str_ptr;
+    long len;
+    rb_io_t *fptr;
+};
+
+static VALUE
+bufread_call(VALUE arg)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+    p->len = io_bufread(p->str_ptr, p->len, p->fptr);
+    return Qundef;
+}
+
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     long len;
+    struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
-    rb_str_locktmp(str);
-    len = io_bufread(RSTRING_PTR(str) + offset, size, fptr);
-    rb_str_unlocktmp(str);
+    arg.str_ptr = RSTRING_PTR(str) + offset;
+    arg.len = size;
+    arg.fptr = fptr;
+    rb_str_locktmp_ensure(str, bufread_call, (VALUE)&arg);
+    len = arg.len;
     if (len < 0) rb_sys_fail_path(fptr->pathv);
     return len;
 }
