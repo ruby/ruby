@@ -227,7 +227,7 @@ def extmake(target)
         f.rewind
         f.print(s)
         f.truncate(f.pos)
-      end
+      end unless $static
     else
       open(makefile, "wb") do |f|
         f.puts "# " + DUMMY_SIGNATURE

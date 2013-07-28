@@ -1,3 +1,8 @@
+Sun Jul 28 20:10:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): should make static libraries for extensions
+	  to be statically linked.  [Bug #7948]
+
 Sun Jul 28 17:38:32 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c: add internal API rb_str_locktmp_ensure().
