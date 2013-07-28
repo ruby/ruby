@@ -1,3 +1,9 @@
+Sun Jul 28 21:44:57 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_asn1.c (asn1time_to_time):  Implement YYMMDDhhmmZ
+	  format for ASN.1 UTCTime.  [ruby-trunk - Bug #8664]
+	* test/openssl/test_asn1.rb:  Test for the above.
+
 Fri Jul 26 00:38:58 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.0.6. [ruby-core:56160]
