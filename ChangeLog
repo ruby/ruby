@@ -1,3 +1,11 @@
+Sun Jul 28 11:12:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_absint_size): Declaration moved from
+	  internal.h to calculate required buffer size to pack integers.
+	  (rb_absint_numwords): Ditto.
+	  (rb_absint_singlebit_p): Ditto.
+	  [ruby-core:42813] [Feature #6065]
+
 Sun Jul 28 10:54:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_pipe): fix pipe name formatting.  as "%x" may

@@ -141,9 +141,6 @@ VALUE rb_big_fdiv(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
-size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
-size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
-int rb_absint_singlebit_p(VALUE val);
 
 /* class.c */
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);

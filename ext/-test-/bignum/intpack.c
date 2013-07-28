@@ -45,6 +45,26 @@ rb_integer_unpack_m(VALUE klass, VALUE buf, VALUE numwords, VALUE wordsize, VALU
             NUM2SIZET(nails), NUM2INT(flags));
 }
 
+static VALUE
+rb_integer_test_numbits_2comp_without_sign(VALUE val)
+{
+  size_t size;
+  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+  size = rb_absint_numwords(val, 1, NULL) - (neg && rb_absint_singlebit_p(val));
+  return SIZET2NUM(size);
+}
+
+static VALUE
+rb_integer_test_numbytes_2comp_with_sign(VALUE val)
+{
+  int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+  int nlz_bits;
+  size_t size = rb_absint_size(val, &nlz_bits);
+  if (nlz_bits == 0 && !(neg && rb_absint_singlebit_p(val)))
+    size++;
+  return SIZET2NUM(size);
+}
+
 void
 Init_intpack(VALUE klass)
 {
@@ -62,4 +82,7 @@ Init_intpack(VALUE klass)
     rb_define_const(rb_cInteger, "INTEGER_PACK_FORCE_BIGNUM", INT2NUM(INTEGER_PACK_FORCE_BIGNUM));
     rb_define_const(rb_cInteger, "INTEGER_PACK_NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
     rb_define_const(rb_cInteger, "INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION", INT2NUM(INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION));
+
+    rb_define_method(rb_cInteger, "test_numbits_2comp_without_sign", rb_integer_test_numbits_2comp_without_sign, 0);
+    rb_define_method(rb_cInteger, "test_numbytes_2comp_with_sign", rb_integer_test_numbytes_2comp_with_sign, 0);
 }

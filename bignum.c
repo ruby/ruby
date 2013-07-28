@@ -3275,6 +3275,34 @@ rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret)
     return numwords;
 }
 
+/* Test abs(val) consists only a bit or not.
+ *
+ * Returns 1 if abs(val) == 1 << n for some n >= 0.
+ * Returns 0 otherwise.
+ *
+ * rb_absint_singlebit_p can be used to determine required buffer size
+ * for rb_integer_pack used with INTEGER_PACK_2COMP (two's complement).
+ *
+ * Following example calculates number of bits required to
+ * represent val in two's complement number, without sign bit.
+ *
+ *   size_t size;
+ *   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+ *   size = rb_absint_numwords(val, 1, NULL)
+ *   if (size == (size_t)-1) ...overflow...
+ *   if (neg && rb_absint_singlebit_p(val))
+ *     size--;
+ *
+ * Following example calculates number of bytes required to
+ * represent val in two's complement number, with sign bit.
+ *
+ *   size_t size;
+ *   int neg = FIXNUM_P(val) ? FIX2LONG(val) < 0 : RBIGNUM_NEGATIVE_P(val);
+ *   int nlz_bits;
+ *   size = rb_absint_size(val, &nlz_bits);
+ *   if (nlz_bits == 0 && !(neg && rb_absint_singlebit_p(val)))
+ *     size++;
+ */
 int
 rb_absint_singlebit_p(VALUE val)
 {

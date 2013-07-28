@@ -157,6 +157,9 @@ VALUE rb_big_rshift(VALUE, VALUE);
      INTEGER_PACK_MSBYTE_FIRST)
 int rb_integer_pack(VALUE val, void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
 VALUE rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t nails, int flags);
+size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
+size_t rb_absint_numwords(VALUE val, size_t word_numbits, size_t *nlz_bits_ret);
+int rb_absint_singlebit_p(VALUE val);
 
 /* rational.c */
 VALUE rb_rational_raw(VALUE, VALUE);

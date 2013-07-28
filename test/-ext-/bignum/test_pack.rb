@@ -322,4 +322,53 @@ class TestBignum < Test::Unit::TestCase
       }
     end
   end
+
+  def test_numbits_2comp
+    assert_equal(4, -9.test_numbits_2comp_without_sign)
+    assert_equal(3, -8.test_numbits_2comp_without_sign)
+    assert_equal(3, -7.test_numbits_2comp_without_sign)
+    assert_equal(3, -6.test_numbits_2comp_without_sign)
+    assert_equal(3, -5.test_numbits_2comp_without_sign)
+    assert_equal(2, -4.test_numbits_2comp_without_sign)
+    assert_equal(2, -3.test_numbits_2comp_without_sign)
+    assert_equal(1, -2.test_numbits_2comp_without_sign)
+    assert_equal(0, -1.test_numbits_2comp_without_sign)
+    assert_equal(0, 0.test_numbits_2comp_without_sign)
+    assert_equal(1, 1.test_numbits_2comp_without_sign)
+    assert_equal(2, 2.test_numbits_2comp_without_sign)
+    assert_equal(2, 3.test_numbits_2comp_without_sign)
+    assert_equal(3, 4.test_numbits_2comp_without_sign)
+    assert_equal(3, 5.test_numbits_2comp_without_sign)
+    assert_equal(3, 6.test_numbits_2comp_without_sign)
+    assert_equal(3, 7.test_numbits_2comp_without_sign)
+    assert_equal(4, 8.test_numbits_2comp_without_sign)
+    assert_equal(4, 9.test_numbits_2comp_without_sign)
+  end
+
+  def test_numbytes_2comp
+    assert_equal(6, -0x8000000001.test_numbytes_2comp_with_sign)
+    assert_equal(5, -0x8000000000.test_numbytes_2comp_with_sign)
+    assert_equal(5, -0x80000001.test_numbytes_2comp_with_sign)
+    assert_equal(4, -0x80000000.test_numbytes_2comp_with_sign)
+    assert_equal(4, -0x800001.test_numbytes_2comp_with_sign)
+    assert_equal(3, -0x800000.test_numbytes_2comp_with_sign)
+    assert_equal(3, -0x8001.test_numbytes_2comp_with_sign)
+    assert_equal(2, -0x8000.test_numbytes_2comp_with_sign)
+    assert_equal(2, -0x81.test_numbytes_2comp_with_sign)
+    assert_equal(1, -0x80.test_numbytes_2comp_with_sign)
+    assert_equal(1, -1.test_numbytes_2comp_with_sign)
+    assert_equal(1, 0.test_numbytes_2comp_with_sign)
+    assert_equal(1, 1.test_numbytes_2comp_with_sign)
+    assert_equal(1, 0x7f.test_numbytes_2comp_with_sign)
+    assert_equal(2, 0x80.test_numbytes_2comp_with_sign)
+    assert_equal(2, 0x7fff.test_numbytes_2comp_with_sign)
+    assert_equal(3, 0x8000.test_numbytes_2comp_with_sign)
+    assert_equal(3, 0x7fffff.test_numbytes_2comp_with_sign)
+    assert_equal(4, 0x800000.test_numbytes_2comp_with_sign)
+    assert_equal(4, 0x7fffffff.test_numbytes_2comp_with_sign)
+    assert_equal(5, 0x80000000.test_numbytes_2comp_with_sign)
+    assert_equal(5, 0x7fffffffff.test_numbytes_2comp_with_sign)
+    assert_equal(6, 0x8000000000.test_numbytes_2comp_with_sign)
+  end
+
 end
