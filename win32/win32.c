@@ -5654,8 +5654,12 @@ int
 rb_w32_pipe(int fds[2])
 {
     static DWORD serial = 0;
-    char name[] = "\\\\.\\pipe\\ruby0000000000000000-0000000000000000";
-    char *p;
+    static const char prefix[] = "\\\\.\\pipe\\ruby";
+    const int width_of_prefix = (int)sizeof(prefix) - 1;
+    const int width_of_pid = (int)sizeof(rb_pid_t) * 2;
+    const int width_of_serial = (int)sizeof(serial) * 2;
+    const int width_of_ids = width_of_pid + 1 + width_of_serial + 1;
+    char name[sizeof(prefix) + width_of_ids];
     SECURITY_ATTRIBUTES sec;
     HANDLE hRead, hWrite, h;
     int fdRead, fdWrite;
@@ -5665,8 +5669,9 @@ rb_w32_pipe(int fds[2])
     if (!cancel_io)
 	return _pipe(fds, 65536L, _O_NOINHERIT);
 
-    p = strchr(name, '0');
-    snprintf(p, strlen(p) + 1, "%"PRI_PIDT_PREFIX"x-%lx", rb_w32_getpid(), serial++);
+    memcpy(name, prefix, width_of_prefix);
+    snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
+	     width_of_pid, rb_w32_getpid(), width_of_serial, serial++);
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;

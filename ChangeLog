@@ -1,3 +1,8 @@
+Sun Jul 28 10:54:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pipe): fix pipe name formatting.  as "%x" may
+	  not contain '0' at all, fill at fixed position instead.
+
 Sun Jul 28 00:35:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_size): Return the bignum "bytewise" size.
