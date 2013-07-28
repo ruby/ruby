@@ -1,3 +1,21 @@
+Sun Jul 28 21:50:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_getpartial): use rb_str_locktmp_ensure().
+	  [ruby-core:56121] [Bug #8669]
+
+	* io.c (rb_io_sysread): ditto.
+
+	* test/ruby/test_io.rb: add tests for above.
+
+Sun Jul 28 21:50:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c: add internal API rb_str_locktmp_ensure().
+
+	* io.c (io_fread): use rb_str_locktmp_ensure().
+	  [ruby-core:56121] [Bug #8669]
+
+	* test/ruby/test_io.rb: add a test for above.
+
 Sun Jul 28 21:44:57 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_asn1.c (asn1time_to_time):  Implement YYMMDDhhmmZ

@@ -2021,15 +2021,32 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 
 static void io_setstrbuf(VALUE *str, long len);
 
+struct bufread_arg {
+    char *str_ptr;
+    long len;
+    rb_io_t *fptr;
+};
+
+static VALUE
+bufread_call(VALUE arg)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+    p->len = io_bufread(p->str_ptr, p->len, p->fptr);
+    return Qundef;
+}
+
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     long len;
+    struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
-    rb_str_locktmp(str);
-    len = io_bufread(RSTRING_PTR(str) + offset, size, fptr);
-    rb_str_unlocktmp(str);
+    arg.str_ptr = RSTRING_PTR(str) + offset;
+    arg.len = size;
+    arg.fptr = fptr;
+    rb_str_locktmp_ensure(str, bufread_call, (VALUE)&arg);
+    len = arg.len;
     if (len < 0) rb_sys_fail_path(fptr->pathv);
     return len;
 }
@@ -2337,12 +2354,27 @@ rb_io_set_nonblock(rb_io_t *fptr)
     }
 }
 
+struct read_internal_arg {
+    int fd;
+    char *str_ptr;
+    long len;
+};
+
+static VALUE
+read_internal_call(VALUE arg)
+{
+    struct read_internal_arg *p = (struct read_internal_arg *)arg;
+    p->len = rb_read_internal(p->fd, p->str_ptr, p->len);
+    return Qundef;
+}
+
 static VALUE
 io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 {
     rb_io_t *fptr;
     VALUE length, str;
     long n, len;
+    struct read_internal_arg arg;
 
     rb_scan_args(argc, argv, "11", &length, &str);
 
@@ -2368,9 +2400,11 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
             rb_io_set_nonblock(fptr);
         }
 	io_setstrbuf(&str, len);
-	rb_str_locktmp(str);
-	n = rb_read_internal(fptr->fd, RSTRING_PTR(str), len);
-	rb_str_unlocktmp(str);
+	arg.fd = fptr->fd;
+	arg.str_ptr = RSTRING_PTR(str);
+	arg.len = len;
+	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
+	n = arg.len;
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
@@ -4508,6 +4542,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     VALUE len, str;
     rb_io_t *fptr;
     long n, ilen;
+    struct read_internal_arg arg;
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
@@ -4537,8 +4572,11 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     io_setstrbuf(&str, ilen);
     rb_str_locktmp(str);
-    n = rb_read_internal(fptr->fd, RSTRING_PTR(str), ilen);
-    rb_str_unlocktmp(str);
+    arg.fd = fptr->fd;
+    arg.str_ptr = RSTRING_PTR(str);
+    arg.len = ilen;
+    rb_ensure(read_internal_call, (VALUE)&arg, rb_str_unlocktmp, str);
+    n = arg.len;
 
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
