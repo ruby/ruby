@@ -5655,10 +5655,12 @@ rb_w32_pipe(int fds[2])
 {
     static DWORD serial = 0;
     static const char prefix[] = "\\\\.\\pipe\\ruby";
-    const int width_of_prefix = (int)sizeof(prefix) - 1;
-    const int width_of_pid = (int)sizeof(rb_pid_t) * 2;
-    const int width_of_serial = (int)sizeof(serial) * 2;
-    const int width_of_ids = width_of_pid + 1 + width_of_serial + 1;
+    enum {
+	width_of_prefix = (int)sizeof(prefix) - 1,
+	width_of_pid = (int)sizeof(rb_pid_t) * 2,
+	width_of_serial = (int)sizeof(serial) * 2,
+	width_of_ids = width_of_pid + 1 + width_of_serial + 1
+    };
     char name[sizeof(prefix) + width_of_ids];
     SECURITY_ATTRIBUTES sec;
     HANDLE hRead, hWrite, h;

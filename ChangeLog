@@ -1,3 +1,8 @@
+Mon Jul 29 06:54:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pipe): use enum for compile time constants,
+	  instead of const int for debugging.
+
 Mon Jul 29 00:11:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Specialized implementation added for
