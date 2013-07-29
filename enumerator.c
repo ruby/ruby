@@ -1178,6 +1178,7 @@ generator_init(VALUE obj, VALUE proc)
 {
     struct generator *ptr;
 
+    rb_check_frozen(obj);
     TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
 
     if (!ptr) {

@@ -419,6 +419,11 @@ class TestEnumerator < Test::Unit::TestCase
     a = []
     assert_equal(:foo, g2.each {|x| a << x })
     assert_equal([1, 2, 3], a)
+
+    g.freeze
+    assert_raise(RuntimeError) {
+      g.__send__ :initialize, proc { |y| y << 4 << 5 }
+    }
   end
 
   def test_generator_args
