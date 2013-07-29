@@ -2123,6 +2123,32 @@ rb_hash_merge(VALUE hash1, VALUE hash2)
 }
 
 static int
+assoc_cmp(VALUE a, VALUE b)
+{
+    return !RTEST(rb_equal(a, b));
+}
+
+static VALUE
+lookup2_call(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    return rb_hash_lookup2(args[0], args[1], Qundef);
+}
+
+struct reset_hash_type_arg {
+    VALUE hash;
+    const struct st_hash_type *orighash;
+};
+
+static VALUE
+reset_hash_type(VALUE arg)
+{
+    struct reset_hash_type_arg *p = (struct reset_hash_type_arg *)arg;
+    RHASH(p->hash)->ntbl->type = p->orighash;
+    return Qundef;
+}
+
+static int
 assoc_i(VALUE key, VALUE val, VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
@@ -2149,11 +2175,33 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  */
 
 VALUE
-rb_hash_assoc(VALUE hash, VALUE obj)
+rb_hash_assoc(VALUE hash, VALUE key)
 {
+    st_table *table;
+    const struct st_hash_type *orighash;
     VALUE args[2];
 
-    args[0] = obj;
+    if (RHASH_EMPTY_P(hash)) return Qnil;
+    table = RHASH(hash)->ntbl;
+    orighash = table->type;
+
+    if (orighash != &identhash) {
+	VALUE value;
+	struct reset_hash_type_arg ensure_arg;
+	struct st_hash_type assochash;
+
+	assochash.compare = assoc_cmp;
+	assochash.hash = orighash->hash;
+	table->type = &assochash;
+	args[0] = hash;
+	args[1] = key;
+	ensure_arg.hash = hash;
+	ensure_arg.orighash = orighash;
+	value = rb_ensure(lookup2_call, (VALUE)&args, reset_hash_type, (VALUE)&ensure_arg);
+	if (value != Qundef) return rb_assoc_new(key, value);
+    }
+
+    args[0] = key;
     args[1] = Qnil;
     rb_hash_foreach(hash, assoc_i, (VALUE)args);
     return args[1];

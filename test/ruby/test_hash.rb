@@ -879,6 +879,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal([1.0,1], {1.0=>1}.assoc(1))
   end
 
+  def test_assoc_compare_by_identity
+    h = {}
+    h.compare_by_identity
+    h["a"] = 1
+    h["a"] = 2
+    assert_equal(["a",1], h.assoc("a"))
+  end
+
   def test_rassoc
     assert_equal([3,4], {1=>2, 3=>4, 5=>6}.rassoc(4))
     assert_nil({1=>2, 3=>4, 5=>6}.rassoc(3))
