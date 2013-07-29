@@ -1,3 +1,11 @@
+Mon Jul 29 21:15:30 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_lazy_enumerator.rb
+	  (TestLazyEnumerator#test_initialize): Make sure
+	  Enumerator::Lazy#initialize raises error if the object is
+	  frozen.  The check was performed by rb_ivar_set() before
+	  rb_check_frozen() was added to enumerator_init().
+
 Mon Jul 29 21:06:42 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_init): Add a frozenness check to
