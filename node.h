@@ -486,6 +486,8 @@ NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
 NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
 NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
 NODE *rb_parser_compile_file(volatile VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_string_path(volatile VALUE vparser, VALUE fname, VALUE src, int line);
+NODE *rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE input, int line);
 
 NODE *rb_compile_cstr(const char*, const char*, int, int);
 NODE *rb_compile_string(const char*, VALUE, int);

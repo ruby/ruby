@@ -1176,7 +1176,7 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char *volatile file, volatile int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile VALUE file, volatile int line)
 {
     int state;
     VALUE result = Qundef;
@@ -1188,7 +1188,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     volatile int mild_compile_error;
 
     if (file == 0) {
-	file = rb_sourcefile();
+	file = rb_sourcefilename();
 	line = rb_sourceline();
     }
 
@@ -1200,16 +1200,17 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
 	VALUE absolute_path = Qnil;
+	VALUE fname;
 
 	if (scope != Qnil) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 	    {
 		envval = bind->env;
-		if (strcmp(file, "(eval)") != 0) {
-		    absolute_path = rb_str_new_cstr(file);
+		if (file != Qundef) {
+		    absolute_path = file;
 		}
-		else if (bind->path != Qnil) {
-		    file = RSTRING_PTR(bind->path);
+		else if (!NIL_P(bind->path)) {
+		    file = bind->path;
 		    line = bind->first_lineno;
 		    absolute_path = rb_current_realfilepath();
 		}
@@ -1231,10 +1232,14 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    }
 	}
 
+	if ((fname = file) == Qundef) {
+	    fname = rb_usascii_str_new_cstr("(eval)");
+	}
+
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile_with_option(src, rb_str_new2(file), absolute_path, INT2FIX(line), base_block, Qnil);
+	iseqval = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
@@ -1262,7 +1267,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     if (state) {
 	if (state == TAG_RAISE) {
 	    VALUE errinfo = th->errinfo;
-	    if (strcmp(file, "(eval)") == 0) {
+	    if (file == Qundef) {
 		VALUE mesg, errat, bt2;
 		ID id_mesg;
 
@@ -1292,7 +1297,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 }
 
 static VALUE
-eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
+eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
 {
     return eval_string_with_cref(self, src, scope, 0, file, line);
 }
@@ -1319,7 +1324,7 @@ VALUE
 rb_f_eval(int argc, VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
-    const char *file = "(eval)";
+    VALUE file = Qundef;
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
@@ -1341,7 +1346,7 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     }
 
     if (!NIL_P(vfile))
-	file = RSTRING_PTR(vfile);
+	file = vfile;
     return eval_string(self, src, scope, file, line);
 }
 
@@ -1349,27 +1354,28 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
 VALUE
 ruby_eval_string_from_file(const char *str, const char *filename)
 {
-    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, filename, 1);
+    VALUE file = filename ? rb_str_new_cstr(filename) : 0;
+    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, file, 1);
 }
 
 struct eval_string_from_file_arg {
-    const char *str;
-    const char *filename;
+    VALUE str;
+    VALUE filename;
 };
 
 static VALUE
 eval_string_from_file_helper(VALUE data)
 {
     const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
-    return eval_string(rb_vm_top_self(), rb_str_new2(arg->str), Qnil, arg->filename, 1);
+    return eval_string(rb_vm_top_self(), arg->str, Qnil, arg->filename, 1);
 }
 
 VALUE
 ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state)
 {
     struct eval_string_from_file_arg arg;
-    arg.str = str;
-    arg.filename = filename;
+    arg.str = rb_str_new_cstr(str);
+    arg.filename = filename ? rb_str_new_cstr(filename) : 0;
     return rb_protect(eval_string_from_file_helper, (VALUE)&arg, state);
 }
 
@@ -1529,7 +1535,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 
 /* string eval under the class/module context */
 static VALUE
-eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
+eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
     NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
@@ -1554,7 +1560,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	return yield_under(klass, self, Qundef);
     }
     else {
-	const char *file = "(eval)";
+	VALUE file = Qundef;
 	int line = 1;
 
 	rb_check_arity(argc, 1, 3);
@@ -1567,7 +1573,8 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {
-	    file = StringValuePtr(argv[1]);
+	    file = argv[1];
+	    if (!NIL_P(file)) StringValue(file);
 	}
 	return eval_under(klass, self, argv[0], file, line);
     }
