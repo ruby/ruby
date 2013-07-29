@@ -1358,7 +1358,7 @@ struct eval_string_from_file_arg {
 };
 
 static VALUE
-eval_string_from_file_helper(void *data)
+eval_string_from_file_helper(VALUE data)
 {
     const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
     return eval_string(rb_vm_top_self(), rb_str_new2(arg->str), Qnil, arg->filename, 1);
@@ -1370,7 +1370,7 @@ ruby_eval_string_from_file_protect(const char *str, const char *filename, int *s
     struct eval_string_from_file_arg arg;
     arg.str = str;
     arg.filename = filename;
-    return rb_protect((VALUE (*)(VALUE))eval_string_from_file_helper, (VALUE)&arg, state);
+    return rb_protect(eval_string_from_file_helper, (VALUE)&arg, state);
 }
 
 /**
