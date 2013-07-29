@@ -1,3 +1,15 @@
+Mon Jul 29 17:00:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): store file name as String to keep the encoding.
+
+	* parse.y (rb_parser_compile_string_path, rb_parser_compile_file_path):
+	  new functions to pass file name as a String.
+
+	* parse.y (gettable_gen): return a copy of the original file name, not
+	  a copy in filesystem encoding.
+
+	* vm_eval.c (eval_string_with_cref): use Qundef instead of "(eval)".
+
 Mon Jul 29 16:53:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_initialize_copy): copy st_table type even if empty.
