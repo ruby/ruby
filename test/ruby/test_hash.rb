@@ -102,6 +102,12 @@ class TestHash < Test::Unit::TestCase
     assert_raises(TypeError) { h.dup }
   end
 
+  def test_clear_initialize_copy
+    h = @cls[1=>2]
+    h.instance_eval {initialize_copy({})}
+    assert_empty(h)
+  end
+
   def test_dup_will_rehash
     set1 = { }
     set2 = { set1 => true}
@@ -912,13 +918,17 @@ class TestHash < Test::Unit::TestCase
 
   def test_compare_by_identity
     a = "foo"
-    assert_not_predicate({}, :compare_by_identity?)
-    h = { a => "bar" }
+    assert_not_predicate(@cls[], :compare_by_identity?)
+    h = @cls[a => "bar"]
     assert_not_predicate(h, :compare_by_identity?)
     h.compare_by_identity
     assert_predicate(h, :compare_by_identity?)
     #assert_equal("bar", h[a])
     assert_nil(h["foo"])
+
+    bug8703 = '[ruby-core:56256] [Bug #8703] copied identhash'
+    h.clear
+    assert_predicate(h.dup, :compare_by_identity?, bug8703)
   end
 
   class ObjWithHash

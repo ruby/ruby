@@ -1306,14 +1306,22 @@ replace_i(VALUE key, VALUE val, VALUE hash)
 static VALUE
 rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 {
+    st_table *ntbl;
+
     rb_hash_modify_check(hash);
     hash2 = to_hash(hash2);
 
     Check_Type(hash2, T_HASH);
 
-    if (!RHASH_EMPTY_P(hash2)) {
+    ntbl = RHASH(hash)->ntbl;
+    if (RHASH(hash2)->ntbl) {
+	if (ntbl) st_free_table(ntbl);
         RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
-	rb_hash_rehash(hash);
+	if (RHASH(hash)->ntbl->num_entries)
+	    rb_hash_rehash(hash);
+    }
+    else if (ntbl) {
+	st_clear(ntbl);
     }
 
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
@@ -2167,11 +2175,10 @@ rb_hash_assoc(VALUE hash, VALUE key)
     struct lookup2_arg arg;
     struct reset_hash_type_arg ensure_arg;
     const struct st_hash_type *orighash = table->type;
-    const struct st_hash_type assochash = {
-	assoc_cmp,
-	orighash->hash,
-    };
+    struct st_hash_type assochash;
 
+    assochash.compare = assoc_cmp;
+    assochash.hash = orighash->hash;
     table->type = &assochash;
     arg.hash = hash;
     arg.key = key;

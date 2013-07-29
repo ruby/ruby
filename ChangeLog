@@ -1,18 +1,3 @@
-Mon Jul 29 16:48:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* hash.c (rb_hash_initialize_copy): copy st_table type even if empty.
-	  [ruby-core:56256] [Bug #8703]
-
-Mon Jul 29 16:34:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* hash.c (rb_hash_initialize_copy): clear old table before copy new
-	  table.
-
-Mon Jul 29 16:34:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* hash.c (rb_hash_assoc): aggregate object can be initialized only
-	  with link time constants.
-
 Mon Jul 29 14:54:44 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_assoc): performance improvement by replacing
