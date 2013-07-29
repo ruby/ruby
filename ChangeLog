@@ -1,3 +1,8 @@
+Mon Jul 29 14:54:44 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_assoc): performance improvement by replacing
+	  compare function in RHASH(hash)->ntbl->type temporarily.
+
 Mon Jul 29 14:52:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (xsystem): expand environment variable in all macros not
