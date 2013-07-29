@@ -1,3 +1,8 @@
+Mon Jul 29 16:48:38 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_initialize_copy): copy st_table type even if empty.
+	  [ruby-core:56256] [Bug #8703]
+
 Mon Jul 29 16:34:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_initialize_copy): clear old table before copy new
