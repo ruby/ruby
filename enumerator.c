@@ -270,6 +270,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv, rb
 {
     struct enumerator *ptr;
 
+    rb_check_frozen(enum_obj);
     TypedData_Get_Struct(enum_obj, struct enumerator, &enumerator_data_type, ptr);
 
     if (!ptr) {
