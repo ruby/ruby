@@ -1,3 +1,9 @@
+Mon Jul 29 22:16:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (LOG2_KARATSUBA_BIG2STR_DIGITS): Renamed from
+	  LOG2_KARATSUBA_DIGITS.
+	  (KARATSUBA_BIG2STR_DIGITS): Renamed from KARATSUBA_DIGITS.
+
 Mon Jul 29 22:04:45 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (rb_hash_compare_by_id): add function prototype.

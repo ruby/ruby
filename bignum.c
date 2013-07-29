@@ -4080,8 +4080,8 @@ big_rshift(VALUE x, unsigned long shift)
     return big_shift3(x, 0, s1, s2);
 }
 
-#define LOG2_KARATSUBA_DIGITS 7
-#define KARATSUBA_DIGITS (1L<<LOG2_KARATSUBA_DIGITS)
+#define LOG2_KARATSUBA_BIG2STR_DIGITS 7
+#define KARATSUBA_BIG2STR_DIGITS (1L<<LOG2_KARATSUBA_BIG2STR_DIGITS)
 #define MAX_BIG2STR_TABLE_ENTRIES 64
 
 static VALUE big2str_power_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
@@ -4102,7 +4102,7 @@ power_cache_get_power0(int base, int i)
 {
     if (NIL_P(big2str_power_cache[base - 2][i])) {
 	big2str_power_cache[base - 2][i] =
-	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_DIGITS))
+	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_BIG2STR_DIGITS))
 		   : bigsq(power_cache_get_power0(base, i - 1));
 	rb_gc_register_mark_object(big2str_power_cache[base - 2][i]);
     }
@@ -4116,17 +4116,17 @@ power_cache_get_power(int base, long n1, long* m1)
     long j;
     VALUE t;
 
-    if (n1 <= KARATSUBA_DIGITS)
-	rb_bug("n1 > KARATSUBA_DIGITS");
+    if (n1 <= KARATSUBA_BIG2STR_DIGITS)
+	rb_bug("n1 > KARATSUBA_BIG2STR_DIGITS");
 
     m = bitsize(n1-1); /* ceil(log2(n1)) */
     if (m1) *m1 = 1 << m;
-    i = m - LOG2_KARATSUBA_DIGITS;
+    i = m - LOG2_KARATSUBA_BIG2STR_DIGITS;
     if (i >= MAX_BIG2STR_TABLE_ENTRIES)
 	i = MAX_BIG2STR_TABLE_ENTRIES - 1;
     t = power_cache_get_power0(base, i);
 
-    j = KARATSUBA_DIGITS*(1 << i);
+    j = KARATSUBA_BIG2STR_DIGITS*(1 << i);
     while (n1 > j) {
 	t = bigsq(t);
 	j *= 2;
@@ -4233,7 +4233,7 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
 	}
     }
 
-    if (n1 <= KARATSUBA_DIGITS) {
+    if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
 	return big2str_orig(x, base, ptr, len, hbase, hbase_numdigits, trim);
     }
 
@@ -4318,7 +4318,7 @@ rb_big2str1(VALUE x, int base, int trim)
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
-    if (n1 <= KARATSUBA_DIGITS) {
+    if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
 	len = off + big2str_orig(xx, base, ptr + off, n2, hbase, hbase_numdigits, trim);
     }
     else {
