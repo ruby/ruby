@@ -67,6 +67,8 @@ class TestEnumerator < Test::Unit::TestCase
     assert_match 'Enumerator.new without a block is deprecated', err
     assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
+    assert_raise(ArgumentError) { @obj.to_enum.freeze.instance_eval { initialize } }
+    assert_raise(RuntimeError) { @obj.to_enum.freeze.instance_eval { initialize self } }
   end
 
   def test_initialize_copy

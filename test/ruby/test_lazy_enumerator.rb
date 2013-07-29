@@ -22,6 +22,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], [1, 2, 3].lazy.to_a)
     assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]){|y, v| y << v}.to_a)
     assert_raise(ArgumentError) { Enumerator::Lazy.new([1, 2, 3]) }
+    assert_raise(ArgumentError) { Enumerator::Lazy.new([], &->{}).freeze.instance_eval { initialize(&->{}) } }
+    assert_raise(RuntimeError) { Enumerator::Lazy.new([], &->{}).freeze.instance_eval { initialize self, &->{} } }
   end
 
   def test_each_args
