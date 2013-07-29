@@ -2643,11 +2643,11 @@ pad_noutrefresh(VALUE obj, VALUE pminrow, VALUE pmincol, VALUE sminrow,
  * == Examples
  *
  * * hello.rb
- *     :include: hello.rb
+ *     :include: sample/curses/hello.rb
  *
  *
  * * rain.rb
- *     :include: rain.rb
+ *     :include: sample/curses/rain.rb
  *
  *
  */
@@ -2680,7 +2680,7 @@ Init_curses(void)
      * == Example
      *
      * * mouse.rb
-     *     :include: mouse.rb
+     *     :include: sample/curses/mouse.rb
      *
      */
     cMouseEvent = rb_define_class_under(mCurses,"MouseEvent",rb_cObject);

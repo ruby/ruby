@@ -1,3 +1,10 @@
+Mon Jul 29 22:25:20 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/curses/curses.c: [DOC] Update location of samples
+	* samples/curses/*: Move Curses samples and refactor from mixin
+	  The samples are included in rdoc for module and use of mixin is
+	  confusing
+
 Mon Jul 29 22:16:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (LOG2_KARATSUBA_BIG2STR_DIGITS): Renamed from
