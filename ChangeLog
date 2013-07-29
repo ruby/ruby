@@ -1,3 +1,11 @@
+Mon Jul 29 14:52:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (xsystem): expand environment variable in all macros not
+	  expanded with RbConfig.  [Bug #8702]
+
+	* test/mkmf/test_framework.rb (create_framework): replace all $@ not
+	  only once.
+
 Mon Jul 29 06:54:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_pipe): use enum for compile time constants,

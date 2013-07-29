@@ -378,7 +378,7 @@ module MakeMakefile
   def xsystem command, opts = nil
     varpat = /\$\((\w+)\)|\$\{(\w+)\}/
     if varpat =~ command
-      vars = Hash.new {|h, k| h[k] = ''; ENV[k]}
+      vars = Hash.new {|h, k| h[k] = ENV[k]}
       command = command.dup
       nil while command.gsub!(varpat) {vars[$1||$2]}
     end

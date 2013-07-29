@@ -12,8 +12,8 @@ class TestMkmf
         File.write(src, "void #{fw}(void) {}")
         cmd = LINK_SO.dup
         RbConfig.expand(cmd, RbConfig::CONFIG.merge("OBJS"=>src))
-        cmd.sub!("$@", "#{fwdir}/#{fw}")
-        cmd.sub!(/ -bundle /, ' -dynamiclib ')
+        cmd.gsub!("$@", "#{fwdir}/#{fw}")
+        cmd.gsub!(/ -bundle /, ' -dynamiclib ')
         assert(xsystem(cmd), MKMFLOG)
         $INCFLAGS << " " << "-F#{dir}".quote
         yield fw, hdrname
