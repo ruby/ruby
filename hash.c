@@ -2307,6 +2307,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 static VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
+    if (rb_hash_compare_by_id_p(hash)) return hash;
     rb_hash_modify(hash);
     RHASH(hash)->ntbl->type = &identhash;
     rb_hash_rehash(hash);
