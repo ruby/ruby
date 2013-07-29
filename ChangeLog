@@ -1,10 +1,12 @@
-Mon Jul 29 20:53:24 2013  Akinori MUSHA  <knu@iDaemons.org>
+Mon Jul 29 21:06:42 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_init): Add a frozenness check to
 	  prevent a frozen Enumerator object from being reinitialized with
 	  a different enumerable object.  This is the least we should do,
 	  and more fixes will follow. [Fixes GH-368] Patch by Kenichi
 	  Kamiya.
+
+	* enumerator.c (generator_init): Ditto.
 
 Mon Jul 29 20:14:24 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
