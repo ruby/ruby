@@ -1,3 +1,7 @@
+Tue Jul 30 08:19:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sizes.c (Init_sizes): Define sizes only if the type actually exists.
+
 Mon Jul 29 22:55:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sizes.c (Init_sizes): define RbConfig::SIZEOF.  [Feature #8568]

@@ -8,43 +8,43 @@ Init_sizes(void)
 
 #define DEFINE(type, size) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(SIZEOF_##size));
 
-#ifdef SIZEOF_INT
+#if SIZEOF_INT != 0
     DEFINE(int, INT);
 #endif
-#ifdef SIZEOF_SHORT
+#if SIZEOF_SHORT != 0
     DEFINE(short, SHORT);
 #endif
-#ifdef SIZEOF_LONG
+#if SIZEOF_LONG != 0
     DEFINE(long, LONG);
 #endif
-#ifdef SIZEOF_LONG_LONG
+#if SIZEOF_LONG_LONG != 0 && defined(HAVE_TRUE_LONG_LONG)
     DEFINE(long long, LONG_LONG);
 #endif
-#ifdef SIZEOF___INT64
+#if SIZEOF___INT64 != 0
     DEFINE(__int64, __INT64);
 #endif
-#ifdef SIZEOF___INT128
+#if SIZEOF___INT128 != 0
     DEFINE(__int128, __INT128);
 #endif
-#ifdef SIZEOF_OFF_T
+#if SIZEOF_OFF_T != 0
     DEFINE(off_t, OFF_T);
 #endif
-#ifdef SIZEOF_VOIDP
+#if SIZEOF_VOIDP != 0
     DEFINE(void*, VOIDP);
 #endif
-#ifdef SIZEOF_FLOAT
+#if SIZEOF_FLOAT != 0
     DEFINE(float, FLOAT);
 #endif
-#ifdef SIZEOF_DOUBLE
+#if SIZEOF_DOUBLE != 0
     DEFINE(double, DOUBLE);
 #endif
-#ifdef SIZEOF_TIME_T
+#if SIZEOF_TIME_T != 0
     DEFINE(time_t, TIME_T);
 #endif
-#ifdef SIZEOF_SIZE_T
+#if SIZEOF_SIZE_T != 0
     DEFINE(size_t, SIZE_T);
 #endif
-#ifdef SIZEOF_PTRDIFF_T
+#if SIZEOF_PTRDIFF_T != 0
     DEFINE(ptrdiff_t, PTRDIFF_T);
 #endif
 
