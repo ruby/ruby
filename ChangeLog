@@ -1,3 +1,7 @@
+Mon Jul 29 22:55:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sizes.c (Init_sizes): define RbConfig::SIZEOF.  [Feature #8568]
+
 Mon Jul 29 22:25:20 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/curses/curses.c: [DOC] Update location of samples
