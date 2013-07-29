@@ -1,3 +1,10 @@
+Mon Jul 29 20:14:24 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* hash.c (rb_hash_assoc): revert r42224. table->type->compare is
+	  called only if hashes are matched.
+
+	* test/ruby/test_hash.rb: add a test to check using #== to compare.
+
 Mon Jul 29 17:00:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yycompile): store file name as String to keep the encoding.

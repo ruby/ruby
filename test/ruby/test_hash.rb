@@ -876,6 +876,7 @@ class TestHash < Test::Unit::TestCase
   def test_assoc
     assert_equal([3,4], {1=>2, 3=>4, 5=>6}.assoc(3))
     assert_nil({1=>2, 3=>4, 5=>6}.assoc(4))
+    assert_equal([1.0,1], {1.0=>1}.assoc(1))
   end
 
   def test_rassoc
