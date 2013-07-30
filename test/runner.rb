@@ -30,7 +30,7 @@ begin
   require 'objspace'
   h = {}
   exit Test::Unit::AutoRunner.run(true, src_testdir)
-rescue
+rescue NoMemoryError
   ObjectSpace.count_objects(h)
   p h
   ObjectSpace.count_objects_size(h)
