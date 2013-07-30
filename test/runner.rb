@@ -29,7 +29,6 @@ end
 begin
   require 'objspace'
   h = {}
-  raise
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue
   ObjectSpace.count_objects(h)
