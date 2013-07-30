@@ -26,4 +26,15 @@ module Test::Unit
   end
 end
 
-exit Test::Unit::AutoRunner.run(true, src_testdir)
+begin
+  require 'objspace'
+  h = {}
+  raise
+  exit Test::Unit::AutoRunner.run(true, src_testdir)
+rescue
+  ObjectSpace.count_objects(h)
+  p h
+  ObjectSpace.count_objects_size(h)
+  p h
+  raise
+end
