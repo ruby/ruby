@@ -3,11 +3,6 @@ Tue Jul 30 17:16:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* sprintf.c (ruby__sfvextra): add QUOTE flag to escape unprintable
 	  characters.
 
-Tue Jul 30 17:09:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* sprintf.c (ruby__sfvextra): add QUOTE flag to escape unprintable
-	  characters.
-
 Tue Jul 30 11:00:52 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/curses/extconf.rb: [DOC] nodoc to reduce Object pollution
