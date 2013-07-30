@@ -354,6 +354,11 @@ class TestHash < Test::Unit::TestCase
       assert_equal(v, h.delete(k))
     end
     assert_equal(@cls[], h)
+
+    h = @cls[]
+    h[1] = 1
+    h[2] = 2
+    assert_equal([[1,1],[2,2]], h.each.to_a)
   end
 
   def test_each_key
