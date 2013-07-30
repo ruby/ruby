@@ -368,7 +368,7 @@ module Gem::Security
   # Cipher used to encrypt the key pair used to sign gems.
   # Must be in the list returned by OpenSSL::Cipher.ciphers
 
-  KEY_CIPHER = OpenSSL::Cipher.new('aes256') if defined?(OpenSSL::Cipher)
+  KEY_CIPHER = OpenSSL::Cipher.new('AES-256-CBC') if defined?(OpenSSL::Cipher)
 
   ##
   # One year in seconds

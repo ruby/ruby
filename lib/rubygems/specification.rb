@@ -1016,25 +1016,43 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Return a list of all outdated specifications. This method is HEAVY
+  # Return a list of all outdated local gem names.  This method is HEAVY
   # as it must go fetch specifications from the server.
+  #
+  # Use outdated_and_latest_version if you wish to retrieve the latest remote
+  # version as well.
 
   def self.outdated
-    outdateds = []
+    outdated_and_latest_version.map { |local, _| local.name }
+  end
+
+  ##
+  # Enumerates the outdated local gems yielding the local specification and
+  # the latest remote version.
+  #
+  # This method may take some time to return as it must check each local gem
+  # against the server's index.
+
+  def self.outdated_and_latest_version
+    return enum_for __method__ unless block_given?
 
     # TODO: maybe we should switch to rubygems' version service?
     fetcher = Gem::SpecFetcher.fetcher
 
-    latest_specs(true).each do |local|
-      dependency = Gem::Dependency.new local.name, ">= #{local.version}"
-      remotes, _   = fetcher.search_for_dependency dependency
-      remotes      = remotes.map { |n, _| n.version }
-      latest       = remotes.sort.last
+    latest_specs(true).each do |local_spec|
+      dependency =
+        Gem::Dependency.new local_spec.name, ">= #{local_spec.version}"
 
-      outdateds << local.name if latest and local.version < latest
+      remotes, = fetcher.search_for_dependency dependency
+      remotes  = remotes.map { |n, _| n.version }
+
+      latest_remote = remotes.sort.last
+
+      yield [local_spec, latest_remote] if
+        latest_remote and local_spec.version < latest_remote
     end
 
-    outdateds
+    nil
   end
 
   ##

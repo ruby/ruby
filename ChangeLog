@@ -1,3 +1,8 @@
+Wed Jul 31 07:09:07 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems from master as of commit 523551c
+	* test/rubygems:  ditto.
+
 Tue Jul 30 22:21:54 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* test/ruby/test_hash.rb: add a test for enumeration order of Hash.

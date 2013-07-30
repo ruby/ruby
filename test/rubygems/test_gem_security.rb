@@ -99,7 +99,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_create_key
-    key = @SEC.create_key 256
+    key = @SEC.create_key 1024
 
     assert_kind_of OpenSSL::PKey::RSA, key
   end
@@ -251,7 +251,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write
-    key = @SEC.create_key 256
+    key = @SEC.create_key 1024
 
     path = File.join @tempdir, 'test-private_key.pem'
 
@@ -265,7 +265,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_encrypted
-    key = @SEC.create_key 256
+    key = @SEC.create_key 1024
 
     path = File.join @tempdir, 'test-private_encrypted_key.pem'
 
@@ -281,13 +281,13 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_encrypted_cipher
-    key = @SEC.create_key 256
+    key = @SEC.create_key 1024
 
     path = File.join @tempdir, 'test-private_encrypted__with_non_default_cipher_key.pem'
 
     passphrase = 'It should be long.'
 
-    cipher = OpenSSL::Cipher.new('aes192')
+    cipher = OpenSSL::Cipher.new 'AES-192-CBC'
 
     @SEC.write key, path, 0600, passphrase, cipher
 

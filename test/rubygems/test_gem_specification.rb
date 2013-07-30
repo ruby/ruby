@@ -828,6 +828,25 @@ dependencies: []
     assert_equal %w[a], Gem::Specification.outdated
   end
 
+  def test_self_outdated_and_latest_remotes
+    util_clear_gems
+    util_setup_fake_fetcher true
+
+    a4 = quick_gem @a1.name, '4'
+    util_build_gem a4
+    b3 = quick_gem @b2.name, '3'
+    util_build_gem b3
+    util_setup_spec_fetcher @a1, @a2, @a3a, a4, @b2, b3
+
+    Gem::Specification.remove_spec @a1
+    Gem::Specification.remove_spec @a2
+    Gem::Specification.remove_spec a4
+    Gem::Specification.remove_spec b3
+
+    assert_equal [[@a3a, a4.version], [@b2, b3.version]],
+                 Gem::Specification.outdated_and_latest_version.to_a
+  end
+
   DATA_PATH = File.expand_path "../data", __FILE__
 
   def test_handles_private_null_type

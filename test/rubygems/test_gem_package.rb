@@ -64,13 +64,16 @@ class TestGemPackage < Gem::Package::TarTestCase
     reader = Gem::Package::TarReader.new gem_io
 
     checksums = nil
+    tar       = nil
 
     reader.each_entry do |entry|
       case entry.full_name
-      when 'checksums.yaml.gz'
+      when 'checksums.yaml.gz' then
         Zlib::GzipReader.wrap entry do |io|
           checksums = io.read
         end
+      when 'data.tar.gz' then
+        tar = entry.read
       end
     end
 
@@ -83,22 +86,17 @@ class TestGemPackage < Gem::Package::TarTestCase
     metadata_sha1   = Digest::SHA1.hexdigest s.string
     metadata_sha512 = Digest::SHA512.hexdigest s.string
 
-    data_digests = nil
-    util_tar do |tar|
-      data_digests = package.add_contents tar
-    end
-
     expected = {
       'SHA512' => {
         'metadata.gz' => metadata_sha512,
-        'data.tar.gz' => data_digests['SHA512'].hexdigest,
+        'data.tar.gz' => Digest::SHA512.hexdigest(tar),
       }
     }
 
     if defined?(OpenSSL::Digest) then
       expected['SHA1'] = {
         'metadata.gz' => metadata_sha1,
-        'data.tar.gz' => data_digests['SHA1'].hexdigest,
+        'data.tar.gz' => Digest::SHA1.hexdigest(tar),
       }
     end
 
