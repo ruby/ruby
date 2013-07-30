@@ -327,6 +327,7 @@ class TC_Set < Test::Unit::TestCase
     assert_intersect(ArgumentError, set, 3)
     assert_intersect(ArgumentError, set, [2,4,6])
 
+    assert_intersect(true, set, set)
     assert_intersect(true, set, Set[2,4])
     assert_intersect(true, set, Set[5,6,7])
     assert_intersect(true, set, Set[1,2,6,8,4])
@@ -335,6 +336,9 @@ class TC_Set < Test::Unit::TestCase
     assert_intersect(false, set, Set[0,2])
     assert_intersect(false, set, Set[0,2,6])
     assert_intersect(false, set, Set[0,2,6,8,10])
+
+    # Make sure set hasn't changed
+    assert_equal(Set[3,4,5], set)
   end
 
   def test_each
