@@ -21,6 +21,12 @@ printf_test_v(VALUE self, VALUE obj)
     return rb_enc_sprintf(rb_usascii_encoding(), "{%+"PRIsVALUE"}", obj);
 }
 
+static VALUE
+printf_test_q(VALUE self, VALUE obj)
+{
+    return rb_enc_sprintf(rb_usascii_encoding(), "[% "PRIsVALUE"]", obj);
+}
+
 void
 Init_printf(void)
 {
@@ -28,4 +34,5 @@ Init_printf(void)
     rb_define_singleton_method(m, "i", printf_test_i, 1);
     rb_define_singleton_method(m, "s", printf_test_s, 1);
     rb_define_singleton_method(m, "v", printf_test_v, 1);
+    rb_define_singleton_method(m, "q", printf_test_q, 1);
 }

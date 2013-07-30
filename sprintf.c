@@ -1171,6 +1171,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     }
     else {
 	value = rb_obj_as_string(value);
+	if (sign == ' ') value = QUOTE(value);
     }
     enc = rb_enc_compatible(result, value);
     if (enc) {
