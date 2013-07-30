@@ -1,6 +1,6 @@
 require 'mkmf'
 
-def have_all(*args)
+def have_all(*args) # :nodoc:
   old_libs = $libs.dup
   old_defs = $defs.dup
   result = []
