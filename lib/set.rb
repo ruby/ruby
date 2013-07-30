@@ -231,6 +231,23 @@ class Set
   end
   alias < proper_subset?
 
+  # Returns true if the set and the given set have at least one
+  # element in common.
+  def intersect?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    if size < set.size
+      any? { |o| set.include?(o) }
+    else
+      set.any? { |o| include?(o) }
+    end
+  end
+
+  # Returns true if the set and the given set have no element in
+  # common.  This method is the opposite of +intersect?+.
+  def disjoint?(set)
+    !intersect?(set)
+  end
+
   # Calls the given block once for each element in the set, passing
   # the element as parameter.  Returns an enumerator if no block is
   # given.

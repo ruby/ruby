@@ -141,6 +141,11 @@ with all sufficient information, see the ChangeLog file.
   * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
   * REXML::Text#<< supports not "raw" mode.
 
+* Set
+  * New methods:
+    * Set#intersect?
+    * Set#disjoint?
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * Set

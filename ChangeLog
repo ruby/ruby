@@ -1,3 +1,9 @@
+Tue Jul 30 18:52:27 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#intersect?, Set#disjoint?): Add new methods for
+	  testing if two sets have any element in common.
+	  [ruby-core:45641] [Feature #6588] Based on the code by marcandre.
+
 Tue Jul 30 17:16:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (ruby__sfvextra): add QUOTE flag to escape unprintable
