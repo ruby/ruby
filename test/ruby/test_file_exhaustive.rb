@@ -671,7 +671,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path_for_existent_username
     user = ENV['USER']
-    assert_not_empty(user)
+    skip "ENV['USER'] is not set" unless user
     assert_equal(ENV['HOME'], File.expand_path("~#{user}"))
   end unless DRIVE
 
