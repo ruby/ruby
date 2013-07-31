@@ -1,3 +1,8 @@
+Wed Jul 31 21:31:49 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: Remove setup because it
+	  doesn't share anything with other tests.
+
 Wed Jul 31 21:24:55 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_attributes_mixin.rb: Remove a needless shebang.
