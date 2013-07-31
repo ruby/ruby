@@ -1,3 +1,7 @@
+Wed Jul 31 22:54:39 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_mixin.rb: Remove duplicated tests.
+
 Wed Jul 31 22:52:55 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Fix typos in expected
