@@ -1,3 +1,11 @@
+Wed Jul 31 21:24:55 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_attributes_mixin.rb: Remove a needless shebang.
+	* test/rexml/test_notationdecl_mixin.rb: ditto.
+	* test/rexml/test_doctype.rb: ditto.
+	* test/rexml/test_xml_declaration.rb: ditto.
+	* test/rexml/test_changing_encoding.rb: ditto.
+
 Wed Jul 31 21:20:08 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: remove a needless shebang.
