@@ -2673,27 +2673,33 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     long len, slen;
     char *s, *sbeg, *e, *t;
     rb_encoding *enc;
-    int singlebyte = single_byte_optimizable(str);
+    int singlebyte;
 
     enc = rb_enc_check(str, sub);
-    if (is_broken_string(sub)) {
-	return -1;
-    }
-    len = str_strlen(str, enc);
+    if (is_broken_string(sub)) return -1;
+    singlebyte = single_byte_optimizable(str);
+    len = singlebyte ? RSTRING_LEN(str) : str_strlen(str, enc);
     slen = str_strlen(sub, enc);
+
     /* substring longer than string */
     if (len < slen) return -1;
-    if (len - pos < slen) {
-	pos = len - slen;
-    }
-    if (len == 0) {
-	return pos;
-    }
+    if (len - pos < slen) pos = len - slen;
+    if (len == 0) return pos;
+
     sbeg = RSTRING_PTR(str);
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     slen = RSTRING_LEN(sub);
+
+    if (pos == 0) {
+	if (memcmp(sbeg, t, slen) == 0)
+	    return 0;
+	else
+	    return -1;
+    }
+
     s = str_nth(sbeg, e, pos, enc, singlebyte);
+
     while (s) {
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;

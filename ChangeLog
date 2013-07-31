@@ -1,3 +1,8 @@
+Wed Jul 31 16:43:30 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_rindex): refactoring and avoid to call str_nth() if
+	  pos == 0.
+
 Wed Jul 31 14:41:36 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: [DOC] Add a couple of notes on Hash as storage.
