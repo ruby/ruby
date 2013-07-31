@@ -33,7 +33,6 @@ begin
 rescue NoMemoryError
   ObjectSpace.count_objects(h)
   p h
-  ObjectSpace.count_objects_size(h)
-  p h
+  system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
   raise
 end
