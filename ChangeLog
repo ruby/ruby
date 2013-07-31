@@ -1,3 +1,8 @@
+Wed Jul 31 17:55:55 2013  Shota Fukumori  <her@sorah.jp>
+
+	* lib/uri/common.rb (URI.decode_www_form_component):
+	  Don't raise error when str includes multibyte characters.
+
 Wed Jul 31 17:45:39 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_rindex): performance improvement by using
