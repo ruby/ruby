@@ -2667,11 +2667,68 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
+#if HAVE_MEMRCHR
+static long
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
+{
+    char *hit, *adjusted;
+    int c;
+    long slen, searchlen;
+    char *sbeg, *e, *t;
+
+    sbeg = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    t = RSTRING_PTR(sub);
+    slen = RSTRING_LEN(sub);
+    c = *t & 0xff;
+    searchlen = s - sbeg + 1;
+
+    do {
+	/* printf("\"%s\" \"%s\" %ld %ld %d\n", hit, t, slen, searchlen, memcmp(hit, t, slen)); */
+	hit = memrchr(sbeg, c, searchlen);
+	if (!hit) break;
+	adjusted = rb_enc_left_char_head(sbeg, hit, e, enc);
+	if (hit != adjusted) {
+	    searchlen = adjusted - sbeg;
+	    continue;
+	}
+	if (memcmp(hit, t, slen) == 0)
+	    return rb_str_sublen(str, hit - sbeg);
+	searchlen = adjusted - sbeg;
+    } while (searchlen > 0);
+
+    return -1;
+}
+#else
+static long
+str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
+{
+    long slen;
+    char *sbeg, *e, *t;
+
+    sbeg = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    t = RSTRING_PTR(sub);
+    slen = RSTRING_LEN(sub);
+
+    while (s) {
+	if (memcmp(s, t, slen) == 0) {
+	    return pos;
+	}
+	if (pos == 0) break;
+	pos--;
+	s = rb_enc_prev_char(sbeg, s, e, enc);
+    }
+
+    return -1;
+}
+#endif
+
 static long
 rb_str_rindex(VALUE str, VALUE sub, long pos)
 {
     long len, slen;
-    char *s, *sbeg, *e, *t;
+    char *sbeg, *s;
     rb_encoding *enc;
     int singlebyte;
 
@@ -2687,28 +2744,16 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     if (len == 0) return pos;
 
     sbeg = RSTRING_PTR(str);
-    e = RSTRING_END(str);
-    t = RSTRING_PTR(sub);
-    slen = RSTRING_LEN(sub);
 
     if (pos == 0) {
-	if (memcmp(sbeg, t, slen) == 0)
+	if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
 	    return 0;
 	else
 	    return -1;
     }
 
-    s = str_nth(sbeg, e, pos, enc, singlebyte);
-
-    while (s) {
-	if (memcmp(s, t, slen) == 0) {
-	    return pos;
-	}
-	if (pos == 0) break;
-	pos--;
-	s = rb_enc_prev_char(sbeg, s, e, enc);
-    }
-    return -1;
+    s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
+    return str_rindex(str, sub, s, enc);
 }
 
 

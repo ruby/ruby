@@ -1,3 +1,8 @@
+Wed Jul 31 17:45:39 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_rindex): performance improvement by using
+	  memrchr(3).
+
 Wed Jul 31 16:43:30 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_rindex): refactoring and avoid to call str_nth() if
