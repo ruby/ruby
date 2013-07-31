@@ -1,3 +1,7 @@
+Thu Aug  1 07:36:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_orig): Use temporary buffer when trim mode.
+
 Thu Aug  1 06:28:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_orig): Simplified because RBIGNUM_LEN(x) <= 2 now.

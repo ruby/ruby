@@ -4224,12 +4224,22 @@ static size_t
 big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int trim)
 {
     long i = RBIGNUM_LEN(x);
-    size_t j = len;
+    size_t j;
     int k;
     BDIGIT* ds = BDIGITS(x);
     BDIGIT_DBL num;
+    char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
 
     assert(i <= 2);
+
+    if (trim) {
+        p = buf;
+        j = sizeof(buf);
+    }
+    else {
+        p = ptr;
+        j = len;
+    }
 
     num = 0;
     if (0 < i)
@@ -4239,15 +4249,16 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
 
     k = b2s->hbase2_numdigits;
     while (k--) {
-        ptr[--j] = ruby_digitmap[num % b2s->base];
+        p[--j] = ruby_digitmap[num % b2s->base];
         num /= b2s->base;
         if (j <= 0) break;
         if (trim && num == 0) break;
     }
     if (trim) {
-	while (j < len && ptr[j] == '0') j++;
-	MEMMOVE(ptr, ptr + j, char, len - j);
-	len -= j;
+	while (j < sizeof(buf) && p[j] == '0') j++;
+        assert(sizeof(buf)-j <= len);
+	MEMCPY(ptr, p + j, char, sizeof(buf) - j);
+        len = sizeof(buf) - j;
     }
     return len;
 }
