@@ -29,10 +29,6 @@ class TestNotationDeclMixin < Test::Unit::TestCase
     @doctype = REXML::Document.new(doc_string).doctype
   end
 
-  def test_name
-    assert_equal('n1', @doctype.notation('n1').name)
-  end
-
   def test_public_2
     assert_equal(@pubid1, @doctype.notation('n1').public)
     assert_equal(@pubid2, @doctype.notation('n2').public)

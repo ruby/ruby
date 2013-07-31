@@ -1,3 +1,12 @@
+Wed Jul 31 21:37:51 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_mixin.rb (TestNotationDecl#test_name):
+	  Move to ...
+	* test/rexml/test_notationdecl_parsetest.rb
+	  (TestNotationDecl#test_name): ... here.
+
+Wed Jul 31 21:37:47 2013  Kouhei Sutou  <kou@cozmixng.org>
+
 Wed Jul 31 21:31:49 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Remove setup because it

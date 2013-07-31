@@ -2,6 +2,11 @@ require 'test/unit'
 require 'rexml/document'
 
 class TestNotationDecl < Test::Unit::TestCase
+  def test_name
+    doctype = parse("<!NOTATION name PUBLIC 'urn:public-id'>")
+    assert_equal("name", doctype.notation("name").name)
+  end
+
   def test_notation
     doctype = parse(<<-INTERNAL_SUBSET)
       <!NOTATION n1 PUBLIC "-//HM//NOTATION TEST1//EN" 'urn:x-henrikmartensson.org:test5'>
