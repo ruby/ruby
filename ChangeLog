@@ -1,3 +1,7 @@
+Wed Jul 31 21:20:08 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: remove a needless shebang.
+
 Wed Jul 31 20:11:01 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_rindex): fix bug introduced in r42269.
