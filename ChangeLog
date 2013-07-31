@@ -1,3 +1,7 @@
+Wed Jul 31 21:58:53 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: Split test patterns.
+
 Wed Jul 31 21:42:33 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Group tests.

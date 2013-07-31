@@ -24,13 +24,22 @@ class TestNotationDecl < Test::Unit::TestCase
   end
 
   class TestExternID < self
-    def test_notation
-      doctype = parse(<<-INTERNAL_SUBSET)
-        <!NOTATION n1 PUBLIC "-//HM//NOTATION TEST1//EN" 'urn:x-henrikmartensson.org:test5'>
-        <!NOTATION n2 PUBLIC '-//HM//NOTATION TEST2//EN' "urn:x-henrikmartensson.org:test6">
-      INTERNAL_SUBSET
-      assert(doctype.notation('n1'), "Testing notation n1")
-      assert(doctype.notation('n2'), "Testing notation n2")
+    class TestPublic < self
+      class TestSystemLiteral < self
+        def test_single_quote
+          doctype = parse(<<-INTERNAL_SUBSET)
+<!NOTATION name PUBLIC "public-id-literal" 'system-literal'>
+          INTERNAL_SUBSET
+          assert_equal("system-literal", doctype.notation("name").system)
+        end
+
+        def test_double_quote
+          doctype = parse(<<-INTERNAL_SUBSET)
+<!NOTATION name PUBLIC "public-id-literal" "system-literal">
+          INTERNAL_SUBSET
+          assert_equal("system-literal", doctype.notation("name").system)
+        end
+      end
     end
   end
 end
