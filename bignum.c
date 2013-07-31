@@ -4186,8 +4186,14 @@ big2str_find_n1(VALUE x, int base)
     return (long)ceil(((double)bits)/log_2[base - 2]);
 }
 
+struct big2str_struct {
+    int base;
+    BDIGIT hbase;
+    int hbase_numdigits;
+};
+
 static long
-big2str_orig(VALUE x, int base, char* ptr, long len, BDIGIT hbase, int hbase_numdigits, int trim)
+big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, long len, int trim)
 {
     long i = RBIGNUM_LEN(x), j = len;
     BDIGIT* ds = BDIGITS(x);
@@ -4198,14 +4204,14 @@ big2str_orig(VALUE x, int base, char* ptr, long len, BDIGIT hbase, int hbase_num
 
 	while (k--) {               /* x / hbase */
 	    num = BIGUP(num) + ds[k];
-	    ds[k] = (BDIGIT)(num / hbase);
-	    num %= hbase;
+	    ds[k] = (BDIGIT)(num / b2s->hbase);
+	    num %= b2s->hbase;
 	}
 	if (trim && ds[i-1] == 0) i--;
-	k = hbase_numdigits;
+	k = b2s->hbase_numdigits;
 	while (k--) {
-	    ptr[--j] = ruby_digitmap[num % base];
-	    num /= base;
+	    ptr[--j] = ruby_digitmap[num % b2s->base];
+	    num /= b2s->base;
 	    if (j <= 0) break;
 	    if (trim && i == 0 && num == 0) break;
 	}
@@ -4219,8 +4225,8 @@ big2str_orig(VALUE x, int base, char* ptr, long len, BDIGIT hbase, int hbase_num
 }
 
 static long
-big2str_karatsuba(VALUE x, int base, char* ptr,
-		  long n1, long len, BDIGIT hbase, int hbase_numdigits, int trim)
+big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
+		  long n1, long len, int trim)
 {
     long lh, ll, m1;
     VALUE b, q, r;
@@ -4234,18 +4240,18 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
     }
 
     if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
-	return big2str_orig(x, base, ptr, len, hbase, hbase_numdigits, trim);
+	return big2str_orig(b2s, x, ptr, len, trim);
     }
 
-    b = power_cache_get_power(base, n1, &m1);
+    b = power_cache_get_power(b2s->base, n1, &m1);
     bigdivmod(x, b, &q, &r);
     rb_obj_hide(q);
     rb_obj_hide(r);
-    lh = big2str_karatsuba(q, base, ptr, (len - m1)/2,
-			   len - m1, hbase, hbase_numdigits, trim);
+    lh = big2str_karatsuba(b2s, q, ptr, (len - m1)/2,
+			   len - m1, trim);
     rb_big_resize(q, 0);
-    ll = big2str_karatsuba(r, base, ptr + lh, m1/2,
-			   m1, hbase, hbase_numdigits, !lh && trim);
+    ll = big2str_karatsuba(b2s, r, ptr + lh, m1/2,
+			   m1, !lh && trim);
     rb_big_resize(r, 0);
 
     return lh + ll;
@@ -4288,9 +4294,8 @@ rb_big2str1(VALUE x, int base, int trim)
     int off;
     VALUE ss, xx;
     long n1, n2, len;
-    BDIGIT hbase;
-    int hbase_numdigits;
     char* ptr;
+    struct big2str_struct b2s_data;
 
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
@@ -4314,16 +4319,17 @@ rb_big2str1(VALUE x, int base, int trim)
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
-    hbase = maxpow_in_bdigit(base, &hbase_numdigits);
+    b2s_data.base = base;
+    b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
-	len = off + big2str_orig(xx, base, ptr + off, n2, hbase, hbase_numdigits, trim);
+	len = off + big2str_orig(&b2s_data, xx, ptr + off, n2, trim);
     }
     else {
-	len = off + big2str_karatsuba(xx, base, ptr + off, n1,
-				      n2, hbase, hbase_numdigits, trim);
+	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, n1,
+				      n2, trim);
     }
     rb_big_resize(xx, 0);
 

@@ -1,3 +1,10 @@
+Wed Jul 31 12:18:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_struct): New structure.
+	  (big2str_orig): Use big2str_struct.
+	  (big2str_karatsuba): Ditto.
+	  (rb_big2str1): Ditto.
+
 Wed Jul 31 12:02:16 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rubygems.rb: [DOC] typo in url patch by @Red54 [Fixes #369]
