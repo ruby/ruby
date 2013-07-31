@@ -304,8 +304,6 @@ struct parser_params {
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
 
-#define YYLEX_PARAM parser
-
 #define lex_strterm		(parser->parser_lex_strterm)
 #define lex_state		(parser->parser_lex_state)
 #define cond_stack		(parser->parser_cond_stack)
@@ -349,7 +347,11 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_coverage		(parser->coverage)
 #endif
 
+#if YYPURE
 static int yylex(void*, void*);
+#else
+static int yylex(void*);
+#endif
 
 #ifndef RIPPER
 #define yyparse ruby_yyparse
@@ -684,7 +686,8 @@ static void token_info_pop(struct parser_params*, const char *token);
 #endif
 %}
 
-%pure_parser
+%pure-parser
+%lex-param {struct parser_params *parser}
 %parse-param {struct parser_params *parser}
 
 %union {

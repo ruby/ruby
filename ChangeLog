@@ -1,3 +1,7 @@
+Wed Jul 31 22:01:24 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* parse.y: fix build error with bison-3.0.
+
 Wed Jul 31 21:58:53 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Split test patterns.
