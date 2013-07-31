@@ -4225,6 +4225,8 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
     size_t j = len;
     BDIGIT* ds = BDIGITS(x);
 
+    assert(i <= 2);
+
     while (i && j > 0) {
 	long k = i;
 	BDIGIT_DBL num = 0;
@@ -4266,7 +4268,7 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
 	}
     }
 
-    if (power_level == 0) {
+    if (power_level < 0) {
 	return big2str_orig(b2s, x, ptr, len, trim);
     }
 
