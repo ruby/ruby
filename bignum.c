@@ -4167,7 +4167,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
  * (2*log_2(b_1)), therefore n_1 is given by ceil((B*n_0) /
  * (2*log_2(b_1))).
  */
-static long
+static size_t
 big2str_find_n1(VALUE x, int base)
 {
     static const double log_2[] = {
@@ -4212,7 +4212,7 @@ struct big2str_struct {
     int hbase_numdigits;
 };
 
-static long
+static size_t
 big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int trim)
 {
     long i = RBIGNUM_LEN(x);
@@ -4245,12 +4245,11 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
     return len;
 }
 
-static long
+static size_t
 big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
 		  int power_level, size_t len, int trim)
 {
-    long lh, ll;
-    size_t m1;
+    size_t lh, ll, m1;
     VALUE b, q, r;
 
     if (BIGZEROP(x)) {
@@ -4315,7 +4314,7 @@ rb_big2str1(VALUE x, int base, int trim)
 {
     int off;
     VALUE ss, xx;
-    long n2, len;
+    size_t n2, len;
     char* ptr;
     struct big2str_struct b2s_data;
     int power_level;
@@ -4335,10 +4334,13 @@ rb_big2str1(VALUE x, int base, int trim)
 
     if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
-        return big2str_base_powerof2(x, (size_t)n2, base, trim);
+        return big2str_base_powerof2(x, n2, base, trim);
     }
 
-    ss = rb_usascii_str_new(0, n2 + 1); /* plus one for sign */
+    if (LONG_MAX-1 < n2)
+        rb_raise(rb_eArgError, "too big number");
+
+    ss = rb_usascii_str_new(0, (long)(n2 + 1)); /* plus one for sign */
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
@@ -4366,16 +4368,18 @@ rb_big2str1(VALUE x, int base, int trim)
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (power_level < 0) {
-	len = off + big2str_orig(&b2s_data, xx, ptr + off, (size_t)n2, trim);
+	len = off + big2str_orig(&b2s_data, xx, ptr + off, n2, trim);
     }
     else {
 	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, power_level,
-				      (size_t)n2, trim);
+				      n2, trim);
     }
     rb_big_resize(xx, 0);
 
+    assert(len <= LONG_MAX);
+
     ptr[len] = '\0';
-    rb_str_resize(ss, len);
+    rb_str_resize(ss, (long)len);
 
     return ss;
 }

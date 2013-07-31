@@ -1,3 +1,10 @@
+Wed Jul 31 23:59:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_find_n1): Change the return type to size_t.
+	  (big2str_orig): Ditto.
+	  (big2str_karatsuba): Ditto.
+	  (rb_big2str1): Follow the above changes.
+
 Wed Jul 31 23:19:06 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (power_cache_get_power): Change numdigits_ret to size_t *.
