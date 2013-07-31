@@ -2667,19 +2667,20 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
-#if HAVE_MEMRCHR
+#ifdef HAVE_MEMRCHR
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 {
     char *hit, *adjusted;
     int c;
     long slen, searchlen;
     char *sbeg, *e, *t;
 
+    slen = RSTRING_LEN(sub);
+    if (slen == 0) return pos;
     sbeg = RSTRING_PTR(str);
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
-    slen = RSTRING_LEN(sub);
     c = *t & 0xff;
     searchlen = s - sbeg + 1;
 
@@ -2701,7 +2702,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 }
 #else
 static long
-str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
+str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 {
     long slen;
     char *sbeg, *e, *t;
@@ -2753,7 +2754,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
-    return str_rindex(str, sub, s, enc);
+    return str_rindex(str, sub, s, pos, enc);
 }
 
 

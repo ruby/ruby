@@ -1,3 +1,9 @@
+Wed Jul 31 20:11:01 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_rindex): fix bug introduced in r42269.
+	  "".rindex("") should return 0.
+	  (str_rindex): ditto.
+
 Wed Jul 31 19:55:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (MAX_BIG2STR_TABLE_ENTRIES): Use SIZEOF_SIZE_T.
