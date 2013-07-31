@@ -1,3 +1,7 @@
+Wed Jul 31 21:42:33 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: Group tests.
+
 Wed Jul 31 21:37:51 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_mixin.rb (TestNotationDecl#test_name):
