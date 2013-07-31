@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'rexml/document'
 
-class TestNotationDecl < Test::Unit::TestCase
+class TestParseNotationDeclaration < Test::Unit::TestCase
   private
   def xml(internal_subset)
     <<-XML
