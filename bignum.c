@@ -4119,7 +4119,7 @@ power_cache_init(void)
 static inline VALUE
 power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
 {
-    /* 
+    /*
      * MAX_BIG2STR_TABLE_ENTRIES is big enough to that
      * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] fills whole memory.
      * So MAX_BIG2STR_TABLE_ENTRIES <= power_level is not possible to calculate.
