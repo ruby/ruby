@@ -1,6 +1,7 @@
 Wed Jul 31 14:41:36 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: [DOC] Add a couple of notes on Hash as storage.
+	  ref. [Feature #6589]
 
 Wed Jul 31 14:38:52 2013  Akinori MUSHA  <knu@iDaemons.org>
 
