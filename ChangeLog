@@ -1,3 +1,11 @@
+Wed Jul 31 22:36:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_cmp): Extracted from rb_big_cmp.
+	  (power_cache_get_power): Change n1 argument (number of digits) to
+	  power_level which is just passed to power_cache_get_power0.
+	  (big2str_karatsuba): Ditto.
+	  (rb_big2str1): Calculate the initial power_level.
+
 Wed Jul 31 22:04:36 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Fix a typo.

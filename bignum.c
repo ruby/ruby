@@ -481,6 +481,26 @@ maxpow_in_bdigit(int base, int *exp_ret)
     return maxpow;
 }
 
+static int
+bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+    while (0 < xn && xds[xn-1] == 0)
+        xn--;
+    while (0 < yn && yds[yn-1] == 0)
+        yn--;
+
+    if (xn < yn)
+        return -1;
+    if (xn > yn)
+        return 1;
+
+    while (xn-- && xds[xn] == yds[xn])
+        ;
+    if (xn == (size_t)-1)
+        return 0;
+    return xds[xn] < yds[xn] ? -1 : 1;
+}
+
 static BDIGIT
 bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 {
@@ -4125,19 +4145,13 @@ power_cache_get_power0(int base, int i)
 }
 
 static VALUE
-power_cache_get_power(int base, long n1, long* m1)
+power_cache_get_power(int base, int power_level, long *numdigits_ret)
 {
-    int i, m;
-    VALUE t;
-
-    if (n1 <= KARATSUBA_BIG2STR_DIGITS)
-	rb_bug("n1 > KARATSUBA_BIG2STR_DIGITS");
-
-    m = bitsize(n1-1); /* ceil(log2(n1)) */
-    if (m1) *m1 = 1 << m; /* smallest x which n1 <= x and x is a power of 2. */
-    i = m - LOG2_KARATSUBA_BIG2STR_DIGITS;
-    t = power_cache_get_power0(base, i);
-    return t;
+    VALUE power;
+    power = power_cache_get_power0(base, power_level);
+    if (numdigits_ret)
+        *numdigits_ret = KARATSUBA_BIG2STR_DIGITS * (1 << power_level);
+    return power;
 }
 
 /* big2str_muraken_find_n1
@@ -4232,7 +4246,7 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, long len, int trim)
 
 static long
 big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
-		  long n1, long len, int trim)
+		  int power_level, long len, int trim)
 {
     long lh, ll, m1;
     VALUE b, q, r;
@@ -4245,18 +4259,18 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
 	}
     }
 
-    if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
+    if (power_level == 0) {
 	return big2str_orig(b2s, x, ptr, len, trim);
     }
 
-    b = power_cache_get_power(b2s->base, n1, &m1);
+    b = power_cache_get_power(b2s->base, power_level, &m1);
     bigdivmod(x, b, &q, &r);
     rb_obj_hide(q);
     rb_obj_hide(r);
-    lh = big2str_karatsuba(b2s, q, ptr, (len - m1)/2,
+    lh = big2str_karatsuba(b2s, q, ptr, power_level-1,
 			   len - m1, trim);
     rb_big_resize(q, 0);
-    ll = big2str_karatsuba(b2s, r, ptr + lh, m1/2,
+    ll = big2str_karatsuba(b2s, r, ptr + lh, power_level-1,
 			   m1, !lh && trim);
     rb_big_resize(r, 0);
 
@@ -4299,9 +4313,11 @@ rb_big2str1(VALUE x, int base, int trim)
 {
     int off;
     VALUE ss, xx;
-    long n1, n2, len;
+    long n2, len;
     char* ptr;
     struct big2str_struct b2s_data;
+    int power_level;
+    VALUE power;
 
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
@@ -4320,21 +4336,38 @@ rb_big2str1(VALUE x, int base, int trim)
         return big2str_base_powerof2(x, (size_t)n2, base, trim);
     }
 
-    n1 = (n2 + 1) / 2;
     ss = rb_usascii_str_new(0, n2 + 1); /* plus one for sign */
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
+
+    power_level = 0;
+    power = power_cache_get_power0(base, power_level);
+    while (power_level < MAX_BIG2STR_TABLE_ENTRIES &&
+           RBIGNUM_LEN(power) <= (RBIGNUM_LEN(x)+1)/2) {
+        power_level++;
+        power = power_cache_get_power0(base, power_level);
+    }
+    assert(power_level != MAX_BIG2STR_TABLE_ENTRIES);
+    if (FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power), RBIGNUM_LEN(power))) < 0) {
+        power_level--;
+#ifndef NDEBUG
+        if (0 <= power_level) {
+            VALUE power0 = power_cache_get_power0(base, power_level);
+            assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) >= 0);
+        }
+#endif
+    }
 
     b2s_data.base = base;
     b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
-    if (n1 <= KARATSUBA_BIG2STR_DIGITS) {
+    if (power_level < 0) {
 	len = off + big2str_orig(&b2s_data, xx, ptr + off, n2, trim);
     }
     else {
-	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, n1,
+	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, power_level,
 				      n2, trim);
     }
     rb_big_resize(xx, 0);
@@ -4733,8 +4766,7 @@ rb_integer_float_eq(VALUE x, VALUE y)
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
 {
-    long xlen = RBIGNUM_LEN(x);
-    BDIGIT *xds, *yds;
+    int cmp;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -4753,19 +4785,12 @@ rb_big_cmp(VALUE x, VALUE y)
 
     if (RBIGNUM_SIGN(x) > RBIGNUM_SIGN(y)) return INT2FIX(1);
     if (RBIGNUM_SIGN(x) < RBIGNUM_SIGN(y)) return INT2FIX(-1);
-    if (xlen < RBIGNUM_LEN(y))
-	return (RBIGNUM_SIGN(x)) ? INT2FIX(-1) : INT2FIX(1);
-    if (xlen > RBIGNUM_LEN(y))
-	return (RBIGNUM_SIGN(x)) ? INT2FIX(1) : INT2FIX(-1);
 
-    xds = BDIGITS(x);
-    yds = BDIGITS(y);
-
-    while (xlen-- && (xds[xlen]==yds[xlen]));
-    if (-1 == xlen) return INT2FIX(0);
-    return (xds[xlen] > yds[xlen]) ?
-	(RBIGNUM_SIGN(x) ? INT2FIX(1) : INT2FIX(-1)) :
-	    (RBIGNUM_SIGN(x) ? INT2FIX(-1) : INT2FIX(1));
+    cmp = bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(y), RBIGNUM_LEN(y));
+    if (RBIGNUM_SIGN(x))
+        return INT2FIX(cmp);
+    else
+        return INT2FIX(-cmp);
 }
 
 enum big_op_t {
