@@ -1,3 +1,11 @@
+Wed Jul 31 22:52:55 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: Fix typos in expected
+	  value.
+	  pubilc ->
+	  public
+	     ^^
+
 Wed Jul 31 22:50:51 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Add tests that focus

@@ -46,14 +46,14 @@ class TestNotationDecl < Test::Unit::TestCase
           doctype = parse(<<-INTERNAL_SUBSET)
 <!NOTATION name PUBLIC 'public-id-literal' "system-literal">
           INTERNAL_SUBSET
-          assert_equal("pubilc-id-literal", doctype.notation("name").public)
+          assert_equal("public-id-literal", doctype.notation("name").public)
         end
 
         def test_double_quote
           doctype = parse(<<-INTERNAL_SUBSET)
 <!NOTATION name PUBLIC "public-id-literal" "system-literal">
           INTERNAL_SUBSET
-          assert_equal("pubilc-id-literal", doctype.notation("name").public)
+          assert_equal("public-id-literal", doctype.notation("name").public)
         end
       end
 
