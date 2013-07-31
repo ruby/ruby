@@ -11,7 +11,7 @@ class TestRDocMarkupPreProcess < RDoc::TestCase
     @file_name = File.basename @tempfile.path
     @dir  = File.dirname @tempfile.path
 
-    @pp = RDoc::Markup::PreProcess.new __FILE__, [@dir]
+    @pp = RDoc::Markup::PreProcess.new @tempfile.path, [@dir, File.dirname(__FILE__)]
   end
 
   def teardown
@@ -70,6 +70,18 @@ contents of a string.
     expected = "?\n"
 
     assert_equal expected, content
+  end
+
+  def test_include_file_in_other_directory
+    content = nil
+    out, err = capture_io do
+      content = @pp.include_file "test.txt", '', nil
+    end
+
+    assert_empty out
+    assert_empty err
+
+    assert_equal "test file\n", content
   end
 
   def test_handle

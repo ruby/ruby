@@ -1,3 +1,8 @@
+Thu Aug  1 04:05:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/test_rdoc_markup_pre_process.rb (TestRDocMarkupPreProcess#setup):
+	  fix input_file_name, as the test script is not pre-processed.
+
 Thu Aug  1 01:45:18 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_karatsuba): Fix a condition of power_level.
