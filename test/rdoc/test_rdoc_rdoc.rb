@@ -162,6 +162,26 @@ class TestRDocRDoc < RDoc::TestCase
     end
   end
 
+  def test_parse_file_include_root
+    @rdoc.store = RDoc::Store.new
+
+    top_level = nil
+    temp_dir do |dir|
+      @rdoc.options.parse %W[--root #{File.dirname(__FILE__)}]
+
+      open 'include.txt', 'w' do |io|
+        io.puts ':include: test.txt'
+      end
+
+      out, err = capture_io do
+        top_level = @rdoc.parse_file 'include.txt'
+      end
+      assert_empty out
+      assert_empty err
+    end
+    assert_equal "test file", top_level.comment.text
+  end
+
   def test_parse_file_page_dir
     @rdoc.store = RDoc::Store.new
 

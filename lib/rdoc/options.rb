@@ -466,6 +466,8 @@ class RDoc::Options
     @op_dir ||= 'doc'
 
     @rdoc_include << "." if @rdoc_include.empty?
+    root = @root.to_path
+    @rdoc_include << root unless @rdoc_include.include?(root)
 
     if @exclude.nil? or Regexp === @exclude then
       # done, #finish is being re-run
