@@ -395,7 +395,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_main_using
-    assert_in_out_err([], <<-INPUT, %w(:C :M), /Refinements are experimental/)
+    assert_in_out_err([], <<-INPUT, %w(:C :M), [])
       class C
         def foo
           :C
@@ -461,7 +461,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_using_method_cache
-    assert_in_out_err([], <<-INPUT, %w(:M1 :M2), /Refinements are experimental/)
+    assert_in_out_err([], <<-INPUT, %w(:M1 :M2), [])
       class C
         def foo
           "original"

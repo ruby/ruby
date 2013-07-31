@@ -1,3 +1,13 @@
+Wed Jul 31 18:24:02 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine, mod_using, top_using): don't show
+	  warnings because Refinements are no longer experimental.
+	  [ruby-core:55993] [Feature #8632]
+
+	* test/ruby/test_refinement.rb: related test.
+
+	* NEWS: fixes for the above change.
+
 Wed Jul 31 17:55:55 2013  Shota Fukumori  <her@sorah.jp>
 
 	* lib/uri/common.rb (URI.decode_www_form_component):

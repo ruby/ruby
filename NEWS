@@ -30,6 +30,8 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Module#using, which activates refinements of the specified module only
       in the current class or module definition.
+  * extended methods:
+    * Module#refine is no longer experimental.
 
 * Mutex
   * misc
@@ -48,8 +50,9 @@ with all sufficient information, see the ChangeLog file.
 
 * toplevel
   * extended methods:
-    * main.using activates refinements in the ancestors of the argument
-      module to support refinement inheritance by Module#include.
+    * main.using is no longer experimental. The method activates refinements
+      in the ancestors of the argument module to support refinement
+      inheritance by Module#include.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 

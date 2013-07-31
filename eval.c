@@ -1046,17 +1046,6 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
-static void
-warn_refinements_once()
-{
-    static int warned = 0;
-
-    if (warned)
-	return;
-    rb_warn("Refinements are experimental, and the behavior may change in future versions of Ruby!");
-    warned = 1;
-}
-
 static VALUE
 hidden_identity_hash_new()
 {
@@ -1213,7 +1202,6 @@ rb_mod_refine(VALUE module, VALUE klass)
     rb_thread_t *th = GET_THREAD();
     rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 
-    warn_refinements_once();
     if (!block) {
         rb_raise(rb_eArgError, "no block given");
     }
@@ -1265,7 +1253,6 @@ mod_using(VALUE self, VALUE module)
     NODE *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
-    warn_refinements_once();
     if (prev_frame_func()) {
 	rb_raise(rb_eRuntimeError,
 		 "Module#using is not permitted in methods");
@@ -1405,7 +1392,6 @@ top_using(VALUE self, VALUE module)
     NODE *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
-    warn_refinements_once();
     if (cref->nd_next || (prev_cfp && prev_cfp->me)) {
 	rb_raise(rb_eRuntimeError,
 		 "main.using is permitted only at toplevel");
