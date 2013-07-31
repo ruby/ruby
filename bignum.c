@@ -4145,12 +4145,12 @@ power_cache_get_power0(int base, int i)
 }
 
 static VALUE
-power_cache_get_power(int base, int power_level, long *numdigits_ret)
+power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
 {
     VALUE power;
     power = power_cache_get_power0(base, power_level);
     if (numdigits_ret)
-        *numdigits_ret = KARATSUBA_BIG2STR_DIGITS * (1 << power_level);
+        *numdigits_ret = KARATSUBA_BIG2STR_DIGITS * ((size_t)1 << power_level);
     return power;
 }
 
@@ -4213,9 +4213,10 @@ struct big2str_struct {
 };
 
 static long
-big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, long len, int trim)
+big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int trim)
 {
-    long i = RBIGNUM_LEN(x), j = len;
+    long i = RBIGNUM_LEN(x);
+    size_t j = len;
     BDIGIT* ds = BDIGITS(x);
 
     while (i && j > 0) {
@@ -4246,9 +4247,10 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, long len, int trim)
 
 static long
 big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
-		  int power_level, long len, int trim)
+		  int power_level, size_t len, int trim)
 {
-    long lh, ll, m1;
+    long lh, ll;
+    size_t m1;
     VALUE b, q, r;
 
     if (BIGZEROP(x)) {
@@ -4364,11 +4366,11 @@ rb_big2str1(VALUE x, int base, int trim)
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (power_level < 0) {
-	len = off + big2str_orig(&b2s_data, xx, ptr + off, n2, trim);
+	len = off + big2str_orig(&b2s_data, xx, ptr + off, (size_t)n2, trim);
     }
     else {
 	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, power_level,
-				      n2, trim);
+				      (size_t)n2, trim);
     }
     rb_big_resize(xx, 0);
 
