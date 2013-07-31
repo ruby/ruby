@@ -27,12 +27,8 @@ module Test::Unit
 end
 
 begin
-  require 'objspace'
-  h = {}
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue NoMemoryError
-  ObjectSpace.count_objects(h)
-  p h
   system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
   raise
 end
