@@ -23,7 +23,7 @@ class TestNotationDecl < Test::Unit::TestCase
     end
   end
 
-  class TestExternID < self
+  class TestExternalID < self
     class TestPublic < self
       class TestPublicIDLiteral < self
         def test_single_quote

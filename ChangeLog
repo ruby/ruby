@@ -1,3 +1,10 @@
+Wed Jul 31 22:04:36 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_notationdecl_parsetest.rb: Fix a typo.
+	  Extern  ID ->
+	  ExternalID
+	        ^^
+
 Wed Jul 31 22:01:36 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_notationdecl_parsetest.rb: Add tests that focus
