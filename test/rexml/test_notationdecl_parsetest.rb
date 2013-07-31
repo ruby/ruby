@@ -24,6 +24,22 @@ class TestNotationDecl < Test::Unit::TestCase
   end
 
   class TestExternalID < self
+    class TestSystem < self
+      def test_single_quote
+        doctype = parse(<<-INTERNAL_SUBSET)
+<!NOTATION name SYSTEM 'system-literal'>
+        INTERNAL_SUBSET
+        assert_equal("system-literal", doctype.notation("name").system)
+      end
+
+      def test_double_quote
+        doctype = parse(<<-INTERNAL_SUBSET)
+<!NOTATION name SYSTEM "system-literal">
+        INTERNAL_SUBSET
+        assert_equal("system-literal", doctype.notation("name").system)
+      end
+    end
+
     class TestPublic < self
       class TestPublicIDLiteral < self
         def test_single_quote
