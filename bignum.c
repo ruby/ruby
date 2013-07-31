@@ -4082,7 +4082,7 @@ big_rshift(VALUE x, unsigned long shift)
 
 #define LOG2_KARATSUBA_BIG2STR_DIGITS 7
 #define KARATSUBA_BIG2STR_DIGITS (1L<<LOG2_KARATSUBA_BIG2STR_DIGITS)
-#define MAX_BIG2STR_TABLE_ENTRIES 64
+#define MAX_BIG2STR_TABLE_ENTRIES (SIZEOF_SIZE_T * CHAR_BIT)
 
 static VALUE big2str_power_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
 
@@ -4100,6 +4100,21 @@ power_cache_init(void)
 static inline VALUE
 power_cache_get_power0(int base, int i)
 {
+    /* MAX_BIG2STR_TABLE_ENTRIES is big enough to that
+     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] fills whole memory.
+     * So MAX_BIG2STR_TABLE_ENTRIES <= i is not possible to calculate.
+     *
+     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] =
+     * (base**KARATSUBA_BIG2STR_DIGITS)**(MAX_BIG2STR_TABLE_ENTRIES-1) =
+     * (base**KARATSUBA_BIG2STR_DIGITS)**(SIZEOF_SIZE_T*CHAR_BIT-1) =
+     * base**(KARATSUBA_BIG2STR_DIGITS*(SIZEOF_SIZE_T*CHAR_BIT-1)) > 2**(SIZEOF_SIZE_T*CHAR_BIT-1)
+     * where
+     *   2 <= base
+     *   1 < KARATSUBA_BIG2STR_DIGITS
+     */
+    if (MAX_BIG2STR_TABLE_ENTRIES <= i)
+        rb_bug("too big power number requested: (%d**%ld)**(2**%d)", base, KARATSUBA_BIG2STR_DIGITS, i);
+
     if (NIL_P(big2str_power_cache[base - 2][i])) {
 	big2str_power_cache[base - 2][i] =
 	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_BIG2STR_DIGITS))
@@ -4113,24 +4128,15 @@ static VALUE
 power_cache_get_power(int base, long n1, long* m1)
 {
     int i, m;
-    long j;
     VALUE t;
 
     if (n1 <= KARATSUBA_BIG2STR_DIGITS)
 	rb_bug("n1 > KARATSUBA_BIG2STR_DIGITS");
 
     m = bitsize(n1-1); /* ceil(log2(n1)) */
-    if (m1) *m1 = 1 << m;
+    if (m1) *m1 = 1 << m; /* smallest x which n1 <= x and x is a power of 2. */
     i = m - LOG2_KARATSUBA_BIG2STR_DIGITS;
-    if (i >= MAX_BIG2STR_TABLE_ENTRIES)
-	i = MAX_BIG2STR_TABLE_ENTRIES - 1;
     t = power_cache_get_power0(base, i);
-
-    j = KARATSUBA_BIG2STR_DIGITS*(1 << i);
-    while (n1 > j) {
-	t = bigsq(t);
-	j *= 2;
-    }
     return t;
 }
 
