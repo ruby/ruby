@@ -1,3 +1,7 @@
+Wed Jul 31 12:02:16 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rubygems.rb: [DOC] typo in url patch by @Red54 [Fixes #369]
+
 Wed Jul 31 07:09:07 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems from master as of commit 523551c
