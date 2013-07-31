@@ -4216,6 +4216,8 @@ struct big2str_struct {
     int base;
     BDIGIT hbase;
     int hbase_numdigits;
+    BDIGIT_DBL hbase2;
+    int hbase2_numdigits;
 };
 
 static size_t
@@ -4223,27 +4225,24 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
 {
     long i = RBIGNUM_LEN(x);
     size_t j = len;
+    int k;
     BDIGIT* ds = BDIGITS(x);
+    BDIGIT_DBL num;
 
     assert(i <= 2);
 
-    while (i && j > 0) {
-	long k = i;
-	BDIGIT_DBL num = 0;
+    num = 0;
+    if (0 < i)
+        num = ds[0];
+    if (1 < i)
+        num |= BIGUP(ds[1]);
 
-	while (k--) {               /* x / hbase */
-	    num = BIGUP(num) + ds[k];
-	    ds[k] = (BDIGIT)(num / b2s->hbase);
-	    num %= b2s->hbase;
-	}
-	if (trim && ds[i-1] == 0) i--;
-	k = b2s->hbase_numdigits;
-	while (k--) {
-	    ptr[--j] = ruby_digitmap[num % b2s->base];
-	    num /= b2s->base;
-	    if (j <= 0) break;
-	    if (trim && i == 0 && num == 0) break;
-	}
+    k = b2s->hbase2_numdigits;
+    while (k--) {
+        ptr[--j] = ruby_digitmap[num % b2s->base];
+        num /= b2s->base;
+        if (j <= 0) break;
+        if (trim && num == 0) break;
     }
     if (trim) {
 	while (j < len && ptr[j] == '0') j++;
@@ -4372,6 +4371,7 @@ rb_big2str1(VALUE x, int base, int trim)
 
     b2s_data.base = base;
     b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
+    b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
     off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);

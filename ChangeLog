@@ -1,3 +1,9 @@
+Thu Aug  1 06:28:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_orig): Simplified because RBIGNUM_LEN(x) <= 2 now.
+	  (big2str_struct): Two fields added: hbase2, hbase2_numdigits.
+	  (rb_big2str1): Initialize above fields.
+
 Thu Aug  1 04:06:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/options.rb (RDoc#finish): include root path in include
