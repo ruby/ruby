@@ -1,3 +1,7 @@
+Wed Jul 31 18:32:25 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/uri/common.rb (URI.decode_www_form_component): Use String#b.
+
 Wed Jul 31 18:24:02 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine, mod_using, top_using): don't show
