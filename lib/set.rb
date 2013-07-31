@@ -15,7 +15,7 @@
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.  If you
-# need to keep values ordered, use the SortedSet class.
+# need to keep values sorted in some order, use the SortedSet class.
 #
 # The method +to_set+ is added to Enumerable for convenience.
 #
