@@ -1,3 +1,12 @@
+Thu Aug  1 01:09:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (LOG2_KARATSUBA_BIG2STR_DIGITS): Removed.
+	  (KARATSUBA_BIG2STR_DIGITS): Removed.
+	  (big2str_numdigits_cache): New variable.
+	  (power_cache_get_power): Merged with power_cache_get_power0.
+	  This function returns maxpow_in_bdigit_dbl(base)**(2**power_level).
+	  (rb_big2str1): use power_cache_get_power.
+
 Wed Jul 31 23:59:28 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_find_n1): Change the return type to size_t.

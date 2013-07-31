@@ -4100,11 +4100,10 @@ big_rshift(VALUE x, unsigned long shift)
     return big_shift3(x, 0, s1, s2);
 }
 
-#define LOG2_KARATSUBA_BIG2STR_DIGITS 7
-#define KARATSUBA_BIG2STR_DIGITS (1L<<LOG2_KARATSUBA_BIG2STR_DIGITS)
-#define MAX_BIG2STR_TABLE_ENTRIES (SIZEOF_SIZE_T * CHAR_BIT)
+#define MAX_BIG2STR_TABLE_ENTRIES (SIZEOF_SIZE_T * CHAR_BIT + 1)
 
 static VALUE big2str_power_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
+static size_t big2str_numdigits_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
 
 static void
 power_cache_init(void)
@@ -4118,40 +4117,47 @@ power_cache_init(void)
 }
 
 static inline VALUE
-power_cache_get_power0(int base, int i)
-{
-    /* MAX_BIG2STR_TABLE_ENTRIES is big enough to that
-     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] fills whole memory.
-     * So MAX_BIG2STR_TABLE_ENTRIES <= i is not possible to calculate.
-     *
-     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] =
-     * (base**KARATSUBA_BIG2STR_DIGITS)**(MAX_BIG2STR_TABLE_ENTRIES-1) =
-     * (base**KARATSUBA_BIG2STR_DIGITS)**(SIZEOF_SIZE_T*CHAR_BIT-1) =
-     * base**(KARATSUBA_BIG2STR_DIGITS*(SIZEOF_SIZE_T*CHAR_BIT-1)) > 2**(SIZEOF_SIZE_T*CHAR_BIT-1)
-     * where
-     *   2 <= base
-     *   1 < KARATSUBA_BIG2STR_DIGITS
-     */
-    if (MAX_BIG2STR_TABLE_ENTRIES <= i)
-        rb_bug("too big power number requested: (%d**%ld)**(2**%d)", base, KARATSUBA_BIG2STR_DIGITS, i);
-
-    if (NIL_P(big2str_power_cache[base - 2][i])) {
-	big2str_power_cache[base - 2][i] =
-	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_BIG2STR_DIGITS))
-		   : bigsq(power_cache_get_power0(base, i - 1));
-	rb_gc_register_mark_object(big2str_power_cache[base - 2][i]);
-    }
-    return big2str_power_cache[base - 2][i];
-}
-
-static VALUE
 power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
 {
-    VALUE power;
-    power = power_cache_get_power0(base, power_level);
+    /* 
+     * MAX_BIG2STR_TABLE_ENTRIES is big enough to that
+     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] fills whole memory.
+     * So MAX_BIG2STR_TABLE_ENTRIES <= power_level is not possible to calculate.
+     *
+     * number-of-bytes =
+     * log256(big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1]) =
+     * log256(maxpow_in_bdigit_dbl(base)**(2**(MAX_BIG2STR_TABLE_ENTRIES-1))) =
+     * log256(maxpow_in_bdigit_dbl(base)**(2**(SIZEOF_SIZE_T*CHAR_BIT))) =
+     * (2**(SIZEOF_SIZE_T*CHAR_BIT))*log256(maxpow_in_bdigit_dbl(base)) =
+     * (256**SIZEOF_SIZE_T)*log256(maxpow_in_bdigit_dbl(base)) >
+     * (256**SIZEOF_SIZE_T)*(sizeof(BDIGIT_DBL)-1) >
+     * 256**SIZEOF_SIZE_T
+     */
+    if (MAX_BIG2STR_TABLE_ENTRIES <= power_level)
+        rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
+
+    if (NIL_P(big2str_power_cache[base - 2][power_level])) {
+        VALUE power;
+        size_t numdigits;
+        if (power_level == 0) {
+            int numdigits0;
+            BDIGIT_DBL dd = maxpow_in_bdigit_dbl(base, &numdigits0);
+            power = bignew(2, 1);
+            BDIGITS(power)[0] = BIGLO(dd);
+            BDIGITS(power)[1] = (BDIGIT)BIGDN(dd);
+            numdigits = numdigits0;
+        }
+        else {
+            power = bigsq(power_cache_get_power(base, power_level - 1, &numdigits));
+            numdigits *= 2;
+        }
+        big2str_power_cache[base - 2][power_level] = power;
+        big2str_numdigits_cache[base - 2][power_level] = numdigits;
+	rb_gc_register_mark_object(power);
+    }
     if (numdigits_ret)
-        *numdigits_ret = KARATSUBA_BIG2STR_DIGITS * ((size_t)1 << power_level);
-    return power;
+        *numdigits_ret = big2str_numdigits_cache[base - 2][power_level];
+    return big2str_power_cache[base - 2][power_level];
 }
 
 /* big2str_muraken_find_n1
@@ -4345,18 +4351,18 @@ rb_big2str1(VALUE x, int base, int trim)
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
     power_level = 0;
-    power = power_cache_get_power0(base, power_level);
+    power = power_cache_get_power(base, power_level, NULL);
     while (power_level < MAX_BIG2STR_TABLE_ENTRIES &&
            RBIGNUM_LEN(power) <= (RBIGNUM_LEN(x)+1)/2) {
         power_level++;
-        power = power_cache_get_power0(base, power_level);
+        power = power_cache_get_power(base, power_level, NULL);
     }
     assert(power_level != MAX_BIG2STR_TABLE_ENTRIES);
     if (FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power), RBIGNUM_LEN(power))) < 0) {
         power_level--;
 #ifndef NDEBUG
         if (0 <= power_level) {
-            VALUE power0 = power_cache_get_power0(base, power_level);
+            VALUE power0 = power_cache_get_power(base, power_level, NULL);
             assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) >= 0);
         }
 #endif
