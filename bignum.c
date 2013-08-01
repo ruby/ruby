@@ -4213,15 +4213,29 @@ big2str_find_n1(VALUE x, int base)
 }
 
 struct big2str_struct {
+    int negative;
     int base;
     BDIGIT hbase;
     int hbase_numdigits;
     BDIGIT_DBL hbase2;
     int hbase2_numdigits;
+    VALUE result;
+    char *ptr;
 };
 
-static size_t
-big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int trim)
+static void
+big2str_alloc(struct big2str_struct *b2s, size_t len)
+{
+    if (LONG_MAX-1 < len)
+        rb_raise(rb_eArgError, "too big number");
+    b2s->result = rb_usascii_str_new(0, (long)(len + 1)); /* plus one for sign */
+    b2s->ptr = RSTRING_PTR(b2s->result);
+    if (b2s->negative)
+        *b2s->ptr++ = '-';
+}
+
+static void
+big2str_orig(struct big2str_struct *b2s, VALUE x, size_t len, size_t taillen)
 {
     long i = RBIGNUM_LEN(x);
     size_t j;
@@ -4229,23 +4243,27 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
     BDIGIT* ds = BDIGITS(x);
     BDIGIT_DBL num;
     char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
+    int trim = !b2s->ptr;
 
     assert(i <= 2);
-
-    if (trim) {
-        p = buf;
-        j = sizeof(buf);
-    }
-    else {
-        p = ptr;
-        j = len;
-    }
 
     num = 0;
     if (0 < i)
         num = ds[0];
     if (1 < i)
         num |= BIGUP(ds[1]);
+
+    if (num == 0)
+        return;
+
+    if (trim) {
+        p = buf;
+        j = sizeof(buf);
+    }
+    else {
+        p = b2s->ptr;
+        j = len;
+    }
 
     k = b2s->hbase2_numdigits;
     while (k--) {
@@ -4255,45 +4273,43 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, char* ptr, size_t len, int tri
         if (trim && num == 0) break;
     }
     if (trim) {
-	while (j < sizeof(buf) && p[j] == '0') j++;
-        assert(sizeof(buf)-j <= len);
-	MEMCPY(ptr, p + j, char, sizeof(buf) - j);
+	while (j < sizeof(buf) && buf[j] == '0')
+            j++;
         len = sizeof(buf) - j;
+        big2str_alloc(b2s, len + taillen);
+	MEMCPY(b2s->ptr, buf + j, char, len);
     }
-    return len;
+    b2s->ptr += len;
 }
 
-static size_t
-big2str_karatsuba(struct big2str_struct *b2s, VALUE x, char* ptr,
-		  int power_level, size_t len, int trim)
+static void
+big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
+		  int power_level, size_t len, size_t taillen)
 {
-    size_t lh, ll, m1;
+    size_t m1;
     VALUE b, q, r;
 
     if (BIGZEROP(x)) {
-	if (trim) return 0;
-	else {
-	    memset(ptr, '0', len);
-	    return len;
+	if (b2s->ptr) {
+	    memset(b2s->ptr, '0', len);
+            b2s->ptr += len;
 	}
+        return;
     }
 
     if (power_level < 0) {
-	return big2str_orig(b2s, x, ptr, len, trim);
+	big2str_orig(b2s, x, len, taillen);
+        return;
     }
 
     b = power_cache_get_power(b2s->base, power_level, &m1);
     bigdivmod(x, b, &q, &r);
     rb_obj_hide(q);
     rb_obj_hide(r);
-    lh = big2str_karatsuba(b2s, q, ptr, power_level-1,
-			   len - m1, trim);
+    big2str_karatsuba(b2s, q, power_level-1, len ? len-m1 : 0, m1+taillen);
     rb_big_resize(q, 0);
-    ll = big2str_karatsuba(b2s, r, ptr + lh, power_level-1,
-			   m1, !lh && trim);
+    big2str_karatsuba(b2s, r, power_level-1, m1, taillen);
     rb_big_resize(r, 0);
-
-    return lh + ll;
 }
 
 static VALUE
@@ -4330,10 +4346,8 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
 static VALUE
 rb_big2str1(VALUE x, int base, int trim)
 {
-    int off;
-    VALUE ss, xx;
+    VALUE xx;
     size_t n2, len;
-    char* ptr;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
@@ -4355,13 +4369,6 @@ rb_big2str1(VALUE x, int base, int trim)
         return big2str_base_powerof2(x, n2, base, trim);
     }
 
-    if (LONG_MAX-1 < n2)
-        rb_raise(rb_eArgError, "too big number");
-
-    ss = rb_usascii_str_new(0, (long)(n2 + 1)); /* plus one for sign */
-    ptr = RSTRING_PTR(ss);
-    ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
-
     power_level = 0;
     power = power_cache_get_power(base, power_level, NULL);
     while (power_level < MAX_BIG2STR_TABLE_ENTRIES &&
@@ -4380,27 +4387,39 @@ rb_big2str1(VALUE x, int base, int trim)
 #endif
     }
 
+    b2s_data.negative = RBIGNUM_NEGATIVE_P(x);
     b2s_data.base = base;
     b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
-    off = !(trim && RBIGNUM_SIGN(x)); /* erase plus sign if trim */
+
+    if (trim) {
+        b2s_data.result = Qnil;
+        b2s_data.ptr = NULL;
+        len = 0;
+    }
+    else {
+        len = n2;
+        if (LONG_MAX-1 < n2)
+            rb_raise(rb_eArgError, "too big number");
+        b2s_data.result = rb_usascii_str_new(0, (long)(n2 + 1)); /* plus one for sign */
+        b2s_data.ptr = RSTRING_PTR(b2s_data.result);
+        *b2s_data.ptr++ = b2s_data.negative ? '-' : '+';
+    }
+
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (power_level < 0) {
-	len = off + big2str_orig(&b2s_data, xx, ptr + off, n2, trim);
+	big2str_orig(&b2s_data, xx, len, 0);
     }
     else {
-	len = off + big2str_karatsuba(&b2s_data, xx, ptr + off, power_level,
-				      n2, trim);
+	big2str_karatsuba(&b2s_data, xx, power_level, len, 0);
     }
     rb_big_resize(xx, 0);
 
-    assert(len <= LONG_MAX);
+    *b2s_data.ptr = '\0';
+    rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
-    ptr[len] = '\0';
-    rb_str_resize(ss, (long)len);
-
-    return ss;
+    return b2s_data.result;
 }
 
 /* deprecated */

@@ -1,3 +1,12 @@
+Thu Aug  1 12:37:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_alloc): New function to allocate the result string. 
+	  It is called after actual length is calculated.
+	  (big2str_struct): Add fields: negative, result and ptr.
+	  (big2str_orig): Write out the result via b2s->ptr.
+	  (big2str_orig): Ditto.
+	  (rb_big2str1): Don't allocate the result string at beginning.
+
 Thu Aug  1 07:36:27 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_orig): Use temporary buffer when trim mode.
