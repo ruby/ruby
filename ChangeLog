@@ -1,3 +1,7 @@
+Thu Aug  2 02:32:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: Add the description of number literal suffixes.
+
 Thu Aug  2 00:02:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bootstraptest/test_literal_suffix.rb: add two test cases to
