@@ -2685,7 +2685,6 @@ str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
     searchlen = s - sbeg + 1;
 
     do {
-	/* printf("\"%s\" \"%s\" %ld %ld %d\n", hit, t, slen, searchlen, memcmp(hit, t, slen)); */
 	hit = memrchr(sbeg, c, searchlen);
 	if (!hit) break;
 	adjusted = rb_enc_left_char_head(sbeg, hit, e, enc);
