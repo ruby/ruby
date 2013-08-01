@@ -4352,7 +4352,6 @@ static VALUE
 rb_big2str1(VALUE x, int base)
 {
     VALUE xx;
-    size_t len;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
@@ -4401,15 +4400,14 @@ rb_big2str1(VALUE x, int base)
 
     b2s_data.result = Qnil;
     b2s_data.ptr = NULL;
-    len = 0;
 
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (power_level < 0) {
-	big2str_orig(&b2s_data, xx, len, 0);
+	big2str_orig(&b2s_data, xx, 0, 0);
     }
     else {
-	big2str_karatsuba(&b2s_data, xx, power_level, len, 0);
+	big2str_karatsuba(&b2s_data, xx, power_level, 0, 0);
     }
     rb_big_resize(xx, 0);
 
