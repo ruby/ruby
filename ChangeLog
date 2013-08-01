@@ -1,3 +1,9 @@
+Fri Aug  2 07:45:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_orig): Remove len argument.
+	  (big2str_karatsuba): Ditto.
+	  (rb_big2str1): Follow above change.
+
 Thu Aug  2 02:32:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: Add the description of number literal suffixes.

@@ -4240,7 +4240,7 @@ big2str_alloc(struct big2str_struct *b2s, size_t len)
 }
 
 static void
-big2str_orig(struct big2str_struct *b2s, VALUE x, size_t len, size_t taillen)
+big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
 {
     long i = RBIGNUM_LEN(x);
     size_t j;
@@ -4249,6 +4249,7 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t len, size_t taillen)
     BDIGIT_DBL num;
     char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
     int trim = !b2s->ptr;
+    size_t len = 0;
 
     assert(i <= 2);
 
@@ -4258,14 +4259,14 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t len, size_t taillen)
     if (1 < i)
         num |= BIGUP(ds[1]);
 
-    if (num == 0)
-        return;
-
     if (trim) {
+        if (num == 0)
+            return;
         p = buf;
         j = sizeof(buf);
     }
     else {
+        power_cache_get_power(b2s->base, 0, &len);
         p = b2s->ptr;
         j = len;
     }
@@ -4289,13 +4290,15 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t len, size_t taillen)
 
 static void
 big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
-		  int power_level, size_t len, size_t taillen)
+		  int power_level, size_t taillen)
 {
     size_t m1;
     VALUE b, q, r;
+    size_t len;
 
     if (BIGZEROP(x)) {
 	if (b2s->ptr) {
+            power_cache_get_power(b2s->base, power_level+1, &len);
 	    memset(b2s->ptr, '0', len);
             b2s->ptr += len;
 	}
@@ -4303,17 +4306,18 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
     }
 
     if (power_level < 0) {
-	big2str_orig(b2s, x, len, taillen);
+	big2str_orig(b2s, x, taillen);
         return;
     }
 
     b = power_cache_get_power(b2s->base, power_level, &m1);
+
     bigdivmod(x, b, &q, &r);
     rb_obj_hide(q);
     rb_obj_hide(r);
-    big2str_karatsuba(b2s, q, power_level-1, len ? len-m1 : 0, m1+taillen);
+    big2str_karatsuba(b2s, q, power_level-1, m1+taillen);
     rb_big_resize(q, 0);
-    big2str_karatsuba(b2s, r, power_level-1, m1, taillen);
+    big2str_karatsuba(b2s, r, power_level-1, taillen);
     rb_big_resize(r, 0);
 }
 
@@ -4404,10 +4408,10 @@ rb_big2str1(VALUE x, int base)
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (power_level < 0) {
-	big2str_orig(&b2s_data, xx, 0, 0);
+	big2str_orig(&b2s_data, xx, 0);
     }
     else {
-	big2str_karatsuba(&b2s_data, xx, power_level, 0, 0);
+	big2str_karatsuba(&b2s_data, xx, power_level, 0);
     }
     rb_big_resize(xx, 0);
 
