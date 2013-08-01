@@ -30,5 +30,6 @@ begin
   exit Test::Unit::AutoRunner.run(true, src_testdir)
 rescue NoMemoryError
   system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
+  system("ps x -opid,cmd,%mem,rss,size,vsz") if File.exist?("/bin/ps")
   raise
 end
