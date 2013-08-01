@@ -1,6 +1,6 @@
 Thu Aug  1 12:37:58 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.c (big2str_alloc): New function to allocate the result string. 
+	* bignum.c (big2str_alloc): New function to allocate the result string.
 	  It is called after actual length is calculated.
 	  (big2str_struct): Add fields: negative, result and ptr.
 	  (big2str_orig): Write out the result via b2s->ptr.
