@@ -141,6 +141,7 @@ static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
+static VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
 static int
 nlz16(uint16_t x)
@@ -3833,13 +3834,12 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
             BDIGIT_DBL dd;
             BDIGIT_DBL current_base;
             int m;
+            int power_level = 0;
 
             uds = ALLOCV_N(BDIGIT, tmpuv, 2*num_bdigits);
             vds = uds + num_bdigits;
 
-            powerv = bignew(2, 1);
-            BDIGITS(powerv)[0] = BIGLO(power);
-            BDIGITS(powerv)[1] = (BDIGIT)BIGDN(power);
+            powerv = power_cache_get_power(base, power_level, NULL);
 
             i = 0;
             dd = 0;
@@ -3879,7 +3879,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                         MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
                     }
                 }
-                powerv = bigtrunc(bigsq(powerv));
+                power_level++;
+                powerv = power_cache_get_power(base, power_level, NULL);
                 tds = vds;
                 vds = uds;
                 uds = tds;

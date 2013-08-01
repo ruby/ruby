@@ -1,3 +1,7 @@
+Thu Aug  1 23:33:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_cstr_to_inum): Use power_cache_get_power.
+
 Thu Aug  1 21:02:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Raise an error for too big number.
