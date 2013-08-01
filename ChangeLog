@@ -1,3 +1,8 @@
+Thu Aug  2 00:02:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bootstraptest/test_literal_suffix.rb: add two test cases to
+	  examine that "1if true" and "1rescue nil" are recognized as 1.
+
 Thu Aug  1 23:45:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* rational.c (rb_flt_rationalize_with_prec): new public C function

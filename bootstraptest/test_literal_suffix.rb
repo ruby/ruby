@@ -37,6 +37,8 @@ assert_equal '0+6/5i',          '1.2ri'
 assert_equal 'Complex',         '1.2ri.class'
 assert_equal '0+10.0i',         '1e1i'
 assert_equal 'Complex',         '1e1i.class'
+assert_equal '1',               '1if true'
+assert_equal '1',               '1rescue nil'
 
 assert_equal 'syntax error, unexpected tIDENTIFIER, expecting end-of-input',
              %q{begin eval('1ir', nil, '', 0); rescue SyntaxError => e; e.message[/\A:(?:\d+:)? (.*)/, 1] end}
