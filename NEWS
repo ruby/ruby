@@ -16,8 +16,8 @@ with all sufficient information, see the ChangeLog file.
 * Added integer and float literals: 'r', 'i', and 'ri'.
   * "42r" and "3.14r" are evaluated as Rational(42, 1) and 3.14.rationalize,
     respectively.  But exponential form with 'r' suffix like "6.022e+23r" is
-    not accepted bcause it is misleadable.
-  * "42i" and "3.14i" are evaluated as Complex(0, 1) and Complex(0, 1.5),
+    not accepted because it is misleading.
+  * "42i" and "3.14i" are evaluated as Complex(0, 42) and Complex(0, 3.14),
     respectively.
   * "42ri" and "3.14ri" are evaluated as Complex(0, 42r) and Complex(0, 3.14r),
     respectively.
