@@ -754,7 +754,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 	keyword__ENCODING__
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
-%token <node> tINTEGER tFLOAT tSTRING_CONTENT tCHAR
+%token <node> tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
 %token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
 
@@ -2128,6 +2128,24 @@ arg		: lhs '=' arg
 			$$ = dispatch2(unary, ripper_intern("-@"), $$);
 		    %*/
 		    }
+                | tUMINUS_NUM tRATIONAL tPOW arg
+                    {
+                    /*%%%*/
+                        $$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
+                    /*%
+                        $$ = dispatch3(binary, $2, ripper_intern("**"), $4);
+                        $$ = dispatch2(unary, ripper_intern("-@"), $$);
+                    %*/
+                    }
+                | tUMINUS_NUM tIMAGINARY tPOW arg
+                    {
+                    /*%%%*/
+                        $$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
+                    /*%
+                        $$ = dispatch3(binary, $2, ripper_intern("**"), $4);
+                        $$ = dispatch2(unary, ripper_intern("-@"), $$);
+                    %*/
+                    }
 		| tUPLUS arg
 		    {
 		    /*%%%*/
@@ -4294,6 +4312,8 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 
 numeric 	: tINTEGER
 		| tFLOAT
+                | tRATIONAL
+                | tIMAGINARY
 		| tUMINUS_NUM tINTEGER	       %prec tLOWEST
 		    {
 		    /*%%%*/
@@ -4310,6 +4330,22 @@ numeric 	: tINTEGER
 			$$ = dispatch2(unary, ripper_intern("-@"), $2);
 		    %*/
 		    }
+                | tUMINUS_NUM tRATIONAL	       %prec tLOWEST
+                    {
+                    /*%%%*/
+                        $$ = negate_lit($2);
+                    /*%
+                        $$ = dispatch2(unary, ripper_intern("-@"), $2);
+                    %*/
+                    }
+                | tUMINUS_NUM tIMAGINARY       %prec tLOWEST
+                    {
+                    /*%%%*/
+                        $$ = negate_lit($2);
+                    /*%
+                        $$ = dispatch2(unary, ripper_intern("-@"), $2);
+                    %*/
+                    }
 		;
 
 user_variable	: tIDENTIFIER
@@ -5020,22 +5056,23 @@ static int parser_parse_string(struct parser_params*,NODE*);
 static int parser_here_document(struct parser_params*,NODE*);
 
 
-# define nextc()                   parser_nextc(parser)
-# define pushback(c)               parser_pushback(parser, (c))
-# define newtok()                  parser_newtok(parser)
-# define tokspace(n)               parser_tokspace(parser, (n))
-# define tokadd(c)                 parser_tokadd(parser, (c))
-# define tok_hex(numlen)           parser_tok_hex(parser, (numlen))
-# define read_escape(flags,e)      parser_read_escape(parser, (flags), (e))
-# define tokadd_escape(e)          parser_tokadd_escape(parser, (e))
-# define regx_options()            parser_regx_options(parser)
-# define tokadd_string(f,t,p,n,e)  parser_tokadd_string(parser,(f),(t),(p),(n),(e))
-# define parse_string(n)           parser_parse_string(parser,(n))
-# define tokaddmbc(c, enc)         parser_tokaddmbc(parser, (c), (enc))
-# define here_document(n)          parser_here_document(parser,(n))
-# define heredoc_identifier()      parser_heredoc_identifier(parser)
-# define heredoc_restore(n)        parser_heredoc_restore(parser,(n))
-# define whole_match_p(e,l,i)      parser_whole_match_p(parser,(e),(l),(i))
+# define nextc()                      parser_nextc(parser)
+# define pushback(c)                  parser_pushback(parser, (c))
+# define newtok()                     parser_newtok(parser)
+# define tokspace(n)                  parser_tokspace(parser, (n))
+# define tokadd(c)                    parser_tokadd(parser, (c))
+# define tok_hex(numlen)              parser_tok_hex(parser, (numlen))
+# define read_escape(flags,e)         parser_read_escape(parser, (flags), (e))
+# define tokadd_escape(e)             parser_tokadd_escape(parser, (e))
+# define regx_options()               parser_regx_options(parser)
+# define tokadd_string(f,t,p,n,e)     parser_tokadd_string(parser,(f),(t),(p),(n),(e))
+# define parse_string(n)              parser_parse_string(parser,(n))
+# define tokaddmbc(c, enc)            parser_tokaddmbc(parser, (c), (enc))
+# define here_document(n)             parser_here_document(parser,(n))
+# define heredoc_identifier()         parser_heredoc_identifier(parser)
+# define heredoc_restore(n)           parser_heredoc_restore(parser,(n))
+# define whole_match_p(e,l,i)         parser_whole_match_p(parser,(e),(l),(i))
+# define number_literal_suffix(v, f)  parser_number_literal_suffix(parser, (v), (f))
 
 #ifndef RIPPER
 # define set_yylval_str(x) (yylval.node = NEW_STR(x))
@@ -6388,6 +6425,58 @@ parser_whole_match_p(struct parser_params *parser,
     return strncmp(eos, p, len) == 0;
 }
 
+#define NUM_SUFFIX_R   (1<<0)
+#define NUM_SUFFIX_I   (1<<1)
+#define NUM_SUFFIX_ALL 3
+
+static int
+parser_number_literal_suffix(struct parser_params *parser, VALUE v, int const flag)
+{
+    int c = nextc();
+    if ((flag & NUM_SUFFIX_R) > 0 && c == 'r') {
+        c = nextc();
+        if (c != 'i' && (ISALNUM(c) || c == '_')) {
+            pushback(c);
+            pushback('r');
+            goto finish;
+        }
+
+        if (RB_TYPE_P(v, T_FLOAT)) {
+            v = rb_flt_rationalize(v);
+        }
+        else {
+            v = rb_rational_new(v, INT2FIX(1));
+        }
+    }
+    if ((flag & NUM_SUFFIX_I) > 0 && c == 'i') {
+        c = nextc();
+        if (ISALNUM(c) || c == '_') {
+            pushback(c);
+            pushback('i');
+            goto finish;
+        }
+
+        v = rb_complex_new(INT2FIX(0), v);
+    }
+    pushback(c);
+
+finish:
+    set_yylval_literal(v);
+    switch (TYPE(v)) {
+    case T_FIXNUM: case T_BIGNUM:
+        return tINTEGER;
+    case T_FLOAT:
+        return tFLOAT;
+    case T_RATIONAL:
+        return tRATIONAL;
+    case T_COMPLEX:
+        return tIMAGINARY;
+    default:
+        break;
+    }
+    UNREACHABLE;
+}
+
 #ifdef RIPPER
 static void
 ripper_dispatch_heredoc_end(struct parser_params *parser)
@@ -7384,6 +7473,7 @@ parser_yylex(struct parser_params *parser)
       case '5': case '6': case '7': case '8': case '9':
 	{
 	    int is_float, seen_point, seen_e, nondigit;
+            VALUE v;
 
 	    is_float = seen_point = seen_e = nondigit = 0;
 	    lex_state = EXPR_END;
@@ -7417,8 +7507,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    set_yylval_literal(rb_cstr_to_inum(tok(), 16, FALSE));
-		    return tINTEGER;
+                    v = rb_cstr_to_inum(tok(), 16, FALSE);
+                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
 		}
 		if (c == 'b' || c == 'B') {
 		    /* binary */
@@ -7441,8 +7531,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    set_yylval_literal(rb_cstr_to_inum(tok(), 2, FALSE));
-		    return tINTEGER;
+                    v = rb_cstr_to_inum(tok(), 2, FALSE);
+                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
 		}
 		if (c == 'd' || c == 'D') {
 		    /* decimal */
@@ -7465,8 +7555,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    set_yylval_literal(rb_cstr_to_inum(tok(), 10, FALSE));
-		    return tINTEGER;
+                    v = rb_cstr_to_inum(tok(), 10, FALSE);
+                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
 		}
 		if (c == '_') {
 		    /* 0_0 */
@@ -7497,8 +7587,8 @@ parser_yylex(struct parser_params *parser)
 			pushback(c);
 			tokfix();
 			if (nondigit) goto trailing_uc;
-			set_yylval_literal(rb_cstr_to_inum(tok(), 8, FALSE));
-			return tINTEGER;
+                        v = rb_cstr_to_inum(tok(), 8, FALSE);
+                        return number_literal_suffix(v, NUM_SUFFIX_ALL);
 		    }
 		    if (nondigit) {
 			pushback(c);
@@ -7514,8 +7604,7 @@ parser_yylex(struct parser_params *parser)
 		}
 		else {
 		    pushback(c);
-                    set_yylval_literal(INT2FIX(0));
-		    return tINTEGER;
+                    return number_literal_suffix(INT2FIX(0), NUM_SUFFIX_ALL);
 		}
 	    }
 
@@ -7597,11 +7686,11 @@ parser_yylex(struct parser_params *parser)
 		    rb_warningS("Float %s out of range", tok());
 		    errno = 0;
 		}
-                set_yylval_literal(DBL2NUM(d));
-		return tFLOAT;
+                v = DBL2NUM(d);
+                return number_literal_suffix(v, seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
 	    }
-	    set_yylval_literal(rb_cstr_to_inum(tok(), 10, FALSE));
-	    return tINTEGER;
+            v = rb_cstr_to_inum(tok(), 10, FALSE);
+            return number_literal_suffix(v, NUM_SUFFIX_ALL);
 	}
 
       case ')':

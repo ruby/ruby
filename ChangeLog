@@ -1,3 +1,21 @@
+Thu Aug  1 23:45:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* rational.c (rb_flt_rationalize_with_prec): new public C function
+	  to rationalize a Float instance with a precision.
+
+	* rational.c (rb_flt_rationalize): new public C function to
+	 rationalize a Float instance.  A precision is calculated from
+	 the given float number.
+
+	* include/ruby/intern.h: Add rb_flt_rationalize_with_prec and
+	  rb_flt_rationalize.
+
+	* parse.y: implement number literal suffixes, 'r' and 'i'.
+	  [ruby-core:55096] [Feature #8430]
+
+	* bootstraptest/test_literal_suffix.rb: add tests for parser to scan
+	  number literals with the above tsuffixes.
+
 Thu Aug  1 23:55:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Remove a local variable.
