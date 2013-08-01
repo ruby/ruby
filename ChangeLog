@@ -1,3 +1,7 @@
+Thu Aug  1 20:46:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (power_cache_get_power): Hide cached Bignum objects.
+
 Thu Aug  1 19:15:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Remove non-trim mode.

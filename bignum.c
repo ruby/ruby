@@ -4151,6 +4151,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             power = bigsq(power_cache_get_power(base, power_level - 1, &numdigits));
             numdigits *= 2;
         }
+        rb_obj_hide(power);
         big2str_power_cache[base - 2][power_level] = power;
         big2str_numdigits_cache[base - 2][power_level] = numdigits;
 	rb_gc_register_mark_object(power);
