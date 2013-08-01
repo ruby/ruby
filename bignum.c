@@ -4160,7 +4160,10 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     return big2str_power_cache[base - 2][power_level];
 }
 
-/* big2str_muraken_find_n1
+/*
+ * deprecated.  (used only from deprecated rb_big2str0)
+ *
+ * big2str_muraken_find_n1
  *
  * Let a natural number x is given by:
  * x = 2^0 * x_0 + 2^1 * x_1 + ... + 2^(B*n_0 - 1) * x_{B*n_0 - 1},
@@ -4173,7 +4176,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
  * (2*log_2(b_1)), therefore n_1 is given by ceil((B*n_0) /
  * (2*log_2(b_1))).
  */
-static size_t
+static long
 big2str_find_n1(VALUE x, int base)
 {
     static const double log_2[] = {
@@ -4313,14 +4316,14 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
 }
 
 static VALUE
-big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
+big2str_base_powerof2(VALUE x, int base)
 {
     int word_numbits = ffs(base) - 1;
     size_t numwords;
     VALUE result;
     char *ptr;
-    numwords = trim ? rb_absint_numwords(x, word_numbits, NULL) : len;
-    if (RBIGNUM_NEGATIVE_P(x) || !trim) {
+    numwords = rb_absint_numwords(x, word_numbits, NULL);
+    if (RBIGNUM_NEGATIVE_P(x)) {
         if (LONG_MAX-1 < numwords)
             rb_raise(rb_eArgError, "too big number");
         result = rb_usascii_str_new(0, 1+numwords);
@@ -4344,10 +4347,10 @@ big2str_base_powerof2(VALUE x, size_t len, int base, int trim)
 }
 
 static VALUE
-rb_big2str1(VALUE x, int base, int trim)
+rb_big2str1(VALUE x, int base)
 {
     VALUE xx;
-    size_t n2, len;
+    size_t len;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
@@ -4362,11 +4365,9 @@ rb_big2str1(VALUE x, int base, int trim)
     if (base < 2 || 36 < base)
 	rb_raise(rb_eArgError, "invalid radix %d", base);
 
-    n2 = big2str_find_n1(x, base);
-
     if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
-        return big2str_base_powerof2(x, n2, base, trim);
+        return big2str_base_powerof2(x, base);
     }
 
     power_level = 0;
@@ -4392,19 +4393,9 @@ rb_big2str1(VALUE x, int base, int trim)
     b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
 
-    if (trim) {
-        b2s_data.result = Qnil;
-        b2s_data.ptr = NULL;
-        len = 0;
-    }
-    else {
-        len = n2;
-        if (LONG_MAX-1 < n2)
-            rb_raise(rb_eArgError, "too big number");
-        b2s_data.result = rb_usascii_str_new(0, (long)(n2 + 1)); /* plus one for sign */
-        b2s_data.ptr = RSTRING_PTR(b2s_data.result);
-        *b2s_data.ptr++ = b2s_data.negative ? '-' : '+';
-    }
+    b2s_data.result = Qnil;
+    b2s_data.ptr = NULL;
+    len = 0;
 
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
@@ -4426,13 +4417,41 @@ rb_big2str1(VALUE x, int base, int trim)
 VALUE
 rb_big2str0(VALUE x, int base, int trim)
 {
-    return rb_big2str1(x, base, trim);
+    VALUE str;
+    long oldlen;
+    long n2;
+
+    str = rb_big2str1(x, base);
+
+    if (trim || FIXNUM_P(x) || BIGZEROP(x))
+        return str;
+
+    oldlen = RSTRING_LEN(str);
+    if (oldlen && RSTRING_PTR(str)[0] != '-') {
+        rb_str_resize(str, oldlen+1);
+        MEMMOVE(RSTRING_PTR(str)+1, RSTRING_PTR(str), char, oldlen);
+        RSTRING_PTR(str)[0] = '+';
+    }
+
+    n2 = big2str_find_n1(x, base);
+
+    oldlen = RSTRING_LEN(str);
+    if (oldlen-1 < n2) {
+        long off = n2 - (oldlen-1);
+        rb_str_resize(str, n2+1);
+        MEMMOVE(RSTRING_PTR(str)+1+off, RSTRING_PTR(str)+1, char, oldlen-1);
+        memset(RSTRING_PTR(str)+1, '0', off);
+    }
+
+    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+
+    return str;
 }
 
 VALUE
 rb_big2str(VALUE x, int base)
 {
-    return rb_big2str1(x, base, 1);
+    return rb_big2str1(x, base);
 }
 
 /*

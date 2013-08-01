@@ -1,3 +1,11 @@
+Thu Aug  1 19:15:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big2str1): Remove non-trim mode.
+	  (rb_big2str0): Non-trim mode implemented here.
+	  (big2str_find_n1): Change the result type to long again.
+	  (big2str_base_powerof2): Don't take arguments: len and trim.
+	  (rb_big2str): Follow above change.
+
 Thu Aug  1 12:37:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_alloc): New function to allocate the result string.
