@@ -4366,6 +4366,10 @@ rb_big2str1(VALUE x, int base)
     if (base < 2 || 36 < base)
 	rb_raise(rb_eArgError, "invalid radix %d", base);
 
+    if (RBIGNUM_LEN(x) >= LONG_MAX/BITSPERDIG) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
+
     if (POW2_P(base)) {
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
         return big2str_base_powerof2(x, base);
