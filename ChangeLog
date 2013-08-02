@@ -1,3 +1,7 @@
+Sat Aug  3 00:52:43 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big2str1): Simplify power_level calculation.
+
 Sat Aug  3 00:34:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_zip): use rb_ary_new2() to create buffer

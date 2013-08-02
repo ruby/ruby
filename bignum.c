@@ -4308,7 +4308,9 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
 
     /*
      * Precondition:
-     * abs(x) < maxpow_in_bdigit_dbl(base, &numdigits)**(2**power_level)
+     * abs(x) < maxpow**(2**power_level)
+     * where
+     *   maxpow = maxpow_in_bdigit_dbl(base, &numdigits)
      *
      * This function generates sequence of zeros, and then stringized abs(x) into b2s->ptr.
      *
@@ -4453,22 +4455,20 @@ rb_big2str1(VALUE x, int base)
         power = power_cache_get_power(base, power_level, NULL);
     }
     assert(power_level != MAX_BIG2STR_TABLE_ENTRIES);
-    if (FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power), RBIGNUM_LEN(power))) >= 0) {
+
+    if (RBIGNUM_LEN(power) <= RBIGNUM_LEN(x)) {
+        /*
+         * This increment guarantees x < power_cache_get_power(base, power_level)
+         * without invoking it actually.
+         * (power_cache_get_power(base, power_level) can be slow and not used
+         * in big2str_karatsuba.)
+         *
+         * Although it is possible that x < power_cache_get_power(base, power_level-1),
+         * it is no problem because big2str_karatsuba checks it and
+         * doesn't affect the result when b2s_data.ptr is NULL.
+         */
         power_level++;
     }
-
-#ifndef NDEBUG
-    if (0 < power_level) {
-        VALUE power1 = power_cache_get_power(base, power_level-1, NULL);
-        assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power1), RBIGNUM_LEN(power1))) >= 0);
-        /*
-        {
-            VALUE power0 = power_cache_get_power(base, power_level, NULL);
-            assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) < 0);
-        }
-        */
-    }
-#endif
 
     b2s_data.negative = RBIGNUM_NEGATIVE_P(x);
     b2s_data.base = base;
