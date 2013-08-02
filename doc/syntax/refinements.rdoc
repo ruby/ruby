@@ -48,9 +48,11 @@ Activate the refinement with #using:
 
 == Scope
 
-You may activate refinements at top-level to the end of the file or in a
-string passed to Kernel#eval, Kernel#instance_eval or Kernel#module_eval until
-the end of the string.
+You may only activate refinements at top-level, not inside any class, module
+or method scope.  You may activate refinements in a string passed to
+Kernel#eval, Kernel#instance_eval or Kernel#module_eval that is evaluated at
+top-level.  Refinements are active until the end of the file or the end of the
+eval string, respectively.
 
 Refinements are lexical in scope.  When control is transferred outside the
 scope the refinement is deactivated.  This means that if you require or load a

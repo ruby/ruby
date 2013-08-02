@@ -1,3 +1,8 @@
+Fri Aug  2 09:14:47 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/refinements.rdoc:  Improve description of where you may
+	  activate refinements.
+
 Fri Aug  2 07:45:55 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_orig): Remove len argument.
