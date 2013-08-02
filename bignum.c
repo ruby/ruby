@@ -3801,8 +3801,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
     else {
         int digits_per_bdigits_dbl;
-        BDIGIT_DBL power;
-        power = maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+        maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
         if (num_bdigits < KARATSUBA_MUL_DIGITS) {
