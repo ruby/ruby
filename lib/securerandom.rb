@@ -78,7 +78,7 @@ module SecureRandom
           end
           return ret
         }
-      rescue Errno::ENOENT
+      rescue Errno::ENOENT, Errno::EINVAL
         @has_urandom = false
       end
     end
