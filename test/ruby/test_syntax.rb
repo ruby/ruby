@@ -370,6 +370,13 @@ eom
     end
   end
 
+  def test_value_of_def
+    assert_separately [], <<-EOS
+      assert_equal(:foo, (def foo; end))
+      assert_equal(:foo, (def (Object.new).foo; end))
+    EOS
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

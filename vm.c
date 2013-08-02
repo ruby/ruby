@@ -2052,7 +2052,7 @@ m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
     REWIND_CFP({
 	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, rb_vm_cref());
     });
-    return Qnil;
+    return sym;
 }
 
 static VALUE
@@ -2061,7 +2061,7 @@ m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval
     REWIND_CFP({
 	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, rb_vm_cref());
     });
-    return Qnil;
+    return sym;
 }
 
 static VALUE

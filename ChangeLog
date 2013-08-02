@@ -1,3 +1,13 @@
+Fri Aug  2 23:57:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm.c (m_core_define_method, m_core_define_singleton_method): now
+	  the value of def-expr is the Symbol of the name of the method, not
+	  nil.
+	  ref. [ruby-dev:42151] [Feature #3753]
+
+	* test/ruby/test_syntax.rb (TestSyntax#test_value_of_def): test for
+	  above changes.
+
 Fri Aug  2 23:54:11 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_zip): performance improvement by avoiding
