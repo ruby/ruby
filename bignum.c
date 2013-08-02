@@ -2559,12 +2559,20 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const
 static void
 bary_mul(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl)
 {
-    if (xl < KARATSUBA_MUL_DIGITS || yl < KARATSUBA_MUL_DIGITS) {
-        if (xds == yds && xl == yl)
-            bary_sq_fast(zds, zl, xds, xl);
-        else
-            bary_mul1(zds, zl, xds, xl, yds, yl);
-        return;
+    if (xl <= yl) {
+        if (yl < KARATSUBA_MUL_DIGITS) {
+            if (xds == yds && xl == yl)
+                bary_sq_fast(zds, zl, xds, xl);
+            else
+                bary_mul1(zds, zl, xds, xl, yds, yl);
+            return;
+        }
+    }
+    else {
+        if (xl < KARATSUBA_MUL_DIGITS) {
+            bary_mul1(zds, zl, yds, yl, xds, xl);
+            return;
+        }
     }
 
     bary_mul_toom3_start(zds, zl, xds, xl, yds, yl, NULL, 0);

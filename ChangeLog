@@ -1,3 +1,8 @@
+Fri Aug  2 12:25:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul): Swap x and y for bary_mul1 if x is longer than y.
+	  [ruby-dev:47565] [Bug #8719] Reported by Narihiro Nakamura.
+
 Fri Aug  2 10:39:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* parse.y (negate_lit): add T_RATIONAL and T_COMPLEX to the switch
