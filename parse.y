@@ -11040,12 +11040,14 @@ ripper_validate_object(VALUE self, VALUE x)
     if (SYMBOL_P(x)) return x;
     if (!rb_is_pointer_to_heap(x))
         rb_raise(rb_eArgError, "invalid pointer: %p", x);
-    switch (TYPE(x)) {
+    switch (BUILTIN_TYPE(x)) {
       case T_STRING:
       case T_OBJECT:
       case T_ARRAY:
       case T_BIGNUM:
       case T_FLOAT:
+      case T_COMPLEX:
+      case T_RATIONAL:
         return x;
       case T_NODE:
 	if (nd_type(x) != NODE_LASGN) {
