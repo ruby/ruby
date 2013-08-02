@@ -3146,7 +3146,7 @@ take_items(VALUE obj, long n)
 static VALUE
 rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 {
-    int i, j;
+    int i, j, block_given, arity = 0;
     long len;
     VALUE result = Qnil;
 
@@ -3154,24 +3154,40 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
     for (i=0; i<argc; i++) {
 	argv[i] = take_items(argv[i], len);
     }
-    if (!rb_block_given_p()) {
+
+    block_given = rb_block_given_p();
+    if (block_given)
+	arity = rb_block_arity();
+    else
 	result = rb_ary_new2(len);
-    }
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	VALUE tmp = rb_ary_new2(argc+1);
+    if (block_given && arity > 1) {
+	int yield_argc = argc + 1;
+	VALUE *yield_argv = ALLOC_N(VALUE, yield_argc);
 
-	rb_ary_push(tmp, rb_ary_elt(ary, i));
-	for (j=0; j<argc; j++) {
-	    rb_ary_push(tmp, rb_ary_elt(argv[j], i));
-	}
-	if (NIL_P(result)) {
-	    rb_yield(tmp);
-	}
-	else {
-	    rb_ary_push(result, tmp);
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    yield_argv[0] = RARRAY_AREF(ary, i);
+	    for (j=0; j<argc; j++) {
+		yield_argv[j+1] = rb_ary_elt(argv[j], i);
+	    }
+	    rb_yield_values2(yield_argc, yield_argv);
 	}
     }
+    else {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    VALUE tmp = rb_ary_new2(argc+1);
+
+	    rb_ary_push(tmp, RARRAY_AREF(ary, i));
+	    for (j=0; j<argc; j++) {
+		rb_ary_push(tmp, rb_ary_elt(argv[j], i));
+	    }
+	    if (block_given)
+		rb_yield(tmp);
+	    else
+		rb_ary_push(result, tmp);
+	}
+    }
+
     return result;
 }
 

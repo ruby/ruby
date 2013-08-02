@@ -1,3 +1,8 @@
+Fri Aug  2 23:54:11 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): performance improvement by avoiding
+	  array creation if rb_block_arity() > 1.
+
 Fri Aug  2 23:50:53 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (power_cache_get_power): Appry bigtrunc to the result of
