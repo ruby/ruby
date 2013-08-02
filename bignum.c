@@ -4251,7 +4251,6 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
 {
     long i = RBIGNUM_LEN(x);
     size_t j;
-    int k;
     BDIGIT* ds = BDIGITS(x);
     BDIGIT_DBL num;
     char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
@@ -4271,26 +4270,22 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
             return;
         p = buf;
         j = sizeof(buf);
-    }
-    else {
-        power_cache_get_power(b2s->base, 0, &len);
-        p = b2s->ptr;
-        j = len;
-    }
-
-    k = b2s->hbase2_numdigits;
-    while (k--) {
-        p[--j] = ruby_digitmap[num % b2s->base];
-        num /= b2s->base;
-        if (j <= 0) break;
-        if (beginning && num == 0) break;
-    }
-    if (beginning) {
-	while (j < sizeof(buf) && buf[j] == '0')
-            j++;
+        do {
+            p[--j] = ruby_digitmap[num % b2s->base];
+            num /= b2s->base;
+        } while (num);
         len = sizeof(buf) - j;
         big2str_alloc(b2s, len + taillen);
 	MEMCPY(b2s->ptr, buf + j, char, len);
+    }
+    else {
+        p = b2s->ptr;
+        j = b2s->hbase2_numdigits;
+        do {
+            p[--j] = ruby_digitmap[num % b2s->base];
+            num /= b2s->base;
+        } while (j);
+        len = b2s->hbase2_numdigits;
     }
     b2s->ptr += len;
 }

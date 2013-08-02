@@ -1,6 +1,6 @@
-Sat Aug  3 01:40:33 2013  Tanaka Akira  <akr@fsij.org>
+Sat Aug  3 02:22:05 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.c (big2str_orig): Rename a local variable.
+	* bignum.c (big2str_orig): Refactored.
 
 Sat Aug  3 01:20:19 2013  Tanaka Akira  <akr@fsij.org>
 
