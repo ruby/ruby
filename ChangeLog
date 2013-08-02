@@ -1,3 +1,9 @@
+Sat Aug  3 06:55:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (value_expr_gen): now NODE_DEFN and NODE_DEFS are not void
+	  value expressions.  get rid of wrong warning with -w, and make to
+	  pass tests with chkbuild.  ref. [Feature #3753]
+
 Sat Aug  3 04:23:48 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/syntax/refinements.rdoc:  Remove mention of instance_eval and
