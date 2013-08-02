@@ -1,3 +1,8 @@
+Fri Aug  2 23:13:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/eventids2.c (ripper_init_eventids2): ripper support for
+	  new literals, tRATIONAL and tIMAGINARY.
+
 Fri Aug  2 18:33:28 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_karatsuba): Reduce power_level more than one at

@@ -87,6 +87,17 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[1, 1], :on_tstring_content, "\u3042\n\u3044"],
                   [[2, 3], :on_tstring_end, "'"]],
                  Ripper.lex("'\u3042\n\u3044'")
+    assert_equal [[[1, 0], :on_rational, "1r"],
+                  [[1, 2], :on_nl, "\n"],
+                  [[2, 0], :on_imaginary, "2i"],
+                  [[2, 2], :on_nl, "\n"],
+                  [[3, 0], :on_imaginary, "3ri"],
+                  [[3, 3], :on_nl, "\n"],
+                  [[4, 0], :on_rational, "4.2r"],
+                  [[4, 4], :on_nl, "\n"],
+                  [[5, 0], :on_imaginary, "5.6ri"],
+                 ],
+                 Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
   end
 
   def test_location
@@ -264,6 +275,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('float', 'm(a,b,1.0,c,d)')
   end
 
+  def test_rational
+    assert_equal [],
+                 scan('rational', '')
+    assert_equal ['1r', '10r', '10.1r'],
+                 scan('rational', 'm(1r,10r,10.1r)')
+  end
+
   def test_gvar
     assert_equal [],
                  scan('gvar', '')
@@ -284,6 +302,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('ident', 'lvar')
     assert_equal ['m', 'lvar'],
                  scan('ident', 'm(lvar, @ivar, @@cvar, $gvar)')
+  end
+
+  def test_imaginary
+    assert_equal [],
+                 scan('imaginary', '')
+    assert_equal ['1i', '10ri', '10.0i', '10.1ri'],
+                 scan('imaginary', 'm(1i,10ri,10.0i,10.1ri)')
   end
 
   def test_int
