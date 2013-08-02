@@ -9402,6 +9402,8 @@ negate_lit(NODE *node)
 	node->nd_lit = LONG2FIX(-FIX2LONG(node->nd_lit));
 	break;
       case T_BIGNUM:
+      case T_RATIONAL:
+      case T_COMPLEX:
 	node->nd_lit = rb_funcall(node->nd_lit,tUMINUS,0,0);
 	break;
       case T_FLOAT:
@@ -9417,6 +9419,7 @@ negate_lit(NODE *node)
 #endif
 	break;
       default:
+	rb_bug("unknown literal type passed to negate_lit");
 	break;
     }
     return node;
