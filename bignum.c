@@ -5357,12 +5357,6 @@ bigadd_int(VALUE x, long y)
     return bignorm(z);
 }
 
-static void
-bigadd_core(BDIGIT *xds, long xn, BDIGIT *yds, long yn, BDIGIT *zds, long zn)
-{
-    bary_add(zds, zn, xds, xn, yds, yn);
-}
-
 static VALUE
 bigadd(VALUE x, VALUE y, int sign)
 {
@@ -5383,9 +5377,9 @@ bigadd(VALUE x, VALUE y, int sign)
     }
     z = bignew(len, sign);
 
-    bigadd_core(BDIGITS(x), RBIGNUM_LEN(x),
-		BDIGITS(y), RBIGNUM_LEN(y),
-		BDIGITS(z), RBIGNUM_LEN(z));
+    bary_add(BDIGITS(z), RBIGNUM_LEN(z),
+             BDIGITS(x), RBIGNUM_LEN(x),
+             BDIGITS(y), RBIGNUM_LEN(y));
 
     return z;
 }

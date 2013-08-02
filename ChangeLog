@@ -1,3 +1,8 @@
+Sat Aug  3 01:20:19 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigadd_core): Removed.
+	  (bigadd): Use bary_add instead of bigadd_core.
+
 Sat Aug  3 00:52:43 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Simplify power_level calculation.
