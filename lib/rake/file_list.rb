@@ -185,6 +185,7 @@ module Rake
       klass == Array || super(klass)
     end
     alias kind_of? is_a?
+    alias is_an? is_a?
 
     # Redefine * to return either a string or a new file list.
     def *(other)
