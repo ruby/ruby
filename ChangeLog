@@ -1,3 +1,9 @@
+Fri Aug  2 20:41:15 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_asn1.c (asn1time_to_time):  Implement YYMMDDhhmmZ
+	  format for ASN.1 UTCTime.  [ruby-trunk - Bug #8664]
+	* test/openssl/test_asn1.rb:  Test for the above.
+
 Fri Aug  2 20:34:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* io.c (io_getpartial): use rb_str_locktmp_ensure().
