@@ -1,3 +1,9 @@
+Fri Aug  2 20:03:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (f_round_common): Rational is expected to be returned by
+	  Rational#*, but mathn.rb breaks that assumption.  [ruby-core:56177]
+	  [Bug #8687]
+
 Wed Jul 17 11:00:21 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:46058].
