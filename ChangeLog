@@ -1,4 +1,7 @@
-Fri Aug  2 23:13:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  2 23:14:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (simple_numeric): integrate numeric literals and simplify
+	  numeric rules.
 
 	* ext/ripper/eventids2.c (ripper_init_eventids2): ripper support for
 	  new literals, tRATIONAL and tIMAGINARY.

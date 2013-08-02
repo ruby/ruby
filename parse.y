@@ -761,7 +761,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
-%type <node> literal numeric dsym cpath
+%type <node> literal numeric simple_numeric dsym cpath
 %type <node> top_compstmt top_stmts top_stmt
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value fcall
@@ -2110,7 +2110,7 @@ arg		: lhs '=' arg
 			$$ = dispatch3(binary, $1, ripper_intern("**"), $3);
 		    %*/
 		    }
-		| tUMINUS_NUM tINTEGER tPOW arg
+		| tUMINUS_NUM simple_numeric tPOW arg
 		    {
 		    /*%%%*/
 			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
@@ -2119,33 +2119,6 @@ arg		: lhs '=' arg
 			$$ = dispatch2(unary, ripper_intern("-@"), $$);
 		    %*/
 		    }
-		| tUMINUS_NUM tFLOAT tPOW arg
-		    {
-		    /*%%%*/
-			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
-		    /*%
-			$$ = dispatch3(binary, $2, ripper_intern("**"), $4);
-			$$ = dispatch2(unary, ripper_intern("-@"), $$);
-		    %*/
-		    }
-                | tUMINUS_NUM tRATIONAL tPOW arg
-                    {
-                    /*%%%*/
-                        $$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
-                    /*%
-                        $$ = dispatch3(binary, $2, ripper_intern("**"), $4);
-                        $$ = dispatch2(unary, ripper_intern("-@"), $$);
-                    %*/
-                    }
-                | tUMINUS_NUM tIMAGINARY tPOW arg
-                    {
-                    /*%%%*/
-                        $$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
-                    /*%
-                        $$ = dispatch3(binary, $2, ripper_intern("**"), $4);
-                        $$ = dispatch2(unary, ripper_intern("-@"), $$);
-                    %*/
-                    }
 		| tUPLUS arg
 		    {
 		    /*%%%*/
@@ -4310,42 +4283,21 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 		    }
 		;
 
-numeric 	: tINTEGER
+numeric 	: simple_numeric
+		| tUMINUS_NUM simple_numeric   %prec tLOWEST
+		    {
+		    /*%%%*/
+			$$ = negate_lit($2);
+		    /*%
+			$$ = dispatch2(unary, ripper_intern("-@"), $2);
+		    %*/
+		    }
+		;
+
+simple_numeric	: tINTEGER
 		| tFLOAT
-                | tRATIONAL
-                | tIMAGINARY
-		| tUMINUS_NUM tINTEGER	       %prec tLOWEST
-		    {
-		    /*%%%*/
-			$$ = negate_lit($2);
-		    /*%
-			$$ = dispatch2(unary, ripper_intern("-@"), $2);
-		    %*/
-		    }
-		| tUMINUS_NUM tFLOAT	       %prec tLOWEST
-		    {
-		    /*%%%*/
-			$$ = negate_lit($2);
-		    /*%
-			$$ = dispatch2(unary, ripper_intern("-@"), $2);
-		    %*/
-		    }
-                | tUMINUS_NUM tRATIONAL	       %prec tLOWEST
-                    {
-                    /*%%%*/
-                        $$ = negate_lit($2);
-                    /*%
-                        $$ = dispatch2(unary, ripper_intern("-@"), $2);
-                    %*/
-                    }
-                | tUMINUS_NUM tIMAGINARY       %prec tLOWEST
-                    {
-                    /*%%%*/
-                        $$ = negate_lit($2);
-                    /*%
-                        $$ = dispatch2(unary, ripper_intern("-@"), $2);
-                    %*/
-                    }
+		| tRATIONAL
+		| tIMAGINARY
 		;
 
 user_variable	: tIDENTIFIER
