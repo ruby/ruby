@@ -44,7 +44,7 @@ Fri Aug  2 23:54:11 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 Fri Aug  2 23:50:53 2013  Tanaka Akira  <akr@fsij.org>
 
-	* bignum.c (power_cache_get_power): Appry bigtrunc to the result of
+	* bignum.c (power_cache_get_power): Apply bigtrunc to the result of
 	  bigsq.
 	  (big2str_karatsuba): Fix number of leading zero characters.
 
