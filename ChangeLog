@@ -1,3 +1,9 @@
+Fri Aug  2 18:33:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_karatsuba): Reduce power_level more than one at
+	  recursion, if possible.
+	  (rb_big2str1): Follow the above change.
+
 Fri Aug  2 12:25:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul): Swap x and y for bary_mul1 if x is longer than y.

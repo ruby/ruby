@@ -4300,33 +4300,87 @@ static void
 big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
 		  int power_level, size_t taillen)
 {
-    size_t m1;
     VALUE b, q, r;
+    size_t half_numdigits, lower_numdigits;
+    int lower_power_level;
+    size_t xn, bn;
+    BDIGIT *xds, *bds;
     size_t len;
+
+    /*
+     * Precondition:
+     * abs(x) < maxpow_in_bdigit_dbl(base, &numdigits)**(2**power_level)
+     *
+     * This function generates sequence of zeros, and then stringized abs(x) into b2s->ptr.
+     *
+     * b2s->ptr can be NULL.
+     * It is allocated when the first character is generated via big2str_alloc.
+     *
+     * The prefix zeros should be generated if and only if b2s->ptr is not NULL.
+     * When the zeros are generated, the zeros and abs(x) consists
+     * numdigits*(2**power_level) characters at total.
+     *
+     * Note:
+     * power_cache_get_power(base, power_level, &len) may not be cached yet. It should not be called.
+     * power_cache_get_power(base, power_level-1, &len) should be cached already if 0 <= power_level-1.
+     */
 
     if (BIGZEROP(x)) {
 	if (b2s->ptr) {
-            power_cache_get_power(b2s->base, power_level+1, &len);
+            /* When x is zero, power_cache_get_power(base, power_level) should be cached already. */
+            power_cache_get_power(b2s->base, power_level, &len);
 	    memset(b2s->ptr, '0', len);
             b2s->ptr += len;
 	}
         return;
     }
 
-    if (power_level < 0) {
+    if (power_level == 0) {
 	big2str_orig(b2s, x, taillen);
         return;
     }
 
-    b = power_cache_get_power(b2s->base, power_level, &m1);
+    xn = RBIGNUM_LEN(x);
+    xds = BDIGITS(x);
 
-    bigdivmod(x, b, &q, &r);
-    rb_obj_hide(q);
-    rb_obj_hide(r);
-    big2str_karatsuba(b2s, q, power_level-1, m1+taillen);
-    rb_big_resize(q, 0);
-    big2str_karatsuba(b2s, r, power_level-1, taillen);
-    rb_big_resize(r, 0);
+    lower_power_level = power_level-1;
+    b = power_cache_get_power(b2s->base, lower_power_level, &lower_numdigits);
+    bn = RBIGNUM_LEN(b);
+    bds = BDIGITS(b);
+
+    half_numdigits = lower_numdigits;
+
+    while (0 < lower_power_level &&
+            (xn < bn ||
+             (xn == bn && bary_cmp(xds, xn, bds, bn) < 0))) {
+        lower_power_level--;
+        b = power_cache_get_power(b2s->base, lower_power_level, &lower_numdigits);
+        bn = RBIGNUM_LEN(b);
+        bds = BDIGITS(b);
+    }
+
+    if (lower_power_level != power_level-1 && b2s->ptr) {
+        len = (half_numdigits - lower_numdigits) * 2;
+        memset(b2s->ptr, '0', len);
+        b2s->ptr += len;
+    }
+
+    if (lower_power_level == 0 &&
+            (xn < bn ||
+             (xn == bn && bary_cmp(xds, xn, bds, bn) < 0))) {
+	big2str_orig(b2s, x, taillen);
+    }
+    else {
+        bigdivmod(x, b, &q, &r);
+        bigtrunc(q);
+        bigtrunc(r);
+        rb_obj_hide(q);
+        rb_obj_hide(r);
+        big2str_karatsuba(b2s, q, lower_power_level, lower_numdigits+taillen);
+        rb_big_resize(q, 0);
+        big2str_karatsuba(b2s, r, lower_power_level, taillen);
+        rb_big_resize(r, 0);
+    }
 }
 
 static VALUE
@@ -4395,15 +4449,16 @@ rb_big2str1(VALUE x, int base)
         power = power_cache_get_power(base, power_level, NULL);
     }
     assert(power_level != MAX_BIG2STR_TABLE_ENTRIES);
-    if (FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power), RBIGNUM_LEN(power))) < 0) {
-        power_level--;
-#ifndef NDEBUG
-        if (0 <= power_level) {
-            VALUE power0 = power_cache_get_power(base, power_level, NULL);
-            assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) >= 0);
-        }
-#endif
+    if (FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power), RBIGNUM_LEN(power))) >= 0) {
+        power_level++;
     }
+
+#ifndef NDEBUG
+    if (0 < power_level) {
+        VALUE power0 = power_cache_get_power(base, power_level-1, NULL);
+        assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) >= 0);
+    }
+#endif
 
     b2s_data.negative = RBIGNUM_NEGATIVE_P(x);
     b2s_data.base = base;
@@ -4415,7 +4470,7 @@ rb_big2str1(VALUE x, int base)
 
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
-    if (power_level < 0) {
+    if (power_level == 0) {
 	big2str_orig(&b2s_data, xx, 0);
     }
     else {
@@ -4524,6 +4579,7 @@ big2ulong(VALUE x, const char *type)
     return num;
 }
 
+/* deprecated */
 VALUE
 rb_big2ulong_pack(VALUE x)
 {
