@@ -30,7 +30,8 @@ with all sufficient information, see the ChangeLog file.
 
 * IO
   * extended methods:
-    * IO#seek accepts symbols (:CUR, :END, :SET) for 2nd argument.
+    * IO#seek supports SEEK_DATA and SEEK_HOLE as whence.
+    * IO#seek accepts symbols (:CUR, :END, :SET, :DATA, :HOLE) for 2nd argument.
 
 * Kernel
   * New methods:

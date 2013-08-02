@@ -1,3 +1,8 @@
+Sat Aug  3 00:12:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* NEWS: Add the description that IO#seek supports SEEK_DATA
+	  and SEEK_HOLE.
+
 Fri Aug  2 23:57:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* vm.c (m_core_define_method, m_core_define_singleton_method): now
