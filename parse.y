@@ -7649,9 +7649,7 @@ parser_yylex(struct parser_params *parser)
 		    type = tRATIONAL;
 		    memmove(point, point+1, fraclen+1);
 		    v = rb_cstr_to_inum(tok(), 10, FALSE);
-		    *point = '1';
-		    memset(point+1, '0', fraclen);
-		    v = rb_rational_new(v, rb_cstr_to_inum(point, 10, FALSE));
+		    v = rb_rational_new(v, rb_int_positive_pow(10, fraclen));
 		}
 		else {
 		    double d = strtod(tok(), 0);

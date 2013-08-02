@@ -2986,6 +2986,12 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
+VALUE
+rb_int_positive_pow(long x, unsigned long y)
+{
+    return int_pow(x, y);
+}
+
 /*
  *  call-seq:
  *    fix ** numeric  ->  numeric_result

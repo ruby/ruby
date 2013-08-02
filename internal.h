@@ -503,6 +503,9 @@ VALUE rb_big_sq_fast(VALUE x);
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);
 
+/* numeric.c */
+VALUE rb_int_positive_pow(long x, unsigned long y);
+
 /* process.c */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);

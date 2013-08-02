@@ -1,4 +1,7 @@
-Fri Aug  2 23:14:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  2 23:48:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): calculate denominator directly as powers of
+	  ten, not parsing string.
 
 	* parse.y (parser_number_literal_suffix): return bit set of found
 	  suffixes.
