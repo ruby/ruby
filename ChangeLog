@@ -1,3 +1,21 @@
+Fri Aug  2 20:34:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (io_getpartial): use rb_str_locktmp_ensure().
+	  [ruby-core:56121] [Bug #8669]
+
+	* io.c (rb_io_sysread): ditto.
+
+	* test/ruby/test_io.rb: add tests for above.
+
+Fri Aug  2 20:34:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c: add internal API rb_str_locktmp_ensure().
+
+	* io.c (io_fread): use rb_str_locktmp_ensure().
+	  [ruby-core:56121] [Bug #8669]
+
+	* test/ruby/test_io.rb: add a test for above.
+
 Fri Aug  2 20:03:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rational.c (f_round_common): Rational is expected to be returned by
