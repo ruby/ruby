@@ -55,8 +55,10 @@ install:
       refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
     end
 
-    assert_match %r%^all: destination$%,     results
-    assert_match %r%^install: destination$%, results
+    if /nmake/ !~ results
+      assert_match %r%^all: destination$%,     results
+      assert_match %r%^install: destination$%, results
+    end
   end
 
   def test_build_extensions_none
