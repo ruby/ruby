@@ -26,8 +26,8 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       end
     end
 
-    assert_equal "ERROR:  Gem names and --all may not be used together\n",
-                 @ui.error
+    assert_match(/\A(?:WARNING:  Unable to use symlinks on Windows, installing wrapper\n)?ERROR:  Gem names and --all may not be used together\n\z/,
+                 @ui.error)
   end
 
   def test_execute_dependency_order
