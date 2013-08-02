@@ -1,3 +1,9 @@
+Sat Aug  3 04:23:48 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/syntax/refinements.rdoc:  Remove mention of instance_eval and
+	  module_eval from scope section per:
+	  http://twitter.com/shugomaeda/status/363219951336693761
+
 Sat Aug  3 02:22:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_orig): Refactored.
