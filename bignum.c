@@ -4255,7 +4255,7 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
     BDIGIT* ds = BDIGITS(x);
     BDIGIT_DBL num;
     char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
-    int trim = !b2s->ptr;
+    int beginning = !b2s->ptr;
     size_t len = 0;
 
     assert(i <= 2);
@@ -4266,7 +4266,7 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
     if (1 < i)
         num |= BIGUP(ds[1]);
 
-    if (trim) {
+    if (beginning) {
         if (num == 0)
             return;
         p = buf;
@@ -4283,9 +4283,9 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
         p[--j] = ruby_digitmap[num % b2s->base];
         num /= b2s->base;
         if (j <= 0) break;
-        if (trim && num == 0) break;
+        if (beginning && num == 0) break;
     }
-    if (trim) {
+    if (beginning) {
 	while (j < sizeof(buf) && buf[j] == '0')
             j++;
         len = sizeof(buf) - j;
