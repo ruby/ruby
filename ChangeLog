@@ -1,3 +1,9 @@
+Fri Aug  2 23:50:53 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (power_cache_get_power): Appry bigtrunc to the result of
+	  bigsq.
+	  (big2str_karatsuba): Fix number of leading zero characters.
+
 Fri Aug  2 23:48:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): calculate denominator directly as powers of

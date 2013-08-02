@@ -106,6 +106,8 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("nd075ib45k86g" ,18446744073709551616.to_s(31), "[ruby-core:10686]")
     assert_equal("1777777777777777777777" ,18446744073709551615.to_s(8))
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
+    assert_match(/\A10{99}1\z/, (10**100+1).to_s)
+    assert_match(/\A10{900}9{100}\z/, (10**1000+(10**100-1)).to_s)
   end
 
   b = 2**64

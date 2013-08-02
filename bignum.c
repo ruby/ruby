@@ -4156,7 +4156,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits = numdigits0;
         }
         else {
-            power = bigsq(power_cache_get_power(base, power_level - 1, &numdigits));
+            power = bigtrunc(bigsq(power_cache_get_power(base, power_level - 1, &numdigits)));
             numdigits *= 2;
         }
         rb_obj_hide(power);
@@ -4358,21 +4358,26 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
         bds = BDIGITS(b);
     }
 
-    if (lower_power_level != power_level-1 && b2s->ptr) {
-        len = (half_numdigits - lower_numdigits) * 2;
-        memset(b2s->ptr, '0', len);
-        b2s->ptr += len;
-    }
-
     if (lower_power_level == 0 &&
             (xn < bn ||
              (xn == bn && bary_cmp(xds, xn, bds, bn) < 0))) {
+        if (b2s->ptr) {
+            len = half_numdigits * 2 - lower_numdigits;
+            memset(b2s->ptr, '0', len);
+            b2s->ptr += len;
+        }
 	big2str_orig(b2s, x, taillen);
     }
     else {
+        if (lower_power_level != power_level-1 && b2s->ptr) {
+            len = (half_numdigits - lower_numdigits) * 2;
+            memset(b2s->ptr, '0', len);
+            b2s->ptr += len;
+        }
         bigdivmod(x, b, &q, &r);
         bigtrunc(q);
         bigtrunc(r);
+        assert(RBIGNUM_LEN(q) <= RBIGNUM_LEN(b));
         rb_obj_hide(q);
         rb_obj_hide(r);
         big2str_karatsuba(b2s, q, lower_power_level, lower_numdigits+taillen);
@@ -4454,8 +4459,14 @@ rb_big2str1(VALUE x, int base)
 
 #ifndef NDEBUG
     if (0 < power_level) {
-        VALUE power0 = power_cache_get_power(base, power_level-1, NULL);
-        assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) >= 0);
+        VALUE power1 = power_cache_get_power(base, power_level-1, NULL);
+        assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power1), RBIGNUM_LEN(power1))) >= 0);
+        /*
+        {
+            VALUE power0 = power_cache_get_power(base, power_level, NULL);
+            assert(FIX2LONG(bary_cmp(BDIGITS(x), RBIGNUM_LEN(x), BDIGITS(power0), RBIGNUM_LEN(power0))) < 0);
+        }
+        */
     }
 #endif
 
