@@ -1,4 +1,13 @@
-Fri Aug  2 23:14:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  2 23:14:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_number_literal_suffix): return bit set of found
+	  suffixes.
+
+	* parse.y (parser_set_number_literal, parser_set_integer_literal):
+	  split from parser_number_literal_suffix to set yyvlal.
+
+	* parse.y (parser_yylex): parse rational number literal with decimal
+	  point precisely.
 
 	* parse.y (simple_numeric): integrate numeric literals and simplify
 	  numeric rules.

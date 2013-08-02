@@ -5024,7 +5024,9 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define heredoc_identifier()         parser_heredoc_identifier(parser)
 # define heredoc_restore(n)           parser_heredoc_restore(parser,(n))
 # define whole_match_p(e,l,i)         parser_whole_match_p(parser,(e),(l),(i))
-# define number_literal_suffix(v, f)  parser_number_literal_suffix(parser, (v), (f))
+# define number_literal_suffix(f)     parser_number_literal_suffix(parser, (f))
+# define set_number_literal(v, t, f)  parser_set_number_literal(parser, (v), (t), (f))
+# define set_integer_literal(v, f)    parser_set_integer_literal(parser, (v), (f))
 
 #ifndef RIPPER
 # define set_yylval_str(x) (yylval.node = NEW_STR(x))
@@ -6382,51 +6384,54 @@ parser_whole_match_p(struct parser_params *parser,
 #define NUM_SUFFIX_ALL 3
 
 static int
-parser_number_literal_suffix(struct parser_params *parser, VALUE v, int const flag)
+parser_number_literal_suffix(struct parser_params *parser, int mask)
 {
-    int c = nextc();
-    if ((flag & NUM_SUFFIX_R) > 0 && c == 'r') {
-        c = nextc();
-        if (c != 'i' && (ISALNUM(c) || c == '_')) {
-            pushback(c);
-            pushback('r');
-            goto finish;
-        }
+    int c, result = 0;
+    const char *lastp = lex_p;
 
-        if (RB_TYPE_P(v, T_FLOAT)) {
-            v = rb_flt_rationalize(v);
-        }
-        else {
-            v = rb_rational_new(v, INT2FIX(1));
-        }
+    while ((c = nextc()) != -1) {
+	if ((mask & NUM_SUFFIX_I) && c == 'i') {
+	    result |= (mask & NUM_SUFFIX_I);
+	    mask &= ~NUM_SUFFIX_I;
+	    /* r after i, rational of complex is disallowed */
+	    mask &= ~NUM_SUFFIX_R;
+	    continue;
+	}
+	if ((mask & NUM_SUFFIX_R) && c == 'r') {
+	    result |= (mask & NUM_SUFFIX_R);
+	    mask &= ~NUM_SUFFIX_R;
+	    continue;
+	}
+	if (!ISASCII(c) || ISALPHA(c) || c == '_') {
+	    lex_p = lastp;
+	    return 0;
+	}
+	pushback(c);
+	break;
     }
-    if ((flag & NUM_SUFFIX_I) > 0 && c == 'i') {
-        c = nextc();
-        if (ISALNUM(c) || c == '_') {
-            pushback(c);
-            pushback('i');
-            goto finish;
-        }
+    return result;
+}
 
-        v = rb_complex_new(INT2FIX(0), v);
+static int
+parser_set_number_literal(struct parser_params *parser, VALUE v, int type, int suffix)
+{
+    if (suffix & NUM_SUFFIX_I) {
+	v = rb_complex_raw(INT2FIX(0), v);
+	type = tIMAGINARY;
     }
-    pushback(c);
-
-finish:
     set_yylval_literal(v);
-    switch (TYPE(v)) {
-    case T_FIXNUM: case T_BIGNUM:
-        return tINTEGER;
-    case T_FLOAT:
-        return tFLOAT;
-    case T_RATIONAL:
-        return tRATIONAL;
-    case T_COMPLEX:
-        return tIMAGINARY;
-    default:
-        break;
+    return type;
+}
+
+static int
+parser_set_integer_literal(struct parser_params *parser, VALUE v, int suffix)
+{
+    int type = tINTEGER;
+    if (suffix & NUM_SUFFIX_R) {
+	v = rb_rational_new(v, INT2FIX(1));
+	type = tRATIONAL;
     }
-    UNREACHABLE;
+    return set_number_literal(v, type, suffix);
 }
 
 #ifdef RIPPER
@@ -7425,7 +7430,7 @@ parser_yylex(struct parser_params *parser)
       case '5': case '6': case '7': case '8': case '9':
 	{
 	    int is_float, seen_point, seen_e, nondigit;
-            VALUE v;
+	    int suffix;
 
 	    is_float = seen_point = seen_e = nondigit = 0;
 	    lex_state = EXPR_END;
@@ -7459,8 +7464,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    v = rb_cstr_to_inum(tok(), 16, FALSE);
-                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
+		    suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+		    return set_integer_literal(rb_cstr_to_inum(tok(), 16, FALSE), suffix);
 		}
 		if (c == 'b' || c == 'B') {
 		    /* binary */
@@ -7483,8 +7488,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    v = rb_cstr_to_inum(tok(), 2, FALSE);
-                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
+		    suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+		    return set_integer_literal(rb_cstr_to_inum(tok(), 2, FALSE), suffix);
 		}
 		if (c == 'd' || c == 'D') {
 		    /* decimal */
@@ -7507,8 +7512,8 @@ parser_yylex(struct parser_params *parser)
 			no_digits();
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    v = rb_cstr_to_inum(tok(), 10, FALSE);
-                    return number_literal_suffix(v, NUM_SUFFIX_ALL);
+		    suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+		    return set_integer_literal(rb_cstr_to_inum(tok(), 10, FALSE), suffix);
 		}
 		if (c == '_') {
 		    /* 0_0 */
@@ -7539,8 +7544,8 @@ parser_yylex(struct parser_params *parser)
 			pushback(c);
 			tokfix();
 			if (nondigit) goto trailing_uc;
-                        v = rb_cstr_to_inum(tok(), 8, FALSE);
-                        return number_literal_suffix(v, NUM_SUFFIX_ALL);
+			suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+			return set_integer_literal(rb_cstr_to_inum(tok(), 8, FALSE), suffix);
 		    }
 		    if (nondigit) {
 			pushback(c);
@@ -7556,7 +7561,8 @@ parser_yylex(struct parser_params *parser)
 		}
 		else {
 		    pushback(c);
-                    return number_literal_suffix(INT2FIX(0), NUM_SUFFIX_ALL);
+		    suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+		    return set_integer_literal(INT2FIX(0), suffix);
 		}
 	    }
 
@@ -7581,10 +7587,10 @@ parser_yylex(struct parser_params *parser)
 			}
 			c = c0;
 		    }
+		    seen_point = toklen();
 		    tokadd('.');
 		    tokadd(c);
 		    is_float++;
-		    seen_point++;
 		    nondigit = 0;
 		    break;
 
@@ -7633,16 +7639,32 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    tokfix();
 	    if (is_float) {
-		double d = strtod(tok(), 0);
-		if (errno == ERANGE) {
-		    rb_warningS("Float %s out of range", tok());
-		    errno = 0;
+		int type = tFLOAT;
+		VALUE v;
+
+		suffix = number_literal_suffix(seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
+		if (suffix & NUM_SUFFIX_R) {
+		    char *point = &tok()[seen_point];
+		    size_t fraclen = toklen()-seen_point-1;
+		    type = tRATIONAL;
+		    memmove(point, point+1, fraclen+1);
+		    v = rb_cstr_to_inum(tok(), 10, FALSE);
+		    *point = '1';
+		    memset(point+1, '0', fraclen);
+		    v = rb_rational_new(v, rb_cstr_to_inum(point, 10, FALSE));
 		}
-                v = DBL2NUM(d);
-                return number_literal_suffix(v, seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
+		else {
+		    double d = strtod(tok(), 0);
+		    if (errno == ERANGE) {
+			rb_warningS("Float %s out of range", tok());
+			errno = 0;
+		    }
+		    v = DBL2NUM(d);
+		}
+		return set_number_literal(v, type, suffix);
 	    }
-            v = rb_cstr_to_inum(tok(), 10, FALSE);
-            return number_literal_suffix(v, NUM_SUFFIX_ALL);
+	    suffix = number_literal_suffix(NUM_SUFFIX_ALL);
+	    return set_integer_literal(rb_cstr_to_inum(tok(), 10, FALSE), suffix);
 	}
 
       case ')':
