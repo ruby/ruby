@@ -1,3 +1,8 @@
+Sat Aug  3 00:34:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): use rb_ary_new2() to create buffer
+	  if rb_block_arity() > 1.
+
 Sat Aug  3 00:12:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* NEWS: Add the description that IO#seek supports SEEK_DATA

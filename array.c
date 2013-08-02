@@ -3162,15 +3162,14 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 	result = rb_ary_new2(len);
 
     if (block_given && arity > 1) {
-	int yield_argc = argc + 1;
-	VALUE *yield_argv = ALLOC_N(VALUE, yield_argc);
+	VALUE tmp = rb_ary_new2(argc+1);
 
 	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    yield_argv[0] = RARRAY_AREF(ary, i);
+	    rb_ary_store(tmp, 0, RARRAY_AREF(ary, i));
 	    for (j=0; j<argc; j++) {
-		yield_argv[j+1] = rb_ary_elt(argv[j], i);
+		rb_ary_store(tmp, j+1, rb_ary_elt(argv[j], i));
 	    }
-	    rb_yield_values2(yield_argc, yield_argv);
+	    rb_yield_values2(argc+1, RARRAY_RAWPTR(tmp));
 	}
     }
     else {
