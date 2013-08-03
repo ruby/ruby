@@ -4108,18 +4108,18 @@ big_rshift(VALUE x, unsigned long shift)
     return big_shift3(x, 0, s1, s2);
 }
 
-#define MAX_BIG2STR_TABLE_ENTRIES (SIZEOF_SIZE_T * CHAR_BIT + 1)
+#define MAX_BASE36_POWER_TABLE_ENTRIES (SIZEOF_SIZE_T * CHAR_BIT + 1)
 
-static VALUE big2str_power_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
-static size_t big2str_numdigits_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
+static VALUE base36_power_cache[35][MAX_BASE36_POWER_TABLE_ENTRIES];
+static size_t base36_numdigits_cache[35][MAX_BASE36_POWER_TABLE_ENTRIES];
 
 static void
 power_cache_init(void)
 {
     int i, j;
     for (i = 0; i < 35; ++i) {
-	for (j = 0; j < MAX_BIG2STR_TABLE_ENTRIES; ++j) {
-	    big2str_power_cache[i][j] = Qnil;
+	for (j = 0; j < MAX_BASE36_POWER_TABLE_ENTRIES; ++j) {
+	    base36_power_cache[i][j] = Qnil;
 	}
     }
 }
@@ -4128,23 +4128,23 @@ static inline VALUE
 power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
 {
     /*
-     * MAX_BIG2STR_TABLE_ENTRIES is big enough to that
-     * big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1] fills whole memory.
-     * So MAX_BIG2STR_TABLE_ENTRIES <= power_level is not possible to calculate.
+     * MAX_BASE36_POWER_TABLE_ENTRIES is big enough to that
+     * base36_power_cache[base][MAX_BASE36_POWER_TABLE_ENTRIES-1] fills whole memory.
+     * So MAX_BASE36_POWER_TABLE_ENTRIES <= power_level is not possible to calculate.
      *
      * number-of-bytes =
-     * log256(big2str_power_cache[base][MAX_BIG2STR_TABLE_ENTRIES-1]) =
-     * log256(maxpow_in_bdigit_dbl(base)**(2**(MAX_BIG2STR_TABLE_ENTRIES-1))) =
+     * log256(base36_power_cache[base][MAX_BASE36_POWER_TABLE_ENTRIES-1]) =
+     * log256(maxpow_in_bdigit_dbl(base)**(2**(MAX_BASE36_POWER_TABLE_ENTRIES-1))) =
      * log256(maxpow_in_bdigit_dbl(base)**(2**(SIZEOF_SIZE_T*CHAR_BIT))) =
      * (2**(SIZEOF_SIZE_T*CHAR_BIT))*log256(maxpow_in_bdigit_dbl(base)) =
      * (256**SIZEOF_SIZE_T)*log256(maxpow_in_bdigit_dbl(base)) >
      * (256**SIZEOF_SIZE_T)*(sizeof(BDIGIT_DBL)-1) >
      * 256**SIZEOF_SIZE_T
      */
-    if (MAX_BIG2STR_TABLE_ENTRIES <= power_level)
+    if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    if (NIL_P(big2str_power_cache[base - 2][power_level])) {
+    if (NIL_P(base36_power_cache[base - 2][power_level])) {
         VALUE power;
         size_t numdigits;
         if (power_level == 0) {
@@ -4160,13 +4160,13 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits *= 2;
         }
         rb_obj_hide(power);
-        big2str_power_cache[base - 2][power_level] = power;
-        big2str_numdigits_cache[base - 2][power_level] = numdigits;
+        base36_power_cache[base - 2][power_level] = power;
+        base36_numdigits_cache[base - 2][power_level] = numdigits;
 	rb_gc_register_mark_object(power);
     }
     if (numdigits_ret)
-        *numdigits_ret = big2str_numdigits_cache[base - 2][power_level];
-    return big2str_power_cache[base - 2][power_level];
+        *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
+    return base36_power_cache[base - 2][power_level];
 }
 
 /*
@@ -4444,12 +4444,12 @@ rb_big2str1(VALUE x, int base)
 
     power_level = 0;
     power = power_cache_get_power(base, power_level, NULL);
-    while (power_level < MAX_BIG2STR_TABLE_ENTRIES &&
+    while (power_level < MAX_BASE36_POWER_TABLE_ENTRIES &&
            RBIGNUM_LEN(power) <= (RBIGNUM_LEN(x)+1)/2) {
         power_level++;
         power = power_cache_get_power(base, power_level, NULL);
     }
-    assert(power_level != MAX_BIG2STR_TABLE_ENTRIES);
+    assert(power_level != MAX_BASE36_POWER_TABLE_ENTRIES);
 
     if (RBIGNUM_LEN(power) <= RBIGNUM_LEN(x)) {
         /*

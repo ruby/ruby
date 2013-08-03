@@ -1,3 +1,10 @@
+Sat Aug  3 13:30:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (MAX_BASE36_POWER_TABLE_ENTRIES): Renamed from
+	  MAX_BIG2STR_TABLE_ENTRIES.
+	  (base36_power_cache): Renamed from big2str_power_cache.
+	  (base36_numdigits_cache): Renamed from big2str_numdigits_cache.
+
 Sat Aug  3 10:33:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_set_integer_literal): use rb_rational_raw1() for
