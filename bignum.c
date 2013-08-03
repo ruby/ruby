@@ -4247,23 +4247,21 @@ big2str_alloc(struct big2str_struct *b2s, size_t len)
 }
 
 static void
-big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
+big2str_orig(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
 {
-    long i = RBIGNUM_LEN(x);
     size_t j;
-    BDIGIT* ds = BDIGITS(x);
     BDIGIT_DBL num;
     char buf[SIZEOF_BDIGIT_DBL*CHAR_BIT], *p;
     int beginning = !b2s->ptr;
     size_t len = 0;
 
-    assert(i <= 2);
+    assert(xn <= 2);
 
     num = 0;
-    if (0 < i)
-        num = ds[0];
-    if (1 < i)
-        num |= BIGUP(ds[1]);
+    if (0 < xn)
+        num = xds[0];
+    if (1 < xn)
+        num |= BIGUP(xds[1]);
 
     if (beginning) {
         if (num == 0)
@@ -4291,14 +4289,15 @@ big2str_orig(struct big2str_struct *b2s, VALUE x, size_t taillen)
 }
 
 static void
-big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
-		  int power_level, size_t taillen)
+big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn,
+		  int power_level, size_t taillen,
+                  BDIGIT *wds, size_t wn)
 {
-    VALUE b, q, r;
+    VALUE b;
     size_t half_numdigits, lower_numdigits;
     int lower_power_level;
-    size_t xn, bn;
-    BDIGIT *xds, *bds;
+    size_t bn;
+    BDIGIT *bds;
     size_t len;
 
     /*
@@ -4321,7 +4320,7 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
      * power_cache_get_power(base, power_level-1, &len) should be cached already if 0 <= power_level-1.
      */
 
-    if (BIGZEROP(x)) {
+    if (xn == 0 || bary_zero_p(xds, xn)) {
 	if (b2s->ptr) {
             /* When x is zero, power_cache_get_power(base, power_level) should be cached already. */
             power_cache_get_power(b2s->base, power_level, &len);
@@ -4332,12 +4331,9 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
     }
 
     if (power_level == 0) {
-	big2str_orig(b2s, x, taillen);
+	big2str_orig(b2s, xds, xn, taillen);
         return;
     }
-
-    xn = RBIGNUM_LEN(x);
-    xds = BDIGITS(x);
 
     lower_power_level = power_level-1;
     b = power_cache_get_power(b2s->base, lower_power_level, &lower_numdigits);
@@ -4363,24 +4359,35 @@ big2str_karatsuba(struct big2str_struct *b2s, VALUE x,
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-	big2str_orig(b2s, x, taillen);
+	big2str_orig(b2s, xds, xn, taillen);
     }
     else {
+        VALUE tmpw = 0;
+        BDIGIT *qds, *rds;
+        size_t qn, rn;
         if (lower_power_level != power_level-1 && b2s->ptr) {
             len = (half_numdigits - lower_numdigits) * 2;
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-        bigdivmod(x, b, &q, &r);
-        bigtrunc(q);
-        bigtrunc(r);
-        assert(RBIGNUM_LEN(q) <= RBIGNUM_LEN(b));
-        rb_obj_hide(q);
-        rb_obj_hide(r);
-        big2str_karatsuba(b2s, q, lower_power_level, lower_numdigits+taillen);
-        rb_big_resize(q, 0);
-        big2str_karatsuba(b2s, r, lower_power_level, taillen);
-        rb_big_resize(r, 0);
+        if (wn < bn * 4 + BIGDIVREM_EXTRA_WORDS) {
+            wn = bn * 4 + BIGDIVREM_EXTRA_WORDS;
+            wds = ALLOCV_N(BDIGIT, tmpw, wn);
+        }
+        rn = bn;
+        qn = xn+BIGDIVREM_EXTRA_WORDS;
+        rds = wds;
+        qds = wds+rn;
+        bary_divmod(qds, qn, rds, rn, xds, xn, bds, bn);
+        while (0 < qn && qds[qn-1] == 0)
+            qn--;
+        assert(qn <= bn);
+        big2str_karatsuba(b2s, qds, qn, lower_power_level, lower_numdigits+taillen, qds+qn, wn-(rn+qn));
+        while (0 < rn && rds[rn-1] == 0)
+            rn--;
+        big2str_karatsuba(b2s, rds, rn, lower_power_level, taillen, rds+rn, wn-rn);
+        if (tmpw)
+            ALLOCV_END(tmpw);
     }
 }
 
@@ -4418,7 +4425,6 @@ big2str_base_powerof2(VALUE x, int base)
 static VALUE
 rb_big2str1(VALUE x, int base)
 {
-    VALUE xx;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
@@ -4473,15 +4479,13 @@ rb_big2str1(VALUE x, int base)
     b2s_data.result = Qnil;
     b2s_data.ptr = NULL;
 
-    xx = rb_big_clone(x);
-    RBIGNUM_SET_SIGN(xx, 1);
     if (power_level == 0) {
-	big2str_orig(&b2s_data, xx, 0);
+	big2str_orig(&b2s_data, BDIGITS(x), RBIGNUM_LEN(x), 0);
     }
     else {
-	big2str_karatsuba(&b2s_data, xx, power_level, 0);
+	big2str_karatsuba(&b2s_data, BDIGITS(x), RBIGNUM_LEN(x), power_level, 0, NULL, 0);
     }
-    rb_big_resize(xx, 0);
+    RB_GC_GUARD(x);
 
     *b2s_data.ptr = '\0';
     rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));

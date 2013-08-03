@@ -1,3 +1,11 @@
+Sat Aug  3 22:23:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_orig): Receive the number to stringize as
+	  BDIGIT array and size.
+	  (big2str_karatsuba): Receive the number to stringize as BDIGIT array
+	  and size.  Use an temporary array of BDIGIT.
+	  (rb_big2str1): Follow the above change.
+
 Sat Aug  3 13:30:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (MAX_BASE36_POWER_TABLE_ENTRIES): Renamed from
