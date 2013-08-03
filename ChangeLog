@@ -1,3 +1,18 @@
+Sat Aug  3 23:02:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/extmk.rb (extmake): Invoke Logging::log_close in a ensure
+	  clause.
+
+Sat Aug  3 23:02:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/extmk.rb (extmake): Use Logging.open to switch stdout and
+	  stderr.  Delay Logging::log_close until the failure message is
+	  written.  Write the failure message only if log file is opened.
+
+	* lib/mkmf.rb (Logging.log_opened?): New method.
+
+	  [ruby-dev:47215] [Bug #8209]
+
 Sat Aug  3 22:46:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (xsystem): expand environment variable in all macros not
