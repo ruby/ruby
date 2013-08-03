@@ -102,6 +102,7 @@ strio_substr(struct StringIO *ptr, long pos, long len)
 
     if (len > rlen) len = rlen;
     if (len < 0) len = 0;
+    if (len == 0) return rb_str_new(0,0);
     return rb_enc_str_new(RSTRING_PTR(str)+pos, len, enc);
 }
 
