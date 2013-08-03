@@ -1,3 +1,8 @@
+Sat Aug  3 09:46:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (setup_passwd, setup_group): set proper encodings to
+	  string members.
+
 Sat Aug  3 09:30:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (rb_struct_define_under): new function to define Struct
