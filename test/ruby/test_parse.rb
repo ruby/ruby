@@ -752,13 +752,7 @@ x = __ENCODING__
       eval %q(1; next; 2)
     end
 
-    o = Object.new
-    assert_nothing_raised do
-      eval <<-END, nil, __FILE__, __LINE__+1
-        x = def o.foo; end
-      END
-    end
-    assert_equal(14, $stderr.string.lines.to_a.size)
+    assert_equal(13, $stderr.string.lines.to_a.size)
     $stderr = stderr
   end
 
