@@ -1,3 +1,13 @@
+Sun Aug  4 00:22:34 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary2bdigitdbl): New function.
+	  (bdigitdbl2bary): Ditto.
+	  (bary_mul_single): Use bdigitdbl2bary.
+	  (power_cache_get_power): Ditto.
+	  (bary_divmod): Use bary2bdigitdbl.
+	  (big2str_orig): Ditto.
+	  (bigdivrem): Ditto.
+
 Sat Aug  3 22:47:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: The branch condition of selecting multiplication

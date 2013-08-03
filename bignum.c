@@ -482,6 +482,27 @@ maxpow_in_bdigit(int base, int *exp_ret)
     return maxpow;
 }
 
+static inline BDIGIT_DBL
+bary2bdigitdbl(const BDIGIT *ds, size_t n)
+{
+    assert(n <= 2);
+
+    if (n == 2)
+        return ds[0] | BIGUP(ds[1]);
+    if (n == 1)
+        return ds[0];
+    return 0;
+}
+
+static inline void
+bdigitdbl2bary(BDIGIT *ds, size_t n, BDIGIT_DBL num)
+{
+    assert(n == 2);
+
+    ds[0] = BIGLO(num);
+    ds[1] = (BDIGIT)BIGDN(num);
+}
+
 static int
 bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
@@ -1551,9 +1572,7 @@ bary_mul_single(BDIGIT *zds, size_t zl, BDIGIT x, BDIGIT y)
     assert(2 <= zl);
 
     n = (BDIGIT_DBL)x * y;
-    zds[0] = BIGLO(n);
-    zds[1] = (BDIGIT)BIGDN(n);
-
+    bdigitdbl2bary(zds, 2, n);
     BDIGITS_ZERO(zds + 2, zl - 2);
 }
 
@@ -2724,8 +2743,8 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, const BDIGIT *xds, s
         BDIGITS_ZERO(rds+1, nr-1);
     }
     else if (nx == 2 && ny == 2) {
-        BDIGIT_DBL x = xds[0] | BIGUP(xds[1]);
-        BDIGIT_DBL y = yds[0] | BIGUP(yds[1]);
+        BDIGIT_DBL x = bary2bdigitdbl(xds, 2);
+        BDIGIT_DBL y = bary2bdigitdbl(yds, 2);
         BDIGIT_DBL q = x / y;
         BDIGIT_DBL r = x % y;
         qds[0] = BIGLO(q);
@@ -4151,8 +4170,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             int numdigits0;
             BDIGIT_DBL dd = maxpow_in_bdigit_dbl(base, &numdigits0);
             power = bignew(2, 1);
-            BDIGITS(power)[0] = BIGLO(dd);
-            BDIGITS(power)[1] = (BDIGIT)BIGDN(dd);
+            bdigitdbl2bary(BDIGITS(power), 2, dd);
             numdigits = numdigits0;
         }
         else {
@@ -4256,12 +4274,7 @@ big2str_orig(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
     size_t len = 0;
 
     assert(xn <= 2);
-
-    num = 0;
-    if (0 < xn)
-        num = xds[0];
-    if (1 < xn)
-        num |= BIGUP(xds[1]);
+    num = bary2bdigitdbl(xds, xn);
 
     if (beginning) {
         if (num == 0)
@@ -5575,8 +5588,8 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 	return Qnil;
     }
     if (nx == 2 && ny == 2) {
-        BDIGIT_DBL x0 = xds[0] | BIGUP(xds[1]);
-        BDIGIT_DBL y0 = yds[0] | BIGUP(yds[1]);
+        BDIGIT_DBL x0 = bary2bdigitdbl(xds, 2);
+        BDIGIT_DBL y0 = bary2bdigitdbl(yds, 2);
         BDIGIT_DBL q0 = x0 / y0;
         BDIGIT_DBL r0 = x0 % y0;
         if (divp) {
