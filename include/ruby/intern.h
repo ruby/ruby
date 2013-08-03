@@ -837,6 +837,7 @@ VALUE rb_str_ellipsize(VALUE, long);
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);
+VALUE rb_struct_define_under(VALUE, const char*, ...);
 VALUE rb_struct_alloc(VALUE, VALUE);
 VALUE rb_struct_initialize(VALUE, VALUE);
 VALUE rb_struct_aref(VALUE, VALUE);

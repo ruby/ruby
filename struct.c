@@ -283,6 +283,25 @@ rb_struct_define(const char *name, ...)
     return setup_struct(st, ary);
 }
 
+VALUE
+rb_struct_define_under(VALUE outer, const char *name, ...)
+{
+    va_list ar;
+    VALUE ary;
+    char *mem;
+
+    ary = rb_ary_tmp_new(0);
+
+    va_start(ar, name);
+    while ((mem = va_arg(ar, char*)) != 0) {
+	ID slot = rb_intern(mem);
+	rb_ary_push(ary, ID2SYM(slot));
+    }
+    va_end(ar);
+
+    return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
+}
+
 /*
  *  call-seq:
  *    Struct.new([class_name] [, member_name]+>)                        -> StructClass

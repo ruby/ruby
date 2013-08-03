@@ -1,3 +1,10 @@
+Sat Aug  3 09:30:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_define_under): new function to define Struct
+	  under the given namespace, not under Struct.  [Feature #8264]
+
+	* ext/etc/etc.c: use rb_struct_define_under.
+
 Sat Aug  3 06:55:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (value_expr_gen): now NODE_DEFN and NODE_DEFS are not void
