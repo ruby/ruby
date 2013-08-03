@@ -2534,7 +2534,7 @@ bary_mul_karatsuba_start(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, c
 static void
 bary_mul_toom3_branch(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl, BDIGIT *wds, size_t wl)
 {
-    if (yl < TOOM3_MUL_DIGITS) {
+    if (xl < TOOM3_MUL_DIGITS) {
         bary_mul_karatsuba_branch(zds, zl, xds, xl, yds, yl, wds, wl);
         return;
     }
@@ -2560,7 +2560,7 @@ static void
 bary_mul(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds, size_t yl)
 {
     if (xl <= yl) {
-        if (yl < KARATSUBA_MUL_DIGITS) {
+        if (xl < KARATSUBA_MUL_DIGITS) {
             if (xds == yds && xl == yl)
                 bary_sq_fast(zds, zl, xds, xl);
             else
@@ -2569,7 +2569,7 @@ bary_mul(BDIGIT *zds, size_t zl, const BDIGIT *xds, size_t xl, const BDIGIT *yds
         }
     }
     else {
-        if (xl < KARATSUBA_MUL_DIGITS) {
+        if (yl < KARATSUBA_MUL_DIGITS) {
             bary_mul1(zds, zl, yds, yl, xds, xl);
             return;
         }

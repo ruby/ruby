@@ -1,3 +1,12 @@
+Sat Aug  3 22:47:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: The branch condition of selecting multiplication
+	  algorighms should check smaller argument because Karatsuba and Toom3
+	  is effective only if both arguments are big.
+	  (bary_mul_toom3_branch): Compare the smaller argument to
+	  TOOM3_MUL_DIGITS.
+	  (bary_mul): Compare the smaller argument to KARATSUBA_MUL_DIGITS.
+
 Sat Aug  3 22:23:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_orig): Receive the number to stringize as
