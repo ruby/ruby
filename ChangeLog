@@ -1,3 +1,8 @@
+Sat Aug  3 22:40:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_framework): allow header file to check.
+	  [ruby-core:55745] [Bug #8593]
+
 Sat Aug  3 22:24:44 2013  Shota Fukumori  <her@sorah.jp>
 
 	* lib/uri/common.rb (URI.decode_www_form_component):
