@@ -1,3 +1,8 @@
+Sun Aug  4 07:14:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* README.EXT, README.EXT.ja: Mention rb_integer_pack and
+	  rb_integer_unpack.
+
 Sun Aug  4 01:54:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BARY_TRUNC): New macro.

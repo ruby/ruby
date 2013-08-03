@@ -1060,6 +1060,10 @@ NUM2SSIZET(value), SSIZET2NUM(ssize) ::
 
   Numeric <-> ssize_t
 
+rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags) ::
+
+  Numeric <-> Arbitrary size integer buffer
+
 NUM2DBL(value) ::
 
   Numeric -> double

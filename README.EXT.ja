@@ -1108,6 +1108,7 @@ Data_Get_Struct(data, type, sval) ::
   NUM2OFFT(value), OFFT2NUM(off)
   NUM2SIZET(value), SIZET2NUM(size)
   NUM2SSIZET(value), SSIZET2NUM(ssize)
+  rb_integer_pack(value, words, numwords, wordsize, nails, flags), rb_integer_unpack(words, numwords, wordsize, nails, flags)
   NUM2DBL(value)
   rb_float_new(f)
   StringValue(value)
