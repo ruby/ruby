@@ -141,7 +141,7 @@ static inline VALUE bigtrunc(VALUE x);
 
 static VALUE bigsq(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
-static VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
+static inline VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
 static int
 nlz16(uint16_t x)
