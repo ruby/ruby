@@ -588,6 +588,7 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
 /*
  *  call-seq:
  *     obj.is_a?(class)       -> true or false
+ *     obj.is_an?(class)      -> true or false
  *     obj.kind_of?(class)    -> true or false
  *
  *  Returns <code>true</code> if <i>class</i> is the class of
@@ -606,6 +607,11 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
  *     b.is_a? B          #=> true
  *     b.is_a? C          #=> false
  *     b.is_a? M          #=> true
+ *
+ *     b.is_an? A         #=> true
+ *     b.is_an? B         #=> true
+ *     b.is_an? C         #=> false
+ *     b.is_an? M         #=> true
  *
  *     b.kind_of? A       #=> true
  *     b.kind_of? B       #=> true
@@ -3146,6 +3152,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
+    rb_define_method(rb_mKernel, "is_an?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
