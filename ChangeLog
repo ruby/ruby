@@ -1,3 +1,8 @@
+Sat Aug  3 22:24:44 2013  Shota Fukumori  <her@sorah.jp>
+
+	* lib/uri/common.rb (URI.decode_www_form_component):
+	  Don't raise error when str includes multibyte characters.
+
 Sun Jul 28 22:00:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rational.c (f_round_common): Rational is expected to be returned by

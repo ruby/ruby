@@ -69,6 +69,9 @@ class TestCommon < Test::Unit::TestCase
                    "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
     assert_equal("\xA1\xA2".force_encoding(Encoding::EUC_JP),
                  URI.decode_www_form_component("%A1%A2", "EUC-JP"))
+    assert_equal("\xE3\x81\x82\xE3\x81\x82".force_encoding("UTF-8"),
+                 URI.decode_www_form_component("\xE3\x81\x82%E3%81%82".force_encoding("UTF-8")))
+
     assert_raise(ArgumentError){URI.decode_www_form_component("%")}
   end
 
