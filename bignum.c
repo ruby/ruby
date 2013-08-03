@@ -4383,12 +4383,13 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn,
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-        if (wn < bn * 4 + BIGDIVREM_EXTRA_WORDS) {
-            wn = bn * 4 + BIGDIVREM_EXTRA_WORDS;
-            wds = ALLOCV_N(BDIGIT, tmpw, wn);
-        }
         rn = bn;
         qn = xn+BIGDIVREM_EXTRA_WORDS;
+        if (wn < rn + qn) {
+            wn = bn * 4 + BIGDIVREM_EXTRA_WORDS;
+            assert(rn + qn <= wn);
+            wds = ALLOCV_N(BDIGIT, tmpw, wn);
+        }
         rds = wds;
         qds = wds+rn;
         bary_divmod(qds, qn, rds, rn, xds, xn, bds, bn);
