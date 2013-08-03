@@ -1,3 +1,8 @@
+Sat Aug  3 10:33:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_set_integer_literal): use rb_rational_raw1() for
+	  integral rational because no reduction is needed with 1.
+
 Sat Aug  3 09:46:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd, setup_group): set proper encodings to

@@ -6428,7 +6428,7 @@ parser_set_integer_literal(struct parser_params *parser, VALUE v, int suffix)
 {
     int type = tINTEGER;
     if (suffix & NUM_SUFFIX_R) {
-	v = rb_rational_new(v, INT2FIX(1));
+	v = rb_rational_raw1(v);
 	type = tRATIONAL;
     }
     return set_number_literal(v, type, suffix);
