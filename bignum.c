@@ -121,6 +121,11 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
   } \
 } while (0)
 
+#define BARY_TRUNC(ds, n) do { \
+        while (0 < (n) && (ds)[(n)-1] == 0) \
+            (n)--; \
+    } while (0)
+
 #define KARATSUBA_BALANCED(xn, yn) ((yn)/2 < (xn))
 #define TOOM3_BALANCED(xn, yn) (((yn)+2)/3 * 2 < (xn))
 
@@ -506,10 +511,8 @@ bdigitdbl2bary(BDIGIT *ds, size_t n, BDIGIT_DBL num)
 static int
 bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-    while (0 < xn && xds[xn-1] == 0)
-        xn--;
-    while (0 < yn && yds[yn-1] == 0)
-        yn--;
+    BARY_TRUNC(xds, xn);
+    BARY_TRUNC(yds, yn);
 
     if (xn < yn)
         return -1;
@@ -2364,8 +2367,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     else
         bary_sub(zzds + 4*n, zzn - 4*n, zzds + 4*n, zzn - 4*n, z4ds, z4n);
 
-    while (0 < zzn && zzds[zzn-1] == 0)
-        zzn--;
+    BARY_TRUNC(zzds, zzn);
     MEMCPY(zds, zzds, BDIGIT, zzn);
     BDIGITS_ZERO(zds + zzn, zn - zzn);
 
@@ -2720,11 +2722,11 @@ bary_divmod(BDIGIT *qds, size_t nq, BDIGIT *rds, size_t nr, const BDIGIT *xds, s
     assert(nx <= nq);
     assert(ny <= nr);
 
-    while (0 < ny && !yds[ny-1]) ny--;
+    BARY_TRUNC(yds, ny);
     if (ny == 0)
         rb_num_zerodiv();
 
-    while (0 < nx && !xds[nx-1]) nx--;
+    BARY_TRUNC(xds, nx);
     if (nx == 0) {
         BDIGITS_ZERO(qds, nq);
         BDIGITS_ZERO(rds, nr);
@@ -2973,8 +2975,7 @@ abs2twocomp(VALUE *xp, long *n_ret)
     BDIGIT *ds = BDIGITS(x);
     BDIGIT hibits = 0;
 
-    while (0 < n && ds[n-1] == 0)
-        n--;
+    BARY_TRUNC(ds, n);
 
     if (n != 0 && RBIGNUM_NEGATIVE_P(x)) {
         VALUE z = bignew_1(CLASS_OF(x), n, 0);
@@ -3021,8 +3022,7 @@ bigfixize(VALUE x)
     BDIGIT u;
 #endif
 
-    while (0 < len && ds[len-1] == 0)
-        len--;
+    BARY_TRUNC(ds, len);
 
     if (len == 0) return INT2FIX(0);
 
@@ -3911,8 +3911,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
                 vds = uds;
                 uds = tds;
             }
-            while (0 < num_bdigits && uds[num_bdigits-1] == 0)
-                num_bdigits--;
+            BARY_TRUNC(uds, num_bdigits);
             z = bignew(num_bdigits, sign);
             MEMCPY(BDIGITS(z), uds, BDIGIT, num_bdigits);
 
@@ -4393,12 +4392,10 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn,
         rds = wds;
         qds = wds+rn;
         bary_divmod(qds, qn, rds, rn, xds, xn, bds, bn);
-        while (0 < qn && qds[qn-1] == 0)
-            qn--;
+        BARY_TRUNC(qds, qn);
         assert(qn <= bn);
         big2str_karatsuba(b2s, qds, qn, lower_power_level, lower_numdigits+taillen, qds+qn, wn-(rn+qn));
-        while (0 < rn && rds[rn-1] == 0)
-            rn--;
+        BARY_TRUNC(rds, rn);
         big2str_karatsuba(b2s, rds, rn, lower_power_level, taillen, rds+rn, wn-rn);
         if (tmpw)
             ALLOCV_END(tmpw);
@@ -5564,12 +5561,12 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     BDIGIT dd;
 
     yds = BDIGITS(y);
-    while (0 < ny && !yds[ny-1]) ny--;
+    BARY_TRUNC(yds, ny);
     if (ny == 0)
         rb_num_zerodiv();
 
     xds = BDIGITS(x);
-    while (0 < nx && !xds[nx-1]) nx--;
+    BARY_TRUNC(xds, nx);
 
     if (nx < ny || (nx == ny && xds[nx - 1] < yds[ny - 1])) {
 	if (divp) *divp = rb_int2big(0);
@@ -5623,13 +5620,12 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 
     if (divp) {			/* move quotient down in z */
         j = nz - ny;
-	while (0 < j && !zds[j-1+ny])
-            j--;
+        BARY_TRUNC(zds+ny, j);
 	*divp = zz = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
         MEMCPY(BDIGITS(zz), zds+ny, BDIGIT, j);
     }
     if (modp) {			/* normalize remainder */
-	while (ny > 0 && !zds[ny-1]) --ny;
+        BARY_TRUNC(zds, ny);
 	*modp = zz = bignew(ny, RBIGNUM_SIGN(x));
 	MEMCPY(BDIGITS(zz), zds, BDIGIT, ny);
     }

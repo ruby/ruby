@@ -1,3 +1,15 @@
+Sun Aug  4 01:54:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BARY_TRUNC): New macro.
+	  (bary_cmp): Use BARY_TRUNC.
+	  (bary_mul_toom3): Ditto.
+	  (bary_divmod): Ditto.
+	  (abs2twocomp): Ditto.
+	  (bigfixize): Ditto.
+	  (rb_cstr_to_inum): Ditto.
+	  (big2str_karatsuba): Ditto.
+	  (bigdivrem): Ditto.
+
 Sun Aug  4 00:57:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_karatsuba): Don't allocate new temporary buffer
