@@ -1,3 +1,7 @@
+Mon Aug  5 03:57:16 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/0.9.rb: [DOC] Document RSS09 by Steve Klabnik [Bug #8732]
+
 Mon Aug  5 03:35:11 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rexml/attribute.rb: [DOC] Update example for #namespace
