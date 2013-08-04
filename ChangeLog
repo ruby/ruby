@@ -1,3 +1,8 @@
+Mon Aug  5 03:35:11 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rexml/attribute.rb: [DOC] Update example for #namespace
+	  Patch by Ippei Obayashi [Bug #8685] [ruby-core:56173]
+
 Sun Aug  4 21:08:29 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_zip): performance implement by using
