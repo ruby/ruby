@@ -1,3 +1,9 @@
+Mon Aug  5 06:13:48 2013  Zachary Scott  <e@zzak.io>
+
+	* enumerator.c: [DOC] Remove reference to Enumerator::Lazy#cycle
+	  Patch by @kachick [Fixes GH-372]
+	  https://github.com/ruby/ruby/pull/372
+
 Mon Aug  5 03:57:16 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/0.9.rb: [DOC] Document RSS09 by Steve Klabnik [Bug #8732]
