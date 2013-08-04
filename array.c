@@ -3161,15 +3161,15 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
     else
 	result = rb_ary_new2(len);
 
-    if (block_given && arity > 1) {
-	VALUE tmp = rb_ary_new2(argc+1);
+    if (block_given && arity > 1 && argc+1 < 0x100) {
+	VALUE *tmp = ALLOCA_N(VALUE, argc+1);
 
 	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    rb_ary_store(tmp, 0, RARRAY_AREF(ary, i));
+	    tmp[0] = RARRAY_AREF(ary, i);
 	    for (j=0; j<argc; j++) {
-		rb_ary_store(tmp, j+1, rb_ary_elt(argv[j], i));
+		tmp[j+1] = rb_ary_elt(argv[j], i);
 	    }
-	    rb_yield_values2(argc+1, RARRAY_RAWPTR(tmp));
+	    rb_yield_values2(argc+1, tmp);
 	}
     }
     else {

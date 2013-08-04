@@ -1,3 +1,8 @@
+Sun Aug  4 21:08:29 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): performance implement by using
+	  ALLOCA_N() to allocate tmp buffer.
+
 Sun Aug  4 07:14:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* README.EXT, README.EXT.ja: Mention rb_integer_pack and
