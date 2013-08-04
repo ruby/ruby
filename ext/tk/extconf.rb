@@ -2011,7 +2011,6 @@ if TkLib_Config["tcltk-framework"]
     end
   end
   $LDFLAGS << ' ' << libs
-  $libs << ' -ltk -ltcl'
   setup_for_macosx_framework(tclver, tkver) if tcl_cfg_dir && tk_cfg_dir
 end
 
