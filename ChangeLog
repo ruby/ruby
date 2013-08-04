@@ -1,3 +1,11 @@
+Sun Aug  4 22:42:16 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (wrename): use MoveFileExW instead of MoveFileW,
+	  because the latter fails on cross device file move of some
+	  environments.
+	  fix [ruby-core:53492] [Bug #8109]
+	  reported by mitchellh (Mitchell Hashimoto)
+
 Sat Aug  3 23:02:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/extmk.rb (extmake): Invoke Logging::log_close in a ensure
