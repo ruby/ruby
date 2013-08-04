@@ -1385,8 +1385,8 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
  *
  * Returns a lazy enumerator, whose methods map/collect,
  * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
- * take_while, drop, drop_while, and cycle enumerate values only on an
- * as-needed basis.  However, if a block is given to zip or cycle, values
+ * take_while, drop, and drop_while enumerate values only on an
+ * as-needed basis.  However, if a block is given to zip, values
  * are enumerated immediately.
  *
  * === Example
