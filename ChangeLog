@@ -1,3 +1,10 @@
+Mon Aug  5 17:33:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (wstr_to_mbstr, mbstr_to_wstr): fix wrong trimming.
+	  WideCharToMultiByte() and MultiByteToWideChar() do not count
+	  NUL-terminator in the size for conversion result, unless the input
+	  length is -1.
+
 Mon Aug  5 11:51:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* include/ruby/encoding.h: document which user flags are used by

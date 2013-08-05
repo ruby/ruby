@@ -1954,10 +1954,14 @@ static char *
 wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 {
     char *ptr;
-    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL) - 1;
-    if (!(ptr = malloc(len + 1))) return 0;
-    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len + 1, NULL, NULL);
-    if (plen) *plen = len;
+    int len = WideCharToMultiByte(cp, 0, wstr, clen, NULL, 0, NULL, NULL);
+    if (!(ptr = malloc(len))) return 0;
+    WideCharToMultiByte(cp, 0, wstr, clen, ptr, len, NULL, NULL);
+    if (plen) {
+	/* exclude NUL only if NUL-terminated string */
+	if (clen == -1) --len;
+	*plen = len;
+    }
     return ptr;
 }
 
@@ -1966,10 +1970,14 @@ static WCHAR *
 mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
     WCHAR *ptr;
-    int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0) - 1;
-    if (!(ptr = malloc(sizeof(WCHAR) * (len + 1)))) return 0;
-    MultiByteToWideChar(cp, 0, str, clen, ptr, len + 1);
-    if (plen) *plen = len;
+    int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
+    if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;
+    MultiByteToWideChar(cp, 0, str, clen, ptr, len);
+    if (plen) {
+	/* exclude NUL only if NUL-terminated string */
+	if (clen == -1) --len;
+	*plen = len;
+    }
     return ptr;
 }
 
