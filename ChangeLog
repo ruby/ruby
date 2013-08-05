@@ -1,3 +1,8 @@
+Mon Aug  5 11:51:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* include/ruby/encoding.h: document which user flags are used by
+	  ENCODING_MASK for better greppability
+
 Mon Aug  5 10:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* object.c (rb_class_inherited_p): allow iclasses to be tested for
