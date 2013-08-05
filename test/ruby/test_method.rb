@@ -262,6 +262,22 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  def test_define_singleton_method_with_extended_method
+    bug8686 = "[ruby-core:56174]"
+
+    m = Module.new do
+      extend self
+
+      def a
+        "a"
+      end
+    end
+
+    assert_nothing_raised do
+      m.define_singleton_method(:a, m.method(:a))
+    end
+  end
+
   def test_define_method_transplating
     feature4254 = '[ruby-core:34267]'
     m = Module.new {define_method(:meth, M.instance_method(:meth))}

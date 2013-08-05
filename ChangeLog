@@ -1,3 +1,10 @@
+Mon Aug  5 10:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): allow iclasses to be tested for
+	  inheritance. [Bug #8686] [ruby-core:56174]
+
+	* test/ruby/test_method.rb: add test
+
 Mon Aug  5 06:13:48 2013  Zachary Scott  <e@zzak.io>
 
 	* enumerator.c: [DOC] Remove reference to Enumerator::Lazy#cycle
