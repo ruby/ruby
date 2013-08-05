@@ -65,7 +65,7 @@ Sun Aug  4 00:22:34 2013  Tanaka Akira  <akr@fsij.org>
 Sat Aug  3 22:47:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: The branch condition of selecting multiplication
-	  algorighms should check smaller argument because Karatsuba and Toom3
+	  algorithms should check smaller argument because Karatsuba and Toom3
 	  is effective only if both arguments are big.
 	  (bary_mul_toom3_branch): Compare the smaller argument to
 	  TOOM3_MUL_DIGITS.
@@ -168,7 +168,7 @@ Fri Aug  2 23:48:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  suffixes.
 
 	* parse.y (parser_set_number_literal, parser_set_integer_literal):
-	  split from parser_number_literal_suffix to set yyvlal.
+	  split from parser_number_literal_suffix to set yylval.
 
 	* parse.y (parser_yylex): parse rational number literal with decimal
 	  point precisely.
