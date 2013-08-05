@@ -8,7 +8,7 @@ module RSS
   #
   # The Atom module provides support in reading and creating feeds.
   #
-  # See the RSS module for examples consuming and creating feeds
+  # See the RSS module for examples consuming and creating feeds.
   module Atom
 
     ##

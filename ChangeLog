@@ -1,3 +1,8 @@
+Tue Aug  6 01:22:37 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/2.0.rb: [DOC] Document RSS::Rss by Steve Klabnik #8740
+	* lib/rss/atom.rb: [DOC] Typo in rdoc by Steve Klabnik
+
 Mon Aug  5 23:47:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Rename local variables.
