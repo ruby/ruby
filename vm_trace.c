@@ -1162,7 +1162,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *	#=> #<TracePoint:0x007f17372cdb20>
  *
  *	trace.enable
- *	#=> #<TracePoint:0x007f17372cdb20>
+ *	#=> false
  *
  *	puts "Hello, TracePoint!"
  *	# ...
@@ -1305,7 +1305,7 @@ Init_vm_trace(void)
      *	    #=> #<TracePoint:0x007f786a452448>
      *
      *	    trace.enable
-     *	    #=> #<TracePoint:0x007f786a452448>
+     *	    #=> false
      *
      *	    0 / 0
      *	    #=> [5, :raise, #<ZeroDivisionError: divided by 0>]
