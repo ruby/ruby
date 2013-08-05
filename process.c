@@ -3864,7 +3864,7 @@ rb_f_system(int argc, VALUE *argv)
  *      name => nil : unset the environment variable
  *    command...:
  *      commandline                 : command line string which is passed to the standard shell
- *      cmdname, arg1, ...          : command name and one or more arguments (no shell)
+ *      cmdname, arg1, ...          : command name and one or more arguments (This form does not use the shell. See below for caveats.)
  *      [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
  *    options: hash
  *      clearing environment variables:
@@ -3904,6 +3904,14 @@ rb_f_system(int argc, VALUE *argv)
  *        :close_others => true  : don't inherit
  *      current directory:
  *        :chdir => str
+ *
+ *      The 'cmdname, arg1, ...' form does not use the shell. However,
+ *      on different OSes, different things are provided as built-in
+ *      commands. An example of this is 'echo', which is a built-in
+ *      on Windows, but is a normal program on Linux and Mac OS X.
+ *      This means that `Process.spawn 'echo', '%Path%'` will display
+ *      the contents of the `%Path%` environment variable on Windows,
+ *      but `Process.spawn 'echo', '$PATH'` prints the literal '$PATH'.
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.

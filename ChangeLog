@@ -1,3 +1,8 @@
+Tue Aug  6 01:40:37 2013  Zachary Scott  <e@zzak.io>
+
+	* process.c: [DOC] Document caveats of command form of Process.spawn
+	  with regard to the shell and OS. Patched by Steve Klabnik [Bug #8550]
+
 Tue Aug  6 01:28:35 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/0.9.rb: [DOC] Typo in example [Bug #8732]
