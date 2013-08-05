@@ -1,3 +1,7 @@
+Mon Aug  5 23:47:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Rename local variables.
+
 Mon Aug  5 22:23:59 2013  Zachary Scott  <e@zzak.io>
 
 	* vm_trace.c: [DOC] Fix TracePoint return values in examples
