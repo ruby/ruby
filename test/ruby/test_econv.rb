@@ -911,21 +911,14 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_default_external
-    cmd = <<EOS
+    Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
+      assert_separately(%W[--disable=gems -d - #{enc.name}], <<-EOS, ignore_stderr: true)
     Encoding.default_external = ext = ARGV[0]
     Encoding.default_internal = int ='utf-8'
-    begin
+    assert_nothing_raised do
       Encoding::Converter.new(ext, int)
-    ensure
-      Marshal.dump($!, STDOUT)
-      STDOUT.flush
     end
-EOS
-    Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
-      error = IO.popen([EnvUtil.rubybin, "-e", cmd, enc.name, err: File::NULL]) do |child|
-        Marshal.load(child)
-      end
-      assert_nil(error)
+    EOS
     end
   end
 end
