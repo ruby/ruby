@@ -1,4 +1,8 @@
-Mon Aug  5 17:33:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  5 17:38:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): use MultiByteToWideChar() for
+	  the last step of conversion to WCHAR, to get rid of warnings from
+	  rb_enc_find() in miniruby.  [ruby-dev:47584] [Bug #8733]
 
 	* win32/win32.c (wstr_to_mbstr, mbstr_to_wstr): fix wrong trimming.
 	  WideCharToMultiByte() and MultiByteToWideChar() do not count

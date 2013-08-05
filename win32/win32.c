@@ -48,6 +48,7 @@
 #endif
 #include "ruby/win32.h"
 #include "win32/dir.h"
+#include "internal.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #if defined _MSC_VER && _MSC_VER <= 1200
@@ -465,8 +466,6 @@ get_system_directory(WCHAR *path, UINT len)
 	return (*(wgetdir_func *)ptr)(path, len);
     return GetWindowsDirectoryW(path, len);
 }
-
-#define numberof(array) (sizeof(array) / sizeof(*array))
 
 /* License: Ruby's */
 VALUE
@@ -6397,34 +6396,51 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     HANDLE handle;
     DWORD dwMode, reslen;
     VALUE str = strarg;
-    rb_encoding *utf16 = rb_enc_find("UTF-16LE");
+    int encindex;
+    WCHAR *wbuffer = 0;
     const WCHAR *ptr, *next;
     struct constat *s;
     long len;
 
     if (disable) return -1L;
     handle = (HANDLE)_osfhnd(fd);
-    if (!GetConsoleMode(handle, &dwMode) ||
-	!rb_econv_has_convpath_p(rb_enc_name(rb_enc_get(str)), "UTF-16LE"))
+    if (!GetConsoleMode(handle, &dwMode))
 	return -1L;
 
-    str = rb_str_encode(str, rb_enc_from_encoding(utf16),
-			ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
-    ptr = (const WCHAR *)RSTRING_PTR(str);
-    len = RSTRING_LEN(str) / sizeof(WCHAR);
     s = constat_handle(handle);
+    encindex = ENCODING_GET(str);
+    switch (encindex) {
+      default:
+	if (!rb_econv_has_convpath_p(rb_enc_name(rb_enc_from_index(encindex)), "UTF-8"))
+	    return -1L;
+	str = rb_str_conv_enc_opts(str, NULL, rb_enc_from_index(ENCINDEX_UTF_8),
+				   ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
+	/* fall through */
+      case ENCINDEX_US_ASCII:
+      case ENCINDEX_ASCII:
+	/* assume UTF-8 */
+      case ENCINDEX_UTF_8:
+	ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);
+	break;
+      case ENCINDEX_UTF_16LE:
+	ptr = (const WCHAR *)RSTRING_PTR(str);
+	len = RSTRING_LEN(str) / sizeof(WCHAR);
+	break;
+    }
     while (len > 0) {
 	long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
 	if (curlen > 0) {
 	    if (!WriteConsoleW(handle, ptr, curlen, &reslen, NULL)) {
 		if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 		    disable = TRUE;
-		return -1L;
+		reslen = (DWORD)-1L;
+		break;
 	    }
 	}
 	ptr = next;
     }
     RB_GC_GUARD(str);
+    if (wbuffer) free(wbuffer);
     return (long)reslen;
 }
 
