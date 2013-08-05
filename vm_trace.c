@@ -1159,10 +1159,10 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *	trace = TracePoint.new(:call) do |tp|
  *	    p [tp.lineno, tp.defined_class, tp.method_id, tp.event]
  *	end
- *	#=> #<TracePoint:0x007f17372cdb20>
+ *	#=> #<TracePoint:disabled>
  *
  *	trace.enable
- *	#=> #<TracePoint:0x007f17372cdb20>
+ *	#=> false
  *
  *	puts "Hello, TracePoint!"
  *	# ...
@@ -1302,10 +1302,10 @@ Init_vm_trace(void)
      *	    trace = TracePoint.new(:raise) do |tp|
      *		p [tp.lineno, tp.event, tp.raised_exception]
      *	    end
-     *	    #=> #<TracePoint:0x007f786a452448>
+     *	    #=> #<TracePoint:disabled>
      *
      *	    trace.enable
-     *	    #=> #<TracePoint:0x007f786a452448>
+     *	    #=> false
      *
      *	    0 / 0
      *	    #=> [5, :raise, #<ZeroDivisionError: divided by 0>]
@@ -1349,7 +1349,7 @@ Init_vm_trace(void)
      *  automatically.
      *
      *	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
-     *	    #=> #<TracePoint:0x007f786a452448>
+     *	    #=> #<TracePoint:enabled>
      *
      *	    trace.enabled? #=> true
      */
