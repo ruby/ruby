@@ -1,3 +1,16 @@
+Wed Aug  7 07:38:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (nlz16): Removed.
+	  (nlz32): Ditto.
+	  (nlz64): Ditto.
+	  (nlz128): Ditto.
+	  (nlz_int): New function.
+	  (nlz_long): New function.
+	  (nlz_long_long): New function.
+	  (nlz_int128): New function.
+	  (nlz): Follow above changes.
+	  (bitsize): Follow above changes.
+
 Tue Aug  6 22:38:15 2013  Zachary Scott  <e@zzak.io>
 
 	* time.c: [DOC] Typo in Time overview by @sparr [Fixes GH-374]
