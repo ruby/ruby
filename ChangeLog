@@ -1,3 +1,12 @@
+Tue Aug  6 12:23:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_realloc): Use VALGRIND_MAKE_MEM_UNDEFINED to
+	  declare undefined memory area.
+	  (bignew_1): Ditto.
+
+	* internal.h (VALGRIND_MAKE_MEM_DEFINED): Moved from gc.c
+	  (VALGRIND_MAKE_MEM_UNDEFINED): Ditto.
+
 Tue Aug  6 01:40:37 2013  Zachary Scott  <e@zzak.io>
 
 	* process.c: [DOC] Document caveats of command form of Process.spawn

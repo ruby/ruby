@@ -2886,6 +2886,7 @@ rb_big_realloc(VALUE big, long len)
 	    ds = RBIGNUM(big)->as.heap.digits;
 	    RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
 	    RBIGNUM_SET_LEN(big, len);
+            (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
 	    if (ds) {
 		MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
 		xfree(ds);
@@ -2917,6 +2918,7 @@ bignew_1(VALUE klass, long len, int sign)
     if (len <= RBIGNUM_EMBED_LEN_MAX) {
 	RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
 	RBIGNUM_SET_LEN(big, len);
+        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, sizeof(RBIGNUM(big)->as.ary));
     }
     else {
 	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
