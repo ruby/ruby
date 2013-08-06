@@ -1,3 +1,8 @@
+Tue Aug  6 17:42:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_last): exclude the last number of the exclusive range
+	  if the end is Numeric.  [ruby-dev:47587] [Bug #8739]
+
 Tue Aug  6 17:42:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_conv_from_wchar): converted string to CP_UTF8
