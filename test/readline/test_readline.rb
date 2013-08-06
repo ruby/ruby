@@ -361,19 +361,19 @@ class TestReadline < Test::Unit::TestCase
   end if !/EditLine/n.match(Readline::VERSION)
 
   def test_delete_text
-      str = "test_insert_text"
-      assert_equal(0, Readline.point)
-      assert_equal(Readline, Readline.insert_text(str))
-      assert_equal(16, Readline.point)
-      assert_equal(str, Readline.line_buffer)
-      Readline.delete_text
+    str = "test_insert_text"
+    assert_equal(0, Readline.point)
+    assert_equal(Readline, Readline.insert_text(str))
+    assert_equal(16, Readline.point)
+    assert_equal(str, Readline.line_buffer)
+    Readline.delete_text
 
-      # NOTE: unexpected but GNU Readline's spec
-      assert_equal(16, Readline.point)
-      assert_equal("", Readline.line_buffer)
-      assert_equal(Readline, Readline.insert_text(str))
-      assert_equal(32, Readline.point)
-      assert_equal("", Readline.line_buffer)
+    # NOTE: unexpected but GNU Readline's spec
+    assert_equal(16, Readline.point)
+    assert_equal("", Readline.line_buffer)
+    assert_equal(Readline, Readline.insert_text(str))
+    assert_equal(32, Readline.point)
+    assert_equal("", Readline.line_buffer)
   rescue NotImplementedError
   end if !/EditLine/n.match(Readline::VERSION)
 
