@@ -62,6 +62,36 @@ ossl_hmac_alloc(VALUE klass)
  *  call-seq:
  *     HMAC.new(key, digest) -> hmac
  *
+ * Returns an instance of OpenSSL::HMAC set with the key and digest
+ * algorithm to be used. The instance represents the initial state of
+ * the message authentication code before any data has been processed.
+ * To process data with it, use the instance method #update with your
+ * data as an argument.
+ *
+ * === Example
+ *
+ *	key = 'key'
+ * 	digest = OpenSSL::Digest.new('sha1')
+ * 	instance = OpenSSL::HMAC.new(key, digest)
+ * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ * 	instance.class
+ * 	#=> OpenSSL::HMAC
+ *
+ * === A note about comparisons
+ *
+ * Two instances won't be equal when they're compared, even if they have the
+ * same value. Use #to_s or #hexdigest to return the authentication code that
+ * the instance represents. For example:
+ *
+ *	other_instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ *  	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *  	instance
+ *  	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *  	instance == other_instance
+ *  	#=> false
+ *  	instance.to_s == other_instance.to_s
+ *  	#=> true
+ *
  */
 static VALUE
 ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
@@ -95,6 +125,19 @@ ossl_hmac_copy(VALUE self, VALUE other)
  *  call-seq:
  *     hmac.update(string) -> self
  *
+ * Returns +self+ updated with the message to be authenticated.
+ * Can be called repeatedly with chunks of the message.
+ *
+ * === Example
+ *
+ *	first_chunk = 'The quick brown fox jumps '
+ * 	second_chunk = 'over the lazy dog'
+ *
+ * 	instance.update(first_chunk)
+ * 	#=> 5b9a8038a65d571076d97fe783989e52278a492a
+ * 	instance.update(second_chunk)
+ * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ *
  */
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
@@ -125,7 +168,16 @@ hmac_final(HMAC_CTX *ctx, unsigned char **buf, unsigned int *buf_len)
 
 /*
  *  call-seq:
- *     hmac.digest -> aString
+ *     hmac.digest -> string
+ *
+ * Returns the authentication code an instance represents as a binary string.
+ *
+ * === Example
+ *
+ *	instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ * 	instance.digest
+ * 	#=> "\xF4+\xB0\xEE\xB0\x18\xEB\xBDE\x97\xAEr\x13q\x1E\xC6\a`\x84?"
  *
  */
 static VALUE
@@ -145,7 +197,10 @@ ossl_hmac_digest(VALUE self)
 
 /*
  *  call-seq:
- *     hmac.hexdigest -> aString
+ *     hmac.hexdigest -> string
+ *
+ * Returns the authentication code an instance represents as a hex-encoded
+ * string.
  *
  */
 static VALUE
@@ -173,6 +228,20 @@ ossl_hmac_hexdigest(VALUE self)
  *  call-seq:
  *     hmac.reset -> self
  *
+ * Returns +self+ as it was when it was first initialized, with all processed
+ * data cleared from it.
+ *
+ * === Example
+ *
+ *	data = "The quick brown fox jumps over the lazy dog"
+ * 	instance = OpenSSL::HMAC.new('key', OpenSSL::Digest.new('sha1'))
+ * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *
+ * 	instance.update(data)
+ * 	#=> de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
+ * 	instance.reset
+ * 	#=> f42bb0eeb018ebbd4597ae7213711ec60760843f
+ *
  */
 static VALUE
 ossl_hmac_reset(VALUE self)
@@ -188,6 +257,18 @@ ossl_hmac_reset(VALUE self)
 /*
  *  call-seq:
  *     HMAC.digest(digest, key, data) -> aString
+ *
+ * Returns the authentication code as a binary string. The +digest+ parameter
+ * must be an instance of OpenSSL::Digest.
+ *
+ * === Example
+ *
+ *	key = 'key'
+ * 	data = 'The quick brown fox jumps over the lazy dog'
+ * 	digest = OpenSSL::Digest.new('sha1')
+ *
+ * 	hmac = OpenSSL::HMAC.digest(digest, key, data)
+ * 	#=> "\xDE|\x9B\x85\xB8\xB7\x8A\xA6\xBC\x8Az6\xF7\n\x90p\x1C\x9D\xB4\xD9"
  *
  */
 static VALUE
@@ -207,6 +288,18 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 /*
  *  call-seq:
  *     HMAC.hexdigest(digest, key, data) -> aString
+ *
+ * Returns the authentication code as a hex-encoded string. The +digest+
+ * parameter must be an instance of OpenSSL::Digest.
+ *
+ * === Example
+ *
+ *	key = 'key'
+ * 	data = 'The quick brown fox jumps over the lazy dog'
+ * 	digest = OpenSSL::Digest.new('sha1')
+ *
+ * 	hmac = OpenSSL::HMAC.hexdigest(digest, key, data)
+ * 	#=> "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
  *
  */
 static VALUE
@@ -237,6 +330,7 @@ void
 Init_ossl_hmac()
 {
 #if 0
+    /* :nodoc: */
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
 

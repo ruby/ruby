@@ -1,3 +1,9 @@
+Wed Aug  7 08:30:38 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_hmac.c: [DOC] Documentation for OpenSSL::HMAC
+	  based on a patch by @repah documenting-ruby/ruby#14
+	  https://github.com/documenting-ruby/ruby/pull/14
+
 Wed Aug  7 07:46:23 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/utils.rb: [DOC] RSS::Utils by Steve Klabnik [Bug #8745]
