@@ -972,7 +972,7 @@ defineclass
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
-		  class_iseq->local_size, 0);
+		  class_iseq->local_size, 0, class_iseq->stack_max);
     RESTORE_REGS();
 
     INC_VM_STATE_VERSION();

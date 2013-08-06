@@ -1,3 +1,22 @@
+Tue Aug  6 17:21:38 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_push_frame): fix stack overflow check codes.
+	  Stack overflow check should be done *after* pushing a stack frame.
+	  However, some stack overflow checking codes checked *before*
+	  pushing a stack frame with iseq->stack_max.
+	  To solve this problem, add a new parameter `stack_max' to specify
+	  a possible consuming stack size.
+
+	* vm_core.h (CHECK_VM_STACK_OVERFLOW0): add to share the stack overflow
+	  checking code.
+
+	* insns.def: catch up this change.
+
+	* vm.c, vm_eval.c: ditto.
+
+	* test/ruby/test_exception.rb: add a stack overflow test.
+	  This code is reported by nobu.
+
 Tue Aug  6 17:02:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_conv_from_wchar): use WideCharToMultiByte(),

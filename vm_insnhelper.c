@@ -40,15 +40,15 @@ vm_push_frame(rb_thread_t *th,
 	      const VALUE *pc,
 	      VALUE *sp,
 	      int local_size,
-	      const rb_method_entry_t *me)
+	      const rb_method_entry_t *me,
+	      int stack_max)
 {
     rb_control_frame_t *const cfp = th->cfp - 1;
     int i;
 
     /* check stack overflow */
-    if ((void *)(sp + local_size) >= (void *)cfp) {
-	vm_stackoverflow();
-    }
+    CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
+
     th->cfp = cfp;
 
     /* setup vm value stack */
@@ -1283,8 +1283,6 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     rb_iseq_t *iseq = ci->me->def->body.iseq;
     VALUE *sp = argv + iseq->arg_size;
 
-    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
-
     /* clear local variables */
     for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
 	*sp++ = Qnil;
@@ -1292,7 +1290,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv, ci->defined_class,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
+		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me, iseq->stack_max);
 
     cfp->sp = argv - 1 /* recv */;
     return Qundef;
@@ -1310,7 +1308,6 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 
     cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
-    CHECK_VM_STACK_OVERFLOW(cfp, iseq->stack_max);
     RUBY_VM_CHECK_INTS(th);
 
     sp_orig = sp = cfp->sp;
@@ -1331,7 +1328,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		  ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
+		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me, iseq->stack_max);
 
     cfp->sp = sp_orig;
     return Qundef;
@@ -1484,7 +1481,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_i
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass, Qundef);
 
     vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
-		  VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me);
+		  VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me, 0);
 
     if (len >= 0) rb_check_arity(argc, len, len);
 
@@ -2102,7 +2099,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 
     vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC, self,
 		  0, VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
-		  th->cfp->sp, 1, 0);
+		  th->cfp->sp, 1, 0, 0);
 
     val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockarg);
 
@@ -2334,7 +2331,6 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 	VALUE * const rsp = GET_SP() - ci->argc;
 	SET_SP(rsp);
 
-	CHECK_VM_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 	opt_pc = vm_yield_setup_args(th, iseq, ci->argc, rsp, 0, block_proc_is_lambda(block->proc));
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_BLOCK, block->self,
@@ -2342,7 +2338,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,
 		      rsp + arg_size,
-		      iseq->local_size - arg_size, 0);
+		      iseq->local_size - arg_size, 0, iseq->stack_max);
 
 	return Qundef;
     }

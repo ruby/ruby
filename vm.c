@@ -141,10 +141,9 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
     }
 
     /* for return */
-    CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
 		  th->top_self, rb_cObject, VM_ENVVAL_BLOCK_PTR(0),
-		  iseq->iseq_encoded, th->cfp->sp, iseq->local_size, 0);
+		  iseq->iseq_encoded, th->cfp->sp, iseq->local_size, 0, iseq->stack_max);
 }
 
 static void
@@ -153,11 +152,10 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t 
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
 
-    CHECK_VM_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
 		  base_block->self, base_block->klass,
 		  VM_ENVVAL_PREV_EP_PTR(base_block->ep), iseq->iseq_encoded,
-		  th->cfp->sp, iseq->local_size, 0);
+		  th->cfp->sp, iseq->local_size, 0, iseq->stack_max);
 
     if (cref) {
 	th->cfp->ep[-1] = (VALUE)cref;
@@ -622,7 +620,6 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 
 	cfp = th->cfp;
-	CHECK_VM_STACK_OVERFLOW(cfp, argc + iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
 	    cfp->sp[i] = argv[i];
@@ -636,7 +633,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,
 		      cfp->sp + arg_size, iseq->local_size - arg_size,
-		      th->passed_me);
+		      th->passed_me, iseq->stack_max);
 	th->passed_me = 0;
 
 	if (cref) {
@@ -1382,7 +1379,7 @@ vm_exec(rb_thread_t *th)
 			  catch_iseq->iseq_encoded,
 			  cfp->sp + 1 /* push value */,
 			  catch_iseq->local_size - 1,
-			  cfp->me);
+			  cfp->me, catch_iseq->stack_max);
 
 	    state = 0;
 	    th->state = 0;
@@ -1524,7 +1521,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     VALUE val;
 
     vm_push_frame(th, DATA_PTR(iseqval), VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
-		  recv, CLASS_OF(recv), VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, 0);
+		  recv, CLASS_OF(recv), VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, 0, 0);
 
     val = (*func)(arg);
 
@@ -1967,7 +1964,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->cfp = (void *)(th->stack + th->stack_size);
 
     vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_TOP | VM_FRAME_FLAG_FINISH,
-		  Qnil /* dummy self */, Qnil /* dummy klass */, VM_ENVVAL_BLOCK_PTR(0), 0 /* dummy pc */, th->stack, 1, 0);
+		  Qnil /* dummy self */, Qnil /* dummy klass */, VM_ENVVAL_BLOCK_PTR(0), 0 /* dummy pc */, th->stack, 1, 0, 0);
 
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;

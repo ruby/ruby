@@ -456,4 +456,13 @@ end.join
     s = e.to_s
     assert_equal(false, s.tainted?)
   end
+
+  def m;
+    m &->{return 0};
+    42;
+  end
+
+  def test_stackoverflow
+    assert_raise(SystemStackError){m}
+  end
 end
