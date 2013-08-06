@@ -2396,13 +2396,13 @@ str_eql(const VALUE str1, const VALUE str2)
 }
 
 /*
- *  call-seq:
- *     str == obj    -> true or false
- *     str === obj   -> true or false
+ * call-seq:
+ *   str == obj    -> true or false
+ *   str === obj   -> true or false
  *
- *  Equality---If <i>obj</i> is not a <code>String</code>, returns
- *  <code>false</code>. Otherwise, returns <code>true</code> if <i>str</i>
- *  <code><=></code> <i>obj</i> returns zero.
+ * Equality--—If <i>obj</i> is a <code>String</code>, returns <i>true</i> if
+ * <i>obj</i> has the same length and content. Otherwise, returns <i>true</i> if
+ * <i>obj</i> implements <code>to_str</code> and <code>obj == str</code>.
  */
 
 VALUE
