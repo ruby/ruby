@@ -41,13 +41,13 @@ vm_push_frame(rb_thread_t *th,
 	      VALUE *sp,
 	      int local_size,
 	      const rb_method_entry_t *me,
-	      int stack_max)
+	      size_t stack_max)
 {
     rb_control_frame_t *const cfp = th->cfp - 1;
     int i;
 
     /* check stack overflow */
-    CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
+    CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + (int)stack_max);
 
     th->cfp = cfp;
 
