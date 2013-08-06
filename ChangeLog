@@ -1,3 +1,11 @@
+Tue Aug  6 21:14:11 2013  Kouji Takao  <kouji.takao@gmail.com>
+
+	* ext/readline/readline.c (Init_readline, readline_s_set_output)
+	(clear_rl_outstream, readline_s_set_input, clear_rl_instream)
+	(readline_readline): fix causing SEGV if closed IO object that is
+	  set Readline.input or Readline.output. Patched by akr
+	  [ruby-dev:47509] [Bug #8644]
+
 Tue Aug  6 17:56:40 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_push_frame): change type of stack_max to size_t.

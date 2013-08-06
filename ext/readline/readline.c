@@ -132,8 +132,10 @@ static char **readline_attempted_completion_function(const char *text,
  * Documented by TAKAO Kouji <kouji at takao7 dot net>.
  */
 
-#if defined HAVE_RL_GETC_FUNCTION
 static VALUE readline_instream;
+static VALUE readline_outstream;
+
+#if defined HAVE_RL_GETC_FUNCTION
 
 #ifndef HAVE_RL_GETC
 #define rl_getc(f) EOF
@@ -302,9 +304,9 @@ readline_get(VALUE prompt)
  * Returns nil when the inputted line is empty and user inputs EOF
  * (Presses ^D on UNIX).
  *
- * Raises IOError exception if below conditions are satisfied.
- * 1. stdin is not tty.
- * 2. stdin was closed. (errno is EBADF after called isatty(2).)
+ * Raises IOError exception if one of below conditions are satisfied.
+ * 1. stdin was closed.
+ * 2. stdout was closed.
  *
  * This method supports thread. Switches the thread context when waits
  * inputting line.
@@ -395,13 +397,30 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	prompt = RSTRING_PTR(tmp);
     }
 
-    if (!isatty(fileno(rl_instream)) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
-    if (rl_outstream) {
-	struct stat stbuf;
-	int fd = fileno(rl_outstream);
-	if (fd < 0 || fstat(fd, &stbuf) != 0) {
-	    rb_raise(rb_eIOError, "closed stdout");
-	}
+    if (readline_instream) {
+            rb_io_t *ifp;
+            GetOpenFile(readline_instream, ifp);
+            if (ifp->fd < 0) {
+                if (rl_instream) {
+                    fclose(rl_instream);
+                    rl_instream = NULL;
+                }
+                readline_instream = Qfalse;
+                rb_raise(rb_eIOError, "closed stdin");
+            }
+    }
+
+    if (readline_outstream) {
+            rb_io_t *ofp;
+            GetOpenFile(readline_outstream, ofp);
+            if (ofp->fd < 0) {
+                if (rl_outstream) {
+                    fclose(rl_outstream);
+                    rl_outstream = NULL;
+                }
+                readline_outstream = Qfalse;
+                rb_raise(rb_eIOError, "closed stdout");
+            }
     }
 
 #ifdef _WIN32
@@ -443,6 +462,23 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     return result;
 }
 
+static void
+clear_rl_instream(void)
+{
+    rb_io_t *ifp;
+    if (rl_instream) {
+        if (readline_instream) {
+            rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
+            if (ifp->fd < 0 || fileno(rl_instream) == ifp->fd) {
+                fclose(rl_instream);
+                rl_instream = NULL;
+            }
+        }
+        readline_instream = Qfalse;
+        rl_instream = NULL;
+    }
+}
+
 /*
  * call-seq:
  *   Readline.input = input
@@ -456,14 +492,47 @@ static VALUE
 readline_s_set_input(VALUE self, VALUE input)
 {
     rb_io_t *ifp;
+    int fd;
+    FILE *f;
 
-    Check_Type(input, T_FILE);
-    GetOpenFile(input, ifp);
-    rl_instream = rb_io_stdio_file(ifp);
-#ifdef HAVE_RL_GETC_FUNCTION
-    readline_instream = input;
-#endif
+    if (NIL_P(input)) {
+        clear_rl_instream();
+    }
+    else {
+        Check_Type(input, T_FILE);
+        GetOpenFile(input, ifp);
+        clear_rl_instream();
+        fd = rb_cloexec_dup(ifp->fd);
+        if (fd == -1)
+            rb_sys_fail("dup");
+        f = fdopen(fd, "r");
+        if (f == NULL) {
+            int save_errno = errno;
+            close(fd);
+            errno = save_errno;
+            rb_sys_fail("fdopen");
+        }
+        rl_instream = f;
+        readline_instream = input;
+    }
     return input;
+}
+
+static void
+clear_rl_outstream(void)
+{
+    rb_io_t *ofp;
+    if (rl_outstream) {
+        if (readline_outstream) {
+            rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
+            if (ofp->fd < 0 || fileno(rl_outstream) == ofp->fd) {
+                fclose(rl_outstream);
+                rl_outstream = NULL;
+            }
+        }
+        readline_outstream = Qfalse;
+        rl_outstream = NULL;
+    }
 }
 
 /*
@@ -479,10 +548,29 @@ static VALUE
 readline_s_set_output(VALUE self, VALUE output)
 {
     rb_io_t *ofp;
+    int fd;
+    FILE *f;
 
-    Check_Type(output, T_FILE);
-    GetOpenFile(output, ofp);
-    rl_outstream = rb_io_stdio_file(ofp);
+    if (NIL_P(output)) {
+        clear_rl_outstream();
+    }
+    else {
+        Check_Type(output, T_FILE);
+        GetOpenFile(output, ofp);
+        clear_rl_outstream();
+        fd = rb_cloexec_dup(ofp->fd);
+        if (fd == -1)
+            rb_sys_fail("dup");
+        f = fdopen(fd, "w");
+        if (f == NULL) {
+            int save_errno = errno;
+            close(fd);
+            errno = save_errno;
+            rb_sys_fail("fdopen");
+        }
+        rl_outstream = f;
+        readline_outstream = output;
+    }
     return output;
 }
 
@@ -1905,6 +1993,9 @@ Init_readline()
 #ifdef HAVE_RL_CLEAR_SIGNALS
     rl_clear_signals();
 #endif
+
+    rb_gc_register_address(&readline_instream);
+    rb_gc_register_address(&readline_outstream);
 
     readline_s_set_input(mReadline, rb_stdin);
 }
