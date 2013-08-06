@@ -5,7 +5,7 @@ Tue Aug  6 22:38:15 2013  Zachary Scott  <e@zzak.io>
 
 Tue Aug  6 22:35:32 2013  Zachary Scott  <e@zzak.io>
 
-	* lib/rss/1.0.rb: [DOC] Document RSS110 by Steve Klabnik [Bug #8740]
+	* lib/rss/1.0.rb: [DOC] Document RSS10 by Steve Klabnik [Bug #8740]
 
 Tue Aug  6 22:14:11 2013  Kouji Takao  <kouji.takao@gmail.com>
 
