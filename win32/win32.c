@@ -490,9 +490,9 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     }
     p = translate_wchar(path, L'\\', L'/');
     if (*(p - 1) != L'/') *p++ = L'/';
-    if (p - path + numberof(temp) >= len) return 0;
+    if ((UINT)(p - path + numberof(temp)) >= len) return 0;
     memcpy(p, temp, sizeof(temp));
-    return p - path + numberof(temp) - 1;
+    return (UINT)(p - path + numberof(temp) - 1);
 }
 
 /* License: Ruby's */
