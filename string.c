@@ -7846,7 +7846,7 @@ rb_str_is_ascii_only_p(VALUE str)
  * \pre 	_len_ must not be negative.
  * \post	the length of the returned string in characters is less than or equal to _len_.
  * \post	If the length of _str_ is less than or equal _len_, returns _str_ itself.
- * \post	the encoded of returned string is equal to the encoded of _str_.
+ * \post	the encoding of returned string is equal to the encoding of _str_.
  * \post	the class of returned string is equal to the class of _str_.
  * \note	the length is counted in characters.
  */
