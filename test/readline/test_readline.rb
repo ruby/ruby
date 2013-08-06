@@ -322,7 +322,7 @@ class TestReadline < Test::Unit::TestCase
     assert_equal(5, Readline.point)
 
     assert_equal(4, Readline.point=(4))
-    
+
     Readline.insert_text('abc')
     assert_equal(7, Readline.point)
 
