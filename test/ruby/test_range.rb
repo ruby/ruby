@@ -254,6 +254,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(10, (0..10).last)
     assert_equal("a", ("a".."c").first)
     assert_equal("c", ("a".."c").last)
+    assert_equal(0, (2..0).last)
 
     bug8739 = '[ruby-dev:47587] [Bug #8739] from exclusive range'
     assert_equal([0, 1, 2], (0...10).first(3), bug8739)
@@ -262,6 +263,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(9, (0...10).last, bug8739)
     assert_equal("a", ("a"..."c").first, bug8739)
     assert_equal("b", ("a"..."c").last, bug8739)
+    assert_nil((2...0).last)
   end
 
   def test_to_s

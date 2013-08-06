@@ -891,8 +891,15 @@ range_last(int argc, VALUE *argv, VALUE range)
 	VALUE e = RANGE_END(range);
 	if (!EXCL(range)) return e; /* inclusive, the end is the last */
 	/* exclusive, the last is previous to the end */
-	if (FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric))
-	    return rb_int_pred(e);
+	if (FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric)) {
+	    VALUE pred = rb_int_pred(e);
+	    if (!r_lt(RANGE_BEG(range), pred)) {
+		/* TODO: what should be returned, or should raise an
+		 * exception? */
+		pred = Qnil;
+	    }
+	    return pred;
+	}
 
 	/* fallback to Array */
     }

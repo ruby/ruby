@@ -1,3 +1,8 @@
+Tue Aug  6 21:59:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_last): return nil for empty range, or in the case the
+	  predecessor is smaller than the begin.  [Bug #8739]
+
 Tue Aug  6 21:48:31 2013  Kouji Takao  <kouji.takao@gmail.com>
 
 	* ext/readline/readline.c (readline_s_set_point, Init_readline):
