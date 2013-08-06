@@ -238,7 +238,6 @@ module Net::HTTPHeader
     when Range
       first = r.first
       last = r.last
-      last -= 1 if r.exclude_end?
       if last == -1
         rangestr = (first > 0 ? "#{first}-" : "-#{-first}")
       else
