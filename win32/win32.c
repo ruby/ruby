@@ -2053,7 +2053,7 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 #endif
 	int clen = rb_long2int(len);
 	len = WideCharToMultiByte(CP_UTF8, 0, wstr, clen, NULL, 0, NULL, NULL);
-	src = rb_enc_str_new(0, len, enc);
+	src = rb_enc_str_new(0, len, rb_enc_from_index(ENCINDEX_UTF_8));
 	WideCharToMultiByte(CP_UTF8, 0, wstr, clen, RSTRING_PTR(src), len, NULL, NULL);
     }
     switch (encindex) {
