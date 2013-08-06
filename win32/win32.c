@@ -2040,20 +2040,31 @@ win32_direct_conv(const WCHAR *file, struct direct *entry, rb_encoding *dummy)
 VALUE
 rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 {
-    static rb_encoding *utf16 = (rb_encoding *)-1;
     VALUE src;
+    long len = lstrlenW(wstr);
+    int encindex = ENC_TO_ENCINDEX(enc);
 
-    if (utf16 == (rb_encoding *)-1) {
-	utf16 = rb_enc_find("UTF-16LE");
-	if (utf16 == rb_ascii8bit_encoding())
-	    utf16 = NULL;
+    if (encindex == ENCINDEX_UTF_16LE) {
+	return rb_enc_str_new((char *)wstr, len * sizeof(WCHAR), enc);
     }
-    if (!utf16)
-	/* maybe miniruby */
-	return Qnil;
-
-    src = rb_enc_str_new((char *)wstr, lstrlenW(wstr) * sizeof(WCHAR), utf16);
-    return rb_str_encode(src, rb_enc_from_encoding(enc), ECONV_UNDEF_REPLACE, Qnil);
+    else {
+#if SIZEOF_INT < SIZEOF_LONG
+# error long should equal to int on Windows
+#endif
+	int clen = rb_long2int(len);
+	len = WideCharToMultiByte(CP_UTF8, 0, wstr, clen, NULL, 0, NULL, NULL);
+	src = rb_enc_str_new(0, len, enc);
+	WideCharToMultiByte(CP_UTF8, 0, wstr, clen, RSTRING_PTR(src), len, NULL, NULL);
+    }
+    switch (encindex) {
+      case ENCINDEX_ASCII:
+      case ENCINDEX_US_ASCII:
+	/* assume UTF-8 */
+      case ENCINDEX_UTF_8:
+	/* do nothing */
+	return src;
+    }
+    return rb_str_conv_enc_opts(src, NULL, enc, ECONV_UNDEF_REPLACE, Qnil);
 }
 
 /* License: Ruby's */
