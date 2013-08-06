@@ -1,3 +1,8 @@
+Tue Aug  6 22:38:15 2013  Zachary Scott  <e@zzak.io>
+
+	* time.c: [DOC] Typo in Time overview by @sparr [Fixes GH-374]
+	  https://github.com/ruby/ruby/pull/374
+
 Tue Aug  6 22:35:32 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/1.0.rb: [DOC] Document RSS110 by Steve Klabnik [Bug #8740]
