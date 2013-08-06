@@ -1,3 +1,9 @@
+Tue Aug  6 21:48:31 2013  Kouji Takao  <kouji.takao@gmail.com>
+
+	* ext/readline/readline.c (readline_s_set_point, Init_readline):
+	  add Readline.point=(pos). Patched by naruse.  [ruby-dev:47535]
+	  [Feature #8675]
+
 Tue Aug  6 21:14:11 2013  Kouji Takao  <kouji.takao@gmail.com>
 
 	* ext/readline/readline.c (Init_readline, readline_s_set_output)

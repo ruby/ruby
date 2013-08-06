@@ -17,6 +17,11 @@ class TestReadline < Test::Unit::TestCase
   def teardown
     ENV[INPUTRC] = @inputrc
     Readline.instance_variable_set("@completion_proc", nil)
+    begin
+      Readline.delete_text
+      Readline.point = 0
+    rescue NotImplementedError
+    end
   end
 
   if !/EditLine/n.match(Readline::VERSION)
@@ -311,9 +316,22 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  def test_point
+    assert_equal(0, Readline.point)
+    Readline.insert_text('12345')
+    assert_equal(5, Readline.point)
+
+    assert_equal(4, Readline.point=(4))
+    
+    Readline.insert_text('abc')
+    assert_equal(7, Readline.point)
+
+    assert_equal('1234abc5', Readline.line_buffer)
+  rescue NotImplementedError
+  end if !/EditLine/n.match(Readline::VERSION)
+
   def test_insert_text
     str = "test_insert_text"
-    with_pipe {|r, w| w.write("\C-a\n")} # reset rl_point
     assert_equal(0, Readline.point)
     assert_equal(Readline, Readline.insert_text(str))
     assert_equal(str, Readline.line_buffer)

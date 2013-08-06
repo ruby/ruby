@@ -896,8 +896,25 @@ readline_s_get_point(VALUE self)
 {
     return INT2NUM(rl_point);
 }
+
+/*
+ * call-seq:
+ *   Readline.point = int
+ *
+ * Set the index of the current cursor position in
+ * +Readline.line_buffer+.
+ *
+ * See +Readline.point+.
+ */
+static VALUE
+readline_s_set_point(VALUE self, VALUE pos)
+{
+    rl_point = NUM2INT(pos);
+    return pos;
+}
 #else
 #define readline_s_get_point rb_f_notimplement
+#define readline_s_set_point rb_f_notimplement
 #endif
 
 static char **
@@ -1849,6 +1866,8 @@ Init_readline()
 			       readline_s_get_line_buffer, 0);
     rb_define_singleton_method(mReadline, "point",
 			       readline_s_get_point, 0);
+    rb_define_singleton_method(mReadline, "point=",
+			       readline_s_set_point, 1);
     rb_define_singleton_method(mReadline, "set_screen_size",
 			       readline_s_set_screen_size, 2);
     rb_define_singleton_method(mReadline, "get_screen_size",
