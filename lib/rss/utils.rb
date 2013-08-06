@@ -1,14 +1,84 @@
 module RSS
+
+  ##
+  # RSS::Utils is a module that holds various utility functions that are used
+  # across many parts of the rest of the RSS library. Like most modules named
+  # some variant of 'util', its methods are probably not particuarly useful
+  # to those who aren't developing the library itself.
   module Utils
     module_function
 
-    # Convert a name_with_underscores to CamelCase.
+    # Given a +name+ in a name_with_underscores or a name-with-dashes format,
+    # returns the CamelCase version of +name+.
+    #
+    # If the +name+ is already CamelCased, nothing happens.
+    #
+    # Examples:
+    #
+    #   require 'rss/utils'
+    #
+    #   RSS::Utils.to_class_name("sample_name")
+    #   # => "SampleName"
+    #   RSS::Utils.to_class_name("with-dashes")
+    #   # => "WithDashes"
+    #   RSS::Utils.to_class_name("CamelCase")
+    #   # => "CamelCase"
     def to_class_name(name)
       name.split(/[_\-]/).collect do |part|
         "#{part[0, 1].upcase}#{part[1..-1]}"
       end.join("")
     end
 
+    # Returns an array of two elements: the filename where the calling method
+    # is located, and the line number where it is defined.
+    #
+    # Takes an optional argument +i+, which specifies how many callers up the
+    # stack to look.
+    #
+    # Examples:
+    #
+    #   require 'rss/utils'
+    #
+    #   def foo
+    #     p RSS::Utils.get_file_and_line_from_caller
+    #     p RSS::Utils.get_file_and_line_from_caller(1)
+    #   end
+    #
+    #   def bar
+    #     foo
+    #   end
+    #
+    #   def baz
+    #     bar
+    #   end
+    #
+    #   baz
+    #   # => ["test.rb", 5]
+    #   # => ["test.rb", 9]
+    #
+    # If +i+ is not given, or is the default value of 0, it attempts to figure
+    # out the correct value. This is useful when in combination with
+    # instance_eval. For example:
+    #
+    #   require 'rss/utils'
+    #
+    #   def foo
+    #     p RSS::Utils.get_file_and_line_from_caller(1)
+    #   end
+    #
+    #   def bar
+    #     foo
+    #   end
+    #
+    #   instance_eval <<-RUBY, *RSS::Utils.get_file_and_line_from_caller
+    #   def baz
+    #     bar
+    #   end
+    #   RUBY
+    #
+    #   baz
+    #
+    #   # => ["test.rb", 8]
     def get_file_and_line_from_caller(i=0)
       file, line, = caller[i].split(':')
       line = line.to_i
@@ -16,7 +86,19 @@ module RSS
       [file, line]
     end
 
-    # escape '&', '"', '<' and '>' for use in HTML.
+    # Takes a string +s+ with some HTML in it, and escapes '&', '"', '<' and '>', by
+    # replacing them with the appropriate entities.
+    #
+    # This method is also aliased to h, for convenience.
+    #
+    # Examples:
+    #
+    #   require 'rss/utils'
+    #
+    #   RSS::Utils.html_escape("Dungeons & Dragons")
+    #   # => "Dungeons &amp; Dragons"
+    #   RSS::Utils.h(">_>")
+    #   # => "&gt;_&gt;"
     def html_escape(s)
       s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
     end
@@ -32,6 +114,12 @@ module RSS
       end
     end
 
+    # This method is used inside of several different objects to determine
+    # if special behavior is needed in the constructor.
+    #
+    # Special behavior is needed if the array passed in as +args+ has
+    # +true+ or +false+ as its value, and if the second element of +args+
+    # is a hash.
     def element_initialize_arguments?(args)
       [true, false].include?(args[0]) and args[1].is_a?(Hash)
     end

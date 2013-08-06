@@ -1,3 +1,7 @@
+Wed Aug  7 07:46:23 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/utils.rb: [DOC] RSS::Utils by Steve Klabnik [Bug #8745]
+
 Wed Aug  7 07:38:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (nlz16): Removed.
