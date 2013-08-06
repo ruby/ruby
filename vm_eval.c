@@ -1186,6 +1186,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
     rb_block_t block, *base_block;
     volatile int parse_in_eval;
     volatile int mild_compile_error;
+    NODE *orig_cref;
+    VALUE crefval;
 
     if (file == 0) {
 	file = rb_sourcefilename();
@@ -1243,7 +1245,14 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
+	if (!cref && base_block->iseq) {
+	    orig_cref = rb_vm_get_cref(base_block->iseq, base_block->ep);
+	    cref = NEW_CREF(Qnil);
+	    crefval = (VALUE) cref;
+	    COPY_CREF(cref, orig_cref);
+	}
 	vm_set_eval_stack(th, iseqval, cref, base_block);
+	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseqval);

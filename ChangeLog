@@ -1,3 +1,10 @@
+Tue Aug  6 16:14:32 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_eval.c (eval_string_with_cref): copy cref to limit the scope of
+	  refienements in the eval string. [ruby-core:56329] [Bug #8722]
+
+	* test/ruby/test_refinement.rb: related test.
+
 Tue Aug  6 12:23:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_realloc): Use VALGRIND_MAKE_MEM_UNDEFINED to

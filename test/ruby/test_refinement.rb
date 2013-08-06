@@ -929,6 +929,38 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("FooExt2#y Foo#y", FooFoo2ExtClient.invoke_y_on(foo))
   end
 
+  def test_eval_scoping
+    assert_in_out_err([], <<-INPUT, ["HELLO WORLD", "dlrow olleh", "HELLO WORLD"], [])
+      module M
+        refine String do
+          def upcase
+            reverse
+          end
+        end
+      end
+
+      puts "hello world".upcase
+      puts eval(%{using M; "hello world".upcase})
+      puts "hello world".upcase
+    INPUT
+  end
+
+  def test_eval_with_binding_scoping
+    assert_in_out_err([], <<-INPUT, ["HELLO WORLD", "dlrow olleh", "HELLO WORLD"], [])
+      module M
+        refine String do
+          def upcase
+            reverse
+          end
+        end
+      end
+
+      puts "hello world".upcase
+      puts eval(%{using M; "hello world".upcase}, TOPLEVEL_BINDING)
+      puts eval(%{"hello world".upcase}, TOPLEVEL_BINDING)
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)
