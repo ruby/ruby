@@ -2392,8 +2392,8 @@ int_even_p(VALUE num)
 
 /*
  *  call-seq:
- *     fixnum.next  ->  integer
- *     fixnum.succ  ->  integer
+ *     int.next  ->  integer
+ *     int.succ  ->  integer
  *
  *  Returns the Integer equal to +int+ + 1.
  *
