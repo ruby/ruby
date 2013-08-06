@@ -1,3 +1,11 @@
+Tue Aug  6 22:14:11 2013  Kouji Takao  <kouji.takao@gmail.com>
+
+	* ext/readline/readline.c (readline_s_delete_text): remove
+	  checking "$SAFE == 4".
+
+	* ext/readline/readline.c: fix rdoc, remove "Raises SecurityError"
+	  and add "Raises NotImplementedError".
+
 Tue Aug  6 22:04:38 2013  Kouji Takao  <kouji.takao@gmail.com>
 
 	* ext/readline/readline.c, test/readline/test_readline.rb: fix

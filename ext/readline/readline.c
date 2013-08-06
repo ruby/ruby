@@ -44,10 +44,6 @@
 #include <sys/stat.h>
 #endif
 
-#ifndef RUBY_SAFE_LEVEL_MAX
-#define RUBY_SAFE_LEVEL_MAX 4   /* 2.0 or earlier */
-#endif
-
 static VALUE mReadline;
 
 #define EDIT_LINE_LIBRARY_VERSION "EditLine wrapper"
@@ -127,9 +123,7 @@ static char **readline_attempted_completion_function(const char *text,
  *     print("-> ", buf, "\n")
  *   end
  *
- * Most of methods raise SecurityError exception if $SAFE is 4.
- *
- * Documented by TAKAO Kouji <kouji at takao7 dot net>.
+ * Documented by Kouji Takao <kouji dot takao at gmail dot com>.
  */
 
 static VALUE readline_instream;
@@ -377,8 +371,6 @@ readline_get(VALUE prompt)
  *     # p Readline::HISTORY.to_a
  *     print "-> ", buf, "\n"
  *   end
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_readline(int argc, VALUE *argv, VALUE self)
@@ -485,8 +477,6 @@ clear_rl_instream(void)
  *
  * Specifies a File object +input+ that is input stream for
  * Readline.readline method.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_input(VALUE self, VALUE input)
@@ -541,8 +531,6 @@ clear_rl_outstream(void)
  *
  * Specifies a File object +output+ that is output stream for
  * Readline.readline method.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_output(VALUE self, VALUE output)
@@ -587,7 +575,7 @@ readline_s_set_output(VALUE self, VALUE output)
  *
  * Raises ArgumentError if +proc+ does not respond to the call method.
  *
- * Raises SecurityError if $SAFE is 4.
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_set_pre_input_hook(VALUE self, VALUE proc)
@@ -605,7 +593,7 @@ readline_s_set_pre_input_hook(VALUE self, VALUE proc)
  * been printed and just before readline starts reading input
  * characters. The default is nil.
  *
- * Raises SecurityError if $SAFE is 4.
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_get_pre_input_hook(VALUE self)
@@ -637,7 +625,7 @@ readline_pre_input_hook(void)
  *
  * See GNU Readline's rl_insert_text function.
  *
- * Raises SecurityError if $SAFE is 4.
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_insert_text(VALUE self, VALUE str)
@@ -661,14 +649,11 @@ readline_s_insert_text(VALUE self, VALUE str)
  *
  * See GNU Readline's rl_delete_text function.
  *
- * Raises SecurityError if $SAFE is 4.
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_delete_text(int argc, VALUE *argv, VALUE self)
 {
-#if RUBY_SAFE_LEVEL_MAX >= 4
-    rb_secure(4);
-#endif
     rb_check_arity(argc, 0, 2);
     if (rl_line_buffer) {
         char *p, *ptr = rl_line_buffer;
@@ -714,7 +699,7 @@ readline_s_delete_text(int argc, VALUE *argv, VALUE self)
  *
  * See GNU Readline's rl_redisplay function.
  *
- * Raises SecurityError if $SAFE is 4.
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_redisplay(VALUE self)
@@ -793,8 +778,6 @@ readline_s_redisplay(VALUE self)
  * It may also be helpful to use the Abbrev library to generate completions.
  *
  * Raises ArgumentError if +proc+ does not respond to the call method.
- *
- * Raises SecurityError if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
@@ -809,8 +792,6 @@ readline_s_set_completion_proc(VALUE self, VALUE proc)
  *   Readline.completion_proc -> proc
  *
  * Returns the completion Proc object.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_completion_proc(VALUE self)
@@ -823,8 +804,6 @@ readline_s_get_completion_proc(VALUE self)
  *   Readline.completion_case_fold = bool
  *
  * Sets whether or not to ignore case on completion.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completion_case_fold(VALUE self, VALUE val)
@@ -845,8 +824,6 @@ readline_s_set_completion_case_fold(VALUE self, VALUE val)
  *
  *   Readline.completion_case_fold = "This is a String."
  *   p Readline.completion_case_fold # => "This is a String."
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_completion_case_fold(VALUE self)
@@ -865,6 +842,8 @@ readline_s_get_completion_case_fold(VALUE self)
  *
  * The length of +Readline.line_buffer+ and GNU Readline's rl_end are
  * same.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_get_line_buffer(VALUE self)
@@ -890,6 +869,8 @@ readline_s_get_line_buffer(VALUE self)
  * the length of input-string from +Readline.point+.
  *
  *   start = (the length of input-string) - Readline.point
+ *
+ * Raises NotImplementedError if the using readline library does not support.
  */
 static VALUE
 readline_s_get_point(VALUE self)
@@ -903,6 +884,8 @@ readline_s_get_point(VALUE self)
  *
  * Set the index of the current cursor position in
  * +Readline.line_buffer+.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
  *
  * See +Readline.point+.
  */
@@ -1001,8 +984,6 @@ readline_attempted_completion_function(const char *text, int start, int end)
  * See GNU Readline's rl_set_screen_size function.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_screen_size(VALUE self, VALUE rows, VALUE columns)
@@ -1024,8 +1005,6 @@ readline_s_set_screen_size(VALUE self, VALUE rows, VALUE columns)
  * See GNU Readline's rl_get_screen_size function.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_screen_size(VALUE self)
@@ -1052,8 +1031,6 @@ readline_s_get_screen_size(VALUE self)
  * details of VI editing mode.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_vi_editing_mode(VALUE self)
@@ -1073,8 +1050,6 @@ readline_s_vi_editing_mode(VALUE self)
  * Returns true if vi mode is active. Returns false if not.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_vi_editing_mode_p(VALUE self)
@@ -1094,8 +1069,6 @@ readline_s_vi_editing_mode_p(VALUE self)
  * manual of GNU Readline for details of Emacs editing mode.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_emacs_editing_mode(VALUE self)
@@ -1115,8 +1088,6 @@ readline_s_emacs_editing_mode(VALUE self)
  * Returns true if emacs mode is active. Returns false if not.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_emacs_editing_mode_p(VALUE self)
@@ -1163,8 +1134,6 @@ readline_s_emacs_editing_mode_p(VALUE self)
  *   p Readline.completion_append_character # => "s"
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completion_append_character(VALUE self, VALUE str)
@@ -1195,8 +1164,6 @@ readline_s_set_completion_append_character(VALUE self, VALUE str)
  * completion. The default is a space (" ").
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_completion_append_character(VALUE self)
@@ -1223,8 +1190,6 @@ readline_s_get_completion_append_character(VALUE self)
  * break words for completion in Bash: " \t\n\"\\'`@$><=;|&{(".
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
@@ -1258,8 +1223,6 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
  * for the completer routine.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
@@ -1282,8 +1245,6 @@ readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
  * Readline.basic_word_break_characters.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
@@ -1317,8 +1278,6 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
  * for rl_complete_internal().
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
@@ -1345,8 +1304,6 @@ readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
  * See GNU Readline's rl_special_prefixes variable.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_special_prefixes(VALUE self, VALUE str)
@@ -1377,8 +1334,6 @@ readline_s_set_special_prefixes(VALUE self, VALUE str)
  * See GNU Readline's rl_special_prefixes variable.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_special_prefixes(VALUE self)
@@ -1405,8 +1360,6 @@ readline_s_get_special_prefixes(VALUE self)
  * Sets a list of quote characters which can cause a word break.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_basic_quote_characters(VALUE self, VALUE str)
@@ -1440,8 +1393,6 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
  * Gets a list of quote characters which can cause a word break.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_basic_quote_characters(VALUE self, VALUE str)
@@ -1465,8 +1416,6 @@ readline_s_get_basic_quote_characters(VALUE self, VALUE str)
  * as any other character, unless they also appear within this list.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completer_quote_characters(VALUE self, VALUE str)
@@ -1500,8 +1449,6 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
  * the line.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_completer_quote_characters(VALUE self, VALUE str)
@@ -1523,8 +1470,6 @@ readline_s_get_completer_quote_characters(VALUE self, VALUE str)
  * when they appear in a completed filename. The default is nil.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_set_filename_quote_characters(VALUE self, VALUE str)
@@ -1558,8 +1503,6 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
  * when they appear in a completed filename.
  *
  * Raises NotImplementedError if the using readline library does not support.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_get_filename_quote_characters(VALUE self, VALUE str)
@@ -1578,8 +1521,6 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
  *   Readline.refresh_line -> nil
  *
  * Clear the current input line.
- *
- * Raises SecurityError exception if $SAFE is 4.
  */
 static VALUE
 readline_s_refresh_line(VALUE self)
