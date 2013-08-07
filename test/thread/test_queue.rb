@@ -133,4 +133,78 @@ class TestQueue < Test::Unit::TestCase
     assert_same q, retval
   end
 
+  def test_queue_each
+    q = Queue.new
+    q.push(1)
+    q.push(2)
+    results = []
+    doubler = Thread.new do
+      q.each do |n|
+        results << n + n
+      end
+    end
+    sleep 0.01 until doubler.stop?
+    assert_equal [2, 4], results
+    q.push(3)
+    sleep 0.01 until doubler.stop?
+    assert_equal [2, 4, 6], results
+  end
+
+  def test_queue_each_break
+    q = Queue.new
+    q.push(1)
+    q.push(:stop)
+    q.push(2)
+    results = []
+    doubler = Thread.new do
+      q.each do |n|
+        break if n == :stop
+        results << n + n
+      end
+    end
+    doubler.join
+    assert_equal [2], results
+    assert_equal 2, q.pop
+  end
+
+  def test_queue_each_enumerator
+    q = Queue.new
+    q.push(1)
+    q.push(2)
+    e = q.each
+    assert_instance_of Enumerator, e
+    assert_equal 2, e.size
+    assert_equal 1, e.next
+    assert_equal 2, e.next
+    assert_equal 0, e.size
+  end
+
+  def test_queue_each_blocking_passes_thread_errors_through
+    q = Queue.new
+    q.push(1)
+    doubler = Thread.new do
+      q.each(false) do |n|
+        raise ThreadError
+      end
+    end
+    assert_raises(ThreadError) do
+      doubler.join
+    end
+  end
+
+  def test_queue_each_nonblock
+    q = Queue.new
+    q.push(1)
+    q.push(2)
+    results = []
+    doubler = Thread.new do
+      q.each(true) do |n|
+        results << n + n
+      end
+    end
+    doubler.abort_on_exception = true
+    sleep 0.01 until doubler.stop?
+    assert_equal [2, 4], results
+    assert !doubler.alive?, "Thread should have ended"
+  end
 end
