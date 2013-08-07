@@ -1,3 +1,11 @@
+Thu Aug  8 03:37:38 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/httpresponse.rb:  Allow #body to be an IO-like object
+	  that responds to #readpartial and #read.
+	  [ruby-trunk - Feature #8155]
+	* NEWS:  NEWS for above
+	* test/webrick/test_httpresponse.rb:  Tests for above.
+
 Wed Aug  7 23:06:26 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.c (Process.argv0): New method to return the original value

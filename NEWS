@@ -145,6 +145,10 @@ with all sufficient information, see the ChangeLog file.
 * CGI::Util
   * All class methods modulized.
 
+* WEBrick
+  * The body of a response may now be a StringIO or other IO-like that responds
+    to #readpartial and #read.
+
 * XMLRPC::Client
   * New methods:
     * XMLRPC::Client#http. It returns Net::HTTP for the client. Normally,
