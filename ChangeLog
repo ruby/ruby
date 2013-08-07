@@ -1,3 +1,8 @@
+Wed Aug  7 16:34:30 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/test_cgi.rb (TestWEBrickCGI#{start_cgi_server,test_cgi}):
+	  mswin is not only mswin32 but also mswin64.
+
 Wed Aug  7 16:19:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_fiber_start): use RARRAY_RAWPTR() instead of
