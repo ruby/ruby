@@ -1,3 +1,8 @@
+Wed Aug  7 12:58:23 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (thread_start_func_2): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR() because there is no new reference.
+
 Wed Aug  7 09:00:24 2013  Zachary Scott  <e@zzak.io>
 
 	* string.c: [DOC] Description of rb_str_equal [Fixes GH-375]
