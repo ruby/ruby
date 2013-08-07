@@ -627,12 +627,12 @@ random_load(VALUE obj, VALUE dump)
     rb_random_t *rnd = get_rnd(obj);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    VALUE *ary;
+    const VALUE *ary;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_PTR(dump);
+    ary = RARRAY_RAWPTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
 	seed = ary[2];
