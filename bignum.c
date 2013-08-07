@@ -4749,7 +4749,7 @@ dbl2big(double d)
 	rb_raise(rb_eFloatDomainError, "NaN");
     }
 
-    while (!POSFIXABLE(u) || 0 != (long)u) {
+    while (1.0 <= u) {
 	u /= (double)(BIGRAD);
 	i++;
     }

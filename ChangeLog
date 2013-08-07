@@ -1,3 +1,7 @@
+Wed Aug  7 19:29:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (dbl2big): A condition simplified.
+
 Wed Aug  7 16:34:30 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb (TestWEBrickCGI#{start_cgi_server,test_cgi}):
