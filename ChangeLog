@@ -1,3 +1,12 @@
+Wed Aug  7 16:19:12 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_start): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR() because there is no new reference.
+
+	* proc.c (curry): ditto.
+
+	* proc.c (rb_proc_call): remove line break.
+
 Wed Aug  7 13:20:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* random.c (random_load): use RARRAY_RAWPTR() instead of
