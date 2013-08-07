@@ -49,7 +49,8 @@ with all sufficient information, see the ChangeLog file.
     * Mutex#owned? is no longer experimental.
 
 * Process
-  * New methods:
+  * New alternative methods to $0/$0=:
+    * Process.argv0() returns the original value of $0.
     * Process.setproctitle() sets the process title without affecting $0.
 
 * String

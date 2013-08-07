@@ -462,7 +462,7 @@ class TestRubyOptions < Test::Unit::TestCase
     skip "platform dependent feature" if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
 
     with_tmpchdir do
-      write_file("test-script", "$0 = 'hello world'; sleep 60")
+      write_file("test-script", "$0 = 'hello world'; /test-script/ =~ Process.argv0 or $0 = 'Process.argv0 changed!'; sleep 60")
 
       pid = spawn(EnvUtil.rubybin, "test-script")
       ps = nil

@@ -1205,7 +1205,8 @@ opt_enc_index(VALUE enc_name)
     return i;
 }
 
-#define rb_progname (GET_VM()->progname)
+#define rb_progname      (GET_VM()->progname)
+#define rb_orig_progname (GET_VM()->orig_progname)
 VALUE rb_argv0;
 
 static VALUE
@@ -1834,7 +1835,7 @@ void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_external_str_new(name, strlen(name));
+	rb_orig_progname = rb_progname = rb_external_str_new(name, strlen(name));
 	rb_vm_set_progname(rb_progname);
     }
 }
@@ -1846,7 +1847,7 @@ ruby_script(const char *name)
 void
 ruby_set_script_name(VALUE name)
 {
-    rb_progname = rb_str_dup(name);
+    rb_orig_progname = rb_progname = rb_str_dup(name);
     rb_vm_set_progname(rb_progname);
 }
 
@@ -1914,6 +1915,7 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
+    rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
     /*

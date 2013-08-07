@@ -1,3 +1,8 @@
+Wed Aug  7 23:06:26 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.c (Process.argv0): New method to return the original value
+	  of $0. [Feature #8696]
+
 Wed Aug  7 23:05:55 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.c (Process.setproctitle): New method to change the title of
