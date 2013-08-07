@@ -1,3 +1,9 @@
+Wed Aug  7 09:00:24 2013  Zachary Scott  <e@zzak.io>
+
+	* string.c: [DOC] Description of rb_str_equal [Fixes GH-375]
+	  Based on a patch by @markijbema
+	  https://github.com/ruby/ruby/pull/375
+
 Wed Aug  7 08:30:38 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_hmac.c: [DOC] Documentation for OpenSSL::HMAC

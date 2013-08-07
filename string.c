@@ -2400,9 +2400,14 @@ str_eql(const VALUE str1, const VALUE str2)
  *     str == obj    -> true or false
  *     str === obj   -> true or false
  *
- *  Equality---If <i>obj</i> is not a <code>String</code>, returns
- *  <code>false</code>. Otherwise, returns <code>true</code> if <i>str</i>
- *  <code><=></code> <i>obj</i> returns zero.
+ *  === Equality
+ *
+ *  Returns whether +str+ == +obj+, similar to Object#==.
+ *
+ *  If +obj+ is not an instance of String but responds to +to_str+, then the
+ *  two strings are compared using case equality Object#===.
+ *
+ *  Otherwise, returns similarly to String#eql?, comparing length and content.
  */
 
 VALUE
