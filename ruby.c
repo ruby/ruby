@@ -1780,21 +1780,49 @@ rb_load_file_str(VALUE fname_v)
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
 
+/*
+ *  call-seq:
+ *     Process.argv0  -> frozen_string
+ *
+ *  Returns the name of the script being executed.  The value is not
+ *  affected by assigning a new value to $0.
+ */
+
+static VALUE
+proc_argv0(VALUE process)
+{
+    return rb_orig_progname;
+}
+
+/*
+ *  call-seq:
+ *     Process.setproctitle(string)  -> string
+ *
+ *  Returns the process title that appears on the ps(1) command.  Not
+ *  necessarily effective on all platforms.
+ *
+ *  Calling this method does not affect the value of $0.
+ *
+ *     Process.setproctitle('myapp: worker #%d' % worker_id)
+ */
+
+static VALUE
+proc_setproctitle(VALUE process, VALUE title)
+{
+    StringValue(title);
+
+    setproctitle("%.*s", RSTRING_LENINT(title), RSTRING_PTR(title));
+
+    return title;
+}
+
 static void
 set_arg0(VALUE val, ID id)
 {
-    char *s;
-    long i;
-
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
-    StringValue(val);
-    s = RSTRING_PTR(val);
-    i = RSTRING_LEN(val);
 
-    setproctitle("%.*s", (int)i, s);
-
-    rb_progname = rb_obj_freeze(rb_external_str_new(s, i));
+    rb_progname = rb_str_new_frozen(proc_setproctitle(rb_mProcess, val));
 }
 
 /*! Sets the current script name to this value.
@@ -1885,6 +1913,8 @@ ruby_prog_init(void)
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
+
+    rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
     /*
      * ARGV contains the command line arguments used to run ruby with the

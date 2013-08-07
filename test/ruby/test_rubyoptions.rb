@@ -477,6 +477,25 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_setproctitle
+    skip "platform dependent feature" if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
+
+    with_tmpchdir do
+      write_file("test-script", "$_0 = $0.dup; Process.setproctitle('hello world'); $0 == $_0 or Process.setproctitle('$0 changed!'); sleep 60")
+
+      pid = spawn(EnvUtil.rubybin, "test-script")
+      ps = nil
+      10.times do
+        sleep 0.1
+        ps = `ps -p #{pid} -o command`
+        break if /hello world/ =~ ps
+      end
+      assert_match(/hello world/, ps)
+      Process.kill :KILL, pid
+      Process.wait(pid)
+    end
+  end
+
   module SEGVTest
     opts = {}
     if /mswin|mingw/ =~ RUBY_PLATFORM
