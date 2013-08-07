@@ -1,3 +1,8 @@
+Wed Aug  7 20:05:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_odd_p): Check the bignum length.
+	  (rb_big_even_p): Ditto.
+
 Wed Aug  7 19:29:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (dbl2big): A condition simplified.

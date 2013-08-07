@@ -6559,7 +6559,7 @@ rb_big_size(VALUE big)
 static VALUE
 rb_big_odd_p(VALUE num)
 {
-    if (BDIGITS(num)[0] & 1) {
+    if (RBIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qtrue;
     }
     return Qfalse;
@@ -6575,7 +6575,7 @@ rb_big_odd_p(VALUE num)
 static VALUE
 rb_big_even_p(VALUE num)
 {
-    if (BDIGITS(num)[0] & 1) {
+    if (RBIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
 	return Qfalse;
     }
     return Qtrue;
