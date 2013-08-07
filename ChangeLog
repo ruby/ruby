@@ -1,3 +1,8 @@
+Thu Aug  8 05:59:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* test/openssl/test_ssl.rb: Fix test for CVE-2013-4073.
+	  Patch by Antonio Terceiro. [Bug #8750] [ruby-core:56437]
+
 Thu Aug  8 03:37:38 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/httpresponse.rb:  Allow #body to be an IO-like object
