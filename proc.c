@@ -601,7 +601,7 @@ rb_proc_call(VALUE self, VALUE args)
 }
 
 VALUE
-rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
+rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_procval)
 {
     VALUE vret;
     rb_proc_t *proc;

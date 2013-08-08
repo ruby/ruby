@@ -407,7 +407,7 @@ VALUE rb_block_lambda(void);
 VALUE rb_proc_new(VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_proc_call(VALUE, VALUE);
-VALUE rb_proc_call_with_block(VALUE, int argc, VALUE *argv, VALUE);
+VALUE rb_proc_call_with_block(VALUE, int argc, const VALUE *argv, VALUE);
 int rb_proc_arity(VALUE);
 VALUE rb_proc_lambda_p(VALUE);
 VALUE rb_binding_new(void);
