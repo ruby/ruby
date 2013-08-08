@@ -1,3 +1,8 @@
+Thu Aug  8 19:56:52 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (rb_str_format_m): use RARRAY_RAWPTR() instead of
+	  RARRAY_PTR() because there is no new reference.
+
 Thu Aug  8 19:55:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: define USE_RGENGC_LOGGING_WB_UNPROTECT.
