@@ -2231,7 +2231,7 @@ time_overflow_p(time_t *secp, long *nsecp)
     }
     if (nsec < 0) {		/* nsec negative overflow */
 	sec2 = NDIV(nsec,1000000000); /* negative div */
-	if (sec < TIMET_MAX - sec2) {
+	if (sec < TIMET_MIN - sec2) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
 	nsec = NMOD(nsec,1000000000);      /* negative mod */

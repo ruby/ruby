@@ -1,4 +1,4 @@
-Thu Aug  8 21:10:05 2013  Tanaka Akira  <akr@fsij.org>
+Thu Aug  8 21:32:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_overflow_p): Avoid signed integer overflow.
 
