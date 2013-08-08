@@ -264,7 +264,7 @@ post-install-ext:: post-install-ext-arch post-install-ext-comm
 install-arch: pre-install-arch do-install-arch post-install-arch
 pre-install-arch:: pre-install-bin pre-install-ext-arch
 do-install-arch: main
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin --install=ext-arch
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=arch
 post-install-arch:: post-install-bin post-install-ext-arch
 
 install-comm: pre-install-comm do-install-comm post-install-comm
