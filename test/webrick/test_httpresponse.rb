@@ -104,6 +104,7 @@ module WEBrick
 
       w.close
 
+      r.binmode
       assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
     end
 
@@ -118,6 +119,7 @@ module WEBrick
 
       w.close
 
+      r.binmode
       assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
     end
 
@@ -132,6 +134,7 @@ module WEBrick
 
       w.close
 
+      r.binmode
       assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
     end
   end

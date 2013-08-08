@@ -1,3 +1,9 @@
+Thu Aug  8 12:11:43 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/test_httpresponse.rb (test_send_body_*_chunked): these
+	  expectations assumes that the IOs are binmode.  fixed test failures
+	  introduced at r42427 on Windows.
+
 Thu Aug  8 10:27:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_last): revert r42400.  [Bug #8739]
