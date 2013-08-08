@@ -1,3 +1,7 @@
+Thu Aug  8 10:26:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_normalize_ospath): extract and move from dir.c.
+
 Thu Aug  8 05:59:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* test/openssl/test_ssl.rb: Fix test for CVE-2013-4073.

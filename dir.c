@@ -84,11 +84,7 @@ char *strchr(char*,char);
 #include <sys/param.h>
 #include <sys/mount.h>
 
-rb_encoding *
-rb_utf8mac_encoding(void)
-{
-    return rb_enc_from_index(ENCINDEX_UTF8_MAC);
-}
+VALUE rb_str_normalize_ospath(const char *ptr, long len);
 
 static inline int
 is_hfs(DIR *dirp)
@@ -634,10 +630,8 @@ dir_each(VALUE dir)
 	VALUE path;
 #if HAVE_HFS
 	VALUE utf8str = Qnil;
-	rb_encoding *utf8mac = 0;
-	if (hfs_p && has_nonascii(name, namlen) && (utf8mac = rb_utf8mac_encoding()) != 0) {
-	    utf8str = rb_str_conv_enc(rb_tainted_str_new(name, namlen),
-				      utf8mac, rb_utf8_encoding());
+	if (hfs_p && has_nonascii(name, namlen) &&
+	    !NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
 	    RSTRING_GETMEM(utf8str, name, namlen);
 	}
 #endif
@@ -1427,10 +1421,7 @@ glob_helper(
 	    namlen = NAMLEN(dp);
 # if HAVE_HFS
 	    if (hfs_p && has_nonascii(name, namlen)) {
-		rb_encoding *utf8mac = rb_utf8mac_encoding();
-		if (utf8mac) {
-		    utf8str = rb_str_conv_enc(rb_str_new(name, namlen),
-					      utf8mac, rb_utf8_encoding());
+		if (!NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
 		    RSTRING_GETMEM(utf8str, name, namlen);
 		}
 	    }

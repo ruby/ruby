@@ -240,6 +240,19 @@ rb_str_encode_ospath(VALUE path)
     return path;
 }
 
+#ifdef __APPLE__
+VALUE
+rb_str_normalize_ospath(const char *ptr, long len)
+{
+    rb_encoding *utf8mac = rb_enc_from_index(ENCINDEX_UTF8_MAC);
+    if (utf8mac) {
+	return rb_str_conv_enc(rb_tainted_str_new(ptr, len),
+			       utf8mac, rb_utf8_encoding());
+    }
+    return Qnil;
+}
+#endif
+
 static long
 apply2files(void (*func)(const char *, VALUE, void *), VALUE vargs, void *arg)
 {
