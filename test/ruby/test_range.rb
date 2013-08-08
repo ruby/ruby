@@ -260,10 +260,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2], (0...10).first(3), bug8739)
     assert_equal([7, 8, 9], (0...10).last(3), bug8739)
     assert_equal(0, (0...10).first, bug8739)
-    assert_equal(9, (0...10).last, bug8739)
+    assert_equal(10, (0...10).last, bug8739)
     assert_equal("a", ("a"..."c").first, bug8739)
-    assert_equal("b", ("a"..."c").last, bug8739)
-    assert_nil((2...0).last)
+    assert_equal("c", ("a"..."c").last, bug8739)
+    assert_equal(0, (2...0).last)
   end
 
   def test_to_s
