@@ -2226,16 +2226,16 @@ time_overflow_p(time_t *secp, long *nsecp)
 	if (TIMET_MAX - sec2 < sec) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	nsec %= 1000000000;
+	nsec -= sec2 * 1000000000;
 	sec += sec2;
     }
-    if (nsec < 0) {		/* nsec negative overflow */
+    else if (nsec < 0) {		/* nsec negative overflow */
 	sec2 = NDIV(nsec,1000000000); /* negative div */
 	if (sec < TIMET_MIN - sec2) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
-	nsec = NMOD(nsec,1000000000);      /* negative mod */
-	sec = sec + sec2;
+	nsec -= sec2 * 1000000000;
+	sec += sec2;
     }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0)
@@ -2281,9 +2281,9 @@ rb_time_new(time_t sec, long usec)
 	usec -= sec2 * 1000000;
 	sec += sec2;
     }
-    else if (usec <= 1000000) {
-	long sec2 = usec / 1000000;
-	if (sec < -TIMET_MAX - sec2) {
+    else if (usec < 0) {
+	long sec2 = NDIV(usec,1000000); /* negative div */
+	if (sec < TIMET_MIN - sec2) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
 	usec -= sec2 * 1000000;

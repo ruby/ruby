@@ -1,6 +1,7 @@
-Thu Aug  8 21:32:22 2013  Tanaka Akira  <akr@fsij.org>
+Thu Aug  8 21:56:44 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_overflow_p): Avoid signed integer overflow.
+	  (rb_time_new): Fix overflow condition.
 
 Thu Aug  8 19:58:02 2013  Koichi Sasada  <ko1@atdot.net>
 
