@@ -227,13 +227,13 @@ Tue Aug  6 17:21:38 2013  Koichi Sasada  <ko1@atdot.net>
 Tue Aug  6 17:02:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_conv_from_wchar): use WideCharToMultiByte(),
-	  as like as mbstr_to_wstr(), in the first step of the convertion from
+	  as like as mbstr_to_wstr(), in the first step of the conversion from
 	  WCHAR.
 
 Tue Aug  6 16:14:32 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_eval.c (eval_string_with_cref): copy cref to limit the scope of
-	  refienements in the eval string. [ruby-core:56329] [Bug #8722]
+	  refinements in the eval string. [ruby-core:56329] [Bug #8722]
 
 	* test/ruby/test_refinement.rb: related test.
 
