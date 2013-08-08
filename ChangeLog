@@ -1,3 +1,7 @@
+Thu Aug  8 10:27:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_last): revert r42400.  [Bug #8739]
+
 Thu Aug  8 10:26:25 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_str_normalize_ospath): extract and move from dir.c.
