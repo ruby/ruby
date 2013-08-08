@@ -1769,6 +1769,7 @@ int ruby_native_thread_p(void);
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH        0x040000
+#define RUBY_EVENT_SWITCH                 0x040000 /* obsolete name. this macro is for compatibility */
                                        /* 0x080000 */
 #define RUBY_INTERNAL_EVENT_NEWOBJ        0x100000
 #define RUBY_INTERNAL_EVENT_FREEOBJ       0x200000
