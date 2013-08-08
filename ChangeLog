@@ -1,3 +1,8 @@
+Thu Aug  8 14:54:18 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: add description of incompatibility introduced by r42396.
+	  [ruby-core:56329] [Bug #8722]
+
 Thu Aug  8 14:50:36 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (mini): portable target to build miniruby
