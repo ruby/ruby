@@ -1,3 +1,13 @@
+Thu Aug  8 14:50:36 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (mini): portable target to build miniruby
+
+	* common.mk (bisect): run git-bisect with miniruby
+
+	* common.mk (bisect-ruby): run git-bisect with ruby
+
+	* tool/bisect.sh: script for git-bisect
+
 Thu Aug  8 12:11:43 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_httpresponse.rb (test_send_body_*_chunked): these

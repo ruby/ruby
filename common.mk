@@ -211,6 +211,7 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)
+mini: PHONY miniruby$(EXEEXT)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
@@ -984,6 +985,12 @@ runruby: $(PROGRAM) PHONY
 
 parse: fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
+
+bisect: PHONY
+	$(srcdir)/tool/bisect.sh miniruby $(srcdir)
+
+bisect-ruby: PHONY
+	$(srcdir)/tool/bisect.sh ruby $(srcdir)
 
 COMPARE_RUBY = $(BASERUBY)
 ITEM =
