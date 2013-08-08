@@ -1,3 +1,12 @@
+Thu Aug  8 15:37:53 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/coverage/test_coverage.rb (TestCoverage#test_big_code): use `1'
+	  instead of `p' to get rid of a side effect.
+	  Kernel#p without any argument seems to do nothing, but flushes stdout.
+	  and, if stdout is redirected to file, fsync() will be called on
+	  Windows.  so, when running test-all on Windows with redirection, such
+	  as CI environment, this test took a lot of time.
+
 Thu Aug  8 14:54:18 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add description of incompatibility introduced by r42396.
