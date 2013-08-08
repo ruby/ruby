@@ -1,3 +1,7 @@
+Thu Aug  8 19:55:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: define USE_RGENGC_LOGGING_WB_UNPROTECT.
+
 Thu Aug  8 16:44:25 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: add old macro name `RUBY_EVENT_SWITCH'.
