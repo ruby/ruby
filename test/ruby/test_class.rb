@@ -346,4 +346,10 @@ class TestClass < Test::Unit::TestCase
     assert_empty(added.grep(->(k) {c == k[0]}), bug5283)
     assert_equal(:foo, d.foo)
   end
+
+  def test_singleton_class_p
+    feature7609 = '[ruby-core:51087] [Feature #7609]'
+    assert_predicate(self.singleton_class, :singleton_class?, feature7609)
+    assert_not_predicate(self.class, :singleton_class?, feature7609)
+  end
 end

@@ -2385,6 +2385,14 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
     return rb_cvar_defined(obj, id);
 }
 
+static VALUE
+rb_mod_singleton_p(VALUE klass)
+{
+    if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON))
+	return Qtrue;
+    return Qfalse;
+}
+
 static struct conv_method_tbl {
     const char *method;
     ID id;
@@ -3225,6 +3233,7 @@ Init_Object(void)
     rb_define_method(rb_cModule, "class_variable_defined?", rb_mod_cvar_defined, 1);
     rb_define_method(rb_cModule, "public_constant", rb_mod_public_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1); /* in variable.c */
+    rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

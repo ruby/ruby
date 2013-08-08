@@ -1,3 +1,9 @@
+Thu Aug  8 23:01:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_singleton_p): new method Module#singleton_class? to
+	  return whether the receiver is a singleton class or not.
+	  [ruby-core:51087] [Feature #7609]
+
 Thu Aug  8 21:56:44 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_overflow_p): Avoid signed integer overflow.

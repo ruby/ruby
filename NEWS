@@ -41,6 +41,8 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Module#using, which activates refinements of the specified module only
       in the current class or module definition.
+    * Module#singleton_class? returns true if the receiver is a singleton class
+      or false if it is an ordinary class or module.
   * extended methods:
     * Module#refine is no longer experimental.
 
