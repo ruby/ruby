@@ -1,3 +1,9 @@
+Thu Aug  8 19:58:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_threadptr_pending_interrupt_check_mask):
+	  use RARRAY_RAWPTR() instead of RARRAY_PTR() because
+	  there is no new reference.
+
 Thu Aug  8 19:56:52 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (rb_str_format_m): use RARRAY_RAWPTR() instead of

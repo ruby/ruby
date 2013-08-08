@@ -1549,10 +1549,10 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 {
     VALUE mask;
     long mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
-    VALUE *mask_stack = RARRAY_PTR(th->pending_interrupt_mask_stack);
+    const VALUE *mask_stack = RARRAY_RAWPTR(th->pending_interrupt_mask_stack);
     VALUE ancestors = rb_mod_ancestors(err); /* TODO: GC guard */
     long ancestors_len = RARRAY_LEN(ancestors);
-    VALUE *ancestors_ptr = RARRAY_PTR(ancestors);
+    const VALUE *ancestors_ptr = RARRAY_RAWPTR(ancestors);
     int i, j;
 
     for (i=0; i<mask_stack_len; i++) {
