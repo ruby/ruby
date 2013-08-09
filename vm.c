@@ -602,6 +602,44 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
     return procval;
 }
 
+VALUE *
+rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
+{
+    VALUE envval = bind->env, path = bind->path, iseqval;
+    rb_env_t *env;
+    rb_block_t *base_block;
+    rb_thread_t *th = GET_THREAD();
+    rb_iseq_t *base_iseq;
+    NODE *node = 0;
+    ID minibuf[4], *dyns = minibuf;
+    VALUE idtmp = 0;
+
+    if (dyncount < 0) return 0;
+
+    GetEnvPtr(envval, env);
+
+    base_block = &env->block;
+    base_iseq = base_block->iseq;
+
+    if (dyncount >= numberof(minibuf)) dyns = ALLOCV_N(ID, idtmp, dyncount + 1);
+
+    dyns[0] = dyncount;
+    MEMCPY(dyns + 1, dynvars, ID, dyncount);
+    node = NEW_NODE(NODE_SCOPE, dyns, 0, 0);
+
+    iseqval = rb_iseq_new(node, base_iseq->location.label, path, path,
+			  base_iseq->self, ISEQ_TYPE_EVAL);
+    node->u1.tbl = 0; /* reset table */
+    ALLOCV_END(idtmp);
+
+    vm_set_eval_stack(th, iseqval, 0, base_block);
+    bind->env = rb_vm_make_env_object(th, th->cfp);
+    vm_pop_frame(th);
+    GetEnvPtr(bind->env, env);
+
+    return env->env;
+}
+
 /* C -> Ruby: block */
 
 static inline VALUE

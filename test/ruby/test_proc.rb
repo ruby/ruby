@@ -1207,4 +1207,38 @@ class TestProc < Test::Unit::TestCase
     bug8345 = '[ruby-core:54688] [Bug #8345]'
     assert_normal_exit('def proc; end; ->{}.curry', bug8345)
   end
+
+  def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5
+    a = 0
+    binding
+  end
+
+  def test_local_variable_get
+    b = get_binding
+    assert_equal(0, b.local_variable_get(:a))
+    assert_raise(NameError){ b.local_variable_get(:b) }
+
+    # access keyword named local variables
+    assert_equal(1, b.local_variable_get(:if))
+    assert_equal(2, b.local_variable_get(:case))
+    assert_equal(3, b.local_variable_get(:when))
+    assert_equal(4, b.local_variable_get(:begin))
+    assert_equal(5, b.local_variable_get(:end))
+  end
+
+  def test_local_variable_set
+    b = get_binding
+    b.local_variable_set(:a, 10)
+    b.local_variable_set(:b, 20)
+    assert_equal(10, b.local_variable_get(:a))
+    assert_equal(20, b.local_variable_get(:b))
+    assert_equal(10, b.eval("a"))
+    assert_equal(20, b.eval("b"))
+  end
+
+  def test_local_variable_defined?
+    b = get_binding
+    assert_equal(true, b.local_variable_defined?(:a))
+    assert_equal(false, b.local_variable_defined?(:b))
+  end
 end

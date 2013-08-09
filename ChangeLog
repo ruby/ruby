@@ -1,3 +1,14 @@
+Fri Aug  9 18:48:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: add Binding#local_variable_get/set/defined?
+	  to access local variables which a binding contains.
+	  Most part of implementation by nobu.
+
+	* test/ruby/test_proc.rb: add a tests for above.
+
+	* vm.c, vm_core.h (rb_binding_add_dynavars): add a new function
+	  to add a new environment to create space for new local variables.
+
 Fri Aug  9 14:02:01 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: Fix order of priority for option parameter.

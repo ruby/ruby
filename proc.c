@@ -394,6 +394,164 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
+static VALUE *
+get_local_variable_ptr(VALUE envval, ID lid)
+{
+    const rb_env_t *env;
+
+    do {
+	const rb_iseq_t *iseq;
+	int i;
+
+	GetEnvPtr(envval, env);
+	iseq = env->block.iseq;
+
+	for (i=0; i<iseq->local_table_size; i++) {
+	    if (iseq->local_table[i] == lid) {
+		return &env->env[i];
+	    }
+	}
+    } while ((envval = env->prev_envval) != 0);
+
+    return 0;
+}
+
+/*
+ * check local variable name.
+ * returns ID if it's an already interned symbol, or 0 with setting
+ * local name in String to *namep.
+ */
+static ID
+check_local_id(VALUE bindval, volatile VALUE *pname)
+{
+    ID lid = rb_check_id(pname);
+    VALUE name = *pname, sym = name;
+
+    if (lid) {
+        if (!rb_is_local_id(lid)) {
+	    name = rb_id2str(lid);
+	  wrong:
+	    rb_name_error_str(sym, "wrong local variable name `% "PRIsVALUE"' for %"PRIsVALUE,
+			      name, bindval);
+	}
+    }
+    else {
+        if (!rb_is_local_name(sym)) goto wrong;
+	return 0;
+    }
+    return lid;
+}
+
+/*
+ *  call-seq:
+ *     binding.local_variable_get(symbol) -> obj
+ *
+ *  Returns a +value+ of local variable +symbol+.
+ *
+ *  def foo
+ *    a = 1
+ *    binding.local_variable_get(:a) #=> 1
+ *    binding.local_variable_get(:b) #=> NameError
+ *  end
+ *
+ *  This method is short version of the following code.
+ *
+ *    binding.eval("#{symbol}")
+ *
+ */
+static VALUE
+bind_local_variable_get(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const VALUE *ptr;
+
+    if (!lid) goto undefined;
+
+    GetBindingPtr(bindval, bind);
+
+    if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
+      undefined:
+	rb_name_error_str(sym, "local variable `%"PRIsVALUE"' not defined for %"PRIsVALUE,
+			  sym, bindval);
+    }
+
+    return *ptr;
+}
+
+/*
+ *  call-seq:
+ *     binding.local_variable_set(symbol, obj) -> obj
+ *
+ *  Set local variable named +symbol+ as +obj+.
+ *
+ *  def foo
+ *    a = 1
+ *    b = binding
+ *    b.local_variable_set(:a, 2) # set existing local variable `a'
+ *    b.local_variable_set(:b, 3) # create new local variable `b'
+ *                                # `b' exists only in binding.
+ *    b.local_variable_get(:a) #=> 2
+ *    b.local_variable_get(:b) #=> 3
+ *    p a #=> 2
+ *    p b #=> NameError
+ *  end
+ *
+ *  This method is a similar behavior of the following code
+ *
+ *    binding.eval("#{symbol} = #{obj}")
+ *
+ *  if obj can be dumped in Ruby code.
+ */
+static VALUE
+bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
+{
+    ID lid = check_local_id(bindval, &sym);
+    rb_binding_t *bind;
+    VALUE *ptr;
+
+    if (!lid) lid = rb_intern_str(sym);
+
+    GetBindingPtr(bindval, bind);
+    if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
+	/* not found. create new env */
+	ptr = rb_binding_add_dynavars(bind, 1, &lid);
+    }
+
+    *ptr = val;
+
+    return val;
+}
+
+/*
+ *  call-seq:
+ *     binding.local_variable_defined?(symbol) -> obj
+ *
+ *  Returns a +true+ if a local variable +symbol+ exists.
+ *
+ *  def foo
+ *    a = 1
+ *    binding.local_variable_defined?(:a) #=> true
+ *    binding.local_variable_defined?(:b) #=> false
+ *  end
+ *
+ *  This method is short version of the following code.
+ *
+ *    binding.eval("defined?(#{symbol}) == 'local-variable'")
+ *
+ */
+static VALUE
+bind_local_variable_defined_p(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+
+    if (!lid) return Qfalse;
+
+    GetBindingPtr(bindval, bind);
+    return get_local_variable_ptr(bind->env, lid) ? Qtrue : Qfalse;
+}
+
 static VALUE
 proc_new(VALUE klass, int is_lambda)
 {
@@ -2539,6 +2697,9 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "clone", binding_clone, 0);
     rb_define_method(rb_cBinding, "dup", binding_dup, 0);
     rb_define_method(rb_cBinding, "eval", bind_eval, -1);
+    rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
+    rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
+    rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
