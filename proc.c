@@ -428,7 +428,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
     VALUE name = *pname, sym = name;
 
     if (lid) {
-        if (!rb_is_local_id(lid)) {
+	if (!rb_is_local_id(lid)) {
 	    name = rb_id2str(lid);
 	  wrong:
 	    rb_name_error_str(sym, "wrong local variable name `% "PRIsVALUE"' for %"PRIsVALUE,
@@ -436,7 +436,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 	}
     }
     else {
-        if (!rb_is_local_name(sym)) goto wrong;
+	if (!rb_is_local_name(sym)) goto wrong;
 	return 0;
     }
     return lid;
