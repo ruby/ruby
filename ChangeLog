@@ -1,3 +1,8 @@
+Fri Aug  9 12:06:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_normalize_ospath): normalize to Normalization Form C
+	  using CFString.
+
 Fri Aug  9 10:53:57 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* time.c (get_timeval, get_new_timeval): use rb_obj_class()

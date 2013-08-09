@@ -19,6 +19,9 @@
 #include <sys/cygwin.h>
 #include <wchar.h>
 #endif
+#ifdef __APPLE__
+#include <CoreFoundation/CFString.h>
+#endif
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
@@ -244,12 +247,25 @@ rb_str_encode_ospath(VALUE path)
 VALUE
 rb_str_normalize_ospath(const char *ptr, long len)
 {
-    rb_encoding *utf8mac = rb_enc_from_index(ENCINDEX_UTF8_MAC);
-    if (utf8mac) {
-	return rb_str_conv_enc(rb_tainted_str_new(ptr, len),
-			       utf8mac, rb_utf8_encoding());
-    }
-    return Qnil;
+    VALUE str;
+    CFIndex buflen = 0;
+    CFRange all;
+    CFStringRef s = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault,
+						  (const UInt8 *)ptr, len,
+						  kCFStringEncodingUTF8, FALSE,
+						  kCFAllocatorNull);
+    CFMutableStringRef m = CFStringCreateMutableCopy(kCFAllocatorDefault, len, s);
+
+    CFStringNormalize(m, kCFStringNormalizationFormC);
+    all = CFRangeMake(0, CFStringGetLength(m));
+    CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE, NULL, 0, &buflen);
+    str = rb_enc_str_new(0, buflen, rb_utf8_encoding());
+    CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE, (UInt8 *)RSTRING_PTR(str),
+		     buflen, &buflen);
+    rb_str_set_len(str, buflen);
+    CFRelease(m);
+    CFRelease(s);
+    return str;
 }
 #endif
 

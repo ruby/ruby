@@ -237,6 +237,8 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS << 'LD_PRELOAD'
   when /mswin|mingw/
     MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
+  when /darwin/
+    MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
