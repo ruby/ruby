@@ -1,3 +1,11 @@
+Fri Aug  9 16:29:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (xsystem): expand environment variable in all macros not
+	  expanded with RbConfig.  [Bug #8702]
+
+	* test/mkmf/test_framework.rb (create_framework): replace all $@ not
+	  only once.
+
 Fri Aug  9 15:59:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_peek_variable_name): treat invalid global, class,
