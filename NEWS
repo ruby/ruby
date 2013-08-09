@@ -97,6 +97,11 @@ with all sufficient information, see the ChangeLog file.
   * Raises TypeError instead of ArgumentError if the receiver doesn't have
     to_r method.
 
+* Proc
+  * Returning from lambda proc now always exits from the Proc, not from the
+    method where the lambda is created.  Returing from non-lambda proc exits
+    from the method, same as the former behavior.
+
 === Stdlib updates (outstanding ones only)
 
 * Digest

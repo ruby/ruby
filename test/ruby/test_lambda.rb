@@ -89,4 +89,24 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_send([e.backtrace.first, :start_with?, "#{__FILE__}:#{line}:"], bug6151)
     assert_equal(0, called)
   end
+
+  def return_in_current(val)
+    1.tap &->(*) {return 0}
+    val
+  end
+
+  def yield_block
+    yield
+  end
+
+  def return_in_callee(val)
+    yield_block &->(*) {return 0}
+    val
+  end
+
+  def test_return
+    feature8693 = '[ruby-core:56193] [Feature #8693]'
+    assert_equal(42, return_in_current(42), feature8693)
+    assert_equal(42, return_in_callee(42), feature8693)
+  end
 end

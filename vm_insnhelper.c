@@ -2328,12 +2328,15 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;
 	const int arg_size = iseq->arg_size;
+	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - ci->argc;
 	SET_SP(rsp);
 
-	opt_pc = vm_yield_setup_args(th, iseq, ci->argc, rsp, 0, block_proc_is_lambda(block->proc));
+	opt_pc = vm_yield_setup_args(th, iseq, ci->argc, rsp, 0, is_lambda);
 
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_BLOCK, block->self,
+	vm_push_frame(th, iseq,
+		      is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK,
+		      block->self,
 		      block->klass,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,

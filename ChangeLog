@@ -1,3 +1,10 @@
+Fri Aug  9 10:42:11 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (vm_invoke_block): returning from lambda proc
+	  now always exits from the Proc. [ruby-core:56193] [Feature #8693]
+
+	* NEWS, test/ruby/test_lambda.rb: ditto. Patch by nobu.
+
 Fri Aug  9 00:10:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_zip_func): fix non-single argument.  fix
