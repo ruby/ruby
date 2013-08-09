@@ -251,7 +251,7 @@ insert_ignore_escape(VALUE self, VALUE prompt)
                         s0 = s;
                         break;
                     }
-                    else if (!('0' <= *s && *s <= '9' || *s == ';')) {
+                    else if (!(('0' <= *s && *s <= '9') || *s == ';')) {
                         break;
                     }
                 }
