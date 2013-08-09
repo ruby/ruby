@@ -236,9 +236,9 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 	return 0;
     }
     else if (m == 1) {
-	const unsigned char *ys;
+	const unsigned char *ys = memchr(y, *x, n);
 
-	if (ys = memchr(y, *x, n))
+	if (ys)
 	    return ys - y;
 	else
 	    return -1;
