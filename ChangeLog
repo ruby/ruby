@@ -1,3 +1,7 @@
+Fri Aug  9 14:02:01 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/make-snapshot: Fix order of priority for option parameter.
+
 Fri Aug  9 12:06:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_str_normalize_ospath): normalize to Normalization Form C
