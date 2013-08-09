@@ -1948,7 +1948,7 @@ module Net   #:nodoc:
       wait_for_continue sock, ver if sock.continue_timeout
       if chunked?
         while s = f.read(1024)
-          sock.write(sprintf("%x\r\n", s.length) << s << "\r\n")
+          sock.write(sprintf("%x\r\n", s.bytesize) << s << "\r\n")
         end
         sock.write "0\r\n\r\n"
       else

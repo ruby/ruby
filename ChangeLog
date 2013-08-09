@@ -1,3 +1,10 @@
+Fri Aug  9 15:56:05 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#send_request_with_body_stream): use
+	  String#bytesize instead of String#length.
+	  reported by shekhei (shek hei wong) at [ruby-core:53775]
+	  [Backport #8176].
+
 Fri Aug  9 15:50:11 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (wrename): use MoveFileExW instead of MoveFileW,
