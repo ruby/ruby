@@ -1,8 +1,7 @@
 Fri Aug  9 07:16:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/io/console/console.c: delete redefinition of rb_cloexec_open.
-	  This function is always defined by io.c and is declared as non-static
-	  in a header file, so this declaration causes a compilation error.
+	  drop support for 1.8 and 1.9 from the next release of io-console gem.
 
 Fri Aug  9 19:13:54 2013  Koichi Sasada  <ko1@atdot.net>
 
