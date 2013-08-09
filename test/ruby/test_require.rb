@@ -68,6 +68,13 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8676)
   end
 
+  def test_require_nonascii_path_shift_jis
+    bug8676 = '[ruby-core:56136] [Bug #8676]'
+    encoding = Encoding::Shift_JIS
+    return if Encoding.find('filesystem') == encoding
+    assert_require_nonascii_path(encoding, bug8676)
+  end
+
   def assert_require_nonascii_path(encoding, bug)
     Dir.mktmpdir {|tmp|
       dir = "\u3042" * 5
@@ -77,7 +84,7 @@ class TestRequire < Test::Unit::TestCase
         skip "cannot convert path encoding to #{encoding}"
       end
       Dir.mkdir(File.dirname(require_path))
-      open(require_path, "wb") {}
+      open(require_path, "wb") {|f| f.puts '$:.push __FILE__'}
       begin
         load_path = $:.dup
         features = $".dup
@@ -87,6 +94,8 @@ class TestRequire < Test::Unit::TestCase
         $:.clear
         assert_nothing_raised(LoadError, bug) {
           assert(require(require_path), bug)
+          assert_equal(Encoding.find(encoding), $".last.encoding)
+          assert_equal(Encoding.find(encoding), $:.last.encoding, '[Bug #8753]')
           assert(!require(require_path), bug)
         }
       ensure

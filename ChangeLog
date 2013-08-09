@@ -1,3 +1,8 @@
+Fri Aug  9 22:20:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): use rb_parser_compile_string_path and
+	  rb_parser_compile_file_path, String path name versions.  [Bug #8753]
+
 Fri Aug  9 07:16:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* ext/io/console/console.c: delete redefinition of rb_cloexec_open.
