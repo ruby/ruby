@@ -1,3 +1,9 @@
+Fri Aug  9 07:16:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* ext/io/console/console.c: delete redefinition of rb_cloexec_open.
+	  This function is always defined by io.c and is declared as non-static
+	  in a header file, so this declaration causes a compilation error.
+
 Fri Aug  9 19:13:54 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: update about new methods for Binding.

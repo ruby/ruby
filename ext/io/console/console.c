@@ -668,23 +668,6 @@ console_ioflush(VALUE io)
     return io;
 }
 
-#ifndef HAVE_RB_CLOEXEC_OPEN
-static int
-rb_cloexec_open(const char *pathname, int flags, mode_t mode)
-{
-    int ret;
-#ifdef O_CLOEXEC
-    /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
-    flags |= O_CLOEXEC;
-#elif defined O_NOINHERIT
-    flags |= O_NOINHERIT;
-#endif
-    return open(pathname, flags, mode);
-}
-
-#define rb_update_max_fd(fd) (void)(fd)
-#endif
-
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
