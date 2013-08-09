@@ -2006,7 +2006,7 @@ rb_big_mul_karatsuba(VALUE x, VALUE y)
 {
     size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
     VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-    if (!(xn <= yn && yn < 2 || KARATSUBA_BALANCED(xn, yn)))
+    if (!((xn <= yn && yn < 2) || KARATSUBA_BALANCED(xn, yn)))
         rb_raise(rb_eArgError, "unexpected bignum length for karatsuba");
     bary_mul_karatsuba(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, NULL, 0);
     RB_GC_GUARD(x);
