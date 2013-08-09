@@ -1,3 +1,12 @@
+Sat Aug 10 04:52:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big_div_struct): Use size_t.
+	  (bigdivrem1): Ditto.
+	  (bigdivrem_num_extra_words): Ditto.
+	  (bigdivrem_single): Ditto.
+	  (bigdivrem_normal): Ditto.
+	  (bary_divmod): Ditto.
+
 Fri Aug  9 23:47:15 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rexmlparser.rb: Remove needless REXML version check.

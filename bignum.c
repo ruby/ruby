@@ -136,7 +136,7 @@ typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, c
 
 static mulfunc_t bary_mul_toom3_start;
 static mulfunc_t bary_mul_karatsuba_start;
-static BDIGIT bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, long xn, BDIGIT y);
+static BDIGIT bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y);
 static void bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn);
 
 static VALUE bigmul0(VALUE x, VALUE y);
@@ -2625,7 +2625,7 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
 }
 
 struct big_div_struct {
-    long xn, yn, j, ynzero;
+    size_t xn, yn, j, ynzero;
     BDIGIT *yds, *zds;
     volatile VALUE stop;
 };
@@ -2634,9 +2634,9 @@ static void *
 bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
-    long yn = bds->yn;
-    long j;
-    long ynzero = bds->ynzero;
+    size_t yn = bds->yn;
+    size_t j;
+    size_t ynzero = bds->ynzero;
     BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
@@ -2674,7 +2674,7 @@ rb_big_stop(void *ptr)
 }
 
 static inline int
-bigdivrem_num_extra_words(long xn, long yn)
+bigdivrem_num_extra_words(size_t xn, size_t yn)
 {
     int ret = xn==yn ? 2 : 1;
     assert(ret <= BIGDIVREM_EXTRA_WORDS);
@@ -2682,9 +2682,9 @@ bigdivrem_num_extra_words(long xn, long yn)
 }
 
 static BDIGIT
-bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, long xn, BDIGIT y)
+bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
 {
-    long i;
+    size_t i;
     BDIGIT_DBL t2;
     t2 = 0;
     i = xn;
@@ -2697,7 +2697,7 @@ bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, long xn, BDIGIT y)
 }
 
 static void
-bigdivrem_normal(BDIGIT *zds, long zn, const BDIGIT *xds, long xn, BDIGIT *yds, long yn, int needs_mod)
+bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int needs_mod)
 {
     struct big_div_struct bds;
     BDIGIT q;
@@ -2783,8 +2783,8 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
     }
     else {
         int extra_words;
-        long j;
-        long zn;
+        size_t j;
+        size_t zn;
         BDIGIT *zds;
         VALUE tmpz = 0;
         BDIGIT *tds;
