@@ -1,3 +1,10 @@
+Fri Aug  9 23:47:15 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rexmlparser.rb: Remove needless REXML version check.
+	  Both RSS Parser and REXML are bundled in Ruby. RSS Parser can
+	  always use the latest REXML. [Bug #8754] [ruby-core:56454]
+	  Patch by Steve Klabnik. Thanks!!!
+
 Fri Aug  9 22:51:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XLDFLAGS, LIBRUBYARG_STATIC): CoreFoundation framework
