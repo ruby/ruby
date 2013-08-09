@@ -566,6 +566,7 @@ module Net   #:nodoc:
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
       port = https_default_port if !port && opt && opt[:use_ssl]
+      p_addr = :ENV if p_addr.nil? && arg.length < 2
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
       if opt

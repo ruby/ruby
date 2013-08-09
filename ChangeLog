@@ -1,3 +1,15 @@
+Sat  11 Aug 2013 23:04:52 BST  Sam Taylor  <sjltaylor@gmail.com>
+
+	* lib/net/http.rb (Net::HTTP.start): Proxy configuration can
+	  can come from ENV variables. [Bug #8771]
+
+	* test/net/test_http.rb (test_override_proxy_ENV_with_start):
+	  that proxy configuration can come from ENV. [Bug #8771]
+
+	* test/net/test_http.rb (test_proxy_ENV_with_start):
+	  test ENV proxy configuration can still be overridden
+	  [Bug #8771]
+
 Wed Aug  7 23:06:26 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.c (Process.argv0): New method to return the original value

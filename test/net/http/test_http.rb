@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'net/http'
 require 'stringio'
+require 'minitest/mock'
 require_relative 'utils'
 require_relative '../../ruby/envutil'
 
@@ -105,6 +106,45 @@ class TestNetHTTP < Test::Unit::TestCase
 
       assert_equal 'proxy.example', http.proxy_address
     end
+  end
+
+  def test_proxy_ENV_with_start
+    http_mock_inst = Object.new.tap do |http|
+      def http.start(&blk)
+      end
+    end
+
+    captured_proxy_address = nil
+    captured_proxy_address = lambda do |_, _, arg2, _, _, _|
+      captured_proxy_address = arg2
+      http_mock_inst
+    end
+
+    Net::HTTP.stub(:new, captured_proxy_address) do
+      Net::HTTP.start('http://example')
+    end
+
+    assert_equal :ENV, captured_proxy_address
+  end
+
+  def test_override_proxy_ENV_with_start
+    http_mock_inst = Object.new.tap do |http|
+      def http.start(&blk)
+      end
+    end
+
+    captured_proxy_address = nil
+
+    capture_proxy_address = lambda do |_, _, arg2, _, _, _|
+      captured_proxy_address = arg2
+      http_mock_inst
+    end
+
+    Net::HTTP.stub(:new, capture_proxy_address) do
+      Net::HTTP.start('http://example', 80, 'proxy_address', 'proxy_port')
+    end
+
+    assert_equal 'proxy_address', captured_proxy_address
   end
 
   def test_proxy_eh_no_proxy
