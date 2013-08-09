@@ -1,3 +1,9 @@
+Fri Aug  9 10:53:57 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* time.c (get_timeval, get_new_timeval): use rb_obj_class()
+	  instead of CLASS_OF() because CLASS_OF() may return
+	  a singleton class.
+
 Fri Aug  9 10:42:11 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (vm_invoke_block): returning from lambda proc
