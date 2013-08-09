@@ -24,6 +24,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Binding
+  * New methods
+    * Binding#local_variable_get(symbol)
+    * Binding#local_variable_set(symbol)
+    * Binding#local_variable_defined?(symbol)
+
 * GC
   * added environment variable:
     * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
