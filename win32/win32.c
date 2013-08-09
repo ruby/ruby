@@ -4023,18 +4023,18 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
 	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
-	if (!MoveFileW(oldpath, newpath))
-	    res = -1;
+	if (IsWinNT()) {
+	    if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
+		res = -1;
+	}
+	else {
+	    if (!MoveFileW(oldpath, newpath))
+		res = -1;
 
-	if (res) {
-	    switch (GetLastError()) {
-	      case ERROR_ALREADY_EXISTS:
-	      case ERROR_FILE_EXISTS:
-		if (IsWinNT()) {
-		    if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-			res = 0;
-		}
-		else {
+	    if (res) {
+		switch (GetLastError()) {
+		  case ERROR_ALREADY_EXISTS:
+		  case ERROR_FILE_EXISTS:
 		    for (;;) {
 			if (!DeleteFileW(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
 			    break;
