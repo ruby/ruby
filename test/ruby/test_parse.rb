@@ -358,6 +358,17 @@ class TestParse < Test::Unit::TestCase
     assert_equal("foo 1 bar", "foo #$1 bar")
   end
 
+  def test_dstr_disallowd_variable
+    bug8375 = '[ruby-core:54885] [Bug #8375]'
+    %w[@ @1 @@. @@ @@1 @@. $ $%].each do |src|
+      src = '#'+src+' '
+      str = assert_nothing_raised(SyntaxError, "#{bug8375} #{src.dump}") do
+        break eval('"'+src+'"')
+      end
+      assert_equal(src, str, bug8375)
+    end
+  end
+
   def test_dsym
     assert_nothing_raised { eval(':""') }
   end
@@ -524,13 +535,14 @@ class TestParse < Test::Unit::TestCase
       )
     end
 
-    assert_raise(SyntaxError) do
-      eval %q(
+    assert_nothing_raised(SyntaxError) do
+      x = eval %q(
 <<FOO
 #$
 FOO
       )
     end
+    assert_equal "\#$\n", x
 
     assert_raise(SyntaxError) do
       eval %Q(
@@ -550,14 +562,15 @@ FOO
       )
     end
 
-    assert_raise(SyntaxError) do
-      eval %q(
+    assert_nothing_raised(SyntaxError) do
+      x = eval %q(
 <<FOO
 #$
 foo
 FOO
       )
     end
+    assert_equal "\#$\nfoo\n", x
 
     assert_nothing_raised do
       eval "x = <<""FOO\r\n1\r\nFOO"

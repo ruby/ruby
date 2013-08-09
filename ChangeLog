@@ -1,3 +1,14 @@
+Fri Aug  9 15:59:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_peek_variable_name): treat invalid global, class,
+	  and instance variable names as mere strings rather than errors.
+	  [ruby-core:54885] [Bug #8375]
+
+Fri Aug  9 15:59:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fail if $, @, @@ are not followed by a valid
+	  name character.  [ruby-core:54846] [Bug #8375].
+
 Fri Aug  9 15:56:05 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#send_request_with_body_stream): use

@@ -90,28 +90,28 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   end
 
   def test_location
-    validate_location ""
-    validate_location " "
-    validate_location "@"
-    validate_location "\n"
-    validate_location "\r\n"
-    validate_location "\n\n\n\n\n\r\n\n\n"
-    validate_location "\n;\n;\n;\n;\n"
-    validate_location "nil"
-    validate_location "@ivar"
-    validate_location "1;2;3"
-    validate_location "1\n2\n3"
-    validate_location "1\n2\n3\n"
-    validate_location "def m(a) nil end"
-    validate_location "if true then false else nil end"
-    validate_location "BEGIN{print nil}"
-    validate_location "%w(a b\nc\r\nd \ne )"
-    validate_location %Q["a\nb\r\nc"]
-    validate_location "print(<<EOS)\nheredoc\nEOS\n"
-    validate_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
+    assert_location ""
+    assert_location " "
+    assert_location ":"
+    assert_location "\n"
+    assert_location "\r\n"
+    assert_location "\n\n\n\n\n\r\n\n\n"
+    assert_location "\n;\n;\n;\n;\n"
+    assert_location "nil"
+    assert_location "@ivar"
+    assert_location "1;2;3"
+    assert_location "1\n2\n3"
+    assert_location "1\n2\n3\n"
+    assert_location "def m(a) nil end"
+    assert_location "if true then false else nil end"
+    assert_location "BEGIN{print nil}"
+    assert_location "%w(a b\nc\r\nd \ne )"
+    assert_location %Q["a\nb\r\nc"]
+    assert_location "print(<<""EOS)\nheredoc\nEOS\n"
+    assert_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
   end
 
-  def validate_location(src)
+  def assert_location(src)
     buf = ''
     Ripper.lex(src).each do |pos, type, tok|
       line, col = *pos
@@ -823,8 +823,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   def test_CHAR
     assert_equal [],
                  scan('CHAR', "")
-    assert_equal ["@"],
-                 scan('CHAR', "@")
+    assert_equal ["?a"],
+                 scan('CHAR', "?a")
     assert_equal [],
                  scan('CHAR', "@ivar")
   end
