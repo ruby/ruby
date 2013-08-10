@@ -618,7 +618,7 @@ num_to_int(VALUE num)
  *  Float objects represent inexact real numbers using the native
  *  architecture's double-precision floating point representation.
  *
- *  Floating point has a different arithmetic and is a inexact number.
+ *  Floating point has a different arithmetic and is an inexact number.
  *  So you should know its esoteric system. see following:
  *
  *  - http://docs.sun.com/source/806-3568/ncg_goldberg.html
