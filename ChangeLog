@@ -4,6 +4,7 @@ Sat Aug 10 12:00:45 2013  Kouhei Sutou  <kou@cozmixng.org>
 	  Fix loose "head" match regular expression. It doesn't cause any
 	  problem in the current code but it should be fixed because readers
 	  may confuse it.
+	  Patch by Ippei Obayashi. Thanks!!!
 
 Sat Aug 10 11:58:24 2013  Kouhei Sutou  <kou@cozmixng.org>
 
