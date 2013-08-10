@@ -1,3 +1,9 @@
+Sun Aug 11 01:28:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Revert r42458.
+	  It removes the HAVE_CLOCK_GETTIME from config.h.
+	  http://www.rubyist.net/~akr/chkbuild/debian/ruby-trunk/log/20130809T044800Z.diff.html.gz
+
 Sat Aug 10 13:53:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id_attrset): allow other than ID_ATTRSET.
