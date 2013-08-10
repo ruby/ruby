@@ -448,15 +448,15 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *
  *  Returns a +value+ of local variable +symbol+.
  *
- *  def foo
- *    a = 1
- *    binding.local_variable_get(:a) #=> 1
- *    binding.local_variable_get(:b) #=> NameError
- *  end
+ *	def foo
+ *  	  a = 1
+ *  	  binding.local_variable_get(:a) #=> 1
+ *  	  binding.local_variable_get(:b) #=> NameError
+ *  	end
  *
  *  This method is short version of the following code.
  *
- *    binding.eval("#{symbol}")
+ *	binding.eval("#{symbol}")
  *
  */
 static VALUE
@@ -485,17 +485,17 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *
  *  Set local variable named +symbol+ as +obj+.
  *
- *  def foo
- *    a = 1
- *    b = binding
- *    b.local_variable_set(:a, 2) # set existing local variable `a'
- *    b.local_variable_set(:b, 3) # create new local variable `b'
- *                                # `b' exists only in binding.
- *    b.local_variable_get(:a) #=> 2
- *    b.local_variable_get(:b) #=> 3
- *    p a #=> 2
- *    p b #=> NameError
- *  end
+ *	def foo
+ *  	  a = 1
+ *  	  b = binding
+ *  	  b.local_variable_set(:a, 2) # set existing local variable `a'
+ *  	  b.local_variable_set(:b, 3) # create new local variable `b'
+ *  	                              # `b' exists only in binding.
+ *  	  b.local_variable_get(:a) #=> 2
+ *  	  b.local_variable_get(:b) #=> 3
+ *  	  p a #=> 2
+ *  	  p b #=> NameError
+ *  	end
  *
  *  This method is a similar behavior of the following code
  *
@@ -529,15 +529,15 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *
  *  Returns a +true+ if a local variable +symbol+ exists.
  *
- *  def foo
- *    a = 1
- *    binding.local_variable_defined?(:a) #=> true
- *    binding.local_variable_defined?(:b) #=> false
- *  end
+ *	def foo
+ *  	  a = 1
+ *  	  binding.local_variable_defined?(:a) #=> true
+ *  	  binding.local_variable_defined?(:b) #=> false
+ *  	end
  *
  *  This method is short version of the following code.
  *
- *    binding.eval("defined?(#{symbol}) == 'local-variable'")
+ *	binding.eval("defined?(#{symbol}) == 'local-variable'")
  *
  */
 static VALUE
