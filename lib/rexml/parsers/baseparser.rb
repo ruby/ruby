@@ -49,7 +49,7 @@ module REXML
       COMMENT_START = /\A<!--/u
       COMMENT_PATTERN = /<!--(.*?)-->/um
       CDATA_START = /\A<!\[CDATA\[/u
-      CDATA_END = /^\s*\]\s*>/um
+      CDATA_END = /\A\s*\]\s*>/um
       CDATA_PATTERN = /<!\[CDATA\[(.*?)\]\]>/um
       XMLDECL_START = /\A<\?xml\s/u;
       XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
