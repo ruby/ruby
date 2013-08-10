@@ -47,7 +47,7 @@ class TestCoverage < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
-          f.puts "p\n" * 10000
+          f.puts "__id__\n" * 10000
           f.puts "def ignore(x); end"
           f.puts "ignore([1"
           f.puts "])"
