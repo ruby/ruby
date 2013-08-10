@@ -132,6 +132,10 @@ class TestStruct < Test::Unit::TestCase
     klass = Struct.new(:@a)
     o = klass.new(1)
     assert_equal("#<struct :@a=1>", o.inspect)
+    methods = klass.instance_methods(false)
+    assert_equal([:@a, :"@a="].inspect, methods.inspect, '[Bug #8756]')
+    assert_include(methods, :@a)
+    assert_include(methods, :"@a=")
   end
 
   def test_init_copy
