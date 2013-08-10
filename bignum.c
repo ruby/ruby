@@ -281,7 +281,7 @@ static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SI
 #else
 #   define bitsize(x) \
         (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x))
+         SIZEOF_LONG * CHAR_BIT - nlz_long(x))
 #endif
 
 #define U16(a) ((uint16_t)(a))
