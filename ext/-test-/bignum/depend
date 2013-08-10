@@ -1,3 +1,4 @@
+extconf.h: $(SRCS)
 $(OBJS): $(HDRS) $(ruby_headers)
 
 intpack.o: intpack.c $(top_srcdir)/internal.h
