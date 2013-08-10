@@ -77,7 +77,7 @@ module REXML
       ATTLISTDECL_START = /^\s*<!ATTLIST/um
       ATTLISTDECL_PATTERN = /^\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
       NOTATIONDECL_START = /^\s*<!NOTATION/um
-      PUBLIC = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
+      PUBLIC = /\A\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
       SYSTEM = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+(["'])(.*?)\3\s*>/um
 
       TEXT_PATTERN = /\A([^<]*)/um

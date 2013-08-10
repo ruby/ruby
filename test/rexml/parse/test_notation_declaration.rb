@@ -73,5 +73,16 @@ class TestParseNotationDeclaration < Test::Unit::TestCase
         end
       end
     end
+
+    class TestMixed < self
+      def test_system_public
+        doctype = parse(<<-INTERNAL_SUBSET)
+<!NOTATION system-name SYSTEM "system-literal">
+<!NOTATION public-name PUBLIC "public-id-literal" 'system-literal'>
+        INTERNAL_SUBSET
+        assert_equal(["system-name", "public-name"],
+                     doctype.notations.collect(&:name))
+      end
+    end
   end
 end

@@ -1,3 +1,12 @@
+Sat Aug 10 11:31:35 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::PUBLIC):
+	  Fix loose "head" match regular expression.
+	  [Bug #8701] [ruby-dev:47551]
+	  Patch by Ippei Obayashi. Thanks!!!
+	* test/rexml/parse/test_notation_declaration.rb (#test_system_public):
+	  Add a test for the above case.
+
 Sat Aug 10 09:20:21 2013  Zachary Scott  <e@zzak.io>
 
 	* NEWS: [DOC] typo in example reported by @moretea
