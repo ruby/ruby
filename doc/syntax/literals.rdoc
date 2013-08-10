@@ -191,7 +191,7 @@ symbols using interpolation.
 
 Like strings, a single-quote may be used to disable interpolation:
 
-  :"my_symbol#{1 + 1}" #=> :"my_symbol\#{1 + 1}"
+  :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"
 
 When creating a Hash there is a special syntax for referencing a Symbol as
 well.
