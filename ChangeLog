@@ -1,3 +1,8 @@
+Sat Aug 10 09:12:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): check if the argument is valid type as an
+	  attribute.
+
 Sat Aug 10 05:44:08 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/trackback.rb: [DOC] Hide RSS::Trackback from rdoc

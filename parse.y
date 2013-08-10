@@ -8766,9 +8766,31 @@ block_dup_check_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     }
 }
 
+static const char id_type_names[][9] = {
+    "LOCAL",
+    "INSTANCE",
+    "",				/* INSTANCE2 */
+    "GLOBAL",
+    "ATTRSET",
+    "CONST",
+    "CLASS",
+    "JUNK",
+};
+
 ID
 rb_id_attrset(ID id)
 {
+    if (!is_notop_id(id)) {
+	rb_bug("rb_id_attrset: operator ID - %"PRIdVALUE, (VALUE)id);
+    }
+    else {
+	int scope = (int)(id & ID_SCOPE_MASK);
+	if (scope != ID_LOCAL && scope != ID_CONST) {
+	    rb_bug("rb_id_attrset: %s ID - %"PRIdVALUE, id_type_names[scope],
+		   (VALUE)id);
+
+	}
+    }
     id &= ~ID_SCOPE_MASK;
     id |= ID_ATTRSET;
     return id;
