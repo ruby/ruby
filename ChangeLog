@@ -1,3 +1,11 @@
+Sat Aug 10 12:43:15 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser):
+	  Use "\A" instead of "^" in document type declaration patterns
+	  because they are used as the head match in content not the head
+	  match in line. They don't cause any problems in the current code
+	  but it should be fixed.
+
 Sat Aug 10 12:39:00 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parse/test_document_type_declaration.rb: Add tests for
