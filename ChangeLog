@@ -1,3 +1,8 @@
+Sun Aug 11 02:44:03 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/time.rb: [DOC] Document constants by @markijbema [Fixes GH-377]
+	  https://github.com/ruby/ruby/pull/377
+
 Sun Aug 11 01:28:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Revert r42458.
