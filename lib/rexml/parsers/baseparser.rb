@@ -43,6 +43,7 @@ module REXML
       REFERENCE_RE = /#{REFERENCE}/
 
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
+      DOCTYPE_END = /\A\s*\]\s*>/um
       DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
       ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\4/um
       COMMENT_START = /\A<!--/u
@@ -322,9 +323,9 @@ module REXML
               raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
             end
             return [ :notationdecl, *vals ]
-          when CDATA_END
+          when DOCTYPE_END
             @document_status = :after_doctype
-            @source.match( CDATA_END, true )
+            @source.match( DOCTYPE_END, true )
             return [ :end_doctype ]
           end
         end

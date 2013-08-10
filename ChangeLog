@@ -1,3 +1,9 @@
+Sat Aug 10 12:47:19 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser):
+	  Fix wrong constant name. "]>" pattern match is the same but
+	  it is used for "<!DOCTYPE" end mark not "<![CDATA[" end mark.
+
 Sat Aug 10 12:43:15 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser):
