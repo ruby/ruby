@@ -1,3 +1,8 @@
+Sat Aug 10 12:39:00 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parse/test_document_type_declaration.rb: Add tests for
+	  parsing document type declaration.
+
 Sat Aug 10 12:00:45 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::SYSTEM):
