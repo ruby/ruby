@@ -27,7 +27,7 @@ with all sufficient information, see the ChangeLog file.
 * Binding
   * New methods
     * Binding#local_variable_get(symbol)
-    * Binding#local_variable_set(symbol)
+    * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
 
 * GC

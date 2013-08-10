@@ -1,3 +1,8 @@
+Sat Aug 10 09:20:21 2013  Zachary Scott  <e@zzak.io>
+
+	* NEWS: [DOC] typo in example reported by @moretea
+	  https://github.com/ruby/ruby/commit/a39e724#commitcomment-3831489
+
 Sat Aug 10 09:19:04 2013  Zachary Scott  <e@zzak.io>
 
 	* proc.c: [DOC] rdoc code formatting
