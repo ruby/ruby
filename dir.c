@@ -1418,7 +1418,7 @@ glob_helper(
 	    name = dp->d_name;
 	    namlen = NAMLEN(dp);
 # if HAVE_HFS
-	    if (0&&hfs_p && has_nonascii(name, namlen)) {
+	    if (hfs_p && has_nonascii(name, namlen)) {
 		if (!NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
 		    RSTRING_GETMEM(utf8str, name, namlen);
 		}
