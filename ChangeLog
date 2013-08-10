@@ -1,3 +1,13 @@
+Sun Aug 11 04:48:14 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_str_normalize_ospath):
+	  HFS Plus (Mac OS Extended) uses a variant of Normal Form D in which
+	  U+2000 through U+2FFF, U+F900 through U+FAFF, and U+2F800 through
+	  U+2FAFF are not decomposed (this avoids problems with round trip
+	  conversions from old Mac text encodings).
+	  http://developer.apple.com/library/mac/qa/qa1173/_index.html
+	  Therefore fix r42457 to exclude the range.
+
 Sun Aug 11 03:26:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bitsize): Fix a conditional expression.

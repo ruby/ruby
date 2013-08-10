@@ -513,6 +513,11 @@ VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 VALUE rb_big_mul_toom3(VALUE x, VALUE y);
 VALUE rb_big_sq_fast(VALUE x);
 
+/* file.c */
+#ifdef __APPLE__
+VALUE rb_str_normalize_ospath(const char *ptr, long len);
+#endif
+
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);
 

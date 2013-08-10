@@ -2,3 +2,4 @@ $(OBJS): $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/encoding.h \
   $(hdrdir)/ruby/oniguruma.h
 qsort.o: $(hdrdir)/ruby/util.h
+normalize.o: $(top_srcdir)/internal.h

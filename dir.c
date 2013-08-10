@@ -84,8 +84,6 @@ char *strchr(char*,char);
 #include <sys/param.h>
 #include <sys/mount.h>
 
-VALUE rb_str_normalize_ospath(const char *ptr, long len);
-
 static inline int
 is_hfs(DIR *dirp)
 {
@@ -1420,7 +1418,7 @@ glob_helper(
 	    name = dp->d_name;
 	    namlen = NAMLEN(dp);
 # if HAVE_HFS
-	    if (hfs_p && has_nonascii(name, namlen)) {
+	    if (0&&hfs_p && has_nonascii(name, namlen)) {
 		if (!NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
 		    RSTRING_GETMEM(utf8str, name, namlen);
 		}
