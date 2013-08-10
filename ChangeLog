@@ -1,3 +1,10 @@
+Sat Aug 10 12:00:45 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::SYSTEM):
+	  Fix loose "head" match regular expression. It doesn't cause any
+	  problem in the current code but it should be fixed because readers
+	  may confuse it.
+
 Sat Aug 10 11:58:24 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parse/test_notation_declaration.rb (#test_system_public):
