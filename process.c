@@ -6666,6 +6666,14 @@ rb_proc_times(VALUE obj)
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
+ *  Also, several symbols are accepted as _clk_id_.
+ *  They may be used as emulation for clock_gettime().
+ *  For example, <code>Process::CLOCK_REALTIME</code> is defined as
+ *  <code>:POSIX_GETTIMEOFDAY_CLOCK_REALTIME</code> when clock_gettime() is not available.
+ *
+ *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The precision is 1 micro second.
+ *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The precision is 1 second.
+ *
  *  If the given _clk_id_ is not supported, Errno::EINVAL is raised.
  *
  *  _unit_ specifies a type of the return value.
