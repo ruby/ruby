@@ -1,3 +1,2 @@
-extconf.h: $(SRCS)
 init.o: $(HDRS) $(ruby_headers)
 inspector.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
