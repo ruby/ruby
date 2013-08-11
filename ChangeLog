@@ -1,3 +1,9 @@
+Sun Aug 11 18:40:25 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/sax2parser.rb (REXML::Parsers::SAX2Parser#parse):
+	  Fix wrong "%" position in parameter entity declaration event argument.
+	* test/rexml/parser/test_sax2.rb: Add tests for the above case.
+
 Sun Aug 11 18:08:40 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/sax2parser.rb (REXML::Parsers::SAX2Parser#parse):

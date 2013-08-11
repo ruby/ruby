@@ -103,6 +103,47 @@ class TestSAX2Parser < Test::Unit::TestCase
           end
         end
       end
+
+      class TestParameterEntity < self
+        class TestValue < self
+          def test_double_quote
+            assert_equal([["%", "name", "value"]], parse(<<-INTERNAL_SUBSET))
+<!ENTITY % name "value">
+            INTERNAL_SUBSET
+          end
+
+          def test_single_quote
+            assert_equal([["%", "name", "value"]], parse(<<-INTERNAL_SUBSET))
+<!ENTITY % name 'value'>
+            INTERNAL_SUBSET
+          end
+        end
+
+        class TestExternlID < self
+          def test_system
+            declaration = [
+              "%",
+              "name",
+              "SYSTEM", "system-literal",
+            ]
+            assert_equal([declaration],
+                           parse(<<-INTERNAL_SUBSET))
+<!ENTITY % name SYSTEM "system-literal">
+            INTERNAL_SUBSET
+          end
+
+          def test_public
+            declaration = [
+              "%",
+              "name",
+              "PUBLIC", "public-literal", "system-literal",
+            ]
+            assert_equal([declaration], parse(<<-INTERNAL_SUBSET))
+<!ENTITY % name PUBLIC "public-literal" "system-literal">
+            INTERNAL_SUBSET
+          end
+        end
+      end
     end
   end
 end

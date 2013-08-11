@@ -177,12 +177,28 @@ module REXML
             handle( :characters, copy )
           when :entitydecl
             @entities[ event[1] ] = event[2] if event.size == 3
+            parameter_reference_p = false
             case event[2]
             when "SYSTEM"
-              event[4, 0] = "NDATA" if event.size == 5
+              if event.size == 5
+                if event.last == "%"
+                  parameter_reference_p = true
+                else
+                  event[4, 0] = "NDATA"
+                end
+              end
             when "PUBLIC"
-              event[5, 0] = "NDATA" if event.size == 6
+              if event.size == 6
+                if event.last == "%"
+                  parameter_reference_p = true
+                else
+                  event[5, 0] = "NDATA"
+                end
+              end
+            else
+              parameter_reference_p = (event.size == 4)
             end
+            event[1, 0] = event.pop if parameter_reference_p
             handle( event[0], event[1..-1] )
           when :processing_instruction, :comment, :attlistdecl,
             :elementdecl, :cdata, :notationdecl, :xmldecl
