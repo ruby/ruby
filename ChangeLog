@@ -1,3 +1,8 @@
+Sun Aug 11 13:17:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* include/ruby/encoding.h: Reduce ENCODING_INLINE_MAX to 127 as this
+	  should be sufficient to represent all the encodings Ruby supports.
+
 Sun Aug 11 11:54:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): New method.
