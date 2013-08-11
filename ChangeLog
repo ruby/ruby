@@ -1,3 +1,13 @@
+Mon Aug 12 02:51:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_s_set_input): on OS X with editline,
+	  Readline.readline doesn't work because readline_get doesn't use
+	  rl_getc. The difference is introduced by r42402 [ruby-dev:47509]
+	  [Bug #8644]. Before it rb_io_stdio_file set ifp->stdio_file.
+	  Therefore add manually setting the value.
+
+	* ext/readline/readline.c (readline_s_set_onput): ditto.
+
 Sun Aug 11 23:27:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_str_encode_ospath): OS path encoding on Mac OS X is also

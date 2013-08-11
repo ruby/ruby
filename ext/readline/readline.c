@@ -503,6 +503,7 @@ readline_s_set_input(VALUE self, VALUE input)
             rb_sys_fail("fdopen");
         }
         rl_instream = f;
+        ifp->stdio_file = f;
         readline_instream = input;
     }
     return input;
@@ -557,6 +558,7 @@ readline_s_set_output(VALUE self, VALUE output)
             rb_sys_fail("fdopen");
         }
         rl_outstream = f;
+        ofp->stdio_file = f;
         readline_outstream = output;
     }
     return output;
