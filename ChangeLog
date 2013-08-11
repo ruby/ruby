@@ -1,3 +1,9 @@
+Sun Aug 11 22:57:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_require.rb (assert_require_nonascii_path): OS path
+	  encoding on Windows is fixed, so encoding of __FILE__ should be it.
+	  [ruby-core:56498] [Bug #8764]
+
 Sun Aug 11 19:11:45 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parser/test_sax2.rb: Expand abbreviated class name.
