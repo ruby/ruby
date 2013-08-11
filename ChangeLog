@@ -1,3 +1,12 @@
+Sun Aug 11 19:06:03 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/sax2listener.rb (REXML::SAX2Listener#notationdecl): Fix
+	  wrong number of arguments in the template listener.
+	  [Bug #8731] [ruby-dev:47582]
+	  Reported by Ippei Obayashi.
+	* test/rexml/parser/test_sax2.rb: Add tests for parsing notation
+	  declarations with SAX2 API.
+
 Sun Aug 11 18:44:04 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/sax2listener.rb (REXML::SAX2Listener#elementdecl): Fix wrong

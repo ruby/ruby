@@ -145,5 +145,56 @@ class TestSAX2Parser < Test::Unit::TestCase
         end
       end
     end
+
+    class TestNotationDeclaration < self
+      class Listener
+        include REXML::SAX2Listener
+        attr_reader :notation_declarations
+        def initialize
+          @notation_declarations = []
+        end
+
+        def notationdecl(*declaration)
+          super
+          @notation_declarations << declaration
+        end
+      end
+
+      private
+      def parse(internal_subset)
+        listener = Listener.new
+        parser = REXML::Parsers::SAX2Parser.new(xml(internal_subset))
+        parser.listen(listener)
+        parser.parse
+        listener.notation_declarations
+      end
+
+      class TestExternlID < self
+        def test_system
+          declaration = ["name", "SYSTEM", nil, "system-literal"]
+          assert_equal([declaration],
+                       parse(<<-INTERNAL_SUBSET))
+<!NOTATION name SYSTEM "system-literal">
+          INTERNAL_SUBSET
+        end
+
+        def test_public
+          declaration = ["name", "PUBLIC", "public-literal", "system-literal"]
+          assert_equal([declaration], parse(<<-INTERNAL_SUBSET))
+<!NOTATION name PUBLIC "public-literal" "system-literal">
+          INTERNAL_SUBSET
+        end
+      end
+
+      class TestPublicID < self
+        def test_literal
+          declaration = ["name", "PUBLIC", "public-literal", nil]
+          assert_equal([declaration],
+                       parse(<<-INTERNAL_SUBSET))
+<!NOTATION name PUBLIC "public-literal">
+          INTERNAL_SUBSET
+        end
+      end
+    end
   end
 end

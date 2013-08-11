@@ -73,7 +73,7 @@ module REXML
     def entitydecl declaration
     end
     # <!NOTATION ...>
-    def notationdecl content
+    def notationdecl name, public_or_system, public_id, system_id
     end
     # Called when <![CDATA[ ... ]]> is encountered in a document.
     # @p content "..."
