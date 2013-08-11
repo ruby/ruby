@@ -279,7 +279,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
     rb_enc_associate(str, enc);
 
     while (p < e) {
-	int l;
+	int l, c;
 	int r = rb_enc_precise_mbclen(p, e, enc);
 	if (!MBCLEN_CHARFOUND_P(r)) {
 	    /* invalid byte shall not happen but */
@@ -288,7 +288,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
 	    p += 1;
 	}
 	l = MBCLEN_CHARFOUND_LEN(r);
-	int c = rb_enc_mbc_to_codepoint(p, e, enc);
+	c = rb_enc_mbc_to_codepoint(p, e, enc);
 	if ((0x2000 <= c && c <= 0x2FFF) || (0xF900 <= c && c <= 0xFAFF) ||
 		(0x2F800 <= c && c <= 0x2FAFF)) {
 	    if (p - p1 > 0) {
