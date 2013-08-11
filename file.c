@@ -239,6 +239,8 @@ rb_str_encode_ospath(VALUE path)
     if (enc != utf8) {
 	path = rb_str_conv_enc(path, enc, utf8);
     }
+#elif defined __APPLE__
+    path = rb_str_conv_enc(path, NULL, rb_utf8_encoding());
 #endif
     return path;
 }

@@ -1,3 +1,8 @@
+Sun Aug 11 23:27:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_encode_ospath): OS path encoding on Mac OS X is also
+	  fixed.
+
 Sun Aug 11 22:57:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_require.rb (assert_require_nonascii_path): OS path
