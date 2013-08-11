@@ -70,7 +70,7 @@ module REXML
     #  ["open-hatch", "PUBLIC", "\"-//Textuality//TEXT Standard open-hatch boilerplate//EN\"", "\"http://www.textuality.com/boilerplate/OpenHatch.xml\""]
     #  <!ENTITY hatch-pic SYSTEM "../grafix/OpenHatch.gif" NDATA gif>
     #  ["hatch-pic", "SYSTEM", "\"../grafix/OpenHatch.gif\"", "\n\t\t\t\t\t\t\tNDATA gif", "gif"]
-    def entitydecl name, decl
+    def entitydecl declaration
     end
     # <!NOTATION ...>
     def notationdecl content

@@ -177,7 +177,7 @@ module REXML
             handle( :characters, copy )
           when :entitydecl
             @entities[ event[1] ] = event[2] if event.size == 3
-            handle( *event )
+            handle( event[0], event[1..-1] )
           when :processing_instruction, :comment, :attlistdecl,
             :elementdecl, :cdata, :notationdecl, :xmldecl
             handle( *event )

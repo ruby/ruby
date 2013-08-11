@@ -22,9 +22,9 @@ class TestSAX2Parser < Test::Unit::TestCase
           @entity_declarations = []
         end
 
-        def entitydecl(*args)
+        def entitydecl(declaration)
           super
-          @entity_declarations << args
+          @entity_declarations << declaration
         end
       end
 
@@ -49,6 +49,33 @@ class TestSAX2Parser < Test::Unit::TestCase
             assert_equal([["name", "value"]], parse(<<-INTERNAL_SUBSET))
 <!ENTITY name 'value'>
             INTERNAL_SUBSET
+          end
+        end
+
+        class TestExternlID < self
+          class TestSystem < self
+            def test_without_ndata
+              declaration = [
+                "name",
+                "SYSTEM", "system-literal",
+              ]
+              assert_equal([declaration],
+                           parse(<<-INTERNAL_SUBSET))
+<!ENTITY name SYSTEM "system-literal">
+              INTERNAL_SUBSET
+            end
+          end
+
+          class TestPublic < self
+            def test_without_ndata
+              declaration = [
+                "name",
+                "PUBLIC", "public-literal", "system-literal",
+              ]
+              assert_equal([declaration], parse(<<-INTERNAL_SUBSET))
+<!ENTITY name PUBLIC "public-literal" "system-literal">
+              INTERNAL_SUBSET
+            end
           end
         end
       end

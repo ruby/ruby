@@ -182,6 +182,12 @@ with all sufficient information, see the ChangeLog file.
 * REXML::Parsers::StreamParser
   * Supports "entity" event.
 
+* REXML::Parsers::SAX2Parser
+  * Fixes wrong number of arguments of entitydecl event. Document of the event
+    says "an array of the entity declaration" but implemenation passes two
+    or more arguments. It is an implementation bug but it breaks backword
+    compatibility.
+
 * REXML::Text
   * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
   * REXML::Text#<< supports not "raw" mode.
