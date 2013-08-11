@@ -1,14 +1,14 @@
 Sun Aug 11 18:08:40 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/sax2parser.rb (REXML::Parsers::SAX2Parser#parse):
-	  Support NDATA in external entity declaration.
+	  Support NDATA in external ID entity declaration.
 	* test/rexml/parser/test_sax2.rb: Add tests for the above case.
 
 Sun Aug 11 18:07:39 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb
 	  (REXML::Parsers::BaseParser#pull_event): Support optional NDATA
-	  in parameter entity declaration.
+	  in external ID entity declaration.
 
 Sun Aug 11 17:54:07 2013  Kouhei Sutou  <kou@cozmixng.org>
 
