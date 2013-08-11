@@ -14,7 +14,7 @@ class TestSAX2Parser < Test::Unit::TestCase
       XML
     end
 
-    class TestEntityDecl < self
+    class TestEntityDeclaration < self
       class Listener
         include REXML::SAX2Listener
         attr_reader :entity_declarations

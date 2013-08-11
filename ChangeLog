@@ -1,3 +1,7 @@
+Sun Aug 11 19:11:45 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_sax2.rb: Expand abbreviated class name.
+
 Sun Aug 11 19:06:03 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/sax2listener.rb (REXML::SAX2Listener#notationdecl): Fix
