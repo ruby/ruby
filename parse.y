@@ -10182,8 +10182,11 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
     return rb_enc_symname2_p(name, strlen(name), enc);
 }
 
+#define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
+#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<ID_SCOPE_MASK) & ~(1U<<ID_ATTRSET))
+
 static int
-rb_enc_symname_type(const char *name, long len, rb_encoding *enc)
+rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_atttset)
 {
     const char *m = name;
     const char *e = m + len;
@@ -10267,7 +10270,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc)
 	    ++m;
 	    break;
 	  case '=':
-	    if (type != ID_CONST && type != ID_LOCAL) return -1;
+	    if (!(allowed_atttset & (1U << type))) return -1;
 	    type = ID_ATTRSET;
 	    ++m;
 	    break;
@@ -10280,15 +10283,15 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc)
 int
 rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
 {
-    return rb_enc_symname_type(name, len, enc) != -1;
+    return rb_enc_symname_type(name, len, enc, IDSET_ATTRSET_FOR_SYNTAX) != -1;
 }
 
 static int
-rb_str_symname_type(VALUE name)
+rb_str_symname_type(VALUE name, unsigned int allowed_atttset)
 {
     const char *ptr = StringValuePtr(name);
     long len = RSTRING_LEN(name);
-    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name));
+    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_atttset);
     RB_GC_GUARD(name);
     return type;
 }
@@ -10719,43 +10722,43 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 int
 rb_is_const_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_CONST;
+    return rb_str_symname_type(name, 0) == ID_CONST;
 }
 
 int
 rb_is_class_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_CLASS;
+    return rb_str_symname_type(name, 0) == ID_CLASS;
 }
 
 int
 rb_is_global_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_GLOBAL;
+    return rb_str_symname_type(name, 0) == ID_GLOBAL;
 }
 
 int
 rb_is_instance_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_INSTANCE;
+    return rb_str_symname_type(name, 0) == ID_INSTANCE;
 }
 
 int
 rb_is_attrset_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_ATTRSET;
+    return rb_str_symname_type(name, IDSET_ATTRSET_FOR_INTERN) == ID_ATTRSET;
 }
 
 int
 rb_is_local_name(VALUE name)
 {
-    return rb_str_symname_type(name) == ID_LOCAL;
+    return rb_str_symname_type(name, 0) == ID_LOCAL;
 }
 
 int
 rb_is_method_name(VALUE name)
 {
-    switch (rb_str_symname_type(name)) {
+    switch (rb_str_symname_type(name, 0)) {
       case ID_LOCAL: case ID_ATTRSET: case ID_JUNK:
 	return TRUE;
     }
@@ -10765,7 +10768,7 @@ rb_is_method_name(VALUE name)
 int
 rb_is_junk_name(VALUE name)
 {
-    return rb_str_symname_type(name) == -1;
+    return rb_str_symname_type(name, IDSET_ATTRSET_FOR_SYNTAX) == -1;
 }
 
 #endif /* !RIPPER */

@@ -1,3 +1,8 @@
+Sun Aug 11 15:10:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_enc_symname_type): allow ID_ATTRSET for ID_INSTANCE,
+	  ID_GLOBAL, ID_CLASS, ID_JUNK too.  [Bug #8756]
+
 Sun Aug 11 13:17:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* include/ruby/encoding.h: Reduce ENCODING_INLINE_MAX to 127 as this

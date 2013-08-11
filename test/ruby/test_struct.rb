@@ -131,7 +131,15 @@ class TestStruct < Test::Unit::TestCase
 
     klass = Struct.new(:@a)
     o = klass.new(1)
+    assert_equal(1, o.__send__(:@a))
     assert_equal("#<struct :@a=1>", o.inspect)
+    o.__send__(:"@a=", 2)
+    assert_equal(2, o.__send__(:@a))
+    assert_equal("#<struct :@a=2>", o.inspect)
+    o.__send__("@a=", 3)
+    assert_equal(3, o.__send__(:@a))
+    assert_equal("#<struct :@a=3>", o.inspect)
+
     methods = klass.instance_methods(false)
     assert_equal([:@a, :"@a="].inspect, methods.inspect, '[Bug #8756]')
     assert_include(methods, :@a)
