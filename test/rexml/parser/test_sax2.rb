@@ -54,6 +54,18 @@ class TestSAX2Parser < Test::Unit::TestCase
 
         class TestExternlID < self
           class TestSystem < self
+            def test_with_ndata
+              declaration = [
+                "name",
+                "SYSTEM", "system-literal",
+                "NDATA", "ndata-name",
+              ]
+              assert_equal([declaration],
+                           parse(<<-INTERNAL_SUBSET))
+<!ENTITY name SYSTEM "system-literal" NDATA ndata-name>
+              INTERNAL_SUBSET
+            end
+
             def test_without_ndata
               declaration = [
                 "name",
@@ -67,6 +79,18 @@ class TestSAX2Parser < Test::Unit::TestCase
           end
 
           class TestPublic < self
+            def test_with_ndata
+              declaration = [
+                "name",
+                "PUBLIC", "public-literal", "system-literal",
+                "NDATA", "ndata-name",
+              ]
+              assert_equal([declaration],
+                           parse(<<-INTERNAL_SUBSET))
+<!ENTITY name PUBLIC "public-literal" "system-literal" NDATA ndata-name>
+              INTERNAL_SUBSET
+            end
+
             def test_without_ndata
               declaration = [
                 "name",

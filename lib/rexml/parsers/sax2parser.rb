@@ -177,6 +177,12 @@ module REXML
             handle( :characters, copy )
           when :entitydecl
             @entities[ event[1] ] = event[2] if event.size == 3
+            case event[2]
+            when "SYSTEM"
+              event[4, 0] = "NDATA" if event.size == 5
+            when "PUBLIC"
+              event[5, 0] = "NDATA" if event.size == 6
+            end
             handle( event[0], event[1..-1] )
           when :processing_instruction, :comment, :attlistdecl,
             :elementdecl, :cdata, :notationdecl, :xmldecl
