@@ -174,10 +174,8 @@ class Time
     end
     private :zone_utc?
 
-    # An array with the number of days per month in a leap year.
-    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    # An array with the number of days per month in a regular year.
-    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     def month_days(y, m)
       if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
         LeapYearMonthDays[m-1]
@@ -403,14 +401,7 @@ class Time
       end
     end
 
-    #
-    # A hash of upcased RFC2822 month-names mapped to number of the month.
-    # For example:
-    #
-    #   Time.MonthValue['JAN']
-    #   #=> 1
-    #
-    MonthValue = {
+    MonthValue = { # :nodoc:
       'JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6,
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
     }
@@ -587,13 +578,11 @@ class Time
   alias rfc822 rfc2822
 
 
-  # An array of day names, as defined by RFC 2822
-  RFC2822_DAY_NAME = [
+  RFC2822_DAY_NAME = [ # :nodoc:
     'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
   ]
 
-  # An array of month names, as defined by RFC 2822
-  RFC2822_MONTH_NAME = [
+  RFC2822_MONTH_NAME = [ # :nodoc:
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ]

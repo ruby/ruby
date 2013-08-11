@@ -1,3 +1,8 @@
+Sun Aug 11 10:40:48 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/time.rb: [DOC] Correcting rdoc visibility of time.rb constants
+	  Reported by Tanaka Akira [ruby-core:56517]
+
 Sun Aug 11 04:48:14 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_str_normalize_ospath):
