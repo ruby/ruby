@@ -1,3 +1,7 @@
+Sun Aug 11 17:41:41 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_sax2.rb: Add SAX2 API test.
+
 Sun Aug 11 15:10:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname_type): allow ID_ATTRSET for ID_INSTANCE,
