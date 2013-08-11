@@ -244,7 +244,7 @@ rb_str_encode_ospath(VALUE path)
 }
 
 #ifdef __APPLE__
-VALUE
+static VALUE
 rb_str_normalize_ospath0(const char *ptr, long len)
 {
     VALUE str;
