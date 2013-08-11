@@ -1,3 +1,8 @@
+Sun Aug 11 18:42:13 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/sax2parser.rb
+	  (REXML::Parsers::SAX2Parser#handle_entitydecl): Extract.
+
 Sun Aug 11 18:40:25 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/sax2parser.rb (REXML::Parsers::SAX2Parser#parse):
