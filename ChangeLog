@@ -1,3 +1,9 @@
+Sun Aug 11 18:07:39 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb
+	  (REXML::Parsers::BaseParser#pull_event): Support optional NDATA
+	  in parameter entity declaration.
+
 Sun Aug 11 17:54:07 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS (REXML::Parsers::SAX2Parser): Add about this change.

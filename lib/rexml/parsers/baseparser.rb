@@ -283,7 +283,8 @@ module REXML
               # External reference
               match[3] = match[3][1..-2] # PUBID
               match[4] = match[4][1..-2] # HREF
-              # match is [ :entity, name, PUBLIC, pubid, href ]
+              match.delete_at(5) if match.size > 5 # Chop out NDATA decl
+              # match is [ :entity, name, PUBLIC, pubid, href(, ndata)? ]
             else
               match[2] = match[2][1..-2]
               match.pop if match.size == 4
