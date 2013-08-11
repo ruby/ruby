@@ -1262,6 +1262,7 @@ RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@include <sys/resource.h>
 ])
 RUBY_REPLACE_TYPE(off_t, [], OFFT)
+RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],

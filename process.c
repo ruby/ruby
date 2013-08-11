@@ -68,7 +68,9 @@
 # include "nacl/unistd.h"
 #endif
 
-
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
@@ -6635,6 +6637,161 @@ rb_proc_times(VALUE obj)
 #define rb_proc_times rb_f_notimplement
 #endif
 
+/*
+ *  call-seq:
+ *     Process.clock_gettime(clk_id [, unit])   -> number
+ *
+ *  Returns a time returned by POSIX clock_gettime() function.
+ *
+ *  _clk_id_ specifies a kind of clock.
+ *  It is specifed as a constant which begins with <code>Process::CLOCK_</code>
+ *  such like <code>Process::CLOCK_REALTIME</code> and
+ *  <code>Process::CLOCK_MONOTONIC</code>.
+ *  The supported constants depends on OS and version.
+ *  Ruby provides following type of _clk_id_ if available.
+ *
+ *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
+ *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4
+ *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63
+ *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63
+ *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
+ *  [CLOCK_PROF] FreeBSD 3.0, OpenBSD 2.1
+ *  [CLOCK_REALTIME_FAST] FreeBSD 8.1
+ *  [CLOCK_REALTIME_PRECISE] FreeBSD 8.1
+ *  [CLOCK_MONOTONIC_FAST] FreeBSD 8.1
+ *  [CLOCK_MONOTONIC_PRECISE] FreeBSD 8.1
+ *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28
+ *  [CLOCK_UPTIME] FreeBSD 7.0
+ *  [CLOCK_UPTIME_FAST] FreeBSD 8.1
+ *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
+ *  [CLOCK_SECOND] FreeBSD 8.1
+ *
+ *  If the given _clk_id_ is not supported, Errno::EINVAL is raised.
+ *
+ *  _unit_ specifies a type of the return value.
+ *
+ *  [:float_seconds] number of seconds as a float (default)
+ *  [:float_milliseconds] number of milliseconds as a float
+ *  [:float_microseconds] number of microseconds as a float
+ *  [:milliseconds] number of milliseconds as an integer
+ *  [:microseconds] number of microseconds as an integer
+ *  [:nanoseconds] number of nanoseconds as an integer
+ *
+ *  The underlying function, clock_gettime(), returns a number of nanoseconds.
+ *  Float object (IEEE 754 double) is not enough to represent
+ *  the return value for CLOCK_REALTIME.
+ *  If the exact nanoseconds value is required, use :nanoseconds as _unit_.
+ *
+ *  The origin (zero) of the returned value varies.
+ *  For example, system start up time, process start up time, the Epoch, etc.
+ *
+ *  The origin in CLOCK_REALTIME is defined as the Epoch
+ *  (1970-01-01 00:00:00 UTC).
+ *  But some systems count leap seconds and others doesn't.
+ *  So the result can be interpreted differently across systems.
+ *  Time.now is recommended over CLOCK_REALTIME.
+ *
+ *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
+ *    #=> 896053.968060096
+ *
+ */
+VALUE
+rb_clock_gettime(int argc, VALUE *argv)
+{
+    struct timespec ts;
+    VALUE clk_id, unit;
+    int ret;
+    long factor;
+
+    rb_scan_args(argc, argv, "11", &clk_id, &unit);
+
+    if (SYMBOL_P(clk_id)) {
+        /*
+         * Non-clock_gettime clocks are provided by symbol clk_id.
+         *
+         * gettimeofday is always available on platforms supported by Ruby.
+         * POSIX_GETTIMEOFDAY_CLOCK_REALTIME is used for
+         * CLOCK_REALTIME if clock_gettime is not available.
+         */
+#define RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME ID2SYM(rb_intern("POSIX_GETTIMEOFDAY_CLOCK_REALTIME"))
+        if (clk_id == RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME) {
+            struct timeval tv;
+            ret = gettimeofday(&tv, 0);
+            if (ret != 0)
+                rb_sys_fail("gettimeofday");
+            ts.tv_sec = tv.tv_sec;
+            ts.tv_nsec = tv.tv_usec * 1000;
+            goto success;
+        }
+
+#define RUBY_POSIX_TIME_CLOCK_REALTIME ID2SYM(rb_intern("POSIX_TIME_CLOCK_REALTIME"))
+        if (clk_id == RUBY_POSIX_TIME_CLOCK_REALTIME) {
+            time_t t;
+            t = time(NULL);
+            if (t == (time_t)-1)
+                rb_sys_fail("time");
+            ts.tv_sec = t;
+            ts.tv_nsec = 0;
+            goto success;
+        }
+    }
+    else {
+#if defined(HAVE_CLOCK_GETTIME)
+        clockid_t c;
+        c = NUM2CLOCKID(clk_id);
+        ret = clock_gettime(c, &ts);
+        if (ret == -1)
+            rb_sys_fail("clock_gettime");
+        goto success;
+#endif
+    }
+    /* EINVAL emulates clock_gettime behavior when clock_id is invalid. */
+    errno = EINVAL;
+    rb_sys_fail(0);
+
+  success:
+    if (unit == ID2SYM(rb_intern("nanoseconds"))) {
+        factor = 1000000000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("microseconds"))) {
+        factor = 1000000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("milliseconds"))) {
+        factor = 1000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("float_microseconds"))) {
+        factor = 1000000;
+        goto return_float;
+    }
+    else if (unit == ID2SYM(rb_intern("float_milliseconds"))) {
+        factor = 1000;
+        goto return_float;
+    }
+    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_seconds"))) {
+        factor = 1;
+        goto return_float;
+    }
+    else {
+        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
+    }
+
+  return_float:
+    return DBL2NUM((ts.tv_sec + 1e-9 * (double)ts.tv_nsec) / factor);
+
+  return_integer:
+#if defined(HAVE_LONG_LONG)
+    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, (LONG_LONG)ts.tv_sec,
+                LLONG_MIN, LLONG_MAX-(factor-1))) {
+        return LL2NUM(ts.tv_nsec/(1000000000/factor) + factor * (LONG_LONG)ts.tv_sec);
+    }
+#endif
+    return rb_funcall(LONG2FIX(ts.tv_nsec/(1000000000/factor)), '+', 1,
+            rb_funcall(LONG2FIX(factor), '*', 1, TIMET2NUM(ts.tv_sec)));
+}
+
 VALUE rb_mProcess;
 VALUE rb_mProcUID;
 VALUE rb_mProcGID;
@@ -6892,6 +7049,55 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "daemon", proc_daemon, -1);
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
+
+#ifdef CLOCK_REALTIME
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
+#elif defined(RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME);
+#endif
+#ifdef CLOCK_MONOTONIC
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
+#endif
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
+#endif
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
+#endif
+#ifdef CLOCK_VIRTUAL
+    rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
+#endif
+#ifdef CLOCK_PROF
+    rb_define_const(rb_mProcess, "CLOCK_PROF", CLOCKID2NUM(CLOCK_PROF));
+#endif
+#ifdef CLOCK_REALTIME_FAST
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_FAST", CLOCKID2NUM(CLOCK_REALTIME_FAST));
+#endif
+#ifdef CLOCK_REALTIME_PRECISE
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_PRECISE", CLOCKID2NUM(CLOCK_REALTIME_PRECISE));
+#endif
+#ifdef CLOCK_MONOTONIC_FAST
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
+#endif
+#ifdef CLOCK_MONOTONIC_PRECISE
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_PRECISE", CLOCKID2NUM(CLOCK_MONOTONIC_PRECISE));
+#endif
+#ifdef CLOCK_MONOTONIC_RAW
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
+#endif
+#ifdef CLOCK_UPTIME
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME", CLOCKID2NUM(CLOCK_UPTIME));
+#endif
+#ifdef CLOCK_UPTIME_FAST
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_FAST", CLOCKID2NUM(CLOCK_UPTIME_FAST));
+#endif
+#ifdef CLOCK_UPTIME_PRECISE
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
+#endif
+#ifdef CLOCK_SECOND
+    rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
+#endif
+    rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
     rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);

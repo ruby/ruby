@@ -1,3 +1,11 @@
+Sun Aug 11 11:54:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): New method.
+	  This is accepted in the meeting:
+	  https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130809
+	  This method is accepted as a CRuby feature.
+	  I.e. Other Ruby implementations don't need to implement it.
+
 Sun Aug 11 10:40:48 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/time.rb: [DOC] Correcting rdoc visibility of time.rb constants

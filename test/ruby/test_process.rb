@@ -1660,4 +1660,13 @@ EOS
     end
   end if windows?
 
+  def test_clock_gettime
+    t1 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanoseconds)
+    t2 = Time.now; t2 = t2.tv_sec * 1000000000 + t2.tv_nsec
+    t3 = Process.clock_gettime(Process::CLOCK_REALTIME, :nanoseconds)
+    assert_operator(t1, :<=, t2)
+    assert_operator(t2, :<=, t3)
+    assert_raise(Errno::EINVAL) { Process.clock_gettime(:foo) }
+  end
+
 end
