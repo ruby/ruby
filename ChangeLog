@@ -1,3 +1,15 @@
+Sun Aug 11 17:54:07 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* NEWS (REXML::Parsers::SAX2Parser): Add about this change.
+	* lib/rexml/parsers/sax2parser.rb (REXML::Parsers::SAX2Parser#parse):
+	  Fix wrong number of arguments. Document says "an array of the
+	  entity declaration" but it passes two or more arguments.
+	  This is a bug but it break backward compatibility.
+	  Reported by Ippei Obayashi. [Bug #8731] [ruby-dev:47582]
+	* lib/rexml/sax2listener.rb (REXML::SAX2Listener#entitydecl): ditto.
+	  The listener template accepted two arguments.
+	* test/rexml/parser/test_sax2.rb: Add tests for external ID case.
+
 Sun Aug 11 17:41:41 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parser/test_sax2.rb: Add SAX2 API test.
