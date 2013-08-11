@@ -5,6 +5,7 @@ Sun Aug 11 11:54:38 2013  Tanaka Akira  <akr@fsij.org>
 	  https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130809
 	  This method is accepted as a CRuby feature.
 	  I.e. Other Ruby implementations don't need to implement it.
+	  [ruby-core:56087] [Feature #8658]
 
 Sun Aug 11 10:40:48 2013  Zachary Scott  <e@zzak.io>
 
