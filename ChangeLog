@@ -1,3 +1,9 @@
+Sun Aug 11 18:44:04 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/sax2listener.rb (REXML::SAX2Listener#elementdecl): Fix wrong
+	  examples. [Bug #8731] [ruby-dev:47582]
+	  Reported by Ippei Obayashi.
+
 Sun Aug 11 18:42:13 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/sax2parser.rb
