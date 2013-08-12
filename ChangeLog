@@ -1,3 +1,10 @@
+Mon Aug 12 12:57:26 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/dbm/extconf.rb: [DOC] Hide from RDoc
+	  Some libraries might want to document extconf.rb so RDoc treats it
+	  like any other ruby program. However, DBM users shouldn't care about
+	  these methods.
+
 Mon Aug 12 12:53:39 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/dbm/dbm.c: [DOC] Reformat headings of DBM class

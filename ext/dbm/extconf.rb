@@ -14,6 +14,7 @@
 #   qdbm        QDBM (libqdbm)
 #   ndbm        Some legacy OS may have libndbm.
 
+# :stopdoc:
 require 'mkmf'
 
 dir_config("dbm")
@@ -268,3 +269,4 @@ if dblib.any? {|db| headers.fetch(db, ["ndbm.h"]).any? {|hdr| headers.db_check(d
   convertible_int("datum.dsize", headers.found, headers.defs)
   create_makefile("dbm")
 end
+# :startdoc:
