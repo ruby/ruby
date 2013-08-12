@@ -17,6 +17,9 @@ module YAML
 class DBM < ::DBM
     VERSION = "0.1" # :nodoc:
 
+    # :call-seq:
+    #   ydbm[key] -> value
+    #
     # Return value associated with +key+ from database.
     #
     # Returns +nil+ if there is no such +key+.
@@ -27,7 +30,7 @@ class DBM < ::DBM
     end
 
     # :call-seq:
-    #   []=( key, value )
+    #   ydbm[key] = value
     #
     # Set +key+ to +value+ in database.
     #
@@ -39,8 +42,8 @@ class DBM < ::DBM
     end
 
     # :call-seq:
-    #   fetch( key, ifnone = nil )
-    #   fetch( key, &block )
+    #   ydbm.fetch( key, ifnone = nil )
+    #   ydbm.fetch( key ) { |key| ... }
     #
     # Return value associated with +key+.
     #
@@ -74,18 +77,24 @@ class DBM < ::DBM
     end
 
     # :call-seq:
-    #   db.key(value) -> string
+    #   ydbm.key(value) -> string
     #
     # Returns the key for the specified value.
     def key( keystr )
         invert[keystr]
     end
 
+    # :call-seq:
+    #   ydbm.values_at(*keys)
+    #
     # Returns an array containing the values associated with the given keys.
     def values_at( *keys )
         keys.collect { |k| fetch( k ) }
     end
 
+    # :call-seq:
+    #   ydbm.delete(key)
+    #
     # Deletes value from database associated with +key+.
     #
     # Returns value or +nil+.
@@ -97,6 +106,9 @@ class DBM < ::DBM
         v
     end
 
+    # :call-seq:
+    #   ydbm.delete_if { |key, value| ... }
+    #
     # Calls the given block once for each +key+, +value+ pair in the database.
     # Deletes all entries for which the block returns true.
     #
@@ -108,6 +120,9 @@ class DBM < ::DBM
         self
     end
 
+    # :call-seq:
+    #   ydbm.reject { |key, value| ... }
+    #
     # Converts the contents of the database to an in-memory Hash, then calls
     # Hash#reject with the specified code block, returning a new Hash.
     def reject
@@ -115,6 +130,9 @@ class DBM < ::DBM
         hsh.reject { |k,v| yield k, v }
     end
 
+    # :call-seq:
+    #   ydbm.each_pair { |key, value| ... }
+    #
     # Calls the given block once for each +key+, +value+ pair in the database.
     #
     # Returns +self+.
@@ -123,6 +141,9 @@ class DBM < ::DBM
         self
     end
 
+    # :call-seq:
+    #   ydbm.each_value { |value| ... }
+    #
     # Calls the given block for each value in database.
     #
     # Returns +self+.
@@ -131,17 +152,26 @@ class DBM < ::DBM
         self
     end
 
+    # :call-seq:
+    #   ydbm.values
+    #
     # Returns an array of values from the database.
     def values
         super.collect { |v| YAML.load( v ) }
     end
 
-    # Returns true if specified value is found in the database.
+    # :call-seq:
+    #   ydbm.has_value?(value)
+    #
+    # Returns true if specified +value+ is found in the database.
     def has_value?( val )
         each_value { |v| return true if v == val }
         return false
     end
 
+    # :call-seq:
+    #   ydbm.invert -> hash
+    #
     # Returns a Hash (not a DBM database) created by using each value in the
     # database as a key, with the corresponding key as its value.
     #
@@ -153,6 +183,9 @@ class DBM < ::DBM
         h
     end
 
+    # :call-seq:
+    #   ydbm.replace(hash) -> ydbm
+    #
     # Replaces the contents of the database with the contents of the specified
     # object. Takes any object which implements the each_pair method, including
     # Hash and DBM objects.
@@ -161,6 +194,9 @@ class DBM < ::DBM
         update( hsh )
     end
 
+    # :call-seq:
+    #   ydbm.shift -> [key, value]
+    #
     # Removes a [key, value] pair from the database, and returns it.
     # If the database is empty, returns +nil+.
     #
@@ -172,8 +208,8 @@ class DBM < ::DBM
     end
 
     # :call-seq:
-    #   select( &block )
-    #   select( *keys )
+    #   ydbm.select { |key, value| ... }
+    #   ydbm.select(*keys)
     #
     # If a block is provided, returns a new array containing [key, value] pairs
     # for which the block returns true.
@@ -188,17 +224,20 @@ class DBM < ::DBM
     end
 
     # :call-seq:
-    #   store( key, value )
+    #   ydbm.store(key, value) -> value
     #
-    #Stores +value+ in database with +key+ as the index. +value+ is converted
-    #to YAML before being stored.
+    # Stores +value+ in database with +key+ as the index. +value+ is converted
+    # to YAML before being stored.
     #
-    #Returns +value+
+    # Returns +value+
     def store( key, val )
         super( key, val.to_yaml )
         val
     end
 
+    # :call-seq:
+    #   ydbm.update(hash) -> ydbm
+    #
     # Updates the database with multiple values from the specified object.
     # Takes any object which implements the each_pair method, including
     # Hash and DBM objects.
@@ -211,6 +250,9 @@ class DBM < ::DBM
         self
     end
 
+    # :call-seq:
+    #   ydbm.to_a -> array
+    #
     # Converts the contents of the database to an array of [key, value] arrays,
     # and returns it.
     def to_a
@@ -220,6 +262,9 @@ class DBM < ::DBM
     end
 
 
+    # :call-seq:
+    #   ydbm.to_hash -> hash
+    #
     # Converts the contents of the database to an in-memory Hash object, and
     # returns it.
     def to_hash

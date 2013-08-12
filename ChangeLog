@@ -1,3 +1,7 @@
+Mon Aug 12 13:29:09 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/yaml/dbm.rb: [DOC] Document call-seq for YAML::DBM
+
 Mon Aug 12 12:57:26 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/dbm/extconf.rb: [DOC] Hide from RDoc
