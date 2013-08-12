@@ -15,11 +15,13 @@ module YAML
 #
 # See the documentation for ::DBM and ::YAML for more information.
 class DBM < ::DBM
-    VERSION = "0.1"
+    VERSION = "0.1" # :nodoc:
 
     # Return value associated with +key+ from database.
     #
     # Returns +nil+ if there is no such +key+.
+    #
+    # See #fetch for more information.
     def []( key )
         fetch( key )
     end
@@ -30,6 +32,8 @@ class DBM < ::DBM
     # Set +key+ to +value+ in database.
     #
     # +value+ will be converted to YAML before storage.
+    #
+    # See #store for more information.
     def []=( key, val )
         store( key, val )
     end
@@ -43,6 +47,8 @@ class DBM < ::DBM
     # If there is no value for +key+ and no block is given, returns +ifnone+.
     #
     # Otherwise, calls block passing in the given +key+.
+    #
+    # See ::DBM#fetch for more information.
     def fetch( keystr, ifnone = nil )
         begin
             val = super( keystr )
@@ -67,6 +73,10 @@ class DBM < ::DBM
         super( keystr.to_yaml )
     end
 
+    # :call-seq:
+    #   db.key(value) -> string
+    #
+    # Returns the key for the specified value.
     def key( keystr )
         invert[keystr]
     end

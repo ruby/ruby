@@ -10,7 +10,7 @@ rescue LoadError
   raise
 end
 
-YAML = Psych
+YAML = Psych # :nodoc:
 
 module Psych # :nodoc:
   # For compatibility, deprecated
