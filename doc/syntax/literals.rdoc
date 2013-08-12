@@ -113,9 +113,15 @@ more discussion of the syntax of percent strings.
 
 Adjacent string literals are automatically concatenated by the interpreter:
 
-  '1' ' + ' '1' #=> "1 + 1"
+  "con" "cat" "en" "at" "ion" #=> "concatenation"
   "This string contains "\
-  "no newlines." #=> "This string contains no newlines."
+  "no newlines."              #=> "This string contains no newlines."
+
+Any combination of adjacent single-quote, double-quote, percent strings will
+be concatenated as long as a percent-string is not last.
+
+  %q{a} 'b' "c" #=> "abc"
+  "a" 'b' %q{c} #=> NameError: uninitialized constant q
 
 === Here Documents
 
