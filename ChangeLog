@@ -1,3 +1,7 @@
+Mon Aug 12 23:07:21 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_marks_test): inhibit gc for st's operation.
+
 Mon Aug 12 15:59:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_whole_match_p): treat CR in middle of a line as a

@@ -3550,6 +3550,8 @@ gc_marks_test(rb_objspace_t *objspace)
      *   exported_bitmap: after minor marking
      */
 
+    /* inhibit gc for st's operation */
+    dont_gc = 1;
 
     if(!monitored_object_table)
 	monitored_object_table = st_init_numtable();
@@ -3608,6 +3610,7 @@ gc_marks_test(rb_objspace_t *objspace)
 	gc_free_exported_bitmaps(objspace, exported_bitmaps);
 	objspace->rgengc.have_saved_bitmaps = FALSE;
     }
+    dont_gc = 0;
 }
 #endif /* RGENGC_CHECK_MODE >= 2 */
 
