@@ -1,3 +1,8 @@
+Mon Aug 12 15:59:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_whole_match_p): treat CR in middle of a line as a
+	  mere whitespace.
+
 Mon Aug 12 15:16:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (rb_prepend_module): make T_ICLASS object shady because

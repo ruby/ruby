@@ -6375,7 +6375,11 @@ parser_whole_match_p(struct parser_params *parser,
 	while (*p && ISSPACE(*p)) p++;
     }
     n = lex_pend - (p + len);
-    if (n < 0 || (n > 0 && p[len] != '\n' && p[len] != '\r')) return FALSE;
+    if (n < 0) return FALSE;
+    if (n > 0 && p[len] != '\n') {
+	if (p[len] != '\r') return FALSE;
+	if (n <= 1 || p[len+1] != '\n') return FALSE;
+    }
     return strncmp(eos, p, len) == 0;
 }
 
