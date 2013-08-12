@@ -143,7 +143,6 @@ readline_getc(FILE *input)
     VALUE c;
     if (!readline_instream) return rl_getc(input);
     GetOpenFile(readline_instream, ifp);
-    if (rl_instream != ifp->stdio_file) return rl_getc(input);
 #if defined(_WIN32)
     {
         INPUT_RECORD ir;
@@ -151,13 +150,13 @@ readline_getc(FILE *input)
         static int prior_key = '0';
         for (;;) {
             if (prior_key > 0xff) {
-                prior_key = rl_getc(ifp->stdio_file);
+                prior_key = rl_getc(rl_instream);
                 return prior_key;
             }
             if (PeekConsoleInput((HANDLE)_get_osfhandle(ifp->fd), &ir, 1, &n)) {
                 if (n == 1) {
                     if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
-                        prior_key = rl_getc(ifp->stdio_file);
+                        prior_key = rl_getc(rl_instream);
                         return prior_key;
                     } else {
                         ReadConsoleInput((HANDLE)_get_osfhandle(ifp->fd), &ir, 1, &n);
@@ -503,8 +502,6 @@ readline_s_set_input(VALUE self, VALUE input)
             rb_sys_fail("fdopen");
         }
         rl_instream = f;
-        if (f == stdin)
-            ifp->stdio_file = f;
         readline_instream = input;
     }
     return input;
@@ -559,8 +556,6 @@ readline_s_set_output(VALUE self, VALUE output)
             rb_sys_fail("fdopen");
         }
         rl_outstream = f;
-        if (f == stdout)
-            ofp->stdio_file = f;
         readline_outstream = output;
     }
     return output;
