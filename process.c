@@ -6639,16 +6639,17 @@ rb_proc_times(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.clock_gettime(clk_id [, unit])   -> number
+ *     Process.clock_gettime(clock_id [, unit])   -> number
  *
  *  Returns a time returned by POSIX clock_gettime() function.
  *
- *  _clk_id_ specifies a kind of clock.
+ *  +clock_id+ specifies a kind of clock.
  *  It is specifed as a constant which begins with <code>Process::CLOCK_</code>
- *  such like <code>Process::CLOCK_REALTIME</code> and
- *  <code>Process::CLOCK_MONOTONIC</code>.
+ *  such as Process::CLOCK_REALTIME and Process::CLOCK_MONOTONIC.
+ *
  *  The supported constants depends on OS and version.
- *  Ruby provides following type of _clk_id_ if available.
+ *
+ *  Ruby provides following types of +clock_id+ if available.
  *
  *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
  *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4
@@ -6666,17 +6667,17 @@ rb_proc_times(VALUE obj)
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
- *  Also, several symbols are accepted as _clk_id_.
+ *  Also, several symbols are accepted as +clock_id+.
  *  They may be used as emulation for clock_gettime().
- *  For example, <code>Process::CLOCK_REALTIME</code> is defined as
- *  <code>:POSIX_GETTIMEOFDAY_CLOCK_REALTIME</code> when clock_gettime() is not available.
+ *  For example, Process::CLOCK_REALTIME is defined as
+ *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
  *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The precision is 1 micro second.
  *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The precision is 1 second.
  *
- *  If the given _clk_id_ is not supported, Errno::EINVAL is raised.
+ *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
- *  _unit_ specifies a type of the return value.
+ *  +unit+ specifies a type of the return value.
  *
  *  [:float_seconds] number of seconds as a float (default)
  *  [:float_milliseconds] number of milliseconds as a float
@@ -6688,7 +6689,7 @@ rb_proc_times(VALUE obj)
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
  *  the return value for CLOCK_REALTIME.
- *  If the exact nanoseconds value is required, use :nanoseconds as _unit_.
+ *  If the exact nanoseconds value is required, use +:nanoseconds+ as the +unit+.
  *
  *  The origin (zero) of the returned value varies.
  *  For example, system start up time, process start up time, the Epoch, etc.

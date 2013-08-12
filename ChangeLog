@@ -1,3 +1,7 @@
+Mon Aug 12 13:47:54 2013  Zachary Scott  <e@zzak.io>
+
+	* process.c: [DOC] RDoc formatting of Process.clock_gettime
+
 Mon Aug 12 13:29:09 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/yaml/dbm.rb: [DOC] Document call-seq for YAML::DBM
