@@ -1,3 +1,12 @@
+Mon Aug 12 15:16:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (rb_prepend_module): make T_ICLASS object shady because
+	  this T_ICLASS object seems to share method table with other class
+	  objects. It was causes WB miss.
+	  TODO: need to know the data structure.
+
+	* test/ruby/test_module.rb: add a test for WB miss.
+
 Mon Aug 12 13:47:54 2013  Zachary Scott  <e@zzak.io>
 
 	* process.c: [DOC] RDoc formatting of Process.clock_gettime

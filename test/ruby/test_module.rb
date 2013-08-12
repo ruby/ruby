@@ -1760,4 +1760,20 @@ class TestModule < Test::Unit::TestCase
       self.#{method}
     INPUT
   end
+
+  def test_prepend_gc
+    assert_separately [], %{
+      module Foo
+      end
+      class Object
+        prepend Foo
+      end
+      GC.start     # make created T_ICLASS old (or remembered shady)
+      class Object # add methods into T_ICLASS (need WB if it is old)
+        def foo; end
+        attr_reader :bar
+      end
+      1_000_000.times{''} # cause GC
+    }
+  end
 end
