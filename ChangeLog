@@ -1,3 +1,8 @@
+Tue Aug 13 08:52:18 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/syntax/literals.rdoc: [DOC] String literal concat by @cknadler
+	  [Fixes GH-380] https://github.com/ruby/ruby/pull/380
+
 Mon Aug 12 23:07:21 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_marks_test): inhibit gc for st's operation.

@@ -111,6 +111,18 @@ like a single-quote string (no interpolation or character escaping) while
 <tt>%Q</tt> behaves as a double-quote string.  See Percent Strings below for
 more discussion of the syntax of percent strings.
 
+Adjacent string literals are automatically concatenated by the interpreter:
+
+  "con" "cat" "en" "at" "ion" #=> "concatenation"
+  "This string contains "\
+  "no newlines."              #=> "This string contains no newlines."
+
+Any combination of adjacent single-quote, double-quote, percent strings will
+be concatenated as long as a percent-string is not last.
+
+  %q{a} 'b' "c" #=> "abc"
+  "a" 'b' %q{c} #=> NameError: uninitialized constant q
+
 === Here Documents
 
 If you are writing a large block of text you may use a "here document" or
