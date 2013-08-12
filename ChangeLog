@@ -1,3 +1,7 @@
+Mon Aug 12 12:53:39 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/dbm/dbm.c: [DOC] Reformat headings of DBM class
+
 Mon Aug 12 12:46:31 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/yaml.rb, lib/yaml/: [DOC] Document YAML::DBM#key and add

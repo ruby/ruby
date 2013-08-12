@@ -957,8 +957,7 @@ fdbm_reject(VALUE obj)
 }
 
 /*
- * Documented by mathew meta@pobox.com.
- * = Introduction
+ * == Introduction
  *
  * The DBM class provides a wrapper to a Unix-style
  * {dbm}[http://en.wikipedia.org/wiki/Dbm] or Database Manager library.
@@ -984,7 +983,7 @@ fdbm_reject(VALUE obj)
  * All of these dbm implementations have their own Ruby interfaces
  * available, which provide richer (but varying) APIs.
  *
- * = Cautions
+ * == Cautions
  *
  * Before you decide to use DBM, there are some issues you should consider:
  *
@@ -1009,7 +1008,7 @@ fdbm_reject(VALUE obj)
  * important data. It is probably best used as a fast and easy alternative
  * to a Hash for processing large amounts of data.
  *
- * = Example
+ * == Example
  *
  *  require 'dbm'
  *  db = DBM.open('rfcs', 666, DBM::CREATRW)
