@@ -2697,23 +2697,11 @@ bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
 }
 
 static void
-bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int needs_mod)
+bigdivrem_restoring(BDIGIT *zds, size_t zn, size_t xn, BDIGIT *yds, size_t yn)
 {
     struct big_div_struct bds;
-    BDIGIT q;
-    int shift;
 
-    q = yds[yn-1];
-    shift = nlz(q);
-    if (shift) {
-        bary_small_lshift(yds, yds, yn, shift);
-        zds[xn] = bary_small_lshift(zds, xds, xn, shift);
-    }
-    else {
-        MEMCPY(zds, xds, BDIGIT, xn);
-	zds[xn] = 0;
-    }
-    if (xn+1 < zn) zds[xn+1] = 0;
+    assert(BDIGIT_MSB(yds[yn-1]));
 
     bds.xn = xn;
     bds.yn = yn;
@@ -2735,6 +2723,27 @@ bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *y
     else {
 	bigdivrem1(&bds);
     }
+}
+
+static void
+bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int needs_mod)
+{
+    BDIGIT q;
+    int shift;
+
+    q = yds[yn-1];
+    shift = nlz(q);
+    if (shift) {
+        bary_small_lshift(yds, yds, yn, shift);
+        zds[xn] = bary_small_lshift(zds, xds, xn, shift);
+    }
+    else {
+        MEMCPY(zds, xds, BDIGIT, xn);
+	zds[xn] = 0;
+    }
+    if (xn+1 < zn) zds[xn+1] = 0;
+
+    bigdivrem_restoring(zds, zn, xn, yds, yn);
 
     if (needs_mod && shift) {
         bary_small_rshift(zds, zds, yn, shift, 0);

@@ -1,3 +1,7 @@
+Tue Aug 13 23:01:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_restoring): Extracted from bigdivrem_normal.
+
 Tue Aug 13 22:12:59 2013  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* random.c (rb_random_ulong_limited): coerce before check negative.
