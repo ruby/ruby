@@ -54,7 +54,7 @@ Mon Aug 12 02:51:32 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 	  [Bug #8644]. Before it rb_io_stdio_file set ifp->stdio_file.
 	  Therefore add manually setting the value.
 
-	* ext/readline/readline.c (readline_s_set_onput): ditto.
+	* ext/readline/readline.c (readline_s_set_output): ditto.
 
 Sun Aug 11 23:27:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
