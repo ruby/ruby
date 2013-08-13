@@ -1,3 +1,9 @@
+Tue Aug 13 23:38:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big_div_struct): ynzero field removed.
+	  (bigdivrem1): Follow the above change.
+	  (bigdivrem_restoring): Ditto.
+
 Tue Aug 13 23:01:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_restoring): Extracted from bigdivrem_normal.
