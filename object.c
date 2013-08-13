@@ -3242,6 +3242,7 @@ Init_Object(void)
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
+    rb_undef_method(rb_cClass, "prepend_features");
 
     /*
      * Document-class: Data

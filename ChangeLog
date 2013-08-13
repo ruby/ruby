@@ -1,3 +1,11 @@
+Tue Aug 13 21:52:15 2013  Kenichi Kamiya  <kachick1@gmail.com>
+
+	* object.c (Init_Object): undef Module#prepend_features on Class, as
+	  well as Module#append_features.  [Fixes GH-376]
+
+	* test_class.rb: Added test for above. And ensure type checking
+	  on similar methods as module_function.
+
 Tue Aug 13 08:52:18 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/syntax/literals.rdoc: [DOC] String literal concat by @cknadler

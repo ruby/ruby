@@ -105,6 +105,32 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_extend_object
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:extend_object).bind(c).call(Object.new)
+    end
+  end
+
+  def test_append_features
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:append_features).bind(c).call(Module.new)
+    end
+  end
+
+  def test_prepend_features
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:prepend_features).bind(c).call(Module.new)
+    end
+  end
+
+  def test_module_specific_methods
+    assert_empty(Class.private_instance_methods(true) &
+      [:module_function, :extend_object, :append_features, :prepend_features])
+  end
+
   def test_method_redefinition
     feature2155 = '[ruby-dev:39400]'
 
