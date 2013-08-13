@@ -1,3 +1,9 @@
+Wed Aug 14 00:18:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big_div_struct): Remove xn and j field.  Add zn field. 
+	  (bigdivrem1): Follow the above change.
+	  (bigdivrem_restoring): Ditto.
+
 Tue Aug 13 23:38:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_div_struct): ynzero field removed.

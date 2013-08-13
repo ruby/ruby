@@ -2625,7 +2625,7 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
 }
 
 struct big_div_struct {
-    size_t xn, yn, j;
+    size_t yn, zn;
     BDIGIT *yds, *zds;
     volatile VALUE stop;
 };
@@ -2635,33 +2635,33 @@ bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
     size_t yn = bds->yn;
-    size_t j;
+    size_t zn = bds->zn;
     BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
-    j = bds->j;
     do {
 	if (bds->stop) {
-	    bds->j = j;
+	    bds->zn = zn;
 	    return 0;
         }
-	if (zds[j] == yds[yn-1]) q = BDIGMAX;
-	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[yn-1]);
+	if (zds[zn-1] == yds[yn-1]) q = BDIGMAX;
+	else q = (BDIGIT)((BIGUP(zds[zn-1]) + zds[zn-2])/yds[yn-1]);
 	if (q) {
-            num = bigdivrem_mulsub(zds+j-yn, yn+1,
+            num = bigdivrem_mulsub(zds+zn-(yn+1), yn+1,
                                    q,
                                    yds, yn);
 	    while (num) { /* "add back" required */
 		q--;
-                num = bary_add(zds+j-yn, yn,
-                               zds+j-yn, yn,
+                num = bary_add(zds+zn-(yn+1), yn,
+                               zds+zn-(yn+1), yn,
                                yds, yn);
                 num--;
 	    }
 	}
-	zds[j] = q;
-    } while (--j >= yn);
+        zn--;
+	zds[zn] = q;
+    } while (zn > yn);
     return 0;
 }
 
@@ -2704,12 +2704,11 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, size_t xn, BDIGIT *yds, size_t yn)
     assert(BDIGIT_MSB(yds[yn-1]));
 
     for (ynzero = 0; !yds[ynzero]; ynzero++);
-    bds.xn = xn - ynzero;
     bds.yn = yn - ynzero;
     bds.zds = zds + ynzero;
     bds.yds = yds + ynzero;
     bds.stop = Qfalse;
-    bds.j = zn - 1 - ynzero;
+    bds.zn = zn - ynzero;
     if (xn > 10000 || yn > 10000) {
       retry:
 	bds.stop = Qfalse;
