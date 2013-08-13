@@ -1,3 +1,8 @@
+Wed Aug 14 00:51:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_restoring): xn argument removed.
+	  (bigdivrem_normal): Follow the above change.
+
 Wed Aug 14 00:18:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_div_struct): Remove xn and j field.  Add zn field.

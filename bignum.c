@@ -2696,7 +2696,7 @@ bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
 }
 
 static void
-bigdivrem_restoring(BDIGIT *zds, size_t zn, size_t xn, BDIGIT *yds, size_t yn)
+bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
 {
     struct big_div_struct bds;
     size_t ynzero;
@@ -2709,7 +2709,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, size_t xn, BDIGIT *yds, size_t yn)
     bds.yds = yds + ynzero;
     bds.stop = Qfalse;
     bds.zn = zn - ynzero;
-    if (xn > 10000 || yn > 10000) {
+    if (bds.zn > 10000 || bds.yn > 10000) {
       retry:
 	bds.stop = Qfalse;
 	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
@@ -2742,7 +2742,7 @@ bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *y
     }
     if (xn+1 < zn) zds[xn+1] = 0;
 
-    bigdivrem_restoring(zds, zn, xn, yds, yn);
+    bigdivrem_restoring(zds, zn, yds, yn);
 
     if (needs_mod && shift) {
         bary_small_rshift(zds, zds, yn, shift, 0);
