@@ -185,7 +185,7 @@ Sat Aug 10 12:49:50 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb
 	  (REXML::Parsers::BaseParser::CDATA_END): Use "\A" instead of "^".
-	  It is not an used constant but I fix it. (Or shuold I remove it?)
+	  It is not an used constant but I fix it. (Or should I remove it?)
 
 Sat Aug 10 12:47:19 2013  Kouhei Sutou  <kou@cozmixng.org>
 
