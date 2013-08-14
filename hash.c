@@ -1264,10 +1264,14 @@ static NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *  Element Assignment---Associates the value given by
  *  <i>value</i> with the key given by <i>key</i>.
  *  <i>key</i> should not have its value changed while it is in
- *  use as a key (a <code>String</code> passed as a key will be
- *  duplicated and frozen).
+ *  use as a key (an <code>unfrozen String</code> passed as a
+ *  key will be duplicated and frozen).
  *
- *     h = { "a" => 100, "b" => 200 }
+ *     a = "a"
+ *     b = "b".freeze
+ *     h = { a => 100, b => 200 }
+ *     h.key(100).equal? a #=> false
+ *     h.key(200).equal? b #=> true
  *     h["a"] = 9
  *     h["c"] = 4
  *     h   #=> {"a"=>9, "b"=>200, "c"=>4}
