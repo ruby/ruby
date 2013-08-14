@@ -1749,6 +1749,26 @@ class TestModule < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_value_of_define_method
+    retvals = []
+    Class.new.class_eval do
+      retvals << define_method(:foo){}
+      retvals << define_method(:bar, instance_method(:foo))
+    end
+    assert_equal :foo, retvals[0]
+    assert_equal :bar, retvals[1]
+  end
+
+  def test_return_value_of_define_singleton_method
+    retvals = []
+    Class.new do
+      retvals << define_singleton_method(:foo){}
+      retvals << define_singleton_method(:bar, method(:foo))
+    end
+    assert_equal :foo, retvals[0]
+    assert_equal :bar, retvals[1]
+  end
+
   private
 
   def assert_top_method_is_private(method)

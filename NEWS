@@ -22,6 +22,8 @@ with all sufficient information, see the ChangeLog file.
   * "42ri" and "3.14ri" are evaluated as Complex(0, 42r) and Complex(0, 3.14r),
     respectively.
 
+* def-expr now returns the symbol of its name instead of nil.
+
 === Core classes updates (outstanding ones only)
 
 * Binding
@@ -100,6 +102,10 @@ with all sufficient information, see the ChangeLog file.
 * Module#ancestors
   * The ancestors of a singleton class now include singleton classes,
     in particular itself.
+
+* Module#define_method and Object#define_singleton_method
+  * Now they return the symbols of the defined methods, not the methods/procs
+    themselves.
 
 * Numeric#quo
   * Raises TypeError instead of ArgumentError if the receiver doesn't have

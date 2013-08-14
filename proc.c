@@ -1569,8 +1569,8 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
 
 /*
  *  call-seq:
- *     define_method(symbol, method)     -> new_method
- *     define_method(symbol) { block }   -> proc
+ *     define_method(symbol, method)     -> symbol
+ *     define_method(symbol) { block }   -> symbol
  *
  *  Defines an instance method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
@@ -1667,7 +1667,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
-    return body;
+    return ID2SYM(id);
 }
 
 /*

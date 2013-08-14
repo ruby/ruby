@@ -1,3 +1,13 @@
+Wed Aug 14 14:28:39 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): now they return the symbols of the
+	  defined methods, not the methods/procs themselves.
+	  [ruby-dev:42151] [Feature #3753]
+
+	* NEWS: documents about above change and def-expr (see r42337).
+
+	* test/ruby/test_module.rb: tests about above change.
+
 Wed Aug 14 00:51:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_restoring): xn argument removed.
