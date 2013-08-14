@@ -1,3 +1,8 @@
+Thu Aug 15 02:32:40 2013  Zachary Scott  <e@zzak.io>
+
+	* hash.c (rb_hash_aset): [DOC] Document key dup patch by @kachick
+	  [Fixes GH-382] https://github.com/ruby/ruby/pull/382
+
 Wed Aug 14 14:28:39 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): now they return the symbols of the
