@@ -30,7 +30,16 @@ class TestNotImplement < Test::Unit::TestCase
         pid = nil
       }
     rescue Timeout::Error
-      ps = `ps -l #{pid}`
+      case RUBY_PLATFORM
+      when /linux/ # assume Linux Distribution uses procps
+        ps = `ps -eLf #{pid}`
+      when /freebsd/
+        ps = `ps -lH #{pid}`
+      when /darwin/
+        ps = `ps -lM #{pid}`
+      else
+        ps = `ps -l #{pid}`
+      end
       Process.kill(:KILL, pid)
       Process.wait pid
       assert_equal nil,  pid, ps
