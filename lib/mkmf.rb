@@ -938,18 +938,31 @@ def have_header(header, preheaders = nil, &b)
 end
 
 # Returns whether or not the given +framework+ can be found on your system.
-# If found, a macro is passed as a preprocessor constant to the compiler using
-# the framework name, in uppercase, prepended with 'HAVE_FRAMEWORK_'.
+# If found, a macro is passed as a preprocessor constant to the compiler
+# using the framework name, in uppercase, prepended with +HAVE_FRAMEWORK_+.
 #
-# For example, if have_framework('Ruby') returned true, then the HAVE_FRAMEWORK_RUBY
-# preprocessor macro would be passed to the compiler.
+# For example, if <code>have_framework('Ruby')</code> returned true, then
+# the +HAVE_FRAMEWORK_RUBY+ preprocessor macro would be passed to the
+# compiler.
 #
+# If +fw+ is a pair of the framework name and its header file name
+# that header file is checked, instead of the normally used header
+# file which is named same as the framework.
 def have_framework(fw, &b)
+  if Array === fw
+    fw, header = *fw
+  else
+    header = "#{fw}.h"
+  end
   checking_for fw do
-    src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
-    if try_link(src, opt = "-framework #{fw}", &b)
+    src = cpp_include("#{fw}/#{header}") << "\n" "int main(void){return 0;}"
+    opt = " -framework #{fw}"
+    if try_link(src, "-ObjC#{opt}", &b)
       $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
-      $LDFLAGS << " " << opt
+      # TODO: non-worse way than this hack, to get rid of separating
+      # option and its argument.
+      $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+      $LDFLAGS << opt
       true
     else
       false
