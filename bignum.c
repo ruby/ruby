@@ -2727,11 +2727,9 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
 static void
 bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int needs_mod)
 {
-    BDIGIT q;
     int shift;
 
-    q = yds[yn-1];
-    shift = nlz(q);
+    shift = nlz(yds[yn-1]);
     if (shift) {
         bary_small_lshift(yds, yds, yn, shift);
         zds[xn] = bary_small_lshift(zds, xds, xn, shift);

@@ -1,3 +1,7 @@
+Thu Aug 15 23:26:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_normal): Remove a local variable.
+
 Thu Aug 15 23:08:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_karatsuba): Use bigdivrem_restoring directly to
