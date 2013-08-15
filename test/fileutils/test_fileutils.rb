@@ -1243,6 +1243,7 @@ class TestFileUtils
 
     begin
       Dir.rmdir '/'
+    rescue Errno::ENOTEMPTY
     rescue => e
       assert_raise(e.class) {
         # Dir.rmdir('') raises Errno::ENOENT.
