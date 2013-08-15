@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tempfile'
+require "thread"
 require_relative 'envutil'
 require_relative 'ut_eof'
 
@@ -116,6 +117,31 @@ class TestFile < Test::Unit::TestCase
       f.truncate 10
       assert_equal("\0" * 7, f.read(100), "[ruby-dev:24532]")
     }
+  end
+
+  def test_truncate_size
+    Tempfile.create("test-truncate") do |f|
+      q1 = Queue.new
+      q2 = Queue.new
+
+      Thread.new do
+        data = ''
+        64.times do |i|
+          data << i.to_s
+          f.rewind
+          f.print data
+          f.truncate(data.bytesize)
+          q1.push data.bytesize
+          q2.pop
+        end
+        q1.push nil
+      end
+
+      while size = q1.pop
+        assert_equal size, File.size(f.path)
+        q2.push true
+      end
+    end
   end
 
   def test_read_all_extended_file
