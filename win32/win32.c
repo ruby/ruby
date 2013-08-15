@@ -4339,7 +4339,7 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
 	    }
 	    sp->tv_sec = count.QuadPart / freq.QuadPart;
 	    if (freq.QuadPart < 1000000000)
-		sp->tv_nsec = (count.QuadPart % freq.QuadPart) * (1000000000 / freq.QuadPart);
+		sp->tv_nsec = (count.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
 	    else
 		sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * (1000000000.0 / freq.QuadPart));
 	    return 0;
