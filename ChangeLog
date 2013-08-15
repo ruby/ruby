@@ -1,3 +1,7 @@
+Fri Aug 16 00:33:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big2str1): Truncate topmost zeros of x.
+
 Fri Aug 16 00:00:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_divmod): Simplify an expression.

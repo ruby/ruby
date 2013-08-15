@@ -4497,18 +4497,25 @@ rb_big2str1(VALUE x, int base)
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
+    BDIGIT *xds;
+    size_t xn;
 
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
     }
-    if (BIGZEROP(x)) {
+
+    xds = BDIGITS(x);
+    xn = RBIGNUM_LEN(x);
+    BARY_TRUNC(xds, xn);
+
+    if (xn == 0) {
 	return rb_usascii_str_new2("0");
     }
 
     if (base < 2 || 36 < base)
 	rb_raise(rb_eArgError, "invalid radix %d", base);
 
-    if (RBIGNUM_LEN(x) >= LONG_MAX/BITSPERDIG) {
+    if (xn >= LONG_MAX/BITSPERDIG) {
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
     }
 
@@ -4520,13 +4527,13 @@ rb_big2str1(VALUE x, int base)
     power_level = 0;
     power = power_cache_get_power(base, power_level, NULL);
     while (power_level < MAX_BASE36_POWER_TABLE_ENTRIES &&
-           RBIGNUM_LEN(power) <= (RBIGNUM_LEN(x)+1)/2) {
+           (size_t)RBIGNUM_LEN(power) <= (xn+1)/2) {
         power_level++;
         power = power_cache_get_power(base, power_level, NULL);
     }
     assert(power_level != MAX_BASE36_POWER_TABLE_ENTRIES);
 
-    if (RBIGNUM_LEN(power) <= RBIGNUM_LEN(x)) {
+    if ((size_t)RBIGNUM_LEN(power) <= xn) {
         /*
          * This increment guarantees x < power_cache_get_power(base, power_level)
          * without invoking it actually.
@@ -4549,19 +4556,18 @@ rb_big2str1(VALUE x, int base)
     b2s_data.ptr = NULL;
 
     if (power_level == 0) {
-	big2str_orig(&b2s_data, BDIGITS(x), RBIGNUM_LEN(x), 0);
+	big2str_orig(&b2s_data, xds, xn, 0);
     }
     else {
-        VALUE tmpx = 0;
-        BDIGIT *xds;
-        size_t xn, wn;
-        xn = RBIGNUM_LEN(x);
+        VALUE tmpw = 0;
+        BDIGIT *wds;
+        size_t wn;
         wn = bitsize(xn) + 1 + RBIGNUM_LEN(power);
-        xds = ALLOCV_N(BDIGIT, tmpx, xn + wn);
-        MEMCPY(xds, BDIGITS(x), BDIGIT, xn);
-	big2str_karatsuba(&b2s_data, xds, xn, wn, power_level, 0);
-        if (tmpx)
-            ALLOCV_END(tmpx);
+        wds = ALLOCV_N(BDIGIT, tmpw, xn + wn);
+        MEMCPY(wds, xds, BDIGIT, xn);
+	big2str_karatsuba(&b2s_data, wds, xn, wn, power_level, 0);
+        if (tmpw)
+            ALLOCV_END(tmpw);
     }
     RB_GC_GUARD(x);
 
