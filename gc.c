@@ -859,7 +859,7 @@ heap_increment(rb_objspace_t *objspace)
     rgengc_report(5, objspace, "heap_increment: heap_inc: %d\n", heap_inc);
 
     if (heap_inc > 0) {
-        heap_assign_slot(objspace);
+	heap_assign_slot(objspace);
 	heap_inc--;
 	return TRUE;
     }
@@ -2388,8 +2388,6 @@ gc_lazy_sweep(rb_objspace_t *objspace)
     int result = FALSE;
 
     gc_prof_sweep_timer_start(objspace);
-
-    heap_increment(objspace);
 
     slot = objspace->heap.sweep_slots;
 

@@ -1,3 +1,8 @@
+Thu Aug 15 17:43:15 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_lazy_sweep): remove heap_increment() here because heap_inc
+	  may be 0.
+
 Thu Aug 15 16:59:56 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_rewind): remove fsync() for Windows to improve the
