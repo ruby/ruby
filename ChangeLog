@@ -1,3 +1,9 @@
+Fri Aug 16 02:14:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (rb_clock_gettime): add CLOCK_MONOTONIC support on OS X.
+	  http://developer.apple.com/library/mac/qa/qa1398/_index.html
+	  [Feature #8658]
+
 Fri Aug 16 01:37:43 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_single): Use shift when y is a power of two.

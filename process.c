@@ -82,6 +82,10 @@
 #include <grp.h>
 #endif
 
+#ifdef __APPLE__
+# include <mach/mach_time.h>
+#endif
+
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE rb_cProcessTms;
 #endif
@@ -6743,6 +6747,23 @@ rb_clock_gettime(int argc, VALUE *argv)
             ts.tv_nsec = 0;
             goto success;
         }
+
+#ifdef __APPLE__
+#define RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC"))
+        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC) {
+	    static mach_timebase_info_data_t sTimebaseInfo;
+	    uint64_t t = mach_absolute_time();
+
+	    if ( sTimebaseInfo.denom == 0 ) {
+		(void) mach_timebase_info(&sTimebaseInfo);
+	    }
+
+	    t = t * sTimebaseInfo.numer / sTimebaseInfo.denom;
+            ts.tv_sec = t / 1000000000;
+            ts.tv_nsec = t % 1000000000;
+            goto success;
+        }
+#endif
     }
     else {
 #if defined(HAVE_CLOCK_GETTIME)
@@ -7066,6 +7087,8 @@ Init_process(void)
 #endif
 #ifdef CLOCK_MONOTONIC
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
+#elif defined(RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC)
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
