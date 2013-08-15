@@ -4310,6 +4310,47 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 /* License: Ruby's */
+typedef int clockid_t;
+#define CLOCK_REALTIME  0
+#define CLOCK_MONOTONIC 1
+int
+clock_gettime(clockid_t clock_id, struct timespec *sp)
+{
+    switch (clock_id) {
+      case CLOCK_REALTIME:
+	{
+	    struct timeval tv;
+	    gettimeofday(&tv, NULL);
+	    sp->tv_sec = tv.tv_sec;
+	    sp->tv_nsec = tv.tv_usec * 1000;
+	    return 0;
+	}
+      case CLOCK_MONOTONIC:
+	{
+	    LARGE_INTEGER freq;
+	    LARGE_INTEGER count;
+	    if (!QueryPerformanceFrequency(&freq)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    if (!QueryPerformanceCounter(&count)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    sp->tv_sec = count.QuadPart / freq.QuadPart;
+	    if (freq.QuadPart < 1000000000)
+		sp->tv_nsec = (count.QuadPart % freq.QuadPart) * (1000000000 / freq.QuadPart);
+	    else
+		sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * (1000000000.0 / freq.QuadPart));
+	    return 0;
+	}
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+}
+
+/* License: Ruby's */
 char *
 rb_w32_getcwd(char *buffer, int size)
 {

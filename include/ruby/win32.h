@@ -124,6 +124,10 @@ typedef unsigned int uintptr_t;
 
 #define WNOHANG -1
 
+typedef int clockid_t;
+#define CLOCK_REALTIME  0
+#define CLOCK_MONOTINIC 1
+
 #undef getc
 #undef putc
 #undef fgetc
@@ -312,6 +316,7 @@ extern int rb_w32_uchown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int rb_w32_ulink(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
+extern int clock_gettime(clockid_t, struct timespec *);
 extern rb_pid_t waitpid (rb_pid_t, int *, int);
 extern rb_pid_t rb_w32_spawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_aspawn(int, const char *, char *const *);

@@ -536,6 +536,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define TIMET2NUM(v) LONG2NUM(v)
 #define NUM2TIMET(v) NUM2LONG(v)
 !endif
+#define CLOCKID2NUM(v) INT2NUM(v)
+#define NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_RLIM_T 0
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define SIZEOF_SIZE_T 8
@@ -638,6 +640,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_MEMCMP 1
 #define HAVE_MEMMOVE 1
 #define HAVE_MKDIR 1
+#define HAVE_CLOCK_GETTIME 1
 #define HAVE_SPAWNV 1
 #define HAVE_STRCASECMP 1
 #define HAVE_STRNCASECMP 1
