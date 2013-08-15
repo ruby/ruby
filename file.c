@@ -4244,7 +4244,11 @@ rb_file_truncate(VALUE obj, VALUE len)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
+#ifndef _WIN32
     rb_io_flush(obj);
+#else
+    rb_io_flush_raw(obj, 0);
+#endif
 #ifdef HAVE_FTRUNCATE
     if (ftruncate(fptr->fd, pos) < 0)
 	rb_sys_fail_path(fptr->pathv);

@@ -1464,6 +1464,34 @@ nogvl_fsync(void *ptr)
 }
 #endif
 
+VALUE
+rb_io_flush_raw(VALUE io, int sync)
+{
+    rb_io_t *fptr;
+
+    if (!RB_TYPE_P(io, T_FILE)) {
+        return rb_funcall(io, id_flush, 0);
+    }
+
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
+
+    if (fptr->mode & FMODE_WRITABLE) {
+        if (io_fflush(fptr) < 0)
+            rb_sys_fail(0);
+#ifdef _WIN32
+	if (sync && GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
+	    rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd);
+	}
+#endif
+    }
+    if (fptr->mode & FMODE_READABLE) {
+        io_unread(fptr);
+    }
+
+    return io;
+}
+
 /*
  *  call-seq:
  *     ios.flush    -> ios
@@ -1483,29 +1511,7 @@ nogvl_fsync(void *ptr)
 VALUE
 rb_io_flush(VALUE io)
 {
-    rb_io_t *fptr;
-
-    if (!RB_TYPE_P(io, T_FILE)) {
-        return rb_funcall(io, id_flush, 0);
-    }
-
-    io = GetWriteIO(io);
-    GetOpenFile(io, fptr);
-
-    if (fptr->mode & FMODE_WRITABLE) {
-        if (io_fflush(fptr) < 0)
-            rb_sys_fail(0);
-#ifdef _WIN32
-	if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
-	    rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd);
-	}
-#endif
-    }
-    if (fptr->mode & FMODE_READABLE) {
-        io_unread(fptr);
-    }
-
-    return io;
+    return rb_io_flush_raw(io, 1);
 }
 
 /*

@@ -283,6 +283,7 @@ void ruby_set_inplace_mode(const char *);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 void rb_write_error_str(VALUE mesg);
+VALUE rb_io_flush_raw(VALUE, int);
 
 /* iseq.c */
 VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);

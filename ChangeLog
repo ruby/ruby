@@ -1,3 +1,12 @@
+Thu Aug 15 20:51:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c, internal.h (rb_io_flush_raw): new function to select calling
+	  fsync() (on Windows).
+
+	* io.c (rb_io_flush_raw): use above function.
+
+	* file.c (rb_file_truncate): use above function.
+
 Thu Aug 15 18:39:31 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (clock_gettime): improve precision when freq is less
