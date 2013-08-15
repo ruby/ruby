@@ -781,7 +781,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest
+%type <id>   f_kwrest f_label
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -4593,9 +4593,16 @@ f_arg		: f_arg_item
 		    }
 		;
 
-f_kw		: tLABEL arg_value
+
+f_label 	: tLABEL
 		    {
 			arg_var(formal_argument(get_id($1)));
+			$$ = $1;
+		    }
+		;
+
+f_kw		: f_label arg_value
+		    {
 			$$ = assignable($1, $2);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4603,9 +4610,8 @@ f_kw		: tLABEL arg_value
 			$$ = rb_assoc_new($$, $2);
 		    %*/
 		    }
-		| tLABEL
+		| f_label
 		    {
-			arg_var(formal_argument(get_id($1)));
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4615,9 +4621,8 @@ f_kw		: tLABEL arg_value
 		    }
 		;
 
-f_block_kw	: tLABEL primary_value
+f_block_kw	: f_label primary_value
 		    {
-			arg_var(formal_argument(get_id($1)));
 			$$ = assignable($1, $2);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4625,9 +4630,8 @@ f_block_kw	: tLABEL primary_value
 			$$ = rb_assoc_new($$, $2);
 		    %*/
 		    }
-		| tLABEL
+		| f_label
 		    {
-			arg_var(formal_argument(get_id($1)));
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
 			$$ = NEW_KW_ARG(0, $$);
@@ -4701,9 +4705,9 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		;
 
-f_opt		: tIDENTIFIER '=' arg_value
+f_opt		: f_norm_arg '=' arg_value
 		    {
-			arg_var(formal_argument(get_id($1)));
+			arg_var(get_id($1));
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
@@ -4713,9 +4717,9 @@ f_opt		: tIDENTIFIER '=' arg_value
 		    }
 		;
 
-f_block_opt	: tIDENTIFIER '=' primary_value
+f_block_opt	: f_norm_arg '=' primary_value
 		    {
-			arg_var(formal_argument(get_id($1)));
+			arg_var(get_id($1));
 			$$ = assignable($1, $3);
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
