@@ -2800,7 +2800,7 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
         if (xn + extra_words <= qn)
             zds = qds;
         else
-            zds = ALLOCV_N(BDIGIT, tmpz, xn + extra_words);
+            zds = ALLOCV_N(BDIGIT, tmpz, zn);
         MEMCPY(zds, xds, BDIGIT, xn);
         BDIGITS_ZERO(zds+xn, zn-xn);
 
