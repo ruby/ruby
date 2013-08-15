@@ -1,3 +1,8 @@
+Thu Aug 15 16:59:56 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_rewind): remove fsync() for Windows to improve the
+	  performance.
+
 Thu Aug 15 16:30:23 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#test_rmdir):
