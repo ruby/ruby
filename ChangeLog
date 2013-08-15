@@ -1,3 +1,9 @@
+Thu Aug 15 15:49:35 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): [DOC] FreeBSD 7.1 supports
+	  CLOCK_THREAD_CPUTIME_ID.
+	  http://www.freebsd.org/releases/7.1R/relnotes.html
+
 Thu Aug 15 14:30:23 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h, win32/Makefile.sub, win32/win32.c
