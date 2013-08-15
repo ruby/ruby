@@ -1,3 +1,9 @@
+Thu Aug 15 23:08:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_karatsuba): Use bigdivrem_restoring directly to
+	  reduce working buffer and memory copy.
+	  (rb_big2str1): Allocate working buffer for big2str_karatsuba here.
+
 Thu Aug 15 20:51:29 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c, internal.h (rb_io_flush_raw): new function to select calling

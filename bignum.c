@@ -4336,15 +4336,14 @@ big2str_orig(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
 }
 
 static void
-big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn,
-		  int power_level, size_t taillen,
-                  BDIGIT *wds, size_t wn)
+big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
+		  int power_level, size_t taillen)
 {
     VALUE b;
     size_t half_numdigits, lower_numdigits;
     int lower_power_level;
     size_t bn;
-    BDIGIT *bds;
+    const BDIGIT *bds;
     size_t len;
 
     /*
@@ -4409,31 +4408,57 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn,
 	big2str_orig(b2s, xds, xn, taillen);
     }
     else {
-        VALUE tmpw = 0;
         BDIGIT *qds, *rds;
         size_t qn, rn;
+        int extra_words;
+        BDIGIT *tds;
+        int shift;
+
         if (lower_power_level != power_level-1 && b2s->ptr) {
             len = (half_numdigits - lower_numdigits) * 2;
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-        rn = bn;
-        qn = xn+BIGDIVREM_EXTRA_WORDS;
-        if (wn < rn + qn) {
-            wn = bn * 4 + BIGDIVREM_EXTRA_WORDS;
-            assert(rn + qn <= wn);
-            wds = ALLOCV_N(BDIGIT, tmpw, wn);
+
+        shift = nlz(bds[bn-1]);
+
+        extra_words = bigdivrem_num_extra_words(xn, bn);
+        qn = xn + extra_words;
+
+        if (shift == 0) {
+            /* bigdivrem_restoring will not modify y.
+             * So use bds directly.  */
+            tds = (BDIGIT *)bds;
+            xds[xn] = 0;
         }
-        rds = wds;
-        qds = wds+rn;
-        bary_divmod(qds, qn, rds, rn, xds, xn, bds, bn);
+        else {
+            /* bigdivrem_restoring will modify y.
+             * So use temporary buffer.  */
+            tds = xds + qn;
+            assert(qn + bn <= xn + wn);
+            bary_small_lshift(tds, bds, bn, shift);
+            xds[xn] = bary_small_lshift(xds, xds, xn, shift);
+        }
+
+        if (xn+1 < qn) xds[xn+1] = 0;
+
+        bigdivrem_restoring(xds, qn, tds, bn);
+
+        rds = xds;
+        rn = bn;
+
+        qds = xds + bn;
+        qn = qn - bn;
+
+        if (shift) {
+            bary_small_rshift(rds, rds, rn, shift, 0);
+        }
+
         BARY_TRUNC(qds, qn);
         assert(qn <= bn);
-        big2str_karatsuba(b2s, qds, qn, lower_power_level, lower_numdigits+taillen, qds+qn, wn-(rn+qn));
+        big2str_karatsuba(b2s, qds, qn, xn+wn - (rn+qn), lower_power_level, lower_numdigits+taillen);
         BARY_TRUNC(rds, rn);
-        big2str_karatsuba(b2s, rds, rn, lower_power_level, taillen, rds+rn, wn-rn);
-        if (tmpw)
-            ALLOCV_END(tmpw);
+        big2str_karatsuba(b2s, rds, rn, xn+wn - rn, lower_power_level, taillen);
     }
 }
 
@@ -4529,7 +4554,16 @@ rb_big2str1(VALUE x, int base)
 	big2str_orig(&b2s_data, BDIGITS(x), RBIGNUM_LEN(x), 0);
     }
     else {
-	big2str_karatsuba(&b2s_data, BDIGITS(x), RBIGNUM_LEN(x), power_level, 0, NULL, 0);
+        VALUE tmpx = 0;
+        BDIGIT *xds;
+        size_t xn, wn;
+        xn = RBIGNUM_LEN(x);
+        wn = bitsize(xn) + 1 + RBIGNUM_LEN(power);
+        xds = ALLOCV_N(BDIGIT, tmpx, xn + wn);
+        MEMCPY(xds, BDIGITS(x), BDIGIT, xn);
+	big2str_karatsuba(&b2s_data, xds, xn, wn, power_level, 0);
+        if (tmpx)
+            ALLOCV_END(tmpx);
     }
     RB_GC_GUARD(x);
 
