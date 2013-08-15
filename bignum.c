@@ -2021,7 +2021,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     size_t wnc;
     VALUE work = 0;
 
-    /* "p" means "positive".  Actually "non-negative", though. */
+    /* "p" stands for "positive".  Actually it means "non-negative", though. */
     size_t x0n; const BDIGIT *x0ds;
     size_t x1n; const BDIGIT *x1ds;
     size_t x2n; const BDIGIT *x2ds;
@@ -2047,7 +2047,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     size_t z1n; BDIGIT *z1ds; int z1p;
     size_t z2n; BDIGIT *z2ds; int z2p;
     size_t z3n; BDIGIT *z3ds; int z3p;
-    size_t z4n; BDIGIT *z4ds; int z4p;
+    size_t z4n; BDIGIT *z4ds;
 
     size_t zzn; BDIGIT *zzds;
 
@@ -2271,7 +2271,7 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
     z0n = t0n; z0ds = t0ds;
 
     /* z4 <- z(inf) == t4 */
-    z4n = t4n; z4ds = t4ds; z4p = t4p;
+    z4n = t4n; z4ds = t4ds;
 
     /* z3 <- (z(-2) - z(1)) / 3 == (t3 - t1) / 3 */
     if (t3p == t1p) {
@@ -2374,7 +2374,9 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
      */
 
     MEMCPY(zzds, z0ds, BDIGIT, z0n);
-    BDIGITS_ZERO(zzds + z0n, zzn - z0n);
+    BDIGITS_ZERO(zzds + z0n, 4*n - z0n);
+    MEMCPY(zzds + 4*n, z4ds, BDIGIT, z4n);
+    BDIGITS_ZERO(zzds + 4*n + z4n, zzn - (4*n + z4n));
     if (z1p)
         bary_add(zzds +   n, zzn -   n, zzds +   n, zzn -   n, z1ds, z1n);
     else
@@ -2387,10 +2389,6 @@ bary_mul_toom3(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGI
         bary_add(zzds + 3*n, zzn - 3*n, zzds + 3*n, zzn - 3*n, z3ds, z3n);
     else
         bary_sub(zzds + 3*n, zzn - 3*n, zzds + 3*n, zzn - 3*n, z3ds, z3n);
-    if (z4p)
-        bary_add(zzds + 4*n, zzn - 4*n, zzds + 4*n, zzn - 4*n, z4ds, z4n);
-    else
-        bary_sub(zzds + 4*n, zzn - 4*n, zzds + 4*n, zzn - 4*n, z4ds, z4n);
 
     BARY_TRUNC(zzds, zzn);
     MEMCPY(zds, zzds, BDIGIT, zzn);

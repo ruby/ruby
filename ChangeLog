@@ -1,3 +1,7 @@
+Fri Aug 16 02:20:39 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_toom3): Reduce a branch.
+
 Fri Aug 16 02:14:09 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c (rb_clock_gettime): add CLOCK_MONOTONIC support on OS X.
