@@ -2683,16 +2683,25 @@ bigdivrem_num_extra_words(size_t xn, size_t yn)
 static BDIGIT
 bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
 {
-    size_t i;
-    BDIGIT_DBL t2;
-    t2 = 0;
-    i = xn;
-    while (i--) {
-        t2 = BIGUP(t2) + xds[i];
-        qds[i] = (BDIGIT)(t2 / y);
-        t2 %= y;
+    assert(0 < xn);
+    if (POW2_P(y)) {
+        BDIGIT r;
+        r = xds[0] & (y-1);
+        bary_small_rshift(qds, xds, xn, bitsize(y)-1, 0);
+        return r;
     }
-    return (BDIGIT)t2;
+    else {
+        size_t i;
+        BDIGIT_DBL t2;
+        t2 = 0;
+        i = xn;
+        while (i--) {
+            t2 = BIGUP(t2) + xds[i];
+            qds[i] = (BDIGIT)(t2 / y);
+            t2 %= y;
+        }
+        return (BDIGIT)t2;
+    }
 }
 
 static void

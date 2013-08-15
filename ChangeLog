@@ -1,3 +1,7 @@
+Fri Aug 16 01:37:43 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_single): Use shift when y is a power of two.
+
 Fri Aug 16 01:09:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_restoring): Use bigdivrem_single if non-topmost
