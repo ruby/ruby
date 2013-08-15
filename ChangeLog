@@ -1,3 +1,8 @@
+Fri Aug 16 01:09:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_restoring): Use bigdivrem_single if non-topmost
+	  BDIGITs of y are zero.
+
 Fri Aug 16 00:33:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Truncate topmost zeros of x.

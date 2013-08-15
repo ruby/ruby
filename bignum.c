@@ -2704,6 +2704,16 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     assert(BDIGIT_MSB(yds[yn-1]));
 
     for (ynzero = 0; !yds[ynzero]; ynzero++);
+
+    if (ynzero+1 == yn) {
+        BDIGIT r;
+        r = bigdivrem_single(zds+ynzero, zds+ynzero, zn-ynzero, yds[yn-1]);
+        assert(zds[zn-1] == 0);
+        MEMMOVE(zds+yn, zds+yn-1, BDIGIT, zn - yn);
+        zds[yn-1] = r;
+        return;
+    }
+
     bds.yn = yn - ynzero;
     bds.zds = zds + ynzero;
     bds.yds = yds + ynzero;
