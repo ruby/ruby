@@ -1,3 +1,7 @@
+Fri Aug 16 15:35:10 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{core,strftime}.c: [ruby-core:46990].
+
 Wed Aug 14 09:56:55 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_framework): allow header file to check.
