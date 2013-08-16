@@ -10194,7 +10194,7 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<ID_SCOPE_MASK) & ~(1U<<ID_ATTRSET))
 
 static int
-rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_atttset)
+rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
 {
     const char *m = name;
     const char *e = m + len;
@@ -10278,7 +10278,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    ++m;
 	    break;
 	  case '=':
-	    if (!(allowed_atttset & (1U << type))) return -1;
+	    if (!(allowed_attrset & (1U << type))) return -1;
 	    type = ID_ATTRSET;
 	    ++m;
 	    break;
@@ -10295,11 +10295,11 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
 }
 
 static int
-rb_str_symname_type(VALUE name, unsigned int allowed_atttset)
+rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 {
     const char *ptr = StringValuePtr(name);
     long len = RSTRING_LEN(name);
-    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_atttset);
+    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_attrset);
     RB_GC_GUARD(name);
     return type;
 }
