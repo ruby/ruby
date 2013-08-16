@@ -20,7 +20,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
         end
       },
     }
-    if RUBY_PLATFORM =~ /mswin32|mingw|cygwin|bccwin32/
+    if RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
       config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
     end
     TestWEBrick.start_httpserver(config){|server, addr, port, log|
@@ -40,7 +40,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       req = Net::HTTP::Get.new("/webrick.cgi/%A4%DB%A4%B2/%A4%DB%A4%B2")
       # Path info of res.body is passed via ENV.
       # ENV[] returns different value on Windows depending on locale.
-      unless RUBY_PLATFORM =~ /mswin32|mingw|cygwin|bccwin32/ &&
+      unless RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/ &&
              Encoding.find("locale") != Encoding.find("filesystem")
         http.request(req){|res|
           assert_equal("/\xA4\xDB\xA4\xB2/\xA4\xDB\xA4\xB2", res.body, log.call)}
