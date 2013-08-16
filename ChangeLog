@@ -1,6 +1,6 @@
 Fri Aug 16 11:23:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* file.c (rb_file_size, rb_file_flock): improve parformance of Winodws.
+	* file.c (rb_file_size, rb_file_flock): improve performance of Winodws.
 
 	* file.c (rb_file_truncate): removed unnecessary #ifdef.
 
