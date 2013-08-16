@@ -6655,8 +6655,8 @@ rb_proc_times(VALUE obj)
  *
  *  Ruby provides following types of +clock_id+ if available.
  *
- *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
- *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4
+ *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, Darwin
+ *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, Darwin
  *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63
  *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1
  *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
