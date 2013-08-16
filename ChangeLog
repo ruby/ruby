@@ -1,3 +1,7 @@
+Fri Aug 16 18:09:20 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/profile_test_all.rb: remove space characters from test names.
+
 Fri Aug 16 17:32:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/profile_test_all.rb: refactoring memory profiling tool for

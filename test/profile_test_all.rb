@@ -65,7 +65,7 @@ class MiniTest::Unit::TestCase
   end
 
   def memprofile_test_all_result_result
-    result = ["#{self.class}\##{self.__name__}"]
+    result = ["#{self.class}\##{self.__name__.to_s.gsub(/\s+/, '')}"]
     TEST_ALL_PROFILE_PROCS.each{|proc|
       proc.call(result)
     }
