@@ -1,3 +1,7 @@
+Fri Aug 16 18:12:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/profile_test_all.rb: fix typo.
+
 Fri Aug 16 18:09:20 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/profile_test_all.rb: remove space characters from test names.

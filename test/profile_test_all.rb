@@ -34,7 +34,7 @@ class MiniTest::Unit::TestCase
     TEST_ALL_PROFILE_PROCS << b
   end
 
-  add 'emsize_of_all', *GC.stat.keys do |result|
+  add 'memsize_of_all', *GC.stat.keys do |result|
     result << ObjectSpace.memsize_of_all
     GC.stat(TEST_ALL_PROFILE_GC_STAT_HASH)
     result.concat TEST_ALL_PROFILE_GC_STAT_HASH.values
