@@ -1176,7 +1176,7 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile VALUE file, volatile int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *const cref_arg, volatile VALUE file, volatile int line)
 {
     int state;
     VALUE result = Qundef;
@@ -1198,6 +1198,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, volatile V
     mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
+	NODE *cref = cref_arg;
 	rb_binding_t *bind = 0;
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
