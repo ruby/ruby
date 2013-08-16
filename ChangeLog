@@ -1,3 +1,9 @@
+Fri Aug 16 09:17:00 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_small_rshift): Specify the higher BDIGIT instead of
+	  sign bit.
+	  (big_shift3): Follow the above change.
+
 Fri Aug 16 02:20:39 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_toom3): Reduce a branch.

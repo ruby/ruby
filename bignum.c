@@ -567,16 +567,14 @@ bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 }
 
 static void
-bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, int sign_bit)
+bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT higher_bdigit)
 {
     BDIGIT_DBL num = 0;
     BDIGIT x;
 
     assert(0 <= shift && shift < BITSPERDIG);
 
-    if (sign_bit) {
-	num = (~(BDIGIT_DBL)0) << BITSPERDIG;
-    }
+    num = BIGUP(higher_bdigit);
     while (n--) {
 	num = (num | xds[n]) >> shift;
         x = xds[n];
@@ -4120,7 +4118,7 @@ big_shift3(VALUE x, int lshift_p, size_t shift_numdigits, int shift_numbits)
         zn = xn - s1;
         z = bignew(zn, 0);
         zds = BDIGITS(z);
-        bary_small_rshift(zds, xds+s1, zn, s2, hibitsx != 0);
+        bary_small_rshift(zds, xds+s1, zn, s2, hibitsx != 0 ? BDIGMAX : 0);
         twocomp2abs_bang(z, hibitsx != 0);
     }
     RB_GC_GUARD(x);
