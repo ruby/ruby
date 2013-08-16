@@ -8,6 +8,8 @@ require 'monitor'
 
 module Kernel
 
+  RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
+
   if defined?(gem_original_require) then
     # Ruby ships with a custom_require, override its require
     remove_method :require
@@ -33,10 +35,8 @@ module Kernel
   # The normal <tt>require</tt> functionality of returning false if
   # that file has already been loaded is preserved.
 
-  ACTIVATION_MONITOR = Monitor.new
-
   def require path
-    ACTIVATION_MONITOR.enter
+    RUBYGEMS_ACTIVATION_MONITOR.enter
 
     spec = Gem.find_unresolved_default_spec(path)
     if spec
@@ -118,7 +118,7 @@ module Kernel
 
     raise load_error
   ensure
-    ACTIVATION_MONITOR.exit
+    RUBYGEMS_ACTIVATION_MONITOR.exit
   end
 
   private :require

@@ -96,11 +96,14 @@ class Gem::PackageTask < Rake::PackageTask
   def define
     super
 
-    task :package => [:gem]
-
     gem_file = File.basename gem_spec.cache_file
     gem_path = File.join package_dir, gem_file
     gem_dir  = File.join package_dir, gem_spec.full_name
+
+    task :package => [:gem]
+
+    directory package_dir
+    directory gem_dir
 
     desc "Build the gem file #{gem_file}"
     task :gem => [gem_path]

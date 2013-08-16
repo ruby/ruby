@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.0.6'
+  VERSION = '2.0.7'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -36,9 +36,9 @@ require 'rubygems/errors'
 #
 # Further RubyGems documentation can be found at:
 #
+# * {RubyGems Guides}[http://guides.rubygems.org]
 # * {RubyGems API}[http://rubygems.rubyforge.org/rdoc] (also available from
 #   <tt>gem server</tt>)
-# * {RubyGems Bookshelf}[http://rubygem.org]
 #
 # == RubyGems Plugins
 #

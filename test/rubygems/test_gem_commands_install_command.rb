@@ -1,5 +1,6 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/install_command'
+require 'rubygems/rdoc'
 
 class TestGemCommandsInstallCommand < Gem::TestCase
 
