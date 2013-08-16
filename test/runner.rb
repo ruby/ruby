@@ -12,7 +12,7 @@ end
 
 ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
-require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
+require_relative 'profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
 
 module Test::Unit
   module ZombieHunter

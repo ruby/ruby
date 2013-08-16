@@ -1,52 +1,83 @@
-require 'objspace'
-
 #
 # purpose:
 #  Profile memory usage of each tests.
 #
 # usage:
-#   RUBY_TEST_ALL_PROFILE=true make test-all
+#   RUBY_TEST_ALL_PROFILE=[file] make test-all
 #
 # output:
-#   ./test_all_profile
+#   [file] specified by RUBY_TEST_ALL_PROFILE
+#   If [file] is 'true', then it is ./test_all_profile
 #
 # collected information:
 #   - ObjectSpace.memsize_of_all
 #   - GC.stat
-#   - /proc/self/statm (if it exists)
+#   - /proc/meminfo     (some fields, if exists)
+#   - /proc/self/status (some fields, if exists)
+#   - /proc/self/statm  (if exists)
 #
+
+require 'objspace'
 
 class MiniTest::Unit::TestCase
   alias orig_run run
 
-  $test_all_profile_out = open('test_all_profile', 'w')
-  $test_all_profile_gc_stat_hash = {}
+  file = ENV['RUBY_TEST_ALL_PROFILE']
+  file = 'test-all-profile-result' if file == 'true'
+  TEST_ALL_PROFILE_OUT = open(file, 'w')
+  TEST_ALL_PROFILE_GC_STAT_HASH = {}
+  TEST_ALL_PROFILE_BANNER = ['name']
+  TEST_ALL_PROFILE_PROCS  = []
+
+  def self.add *name, &b
+    TEST_ALL_PROFILE_BANNER.concat name
+    TEST_ALL_PROFILE_PROCS << b
+  end
+
+  add 'emsize_of_all', *GC.stat.keys do |result|
+    result << ObjectSpace.memsize_of_all
+    GC.stat(TEST_ALL_PROFILE_GC_STAT_HASH)
+    result.concat TEST_ALL_PROFILE_GC_STAT_HASH.values
+  end
+
+  def self.add_proc_meminfo file, fields
+    return unless FileTest.exist?(file)
+    regexp = /(#{fields.join("|")}):\s*(\d+) kB/
+    # check = {}; fields.each{|e| check[e] = true}
+    add *fields do |result|
+      text = File.read(file)
+      text.gsub(regexp){
+        # check.delete $1
+        result << $2
+        ''
+      }
+      # raise check.inspect unless check.empty?
+    end
+  end
+
+  add_proc_meminfo '/proc/meminfo', %w(MemTotal MemFree)
+  add_proc_meminfo '/proc/self/status', %w(VmPeak VmSize VmHWM VmRSS)
 
   if FileTest.exist?('/proc/self/statm')
-    # for Linux (only?)
-    $test_all_profile_out.puts "name\tmemsize_of_all\t" +
-                                 (GC.stat.keys +
-                                  %w(size resident share text lib data dt)).join("\t")
+    add *%w(size resident share text lib data dt) do |result|
+      result.concat File.read('/proc/self/statm').split(/\s+/)
+    end
+  end
 
-    def memprofile_test_all_result_result
-      "#{self.class}\##{self.__name__}\t" \
-      "#{ObjectSpace.memsize_of_all}\t" \
-      "#{GC.stat($test_all_profile_gc_stat_hash).values.join("\t")}\t" \
-      "#{File.read('/proc/self/statm').split(/\s+/).join("\t")}"
-    end
-  else
-    $test_all_profile_out.puts "name\tmemsize_of_alls\t" + GC.stat.keys.join("\t")
-    def memprofile_test_all_result_result
-      "#{self.class}\##{self.__name__}\t" \
-      "#{ObjectSpace.memsize_of_all}\t" \
-      "#{GC.stat($test_all_profile_gc_stat_hash).values.join("\t")}"
-    end
+  def memprofile_test_all_result_result
+    result = ["#{self.class}\##{self.__name__}"]
+    TEST_ALL_PROFILE_PROCS.each{|proc|
+      proc.call(result)
+    }
+    result.join("\t")
   end
 
   def run runner
     result = orig_run(runner)
-    $test_all_profile_out.puts memprofile_test_all_result_result
-    $test_all_profile_out.flush
+    TEST_ALL_PROFILE_OUT.puts memprofile_test_all_result_result
+    TEST_ALL_PROFILE_OUT.flush
     result
   end
+
+  TEST_ALL_PROFILE_OUT.puts TEST_ALL_PROFILE_BANNER.join("\t")
 end
