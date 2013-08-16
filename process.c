@@ -6759,7 +6759,8 @@ rb_clock_gettime(int argc, VALUE *argv)
 	    }
 
 	    t = t * sTimebaseInfo.numer / sTimebaseInfo.denom;
-            ts.tv_sec = t / 1000000000;
+	    /* TODO: time_t overflow */
+            ts.tv_sec = (time_t)(t / 1000000000);
             ts.tv_nsec = t % 1000000000;
             goto success;
         }
