@@ -1,3 +1,7 @@
+Sat Aug 17 00:42:12 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* parse.y: fix build error with bison-3.0.
+
 Sat Aug 17 00:39:20 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb (TestWEBrickCGI#{start_cgi_server,test_cgi}):
