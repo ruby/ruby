@@ -88,7 +88,7 @@ Thu Aug 15 16:30:23 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#test_rmdir):
 	  FileUtils.rmdir ignores Errno::ENOTEMPTY, so, in such cases, this
-	  assertion is nonsence.
+	  assertion is nonsense.
 
 Thu Aug 15 15:49:35 2013  Tanaka Akira  <akr@fsij.org>
 
