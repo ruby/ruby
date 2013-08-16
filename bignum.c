@@ -2677,19 +2677,20 @@ bigdivrem_num_extra_words(size_t xn, size_t yn)
 }
 
 static BDIGIT
-bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
+bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdigit, BDIGIT y)
 {
     assert(0 < xn);
+    assert(x_higher_bdigit < y);
     if (POW2_P(y)) {
         BDIGIT r;
         r = xds[0] & (y-1);
-        bary_small_rshift(qds, xds, xn, bitsize(y)-1, 0);
+        bary_small_rshift(qds, xds, xn, bitsize(y)-1, x_higher_bdigit);
         return r;
     }
     else {
         size_t i;
         BDIGIT_DBL t2;
-        t2 = 0;
+        t2 = x_higher_bdigit;
         i = xn;
         while (i--) {
             t2 = BIGUP(t2) + xds[i];
@@ -2700,6 +2701,12 @@ bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
     }
 }
 
+static BDIGIT
+bigdivrem_single(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT y)
+{
+    return bigdivrem_single1(qds, xds, xn, 0, y);
+}
+
 static void
 bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
 {
@@ -2707,15 +2714,14 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     size_t ynzero;
 
     assert(BDIGIT_MSB(yds[yn-1]));
+    assert(zds[zn-1] < yds[yn-1]);
 
     for (ynzero = 0; !yds[ynzero]; ynzero++);
 
     if (ynzero+1 == yn) {
         BDIGIT r;
-        r = bigdivrem_single(zds+ynzero, zds+ynzero, zn-ynzero, yds[yn-1]);
-        assert(zds[zn-1] == 0);
-        MEMMOVE(zds+yn, zds+yn-1, BDIGIT, zn - yn);
-        zds[yn-1] = r;
+        r = bigdivrem_single1(zds+yn, zds+ynzero, zn-yn, zds[zn-1], yds[ynzero]);
+        zds[ynzero] = r;
         return;
     }
 

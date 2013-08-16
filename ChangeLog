@@ -1,3 +1,10 @@
+Fri Aug 16 10:07:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_single1): Renamed from bigdivrem_single.  Add
+	  x_higher_bdigit argument.
+	  (bigdivrem_single): Just call bigdivrem_single1.
+	  (bigdivrem_restoring): Use bigdivrem_single1 to avoid memmove.
+
 Fri Aug 16 09:17:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_small_rshift): Specify the higher BDIGIT instead of
