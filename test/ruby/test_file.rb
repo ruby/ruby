@@ -139,6 +139,7 @@ class TestFile < Test::Unit::TestCase
 
       while size = q1.pop
         assert_equal size, File.size(f.path)
+        assert_equal size, f.size
         q2.push true
       end
     end

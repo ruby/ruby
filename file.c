@@ -2083,7 +2083,7 @@ rb_file_size(VALUE obj)
 
     GetOpenFile(obj, fptr);
     if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush(obj);
+	rb_io_flush_raw(obj, 0);
     }
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
@@ -4244,11 +4244,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-#ifndef _WIN32
-    rb_io_flush(obj);
-#else
     rb_io_flush_raw(obj, 0);
-#endif
 #ifdef HAVE_FTRUNCATE
     if (ftruncate(fptr->fd, pos) < 0)
 	rb_sys_fail_path(fptr->pathv);
@@ -4355,7 +4351,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     op[0] = fptr->fd;
 
     if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush(obj);
+	rb_io_flush_raw(obj, 0);
     }
     while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
 	switch (errno) {
