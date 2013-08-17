@@ -1,3 +1,7 @@
+Sun Aug 18 03:18:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big2str1): Use power_level instead of bitsize(xn).
+
 Sun Aug 18 00:44:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BIGDIVREM_EXTRA_WORDS): Redefine to 1.
