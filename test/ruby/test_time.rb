@@ -315,7 +315,7 @@ class TestTime < Test::Unit::TestCase
   def in_timezone(zone)
     orig_zone = ENV['TZ']
 
-    ENV['TZ'] = 'UTC'
+    ENV['TZ'] = zone
     yield
   ensure
     ENV['TZ'] = orig_zone
