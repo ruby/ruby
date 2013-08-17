@@ -1,3 +1,8 @@
+Sat Aug 17 23:25:19 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_time.rb: use the in_timezone() helper
+	  and define it at the top with other helpers.
+
 Sat Aug 17 22:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_mload): ignore auxiliary data, offset and zone, if

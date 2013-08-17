@@ -15,6 +15,15 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def in_timezone(zone)
+    orig_zone = ENV['TZ']
+
+    ENV['TZ'] = zone
+    yield
+  ensure
+    ENV['TZ'] = orig_zone
+  end
+
   def no_leap_seconds?
     # 1972-06-30T23:59:60Z is the first leap second.
     Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
@@ -291,18 +300,15 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone
-    orig_zone = ENV['TZ']
-
     t = Time.utc(2013, 2, 24)
     assert_equal('UTC', t.zone)
     assert_equal('UTC', Marshal.load(Marshal.dump(t)).zone)
 
-    ENV['TZ'] = 'JST-9'
-    t = Time.local(2013, 2, 24)
-    assert_equal('JST', Time.local(2013, 2, 24).zone)
-    assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
-  ensure
-    ENV['TZ'] = orig_zone
+    in_timezone('JST-9') do
+      t = Time.local(2013, 2, 24)
+      assert_equal('JST', Time.local(2013, 2, 24).zone)
+      assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
+    end
   end
 
   def test_marshal_to_s
@@ -310,15 +316,6 @@ class TestTime < Test::Unit::TestCase
     t2 = Time.at(Marshal.load(Marshal.dump(t1)))
     assert_equal("2011-11-08 00:42:25 +0900", t2.to_s,
       "[ruby-dev:44827] [Bug #5586]")
-  end
-
-  def in_timezone(zone)
-    orig_zone = ENV['TZ']
-
-    ENV['TZ'] = zone
-    yield
-  ensure
-    ENV['TZ'] = orig_zone
   end
 
   Bug8795 = '[ruby-core:56648] [Bug #8795]'
