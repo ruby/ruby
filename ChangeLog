@@ -1,3 +1,8 @@
+Sat Aug 17 22:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_mload): ignore invalid offset and zone.
+	  [ruby-core:56648] [Bug #8795]
+
 Sat Aug 17 20:11:49 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* process.c: [DOC] MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC is an

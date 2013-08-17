@@ -312,6 +312,43 @@ class TestTime < Test::Unit::TestCase
       "[ruby-dev:44827] [Bug #5586]")
   end
 
+  def in_timezone(zone)
+    orig_zone = ENV['TZ']
+
+    ENV['TZ'] = 'UTC'
+    yield
+  ensure
+    ENV['TZ'] = orig_zone
+  end
+
+  Bug8795 = '[ruby-core:56648] [Bug #8795]'
+
+  def test_marshal_broken_offset
+    data = "\x04\bIu:\tTime\r\xEFF\x1C\x80\x00\x00\x00\x00\x06:\voffset"
+    t1 = t2 = nil
+    in_timezone('UTC') do
+      assert_nothing_raised(TypeError, ArgumentError, Bug8795) do
+        t1 = Marshal.load(data + "T")
+        t2 = Marshal.load(data + "\"\x0ebadoffset")
+      end
+      assert_equal(0, t1.utc_offset)
+      assert_equal(0, t2.utc_offset)
+    end
+  end
+
+  def test_marshal_broken_zone
+    data = "\x04\bIu:\tTime\r\xEFF\x1C\x80\x00\x00\x00\x00\x06:\tzone"
+    t1 = t2 = nil
+    in_timezone('UTC') do
+      assert_nothing_raised(TypeError, ArgumentError, Bug8795) do
+        t1 = Marshal.load(data + "T")
+        t2 = Marshal.load(data + "\"\b\0\0\0")
+      end
+      assert_equal('UTC', t1.zone)
+      assert_equal('UTC', t2.zone)
+    end
+  end
+
   def test_at3
     t2000 = get_t2000
     assert_equal(t2000, Time.at(t2000))

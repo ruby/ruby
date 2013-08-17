@@ -754,7 +754,8 @@ static VALUE time_utc_offset _((VALUE));
 static int obj2int(VALUE obj);
 static VALUE obj2vint(VALUE obj);
 static int month_arg(VALUE arg);
-static void validate_utc_offset(VALUE utc_offset);
+static VALUE validate_utc_offset(VALUE utc_offset);
+static VALUE validate_zone_name(VALUE zone_name);
 static void validate_vtm(struct vtm *vtm);
 static int obj2subsecx(VALUE obj, VALUE *subsecx);
 
@@ -2581,11 +2582,19 @@ month_arg(VALUE arg)
     return mon;
 }
 
-static void
+static VALUE
 validate_utc_offset(VALUE utc_offset)
 {
     if (le(utc_offset, INT2FIX(-86400)) || ge(utc_offset, INT2FIX(86400)))
 	rb_raise(rb_eArgError, "utc_offset out of range");
+    return utc_offset;
+}
+
+static VALUE
+validate_zone_name(VALUE zone_name)
+{
+    StringValueCStr(zone_name);
+    return zone_name;
 }
 
 static void
@@ -4702,8 +4711,9 @@ time_mload(VALUE time, VALUE str)
     get_attr(nano_num, {});
     get_attr(nano_den, {});
     get_attr(submicro, {});
-    get_attr(offset, validate_utc_offset(offset));
-    get_attr(zone, {});
+    get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, NULL, Qnil)));
+    get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, NULL, Qnil)));
+
 #undef get_attr
 
     rb_copy_generic_ivar(time, str);
@@ -4789,7 +4799,7 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-	tobj->vtm.zone = StringValueCStr(zone);
+	tobj->vtm.zone = RSTRING_PTR(zone);
     }
 
     return time;
