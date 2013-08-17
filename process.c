@@ -6678,12 +6678,12 @@ rb_proc_times(VALUE obj)
  *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
  *  Emulations for +:CLOCK_REALTIME+:
- *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The precision is 1 micro second.
- *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The precision is 1 second.
+ *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
+ *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
  *
  *  Emulations for +:CLOCK_MONOTONIC+:
  *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
- * 					  The precision is CPU dependent.
+ * 					  The resolution is CPU dependent.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
