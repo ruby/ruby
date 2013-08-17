@@ -68,6 +68,12 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :a, bug)
     assert_not_respond_to(o, :a=, bug)
     assert_equal(a, 'a')
+    o['+(binary)'] = true
+    assert_respond_to(o, :+)
+    assert_respond_to(o, :'+=')
+    o.delete_field '+(binary)'
+    assert_not_respond_to(o, :+)
+    assert_not_respond_to(o, :'+=')
   end
 
   def test_setter
