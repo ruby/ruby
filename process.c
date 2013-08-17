@@ -6671,13 +6671,19 @@ rb_proc_times(VALUE obj)
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
- *  Also, several symbols are accepted as +clock_id+.
- *  They may be used as emulation for clock_gettime().
+ *  Also, several other symbols are accepted as +clock_id+.
+ *  There are emulations for clock_gettime().
+ *
  *  For example, Process::CLOCK_REALTIME is defined as
  *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
+ *  Emulations for +:CLOCK_REALTIME+:
  *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The precision is 1 micro second.
  *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The precision is 1 second.
+ *
+ *  Emulations for +:CLOCK_MONOTONIC+:
+ *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
+ * 					  The precision is CPU dependent.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
