@@ -96,7 +96,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
         (size_t)(RBIGNUM_LEN(x)*SIZEOF_BDIGITS - nlz(BDIGITS(x)[RBIGNUM_LEN(x)-1])/CHAR_BIT) : \
     rb_absint_size(x, NULL))
 
-#define BIGDIVREM_EXTRA_WORDS 2
+#define BIGDIVREM_EXTRA_WORDS 1
 #define roomof(n, m) ((long)(((n)+(m)-1) / (m)))
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGITS)
 #define BARY_ARGS(ary) ary, numberof(ary)
@@ -2668,14 +2668,6 @@ rb_big_stop(void *ptr)
     bds->stop = Qtrue;
 }
 
-static inline int
-bigdivrem_num_extra_words(size_t xn, size_t yn)
-{
-    int ret = xn==yn ? 2 : 1;
-    assert(ret <= BIGDIVREM_EXTRA_WORDS);
-    return ret;
-}
-
 static BDIGIT
 bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdigit, BDIGIT y)
 {
@@ -2713,6 +2705,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     struct big_div_struct bds;
     size_t ynzero;
 
+    assert(yn < zn);
     assert(BDIGIT_MSB(yds[yn-1]));
     assert(zds[zn-1] < yds[yn-1]);
 
@@ -2759,7 +2752,6 @@ bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *y
         MEMCPY(zds, xds, BDIGIT, xn);
 	zds[xn] = 0;
     }
-    if (xn+1 < zn) zds[xn+1] = 0;
 
     bigdivrem_restoring(zds, zn, yds, yn);
 
@@ -2809,21 +2801,19 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
         BDIGITS_ZERO(rds+2, rn-2);
     }
     else {
-        int extra_words;
         size_t j;
         size_t zn;
         BDIGIT *zds;
         VALUE tmpz = 0;
         BDIGIT *tds;
 
-        extra_words = bigdivrem_num_extra_words(xn, yn);
-        zn = xn + extra_words;
-        if (xn + extra_words <= qn)
+        zn = xn + BIGDIVREM_EXTRA_WORDS;
+        if (zn <= qn)
             zds = qds;
         else
             zds = ALLOCV_N(BDIGIT, tmpz, zn);
         MEMCPY(zds, xds, BDIGIT, xn);
-        BDIGITS_ZERO(zds+xn, zn-xn);
+        BDIGITS_ZERO(zds+xn, BIGDIVREM_EXTRA_WORDS);
 
         if (BDIGIT_MSB(yds[yn-1])) {
             /* bigdivrem_normal will not modify y.
@@ -4429,7 +4419,6 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
     else {
         BDIGIT *qds, *rds;
         size_t qn, rn;
-        int extra_words;
         BDIGIT *tds;
         int shift;
 
@@ -4441,8 +4430,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
 
         shift = nlz(bds[bn-1]);
 
-        extra_words = bigdivrem_num_extra_words(xn, bn);
-        qn = xn + extra_words;
+        qn = xn + BIGDIVREM_EXTRA_WORDS;
 
         if (shift == 0) {
             /* bigdivrem_restoring will not modify y.
@@ -4458,8 +4446,6 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
             bary_small_lshift(tds, bds, bn, shift);
             xds[xn] = bary_small_lshift(xds, xds, xn, shift);
         }
-
-        if (xn+1 < qn) xds[xn+1] = 0;
 
         bigdivrem_restoring(xds, qn, tds, bn);
 
@@ -5708,7 +5694,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         yds = tds;
     }
 
-    zn = xn + bigdivrem_num_extra_words(xn, yn);
+    zn = xn + BIGDIVREM_EXTRA_WORDS;
     zds = ALLOCV_N(BDIGIT, tmpz, zn);
     bigdivrem_normal(zds, zn, xds, xn, yds, yn, modp != NULL);
 

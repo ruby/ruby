@@ -1,3 +1,10 @@
+Sun Aug 18 00:44:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BIGDIVREM_EXTRA_WORDS): Redefine to 1.
+	  (bigdivrem_num_extra_words): Removed.
+	  (bigdivrem_normal): Simplefied.
+	  (big2str_karatsuba): Ditto.
+
 Sat Aug 17 23:25:19 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ruby/test_time.rb: use the in_timezone() helper
