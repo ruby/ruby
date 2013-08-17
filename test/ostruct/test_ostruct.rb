@@ -46,14 +46,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     o = OpenStruct.new
     o.a = 'a'
     o.freeze
-    assert_raise(TypeError) {o.b = 'b'}
+    assert_raise(RuntimeError) {o.b = 'b'}
     assert_not_respond_to(o, :b)
-    assert_raise(TypeError) {o.a = 'z'}
+    assert_raise(RuntimeError) {o.a = 'z'}
     assert_equal('a', o.a)
     o = OpenStruct.new :a => 42
     def o.frozen?; nil end
     o.freeze
-    assert_raise(TypeError, '[ruby-core:22559]') {o.a = 1764}
+    assert_raise(RuntimeError, '[ruby-core:22559]') {o.a = 1764}
   end
 
   def test_delete_field
