@@ -40,7 +40,12 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 before_script:
   - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
   - "autoconf"
-  - "./configure --with-gcc=$CC"
+  - "mkdir config_1st config_2nd"
+  - "./configure -C --with-gcc=$CC"
+  - "cp -pr config.status .ext/include config_1nd"
+  - "make reconfig"
+  - "cp -pr config.status .ext/include config_2nd"
+  - "diff -ru config_1nd config_2nd"
   - "make -sj encs"
   - "make -sj exts"
 script:
