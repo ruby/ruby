@@ -217,10 +217,7 @@ class TestFiber < Test::Unit::TestCase
   def test_no_valid_cfp
     bug5083 = '[ruby-dev:44208]'
     assert_equal([], Fiber.new(&Module.method(:nesting)).resume)
-    error = assert_raise(RuntimeError) do
-      Fiber.new(&Module.method(:undef_method)).resume(:to_s)
-    end
-    assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
+    assert_instance_of(Class, Fiber.new(&Class.new.method(:undef_method)).resume(:to_s))
   end
 
   def test_prohibit_resume_transfered_fiber

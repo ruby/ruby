@@ -672,8 +672,6 @@ remove_method(VALUE klass, ID mid)
     VALUE self = klass;
 
     klass = RCLASS_ORIGIN(klass);
-    if (klass == rb_cObject) {
-    }
     rb_check_frozen(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
@@ -754,9 +752,6 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 {
     rb_method_entry_t *me;
     VALUE defined_class;
-
-    if (klass == rb_cObject) {
-    }
 
     me = search_method(klass, name, &defined_class);
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
@@ -856,8 +851,6 @@ rb_undef(VALUE klass, ID id)
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
-    }
-    if (rb_vm_cbase() == rb_cObject && klass == rb_cObject) {
     }
     rb_frozen_class_p(klass);
     if (id == object_id || id == id__send__ || id == idInitialize) {
@@ -1207,8 +1200,6 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
     rb_frozen_class_p(klass);
-    if (klass == rb_cObject) {
-    }
 
   again:
     orig_me = search_method(klass, def, 0);

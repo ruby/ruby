@@ -1,3 +1,10 @@
+Sun Aug 18 20:17:41 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* variable.c, vm_method.c: remove dead code.
+
+	* test/ruby/test_fiber.rb, test/ruby/test_thread.rb:
+	  change accordingly.
+
 Sun Aug 18 19:32:26 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* error.c, file.c, gc.c, hash.c, thread.c, variable.c, vm_eval.c, bin/erb:

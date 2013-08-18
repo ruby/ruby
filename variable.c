@@ -2191,8 +2191,6 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     if (!rb_is_const_id(id)) {
 	rb_warn("rb_define_const: invalid name `%s' for constant", name);
     }
-    if (klass == rb_cObject) {
-    }
     rb_const_set(klass, id, val);
 }
 
