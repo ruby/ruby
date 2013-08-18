@@ -1,3 +1,9 @@
+Sun Aug 18 12:41:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (clock_gettime): need to check with -lrt prior to check
+	  for the function only.  otherwise -lrt is not linked and the link
+	  fails, when ac_cv_func_clock_gettime is cached as yes.
+
 Sun Aug 18 10:05:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Make an expression more explicit.

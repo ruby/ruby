@@ -1748,7 +1748,6 @@ AC_CHECK_FUNCS(_setjmp)			# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(_setjmpex)		# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(chroot)
 AC_CHECK_FUNCS(chsize)
-AC_CHECK_FUNCS(clock_gettime)
 AC_CHECK_FUNCS(cosh)
 AC_CHECK_FUNCS(daemon)
 AC_CHECK_FUNCS(dl_iterate_phdr)
@@ -1856,13 +1855,13 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 
 # Some platform need -lrt for clock_gettime, but the other don't.
-if test x"$ac_cv_func_clock_gettime" != xyes; then
+AC_CHECK_LIB(rt, clock_gettime)
+if test x"$ac_cv_lib_rt_clock_gettime" = xyes; then
     # glibc 2.17 moves clock_* functions from librt to the main C library.
     # http://sourceware.org/ml/libc-announce/2012/msg00001.html
-    AC_CHECK_LIB(rt, clock_gettime)
-    unset ac_cv_func_clock_gettime
-    AC_CHECK_FUNCS(clock_gettime)
+    ac_cv_func_clock_gettime="$ac_cv_lib_rt_clock_gettime"
 fi
+AC_CHECK_FUNCS(clock_gettime)
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([
