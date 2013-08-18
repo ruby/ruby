@@ -4569,7 +4569,7 @@ rb_big2str1(VALUE x, int base)
         VALUE tmpw = 0;
         BDIGIT *wds;
         size_t wn;
-        wn = power_level + RBIGNUM_LEN(power);
+        wn = power_level * BIGDIVREM_EXTRA_WORDS + RBIGNUM_LEN(power);
         wds = ALLOCV_N(BDIGIT, tmpw, xn + wn);
         MEMCPY(wds, xds, BDIGIT, xn);
 	big2str_karatsuba(&b2s_data, wds, xn, wn, power_level, 0);

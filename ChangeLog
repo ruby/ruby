@@ -1,3 +1,7 @@
+Sun Aug 18 10:05:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big2str1): Make an expression more explicit.
+
 Sun Aug 18 03:18:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big2str1): Use power_level instead of bitsize(xn).
