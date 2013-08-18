@@ -918,7 +918,7 @@ rb_obj_tainted(VALUE obj)
  *  You should only untaint a tainted object if your code has inspected it and
  *  determined that it is safe. To do so use #untaint
  *
- *  In $SAFE level 3 and 4, all objects are tainted and untrusted, any use of
+ *  In $SAFE level 3, all objects are tainted and untrusted, any use of
  *  trust or taint methods will raise a SecurityError exception.
  */
 

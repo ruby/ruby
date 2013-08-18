@@ -1588,14 +1588,14 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *     foo = "bar"
  *     proc = Proc.new do
- *       $SAFE = 4
- *       foo.gsub! "a", "*"
+ *       $SAFE = 3
+ *       foo.untaint
  *     end
  *     proc.call
  *
  *  <em>raises the exception:</em>
  *
- *     SecurityError: Insecure: can't modify string
+ *     SecurityError: Insecure: Insecure operation `untaint' at level 3
  */
 
 /*

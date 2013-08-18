@@ -25,8 +25,6 @@ GNU Readline のように入力の補完やEmacs のようなキー操作など�
 使用するライブラリにより、いくつかのメソッドで例外 NotImplementedError
 が発生します。
 
-$SAFE が 4 の場合、多くのメソッドで例外 SecurityError が発生します。
-
 == Readline モジュール
 
 === モジュール関数
@@ -112,8 +110,6 @@ readline([prompt, [add_hist]]) -> String | nil
       print "-> ", buf, "\n"
     end
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 === クラスメソッド
 
 Readline.input = input
@@ -121,14 +117,10 @@ Readline.input = input
   Readline.readline メソッドで使用する入力用の File オブジェクト input
   を指定します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.output = output
 
   Readline.readline メソッドで使用する出力用の File オブジェクト
   output を指定します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.completion_proc = proc
 
@@ -146,21 +138,15 @@ Readline.completion_proc = proc
   のを単語とすると、カーソルがある単語の最初の文字から現在のカーソル位
   置までの文字列が proc の引数に渡されます。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.completion_proc -> proc
 
   ユーザからの入力を補完する時の候補を取得する Proc オブジェクト proc
   を取得します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.completion_case_fold = bool
 
   ユーザの入力を補完する際、大文字と小文字を区別する／しないを指定します。
   bool が真ならば区別しません。bool が偽ならば区別します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.completion_case_fold -> bool
 
@@ -174,8 +160,6 @@ Readline.completion_case_fold -> bool
 
     Readline.completion_case_fold = "This is a String."
     p Readline.completion_case_fold # => "This is a String."
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.line_buffer -> string
 
@@ -199,16 +183,12 @@ Readline.vi_editing_mode -> nil
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.vi_editing_mode? -> bool
 
   編集モードが vi モードの場合、true を返します。そうでなければ false
   を返します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.emacs_editing_mode -> nil
 
@@ -218,16 +198,12 @@ Readline.emacs_editing_mode -> nil
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.emacs_editing_mode? -> bool
 
   編集モードが Emacs モードの場合、true を返します。そうでなければ false
   を返します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.completion_append_character = char
 
@@ -265,16 +241,12 @@ Readline.completion_append_character = char
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.completion_append_character -> char
 
   ユーザの入力の補完が完了した場合に、最後に付加する文字を取得します。
   デフォルトは空白 (" ") です。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.basic_word_break_characters = string
 
@@ -286,16 +258,12 @@ Readline.basic_word_break_characters = string
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.basic_word_break_characters -> string
 
   ユーザの入力の補完を行う際、単語の区切りを示す複数の文字で構成される
   文字列を取得します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.completer_word_break_characters = string
 
@@ -309,16 +277,12 @@ Readline.completer_word_break_characters = string
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.completer_word_break_characters -> string
 
   ユーザの入力の補完を行う際、単語の区切りを示す複数の文字で構成された
   文字列を取得します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.basic_quote_characters = string
 
@@ -327,16 +291,12 @@ Readline.basic_quote_characters = string
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.basic_quote_characters -> string
 
   スペースなどの単語の区切りをクオートするための複数の文字で構成される
   文字列を取得します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.completer_quote_characters = string
 
@@ -347,16 +307,12 @@ Readline.completer_quote_characters = string
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.completer_quote_characters -> string
 
   ユーザの入力の補完を行う際、スペースなどの単語の区切りを
   クオートするための複数の文字で構成される文字列を取得します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 Readline.filename_quote_characters = string
 
@@ -367,16 +323,12 @@ Readline.filename_quote_characters = string
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
-
 Readline.filename_quote_characters -> string
 
   ユーザの入力時にファイル名の補完を行う際、スペースなどの単語の区切りを
   クオートするための複数の文字で構成される文字列を取得します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
-
-  $SAFE が 4 の場合、例外 SecurityError が発生します。
 
 === クラス定数
 
@@ -414,9 +366,6 @@ HISTORY
   * HISTORY.shift -> string
   * HISTORY.delete_at(index) -> string
   * HISTORY.clear -> self
-
-  $SAFE が 4 の場合、ヒストリにアクセスしたときに例外 SecurityError が
-  発生します。
 
 FILENAME_COMPLETION_PROC
 
