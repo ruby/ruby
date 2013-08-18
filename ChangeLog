@@ -1,3 +1,8 @@
+Sun Aug 18 14:22:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Revert r42604.  It causes linking librt on systems
+	  with newer glibc uselessly.
+
 Sun Aug 18 13:18:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (Init_process): Add constants: CLOCK_REALTIME_COARSE,
