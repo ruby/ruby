@@ -1,3 +1,8 @@
+Sun Aug 18 13:18:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (Init_process): Add constants: CLOCK_REALTIME_COARSE,
+	  CLOCK_MONOTONIC_COARSE and CLOCK_BOOTTIME.
+
 Sun Aug 18 12:41:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (clock_gettime): need to check with -lrt prior to check
