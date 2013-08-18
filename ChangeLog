@@ -1,3 +1,8 @@
+Sun Aug 18 19:32:26 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* error.c, file.c, gc.c, hash.c, thread.c, variable.c, vm_eval.c, bin/erb:
+	  $SAFE=4 is obsolete.
+
 Sun Aug 18 14:30:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): Rename POSIX_TIME_CLOCK_REALTIME to

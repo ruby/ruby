@@ -541,10 +541,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    if (state == TAG_FATAL) {
 		/* fatal error within this thread, need to stop whole script */
 	    }
-	    else if (th->safe_level >= 4) {
-		/* Ignore it. Main thread shouldn't be harmed from untrusted thread. */
-		errinfo = Qnil;
-	    }
 	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 		/* exit on main_thread. */
 	    }
@@ -2176,8 +2172,6 @@ rb_thread_kill(VALUE thread)
 
     GetThreadPtr(thread, th);
 
-    if (th != GET_THREAD() && th->safe_level < 4) {
-    }
     if (th->to_kill || th->status == THREAD_KILLED) {
 	return thread;
     }
@@ -2741,9 +2735,6 @@ rb_thread_local_aref(VALUE thread, ID id)
     st_data_t val;
 
     GetThreadPtr(thread, th);
-    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
-	rb_raise(rb_eSecurityError, "Insecure: thread locals");
-    }
     if (!th->local_storage) {
 	return Qnil;
     }
@@ -2827,9 +2818,6 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
-    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
-	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
-    }
     if (OBJ_FROZEN(thread)) {
 	rb_error_frozen("thread locals");
     }
@@ -2898,14 +2886,7 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
-    rb_thread_t *th;
     ID id = rb_check_id(&key);
-
-    GetThreadPtr(thread, th);
-
-    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
-	rb_raise(rb_eSecurityError, "Insecure: can't access thread locals");
-    }
 
     if (!id) return Qnil;
     locals = rb_ivar_get(thread, id_locals);
@@ -2925,13 +2906,7 @@ static VALUE
 rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
 {
     VALUE locals;
-    rb_thread_t *th;
 
-    GetThreadPtr(thread, th);
-
-    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
-	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
-    }
     if (OBJ_FROZEN(thread)) {
 	rb_error_frozen("thread locals");
     }

@@ -1337,16 +1337,7 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
-    if (rb_safe_level() >= 4) {
-	StringValue(src);
-	if (!NIL_P(scope) && !OBJ_TAINTED(scope)) {
-	    rb_raise(rb_eSecurityError,
-		     "Insecure: can't modify trusted binding");
-	}
-    }
-    else {
-	SafeStringValue(src);
-    }
+    SafeStringValue(src);
     if (argc >= 3) {
 	StringValue(vfile);
     }
@@ -1551,12 +1542,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
     if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
 	cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
     }
-    if (rb_safe_level() >= 4) {
-	StringValue(src);
-    }
-    else {
-	SafeStringValue(src);
-    }
+    SafeStringValue(src);
 
     return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }
@@ -1573,12 +1559,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	int line = 1;
 
 	rb_check_arity(argc, 1, 3);
-	if (rb_safe_level() >= 4) {
-	    StringValue(argv[0]);
-	}
-	else {
-	    SafeStringValue(argv[0]);
-	}
+	SafeStringValue(argv[0]);
 	if (argc > 2)
 	    line = NUM2INT(argv[2]);
 	if (argc > 1) {

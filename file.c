@@ -5428,10 +5428,6 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	return 0;
     }
 
-    if (safe_level >= 4) {
-	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
-    }
-
     RB_GC_GUARD(load_path) = rb_get_expanded_load_path();
     if (!load_path) return 0;
 
@@ -5491,10 +5487,6 @@ rb_find_file_safe(VALUE path, int safe_level)
 	if (!expanded)
 	    path = copy_path_class(file_expand_path_1(path), path);
 	return path;
-    }
-
-    if (safe_level >= 4) {
-	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
     }
 
     RB_GC_GUARD(load_path) = rb_get_expanded_load_path();

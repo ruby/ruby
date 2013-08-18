@@ -2714,10 +2714,6 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 {
     char *name, *value;
 
-    if (rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "can't change environment variable");
-    }
-
     if (NIL_P(val)) {
 	env_delete(obj, nm);
 	return Qnil;

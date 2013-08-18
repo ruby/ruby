@@ -782,8 +782,6 @@ rb_gvar_set(struct global_entry *entry, VALUE val)
     struct trace_data trace;
     struct global_variable *var = entry->var;
 
-    if (rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't change global variable value");
     (*var->setter)(val, entry->id, var->data, var);
 
     if (var->trace && !var->block_trace) {
@@ -859,9 +857,6 @@ rb_alias_variable(ID name1, ID name2)
 {
     struct global_entry *entry1, *entry2;
     st_data_t data1;
-
-    if (rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't alias global variable");
 
     entry2 = rb_global_entry(name2);
     if (!st_lookup(rb_global_tbl, (st_data_t)name1, &data1)) {

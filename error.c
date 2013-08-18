@@ -2030,10 +2030,6 @@ rb_check_frozen(VALUE obj)
 void
 rb_error_untrusted(VALUE obj)
 {
-    if (rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "Insecure: can't modify %s",
-		 rb_obj_classname(obj));
-    }
 }
 
 #undef rb_check_trusted
