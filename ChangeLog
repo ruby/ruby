@@ -1,3 +1,8 @@
+Sun Aug 18 14:30:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Rename POSIX_TIME_CLOCK_REALTIME to
+	  ISO_C_TIME_CLOCK_REALTIME.
+
 Sun Aug 18 14:22:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Revert r42604.  It causes linking librt on systems

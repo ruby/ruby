@@ -6682,7 +6682,7 @@ rb_proc_times(VALUE obj)
  *
  *  Emulations for +:CLOCK_REALTIME+:
  *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
- *  [:POSIX_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
+ *  [:ISO_C_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
  *
  *  Emulations for +:CLOCK_MONOTONIC+:
  *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
@@ -6746,8 +6746,8 @@ rb_clock_gettime(int argc, VALUE *argv)
             goto success;
         }
 
-#define RUBY_POSIX_TIME_CLOCK_REALTIME ID2SYM(rb_intern("POSIX_TIME_CLOCK_REALTIME"))
-        if (clk_id == RUBY_POSIX_TIME_CLOCK_REALTIME) {
+#define RUBY_ISO_C_TIME_CLOCK_REALTIME ID2SYM(rb_intern("ISO_C_TIME_CLOCK_REALTIME"))
+        if (clk_id == RUBY_ISO_C_TIME_CLOCK_REALTIME) {
             time_t t;
             t = time(NULL);
             if (t == (time_t)-1)
