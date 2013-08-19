@@ -1,3 +1,7 @@
+Tue Aug 20 01:19:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Define ac_cv_func_clock_gettime to yes for mingw*.
+
 Mon Aug 19 21:31:35 2013  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h: Fix a compilation error with
