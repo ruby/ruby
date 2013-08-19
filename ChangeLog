@@ -1,3 +1,7 @@
+Mon Aug 19 17:41:49 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/profile_test_all.rb: add `failed?' information.
+
 Mon Aug 19 17:00:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (retry_fork): retry with GC if ENOMEM occurred, to free

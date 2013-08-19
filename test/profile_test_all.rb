@@ -34,8 +34,15 @@ class MiniTest::Unit::TestCase
     TEST_ALL_PROFILE_PROCS << b
   end
 
-  add 'memsize_of_all', *GC.stat.keys do |result|
+  add 'failed?' do |result, tc|
+    result << (tc.passed? ? 0 : 1)
+  end
+
+  add 'memsize_of_all' do |result, *|
     result << ObjectSpace.memsize_of_all
+  end
+
+  add *GC.stat.keys do |result, *|
     GC.stat(TEST_ALL_PROFILE_GC_STAT_HASH)
     result.concat TEST_ALL_PROFILE_GC_STAT_HASH.values
   end
@@ -44,9 +51,9 @@ class MiniTest::Unit::TestCase
     return unless FileTest.exist?(file)
     regexp = /(#{fields.join("|")}):\s*(\d+) kB/
     # check = {}; fields.each{|e| check[e] = true}
-    add *fields do |result|
+    add *fields do |result, *|
       text = File.read(file)
-      text.gsub(regexp){
+      text.scan(regexp){
         # check.delete $1
         result << $2
         ''
@@ -59,7 +66,7 @@ class MiniTest::Unit::TestCase
   add_proc_meminfo '/proc/self/status', %w(VmPeak VmSize VmHWM VmRSS)
 
   if FileTest.exist?('/proc/self/statm')
-    add *%w(size resident share text lib data dt) do |result|
+    add *%w(size resident share text lib data dt) do |result, *|
       result.concat File.read('/proc/self/statm').split(/\s+/)
     end
   end
@@ -67,7 +74,7 @@ class MiniTest::Unit::TestCase
   def memprofile_test_all_result_result
     result = ["#{self.class}\##{self.__name__.to_s.gsub(/\s+/, '')}"]
     TEST_ALL_PROFILE_PROCS.each{|proc|
-      proc.call(result)
+      proc.call(result, self)
     }
     result.join("\t")
   end
