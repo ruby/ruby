@@ -42,7 +42,7 @@ Mon Aug 19 13:28:47 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 Mon Aug 19 13:03:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (clock_gettime): should not overwrite cache variable
-	  with different condtion.  otherwise -lrt is not linked and the link
+	  with different condition.  otherwise -lrt is not linked and the link
 	  fails, after reconfig.
 
 Mon Aug 19 12:56:49 2013  Tanaka Akira  <akr@fsij.org>
@@ -95,7 +95,7 @@ Sun Aug 18 00:44:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BIGDIVREM_EXTRA_WORDS): Redefine to 1.
 	  (bigdivrem_num_extra_words): Removed.
-	  (bigdivrem_normal): Simplefied.
+	  (bigdivrem_normal): Simplified.
 	  (big2str_karatsuba): Ditto.
 
 Sat Aug 17 23:25:19 2013  Benoit Daloze  <eregontp@gmail.com>
@@ -132,7 +132,7 @@ Fri Aug 16 17:32:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 Fri Aug 16 11:23:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* file.c (rb_file_size, rb_file_flock): improve performance of Winodws.
+	* file.c (rb_file_size, rb_file_flock): improve performance of Windows.
 
 	* file.c (rb_file_truncate): removed unnecessary #ifdef.
 
