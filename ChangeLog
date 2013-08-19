@@ -1,3 +1,14 @@
+Tue Aug 20 02:32:52 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/test/: [DOC] Document Test::Unit, hide most submodules and
+	  classes from rdoc. Since lib/test is only present as a compatibility
+	  layer with the legacy test suite many test/unit users will be using
+	  minitest or the test/unit gem instead. It is recommended to use one
+	  of these alternatives for writing new tests.
+
+	  This patch was based on a patch submitted by Steve Klabnik.
+	  [ruby-core:56694] [Bug #8778]
+
 Tue Aug 20 02:10:19 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/rss.rb: [DOC] Document for constants by Steve Klabnik

@@ -358,7 +358,7 @@ EOT
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
       end
 
-      def message(msg = nil, *args, &default)
+      def message(msg = nil, *args, &default) # :nodoc:
         if Proc === msg
           super(nil, *args) do
             [msg.call, (default.call if default)].compact.reject(&:empty?).join(".\n")

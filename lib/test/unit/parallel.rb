@@ -2,7 +2,7 @@ require 'test/unit'
 
 module Test
   module Unit
-    class Worker < Runner
+    class Worker < Runner # :nodoc:
       class << self
         undef autorun
       end
@@ -12,19 +12,19 @@ module Test
       undef _run_suites
       undef run
 
-      def increment_io(orig)
+      def increment_io(orig) # :nodoc:
         *rest, io = 32.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
         rest.each(&:close)
         io
       end
 
-      def _run_suites(suites, type)
+      def _run_suites(suites, type) # :nodoc:
         suites.map do |suite|
           _run_suite(suite, type)
         end
       end
 
-      def _run_suite(suite, type)
+      def _run_suite(suite, type) # :nodoc:
         @partial_report = []
         orig_testout = MiniTest::Unit.output
         i,o = IO.pipe
@@ -81,7 +81,7 @@ module Test
         i.close if i && !i.closed?
       end
 
-      def run(args = [])
+      def run(args = []) # :nodoc:
         process_args args
         @@stop_auto_run = true
         @opts = @options.dup
@@ -149,12 +149,12 @@ module Test
         end
       end
 
-      def _report(res, *args)
+      def _report(res, *args) # :nodoc:
         res = "#{res} #{args.pack("m0")}" unless args.empty?
         @stdout.puts(res)
       end
 
-      def puke(klass, meth, e)
+      def puke(klass, meth, e) # :nodoc:
         @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
         super
       end
@@ -165,7 +165,7 @@ end
 if $0 == __FILE__
   module Test
     module Unit
-      class TestCase < MiniTest::Unit::TestCase
+      class TestCase < MiniTest::Unit::TestCase # :nodoc: all
         undef on_parallel_worker?
         def on_parallel_worker?
           true
@@ -174,7 +174,9 @@ if $0 == __FILE__
     end
   end
   require 'rubygems'
-  class Gem::TestCase < MiniTest::Unit::TestCase
+  module Gem # :nodoc:
+  end
+  class Gem::TestCase < MiniTest::Unit::TestCase # :nodoc:
     @@project_dir = File.expand_path('../../../..', __FILE__)
   end
 
