@@ -126,7 +126,7 @@ typedef unsigned int uintptr_t;
 
 typedef int clockid_t;
 #define CLOCK_REALTIME  0
-#define CLOCK_MONOTINIC 1
+#define CLOCK_MONOTONIC 1
 
 #undef getc
 #undef putc

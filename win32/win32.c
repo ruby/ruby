@@ -4310,9 +4310,6 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 /* License: Ruby's */
-typedef int clockid_t;
-#define CLOCK_REALTIME  0
-#define CLOCK_MONOTONIC 1
 int
 clock_gettime(clockid_t clock_id, struct timespec *sp)
 {
