@@ -1,3 +1,8 @@
+Tue Aug 20 02:01:10 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/xmlparser.rb: [DOC] Hide legacy constant from rdoc
+	  Patch by Steve Klabnik [ruby-core:56708] [Bug #8799]
+
 Tue Aug 20 01:52:05 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/socket/unixserver.c: [DOC] Document #accept
