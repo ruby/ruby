@@ -90,6 +90,13 @@ static ruby_gc_params_t initial_params = {
 #endif
 };
 
+/* GC_DEBUG:
+ *  enable to embed GC debugging information.
+ */
+#ifndef GC_DEBUG
+#define GC_DEBUG 0
+#endif
+
 #if USE_RGENGC
 /* RGENGC_DEBUG:
  * 1: basic information
@@ -230,9 +237,9 @@ typedef struct RVALUE {
 	    VALUE v3;
 	} values;
     } as;
-#ifdef GC_DEBUG
+#if GC_DEBUG
     const char *file;
-    int   line;
+    VALUE line;
 #endif
 } RVALUE;
 
@@ -979,9 +986,10 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     RANY(obj)->as.values.v2 = v2;
     RANY(obj)->as.values.v3 = v3;
 
-#ifdef GC_DEBUG
+#if GC_DEBUG
     RANY(obj)->file = rb_sourcefile();
     RANY(obj)->line = rb_sourceline();
+    assert(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
 #if RGENGC_PROFILE
@@ -3339,7 +3347,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	break;
 
       default:
-#ifdef GC_DEBUG
+#if GC_DEBUG
 	rb_gcdebug_print_obj_condition((VALUE)obj);
 #endif
 	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("rb_gc_mark(): %p is T_NONE", (void *)obj);
@@ -4619,9 +4627,9 @@ aligned_malloc(size_t alignment, size_t size)
     res = (void*)aligned;
 #endif
 
-#if defined(_DEBUG) || defined(GC_DEBUG)
+#if defined(_DEBUG) || GC_DEBUG
     /* alignment must be a power of 2 */
-    assert((alignment - 1) & alignment == 0);
+    assert(((alignment - 1) & alignment) == 0);
     assert(alignment % sizeof(void*) == 0);
 #endif
     return res;
@@ -5640,7 +5648,7 @@ obj_type_name(VALUE obj)
     return type_name(TYPE(obj), obj);
 }
 
-#ifdef GC_DEBUG
+#if GC_DEBUG
 
 void
 rb_gcdebug_print_obj_condition(VALUE obj)
