@@ -6652,7 +6652,6 @@ rb_proc_times(VALUE obj)
  *  such as Process::CLOCK_REALTIME and Process::CLOCK_MONOTONIC.
  *
  *  The supported constants depends on OS and version.
- *
  *  Ruby provides following types of +clock_id+ if available.
  *
  *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
@@ -6664,11 +6663,13 @@ rb_proc_times(VALUE obj)
  *  [CLOCK_REALTIME_FAST] FreeBSD 8.1
  *  [CLOCK_REALTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_REALTIME_COARSE] Linux 2.6.32
+ *  [CLOCK_REALTIME_ALARM] Linux 3.0
  *  [CLOCK_MONOTONIC_FAST] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_PRECISE] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_COARSE] Linux 2.6.32
  *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28
  *  [CLOCK_BOOTTIME] Linux 2.6.39
+ *  [CLOCK_BOOTTIME_ALARM] Linux 3.0
  *  [CLOCK_UPTIME] FreeBSD 7.0
  *  [CLOCK_UPTIME_FAST] FreeBSD 8.1
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
@@ -7121,6 +7122,9 @@ Init_process(void)
 #ifdef CLOCK_REALTIME_COARSE
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_COARSE", CLOCKID2NUM(CLOCK_REALTIME_COARSE));
 #endif
+#ifdef CLOCK_REALTIME_ALARM
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME_ALARM", CLOCKID2NUM(CLOCK_REALTIME_ALARM));
+#endif
 #ifdef CLOCK_MONOTONIC_FAST
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
 #endif
@@ -7135,6 +7139,9 @@ Init_process(void)
 #endif
 #ifdef CLOCK_BOOTTIME
     rb_define_const(rb_mProcess, "CLOCK_BOOTTIME", CLOCKID2NUM(CLOCK_BOOTTIME));
+#endif
+#ifdef CLOCK_BOOTTIME_ALARM
+    rb_define_const(rb_mProcess, "CLOCK_BOOTTIME_ALARM", CLOCKID2NUM(CLOCK_BOOTTIME_ALARM));
 #endif
 #ifdef CLOCK_UPTIME
     rb_define_const(rb_mProcess, "CLOCK_UPTIME", CLOCKID2NUM(CLOCK_UPTIME));
