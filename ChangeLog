@@ -1,3 +1,12 @@
+Mon Aug 19 21:31:35 2013  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/defines.h: Fix a compilation error with
+	  i586-mingw32msvc-gcc of gcc-mingw32 package on Debian squeeze.
+	  ruby/missing.h should be included before include/ruby/win32.h
+	  because struct timespec, used in the clock_gettime declaration in
+	  include/ruby/win32.h, is defined in ruby/missing.h instead of
+	  system headers.
+
 Mon Aug 19 20:55:12 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: fix around GC_DEBUG.

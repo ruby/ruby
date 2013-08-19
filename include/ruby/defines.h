@@ -65,6 +65,8 @@ extern "C" {
 #include <setjmpex.h>
 #endif
 
+#include "ruby/missing.h"
+
 #define RUBY
 
 #ifdef __cplusplus

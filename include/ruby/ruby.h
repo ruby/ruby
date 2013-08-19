@@ -1736,7 +1736,6 @@ rb_special_const_p(VALUE obj)
 }
 #endif
 
-#include "ruby/missing.h"
 #include "ruby/intern.h"
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
