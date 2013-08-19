@@ -19,7 +19,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
         end
       },
     }
-    if RUBY_PLATFORM =~ /mswin32|mingw|cygwin|bccwin32/
+    if RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
       config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
     end
     TestWEBrick.start_httpserver(config){|server, addr, port, log|
