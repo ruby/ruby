@@ -1,3 +1,11 @@
+Tue Aug 20 01:52:05 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/socket/unixserver.c: [DOC] Document #accept
+	* ext/socket/tcpserver.c: ditto
+	* ext/socket/udpsocket.c: [DOC] Fix indentation of documentation
+	* ext/socket/socket.c: ditto
+	  Patches by David Rodríguez [ruby-core:56734] [Bug #8802]
+
 Tue Aug 20 01:19:22 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Define ac_cv_func_clock_gettime to yes for mingw*.

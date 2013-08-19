@@ -12,7 +12,7 @@
 
 /*
  * call-seq:
- *   TCPServer.new([hostname,] port)                    => tcpserver
+ *   TCPServer.new([hostname,] port) => tcpserver
  *
  * Creates a new server socket bound to _port_.
  *
@@ -43,6 +43,8 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
  * call-seq:
  *   tcpserver.accept => tcpsocket
  *
+ * Accepts an incoming connection. It returns a new TCPSocket object.
+ *
  *   TCPServer.open("127.0.0.1", 14641) {|serv|
  *     s = serv.accept
  *     s.puts Time.now
@@ -64,7 +66,7 @@ tcp_accept(VALUE sock)
 
 /*
  * call-seq:
- * 	tcpserver.accept_nonblock => tcpsocket
+ *   tcpserver.accept_nonblock => tcpsocket
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.

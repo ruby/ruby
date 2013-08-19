@@ -262,7 +262,7 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- * 	socket.connect(remote_sockaddr) => 0
+ *   socket.connect(remote_sockaddr) => 0
  *
  * Requests a connection to be made on the given +remote_sockaddr+. Returns 0 if
  * successful, otherwise an exception is raised.
@@ -392,7 +392,7 @@ sock_connect(VALUE sock, VALUE addr)
 
 /*
  * call-seq:
- * 	socket.connect_nonblock(remote_sockaddr) => 0
+ *   socket.connect_nonblock(remote_sockaddr) => 0
  *
  * Requests a connection to be made on the given +remote_sockaddr+ after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -455,7 +455,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
 
 /*
  * call-seq:
- * 	socket.bind(local_sockaddr) => 0
+ *   socket.bind(local_sockaddr) => 0
  *
  * Binds to the given local address.
  *
@@ -555,7 +555,7 @@ sock_bind(VALUE sock, VALUE addr)
 
 /*
  * call-seq:
- * 	socket.listen( int ) => 0
+ *   socket.listen( int ) => 0
  *
  * Listens for connections, using the specified +int+ as the backlog. A call
  * to _listen_ only applies if the +socket+ is of type SOCK_STREAM or
@@ -639,8 +639,8 @@ rsock_sock_listen(VALUE sock, VALUE log)
 
 /*
  * call-seq:
- * 	socket.recvfrom(maxlen) => [mesg, sender_addrinfo]
- * 	socket.recvfrom(maxlen, flags) => [mesg, sender_addrinfo]
+ *   socket.recvfrom(maxlen) => [mesg, sender_addrinfo]
+ *   socket.recvfrom(maxlen, flags) => [mesg, sender_addrinfo]
  *
  * Receives up to _maxlen_ bytes from +socket+. _flags_ is zero or more
  * of the +MSG_+ options. The first element of the results, _mesg_, is the data
@@ -750,8 +750,8 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- * 	socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
- * 	socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
+ *   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
+ *   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
  *
  * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -846,7 +846,7 @@ sock_accept(VALUE sock)
 
 /*
  * call-seq:
- * 	socket.accept_nonblock => [client_socket, client_addrinfo]
+ *   socket.accept_nonblock => [client_socket, client_addrinfo]
  *
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -910,7 +910,7 @@ sock_accept_nonblock(VALUE sock)
 
 /*
  * call-seq:
- * 	socket.sysaccept => [client_socket_fd, client_addrinfo]
+ *   socket.sysaccept => [client_socket_fd, client_addrinfo]
  *
  * Accepts an incoming connection returning an array containing the (integer)
  * file descriptor for the incoming connection, _client_socket_fd_,
