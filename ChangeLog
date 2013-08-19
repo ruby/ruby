@@ -1,3 +1,9 @@
+Mon Aug 19 13:03:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (clock_gettime): should not overwrite cache variable
+	  with different condtion.  otherwise -lrt is not linked and the link
+	  fails, after reconfig.
+
 Mon Aug 19 12:56:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (Init_process): Add constants: CLOCK_REALTIME_ALARM and

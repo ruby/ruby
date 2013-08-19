@@ -1860,8 +1860,9 @@ if test x"$ac_cv_func_clock_gettime" != xyes; then
     # glibc 2.17 moves clock_* functions from librt to the main C library.
     # http://sourceware.org/ml/libc-announce/2012/msg00001.html
     AC_CHECK_LIB(rt, clock_gettime)
-    unset ac_cv_func_clock_gettime
-    AC_CHECK_FUNCS(clock_gettime)
+    if test x"$ac_cv_lib_rt_clock_gettime" = xyes; then
+	AC_DEFINE(HAVE_CLOCK_GETTIME, 1)
+    fi
 fi
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
