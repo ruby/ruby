@@ -1,3 +1,8 @@
+Tue Aug 20 02:10:19 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/rss.rb: [DOC] Document for constants by Steve Klabnik
+	  [ruby-core:56705] [Bug #8798]
+
 Tue Aug 20 02:01:10 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/xmlparser.rb: [DOC] Hide legacy constant from rdoc
