@@ -1,3 +1,7 @@
+Mon Aug 19 18:31:26 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* parse.y: fix build error with bison-3.0.
+
 Fri Aug 16 15:35:10 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{core,strftime}.c: [ruby-core:46990].
