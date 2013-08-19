@@ -1,3 +1,8 @@
+Mon Aug 19 18:34:31 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* test/openssl/test_ssl.rb: Fix test for CVE-2013-4073.
+	  Patch by Antonio Terceiro. [Bug #8750] [ruby-core:56437]
+
 Mon Aug 19 18:31:26 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* parse.y: fix build error with bison-3.0.
