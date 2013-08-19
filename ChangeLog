@@ -1,3 +1,8 @@
+Mon Aug 19 17:00:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (retry_fork): retry with GC if ENOMEM occurred, to free
+	  swap/kernel space.
+
 Mon Aug 19 13:28:47 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (CLOCK_MONOTONIC): typo.

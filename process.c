@@ -3246,6 +3246,7 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
 {
     rb_pid_t pid;
     int state = 0;
+    int try_gc = 1;
 
 #define prefork() (		\
 	rb_io_flush(rb_stdout), \
@@ -3265,6 +3266,12 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
             return pid;
         /* fork failed */
 	switch (errno) {
+	  case ENOMEM:
+	    if (try_gc-- > 0 && !rb_during_gc()) {
+		rb_gc();
+		continue;
+	    }
+	    break;
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
@@ -3278,14 +3285,13 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
 		if (status) *status = state;
 		if (!state) continue;
 	    }
-            /* fall through */
-	  default:
-	    if (ep) {
-		preserving_errno((close(ep[0]), close(ep[1])));
-	    }
-	    if (state && !status) rb_jump_tag(state);
-	    return -1;
+	    break;
 	}
+	if (ep) {
+	    preserving_errno((close(ep[0]), close(ep[1])));
+	}
+	if (state && !status) rb_jump_tag(state);
+	return -1;
     }
 }
 
