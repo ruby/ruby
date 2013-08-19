@@ -33,16 +33,18 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    max = 10000
+    max = 10_000
     assert_equal(max, max.times{
       Fiber.new{}
     })
+    GC.start # force collect created fibers
     assert_equal(max,
       max.times{|i|
         Fiber.new{
         }.resume
       }
     )
+    GC.start # force collect created fibers
   end
 
   def test_many_fibers_with_threads

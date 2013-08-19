@@ -1,3 +1,7 @@
+Mon Aug 19 17:43:44 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_fiber.rb: collect garbage fibers immediately.
+
 Mon Aug 19 17:41:49 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/profile_test_all.rb: add `failed?' information.
