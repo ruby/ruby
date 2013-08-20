@@ -125,13 +125,23 @@ struct iseq_compile_data_ensure_node_stack;
 
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
+
 struct iseq_inline_cache_entry {
     VALUE ic_vmstat;
     VALUE ic_class;
     union {
+	size_t index;
 	VALUE value;
-	long index;
     } ic_value;
+};
+
+union iseq_inline_storage_entry {
+    struct {
+	struct rb_thread_struct *running_thread;
+	VALUE value;
+	VALUE done;
+    } once;
+    struct iseq_inline_cache_entry cache;
 };
 
 /* to avoid warning */
@@ -224,8 +234,8 @@ struct rb_iseq_struct {
     /* sizeof(vars) + 1 */
     int local_size;
 
-    struct iseq_inline_cache_entry *ic_entries;
-    int ic_size;
+    union iseq_inline_storage_entry *is_entries;
+    int is_size;
 
     rb_call_info_t *callinfo_entries;
     int callinfo_size;
