@@ -857,7 +857,7 @@ module Test
 end
 
 module MiniTest # :nodoc: all
-  module Unit
+  class Unit
   end
 end
 
