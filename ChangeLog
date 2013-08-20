@@ -1,3 +1,10 @@
+Tue Aug 20 13:38:00 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/gdbm/test_gdbm.rb: skip TestGDBM#test_s_open_lock on Solaris.
+	  On Solaris (and platforms which do not have flock and have lockf),
+	  with GDBM 1.10, gdbm_open(3) blocks when opening already locked
+	  gdbm file. [Bug #8790] [ruby-dev:47631]
+
 Tue Aug 20 02:32:52 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/test/: [DOC] Document Test::Unit, hide most submodules and
