@@ -966,6 +966,45 @@ class TestRegexp < Test::Unit::TestCase
     }
   end
 
+  def test_once
+    pr1 = proc{|i| /#{i}/o}
+    assert_equal(/0/, pr1.call(0))
+    assert_equal(/0/, pr1.call(1))
+    assert_equal(/0/, pr1.call(2))
+
+    # recursive
+    pr2 = proc{|i|
+      if i > 0
+        /#{pr2.call(i-1).to_s}#{i}/
+      else
+        //
+      end
+    }
+    assert_equal(/(?-mix:(?-mix:(?-mix:)1)2)3/, pr2.call(3))
+
+    # multi-thread
+    m = Mutex.new
+    pr3 = proc{|i|
+      /#{m.unlock; sleep 0.5; i}/o
+    }
+    ary = []
+    n = 0
+    th1 = Thread.new{m.lock; ary << pr3.call(n+=1)}
+    th2 = Thread.new{m.lock; ary << pr3.call(n+=1)}
+    th1.join; th2.join
+    assert_equal([/1/, /1/], ary)
+
+    # escape
+    pr4 = proc{|i|
+      catch(:xyzzy){
+        /#{throw :xyzzy, i}/o
+        :ng
+      }
+    }
+    assert_equal(0, pr4.call(0))
+    assert_equal(1, pr4.call(1))
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)

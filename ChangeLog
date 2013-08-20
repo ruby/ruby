@@ -1,3 +1,24 @@
+Wed Aug 21 02:32:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: fix regexp's once option behavior.
+	  fix [ruby-trunk - Bug #6701]
+
+	* insns.def: remove `onceinlinecache' and introduce `once' instruction.
+	  `once' doesn't use `setinlinecache' insn any more.
+
+	* vm_core.h: `union iseq_inline_storage_entry' to store once data.
+
+	* compile.c: catch up above changes.
+
+	* iseq.c: ditto.
+
+	* vm.c, vm_insnhelper.c: ditto. fix `m_core_set_postexe()' which
+	  is depend on `onceinlinecache' insn.
+
+	* test/ruby/test_regexp.rb: add tests.
+
+	* iseq.c: ISEQ_MINOR_VERSION to 1 (should increment major?)
+
 Wed Aug 21 02:30:15 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gcdebug_print_obj_condition): add printing information.

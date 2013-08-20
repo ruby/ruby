@@ -1198,35 +1198,6 @@ getinlinecache
 
 /**
   @c optimize
-  @e inline cache (once)
-  @j once を実現する。
- */
-DEFINE_INSN
-onceinlinecache
-(OFFSET dst, IC ic)
-()
-(VALUE val)
-{
-  retry:
-    if (ic->ic_vmstat) {
-	val = ic->ic_value.value;
-	JUMP(dst);
-    }
-    else if (ic->ic_value.value == Qundef)
-    {
-	RUBY_VM_CHECK_INTS(th);
-	rb_thread_schedule();
-	goto retry;
-    }
-    else {
-	/* none */
-	ic->ic_value.value = Qundef;
-	val = Qnil;
-    }
-}
-
-/**
-  @c optimize
   @e set inline cache
   @j インラインキャッシュの値を設定する。
  */
@@ -1242,6 +1213,44 @@ setinlinecache
     ic->ic_value.value = val;
     ic->ic_vmstat = GET_VM_STATE_VERSION() - ruby_vm_const_missing_count;
     ruby_vm_const_missing_count = 0;
+}
+
+/**
+  @c optimize
+  @e once
+  @j once を実現する。
+ */
+DEFINE_INSN
+once
+(ISEQ iseq, IC ic)
+()
+(VALUE val)
+{
+    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)ic;
+
+  retry:
+    if (is->once.done == Qfalse) {
+	if (is->once.running_thread == NULL) {
+	    is->once.running_thread = th;
+	    val = is->once.value = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
+	    /* is->once.running_thread is cleared by vm_once_clear() */
+	    is->once.done = Qtrue;
+	    rb_iseq_add_mark_object(GET_ISEQ(), val);
+	}
+	else if (is->once.running_thread == th) {
+	    /* recursive once */
+	    val = vm_once_exec(iseq);
+	}
+	else {
+	    /* waiting for finish */
+	    RUBY_VM_CHECK_INTS(th);
+	    rb_thread_schedule();
+	    goto retry;
+	}
+    }
+    else {
+	val = is->once.value;
+    }
 }
 
 /**

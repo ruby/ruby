@@ -512,7 +512,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 
 	if (LIKELY((!is_attr && (ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION())) ||
 		   (is_attr && ci->aux.index > 0))) {
-	    long index = !is_attr ? ic->ic_value.index : ci->aux.index - 1;
+	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index - 1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -568,7 +568,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	if (LIKELY(
 	    (!is_attr && ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION()) ||
 	    (is_attr && ci->aux.index > 0))) {
-	    long index = !is_attr ? ic->ic_value.index : ci->aux.index-1;
+	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index-1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -2350,4 +2350,37 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 	POPN(ci->argc); /* TODO: should put before C/yield? */
 	return val;
     }
+}
+
+static VALUE
+vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
+{
+    rb_block_t *blockptr;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (cfp == 0) {
+	rb_bug("m_core_set_postexe: unreachable");
+    }
+
+    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+    blockptr->iseq = blockiseq;
+    blockptr->proc = 0;
+
+    return rb_vm_make_proc(th, blockptr, rb_cProc);
+}
+
+static VALUE
+vm_once_exec(rb_iseq_t *iseq)
+{
+    VALUE proc = vm_make_proc_with_iseq(iseq);
+    return rb_proc_call_with_block(proc, 0, 0, Qnil);
+}
+
+static VALUE
+vm_once_clear(VALUE data)
+{
+    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)data;
+    is->once.running_thread = NULL;
+    return Qnil;
 }

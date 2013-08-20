@@ -1432,8 +1432,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
     line_info_table = ALLOC_N(struct iseq_line_info_entry, k);
-    iseq->ic_entries = ALLOC_N(struct iseq_inline_cache_entry, iseq->ic_size);
-    MEMZERO(iseq->ic_entries, struct iseq_inline_cache_entry, iseq->ic_size);
+    iseq->is_entries = ALLOC_N(union iseq_inline_storage_entry, iseq->is_size);
+    MEMZERO(iseq->is_entries, union iseq_inline_storage_entry, iseq->is_size);
     iseq->callinfo_entries = ALLOC_N(rb_call_info_t, iseq->callinfo_size);
     /* MEMZERO(iseq->callinfo_entries, rb_call_info_t, iseq->callinfo_size); */
 
@@ -1531,9 +1531,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		      case TS_IC: /* inline cache */
 			{
 			    int ic_index = FIX2INT(operands[j]);
-			    IC ic = &iseq->ic_entries[ic_index];
-			    if (UNLIKELY(ic_index >= iseq->ic_size)) {
-				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, iseq->ic_size);
+			    IC ic = (IC)&iseq->is_entries[ic_index];
+			    if (UNLIKELY(ic_index >= iseq->is_size)) {
+				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, iseq->is_size);
 			    }
 			    generated_iseq[pos + 1 + j] = (VALUE)ic;
 			    break;
@@ -3923,7 +3923,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, line, dup);
 	}
 	ADD_INSN2(ret, line, setinstancevariable,
-		  ID2SYM(node->nd_vid), INT2FIX(iseq->ic_size++));
+		  ID2SYM(node->nd_vid), INT2FIX(iseq->is_size++));
 	break;
       }
       case NODE_CDECL:{
@@ -4662,7 +4662,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	debugi("nd_vid", node->nd_vid);
 	if (!poped) {
 	    ADD_INSN2(ret, line, getinstancevariable,
-		      ID2SYM(node->nd_vid), INT2FIX(iseq->ic_size++));
+		      ID2SYM(node->nd_vid), INT2FIX(iseq->is_size++));
 	}
 	break;
       }
@@ -4671,7 +4671,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (iseq->compile_data->option->inline_const_cache) {
 	    LABEL *lend = NEW_LABEL(line);
-	    int ic_index = iseq->ic_size++;
+	    int ic_index = iseq->is_size++;
 
 	    ADD_INSN2(ret, line, getinlinecache, lend, INT2FIX(ic_index));
 	    ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
@@ -4824,16 +4824,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DREGX_ONCE:{
 	/* TODO: once? */
-	LABEL *lend = NEW_LABEL(line);
-	int ic_index = iseq->ic_size++;
+	int ic_index = iseq->is_size++;
+	NODE *dregx_node = NEW_NODE(NODE_DREGX, node->u1.value, node->u2.value, node->u3.value);
+	NODE *block_node = NEW_NODE(NODE_SCOPE, 0, dregx_node, 0);
+	VALUE block_iseq = NEW_CHILD_ISEQVAL(block_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
 
-	ADD_INSN2(ret, line, onceinlinecache, lend, INT2FIX(ic_index));
-	ADD_INSN(ret, line, pop);
-
-	compile_dregx(iseq, ret, node);
-
-	ADD_INSN1(ret, line, setinlinecache, INT2FIX(ic_index));
-	ADD_LABEL(ret, lend);
+	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
@@ -5010,7 +5006,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (rb_is_const_id(node->nd_mid)) {
 	    /* constant */
 	    LABEL *lend = NEW_LABEL(line);
-	    int ic_index = iseq->ic_size++;
+	    int ic_index = iseq->is_size++;
 
 	    DECL_ANCHOR(pref);
 	    DECL_ANCHOR(body);
@@ -5052,7 +5048,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_COLON3:{
 	LABEL *lend = NEW_LABEL(line);
-	int ic_index = iseq->ic_size++;
+	int ic_index = iseq->is_size++;
 
 	debugi("colon3#nd_mid", node->nd_mid);
 
@@ -5201,19 +5197,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_POSTEXE:{
-	LABEL *lend = NEW_LABEL(line);
 	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
-	int ic_index = iseq->ic_size++;
-
-	ADD_INSN2(ret, line, onceinlinecache, lend, INT2FIX(ic_index));
-	ADD_INSN(ret, line, pop);
+	int is_index = iseq->is_size++;
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putiseq, block);
-	ADD_SEND (ret, line, ID2SYM(id_core_set_postexe), INT2FIX(1));
-
-	ADD_INSN1(ret, line, setinlinecache, INT2FIX(ic_index));
-	ADD_LABEL(ret, lend);
+	ADD_INSN1(ret, line, putobject, INT2FIX(is_index));
+	ADD_SEND (ret, line, ID2SYM(id_core_set_postexe), INT2FIX(2));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
@@ -5711,8 +5701,8 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_IC:
 			argv[j] = op;
-			if (NUM2INT(op) >= iseq->ic_size) {
-			    iseq->ic_size = NUM2INT(op) + 1;
+			if (NUM2INT(op) >= iseq->is_size) {
+			    iseq->is_size = NUM2INT(op) + 1;
 			}
 			break;
 		      case TS_CALLINFO:
