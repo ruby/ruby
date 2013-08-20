@@ -5655,6 +5655,8 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
+    fprintf(stderr, "created at: %s:%d\n", RSTRING_PTR(RANY(obj)->file), FIX2INT(RANY(obj)->line));
+
     if (is_pointer_to_heap(objspace, (void *)obj)) {
         fprintf(stderr, "pointer to heap?: true\n");
     }
@@ -5662,12 +5664,17 @@ rb_gcdebug_print_obj_condition(VALUE obj)
         fprintf(stderr, "pointer to heap?: false\n");
         return;
     }
-    fprintf(stderr, "marked?: %s\n",
-            MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
+
+    fprintf(stderr, "marked?    : %s\n", MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) ? "true" : "false");
+#if USE_RGENGC
+    fprintf(stderr, "promoted?  : %s\n", RVALUE_PROMOTED(obj) ? "true" : "false");
+    fprintf(stderr, "shady?     : %s\n", RVALUE_SHADY(obj) ? "true" : "false");
+    fprintf(stderr, "remembered?: %s\n", MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "true" : "false");
+#endif
+
     if (is_lazy_sweeping(objspace)) {
         fprintf(stderr, "lazy sweeping?: true\n");
-        fprintf(stderr, "swept?: %s\n",
-                is_swept_object(objspace, obj) ? "done" : "not yet");
+        fprintf(stderr, "swept?: %s\n", is_swept_object(objspace, obj) ? "done" : "not yet");
     }
     else {
         fprintf(stderr, "lazy sweeping?: false\n");
