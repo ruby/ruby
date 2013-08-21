@@ -6685,10 +6685,10 @@ rb_proc_times(VALUE obj)
  *  There are emulations for clock_gettime().
  *
  *  For example, Process::CLOCK_REALTIME is defined as
- *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
+ *  +:SUS_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
  *  Emulations for +CLOCK_REALTIME+:
- *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
+ *  [:SUS_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
  *  [:ISO_C_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
  *
  *  Emulations for +CLOCK_MONOTONIC+:
@@ -6746,11 +6746,11 @@ rb_clock_gettime(int argc, VALUE *argv)
          * Non-clock_gettime clocks are provided by symbol clk_id.
          *
          * gettimeofday is always available on platforms supported by Ruby.
-         * POSIX_GETTIMEOFDAY_CLOCK_REALTIME is used for
+         * SUS_GETTIMEOFDAY_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
-#define RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME ID2SYM(rb_intern("POSIX_GETTIMEOFDAY_CLOCK_REALTIME"))
-        if (clk_id == RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME) {
+#define RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME ID2SYM(rb_intern("SUS_GETTIMEOFDAY_CLOCK_REALTIME"))
+        if (clk_id == RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME) {
             struct timeval tv;
             ret = gettimeofday(&tv, 0);
             if (ret != 0)
@@ -7126,8 +7126,8 @@ Init_process(void)
 
 #ifdef CLOCK_REALTIME
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME)
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME);
+#elif defined(RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));

@@ -1,3 +1,8 @@
+Wed Aug 21 19:31:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: POSIX_GETTIMEOFDAY_CLOCK_REALTIME is renamed to
+	  SUS_GETTIMEOFDAY_CLOCK_REALTIME.
+
 Wed Aug 21 19:17:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): CLOCK_PROCESS_CPUTIME_ID emulation
