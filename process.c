@@ -6641,14 +6641,19 @@ rb_proc_times(VALUE obj)
 {
     const double hertz = get_clk_tck();
     struct tms buf;
-    volatile VALUE utime, stime, cutime, sctime;
+    VALUE utime, stime, cutime, cstime, ret;
 
     times(&buf);
-    return rb_struct_new(rb_cProcessTms,
-			 utime = DBL2NUM(buf.tms_utime / hertz),
-			 stime = DBL2NUM(buf.tms_stime / hertz),
-			 cutime = DBL2NUM(buf.tms_cutime / hertz),
-			 sctime = DBL2NUM(buf.tms_cstime / hertz));
+    utime = DBL2NUM(buf.tms_utime / hertz);
+    stime = DBL2NUM(buf.tms_stime / hertz);
+    cutime = DBL2NUM(buf.tms_cutime / hertz);
+    cstime = DBL2NUM(buf.tms_cstime / hertz);
+    ret = rb_struct_new(rb_cProcessTms, utime, stime, cutime, cstime);
+    RB_GC_GUARD(utime);
+    RB_GC_GUARD(stime);
+    RB_GC_GUARD(cutime);
+    RB_GC_GUARD(cstime);
+    return ret;
 }
 #else
 #define rb_proc_times rb_f_notimplement

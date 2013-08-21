@@ -1,3 +1,7 @@
+Wed Aug 21 21:02:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_times): Use RB_GC_GUARD to guard objects from GC.
+
 Wed Aug 21 20:33:01 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (get_clk_tck): Extracted from rb_proc_times.
