@@ -1,3 +1,7 @@
+Thu Aug 22 06:24:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (make_clock_result): Extracted from rb_clock_gettime.
+
 Wed Aug 21 22:30:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): clock() based CLOCK_PROCESS_CPUTIME_ID

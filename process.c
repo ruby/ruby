@@ -6659,6 +6659,53 @@ rb_proc_times(VALUE obj)
 #define rb_proc_times rb_f_notimplement
 #endif
 
+static VALUE
+make_clock_result(struct timespec *tsp, VALUE unit)
+{
+    long factor;
+
+    if (unit == ID2SYM(rb_intern("nanoseconds"))) {
+        factor = 1000000000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("microseconds"))) {
+        factor = 1000000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("milliseconds"))) {
+        factor = 1000;
+        goto return_integer;
+    }
+    else if (unit == ID2SYM(rb_intern("float_microseconds"))) {
+        factor = 1000000;
+        goto return_float;
+    }
+    else if (unit == ID2SYM(rb_intern("float_milliseconds"))) {
+        factor = 1000;
+        goto return_float;
+    }
+    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_seconds"))) {
+        factor = 1;
+        goto return_float;
+    }
+    else {
+        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
+    }
+
+  return_float:
+    return DBL2NUM((tsp->tv_sec + 1e-9 * (double)tsp->tv_nsec) / factor);
+
+  return_integer:
+#if defined(HAVE_LONG_LONG)
+    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, (LONG_LONG)tsp->tv_sec,
+                LLONG_MIN, LLONG_MAX-(factor-1))) {
+        return LL2NUM(tsp->tv_nsec/(1000000000/factor) + factor * (LONG_LONG)tsp->tv_sec);
+    }
+#endif
+    return rb_funcall(LONG2FIX(tsp->tv_nsec/(1000000000/factor)), '+', 1,
+            rb_funcall(LONG2FIX(factor), '*', 1, TIMET2NUM(tsp->tv_sec)));
+}
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -6764,7 +6811,6 @@ rb_clock_gettime(int argc, VALUE *argv)
     struct timespec ts;
     VALUE clk_id, unit;
     int ret;
-    long factor;
 
     rb_scan_args(argc, argv, "11", &clk_id, &unit);
 
@@ -6881,46 +6927,7 @@ rb_clock_gettime(int argc, VALUE *argv)
     rb_sys_fail(0);
 
   success:
-    if (unit == ID2SYM(rb_intern("nanoseconds"))) {
-        factor = 1000000000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("microseconds"))) {
-        factor = 1000000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("milliseconds"))) {
-        factor = 1000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("float_microseconds"))) {
-        factor = 1000000;
-        goto return_float;
-    }
-    else if (unit == ID2SYM(rb_intern("float_milliseconds"))) {
-        factor = 1000;
-        goto return_float;
-    }
-    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_seconds"))) {
-        factor = 1;
-        goto return_float;
-    }
-    else {
-        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
-    }
-
-  return_float:
-    return DBL2NUM((ts.tv_sec + 1e-9 * (double)ts.tv_nsec) / factor);
-
-  return_integer:
-#if defined(HAVE_LONG_LONG)
-    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, (LONG_LONG)ts.tv_sec,
-                LLONG_MIN, LLONG_MAX-(factor-1))) {
-        return LL2NUM(ts.tv_nsec/(1000000000/factor) + factor * (LONG_LONG)ts.tv_sec);
-    }
-#endif
-    return rb_funcall(LONG2FIX(ts.tv_nsec/(1000000000/factor)), '+', 1,
-            rb_funcall(LONG2FIX(factor), '*', 1, TIMET2NUM(ts.tv_sec)));
+    return make_clock_result(&ts, unit);
 }
 
 VALUE rb_mProcess;
