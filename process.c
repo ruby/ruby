@@ -6687,13 +6687,20 @@ rb_proc_times(VALUE obj)
  *  For example, Process::CLOCK_REALTIME is defined as
  *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
- *  Emulations for +:CLOCK_REALTIME+:
+ *  Emulations for +CLOCK_REALTIME+:
  *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
  *  [:ISO_C_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
  *
- *  Emulations for +:CLOCK_MONOTONIC+:
+ *  Emulations for +CLOCK_MONOTONIC+:
  *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
  * 					  The resolution is CPU dependent.
+ *
+ *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
+ *  [:SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use getrusage with RUSAGE_SELF.
+ *    getrusage is defined by Single Unix Specification.
+ *    The result is addition of ru_utime and ru_stime.
+ *    The resolution is 1 micro second.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
@@ -6763,6 +6770,26 @@ rb_clock_gettime(int argc, VALUE *argv)
             ts.tv_nsec = 0;
             goto success;
         }
+
+#ifdef RUSAGE_SELF
+#define RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID) {
+            struct rusage usage;
+            long usec;
+            ret = getrusage(RUSAGE_SELF, &usage);
+            if (ret != 0)
+                rb_sys_fail("getrusage");
+            ts.tv_sec = usage.ru_utime.tv_sec + usage.ru_stime.tv_sec;
+            usec = usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
+            if (1000000 <= usec) {
+                ts.tv_sec++;
+                usec -= 1000000;
+            }
+            ts.tv_nsec = usec * 1000;
+            goto success;
+        }
+#endif
 
 #ifdef __APPLE__
 #define RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC"))
@@ -7109,6 +7136,8 @@ Init_process(void)
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
+#elif defined(RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
