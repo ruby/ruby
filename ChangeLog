@@ -1,3 +1,8 @@
+Wed Aug 21 22:30:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): clock() based CLOCK_PROCESS_CPUTIME_ID
+	  emulation implemented.
+
 Wed Aug 21 21:02:37 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_proc_times): Use RB_GC_GUARD to guard objects from GC.

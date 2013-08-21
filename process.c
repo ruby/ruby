@@ -6713,14 +6713,21 @@ rb_proc_times(VALUE obj)
  *    getrusage() is defined by Single Unix Specification.
  *    The result is addition of ru_utime and ru_stime.
  *    The resolution is 1 micro second.
+ *  [:ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use clock() defined by ISO C.
+ *    The resolution is 1/CLOCKS_PER_SEC.
+ *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
+ *    Single Unix Specification defines CLOCKS_PER_SEC is 1000000.
+ *    Non-Unix systems may define it a different value, though.
+ *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
  *  [:POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
- *    Use times().
- *    times() is defined by POSIX.
+ *    Use times() defined by POSIX.
  *    The result is addition of tms_utime and tms_stime.
  *    tms_cutime and tms_cstime are ignored.
  *    The resolution is the clock tick.
  *    "getconf CLK_TCK" command shows the clock ticks per second.
  *    (The clock ticks per second is defined by HZ macro in older systems.)
+ *    If it is 100, the resolution is 10 milli second.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
@@ -6811,6 +6818,21 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 #endif
 
+#define RUBY_ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID) {
+            double ns;
+            clock_t c;
+            c = clock();
+            errno = 0;
+            if (c == (clock_t)-1)
+                rb_sys_fail("clock");
+            ns = c * (1e9 / CLOCKS_PER_SEC);
+            ts.tv_sec = (time_t)(ns*1e-9);
+            ts.tv_nsec = ns - ts.tv_sec*1e9;
+            goto success;
+        }
+
 #ifdef HAVE_TIMES
 #define RUBY_POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID \
         ID2SYM(rb_intern("POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID"))
@@ -6819,7 +6841,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             struct tms buf;
             if (times(&buf) ==  (clock_t)-1)
                 rb_sys_fail("times");
-            ns = ((double)buf.tms_utime + buf.tms_stime) * 1e9 / get_clk_tck();
+            ns = ((double)buf.tms_utime + buf.tms_stime) * (1e9 / get_clk_tck());
             ts.tv_sec = (time_t)(ns*1e-9);
             ts.tv_nsec = ns - ts.tv_sec*1e9;
             goto success;
