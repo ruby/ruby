@@ -1,3 +1,9 @@
+Wed Aug 21 17:34:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (getrusage_time): Fallback clock_gettime to getrusage when
+	  clock_gettime fails.
+	  Reported by Eric Saxby.  [ruby-core:56762] [Bug #8805]
+	  
 Wed Aug 21 02:32:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: fix regexp's once option behavior.
