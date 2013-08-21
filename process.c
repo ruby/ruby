@@ -6744,30 +6744,34 @@ make_clock_result(struct timespec *tsp, VALUE unit)
  *  There are emulations for clock_gettime().
  *
  *  For example, Process::CLOCK_REALTIME is defined as
- *  +:SUS_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
+ *  +:SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
  *  Emulations for +CLOCK_REALTIME+:
- *  [:SUS_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
- *  [:ISO_C_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
+ *  [:SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME]
+ *    Use gettimeofday().
+ *    The resolution is 1 micro second.
+ *  [:ISO_C_TIME_BASED_CLOCK_REALTIME]
+ *    Use time().
+ *    The resolution is 1 second.
  *
  *  Emulations for +CLOCK_MONOTONIC+:
- *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
+ *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
  * 					  The resolution is CPU dependent.
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
- *  [:SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use getrusage() with RUSAGE_SELF.
  *    getrusage() is defined by Single Unix Specification.
  *    The result is addition of ru_utime and ru_stime.
  *    The resolution is 1 micro second.
- *  [:ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use clock() defined by ISO C.
  *    The resolution is 1/CLOCKS_PER_SEC.
  *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
  *    Single Unix Specification defines CLOCKS_PER_SEC is 1000000.
  *    Non-Unix systems may define it a different value, though.
  *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
- *  [:POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use times() defined by POSIX.
  *    The result is addition of tms_utime and tms_stime.
  *    tms_cutime and tms_cstime are ignored.
@@ -6819,11 +6823,11 @@ rb_clock_gettime(int argc, VALUE *argv)
          * Non-clock_gettime clocks are provided by symbol clk_id.
          *
          * gettimeofday is always available on platforms supported by Ruby.
-         * SUS_GETTIMEOFDAY_CLOCK_REALTIME is used for
+         * SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
-#define RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME ID2SYM(rb_intern("SUS_GETTIMEOFDAY_CLOCK_REALTIME"))
-        if (clk_id == RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME) {
+#define RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(rb_intern("SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             struct timeval tv;
             ret = gettimeofday(&tv, 0);
             if (ret != 0)
@@ -6833,8 +6837,8 @@ rb_clock_gettime(int argc, VALUE *argv)
             goto success;
         }
 
-#define RUBY_ISO_C_TIME_CLOCK_REALTIME ID2SYM(rb_intern("ISO_C_TIME_CLOCK_REALTIME"))
-        if (clk_id == RUBY_ISO_C_TIME_CLOCK_REALTIME) {
+#define RUBY_ISO_C_TIME_BASED_CLOCK_REALTIME ID2SYM(rb_intern("ISO_C_TIME_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_ISO_C_TIME_BASED_CLOCK_REALTIME) {
             time_t t;
             t = time(NULL);
             if (t == (time_t)-1)
@@ -6845,9 +6849,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 
 #ifdef RUSAGE_SELF
-#define RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct rusage usage;
             long usec;
             ret = getrusage(RUSAGE_SELF, &usage);
@@ -6864,9 +6868,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 #endif
 
-#define RUBY_ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_ISO_C_CLOCK_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             double ns;
             clock_t c;
             c = clock();
@@ -6880,9 +6884,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 
 #ifdef HAVE_TIMES
-#define RUBY_POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             double ns;
             struct tms buf;
             if (times(&buf) ==  (clock_t)-1)
@@ -6895,8 +6899,8 @@ rb_clock_gettime(int argc, VALUE *argv)
 #endif
 
 #ifdef __APPLE__
-#define RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC"))
-        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC) {
+#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC"))
+        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
 	    static mach_timebase_info_data_t sTimebaseInfo;
 	    uint64_t t = mach_absolute_time();
 
@@ -7190,18 +7194,18 @@ Init_process(void)
 
 #ifdef CLOCK_REALTIME
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME)
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_SUS_GETTIMEOFDAY_CLOCK_REALTIME);
+#elif defined(RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
-#elif defined(RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC)
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC);
+#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
-#elif defined(RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID)
-    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID);
+#elif defined(RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));

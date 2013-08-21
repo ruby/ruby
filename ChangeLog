@@ -1,3 +1,8 @@
+Thu Aug 22 06:54:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Change emulation symbols for
+	  Process.clock_gettime.
+
 Thu Aug 22 06:24:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (make_clock_result): Extracted from rb_clock_gettime.
