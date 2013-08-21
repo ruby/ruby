@@ -1,3 +1,9 @@
+Wed Aug 21 20:33:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (get_clk_tck): Extracted from rb_proc_times.
+	  (rb_clock_gettime): times() based CLOCK_PROCESS_CPUTIME_ID emulation
+	  is implemented.
+
 Wed Aug 21 19:31:48 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: POSIX_GETTIMEOFDAY_CLOCK_REALTIME is renamed to

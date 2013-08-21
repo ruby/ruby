@@ -6605,6 +6605,25 @@ p_gid_switch(VALUE obj)
 
 
 #if defined(HAVE_TIMES)
+static long
+get_clk_tck(void)
+{
+    long hertz =
+#ifdef HAVE__SC_CLK_TCK
+	(double)sysconf(_SC_CLK_TCK);
+#else
+#ifndef HZ
+# ifdef CLK_TCK
+#   define HZ CLK_TCK
+# else
+#   define HZ 60
+# endif
+#endif /* HZ */
+	HZ;
+#endif
+    return hertz;
+}
+
 /*
  *  call-seq:
  *     Process.times   -> aStructTms
@@ -6620,19 +6639,7 @@ p_gid_switch(VALUE obj)
 VALUE
 rb_proc_times(VALUE obj)
 {
-    const double hertz =
-#ifdef HAVE__SC_CLK_TCK
-	(double)sysconf(_SC_CLK_TCK);
-#else
-#ifndef HZ
-# ifdef CLK_TCK
-#   define HZ CLK_TCK
-# else
-#   define HZ 60
-# endif
-#endif /* HZ */
-	HZ;
-#endif
+    const double hertz = get_clk_tck();
     struct tms buf;
     volatile VALUE utime, stime, cutime, sctime;
 
@@ -6697,10 +6704,18 @@ rb_proc_times(VALUE obj)
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
  *  [:SUS_GETRUSAGE_SELF_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
- *    Use getrusage with RUSAGE_SELF.
- *    getrusage is defined by Single Unix Specification.
+ *    Use getrusage() with RUSAGE_SELF.
+ *    getrusage() is defined by Single Unix Specification.
  *    The result is addition of ru_utime and ru_stime.
  *    The resolution is 1 micro second.
+ *  [:POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use times().
+ *    times() is defined by POSIX.
+ *    The result is addition of tms_utime and tms_stime.
+ *    tms_cutime and tms_cstime are ignored.
+ *    The resolution is the clock tick.
+ *    "getconf CLK_TCK" command shows the clock ticks per second.
+ *    (The clock ticks per second is defined by HZ macro in older systems.)
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
@@ -6787,6 +6802,21 @@ rb_clock_gettime(int argc, VALUE *argv)
                 usec -= 1000000;
             }
             ts.tv_nsec = usec * 1000;
+            goto success;
+        }
+#endif
+
+#ifdef HAVE_TIMES
+#define RUBY_POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_POSIX_TIMES_CALLING_PROCESS_USER_AND_SYSTEM_TIME_CLOCK_PROCESS_CPUTIME_ID) {
+            double ns;
+            struct tms buf;
+            if (times(&buf) ==  (clock_t)-1)
+                rb_sys_fail("times");
+            ns = ((double)buf.tms_utime + buf.tms_stime) * 1e9 / get_clk_tck();
+            ts.tv_sec = (time_t)(ns*1e-9);
+            ts.tv_nsec = ns - ts.tv_sec*1e9;
             goto success;
         }
 #endif
