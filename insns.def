@@ -1177,7 +1177,7 @@ branchunless
 
 /**
   @c optimize
-  @e inline cache
+  @e push inline-cached value and go to dst if it is valid
   @j インラインキャッシュが有効なら、値をスタックにプッシュして dst へジャンプする。
  */
 DEFINE_INSN
@@ -1217,7 +1217,7 @@ setinlinecache
 
 /**
   @c optimize
-  @e once
+  @e run iseq only once
   @j once を実現する。
  */
 DEFINE_INSN
@@ -1255,7 +1255,7 @@ once
 
 /**
   @c optimize
-  @e case dispatcher
+  @e case dispatcher, jump by table if possible
   @j case 文で、可能なら表引きでジャンプする。
  */
 DEFINE_INSN
