@@ -1,3 +1,8 @@
+Fri Aug 23 01:16:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_parse.c (rfc2822_cb): check if wday is given, since it
+	  can be omitted.
+
 Fri Aug 23 00:55:02 2013  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (getrusage_time): Fallback clock_gettime to getrusage when
