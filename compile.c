@@ -510,6 +510,10 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	  }
 	}
     }
+    else if (nd_type(node) == NODE_IFUNC) {
+	/* user callback */
+	(*node->nd_cfnc)(iseq, ret, node->nd_tval);
+    }
     else {
 	switch (iseq->type) {
 	  case ISEQ_TYPE_METHOD:
@@ -3154,6 +3158,16 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
     return argc;
 }
 
+static VALUE
+build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *body)
+{
+    int line = nd_line(body);
+    VALUE argc = INT2FIX(0);
+    VALUE block = NEW_CHILD_ISEQVAL(body, make_name_for_block(iseq->parent_iseq), ISEQ_TYPE_BLOCK, line);
+    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    ADD_CALL_WITH_BLOCK(ret, line, ID2SYM(id_core_set_postexe), argc, block);
+    return Qnil;
+}
 
 /**
   compile each node
@@ -4823,7 +4837,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_DREGX_ONCE:{
-	/* TODO: once? */
 	int ic_index = iseq->is_size++;
 	NODE *dregx_node = NEW_NODE(NODE_DREGX, node->u1.value, node->u2.value, node->u3.value);
 	NODE *block_node = NEW_NODE(NODE_SCOPE, 0, dregx_node, 0);
@@ -5197,13 +5210,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_POSTEXE:{
-	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
+	/* compiled to:
+	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
+	 */
 	int is_index = iseq->is_size++;
+	VALUE once_iseq = NEW_CHILD_ISEQVAL(
+	    NEW_IFUNC(build_postexe_iseq, node->nd_body),
+	    make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
 
-	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	ADD_INSN1(ret, line, putiseq, block);
-	ADD_INSN1(ret, line, putobject, INT2FIX(is_index));
-	ADD_SEND (ret, line, ID2SYM(id_core_set_postexe), INT2FIX(2));
+	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);

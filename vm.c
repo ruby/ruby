@@ -2128,21 +2128,9 @@ m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 }
 
 static VALUE
-m_core_set_postexe(VALUE self, VALUE block_iseqval, VALUE is_index_val)
+m_core_set_postexe(VALUE self)
 {
-    int is_index = FIX2INT(is_index_val);
-    rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *iseq = rb_vm_get_ruby_level_next_cfp(th, th->cfp)->iseq;
-    union iseq_inline_storage_entry *is = &iseq->is_entries[is_index];
-
-    REWIND_CFP({
-	if (is->once.done != Qtrue) {
-	    rb_iseq_t *block_iseq;
-	    GetISeqPtr(block_iseqval, block_iseq);
-	    rb_set_end_proc(rb_call_end_proc, vm_make_proc_with_iseq(block_iseq));
-	    is->once.done = Qtrue;
-	}
-    });
+    rb_set_end_proc(rb_call_end_proc, rb_block_proc());
     return Qnil;
 }
 
@@ -2284,7 +2272,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_define_method, m_core_define_method, 3);
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
-    rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 2);
+    rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
     rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);

@@ -1,3 +1,14 @@
+Thu Aug 22 15:42:43 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (rb_iseq_compile_node): accept NODE_IFUNC to support
+	  custom compilation.
+
+	* compile.c (NODE_POSTEXE): compile to
+	  "ONCE{ VMFrozenCore::core#set_postexe{...} }" with a new custom
+	  compiler `build_postexe_iseq()'.
+
+	* vm.c (m_core_set_postexe): remove parameters (passed by a block).
+
 Thu Aug 22 06:54:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): Change emulation symbols for
