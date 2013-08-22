@@ -6672,27 +6672,27 @@ make_clock_result(struct timespec *tsp, VALUE unit)
 {
     long factor;
 
-    if (unit == ID2SYM(rb_intern("nanoseconds"))) {
+    if (unit == ID2SYM(rb_intern("nanosecond"))) {
         factor = 1000000000;
         goto return_integer;
     }
-    else if (unit == ID2SYM(rb_intern("microseconds"))) {
+    else if (unit == ID2SYM(rb_intern("microsecond"))) {
         factor = 1000000;
         goto return_integer;
     }
-    else if (unit == ID2SYM(rb_intern("milliseconds"))) {
+    else if (unit == ID2SYM(rb_intern("millisecond"))) {
         factor = 1000;
         goto return_integer;
     }
-    else if (unit == ID2SYM(rb_intern("float_microseconds"))) {
+    else if (unit == ID2SYM(rb_intern("float_microsecond"))) {
         factor = 1000000;
         goto return_float;
     }
-    else if (unit == ID2SYM(rb_intern("float_milliseconds"))) {
+    else if (unit == ID2SYM(rb_intern("float_millisecond"))) {
         factor = 1000;
         goto return_float;
     }
-    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_seconds"))) {
+    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_second"))) {
         factor = 1;
         goto return_float;
     }
@@ -6792,12 +6792,12 @@ make_clock_result(struct timespec *tsp, VALUE unit)
  *
  *  +unit+ specifies a type of the return value.
  *
- *  [:float_seconds] number of seconds as a float (default)
- *  [:float_milliseconds] number of milliseconds as a float
- *  [:float_microseconds] number of microseconds as a float
- *  [:milliseconds] number of milliseconds as an integer
- *  [:microseconds] number of microseconds as an integer
- *  [:nanoseconds] number of nanoseconds as an integer
+ *  [:float_second] number of seconds as a float (default)
+ *  [:float_millisecond] number of milliseconds as a float
+ *  [:float_microsecond] number of microseconds as a float
+ *  [:millisecond] number of milliseconds as an integer
+ *  [:microsecond] number of microseconds as an integer
+ *  [:nanosecond] number of nanoseconds as an integer
  *
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent

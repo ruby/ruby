@@ -1,3 +1,7 @@
+Thu Aug 22 22:01:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Strip "s" from unit names.
+
 Thu Aug 22 20:14:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (unsigned_clock_t): Defined.
