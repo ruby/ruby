@@ -1,3 +1,9 @@
+Fri Aug 23 00:55:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (getrusage_time): Fallback clock_gettime to getrusage when
+	  clock_gettime fails.
+	  Reported by Eric Saxby.  [ruby-core:56762] [Bug #8805]
+	  
 Sat Aug 17 00:42:12 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* parse.y: fix build error with bison-3.0.
