@@ -196,6 +196,14 @@ static rb_gid_t obj2gid(VALUE id);
 # endif
 #endif
 
+#if SIZEOF_CLOCK_T == SIZEOF_INT
+typedef unsigned int unsigned_clock_t;
+#elif SIZEOF_CLOCK_T == SIZEOF_LONG
+typedef unsigned long unsigned_clock_t;
+#elif defined(HAVE_LONG_LONG) && SIZEOF_CLOCK_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_clock_t;
+#endif
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -6886,15 +6894,18 @@ rb_clock_gettime(int argc, VALUE *argv)
 #define RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
         ID2SYM(rb_intern("ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
         if (clk_id == RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
-            double ns;
+            double s, ns;
             clock_t c;
+            unsigned_clock_t uc;
             c = clock();
             errno = 0;
             if (c == (clock_t)-1)
                 rb_sys_fail("clock");
-            ns = c * (1e9 / CLOCKS_PER_SEC);
-            ts.tv_sec = (time_t)(ns*1e-9);
-            ts.tv_nsec = ns - ts.tv_sec*1e9;
+            uc = (unsigned_clock_t)c;
+            ns = (uc*1e9) / CLOCKS_PER_SEC; /* uc*1e9 doesn't lose data if clock_t is 32bit. */
+            s = floor(ns*1e-9);
+            ts.tv_sec = (time_t)s;
+            ts.tv_nsec = ns - s*1e9;
             goto success;
         }
 

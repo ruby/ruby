@@ -1,3 +1,11 @@
+Thu Aug 22 20:14:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (unsigned_clock_t): Defined.
+	  (rb_clock_gettime): Consider clock_t overflow for
+	  ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID.
+
+	* configure.in: Check the size of clock_t.
+
 Thu Aug 22 16:22:48 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (build_postexe_iseq): fix to setup the local table.
