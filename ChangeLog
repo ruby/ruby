@@ -1,3 +1,7 @@
+Thu Aug 22 16:22:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (build_postexe_iseq): fix to setup the local table.
+
 Thu Aug 22 15:42:43 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_iseq_compile_node): accept NODE_IFUNC to support
