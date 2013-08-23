@@ -1,3 +1,7 @@
+Fri Aug 23 22:07:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (clock_t): needs time.h.
+
 Fri Aug 23 21:37:28 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (reduce_factors): New function.
