@@ -6886,7 +6886,7 @@ rb_clock_gettime(int argc, VALUE *argv)
                 rb_sys_fail("times");
             ns = ((double)buf.tms_utime + buf.tms_stime) * (1e9 / get_clk_tck());
             ts.tv_sec = (time_t)(ns*1e-9);
-            ts.tv_nsec = ns - ts.tv_sec*1e9;
+            ts.tv_nsec = (long)(ns - ts.tv_sec*1e9);
             goto success;
         }
 #endif
@@ -6905,7 +6905,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             ns = (uc*1e9) / CLOCKS_PER_SEC; /* uc*1e9 doesn't lose data if clock_t is 32bit. */
             s = floor(ns*1e-9);
             ts.tv_sec = (time_t)s;
-            ts.tv_nsec = ns - s*1e9;
+            ts.tv_nsec = (long)(ns - s*1e9);
             goto success;
         }
 
