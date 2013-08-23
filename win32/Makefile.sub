@@ -538,6 +538,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define CLOCKID2NUM(v) INT2NUM(v)
 #define NUM2CLOCKID(v) NUM2INT(v)
+#define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define SIZEOF_SIZE_T 8
