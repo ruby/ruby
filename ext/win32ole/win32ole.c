@@ -764,8 +764,10 @@ static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
     */
     char* psz = ole_wc2mb(*rgszNames); // support only one method
-    *rgDispId = rb_intern(psz);
+    ID nameid = rb_intern(psz);
     free(psz);
+    if ((ID)(DISPID)nameid != nameid) return E_NOINTERFACE;
+    *rgDispId = (DISPID)nameid;
     return S_OK;
 }
 
@@ -785,17 +787,18 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
     int args = pDispParams->cArgs;
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
     VALUE* parg = ALLOCA_N(VALUE, args);
+    ID mid = (ID)dispIdMember;
     for (i = 0; i < args; i++) {
         *(parg + i) = ole_variant2val(&pDispParams->rgvarg[args - i - 1]);
     }
     if (dispIdMember == DISPID_VALUE) {
         if (wFlags == DISPATCH_METHOD) {
-            dispIdMember = rb_intern("call");
+            mid = rb_intern("call");
         } else if (wFlags & DISPATCH_PROPERTYGET) {
-            dispIdMember = rb_intern("value");
+            mid = rb_intern("value");
         }
     }
-    v = rb_funcall2(p->obj, dispIdMember, args, parg);
+    v = rb_funcall2(p->obj, mid, args, parg);
     ole_val2variant(v, pVarResult);
     return S_OK;
 }
