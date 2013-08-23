@@ -1,3 +1,13 @@
+Fri Aug 23 19:40:50 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (gcd_ul): New function.
+	  (reduce_fraction): Ditto.
+	  (reduce_fraction): Ditto.
+	  (timetick2dblnum): Ditto.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Use timetick2dblnum and timetick2integer.
+	  (rb_clock_gettime): Follow the make_clock_result change.
+
 Fri Aug 23 18:39:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (ary_make_shared): shared ary as shady. Need more effort to
