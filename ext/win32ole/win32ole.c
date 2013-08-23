@@ -5281,7 +5281,7 @@ foletypelib_name(VALUE self)
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get name from ITypeLib");
     }
     name = WC2VSTR(bstr);
-    return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
+    return name;
 }
 
 /*
@@ -5436,7 +5436,7 @@ foletypelib_path(VALUE self)
 
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     path = WC2VSTR(bstr);
-    return rb_enc_str_new(StringValuePtr(path), strlen(StringValuePtr(path)), cWIN32OLE_enc);
+    return path;
 }
 
 /*
