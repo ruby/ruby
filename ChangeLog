@@ -1,3 +1,14 @@
+Fri Aug 23 18:39:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_make_shared): shared ary as shady. Need more effort to
+	  make it normal object.
+
+	* array.c (rb_ary_modify): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
+	* array.c (ary_ensure_room_for_unshift): use RARRAY_RAWPTR() because
+	  there are not new relations.
+
 Fri Aug 23 11:25:57 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c: introduce ARY_SHARED_OCCUPIED(shared).
