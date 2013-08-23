@@ -184,6 +184,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 #define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_NUM(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
+#define ARY_SHARED_OCCUPIED(ary) (ARY_SHARED_NUM(ary) == 1)
 #define ARY_SET_SHARED_NUM(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
@@ -322,7 +323,7 @@ rb_ary_modify(VALUE ary)
             rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
-	else if (ARY_SHARED_NUM(shared) == 1 && len > (RARRAY_LEN(shared)>>1)) {
+	else if (ARY_SHARED_OCCUPIED(shared) && len > (RARRAY_LEN(shared)>>1)) {
 	    long shift = RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared);
 	    FL_UNSET_SHARED(ary);
 	    ARY_SET_PTR(ary, RARRAY_RAWPTR(shared));
@@ -350,7 +351,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
-	    if (ARY_SHARED_NUM(shared) == 1) {
+	    if (ARY_SHARED_OCCUPIED(ary)) {
 		if (RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
 		}
@@ -1007,7 +1008,7 @@ rb_ary_shift(VALUE ary)
 	RARRAY_ASET(ary, 0, Qnil);
 	ary_make_shared(ary);
     }
-    else if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+    else if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	RARRAY_ASET(ary, 0, Qnil);
     }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
@@ -1053,7 +1054,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     n = RARRAY_LEN(result);
     if (ARY_SHARED_P(ary)) {
-	if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+	if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	    ary_mem_clear(ary, 0, n);
 	}
         ARY_INCREASE_PTR(ary, n);
@@ -1077,7 +1078,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     if (ARY_SHARED_P(ary)) {
 	VALUE shared = ARY_SHARED(ary);
 	capa = RARRAY_LEN(shared);
-	if (ARY_SHARED_NUM(shared) == 1 && capa > new_len) {
+	if (ARY_SHARED_OCCUPIED(shared) && capa > new_len) {
 	    head = RARRAY_PTR(ary);
 	    sharedp = RARRAY_PTR(shared);
 	    goto makeroom_if_need;
