@@ -1311,7 +1311,7 @@ ole_vstr2wc(VALUE vstr)
     enc = rb_enc_get(vstr);
 
     if (st_lookup(enc2cp_table, (st_data_t)enc, &data)) {
-        cp = data;
+        cp = (int)data;
     } else {
         cp = ole_encoding2cp(enc);
         if (code_page_installed(cp) ||
