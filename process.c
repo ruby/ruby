@@ -6989,7 +6989,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             if (ret != 0)
                 rb_sys_fail("getrusage");
             tt.giga_count = usage.ru_utime.tv_sec + usage.ru_stime.tv_sec;
-            usec = usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
+            usec = (int32_t)(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec);
             if (1000000 <= usec) {
                 tt.giga_count++;
                 usec -= 1000000;
