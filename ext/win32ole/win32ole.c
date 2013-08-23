@@ -4073,7 +4073,7 @@ fole_missing(int argc, VALUE *argv, VALUE self)
 {
     ID id;
     const char* mname;
-    int n;
+    size_t n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     id = rb_to_id(argv[0]);
     mname = rb_id2name(id);
@@ -4081,14 +4081,19 @@ fole_missing(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
     }
     n = strlen(mname);
+#if SIZEOF_SIZE_T > SIZEOF_LONG
+    if (n >= LONG_MAX) {
+	rb_raise(rb_eRuntimeError, "too long method or property name");
+    }
+#endif
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
-        argv[0] = rb_enc_str_new(mname, n-1, cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, (long)(n-1), cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, (long)n, cWIN32OLE_enc);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }
