@@ -1064,7 +1064,7 @@ ole_cp2encoding(UINT cp)
 }
 
 static char *
-ole_wc2mb(LPWSTR pw)
+ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
 {
     LPSTR pm;
     UINT size = 0;
@@ -1076,7 +1076,7 @@ ole_wc2mb(LPWSTR pw)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
 	}
-	pm = ALLOC_N(char, size + 1);
+	pm = alloc(size, arg);
 	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pw, NULL, pm, &size);
 	if (FAILED(hr)) {
@@ -1088,15 +1088,27 @@ ole_wc2mb(LPWSTR pw)
     }
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
-        pm = ALLOC_N(char, size + 1);
+        pm = alloc(size, arg);
         WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
         pm[size] = '\0';
     }
     else {
-        pm = ALLOC_N(char, 1);
+        pm = alloc(0, arg);
         *pm = '\0';
     }
     return pm;
+}
+
+static char *
+ole_alloc_str(UINT size, void *arg)
+{
+    return ALLOC_N(char, size + 1);
+}
+
+static char *
+ole_wc2mb(LPWSTR pw)
+{
+    return ole_wc2mb_alloc(pw, ole_alloc_str, NULL);
 }
 
 static VALUE
@@ -1383,15 +1395,22 @@ ole_mb2wc(char *pm, int len)
     return pw;
 }
 
+static char *
+ole_alloc_vstr(UINT size, void *arg)
+{
+    VALUE str = rb_enc_str_new(NULL, size, cWIN32OLE_enc);
+    *(VALUE *)arg = str;
+    return RSTRING_PTR(str);
+}
+
 static VALUE
 ole_wc2vstr(LPWSTR pw, BOOL isfree)
 {
-    char *p = ole_wc2mb(pw);
-    VALUE vstr = rb_str_new_cstr(p);
-    rb_enc_associate(vstr, cWIN32OLE_enc);
+    VALUE vstr;
+    ole_wc2mb_alloc(pw, ole_alloc_vstr, &vstr);
+    rb_str_set_len(vstr, (long)strlen(RSTRING_PTR(vstr)));
     if(isfree)
         SysFreeString(pw);
-    free(p);
     return vstr;
 }
 
