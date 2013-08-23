@@ -1171,7 +1171,7 @@ ole_excepinfo2msg(EXCEPINFO *pExInfo)
     }
     error_msg = rb_str_new2(error_code);
     if(pSource != NULL) {
-        rb_str_cat(error_msg, pSource, strlen(pSource));
+        rb_str_cat2(error_msg, pSource);
     }
     else {
         rb_str_cat(error_msg, "<Unknown>", 9);
@@ -1387,7 +1387,8 @@ static VALUE
 ole_wc2vstr(LPWSTR pw, BOOL isfree)
 {
     char *p = ole_wc2mb(pw);
-    VALUE vstr = rb_enc_str_new(p, strlen(p), cWIN32OLE_enc);
+    VALUE vstr = rb_str_new_cstr(p);
+    rb_enc_associate(vstr, cWIN32OLE_enc);
     if(isfree)
         SysFreeString(pw);
     free(p);
