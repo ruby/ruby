@@ -6667,10 +6667,22 @@ rb_proc_times(VALUE obj)
 #define rb_proc_times rb_f_notimplement
 #endif
 
-static unsigned long
-gcd_ul(unsigned long a, unsigned long b)
+#ifdef HAVE_LONG_LONG
+typedef LONG_LONG timetick_int_t;
+#define TIMETICK_INT_MIN LLONG_MIN
+#define TIMETICK_INT_MAX LLONG_MAX
+#define TIMETICK_INT2NUM(v) LL2NUM(v)
+#else
+typedef long timetick_int_t;
+#define TIMETICK_INT_MIN LONG_MIN
+#define TIMETICK_INT_MAX LONG_MAX
+#define TIMETICK_INT2NUM(v) LONG2NUM(v)
+#endif
+
+static timetick_int_t
+gcd_timtick_int(timetick_int_t a, timetick_int_t b)
 {
-    unsigned long t;
+    timetick_int_t t;
 
     if (a < b) {
         t = a;
@@ -6688,34 +6700,22 @@ gcd_ul(unsigned long a, unsigned long b)
 }
 
 static void
-reduce_fraction(unsigned long *np, unsigned long *dp)
+reduce_fraction(timetick_int_t *np, timetick_int_t *dp)
 {
-    unsigned long gcd = gcd_ul(*np, *dp);
+    timetick_int_t gcd = gcd_timtick_int(*np, *dp);
     if (gcd != 1) {
         *np /= gcd;
         *dp /= gcd;
     }
 }
 
-#ifdef HAVE_LONG_LONG
-typedef LONG_LONG timetick_giga_count_t;
-#define TIMETICK_GIGA_COUNT_MIN LLONG_MIN
-#define TIMETICK_GIGA_COUNT_MAX LLONG_MAX
-#define TIMETICK_GIGA_COUNT2NUM(v) LL2NUM(v)
-#else
-typedef long timetick_giga_count_t;
-#define TIMETICK_GIGA_COUNT_MIN LONG_MIN
-#define TIMETICK_GIGA_COUNT_MAX LONG_MAX
-#define TIMETICK_GIGA_COUNT2NUM(v) LONG2NUM(v)
-#endif
-
 struct timetick {
-    timetick_giga_count_t giga_count;
-    long count; /* 0 .. 999999999 */
+    timetick_int_t giga_count;
+    int32_t count; /* 0 .. 999999999 */
 };
 
-static double
-timetick2dblnum(struct timetick *ttp, unsigned long numerator, unsigned long denominator, unsigned long factor)
+static VALUE
+timetick2dblnum(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, timetick_int_t factor)
 {
     if (factor != 1 && denominator != 1)
         reduce_fraction(&factor, &denominator);
@@ -6728,7 +6728,7 @@ timetick2dblnum(struct timetick *ttp, unsigned long numerator, unsigned long den
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
 static VALUE
-timetick2integer(struct timetick *ttp, unsigned long numerator, unsigned long denominator, unsigned long factor)
+timetick2integer(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, timetick_int_t factor)
 {
     VALUE v;
 
@@ -6737,34 +6737,32 @@ timetick2integer(struct timetick *ttp, unsigned long numerator, unsigned long de
     if (denominator != 1 && numerator != 1)
         reduce_fraction(&numerator, &denominator);
 
-    if (numerator <= LONG_MAX && factor <= LONG_MAX) {
-        if (!MUL_OVERFLOW_SIGNED_INTEGER_P(1000000000, ttp->giga_count,
-                    TIMETICK_GIGA_COUNT_MIN, TIMETICK_GIGA_COUNT_MAX-ttp->count)) {
-            timetick_giga_count_t t = ttp->giga_count * 1000000000 + ttp->count;
-            if (!MUL_OVERFLOW_SIGNED_INTEGER_P((long)numerator, t,
-                        TIMETICK_GIGA_COUNT_MIN, TIMETICK_GIGA_COUNT_MAX)) {
-                t *= numerator;
-                if (!MUL_OVERFLOW_SIGNED_INTEGER_P((long)factor, t,
-                            TIMETICK_GIGA_COUNT_MIN, TIMETICK_GIGA_COUNT_MAX)) {
-                    t *= factor;
-                    t = DIV(t, denominator);
-                    return TIMETICK_GIGA_COUNT2NUM(t);
-                }
+    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(1000000000, ttp->giga_count,
+                TIMETICK_INT_MIN, TIMETICK_INT_MAX-ttp->count)) {
+        timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
+        if (!MUL_OVERFLOW_SIGNED_INTEGER_P(numerator, t,
+                    TIMETICK_INT_MIN, TIMETICK_INT_MAX)) {
+            t *= numerator;
+            if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
+                        TIMETICK_INT_MIN, TIMETICK_INT_MAX)) {
+                t *= factor;
+                t = DIV(t, denominator);
+                return TIMETICK_INT2NUM(t);
             }
         }
     }
 
-    v = TIMETICK_GIGA_COUNT2NUM(ttp->giga_count);
+    v = TIMETICK_INT2NUM(ttp->giga_count);
     v = rb_funcall(v, '*', 1, LONG2FIX(1000000000));
     v = rb_funcall(v, '+', 1, LONG2FIX(ttp->count));
-    v = rb_funcall(v, '*', 1, ULONG2NUM(numerator));
-    v = rb_funcall(v, '*', 1, ULONG2NUM(factor));
-    v = rb_funcall(v, '/', 1, ULONG2NUM(denominator)); /* Ruby's '/' is div. */
+    v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(numerator));
+    v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(factor));
+    v = rb_funcall(v, '/', 1, TIMETICK_INT2NUM(denominator)); /* Ruby's '/' is div. */
     return v;
 }
 
 static VALUE
-make_clock_result(struct timetick *ttp, unsigned long numerator, unsigned long denominator, VALUE unit)
+make_clock_result(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, VALUE unit)
 {
     if (unit == ID2SYM(rb_intern("nanosecond")))
         return timetick2integer(ttp, numerator, denominator, 1000000000);
@@ -6892,8 +6890,8 @@ rb_clock_gettime(int argc, VALUE *argv)
     int ret;
 
     struct timetick tt;
-    unsigned long numerator;
-    unsigned long denominator;
+    timetick_int_t numerator;
+    timetick_int_t denominator;
 
     rb_scan_args(argc, argv, "11", &clk_id, &unit);
 
@@ -7005,7 +7003,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             tt.count = t % 1000000000;
             tt.giga_count = t / 1000000000;
             numerator = sTimebaseInfo.numer;
-            denominator = sTimebaseInfo.denom * 1000000000;
+            denominator = sTimebaseInfo.denom * (timetick_int_t)1000000000;
             goto success;
         }
 #endif

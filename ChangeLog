@@ -1,3 +1,14 @@
+Fri Aug 23 21:00:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (timetick_int_t): Renamed from timetick_giga_count_t.
+	  (gcd_timtick_int): Renamed from gcd_ul and make the arguments
+	  timetick_giga_count_t.
+	  (reduce_fraction): Make the arguments timetick_int_t.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Ditto.
+	  (timetick2dblnum): Fix the return type.
+	  (rb_clock_gettime): Use timetick_int_t.
+
 Fri Aug 23 20:50:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (gcd_ul): New function.
