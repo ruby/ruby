@@ -6709,73 +6709,123 @@ reduce_fraction(timetick_int_t *np, timetick_int_t *dp)
     }
 }
 
+static void
+reduce_factors(timetick_int_t *numerators, int num_numerators,
+               timetick_int_t *denominators, int num_denominators)
+{
+    int i, j;
+    for (i = 0; i < num_numerators; i++) {
+        if (numerators[i] == 1)
+            continue;
+        for (j = 0; j < num_denominators; j++) {
+            if (denominators[j] == 1)
+                continue;
+            reduce_fraction(&numerators[i], &denominators[j]);
+        }
+    }
+}
+
 struct timetick {
     timetick_int_t giga_count;
     int32_t count; /* 0 .. 999999999 */
 };
 
 static VALUE
-timetick2dblnum(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, timetick_int_t factor)
+timetick2dblnum(struct timetick *ttp,
+    timetick_int_t *numerators, int num_numerators,
+    timetick_int_t *denominators, int num_denominators)
 {
-    if (factor != 1 && denominator != 1)
-        reduce_fraction(&factor, &denominator);
-    if (numerator != 1 && denominator != 1)
-        reduce_fraction(&numerator, &denominator);
-    return DBL2NUM(((ttp->giga_count * 1e9 + ttp->count) * numerator * factor) / denominator);
+    double d;
+    int i;
+
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
+
+    d = ttp->giga_count * 1e9 + ttp->count;
+
+    for (i = 0; i < num_numerators; i++)
+        d *= numerators[i];
+    for (i = 0; i < num_denominators; i++)
+        d /= denominators[i];
+
+    return DBL2NUM(d);
 }
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
 static VALUE
-timetick2integer(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, timetick_int_t factor)
+timetick2integer(struct timetick *ttp,
+        timetick_int_t *numerators, int num_numerators,
+        timetick_int_t *denominators, int num_denominators)
 {
     VALUE v;
+    int i;
 
-    if (denominator != 1 && factor != 1)
-        reduce_fraction(&factor, &denominator);
-    if (denominator != 1 && numerator != 1)
-        reduce_fraction(&numerator, &denominator);
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
 
     if (!MUL_OVERFLOW_SIGNED_INTEGER_P(1000000000, ttp->giga_count,
                 TIMETICK_INT_MIN, TIMETICK_INT_MAX-ttp->count)) {
         timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
-        if (!MUL_OVERFLOW_SIGNED_INTEGER_P(numerator, t,
-                    TIMETICK_INT_MIN, TIMETICK_INT_MAX)) {
-            t *= numerator;
-            if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
-                        TIMETICK_INT_MIN, TIMETICK_INT_MAX)) {
-                t *= factor;
-                t = DIV(t, denominator);
-                return TIMETICK_INT2NUM(t);
-            }
+        for (i = 0; i < num_numerators; i++) {
+            timetick_int_t factor = numerators[i];
+            if (MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
+                        TIMETICK_INT_MIN, TIMETICK_INT_MAX))
+                goto generic;
+            t *= factor;
         }
+        for (i = 0; i < num_denominators; i++) {
+            t = DIV(t, denominators[i]);
+        }
+        return TIMETICK_INT2NUM(t);
     }
 
+  generic:
     v = TIMETICK_INT2NUM(ttp->giga_count);
     v = rb_funcall(v, '*', 1, LONG2FIX(1000000000));
     v = rb_funcall(v, '+', 1, LONG2FIX(ttp->count));
-    v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(numerator));
-    v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(factor));
-    v = rb_funcall(v, '/', 1, TIMETICK_INT2NUM(denominator)); /* Ruby's '/' is div. */
+    for (i = 0; i < num_numerators; i++) {
+        timetick_int_t factor = numerators[i];
+        if (factor == 1)
+            continue;
+        v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(factor));
+    }
+    for (i = 0; i < num_denominators; i++) {
+        v = rb_funcall(v, '/', 1, TIMETICK_INT2NUM(denominators[i])); /* Ruby's '/' is div. */
+    }
     return v;
 }
 
 static VALUE
-make_clock_result(struct timetick *ttp, timetick_int_t numerator, timetick_int_t denominator, VALUE unit)
+make_clock_result(struct timetick *ttp,
+        timetick_int_t *numerators, int num_numerators,
+        timetick_int_t *denominators, int num_denominators,
+        VALUE unit)
 {
-    if (unit == ID2SYM(rb_intern("nanosecond")))
-        return timetick2integer(ttp, numerator, denominator, 1000000000);
-    else if (unit == ID2SYM(rb_intern("microsecond")))
-        return timetick2integer(ttp, numerator, denominator, 1000000);
-    else if (unit == ID2SYM(rb_intern("millisecond")))
-        return timetick2integer(ttp, numerator, denominator, 1000);
-    else if (unit == ID2SYM(rb_intern("float_microsecond")))
-        return timetick2dblnum(ttp, numerator, denominator, 1000000);
-    else if (unit == ID2SYM(rb_intern("float_millisecond")))
-        return timetick2dblnum(ttp, numerator, denominator, 1000);
-    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_second")))
-        return timetick2dblnum(ttp, numerator, denominator, 1);
+    if (unit == ID2SYM(rb_intern("nanosecond"))) {
+        numerators[num_numerators++] = 1000000000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("microsecond"))) {
+        numerators[num_numerators++] = 1000000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("millisecond"))) {
+        numerators[num_numerators++] = 1000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("float_microsecond"))) {
+        numerators[num_numerators++] = 1000000;
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("float_millisecond"))) {
+        numerators[num_numerators++] = 1000;
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_second"))) {
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
     else
         rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
 }
@@ -6890,8 +6940,10 @@ rb_clock_gettime(int argc, VALUE *argv)
     int ret;
 
     struct timetick tt;
-    timetick_int_t numerator;
-    timetick_int_t denominator;
+    timetick_int_t numerators[2];
+    timetick_int_t denominators[2];
+    int num_numerators = 0;
+    int num_denominators = 0;
 
     rb_scan_args(argc, argv, "11", &clk_id, &unit);
 
@@ -6910,9 +6962,8 @@ rb_clock_gettime(int argc, VALUE *argv)
             if (ret != 0)
                 rb_sys_fail("gettimeofday");
             tt.giga_count = tv.tv_sec;
-            tt.count = tv.tv_usec * 1000;
-            numerator = 1;
-            denominator = 1000000000;
+            tt.count = (int32_t)tv.tv_usec * 1000;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 
@@ -6924,8 +6975,7 @@ rb_clock_gettime(int argc, VALUE *argv)
                 rb_sys_fail("time");
             tt.giga_count = t;
             tt.count = 0;
-            numerator = 1;
-            denominator = 1000000000;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 
@@ -6934,7 +6984,7 @@ rb_clock_gettime(int argc, VALUE *argv)
         ID2SYM(rb_intern("SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
         if (clk_id == RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct rusage usage;
-            long usec;
+            int32_t usec;
             ret = getrusage(RUSAGE_SELF, &usage);
             if (ret != 0)
                 rb_sys_fail("getrusage");
@@ -6945,8 +6995,7 @@ rb_clock_gettime(int argc, VALUE *argv)
                 usec -= 1000000;
             }
             tt.count = usec * 1000;
-            numerator = 1;
-            denominator = 1000000000;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 #endif
@@ -6961,14 +7010,13 @@ rb_clock_gettime(int argc, VALUE *argv)
                 rb_sys_fail("times");
             utime = (unsigned_clock_t)buf.tms_utime;
             stime = (unsigned_clock_t)buf.tms_stime;
-            tt.count = (utime % 1000000000) + (stime % 1000000000);
+            tt.count = (int32_t)((utime % 1000000000) + (stime % 1000000000));
             tt.giga_count = (utime / 1000000000) + (stime / 1000000000);
             if (1000000000 <= tt.count) {
                 tt.count -= 1000000000;
                 tt.giga_count++;
             }
-            numerator = 1;
-            denominator = get_clk_tck();
+            denominators[num_denominators++] = get_clk_tck();
             goto success;
         }
 #endif
@@ -6983,10 +7031,9 @@ rb_clock_gettime(int argc, VALUE *argv)
             if (c == (clock_t)-1)
                 rb_sys_fail("clock");
             uc = (unsigned_clock_t)c;
-            tt.count = uc % 1000000000;
+            tt.count = (int32_t)(uc % 1000000000);
             tt.giga_count = uc / 1000000000;
-            numerator = 1;
-            denominator = CLOCKS_PER_SEC;
+            denominators[num_denominators++] = CLOCKS_PER_SEC;
             goto success;
         }
 
@@ -7000,10 +7047,11 @@ rb_clock_gettime(int argc, VALUE *argv)
 		(void) mach_timebase_info(&sTimebaseInfo);
 	    }
 
-            tt.count = t % 1000000000;
+            tt.count = (int32_t)(t % 1000000000);
             tt.giga_count = t / 1000000000;
-            numerator = sTimebaseInfo.numer;
-            denominator = sTimebaseInfo.denom * (timetick_int_t)1000000000;
+            numerators[num_numerators++] = sTimebaseInfo.numer;
+            denominators[num_denominators++] = sTimebaseInfo.denom;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 #endif
@@ -7016,10 +7064,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         ret = clock_gettime(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_gettime");
-        tt.count = ts.tv_nsec;
+        tt.count = (int32_t)ts.tv_nsec;
         tt.giga_count = ts.tv_sec;
-        numerator = 1;
-        denominator = 1000000000;
+        denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
@@ -7028,7 +7075,7 @@ rb_clock_gettime(int argc, VALUE *argv)
     rb_sys_fail(0);
 
   success:
-    return make_clock_result(&tt, numerator, denominator, unit);
+    return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
 }
 
 VALUE rb_mProcess;

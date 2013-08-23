@@ -1,3 +1,11 @@
+Fri Aug 23 21:37:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (reduce_factors): New function.
+	  (timetick2dblnum): Use reduce_factors.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Follow the above change.
+	  (rb_clock_gettime): Ditto.
+
 Fri Aug 23 21:00:55 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (timetick_int_t): Renamed from timetick_giga_count_t.
