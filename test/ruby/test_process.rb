@@ -1669,4 +1669,64 @@ EOS
     assert_raise(Errno::EINVAL) { Process.clock_gettime(:foo) }
   end
 
+  def test_clock_gettime_constants
+    Process.constants.grep(/\ACLOCK_/).each {|n|
+      c = Process.const_get(n)
+      begin
+        t = Process.clock_gettime(c)
+      rescue Errno::EINVAL
+        next
+      end
+      assert_kind_of(Float, t, "Process.clock_gettime(Process::#{n})")
+    }
+  end
+
+  def test_clock_gettime_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    n = :SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_ISO_C_TIME_BASED_CLOCK_REALTIME
+    n = :ISO_C_TIME_BASED_CLOCK_REALTIME
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    t = Process.clock_gettime(n)
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
+  def test_clock_gettime_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    n = :MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
 end
