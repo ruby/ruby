@@ -516,7 +516,7 @@ static VALUE folemethod_visible(VALUE self);
 static VALUE ole_method_event(ITypeInfo *pTypeInfo, UINT method_index, VALUE method_name);
 static VALUE folemethod_event(VALUE self);
 static VALUE folemethod_event_interface(VALUE self);
-static VALUE ole_method_docinfo_from_type(ITypeInfo *pTypeInfo, UINT method_index, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
+static HRESULT ole_method_docinfo_from_type(ITypeInfo *pTypeInfo, UINT method_index, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 static VALUE ole_method_helpstring(ITypeInfo *pTypeInfo, UINT method_index);
 static VALUE folemethod_helpstring(VALUE self);
 static VALUE ole_method_helpfile(ITypeInfo *pTypeInfo, UINT method_index);
@@ -6918,7 +6918,7 @@ folemethod_event_interface(VALUE self)
     return Qnil;
 }
 
-static VALUE
+static HRESULT
 ole_method_docinfo_from_type(
     ITypeInfo *pTypeInfo,
     UINT method_index,
