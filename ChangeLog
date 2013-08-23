@@ -1,4 +1,4 @@
-Fri Aug 23 19:40:50 2013  Tanaka Akira  <akr@fsij.org>
+Fri Aug 23 20:50:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (gcd_ul): New function.
 	  (reduce_fraction): Ditto.

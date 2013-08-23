@@ -6888,7 +6888,6 @@ make_clock_result(struct timetick *ttp, unsigned long numerator, unsigned long d
 VALUE
 rb_clock_gettime(int argc, VALUE *argv)
 {
-    struct timespec ts;
     VALUE clk_id, unit;
     int ret;
 
@@ -7006,13 +7005,14 @@ rb_clock_gettime(int argc, VALUE *argv)
             tt.count = t % 1000000000;
             tt.giga_count = t / 1000000000;
             numerator = sTimebaseInfo.numer;
-            denominator = sTimebaseInfo.denom;
+            denominator = sTimebaseInfo.denom * 1000000000;
             goto success;
         }
 #endif
     }
     else {
 #if defined(HAVE_CLOCK_GETTIME)
+        struct timespec ts;
         clockid_t c;
         c = NUM2CLOCKID(clk_id);
         ret = clock_gettime(c, &ts);
