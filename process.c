@@ -7092,6 +7092,8 @@ VALUE rb_mProcID_Syscall;
 void
 Init_process(void)
 {
+#undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", rb_last_status_get, 0);
     rb_define_virtual_variable("$$", get_pid, 0);
     rb_define_global_function("exec", rb_f_exec, -1);
