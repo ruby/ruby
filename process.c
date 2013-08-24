@@ -6868,13 +6868,13 @@ make_clock_result(struct timetick *ttp,
  *  There are emulations for clock_gettime().
  *
  *  For example, Process::CLOCK_REALTIME is defined as
- *  +:SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME+ when clock_gettime() is not available.
+ *  +:GETTIMEOFDAY_BASED_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
  *  Emulations for +CLOCK_REALTIME+:
- *  [:SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME]
+ *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
  *    Use gettimeofday().
  *    The resolution is 1 micro second.
- *  [:ISO_C_TIME_BASED_CLOCK_REALTIME]
+ *  [:TIME_BASED_CLOCK_REALTIME]
  *    Use time().
  *    The resolution is 1 second.
  *
@@ -6883,12 +6883,12 @@ make_clock_result(struct timetick *ttp,
  * 					  The resolution is CPU dependent.
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
- *  [:SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use getrusage() with RUSAGE_SELF.
  *    getrusage() is defined by Single Unix Specification.
  *    The result is addition of ru_utime and ru_stime.
  *    The resolution is 1 micro second.
- *  [:POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use times() defined by POSIX.
  *    The result is addition of tms_utime and tms_stime.
  *    tms_cutime and tms_cstime are ignored.
@@ -6896,7 +6896,7 @@ make_clock_result(struct timetick *ttp,
  *    "getconf CLK_TCK" command shows the clock ticks per second.
  *    (The clock ticks per second is defined by HZ macro in older systems.)
  *    If it is 100, the resolution is 10 milli second.
- *  [:ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *  [:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use clock() defined by ISO C.
  *    The resolution is 1/CLOCKS_PER_SEC.
  *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
@@ -6952,11 +6952,11 @@ rb_clock_gettime(int argc, VALUE *argv)
          * Non-clock_gettime clocks are provided by symbol clk_id.
          *
          * gettimeofday is always available on platforms supported by Ruby.
-         * SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
+         * GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
-#define RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(rb_intern("SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME"))
-        if (clk_id == RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
+#define RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             struct timeval tv;
             ret = gettimeofday(&tv, 0);
             if (ret != 0)
@@ -6967,8 +6967,8 @@ rb_clock_gettime(int argc, VALUE *argv)
             goto success;
         }
 
-#define RUBY_ISO_C_TIME_BASED_CLOCK_REALTIME ID2SYM(rb_intern("ISO_C_TIME_BASED_CLOCK_REALTIME"))
-        if (clk_id == RUBY_ISO_C_TIME_BASED_CLOCK_REALTIME) {
+#define RUBY_TIME_BASED_CLOCK_REALTIME ID2SYM(rb_intern("TIME_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
             time_t t;
             t = time(NULL);
             if (t == (time_t)-1)
@@ -6980,9 +6980,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 
 #ifdef RUSAGE_SELF
-#define RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct rusage usage;
             int32_t usec;
             ret = getrusage(RUSAGE_SELF, &usage);
@@ -7001,9 +7001,9 @@ rb_clock_gettime(int argc, VALUE *argv)
 #endif
 
 #ifdef HAVE_TIMES
-#define RUBY_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             struct tms buf;
             unsigned_clock_t utime, stime;
             if (times(&buf) ==  (clock_t)-1)
@@ -7021,9 +7021,9 @@ rb_clock_gettime(int argc, VALUE *argv)
         }
 #endif
 
-#define RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
-        ID2SYM(rb_intern("ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
-        if (clk_id == RUBY_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+#define RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
             clock_t c;
             unsigned_clock_t uc;
             errno = 0;
@@ -7340,8 +7340,8 @@ Init_process(void)
 
 #ifdef CLOCK_REALTIME
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
+#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
@@ -7350,8 +7350,8 @@ Init_process(void)
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
-#elif defined(RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
+#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));

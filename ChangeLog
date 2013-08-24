@@ -1,3 +1,7 @@
+Sat Aug 24 10:35:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): The emulated clock names changed.
+
 Fri Aug 23 22:22:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): Add a cast to fix compile error by

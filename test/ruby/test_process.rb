@@ -1681,20 +1681,20 @@ EOS
     }
   end
 
-  def test_clock_gettime_SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    n = :SUS_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+  def test_clock_gettime_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
     t = Process.clock_gettime(n)
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
-  def test_clock_gettime_ISO_C_TIME_BASED_CLOCK_REALTIME
-    n = :ISO_C_TIME_BASED_CLOCK_REALTIME
+  def test_clock_gettime_TIME_BASED_CLOCK_REALTIME
+    n = :TIME_BASED_CLOCK_REALTIME
     t = Process.clock_gettime(n)
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
-  def test_clock_gettime_SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
-    n = :SUS_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+  def test_clock_gettime_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
     begin
       t = Process.clock_gettime(n)
     rescue Errno::EINVAL
@@ -1703,8 +1703,8 @@ EOS
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
-  def test_clock_gettime_POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
-    n = :POSIX_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+  def test_clock_gettime_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
     begin
       t = Process.clock_gettime(n)
     rescue Errno::EINVAL
@@ -1713,8 +1713,8 @@ EOS
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
-  def test_clock_gettime_ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
-    n = :ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+  def test_clock_gettime_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
     t = Process.clock_gettime(n)
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
