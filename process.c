@@ -6867,7 +6867,12 @@ make_clock_result(struct timetick *ttp,
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
- *  Also, several other symbols are accepted as +clock_id+.
+ *  Note that SUS stands for Single Unix Specification.
+ *  SUS contains POSIX and clock_gettime is defined in the POSIX part.
+ *  SUS defines CLOCK_REALTIME mandatory but
+ *  CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID and CLOCK_THREAD_CPUTIME_ID are optional.
+ *
+ *  Also, several symbols are accepted as +clock_id+.
  *  There are emulations for clock_gettime().
  *
  *  For example, Process::CLOCK_REALTIME is defined as
@@ -6875,7 +6880,7 @@ make_clock_result(struct timetick *ttp,
  *
  *  Emulations for +CLOCK_REALTIME+:
  *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
- *    Use gettimeofday() defined by Single Unix Specification.
+ *    Use gettimeofday() defined by SUS.
  *    (SUSv4 obsoleted it, though.)
  *    The resolution is 1 micro second.
  *  [:TIME_BASED_CLOCK_REALTIME]
@@ -6889,7 +6894,7 @@ make_clock_result(struct timetick *ttp,
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
  *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
- *    Use getrusage() defined by Single Unix Specification.
+ *    Use getrusage() defined by SUS.
  *    getrusage() is used with RUSAGE_SELF to obtain the time only for
  *    the calling process (excluding the time for child processes).
  *    The result is addition of user time (ru_utime) and system time (ru_stime).
@@ -6906,10 +6911,10 @@ make_clock_result(struct timetick *ttp,
  *    Use clock() defined by ISO C.
  *    The resolution is 1/CLOCKS_PER_SEC.
  *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
- *    Single Unix Specification defines CLOCKS_PER_SEC is 1000000.
+ *    SUS defines CLOCKS_PER_SEC is 1000000.
  *    Non-Unix systems may define it a different value, though.
  *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
- *    If clock_t is 32 bit and CLOCKS_PER_SEC is 1000000, it overflows for each 72 minutes.
+ *    If CLOCKS_PER_SEC is 1000000 and clock_t is 32 bits integer type, it cannot represent over 72 minutes.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
