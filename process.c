@@ -6836,6 +6836,9 @@ make_clock_result(struct timetick *ttp,
  *
  *  Returns a time returned by POSIX clock_gettime() function.
  *
+ *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
+ *    #=> 896053.968060096
+ *
  *  +clock_id+ specifies a kind of clock.
  *  It is specifed as a constant which begins with <code>Process::CLOCK_</code>
  *  such as Process::CLOCK_REALTIME and Process::CLOCK_MONOTONIC.
@@ -6872,26 +6875,29 @@ make_clock_result(struct timetick *ttp,
  *
  *  Emulations for +CLOCK_REALTIME+:
  *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
- *    Use gettimeofday().
+ *    Use gettimeofday() defined by Single Unix Specification.
+ *    (SUSv4 obsoleted it, though.)
  *    The resolution is 1 micro second.
  *  [:TIME_BASED_CLOCK_REALTIME]
- *    Use time().
+ *    Use time() defined by ISO C.
  *    The resolution is 1 second.
  *
  *  Emulations for +CLOCK_MONOTONIC+:
- *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
- * 					  The resolution is CPU dependent.
+ *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC]
+ *    Use mach_absolute_time(), available on Darwin.
+ *    The resolution is CPU dependent.
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
  *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
- *    Use getrusage() with RUSAGE_SELF.
- *    getrusage() is defined by Single Unix Specification.
- *    The result is addition of ru_utime and ru_stime.
+ *    Use getrusage() defined by Single Unix Specification.
+ *    getrusage() is used with RUSAGE_SELF to obtain the time only for
+ *    the calling process (excluding the time for child processes).
+ *    The result is addition of user time (ru_utime) and system time (ru_stime).
  *    The resolution is 1 micro second.
  *  [:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use times() defined by POSIX.
- *    The result is addition of tms_utime and tms_stime.
- *    tms_cutime and tms_cstime are ignored.
+ *    The result is addition of user time (tms_utime) and system time (tms_stime).
+ *    tms_cutime and tms_cstime are ignored to exclude the time for child processes.
  *    The resolution is the clock tick.
  *    "getconf CLK_TCK" command shows the clock ticks per second.
  *    (The clock ticks per second is defined by HZ macro in older systems.)
@@ -6903,6 +6909,7 @@ make_clock_result(struct timetick *ttp,
  *    Single Unix Specification defines CLOCKS_PER_SEC is 1000000.
  *    Non-Unix systems may define it a different value, though.
  *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
+ *    If clock_t is 32 bit and CLOCKS_PER_SEC is 1000000, it overflows for each 72 minutes.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
@@ -6928,10 +6935,6 @@ make_clock_result(struct timetick *ttp,
  *  But some systems count leap seconds and others doesn't.
  *  So the result can be interpreted differently across systems.
  *  Time.now is recommended over CLOCK_REALTIME.
- *
- *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
- *    #=> 896053.968060096
- *
  */
 VALUE
 rb_clock_gettime(int argc, VALUE *argv)
