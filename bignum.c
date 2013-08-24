@@ -103,7 +103,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 
 #define BARY_ADD(z, x, y) bary_add(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_SUB(z, x, y) bary_sub(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
-#define BARY_MUL1(z, x, y) bary_mul1(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_SHORT_MUL(z, x, y) bary_short_mul(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_DIVMOD(q, r, x, y) bary_divmod(BARY_ARGS(q), BARY_ARGS(r), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
 
@@ -2410,7 +2410,7 @@ rb_big_mul_toom3(VALUE x, VALUE y)
 }
 
 static void
-bary_mul1(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+bary_short_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
     assert(xn + yn <= zn);
 
@@ -2543,14 +2543,14 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
         if (xds == yds && xn == yn)
             bary_sq_fast(zds, zn, xds, xn);
         else
-            bary_mul1(zds, zn, xds, xn, yds, yn);
+            bary_short_mul(zds, zn, xds, xn, yds, yn);
         return;
     }
 
     /* normal multiplication when x or y is a sparse bignum */
     if (bary_sparse_p(xds, xn)) goto normal;
     if (bary_sparse_p(yds, yn)) {
-        bary_mul1(zds, zn, yds, yn, xds, xn);
+        bary_short_mul(zds, zn, yds, yn, xds, xn);
         return;
     }
 
@@ -2606,13 +2606,13 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
             if (xds == yds && xn == yn)
                 bary_sq_fast(zds, zn, xds, xn);
             else
-                bary_mul1(zds, zn, xds, xn, yds, yn);
+                bary_short_mul(zds, zn, xds, xn, yds, yn);
             return;
         }
     }
     else {
         if (yn < KARATSUBA_MUL_DIGITS) {
-            bary_mul1(zds, zn, yds, yn, xds, xn);
+            bary_short_mul(zds, zn, yds, yn, xds, xn);
             return;
         }
     }
@@ -3289,7 +3289,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
 
     bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
-    BARY_MUL1(val_numbits_bary, numbytes_bary, char_bit);
+    BARY_SHORT_MUL(val_numbits_bary, numbytes_bary, char_bit);
     if (nlz_bits_in_msbyte)
         BARY_SUB(val_numbits_bary, val_numbits_bary, nlz_bits_in_msbyte_bary);
     bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,

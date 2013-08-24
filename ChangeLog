@@ -1,3 +1,8 @@
+Sun Aug 25 01:47:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BARY_SHORT_MUL): Renamed from BARY_MUL1.
+	  (bary_short_mul): Renamed from bary_mul1.
+
 Sat Aug 24 10:35:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): The emulated clock names changed.
