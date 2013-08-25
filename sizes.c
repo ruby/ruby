@@ -41,6 +41,9 @@ Init_sizes(void)
 #if SIZEOF_TIME_T != 0
     DEFINE(time_t, TIME_T);
 #endif
+#if SIZEOF_CLOCK_T != 0
+    DEFINE(clock_t, CLOCK_T);
+#endif
 #if SIZEOF_SIZE_T != 0
     DEFINE(size_t, SIZE_T);
 #endif

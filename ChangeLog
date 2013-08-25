@@ -1,3 +1,7 @@
+Sun Aug 25 21:02:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sizes.c (Init_sizes): Define the size of clock_t.
+
 Sun Aug 25 01:47:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (BARY_SHORT_MUL): Renamed from BARY_MUL1.
