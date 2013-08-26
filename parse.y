@@ -270,6 +270,8 @@ struct parser_params {
 
     int parser_yydebug;
 
+    int last_cr_line;
+
 #ifndef RIPPER
     /* Ruby core only */
     NODE *parser_eval_tree_begin;
@@ -5329,6 +5331,7 @@ yycompile0(VALUE arg)
 	    ruby_coverage = coverage(ruby_sourcefile_string, ruby_sourceline);
 	}
     }
+    parser->last_cr_line = ruby_sourceline - 1;
 
     parser_prepare(parser);
     deferred_nodes = 0;
@@ -5611,9 +5614,15 @@ parser_nextc(struct parser_params *parser)
 	}
     }
     c = (unsigned char)*lex_p++;
-    if (c == '\r' && peek('\n')) {
-	lex_p++;
-	c = '\n';
+    if (c == '\r') {
+	if (peek('\n')) {
+	    lex_p++;
+	    c = '\n';
+	}
+	else if (ruby_sourceline > parser->last_cr_line) {
+	    parser->last_cr_line = ruby_sourceline;
+	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in mddile of line, treat as a mere space");
+	}
     }
 
     return c;

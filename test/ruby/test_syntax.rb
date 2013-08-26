@@ -385,6 +385,13 @@ eom
     assert_syntax_error("__END__\r<<<<<\n", /unexpected <</)
   end
 
+  def test_warning_for_cr
+    feature8699 = '[ruby-core:56240] [Feature #8699]'
+    assert_warning(/encountered \\r/, feature8699) do
+      eval("\r""__id__\r")
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

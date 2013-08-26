@@ -1,3 +1,8 @@
+Mon Aug 26 16:24:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_nextc): warn carriage return in middle of line.
+	  [ruby-core:56240] [Feature #8699]
+
 Mon Aug 26 15:27:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): should not be caught by rescue
