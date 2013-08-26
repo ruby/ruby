@@ -40,6 +40,8 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * IO#seek supports SEEK_DATA and SEEK_HOLE as whence.
     * IO#seek accepts symbols (:CUR, :END, :SET, :DATA, :HOLE) for 2nd argument.
+    * IO#read_nonblock accepts optional `exception: false` to return symbols
+    * IO#write_nonblock accepts optional `exception: false` to return symbols
 
 * Kernel
   * New methods:
