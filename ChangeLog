@@ -1,3 +1,8 @@
+Mon Aug 26 15:27:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): should not be caught by rescue
+	  clause.  [Bug #8730]
+
 Mon Aug 26 14:44:26 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_splice): use RARRAY_PTR_USE() without WB because
