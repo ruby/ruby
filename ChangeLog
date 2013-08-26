@@ -1,3 +1,8 @@
+Mon Aug 26 12:37:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/sizes.c.tmpl: generate automatically by extracting
+	  RUBY_CHECK_SIZEOF from configure.in.
+
 Mon Aug 26 10:16:59 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* process.c (gcd_timetick_int): Renamed from gcd_timtick_int.

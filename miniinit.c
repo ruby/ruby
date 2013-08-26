@@ -28,3 +28,9 @@ Init_enc_set_filesystem_encoding(void)
 {
     return rb_enc_to_index(rb_default_external_encoding());
 }
+
+/* sizes.c */
+void
+Init_sizes(void)
+{
+}
