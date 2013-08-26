@@ -1545,7 +1545,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	}
 
 	if (len != rlen) {
-	    RARRAY_PTR_USE(ary, ptr, 
+	    RARRAY_PTR_USE(ary, ptr,
 			   MEMMOVE(ptr + beg + rlen, ptr + beg + len,
 				   VALUE, RARRAY_LEN(ary) - (beg + len)));
 	    ARY_SET_LEN(ary, alen);
