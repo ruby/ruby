@@ -6680,7 +6680,7 @@ typedef long timetick_int_t;
 #endif
 
 static timetick_int_t
-gcd_timtick_int(timetick_int_t a, timetick_int_t b)
+gcd_timetick_int(timetick_int_t a, timetick_int_t b)
 {
     timetick_int_t t;
 
@@ -6702,7 +6702,7 @@ gcd_timtick_int(timetick_int_t a, timetick_int_t b)
 static void
 reduce_fraction(timetick_int_t *np, timetick_int_t *dp)
 {
-    timetick_int_t gcd = gcd_timtick_int(*np, *dp);
+    timetick_int_t gcd = gcd_timetick_int(*np, *dp);
     if (gcd != 1) {
         *np /= gcd;
         *dp /= gcd;

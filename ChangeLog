@@ -1,3 +1,7 @@
+Mon Aug 26 10:16:59 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* process.c (gcd_timetick_int): Renamed from gcd_timtick_int.
+
 Sun Aug 25 21:02:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* sizes.c (Init_sizes): Define the size of clock_t.
