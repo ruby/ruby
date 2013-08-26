@@ -197,7 +197,7 @@ new_struct(VALUE name, VALUE super)
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
-    VALUE *ptr_members;
+    const VALUE *ptr_members;
     long i, len;
 
     OBJ_FREEZE(members);
@@ -207,7 +207,7 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
-    ptr_members = RARRAY_PTR(members);
+    ptr_members = RARRAY_RAWPTR(members);
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
 	ID id = SYM2ID(ptr_members[i]);

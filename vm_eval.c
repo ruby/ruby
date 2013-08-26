@@ -1510,7 +1510,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 	return vm_yield_with_cref(th, 1, &self, cref);
     }
     else {
-	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_PTR(values), cref);
+	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_RAWPTR(values), cref);
     }
 }
 
