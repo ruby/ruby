@@ -353,7 +353,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
-	    if (ARY_SHARED_OCCUPIED(ary)) {
+	    if (ARY_SHARED_OCCUPIED(shared)) {
 		if (RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
 		}

@@ -1,3 +1,7 @@
+Mon Aug 26 13:11:10 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* array.c (ary_ensure_room_for_push): fix typo in r42658.
+
 Mon Aug 26 12:37:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/sizes.c.tmpl: generate automatically by extracting
