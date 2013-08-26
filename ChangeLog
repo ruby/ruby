@@ -1,3 +1,8 @@
+Tue Aug 27 05:24:34 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 2.1.0 Release Candidate
+	* test/rubygems:  ditto.
+
 Mon Aug 26 16:24:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_nextc): warn carriage return in middle of line.

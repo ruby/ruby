@@ -1181,6 +1181,28 @@ class TestGem < Gem::TestCase
     assert_equal nil, Gem.find_unresolved_default_spec("README")
   end
 
+  def test_default_gems_use_full_paths
+    begin
+      engine = RUBY_ENGINE
+      Object.send :remove_const, :RUBY_ENGINE
+      Object.const_set :RUBY_ENGINE, 'ruby'
+      refute Gem.default_gems_use_full_paths?
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE
+      Object.const_set :RUBY_ENGINE, engine
+    end
+
+    begin
+      engine = RUBY_ENGINE
+      Object.send :remove_const, :RUBY_ENGINE
+      Object.const_set :RUBY_ENGINE, 'jruby'
+      assert Gem.default_gems_use_full_paths?
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE
+      Object.const_set :RUBY_ENGINE, engine
+    end
+  end
+
   def with_plugin(path)
     test_plugin_path = File.expand_path("test/rubygems/plugin/#{path}",
                                         @@project_dir)

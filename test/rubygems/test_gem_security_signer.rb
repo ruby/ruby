@@ -84,6 +84,12 @@ class TestGemSecuritySigner < Gem::TestCase
     assert_equal ENCRYPTED_PRIVATE_KEY.to_s, signer.key.to_s
   end
 
+  def test_extract_name
+    signer = Gem::Security::Signer.new nil, nil
+
+    assert_equal 'child@example', signer.extract_name(CHILD_CERT)
+  end
+
   def test_load_cert_chain
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
