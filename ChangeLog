@@ -1,3 +1,18 @@
+Tue Aug 27 07:35:05 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* io.c (io_read_nonblock): support non-blocking reads without raising
+	  exceptions. As in: `io.read_nonblock(size, exception: false)`
+	  [ruby-core:38666] [Feature #5138]
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal): ditto
+	* ext/stringio/stringio.c (strio_sysread): ditto
+	* io.c (rb_io_write_nonblock): support non-blocking writes without
+	  raising an exception.
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write_internal): ditto
+	* test/openssl/test_pair.rb (class OpenSSL): tests
+	* test/ruby/test_io.rb (class TestIO): ditto
+	* test/socket/test_nonblock.rb (class TestSocketNonblock): ditto
+	* test/stringio/test_stringio.rb (class TestStringIO): ditto
+
 Tue Aug 27 05:24:34 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 2.1.0 Release Candidate

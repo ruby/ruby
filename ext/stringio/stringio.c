@@ -119,6 +119,8 @@ typedef char strio_flags_check[(STRIO_READABLE/FMODE_READABLE == STRIO_WRITABLE/
 #define READABLE(strio) STRIO_MODE_SET_P(strio, READABLE)
 #define WRITABLE(strio) STRIO_MODE_SET_P(strio, WRITABLE)
 
+static VALUE sym_exception;
+
 static struct StringIO*
 readable(VALUE strio)
 {
@@ -1327,7 +1329,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   strio.sysread(integer[, outbuf])    -> string
  *   strio.readpartial(integer[, outbuf])    -> string
- *   strio.read_nonblock(integer[, outbuf])    -> string
  *
  * Similar to #read, but raises +EOFError+ at end of string instead of
  * returning +nil+, as well as IO#sysread does.
@@ -1342,7 +1343,49 @@ strio_sysread(int argc, VALUE *argv, VALUE self)
     return val;
 }
 
+/*
+ * call-seq:
+ *   strio.read_nonblock(integer[, outbuf [, opts]])    -> string
+ *
+ * Similar to #read, but raises +EOFError+ at end of string unless the
+ * +exception: false+ option is passed in.
+ */
+static VALUE
+strio_read_nonblock(int argc, VALUE *argv, VALUE self)
+{
+    VALUE opts = Qnil;
+    int no_exception = 0;
+
+    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
+
+    if (!NIL_P(opts)) {
+	argc--;
+
+	if (Qfalse == rb_hash_aref(opts, sym_exception))
+	    no_exception = 1;
+    }
+
+    VALUE val = strio_read(argc, argv, self);
+    if (NIL_P(val)) {
+	if (no_exception)
+	    return Qnil;
+	else
+	    rb_eof_error();
+    }
+
+    return val;
+}
+
 #define strio_syswrite rb_io_write
+
+static VALUE
+strio_syswrite_nonblock(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str;
+
+    rb_scan_args(argc, argv, "10:", &str, NULL);
+    return strio_syswrite(self, str);
+}
 
 #define strio_isatty strio_false
 
@@ -1542,7 +1585,7 @@ Init_stringio()
 	rb_define_method(mReadable, "readline", strio_readline, -1);
 	rb_define_method(mReadable, "sysread", strio_sysread, -1);
 	rb_define_method(mReadable, "readpartial", strio_sysread, -1);
-	rb_define_method(mReadable, "read_nonblock", strio_sysread, -1);
+	rb_define_method(mReadable, "read_nonblock", strio_read_nonblock, -1);
 	rb_include_module(StringIO, mReadable);
     }
     {
@@ -1552,7 +1595,9 @@ Init_stringio()
 	rb_define_method(mWritable, "printf", strio_printf, -1);
 	rb_define_method(mWritable, "puts", strio_puts, -1);
 	rb_define_method(mWritable, "syswrite", strio_syswrite, 1);
-	rb_define_method(mWritable, "write_nonblock", strio_syswrite, 1);
+	rb_define_method(mWritable, "write_nonblock", strio_syswrite_nonblock, -1);
 	rb_include_module(StringIO, mWritable);
     }
+
+    sym_exception = ID2SYM(rb_intern("exception"));
 }

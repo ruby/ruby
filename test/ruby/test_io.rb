@@ -1205,6 +1205,16 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_write_nonblock_simple_no_exceptions
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    pipe(proc do |w|
+      w.write_nonblock('1', exception: false)
+      w.close
+    end, proc do |r|
+      assert_equal("1", r.read)
+    end)
+  end
+
   def test_read_nonblock_error
     return if !have_nonblock?
     skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
@@ -1214,6 +1224,41 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end
+    }
+
+    with_pipe {|r, w|
+      begin
+        r.read_nonblock 4096, ""
+      rescue Errno::EWOULDBLOCK
+        assert_kind_of(IO::WaitReadable, $!)
+      end
+    }
+  end
+
+  def test_read_nonblock_no_exceptions
+    return if !have_nonblock?
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
+      w.puts "HI!"
+      assert_equal "HI!\n", r.read_nonblock(4096, exception: false)
+      w.close
+      assert_equal nil, r.read_nonblock(4096, exception: false)
+    }
+  end
+
+  def test_read_nonblock_with_buffer_no_exceptions
+    return if !have_nonblock?
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      assert_equal :wait_readable, r.read_nonblock(4096, "", exception: false)
+      w.puts "HI!"
+      buf = "buf"
+      value = r.read_nonblock(4096, buf, exception: false)
+      assert_equal value, "HI!\n"
+      assert buf.equal?(value)
+      w.close
+      assert_equal nil, r.read_nonblock(4096, "", exception: false)
     }
   end
 
@@ -1228,6 +1273,20 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
+    }
+  end
+
+  def test_write_nonblock_no_exceptions
+    return if !have_nonblock?
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      loop {
+        ret = w.write_nonblock("a"*100000, exception: false)
+        if ret.is_a?(Symbol)
+          assert_equal :wait_writable, ret
+          break
+        end
+      }
     }
   end
 

@@ -103,6 +103,8 @@ static const char *ossl_ssl_attrs[] = {
 
 ID ID_callback_state;
 
+static VALUE sym_exception;
+
 /*
  * SSLContext class
  */
@@ -1373,10 +1375,16 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen, nread = 0;
+    int no_exception = 0;
     VALUE len, str;
     rb_io_t *fptr;
+    VALUE opts = Qnil;
 
-    rb_scan_args(argc, argv, "11", &len, &str);
+    rb_scan_args(argc, argv, "11:", &len, &str, &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
     else{
@@ -1397,17 +1405,23 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
+		if (no_exception) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
+		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
+		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
-		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
+		if(ERR_peek_error() == 0 && nread == 0) {
+		    if (no_exception) { return Qnil; }
+		    rb_eof_error();
+		}
 		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
@@ -1445,9 +1459,11 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    ssl.sysread_nonblock(length) => string
  *    ssl.sysread_nonblock(length, buffer) => buffer
+ *    ssl.sysread_nonblock(length[, buffer [, opts]) => buffer
  *
  * A non-blocking version of #sysread.  Raises an SSLError if reading would
- * block.
+ * block.  If "exception: false" is passed, this method returns a symbol of
+ * :wait_writable, :wait_writable, or nil, rather than raising an exception.
  *
  * Reads +length+ bytes from the SSL connection.  If a pre-allocated +buffer+
  * is provided the data will be written into it.
@@ -1459,7 +1475,7 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
+ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 {
     SSL *ssl;
     int nwrite = 0;
@@ -1476,10 +1492,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
+		if (no_exception) { return ID2SYM(rb_intern("wait_writable")); }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
+		if (no_exception) { return ID2SYM(rb_intern("wait_readable")); }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
@@ -1509,7 +1527,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
-    return ossl_ssl_write_internal(self, str, 0);
+    return ossl_ssl_write_internal(self, str, 0, 0);
 }
 
 /*
@@ -1520,9 +1538,18 @@ ossl_ssl_write(VALUE self, VALUE str)
  * SSLError if writing would block.
  */
 static VALUE
-ossl_ssl_write_nonblock(VALUE self, VALUE str)
+ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    return ossl_ssl_write_internal(self, str, 1);
+    VALUE str;
+    VALUE opts = Qnil;
+    int no_exception = 0;
+
+    rb_scan_args(argc, argv, "1:", &str, &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
+    return ossl_ssl_write_internal(self, str, 1, no_exception);
 }
 
 /*
@@ -2168,7 +2195,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
-    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, 1);
+    rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, -1);
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
@@ -2239,4 +2266,6 @@ Init_ossl_ssl()
     ossl_ssl_def_const(OP_PKCS1_CHECK_2);
     ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);
     ossl_ssl_def_const(OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+
+    sym_exception = ID2SYM(rb_intern("exception"));
 }

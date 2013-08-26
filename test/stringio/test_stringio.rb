@@ -89,6 +89,14 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_write_nonblock_no_exceptions
+    s = ""
+    f = StringIO.new(s, "w")
+    f.write_nonblock("foo", exception: false)
+    f.close
+    assert_equal("foo", s)
+  end
+
   def test_write_nonblock
     s = ""
     f = StringIO.new(s, "w")
@@ -437,7 +445,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.readpartial(-1) }
     assert_raise(ArgumentError) { f.readpartial(1, 2, 3) }
-    assert_equal("\u3042\u3044", f.readpartial)
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(100))
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size))
     f.rewind
@@ -450,7 +458,19 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read_nonblock(-1) }
     assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3) }
-    assert_equal("\u3042\u3044", f.read_nonblock)
+    assert_equal("\u3042\u3044".force_encoding("BINARY"), f.read_nonblock(100))
+    assert_raise(EOFError) { f.read_nonblock(10) }
+    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+  end
+
+  def test_read_nonblock_no_exceptions
+    f = StringIO.new("\u3042\u3044")
+    assert_raise(ArgumentError) { f.read_nonblock(-1, exception: false) }
+    assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3, exception: false) }
+    assert_raise(ArgumentError) { f.read_nonblock }
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(100, exception: false))
+    assert_equal(nil, f.read_nonblock(10, exception: false))
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
     f.rewind

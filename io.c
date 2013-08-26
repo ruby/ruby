@@ -159,7 +159,7 @@ static VALUE argf;
 
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
-static VALUE sym_textmode, sym_binmode, sym_autoclose;
+static VALUE sym_textmode, sym_binmode, sym_autoclose, sym_exception;
 static VALUE sym_SET, sym_CUR, sym_END;
 #ifdef SEEK_DATA
 static VALUE sym_DATA;
@@ -2413,14 +2413,14 @@ read_internal_call(VALUE arg)
 }
 
 static VALUE
-io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
+io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
 {
     rb_io_t *fptr;
     VALUE length, str;
     long n, len;
     struct read_internal_arg arg;
 
-    rb_scan_args(argc, argv, "11", &length, &str);
+    rb_scan_args(argc, argv, "11:", &length, &str, NULL);
 
     if ((len = NUM2LONG(length)) < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
@@ -2452,8 +2452,12 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
-            if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
-                rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+            if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+                if (no_exception)
+                    return ID2SYM(rb_intern("wait_readable"));
+                else
+		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+            }
             rb_sys_fail_path(fptr->pathv);
         }
     }
@@ -2529,7 +2533,7 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
 {
     VALUE ret;
 
-    ret = io_getpartial(argc, argv, io, 0);
+    ret = io_getpartial(argc, argv, io, 0, 0);
     if (NIL_P(ret))
         rb_eof_error();
     return ret;
@@ -2590,16 +2594,62 @@ static VALUE
 io_read_nonblock(int argc, VALUE *argv, VALUE io)
 {
     VALUE ret;
+    VALUE opts = Qnil;
+    int no_exception = 0;
 
-    ret = io_getpartial(argc, argv, io, 1);
-    if (NIL_P(ret))
-        rb_eof_error();
+    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
+
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exception = 1;
+
+    ret = io_getpartial(argc, argv, io, 1, no_exception);
+
+    if (NIL_P(ret)) {
+	if (no_exception)
+	    return Qnil;
+	else
+	    rb_eof_error();
+    }
     return ret;
+}
+
+static VALUE
+io_write_nonblock(VALUE io, VALUE str, int no_exception)
+{
+    rb_io_t *fptr;
+    long n;
+
+    if (!RB_TYPE_P(str, T_STRING))
+	str = rb_obj_as_string(str);
+
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+
+    if (io_fflush(fptr) < 0)
+        rb_sys_fail(0);
+
+    rb_io_set_nonblock(fptr);
+    n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
+
+    if (n == -1) {
+        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+	    if (no_exception) {
+		return ID2SYM(rb_intern("wait_writable"));
+	    } else {
+		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
+	    }
+	}
+        rb_sys_fail_path(fptr->pathv);
+    }
+
+    return LONG2FIX(n);
 }
 
 /*
  *  call-seq:
  *     ios.write_nonblock(string)   -> integer
+ *     ios.write_nonblock(string [, options])   -> integer
  *
  *  Writes the given string to <em>ios</em> using
  *  the write(2) system call after O_NONBLOCK is set for
@@ -2648,34 +2698,25 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  according to the kind of the IO object.
  *  In such cases, write_nonblock raises <code>Errno::EBADF</code>.
  *
+ *  By specifying `exception: false`, the options hash allows you to indicate
+ *  that write_nonblock should not raise an IO::WaitWritable exception, but
+ *  return the symbol :wait_writable instead.
+ *
  */
 
 static VALUE
-rb_io_write_nonblock(VALUE io, VALUE str)
+rb_io_write_nonblock(int argc, VALUE *argv, VALUE io)
 {
-    rb_io_t *fptr;
-    long n;
+    VALUE str;
+    VALUE opts = Qnil;
+    int no_exceptions = 0;
 
-    if (!RB_TYPE_P(str, T_STRING))
-	str = rb_obj_as_string(str);
+    rb_scan_args(argc, argv, "10:", &str, &opts);
 
-    io = GetWriteIO(io);
-    GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
+    if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
+	no_exceptions = 1;
 
-    if (io_fflush(fptr) < 0)
-        rb_sys_fail(0);
-
-    rb_io_set_nonblock(fptr);
-    n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
-
-    if (n == -1) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN)
-            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
-        rb_sys_fail_path(fptr->pathv);
-    }
-
-    return LONG2FIX(n);
+    return io_write_nonblock(io, str, no_exceptions);
 }
 
 /*
@@ -10809,7 +10850,7 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, nonblock);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, nonblock, 0);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
@@ -11851,7 +11892,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
     rb_define_method(rb_cIO, "read_nonblock",  io_read_nonblock, -1);
-    rb_define_method(rb_cIO, "write_nonblock", rb_io_write_nonblock, 1);
+    rb_define_method(rb_cIO, "write_nonblock", rb_io_write_nonblock, -1);
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, 1);
@@ -12056,4 +12097,5 @@ Init_IO(void)
 #ifdef SEEK_HOLE
     sym_HOLE = ID2SYM(rb_intern("HOLE"));
 #endif
+    sym_exception = ID2SYM(rb_intern("exception"));
 }
