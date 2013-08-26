@@ -5621,7 +5621,7 @@ parser_nextc(struct parser_params *parser)
 	}
 	else if (ruby_sourceline > parser->last_cr_line) {
 	    parser->last_cr_line = ruby_sourceline;
-	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in mddile of line, treat as a mere space");
+	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in middle of line, treated as a mere space");
 	}
     }
 
