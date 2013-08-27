@@ -452,6 +452,9 @@ class TestEnumerator < Test::Unit::TestCase
   def test_size
     assert_equal nil, Enumerator.new{}.size
     assert_equal 42, Enumerator.new(->{42}){}.size
+    obj = Object.new
+    def obj.call; 42; end
+    assert_equal 42, Enumerator.new(obj){}.size
     assert_equal 42, Enumerator.new(42){}.size
     assert_equal 1 << 70, Enumerator.new(1 << 70){}.size
     assert_equal Float::INFINITY, Enumerator.new(Float::INFINITY){}.size
