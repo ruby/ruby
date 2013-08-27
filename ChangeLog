@@ -1,3 +1,8 @@
+Tue Aug 27 13:03:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/stringio/stringio.c (strio_read_nonblock): declare local
+	  variables at the first of function.
+
 Tue Aug 27 11:51:37 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: Allow Enumerator size argument to be any callable.
