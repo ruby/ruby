@@ -1,4 +1,7 @@
-Tue Aug 27 16:51:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 27 16:56:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_size): use rb_check_funcall() instead of
+	  respond_to? and call.
 
 	* enumerator.c (enumerator_each): ensure that argument array size
 	  does not overflow at appending.

@@ -1007,19 +1007,19 @@ static VALUE
 enumerator_size(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+    int argc = 0;
+    const VALUE *argv = NULL;
+    VALUE size;
 
     if (e->size_fn) {
 	return (*e->size_fn)(e->obj, e->args, obj);
     }
-    if (rb_respond_to(e->size, id_call)) {
-	if (e->args) {
-	    int argc = (int)RARRAY_LEN(e->args);
-	    VALUE *argv = RARRAY_PTR(e->args);
-	    return rb_funcall2(e->size, id_call, argc, argv);
-	} else {
-	    return rb_funcall(e->size, id_call, 0);
-	}
+    if (e->args) {
+	argc = (int)RARRAY_LEN(e->args);
+	argv = RARRAY_RAWPTR(e->args);
     }
+    size = rb_check_funcall(e->size, id_call, argc, argv);
+    if (size != Qundef) return size;
     return e->size;
 }
 
