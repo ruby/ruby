@@ -1,3 +1,13 @@
+Tue Aug 27 17:02:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): should write in binary mode.  based on a
+	  patch by godfat (Lin Jen-Shin) at [ruby-core:56556].
+	  [ruby-core:56518] [Bug #8767]
+
+Tue Aug 27 17:02:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): move common open flags.
+
 Tue Aug 27 16:56:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_size): use rb_check_funcall() instead of

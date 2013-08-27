@@ -857,6 +857,47 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_write_in_binmode
+    bug8767 = '[ruby-core:56518] [Bug #8767]'
+    mkcdtmpdir {
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        # StringIO to object with to_path
+        bytes = "\xDE\xAD\xBE\xEF".force_encoding(Encoding::ASCII_8BIT)
+        src = StringIO.new(bytes)
+        dst = Object.new
+        def dst.to_path
+          "qux"
+        end
+        assert_nothing_raised(bug8767) {
+          IO.copy_stream(src, dst)
+        }
+        assert_equal(bytes, File.binread("qux"), bug8767)
+        assert_equal(4, src.pos, bug8767)
+      end
+    }
+  end
+
+  def test_copy_stream_read_in_binmode
+    bug8767 = '[ruby-core:56518] [Bug #8767]'
+    mkcdtmpdir {
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        # StringIO to object with to_path
+        bytes = "\xDE\xAD\xBE\xEF".force_encoding(Encoding::ASCII_8BIT)
+        File.binwrite("qux", bytes)
+        dst = StringIO.new
+        src = Object.new
+        def src.to_path
+          "qux"
+        end
+        assert_nothing_raised(bug8767) {
+          IO.copy_stream(src, dst)
+        }
+        assert_equal(bytes, dst.string.b, bug8767)
+        assert_equal(4, dst.pos, bug8767)
+      end
+    }
+  end
+
   class Rot13IO
     def initialize(io)
       @io = io

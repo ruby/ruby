@@ -10229,9 +10229,9 @@ copy_stream_body(VALUE arg)
 #ifdef O_BINARY
     if (src_fptr)
 	SET_BINARY_MODE_WITH_SEEK_CUR(src_fptr);
-    if (dst_fptr)
-	setmode(dst_fd, O_BINARY);
 #endif
+    if (dst_fptr)
+	rb_io_ascii8bit_binmode(dst_io);
 
     if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf.len) {
         size_t len = src_fptr->rbuf.len;
