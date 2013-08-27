@@ -1,6 +1,7 @@
 Tue Aug 27 16:51:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* enumerator.c (enumerator_each): ensure argument array size is int.
+	* enumerator.c (enumerator_each): ensure that argument array size
+	  does not overflow at appending.
 
 Tue Aug 27 16:46:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

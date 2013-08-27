@@ -448,6 +448,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 	VALUE args = e->args;
 	if (args) {
 #if SIZEOF_INT < SIZEOF_LONG
+	    /* check int range overflow */
 	    rb_long2int(RARRAY_LEN(args) + argc);
 #endif
 	    args = rb_ary_dup(args);
