@@ -1,3 +1,11 @@
+Tue Aug 27 16:11:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (opt_eq_func): use RBASIC_CLASS() instead of HEAP_CLASS_OF().
+
+	* insns.def (opt_plus, opt_minus, opt_mult, opt_div, opt_mod, opt_lt),
+	  (opt_gt, opt_ltlt, opt_aref, opt_aset, opt_length, opt_size),
+	  (opt_empty_p, opt_succ): ditto.
+
 Tue Aug 27 16:08:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_check_funcall, rb_check_funcall_with_hook): constify
