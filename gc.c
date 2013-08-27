@@ -5290,6 +5290,11 @@ gc_profile_clear(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
+    /* This method doesn't change profile.run status.
+     * While lazy sweeping, it is possible to touch zero-cleared profile.current_record.
+     */
+    gc_rest_sweep(objspace);
+
     if (GC_PROFILE_RECORD_DEFAULT_SIZE * 2 < objspace->profile.size) {
         objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE * 2;
         objspace->profile.records = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);

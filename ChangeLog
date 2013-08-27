@@ -1,3 +1,8 @@
+Tue Aug 27 11:46:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_clear): do rest_sweep() before clearing
+	  profile.current_record.
+
 Tue Aug 27 07:35:05 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* io.c (io_read_nonblock): support non-blocking reads without raising
