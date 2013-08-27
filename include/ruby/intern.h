@@ -289,7 +289,7 @@ void rb_check_copyable(VALUE obj, VALUE orig);
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);
-VALUE rb_check_funcall(VALUE, ID, int, VALUE*);
+VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
 NORETURN(void rb_error_arity(int, int, int));
 #define rb_check_arity rb_check_arity /* for ifdef */

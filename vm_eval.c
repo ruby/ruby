@@ -328,7 +328,7 @@ struct rescue_funcall_args {
     VALUE recv;
     VALUE sym;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 };
 
 static VALUE
@@ -385,7 +385,7 @@ check_funcall_callable(rb_thread_t *th, const rb_method_entry_t *me)
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, VALUE *argv)
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     if (rb_method_basic_definition_p(klass, idMethodMissing)) {
 	return Qundef;
@@ -405,7 +405,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 }
 
 VALUE
-rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
+rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VALUE klass = CLASS_OF(recv);
     const rb_method_entry_t *me;
@@ -424,7 +424,7 @@ rb_check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 }
 
 VALUE
-rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 			   rb_check_funcall_hook *hook, VALUE arg)
 {
     VALUE klass = CLASS_OF(recv);

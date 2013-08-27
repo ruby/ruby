@@ -1,3 +1,8 @@
+Tue Aug 27 16:08:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall, rb_check_funcall_with_hook): constify
+	  argv.
+
 Tue Aug 27 13:03:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/stringio/stringio.c (strio_read_nonblock): declare local
