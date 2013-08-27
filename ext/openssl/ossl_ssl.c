@@ -1463,7 +1463,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
  *
  * A non-blocking version of #sysread.  Raises an SSLError if reading would
  * block.  If "exception: false" is passed, this method returns a symbol of
- * :wait_writable, :wait_writable, or nil, rather than raising an exception.
+ * :wait_readable, :wait_writable, or nil, rather than raising an exception.
  *
  * Reads +length+ bytes from the SSL connection.  If a pre-allocated +buffer+
  * is provided the data will be written into it.

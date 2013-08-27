@@ -1,3 +1,8 @@
+Wed Aug 28 04:54:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read):  Replace duplicate
+	  wait_writable with wait_readable.
+
 Tue Aug 27 17:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): skip rescue clause only when no
