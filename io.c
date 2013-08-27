@@ -10163,6 +10163,11 @@ copy_stream_body(VALUE arg)
     VALUE src_io, dst_io;
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
+    const int common_oflags = 0
+#ifdef O_NOCTTY
+	| O_NOCTTY
+#endif
+	;
 
     stp->th = rb_thread_current();
 
@@ -10178,10 +10183,7 @@ copy_stream_body(VALUE arg)
         src_io = RB_TYPE_P(stp->src, T_FILE) ? stp->src : Qnil;
         if (NIL_P(src_io)) {
             VALUE args[2];
-            int oflags = O_RDONLY;
-#ifdef O_NOCTTY
-            oflags |= O_NOCTTY;
-#endif
+            const int oflags = O_RDONLY|common_oflags;
             FilePathValue(stp->src);
             args[0] = stp->src;
             args[1] = INT2NUM(oflags);
@@ -10205,10 +10207,7 @@ copy_stream_body(VALUE arg)
         dst_io = RB_TYPE_P(stp->dst, T_FILE) ? stp->dst : Qnil;
         if (NIL_P(dst_io)) {
             VALUE args[3];
-            int oflags = O_WRONLY|O_CREAT|O_TRUNC;
-#ifdef O_NOCTTY
-            oflags |= O_NOCTTY;
-#endif
+            const int oflags = O_WRONLY|O_CREAT|O_TRUNC|common_oflags;
             FilePathValue(stp->dst);
             args[0] = stp->dst;
             args[1] = INT2NUM(oflags);
