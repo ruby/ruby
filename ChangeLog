@@ -1,3 +1,7 @@
+Tue Aug 27 16:51:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_each): ensure argument array size is int.
+
 Tue Aug 27 16:46:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_index, rb_ary_rindex): use optimized equality to

@@ -447,6 +447,9 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 	struct enumerator *e = enumerator_ptr(obj = rb_obj_dup(obj));
 	VALUE args = e->args;
 	if (args) {
+#if SIZEOF_INT < SIZEOF_LONG
+	    rb_long2int(RARRAY_LEN(args) + argc);
+#endif
 	    args = rb_ary_dup(args);
 	    rb_ary_cat(args, argv, argc);
 	}
@@ -1009,7 +1012,7 @@ enumerator_size(VALUE obj)
     }
     if (rb_respond_to(e->size, id_call)) {
 	if (e->args) {
-	    int argc = RARRAY_LENINT(e->args);
+	    int argc = (int)RARRAY_LEN(e->args);
 	    VALUE *argv = RARRAY_PTR(e->args);
 	    return rb_funcall2(e->size, id_call, argc, argv);
 	} else {
