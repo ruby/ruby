@@ -1,3 +1,10 @@
+Tue Aug 27 16:46:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_index, rb_ary_rindex): use optimized equality to
+	  improve performance.  [Feature #8820]
+
+	* vm_insnhelper.c (rb_equal_opt): optimized equality function.
+
 Tue Aug 27 16:11:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (opt_eq_func): use RBASIC_CLASS() instead of HEAP_CLASS_OF().

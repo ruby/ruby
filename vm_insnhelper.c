@@ -918,6 +918,18 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
     return Qundef;
 }
 
+VALUE
+rb_equal_opt(VALUE obj1, VALUE obj2)
+{
+    rb_call_info_t ci;
+    ci.mid = idEq;
+    ci.klass = 0;
+    ci.vmstat = 0;
+    ci.me = NULL;
+    ci.defined_class = 0;
+    return opt_eq_func(obj1, obj2, &ci);
+}
+
 static VALUE
 check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 {

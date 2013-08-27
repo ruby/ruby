@@ -1414,8 +1414,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
+    const VALUE *ptr;
     VALUE val;
-    long i;
+    long i, len;
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
@@ -1426,12 +1427,24 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "1", &val);
+    rb_check_arity(argc, 0, 1);
+    val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	if (rb_equal(RARRAY_AREF(ary, i), val))
+    len = RARRAY_LEN(ary);
+    ptr = RARRAY_RAWPTR(ary);
+    for (i=0; i<len; i++) {
+	VALUE e = ptr[i];
+	switch (rb_equal_opt(e, val)) {
+	  case Qundef:
+	    if (!rb_equal(e, val)) break;
+	  case Qtrue:
 	    return LONG2NUM(i);
+	  case Qfalse:
+	    continue;
+	}
+	len = RARRAY_LEN(ary);
+	ptr = RARRAY_RAWPTR(ary);
     }
     return Qnil;
 }
@@ -1463,8 +1476,9 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
+    const VALUE *ptr;
     VALUE val;
-    long i = RARRAY_LEN(ary);
+    long i = RARRAY_LEN(ary), len;
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
@@ -1477,15 +1491,25 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "1", &val);
+    rb_check_arity(argc, 0, 1);
+    val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
+    ptr = RARRAY_RAWPTR(ary);
     while (i--) {
-	if (rb_equal(RARRAY_AREF(ary, i), val))
+	VALUE e = ptr[i];
+	switch (rb_equal_opt(e, val)) {
+	  case Qundef:
+	    if (!rb_equal(e, val)) break;
+	  case Qtrue:
 	    return LONG2NUM(i);
-	if (i > RARRAY_LEN(ary)) {
-	    i = RARRAY_LEN(ary);
+	  case Qfalse:
+	    continue;
 	}
+	if (i > (len = RARRAY_LEN(ary))) {
+	    i = len;
+	}
+	ptr = RARRAY_RAWPTR(ary);
     }
     return Qnil;
 }

@@ -483,6 +483,9 @@ typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 				 rb_check_funcall_hook *hook, VALUE arg);
 
+/* vm_insnhelper.c */
+VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
+
 /* vm_method.c */
 void Init_eval_method(void);
 int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
