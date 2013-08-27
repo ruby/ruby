@@ -1,3 +1,8 @@
+Tue Aug 27 17:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): skip rescue clause only when no
+	  exception class is given.
+
 Tue Aug 27 17:02:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (copy_stream_body): should write in binary mode.  based on a

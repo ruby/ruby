@@ -62,7 +62,9 @@ module Timeout
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    bt = catch(ExitException.new) do |exception|
+    message = "execution expired"
+    e = Error
+    bt = catch((klass||ExitException).new) do |exception|
       begin
         x = Thread.current
         y = Thread.start {
@@ -71,11 +73,12 @@ module Timeout
           rescue => e
             x.raise e
           else
-            # no message, not to make new instance.
-            x.raise exception
+            x.raise exception, message
           end
         }
         return yield(sec)
+      rescue (klass||ExitException) => e
+        e.backtrace
       ensure
         if y
           y.kill
@@ -89,7 +92,7 @@ module Timeout
     while THIS_FILE =~ bt[level]
       bt.delete_at(level)
     end
-    raise((klass||Error), "execution expired", bt)
+    raise(e, message, bt)
   end
 
   module_function :timeout
