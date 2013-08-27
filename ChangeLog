@@ -1,3 +1,10 @@
+Tue Aug 27 11:51:37 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Allow Enumerator size argument to be any callable.
+	  Patch by Avdi Grimm. [bug #8641] [ruby-core:56032] [fix GH-362]
+
+	* test/ruby/test_enumerator.rb: Test for above
+
 Tue Aug 27 11:46:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_profile_clear): do rest_sweep() before clearing
