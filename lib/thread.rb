@@ -60,7 +60,7 @@ class ConditionVariable
   # Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
   #
   # If +timeout+ is given, this method returns after +timeout+ seconds passed,
-  # even if no other thread doesn't signal.
+  # even if no other thread has signaled.
   #
   def wait(mutex, timeout=nil)
     Thread.handle_interrupt(StandardError => :never) do
