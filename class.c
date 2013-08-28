@@ -833,7 +833,6 @@ rb_include_module(VALUE klass, VALUE module)
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic include detected");
-    if (changed) rb_clear_cache_by_class(klass);
 }
 
 static int
@@ -847,7 +846,7 @@ static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module)
 {
     VALUE p, iclass;
-    int changed = 0;
+    int method_changed = 0, constant_changed = 0;
     const st_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
 
     while (module) {
@@ -891,16 +890,17 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
-	    changed = 1;
+	    method_changed = 1;
 	if (RMODULE_CONST_TBL(module) && RMODULE_CONST_TBL(module)->num_entries)
-	    changed = 1;
+	    constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }
 
-    if (changed) rb_clear_cache_by_class(klass);
+    if (method_changed) rb_clear_cache_by_class(klass);
+    if (constant_changed) rb_clear_cache_globally();
 
-    return changed;
+    return method_changed;
 }
 
 static int
@@ -959,7 +959,6 @@ rb_prepend_module(VALUE klass, VALUE module)
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
     if (changed) {
-	rb_clear_cache_by_class(klass);
 	rb_vm_check_redefinition_by_prepend(klass);
     }
 }
