@@ -801,21 +801,14 @@ register_cached_thread_and_wait(void)
 	native_cond_timedwait(&cond, &thread_cache_lock, &ts);
 
 	{
-	    struct cached_thread_entry *e = cached_thread_root;
-	    struct cached_thread_entry *prev = cached_thread_root;
+	    struct cached_thread_entry *e, **prev = &cached_thread_root;
 
-	    while (e) {
+	    while ((e = *prev) != 0) {
 		if (e == entry) {
-		    if (prev == cached_thread_root) {
-			cached_thread_root = e->next;
-		    }
-		    else {
-			prev->next = e->next;
-		    }
+		    *prev = e->next;
 		    break;
 		}
-		prev = e;
-		e = e->next;
+		prev = &e->next;
 	    }
 	}
 
