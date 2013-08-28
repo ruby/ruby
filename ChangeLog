@@ -1,3 +1,11 @@
+Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
+	  treated as strings. 
+	  [Fixes GH-156] https://github.com/tenderlove/psych/issues/156
+
+	* test/psych/test_string.rb: test for change
+
 Wed Aug 28 17:20:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (hpux_attr_getstackaddr): basic support for the
