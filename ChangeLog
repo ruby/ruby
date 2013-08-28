@@ -1,3 +1,11 @@
+Thu Aug 29 05:35:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_run):  Fix handling of deflate streams that
+	  need a dictionary but are being decompressed by Zlib::Inflate.inflate
+	  (which has no option to set a dictionary).  Now Zlib::NeedDict is
+	  raised instead of crashing.  [ruby-trunk - Bug #8829]
+	* test/zlib/test_zlib.rb (TestZlibInflate):  Test for the above.
+
 Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
