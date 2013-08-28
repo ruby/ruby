@@ -532,12 +532,11 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
 # ifdef HAVE_PTHREAD_ATTR_GETSTACK
     CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 # else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 # endif
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
     pthread_attr_destroy(&attr);
 #elif (defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP) /* MacOS X */
     pthread_t th = pthread_self();
