@@ -492,6 +492,48 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#elif defined __ia64 && defined _HPUX_SOURCE
+#define STACKADDR_AVAILABLE 1
+
+/*
+ * Do not lower the thread's stack to PTHREAD_STACK_MIN,
+ * otherwise one would receive a 'sendsig: useracc failed.'
+ * and a coredump.
+ */
+#undef PTHREAD_STACK_MIN
+
+#define HAVE_PTHREAD_ATTR_GET_NP 1
+#undef HAVE_PTHREAD_ATTR_GETSTACK
+
+/*
+ * As the PTHREAD_STACK_MIN is undefined and
+ * noone touches the default stacksize,
+ * it is just fine to use the default.
+ */
+#define pthread_attr_get_np(thid, attr) 0
+
+/*
+ * Using value of sp is very rough... To make it more real,
+ * addr would need to be aligned to vps_pagesize.
+ * The vps_pagesize is 'Default user page size (kBytes)'
+ * and could be retrieved by gettune().
+ */
+
+static int hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
+{
+    static uint64_t pagesize;
+    size_t size;
+
+    if (!pagesize) {
+	if (gettune("vps_pagesize", &pagesize)) {
+	    pagesize = 1024;
+	}
+    }
+    pthread_attr_getstacksize(attr, &size);
+    *addr = (void *)((size_t)((char *)_Asm_get_sp() - size) & ~(pagesize - 1));
+    return 0;
+}
+#define pthread_attr_getstackaddr(attr, addr) hpux_attr_getstackaddr(attr, addr)
 #endif
 
 #ifndef MAINSTACKADDR_AVAILABLE

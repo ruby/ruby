@@ -1,3 +1,9 @@
+Wed Aug 28 17:20:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (hpux_attr_getstackaddr): basic support for the
+	  get_stack() under HP-UX.  based on the patch by michal@rokos.cz
+	  (Michal Rokos) at [ruby-core:56645].  [Feature #8793]
+
 Wed Aug 28 11:24:20 2013  Michal Rokos  <michal@rokos.cz>
 
 	* configure.in (sys/pstat.h): fix missing header check for
