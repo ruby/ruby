@@ -1940,6 +1940,9 @@ rb_const_remove(VALUE mod, ID id)
     }
 
     rb_clear_cache_by_class(mod);
+    /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+       we need to do a global invalidation here... */
+    rb_clear_cache_globally();
 
     val = ((rb_const_entry_t*)v)->value;
     if (val == Qundef) {
@@ -2150,6 +2153,10 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		/* for autoloading thread, keep the defined value to autoloading storage */
 		if (load && (ele = check_autoload_data(load)) && (ele->thread == rb_thread_current())) {
 		    rb_clear_cache_by_class(klass);
+		    /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+		       we need to do a global invalidation here... */
+		    rb_clear_cache_globally();
+
 		    ele->value = val; /* autoload_i is shady */
 		    return;
 		}
@@ -2173,6 +2180,10 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
 
     rb_clear_cache_by_class(klass);
+    /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+       we need to do a global invalidation here... */
+    rb_clear_cache_globally();
+
 
     ce = ALLOC(rb_const_entry_t);
     MEMZERO(ce, rb_const_entry_t, 1);
@@ -2217,8 +2228,13 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 	VALUE val = argv[i];
 	id = rb_check_id(&val);
 	if (!id) {
-	    if (i > 0)
+	    if (i > 0) {
 		rb_clear_cache_by_class(mod);
+		/* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+		   we need to do a global invalidation here... */
+		rb_clear_cache_globally();
+	    }
+
 	    rb_name_error_str(val, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
 			      rb_class_name(mod), QUOTE(val));
 	}
@@ -2227,13 +2243,20 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 	    ((rb_const_entry_t*)v)->flag = flag;
 	}
 	else {
-	    if (i > 0)
+	    if (i > 0) {
 		rb_clear_cache_by_class(mod);
+		/* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+		   we need to do a global invalidation here... */
+		rb_clear_cache_globally();
+	    }
 	    rb_name_error(id, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
 			  rb_class_name(mod), QUOTE_ID(id));
 	}
     }
     rb_clear_cache_by_class(mod);
+    /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
+       we need to do a global invalidation here... */
+    rb_clear_cache_globally();
 }
 
 /*

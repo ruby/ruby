@@ -31,6 +31,12 @@ rb_class_clear_method_cache(VALUE klass)
 }
 
 void
+rb_clear_cache_globally(void)
+{
+    INC_VM_STATE_VERSION();
+}
+
+void
 rb_clear_cache_by_class(VALUE klass)
 {
     if (klass && klass != Qundef) {
