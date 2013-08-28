@@ -110,14 +110,31 @@ struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };
 
+struct rb_subclass_entry;
+typedef struct rb_subclass_entry rb_subclass_entry_t;
+
+struct rb_subclass_entry {
+    VALUE klass;
+    rb_subclass_entry_t *next;
+};
+
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
+    struct sa_table *mc_tbl;
+    rb_subclass_entry_t *subclasses;
+    rb_subclass_entry_t **parent_subclasses;
+    rb_subclass_entry_t **module_subclasses;
+    uint64_t seq;
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
 };
+
+/* class.c */
+void rb_class_subclass_add(VALUE super, VALUE klass);
+void rb_class_remove_from_super_subclasses(VALUE);
 
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
@@ -137,6 +154,10 @@ RCLASS_SUPER(VALUE klass)
 static inline VALUE
 RCLASS_SET_SUPER(VALUE klass, VALUE super)
 {
+    if (super) {
+	rb_class_remove_from_super_subclasses(klass);
+	rb_class_subclass_add(super, klass);
+    }
     OBJ_WRITE(klass, &RCLASS_EXT(klass)->super, super);
     return super;
 }
@@ -156,6 +177,10 @@ VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
+void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
+void rb_class_detach_subclasses(VALUE);
+void rb_class_detach_module_subclasses(VALUE);
+void rb_class_remove_from_module_subclasses(VALUE);
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
@@ -461,6 +486,9 @@ void ruby_kill(rb_pid_t pid, int sig);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
+
+/* vm_insnhelper.h */
+uint64_t rb_next_seq();
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);

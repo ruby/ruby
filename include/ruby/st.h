@@ -131,6 +131,51 @@ st_index_t st_hash_end(st_index_t h);
 st_index_t st_hash_start(st_index_t h);
 #define st_hash_start(h) ((st_index_t)(h))
 
+typedef uint64_t sa_index_t;
+#define SA_STOP     ST_STOP
+#define SA_CONTINUE ST_CONTINUE
+
+#define SA_EMPTY   0
+
+typedef struct sa_entry {
+    sa_index_t next;
+    sa_index_t key;
+    st_data_t value;
+} sa_entry;
+
+typedef struct sa_table {
+    sa_index_t num_bins;
+    sa_index_t num_entries;
+    sa_index_t free_pos;
+    sa_entry *entries;
+} sa_table;
+
+#define SA_EMPTY_TABLE {0, 0, 0, 0};
+void sa_init_table(sa_table *, sa_index_t);
+sa_table *sa_new_table();
+int  sa_insert(sa_table *, sa_index_t, st_data_t);
+int  sa_lookup(sa_table *, sa_index_t, st_data_t *);
+int  sa_delete(sa_table *, sa_index_t, st_data_t *);
+void sa_clear(sa_table *);
+void sa_clear_no_free(sa_table *);
+void sa_free_table(sa_table *);
+int  sa_foreach(sa_table *, int (*)(ANYARGS), st_data_t);
+size_t sa_memsize(const sa_table *);
+sa_table *sa_copy(sa_table*);
+void sa_copy_to(sa_table*, sa_table*);
+typedef int (*sa_iter_func)(sa_index_t key, st_data_t val, st_data_t arg);
+
+#define SA_FOREACH_START_I(table, entry) do { \
+    sa_table *T##entry = (table); \
+    sa_index_t K##entry; \
+    for(K##entry = 0; K##entry < T##entry->num_bins; K##entry++) { \
+	sa_entry *entry = T##entry->entries + K##entry; \
+	if (entry->next != SA_EMPTY) { \
+	    st_data_t value = entry->value
+#define SA_FOREACH_END() } } } while(0)
+
+#define SA_FOREACH_START(table) SA_FOREACH_START_I(table, entry)
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
