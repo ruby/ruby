@@ -127,8 +127,8 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 
 
 struct iseq_inline_cache_entry {
-    uint64_t ic_vmstat;
-    uint64_t ic_seq;
+    vm_state_version_t ic_vmstat;
+    vm_state_version_t ic_seq;
     VALUE ic_class;
     union {
 	size_t index;
@@ -158,8 +158,8 @@ typedef struct rb_call_info_struct {
     rb_iseq_t *blockiseq;
 
     /* inline cache: keys */
-    uint64_t vmstat;
-    uint64_t seq;
+    vm_state_version_t vmstat;
+    vm_state_version_t seq;
     VALUE klass;
 
     /* inline cache: values */

@@ -265,7 +265,7 @@ enum vm_regan_acttype {
 } while (0)
 static void vm_clear_all_cache(void);
 
-uint64_t
+vm_state_version_t
 rb_next_seq();
 
 static VALUE make_no_method_exception(VALUE exc, const char *format,

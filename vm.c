@@ -71,8 +71,8 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
-static uint64_t ruby_vm_global_state_version = 1;
-static uint64_t ruby_vm_sequence = 1;
+static vm_state_version_t ruby_vm_global_state_version = 1;
+static vm_state_version_t ruby_vm_sequence = 1;
 
 #include "vm_insnhelper.h"
 #include "vm_insnhelper.c"
@@ -87,7 +87,7 @@ static uint64_t ruby_vm_sequence = 1;
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
 
-uint64_t
+vm_state_version_t
 rb_next_seq()
 {
     return NEXT_SEQ();

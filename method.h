@@ -11,6 +11,8 @@
 #ifndef METHOD_H
 #define METHOD_H
 
+#include "internal.h"
+
 #ifndef END_OF_ENUMERATION
 # ifdef __GNUC__
 #   define END_OF_ENUMERATION(key)

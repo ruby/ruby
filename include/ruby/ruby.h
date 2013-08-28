@@ -785,16 +785,6 @@ struct RObject {
 /** @internal */
 typedef struct rb_classext_struct rb_classext_t;
 
-struct rb_method_entry_struct;
-
-typedef struct method_cache_entry {
-    uint64_t vm_state;
-    uint64_t seq;
-    ID mid;
-    VALUE defined_class;
-    struct rb_method_entry_struct *me;
-} method_cache_entry_t;
-
 /**
  * In the case that this is an `ICLASS`, `module_subclasses` points to the link
  * in the module's `subclasses` list that indicates that the klass has been

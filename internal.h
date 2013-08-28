@@ -118,6 +118,22 @@ struct rb_subclass_entry {
     rb_subclass_entry_t *next;
 };
 
+#if HAVE_UINT64_T
+    typedef uint64_t vm_state_version_t;
+#else
+    typedef unsigned long long vm_state_version_t;
+#endif
+
+struct rb_method_entry_struct;
+
+typedef struct method_cache_entry {
+    vm_state_version_t vm_state;
+    vm_state_version_t seq;
+    ID mid;
+    VALUE defined_class;
+    struct rb_method_entry_struct *me;
+} method_cache_entry_t;
+
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
@@ -126,7 +142,7 @@ struct rb_classext_struct {
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
     rb_subclass_entry_t **module_subclasses;
-    uint64_t seq;
+    vm_state_version_t seq;
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
@@ -488,7 +504,7 @@ void ruby_kill(rb_pid_t pid, int sig);
 void Init_native_thread(void);
 
 /* vm_insnhelper.h */
-uint64_t rb_next_seq();
+vm_state_version_t rb_next_seq();
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
