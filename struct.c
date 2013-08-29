@@ -229,10 +229,38 @@ rb_struct_alloc_noinit(VALUE klass)
     return struct_alloc(klass);
 }
 
-VALUE
-rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
+static VALUE
+struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
     VALUE klass;
+
+    if (class_name) {
+	if (outer) {
+	    klass = rb_define_class_under(outer, class_name, super);
+	}
+	else {
+	    klass = rb_define_class(class_name, super);
+	}
+    }
+    else {
+	klass = anonymous_struct(super);
+    }
+
+    rb_ivar_set(klass, id_members, members);
+
+    if (alloc) {
+	rb_define_alloc_func(klass, alloc);
+    }
+    else {
+	rb_define_alloc_func(klass, struct_alloc);
+    }
+
+    return klass;
+}
+
+VALUE
+rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
+{
     va_list ar;
     VALUE members;
     char *name;
@@ -245,21 +273,25 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
     va_end(ar);
     OBJ_FREEZE(members);
 
-    if (class_name) {
-        klass = rb_define_class(class_name, super);
+    return struct_define_without_accessor(outer, class_name, super, alloc, members);
+}
+
+VALUE
+rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
+{
+    va_list ar;
+    VALUE members;
+    char *name;
+
+    members = rb_ary_tmp_new(0);
+    va_start(ar, alloc);
+    while ((name = va_arg(ar, char*)) != NULL) {
+        rb_ary_push(members, ID2SYM(rb_intern(name)));
     }
-    else {
-	klass = anonymous_struct(super);
-    }
+    va_end(ar);
+    OBJ_FREEZE(members);
 
-    rb_ivar_set(klass, id_members, members);
-
-    if (alloc)
-        rb_define_alloc_func(klass, alloc);
-    else
-        rb_define_alloc_func(klass, struct_alloc);
-
-    return klass;
+    return struct_define_without_accessor(0, class_name, super, alloc, members);
 }
 
 VALUE

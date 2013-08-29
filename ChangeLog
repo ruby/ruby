@@ -1,3 +1,11 @@
+Thu Aug 29 18:05:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* struct.c (rb_struct_define_without_accessor_under): added.
+	  This function is similar to rb_define_class_under() against
+	  rb_define_class().
+
+	* include/ruby/intern.h: add a declaration of this function.
+
 Thu Aug 29 17:03:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): a method entry refers the based
