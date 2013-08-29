@@ -1,3 +1,10 @@
+Thu Aug 29 21:28:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): a method entry refers the based
+	  class/module, so should search superclass from the origin i-class
+	  where the entry belongs to, to get rid of infinite loop when zsuper
+	  in a prepended class/module.  [ruby-core:54105] [Bug #8238]
+
 Fri Aug 23 01:16:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_parse.c (rfc2822_cb): check if wday is given, since it
