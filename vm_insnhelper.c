@@ -1769,6 +1769,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
   start_method_dispatch:
     if (ci->me != 0) {
 	if ((ci->me->flag == 0)) {
+	    VALUE klass;
+
 	  normal_method_dispatch:
 	    switch (ci->me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
@@ -1801,10 +1803,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_bmethod(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
-		VALUE klass;
-
+		klass = ci->me->klass;
+		klass = RCLASS_ORIGIN(klass);
 	      zsuper_method_dispatch:
-		klass = RCLASS_SUPER(ci->me->klass);
+		klass = RCLASS_SUPER(klass);
 		ci_temp = *ci;
 		ci = &ci_temp;
 
@@ -1866,6 +1868,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    goto normal_method_dispatch;
 		}
 		else {
+		    klass = ci->me->klass;
 		    goto zsuper_method_dispatch;
 		}
 	      }
