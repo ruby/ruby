@@ -1074,11 +1074,13 @@ loop:
 	}
 	if (err == Z_NEED_DICT) {
 	    VALUE self = (VALUE)z->stream.opaque;
-	    VALUE dicts = rb_ivar_get(self, id_dictionaries);
-	    VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
-	    if (!NIL_P(dict)) {
-		rb_inflate_set_dictionary(self, dict);
-		goto loop;
+	    if (self) {
+		VALUE dicts = rb_ivar_get(self, id_dictionaries);
+		VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
+		if (!NIL_P(dict)) {
+		    rb_inflate_set_dictionary(self, dict);
+		    goto loop;
+		}
 	    }
 	}
 	raise_zlib_error(err, z->stream.msg);

@@ -1,3 +1,11 @@
+Thu Aug 29 21:51:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_run):  Fix handling of deflate streams that
+	  need a dictionary but are being decompressed by Zlib::Inflate.inflate
+	  (which has no option to set a dictionary).  Now Zlib::NeedDict is
+	  raised instead of crashing.  [ruby-trunk - Bug #8829]
+	* test/zlib/test_zlib.rb (TestZlibInflate):  Test for the above.
+
 Thu Aug 29 21:28:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): a method entry refers the based

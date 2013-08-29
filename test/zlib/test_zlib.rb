@@ -232,6 +232,12 @@ if defined? Zlib
   end
 
   class TestZlibInflate < Test::Unit::TestCase
+    def test_class_inflate_dictionary
+      assert_raises(Zlib::NeedDict) do
+        Zlib::Inflate.inflate([0x08,0x3C,0x0,0x0,0x0,0x0].pack("c*"))
+      end
+    end
+
     def test_initialize
       assert_raise(Zlib::StreamError) { Zlib::Inflate.new(-1) }
 
