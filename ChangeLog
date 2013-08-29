@@ -9,7 +9,7 @@ Thu Aug 29 05:35:58 2013  Eric Hodel  <drbrain@segment7.net>
 Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
-	  treated as strings. 
+	  treated as strings.
 	  [Fixes GH-156] https://github.com/tenderlove/psych/issues/156
 
 	* test/psych/test_string.rb: test for change
