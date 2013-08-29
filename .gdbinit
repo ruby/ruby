@@ -722,9 +722,14 @@ document rb_method_entry
 end
 
 define rb_classname
-  call classname($arg0)
-  rb_p $
-  print *(struct RClass*)($arg0)
+  # up to 128bit int
+  set $rb_classname_permanent = "0123456789ABCDEF"
+  set $rb_classname = classname($arg0, $rb_classname_permanent)
+  if $rb_classname != RUBY_Qnil
+    rp $rb_classname
+  else
+    echo anonymous class/module\n
+  end
 end
 
 define rb_ancestors
