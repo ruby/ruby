@@ -368,6 +368,7 @@ define rp_class
     printf " -> %p", ((struct RClass *)($arg0))->ptr.origin
   end
   printf "\n"
+  rb_classname $arg0
   print *(struct RClass *)($arg0)
   print *((struct RClass *)($arg0))->ptr
 end
@@ -735,7 +736,7 @@ end
 define rb_ancestors
   set $rb_ancestors_module = $arg0
   while $rb_ancestors_module
-    rp $rb_ancestors_module
+    rp_class $rb_ancestors_module
     set $rb_ancestors_module = ((struct RClass *)($rb_ancestors_module))->ptr.super
   end
 end
