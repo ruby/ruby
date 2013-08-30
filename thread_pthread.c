@@ -544,6 +544,9 @@ hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
 #   define MAINSTACKADDR_AVAILABLE 0
 # endif
 #endif
+#if MAINSTACKADDR_AVAILABLE && !defined(get_main_stack)
+# define get_main_stack(addr, size) get_stack(addr, size)
+#endif
 
 #ifdef STACKADDR_AVAILABLE
 /*
@@ -685,7 +688,7 @@ ruby_init_stack(volatile VALUE *addr
 #if MAINSTACKADDR_AVAILABLE
 	void* stackaddr;
 	STACK_GROW_DIR_DETECTION;
-	if (get_stack(&stackaddr, &size) == 0) {
+	if (get_main_stack(&stackaddr, &size) == 0) {
             space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
         }
 	native_main_thread.stack_maxsize = size - space;
