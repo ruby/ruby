@@ -1,4 +1,7 @@
-Fri Aug 30 22:37:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 30 22:37:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (native_thread_create): define attr only if it is
+	  used, and merge pthread_create() calls.
 
 	* thread_pthread.c (get_main_stack): separate function to get stack of
 	  main thread.

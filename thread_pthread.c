@@ -901,7 +901,12 @@ native_thread_create(rb_thread_t *th)
 	thread_debug("create (use cached thread): %p\n", (void *)th);
     }
     else {
+#ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
+	pthread_attr_t *const attrp = &attr;
+#else
+	pthread_attr_t *const attrp = NULL;
+#endif
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
@@ -923,11 +928,8 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setinheritsched(&attr, PTHREAD_INHERIT_SCHED));
 # endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
-
-	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
-#else
-	err = pthread_create(&th->thread_id, NULL, thread_start_func_1, th);
 #endif
+	err = pthread_create(&th->thread_id, attrp, thread_start_func_1, th);
 	thread_debug("create: %p (%d)\n", (void *)th, err);
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	CHECK_ERR(pthread_attr_destroy(&attr));
