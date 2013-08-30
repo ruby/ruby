@@ -518,16 +518,17 @@ size_t pthread_get_stacksize_np(pthread_t);
  * The vps_pagesize is 'Default user page size (kBytes)'
  * and could be retrieved by gettune().
  */
-
-static int hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
+static int
+hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
 {
     static uint64_t pagesize;
     size_t size;
 
     if (!pagesize) {
 	if (gettune("vps_pagesize", &pagesize)) {
-	    pagesize = 1024;
+	    pagesize = 16;
 	}
+	pagesize *= 1024;
     }
     pthread_attr_getstacksize(attr, &size);
     *addr = (void *)((size_t)((char *)_Asm_get_sp() - size) & ~(pagesize - 1));
