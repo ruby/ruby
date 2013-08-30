@@ -12,18 +12,6 @@ Fri Aug 30 22:37:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* thread_pthread.c (get_main_stack): separate function to get stack of
 	  main thread.
 
-	* thread_pthread.c (native_thread_init_stack): wait the creator thread
-	  to fill machine stack info, if get_stack_of() is available.
-
-	* thread_pthread.c (native_thread_create): fill the created thread
-	  stack info after starting, if get_stack_of() is available.
-
-	* thread_pthread.c (native_thread_create): define attr only if it is
-	  used, and merge pthread_create() calls.
-
-	* thread_pthread.c (get_main_stack): separate function to get stack of
-	  main thread.
-
 Thu Aug 29 18:05:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* struct.c (rb_struct_define_without_accessor_under): added.
