@@ -1965,7 +1965,7 @@ class Resolv
         # Returns the first string from +strings+.
 
         def data
-          @strings[0]
+          @strings.join("")
         end
 
         def encode_rdata(msg) # :nodoc:
