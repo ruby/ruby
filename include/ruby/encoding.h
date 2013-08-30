@@ -197,9 +197,15 @@ rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_filesystem_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 rb_encoding *rb_default_internal_encoding(void);
+#ifndef rb_ascii8bit_encindex
 int rb_ascii8bit_encindex(void);
+#endif
+#ifndef rb_utf8_encindex
 int rb_utf8_encindex(void);
+#endif
+#ifndef rb_usascii_encindex
 int rb_usascii_encindex(void);
+#endif
 int rb_locale_encindex(void);
 int rb_filesystem_encindex(void);
 VALUE rb_enc_default_external(void);
