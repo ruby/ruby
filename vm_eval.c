@@ -761,6 +761,15 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
+VALUE
+rb_funcall_ci(rb_call_info_t *ci, VALUE recv, VALUE *argv)
+{
+    rb_thread_t *th = GET_THREAD();
+    ci->recv = recv;
+    vm_search_method(ci, recv);
+    return vm_call0_body(th, ci, argv);
+}
+
 /*!
  * Calls a method
  * \param recv   receiver of the method
