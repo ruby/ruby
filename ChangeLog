@@ -1,3 +1,7 @@
+Sun Sep  1 03:32:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bit_length): Renamed from bitsize.
+
 Sun Sep  1 00:07:09 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_bit_length): New method.
