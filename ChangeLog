@@ -5,7 +5,7 @@ Sat Aug 31 22:18:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Check clock_getres.
 
-	[ruby-core:56780] [Feature #8809] accepted at
+	[ruby-core:56780] [Feature #8809] accepted as a CRuby feature at
 	DevelopersMeeting20130831Japan
 	https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130831Japan
 
