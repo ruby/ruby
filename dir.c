@@ -627,14 +627,13 @@ dir_each(VALUE dir)
 	size_t namlen = NAMLEN(dp);
 	VALUE path;
 #if HAVE_HFS
-	VALUE utf8str = Qnil;
 	if (hfs_p && has_nonascii(name, namlen) &&
-	    !NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
-	    RSTRING_GETMEM(utf8str, name, namlen);
+	    !NIL_P(path = rb_str_normalize_ospath(name, namlen))) {
+	    path = rb_external_str_with_enc(path, dirp->enc);
 	}
+	else
 #endif
 	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
-	IF_HAVE_HFS(if (!NIL_P(utf8str)) rb_str_resize(utf8str, 0));
 	rb_yield(path);
 	if (dirp->dir == NULL) dir_closed();
     }

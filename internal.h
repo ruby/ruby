@@ -434,6 +434,9 @@ VALUE rb_id_quote_unprintable(ID);
 #define QUOTE_ID(id) rb_id_quote_unprintable(id)
 void rb_str_fill_terminator(VALUE str, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
+#ifdef RUBY_ENCODING_H
+VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
+#endif
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
