@@ -1163,10 +1163,10 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 		case NOEX_PRIVATE: v = "private"; break;
 		case NOEX_PROTECTED: v = "protected"; break;
 	    }
-	    rb_name_error(id, "method `%s' for %s `%s' is %s",
+	    rb_name_error(id, "method `%s' for %s `% "PRIsVALUE"' is %s",
 			  rb_id2name(id),
 			  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-			  rb_class2name(klass),
+			  rb_class_name(klass),
 			  v);
 	}
     }
@@ -1637,8 +1637,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    }
 	    else {
 		rb_raise(rb_eTypeError,
-			 "bind argument must be a subclass of %s",
-			 rb_class2name(rclass));
+			 "bind argument must be a subclass of % "PRIsVALUE,
+			 rb_class_name(rclass));
 	    }
 	}
 	rb_method_entry_set(mod, id, method->me, noex);
@@ -1930,8 +1930,8 @@ umethod_bind(VALUE method, VALUE recv)
 		     "singleton method called for a different object");
 	}
 	else {
-	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(methclass));
+	    rb_raise(rb_eTypeError, "bind argument must be an instance of % "PRIsVALUE,
+		     rb_class_name(methclass));
 	}
     }
 
@@ -2229,10 +2229,10 @@ method_inspect(VALUE method)
 	}
     }
     else {
-	rb_str_buf_cat2(str, rb_class2name(data->rclass));
+	rb_str_buf_append(str, rb_class_name(data->rclass));
 	if (data->rclass != data->me->klass) {
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_cat2(str, rb_class2name(data->me->klass));
+	    rb_str_buf_append(str, rb_class_name(data->me->klass));
 	    rb_str_buf_cat2(str, ")");
 	}
     }
