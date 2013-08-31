@@ -251,9 +251,9 @@ enum vm_regan_acttype {
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
 #endif
 
-#define CALL_SIMPLE_METHOD(recv) do { \
+#define CALL_SIMPLE_METHOD(recv_) do { \
     ci->blockptr = 0; ci->argc = ci->orig_argc; \
-    vm_search_method(ci, ci->recv = (recv)); \
+    vm_search_method(ci, ci->recv = (recv_)); \
     CALL_METHOD(ci); \
 } while (0)
 
