@@ -2090,7 +2090,7 @@ opt_regexpmatch1
  */
 DEFINE_INSN
 opt_regexpmatch2
-()
+(CALL_INFO ci)
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 {
@@ -2098,7 +2098,9 @@ opt_regexpmatch2
 	val = rb_reg_match(obj1, obj2);
     }
     else {
-	val = rb_funcall(obj2, idEqTilde, 1, obj1);
+	PUSH(obj2);
+	PUSH(obj1);
+	CALL_SIMPLE_METHOD(obj2);
     }
 }
 
