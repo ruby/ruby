@@ -1639,7 +1639,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  When the method name parameter is given as a string, the string is
  *  converted to a symbol.
  *
- *  See #respond_to?.
+ *  See #respond_to?, and the example of BasicObject.
  */
 static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
