@@ -1,3 +1,9 @@
+Sun Sep  1 00:07:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_bit_length): New method.
+	  (rb_fix_bit_length): Ditto.
+	  [ruby-core:56247] [Feature #8700]
+
 Sat Aug 31 22:18:29 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_getres): New method.

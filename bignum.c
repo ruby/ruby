@@ -6662,6 +6662,113 @@ rb_big_size(VALUE big)
 
 /*
  *  call-seq:
+ *     int.bit_length -> integer
+ *
+ *  Returns the number of bits of the value of <i>int</i>.
+ *
+ *  "the number of bits" means that
+ *  the bit position of the highest bit which is different to the sign bit.
+ *  (The bit position of the bit 2**n is n+1.)
+ *  If there is no such bit (zero or minus one), zero is returned.
+ *
+ *     (-2**10000-1).bit_length  #=> 10001
+ *     (-2**10000).bit_length    #=> 10000
+ *     (-2**10000+1).bit_length  #=> 10000
+ *
+ *     (-2**1000-1).bit_length   #=> 1001
+ *     (-2**1000).bit_length     #=> 1000
+ *     (-2**1000+1).bit_length   #=> 1000
+ *
+ *     (2**1000-1).bit_length    #=> 1000
+ *     (2**1000).bit_length      #=> 1001
+ *     (2**1000+1).bit_length    #=> 1001
+ *
+ *     (2**10000-1).bit_length   #=> 10000
+ *     (2**10000).bit_length     #=> 10001
+ *     (2**10000+1).bit_length   #=> 10001
+ *
+ */
+
+static VALUE
+rb_big_bit_length(VALUE big)
+{
+    int nlz_bits;
+    size_t numbytes;
+
+    static const BDIGIT char_bit[1] = { CHAR_BIT };
+    BDIGIT numbytes_bary[bdigit_roomof(sizeof(size_t))];
+    BDIGIT nlz_bary[1];
+    BDIGIT result_bary[bdigit_roomof(sizeof(size_t)+1)];
+
+    numbytes = rb_absint_size(big, &nlz_bits);
+
+    if (numbytes == 0)
+        return LONG2FIX(0);
+
+    if (RBIGNUM_NEGATIVE_P(big) && rb_absint_singlebit_p(big)) {
+        if (nlz_bits != CHAR_BIT-1) {
+            nlz_bits++;
+        }
+        else {
+            nlz_bits = 0;
+            numbytes--;
+        }
+    }
+
+    if (numbytes <= SIZE_MAX / CHAR_BIT) {
+        return SIZET2NUM(numbytes * CHAR_BIT - nlz_bits);
+    }
+
+    nlz_bary[0] = nlz_bits;
+
+    bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER);
+    BARY_SHORT_MUL(result_bary, numbytes_bary, char_bit);
+    BARY_SUB(result_bary, result_bary, nlz_bary);
+
+    return rb_integer_unpack(result_bary, numberof(result_bary), sizeof(BDIGIT), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+}
+
+/*
+ *  call-seq:
+ *     int.bit_length -> integer
+ *
+ *  Returns the number of bits of the value of <i>int</i>.
+ *
+ *  "the number of bits" means that
+ *  the bit position of the highest bit which is different to the sign bit.
+ *  (The bit position of the bit 2**n is n+1.)
+ *  If there is no such bit (zero or minus one), zero is returned.
+ *
+ *     (-2**12-1).bit_length     #=> 13
+ *     (-2**12).bit_length       #=> 12
+ *     (-2**12+1).bit_length     #=> 12
+ *     -0x101.bit_length         #=> 9
+ *     -0x100.bit_length         #=> 8
+ *     -0xff.bit_length          #=> 8
+ *     -2.bit_length             #=> 1
+ *     -1.bit_length             #=> 0
+ *     0.bit_length              #=> 0
+ *     1.bit_length              #=> 1
+ *     0xff.bit_length           #=> 8
+ *     0x100.bit_length          #=> 9
+ *     (2**12-1).bit_length      #=> 12
+ *     (2**12).bit_length        #=> 13
+ *     (2**12+1).bit_length      #=> 13
+ */
+
+static VALUE
+rb_fix_bit_length(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        v = ~v;
+    return LONG2FIX(bitsize(v));
+}
+
+/*
+ *  call-seq:
  *     big.odd? -> true or false
  *
  *  Returns <code>true</code> if <i>big</i> is an odd number.
@@ -6751,8 +6858,11 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
+    rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
     rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
+
+    rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
 
     power_cache_init();
 }

@@ -241,4 +241,40 @@ class TestInteger < Test::Unit::TestCase
     end
     assert_equal(3 ^ 10, 3 ^ obj)
   end
+
+  def test_bit_length
+    assert_equal(13, (-2**12-1).bit_length)
+    assert_equal(12, (-2**12).bit_length)
+    assert_equal(12, (-2**12+1).bit_length)
+    assert_equal(9, -0x101.bit_length)
+    assert_equal(8, -0x100.bit_length)
+    assert_equal(8, -0xff.bit_length)
+    assert_equal(1, -2.bit_length)
+    assert_equal(0, -1.bit_length)
+    assert_equal(0, 0.bit_length)
+    assert_equal(1, 1.bit_length)
+    assert_equal(8, 0xff.bit_length)
+    assert_equal(9, 0x100.bit_length)
+    assert_equal(9, 0x101.bit_length)
+    assert_equal(12, (2**12-1).bit_length)
+    assert_equal(13, (2**12).bit_length)
+    assert_equal(13, (2**12+1).bit_length)
+
+    assert_equal(10001, (-2**10000-1).bit_length)
+    assert_equal(10000, (-2**10000).bit_length)
+    assert_equal(10000, (-2**10000+1).bit_length)
+    assert_equal(10000, (2**10000-1).bit_length)
+    assert_equal(10001, (2**10000).bit_length)
+    assert_equal(10001, (2**10000+1).bit_length)
+
+    2.upto(1000) {|i|
+      n = 2**i
+      assert_equal(i+1, (-n-1).bit_length, "(#{-n-1}).bit_length")
+      assert_equal(i,   (-n).bit_length, "(#{-n}).bit_length")
+      assert_equal(i,   (-n+1).bit_length, "(#{-n+1}).bit_length")
+      assert_equal(i,   (n-1).bit_length, "#{n-1}.bit_length")
+      assert_equal(i+1, (n).bit_length, "#{n}.bit_length")
+      assert_equal(i+1, (n+1).bit_length, "#{n+1}.bit_length")
+    }
+  end
 end
