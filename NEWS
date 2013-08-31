@@ -26,11 +26,21 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Bignum
+  * New methods
+    * Fixnum#bit_length
+  * Performance improvement
+    * Use GMP for multiplication of big numbers if it is available.
+
 * Binding
   * New methods
     * Binding#local_variable_get(symbol)
     * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
+
+* Fixnum
+  * New methods
+    * Fixnum#bit_length
 
 * GC
   * added environment variable:
@@ -66,6 +76,7 @@ with all sufficient information, see the ChangeLog file.
       * Process.argv0() returns the original value of $0.
       * Process.setproctitle() sets the process title without affecting $0.
     * Process.clock_gettime
+    * Process.clock_getres
 
 * String
   * New methods:
