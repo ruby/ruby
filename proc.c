@@ -1918,18 +1918,20 @@ static VALUE
 umethod_bind(VALUE method, VALUE recv)
 {
     struct METHOD *data, *bound;
+    VALUE methclass;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
 
-    if (!RB_TYPE_P(data->rclass, T_MODULE) &&
-	data->rclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, data->rclass)) {
-	if (FL_TEST(data->rclass, FL_SINGLETON)) {
+    methclass = data->rclass;
+    if (!RB_TYPE_P(methclass, T_MODULE) &&
+	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
+	if (FL_TEST(methclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
 		     "singleton method called for a different object");
 	}
 	else {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->rclass));
+		     rb_class2name(methclass));
 	}
     }
 
