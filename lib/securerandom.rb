@@ -54,8 +54,8 @@ module SecureRandom
       @pid = 0 unless defined?(@pid)
       pid = $$
       unless @pid == pid
-        now = Time.now
-        ary = [now.to_i, now.nsec, @pid, pid]
+        now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+        ary = [now, @pid, pid]
         OpenSSL::Random.random_add(ary.join("").to_s, 0.0)
         @pid = pid
       end
