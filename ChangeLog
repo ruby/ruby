@@ -1,3 +1,14 @@
+Sat Aug 31 21:02:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Use GMP to accelerate big Bignum multiplication.
+	  (bary_mul_gmp): New function.
+	  (bary_mul): Use bary_mul_gmp.
+	  (bigsq): Use different threshold with GMP.
+
+	* configure.in: Detect GMP.
+
+	[ruby-core:56658] [Feature #8796]
+
 Sat Aug 31 15:03:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c (NODE_MATCH3): pass CALL_INFO to opt_regexpmatch2

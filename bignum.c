@@ -25,6 +25,11 @@
 #endif
 #include <assert.h>
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+#define USE_GMP
+#include <gmp.h>
+#endif
+
 VALUE rb_cBignum;
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -129,6 +134,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define KARATSUBA_BALANCED(xn, yn) ((yn)/2 < (xn))
 #define TOOM3_BALANCED(xn, yn) (((yn)+2)/3 * 2 < (xn))
 
+#define GMP_MUL_DIGITS 20
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
@@ -2409,6 +2415,42 @@ rb_big_mul_toom3(VALUE x, VALUE y)
     return z;
 }
 
+#ifdef USE_GMP
+static void
+bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t x, y, z;
+    size_t count;
+
+    assert(xn + yn <= zn);
+
+    mpz_inits(x, y, z, 0);
+    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    if (xds == yds && xn == yn) {
+        mpz_mul(z, x, x);
+    }
+    else {
+        mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+        mpz_mul(z, x, y);
+    }
+    mpz_export (zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    BDIGITS_ZERO(zds+count, zn-count);
+    mpz_clears(x, y, z, 0);
+}
+
+VALUE
+rb_big_mul_gmp(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    bary_mul_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+#endif
+
 static void
 bary_short_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
@@ -2601,8 +2643,13 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const
 static void
 bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
+#ifdef USE_GMP
+    const size_t naive_threshold = GMP_MUL_DIGITS;
+#else
+    const size_t naive_threshold = KARATSUBA_MUL_DIGITS;
+#endif
     if (xn <= yn) {
-        if (xn < KARATSUBA_MUL_DIGITS) {
+        if (xn < naive_threshold) {
             if (xds == yds && xn == yn)
                 bary_sq_fast(zds, zn, xds, xn);
             else
@@ -2611,13 +2658,17 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
         }
     }
     else {
-        if (yn < KARATSUBA_MUL_DIGITS) {
+        if (yn < naive_threshold) {
             bary_short_mul(zds, zn, yds, yn, xds, xn);
             return;
         }
     }
 
+#ifdef USE_GMP
+    bary_mul_gmp(zds, zn, xds, xn, yds, yn);
+#else
     bary_mul_toom3_start(zds, zn, xds, xn, yds, yn, NULL, 0);
+#endif
 }
 
 struct big_div_struct {
@@ -5566,10 +5617,17 @@ bigsq(VALUE x)
     xds = BDIGITS(x);
     zds = BDIGITS(z);
 
+#ifdef USE_GMP
+    if (xn < GMP_MUL_DIGITS)
+        bary_sq_fast(zds, zn, xds, xn);
+    else
+        bary_mul(zds, zn, xds, xn, xds, xn);
+#else
     if (xn < KARATSUBA_MUL_DIGITS)
         bary_sq_fast(zds, zn, xds, xn);
     else
         bary_mul(zds, zn, xds, xn, xds, xn);
+#endif
 
     RB_GC_GUARD(x);
     return z;

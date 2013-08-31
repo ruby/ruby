@@ -1049,6 +1049,16 @@ AC_CHECK_HEADERS( \
   setjmpex.h
 )
 
+AC_ARG_WITH([gmp],
+  [AS_HELP_STRING([--without-gmp],
+    [disable GNU GMP to accelerate Bignum operations])],
+  [],
+  [with_gmp=yes])
+AS_IF([test "x$with_gmp" != xno],
+  [AC_CHECK_HEADERS(gmp.h)
+   AS_IF([test "x$ac_cv_header_gmp_h" != xno],
+     AC_CHECK_LIB([gmp], [__gmpz_init]))])
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
