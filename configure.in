@@ -1877,6 +1877,7 @@ if test x"$ac_cv_func_clock_gettime" != xyes; then
 	AC_DEFINE(HAVE_CLOCK_GETTIME, 1)
     fi
 fi
+AC_CHECK_FUNCS(clock_getres) # clock_getres should be tested after clock_gettime test including librt test.
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([

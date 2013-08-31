@@ -1729,4 +1729,70 @@ EOS
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
+  def test_clock_getres
+    r = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+    assert_kind_of(Integer, r)
+    assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
+  end
+
+  def test_clock_getres_constants
+    Process.constants.grep(/\ACLOCK_/).each {|n|
+      c = Process.const_get(n)
+      begin
+        t = Process.clock_getres(c)
+      rescue Errno::EINVAL
+        next
+      end
+      assert_kind_of(Float, t, "Process.clock_getres(Process::#{n})")
+    }
+  end
+
+  def test_clock_getres_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
+  def test_clock_getres_TIME_BASED_CLOCK_REALTIME
+    n = :TIME_BASED_CLOCK_REALTIME
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
+  def test_clock_getres_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
+  def test_clock_getres_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
+  def test_clock_getres_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    n = :CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+    t = Process.clock_getres(n)
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
+  def test_clock_getres_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    n = :MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+  end
+
 end

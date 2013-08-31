@@ -6751,6 +6751,27 @@ timetick2dblnum(struct timetick *ttp,
     return DBL2NUM(d);
 }
 
+static VALUE
+timetick2dblnum_reciprocal(struct timetick *ttp,
+    timetick_int_t *numerators, int num_numerators,
+    timetick_int_t *denominators, int num_denominators)
+{
+    double d;
+    int i;
+
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
+
+    d = 1.0;
+    for (i = 0; i < num_denominators; i++)
+        d *= denominators[i];
+    for (i = 0; i < num_numerators; i++)
+        d /= numerators[i];
+    d /= ttp->giga_count * 1e9 + ttp->count;
+
+    return DBL2NUM(d);
+}
+
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
 
@@ -7086,6 +7107,135 @@ rb_clock_gettime(int argc, VALUE *argv)
     return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
 }
 
+/*
+ *  call-seq:
+ *     Process.clock_getres(clock_id [, unit])   -> number
+ *
+ *  Returns the time resolution returned by POSIX clock_getres() function.
+ *
+ *  +clock_id+ specifies a kind of clock.
+ *  See the document of +Process.clock_gettime+ for details.
+ *
+ *  +clock_id+ can be a symbol as +Process.clock_gettime+.
+ *  However the result may not be accurate.
+ *  For example, +Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)+
+ *  returns 1.0e-06 which means 1 micro second, but actual resolution can be more coarse.
+ *
+ *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
+ *
+ *  +unit+ specifies a type of the return value.
+ *  +Process.clock_getres+ accepts +unit+ as +Process.clock_gettime+.
+ *  The default value, +:float_second+, is also same as
+ *  +Process.clock_gettime+.
+ *
+ *  +Process.clock_getres+ also accepts +:hertz+ as +unit+.
+ *  +:hertz+ means a the reciprocal of +:float_second+.
+ *
+ *  +:hertz+ can be used to obtain the exact value of
+ *  the clock ticks per second for times() function and
+ *  CLOCKS_PER_SEC for clock() function.
+ *
+ *  +Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  returns the clock ticks per second.
+ *
+ *  +Process.clock_getres(:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  returns CLOCKS_PER_SEC.
+ *
+ *    p Process.clock_getres(Process::CLOCK_MONOTONIC)
+ *    #=> 1.0e-09
+ *
+ */
+VALUE
+rb_clock_getres(int argc, VALUE *argv)
+{
+    VALUE clk_id, unit;
+    int ret;
+
+    struct timetick tt;
+    timetick_int_t numerators[2];
+    timetick_int_t denominators[2];
+    int num_numerators = 0;
+    int num_denominators = 0;
+
+    rb_scan_args(argc, argv, "11", &clk_id, &unit);
+
+    if (SYMBOL_P(clk_id)) {
+#ifdef RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+        if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
+            tt.giga_count = 0;
+            tt.count = 1000;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_TIME_BASED_CLOCK_REALTIME
+        if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
+            tt.giga_count = 1;
+            tt.count = 0;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.giga_count = 0;
+            tt.count = 1000;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.count = 1;
+            tt.giga_count = 0;
+            denominators[num_denominators++] = get_clk_tck();
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.count = 1;
+            tt.giga_count = 0;
+            denominators[num_denominators++] = CLOCKS_PER_SEC;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+        /* not yet */
+#endif
+    }
+    else {
+#if defined(HAVE_CLOCK_GETRES)
+        struct timespec ts;
+        clockid_t c;
+        c = NUM2CLOCKID(clk_id);
+        ret = clock_getres(c, &ts);
+        if (ret == -1)
+            rb_sys_fail("clock_getres");
+        tt.count = (int32_t)ts.tv_nsec;
+        tt.giga_count = ts.tv_sec;
+        denominators[num_denominators++] = 1000000000;
+        goto success;
+#endif
+    }
+    /* EINVAL emulates clock_getres behavior when clock_id is invalid. */
+    errno = EINVAL;
+    rb_sys_fail(0);
+
+  success:
+    if (unit == ID2SYM(rb_intern("hertz"))) {
+        return timetick2dblnum_reciprocal(&tt, numerators, num_numerators, denominators, num_denominators);
+    }
+    else {
+        return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
+    }
+}
+
 VALUE rb_mProcess;
 VALUE rb_mProcUID;
 VALUE rb_mProcGID;
@@ -7413,6 +7563,7 @@ Init_process(void)
     rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
+    rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
     rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);

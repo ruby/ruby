@@ -1,3 +1,14 @@
+Sat Aug 31 22:18:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_getres): New method.
+	  (timetick2dblnum_reciprocal): New function.
+
+	* configure.in: Check clock_getres.
+
+	[ruby-core:56780] [Feature #8809] accepted at
+	DevelopersMeeting20130831Japan
+	https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130831Japan
+
 Sat Aug 31 21:02:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Use GMP to accelerate big Bignum multiplication.
