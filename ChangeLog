@@ -1,3 +1,7 @@
+Sun Sep  1 11:38:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (maxpow_in_bdigit): Removed.
+
 Sun Sep  1 10:30:42 2013  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_fix_bit_length): Moved from bignum.c.

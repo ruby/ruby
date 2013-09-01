@@ -358,40 +358,6 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
     return maxpow;
 }
 
-static BDIGIT
-maxpow_in_bdigit(int base, int *exp_ret)
-{
-    BDIGIT maxpow;
-    int exponent;
-
-    {
-#if SIZEOF_BDIGITS == 0
-#elif SIZEOF_BDIGITS == 2
-        maxpow = maxpow16_num[base-2];
-        exponent = maxpow16_exp[base-2];
-#elif SIZEOF_BDIGITS == 4
-        maxpow = maxpow32_num[base-2];
-        exponent = maxpow32_exp[base-2];
-#elif SIZEOF_BDIGITS == 8 && defined HAVE_UINT64_T
-        maxpow = maxpow64_num[base-2];
-        exponent = maxpow64_exp[base-2];
-#elif SIZEOF_BDIGITS == 16 && defined HAVE_UINT128_T
-        maxpow = maxpow128_num[base-2];
-        exponent = maxpow128_exp[base-2];
-#else
-        maxpow = base;
-        exponent = 1;
-        while (maxpow <= BDIGMAX / base) {
-            maxpow *= base;
-            exponent++;
-        }
-#endif
-    }
-
-    *exp_ret = exponent;
-    return maxpow;
-}
-
 static inline BDIGIT_DBL
 bary2bdigitdbl(const BDIGIT *ds, size_t n)
 {
@@ -4213,8 +4179,6 @@ big2str_find_n1(VALUE x, int base)
 struct big2str_struct {
     int negative;
     int base;
-    BDIGIT hbase;
-    int hbase_numdigits;
     BDIGIT_DBL hbase2;
     int hbase2_numdigits;
     VALUE result;
@@ -4481,7 +4445,6 @@ rb_big2str1(VALUE x, int base)
 
     b2s_data.negative = RBIGNUM_NEGATIVE_P(x);
     b2s_data.base = base;
-    b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
 
     b2s_data.result = Qnil;
