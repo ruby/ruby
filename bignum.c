@@ -6545,6 +6545,8 @@ rb_big_size(VALUE big)
  *  (The bit position of the bit 2**n is n+1.)
  *  If there is no such bit (zero or minus one), zero is returned.
  *
+ *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
+ *
  *     (-2**10000-1).bit_length  #=> 10001
  *     (-2**10000).bit_length    #=> 10000
  *     (-2**10000+1).bit_length  #=> 10000
@@ -6614,6 +6616,8 @@ rb_big_bit_length(VALUE big)
  *  the bit position of the highest bit which is different to the sign bit.
  *  (The bit position of the bit 2**n is n+1.)
  *  If there is no such bit (zero or minus one), zero is returned.
+ *
+ *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
  *
  *     (-2**12-1).bit_length     #=> 13
  *     (-2**12).bit_length       #=> 12
