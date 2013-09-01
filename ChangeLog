@@ -1,3 +1,7 @@
+Sun Sep  1 10:30:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_fix_bit_length): Moved from bignum.c.
+
 Sun Sep  1 09:55:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (bit_length): Moved from bignum.c.

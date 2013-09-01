@@ -6608,45 +6608,6 @@ rb_big_bit_length(VALUE big)
 
 /*
  *  call-seq:
- *     int.bit_length -> integer
- *
- *  Returns the number of bits of the value of <i>int</i>.
- *
- *  "the number of bits" means that
- *  the bit position of the highest bit which is different to the sign bit.
- *  (The bit position of the bit 2**n is n+1.)
- *  If there is no such bit (zero or minus one), zero is returned.
- *
- *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
- *
- *     (-2**12-1).bit_length     #=> 13
- *     (-2**12).bit_length       #=> 12
- *     (-2**12+1).bit_length     #=> 12
- *     -0x101.bit_length         #=> 9
- *     -0x100.bit_length         #=> 8
- *     -0xff.bit_length          #=> 8
- *     -2.bit_length             #=> 1
- *     -1.bit_length             #=> 0
- *     0.bit_length              #=> 0
- *     1.bit_length              #=> 1
- *     0xff.bit_length           #=> 8
- *     0x100.bit_length          #=> 9
- *     (2**12-1).bit_length      #=> 12
- *     (2**12).bit_length        #=> 13
- *     (2**12+1).bit_length      #=> 13
- */
-
-static VALUE
-rb_fix_bit_length(VALUE fix)
-{
-    long v = FIX2LONG(fix);
-    if (v < 0)
-        v = ~v;
-    return LONG2FIX(bit_length(v));
-}
-
-/*
- *  call-seq:
  *     big.odd? -> true or false
  *
  *  Returns <code>true</code> if <i>big</i> is an odd number.
@@ -6739,8 +6700,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
     rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
-
-    rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
 
     power_cache_init();
 }
