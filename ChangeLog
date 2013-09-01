@@ -1,3 +1,8 @@
+Sun Sep  1 13:02:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Remove BITSPERDIG >= INT_MAX test.  The static assertion,
+	  SIZEOF_BDIGITS <= sizeof(BDIGIT) is enough.
+
 Sun Sep  1 11:38:26 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (maxpow_in_bdigit): Removed.

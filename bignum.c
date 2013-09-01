@@ -64,7 +64,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #   define HOST_BIGENDIAN_P 0
 #endif
 #define ALIGNOF(type) ((int)offsetof(struct { char f1; type f2; }, f2))
-/* (sizeof(d) * CHAR_BIT <= (n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
+/* (!LSHIFTABLE(d, n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
 #define LSHIFTABLE(d, n) ((n) < sizeof(d) * CHAR_BIT)
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
@@ -73,9 +73,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#if BITSPERDIG >= INT_MAX
-# error incredible BDIGIT
-#endif
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define BIGRAD_HALF ((BDIGIT)(BIGRAD >> 1))
 #define BDIGIT_MSB(d) (((d) & BIGRAD_HALF) != 0)
