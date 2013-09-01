@@ -154,115 +154,6 @@ static VALUE bigsq(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 static inline VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
-static int
-nlz_int(unsigned int x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZ)
-    if (x == 0) return SIZEOF_INT * CHAR_BIT;
-    return __builtin_clz(x);
-#else
-    unsigned int y;
-# if 64 < SIZEOF_INT * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_INT * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_INT * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_INT * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-
-static int
-nlz_long(unsigned long x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZL)
-    if (x == 0) return SIZEOF_LONG * CHAR_BIT;
-    return __builtin_clzl(x);
-#else
-    unsigned long y;
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_LONG * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-
-#ifdef HAVE_LONG_LONG
-static int
-nlz_long_long(unsigned LONG_LONG x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
-    if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
-    return __builtin_clzll(x);
-#else
-    unsigned LONG_LONG y;
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-#endif
-
-#ifdef HAVE_UINT128_T
-static int
-nlz_int128(uint128_t x)
-{
-    uint128_t y;
-    int n = 128;
-    y = x >> 64; if (y) {n -= 64; x = y;}
-    y = x >> 32; if (y) {n -= 32; x = y;}
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-}
-#endif
-
 #if SIZEOF_BDIGITS <= SIZEOF_INT
 static int nlz(BDIGIT x) { return nlz_int((unsigned int)x) - (SIZEOF_INT-SIZEOF_BDIGITS) * CHAR_BIT; }
 #elif SIZEOF_BDIGITS <= SIZEOF_LONG
@@ -271,23 +162,6 @@ static int nlz(BDIGIT x) { return nlz_long((unsigned long)x) - (SIZEOF_LONG-SIZE
 static int nlz(BDIGIT x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF_LONG_LONG-SIZEOF_BDIGITS) * CHAR_BIT; }
 #elif SIZEOF_BDIGITS <= SIZEOF_INT128_T
 static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SIZEOF_BDIGITS) * CHAR_BIT; }
-#endif
-
-#if defined(HAVE_UINT128_T)
-#   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x) : \
-         SIZEOF_INT128_T * CHAR_BIT - nlz_int128(x))
-#elif defined(HAVE_LONG_LONG)
-#   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x))
-#else
-#   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         SIZEOF_LONG * CHAR_BIT - nlz_long(x))
 #endif
 
 #define U16(a) ((uint16_t)(a))
