@@ -648,6 +648,8 @@ VALUE rb_big_mul_toom3(VALUE x, VALUE y);
 VALUE rb_big_mul_gmp(VALUE x, VALUE y);
 #endif
 VALUE rb_big_sq_fast(VALUE x);
+VALUE rb_big2str_poweroftwo(VALUE x, int base);
+VALUE rb_big2str_generic(VALUE x, int base);
 
 /* file.c */
 #ifdef __APPLE__

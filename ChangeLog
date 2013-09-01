@@ -1,3 +1,18 @@
+Sun Sep  1 20:32:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_base_poweroftwo): Renamed from
+	  big2str_base_powerof2.
+	  (rb_big2str_poweroftwo): New function for test.
+	  (big2str_generic): Extracted from rb_big2str1.
+	  (rb_big2str_generic): New function for test.
+
+	* internal.h (rb_big2str_poweroftwo): Declared.
+	  (rb_big2str_generic): Ditto.
+
+	* ext/-test-/bignum/big2str.c: New file.
+
+	* test/-ext-/bignum/test_big2str.rb: New file.
+
 Sun Sep  1 15:21:21 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_2bdigits): Renamed from big2str_orig.

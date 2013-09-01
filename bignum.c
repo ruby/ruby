@@ -4354,7 +4354,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
 }
 
 static VALUE
-big2str_base_powerof2(VALUE x, int base)
+big2str_base_poweroftwo(VALUE x, int base)
 {
     int word_numbits = ffs(base) - 1;
     size_t numwords;
@@ -4384,38 +4384,18 @@ big2str_base_powerof2(VALUE x, int base)
     return result;
 }
 
+VALUE
+rb_big2str_poweroftwo(VALUE x, int base)
+{
+    return big2str_base_poweroftwo(x, base);
+}
+
 static VALUE
-rb_big2str1(VALUE x, int base)
+big2str_generic(VALUE x, int base, BDIGIT *xds, size_t xn)
 {
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
-    BDIGIT *xds;
-    size_t xn;
-
-    if (FIXNUM_P(x)) {
-	return rb_fix2str(x, base);
-    }
-
-    xds = BDIGITS(x);
-    xn = RBIGNUM_LEN(x);
-    BARY_TRUNC(xds, xn);
-
-    if (xn == 0) {
-	return rb_usascii_str_new2("0");
-    }
-
-    if (base < 2 || 36 < base)
-	rb_raise(rb_eArgError, "invalid radix %d", base);
-
-    if (xn >= LONG_MAX/BITSPERDIG) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
-    }
-
-    if (POW2_P(base)) {
-        /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
-        return big2str_base_powerof2(x, base);
-    }
 
     power_level = 0;
     power = power_cache_get_power(base, power_level, NULL);
@@ -4467,6 +4447,52 @@ rb_big2str1(VALUE x, int base)
     rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
     return b2s_data.result;
+}
+
+VALUE
+rb_big2str_generic(VALUE x, int base)
+{
+    BDIGIT *xds;
+    size_t xn;
+
+    xds = BDIGITS(x);
+    xn = RBIGNUM_LEN(x);
+    BARY_TRUNC(xds, xn);
+
+    return big2str_generic(x, base, xds, xn);
+}
+
+static VALUE
+rb_big2str1(VALUE x, int base)
+{
+    BDIGIT *xds;
+    size_t xn;
+
+    if (FIXNUM_P(x)) {
+	return rb_fix2str(x, base);
+    }
+
+    xds = BDIGITS(x);
+    xn = RBIGNUM_LEN(x);
+    BARY_TRUNC(xds, xn);
+
+    if (xn == 0) {
+	return rb_usascii_str_new2("0");
+    }
+
+    if (base < 2 || 36 < base)
+	rb_raise(rb_eArgError, "invalid radix %d", base);
+
+    if (xn >= LONG_MAX/BITSPERDIG) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
+
+    if (POW2_P(base)) {
+        /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
+        return big2str_base_poweroftwo(x, base);
+    }
+
+    return big2str_generic(x, base, xds, xn);
 }
 
 /* deprecated */
