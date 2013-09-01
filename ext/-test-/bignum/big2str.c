@@ -42,7 +42,7 @@ big2str_gmp(VALUE x, VALUE vbase)
     return rb_big2str_gmp(big(x), NUM2INT(vbase));
 }
 #else
-#define mul_gmp rb_f_notimplement
+#define big2str_gmp rb_f_notimplement
 #endif
 
 void
