@@ -1751,12 +1751,14 @@ EOS
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
     t = Process.clock_getres(n)
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000, Process.clock_getres(n, :nanosecond))
   end
 
   def test_clock_getres_TIME_BASED_CLOCK_REALTIME
     n = :TIME_BASED_CLOCK_REALTIME
     t = Process.clock_getres(n)
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000000000, Process.clock_getres(n, :nanosecond))
   end
 
   def test_clock_getres_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
@@ -1767,6 +1769,7 @@ EOS
       return
     end
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    assert_equal(1000, Process.clock_getres(n, :nanosecond))
   end
 
   def test_clock_getres_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
@@ -1777,12 +1780,16 @@ EOS
       return
     end
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
   end
 
   def test_clock_getres_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
     n = :CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
     t = Process.clock_getres(n)
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
   end
 
   def test_clock_getres_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
