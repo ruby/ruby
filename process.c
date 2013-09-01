@@ -6851,6 +6851,20 @@ make_clock_result(struct timetick *ttp,
         rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
 }
 
+#ifdef __APPLE__
+static mach_timebase_info_data_t *
+get_mach_timebase_info(void)
+{
+    static mach_timebase_info_data_t sTimebaseInfo;
+
+    if ( sTimebaseInfo.denom == 0 ) {
+        (void) mach_timebase_info(&sTimebaseInfo);
+    }
+
+    return &sTimebaseInfo;
+}
+#endif
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -7069,17 +7083,12 @@ rb_clock_gettime(int argc, VALUE *argv)
 #ifdef __APPLE__
 #define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC"))
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
-	    static mach_timebase_info_data_t sTimebaseInfo;
-	    uint64_t t = mach_absolute_time();
-
-	    if ( sTimebaseInfo.denom == 0 ) {
-		(void) mach_timebase_info(&sTimebaseInfo);
-	    }
-
+	    mach_timebase_info_data_t *info = get_mach_timebase_info();
+            uint64_t t = mach_absolute_time();
             tt.count = (int32_t)(t % 1000000000);
             tt.giga_count = t / 1000000000;
-            numerators[num_numerators++] = sTimebaseInfo.numer;
-            denominators[num_denominators++] = sTimebaseInfo.denom;
+            numerators[num_numerators++] = info->numer;
+            denominators[num_denominators++] = info->denom;
             denominators[num_denominators++] = 1000000000;
             goto success;
         }
@@ -7205,7 +7214,15 @@ rb_clock_getres(int argc, VALUE *argv)
 #endif
 
 #ifdef RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
-        /* not yet */
+        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
+	    mach_timebase_info_data_t *info = get_mach_timebase_info();
+            tt.count = 1;
+            tt.giga_count = 0;
+            numerators[num_numerators++] = info->numer;
+            denominators[num_denominators++] = info->denom;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
 #endif
     }
     else {

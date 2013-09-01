@@ -1,3 +1,9 @@
+Mon Sep  2 00:08:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (get_mach_timebase_info): Extracted from rb_clock_gettime.
+	  (rb_clock_gettime): Use get_mach_timebase_info.
+	  (rb_clock_getres): Support MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC.
+
 Sun Sep  1 23:30:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (GMP_BIG2STR_DIGITS): New constant.
