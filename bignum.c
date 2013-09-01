@@ -4194,7 +4194,7 @@ big2str_alloc(struct big2str_struct *b2s, size_t len)
 }
 
 static void
-big2str_orig(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
+big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
 {
     size_t j;
     BDIGIT_DBL num;
@@ -4272,7 +4272,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
     }
 
     if (power_level == 0) {
-	big2str_orig(b2s, xds, xn, taillen);
+	big2str_2bdigits(b2s, xds, xn, taillen);
         return;
     }
 
@@ -4300,7 +4300,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-	big2str_orig(b2s, xds, xn, taillen);
+	big2str_2bdigits(b2s, xds, xn, taillen);
     }
     else {
         BDIGIT *qds, *rds;
@@ -4448,7 +4448,7 @@ rb_big2str1(VALUE x, int base)
     b2s_data.ptr = NULL;
 
     if (power_level == 0) {
-	big2str_orig(&b2s_data, xds, xn, 0);
+	big2str_2bdigits(&b2s_data, xds, xn, 0);
     }
     else {
         VALUE tmpw = 0;

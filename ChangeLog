@@ -1,3 +1,7 @@
+Sun Sep  1 15:21:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_2bdigits): Renamed from big2str_orig.
+
 Sun Sep  1 13:02:24 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c: Remove BITSPERDIG >= INT_MAX test.  The static assertion,
