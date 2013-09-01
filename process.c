@@ -7149,7 +7149,6 @@ VALUE
 rb_clock_getres(int argc, VALUE *argv)
 {
     VALUE clk_id, unit;
-    int ret;
 
     struct timetick tt;
     timetick_int_t numerators[2];
@@ -7212,9 +7211,8 @@ rb_clock_getres(int argc, VALUE *argv)
     else {
 #if defined(HAVE_CLOCK_GETRES)
         struct timespec ts;
-        clockid_t c;
-        c = NUM2CLOCKID(clk_id);
-        ret = clock_getres(c, &ts);
+        clockid_t c = NUM2CLOCKID(clk_id);
+        int ret = clock_getres(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_getres");
         tt.count = (int32_t)ts.tv_nsec;
