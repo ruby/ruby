@@ -1,3 +1,8 @@
+Sun Sep  1 21:17:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/test_http.rb (test_bind_to_local_port): Choose an open
+	  port more reliably.
+
 Sun Sep  1 20:32:40 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_base_poweroftwo): Renamed from
