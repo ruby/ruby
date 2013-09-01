@@ -6752,5 +6752,9 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
 
+#ifdef USE_GMP
+    rb_define_const(rb_cBignum, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
+#endif
+
     power_cache_init();
 }

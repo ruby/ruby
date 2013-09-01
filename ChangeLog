@@ -1,3 +1,7 @@
+Mon Sep  2 07:02:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (Init_Bignum): Define Bignum::GMP_VERSION when GMP is used.
+
 Mon Sep  2 01:46:14 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big2str_generic): Reduce arguments.
