@@ -4397,11 +4397,28 @@ rb_big2str_poweroftwo(VALUE x, int base)
 }
 
 static VALUE
-big2str_generic(VALUE x, int base, BDIGIT *xds, size_t xn)
+big2str_generic(VALUE x, int base)
 {
+    BDIGIT *xds;
+    size_t xn;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
+
+    xds = BDIGITS(x);
+    xn = RBIGNUM_LEN(x);
+    BARY_TRUNC(xds, xn);
+
+    if (xn == 0) {
+	return rb_usascii_str_new2("0");
+    }
+
+    if (base < 2 || 36 < base)
+	rb_raise(rb_eArgError, "invalid radix %d", base);
+
+    if (xn >= LONG_MAX/BITSPERDIG) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
 
     power_level = 0;
     power = power_cache_get_power(base, power_level, NULL);
@@ -4452,63 +4469,54 @@ big2str_generic(VALUE x, int base, BDIGIT *xds, size_t xn)
     *b2s_data.ptr = '\0';
     rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
+    RB_GC_GUARD(x);
     return b2s_data.result;
 }
 
 VALUE
 rb_big2str_generic(VALUE x, int base)
 {
-    BDIGIT *xds;
-    size_t xn;
-
-    xds = BDIGITS(x);
-    xn = RBIGNUM_LEN(x);
-    BARY_TRUNC(xds, xn);
-
-    return big2str_generic(x, base, xds, xn);
+    return big2str_generic(x, base);
 }
 
 #ifdef USE_GMP
 VALUE
-big2str_gmp(int negative_p, int base, BDIGIT *xds, size_t xn)
+big2str_gmp(VALUE x, int base)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
-    mpz_t x;
+    mpz_t mx;
     size_t size;
     VALUE str;
-    char *p;
+    BDIGIT *xds = BDIGITS(x);
+    size_t xn = RBIGNUM_LEN(x);
 
-    mpz_init(x);
-    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    mpz_init(mx);
+    mpz_import(mx, xn, -1, sizeof(BDIGIT), 0, nails, xds);
 
-    size = mpz_sizeinbase(x, base);
+    size = mpz_sizeinbase(mx, base);
 
-    if (negative_p) {
+    if (RBIGNUM_NEGATIVE_P(x)) {
+        mpz_neg(mx, mx);
         str = rb_usascii_str_new(0, size+1);
-        p = RSTRING_PTR(str);
-        *p++ = '-';
     }
     else {
         str = rb_usascii_str_new(0, size);
-        p = RSTRING_PTR(str);
     }
-    mpz_get_str(p, base, x);
-    mpz_clear(x);
+    mpz_get_str(RSTRING_PTR(str), base, mx);
+    mpz_clear(mx);
 
     if (RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\0') {
         rb_str_set_len(str, RSTRING_LEN(str)-1);
     }
 
+    RB_GC_GUARD(x);
     return str;
 }
 
 VALUE
 rb_big2str_gmp(VALUE x, int base)
 {
-    VALUE str;
-    str = big2str_gmp(RBIGNUM_NEGATIVE_P(x), base, BDIGITS(x), RBIGNUM_LEN(x));
-    RB_GC_GUARD(x);
-    return str;
+    return big2str_gmp(x, base);
 }
 #endif
 
@@ -4522,6 +4530,7 @@ rb_big2str1(VALUE x, int base)
 	return rb_fix2str(x, base);
     }
 
+    bigtrunc(x);
     xds = BDIGITS(x);
     xn = RBIGNUM_LEN(x);
     BARY_TRUNC(xds, xn);
@@ -4544,14 +4553,11 @@ rb_big2str1(VALUE x, int base)
 
 #ifdef USE_GMP
     if (GMP_BIG2STR_DIGITS < xn) {
-        VALUE str;
-        str = big2str_gmp(RBIGNUM_NEGATIVE_P(x), base, xds, xn);
-        RB_GC_GUARD(x);
-        return str;
+        return big2str_gmp(x, base);
     }
 #endif
 
-    return big2str_generic(x, base, xds, xn);
+    return big2str_generic(x, base);
 }
 
 /* deprecated */

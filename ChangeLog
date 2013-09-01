@@ -1,3 +1,9 @@
+Mon Sep  2 01:46:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_generic): Reduce arguments.
+	  (big2str_gmp): Ditto.
+	  (rb_big2str1): Follow the above change.
+
 Mon Sep  2 00:08:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (get_mach_timebase_info): Extracted from rb_clock_gettime.
