@@ -1,3 +1,9 @@
+Sun Sep  1 22:37:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_gmp): Use mpz_init and mpz_clear instead of
+	  mpz_inits and mpz_clears.
+	  Older GMP don't have them.
+
 Sun Sep  1 21:17:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/test_http.rb (test_bind_to_local_port): Choose an open

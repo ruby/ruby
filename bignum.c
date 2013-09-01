@@ -2262,7 +2262,9 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
 
     assert(xn + yn <= zn);
 
-    mpz_inits(x, y, z, 0);
+    mpz_init(x);
+    mpz_init(y);
+    mpz_init(z);
     mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
     if (xds == yds && xn == yn) {
         mpz_mul(z, x, x);
@@ -2273,7 +2275,9 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
     }
     mpz_export (zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
     BDIGITS_ZERO(zds+count, zn-count);
-    mpz_clears(x, y, z, 0);
+    mpz_clear(x);
+    mpz_clear(y);
+    mpz_clear(z);
 }
 
 VALUE
