@@ -1,3 +1,13 @@
+Sun Sep  1 23:30:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (GMP_BIG2STR_DIGITS): New constant.
+	  (big2str_gmp): New function.
+	  (rb_big2str1): Use big2str_gmp for big bignums.
+
+	* internal.h (rb_big2str_gmp): Declared.
+
+	* ext/-test-/bignum/big2str.c (big2str_gmp): New method.
+
 Sun Sep  1 22:37:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bary_mul_gmp): Use mpz_init and mpz_clear instead of

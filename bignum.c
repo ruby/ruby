@@ -135,6 +135,8 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
+#define GMP_BIG2STR_DIGITS 20
+
 typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 
 static mulfunc_t bary_mul_toom3_start;
@@ -4466,6 +4468,50 @@ rb_big2str_generic(VALUE x, int base)
     return big2str_generic(x, base, xds, xn);
 }
 
+#ifdef USE_GMP
+VALUE
+big2str_gmp(int negative_p, int base, BDIGIT *xds, size_t xn)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t x;
+    size_t size;
+    VALUE str;
+    char *p;
+
+    mpz_init(x);
+    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+
+    size = mpz_sizeinbase(x, base);
+
+    if (negative_p) {
+        str = rb_usascii_str_new(0, size+1);
+        p = RSTRING_PTR(str);
+        *p++ = '-';
+    }
+    else {
+        str = rb_usascii_str_new(0, size);
+        p = RSTRING_PTR(str);
+    }
+    mpz_get_str(p, base, x);
+    mpz_clear(x);
+
+    if (RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\0') {
+        rb_str_set_len(str, RSTRING_LEN(str)-1);
+    }
+
+    return str;
+}
+
+VALUE
+rb_big2str_gmp(VALUE x, int base)
+{
+    VALUE str;
+    str = big2str_gmp(RBIGNUM_NEGATIVE_P(x), base, BDIGITS(x), RBIGNUM_LEN(x));
+    RB_GC_GUARD(x);
+    return str;
+}
+#endif
+
 static VALUE
 rb_big2str1(VALUE x, int base)
 {
@@ -4495,6 +4541,15 @@ rb_big2str1(VALUE x, int base)
         /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
         return big2str_base_poweroftwo(x, base);
     }
+
+#ifdef USE_GMP
+    if (GMP_BIG2STR_DIGITS < xn) {
+        VALUE str;
+        str = big2str_gmp(RBIGNUM_NEGATIVE_P(x), base, xds, xn);
+        RB_GC_GUARD(x);
+        return str;
+    }
+#endif
 
     return big2str_generic(x, base, xds, xn);
 }

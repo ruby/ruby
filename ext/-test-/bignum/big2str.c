@@ -32,9 +32,23 @@ big2str_poweroftwo(VALUE x, VALUE vbase)
     return rb_big2str_poweroftwo(big(x), NUM2INT(vbase));
 }
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+static VALUE
+big2str_gmp(VALUE x, VALUE vbase)
+{
+    int base = NUM2INT(vbase);
+    if (base < 2 || 36 < base)
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    return rb_big2str_gmp(big(x), NUM2INT(vbase));
+}
+#else
+#define mul_gmp rb_f_notimplement
+#endif
+
 void
 Init_big2str(VALUE klass)
 {
     rb_define_method(rb_cInteger, "big2str_generic", big2str_generic, 1);
     rb_define_method(rb_cInteger, "big2str_poweroftwo", big2str_poweroftwo, 1);
+    rb_define_method(rb_cInteger, "big2str_gmp", big2str_gmp, 1);
 }

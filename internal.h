@@ -644,12 +644,13 @@ VALUE rb_big_mul_normal(VALUE x, VALUE y);
 VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 VALUE rb_big_mul_toom3(VALUE x, VALUE y);
-#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-VALUE rb_big_mul_gmp(VALUE x, VALUE y);
-#endif
 VALUE rb_big_sq_fast(VALUE x);
 VALUE rb_big2str_poweroftwo(VALUE x, int base);
 VALUE rb_big2str_generic(VALUE x, int base);
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+VALUE rb_big_mul_gmp(VALUE x, VALUE y);
+VALUE rb_big2str_gmp(VALUE x, int base);
+#endif
 
 /* file.c */
 #ifdef __APPLE__
