@@ -2225,6 +2225,17 @@ class TestString < Test::Unit::TestCase
     assert_equal "2", f.call
   end
 
+  def test_frozen_string_adjacent
+    str = nil
+    assert_nothing_raised(SyntaxError) do
+      eval(%{
+        str = "hello" "world"f
+      })
+    end
+    assert_equal "helloworld", str
+    assert_predicate str, :frozen?
+  end
+
   def test_frozen_string_cannot_be_adjacent
     assert_raise(SyntaxError) do
       eval(%{
