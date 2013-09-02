@@ -3751,9 +3751,6 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     size_t num_digits;
     size_t num_bdigits;
 
-#undef ISDIGIT
-#define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
-
     if (!str) {
 	if (badcheck) goto bad;
 	return INT2FIX(0);

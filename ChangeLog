@@ -1,3 +1,7 @@
+Mon Sep  2 22:55:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (ISDIGIT): Unused macro removed.
+
 Mon Sep  2 22:49:15 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (str2big_poweroftwo): Extracted from rb_cstr_to_inum.
