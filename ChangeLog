@@ -1,3 +1,9 @@
+Tue Sep  3 08:20:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac-tbl.rb: update conversion table to recent OS X.
+	  Previous table is used on Mac OS X 10.1 or prior.
+	  This table is used on 10.2 or later. [ruby-dev:47680]
+
 Tue Sep  3 07:49:25 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (NUM_STEP_SCAN_ARGS): On sencond thought, keep

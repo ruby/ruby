@@ -53,6 +53,7 @@ class Test_StringNormalize < Test::Unit::TestCase
       \u03D3 \u03D2\u0301
       \u0401 \u0415\u0308
       \u2260 =\u0338
+      \u{c548} \u{110b}\u{1161}\u{11ab}
     ].scan(/(\S+)\s+(\S+)/) do |expected, src|
       result = Bug::String.new(src).normalize_ospath
       assert_equal expected, result,
