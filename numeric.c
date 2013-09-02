@@ -1854,6 +1854,9 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }									\
     else {								\
 	/* compatibility */						\
+        if (argc > 1 && NIL_P(step)) {				       	\
+            rb_raise(rb_eTypeError, "step must be numeric");		\
+	}								\
 	if (rb_equal(step, INT2FIX(0))) {				\
 	    rb_raise(rb_eArgError, "step can't be 0");			\
 	}								\

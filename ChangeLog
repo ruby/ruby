@@ -1,3 +1,14 @@
+Tue Sep  3 07:49:25 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (NUM_STEP_SCAN_ARGS): On sencond thought, keep
+	  Numeral#step backward compatible in that it raises TypeError
+	  when nil is given as second argument.
+
+	* test/ruby/test_float.rb (TestFloat#test_num2dbl): Revert.
+
+	* test/ruby/test_numeric.rb (TestNumeric#test_step): Fix test
+	  cases for the above change.
+
 Tue Sep  3 07:39:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bytes_2comp): Define it only for little endian
