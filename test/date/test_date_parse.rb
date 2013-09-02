@@ -1028,8 +1028,14 @@ class TestDateParse < Test::Unit::TestCase
     d = Date.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
     assert_equal(Date.new(2001,2,3), d)
     assert_equal(Date::ITALY + 10, d.start)
+    d = Date.rfc2822('3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
 
     d = DateTime.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
+    d = DateTime.rfc2822('3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
     assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
     assert_equal(Date::ITALY + 10, d.start)
   end
