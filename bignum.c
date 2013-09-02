@@ -3567,6 +3567,176 @@ rb_quad_unpack(const char *buf, int signed_p)
             (signed_p ? INTEGER_PACK_2COMP : 0));
 }
 
+#define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
+
+static VALUE
+str2big_poweroftwo(
+    int sign,
+    const char *digits_start,
+    const char *digits_end,
+    size_t num_digits,
+    int bits_per_digit)
+{
+    BDIGIT *dp;
+    BDIGIT_DBL dd;
+    int numbits;
+
+    size_t num_bdigits;
+    const char *p;
+    int c;
+    VALUE z;
+
+    num_bdigits = (num_digits / BITSPERDIG) * bits_per_digit + roomof((num_digits % BITSPERDIG) * bits_per_digit, BITSPERDIG);
+    z = bignew(num_bdigits, sign);
+    dp = BDIGITS(z);
+    dd = 0;
+    numbits = 0;
+    for (p = digits_end; digits_start < p; p--) {
+        if ((c = conv_digit(p[-1])) < 0)
+            continue;
+        dd |= (BDIGIT_DBL)c << numbits;
+        numbits += bits_per_digit;
+        if (BITSPERDIG <= numbits) {
+            *dp++ = BIGLO(dd);
+            dd = BIGDN(dd);
+            numbits -= BITSPERDIG;
+        }
+    }
+    if (numbits) {
+        *dp++ = BIGLO(dd);
+    }
+    assert((size_t)(dp - BDIGITS(z)) == num_bdigits);
+
+    return z;
+}
+
+static VALUE
+str2big_normal(
+    int sign,
+    const char *digits_start,
+    const char *digits_end,
+    size_t num_bdigits,
+    int base)
+{
+    size_t blen = 1;
+    BDIGIT *zds;
+    BDIGIT_DBL num;
+
+    size_t i;
+    const char *p;
+    int c;
+    VALUE z;
+
+    z = bignew(num_bdigits, sign);
+    zds = BDIGITS(z);
+    BDIGITS_ZERO(zds, num_bdigits);
+
+    for (p = digits_start; p < digits_end; p++) {
+        if ((c = conv_digit(*p)) < 0)
+            continue;
+        num = c;
+        i = 0;
+        for (;;) {
+            while (i<blen) {
+                num += (BDIGIT_DBL)zds[i]*base;
+                zds[i++] = BIGLO(num);
+                num = BIGDN(num);
+            }
+            if (num) {
+                blen++;
+                continue;
+            }
+            break;
+        }
+        assert(blen <= num_bdigits);
+    }
+
+    return z;
+}
+
+static VALUE
+str2big_karatsuba(
+    int sign,
+    const char *digits_start,
+    const char *digits_end,
+    size_t num_digits,
+    size_t num_bdigits,
+    int digits_per_bdigits_dbl,
+    int base)
+{
+    VALUE powerv;
+    size_t unit;
+    VALUE tmpuv = 0;
+    BDIGIT *uds, *vds, *tds;
+    BDIGIT_DBL dd;
+    BDIGIT_DBL current_base;
+    int m;
+    int power_level = 0;
+
+    size_t i;
+    const char *p;
+    int c;
+    VALUE z;
+
+    uds = ALLOCV_N(BDIGIT, tmpuv, 2*num_bdigits);
+    vds = uds + num_bdigits;
+
+    powerv = power_cache_get_power(base, power_level, NULL);
+
+    i = 0;
+    dd = 0;
+    current_base = 1;
+    m = digits_per_bdigits_dbl;
+    if (num_digits < (size_t)m)
+        m = (int)num_digits;
+    for (p = digits_end; digits_start < p; p--) {
+        if ((c = conv_digit(p[-1])) < 0)
+            continue;
+        dd = dd + c * current_base;
+        current_base *= base;
+        num_digits--;
+        m--;
+        if (m == 0) {
+            uds[i++] = BIGLO(dd);
+            uds[i++] = (BDIGIT)BIGDN(dd);
+            dd = 0;
+            m = digits_per_bdigits_dbl;
+            if (num_digits < (size_t)m)
+                m = (int)num_digits;
+            current_base = 1;
+        }
+    }
+    assert(i == num_bdigits);
+    for (unit = 2; unit < num_bdigits; unit *= 2) {
+        for (i = 0; i < num_bdigits; i += unit*2) {
+            if (2*unit <= num_bdigits - i) {
+                bary_mul(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
+                bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
+            }
+            else if (unit <= num_bdigits - i) {
+                bary_mul(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
+                bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
+            }
+            else {
+                MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
+            }
+        }
+        power_level++;
+        powerv = power_cache_get_power(base, power_level, NULL);
+        tds = vds;
+        vds = uds;
+        uds = tds;
+    }
+    BARY_TRUNC(uds, num_bdigits);
+    z = bignew(num_bdigits, sign);
+    MEMCPY(BDIGITS(z), uds, BDIGIT, num_bdigits);
+
+    if (tmpuv)
+        ALLOCV_END(tmpuv);
+
+    return z;
+}
+
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
@@ -3576,15 +3746,13 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     VALUE z;
 
     int bits_per_digit;
-    size_t i;
 
-    const char *digits_start, *digits_end, *p;
+    const char *digits_start, *digits_end;
     size_t num_digits;
     size_t num_bdigits;
 
 #undef ISDIGIT
 #define ISDIGIT(c) ('0' <= (c) && (c) <= '9')
-#define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
     if (!str) {
 	if (badcheck) goto bad;
@@ -3699,6 +3867,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    return bignorm(big);
 	}
     }
+
   bigparse:
     if (badcheck && *str == '_') goto bad;
 
@@ -3732,29 +3901,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
 
     if (POW2_P(base)) {
-        BDIGIT *dp;
-        BDIGIT_DBL dd;
-        int numbits;
-        num_bdigits = (num_digits / BITSPERDIG) * bits_per_digit + roomof((num_digits % BITSPERDIG) * bits_per_digit, BITSPERDIG);
-        z = bignew(num_bdigits, sign);
-        dp = BDIGITS(z);
-        dd = 0;
-        numbits = 0;
-        for (p = digits_end; digits_start < p; p--) {
-            if ((c = conv_digit(p[-1])) < 0)
-                continue;
-            dd |= (BDIGIT_DBL)c << numbits;
-            numbits += bits_per_digit;
-            if (BITSPERDIG <= numbits) {
-                *dp++ = BIGLO(dd);
-                dd = BIGDN(dd);
-                numbits -= BITSPERDIG;
-            }
-        }
-        if (numbits) {
-            *dp++ = BIGLO(dd);
-        }
-        assert((size_t)(dp - BDIGITS(z)) == num_bdigits);
+        z = str2big_poweroftwo(sign, digits_start, digits_end, num_digits,
+                bits_per_digit);
     }
     else {
         int digits_per_bdigits_dbl;
@@ -3762,99 +3910,12 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
         if (num_bdigits < KARATSUBA_MUL_DIGITS) {
-            size_t blen = 1;
-            BDIGIT *zds;
-            BDIGIT_DBL num;
-
-            z = bignew(num_bdigits, sign);
-            zds = BDIGITS(z);
-            BDIGITS_ZERO(zds, num_bdigits);
-
-            for (p = digits_start; p < digits_end; p++) {
-                if ((c = conv_digit(*p)) < 0)
-                    continue;
-                num = c;
-                i = 0;
-                for (;;) {
-                    while (i<blen) {
-                        num += (BDIGIT_DBL)zds[i]*base;
-                        zds[i++] = BIGLO(num);
-                        num = BIGDN(num);
-                    }
-                    if (num) {
-                        blen++;
-                        continue;
-                    }
-                    break;
-                }
-                assert(blen <= num_bdigits);
-            }
+            z = str2big_normal(sign, digits_start, digits_end,
+                    num_bdigits, base);
         }
         else {
-            VALUE powerv;
-            size_t unit;
-            VALUE tmpuv = 0;
-            BDIGIT *uds, *vds, *tds;
-            BDIGIT_DBL dd;
-            BDIGIT_DBL current_base;
-            int m;
-            int power_level = 0;
-
-            uds = ALLOCV_N(BDIGIT, tmpuv, 2*num_bdigits);
-            vds = uds + num_bdigits;
-
-            powerv = power_cache_get_power(base, power_level, NULL);
-
-            i = 0;
-            dd = 0;
-            current_base = 1;
-            m = digits_per_bdigits_dbl;
-            if (num_digits < (size_t)m)
-                m = (int)num_digits;
-            for (p = digits_end; digits_start < p; p--) {
-                if ((c = conv_digit(p[-1])) < 0)
-                    continue;
-                dd = dd + c * current_base;
-                current_base *= base;
-                num_digits--;
-                m--;
-                if (m == 0) {
-                    uds[i++] = BIGLO(dd);
-                    uds[i++] = (BDIGIT)BIGDN(dd);
-                    dd = 0;
-                    m = digits_per_bdigits_dbl;
-                    if (num_digits < (size_t)m)
-                        m = (int)num_digits;
-                    current_base = 1;
-                }
-            }
-            assert(i == num_bdigits);
-            for (unit = 2; unit < num_bdigits; unit *= 2) {
-                for (i = 0; i < num_bdigits; i += unit*2) {
-                    if (2*unit <= num_bdigits - i) {
-                        bary_mul(vds+i, unit*2, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, unit);
-                        bary_add(vds+i, unit*2, vds+i, unit*2, uds+i, unit);
-                    }
-                    else if (unit <= num_bdigits - i) {
-                        bary_mul(vds+i, num_bdigits-i, BDIGITS(powerv), RBIGNUM_LEN(powerv), uds+i+unit, num_bdigits-(i+unit));
-                        bary_add(vds+i, num_bdigits-i, vds+i, num_bdigits-i, uds+i, unit);
-                    }
-                    else {
-                        MEMCPY(vds+i, uds+i, BDIGIT, num_bdigits-i);
-                    }
-                }
-                power_level++;
-                powerv = power_cache_get_power(base, power_level, NULL);
-                tds = vds;
-                vds = uds;
-                uds = tds;
-            }
-            BARY_TRUNC(uds, num_bdigits);
-            z = bignew(num_bdigits, sign);
-            MEMCPY(BDIGITS(z), uds, BDIGIT, num_bdigits);
-
-            if (tmpuv)
-                ALLOCV_END(tmpuv);
+            z = str2big_karatsuba(sign, digits_start, digits_end, num_digits,
+                    num_bdigits, digits_per_bdigits_dbl, base);
         }
     }
 
