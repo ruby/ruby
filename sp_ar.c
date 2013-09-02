@@ -3,12 +3,7 @@
  * inspired by Lua table
  * written by Sokolov Yura aka funny_falcon
  */
-#ifdef NOT_RUBY
-#include "regint.h"
-#include "st.h"
-#else
-#include "ruby/ruby.h"
-#endif
+#include "sp_ar.h"
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H

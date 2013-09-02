@@ -3,6 +3,7 @@
  */
 
 #include "method.h"
+#include "sp_ar.h"
 
 #define NOEX_NOREDEF 0
 #ifndef NOEX_NOREDEF

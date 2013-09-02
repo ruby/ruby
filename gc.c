@@ -25,6 +25,7 @@
 #include "constant.h"
 #include "ruby_atomic.h"
 #include "probes.h"
+#include "sp_ar.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
