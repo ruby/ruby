@@ -141,6 +141,11 @@ struct rb_classext_struct {
     struct sp_ar_table *mc_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
+    /**
+     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
+     * in the module's `subclasses` list that indicates that the klass has been
+     * included. Hopefully that makes sense.
+     */
     rb_subclass_entry_t **module_subclasses;
     vm_state_version_t seq;
     VALUE origin;

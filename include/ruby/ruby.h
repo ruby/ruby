@@ -785,11 +785,6 @@ struct RObject {
 /** @internal */
 typedef struct rb_classext_struct rb_classext_t;
 
-/**
- * In the case that this is an `ICLASS`, `module_subclasses` points to the link
- * in the module's `subclasses` list that indicates that the klass has been
- * included. Hopefully that makes sense.
- */
 struct RClass {
     struct RBasic basic;
     rb_classext_t *ptr;
