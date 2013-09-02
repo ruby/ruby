@@ -608,6 +608,7 @@ integer_pack_take_lowbits(int n, BDIGIT_DBL *ddp, int *numbits_in_dd_p)
     return ret;
 }
 
+#if !defined(WORDS_BIGENDIAN)
 static int
 bytes_2comp(unsigned char *buf, size_t len)
 {
@@ -621,6 +622,7 @@ bytes_2comp(unsigned char *buf, size_t len)
     }
     return 1;
 }
+#endif
 
 static int
 bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords, size_t wordsize, size_t nails, int flags)
