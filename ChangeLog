@@ -1,3 +1,7 @@
+Mon Sep  2 14:15:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* NEWS: fix description of number literal suffixes.
+
 Mon Sep  2 14:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* test/rake/test_rake_rules.rb: add space after string literal to
