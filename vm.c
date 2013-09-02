@@ -88,9 +88,9 @@ static vm_state_version_t ruby_vm_sequence = 1;
 #define PROCDEBUG 0
 
 vm_state_version_t
-rb_next_seq()
+rb_next_class_sequence()
 {
-    return NEXT_SEQ();
+    return NEXT_CLASS_SEQUENCE();
 }
 
 VALUE rb_cRubyVM;

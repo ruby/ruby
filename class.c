@@ -164,7 +164,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_EXT(obj)->subclasses = NULL;
     RCLASS_EXT(obj)->parent_subclasses = NULL;
     RCLASS_EXT(obj)->module_subclasses = NULL;
-    RCLASS_EXT(obj)->seq = rb_next_seq();
+    RCLASS_EXT(obj)->seq = rb_next_class_sequence();
     RCLASS_EXT(obj)->mc_tbl = NULL;
 
     RCLASS_REFINED_CLASS(obj) = Qnil;

@@ -26,7 +26,7 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VAL
 static void
 rb_class_clear_method_cache(VALUE klass)
 {
-    RCLASS_EXT(klass)->seq = NEXT_SEQ();
+    RCLASS_EXT(klass)->seq = rb_next_class_sequence();
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache);
 }
 
