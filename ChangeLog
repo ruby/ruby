@@ -1,3 +1,8 @@
+Tue Sep  3 07:31:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (NUM_STEP_SCAN_ARGS): Numeral#step should raise
+	  TypeError if a non-numeric parameter is given.
+
 Tue Sep  3 07:28:49 2013  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (bit_length): Add casts to fix complation error with

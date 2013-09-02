@@ -1858,9 +1858,23 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	    rb_raise(rb_eArgError, "step can't be 0");			\
 	}								\
     }									\
-    if (NIL_P(step)) step = INT2FIX(1);					\
+    if (NIL_P(step)) {							\
+        step = INT2FIX(1);						\
+    }									\
+    else {								\
+        if (!rb_obj_is_kind_of(step, rb_cNumeric)) {			\
+            rb_raise(rb_eTypeError, "step must be numeric");		\
+        }								\
+    }									\
     desc = negative_int_p(step);					\
-    if (NIL_P(to)) to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);	\
+    if (NIL_P(to)) {							\
+        to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);		\
+    }									\
+    else {								\
+        if (!rb_obj_is_kind_of(to, rb_cNumeric)) {			\
+            rb_raise(rb_eTypeError, "limit must be numeric");		\
+        }								\
+    }									\
     if (TYPE(to) == T_FLOAT) {						\
 	double f = RFLOAT_VALUE(to);					\
 	inf = isinf(f) && (signbit(f) ? desc : !desc);			\
