@@ -1,3 +1,10 @@
+Mon Sep  2 14:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* test/rake/test_rake_rules.rb: add space after string literal to
+	  prevent conflict with string options syntax "foo"opts
+
+	* test/rss/rss-assertions.rb: ditto
+
 Mon Sep  2 12:28:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_bignum.rb (test_interrupt_during_to_s): Disable it
