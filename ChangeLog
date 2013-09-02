@@ -1,3 +1,8 @@
+Mon Sep  2 12:28:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_bignum.rb (test_interrupt_during_to_s): Disable it
+	  when GMP is used.
+
 Mon Sep  2 07:02:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (Init_Bignum): Define Bignum::GMP_VERSION when GMP is used.
