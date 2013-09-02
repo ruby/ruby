@@ -227,11 +227,20 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 0).size }
+    assert_raise(TypeError) { 1.step(10, "1") { } }
+    assert_raise(TypeError) { 1.step(10, "1").size }
+    assert_nothing_raised { 1.step(10, nil) { } }
+    assert_nothing_raised { 1.step(10, nil).size }
+    assert_nothing_raised { 1.step(by: 0, to: nil) }
+    assert_nothing_raised { 1.step(by: 0, to: nil).size }
     assert_nothing_raised { 1.step(by: 0) }
     assert_nothing_raised { 1.step(by: 0).size }
+    assert_nothing_raised { 1.step(by: nil) }
+    assert_nothing_raised { 1.step(by: nil).size }
 
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10]
+    assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10, by: nil]
     assert_step [1, 3, 5, 7, 9], [1, 10, 2]
     assert_step [1, 3, 5, 7, 9], [1, to: 10, by: 2]
 
@@ -251,6 +260,7 @@ class TestNumeric < Test::Unit::TestCase
 
     assert_step [10, 11, 12, 13], [10], inf: true
     assert_step [10, 9, 8, 7], [10, by: -1], inf: true
+    assert_step [10, 9, 8, 7], [10, by: -1, to: nil], inf: true
   end
 
   def test_num2long

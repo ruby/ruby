@@ -561,9 +561,6 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) do
       1.0.step(2.0, "0.5") {}
     end
-    assert_raise(TypeError) do
-      1.0.step(2.0, nil) {}
-    end
   end
 
   def test_sleep_with_Float
