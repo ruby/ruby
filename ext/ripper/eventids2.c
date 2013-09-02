@@ -37,6 +37,7 @@ static ID ripper_id_symbeg;
 static ID ripper_id_tstring_beg;
 static ID ripper_id_tstring_content;
 static ID ripper_id_tstring_end;
+static ID ripper_id_tstring_suffix;
 static ID ripper_id_words_beg;
 static ID ripper_id_qwords_beg;
 static ID ripper_id_qsymbols_beg;
@@ -94,6 +95,7 @@ ripper_init_eventids2(void)
     ripper_id_tstring_beg = rb_intern_const("on_tstring_beg");
     ripper_id_tstring_content = rb_intern_const("on_tstring_content");
     ripper_id_tstring_end = rb_intern_const("on_tstring_end");
+    ripper_id_tstring_suffix = rb_intern_const("on_tstring_suffix");
     ripper_id_words_beg = rb_intern_const("on_words_beg");
     ripper_id_qwords_beg = rb_intern_const("on_qwords_beg");
     ripper_id_qsymbols_beg = rb_intern_const("on_qsymbols_beg");
@@ -252,6 +254,7 @@ static const struct token_assoc {
     {tSTRING_DEND,	&ripper_id_embexpr_end},
     {tSTRING_DVAR,	&ripper_id_embvar},
     {tSTRING_END,	&ripper_id_tstring_end},
+    {tSTRING_SUFFIX,	&ripper_id_tstring_suffix},
     {tSYMBEG,		&ripper_id_symbeg},
     {tUMINUS,		&ripper_id_op},
     {tUMINUS_NUM,	&ripper_id_op},

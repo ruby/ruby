@@ -2192,6 +2192,49 @@ class TestString < Test::Unit::TestCase
     assert_equal(false, "\u3042".byteslice(0, 2).valid_encoding?)
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?)
   end
+
+  def test_unknown_string_option
+    assert_raises(SyntaxError) do
+      eval(%{
+        "hello"x
+      })
+    end
+  end
+
+  def test_frozen_string
+    assert_equal "hello", "hello"f
+
+    assert_predicate "hello"f, :frozen?
+
+    f = -> { "hello"f }
+
+    assert_equal f.call.object_id, f.call.object_id
+  end
+
+  def test_frozen_dstring
+    assert_equal "hello123", "hello#{123}"f
+
+    assert_predicate "hello#{123}"f, :frozen?
+
+    i = 0
+    f = -> { "#{i += 1}"f }
+    assert_equal "1", f.call
+    assert_equal "2", f.call
+  end
+
+  def test_frozen_string_cannot_be_adjacent
+    assert_raises(SyntaxError) do
+      eval(%{
+        "hello"f "world"
+      })
+    end
+
+    assert_raises(SyntaxError) do
+      eval(%{
+        "hello"f "world"
+      })
+    end
+  end
 end
 
 class TestString2 < TestString
