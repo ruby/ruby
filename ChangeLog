@@ -1,3 +1,9 @@
+Mon Sep  2 14:39:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.c (Process#setproctitle): Fix and improve rdoc.
+
+	* ruby.c (Process#argv0): Improve rdoc.
+
 Mon Sep  2 14:15:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* NEWS: fix description of number literal suffixes.

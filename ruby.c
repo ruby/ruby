@@ -1787,6 +1787,9 @@ rb_load_file_str(VALUE fname_v)
  *
  *  Returns the name of the script being executed.  The value is not
  *  affected by assigning a new value to $0.
+ *
+ *  This method first appeared in Ruby 2.1 to serve as a global
+ *  variable free means to get the script name.
  */
 
 static VALUE
@@ -1799,12 +1802,17 @@ proc_argv0(VALUE process)
  *  call-seq:
  *     Process.setproctitle(string)  -> string
  *
- *  Returns the process title that appears on the ps(1) command.  Not
- *  necessarily effective on all platforms.
+ *  Sets the process title that appears on the ps(1) command.  Not
+ *  necessarily effective on all platforms.  No exception will be
+ *  raised regardless of the result, nor will NotImplementedError be
+ *  raised even if the platform does not support the feature.
  *
  *  Calling this method does not affect the value of $0.
  *
  *     Process.setproctitle('myapp: worker #%d' % worker_id)
+ *
+ *  This method first appeared in Ruby 2.1 to serve as a global
+ *  variable free means to change the process title.
  */
 
 static VALUE
