@@ -1,3 +1,9 @@
+Tue Sep  3 07:28:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (bit_length): Add casts to fix complation error with
+	  clang 3.0 -Werror,-Wshorten-64-to-32.
+	  [ruby-dev:47687] reported by SASADA Koichi.
+
 Tue Sep  3 03:17:26 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_search_super_method): use ci->argc instead of
