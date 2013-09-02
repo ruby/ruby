@@ -115,6 +115,8 @@ VALUE rb_cFixnum;
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
 
+static VALUE sym_to, sym_by;
+
 void
 rb_num_zerodiv(void)
 {
@@ -1844,24 +1846,59 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
 }
 
+#define NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf) do {	\
+    argc = rb_scan_args(argc, argv, "02:", &to, &step, &hash);		\
+    if (!NIL_P(hash)) {							\
+	step = rb_hash_aref(hash, sym_by);				\
+	to = rb_hash_aref(hash, sym_to);				\
+    }									\
+    else {								\
+	/* compatibility */						\
+	if (rb_equal(step, INT2FIX(0))) {				\
+	    rb_raise(rb_eArgError, "step can't be 0");			\
+	}								\
+    }									\
+    if (NIL_P(step)) step = INT2FIX(1);					\
+    desc = negative_int_p(step);					\
+    if (NIL_P(to)) to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);	\
+    if (TYPE(to) == T_FLOAT) {						\
+	double f = RFLOAT_VALUE(to);					\
+	inf = isinf(f) && (signbit(f) ? desc : !desc);			\
+    }									\
+    else inf = 0;							\
+} while (0)
+
 static VALUE
 num_step_size(VALUE from, VALUE args, VALUE eobj)
 {
-    VALUE to = RARRAY_AREF(args, 0);
-    VALUE step = (RARRAY_LEN(args) > 1) ? RARRAY_AREF(args, 1) : INT2FIX(1);
+    VALUE to, step, hash;
+    int desc, inf;
+    int argc = args ? RARRAY_LENINT(args) : 0;
+    VALUE *argv = args ? RARRAY_PTR(args) : 0;
+
+    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf);
+
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
 /*
  *  call-seq:
- *     num.step(limit[, step]) {|i| block }  ->  self
- *     num.step(limit[, step])               ->  an_enumerator
+ *     num.step(by: step, to: limit]) {|i| block }  ->  self
+ *     num.step(by: step, to: limit])               ->  an_enumerator
+ *     num.step(limit=nil, step=1) {|i| block }     ->  self
+ *     num.step(limit=nil, step=1)                  ->  an_enumerator
  *
  *  Invokes the given block with the sequence of numbers starting at +num+,
  *  incremented by +step+ (defaulted to +1+) on each call.
  *
  *  The loop finishes when the value to be passed to the block is greater than
  *  +limit+ (if +step+ is positive) or less than +limit+ (if +step+ is
- *  negative).
+ *  negative), where <i>limit</i> is defaulted to infinity.
+ *
+ *  In the recommended keyword argument style, either or both of
+ *  +step+ and +limit+ (default infinity) can be omitted.  In the
+ *  fixed position argument style, integer zero as a step
+ *  (i.e. num.step(limit, 0)) is not allowed for historical
+ *  compatibility reasons.
  *
  *  If all the arguments are integers, the loop operates using an integer
  *  counter.
@@ -1882,11 +1919,17 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *
  *  For example:
  *
+ *     p 1.step.take(4)
+ *     p 10.step(by: -1).take(4)
+ *     3.step(to: 5) { |i| print i, " " }
  *     1.step(10, 2) { |i| print i, " " }
- *     Math::E.step(Math::PI, 0.2) { |f| print f, " " }
+ *     Math::E.step(to: Math::PI, by: 0.2) { |f| print f, " " }
  *
  *  Will produce:
  *
+ *     [1, 2, 3, 4]
+ *     [10, 9, 8, 7]
+ *     3 4 5
  *     1 3 5 7 9
  *     2.71828182845905 2.91828182845905 3.11828182845905
  */
@@ -1894,56 +1937,46 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 static VALUE
 num_step(int argc, VALUE *argv, VALUE from)
 {
-    VALUE to, step;
+    VALUE to, step, hash;
+    int desc, inf;
 
     RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
-    if (argc == 1) {
-	to = argv[0];
-	step = INT2FIX(1);
-    }
-    else {
-	rb_check_arity(argc, 1, 2);
-	to = argv[0];
-	step = argv[1];
-	if (rb_equal(step, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be 0");
-	}
-    }
 
-    if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
-	long i, end, diff;
+    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf);
 
-	i = FIX2LONG(from);
-	end = FIX2LONG(to);
-	diff = FIX2LONG(step);
+    if (FIXNUM_P(from) && (inf || FIXNUM_P(to)) && FIXNUM_P(step)) {
+	long i = FIX2LONG(from);
+	long diff = FIX2LONG(step);
 
-	if (diff > 0) {
-	    while (i <= end) {
+	if (inf) {
+	    for (;; i += diff)
 		rb_yield(LONG2FIX(i));
-		i += diff;
-	    }
 	}
 	else {
-	    while (i >= end) {
-		rb_yield(LONG2FIX(i));
-		i += diff;
+	    long end = FIX2LONG(to);
+
+	    if (desc) {
+		for (; i >= end; i += diff)
+		    rb_yield(LONG2FIX(i));
+	    }
+	    else {
+		for (; i <= end; i += diff)
+		    rb_yield(LONG2FIX(i));
 	    }
 	}
     }
     else if (!ruby_float_step(from, to, step, FALSE)) {
 	VALUE i = from;
-	ID cmp;
 
-	if (positive_int_p(step)) {
-	    cmp = '>';
+	if (inf) {
+	    for (;; i = rb_funcall(i, '+', 1, step))
+		rb_yield(i);
 	}
 	else {
-	    cmp = '<';
-	}
-	for (;;) {
-	    if (RTEST(rb_funcall(i, cmp, 1, to))) break;
-	    rb_yield(i);
-	    i = rb_funcall(i, '+', 1, step);
+	    ID cmp = desc ? '<' : '>';
+
+	    for (; !RTEST(rb_funcall(i, cmp, 1, to)); i = rb_funcall(i, '+', 1, step))
+		rb_yield(i);
 	}
     }
     return from;
@@ -4041,4 +4074,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
     rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
+
+    sym_to = ID2SYM(rb_intern("to"));
+    sym_by = ID2SYM(rb_intern("by"));
 }

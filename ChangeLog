@@ -1,3 +1,12 @@
+Mon Sep  2 23:46:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (num_step): Default the limit argument to infinity and
+	  allow it to be omitted.  Keyword arguments (by: and to:) are
+	  introduced for ease of use. [Feature #8838] [ruby-dev:47662]
+	  [ruby-dev:42194]
+
+	* numeric.c (num_step): Optimize for infinite loop.
+
 Mon Sep  2 23:46:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_str_options): use valid suffix word only, as well as

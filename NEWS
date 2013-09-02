@@ -72,6 +72,12 @@ with all sufficient information, see the ChangeLog file.
   * misc
     * Mutex#owned? is no longer experimental.
 
+* Numeric
+  * extended methods:
+    * Numeric#step allows the limit argument to be omitted, in which
+      case an infinite sequence of numbers is generated.  Keyword
+      arguments `to` and `by` are introduced for ease of use.
+
 * Process
   * New methods:
     * alternative methods to $0/$0=:

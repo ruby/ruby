@@ -193,41 +193,64 @@ class TestNumeric < Test::Unit::TestCase
     end
   end
 
+  def assert_step(expected, (from, *args), inf: false)
+    enum = from.step(*args)
+    size = enum.size
+    xsize = expected.size
+
+    if inf
+      assert_send [size, :infinite?], "step size: +infinity"
+      assert_send [size, :>, 0], "step size: +infinity"
+
+      a = []
+      from.step(*args) { |x| a << x; break if a.size == xsize }
+      assert_equal expected, a, "step"
+
+      a = []
+      enum.each { |x| a << x; break if a.size == xsize }
+      assert_equal expected, a, "step enumerator"
+    else
+      assert_equal expected.size, size, "step size"
+
+      a = []
+      from.step(*args) { |x| a << x }
+      assert_equal expected, a, "step"
+
+      a = []
+      enum.each { |x| a << x }
+      assert_equal expected, a, "step enumerator"
+    end
+  end
+
   def test_step
-    a = []
-    1.step(10) {|x| a << x }
-    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
-
-    a = []
-    1.step(10, 2) {|x| a << x }
-    assert_equal([1, 3, 5, 7, 9], a)
-
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
+    assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
+    assert_raise(ArgumentError) { 1.step(10, 0).size }
+    assert_nothing_raised { 1.step(by: 0) }
+    assert_nothing_raised { 1.step(by: 0).size }
 
-    a = []
-    10.step(1, -2) {|x| a << x }
-    assert_equal([10, 8, 6, 4, 2], a)
+    assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
+    assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10]
+    assert_step [1, 3, 5, 7, 9], [1, 10, 2]
+    assert_step [1, 3, 5, 7, 9], [1, to: 10, by: 2]
 
-    a = []
-    1.0.step(10.0, 2.0) {|x| a << x }
-    assert_equal([1.0, 3.0, 5.0, 7.0, 9.0], a)
+    assert_step [10, 8, 6, 4, 2], [10, 1, -2]
+    assert_step [10, 8, 6, 4, 2], [10, to: 1, by: -2]
+    assert_step [1.0, 3.0, 5.0, 7.0, 9.0], [1.0, 10.0, 2.0]
+    assert_step [1.0, 3.0, 5.0, 7.0, 9.0], [1.0, to: 10.0, by: 2.0]
+    assert_step [1], [1, 10, 2**32]
+    assert_step [1], [1, to: 10, by: 2**32]
 
-    a = []
-    1.step(10, 2**32) {|x| a << x }
-    assert_equal([1], a)
+    assert_step [3, 3, 3, 3], [3, by: 0], inf: true
+    assert_step [10], [10, 1, -(2**32)]
 
-    a = []
-    10.step(1, -(2**32)) {|x| a << x }
-    assert_equal([10], a)
+    assert_step [], [1, 0, Float::INFINITY]
+    assert_step [], [0, 1, -Float::INFINITY]
+    assert_step [10], [10, to: 1, by: -(2**32)]
 
-    a = []
-    1.step(0, Float::INFINITY) {|x| a << x }
-    assert_equal([], a)
-
-    a = []
-    0.step(1, -Float::INFINITY) {|x| a << x }
-    assert_equal([], a)
+    assert_step [10, 11, 12, 13], [10], inf: true
+    assert_step [10, 9, 8, 7], [10, by: -1], inf: true
   end
 
   def test_num2long
