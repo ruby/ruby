@@ -1942,7 +1942,7 @@ rb_const_remove(VALUE mod, ID id)
     rb_clear_cache_by_class(mod);
     /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
        we need to do a global invalidation here... */
-    rb_clear_cache_globally();
+    rb_clear_cache();
 
     val = ((rb_const_entry_t*)v)->value;
     if (val == Qundef) {
@@ -2155,7 +2155,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		    rb_clear_cache_by_class(klass);
 		    /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
 		       we need to do a global invalidation here... */
-		    rb_clear_cache_globally();
+		    rb_clear_cache();
 
 		    ele->value = val; /* autoload_i is shady */
 		    return;
@@ -2182,7 +2182,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     rb_clear_cache_by_class(klass);
     /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
        we need to do a global invalidation here... */
-    rb_clear_cache_globally();
+    rb_clear_cache();
 
 
     ce = ALLOC(rb_const_entry_t);
@@ -2232,7 +2232,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 		rb_clear_cache_by_class(mod);
 		/* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
 		   we need to do a global invalidation here... */
-		rb_clear_cache_globally();
+		rb_clear_cache();
 	    }
 
 	    rb_name_error_str(val, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
@@ -2247,7 +2247,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 		rb_clear_cache_by_class(mod);
 		/* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
 		   we need to do a global invalidation here... */
-		rb_clear_cache_globally();
+		rb_clear_cache();
 	    }
 	    rb_name_error(id, "constant %"PRIsVALUE"::%"PRIsVALUE" not defined",
 			  rb_class_name(mod), QUOTE_ID(id));
@@ -2256,7 +2256,7 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     rb_clear_cache_by_class(mod);
     /* KLASSCACHE-TODO: constant lookup is keyed on vm_state_version only, so
        we need to do a global invalidation here... */
-    rb_clear_cache_globally();
+    rb_clear_cache();
 }
 
 /*

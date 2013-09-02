@@ -898,7 +898,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
     }
 
     if (method_changed) rb_clear_cache_by_class(klass);
-    if (constant_changed) rb_clear_cache_globally();
+    if (constant_changed) rb_clear_cache();
 
     return method_changed;
 }

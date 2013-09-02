@@ -31,7 +31,7 @@ rb_class_clear_method_cache(VALUE klass)
 }
 
 void
-rb_clear_cache_globally(void)
+rb_clear_cache(void)
 {
     INC_VM_STATE_VERSION();
 }
