@@ -298,9 +298,9 @@ class TestRakeRules < Rake::TestCase
     actions = []
     create_file("abc.xml")
     rule '.y' => '.xml' do actions << 'y' end
-    rule '.c' => '.y' do actions << 'c'end
-    rule '.o' => '.c' do actions << 'o'end
-    rule '.exe' => '.o' do actions << 'exe'end
+    rule '.c' => '.y' do actions << 'c' end
+    rule '.o' => '.c' do actions << 'o' end
+    rule '.exe' => '.o' do actions << 'exe' end
     Task["abc.exe"].invoke
     assert_equal ['y', 'c', 'o', 'exe'], actions
   end

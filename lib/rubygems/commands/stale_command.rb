@@ -5,6 +5,16 @@ class Gem::Commands::StaleCommand < Gem::Command
     super('stale', 'List gems along with access times')
   end
 
+  def description # :nodoc:
+    <<-EOF
+The stale command lists the latest access time for all the files in your
+installed gems.
+
+You can use this command to discover gems and gem versions you are no
+longer using.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name}"
   end

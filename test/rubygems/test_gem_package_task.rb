@@ -4,16 +4,37 @@ require 'rubygems/package_task'
 
 class TestGemPackageTask < Gem::TestCase
 
+  def setup
+    super
+
+    Rake.application = Rake::Application.new
+    RakeFileUtils.verbose_flag = false
+  end
+
   def test_gem_package
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
-      g.files = Rake::FileList["x"].resolve
+
+      g.authors = %w[author]
+      g.files = %w[x]
+      g.summary = 'summary'
     end
+
     pkg = Gem::PackageTask.new(gem)  do |p|
       p.package_files << "y"
     end
-    assert_equal ["x", "y"], pkg.package_files
+
+    assert_equal %w[x y], pkg.package_files
+
+    Dir.chdir @tempdir do
+      FileUtils.touch 'x'
+      FileUtils.touch 'y'
+
+      Rake.application['package'].invoke
+
+      assert_path_exists 'pkg/pkgr-1.2.3.gem'
+    end
   end
 
   def test_gem_package_with_current_platform

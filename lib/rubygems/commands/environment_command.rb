@@ -21,6 +21,9 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def description # :nodoc:
     <<-EOF
+The environment command lets you query rubygems for its configuration for
+use in shell scripts or as a debugging aid.
+
 The RubyGems environment can be controlled through command line arguments,
 gemrc files, environment variables and built-in defaults.
 

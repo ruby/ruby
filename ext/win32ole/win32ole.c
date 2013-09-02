@@ -516,7 +516,7 @@ static VALUE folemethod_visible(VALUE self);
 static VALUE ole_method_event(ITypeInfo *pTypeInfo, UINT method_index, VALUE method_name);
 static VALUE folemethod_event(VALUE self);
 static VALUE folemethod_event_interface(VALUE self);
-static VALUE ole_method_docinfo_from_type(ITypeInfo *pTypeInfo, UINT method_index, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
+static HRESULT ole_method_docinfo_from_type(ITypeInfo *pTypeInfo, UINT method_index, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 static VALUE ole_method_helpstring(ITypeInfo *pTypeInfo, UINT method_index);
 static VALUE folemethod_helpstring(VALUE self);
 static VALUE ole_method_helpfile(ITypeInfo *pTypeInfo, UINT method_index);
@@ -764,8 +764,10 @@ static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
     */
     char* psz = ole_wc2mb(*rgszNames); // support only one method
-    *rgDispId = rb_intern(psz);
+    ID nameid = rb_intern(psz);
     free(psz);
+    if ((ID)(DISPID)nameid != nameid) return E_NOINTERFACE;
+    *rgDispId = (DISPID)nameid;
     return S_OK;
 }
 
@@ -785,17 +787,18 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
     int args = pDispParams->cArgs;
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
     VALUE* parg = ALLOCA_N(VALUE, args);
+    ID mid = (ID)dispIdMember;
     for (i = 0; i < args; i++) {
         *(parg + i) = ole_variant2val(&pDispParams->rgvarg[args - i - 1]);
     }
     if (dispIdMember == DISPID_VALUE) {
         if (wFlags == DISPATCH_METHOD) {
-            dispIdMember = rb_intern("call");
+            mid = rb_intern("call");
         } else if (wFlags & DISPATCH_PROPERTYGET) {
-            dispIdMember = rb_intern("value");
+            mid = rb_intern("value");
         }
     }
-    v = rb_funcall2(p->obj, dispIdMember, args, parg);
+    v = rb_funcall2(p->obj, mid, args, parg);
     ole_val2variant(v, pVarResult);
     return S_OK;
 }
@@ -1064,7 +1067,7 @@ ole_cp2encoding(UINT cp)
 }
 
 static char *
-ole_wc2mb(LPWSTR pw)
+ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
 {
     LPSTR pm;
     UINT size = 0;
@@ -1076,7 +1079,7 @@ ole_wc2mb(LPWSTR pw)
 	if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
 	}
-	pm = ALLOC_N(char, size + 1);
+	pm = alloc(size, arg);
 	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
 		&dw, cWIN32OLE_cp, pw, NULL, pm, &size);
 	if (FAILED(hr)) {
@@ -1088,15 +1091,27 @@ ole_wc2mb(LPWSTR pw)
     }
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
-        pm = ALLOC_N(char, size + 1);
+        pm = alloc(size, arg);
         WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
         pm[size] = '\0';
     }
     else {
-        pm = ALLOC_N(char, 1);
+        pm = alloc(0, arg);
         *pm = '\0';
     }
     return pm;
+}
+
+static char *
+ole_alloc_str(UINT size, void *arg)
+{
+    return ALLOC_N(char, size + 1);
+}
+
+static char *
+ole_wc2mb(LPWSTR pw)
+{
+    return ole_wc2mb_alloc(pw, ole_alloc_str, NULL);
 }
 
 static VALUE
@@ -1171,7 +1186,7 @@ ole_excepinfo2msg(EXCEPINFO *pExInfo)
     }
     error_msg = rb_str_new2(error_code);
     if(pSource != NULL) {
-        rb_str_cat(error_msg, pSource, strlen(pSource));
+        rb_str_cat2(error_msg, pSource);
     }
     else {
         rb_str_cat(error_msg, "<Unknown>", 9);
@@ -1311,7 +1326,7 @@ ole_vstr2wc(VALUE vstr)
     enc = rb_enc_get(vstr);
 
     if (st_lookup(enc2cp_table, (st_data_t)enc, &data)) {
-        cp = data;
+        cp = (int)data;
     } else {
         cp = ole_encoding2cp(enc);
         if (code_page_installed(cp) ||
@@ -1383,14 +1398,22 @@ ole_mb2wc(char *pm, int len)
     return pw;
 }
 
+static char *
+ole_alloc_vstr(UINT size, void *arg)
+{
+    VALUE str = rb_enc_str_new(NULL, size, cWIN32OLE_enc);
+    *(VALUE *)arg = str;
+    return RSTRING_PTR(str);
+}
+
 static VALUE
 ole_wc2vstr(LPWSTR pw, BOOL isfree)
 {
-    char *p = ole_wc2mb(pw);
-    VALUE vstr = rb_enc_str_new(p, strlen(p), cWIN32OLE_enc);
+    VALUE vstr;
+    ole_wc2mb_alloc(pw, ole_alloc_vstr, &vstr);
+    rb_str_set_len(vstr, (long)strlen(RSTRING_PTR(vstr)));
     if(isfree)
         SysFreeString(pw);
-    free(p);
     return vstr;
 }
 
@@ -4072,7 +4095,7 @@ fole_missing(int argc, VALUE *argv, VALUE self)
 {
     ID id;
     const char* mname;
-    int n;
+    size_t n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     id = rb_to_id(argv[0]);
     mname = rb_id2name(id);
@@ -4080,14 +4103,19 @@ fole_missing(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
     }
     n = strlen(mname);
+#if SIZEOF_SIZE_T > SIZEOF_LONG
+    if (n >= LONG_MAX) {
+	rb_raise(rb_eRuntimeError, "too long method or property name");
+    }
+#endif
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
-        argv[0] = rb_enc_str_new(mname, n-1, cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, (long)(n-1), cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, (long)n, cWIN32OLE_enc);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }
@@ -5281,7 +5309,7 @@ foletypelib_name(VALUE self)
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get name from ITypeLib");
     }
     name = WC2VSTR(bstr);
-    return rb_enc_str_new(StringValuePtr(name), strlen(StringValuePtr(name)), cWIN32OLE_enc);
+    return name;
 }
 
 /*
@@ -5436,7 +5464,7 @@ foletypelib_path(VALUE self)
 
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     path = WC2VSTR(bstr);
-    return rb_enc_str_new(StringValuePtr(path), strlen(StringValuePtr(path)), cWIN32OLE_enc);
+    return path;
 }
 
 /*
@@ -6918,7 +6946,7 @@ folemethod_event_interface(VALUE self)
     return Qnil;
 }
 
-static VALUE
+static HRESULT
 ole_method_docinfo_from_type(
     ITypeInfo *pTypeInfo,
     UINT method_index,

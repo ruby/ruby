@@ -191,21 +191,30 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   end
 
   def test_execute_all
-    ui = Gem::MockGemUi.new "y\n"
-
     util_make_gems
-    util_setup_gem ui
 
-    assert Gem::Specification.find_all_by_name('a').length > 1
+    default = new_default_spec 'default', '1'
+    install_default_gems default
+
+    gemhome2 = "#{@gemhome}2"
+
+    a_4 = quick_spec 'a', 4
+    install_gem a_4, :install_dir => gemhome2
+
+    Gem::Specification.dirs = [@gemhome, gemhome2]
+
+    assert_includes Gem::Specification.all_names, 'a-1'
+    assert_includes Gem::Specification.all_names, 'a-4'
+    assert_includes Gem::Specification.all_names, 'default-1'
 
     @cmd.options[:all] = true
     @cmd.options[:args] = []
 
-    use_ui ui do
+    use_ui @ui do
       @cmd.execute
     end
 
-    refute_includes Gem::Specification.all_names, 'a'
+    assert_equal %w[a-4 default-1], Gem::Specification.all_names.sort
   end
 
 end

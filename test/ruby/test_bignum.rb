@@ -577,6 +577,9 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_interrupt_during_to_s
+    if defined?(Bignum::GMP_VERSION)
+      return # GMP doesn't support interrupt during an operation.
+    end
     time = Time.now
     start_flag = false
     end_flag = false

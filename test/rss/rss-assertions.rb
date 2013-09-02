@@ -332,7 +332,7 @@ EOA
       _wrap_assertion do
         [nil, "text", "html"].each do |type|
           attr = ""
-          attr = " type=\"#{type}\""if type
+          attr = " type=\"#{type}\"" if type
           assert_parse(generator.call(<<-EOA), :nothing_raised)
   <#{tag_name}#{attr}/>
 EOA

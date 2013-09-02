@@ -52,6 +52,15 @@ class Gem::Commands::UpdateCommand < Gem::Command
     "--document --no-force --install-dir #{Gem.dir}"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The update command will update your gems to the latest version.
+
+The update comamnd does not remove the previous version.  Use the cleanup
+command to remove old versions.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end

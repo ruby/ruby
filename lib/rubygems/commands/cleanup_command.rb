@@ -6,7 +6,7 @@ class Gem::Commands::CleanupCommand < Gem::Command
 
   def initialize
     super 'cleanup',
-          'Clean up old versions of installed gems in the local repository',
+          'Clean up old versions of installed gems',
           :force => false, :install_dir => Gem.dir
 
     add_option('-n', '-d', '--dryrun',
@@ -33,11 +33,11 @@ class Gem::Commands::CleanupCommand < Gem::Command
 
   def description # :nodoc:
     <<-EOF
-The cleanup command removes old gems from GEM_HOME.  If an older version is
-installed elsewhere in GEM_PATH the cleanup command won't touch it.
+The cleanup command removes old versions of gems from GEM_HOME that are not
+required to meet a dependency.  If a gem is installed elsewhere in GEM_PATH
+the cleanup command won't delete it.
 
-Older gems that are required to satisify the dependencies of gems
-are not removed.
+If no gems are named all gems in GEM_HOME are cleaned.
     EOF
   end
 

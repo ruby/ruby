@@ -1,8 +1,8 @@
-require 'rubygems/source'
-
 class Gem::Source::Local < Gem::Source
   def initialize
-    @uri = nil
+    @specs   = nil
+    @api_uri = nil
+    @uri     = nil
   end
 
   ##
@@ -22,7 +22,8 @@ class Gem::Source::Local < Gem::Source
   end
 
   def inspect # :nodoc:
-    "#<%s specs: %p>" % [self.class, @specs.keys]
+    keys = @specs ? @specs.keys.sort : 'NOT LOADED'
+    "#<%s specs: %p>" % [self.class, keys]
   end
 
   def load_specs(type)

@@ -88,6 +88,16 @@ class Gem::Commands::UninstallCommand < Gem::Command
     "--user-install"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The uninstall command removes a previously installed gem.
+
+RubyGems will ask for confirmation if you are attempting to uninstall a gem
+that is a dependency of an existing gem.  You can use the
+--ignore-dependencies option to skip this check.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
@@ -104,15 +114,18 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def uninstall_all
-    install_dir = options[:install_dir]
+    _, specs = Gem::Specification.partition { |spec| spec.default_gem? }
 
-    dirs_to_be_emptied = Dir[File.join(install_dir, '*')]
-    dirs_to_be_emptied.delete_if { |dir| dir.end_with? 'build_info' }
+    specs.each do |spec|
+      options[:version] = spec.version
 
-    dirs_to_be_emptied.each do |dir|
-      FileUtils.rm_rf Dir[File.join(dir, '*')]
+      begin
+        Gem::Uninstaller.new(spec.name, options).uninstall
+      rescue Gem::InstallError
+      end
     end
-    alert("Successfully uninstalled all gems in #{install_dir}")
+
+    alert "Uninstalled all gems in #{options[:install_dir]}"
   end
 
   def uninstall_specific

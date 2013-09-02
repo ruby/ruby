@@ -492,6 +492,49 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#elif defined __ia64 && defined _HPUX_SOURCE
+#define STACKADDR_AVAILABLE 1
+
+/*
+ * Do not lower the thread's stack to PTHREAD_STACK_MIN,
+ * otherwise one would receive a 'sendsig: useracc failed.'
+ * and a coredump.
+ */
+#undef PTHREAD_STACK_MIN
+
+#define HAVE_PTHREAD_ATTR_GET_NP 1
+#undef HAVE_PTHREAD_ATTR_GETSTACK
+
+/*
+ * As the PTHREAD_STACK_MIN is undefined and
+ * noone touches the default stacksize,
+ * it is just fine to use the default.
+ */
+#define pthread_attr_get_np(thid, attr) 0
+
+/*
+ * Using value of sp is very rough... To make it more real,
+ * addr would need to be aligned to vps_pagesize.
+ * The vps_pagesize is 'Default user page size (kBytes)'
+ * and could be retrieved by gettune().
+ */
+static int
+hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
+{
+    static uint64_t pagesize;
+    size_t size;
+
+    if (!pagesize) {
+	if (gettune("vps_pagesize", &pagesize)) {
+	    pagesize = 16;
+	}
+	pagesize *= 1024;
+    }
+    pthread_attr_getstacksize(attr, &size);
+    *addr = (void *)((size_t)((char *)_Asm_get_sp() - size) & ~(pagesize - 1));
+    return 0;
+}
+#define pthread_attr_getstackaddr(attr, addr) hpux_attr_getstackaddr(attr, addr)
 #endif
 
 #ifndef MAINSTACKADDR_AVAILABLE
@@ -500,6 +543,9 @@ size_t pthread_get_stacksize_np(pthread_t);
 # else
 #   define MAINSTACKADDR_AVAILABLE 0
 # endif
+#endif
+#if MAINSTACKADDR_AVAILABLE && !defined(get_main_stack)
+# define get_main_stack(addr, size) get_stack(addr, size)
 #endif
 
 #ifdef STACKADDR_AVAILABLE
@@ -532,12 +578,11 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
 # ifdef HAVE_PTHREAD_ATTR_GETSTACK
     CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 # else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 # endif
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
     pthread_attr_destroy(&attr);
 #elif (defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP) /* MacOS X */
     pthread_t th = pthread_self();
@@ -643,7 +688,7 @@ ruby_init_stack(volatile VALUE *addr
 #if MAINSTACKADDR_AVAILABLE
 	void* stackaddr;
 	STACK_GROW_DIR_DETECTION;
-	if (get_stack(&stackaddr, &size) == 0) {
+	if (get_main_stack(&stackaddr, &size) == 0) {
             space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
         }
 	native_main_thread.stack_maxsize = size - space;
@@ -708,6 +753,11 @@ native_thread_init_stack(rb_thread_t *th)
 	if (get_stack(&start, &size) == 0) {
 	    th->machine_stack_start = start;
 	    th->machine_stack_maxsize = size;
+	}
+#elif defined get_stack_of
+	if (!th->machine_stack_maxsize) {
+	    native_mutex_lock(&th->interrupt_lock);
+	    native_mutex_unlock(&th->interrupt_lock);
 	}
 #else
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
@@ -801,21 +851,14 @@ register_cached_thread_and_wait(void)
 	native_cond_timedwait(&cond, &thread_cache_lock, &ts);
 
 	{
-	    struct cached_thread_entry *e = cached_thread_root;
-	    struct cached_thread_entry *prev = cached_thread_root;
+	    struct cached_thread_entry *e, **prev = &cached_thread_root;
 
-	    while (e) {
+	    while ((e = *prev) != 0) {
 		if (e == entry) {
-		    if (prev == cached_thread_root) {
-			cached_thread_root = e->next;
-		    }
-		    else {
-			prev->next = e->next;
-		    }
+		    *prev = e->next;
 		    break;
 		}
-		prev = e;
-		e = e->next;
+		prev = &e->next;
 	    }
 	}
 
@@ -863,7 +906,12 @@ native_thread_create(rb_thread_t *th)
 	thread_debug("create (use cached thread): %p\n", (void *)th);
     }
     else {
+#ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
+	pthread_attr_t *const attrp = &attr;
+#else
+	pthread_attr_t *const attrp = NULL;
+#endif
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
@@ -885,10 +933,18 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setinheritsched(&attr, PTHREAD_INHERIT_SCHED));
 # endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
-
-	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
-#else
-	err = pthread_create(&th->thread_id, NULL, thread_start_func_1, th);
+#endif
+#ifdef get_stack_of
+	native_mutex_lock(&th->interrupt_lock);
+#endif
+	err = pthread_create(&th->thread_id, attrp, thread_start_func_1, th);
+#ifdef get_stack_of
+	if (!err) {
+	    get_stack_of(th->thread_id,
+			 &th->machine_stack_start,
+			 &th->machine_stack_maxsize);
+	}
+	native_mutex_unlock(&th->interrupt_lock);
 #endif
 	thread_debug("create: %p (%d)\n", (void *)th, err);
 #ifdef HAVE_PTHREAD_ATTR_INIT

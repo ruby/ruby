@@ -38,6 +38,17 @@ class Gem::Commands::DependencyCommand < Gem::Command
     "--local --version '#{Gem::Requirement.default}' --no-reverse-dependencies"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The dependency commands lists which other gems a given gem depends on.  For
+local gems only the reverse dependencies can be shown (which gems depend on
+the named gem).
+
+The dependency list can be displayed in a format suitable for piping for
+use with other commands.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} GEMNAME"
   end

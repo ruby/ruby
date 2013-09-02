@@ -161,7 +161,7 @@ module OpenSSL::Buffering
   # when the peer requests a new TLS/SSL handshake.  See openssl the FAQ for
   # more details.  http://www.openssl.org/support/faq.html
 
-  def read_nonblock(maxlen, buf=nil)
+  def read_nonblock(maxlen, buf=nil, exception: true)
     if maxlen == 0
       if buf
         buf.clear
@@ -171,7 +171,7 @@ module OpenSSL::Buffering
       end
     end
     if @rbuffer.empty?
-      return sysread_nonblock(maxlen, buf)
+      return sysread_nonblock(maxlen, buf, exception: exception)
     end
     ret = consume_rbuff(maxlen)
     if buf
@@ -370,9 +370,9 @@ module OpenSSL::Buffering
   # is when the peer requests a new TLS/SSL handshake.  See the openssl FAQ
   # for more details.  http://www.openssl.org/support/faq.html
 
-  def write_nonblock(s)
+  def write_nonblock(s, exception: true)
     flush
-    syswrite_nonblock(s)
+    syswrite_nonblock(s, exception: exception)
   end
 
   ##

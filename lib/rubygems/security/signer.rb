@@ -63,6 +63,22 @@ class Gem::Security::Signer
   end
 
   ##
+  # Extracts the full name of +cert+.  If the certificate has a subjectAltName
+  # this value is preferred, otherwise the subject is used.
+
+  def extract_name cert # :nodoc:
+    subject_alt_name = cert.extensions.find { |e| 'subjectAltName' == e.oid }
+
+    if subject_alt_name then
+      /\Aemail:/ =~ subject_alt_name.value
+
+      $' || subject_alt_name.value
+    else
+      cert.subject
+    end
+  end
+
+  ##
   # Loads any missing issuers in the cert chain from the trusted certificates.
   #
   # If the issuer does not exist it is ignored as it will be checked later.
@@ -89,7 +105,9 @@ class Gem::Security::Signer
       re_sign_key
     end
 
-    Gem::Security::SigningPolicy.verify @cert_chain, @key
+    full_name = extract_name @cert_chain.last
+
+    Gem::Security::SigningPolicy.verify @cert_chain, @key, {}, {}, full_name
 
     @key.sign @digest_algorithm.new, data
   end

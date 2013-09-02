@@ -97,6 +97,53 @@ Do you want to add this insecure source?
     '--list'
   end
 
+  def description # :nodoc:
+    <<-EOF
+RubyGems fetches gems from the sources you have configured (stored in your
+~/.gemrc).
+
+The default source is https://rubygems.org, but you may have older sources
+configured.  This guide will help you update your sources or configure
+yourself to use your own gem server.
+
+Without any arguments the sources lists your currently configured sources:
+
+  $ gem sources
+  *** CURRENT SOURCES ***
+
+  https://rubygems.org
+
+This may list multiple sources or non-rubygems sources.  You probably
+configured them before or have an old `~/.gemrc`.  If you have sources you
+do not recognize you should remove them.
+
+RubyGems has been configured to serve gems via the following URLs through
+its history:
+
+* http://gems.rubyforge.org (RubyGems 1.3.6 and earlier)
+* http://rubygems.org       (RubyGems 1.3.7 through 1.8.25)
+* https://rubygems.org      (RubyGems 2.0.1 and newer)
+
+Since all of these sources point to the same set of gems you only need one
+of them in your list.  https://rubygems.org is recommended as it brings the
+protections of an SSL connection to gem downloads.
+
+To add a source use the --add argument:
+
+    $ gem sources --add https://rubygems.org
+    https://rubygems.org added to sources
+
+RubyGems will check to see if gems can be installed from the source given
+before it is added.
+
+To remove a source use the --remove argument:
+
+    $ gem sources --remove http://rubygems.org
+    http://rubygems.org removed from sources
+
+    EOF
+  end
+
   def list # :nodoc:
     say "*** CURRENT SOURCES ***"
     say

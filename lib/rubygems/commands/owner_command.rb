@@ -7,7 +7,14 @@ class Gem::Commands::OwnerCommand < Gem::Command
   include Gem::GemcutterUtilities
 
   def description # :nodoc:
-    'Manage gem owners on RubyGems.org.'
+    <<-EOF
+The owner command lets you add and remove owners of a gem on a push
+server (the default is https://rubygems.org).
+
+The owner of a gem has the permission to push new versions, yank existing
+versions or edit the HTML page of the gem.  Be careful of who you give push
+permission to.
+    EOF
   end
 
   def arguments # :nodoc:
@@ -19,7 +26,7 @@ class Gem::Commands::OwnerCommand < Gem::Command
   end
 
   def initialize
-    super 'owner', description
+    super 'owner', 'Manage gem owners of a gem on the push server'
     add_proxy_option
     add_key_option
     defaults.merge! :add => [], :remove => []

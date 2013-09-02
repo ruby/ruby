@@ -184,6 +184,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
 #define ARY_SHARED_ROOT_P(ary) (FL_TEST((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_NUM(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
+#define ARY_SHARED_OCCUPIED(ary) (ARY_SHARED_NUM(ary) == 1)
 #define ARY_SET_SHARED_NUM(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
@@ -322,12 +323,14 @@ rb_ary_modify(VALUE ary)
             rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
-	else if (ARY_SHARED_NUM(shared) == 1 && len > (RARRAY_LEN(shared)>>1)) {
+	else if (ARY_SHARED_OCCUPIED(shared) && len > (RARRAY_LEN(shared)>>1)) {
 	    long shift = RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared);
 	    FL_UNSET_SHARED(ary);
 	    ARY_SET_PTR(ary, RARRAY_RAWPTR(shared));
 	    ARY_SET_CAPA(ary, RARRAY_LEN(shared));
-	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+shift, VALUE, len);
+	    RARRAY_PTR_USE(ary, ptr, {
+		MEMMOVE(ptr, ptr+shift, VALUE, len);
+	    });
 	    FL_SET_EMBED(shared);
 	    rb_ary_decrement_share(shared);
 	}
@@ -350,7 +353,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
-	    if (ARY_SHARED_NUM(shared) == 1) {
+	    if (ARY_SHARED_OCCUPIED(shared)) {
 		if (RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
 		}
@@ -570,12 +573,12 @@ ary_make_shared(VALUE ary)
 	return ary;
     }
     else {
-	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0));
+	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY); /* keep shared ary as shady */
         FL_UNSET_EMBED(shared);
 
         ARY_SET_LEN((VALUE)shared, ARY_CAPA(ary));
-	ARY_SET_PTR((VALUE)shared, RARRAY_PTR(ary));
-	rb_mem_clear(RARRAY_PTR(shared) + RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
+	ARY_SET_PTR((VALUE)shared, RARRAY_RAWPTR(ary));
+	ary_mem_clear((VALUE)shared, RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
 	FL_SET_SHARED_ROOT(shared);
 	ARY_SET_SHARED_NUM((VALUE)shared, 1);
 	FL_SET_SHARED(ary);
@@ -1007,7 +1010,7 @@ rb_ary_shift(VALUE ary)
 	RARRAY_ASET(ary, 0, Qnil);
 	ary_make_shared(ary);
     }
-    else if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+    else if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	RARRAY_ASET(ary, 0, Qnil);
     }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
@@ -1053,7 +1056,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     n = RARRAY_LEN(result);
     if (ARY_SHARED_P(ary)) {
-	if (ARY_SHARED_NUM(ARY_SHARED(ary)) == 1) {
+	if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	    ary_mem_clear(ary, 0, n);
 	}
         ARY_INCREASE_PTR(ary, n);
@@ -1072,14 +1075,14 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     long len = RARRAY_LEN(ary);
     long new_len = len + argc;
     long capa;
-    VALUE *head, *sharedp;
+    const VALUE *head, *sharedp;
 
     if (ARY_SHARED_P(ary)) {
 	VALUE shared = ARY_SHARED(ary);
 	capa = RARRAY_LEN(shared);
-	if (ARY_SHARED_NUM(shared) == 1 && capa > new_len) {
-	    head = RARRAY_PTR(ary);
-	    sharedp = RARRAY_PTR(shared);
+	if (ARY_SHARED_OCCUPIED(shared) && capa > new_len) {
+	    head = RARRAY_RAWPTR(ary);
+	    sharedp = RARRAY_RAWPTR(shared);
 	    goto makeroom_if_need;
 	}
     }
@@ -1096,7 +1099,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	capa = ARY_CAPA(ary);
 	ary_make_shared(ary);
 
-	head = sharedp = RARRAY_PTR(ary);
+	head = sharedp = RARRAY_RAWPTR(ary);
 	goto makeroom;
       makeroom_if_need:
 	if (head - sharedp < argc) {
@@ -1104,7 +1107,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	  makeroom:
 	    room = capa - new_len;
 	    room -= room >> 4;
-	    MEMMOVE(sharedp + argc + room, head, VALUE, len);
+	    MEMMOVE((VALUE *)sharedp + argc + room, head, VALUE, len);
 	    head = sharedp + argc + room;
 	}
 	ARY_SET_PTR(ary, head - argc);
@@ -1411,8 +1414,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
+    const VALUE *ptr;
     VALUE val;
-    long i;
+    long i, len;
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
@@ -1423,12 +1427,24 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "1", &val);
+    rb_check_arity(argc, 0, 1);
+    val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	if (rb_equal(RARRAY_AREF(ary, i), val))
+    len = RARRAY_LEN(ary);
+    ptr = RARRAY_RAWPTR(ary);
+    for (i=0; i<len; i++) {
+	VALUE e = ptr[i];
+	switch (rb_equal_opt(e, val)) {
+	  case Qundef:
+	    if (!rb_equal(e, val)) break;
+	  case Qtrue:
 	    return LONG2NUM(i);
+	  case Qfalse:
+	    continue;
+	}
+	len = RARRAY_LEN(ary);
+	ptr = RARRAY_RAWPTR(ary);
     }
     return Qnil;
 }
@@ -1460,8 +1476,9 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
+    const VALUE *ptr;
     VALUE val;
-    long i = RARRAY_LEN(ary);
+    long i = RARRAY_LEN(ary), len;
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
@@ -1474,15 +1491,25 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "1", &val);
+    rb_check_arity(argc, 0, 1);
+    val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
+    ptr = RARRAY_RAWPTR(ary);
     while (i--) {
-	if (rb_equal(RARRAY_AREF(ary, i), val))
+	VALUE e = ptr[i];
+	switch (rb_equal_opt(e, val)) {
+	  case Qundef:
+	    if (!rb_equal(e, val)) break;
+	  case Qtrue:
 	    return LONG2NUM(i);
-	if (i > RARRAY_LEN(ary)) {
-	    i = RARRAY_LEN(ary);
+	  case Qfalse:
+	    continue;
 	}
+	if (i > (len = RARRAY_LEN(ary))) {
+	    i = len;
+	}
+	ptr = RARRAY_RAWPTR(ary);
     }
     return Qnil;
 }
@@ -1542,8 +1569,9 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	}
 
 	if (len != rlen) {
-	    MEMMOVE(RARRAY_PTR(ary) + beg + rlen, RARRAY_PTR(ary) + beg + len,
-		    VALUE, RARRAY_LEN(ary) - (beg + len));
+	    RARRAY_PTR_USE(ary, ptr,
+			   MEMMOVE(ptr + beg + rlen, ptr + beg + len,
+				   VALUE, RARRAY_LEN(ary) - (beg + len)));
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {

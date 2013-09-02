@@ -339,7 +339,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_check_arity(argc, 0, 1);
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
 	if (argc) {
-            if (NIL_P(argv[0]) || rb_obj_is_proc(argv[0]) ||
+            if (NIL_P(argv[0]) || rb_respond_to(argv[0], id_call) ||
                 (RB_TYPE_P(argv[0], T_FLOAT) && RFLOAT_VALUE(argv[0]) == INFINITY)) {
                 size = argv[0];
             }
@@ -447,6 +447,10 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 	struct enumerator *e = enumerator_ptr(obj = rb_obj_dup(obj));
 	VALUE args = e->args;
 	if (args) {
+#if SIZEOF_INT < SIZEOF_LONG
+	    /* check int range overflow */
+	    rb_long2int(RARRAY_LEN(args) + argc);
+#endif
 	    args = rb_ary_dup(args);
 	    rb_ary_cat(args, argv, argc);
 	}
@@ -1003,16 +1007,19 @@ static VALUE
 enumerator_size(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+    int argc = 0;
+    const VALUE *argv = NULL;
+    VALUE size;
 
     if (e->size_fn) {
 	return (*e->size_fn)(e->obj, e->args, obj);
     }
-    if (rb_obj_is_proc(e->size)) {
-        if (e->args)
-	    return rb_proc_call(e->size, e->args);
-        else
-            return rb_proc_call_with_block(e->size, 0, 0, Qnil);
+    if (e->args) {
+	argc = (int)RARRAY_LEN(e->args);
+	argv = RARRAY_RAWPTR(e->args);
     }
+    size = rb_check_funcall(e->size, id_call, argc, argv);
+    if (size != Qundef) return size;
     return e->size;
 }
 

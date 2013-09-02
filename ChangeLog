@@ -1,3 +1,465 @@
+Mon Sep  2 14:15:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* NEWS: fix description of number literal suffixes.
+
+Mon Sep  2 14:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* test/rake/test_rake_rules.rb: add space after string literal to
+	  prevent conflict with string options syntax "foo"opts
+
+	* test/rss/rss-assertions.rb: ditto
+
+Mon Sep  2 12:28:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_bignum.rb (test_interrupt_during_to_s): Disable it
+	  when GMP is used.
+
+Mon Sep  2 07:02:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (Init_Bignum): Define Bignum::GMP_VERSION when GMP is used.
+
+Mon Sep  2 01:46:14 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_generic): Reduce arguments.
+	  (big2str_gmp): Ditto.
+	  (rb_big2str1): Follow the above change.
+
+Mon Sep  2 00:08:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (get_mach_timebase_info): Extracted from rb_clock_gettime.
+	  (rb_clock_gettime): Use get_mach_timebase_info.
+	  (rb_clock_getres): Support MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC.
+
+Sun Sep  1 23:30:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (GMP_BIG2STR_DIGITS): New constant.
+	  (big2str_gmp): New function.
+	  (rb_big2str1): Use big2str_gmp for big bignums.
+
+	* internal.h (rb_big2str_gmp): Declared.
+
+	* ext/-test-/bignum/big2str.c (big2str_gmp): New method.
+
+Sun Sep  1 22:37:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_mul_gmp): Use mpz_init and mpz_clear instead of
+	  mpz_inits and mpz_clears.
+	  Older GMP don't have them.
+
+Sun Sep  1 21:17:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/test_http.rb (test_bind_to_local_port): Choose an open
+	  port more reliably.
+
+Sun Sep  1 20:32:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_base_poweroftwo): Renamed from
+	  big2str_base_powerof2.
+	  (rb_big2str_poweroftwo): New function for test.
+	  (big2str_generic): Extracted from rb_big2str1.
+	  (rb_big2str_generic): New function for test.
+
+	* internal.h (rb_big2str_poweroftwo): Declared.
+	  (rb_big2str_generic): Ditto.
+
+	* ext/-test-/bignum/big2str.c: New file.
+
+	* test/-ext-/bignum/test_big2str.rb: New file.
+
+Sun Sep  1 15:21:21 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (big2str_2bdigits): Renamed from big2str_orig.
+
+Sun Sep  1 13:02:24 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Remove BITSPERDIG >= INT_MAX test.  The static assertion,
+	  SIZEOF_BDIGITS <= sizeof(BDIGIT) is enough.
+
+Sun Sep  1 11:38:26 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (maxpow_in_bdigit): Removed.
+
+Sun Sep  1 10:30:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_fix_bit_length): Moved from bignum.c.
+
+Sun Sep  1 09:55:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (bit_length): Moved from bignum.c.
+	  (nlz_int): Ditto.
+	  (nlz_long): Ditto.
+	  (nlz_long_long): Ditto.
+	  (nlz_int128): Ditto.
+
+Sun Sep  1 03:32:22 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bit_length): Renamed from bitsize.
+
+Sun Sep  1 00:07:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_bit_length): New method.
+	  (rb_fix_bit_length): Ditto.
+	  [ruby-core:56247] [Feature #8700]
+
+Sat Aug 31 22:18:29 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_getres): New method.
+	  (timetick2dblnum_reciprocal): New function.
+
+	* configure.in: Check clock_getres.
+
+	[ruby-core:56780] [Feature #8809] accepted as a CRuby feature at
+	DevelopersMeeting20130831Japan
+	https://bugs.ruby-lang.org/projects/ruby/wiki/DevelopersMeeting20130831Japan
+
+Sat Aug 31 21:02:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: Use GMP to accelerate big Bignum multiplication.
+	  (bary_mul_gmp): New function.
+	  (bary_mul): Use bary_mul_gmp.
+	  (bigsq): Use different threshold with GMP.
+
+	* configure.in: Detect GMP.
+
+	[ruby-core:56658] [Feature #8796]
+
+Sat Aug 31 15:03:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* compile.c (NODE_MATCH3): pass CALL_INFO to opt_regexpmatch2
+
+	* insns.def (opt_regexpmatch2): use CALL_SIMPLE_METHOD to call =~ if
+	  the receiver is not a T_STRING [Bug #8847] [ruby-core:56916]
+
+Sat Aug 31 14:07:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (random_bytes): Use Process.clock_gettime.
+
+Sat Aug 31 00:25:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_{ascii8bit,utf8,usascii}_encindex): get
+	  rid of conflict with macros defined in internal.h.
+
+Fri Aug 30 22:37:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (native_thread_init_stack): wait the creator thread
+	  to fill machine stack info, if get_stack_of() is available.
+
+	* thread_pthread.c (native_thread_create): fill the created thread
+	  stack info after starting, if get_stack_of() is available.
+
+	* thread_pthread.c (native_thread_create): define attr only if it is
+	  used, and merge pthread_create() calls.
+
+	* thread_pthread.c (get_main_stack): separate function to get stack of
+	  main thread.
+
+Thu Aug 29 18:05:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* struct.c (rb_struct_define_without_accessor_under): added.
+	  This function is similar to rb_define_class_under() against
+	  rb_define_class().
+
+	* include/ruby/intern.h: add a declaration of this function.
+
+Thu Aug 29 17:03:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): a method entry refers the based
+	  class/module, so should search superclass from the origin i-class
+	  where the entry belongs to, to get rid of infinite loop when zsuper
+	  in a prepended class/module.  [ruby-core:54105] [Bug #8238]
+
+Thu Aug 29 05:35:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_run):  Fix handling of deflate streams that
+	  need a dictionary but are being decompressed by Zlib::Inflate.inflate
+	  (which has no option to set a dictionary).  Now Zlib::NeedDict is
+	  raised instead of crashing.  [ruby-trunk - Bug #8829]
+	* test/zlib/test_zlib.rb (TestZlibInflate):  Test for the above.
+
+Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
+	  treated as strings.
+	  [Fixes GH-156] https://github.com/tenderlove/psych/issues/156
+
+	* test/psych/test_string.rb: test for change
+
+Wed Aug 28 17:20:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (hpux_attr_getstackaddr): basic support for the
+	  get_stack() under HP-UX.  based on the patch by michal@rokos.cz
+	  (Michal Rokos) at [ruby-core:56645].  [Feature #8793]
+
+Wed Aug 28 11:24:20 2013  Michal Rokos  <michal@rokos.cz>
+
+	* configure.in (sys/pstat.h): fix missing header check for
+	  missing/setproctitle.c on HP-UX.  [ruby-core:56644] [Bug #8792]
+
+Wed Aug 28 04:54:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read):  Replace duplicate
+	  wait_writable with wait_readable.
+
+Tue Aug 27 17:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): skip rescue clause only when no
+	  exception class is given.
+
+Tue Aug 27 17:02:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): should write in binary mode.  based on a
+	  patch by godfat (Lin Jen-Shin) at [ruby-core:56556].
+	  [ruby-core:56518] [Bug #8767]
+
+Tue Aug 27 17:02:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): move common open flags.
+
+Tue Aug 27 16:56:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_size): use rb_check_funcall() instead of
+	  respond_to? and call.
+
+	* enumerator.c (enumerator_each): ensure that argument array size
+	  does not overflow at appending.
+
+Tue Aug 27 16:46:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_index, rb_ary_rindex): use optimized equality to
+	  improve performance.  [Feature #8820]
+
+	* vm_insnhelper.c (rb_equal_opt): optimized equality function.
+
+Tue Aug 27 16:11:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (opt_eq_func): use RBASIC_CLASS() instead of HEAP_CLASS_OF().
+
+	* insns.def (opt_plus, opt_minus, opt_mult, opt_div, opt_mod, opt_lt),
+	  (opt_gt, opt_ltlt, opt_aref, opt_aset, opt_length, opt_size),
+	  (opt_empty_p, opt_succ): ditto.
+
+Tue Aug 27 16:08:26 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall, rb_check_funcall_with_hook): constify
+	  argv.
+
+Tue Aug 27 13:03:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/stringio/stringio.c (strio_read_nonblock): declare local
+	  variables at the first of function.
+
+Tue Aug 27 11:51:37 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: Allow Enumerator size argument to be any callable.
+	  Patch by Avdi Grimm. [bug #8641] [ruby-core:56032] [fix GH-362]
+
+	* test/ruby/test_enumerator.rb: Test for above
+
+Tue Aug 27 11:46:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_clear): do rest_sweep() before clearing
+	  profile.current_record.
+
+Tue Aug 27 07:35:05 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* io.c (io_read_nonblock): support non-blocking reads without raising
+	  exceptions. As in: `io.read_nonblock(size, exception: false)`
+	  [ruby-core:38666] [Feature #5138]
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal): ditto
+	* ext/stringio/stringio.c (strio_sysread): ditto
+	* io.c (rb_io_write_nonblock): support non-blocking writes without
+	  raising an exception.
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write_internal): ditto
+	* test/openssl/test_pair.rb (class OpenSSL): tests
+	* test/ruby/test_io.rb (class TestIO): ditto
+	* test/socket/test_nonblock.rb (class TestSocketNonblock): ditto
+	* test/stringio/test_stringio.rb (class TestStringIO): ditto
+
+Tue Aug 27 05:24:34 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 2.1.0 Release Candidate
+	* test/rubygems:  ditto.
+
+Mon Aug 26 16:24:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_nextc): warn carriage return in middle of line.
+	  [ruby-core:56240] [Feature #8699]
+
+Mon Aug 26 15:27:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): should not be caught by rescue
+	  clause.  [Bug #8730]
+
+Mon Aug 26 14:44:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_splice): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
+	* enum.c (enum_sort_by): ditto.
+
+	* struct.c (setup_struct): use RARRAY_RAWPTR().
+
+	* vm_eval.c (yield_under): ditto.
+
+	* ext/pathname/pathname.c (path_entries): use RARRAY_AREF().
+
+	* ext/pathname/pathname.c (path_s_glob): ditto.
+
+Mon Aug 26 13:11:10 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* array.c (ary_ensure_room_for_push): fix typo in r42658.
+
+Mon Aug 26 12:37:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/sizes.c.tmpl: generate automatically by extracting
+	  RUBY_CHECK_SIZEOF from configure.in.
+
+Mon Aug 26 10:16:59 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* process.c (gcd_timetick_int): Renamed from gcd_timtick_int.
+
+Sun Aug 25 21:02:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sizes.c (Init_sizes): Define the size of clock_t.
+
+Sun Aug 25 01:47:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (BARY_SHORT_MUL): Renamed from BARY_MUL1.
+	  (bary_short_mul): Renamed from bary_mul1.
+
+Sat Aug 24 10:35:09 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): The emulated clock names changed.
+
+Fri Aug 23 22:22:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Add a cast to fix compile error by
+	  -Werror,-Wshorten-64-to-32.
+
+Fri Aug 23 22:12:13 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_intern): no symbol cache while initialization.
+
+Fri Aug 23 22:07:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (clock_t): needs time.h.
+
+Fri Aug 23 21:37:28 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (reduce_factors): New function.
+	  (timetick2dblnum): Use reduce_factors.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Follow the above change.
+	  (rb_clock_gettime): Ditto.
+
+Fri Aug 23 21:00:55 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (timetick_int_t): Renamed from timetick_giga_count_t.
+	  (gcd_timtick_int): Renamed from gcd_ul and make the arguments
+	  timetick_giga_count_t.
+	  (reduce_fraction): Make the arguments timetick_int_t.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Ditto.
+	  (timetick2dblnum): Fix the return type.
+	  (rb_clock_gettime): Use timetick_int_t.
+
+Fri Aug 23 20:50:40 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (gcd_ul): New function.
+	  (reduce_fraction): Ditto.
+	  (reduce_fraction): Ditto.
+	  (timetick2dblnum): Ditto.
+	  (timetick2integer): Ditto.
+	  (make_clock_result): Use timetick2dblnum and timetick2integer.
+	  (rb_clock_gettime): Follow the make_clock_result change.
+
+Fri Aug 23 18:39:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (ary_make_shared): shared ary as shady. Need more effort to
+	  make it normal object.
+
+	* array.c (rb_ary_modify): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
+	* array.c (ary_ensure_room_for_unshift): use RARRAY_RAWPTR() because
+	  there are not new relations.
+
+Fri Aug 23 11:25:57 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c: introduce ARY_SHARED_OCCUPIED(shared).
+
+Fri Aug 23 11:07:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): now SIZEOF_CLOCK_T is needed for
+	  unsigned_clock_t.
+
+Thu Aug 22 22:01:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Strip "s" from unit names.
+
+Thu Aug 22 20:14:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (unsigned_clock_t): Defined.
+	  (rb_clock_gettime): Consider clock_t overflow for
+	  ISO_C_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID.
+
+	* configure.in: Check the size of clock_t.
+
+Thu Aug 22 16:22:48 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (build_postexe_iseq): fix to setup the local table.
+
+Thu Aug 22 15:42:43 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (rb_iseq_compile_node): accept NODE_IFUNC to support
+	  custom compilation.
+
+	* compile.c (NODE_POSTEXE): compile to
+	  "ONCE{ VMFrozenCore::core#set_postexe{...} }" with a new custom
+	  compiler `build_postexe_iseq()'.
+
+	* vm.c (m_core_set_postexe): remove parameters (passed by a block).
+
+Thu Aug 22 06:54:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Change emulation symbols for
+	  Process.clock_gettime.
+
+Thu Aug 22 06:24:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (make_clock_result): Extracted from rb_clock_gettime.
+
+Wed Aug 21 22:30:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): clock() based CLOCK_PROCESS_CPUTIME_ID
+	  emulation implemented.
+
+Wed Aug 21 21:02:37 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_times): Use RB_GC_GUARD to guard objects from GC.
+
+Wed Aug 21 20:33:01 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (get_clk_tck): Extracted from rb_proc_times.
+	  (rb_clock_gettime): times() based CLOCK_PROCESS_CPUTIME_ID emulation
+	  is implemented.
+
+Wed Aug 21 19:31:48 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: POSIX_GETTIMEOFDAY_CLOCK_REALTIME is renamed to
+	  SUS_GETTIMEOFDAY_CLOCK_REALTIME.
+
+Wed Aug 21 19:17:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): CLOCK_PROCESS_CPUTIME_ID emulation
+	  using getrusage is implemented.
+
+Wed Aug 21 17:34:27 2013  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (getrusage_time): Fallback clock_gettime to getrusage when
+	  clock_gettime fails.
+	  Reported by Eric Saxby.  [ruby-core:56762] [Bug #8805]
+
 Wed Aug 21 02:32:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: fix regexp's once option behavior.
@@ -57,7 +519,7 @@ Tue Aug 20 01:52:05 2013  Zachary Scott  <e@zzak.io>
 	* ext/socket/tcpserver.c: ditto
 	* ext/socket/udpsocket.c: [DOC] Fix indentation of documentation
 	* ext/socket/socket.c: ditto
-	  Patches by David Rodríguez [ruby-core:56734] [Bug #8802]
+	  Patches by David Rodr'iguez [ruby-core:56734] [Bug #8802]
 
 Tue Aug 20 01:19:22 2013  Tanaka Akira  <akr@fsij.org>
 

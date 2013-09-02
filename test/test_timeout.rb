@@ -29,4 +29,32 @@ class TestTimeout < Test::Unit::TestCase
     def (n = Object.new).zero?; false; end
     assert_raise(TypeError, bug3168) {Timeout.timeout(n) { sleep 0.1 }}
   end
+
+  def test_skip_rescue
+    bug8730 = '[Bug #8730]'
+    e = nil
+    assert_raise_with_message(Timeout::Error, /execution expired/, bug8730) do
+      timeout 0.1 do
+        begin
+          sleep 3
+        rescue Exception => e
+        end
+      end
+    end
+    assert_nil(e, bug8730)
+  end
+
+  def test_rescue_exit
+    exc = Class.new(RuntimeError)
+    e = nil
+    assert_nothing_raised(exc) do
+      timeout 0.1, exc do
+        begin
+          sleep 3
+        rescue exc => e
+        end
+      end
+    end
+    assert_raise_with_message(exc, /execution expired/) {raise e if e}
+  end
 end

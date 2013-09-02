@@ -1527,6 +1527,21 @@ class TestModule < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, bug8005) {a.send :foo}
   end
 
+  def test_prepend_visibility_inherited
+    bug8238 = '[ruby-core:54105] [Bug #8238]'
+    assert_separately [], <<-"end;", timeout: 3
+      class A
+        def foo() A; end
+        private :foo
+      end
+      class B < A
+        public :foo
+        prepend Module.new
+      end
+      assert_equal(A, B.new.foo, "#{bug8238}")
+    end;
+  end
+
   def test_prepend_included_modules
     bug8025 = '[ruby-core:53158] [Bug #8025]'
     mixin = labeled_module("mixin")

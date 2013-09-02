@@ -1049,6 +1049,16 @@ AC_CHECK_HEADERS( \
   setjmpex.h
 )
 
+AC_ARG_WITH([gmp],
+  [AS_HELP_STRING([--without-gmp],
+    [disable GNU GMP to accelerate Bignum operations])],
+  [],
+  [with_gmp=yes])
+AS_IF([test "x$with_gmp" != xno],
+  [AC_CHECK_HEADERS(gmp.h)
+   AS_IF([test "x$ac_cv_header_gmp_h" != xno],
+     AC_CHECK_LIB([gmp], [__gmpz_init]))])
+
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
@@ -1168,6 +1178,7 @@ RUBY_CHECK_SIZEOF(void*, [int long "long long"], [ILP LP LLP])
 RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
+RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
 
 AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
 AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
@@ -1729,6 +1740,7 @@ AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
+AC_CHECK_HEADERS(sys/pstat.h)
 
 
 AC_CACHE_CHECK(for signbit, rb_cv_have_signbit,
@@ -1865,6 +1877,7 @@ if test x"$ac_cv_func_clock_gettime" != xyes; then
 	AC_DEFINE(HAVE_CLOCK_GETTIME, 1)
     fi
 fi
+AC_CHECK_FUNCS(clock_getres) # clock_getres should be tested after clock_gettime test including librt test.
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([

@@ -196,6 +196,14 @@ static rb_gid_t obj2gid(VALUE id);
 # endif
 #endif
 
+#if SIZEOF_CLOCK_T == SIZEOF_INT
+typedef unsigned int unsigned_clock_t;
+#elif SIZEOF_CLOCK_T == SIZEOF_LONG
+typedef unsigned long unsigned_clock_t;
+#elif defined(HAVE_LONG_LONG) && SIZEOF_CLOCK_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_clock_t;
+#endif
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -6605,6 +6613,25 @@ p_gid_switch(VALUE obj)
 
 
 #if defined(HAVE_TIMES)
+static long
+get_clk_tck(void)
+{
+    long hertz =
+#ifdef HAVE__SC_CLK_TCK
+	(double)sysconf(_SC_CLK_TCK);
+#else
+#ifndef HZ
+# ifdef CLK_TCK
+#   define HZ CLK_TCK
+# else
+#   define HZ 60
+# endif
+#endif /* HZ */
+	HZ;
+#endif
+    return hertz;
+}
+
 /*
  *  call-seq:
  *     Process.times   -> aStructTms
@@ -6620,31 +6647,222 @@ p_gid_switch(VALUE obj)
 VALUE
 rb_proc_times(VALUE obj)
 {
-    const double hertz =
-#ifdef HAVE__SC_CLK_TCK
-	(double)sysconf(_SC_CLK_TCK);
-#else
-#ifndef HZ
-# ifdef CLK_TCK
-#   define HZ CLK_TCK
-# else
-#   define HZ 60
-# endif
-#endif /* HZ */
-	HZ;
-#endif
+    const double hertz = get_clk_tck();
     struct tms buf;
-    volatile VALUE utime, stime, cutime, sctime;
+    VALUE utime, stime, cutime, cstime, ret;
 
     times(&buf);
-    return rb_struct_new(rb_cProcessTms,
-			 utime = DBL2NUM(buf.tms_utime / hertz),
-			 stime = DBL2NUM(buf.tms_stime / hertz),
-			 cutime = DBL2NUM(buf.tms_cutime / hertz),
-			 sctime = DBL2NUM(buf.tms_cstime / hertz));
+    utime = DBL2NUM(buf.tms_utime / hertz);
+    stime = DBL2NUM(buf.tms_stime / hertz);
+    cutime = DBL2NUM(buf.tms_cutime / hertz);
+    cstime = DBL2NUM(buf.tms_cstime / hertz);
+    ret = rb_struct_new(rb_cProcessTms, utime, stime, cutime, cstime);
+    RB_GC_GUARD(utime);
+    RB_GC_GUARD(stime);
+    RB_GC_GUARD(cutime);
+    RB_GC_GUARD(cstime);
+    return ret;
 }
 #else
 #define rb_proc_times rb_f_notimplement
+#endif
+
+#ifdef HAVE_LONG_LONG
+typedef LONG_LONG timetick_int_t;
+#define TIMETICK_INT_MIN LLONG_MIN
+#define TIMETICK_INT_MAX LLONG_MAX
+#define TIMETICK_INT2NUM(v) LL2NUM(v)
+#else
+typedef long timetick_int_t;
+#define TIMETICK_INT_MIN LONG_MIN
+#define TIMETICK_INT_MAX LONG_MAX
+#define TIMETICK_INT2NUM(v) LONG2NUM(v)
+#endif
+
+static timetick_int_t
+gcd_timetick_int(timetick_int_t a, timetick_int_t b)
+{
+    timetick_int_t t;
+
+    if (a < b) {
+        t = a;
+        a = b;
+        b = t;
+    }
+
+    while (1) {
+        t = a % b;
+        if (t == 0)
+            return b;
+        a = b;
+        b = t;
+    }
+}
+
+static void
+reduce_fraction(timetick_int_t *np, timetick_int_t *dp)
+{
+    timetick_int_t gcd = gcd_timetick_int(*np, *dp);
+    if (gcd != 1) {
+        *np /= gcd;
+        *dp /= gcd;
+    }
+}
+
+static void
+reduce_factors(timetick_int_t *numerators, int num_numerators,
+               timetick_int_t *denominators, int num_denominators)
+{
+    int i, j;
+    for (i = 0; i < num_numerators; i++) {
+        if (numerators[i] == 1)
+            continue;
+        for (j = 0; j < num_denominators; j++) {
+            if (denominators[j] == 1)
+                continue;
+            reduce_fraction(&numerators[i], &denominators[j]);
+        }
+    }
+}
+
+struct timetick {
+    timetick_int_t giga_count;
+    int32_t count; /* 0 .. 999999999 */
+};
+
+static VALUE
+timetick2dblnum(struct timetick *ttp,
+    timetick_int_t *numerators, int num_numerators,
+    timetick_int_t *denominators, int num_denominators)
+{
+    double d;
+    int i;
+
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
+
+    d = ttp->giga_count * 1e9 + ttp->count;
+
+    for (i = 0; i < num_numerators; i++)
+        d *= numerators[i];
+    for (i = 0; i < num_denominators; i++)
+        d /= denominators[i];
+
+    return DBL2NUM(d);
+}
+
+static VALUE
+timetick2dblnum_reciprocal(struct timetick *ttp,
+    timetick_int_t *numerators, int num_numerators,
+    timetick_int_t *denominators, int num_denominators)
+{
+    double d;
+    int i;
+
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
+
+    d = 1.0;
+    for (i = 0; i < num_denominators; i++)
+        d *= denominators[i];
+    for (i = 0; i < num_numerators; i++)
+        d /= numerators[i];
+    d /= ttp->giga_count * 1e9 + ttp->count;
+
+    return DBL2NUM(d);
+}
+
+#define NDIV(x,y) (-(-((x)+1)/(y))-1)
+#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
+
+static VALUE
+timetick2integer(struct timetick *ttp,
+        timetick_int_t *numerators, int num_numerators,
+        timetick_int_t *denominators, int num_denominators)
+{
+    VALUE v;
+    int i;
+
+    reduce_factors(numerators, num_numerators,
+                   denominators, num_denominators);
+
+    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(1000000000, ttp->giga_count,
+                TIMETICK_INT_MIN, TIMETICK_INT_MAX-ttp->count)) {
+        timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
+        for (i = 0; i < num_numerators; i++) {
+            timetick_int_t factor = numerators[i];
+            if (MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
+                        TIMETICK_INT_MIN, TIMETICK_INT_MAX))
+                goto generic;
+            t *= factor;
+        }
+        for (i = 0; i < num_denominators; i++) {
+            t = DIV(t, denominators[i]);
+        }
+        return TIMETICK_INT2NUM(t);
+    }
+
+  generic:
+    v = TIMETICK_INT2NUM(ttp->giga_count);
+    v = rb_funcall(v, '*', 1, LONG2FIX(1000000000));
+    v = rb_funcall(v, '+', 1, LONG2FIX(ttp->count));
+    for (i = 0; i < num_numerators; i++) {
+        timetick_int_t factor = numerators[i];
+        if (factor == 1)
+            continue;
+        v = rb_funcall(v, '*', 1, TIMETICK_INT2NUM(factor));
+    }
+    for (i = 0; i < num_denominators; i++) {
+        v = rb_funcall(v, '/', 1, TIMETICK_INT2NUM(denominators[i])); /* Ruby's '/' is div. */
+    }
+    return v;
+}
+
+static VALUE
+make_clock_result(struct timetick *ttp,
+        timetick_int_t *numerators, int num_numerators,
+        timetick_int_t *denominators, int num_denominators,
+        VALUE unit)
+{
+    if (unit == ID2SYM(rb_intern("nanosecond"))) {
+        numerators[num_numerators++] = 1000000000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("microsecond"))) {
+        numerators[num_numerators++] = 1000000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("millisecond"))) {
+        numerators[num_numerators++] = 1000;
+        return timetick2integer(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("float_microsecond"))) {
+        numerators[num_numerators++] = 1000000;
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (unit == ID2SYM(rb_intern("float_millisecond"))) {
+        numerators[num_numerators++] = 1000;
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_second"))) {
+        return timetick2dblnum(ttp, numerators, num_numerators, denominators, num_denominators);
+    }
+    else
+        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
+}
+
+#ifdef __APPLE__
+static mach_timebase_info_data_t *
+get_mach_timebase_info(void)
+{
+    static mach_timebase_info_data_t sTimebaseInfo;
+
+    if ( sTimebaseInfo.denom == 0 ) {
+        (void) mach_timebase_info(&sTimebaseInfo);
+    }
+
+    return &sTimebaseInfo;
+}
 #endif
 
 /*
@@ -6652,6 +6870,9 @@ rb_proc_times(VALUE obj)
  *     Process.clock_gettime(clock_id [, unit])   -> number
  *
  *  Returns a time returned by POSIX clock_gettime() function.
+ *
+ *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
+ *    #=> 896053.968060096
  *
  *  +clock_id+ specifies a kind of clock.
  *  It is specifed as a constant which begins with <code>Process::CLOCK_</code>
@@ -6681,30 +6902,65 @@ rb_proc_times(VALUE obj)
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
- *  Also, several other symbols are accepted as +clock_id+.
+ *  Note that SUS stands for Single Unix Specification.
+ *  SUS contains POSIX and clock_gettime is defined in the POSIX part.
+ *  SUS defines CLOCK_REALTIME mandatory but
+ *  CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID and CLOCK_THREAD_CPUTIME_ID are optional.
+ *
+ *  Also, several symbols are accepted as +clock_id+.
  *  There are emulations for clock_gettime().
  *
  *  For example, Process::CLOCK_REALTIME is defined as
- *  +:POSIX_GETTIMEOFDAY_CLOCK_REALTIME+ when clock_gettime() is not available.
+ *  +:GETTIMEOFDAY_BASED_CLOCK_REALTIME+ when clock_gettime() is not available.
  *
- *  Emulations for +:CLOCK_REALTIME+:
- *  [:POSIX_GETTIMEOFDAY_CLOCK_REALTIME] Use gettimeofday().  The resolution is 1 micro second.
- *  [:ISO_C_TIME_CLOCK_REALTIME] Use time().  The resolution is 1 second.
+ *  Emulations for +CLOCK_REALTIME+:
+ *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
+ *    Use gettimeofday() defined by SUS.
+ *    (SUSv4 obsoleted it, though.)
+ *    The resolution is 1 micro second.
+ *  [:TIME_BASED_CLOCK_REALTIME]
+ *    Use time() defined by ISO C.
+ *    The resolution is 1 second.
  *
- *  Emulations for +:CLOCK_MONOTONIC+:
- *  [:MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC] Use mach_absolute_time(), available on Darwin.
- * 					  The resolution is CPU dependent.
+ *  Emulations for +CLOCK_MONOTONIC+:
+ *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC]
+ *    Use mach_absolute_time(), available on Darwin.
+ *    The resolution is CPU dependent.
+ *
+ *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
+ *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use getrusage() defined by SUS.
+ *    getrusage() is used with RUSAGE_SELF to obtain the time only for
+ *    the calling process (excluding the time for child processes).
+ *    The result is addition of user time (ru_utime) and system time (ru_stime).
+ *    The resolution is 1 micro second.
+ *  [:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use times() defined by POSIX.
+ *    The result is addition of user time (tms_utime) and system time (tms_stime).
+ *    tms_cutime and tms_cstime are ignored to exclude the time for child processes.
+ *    The resolution is the clock tick.
+ *    "getconf CLK_TCK" command shows the clock ticks per second.
+ *    (The clock ticks per second is defined by HZ macro in older systems.)
+ *    If it is 100, the resolution is 10 milli second.
+ *  [:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
+ *    Use clock() defined by ISO C.
+ *    The resolution is 1/CLOCKS_PER_SEC.
+ *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
+ *    SUS defines CLOCKS_PER_SEC is 1000000.
+ *    Non-Unix systems may define it a different value, though.
+ *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
+ *    If CLOCKS_PER_SEC is 1000000 and clock_t is 32 bits integer type, it cannot represent over 72 minutes.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *
  *  +unit+ specifies a type of the return value.
  *
- *  [:float_seconds] number of seconds as a float (default)
- *  [:float_milliseconds] number of milliseconds as a float
- *  [:float_microseconds] number of microseconds as a float
- *  [:milliseconds] number of milliseconds as an integer
- *  [:microseconds] number of microseconds as an integer
- *  [:nanoseconds] number of nanoseconds as an integer
+ *  [:float_second] number of seconds as a float (default)
+ *  [:float_millisecond] number of milliseconds as a float
+ *  [:float_microsecond] number of microseconds as a float
+ *  [:millisecond] number of milliseconds as an integer
+ *  [:microsecond] number of microseconds as an integer
+ *  [:nanosecond] number of nanoseconds as an integer
  *
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
@@ -6719,18 +6975,18 @@ rb_proc_times(VALUE obj)
  *  But some systems count leap seconds and others doesn't.
  *  So the result can be interpreted differently across systems.
  *  Time.now is recommended over CLOCK_REALTIME.
- *
- *    p Process.clock_gettime(Process::CLOCK_MONOTONIC)
- *    #=> 896053.968060096
- *
  */
 VALUE
 rb_clock_gettime(int argc, VALUE *argv)
 {
-    struct timespec ts;
     VALUE clk_id, unit;
     int ret;
-    long factor;
+
+    struct timetick tt;
+    timetick_int_t numerators[2];
+    timetick_int_t denominators[2];
+    int num_numerators = 0;
+    int num_denominators = 0;
 
     rb_scan_args(argc, argv, "11", &clk_id, &unit);
 
@@ -6739,56 +6995,116 @@ rb_clock_gettime(int argc, VALUE *argv)
          * Non-clock_gettime clocks are provided by symbol clk_id.
          *
          * gettimeofday is always available on platforms supported by Ruby.
-         * POSIX_GETTIMEOFDAY_CLOCK_REALTIME is used for
+         * GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
-#define RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME ID2SYM(rb_intern("POSIX_GETTIMEOFDAY_CLOCK_REALTIME"))
-        if (clk_id == RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME) {
+#define RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME ID2SYM(rb_intern("GETTIMEOFDAY_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             struct timeval tv;
             ret = gettimeofday(&tv, 0);
             if (ret != 0)
                 rb_sys_fail("gettimeofday");
-            ts.tv_sec = tv.tv_sec;
-            ts.tv_nsec = tv.tv_usec * 1000;
+            tt.giga_count = tv.tv_sec;
+            tt.count = (int32_t)tv.tv_usec * 1000;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 
-#define RUBY_ISO_C_TIME_CLOCK_REALTIME ID2SYM(rb_intern("ISO_C_TIME_CLOCK_REALTIME"))
-        if (clk_id == RUBY_ISO_C_TIME_CLOCK_REALTIME) {
+#define RUBY_TIME_BASED_CLOCK_REALTIME ID2SYM(rb_intern("TIME_BASED_CLOCK_REALTIME"))
+        if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
             time_t t;
             t = time(NULL);
             if (t == (time_t)-1)
                 rb_sys_fail("time");
-            ts.tv_sec = t;
-            ts.tv_nsec = 0;
+            tt.giga_count = t;
+            tt.count = 0;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+
+#ifdef RUSAGE_SELF
+#define RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            struct rusage usage;
+            int32_t usec;
+            ret = getrusage(RUSAGE_SELF, &usage);
+            if (ret != 0)
+                rb_sys_fail("getrusage");
+            tt.giga_count = usage.ru_utime.tv_sec + usage.ru_stime.tv_sec;
+            usec = (int32_t)(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec);
+            if (1000000 <= usec) {
+                tt.giga_count++;
+                usec -= 1000000;
+            }
+            tt.count = usec * 1000;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef HAVE_TIMES
+#define RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            struct tms buf;
+            unsigned_clock_t utime, stime;
+            if (times(&buf) ==  (clock_t)-1)
+                rb_sys_fail("times");
+            utime = (unsigned_clock_t)buf.tms_utime;
+            stime = (unsigned_clock_t)buf.tms_stime;
+            tt.count = (int32_t)((utime % 1000000000) + (stime % 1000000000));
+            tt.giga_count = (utime / 1000000000) + (stime / 1000000000);
+            if (1000000000 <= tt.count) {
+                tt.count -= 1000000000;
+                tt.giga_count++;
+            }
+            denominators[num_denominators++] = get_clk_tck();
+            goto success;
+        }
+#endif
+
+#define RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID \
+        ID2SYM(rb_intern("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID"))
+        if (clk_id == RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            clock_t c;
+            unsigned_clock_t uc;
+            errno = 0;
+            c = clock();
+            if (c == (clock_t)-1)
+                rb_sys_fail("clock");
+            uc = (unsigned_clock_t)c;
+            tt.count = (int32_t)(uc % 1000000000);
+            tt.giga_count = uc / 1000000000;
+            denominators[num_denominators++] = CLOCKS_PER_SEC;
             goto success;
         }
 
 #ifdef __APPLE__
-#define RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC"))
-        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC) {
-	    static mach_timebase_info_data_t sTimebaseInfo;
-	    uint64_t t = mach_absolute_time();
-
-	    if ( sTimebaseInfo.denom == 0 ) {
-		(void) mach_timebase_info(&sTimebaseInfo);
-	    }
-
-	    t = t * sTimebaseInfo.numer / sTimebaseInfo.denom;
-	    /* TODO: time_t overflow */
-            ts.tv_sec = (time_t)(t / 1000000000);
-            ts.tv_nsec = t % 1000000000;
+#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC"))
+        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
+	    mach_timebase_info_data_t *info = get_mach_timebase_info();
+            uint64_t t = mach_absolute_time();
+            tt.count = (int32_t)(t % 1000000000);
+            tt.giga_count = t / 1000000000;
+            numerators[num_numerators++] = info->numer;
+            denominators[num_denominators++] = info->denom;
+            denominators[num_denominators++] = 1000000000;
             goto success;
         }
 #endif
     }
     else {
 #if defined(HAVE_CLOCK_GETTIME)
+        struct timespec ts;
         clockid_t c;
         c = NUM2CLOCKID(clk_id);
         ret = clock_gettime(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_gettime");
+        tt.count = (int32_t)ts.tv_nsec;
+        tt.giga_count = ts.tv_sec;
+        denominators[num_denominators++] = 1000000000;
         goto success;
 #endif
     }
@@ -6797,46 +7113,142 @@ rb_clock_gettime(int argc, VALUE *argv)
     rb_sys_fail(0);
 
   success:
-    if (unit == ID2SYM(rb_intern("nanoseconds"))) {
-        factor = 1000000000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("microseconds"))) {
-        factor = 1000000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("milliseconds"))) {
-        factor = 1000;
-        goto return_integer;
-    }
-    else if (unit == ID2SYM(rb_intern("float_microseconds"))) {
-        factor = 1000000;
-        goto return_float;
-    }
-    else if (unit == ID2SYM(rb_intern("float_milliseconds"))) {
-        factor = 1000;
-        goto return_float;
-    }
-    else if (NIL_P(unit) || unit == ID2SYM(rb_intern("float_seconds"))) {
-        factor = 1;
-        goto return_float;
+    return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
+}
+
+/*
+ *  call-seq:
+ *     Process.clock_getres(clock_id [, unit])   -> number
+ *
+ *  Returns the time resolution returned by POSIX clock_getres() function.
+ *
+ *  +clock_id+ specifies a kind of clock.
+ *  See the document of +Process.clock_gettime+ for details.
+ *
+ *  +clock_id+ can be a symbol as +Process.clock_gettime+.
+ *  However the result may not be accurate.
+ *  For example, +Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)+
+ *  returns 1.0e-06 which means 1 micro second, but actual resolution can be more coarse.
+ *
+ *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
+ *
+ *  +unit+ specifies a type of the return value.
+ *  +Process.clock_getres+ accepts +unit+ as +Process.clock_gettime+.
+ *  The default value, +:float_second+, is also same as
+ *  +Process.clock_gettime+.
+ *
+ *  +Process.clock_getres+ also accepts +:hertz+ as +unit+.
+ *  +:hertz+ means a the reciprocal of +:float_second+.
+ *
+ *  +:hertz+ can be used to obtain the exact value of
+ *  the clock ticks per second for times() function and
+ *  CLOCKS_PER_SEC for clock() function.
+ *
+ *  +Process.clock_getres(:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  returns the clock ticks per second.
+ *
+ *  +Process.clock_getres(:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID, :hertz)+
+ *  returns CLOCKS_PER_SEC.
+ *
+ *    p Process.clock_getres(Process::CLOCK_MONOTONIC)
+ *    #=> 1.0e-09
+ *
+ */
+VALUE
+rb_clock_getres(int argc, VALUE *argv)
+{
+    VALUE clk_id, unit;
+
+    struct timetick tt;
+    timetick_int_t numerators[2];
+    timetick_int_t denominators[2];
+    int num_numerators = 0;
+    int num_denominators = 0;
+
+    rb_scan_args(argc, argv, "11", &clk_id, &unit);
+
+    if (SYMBOL_P(clk_id)) {
+#ifdef RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+        if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
+            tt.giga_count = 0;
+            tt.count = 1000;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_TIME_BASED_CLOCK_REALTIME
+        if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
+            tt.giga_count = 1;
+            tt.count = 0;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.giga_count = 0;
+            tt.count = 1000;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.count = 1;
+            tt.giga_count = 0;
+            denominators[num_denominators++] = get_clk_tck();
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID) {
+            tt.count = 1;
+            tt.giga_count = 0;
+            denominators[num_denominators++] = CLOCKS_PER_SEC;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+        if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
+	    mach_timebase_info_data_t *info = get_mach_timebase_info();
+            tt.count = 1;
+            tt.giga_count = 0;
+            numerators[num_numerators++] = info->numer;
+            denominators[num_denominators++] = info->denom;
+            denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
     }
     else {
-        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
-    }
-
-  return_float:
-    return DBL2NUM((ts.tv_sec + 1e-9 * (double)ts.tv_nsec) / factor);
-
-  return_integer:
-#if defined(HAVE_LONG_LONG)
-    if (!MUL_OVERFLOW_SIGNED_INTEGER_P(factor, (LONG_LONG)ts.tv_sec,
-                LLONG_MIN, LLONG_MAX-(factor-1))) {
-        return LL2NUM(ts.tv_nsec/(1000000000/factor) + factor * (LONG_LONG)ts.tv_sec);
-    }
+#if defined(HAVE_CLOCK_GETRES)
+        struct timespec ts;
+        clockid_t c = NUM2CLOCKID(clk_id);
+        int ret = clock_getres(c, &ts);
+        if (ret == -1)
+            rb_sys_fail("clock_getres");
+        tt.count = (int32_t)ts.tv_nsec;
+        tt.giga_count = ts.tv_sec;
+        denominators[num_denominators++] = 1000000000;
+        goto success;
 #endif
-    return rb_funcall(LONG2FIX(ts.tv_nsec/(1000000000/factor)), '+', 1,
-            rb_funcall(LONG2FIX(factor), '*', 1, TIMET2NUM(ts.tv_sec)));
+    }
+    /* EINVAL emulates clock_getres behavior when clock_id is invalid. */
+    errno = EINVAL;
+    rb_sys_fail(0);
+
+  success:
+    if (unit == ID2SYM(rb_intern("hertz"))) {
+        return timetick2dblnum_reciprocal(&tt, numerators, num_numerators, denominators, num_denominators);
+    }
+    else {
+        return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
+    }
 }
 
 VALUE rb_mProcess;
@@ -6853,6 +7265,8 @@ VALUE rb_mProcID_Syscall;
 void
 Init_process(void)
 {
+#undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
     rb_define_virtual_variable("$?", rb_last_status_get, 0);
     rb_define_virtual_variable("$$", get_pid, 0);
     rb_define_global_function("exec", rb_f_exec, -1);
@@ -7099,16 +7513,18 @@ Init_process(void)
 
 #ifdef CLOCK_REALTIME
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME)
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_POSIX_GETTIMEOFDAY_CLOCK_REALTIME);
+#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
-#elif defined(RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC)
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_CLOCK_MONOTONIC);
+#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
+#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
@@ -7162,6 +7578,7 @@ Init_process(void)
     rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
+    rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
     rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);

@@ -850,17 +850,14 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && klass == ci->klass)) {
 	/* cache hit! */
+	return;
     }
-    else {
-	ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
-	ci->klass = klass;
-	ci->vmstat = GET_VM_STATE_VERSION();
-	ci->call = vm_call_general;
-    }
-#else
+#endif
     ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
     ci->call = vm_call_general;
     ci->klass = klass;
+#if OPT_INLINE_METHOD_CACHE
+    ci->vmstat = GET_VM_STATE_VERSION();
 #endif
 }
 
@@ -892,8 +889,8 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
 	return (recv == obj) ? Qtrue : Qfalse;
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat &&
+	if (RBASIC_CLASS(recv) == rb_cFloat &&
+	    RBASIC_CLASS(obj) == rb_cFloat &&
 	    BASIC_OP_UNREDEFINED_P(BOP_EQ, FLOAT_REDEFINED_OP_FLAG)) {
 	    double a = RFLOAT_VALUE(recv);
 	    double b = RFLOAT_VALUE(obj);
@@ -903,8 +900,8 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
 	    }
 	    return  (a == b) ? Qtrue : Qfalse;
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cString &&
-		 HEAP_CLASS_OF(obj) == rb_cString &&
+	else if (RBASIC_CLASS(recv) == rb_cString &&
+		 RBASIC_CLASS(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_EQ, STRING_REDEFINED_OP_FLAG)) {
 	    return rb_str_equal(recv, obj);
 	}
@@ -919,6 +916,18 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
     }
 
     return Qundef;
+}
+
+VALUE
+rb_equal_opt(VALUE obj1, VALUE obj2)
+{
+    rb_call_info_t ci;
+    ci.mid = idEq;
+    ci.klass = 0;
+    ci.vmstat = 0;
+    ci.me = NULL;
+    ci.defined_class = 0;
+    return opt_eq_func(obj1, obj2, &ci);
 }
 
 static VALUE
@@ -1760,6 +1769,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
   start_method_dispatch:
     if (ci->me != 0) {
 	if ((ci->me->flag == 0)) {
+	    VALUE klass;
+
 	  normal_method_dispatch:
 	    switch (ci->me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
@@ -1792,10 +1803,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_bmethod(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
-		VALUE klass;
-
+		klass = ci->me->klass;
+		klass = RCLASS_ORIGIN(klass);
 	      zsuper_method_dispatch:
-		klass = RCLASS_SUPER(ci->me->klass);
+		klass = RCLASS_SUPER(klass);
 		ci_temp = *ci;
 		ci = &ci_temp;
 
@@ -1857,6 +1868,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    goto normal_method_dispatch;
 		}
 		else {
+		    klass = ci->me->klass;
 		    goto zsuper_method_dispatch;
 		}
 	      }

@@ -213,6 +213,9 @@ class Gem::Security::Policy
       if @only_signed then
         raise Gem::Security::Exception,
           "unsigned gems are not allowed by the #{name} policy"
+      elsif digests.empty? then
+        # lack of signatures is irrelevant if there is nothing to check
+        # against
       else
         alert_warning "#{full_name} is not signed"
       end
@@ -246,6 +249,8 @@ class Gem::Security::Policy
 
     if @only_trusted then
       check_trust chain, digester, trust_dir
+    elsif signatures.empty? and digests.empty? then
+      # trust is irrelevant if there's no signatures to verify
     else
       alert_warning "#{subject signer} is not trusted for #{full_name}"
     end

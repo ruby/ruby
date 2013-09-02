@@ -28,6 +28,16 @@ class Gem::Commands::FetchCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The fetch command fetches gem files that can be stored for later use or
+unpacked to examine their contents.
+
+See the build command help for an example of unpacking a gem, modifying it,
+then repackaging it.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end

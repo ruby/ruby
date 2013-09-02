@@ -15,6 +15,11 @@ module Psych
       end
     end
 
+    def test_dash_dot
+      assert_cycle '-.'
+      assert_cycle '+.'
+    end
+
     def test_string_subclass_with_anchor
       y = Psych.load <<-eoyml
 ---

@@ -106,6 +106,132 @@ extern "C" {
 # endif
 #endif
 
+static inline int
+nlz_int(unsigned int x)
+{
+#if defined(HAVE_BUILTIN___BUILTIN_CLZ)
+    if (x == 0) return SIZEOF_INT * CHAR_BIT;
+    return __builtin_clz(x);
+#else
+    unsigned int y;
+# if 64 < SIZEOF_INT * CHAR_BIT
+    int n = 128;
+# elif 32 < SIZEOF_INT * CHAR_BIT
+    int n = 64;
+# else
+    int n = 32;
+# endif
+# if 64 < SIZEOF_INT * CHAR_BIT
+    y = x >> 64; if (y) {n -= 64; x = y;}
+# endif
+# if 32 < SIZEOF_INT * CHAR_BIT
+    y = x >> 32; if (y) {n -= 32; x = y;}
+# endif
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+#endif
+}
+
+static inline int
+nlz_long(unsigned long x)
+{
+#if defined(HAVE_BUILTIN___BUILTIN_CLZL)
+    if (x == 0) return SIZEOF_LONG * CHAR_BIT;
+    return __builtin_clzl(x);
+#else
+    unsigned long y;
+# if 64 < SIZEOF_LONG * CHAR_BIT
+    int n = 128;
+# elif 32 < SIZEOF_LONG * CHAR_BIT
+    int n = 64;
+# else
+    int n = 32;
+# endif
+# if 64 < SIZEOF_LONG * CHAR_BIT
+    y = x >> 64; if (y) {n -= 64; x = y;}
+# endif
+# if 32 < SIZEOF_LONG * CHAR_BIT
+    y = x >> 32; if (y) {n -= 32; x = y;}
+# endif
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+#endif
+}
+
+#ifdef HAVE_LONG_LONG
+static inline int
+nlz_long_long(unsigned LONG_LONG x)
+{
+#if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
+    if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
+    return __builtin_clzll(x);
+#else
+    unsigned LONG_LONG y;
+# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
+    int n = 128;
+# elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
+    int n = 64;
+# else
+    int n = 32;
+# endif
+# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
+    y = x >> 64; if (y) {n -= 64; x = y;}
+# endif
+# if 32 < SIZEOF_LONG_LONG * CHAR_BIT
+    y = x >> 32; if (y) {n -= 32; x = y;}
+# endif
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+#endif
+}
+#endif
+
+#ifdef HAVE_UINT128_T
+static inline int
+nlz_int128(uint128_t x)
+{
+    uint128_t y;
+    int n = 128;
+    y = x >> 64; if (y) {n -= 64; x = y;}
+    y = x >> 32; if (y) {n -= 32; x = y;}
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (int)(n - x);
+}
+#endif
+
+#if defined(HAVE_UINT128_T)
+#   define bit_length(x) \
+        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
+         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
+         sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x) : \
+         SIZEOF_INT128_T * CHAR_BIT - nlz_int128(x))
+#elif defined(HAVE_LONG_LONG)
+#   define bit_length(x) \
+        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
+         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
+         SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x))
+#else
+#   define bit_length(x) \
+        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
+         SIZEOF_LONG * CHAR_BIT - nlz_long(x))
+#endif
+
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };
@@ -434,6 +560,9 @@ VALUE rb_id_quote_unprintable(ID);
 #define QUOTE_ID(id) rb_id_quote_unprintable(id)
 void rb_str_fill_terminator(VALUE str, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
+#ifdef RUBY_ENCODING_H
+VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
+#endif
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
@@ -479,9 +608,12 @@ void rb_print_backtrace(void);
 void Init_vm_eval(void);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, VALUE *, VALUE (*)(ANYARGS), VALUE);
-typedef void rb_check_funcall_hook(int, VALUE, ID, int, VALUE *, VALUE);
-VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, VALUE *argv,
+typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
+VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 				 rb_check_funcall_hook *hook, VALUE arg);
+
+/* vm_insnhelper.c */
+VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 
 /* vm_method.c */
 void Init_eval_method(void);
@@ -513,6 +645,12 @@ VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 VALUE rb_big_mul_toom3(VALUE x, VALUE y);
 VALUE rb_big_sq_fast(VALUE x);
+VALUE rb_big2str_poweroftwo(VALUE x, int base);
+VALUE rb_big2str_generic(VALUE x, int base);
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+VALUE rb_big_mul_gmp(VALUE x, VALUE y);
+VALUE rb_big2str_gmp(VALUE x, int base);
+#endif
 
 /* file.c */
 #ifdef __APPLE__

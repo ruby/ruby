@@ -3493,6 +3493,45 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
+/*
+ *  call-seq:
+ *     int.bit_length -> integer
+ *
+ *  Returns the number of bits of the value of <i>int</i>.
+ *
+ *  "the number of bits" means that
+ *  the bit position of the highest bit which is different to the sign bit.
+ *  (The bit position of the bit 2**n is n+1.)
+ *  If there is no such bit (zero or minus one), zero is returned.
+ *
+ *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
+ *
+ *     (-2**12-1).bit_length     #=> 13
+ *     (-2**12).bit_length       #=> 12
+ *     (-2**12+1).bit_length     #=> 12
+ *     -0x101.bit_length         #=> 9
+ *     -0x100.bit_length         #=> 8
+ *     -0xff.bit_length          #=> 8
+ *     -2.bit_length             #=> 1
+ *     -1.bit_length             #=> 0
+ *     0.bit_length              #=> 0
+ *     1.bit_length              #=> 1
+ *     0xff.bit_length           #=> 8
+ *     0x100.bit_length          #=> 9
+ *     (2**12-1).bit_length      #=> 12
+ *     (2**12).bit_length        #=> 13
+ *     (2**12+1).bit_length      #=> 13
+ */
+
+static VALUE
+rb_fix_bit_length(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        v = ~v;
+    return LONG2FIX(bit_length(v));
+}
+
 static VALUE
 int_upto_size(VALUE from, VALUE args, VALUE eobj)
 {
@@ -3864,6 +3903,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
+    rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
     rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
     rb_define_method(rb_cFixnum, "odd?", fix_odd_p, 0);
     rb_define_method(rb_cFixnum, "even?", fix_even_p, 0);

@@ -25,6 +25,11 @@
 #endif
 #include <assert.h>
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+#define USE_GMP
+#include <gmp.h>
+#endif
+
 VALUE rb_cBignum;
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -59,7 +64,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #   define HOST_BIGENDIAN_P 0
 #endif
 #define ALIGNOF(type) ((int)offsetof(struct { char f1; type f2; }, f2))
-/* (sizeof(d) * CHAR_BIT <= (n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
+/* (!LSHIFTABLE(d, n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
 #define LSHIFTABLE(d, n) ((n) < sizeof(d) * CHAR_BIT)
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
 #define CLEAR_LOWBITS(d, numbits) ((d) & LSHIFTX(~((d)*0), (numbits)))
@@ -68,9 +73,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 
 #define BDIGITS(x) (RBIGNUM_DIGITS(x))
 #define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#if BITSPERDIG >= INT_MAX
-# error incredible BDIGIT
-#endif
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define BIGRAD_HALF ((BDIGIT)(BIGRAD >> 1))
 #define BDIGIT_MSB(d) (((d) & BIGRAD_HALF) != 0)
@@ -103,7 +105,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 
 #define BARY_ADD(z, x, y) bary_add(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_SUB(z, x, y) bary_sub(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
-#define BARY_MUL1(z, x, y) bary_mul1(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
+#define BARY_SHORT_MUL(z, x, y) bary_short_mul(BARY_ARGS(z), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_DIVMOD(q, r, x, y) bary_divmod(BARY_ARGS(q), BARY_ARGS(r), BARY_ARGS(x), BARY_ARGS(y))
 #define BARY_ZERO_P(x) bary_zero_p(BARY_ARGS(x))
 
@@ -129,8 +131,11 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define KARATSUBA_BALANCED(xn, yn) ((yn)/2 < (xn))
 #define TOOM3_BALANCED(xn, yn) (((yn)+2)/3 * 2 < (xn))
 
+#define GMP_MUL_DIGITS 20
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
+
+#define GMP_BIG2STR_DIGITS 20
 
 typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 
@@ -148,115 +153,6 @@ static VALUE bigsq(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp);
 static inline VALUE power_cache_get_power(int base, int power_level, size_t *numdigits_ret);
 
-static int
-nlz_int(unsigned int x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZ)
-    if (x == 0) return SIZEOF_INT * CHAR_BIT;
-    return __builtin_clz(x);
-#else
-    unsigned int y;
-# if 64 < SIZEOF_INT * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_INT * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_INT * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_INT * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-
-static int
-nlz_long(unsigned long x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZL)
-    if (x == 0) return SIZEOF_LONG * CHAR_BIT;
-    return __builtin_clzl(x);
-#else
-    unsigned long y;
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_LONG * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-
-#ifdef HAVE_LONG_LONG
-static int
-nlz_long_long(unsigned LONG_LONG x)
-{
-#if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
-    if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
-    return __builtin_clzll(x);
-#else
-    unsigned LONG_LONG y;
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 128;
-# elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 64;
-# else
-    int n = 32;
-# endif
-# if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    y = x >> 64; if (y) {n -= 64; x = y;}
-# endif
-# if 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    y = x >> 32; if (y) {n -= 32; x = y;}
-# endif
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-#endif
-}
-#endif
-
-#ifdef HAVE_UINT128_T
-static int
-nlz_int128(uint128_t x)
-{
-    uint128_t y;
-    int n = 128;
-    y = x >> 64; if (y) {n -= 64; x = y;}
-    y = x >> 32; if (y) {n -= 32; x = y;}
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
-}
-#endif
-
 #if SIZEOF_BDIGITS <= SIZEOF_INT
 static int nlz(BDIGIT x) { return nlz_int((unsigned int)x) - (SIZEOF_INT-SIZEOF_BDIGITS) * CHAR_BIT; }
 #elif SIZEOF_BDIGITS <= SIZEOF_LONG
@@ -265,23 +161,6 @@ static int nlz(BDIGIT x) { return nlz_long((unsigned long)x) - (SIZEOF_LONG-SIZE
 static int nlz(BDIGIT x) { return nlz_long_long((unsigned LONG_LONG)x) - (SIZEOF_LONG_LONG-SIZEOF_BDIGITS) * CHAR_BIT; }
 #elif SIZEOF_BDIGITS <= SIZEOF_INT128_T
 static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SIZEOF_BDIGITS) * CHAR_BIT; }
-#endif
-
-#if defined(HAVE_UINT128_T)
-#   define bitsize(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x) : \
-         SIZEOF_INT128_T * CHAR_BIT - nlz_int128(x))
-#elif defined(HAVE_LONG_LONG)
-#   define bitsize(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x))
-#else
-#   define bitsize(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         SIZEOF_LONG * CHAR_BIT - nlz_long(x))
 #endif
 
 #define U16(a) ((uint16_t)(a))
@@ -468,40 +347,6 @@ maxpow_in_bdigit_dbl(int base, int *exp_ret)
         maxpow = base;
         exponent = 1;
         while (maxpow <= BDIGIT_DBL_MAX / base) {
-            maxpow *= base;
-            exponent++;
-        }
-#endif
-    }
-
-    *exp_ret = exponent;
-    return maxpow;
-}
-
-static BDIGIT
-maxpow_in_bdigit(int base, int *exp_ret)
-{
-    BDIGIT maxpow;
-    int exponent;
-
-    {
-#if SIZEOF_BDIGITS == 0
-#elif SIZEOF_BDIGITS == 2
-        maxpow = maxpow16_num[base-2];
-        exponent = maxpow16_exp[base-2];
-#elif SIZEOF_BDIGITS == 4
-        maxpow = maxpow32_num[base-2];
-        exponent = maxpow32_exp[base-2];
-#elif SIZEOF_BDIGITS == 8 && defined HAVE_UINT64_T
-        maxpow = maxpow64_num[base-2];
-        exponent = maxpow64_exp[base-2];
-#elif SIZEOF_BDIGITS == 16 && defined HAVE_UINT128_T
-        maxpow = maxpow128_num[base-2];
-        exponent = maxpow128_exp[base-2];
-#else
-        maxpow = base;
-        exponent = 1;
-        while (maxpow <= BDIGMAX / base) {
             maxpow *= base;
             exponent++;
         }
@@ -2409,8 +2254,48 @@ rb_big_mul_toom3(VALUE x, VALUE y)
     return z;
 }
 
+#ifdef USE_GMP
 static void
-bary_mul1(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t x, y, z;
+    size_t count;
+
+    assert(xn + yn <= zn);
+
+    mpz_init(x);
+    mpz_init(y);
+    mpz_init(z);
+    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    if (xds == yds && xn == yn) {
+        mpz_mul(z, x, x);
+    }
+    else {
+        mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+        mpz_mul(z, x, y);
+    }
+    mpz_export (zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    BDIGITS_ZERO(zds+count, zn-count);
+    mpz_clear(x);
+    mpz_clear(y);
+    mpz_clear(z);
+}
+
+VALUE
+rb_big_mul_gmp(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn = xn + yn;
+    VALUE z = bignew(zn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    bary_mul_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn);
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    return z;
+}
+#endif
+
+static void
+bary_short_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
     assert(xn + yn <= zn);
 
@@ -2511,7 +2396,7 @@ bary_mul_precheck(BDIGIT **zdsp, size_t *znp, const BDIGIT **xdsp, size_t *xnp, 
             return 1;
         }
         if (POW2_P(xds[0])) {
-            zds[yn] = bary_small_lshift(zds, yds, yn, bitsize(xds[0])-1);
+            zds[yn] = bary_small_lshift(zds, yds, yn, bit_length(xds[0])-1);
             BDIGITS_ZERO(zds+yn+1, zn-yn-1);
             return 1;
         }
@@ -2543,14 +2428,14 @@ bary_mul_karatsuba_branch(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, 
         if (xds == yds && xn == yn)
             bary_sq_fast(zds, zn, xds, xn);
         else
-            bary_mul1(zds, zn, xds, xn, yds, yn);
+            bary_short_mul(zds, zn, xds, xn, yds, yn);
         return;
     }
 
     /* normal multiplication when x or y is a sparse bignum */
     if (bary_sparse_p(xds, xn)) goto normal;
     if (bary_sparse_p(yds, yn)) {
-        bary_mul1(zds, zn, yds, yn, xds, xn);
+        bary_short_mul(zds, zn, yds, yn, xds, xn);
         return;
     }
 
@@ -2601,23 +2486,32 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const
 static void
 bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
+#ifdef USE_GMP
+    const size_t naive_threshold = GMP_MUL_DIGITS;
+#else
+    const size_t naive_threshold = KARATSUBA_MUL_DIGITS;
+#endif
     if (xn <= yn) {
-        if (xn < KARATSUBA_MUL_DIGITS) {
+        if (xn < naive_threshold) {
             if (xds == yds && xn == yn)
                 bary_sq_fast(zds, zn, xds, xn);
             else
-                bary_mul1(zds, zn, xds, xn, yds, yn);
+                bary_short_mul(zds, zn, xds, xn, yds, yn);
             return;
         }
     }
     else {
-        if (yn < KARATSUBA_MUL_DIGITS) {
-            bary_mul1(zds, zn, yds, yn, xds, xn);
+        if (yn < naive_threshold) {
+            bary_short_mul(zds, zn, yds, yn, xds, xn);
             return;
         }
     }
 
+#ifdef USE_GMP
+    bary_mul_gmp(zds, zn, xds, xn, yds, yn);
+#else
     bary_mul_toom3_start(zds, zn, xds, xn, yds, yn, NULL, 0);
+#endif
 }
 
 struct big_div_struct {
@@ -2676,7 +2570,7 @@ bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdi
     if (POW2_P(y)) {
         BDIGIT r;
         r = xds[0] & (y-1);
-        bary_small_rshift(qds, xds, xn, bitsize(y)-1, x_higher_bdigit);
+        bary_small_rshift(qds, xds, xn, bit_length(y)-1, x_higher_bdigit);
         return r;
     }
     else {
@@ -3289,7 +3183,7 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
 
     bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
-    BARY_MUL1(val_numbits_bary, numbytes_bary, char_bit);
+    BARY_SHORT_MUL(val_numbits_bary, numbytes_bary, char_bit);
     if (nlz_bits_in_msbyte)
         BARY_SUB(val_numbits_bary, val_numbits_bary, nlz_bits_in_msbyte_bary);
     bary_unpack(BARY_ARGS(word_numbits_bary), &word_numbits, 1, sizeof(word_numbits), 0,
@@ -3780,7 +3674,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	return INT2FIX(0);
     }
 
-    bits_per_digit = bitsize(base-1);
+    bits_per_digit = bit_length(base-1);
     if (bits_per_digit * strlen(str) <= sizeof(long) * CHAR_BIT) {
         char *end;
 	unsigned long val = STRTOUL(str, &end, base);
@@ -4149,8 +4043,8 @@ big_shift2(VALUE x, int lshift_p, VALUE y)
             return RBIGNUM_POSITIVE_P(x) ? INT2FIX(0) : INT2FIX(-1);
     }
     shift_numbits = (int)(lens[0] & (BITSPERDIG-1));
-    shift_numdigits = (lens[0] >> bitsize(BITSPERDIG-1)) |
-      (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bitsize(BITSPERDIG-1)));
+    shift_numdigits = (lens[0] >> bit_length(BITSPERDIG-1)) |
+      (lens[1] << (CHAR_BIT*SIZEOF_SIZE_T - bit_length(BITSPERDIG-1)));
     return big_shift3(x, lshift_p, shift_numdigits, shift_numbits);
 }
 
@@ -4288,8 +4182,6 @@ big2str_find_n1(VALUE x, int base)
 struct big2str_struct {
     int negative;
     int base;
-    BDIGIT hbase;
-    int hbase_numdigits;
     BDIGIT_DBL hbase2;
     int hbase2_numdigits;
     VALUE result;
@@ -4308,7 +4200,7 @@ big2str_alloc(struct big2str_struct *b2s, size_t len)
 }
 
 static void
-big2str_orig(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
+big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t taillen)
 {
     size_t j;
     BDIGIT_DBL num;
@@ -4386,7 +4278,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
     }
 
     if (power_level == 0) {
-	big2str_orig(b2s, xds, xn, taillen);
+	big2str_2bdigits(b2s, xds, xn, taillen);
         return;
     }
 
@@ -4414,7 +4306,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
             memset(b2s->ptr, '0', len);
             b2s->ptr += len;
         }
-	big2str_orig(b2s, xds, xn, taillen);
+	big2str_2bdigits(b2s, xds, xn, taillen);
     }
     else {
         BDIGIT *qds, *rds;
@@ -4468,7 +4360,7 @@ big2str_karatsuba(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t wn,
 }
 
 static VALUE
-big2str_base_powerof2(VALUE x, int base)
+big2str_base_poweroftwo(VALUE x, int base)
 {
     int word_numbits = ffs(base) - 1;
     size_t numwords;
@@ -4498,18 +4390,20 @@ big2str_base_powerof2(VALUE x, int base)
     return result;
 }
 
-static VALUE
-rb_big2str1(VALUE x, int base)
+VALUE
+rb_big2str_poweroftwo(VALUE x, int base)
 {
+    return big2str_base_poweroftwo(x, base);
+}
+
+static VALUE
+big2str_generic(VALUE x, int base)
+{
+    BDIGIT *xds;
+    size_t xn;
     struct big2str_struct b2s_data;
     int power_level;
     VALUE power;
-    BDIGIT *xds;
-    size_t xn;
-
-    if (FIXNUM_P(x)) {
-	return rb_fix2str(x, base);
-    }
 
     xds = BDIGITS(x);
     xn = RBIGNUM_LEN(x);
@@ -4524,11 +4418,6 @@ rb_big2str1(VALUE x, int base)
 
     if (xn >= LONG_MAX/BITSPERDIG) {
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
-    }
-
-    if (POW2_P(base)) {
-        /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
-        return big2str_base_powerof2(x, base);
     }
 
     power_level = 0;
@@ -4556,14 +4445,13 @@ rb_big2str1(VALUE x, int base)
 
     b2s_data.negative = RBIGNUM_NEGATIVE_P(x);
     b2s_data.base = base;
-    b2s_data.hbase = maxpow_in_bdigit(base, &b2s_data.hbase_numdigits);
     b2s_data.hbase2 = maxpow_in_bdigit_dbl(base, &b2s_data.hbase2_numdigits);
 
     b2s_data.result = Qnil;
     b2s_data.ptr = NULL;
 
     if (power_level == 0) {
-	big2str_orig(&b2s_data, xds, xn, 0);
+	big2str_2bdigits(&b2s_data, xds, xn, 0);
     }
     else {
         VALUE tmpw = 0;
@@ -4581,7 +4469,95 @@ rb_big2str1(VALUE x, int base)
     *b2s_data.ptr = '\0';
     rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
+    RB_GC_GUARD(x);
     return b2s_data.result;
+}
+
+VALUE
+rb_big2str_generic(VALUE x, int base)
+{
+    return big2str_generic(x, base);
+}
+
+#ifdef USE_GMP
+VALUE
+big2str_gmp(VALUE x, int base)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t mx;
+    size_t size;
+    VALUE str;
+    BDIGIT *xds = BDIGITS(x);
+    size_t xn = RBIGNUM_LEN(x);
+
+    mpz_init(mx);
+    mpz_import(mx, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+
+    size = mpz_sizeinbase(mx, base);
+
+    if (RBIGNUM_NEGATIVE_P(x)) {
+        mpz_neg(mx, mx);
+        str = rb_usascii_str_new(0, size+1);
+    }
+    else {
+        str = rb_usascii_str_new(0, size);
+    }
+    mpz_get_str(RSTRING_PTR(str), base, mx);
+    mpz_clear(mx);
+
+    if (RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\0') {
+        rb_str_set_len(str, RSTRING_LEN(str)-1);
+    }
+
+    RB_GC_GUARD(x);
+    return str;
+}
+
+VALUE
+rb_big2str_gmp(VALUE x, int base)
+{
+    return big2str_gmp(x, base);
+}
+#endif
+
+static VALUE
+rb_big2str1(VALUE x, int base)
+{
+    BDIGIT *xds;
+    size_t xn;
+
+    if (FIXNUM_P(x)) {
+	return rb_fix2str(x, base);
+    }
+
+    bigtrunc(x);
+    xds = BDIGITS(x);
+    xn = RBIGNUM_LEN(x);
+    BARY_TRUNC(xds, xn);
+
+    if (xn == 0) {
+	return rb_usascii_str_new2("0");
+    }
+
+    if (base < 2 || 36 < base)
+	rb_raise(rb_eArgError, "invalid radix %d", base);
+
+    if (xn >= LONG_MAX/BITSPERDIG) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
+
+    if (POW2_P(base)) {
+        /* base == 2 || base == 4 || base == 8 || base == 16 || base == 32 */
+        return big2str_base_poweroftwo(x, base);
+    }
+
+#ifdef USE_GMP
+    if (GMP_BIG2STR_DIGITS < xn) {
+        return big2str_gmp(x, base);
+    }
+#endif
+
+    return big2str_generic(x, base);
 }
 
 /* deprecated */
@@ -5566,10 +5542,17 @@ bigsq(VALUE x)
     xds = BDIGITS(x);
     zds = BDIGITS(z);
 
+#ifdef USE_GMP
+    if (xn < GMP_MUL_DIGITS)
+        bary_sq_fast(zds, zn, xds, xn);
+    else
+        bary_mul(zds, zn, xds, xn, xds, xn);
+#else
     if (xn < KARATSUBA_MUL_DIGITS)
         bary_sq_fast(zds, zn, xds, xn);
     else
         bary_mul(zds, zn, xds, xn, xds, xn);
+#endif
 
     RB_GC_GUARD(x);
     return z;
@@ -6414,7 +6397,7 @@ rb_big_lshift(VALUE x, VALUE y)
 		shift = 1+(unsigned long)(-(l+1));
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
-            shift_numdigits = shift >> bitsize(BITSPERDIG-1);
+            shift_numdigits = shift >> bit_length(BITSPERDIG-1);
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_TYPE_P(y, T_BIGNUM)) {
@@ -6452,7 +6435,7 @@ rb_big_rshift(VALUE x, VALUE y)
 		shift = 1+(unsigned long)(-(l+1));
 	    }
             shift_numbits = (int)(shift & (BITSPERDIG-1));
-            shift_numdigits = shift >> bitsize(BITSPERDIG-1);
+            shift_numdigits = shift >> bit_length(BITSPERDIG-1);
             return bignorm(big_shift3(x, lshift_p, shift_numdigits, shift_numbits));
 	}
 	else if (RB_TYPE_P(y, T_BIGNUM)) {
@@ -6604,6 +6587,78 @@ rb_big_size(VALUE big)
 
 /*
  *  call-seq:
+ *     int.bit_length -> integer
+ *
+ *  Returns the number of bits of the value of <i>int</i>.
+ *
+ *  "the number of bits" means that
+ *  the bit position of the highest bit which is different to the sign bit.
+ *  (The bit position of the bit 2**n is n+1.)
+ *  If there is no such bit (zero or minus one), zero is returned.
+ *
+ *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
+ *
+ *     (-2**10000-1).bit_length  #=> 10001
+ *     (-2**10000).bit_length    #=> 10000
+ *     (-2**10000+1).bit_length  #=> 10000
+ *
+ *     (-2**1000-1).bit_length   #=> 1001
+ *     (-2**1000).bit_length     #=> 1000
+ *     (-2**1000+1).bit_length   #=> 1000
+ *
+ *     (2**1000-1).bit_length    #=> 1000
+ *     (2**1000).bit_length      #=> 1001
+ *     (2**1000+1).bit_length    #=> 1001
+ *
+ *     (2**10000-1).bit_length   #=> 10000
+ *     (2**10000).bit_length     #=> 10001
+ *     (2**10000+1).bit_length   #=> 10001
+ *
+ */
+
+static VALUE
+rb_big_bit_length(VALUE big)
+{
+    int nlz_bits;
+    size_t numbytes;
+
+    static const BDIGIT char_bit[1] = { CHAR_BIT };
+    BDIGIT numbytes_bary[bdigit_roomof(sizeof(size_t))];
+    BDIGIT nlz_bary[1];
+    BDIGIT result_bary[bdigit_roomof(sizeof(size_t)+1)];
+
+    numbytes = rb_absint_size(big, &nlz_bits);
+
+    if (numbytes == 0)
+        return LONG2FIX(0);
+
+    if (RBIGNUM_NEGATIVE_P(big) && rb_absint_singlebit_p(big)) {
+        if (nlz_bits != CHAR_BIT-1) {
+            nlz_bits++;
+        }
+        else {
+            nlz_bits = 0;
+            numbytes--;
+        }
+    }
+
+    if (numbytes <= SIZE_MAX / CHAR_BIT) {
+        return SIZET2NUM(numbytes * CHAR_BIT - nlz_bits);
+    }
+
+    nlz_bary[0] = nlz_bits;
+
+    bary_unpack(BARY_ARGS(numbytes_bary), &numbytes, 1, sizeof(numbytes), 0,
+            INTEGER_PACK_NATIVE_BYTE_ORDER);
+    BARY_SHORT_MUL(result_bary, numbytes_bary, char_bit);
+    BARY_SUB(result_bary, result_bary, nlz_bary);
+
+    return rb_integer_unpack(result_bary, numberof(result_bary), sizeof(BDIGIT), 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+}
+
+/*
+ *  call-seq:
  *     big.odd? -> true or false
  *
  *  Returns <code>true</code> if <i>big</i> is an odd number.
@@ -6693,8 +6748,13 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
+    rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
     rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
+
+#ifdef USE_GMP
+    rb_define_const(rb_cBignum, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
+#endif
 
     power_cache_init();
 }

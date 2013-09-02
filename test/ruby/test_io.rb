@@ -857,6 +857,47 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_write_in_binmode
+    bug8767 = '[ruby-core:56518] [Bug #8767]'
+    mkcdtmpdir {
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        # StringIO to object with to_path
+        bytes = "\xDE\xAD\xBE\xEF".force_encoding(Encoding::ASCII_8BIT)
+        src = StringIO.new(bytes)
+        dst = Object.new
+        def dst.to_path
+          "qux"
+        end
+        assert_nothing_raised(bug8767) {
+          IO.copy_stream(src, dst)
+        }
+        assert_equal(bytes, File.binread("qux"), bug8767)
+        assert_equal(4, src.pos, bug8767)
+      end
+    }
+  end
+
+  def test_copy_stream_read_in_binmode
+    bug8767 = '[ruby-core:56518] [Bug #8767]'
+    mkcdtmpdir {
+      EnvUtil.with_default_internal(Encoding::UTF_8) do
+        # StringIO to object with to_path
+        bytes = "\xDE\xAD\xBE\xEF".force_encoding(Encoding::ASCII_8BIT)
+        File.binwrite("qux", bytes)
+        dst = StringIO.new
+        src = Object.new
+        def src.to_path
+          "qux"
+        end
+        assert_nothing_raised(bug8767) {
+          IO.copy_stream(src, dst)
+        }
+        assert_equal(bytes, dst.string.b, bug8767)
+        assert_equal(4, dst.pos, bug8767)
+      end
+    }
+  end
+
   class Rot13IO
     def initialize(io)
       @io = io
@@ -1205,6 +1246,16 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_write_nonblock_simple_no_exceptions
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    pipe(proc do |w|
+      w.write_nonblock('1', exception: false)
+      w.close
+    end, proc do |r|
+      assert_equal("1", r.read)
+    end)
+  end
+
   def test_read_nonblock_error
     return if !have_nonblock?
     skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
@@ -1214,6 +1265,41 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end
+    }
+
+    with_pipe {|r, w|
+      begin
+        r.read_nonblock 4096, ""
+      rescue Errno::EWOULDBLOCK
+        assert_kind_of(IO::WaitReadable, $!)
+      end
+    }
+  end
+
+  def test_read_nonblock_no_exceptions
+    return if !have_nonblock?
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
+      w.puts "HI!"
+      assert_equal "HI!\n", r.read_nonblock(4096, exception: false)
+      w.close
+      assert_equal nil, r.read_nonblock(4096, exception: false)
+    }
+  end
+
+  def test_read_nonblock_with_buffer_no_exceptions
+    return if !have_nonblock?
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      assert_equal :wait_readable, r.read_nonblock(4096, "", exception: false)
+      w.puts "HI!"
+      buf = "buf"
+      value = r.read_nonblock(4096, buf, exception: false)
+      assert_equal value, "HI!\n"
+      assert buf.equal?(value)
+      w.close
+      assert_equal nil, r.read_nonblock(4096, "", exception: false)
     }
   end
 
@@ -1228,6 +1314,20 @@ class TestIO < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitWritable, $!)
       end
+    }
+  end
+
+  def test_write_nonblock_no_exceptions
+    return if !have_nonblock?
+    skip "IO#write_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      loop {
+        ret = w.write_nonblock("a"*100000, exception: false)
+        if ret.is_a?(Symbol)
+          assert_equal :wait_writable, ret
+          break
+        end
+      }
     }
   end
 

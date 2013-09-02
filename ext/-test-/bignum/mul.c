@@ -42,6 +42,16 @@ mul_toom3(VALUE x, VALUE y)
     return rb_big_norm(rb_big_mul_toom3(big(x), big(y)));
 }
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+static VALUE
+mul_gmp(VALUE x, VALUE y)
+{
+    return rb_big_norm(rb_big_mul_gmp(big(x), big(y)));
+}
+#else
+#define mul_gmp rb_f_notimplement
+#endif
+
 void
 Init_mul(VALUE klass)
 {
@@ -52,4 +62,5 @@ Init_mul(VALUE klass)
     rb_define_method(rb_cInteger, "big_mul_balance", mul_balance, 1);
     rb_define_method(rb_cInteger, "big_mul_karatsuba", mul_karatsuba, 1);
     rb_define_method(rb_cInteger, "big_mul_toom3", mul_toom3, 1);
+    rb_define_method(rb_cInteger, "big_mul_gmp", mul_gmp, 1);
 }

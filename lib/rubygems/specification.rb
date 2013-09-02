@@ -206,15 +206,19 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :version
 
   ##
-  # Paths in the gem to add to <tt>$LOAD_PATH</tt> when this gem is activated.
+  # Paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
+  # activated.
+  #
+  # If you have an extension you do not need to add <code>"ext"</code> to the
+  # require path, the extension build process will copy the extension files
+  # into "lib" for you.
+  #
+  # The default value is <code>"lib"</code>
   #
   # Usage:
   #
   #   # If all library files are in the root directory...
   #   spec.require_path = '.'
-  #
-  #   # If you have 'lib' and 'ext' directories...
-  #   spec.require_paths << 'ext'
 
   attr_accessor :require_paths
 
@@ -228,7 +232,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # A short summary of this gem's description.  Displayed in `gem list -d`.
   #
-  # The description should be more detailed than the summary.
+  # The #description should be more detailed than the summary.
   #
   # Usage:
   #
@@ -241,21 +245,23 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # This is usually Gem::Platform::RUBY or Gem::Platform::CURRENT.
   #
-  # Most gems contain pure Ruby code; they should simply leave the default value
-  # in place. Some gems contain C (or other) code to be compiled into a Ruby
-  # “extension”. The should leave the default value in place unless their code
-  # will only compile on a certain type of system. Some gems consist of
-  # pre-compiled code (“binary gems”). It’s especially important that they set
-  # the platform attribute appropriately. A shortcut is to set the platform to
-  # Gem::Platform::CURRENT, which will cause the gem builder to set the platform
-  # to the appropriate value for the system on which the build is being performed.
+  # Most gems contain pure Ruby code; they should simply leave the default
+  # value in place.  Some gems contain C (or other) code to be compiled into a
+  # Ruby "extension".  The should leave the default value in place unless
+  # their code will only compile on a certain type of system.  Some gems
+  # consist of pre-compiled code ("binary gems").  It's especially important
+  # that they set the platform attribute appropriately.  A shortcut is to set
+  # the platform to Gem::Platform::CURRENT, which will cause the gem builder
+  # to set the platform to the appropriate value for the system on which the
+  # build is being performed.
   #
-  # If this attribute is set to a non-default value, it will be included in the
-  # filename of the gem when it is built, e.g. fxruby-1.2.0-win32.gem.
+  # If this attribute is set to a non-default value, it will be included in
+  # the filename of the gem when it is built such as:
+  # nokogiri-1.6.0-x86-mingw32.gem
   #
   # Usage:
   #
-  #   spec.platform = Gem::Platform::Win32
+  #   spec.platform = Gem::Platform.local
 
   def platform= platform
     if @original_platform.nil? or
@@ -357,7 +363,7 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :description
 
   ##
-  # A contact email for this gem
+  # A contact email address (or addresses) for this gem
   #
   # Usage:
   #
@@ -473,6 +479,8 @@ class Gem::Specification < Gem::BasicSpecification
   # Usage:
   #
   #  spec.extensions << 'ext/rmagic/extconf.rb'
+  #
+  # See Gem::Ext::Builder for information about writing extensions for gems.
 
   def extensions
     @extensions ||= []
@@ -501,6 +509,8 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # This should just be the name of your license. The full
   # text of the license should be inside of the gem when you build it.
+  #
+  # You can set multiple licenses with #licenses=
   #
   # Usage:
   #   spec.license = 'MIT'
@@ -538,15 +548,20 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The version of Ruby required by this gem
+  # The version of Ruby required by this gem.  The ruby version can be
+  # specified to the patch-level:
+  #
+  #   $ ruby -v -e 'p Gem.ruby_version'
+  #   ruby 2.0.0p247 (2013-06-27 revision 41674) [x86_64-darwin12.4.0]
+  #   #<Gem::Version "2.0.0.247">
   #
   # Usage:
   #
-  #  # If it will work with 1.8.6 or greater...
+  #  # This gem will work with 1.8.6 or greater...
   #  spec.required_ruby_version = '>= 1.8.6'
   #
-  #  # Hopefully by now:
-  #  spec.required_ruby_version = '>= 1.9.2'
+  #  # Only with ruby 2.0.x
+  #  spec.required_ruby_version = '~> 2.0'
 
   def required_ruby_version= req
     @required_ruby_version = Gem::Requirement.create req
@@ -554,7 +569,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Lists the external (to RubyGems) requirements that must be met for this gem
-  # to work. It’s simply information for the user.
+  # to work.  It's simply information for the user.
   #
   # Usage:
   #
@@ -566,7 +581,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # A collection of unit test files. They will be loaded as unit tests when
+  # A collection of unit test files.  They will be loaded as unit tests when
   # the user requests a gem to be unit tested.
   #
   # Usage:
@@ -592,7 +607,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Deprecated: It is neither supported nor functional.
 
-  attr_accessor :autorequire
+  attr_accessor :autorequire # :nodoc:
 
   ##
   # Sets the default executable for this gem.
@@ -615,9 +630,12 @@ class Gem::Specification < Gem::BasicSpecification
   # The RubyGems version required by this gem
 
   attr_reader :required_rubygems_version
+
   ##
   # The rubyforge project this gem lives under.  i.e. RubyGems'
   # rubyforge_project is "rubygems".
+  #
+  # This option is deprecated.
 
   attr_accessor :rubyforge_project
 
@@ -768,7 +786,7 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all= specs
-    @@all = specs
+    @@all = @@stubs = specs
   end
 
   ##
@@ -1320,7 +1338,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Singular reader for #authors
+  # Singular reader for #authors.  Returns the first author in the list
 
   def author
     val = authors and val.first
@@ -1328,6 +1346,8 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # The list of author names who wrote this gem.
+  #
+  #   spec.authors = ['Chad Fowler', 'Jim Weirich', 'Rich Kilmer']
 
   def authors
     @authors ||= []
@@ -1407,7 +1427,9 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The date this gem was created. Lazily defaults to TODAY.
+  # The date this gem was created.  Lazily defaults to the current UTC date.
+  #
+  # There is no need to set this in your gem specification.
 
   def date
     @date ||= TODAY
@@ -1454,7 +1476,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Deprecated: The name of the gem is assumed to be the name of the
   # executable now.  See Gem.bin_path.
 
-  def default_executable
+  def default_executable # :nodoc:
     if defined?(@default_executable) and @default_executable
       result = @default_executable
     elsif @executables and @executables.size == 1
@@ -1513,7 +1535,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # A long description of this gem
+  # A detailed description of this gem.  See also #summary
 
   def description= str
     @description = str.to_s
@@ -1672,7 +1694,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Formerly used to indicate this gem was RDoc-capable.
 
-  def has_rdoc
+  def has_rdoc # :nodoc:
     true
   end
 
@@ -1681,11 +1703,11 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Formerly used to indicate this gem was RDoc-capable.
 
-  def has_rdoc= ignored
+  def has_rdoc= ignored # :nodoc:
     @has_rdoc = true
   end
 
-  alias :has_rdoc? :has_rdoc
+  alias :has_rdoc? :has_rdoc # :nodoc:
 
   ##
   # True if this gem has files in test_files
@@ -1818,7 +1840,7 @@ class Gem::Specification < Gem::BasicSpecification
     @licenses ||= []
   end
 
-  def filename= path
+  def loaded_from= path # :nodoc:
     super
 
     @bin_dir       = nil
@@ -1830,17 +1852,6 @@ class Gem::Specification < Gem::BasicSpecification
     @spec_dir      = nil
     @spec_file     = nil
   end
-
-  ##
-  # Path this gemspec was loaded from.  This attribute is not persisted.
-
-  alias loaded_from filename
-
-  ##
-  # Set the location a Specification was loaded from. +obj+ is converted
-  # to a String.
-
-  alias loaded_from= filename=
 
   ##
   # Sets the rubygems_version to the current RubyGems version.

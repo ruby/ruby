@@ -351,6 +351,17 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
   end
 
+  def test_verify_no_signatures_no_digests
+    Gem::Security.trust_dir.trust_cert PUBLIC_CERT
+
+    use_ui @ui do
+      @no.verify [PUBLIC_CERT], nil, {}, {}, 'some_gem'
+    end
+
+    assert_empty @ui.output
+    assert_empty @ui.error
+  end
+
   def test_verify_not_enough_signatures
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 

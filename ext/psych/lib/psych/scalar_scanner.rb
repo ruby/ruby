@@ -95,7 +95,7 @@ module Psych
         end
         i
       when FLOAT
-        if string == '.'
+        if string =~ /\A[-+]?\.\Z/
           @string_cache[string] = true
           string
         else

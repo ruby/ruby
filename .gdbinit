@@ -368,6 +368,7 @@ define rp_class
     printf " -> %p", ((struct RClass *)($arg0))->ptr.origin
   end
   printf "\n"
+  rb_classname $arg0
   print *(struct RClass *)($arg0)
   print *((struct RClass *)($arg0))->ptr
 end
@@ -722,15 +723,20 @@ document rb_method_entry
 end
 
 define rb_classname
-  call classname($arg0)
-  rb_p $
-  print *(struct RClass*)($arg0)
+  # up to 128bit int
+  set $rb_classname_permanent = "0123456789ABCDEF"
+  set $rb_classname = classname($arg0, $rb_classname_permanent)
+  if $rb_classname != RUBY_Qnil
+    rp $rb_classname
+  else
+    echo anonymous class/module\n
+  end
 end
 
 define rb_ancestors
   set $rb_ancestors_module = $arg0
   while $rb_ancestors_module
-    rp $rb_ancestors_module
+    rp_class $rb_ancestors_module
     set $rb_ancestors_module = ((struct RClass *)($rb_ancestors_module))->ptr.super
   end
 end

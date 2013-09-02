@@ -13,7 +13,7 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
-* Added integer and float literals: 'r', 'i', and 'ri'.
+* Added suffixes for integer and float literals: 'r', 'i', and 'ri'.
   * "42r" and "3.14r" are evaluated as Rational(42, 1) and 3.14.rationalize,
     respectively.  But exponential form with 'r' suffix like "6.022e+23r" is
     not accepted because it is misleading.
@@ -26,11 +26,21 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Bignum
+  * New methods
+    * Fixnum#bit_length
+  * Performance improvement
+    * Use GMP for multiplication of big numbers if it is available.
+
 * Binding
   * New methods
     * Binding#local_variable_get(symbol)
     * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
+
+* Fixnum
+  * New methods
+    * Fixnum#bit_length
 
 * GC
   * added environment variable:
@@ -40,6 +50,8 @@ with all sufficient information, see the ChangeLog file.
   * extended methods:
     * IO#seek supports SEEK_DATA and SEEK_HOLE as whence.
     * IO#seek accepts symbols (:CUR, :END, :SET, :DATA, :HOLE) for 2nd argument.
+    * IO#read_nonblock accepts optional `exception: false` to return symbols
+    * IO#write_nonblock accepts optional `exception: false` to return symbols
 
 * Kernel
   * New methods:
@@ -64,6 +76,7 @@ with all sufficient information, see the ChangeLog file.
       * Process.argv0() returns the original value of $0.
       * Process.setproctitle() sets the process title without affecting $0.
     * Process.clock_gettime
+    * Process.clock_getres
 
 * String
   * New methods:
