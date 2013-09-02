@@ -6006,12 +6006,12 @@ parser_str_options(struct parser_params *parser)
 	switch (c) {
 #if STR_OPTION_FROZEN
 	  case 'f':
-            options |= STR_OPTION_FROZEN;
+	    options |= STR_OPTION_FROZEN;
 	    break;
 #endif
 #if STR_OPTION_BINARY
 	  case 'b':
-            options |= STR_OPTION_BINARY;
+	    options |= STR_OPTION_BINARY;
 	    break;
 #endif
 	  default:
@@ -8576,7 +8576,9 @@ str_suffix_gen(struct parser_params *parser, NODE *node, long opt)
     else {
 #if STR_OPTION_BINARY
 	if (opt & STR_OPTION_BINARY) {
-	    node = NEW_CALL(node, rb_intern("b"), 0);
+	    VALUE ascii8bit = rb_enc_from_encoding(rb_ascii8bit_encoding());
+	    NODE *args = NEW_LIST(NEW_LIT(ascii8bit));
+	    node = NEW_CALL(node, rb_intern("force_encoding"), args);
 	}
 #endif
 #if STR_OPTION_FROZEN

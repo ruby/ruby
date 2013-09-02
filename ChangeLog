@@ -1,3 +1,8 @@
+Mon Sep  2 17:53:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (str_suffix_gen): String#b creates new string object, use
+	  force_encoding instead.
+
 Mon Sep  2 16:06:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* NEWS: Add note about frozen string literals
