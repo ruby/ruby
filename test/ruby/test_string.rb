@@ -2194,11 +2194,14 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_unknown_string_option
-    assert_raises(SyntaxError) do
+    str = nil
+    assert_nothing_raised(SyntaxError) do
       eval(%{
-        "hello"x
+        str = begin"hello"end
       })
     end
+    assert_equal "hello", str
+    assert_not_predicate str, :frozen?
   end
 
   def test_frozen_string

@@ -6000,8 +6000,8 @@ static int
 parser_str_options(struct parser_params *parser)
 {
     int c, options = 0;
+    const char *save_p = lex_p;
 
-    newtok();
     while (c = nextc(), ISALPHA(c)) {
 	switch (c) {
 #if STR_OPTION_FROZEN
@@ -6015,18 +6015,11 @@ parser_str_options(struct parser_params *parser)
 	    break;
 #endif
 	  default:
-	    tokadd(c);
-	    break;
+	    lex_p = save_p;
+	    return 0;
         }
     }
     pushback(c);
-
-    if (toklen()) {
-	tokfix();
-	compile_error(PARSER_ARG "unknown string option%s - %s",
-	              toklen() > 1 ? "s" : "", tok());
-    }
-
     return options;
 }
 

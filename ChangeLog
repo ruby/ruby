@@ -1,3 +1,8 @@
+Mon Sep  2 23:46:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_str_options): use valid suffix word only, as well as
+	  numeric literal, for the backward comatibility.
+
 Mon Sep  2 22:55:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (ISDIGIT): Unused macro removed.
