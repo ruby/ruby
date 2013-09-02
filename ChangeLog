@@ -1,3 +1,12 @@
+Tue Sep  3 03:17:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_super_method): use ci->argc instead of
+	  ci->orig_argc. ci->argc can be changed by splat arguments.
+	  [ruby-list:49575]
+	  This fix should be applied to Ruby 2.0.0 seriese.
+
+	* test/ruby/test_super.rb: add a test for above.
+
 Mon Sep  2 23:46:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (num_step): Default the limit argument to infinity and
