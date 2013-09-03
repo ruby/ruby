@@ -1740,7 +1740,7 @@ EOS
   end
 
   def test_clock_getres
-    r = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
+    r = Process.clock_getres(Process::CLOCK_REALTIME, :nanosecond)
     assert_kind_of(Integer, r)
     assert_raise(Errno::EINVAL) { Process.clock_getres(:foo) }
   end
