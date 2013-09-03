@@ -1,3 +1,7 @@
+Tue Sep  3 12:03:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (str2big_scan_digits): Extracted from rb_cstr_to_inum.
+
 Tue Sep  3 11:23:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select_with_thread): rounding up the fraction of

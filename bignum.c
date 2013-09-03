@@ -3571,6 +3571,48 @@ rb_quad_unpack(const char *buf, int signed_p)
 
 #define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
+static void
+str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size_t *num_digits_p, size_t *len_p)
+{
+    char nondigit = 0;
+    size_t num_digits = 0;
+    const char *digits_start = str;
+    const char *digits_end = str;
+
+    int c;
+
+    if (badcheck && *str == '_') goto bad;
+
+    while ((c = *str++) != 0) {
+	if (c == '_') {
+	    if (nondigit) {
+		if (badcheck) goto bad;
+		break;
+	    }
+	    nondigit = (char) c;
+	    continue;
+	}
+	else if ((c = conv_digit(c)) < 0) {
+	    break;
+	}
+	if (c >= base) break;
+	nondigit = 0;
+        num_digits++;
+        digits_end = str;
+    }
+    if (badcheck) {
+	str--;
+	if (s+1 < str && str[-1] == '_') goto bad;
+	while (*str && ISSPACE(*str)) str++;
+	if (*str) {
+	  bad:
+	    rb_invalid_str(s, "Integer()");
+	}
+    }
+    *num_digits_p = num_digits;
+    *len_p = digits_end - digits_start;
+}
+
 static VALUE
 str2big_poweroftwo(
     int sign,
@@ -3743,7 +3785,7 @@ VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
     const char *s = str;
-    char sign = 1, nondigit = 0;
+    char sign = 1;
     int c;
     VALUE z;
 
@@ -3752,9 +3794,13 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     const char *digits_start, *digits_end;
     size_t num_digits;
     size_t num_bdigits;
+    size_t len;
 
     if (!str) {
-	if (badcheck) goto bad;
+	if (badcheck) {
+          bad:
+            rb_invalid_str(s, "Integer()");
+        }
 	return INT2FIX(0);
     }
     while (ISSPACE(*str)) str++;
@@ -3868,36 +3914,9 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
 
   bigparse:
-    if (badcheck && *str == '_') goto bad;
-
-    num_digits = 0;
-    digits_start = digits_end = str;
-    while ((c = *str++) != 0) {
-	if (c == '_') {
-	    if (nondigit) {
-		if (badcheck) goto bad;
-		break;
-	    }
-	    nondigit = (char) c;
-	    continue;
-	}
-	else if ((c = conv_digit(c)) < 0) {
-	    break;
-	}
-	if (c >= base) break;
-	nondigit = 0;
-        num_digits++;
-        digits_end = str;
-    }
-    if (badcheck) {
-	str--;
-	if (s+1 < str && str[-1] == '_') goto bad;
-	while (*str && ISSPACE(*str)) str++;
-	if (*str) {
-	  bad:
-	    rb_invalid_str(s, "Integer()");
-	}
-    }
+    digits_start = str;
+    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    digits_end = digits_start + len;
 
     if (POW2_P(base)) {
         z = str2big_poweroftwo(sign, digits_start, digits_end, num_digits,
