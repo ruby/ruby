@@ -1,3 +1,9 @@
+Tue Sep  3 11:23:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select_with_thread): rounding up the fraction of
+	  tv_usec instead of rounding down.
+	  this change is an experiment to get rid of failures on vc10-x64 CI.
+
 Tue Sep  3 11:00:28 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (do_select): constify timeout.

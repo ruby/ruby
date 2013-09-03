@@ -2960,7 +2960,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    if (!rb_w32_time_subtract(&rest, &now)) break;
 		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
-		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
+		Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
 	    }
 	}
     }
