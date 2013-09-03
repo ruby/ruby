@@ -52,7 +52,7 @@ Tue Sep  3 08:20:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Sep  3 07:49:25 2013  Akinori MUSHA  <knu@iDaemons.org>
 
-	* numeric.c (NUM_STEP_SCAN_ARGS): On sencond thought, keep
+	* numeric.c (NUM_STEP_SCAN_ARGS): On second thought, keep
 	  Numeral#step backward compatible in that it raises TypeError
 	  when nil is given as second argument.
 
@@ -79,7 +79,7 @@ Tue Sep  3 07:31:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 Tue Sep  3 07:28:49 2013  Tanaka Akira  <akr@fsij.org>
 
-	* internal.h (bit_length): Add casts to fix complation error with
+	* internal.h (bit_length): Add casts to fix compilation error with
 	  clang 3.0 -Werror,-Wshorten-64-to-32.
 	  [ruby-dev:47687] reported by SASADA Koichi.
 
@@ -88,7 +88,7 @@ Tue Sep  3 03:17:26 2013  Koichi Sasada  <ko1@atdot.net>
 	* vm_insnhelper.c (vm_search_super_method): use ci->argc instead of
 	  ci->orig_argc. ci->argc can be changed by splat arguments.
 	  [ruby-list:49575]
-	  This fix should be applied to Ruby 2.0.0 seriese.
+	  This fix should be applied to Ruby 2.0.0 series.
 
 	* test/ruby/test_super.rb: add a test for above.
 
@@ -104,7 +104,7 @@ Mon Sep  2 23:46:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 Mon Sep  2 23:46:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_str_options): use valid suffix word only, as well as
-	  numeric literal, for the backward comatibility.
+	  numeric literal, for the backward compatibility.
 
 Mon Sep  2 22:55:59 2013  Tanaka Akira  <akr@fsij.org>
 
