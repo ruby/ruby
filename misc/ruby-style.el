@@ -64,6 +64,7 @@
     (access-label /)
     )))
 
+;;;###autoload
 (defun ruby-style-c-mode ()
   (interactive)
   (if (or (let ((name (buffer-file-name))) (and name (string-match "/ruby\\>" name)))

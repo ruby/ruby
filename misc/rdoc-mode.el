@@ -8,6 +8,8 @@
 ;; License: Ruby's
 
 (require 'derived)
+
+;;;###autoload
 (define-derived-mode rdoc-mode text-mode "RDoc"
   "Major mode for RD editing.
 \\{rdoc-mode-map}"

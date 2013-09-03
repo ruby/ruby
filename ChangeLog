@@ -1,3 +1,13 @@
+Tue Sep  3 18:26:00 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/inf-ruby.el (inf-ruby-keys, run-ruby): Add magic autoload comments.
+
+	* misc/rdoc-mode.el (rdoc-mode): Ditto.
+
+	* misc/ruby-electric.el (ruby-electric-mode): Ditto.
+
+	* misc/ruby-style.el (ruby-style-c-mode): Ditto.
+
 Tue Sep  3 17:06:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb
