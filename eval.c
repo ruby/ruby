@@ -1592,11 +1592,12 @@ Init_eval(void)
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
     rb_define_global_function("__dir__", f_current_dirname, 0);
 
+    rb_define_method(rb_cModule, "include", rb_mod_include, -1);
+    rb_define_method(rb_cModule, "prepend", rb_mod_prepend, -1);
+
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
-    rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
-    rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
     rb_undef_method(rb_cClass, "refine");

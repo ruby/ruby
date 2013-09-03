@@ -1,3 +1,9 @@
+Tue Sep  3 21:41:37 2013  Akira Matsuda  <ronnie@dio.jp>
+
+	* eval.c (Init_eval): Make Module#include and Module#prepend public
+
+	* test/ruby/test_module.rb (class TestModule): Test for above
+
 Tue Sep  3 21:35:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (sys/dyntune.h): for gettune().
