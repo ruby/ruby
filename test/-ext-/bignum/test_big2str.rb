@@ -19,5 +19,11 @@ class TestBignum < Test::Unit::TestCase
       assert_equal("1" + "0" * e, x.big2str_poweroftwo(2))
     end
 
+    def test_big2str_gmp
+      x = 10**1000
+      assert_equal("1" + "0" * 1000, x.big2str_gmp(10))
+    rescue NotImplementedError
+    end
+
   end
 end

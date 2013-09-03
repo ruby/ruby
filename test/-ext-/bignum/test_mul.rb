@@ -126,5 +126,12 @@ class TestBignum < Test::Unit::TestCase
       assert_equal(x.big_mul_normal(y), x.big_mul_toom3(y))
     end
 
+    def test_mul_gmp
+      x = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
+      y = (1 << 2*BITSPERDIG) | (1 << BITSPERDIG) | 1
+      assert_equal(x.big_mul_normal(y), x.big_mul_gmp(y))
+    rescue NotImplementedError
+    end
+
   end
 end
