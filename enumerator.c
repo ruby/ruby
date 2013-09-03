@@ -444,6 +444,10 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
  *
  * === Examples
  *
+ *   "Hello, world!".scan(/\w+/)                     #=> ["Hello", "world"]
+ *   "Hello, world!".to_enum(:scan, /\w+/).to_a      #=> ["Hello", "world"]
+ *   "Hello, world!".to_enum(:scan).each(/\w+/).to_a #=> ["Hello", "world"]
+ *
  *   obj = Object.new
  *
  *   def obj.each_arg(a, b=:b, *rest)
