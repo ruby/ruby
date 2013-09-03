@@ -1,3 +1,19 @@
+Tue Sep  3 12:45:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_str2big_poweroftwo): New function.
+	  (rb_str2big_normal): Ditto.
+	  (rb_str2big_karatsuba): Ditto.
+
+	* internal.h (rb_str2big_poweroftwo): Declared.
+	  (rb_str2big_normal): Ditto.
+	  (rb_str2big_karatsuba): Ditto.
+
+	* ext/-test-/bignum/str2big.c: New file.
+
+	* test/-ext-/bignum/test_str2big.rb: New file.
+
+	* ext/-test-/bignum/depend: Add the dependency for str2big.c.
+
 Tue Sep  3 12:09:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_clock_gettime): Support times() based monotonic clock.

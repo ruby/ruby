@@ -3972,6 +3972,117 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
     return ret;
 }
 
+VALUE
+rb_str2big_poweroftwo(VALUE arg, int base, int badcheck)
+{
+    int positive_p = 1;
+    const char *s, *str;
+    const char *digits_start, *digits_end;
+    size_t num_digits;
+    size_t len;
+    VALUE z;
+
+    if (base < 2 || 36 < base || !POW2_P(base)) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    rb_must_asciicompat(arg);
+    s = str = StringValueCStr(arg);
+    if (*str == '-') {
+        str++;
+        positive_p = 0;
+    }
+
+    digits_start = str;
+    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    digits_end = digits_start + len;
+
+    z = str2big_poweroftwo(positive_p, digits_start, digits_end, num_digits,
+            bit_length(base-1));
+
+    RB_GC_GUARD(arg);
+
+    return bignorm(z);
+}
+
+VALUE
+rb_str2big_normal(VALUE arg, int base, int badcheck)
+{
+    int positive_p = 1;
+    const char *s, *str;
+    const char *digits_start, *digits_end;
+    size_t num_digits;
+    size_t len;
+    VALUE z;
+
+    int digits_per_bdigits_dbl;
+    size_t num_bdigits;
+
+    if (base < 2 || 36 < base) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    rb_must_asciicompat(arg);
+    s = str = StringValueCStr(arg);
+    if (*str == '-') {
+        str++;
+        positive_p = 0;
+    }
+
+    digits_start = str;
+    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    digits_end = digits_start + len;
+
+    maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+    num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
+
+    z = str2big_normal(positive_p, digits_start, digits_end,
+            num_bdigits, base);
+
+    RB_GC_GUARD(arg);
+
+    return bignorm(z);
+}
+
+VALUE
+rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
+{
+    int positive_p = 1;
+    const char *s, *str;
+    const char *digits_start, *digits_end;
+    size_t num_digits;
+    size_t len;
+    VALUE z;
+
+    int digits_per_bdigits_dbl;
+    size_t num_bdigits;
+
+    if (base < 2 || 36 < base) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    rb_must_asciicompat(arg);
+    s = str = StringValueCStr(arg);
+    if (*str == '-') {
+        str++;
+        positive_p = 0;
+    }
+
+    digits_start = str;
+    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    digits_end = digits_start + len;
+
+    maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+    num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
+
+    z = str2big_karatsuba(positive_p, digits_start, digits_end, num_digits,
+            num_bdigits, digits_per_bdigits_dbl, base);
+
+    RB_GC_GUARD(arg);
+
+    return bignorm(z);
+}
+
 #if HAVE_LONG_LONG
 
 static VALUE
