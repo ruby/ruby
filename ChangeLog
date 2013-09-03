@@ -1,6 +1,7 @@
 Tue Sep  3 21:41:37 2013  Akira Matsuda  <ronnie@dio.jp>
 
 	* eval.c (Init_eval): Make Module#include and Module#prepend public
+	  [Feature #8846]
 
 	* test/ruby/test_module.rb (class TestModule): Test for above
 
