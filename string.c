@@ -34,6 +34,7 @@
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
+#undef rb_enc_str_new_cstr
 #undef rb_external_str_new_cstr
 #undef rb_locale_str_new_cstr
 #undef rb_str_dup_frozen
@@ -471,6 +472,18 @@ rb_usascii_str_new_cstr(const char *ptr)
     VALUE str = rb_str_new2(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
+}
+
+VALUE
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
+{
+    if (!ptr) {
+	rb_raise(rb_eArgError, "NULL pointer given");
+    }
+    if (rb_enc_mbminlen(enc) != 1) {
+	rb_raise(rb_eArgError, "wchar encoding given");
+    }
+    return rb_enc_str_new(ptr, strlen(ptr), enc);
 }
 
 VALUE

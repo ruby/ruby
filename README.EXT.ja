@@ -245,6 +245,7 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap)
   rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 
   指定されたエンコーディングでRubyの文字列を生成する.
 

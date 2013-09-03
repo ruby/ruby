@@ -1,3 +1,8 @@
+Tue Sep  3 22:03:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_str_new_cstr): new function to create a string from
+	  the C-string pointer with the specified encoding.
+
 Tue Sep  3 21:41:37 2013  Akira Matsuda  <ronnie@dio.jp>
 
 	* eval.c (Init_eval): Make Module#include and Module#prepend public

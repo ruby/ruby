@@ -89,6 +89,7 @@ VALUE rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
+VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -102,6 +103,15 @@ VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *);
 VALUE rb_str_export_to_enc(VALUE, rb_encoding *);
 VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
+
+#if defined(__GNUC__) && !defined(__PCC__)
+#define rb_enc_str_new_cstr(str, enc) __extension__ (	\
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_enc_str_new((str), (long)strlen(str), (enc)) : \
+	rb_enc_str_new_cstr((str), (enc)); \
+})
+#endif
 
 PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);
 
