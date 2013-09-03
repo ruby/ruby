@@ -12,7 +12,7 @@ class TestTreeParser < Test::Unit::TestCase
       assert_equal(<<-MESSAGE, exception.to_s)
 Missing end tag for 'root' (got "not-root")
 Line: 1
-Position: 17
+Position: #{xml.bytesize}
 Last 80 unconsumed characters:
       MESSAGE
     end

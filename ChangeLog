@@ -1,3 +1,9 @@
+Tue Sep  3 23:01:41 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_tree.rb
+	  (TestTreeParser::TestInvalid#test_unmatched_close_tag):
+	  Compute expected value from test value.
+
 Tue Sep  3 22:59:58 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
