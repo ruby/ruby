@@ -1,3 +1,8 @@
+Tue Sep  3 14:37:53 2013  Zachary Scott  <e@zzak.io>
+
+	* error.c: [DOC] Update bug tracker url by @ScotterC [Fixes GH-390]
+	  https://github.com/ruby/ruby/pull/390
+
 Tue Sep  3 12:45:23 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_str2big_poweroftwo): New function.
