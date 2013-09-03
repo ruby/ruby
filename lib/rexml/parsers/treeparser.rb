@@ -89,7 +89,7 @@ module REXML
           end
         rescue REXML::Validation::ValidationException
           raise
-        rescue REXML::UndefinedNamespaceException
+        rescue REXML::ParseException
           raise
         rescue
           raise ParseException.new( $!.message, @parser.source, @parser, $! )

@@ -1,3 +1,11 @@
+Tue Sep  3 22:54:46 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
+	  Remove needless nested parse exception information.
+	  [Bug #8844]  [ruby-dev:47672]
+	  Reported by Ippei Obayashi. Thanks!!!
+	* test/rexml/parser/test_tree.rb: Add a test for the above case.
+
 Tue Sep  3 22:03:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_str_new_cstr): new function to create a string from
