@@ -136,6 +136,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define TOOM3_MUL_DIGITS 150
 
 #define GMP_BIG2STR_DIGITS 20
+#define GMP_STR2BIG_DIGITS 20
 
 typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 
@@ -3781,6 +3782,50 @@ str2big_karatsuba(
     return z;
 }
 
+#ifdef USE_GMP
+static VALUE
+str2big_gmp(
+    int sign,
+    const char *digits_start,
+    const char *digits_end,
+    size_t num_digits,
+    size_t num_bdigits,
+    int base)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    char *buf, *p;
+    const char *q;
+    VALUE tmps;
+    mpz_t mz;
+    VALUE z;
+    BDIGIT *zds;
+    size_t zn, count;
+
+    buf = ALLOCV_N(char, tmps, num_digits+1);
+    p = buf;
+    for (q = digits_start; q < digits_end; q++) {
+        if (conv_digit(*q) < 0)
+            continue;
+        *p++ = *q;
+    }
+    *p = '\0';
+
+    mpz_init(mz);
+    mpz_set_str(mz, buf, base);
+    zn = num_bdigits;
+    z = bignew(zn, sign);
+    zds = BDIGITS(z);
+    mpz_export(BDIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
+    BDIGITS_ZERO(zds+count, zn-count);
+    mpz_clear(mz);
+
+    if (tmps)
+        ALLOCV_END(tmps);
+
+    return z;
+}
+#endif
+
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
@@ -3927,6 +3972,13 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
         maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
+#ifdef USE_GMP
+        if (GMP_STR2BIG_DIGITS < num_bdigits) {
+            z = str2big_gmp(sign, digits_start, digits_end, num_digits,
+                    num_bdigits, base);
+        }
+        else
+#endif
         if (num_bdigits < KARATSUBA_MUL_DIGITS) {
             z = str2big_normal(sign, digits_start, digits_end,
                     num_bdigits, base);
@@ -4082,6 +4134,46 @@ rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
 
     return bignorm(z);
 }
+
+#ifdef USE_GMP
+VALUE
+rb_str2big_gmp(VALUE arg, int base, int badcheck)
+{
+    int positive_p = 1;
+    const char *s, *str;
+    const char *digits_start, *digits_end;
+    size_t num_digits;
+    size_t len;
+    VALUE z;
+
+    int digits_per_bdigits_dbl;
+    size_t num_bdigits;
+
+    if (base < 2 || 36 < base) {
+        rb_raise(rb_eArgError, "invalid radix %d", base);
+    }
+
+    rb_must_asciicompat(arg);
+    s = str = StringValueCStr(arg);
+    if (*str == '-') {
+        str++;
+        positive_p = 0;
+    }
+
+    digits_start = str;
+    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    digits_end = digits_start + len;
+
+    maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
+    num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
+
+    z = str2big_gmp(positive_p, digits_start, digits_end, num_digits, num_bdigits, base);
+
+    RB_GC_GUARD(arg);
+
+    return bignorm(z);
+}
+#endif
 
 #if HAVE_LONG_LONG
 

@@ -26,5 +26,12 @@ class TestBignum < Test::Unit::TestCase
       assert_equal(n, s.str2big_karatsuba(10, true))
     end
 
+    def test_str2big_gmp
+      s = "1" + "0" * 1000
+      n = 10 ** 1000
+      assert_equal(n, s.str2big_gmp(10, true))
+    rescue NotImplementedError
+    end
+
   end
 end
