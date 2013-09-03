@@ -4,7 +4,7 @@ require "rexml/parsers/treeparser"
 
 class TestTreeParser < Test::Unit::TestCase
   class TestInvalid < self
-    def test_parse_exception
+    def test_unmatched_close_tag
       xml = "<root></not-root>"
       exception = assert_raise(REXML::ParseException) do
         parse(xml)

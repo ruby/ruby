@@ -1,3 +1,8 @@
+Tue Sep  3 22:57:57 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_tree.rb: Fix test name to describe test
+	  content.
+
 Tue Sep  3 22:54:46 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
