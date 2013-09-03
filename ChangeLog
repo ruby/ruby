@@ -1,3 +1,10 @@
+Tue Sep  3 11:00:28 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (do_select): constify timeout.
+
+	* win32/win32.c (rb_w32_select_with_thread): constify 10ms wait and
+	  0ms wait structs.
+
 Tue Sep  3 10:03:42 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/openssl/test_pair.rb
