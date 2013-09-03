@@ -1,3 +1,9 @@
+Tue Sep  3 17:06:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb
+	  (TestRubyOptions::SEGVTest::ExpectedStderr): the URL was changed at
+	  r42800.
+
 Tue Sep  3 14:48:25 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/thread.rb: [DOC] CV#wait typo by @avdi [Fixes GH-386]
