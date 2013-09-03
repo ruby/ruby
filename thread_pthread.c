@@ -493,6 +493,8 @@ size_t pthread_get_stacksize_np(pthread_t);
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined __ia64 && defined _HPUX_SOURCE
+#include <sys/dyntune.h>
+
 #define STACKADDR_AVAILABLE 1
 
 /*
@@ -519,7 +521,7 @@ size_t pthread_get_stacksize_np(pthread_t);
  * and could be retrieved by gettune().
  */
 static int
-hpux_attr_getstackaddr(const pthread_attr_t *attr, void *addr)
+hpux_attr_getstackaddr(const pthread_attr_t *attr, void **addr)
 {
     static uint64_t pagesize;
     size_t size;

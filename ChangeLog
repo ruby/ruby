@@ -1,3 +1,10 @@
+Tue Sep  3 21:35:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (sys/dyntune.h): for gettune().
+
+	* thread_pthread.c (hpux_attr_getstackaddr): fix missing *.
+	  [ruby-core:56983] [Feature #8793]
+
 Tue Sep  3 20:12:46 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (GMP_STR2BIG_DIGITS): New macro.
