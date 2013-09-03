@@ -1,3 +1,8 @@
+Tue Sep  3 12:09:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Support times() based monotonic clock.
+	  (rb_clock_getres): Ditto.
+
 Tue Sep  3 12:03:02 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (str2big_scan_digits): Extracted from rb_cstr_to_inum.

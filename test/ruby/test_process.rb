@@ -1693,6 +1693,16 @@ EOS
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
+  def test_clock_gettime_TIMES_BASED_CLOCK_MONOTONIC
+    n = :TIMES_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
+  end
+
   def test_clock_gettime_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
     n = :GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
     begin
@@ -1759,6 +1769,18 @@ EOS
     t = Process.clock_getres(n)
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
     assert_equal(1000000000, Process.clock_getres(n, :nanosecond))
+  end
+
+  def test_clock_getres_TIMES_BASED_CLOCK_MONOTONIC
+    n = :TIMES_BASED_CLOCK_MONOTONIC
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
+    assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
+    f = Process.clock_getres(n, :hertz)
+    assert_equal(0, f - f.floor)
   end
 
   def test_clock_getres_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
