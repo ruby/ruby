@@ -18,7 +18,7 @@ big2str_generic(VALUE x, VALUE vbase)
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base)
         rb_raise(rb_eArgError, "invalid radix %d", base);
-    return rb_big2str_generic(big(x), NUM2INT(vbase));
+    return rb_big2str_generic(big(x), base);
 }
 
 #define POW2_P(x) (((x)&((x)-1))==0)
@@ -29,7 +29,7 @@ big2str_poweroftwo(VALUE x, VALUE vbase)
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base || !POW2_P(base))
         rb_raise(rb_eArgError, "invalid radix %d", base);
-    return rb_big2str_poweroftwo(big(x), NUM2INT(vbase));
+    return rb_big2str_poweroftwo(big(x), base);
 }
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
@@ -39,7 +39,7 @@ big2str_gmp(VALUE x, VALUE vbase)
     int base = NUM2INT(vbase);
     if (base < 2 || 36 < base)
         rb_raise(rb_eArgError, "invalid radix %d", base);
-    return rb_big2str_gmp(big(x), NUM2INT(vbase));
+    return rb_big2str_gmp(big(x), base);
 }
 #else
 #define big2str_gmp rb_f_notimplement
