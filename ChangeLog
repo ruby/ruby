@@ -1,3 +1,11 @@
+Tue Sep  3 22:59:58 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
+	  Add source information to parse exception on no close tag error.
+	  [Bug #8844]  [ruby-dev:47672]
+	  Patch by Ippei Obayashi. Thanks!!!
+	* test/rexml/parser/test_tree.rb: Add a test for the above case.
+
 Tue Sep  3 22:57:57 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parser/test_tree.rb: Fix test name to describe test
