@@ -1,3 +1,11 @@
+Tue Sep  3 10:03:42 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/openssl/test_pair.rb
+	  (OpenSSL::TestPair#test_write_nonblock_no_exceptions): on some CIs
+	  such as Debian 6.0, Ubuntu 10.04, CentOS and vc10-x64 (maybe depend
+	  on OpenSSL version), writing to SSLSocket after SSL_ERROR_WANT_WRITE
+	  causes SSL_ERROR_SSL "bad write retry".
+
 Tue Sep  3 08:20:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/utf8_mac-tbl.rb: update conversion table to recent OS X.
