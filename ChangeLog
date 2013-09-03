@@ -1,3 +1,8 @@
+Tue Sep  3 14:48:25 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/thread.rb: [DOC] CV#wait typo by @avdi [Fixes GH-386]
+	  https://github.com/ruby/ruby/pull/386
+
 Tue Sep  3 14:37:53 2013  Zachary Scott  <e@zzak.io>
 
 	* error.c: [DOC] Update bug tracker url by @ScotterC [Fixes GH-390]
