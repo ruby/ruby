@@ -2644,6 +2644,7 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
     VALUE tmpz = 0;
     VALUE tmpyy = 0;
 
+    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
     assert(qds ? (xn - yn + 1) <= qn : 1);
     assert(rds ? yn <= rn : 1);
 
@@ -2694,6 +2695,37 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
         ALLOCV_END(tmpyy);
     if (tmpz)
         ALLOCV_END(tmpz);
+}
+
+VALUE
+rb_big_divrem_normal(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), qn, rn;
+    BDIGIT *xds = BDIGITS(x), *yds = BDIGITS(y), *qds, *rds;
+    VALUE q, r;
+
+    BARY_TRUNC(yds, yn);
+    if (yn == 0)
+        rb_num_zerodiv();
+    BARY_TRUNC(xds, xn);
+
+    if (xn < yn || (xn == yn && xds[xn - 1] < yds[yn - 1]))
+        return rb_assoc_new(LONG2FIX(0), x);
+
+    qn = xn + BIGDIVREM_EXTRA_WORDS;
+    q = bignew(qn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    qds = BDIGITS(q);
+
+    rn = yn;
+    r = bignew(rn, RBIGNUM_SIGN(x));
+    rds = BDIGITS(r);
+
+    bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
+
+    bigtrunc(q);
+    bigtrunc(r);
+
+    return rb_assoc_new(q, r);
 }
 
 static void

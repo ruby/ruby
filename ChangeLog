@@ -1,3 +1,13 @@
+Thu Sep  5 00:38:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_divrem_normal): New function.
+
+	* internal.h (rb_big_divrem_normal): Declared.
+
+	* ext/-test-/bignum/div.c: New file.
+
+	* test/-ext-/bignum/test_div.rb: New file.
+
 Thu Sep  5 00:08:44 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem_normal): Removed.

@@ -696,6 +696,7 @@ VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 VALUE rb_big_mul_toom3(VALUE x, VALUE y);
 VALUE rb_big_sq_fast(VALUE x);
+VALUE rb_big_divrem_normal(VALUE x, VALUE y);
 VALUE rb_big2str_poweroftwo(VALUE x, int base);
 VALUE rb_big2str_generic(VALUE x, int base);
 VALUE rb_str2big_poweroftwo(VALUE arg, int base, int badcheck);
