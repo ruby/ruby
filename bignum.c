@@ -5809,9 +5809,6 @@ rb_big_minus(VALUE x, VALUE y)
     }
 }
 
-
-static VALUE bigdivrem(VALUE, VALUE, volatile VALUE*, volatile VALUE*);
-
 static VALUE
 bigsq(VALUE x)
 {

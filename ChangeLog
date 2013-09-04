@@ -1,3 +1,7 @@
+Wed Sep  4 23:02:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Useless declaration removed.
+
 Wed Sep  4 22:56:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (NUM_STEP_GET_INF): split from NUM_STEP_SCAN_ARGS(), since
