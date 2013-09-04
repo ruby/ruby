@@ -1,3 +1,8 @@
+Wed Sep  4 11:11:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (SOLIBS): LIBRUBY_SO also needs linking with gmp, to
+	  run worker processes in test-all on non-ELF platforms.
+
 Tue Sep  3 23:01:41 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/parser/test_tree.rb

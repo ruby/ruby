@@ -1057,7 +1057,8 @@ AC_ARG_WITH([gmp],
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
-     AC_CHECK_LIB([gmp], [__gmpz_init]))])
+     AC_CHECK_LIB([gmp], [__gmpz_init]))
+   with_gmp="$ac_cv_lib_gmp___gmpz_init"])
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -3327,6 +3328,10 @@ AS_CASE(["$target_os"],
     [nacl], [
 	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
 	])
+
+AS_CASE(["$with_gmp: $SOLIBS "], [no:* | *' -lgmp '*|*' $(LIBS) '*], [],
+	[SOLIBS="-lgmp $SOLIBS"])
+
 MINIOBJS="$MINIDLNOBJ"
 
 AS_CASE(["$THREAD_MODEL"],
