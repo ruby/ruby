@@ -1,3 +1,7 @@
+Wed Sep  4 19:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (vm_state_version_t): prefer LONG_LONG to uint64_t.
+
 Wed Sep  4 16:28:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (vm_state_version_t): use uint64_t when it is larger than

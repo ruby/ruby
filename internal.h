@@ -244,10 +244,10 @@ struct rb_subclass_entry {
     rb_subclass_entry_t *next;
 };
 
-#if defined(HAVE_UINT64_T) && (!defined(HAVE_LONG_LONG) || SIZEOF_UINT64_T > SIZEOF_LONG_LONG)
-typedef uint64_t vm_state_version_t;
-#elif defined(HAVE_LONG_LONG)
+#if defined(HAVE_LONG_LONG)
 typedef unsigned LONG_LONG vm_state_version_t;
+#elif defined(HAVE_UINT64_T)
+typedef uint64_t vm_state_version_t;
 #else
 typedef unsigned long vm_state_version_t;
 #endif
