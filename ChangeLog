@@ -151,7 +151,7 @@ Tue Sep  3 08:20:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Sep  3 07:49:25 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (NUM_STEP_SCAN_ARGS): On second thought, keep
-	  Numeral#step backward compatible in that it raises TypeError
+	  Numeric#step backward compatible in that it raises TypeError
 	  when nil is given as second argument.
 
 	* test/ruby/test_float.rb (TestFloat#test_num2dbl): Revert.
@@ -166,7 +166,7 @@ Tue Sep  3 07:39:58 2013  Tanaka Akira  <akr@fsij.org>
 
 Tue Sep  3 07:31:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 
-	* numeric.c (NUM_STEP_SCAN_ARGS): Numeral#step should raise
+	* numeric.c (NUM_STEP_SCAN_ARGS): Numeric#step should raise
 	  TypeError if a non-numeric parameter is given.
 
 	* test/ruby/test_float.rb (TestFloat#test_num2dbl): Allow nil as
