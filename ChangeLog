@@ -1,3 +1,7 @@
+Thu Sep  5 02:17:06 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_divrem_normal): Add GC guards.
+
 Thu Sep  5 00:38:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_divrem_normal): New function.

@@ -2725,6 +2725,9 @@ rb_big_divrem_normal(VALUE x, VALUE y)
     bigtrunc(q);
     bigtrunc(r);
 
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+
     return rb_assoc_new(q, r);
 }
 
