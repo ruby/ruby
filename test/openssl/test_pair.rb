@@ -157,6 +157,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10) }
       assert_equal("def\n", ret)
       s1.close
+      sleep 0.1
       assert_raise(EOFError) { s2.read_nonblock(10) }
     }
   end
@@ -172,6 +173,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10, exception: false) }
       assert_equal("def\n", ret)
       s1.close
+      sleep 0.1
       assert_equal(nil, s2.read_nonblock(10, exception: false))
     }
   end
