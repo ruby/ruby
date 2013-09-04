@@ -2636,28 +2636,64 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
 }
 
 static void
-bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *yds, size_t yn, int needs_mod)
+bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
     int shift;
+    BDIGIT *zds, *yyds;
+    size_t zn;
+    VALUE tmpz = 0;
+    VALUE tmpyy = 0;
 
-    assert(zn == xn + 1);
-    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+    assert(qds ? (xn - yn + 1) <= qn : 1);
+    assert(rds ? yn <= rn : 1);
+
+    zn = xn + BIGDIVREM_EXTRA_WORDS;
 
     shift = nlz(yds[yn-1]);
     if (shift) {
-        bary_small_lshift(yds, yds, yn, shift);
+        if (qds && zn <= qn)
+            zds = qds;
+        else
+            zds = ALLOCV_N(BDIGIT, tmpz, zn);
+        if (rds)
+            yyds = rds;
+        else
+            yyds = ALLOCV_N(BDIGIT, tmpyy, yn);
         zds[xn] = bary_small_lshift(zds, xds, xn, shift);
+        bary_small_lshift(yyds, yds, yn, shift);
     }
     else {
+        if (qds && zn <= qn)
+            zds = qds;
+        else
+            zds = ALLOCV_N(BDIGIT, tmpz, zn);
         MEMCPY(zds, xds, BDIGIT, xn);
-	zds[xn] = 0;
+        zds[xn] = 0;
+        /* bigdivrem_restoring will not modify y.
+         * So use yds directly.  */
+        yyds = (BDIGIT *)yds;
     }
 
-    bigdivrem_restoring(zds, zn, yds, yn);
+    bigdivrem_restoring(zds, zn, yyds, yn);
 
-    if (needs_mod && shift) {
-        bary_small_rshift(zds, zds, yn, shift, 0);
+    if (rds) {
+        if (shift)
+            bary_small_rshift(rds, zds, yn, shift, 0);
+        else
+            MEMCPY(rds, zds, BDIGIT, yn);
+        BDIGITS_ZERO(rds+yn, rn-yn);
     }
+
+    if (qds) {
+        size_t j = zn - yn;
+        MEMMOVE(qds, zds+yn, BDIGIT, j);
+        BDIGITS_ZERO(qds+j, qn-j);
+    }
+
+    if (tmpyy)
+        ALLOCV_END(tmpyy);
+    if (tmpz)
+        ALLOCV_END(tmpz);
 }
 
 static void
@@ -2701,45 +2737,7 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
         BDIGITS_ZERO(rds+2, rn-2);
     }
     else {
-        size_t j;
-        size_t zn;
-        BDIGIT *zds;
-        VALUE tmpz = 0;
-        BDIGIT *tds;
-
-        zn = xn + BIGDIVREM_EXTRA_WORDS;
-        if (zn <= qn)
-            zds = qds;
-        else
-            zds = ALLOCV_N(BDIGIT, tmpz, zn);
-        MEMCPY(zds, xds, BDIGIT, xn);
-        BDIGITS_ZERO(zds+xn, BIGDIVREM_EXTRA_WORDS);
-
-        if (BDIGIT_MSB(yds[yn-1])) {
-            /* bigdivrem_normal will not modify y.
-             * So use yds directly.  */
-            tds = (BDIGIT *)yds;
-        }
-        else {
-            /* bigdivrem_normal will modify y.
-             * So use rds as a temporary buffer.  */
-            MEMCPY(rds, yds, BDIGIT, yn);
-            tds = rds;
-        }
-
-        bigdivrem_normal(zds, zn, xds, xn, tds, yn, 1);
-
-        /* copy remainder */
-        MEMCPY(rds, zds, BDIGIT, yn);
-        BDIGITS_ZERO(rds+yn, rn-yn);
-
-        /* move quotient */
-        j = zn - yn;
-        MEMMOVE(qds, zds+yn, BDIGIT, j);
-        BDIGITS_ZERO(qds+j, qn-j);
-
-        if (tmpz)
-            ALLOCV_END(tmpz);
+        bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
     }
 }
 
@@ -5898,12 +5896,14 @@ rb_big_mul(VALUE x, VALUE y)
 static VALUE
 bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
 {
-    long xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), zn;
-    long j;
-    VALUE z, zz;
-    VALUE tmpy = 0, tmpz = 0;
-    BDIGIT *xds, *yds, *zds, *tds;
+    long xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y);
+    VALUE z;
+    BDIGIT *xds, *yds, *zds;
     BDIGIT dd;
+
+    VALUE q = Qnil, r = Qnil;
+    BDIGIT *qds, *rds;
+    long qn, rn;
 
     yds = BDIGITS(y);
     BARY_TRUNC(yds, yn);
@@ -5952,32 +5952,37 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         return Qnil;
     }
 
-    if (BDIGIT_MSB(yds[yn-1]) == 0) {
-        /* Make yds modifiable. */
-        tds = ALLOCV_N(BDIGIT, tmpy, yn);
-        MEMCPY(tds, yds, BDIGIT, yn);
-        yds = tds;
+    if (divp) {
+        qn = xn + BIGDIVREM_EXTRA_WORDS;
+        q = bignew(qn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+        qds = BDIGITS(q);
+    }
+    else {
+        qn = 0;
+        qds = NULL;
     }
 
-    zn = xn + BIGDIVREM_EXTRA_WORDS;
-    zds = ALLOCV_N(BDIGIT, tmpz, zn);
-    bigdivrem_normal(zds, zn, xds, xn, yds, yn, modp != NULL);
+    if (modp) {
+        rn = yn;
+        r = bignew(rn, RBIGNUM_SIGN(x));
+        rds = BDIGITS(r);
+    }
+    else {
+        rn = 0;
+        rds = NULL;
+    }
 
-    if (divp) {			/* move quotient down in z */
-        j = zn - yn;
-        BARY_TRUNC(zds+yn, j);
-	*divp = zz = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
-        MEMCPY(BDIGITS(zz), zds+yn, BDIGIT, j);
+    bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
+
+    if (divp) {
+        bigtrunc(q);
+        *divp = q;
     }
-    if (modp) {			/* normalize remainder */
-        BARY_TRUNC(zds, yn);
-	*modp = zz = bignew(yn, RBIGNUM_SIGN(x));
-	MEMCPY(BDIGITS(zz), zds, BDIGIT, yn);
+    if (modp) {
+        bigtrunc(r);
+        *modp = r;
     }
-    if (tmpy)
-        ALLOCV_END(tmpy);
-    if (tmpz)
-        ALLOCV_END(tmpz);
+
     return Qnil;
 }
 

@@ -1,3 +1,10 @@
+Thu Sep  5 00:08:44 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_normal): Removed.
+	  (bary_divmod_normal): New function.
+	  (bary_divmod): Use bary_divmod_normal.
+	  (bigdivrem): Use bary_divmod_normal.
+
 Wed Sep  4 23:02:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (bigdivrem): Useless declaration removed.
