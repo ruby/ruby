@@ -704,6 +704,7 @@ VALUE rb_str2big_normal(VALUE arg, int base, int badcheck);
 VALUE rb_str2big_karatsuba(VALUE arg, int base, int badcheck);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_big_mul_gmp(VALUE x, VALUE y);
+VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif

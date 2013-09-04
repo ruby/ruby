@@ -135,6 +135,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGITS % SIZEOF_LONG == 0);
 #define KARATSUBA_MUL_DIGITS 70
 #define TOOM3_MUL_DIGITS 150
 
+#define GMP_DIV_DIGITS 20
 #define GMP_BIG2STR_DIGITS 20
 #define GMP_STR2BIG_DIGITS 20
 
@@ -2278,7 +2279,7 @@ bary_mul_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT 
         mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
         mpz_mul(z, x, y);
     }
-    mpz_export (zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    mpz_export(zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
     BDIGITS_ZERO(zds+count, zn-count);
     mpz_clear(x);
     mpz_clear(y);
@@ -2730,6 +2731,100 @@ rb_big_divrem_normal(VALUE x, VALUE y)
     return rb_assoc_new(q, r);
 }
 
+#ifdef USE_GMP
+static void
+bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t x, y, q, r;
+    size_t count;
+
+    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+    assert(qds ? (xn - yn + 1) <= qn : 1);
+    assert(rds ? yn <= rn : 1);
+    assert(qds || rds);
+
+    mpz_init(x);
+    mpz_init(y);
+    if (qds) mpz_init(q);
+    if (rds) mpz_init(r);
+
+    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+
+    if (!rds) {
+        mpz_fdiv_q(q, x, y);
+    }
+    else if (!qds) {
+        mpz_fdiv_r(r, x, y);
+    }
+    else {
+        mpz_fdiv_qr(q, r, x, y);
+    }
+
+    mpz_clear(x);
+    mpz_clear(y);
+
+    if (qds) {
+        mpz_export(qds, &count, -1, sizeof(BDIGIT), 0, nails, q);
+        BDIGITS_ZERO(qds+count, qn-count);
+        mpz_clear(q);
+    }
+
+    if (rds) {
+        mpz_export(rds, &count, -1, sizeof(BDIGIT), 0, nails, r);
+        BDIGITS_ZERO(rds+count, rn-count);
+        mpz_clear(r);
+    }
+}
+
+VALUE
+rb_big_divrem_gmp(VALUE x, VALUE y)
+{
+    size_t xn = RBIGNUM_LEN(x), yn = RBIGNUM_LEN(y), qn, rn;
+    BDIGIT *xds = BDIGITS(x), *yds = BDIGITS(y), *qds, *rds;
+    VALUE q, r;
+
+    BARY_TRUNC(yds, yn);
+    if (yn == 0)
+        rb_num_zerodiv();
+    BARY_TRUNC(xds, xn);
+
+    if (xn < yn || (xn == yn && xds[xn - 1] < yds[yn - 1]))
+        return rb_assoc_new(LONG2FIX(0), x);
+
+    qn = xn - yn + 1;
+    q = bignew(qn, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
+    qds = BDIGITS(q);
+
+    rn = yn;
+    r = bignew(rn, RBIGNUM_SIGN(x));
+    rds = BDIGITS(r);
+
+    bary_divmod_gmp(qds, qn, rds, rn, xds, xn, yds, yn);
+
+    bigtrunc(q);
+    bigtrunc(r);
+
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+
+    return rb_assoc_new(q, r);
+}
+#endif
+
+static void
+bary_divmod_branch(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
+{
+#ifdef USE_GMP
+    if (GMP_DIV_DIGITS < xn) {
+        bary_divmod_gmp(qds, qn, rds, rn, xds, xn, yds, yn);
+        return;
+    }
+#endif
+    bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
+}
+
 static void
 bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
@@ -2771,7 +2866,7 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
         BDIGITS_ZERO(rds+2, rn-2);
     }
     else {
-        bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
+        bary_divmod_branch(qds, qn, rds, rn, xds, xn, yds, yn);
     }
 }
 
@@ -6006,7 +6101,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         rds = NULL;
     }
 
-    bary_divmod_normal(qds, qn, rds, rn, xds, xn, yds, yn);
+    bary_divmod_branch(qds, qn, rds, rn, xds, xn, yds, yn);
 
     if (divp) {
         bigtrunc(q);

@@ -598,6 +598,9 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_interrupt_during_bigdivrem
+    if defined?(Bignum::GMP_VERSION)
+      return # GMP doesn't support interrupt during an operation.
+    end
     return unless Process.respond_to?(:kill)
     begin
       trace = []
