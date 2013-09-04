@@ -67,6 +67,7 @@ with all sufficient information, see the ChangeLog file.
       or false if it is an ordinary class or module.
   * extended methods:
     * Module#refine is no longer experimental.
+    * Module#include and Module#prepend are now public methods.
 
 * Mutex
   * misc
