@@ -71,6 +71,9 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
+static vm_state_version_t ruby_vm_global_state_version = 1;
+static vm_state_version_t ruby_vm_sequence = 1;
+
 #include "vm_insnhelper.h"
 #include "vm_insnhelper.c"
 #include "vm_exec.h"
@@ -83,6 +86,12 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class
 
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
+
+vm_state_version_t
+rb_next_class_sequence()
+{
+    return NEXT_CLASS_SEQUENCE();
+}
 
 VALUE rb_cRubyVM;
 VALUE rb_cThread;
@@ -97,14 +106,6 @@ rb_event_flag_t ruby_vm_event_flags;
 
 static void thread_free(void *ptr);
 
-void
-rb_vm_change_state(void)
-{
-    INC_VM_STATE_VERSION();
-}
-
-static void vm_clear_global_method_cache(void);
-
 static void
 vm_clear_all_inline_method_cache(void)
 {
@@ -117,7 +118,6 @@ vm_clear_all_inline_method_cache(void)
 static void
 vm_clear_all_cache()
 {
-    vm_clear_global_method_cache();
     vm_clear_all_inline_method_cache();
     ruby_vm_global_state_version = 1;
 }
@@ -2069,11 +2069,13 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     OBJ_WRITE(miseq->self, &miseq->klass, klass);
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
+    rb_clear_cache_by_class(klass);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {
-	rb_add_method(rb_singleton_class(klass), id, VM_METHOD_TYPE_ISEQ, miseq, NOEX_PUBLIC);
+	klass = rb_singleton_class(klass);
+	rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, NOEX_PUBLIC);
+	rb_clear_cache_by_class(klass);
     }
-    INC_VM_STATE_VERSION();
 }
 
 #define REWIND_CFP(expr) do { \
@@ -2122,7 +2124,8 @@ m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 {
     REWIND_CFP({
 	rb_undef(cbase, SYM2ID(sym));
-	INC_VM_STATE_VERSION();
+	rb_clear_cache_by_class(cbase);
+	rb_clear_cache_by_class(self);
     });
     return Qnil;
 }

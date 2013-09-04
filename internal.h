@@ -236,14 +236,52 @@ struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };
 
+struct rb_subclass_entry;
+typedef struct rb_subclass_entry rb_subclass_entry_t;
+
+struct rb_subclass_entry {
+    VALUE klass;
+    rb_subclass_entry_t *next;
+};
+
+#if HAVE_UINT64_T
+    typedef uint64_t vm_state_version_t;
+#else
+    typedef unsigned long long vm_state_version_t;
+#endif
+
+struct rb_method_entry_struct;
+
+typedef struct method_cache_entry {
+    vm_state_version_t vm_state;
+    vm_state_version_t seq;
+    ID mid;
+    VALUE defined_class;
+    struct rb_method_entry_struct *me;
+} method_cache_entry_t;
+
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
+    struct st_table *mc_tbl;
+    rb_subclass_entry_t *subclasses;
+    rb_subclass_entry_t **parent_subclasses;
+    /**
+     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
+     * in the module's `subclasses` list that indicates that the klass has been
+     * included. Hopefully that makes sense.
+     */
+    rb_subclass_entry_t **module_subclasses;
+    vm_state_version_t seq;
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
 };
+
+/* class.c */
+void rb_class_subclass_add(VALUE super, VALUE klass);
+void rb_class_remove_from_super_subclasses(VALUE);
 
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
@@ -263,6 +301,10 @@ RCLASS_SUPER(VALUE klass)
 static inline VALUE
 RCLASS_SET_SUPER(VALUE klass, VALUE super)
 {
+    if (super) {
+	rb_class_remove_from_super_subclasses(klass);
+	rb_class_subclass_add(super, klass);
+    }
     OBJ_WRITE(klass, &RCLASS_EXT(klass)->super, super);
     return super;
 }
@@ -282,6 +324,10 @@ VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
+void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
+void rb_class_detach_subclasses(VALUE);
+void rb_class_detach_module_subclasses(VALUE);
+void rb_class_remove_from_module_subclasses(VALUE);
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
@@ -587,6 +633,9 @@ void ruby_kill(rb_pid_t pid, int sig);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
+
+/* vm_insnhelper.h */
+vm_state_version_t rb_next_class_sequence();
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);

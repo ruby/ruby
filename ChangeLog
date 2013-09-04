@@ -1,3 +1,11 @@
+Wed Sep  4 14:08:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c, compile.c, eval.c, gc.h, insns.def, internal.h, method.h,
+	  variable.c, vm.c, vm_core.c, vm_insnhelper.c, vm_insnhelper.h,
+	  vm_method.c: Implement class hierarchy method cache invalidation.
+
+	  [ruby-core:55053] [Feature #8426] [GH-387]
+
 Wed Sep  4 11:13:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_gsub): use BEG(0) for whole matched position not
