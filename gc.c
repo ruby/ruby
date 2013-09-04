@@ -25,7 +25,6 @@
 #include "constant.h"
 #include "ruby_atomic.h"
 #include "probes.h"
-#include "sp_ar.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
@@ -1126,14 +1125,14 @@ static int
 free_method_cache_entry_i(ID key, method_cache_entry_t *entry, st_data_t data)
 {
     free(entry);
-    return SP_AR_CONTINUE;
+    return ST_CONTINUE;
 }
 
 void
-rb_free_mc_table(sp_ar_table *tbl)
+rb_free_mc_table(st_table *tbl)
 {
-    sp_ar_foreach(tbl, free_method_cache_entry_i, 0);
-    sp_ar_free_table(tbl);
+    st_foreach(tbl, free_method_cache_entry_i, 0);
+    st_free_table(tbl);
 }
 
 static int
