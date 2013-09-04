@@ -1846,7 +1846,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
 }
 
-#define NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf) do {	\
+#define NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc) do {	\
     argc = rb_scan_args(argc, argv, "02:", &to, &step, &hash);		\
     if (!NIL_P(hash)) {							\
 	step = rb_hash_aref(hash, sym_by);				\
@@ -1878,7 +1878,10 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
             rb_raise(rb_eTypeError, "limit must be numeric");		\
         }								\
     }									\
-    if (TYPE(to) == T_FLOAT) {						\
+} while (0)
+
+#define NUM_STEP_GET_INF(to, desc, inf) do {				\
+    if (RB_TYPE_P(to, T_FLOAT)) {					\
 	double f = RFLOAT_VALUE(to);					\
 	inf = isinf(f) && (signbit(f) ? desc : !desc);			\
     }									\
@@ -1889,11 +1892,11 @@ static VALUE
 num_step_size(VALUE from, VALUE args, VALUE eobj)
 {
     VALUE to, step, hash;
-    int desc, inf;
+    int desc;
     int argc = args ? RARRAY_LENINT(args) : 0;
     VALUE *argv = args ? RARRAY_PTR(args) : 0;
 
-    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf);
+    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
 
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
@@ -1959,7 +1962,9 @@ num_step(int argc, VALUE *argv, VALUE from)
 
     RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
 
-    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc, inf);
+    NUM_STEP_SCAN_ARGS(argc, argv, to, step, hash, desc);
+    NUM_STEP_GET_INF(to, desc, inf);
+
 
     if (FIXNUM_P(from) && (inf || FIXNUM_P(to)) && FIXNUM_P(step)) {
 	long i = FIX2LONG(from);
