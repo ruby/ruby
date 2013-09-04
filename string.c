@@ -4079,7 +4079,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
 	if (OBJ_TAINTED(val)) tainted = 1;
 
-	len = beg - offset;	/* copy pre-match substr */
+	len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
             rb_enc_str_buf_cat(dest, cp, len, str_enc);
         }

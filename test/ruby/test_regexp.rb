@@ -500,6 +500,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foo[\z]baz', "foobarbaz".sub!(/(b..)/, '[\z]'))
   end
 
+  def test_regsub_K
+    bug8856 = '[ruby-dev:47694] [Bug #8856]'
+    result = "foobarbazquux/foobarbazquux".gsub(/foo\Kbar/, "")
+    assert_equal('foobazquux/foobazquux', result, bug8856)
+  end
+
   def test_KCODE
     assert_nil($KCODE)
     assert_nothing_raised { $KCODE = nil }
