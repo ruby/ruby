@@ -2766,7 +2766,7 @@ is_invalid_handle(SOCKET sock)
 /* License: Artistic or GPL */
 static int
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-	  const struct timeval *timeout)
+	  struct timeval *timeout)
 {
     int r = 0;
 
@@ -2911,7 +2911,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     {
 	struct timeval rest;
 	const struct timeval wait = {0, 10 * 1000}; // 10ms
-	const struct timeval zero = {0, 0};         // 0ms
+	struct timeval zero = {0, 0};		    // 0ms
 	for (;;) {
 	    if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
 		r = -1;
