@@ -635,7 +635,7 @@ void ruby_kill(rb_pid_t pid, int sig);
 void Init_native_thread(void);
 
 /* vm_insnhelper.h */
-vm_state_version_t rb_next_class_sequence();
+vm_state_version_t rb_next_class_sequence(void);
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);

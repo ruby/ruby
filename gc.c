@@ -1255,7 +1255,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RCLASS_EXT(obj)->subclasses) {
 	    if (BUILTIN_TYPE(obj) == T_MODULE) {
 		rb_class_detach_module_subclasses(obj);
-	    } else {
+	    }
+	    else {
 		rb_class_detach_subclasses(obj);
 	    }
 	    RCLASS_EXT(obj)->subclasses = NULL;

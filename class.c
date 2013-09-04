@@ -241,7 +241,8 @@ rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass)
     if (node->nd_clss == old_klass) {
 	new_node = NEW_CREF(new_klass);
 	new_node->nd_next = node->nd_next;
-    } else {
+    }
+    else {
 	new_node = NEW_CREF(node->nd_clss);
 	new_node->nd_next = rewrite_cref_stack(node->nd_next, old_klass, new_klass);
     }

@@ -42,7 +42,8 @@ rb_clear_cache_by_class(VALUE klass)
     if (klass && klass != Qundef) {
 	if (klass == rb_cBasicObject || klass == rb_cObject || klass == rb_mKernel) {
 	    INC_VM_STATE_VERSION();
-	} else {
+	}
+	else {
 	    rb_class_clear_method_cache(klass);
 	}
     }
