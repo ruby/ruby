@@ -1,6 +1,6 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
-require 'erb'
+require_relative 'erb'
 
 class TestERB < Test::Unit::TestCase
   class MyError < RuntimeError ; end
@@ -469,6 +469,21 @@ EOS
   def test_percent_after_etag
     assert_equal("1%", @erb.new("<%= 1 %>%", nil, "%").result)
   end
+
+  def test_result_with_hash_as_binding
+    src = "hello <%= name %> from <%= template %>"
+    ans = "hello world from erb"
+    assert_equal(ans, @erb.new(src).result({name: "world", template: "erb"}))
+
+    src = "hello <%= names.join(' and ') %>"
+    ans = "hello Matz and Koichi"
+    assert_equal(ans, @erb.new(src).result({names: %w(Matz Koichi)}))
+
+    src = "<%= @src %>"
+    ans = ""
+    assert_equal(ans, @erb.new(src).result({foo: 'bar'}))
+  end
+
 end
 
 class TestERBCoreWOStrScan < TestERBCore

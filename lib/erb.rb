@@ -26,11 +26,14 @@ require "cgi/util"
 #
 #   require 'erb'
 #
-#   x = 42
 #   template = ERB.new <<-EOF
 #     The value of x is: <%= x %>
 #   EOF
+#
+#   x = 42
 #   puts template.result(binding)
+#   # or
+#   puts template.result({x: 42})
 #
 # <em>Prints:</em> The value of x is: 42
 #
@@ -827,7 +830,7 @@ class ERB
   end
 
   # Generate results and print them. (see ERB#result)
-  def run(b=new_toplevel)
+  def run(b=nil)
     print self.result(b)
   end
 
@@ -837,9 +840,12 @@ class ERB
   # can be affected by _safe_level_.)
   #
   # _b_ accepts a Binding or Proc object which is used to set the context of
-  # code evaluation.
+  # code evaluation or Hash where keys is local variable names and values is
+  # variable values
   #
-  def result(b=new_toplevel)
+  def result(b=nil)
+    b = ERB::Binding.get_binding(b)
+
     if @safe_level
       proc {
         $SAFE = @safe_level
@@ -849,15 +855,6 @@ class ERB
       eval(@src, b, (@filename || '(erb)'), 0)
     end
   end
-
-  ##
-  # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
-  # not specify a binding.
-
-  def new_toplevel
-    TOPLEVEL_BINDING.dup
-  end
-  private :new_toplevel
 
   # Define _methodname_ as instance method of _mod_ from compiled Ruby source.
   #
@@ -1004,5 +1001,24 @@ class ERB
       end
     end
     module_function :def_erb_method
+  end
+end
+
+class ERB
+  module Binding # :nodoc:
+    def self.get_binding(__binding=nil)
+      __binding = new_toplevel unless __binding
+
+      if __binding.kind_of?(Hash)
+        __bvalues, __binding = __binding, binding
+        eval(__bvalues.map{ |k, v| "#{k} = __bvalues[#{k.inspect}]; "}.join, __binding)
+      end
+
+      __binding
+    end
+
+    def self.new_toplevel
+      TOPLEVEL_BINDING.dup
+    end
   end
 end
