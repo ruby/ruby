@@ -2640,6 +2640,9 @@ bigdivrem_normal(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, BDIGIT *y
 {
     int shift;
 
+    assert(zn == xn + 1);
+    assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
+
     shift = nlz(yds[yn-1]);
     if (shift) {
         bary_small_lshift(yds, yds, yn, shift);

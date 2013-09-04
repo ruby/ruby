@@ -1,3 +1,7 @@
+Wed Sep  4 20:22:43 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_normal): Add assertions.
+
 Wed Sep  4 19:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (vm_state_version_t): prefer LONG_LONG to uint64_t.
