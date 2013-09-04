@@ -1,3 +1,7 @@
+Thu Sep  5 06:22:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_divmod_normal): Reduce temporary array allocations.
+
 Thu Sep  5 02:17:06 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_divrem_normal): Add GC guards.

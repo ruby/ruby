@@ -2641,8 +2641,7 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
     int shift;
     BDIGIT *zds, *yyds;
     size_t zn;
-    VALUE tmpz = 0;
-    VALUE tmpyy = 0;
+    VALUE tmpyz = 0;
 
     assert(yn < xn || (xn == yn && yds[yn - 1] <= xds[xn - 1]));
     assert(qds ? (xn - yn + 1) <= qn : 1);
@@ -2652,14 +2651,16 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
 
     shift = nlz(yds[yn-1]);
     if (shift) {
-        if (qds && zn <= qn)
-            zds = qds;
-        else
-            zds = ALLOCV_N(BDIGIT, tmpz, zn);
-        if (rds)
-            yyds = rds;
-        else
-            yyds = ALLOCV_N(BDIGIT, tmpyy, yn);
+        int alloc_y = !rds;
+        int alloc_z = !qds || qn < zn;
+        if (alloc_y && alloc_z) {
+            yyds = ALLOCV_N(BDIGIT, tmpyz, yn+zn);
+            zds = yyds + yn;
+        }
+        else {
+            yyds = alloc_y ? ALLOCV_N(BDIGIT, tmpyz, yn) : rds;
+            zds = alloc_z ? ALLOCV_N(BDIGIT, tmpyz, zn) : qds;
+        }
         zds[xn] = bary_small_lshift(zds, xds, xn, shift);
         bary_small_lshift(yyds, yds, yn, shift);
     }
@@ -2667,7 +2668,7 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
         if (qds && zn <= qn)
             zds = qds;
         else
-            zds = ALLOCV_N(BDIGIT, tmpz, zn);
+            zds = ALLOCV_N(BDIGIT, tmpyz, zn);
         MEMCPY(zds, xds, BDIGIT, xn);
         zds[xn] = 0;
         /* bigdivrem_restoring will not modify y.
@@ -2691,10 +2692,8 @@ bary_divmod_normal(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT 
         BDIGITS_ZERO(qds+j, qn-j);
     }
 
-    if (tmpyy)
-        ALLOCV_END(tmpyy);
-    if (tmpz)
-        ALLOCV_END(tmpz);
+    if (tmpyz)
+        ALLOCV_END(tmpyz);
 }
 
 VALUE
