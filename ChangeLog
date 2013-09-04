@@ -1,3 +1,8 @@
+Wed Sep  4 16:28:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (vm_state_version_t): use uint64_t when it is larger than
+	  LONG_LONG, and fallback to unsigned long.
+
 Wed Sep  4 15:37:05 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/utf8_mac-tbl.rb: fix r42789.
