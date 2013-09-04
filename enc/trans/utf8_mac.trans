@@ -3,8 +3,18 @@
 <%
   require 'utf8_mac-tbl'
 
+  def charlen(v)
+    v.gsub(/[0-7].|[c-d].{3}|e.{5}/, '.').size
+  end
+
+  map = {}
+  MAC_DECOMPOSE_TBL.each do |c, d|
+    v = map[c]
+    next if v && charlen(v) > charlen(d)
+    map[c] = d
+  end
   transcode_tblgen("UTF-8", "UTF8-MAC",
-    MAC_DECOMPOSE_TBL + [
+    map.to_a + [
     ["{00-7F}", :nomap],
     ["{c2-df}{80-bf}", :nomap0],
     ["e0{a0-bf}{80-bf}", :nomap0],
@@ -27,11 +37,41 @@
   map["f4{80-8f}{80-bf}{80-bf}"] = :func_so
   transcode_generate_node(ActionMap.parse(map), "from_UTF8_MAC")
 
-  ary = MAC_DECOMPOSE_TBL.select{|k,v|v.scan(/[0-7C-F].(?:[89AB].)*/i).length == 3}
-  transcode_generate_node(ActionMap.parse(ary.map{|k,v|[v,k]}), "from_utf8_mac_nfc3")
-
-  ary = MAC_DECOMPOSE_TBL.select{|k,v|v.scan(/[0-7C-F].(?:[89AB].)*/i).length == 2}
-  transcode_generate_node(ActionMap.parse(ary.map{|k,v|[v,k]}), "from_utf8_mac_nfc2")
+  # http://www.unicode.org/Public/UNIDATA/CompositionExclusions.txt
+  composition_exclusions = [
+    0x0958,0x0959,0x095A,0x095B,0x095C,0x095D,0x095E,0x095F,
+    0x09DC,0x09DD,0x09DF,0x0A33,0x0A36,0x0A59,0x0A5A,0x0A5B,
+    0x0A5E,0x0B5C,0x0B5D,0x0F43,0x0F4D,0x0F52,0x0F57,0x0F5C,
+    0x0F69,0x0F76,0x0F78,0x0F93,0x0F9D,0x0FA2,0x0FA7,0x0FAC,
+    0x0FB9,0xFB1D,0xFB1F,0xFB2A,0xFB2B,0xFB2C,0xFB2D,0xFB2E,
+    0xFB2F,0xFB30,0xFB31,0xFB32,0xFB33,0xFB34,0xFB35,0xFB36,
+    0xFB38,0xFB39,0xFB3A,0xFB3B,0xFB3C,0xFB3E,0xFB40,0xFB41,
+    0xFB43,0xFB44,0xFB46,0xFB47,0xFB48,0xFB49,0xFB4A,0xFB4B,
+    0xFB4C,0xFB4D,0xFB4E,0x2ADC,
+#    0x1D15E,0x1D15F,0x1D160,0x1D161,0x1D162,0x1D163,0x1D164,
+#    0x1D1BB,0x1D1BC,0x1D1BD,0x1D1BE,0x1D1BF,0x1D1C0,
+    0x0340..0x0341,0x0343,0x0374,0x037E,0x0387,
+    0x1F71,0x1F73,0x1F75,0x1F77,0x1F79,0x1F7B,0x1F7D,0x1FBB,
+    0x1FBE,0x1FC9,0x1FCB,0x1FD3,0x1FDB,0x1FE3,0x1FEB,0x1FEE..0x1FEF,
+    0x1FF9,0x1FFB,0x1FFD,0x2000..0x2001,0x2126,0x212A..0x212B,0x2329,0x232A,
+    0xF900..0xFA0D,0xFA10,0xFA12,0xFA15..0xFA1E,0xFA20,0xFA22,0xFA25..0xFA26,
+    0xFA2A..0xFA6D,0xFA70..0xFAD9,
+#    0x2F800..0x2FA1D,
+    0x0344,0x0F73,0x0F75,0x0F81
+  ]
+  extbl = {}
+  composition_exclusions.each do |x|
+    case x
+    when Range
+      x.each do |n|
+        extbl[[n].pack("U").unpack("H*")[0]] = true
+      end
+    when Integer
+      extbl[[x].pack("U").unpack("H*")[0]] = true
+    end
+  end
+  ary = MAC_DECOMPOSE_TBL.reject{|k,v|charlen(v)!=2||extbl[k]}.map{|k,v|[v,k]}
+  transcode_generate_node(ActionMap.parse(ary), "from_utf8_mac_nfc2")
 %>
 
 <%= transcode_generated_code %>
@@ -50,54 +90,38 @@ struct from_utf8_mac_status {
     unsigned char buf[STATUS_BUF_SIZE];
     int beg;
     int end;
-    int len;
 };
-#define buf_length(sp) ((sp)->len)
+#define buf_empty_p(p) ((p)->beg == (p)->end)
+#define buf_bytesize(p) (((p)->end - (p)->beg + STATUS_BUF_SIZE) % STATUS_BUF_SIZE)
+#define utf8_trailbyte(c) (((c) & 0xC0) == 0x80)
 
-int
-buf_bytesize(struct from_utf8_mac_status *sp)
-{
-    int size = sp->end - sp->beg + STATUS_BUF_SIZE;
-    size %= STATUS_BUF_SIZE;
-    return size;
-}
-
-void
+static void
 buf_push(struct from_utf8_mac_status *sp, const unsigned char *p, ssize_t l)
 {
     const unsigned char *pend = p + l;
     while (p < pend) {
+        /* if (sp->beg == sp->end) */
         sp->buf[sp->end++] = *p++;
         sp->end %= STATUS_BUF_SIZE;
     }
-    sp->len++;
 }
 
-unsigned char
+static unsigned char
 buf_shift(struct from_utf8_mac_status *sp)
 {
+    /* if (sp->beg == sp->end) */
     unsigned char c = sp->buf[sp->beg++];
     sp->beg %= STATUS_BUF_SIZE;
-    if ((c & 0xC0) != 0x80) sp->len--;
     return c;
 }
 
-void
-buf_shift_char(struct from_utf8_mac_status *sp)
-{
-    if (sp->beg == sp->end) return;
-    do {
-        buf_shift(sp);
-    } while (sp->beg != sp->end && (sp->buf[sp->beg] & 0xC0) == 0x80);
-}
-
-void
+static void
 buf_clear(struct from_utf8_mac_status *sp)
 {
-    sp->beg = sp->end = sp->len = 0;
+    sp->beg = sp->end = 0;
 }
 
-unsigned char
+static unsigned char
 buf_at(struct from_utf8_mac_status *sp, int pos)
 {
     pos += sp->beg;
@@ -105,28 +129,28 @@ buf_at(struct from_utf8_mac_status *sp, int pos)
     return sp->buf[pos];
 }
 
-int
+static size_t
 buf_output_char(struct from_utf8_mac_status *sp, unsigned char *o)
 {
-    int n = 0;
-    while (sp->beg != sp->end) {
+    size_t n = 0;
+    while (!buf_empty_p(sp)) {
         o[n++] = buf_shift(sp);
-        if ((sp->buf[sp->beg] & 0xC0) != 0x80) break;
+        if (!utf8_trailbyte(sp->buf[sp->beg])) break;
     }
     return n;
 }
 
-int
+static size_t
 buf_output_all(struct from_utf8_mac_status *sp, unsigned char *o)
 {
-    int n = 0;
-    while (sp->beg != sp->end) {
+    size_t n = 0;
+    while (!buf_empty_p(sp)) {
         o[n++] = buf_shift(sp);
     }
     return n;
 }
 
-VALUE
+static VALUE
 get_info(VALUE next_info, struct from_utf8_mac_status *sp) {
     int pos = 0;
     while (pos < buf_bytesize(sp)) {
@@ -142,30 +166,32 @@ get_info(VALUE next_info, struct from_utf8_mac_status *sp) {
     return next_info;
 }
 
-int
-buf_apply(int mode, struct from_utf8_mac_status *sp, unsigned char *o)
+static size_t
+buf_apply(struct from_utf8_mac_status *sp, unsigned char *o)
 {
-    int n = 0;
-    VALUE next_info = mode == 3 ? from_utf8_mac_nfc3 : from_utf8_mac_nfc2;
-    next_info = get_info(next_info, sp);
+    size_t n = 0;
+    VALUE next_info;
+    unsigned char buf[3];
+    if (buf_bytesize(sp) < 3 || (buf_bytesize(sp) == 3 && buf_at(sp, 0) >= 0xE0)) {
+        /* char length is less than 2 */
+        return 0;
+    }
+    next_info = get_info(from_utf8_mac_nfc2, sp);
     switch (next_info & 0x1F) {
       case THREEbt:
       case TWObt:
-        o[n++] = getBT1(next_info);
-        o[n++] = getBT2(next_info);
-        if (THREEbt == (next_info & 0x1F)) o[n++] = getBT3(next_info);
-        if (mode == 3) {
-            buf_clear(sp);
-        }
-        else {
-            buf_shift_char(sp);
-            buf_shift_char(sp);
-        }
+        buf[n++] = getBT1(next_info);
+        buf[n++] = getBT2(next_info);
+        if (THREEbt == (next_info & 0x1F))
+            buf[n++] = getBT3(next_info);
+        buf_clear(sp);
+        buf_push(sp, buf, n);
+        return 0;
         break;
       default:
-        return 0;
+        return buf_output_char(sp, o);
+        break;
     }
-    return n;
 }
 
 static int
@@ -181,10 +207,7 @@ from_utf8_mac_finish(void *statep,
         unsigned char *o, size_t osize)
 {
     struct from_utf8_mac_status *sp = statep;
-    int n;
-    if (buf_length(sp) == 0) return 0;
-    n = buf_apply(2, sp, o) + buf_output_all(sp, o);
-    return n;
+    return buf_output_all(sp, o);
 }
 
 static ssize_t
@@ -209,15 +232,8 @@ fun_so_from_utf8_mac(void *statep,
     }
 
     buf_push(sp, s, l);
-    if (buf_length(sp) < 3) return n;
-
-    n = buf_apply(3, sp, o);
-    if (n > 0) return n;
-
-    n = buf_apply(2, sp, o);
-    if (n > 0) return n;
-
-    return buf_output_char(sp, o);
+    n += buf_apply(sp, o);
+    return n;
 }
 
 static const rb_transcoder
@@ -238,4 +254,3 @@ TRANS_INIT(utf8_mac)
 <%= transcode_register_code %>
     rb_register_transcoder(&rb_from_UTF8_MAC);
 }
-

@@ -1,3 +1,8 @@
+Wed Sep  4 15:37:05 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac-tbl.rb: fix r42789.
+	  Fix conversion table and logic. [ruby-dev:47680]
+
 Wed Sep  4 14:08:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* class.c, compile.c, eval.c, gc.h, insns.def, internal.h, method.h,
