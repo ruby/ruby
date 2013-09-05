@@ -8561,6 +8561,7 @@ str_suffix_gen(struct parser_params *parser, NODE *node, long opt)
 #endif
 #if STR_OPTION_FROZEN
 	if (opt & STR_OPTION_FROZEN) {
+	    OBJ_FREEZE(node->nd_lit);
 	    node->nd_lit = rb_fstring(node->nd_lit);
 	    nd_set_type(node, NODE_LIT);
 	}

@@ -141,14 +141,16 @@ static const struct st_hash_type fstring_hash_type = {
 VALUE
 rb_fstring(VALUE str)
 {
-    VALUE fstr;
-    if (!st_lookup(frozen_strings, (st_data_t)str, (st_data_t*)&fstr)) {
-	fstr = rb_str_dup(str);
-	OBJ_FREEZE(fstr);
-	RBASIC(fstr)->flags |= RSTRING_FSTR;
-	st_insert(frozen_strings, fstr, fstr);
+    st_data_t fstr;
+    if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
+	str = (VALUE)fstr;
     }
-    return fstr;
+    else {
+	str = rb_str_new_frozen(str);
+	RBASIC(str)->flags |= RSTRING_FSTR;
+	st_insert(frozen_strings, str, str);
+    }
+    return str;
 }
 
 static inline int
@@ -859,7 +861,8 @@ void
 rb_str_free(VALUE str)
 {
     if (FL_TEST(str, RSTRING_FSTR)) {
-	st_delete(frozen_strings, (st_data_t*)&str, NULL);
+	st_data_t fstr = (st_data_t)str;
+	st_delete(frozen_strings, &fstr, NULL);
     }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
 	xfree(RSTRING(str)->as.heap.ptr);

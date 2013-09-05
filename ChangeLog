@@ -1,3 +1,11 @@
+Thu Sep  5 17:25:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring, rb_str_free): use st_data_t instead of VALUE.
+
+	* string.c (rb_fstring): get rid of duplicating already frozen object.
+
+	* parse.y (str_suffix_gen): freeze in advance to reduce objects.
+
 Thu Sep  5 14:01:22 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/optparse.rb:  The Integer acceptable now allows binary and
