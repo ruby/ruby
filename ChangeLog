@@ -1,3 +1,11 @@
+Fri Sep  6 02:37:22 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: use double quotes when
+	  strings start with special characters.
+	  [Fixes GH-157] https://github.com/tenderlove/psych/issues/157
+
+	* test/psych/test_string.rb: test for change.
+
 Fri Sep  6 00:05:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rewrite_cref_stack): remove recursion.
