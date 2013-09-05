@@ -2243,6 +2243,12 @@ class TestString < Test::Unit::TestCase
       })
     end
   end
+
+  def test_frozen_strings_are_deduplicated
+    a = "hello"f
+    b = "hello"f
+    assert_equal a.object_id, b.object_id
+  end
 end
 
 class TestString2 < TestString

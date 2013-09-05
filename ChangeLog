@@ -1,3 +1,20 @@
+Thu Sep  5 13:49:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* include/ruby/ruby.h: add RSTRING_FSTR flag
+
+	* internal.h: add rb_fstring() prototype
+
+	* parse.y (str_suffix_gen): deduplicate frozen string literals
+
+	* string.c (rb_fstring): deduplicate frozen string literals
+
+	* string.c (rb_str_free): delete fstrings from frozen_strings table when
+	  they are GC'd
+
+	* string.c (Init_String): initialize frozen_strings table
+
+	* test/ruby/test_string.rb: test frozen strings are deduplicated
+
 Thu Sep  5 12:48:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* configure.in (with_gmp): set with_gmp no if it is empty.

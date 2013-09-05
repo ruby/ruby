@@ -131,6 +131,26 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
 
+static st_table* frozen_strings;
+
+static const struct st_hash_type fstring_hash_type = {
+    rb_str_cmp,
+    rb_str_hash
+};
+
+VALUE
+rb_fstring(VALUE str)
+{
+    VALUE fstr;
+    if (!st_lookup(frozen_strings, (st_data_t)str, (st_data_t*)&fstr)) {
+	fstr = rb_str_dup(str);
+	OBJ_FREEZE(fstr);
+	RBASIC(fstr)->flags |= RSTRING_FSTR;
+	st_insert(frozen_strings, fstr, fstr);
+    }
+    return fstr;
+}
+
 static inline int
 single_byte_optimizable(VALUE str)
 {
@@ -838,6 +858,9 @@ rb_free_tmp_buffer(volatile VALUE *store)
 void
 rb_str_free(VALUE str)
 {
+    if (FL_TEST(str, RSTRING_FSTR)) {
+	st_delete(frozen_strings, (st_data_t*)&str, NULL);
+    }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
 	xfree(RSTRING(str)->as.heap.ptr);
     }
@@ -8671,6 +8694,8 @@ Init_String(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
+
+    frozen_strings = st_init_table(&fstring_hash_type);
 
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
