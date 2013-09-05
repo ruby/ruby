@@ -1,3 +1,14 @@
+Thu Sep  5 14:01:22 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/optparse.rb:  The Integer acceptable now allows binary and
+	  hexadecimal numbers per the documentation.  [ruby-trunk - Bug #8865]
+
+	  DecimalInteger, OctalInteger, DecimalNumeric now validate their input
+	  before converting to a number.  [ruby-trunk - Bug #8865]
+
+	* test/optparse/test_acceptable.rb:  Tests for the above, tests for all
+	  numeric acceptables for existing behavior.
+
 Thu Sep  5 13:49:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* include/ruby/ruby.h: add RSTRING_FSTR flag

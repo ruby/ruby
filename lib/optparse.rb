@@ -1637,15 +1637,22 @@ XXX
   decimal = '\d+(?:_\d+)*'
   binary = 'b[01]+(?:_[01]+)*'
   hex = 'x[\da-f]+(?:_[\da-f]+)*'
-  octal = "0(?:[0-7]*(?:_[0-7]+)*|#{binary}|#{hex})"
+  octal = "0(?:[0-7]+(?:_[0-7]+)*|#{binary}|#{hex})?"
   integer = "#{octal}|#{decimal}"
-  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s,| Integer(s) if s}
+
+  accept(Integer, %r"\A[-+]?(?:#{integer})\z"io) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Float number format, and converts to Float.
   #
   float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
-  floatpat = %r"\A[-+]?#{float}"io
+  floatpat = %r"\A[-+]?#{float}\z"io
   accept(Float, floatpat) {|s,| s.to_f if s}
 
   #
@@ -1653,7 +1660,7 @@ XXX
   # for float format, and Rational for rational format.
   #
   real = "[-+]?(?:#{octal}|#{float})"
-  accept(Numeric, /\A(#{real})(?:\/(#{real}))?/io) {|s, d, n|
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, n|
     if n
       Rational(d, n)
     elsif s
@@ -1664,22 +1671,40 @@ XXX
   #
   # Decimal integer format, to be converted to Integer.
   #
-  DecimalInteger = /\A[-+]?#{decimal}/io
-  accept(DecimalInteger) {|s,| s.to_i if s}
+  DecimalInteger = /\A[-+]?#{decimal}\z/io
+  accept(DecimalInteger, DecimalInteger) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Ruby/C like octal/hexadecimal/binary integer format, to be converted to
   # Integer.
   #
-  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
-  accept(OctalInteger) {|s,| s.oct if s}
+  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))\z/io
+  accept(OctalInteger, OctalInteger) {|s,|
+    begin
+      Integer(s, 8)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Decimal integer/float number format, to be converted to Integer for
   # integer format, Float for float format.
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
-  accept(DecimalNumeric) {|s,| eval(s) if s}
+  accept(DecimalNumeric, floatpat) {|s,|
+    begin
+      eval(s)
+    rescue SyntaxError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Boolean switch, which means whether it is present or not, whether it is
