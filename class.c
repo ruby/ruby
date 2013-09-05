@@ -231,22 +231,23 @@ rb_class_new(VALUE super)
     return rb_class_boot(super);
 }
 
-static NODE*
-rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass)
+static void
+rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
 {
     NODE *new_node;
-    if (!node) {
-	return NULL;
-    }
-    if (node->nd_clss == old_klass) {
-	new_node = NEW_CREF(new_klass);
-	new_node->nd_next = node->nd_next;
-    }
-    else {
+    while (node) {
+	if (node->nd_clss == old_klass) {
+	    new_node = NEW_CREF(new_klass);
+	    new_node->nd_next = node->nd_next;
+	    *new_cref_ptr = new_node;
+	    return;
+	}
 	new_node = NEW_CREF(node->nd_clss);
-	new_node->nd_next = rewrite_cref_stack(node->nd_next, old_klass, new_klass);
+	node = node->nd_next;
+	*new_cref_ptr = new_node;
+	new_cref_ptr = &new_node->nd_next;
     }
-    return new_node;
+    *new_cref_ptr = NULL;
 }
 
 static void
@@ -255,9 +256,11 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
     VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
 	rb_iseq_t *iseq;
+	NODE *new_cref;
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
-	OBJ_WRITE(iseq->self, &iseq->cref_stack, rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass));
+	rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
+	OBJ_WRITE(iseq->self, &iseq->cref_stack, new_cref);
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
     }

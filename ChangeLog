@@ -1,3 +1,7 @@
+Fri Sep  6 00:05:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rewrite_cref_stack): remove recursion.
+
 Thu Sep  5 18:05:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* string.c (fstring_cmp): take string encoding into account when
