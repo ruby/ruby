@@ -131,11 +131,13 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
 
+static int fstring_cmp(VALUE a, VALUE b);
+
 static st_table* frozen_strings;
 
 static const struct st_hash_type fstring_hash_type = {
-    rb_str_cmp,
-    rb_str_hash
+    fstring_cmp,
+    rb_str_hash,
 };
 
 VALUE
@@ -151,6 +153,16 @@ rb_fstring(VALUE str)
 	st_insert(frozen_strings, str, str);
     }
     return str;
+}
+
+static int
+fstring_cmp(VALUE a, VALUE b)
+{
+    int cmp = rb_str_hash_cmp(a, b);
+    if (cmp != 0) {
+	return cmp;
+    }
+    return ENCODING_GET(b) - ENCODING_GET(a);
 }
 
 static inline int

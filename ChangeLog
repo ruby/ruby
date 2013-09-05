@@ -1,3 +1,10 @@
+Thu Sep  5 18:05:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* string.c (fstring_cmp): take string encoding into account when
+	  comparing fstrings [ruby-core:57037] [Bug #8866]
+
+	* test/ruby/test_string.rb: add test
+
 Thu Sep  5 17:25:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fstring, rb_str_free): use st_data_t instead of VALUE.
