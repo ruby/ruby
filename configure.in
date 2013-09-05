@@ -1058,7 +1058,8 @@ AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
      AC_CHECK_LIB([gmp], [__gmpz_init]))
-   with_gmp="$ac_cv_lib_gmp___gmpz_init"])
+   with_gmp="$ac_cv_lib_gmp___gmpz_init"
+   AS_IF([test -z "$with_gmp"], [with_gmp=no])])
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
