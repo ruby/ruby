@@ -1,3 +1,10 @@
+Thu Sep  5 10:41:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): use class sequence to check class
+	  identity, instead of pointer + vm state
+
+	* vm_insnhelper.c (vm_setivar): ditto
+
 Thu Sep  5 08:20:58 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (GMP_DIV_DIGITS): New macro.
