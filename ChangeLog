@@ -1,3 +1,7 @@
+Fri Sep  6 22:47:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Define ac_cv_func_clock_getres to yes for mingw*.
+
 Fri Sep  6 21:04:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* rational.c: Include gmp.h if GMP is used.

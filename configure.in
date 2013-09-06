@@ -965,6 +965,7 @@ main()
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
                 ac_cv_func_clock_gettime=yes
+                ac_cv_func_clock_getres=yes
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
 		  	      @%:@include <iphlpapi.h>])
