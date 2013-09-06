@@ -1810,9 +1810,9 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
 }
 
 VALUE
-rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
+rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
 {
-    unsigned const char *ss, *sp, *se;
+    unsigned const char *sp, *se;
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int max_output;
@@ -1837,18 +1837,26 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
             rb_str_resize(dst, new_capa);
             rb_str_set_len(dst, dlen);
         }
-        ss = sp = (const unsigned char *)RSTRING_PTR(src) + off;
-        se = ss + len;
+        sp = (const unsigned char *)ss;
+        se = sp + len;
         ds = (unsigned char *)RSTRING_PTR(dst);
         de = ds + rb_str_capacity(dst);
         dp = ds += dlen;
         res = rb_econv_convert(ec, &sp, se, &dp, de, flags);
-        off += sp - ss;
-        len -= sp - ss;
+        len -= (const char *)sp - ss;
+        ss  = (const char *)sp;
         rb_str_set_len(dst, dlen + (dp - ds));
         rb_econv_check_error(ec);
     } while (res == econv_destination_buffer_full);
 
+    return dst;
+}
+
+VALUE
+rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
+{
+    src = rb_str_new_frozen(src);
+    dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
     RB_GC_GUARD(src);
     return dst;
 }

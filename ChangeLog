@@ -1,3 +1,8 @@
+Fri Sep  6 11:45:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_append): new function to append a string data
+	  with converting its encoding.  split from rb_econv_substr_append.
+
 Fri Sep  6 02:37:22 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: use double quotes when

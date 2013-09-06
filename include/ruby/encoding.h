@@ -309,6 +309,7 @@ VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
 VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);
 VALUE rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags);
 VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, VALUE dst, int flags);
+VALUE rb_econv_append(rb_econv_t *ec, const char *bytesrc, long bytesize, VALUE dst, int flags);
 
 void rb_econv_binmode(rb_econv_t *ec);
 
