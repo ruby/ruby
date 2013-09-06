@@ -1,3 +1,19 @@
+Fri Sep  6 21:04:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* rational.c: Include gmp.h if GMP is used.
+	  (GMP_GCD_DIGITS): New macro.
+	  (rb_gcd_gmp): New function.
+	  (f_gcd_normal): Renamed from f_gcd.
+	  (rb_gcd_normal): New function.
+	  (f_gcd): Invoke rb_gcd_gmp or f_gcd_normal.
+
+	* internal.h (rb_gcd_normal): Declared.
+	  (rb_gcd_gmp): Ditto.
+
+	* ext/-test-/rational: New directory.
+
+	* test/-ext-/rational: New directory.
+
 Fri Sep  6 14:23:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (clock_getres): required as well as clock_gettime().

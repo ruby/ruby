@@ -17,9 +17,16 @@
 #define NDEBUG
 #include <assert.h>
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+#define USE_GMP
+#include <gmp.h>
+#endif
+
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
+
+#define GMP_GCD_DIGITS 1
 
 VALUE rb_cRational;
 
@@ -276,6 +283,32 @@ k_rational_p(VALUE x)
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
 #define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
 
+#ifdef USE_GMP
+VALUE
+rb_gcd_gmp(VALUE x, VALUE y)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGITS)*CHAR_BIT;
+    mpz_t mx, my, mz;
+    size_t count;
+    VALUE z;
+    long zn;
+
+    mpz_init(mx);
+    mpz_init(my);
+    mpz_init(mz);
+    mpz_import(mx, RBIGNUM_LEN(x), -1, sizeof(BDIGIT), 0, nails, RBIGNUM_DIGITS(x));
+    mpz_import(my, RBIGNUM_LEN(y), -1, sizeof(BDIGIT), 0, nails, RBIGNUM_DIGITS(y));
+
+    mpz_gcd(mz, mx, my);
+
+    zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGITS*2 - 1) / (SIZEOF_BDIGITS*2);
+    z = rb_big_new(zn, 1);
+    mpz_export(RBIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
+
+    return rb_big_norm(z);
+}
+#endif
+
 #ifndef NDEBUG
 #define f_gcd f_gcd_orig
 #endif
@@ -302,7 +335,7 @@ i_gcd(long x, long y)
 }
 
 inline static VALUE
-f_gcd(VALUE x, VALUE y)
+f_gcd_normal(VALUE x, VALUE y)
 {
     VALUE z;
 
@@ -331,6 +364,26 @@ f_gcd(VALUE x, VALUE y)
 	y = z;
     }
     /* NOTREACHED */
+}
+
+VALUE
+rb_gcd_normal(VALUE x, VALUE y)
+{
+    return f_gcd_normal(x, y);
+}
+
+inline static VALUE
+f_gcd(VALUE x, VALUE y)
+{
+#ifdef USE_GMP
+    if (TYPE(x) == T_BIGNUM && TYPE(y) == T_BIGNUM) {
+        long xn = RBIGNUM_LEN(x);
+        long yn = RBIGNUM_LEN(y);
+        if (GMP_GCD_DIGITS <= xn && GMP_GCD_DIGITS <= yn)
+            return rb_gcd_gmp(x, y);
+    }
+#endif
+    return f_gcd_normal(x, y);
 }
 
 #ifndef NDEBUG

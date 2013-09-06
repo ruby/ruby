@@ -733,6 +733,12 @@ int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, cha
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 
+/* rational.c */
+VALUE rb_gcd_normal(VALUE self, VALUE other);
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+VALUE rb_gcd_gmp(VALUE x, VALUE y);
+#endif
+
 /* util.c */
 extern const signed char ruby_digit36_to_number_table[];
 
