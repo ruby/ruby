@@ -4359,7 +4359,6 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
       case CLOCK_MONOTONIC:
 	{
 	    LARGE_INTEGER freq;
-	    LARGE_INTEGER count;
 	    if (!QueryPerformanceFrequency(&freq)) {
 		errno = map_errno(GetLastError());
 		return -1;
