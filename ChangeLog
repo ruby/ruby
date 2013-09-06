@@ -1,3 +1,8 @@
+Fri Sep  6 14:23:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (clock_getres): required as well as clock_gettime().
+	  [ruby-dev:47699] [Bug #8869]
+
 Fri Sep  6 11:45:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_append): new function to append a string data

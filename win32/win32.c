@@ -4346,6 +4346,35 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
 }
 
 /* License: Ruby's */
+int
+clock_getres(clockid_t clock_id, struct timespec *sp)
+{
+    switch (clock_id) {
+      case CLOCK_REALTIME:
+	{
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = 1000;
+	    return 0;
+	}
+      case CLOCK_MONOTONIC:
+	{
+	    LARGE_INTEGER freq;
+	    LARGE_INTEGER count;
+	    if (!QueryPerformanceFrequency(&freq)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = (long)(1000000000.0 / freq.QuadPart);
+	    return 0;
+	}
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+}
+
+/* License: Ruby's */
 char *
 rb_w32_getcwd(char *buffer, int size)
 {
