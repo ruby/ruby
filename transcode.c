@@ -1828,8 +1828,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     else
         max_output = 1;
 
-    res = econv_destination_buffer_full;
-    while (res == econv_destination_buffer_full) {
+    do {
         long dlen = RSTRING_LEN(dst);
         if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
             unsigned long new_capa = (unsigned long)dlen + len + max_output;
@@ -1848,7 +1847,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
         len -= sp - ss;
         rb_str_set_len(dst, dlen + (dp - ds));
         rb_econv_check_error(ec);
-    }
+    } while (res == econv_destination_buffer_full);
 
     RB_GC_GUARD(src);
     return dst;
