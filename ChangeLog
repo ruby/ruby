@@ -12,7 +12,7 @@ Fri Sep  6 02:37:22 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: use double quotes when
 	  strings start with special characters.
-	  [Fixes GH-157] https://github.com/tenderlove/psych/issues/157
+	  https://github.com/tenderlove/psych/issues/157
 
 	* test/psych/test_string.rb: test for change.
 
@@ -571,7 +571,7 @@ Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
 	  treated as strings.
-	  [Fixes GH-156] https://github.com/tenderlove/psych/issues/156
+	  https://github.com/tenderlove/psych/issues/156
 
 	* test/psych/test_string.rb: test for change
 
