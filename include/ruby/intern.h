@@ -428,6 +428,7 @@ int rb_thread_alone(void);
 DEPRECATED(void rb_thread_polling(void));
 void rb_thread_sleep(int);
 void rb_thread_sleep_forever(void);
+void rb_thread_sleep_deadly(void);
 VALUE rb_thread_stop(void);
 VALUE rb_thread_wakeup(VALUE);
 VALUE rb_thread_wakeup_alive(VALUE);

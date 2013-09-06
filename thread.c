@@ -1058,7 +1058,7 @@ rb_thread_sleep_forever(void)
     sleep_forever(GET_THREAD(), 0, 1);
 }
 
-static void
+void
 rb_thread_sleep_deadly(void)
 {
     thread_debug("rb_thread_sleep_deadly\n");

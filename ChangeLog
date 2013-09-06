@@ -1,3 +1,26 @@
+Fri Sep  6 23:53:31 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* common.mk: use RUNRUBY instead of MINIRUBY because MINIRUBY can't
+	  require extension libraries. The patch is from nobu
+	  (Nobuyoshi Nakada).
+
+	* ext/thread/extconf.rb: for build ext/thread/thread.c.
+
+	* include/ruby/intern.h: ditto.
+
+	* thread.c: ditto.
+
+	* lib/thread.rb: removed and replaced by ext/thread/thread.c.
+
+	* ext/thread/thread.c: Queue, SizedQueue and ConditionVariable
+	  implementations in C. This patch is based on patches from panaggio
+	  (Ricardo Panaggio) and funny_falcon (Yura Sokolov) and  ko1
+	  (Koichi Sasada). [ruby-core:31513] [Feature #3620]
+
+	* test/thread/test_queue.rb (test_queue_thread_raise): add a test for
+	  ensuring that killed thread should be removed from waiting threads.
+	  It is based on a code by ko1 (Koichi Sasada). [ruby-core:45950]
+
 Fri Sep  6 22:47:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: Define ac_cv_func_clock_getres to yes for mingw*.
