@@ -1850,6 +1850,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
         rb_econv_check_error(ec);
     }
 
+    RB_GC_GUARD(src);
     return dst;
 }
 
