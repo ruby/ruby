@@ -32,7 +32,8 @@ with all sufficient information, see the ChangeLog file.
   * New methods
     * Fixnum#bit_length
   * Performance improvement
-    * Use GMP for multiplication of big numbers if it is available.
+    * Use GMP for multiplication and several other operations of big numbers
+      if it is available.
 
 * Binding
   * New methods
