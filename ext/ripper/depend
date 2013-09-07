@@ -586,6 +586,7 @@ ripper.o: $(top_srcdir)/internal/basic_operators.h
 ripper.o: $(top_srcdir)/internal/bignum.h
 ripper.o: $(top_srcdir)/internal/bits.h
 ripper.o: $(top_srcdir)/internal/box.h
+ripper.o: $(top_srcdir)/internal/compar.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
@@ -812,8 +813,10 @@ ripper_init.o: $(hdrdir)/ruby/st.h
 ripper_init.o: $(hdrdir)/ruby/subst.h
 ripper_init.o: $(top_srcdir)/internal.h
 ripper_init.o: $(top_srcdir)/internal/array.h
+ripper_init.o: $(top_srcdir)/internal/basic_operators.h
 ripper_init.o: $(top_srcdir)/internal/bignum.h
 ripper_init.o: $(top_srcdir)/internal/bits.h
+ripper_init.o: $(top_srcdir)/internal/compar.h
 ripper_init.o: $(top_srcdir)/internal/compilers.h
 ripper_init.o: $(top_srcdir)/internal/complex.h
 ripper_init.o: $(top_srcdir)/internal/fixnum.h
