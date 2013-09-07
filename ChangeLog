@@ -1,3 +1,16 @@
+Sat Sep  7 15:36:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_eval.c (vm_call0): fix prototype, the id parameter should be of
+	  type ID, not VALUE
+
+	* vm_insnhelper.c (check_match): the rb_funcall family of functions
+	  does not care about refinements. We need to use
+	  rb_method_entry_with_refinements instead to call === with
+	  refinements. Thanks to Jon Conley for reporting this bug.
+	  [ruby-core:57051] [Bug #8872]
+
+	* test/ruby/test_refinement.rb: add test
+
 Sat Sep  7 13:49:40 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* variable.c (classname): the name of class that has

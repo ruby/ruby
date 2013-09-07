@@ -931,18 +931,23 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
 }
 
 static VALUE
+vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_method_entry_t*, VALUE);
+
+static VALUE
 check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 {
     switch (type) {
       case VM_CHECKMATCH_TYPE_WHEN:
 	return pattern;
-      case VM_CHECKMATCH_TYPE_CASE:
-	return rb_funcall2(pattern, idEqq, 1, &target);
-      case VM_CHECKMATCH_TYPE_RESCUE: {
+      case VM_CHECKMATCH_TYPE_RESCUE:
 	if (!rb_obj_is_kind_of(pattern, rb_cModule)) {
 	    rb_raise(rb_eTypeError, "class or module required for rescue clause");
 	}
-	return RTEST(rb_funcall2(pattern, idEqq, 1, &target));
+	/* fall through */
+      case VM_CHECKMATCH_TYPE_CASE: {
+	VALUE defined_class;
+	rb_method_entry_t *me = rb_method_entry_with_refinements(CLASS_OF(pattern), idEqq, &defined_class);
+	return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
       }
       default:
 	rb_bug("check_match: unreachable");

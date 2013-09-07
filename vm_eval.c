@@ -34,7 +34,7 @@ static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type sc
 static VALUE vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv);
 
 static VALUE
-vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
+vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv,
 	 const rb_method_entry_t *me, VALUE defined_class)
 {
     rb_call_info_t ci_entry, *ci = &ci_entry;
