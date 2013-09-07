@@ -1,3 +1,8 @@
+Sat Sep  7 10:40:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (TCP_FASTOPEN): Defined for TCP fast open.
+	  [ruby-core:57048] [Feature #8871] patch by Masaki Matsushita.
+
 Fri Sep  6 23:53:31 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* common.mk: use RUNRUBY instead of MINIRUBY because MINIRUBY can't
