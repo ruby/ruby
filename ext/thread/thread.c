@@ -288,7 +288,7 @@ queue_pop_should_block(int argc, VALUE *argv)
       case 0:
 	break;
       case 1:
-	should_block = RTEST(argv[0]) ? Qtrue : Qfalse;
+	should_block = RTEST(argv[0]) ? Qfalse : Qtrue;
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
