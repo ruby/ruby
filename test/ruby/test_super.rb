@@ -399,7 +399,7 @@ class TestSuper < Test::Unit::TestCase
   end
 
   def test_super_splat
-    # [ruby-list:49575] 
+    # [ruby-list:49575]
     y = Y.new
     assert_equal([1, 2], y.foo(1, 2))
     assert_equal([1, false], y.foo(1, false))
