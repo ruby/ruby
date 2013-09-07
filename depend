@@ -287,6 +287,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 ast.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 ast.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ast.$(OBJEXT): $(top_srcdir)/internal/box.h
+ast.$(OBJEXT): $(top_srcdir)/internal/compar.h
 ast.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ast.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ast.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -530,6 +531,7 @@ bignum.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/bits.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/box.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/class.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/compar.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/complex.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -1627,6 +1629,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 compile.$(OBJEXT): $(top_srcdir)/internal/bits.h
 compile.$(OBJEXT): $(top_srcdir)/internal/box.h
 compile.$(OBJEXT): $(top_srcdir)/internal/class.h
+compile.$(OBJEXT): $(top_srcdir)/internal/compar.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compile.h
 compile.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 compile.$(OBJEXT): $(top_srcdir)/internal/complex.h
@@ -1895,6 +1898,7 @@ complex.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 complex.$(OBJEXT): $(top_srcdir)/internal/bits.h
 complex.$(OBJEXT): $(top_srcdir)/internal/box.h
 complex.$(OBJEXT): $(top_srcdir)/internal/class.h
+complex.$(OBJEXT): $(top_srcdir)/internal/compar.h
 complex.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 complex.$(OBJEXT): $(top_srcdir)/internal/complex.h
 complex.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -4885,6 +4889,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/bits.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/box.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/class.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/compar.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -5815,6 +5820,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 gc.$(OBJEXT): $(top_srcdir)/internal/bits.h
 gc.$(OBJEXT): $(top_srcdir)/internal/box.h
 gc.$(OBJEXT): $(top_srcdir)/internal/class.h
+gc.$(OBJEXT): $(top_srcdir)/internal/compar.h
 gc.$(OBJEXT): $(top_srcdir)/internal/compile.h
 gc.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/complex.h
@@ -6966,6 +6972,7 @@ io.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 io.$(OBJEXT): $(top_srcdir)/internal/bits.h
 io.$(OBJEXT): $(top_srcdir)/internal/box.h
 io.$(OBJEXT): $(top_srcdir)/internal/class.h
+io.$(OBJEXT): $(top_srcdir)/internal/compar.h
 io.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 io.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 io.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -7197,6 +7204,7 @@ io_buffer.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bits.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/box.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/compar.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/error.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -7413,6 +7421,7 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/box.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/class.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/compar.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compile.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/complex.h
@@ -7919,6 +7928,7 @@ load.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 load.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 load.$(OBJEXT): $(top_srcdir)/internal/bits.h
 load.$(OBJEXT): $(top_srcdir)/internal/box.h
+load.$(OBJEXT): $(top_srcdir)/internal/compar.h
 load.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 load.$(OBJEXT): $(top_srcdir)/internal/complex.h
 load.$(OBJEXT): $(top_srcdir)/internal/dir.h
@@ -8675,6 +8685,7 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/bits.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/box.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/class.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/compar.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -9284,6 +9295,7 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/box.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/compar.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/complex.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/eval.h
@@ -9757,6 +9769,7 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/bits.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/box.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/class.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/compar.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/complex.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -9974,6 +9987,7 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/bits.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/box.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/class.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/compar.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/complex.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
@@ -10196,6 +10210,7 @@ object.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 object.$(OBJEXT): $(top_srcdir)/internal/bits.h
 object.$(OBJEXT): $(top_srcdir)/internal/box.h
 object.$(OBJEXT): $(top_srcdir)/internal/class.h
+object.$(OBJEXT): $(top_srcdir)/internal/compar.h
 object.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 object.$(OBJEXT): $(top_srcdir)/internal/error.h
 object.$(OBJEXT): $(top_srcdir)/internal/eval.h
@@ -10424,6 +10439,7 @@ pack.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 pack.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 pack.$(OBJEXT): $(top_srcdir)/internal/bits.h
 pack.$(OBJEXT): $(top_srcdir)/internal/box.h
+pack.$(OBJEXT): $(top_srcdir)/internal/compar.h
 pack.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 pack.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -10640,6 +10656,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 parse.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 parse.$(OBJEXT): $(top_srcdir)/internal/bits.h
 parse.$(OBJEXT): $(top_srcdir)/internal/box.h
+parse.$(OBJEXT): $(top_srcdir)/internal/compar.h
 parse.$(OBJEXT): $(top_srcdir)/internal/compile.h
 parse.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 parse.$(OBJEXT): $(top_srcdir)/internal/complex.h
@@ -12680,6 +12697,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 process.$(OBJEXT): $(top_srcdir)/internal/bits.h
 process.$(OBJEXT): $(top_srcdir)/internal/box.h
 process.$(OBJEXT): $(top_srcdir)/internal/class.h
+process.$(OBJEXT): $(top_srcdir)/internal/compar.h
 process.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 process.$(OBJEXT): $(top_srcdir)/internal/dir.h
 process.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -12912,6 +12930,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/box.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/compar.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -13145,6 +13164,7 @@ random.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 random.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 random.$(OBJEXT): $(top_srcdir)/internal/bits.h
 random.$(OBJEXT): $(top_srcdir)/internal/box.h
+random.$(OBJEXT): $(top_srcdir)/internal/compar.h
 random.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 random.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 random.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -13557,6 +13577,7 @@ rational.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/bits.h
 rational.$(OBJEXT): $(top_srcdir)/internal/box.h
 rational.$(OBJEXT): $(top_srcdir)/internal/class.h
+rational.$(OBJEXT): $(top_srcdir)/internal/compar.h
 rational.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/complex.h
 rational.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -14990,6 +15011,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/box.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/class.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/compar.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/cont.h
@@ -15239,8 +15261,10 @@ ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
 ruby.$(OBJEXT): {$(VPATH)}yjit.h
 ruby_parser.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/array.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bits.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/compar.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -16445,9 +16469,11 @@ signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/version.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bits.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/class.h
+sprintf.$(OBJEXT): $(top_srcdir)/internal/compar.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/error.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
@@ -20475,6 +20501,7 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/box.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/class.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/compar.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
@@ -20732,6 +20759,7 @@ zjit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/box.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/class.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/compar.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 zjit.$(OBJEXT): $(top_srcdir)/internal/cont.h

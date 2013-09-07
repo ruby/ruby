@@ -492,7 +492,7 @@ rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
 static VALUE
 ensure_cmp(VALUE c, VALUE x, VALUE y)
 {
-    if (NIL_P(c)) rb_cmperr(x, y);
+    if (NIL_P(c)) rb_cmperr_reason(x, y, "comparator returned nil");
     return c;
 }
 
@@ -502,7 +502,7 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
     VALUE x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, FALSE)) {
-        rb_cmperr(x0, y0);
+        rb_cmperr_reason(x0, y0, "coercion was not possible");
         UNREACHABLE_RETURN(Qnil);
     }
     return ensure_cmp(rb_funcall(x, func, 1, y), x0, y0);
@@ -5911,7 +5911,7 @@ int_downto(VALUE from, VALUE to)
             rb_yield(i);
             i = rb_funcall(i, '-', 1, INT2FIX(1));
         }
-        if (NIL_P(c)) rb_cmperr(i, to);
+        ensure_cmp(c, i, to);
     }
     return from;
 }
