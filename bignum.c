@@ -6291,12 +6291,11 @@ big_shift(VALUE x, long n)
 }
 
 static VALUE
-big_fdiv(VALUE x, VALUE y)
+big_fdiv(VALUE x, VALUE y, long ey)
 {
 #define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
     VALUE z;
-    long l, ex, ey;
-    int i;
+    long l, ex;
 
     bigtrunc(x);
     l = RBIGNUM_LEN(x);
@@ -6304,23 +6303,6 @@ big_fdiv(VALUE x, VALUE y)
     ex -= 2 * DBL_BIGDIG * BITSPERDIG;
     if (ex) x = big_shift(x, ex);
 
-    switch (TYPE(y)) {
-      case T_FIXNUM:
-	y = rb_int2big(FIX2LONG(y));
-      case T_BIGNUM:
-	bigtrunc(y);
-	l = RBIGNUM_LEN(y);
-	ey = l * BITSPERDIG - nlz(BDIGITS(y)[l-1]);
-	ey -= DBL_BIGDIG * BITSPERDIG;
-	if (ey) y = big_shift(y, ey);
-	break;
-      case T_FLOAT:
-	y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
-	ey = i - DBL_MANT_DIG;
-	break;
-      default:
-	rb_bug("big_fdiv");
-    }
     bigdivrem(x, y, &z, 0);
     l = ex - ey;
 #if SIZEOF_LONG > SIZEOF_INT
@@ -6331,6 +6313,26 @@ big_fdiv(VALUE x, VALUE y)
     }
 #endif
     return DBL2NUM(ldexp(big2dbl(z), (int)l));
+}
+
+static VALUE
+big_fdiv_int(VALUE x, VALUE y)
+{
+    long l, ey;
+    bigtrunc(y);
+    l = RBIGNUM_LEN(y);
+    ey = l * BITSPERDIG - nlz(BDIGITS(y)[l-1]);
+    ey -= DBL_BIGDIG * BITSPERDIG;
+    if (ey) y = big_shift(y, ey);
+    return big_fdiv(x, y, ey);
+}
+
+static VALUE
+big_fdiv_float(VALUE x, VALUE y)
+{
+    int i;
+    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
+    return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
 /*
@@ -6356,13 +6358,13 @@ rb_big_fdiv(VALUE x, VALUE y)
       case T_FIXNUM:
 	dy = (double)FIX2LONG(y);
 	if (isinf(dx))
-	    return big_fdiv(x, y);
+	    return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
 	break;
 
       case T_BIGNUM:
 	dy = rb_big2dbl(y);
 	if (isinf(dx) || isinf(dy))
-	    return big_fdiv(x, y);
+	    return big_fdiv_int(x, y);
 	break;
 
       case T_FLOAT:
@@ -6370,7 +6372,7 @@ rb_big_fdiv(VALUE x, VALUE y)
 	if (isnan(dy))
 	    return y;
 	if (isinf(dx))
-	    return big_fdiv(x, y);
+	    return big_fdiv_float(x, y);
 	break;
 
       default:
