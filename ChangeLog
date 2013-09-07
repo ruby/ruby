@@ -1,3 +1,10 @@
+Sat Sep  7 13:29:22 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/find.rb (Find.find): respect the encodings of arguments.
+	  [ruby-dev:47530] [Feature #8657]
+
+	* test/test_find.rb: add tests.
+
 Sat Sep  7 10:40:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb (TCP_FASTOPEN): Defined for TCP fast open.
