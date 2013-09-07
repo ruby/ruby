@@ -20,6 +20,8 @@
     extern int signbit(double);
 #endif
 
+#define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
+
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 
@@ -444,7 +446,7 @@ math_log(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &x, &base);
 
-    if (RB_TYPE_P(x, T_BIGNUM) && RBIGNUM_POSITIVE_P(x) &&
+    if (RB_BIGNUM_TYPE_P(x) && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
@@ -501,7 +503,7 @@ math_log2(VALUE obj, VALUE x)
     double d0, d;
     size_t numbits = 0;
 
-    if (RB_TYPE_P(x, T_BIGNUM) && RBIGNUM_POSITIVE_P(x) &&
+    if (RB_BIGNUM_TYPE_P(x) && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
@@ -540,7 +542,7 @@ math_log10(VALUE obj, VALUE x)
     double d0, d;
     size_t numbits = 0;
 
-    if (RB_TYPE_P(x, T_BIGNUM) && RBIGNUM_POSITIVE_P(x) &&
+    if (RB_BIGNUM_TYPE_P(x) && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
