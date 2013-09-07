@@ -82,20 +82,23 @@ class TestConditionVariable < Test::Unit::TestCase
   end
 
   def test_condvar_wait_deadlock
-    assert_in_out_err([], <<-INPUT, ["No live threads left. Deadlock?"], [])
+    assert_in_out_err([], <<-INPUT, ["fatal", "No live threads left. Deadlock?"], [])
       require "thread"
 
       mutex = Mutex.new
       cv = ConditionVariable.new
 
+      klass = nil
       mesg = nil
       begin
         mutex.lock
         cv.wait mutex
         mutex.unlock
       rescue Exception => e
+        klass = e.class
         mesg = e.message
       end
+      puts klass
       print mesg
 INPUT
   end

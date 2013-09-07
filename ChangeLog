@@ -1,3 +1,11 @@
+Sat Sep  7 13:49:40 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* variable.c (classname): the name of class that has
+	  non class id should not be nil. This bug was introduced
+	  in r36577.
+
+	* test/thread/test_cv.rb: test for change.
+
 Sat Sep  7 13:29:22 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/find.rb (Find.find): respect the encodings of arguments.
