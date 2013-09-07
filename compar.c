@@ -21,7 +21,7 @@ rb_cmp(VALUE x, VALUE y)
 }
 
 void
-rb_cmperr(VALUE x, VALUE y)
+rb_cmperr(VALUE x, VALUE y, const char *reason)
 {
     VALUE classname;
 
@@ -31,8 +31,8 @@ rb_cmperr(VALUE x, VALUE y)
     else {
 	classname = rb_obj_class(y);
     }
-    rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
-	     rb_obj_class(x), classname);
+    rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed: %s",
+	     rb_obj_class(x), classname, reason);
 }
 
 static VALUE

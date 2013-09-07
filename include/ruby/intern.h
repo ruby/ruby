@@ -236,7 +236,7 @@ void rb_define_singleton_method(VALUE, const char*, VALUE(*)(ANYARGS), int);
 VALUE rb_singleton_class(VALUE);
 /* compar.c */
 int rb_cmpint(VALUE, VALUE, VALUE);
-NORETURN(void rb_cmperr(VALUE, VALUE));
+NORETURN(void rb_cmperr(VALUE, VALUE, const char*));
 /* cont.c */
 VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);

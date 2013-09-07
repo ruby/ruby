@@ -2925,7 +2925,7 @@ int
 rb_cmpint(VALUE val, VALUE a, VALUE b)
 {
     if (NIL_P(val)) {
-	rb_cmperr(a, b);
+	rb_cmperr(a, b, "comparator returned nil");
     }
     if (FIXNUM_P(val)) {
         long l = FIX2LONG(val);
