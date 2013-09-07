@@ -46,7 +46,7 @@ manually. Never deserialize to a user specified class.
 == YAML
 
 YAML is a popular human readable data serialization format used by many Ruby
-programs for configuration and database persistance of Ruby object trees.
+programs for configuration and database persistence of Ruby object trees.
 
 Similar to +Marshal+, it is able to deserialize into arbitrary Ruby classes.
 For example, the following YAML data will create an +ERB+ object when
