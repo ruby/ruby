@@ -1,3 +1,9 @@
+Sat Sep  7 21:33:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_log): Test the sign for bignums.
+	  (math_log2): Ditto.
+	  (math_log10): Ditto.
+
 Sat Sep  7 20:25:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_log): Support bignums bigger than 2**1024.

@@ -444,7 +444,7 @@ math_log(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &x, &base);
 
-    if (TYPE(x) == T_BIGNUM &&
+    if (TYPE(x) == T_BIGNUM && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
@@ -501,7 +501,7 @@ math_log2(VALUE obj, VALUE x)
     double d0, d;
     size_t numbits = 0;
 
-    if (TYPE(x) == T_BIGNUM &&
+    if (TYPE(x) == T_BIGNUM && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
@@ -540,7 +540,7 @@ math_log10(VALUE obj, VALUE x)
     double d0, d;
     size_t numbits = 0;
 
-    if (TYPE(x) == T_BIGNUM &&
+    if (TYPE(x) == T_BIGNUM && RBIGNUM_POSITIVE_P(x) &&
             DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
