@@ -1864,7 +1864,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     if (NIL_P(step)) {							\
         step = INT2FIX(1);						\
     }									\
-    desc = negative_int_p(step);					\
+    desc = !positive_int_p(step);					\
     if (NIL_P(to)) {							\
         to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);		\
     }									\
