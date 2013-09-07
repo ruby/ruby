@@ -256,6 +256,13 @@ queue_delete_from_waiting(struct waiting_delete *p)
 }
 
 static VALUE
+queue_sleep(VALUE arg)
+{
+    rb_thread_sleep_deadly();
+    return Qnil;
+}
+
+static VALUE
 queue_do_pop(VALUE self, VALUE should_block)
 {
     struct waiting_delete args;
@@ -267,7 +274,7 @@ queue_do_pop(VALUE self, VALUE should_block)
 	    rb_raise(rb_eThreadError, "queue empty");
 	}
 	rb_ary_push(args.waiting, args.th);
-	rb_ensure((VALUE (*)())rb_thread_sleep_deadly, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
+	rb_ensure(queue_sleep, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
     }
 
     return rb_ary_shift(GET_QUEUE_QUE(self));
