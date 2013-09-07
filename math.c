@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "internal.h"
+#include <float.h>
 #include <math.h>
 #include <errno.h>
 
@@ -439,8 +440,16 @@ math_log(int argc, VALUE *argv)
 {
     VALUE x, base;
     double d0, d;
+    size_t numbits = 0;
 
     rb_scan_args(argc, argv, "11", &x, &base);
+
+    if (TYPE(x) == T_BIGNUM &&
+            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
+        numbits -= DBL_MANT_DIG;
+        x = rb_big_rshift(x, SIZET2NUM(numbits));
+    }
+
     Need_Float(x);
     d0 = RFLOAT_VALUE(x);
     /* check for domain error */
@@ -448,6 +457,8 @@ math_log(int argc, VALUE *argv)
     /* check for pole error */
     if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log(d0);
+    if (numbits)
+        d += numbits * log(2); /* log(2**numbits) */
     if (argc == 2) {
 	Need_Float(base);
 	d /= log(RFLOAT_VALUE(base));
@@ -488,6 +499,13 @@ static VALUE
 math_log2(VALUE obj, VALUE x)
 {
     double d0, d;
+    size_t numbits = 0;
+
+    if (TYPE(x) == T_BIGNUM &&
+            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
+        numbits -= DBL_MANT_DIG;
+        x = rb_big_rshift(x, SIZET2NUM(numbits));
+    }
 
     Need_Float(x);
     d0 = RFLOAT_VALUE(x);
@@ -496,6 +514,7 @@ math_log2(VALUE obj, VALUE x)
     /* check for pole error */
     if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log2(d0);
+    d += numbits;
     return DBL2NUM(d);
 }
 
@@ -519,6 +538,13 @@ static VALUE
 math_log10(VALUE obj, VALUE x)
 {
     double d0, d;
+    size_t numbits = 0;
+
+    if (TYPE(x) == T_BIGNUM &&
+            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
+        numbits -= DBL_MANT_DIG;
+        x = rb_big_rshift(x, SIZET2NUM(numbits));
+    }
 
     Need_Float(x);
     d0 = RFLOAT_VALUE(x);
@@ -527,6 +553,8 @@ math_log10(VALUE obj, VALUE x)
     /* check for pole error */
     if (d0 == 0.0) return DBL2NUM(-INFINITY);
     d = log10(d0);
+    if (numbits)
+        d += numbits * log10(2); /* log10(2**numbits) */
     return DBL2NUM(d);
 }
 
