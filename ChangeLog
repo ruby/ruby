@@ -1,3 +1,7 @@
+Sun Sep  8 16:01:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* rational.c (f_gcd): Relax the condition to use GMP.
+
 Sun Sep  8 13:56:38 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (folevariant_initialize): check type of

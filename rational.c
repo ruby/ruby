@@ -379,7 +379,7 @@ f_gcd(VALUE x, VALUE y)
     if (TYPE(x) == T_BIGNUM && TYPE(y) == T_BIGNUM) {
         long xn = RBIGNUM_LEN(x);
         long yn = RBIGNUM_LEN(y);
-        if (GMP_GCD_DIGITS <= xn && GMP_GCD_DIGITS <= yn)
+        if (GMP_GCD_DIGITS <= xn || GMP_GCD_DIGITS <= yn)
             return rb_gcd_gmp(x, y);
     }
 #endif
