@@ -143,7 +143,7 @@ const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.5.4"
+#define WIN32OLE_VERSION "1.5.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -584,6 +584,7 @@ static VALUE evs_length(void);
 static void  olevariant_free(struct olevariantdata *pvar);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
+static void check_type_val2variant(VALUE val);
 static VALUE folevariant_initialize(VALUE self, VALUE args);
 static long *ary2safe_array_index(int ary_size, VALUE *ary, SAFEARRAY *psa);
 static void unlock_safe_array(SAFEARRAY *psa);
@@ -8744,6 +8745,38 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
     return obj;
 }
 
+static void
+check_type_val2variant(VALUE val)
+{
+    VALUE elem;
+    int len = 0;
+    int i = 0;
+    if(!rb_obj_is_kind_of(val, cWIN32OLE) &&
+       !rb_obj_is_kind_of(val, cWIN32OLE_VARIANT) &&
+       !rb_obj_is_kind_of(val, rb_cTime)) {
+	switch (TYPE(val)) {
+	case T_ARRAY:
+            len = RARRAY_LEN(val);
+            for(i = 0; i < len; i++) {
+                elem = rb_ary_entry(val, i);
+                check_type_val2variant(elem);
+            }
+            break;
+	case T_STRING:
+	case T_FIXNUM:
+	case T_BIGNUM:
+	case T_FLOAT:
+	case T_TRUE:
+	case T_FALSE:
+	case T_NIL:
+	    break;
+	default:
+	    rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
+		     rb_obj_classname(val));
+	}
+    }
+}
+
 /*
  *  call-seq:
  *     WIN32OLE_VARIANT.new(val, vartype) #=> WIN32OLE_VARIANT object.
@@ -8779,24 +8812,7 @@ folevariant_initialize(VALUE self, VALUE args)
     VariantInit(&var);
     val = rb_ary_entry(args, 0);
 
-    if(!rb_obj_is_kind_of(val, cWIN32OLE) &&
-       !rb_obj_is_kind_of(val, cWIN32OLE_VARIANT) &&
-       !rb_obj_is_kind_of(val, rb_cTime)) {
-	switch (TYPE(val)) {
-	case T_ARRAY:
-	case T_STRING:
-	case T_FIXNUM:
-	case T_BIGNUM:
-	case T_FLOAT:
-	case T_TRUE:
-	case T_FALSE:
-	case T_NIL:
-	    break;
-	default:
-	    rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
-		     rb_obj_classname(val));
-	}
-    }
+    check_type_val2variant(val);
 
     Data_Get_Struct(self, struct olevariantdata, pvar);
     if (len == 1) {

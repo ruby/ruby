@@ -27,6 +27,14 @@ if defined?(WIN32OLE_VARIANT)
       }
     end
 
+    def test_s_new_ary
+      obj = WIN32OLE_VARIANT.new([1])
+      assert_instance_of(WIN32OLE_VARIANT, obj)
+      assert_raise(TypeError) {
+        WIN32OLE_VARIANT.new([/foo/])
+      }
+    end
+
     def test_s_new_no_argument
       ex = nil
       begin

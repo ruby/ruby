@@ -1,3 +1,10 @@
+Sun Sep  8 13:56:38 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folevariant_initialize): check type of
+	  element of array.
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_ary): ditto.
+
 Sat Sep  7 21:33:10 2013  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_log): Test the sign for bignums.
