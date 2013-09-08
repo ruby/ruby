@@ -1113,6 +1113,7 @@ probes.h: {$(VPATH)}probes.dmyh
 	  $(Q) $(CP) $(srcdir:/=\)\probes.dmyh $(OS_DEST_FILE)\
 	)
 
+{$(VPATH)}sizes.c: sizes.c
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
