@@ -32,8 +32,9 @@ with all sufficient information, see the ChangeLog file.
   * New methods
     * Fixnum#bit_length
   * Performance improvement
-    * Use GMP for multiplication and several other operations of big numbers
-      if it is available.
+    * Use GMP if available.
+      GMP is used only for several operations:
+      multiplication, division, radix conversion, GCD
 
 * Binding
   * New methods
