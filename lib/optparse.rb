@@ -185,7 +185,7 @@
 #
 #         # Another typical switch to print the version.
 #         opts.on_tail("--version", "Show version") do
-#           puts OptionParser::Version.join('.')
+#           puts ::Version.join('.')
 #           exit
 #         end
 #       end
@@ -212,11 +212,6 @@
 #
 class OptionParser
   # :stopdoc:
-  RCSID = %w$Id$[1..-1].each {|s| s.freeze}.freeze
-  Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
-  LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
-  Release = RCSID[2]
-
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze
   OptionalArgument = [OPTIONAL_ARGUMENT = :OPTIONAL, false].freeze
@@ -1959,10 +1954,3 @@ end
 
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
-
-if $0 == __FILE__
-  Version = OptionParser::Version # :nodoc:
-  ARGV.options {|q|
-    q.parse!.empty? or print "what's #{ARGV.join(' ')}?\n"
-  } or abort(ARGV.options.to_s)
-end
