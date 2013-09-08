@@ -1,6 +1,7 @@
 #include "ruby.h"
 #include "internal.h"
 
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
 big(VALUE x)
 {
@@ -11,6 +12,7 @@ big(VALUE x)
     rb_raise(rb_eTypeError, "can't convert %s to Bignum",
             rb_obj_classname(x));
 }
+#endif
 
 static VALUE
 gcd_normal(VALUE x, VALUE y)
