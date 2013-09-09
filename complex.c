@@ -210,17 +210,16 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    switch (TYPE(x)) {
-      case T_FIXNUM:
+    if (RB_TYPE_P(x, T_FIXNUM)) {
 	return f_boolcast(FIX2LONG(x) == 0);
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
-      case T_RATIONAL:
-      {
-	  VALUE num = RRATIONAL(x)->num;
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+	VALUE num = RRATIONAL(x)->num;
 
-	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
-      }
+	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
     }
     return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
@@ -230,19 +229,18 @@ f_zero_p(VALUE x)
 inline static VALUE
 f_one_p(VALUE x)
 {
-    switch (TYPE(x)) {
-      case T_FIXNUM:
+    if (RB_TYPE_P(x, T_FIXNUM)) {
 	return f_boolcast(FIX2LONG(x) == 1);
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
-      case T_RATIONAL:
-      {
-	  VALUE num = RRATIONAL(x)->num;
-	  VALUE den = RRATIONAL(x)->den;
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+	VALUE num = RRATIONAL(x)->num;
+	VALUE den = RRATIONAL(x)->den;
 
-	  return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
-			    FIXNUM_P(den) && FIX2LONG(den) == 1);
-      }
+	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
+			  FIXNUM_P(den) && FIX2LONG(den) == 1);
     }
     return rb_funcall(x, id_eqeq_p, 1, ONE);
 }
@@ -383,13 +381,10 @@ nucomp_canonicalization(int f)
 inline static void
 nucomp_real_check(VALUE num)
 {
-    switch (TYPE(num)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-      case T_RATIONAL:
-	break;
-      default:
+    if (!RB_TYPE_P(x, T_FIXNUM) &&
+	!RB_TYPE_P(x, T_BIGNUM) &&
+	!RB_TYPE_P(x, T_FLOAT) &&
+	!RB_TYPE_P(x, T_RATIONAL)) {
 	if (!k_numeric_p(num) || !f_real_p(num))
 	    rb_raise(rb_eTypeError, "not a real");
     }
@@ -1242,11 +1237,9 @@ f_signbit(VALUE x)
     !defined(signbit)
     extern int signbit(double);
 #endif
-    switch (TYPE(x)) {
-      case T_FLOAT: {
+    if (RB_TYPE_P(x, T_FLOAT)) {
 	double f = RFLOAT_VALUE(x);
 	return f_boolcast(!isnan(f) && signbit(f));
-      }
     }
     return f_negative_p(x);
 }
@@ -1887,30 +1880,17 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     backref = rb_backref_get();
     rb_match_busy(backref);
 
-    switch (TYPE(a1)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      case T_STRING:
+    if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_c_strict(a1);
-	break;
     }
 
-    switch (TYPE(a2)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      case T_STRING:
+    if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_c_strict(a2);
-	break;
     }
 
     rb_backref_set(backref);
 
-    switch (TYPE(a1)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a1, T_COMPLEX)) {
 	{
 	    get_dat1(a1);
 
@@ -1919,8 +1899,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	}
     }
 
-    switch (TYPE(a2)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a2, T_COMPLEX)) {
 	{
 	    get_dat1(a2);
 
@@ -1929,8 +1908,7 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	}
     }
 
-    switch (TYPE(a1)) {
-      case T_COMPLEX:
+    if (RB_TYPE_P(a1, T_COMPLEX)) {
 	if (argc == 1 || (k_exact_zero_p(a2)))
 	    return a1;
     }
