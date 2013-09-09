@@ -381,10 +381,10 @@ nucomp_canonicalization(int f)
 inline static void
 nucomp_real_check(VALUE num)
 {
-    if (!RB_TYPE_P(x, T_FIXNUM) &&
-	!RB_TYPE_P(x, T_BIGNUM) &&
-	!RB_TYPE_P(x, T_FLOAT) &&
-	!RB_TYPE_P(x, T_RATIONAL)) {
+    if (!RB_TYPE_P(num, T_FIXNUM) &&
+	!RB_TYPE_P(num, T_BIGNUM) &&
+	!RB_TYPE_P(num, T_FLOAT) &&
+	!RB_TYPE_P(num, T_RATIONAL)) {
 	if (!k_numeric_p(num) || !f_real_p(num))
 	    rb_raise(rb_eTypeError, "not a real");
     }
