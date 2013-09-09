@@ -1,3 +1,10 @@
+Mon Sep  9 09:14:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (Gem::Specification#initialize): default date to
+	  RUBY_RELEASE_DATE.  [ruby-core:57072] [Bug #8878]
+
+	* tool/rbinstall.rb (Gem::Specification#to_ruby): add date.
+
 Sun Sep  8 16:01:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* rational.c (f_gcd): Relax the condition to use GMP.
