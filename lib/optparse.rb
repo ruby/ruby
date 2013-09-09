@@ -185,7 +185,7 @@
 #
 #         # Another typical switch to print the version.
 #         opts.on_tail("--version", "Show version") do
-#           puts OptionParser::Version.join('.')
+#           puts ::Version.join('.')
 #           exit
 #         end
 #       end
@@ -212,11 +212,6 @@
 #
 class OptionParser
   # :stopdoc:
-  RCSID = %w$Id$[1..-1].each {|s| s.freeze}.freeze
-  Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
-  LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
-  Release = RCSID[2]
-
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze
   OptionalArgument = [OPTIONAL_ARGUMENT = :OPTIONAL, false].freeze
@@ -1637,15 +1632,22 @@ XXX
   decimal = '\d+(?:_\d+)*'
   binary = 'b[01]+(?:_[01]+)*'
   hex = 'x[\da-f]+(?:_[\da-f]+)*'
-  octal = "0(?:[0-7]*(?:_[0-7]+)*|#{binary}|#{hex})"
+  octal = "0(?:[0-7]+(?:_[0-7]+)*|#{binary}|#{hex})?"
   integer = "#{octal}|#{decimal}"
-  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s,| Integer(s) if s}
+
+  accept(Integer, %r"\A[-+]?(?:#{integer})\z"io) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Float number format, and converts to Float.
   #
   float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
-  floatpat = %r"\A[-+]?#{float}"io
+  floatpat = %r"\A[-+]?#{float}\z"io
   accept(Float, floatpat) {|s,| s.to_f if s}
 
   #
@@ -1653,7 +1655,7 @@ XXX
   # for float format, and Rational for rational format.
   #
   real = "[-+]?(?:#{octal}|#{float})"
-  accept(Numeric, /\A(#{real})(?:\/(#{real}))?/io) {|s, d, n|
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, n|
     if n
       Rational(d, n)
     elsif s
@@ -1664,22 +1666,40 @@ XXX
   #
   # Decimal integer format, to be converted to Integer.
   #
-  DecimalInteger = /\A[-+]?#{decimal}/io
-  accept(DecimalInteger) {|s,| s.to_i if s}
+  DecimalInteger = /\A[-+]?#{decimal}\z/io
+  accept(DecimalInteger, DecimalInteger) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Ruby/C like octal/hexadecimal/binary integer format, to be converted to
   # Integer.
   #
-  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
-  accept(OctalInteger) {|s,| s.oct if s}
+  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))\z/io
+  accept(OctalInteger, OctalInteger) {|s,|
+    begin
+      Integer(s, 8)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Decimal integer/float number format, to be converted to Integer for
   # integer format, Float for float format.
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
-  accept(DecimalNumeric) {|s,| eval(s) if s}
+  accept(DecimalNumeric, floatpat) {|s,|
+    begin
+      eval(s)
+    rescue SyntaxError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Boolean switch, which means whether it is present or not, whether it is
@@ -1934,10 +1954,3 @@ end
 
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
-
-if $0 == __FILE__
-  Version = OptionParser::Version # :nodoc:
-  ARGV.options {|q|
-    q.parse!.empty? or print "what's #{ARGV.join(' ')}?\n"
-  } or abort(ARGV.options.to_s)
-end

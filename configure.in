@@ -965,6 +965,7 @@ main()
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
                 ac_cv_func_clock_gettime=yes
+                ac_cv_func_clock_getres=yes
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
 		  	      @%:@include <iphlpapi.h>])
@@ -1057,7 +1058,9 @@ AC_ARG_WITH([gmp],
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
-     AC_CHECK_LIB([gmp], [__gmpz_init]))])
+     AC_CHECK_LIB([gmp], [__gmpz_init]))
+   with_gmp="$ac_cv_lib_gmp___gmpz_init"
+   AS_IF([test -z "$with_gmp"], [with_gmp=no])])
 
 dnl check for large file stuff
 mv confdefs.h confdefs1.h
@@ -3327,6 +3330,10 @@ AS_CASE(["$target_os"],
     [nacl], [
 	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
 	])
+
+AS_CASE(["$with_gmp: $SOLIBS "], [no:* | *' -lgmp '*|*' $(LIBS) '*], [],
+	[SOLIBS="-lgmp $SOLIBS"])
+
 MINIOBJS="$MINIDLNOBJ"
 
 AS_CASE(["$THREAD_MODEL"],

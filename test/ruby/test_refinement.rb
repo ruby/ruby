@@ -961,6 +961,27 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_case_dispatch_is_aware_of_refinements
+    assert_in_out_err([], <<-RUBY, ["refinement used"], [])
+      module RefineSymbol
+        refine Symbol do
+          def ===(other)
+            true
+          end
+        end
+      end
+
+      using RefineSymbol
+
+      case :a
+      when :b
+        puts "refinement used"
+      else
+        puts "refinement not used"
+      end
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)

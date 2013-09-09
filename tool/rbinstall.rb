@@ -560,6 +560,7 @@ module Gem
       super
       yield(self) if defined?(yield)
       self.executables ||= []
+      self.date ||= RUBY_RELEASE_DATE
     end
 
     def self.load(path)
@@ -573,6 +574,7 @@ module Gem
 Gem::Specification.new do |s|
   s.name = #{name.dump}
   s.version = #{version.dump}
+  s.date = #{date.dump}
   s.summary = #{summary.dump}
   s.description = #{description.dump}
   s.homepage = #{homepage.dump}

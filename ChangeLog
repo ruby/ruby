@@ -1,3 +1,500 @@
+Mon Sep  9 09:14:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (Gem::Specification#initialize): default date to
+	  RUBY_RELEASE_DATE.  [ruby-core:57072] [Bug #8878]
+
+	* tool/rbinstall.rb (Gem::Specification#to_ruby): add date.
+
+Sun Sep  8 16:01:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* rational.c (f_gcd): Relax the condition to use GMP.
+
+Sun Sep  8 13:56:38 2013  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (folevariant_initialize): check type of
+	  element of array.
+
+	* test/win32ole/test_win32ole_variant.rb (test_s_new_ary): ditto.
+
+Sat Sep  7 21:33:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_log): Test the sign for bignums.
+	  (math_log2): Ditto.
+	  (math_log10): Ditto.
+
+Sat Sep  7 20:25:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_log): Support bignums bigger than 2**1024.
+	  (math_log2): Ditto.
+	  (math_log10): Ditto.
+
+Sat Sep  7 15:36:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_eval.c (vm_call0): fix prototype, the id parameter should be of
+	  type ID, not VALUE
+
+	* vm_insnhelper.c (check_match): the rb_funcall family of functions
+	  does not care about refinements. We need to use
+	  rb_method_entry_with_refinements instead to call === with
+	  refinements. Thanks to Jon Conley for reporting this bug.
+	  [ruby-core:57051] [Bug #8872]
+
+	* test/ruby/test_refinement.rb: add test
+
+Sat Sep  7 13:49:40 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* variable.c (classname): the name of class that has
+	  non class id should not be nil. This bug was introduced
+	  in r36577.
+
+	* test/thread/test_cv.rb: test for change.
+
+Sat Sep  7 13:29:22 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/find.rb (Find.find): respect the encodings of arguments.
+	  [ruby-dev:47530] [Feature #8657]
+
+	* test/test_find.rb: add tests.
+
+Sat Sep  7 10:40:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb (TCP_FASTOPEN): Defined for TCP fast open.
+	  [ruby-core:57048] [Feature #8871] patch by Masaki Matsushita.
+
+Fri Sep  6 23:53:31 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* common.mk: use RUNRUBY instead of MINIRUBY because MINIRUBY can't
+	  require extension libraries. The patch is from nobu
+	  (Nobuyoshi Nakada).
+
+	* ext/thread/extconf.rb: for build ext/thread/thread.c.
+
+	* include/ruby/intern.h: ditto.
+
+	* thread.c: ditto.
+
+	* lib/thread.rb: removed and replaced by ext/thread/thread.c.
+
+	* ext/thread/thread.c: Queue, SizedQueue and ConditionVariable
+	  implementations in C. This patch is based on patches from panaggio
+	  (Ricardo Panaggio) and funny_falcon (Yura Sokolov) and  ko1
+	  (Koichi Sasada). [ruby-core:31513] [Feature #3620]
+
+	* test/thread/test_queue.rb (test_queue_thread_raise): add a test for
+	  ensuring that killed thread should be removed from waiting threads.
+	  It is based on a code by ko1 (Koichi Sasada). [ruby-core:45950]
+
+Fri Sep  6 22:47:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: Define ac_cv_func_clock_getres to yes for mingw*.
+
+Fri Sep  6 21:04:10 2013  Tanaka Akira  <akr@fsij.org>
+
+	* rational.c: Include gmp.h if GMP is used.
+	  (GMP_GCD_DIGITS): New macro.
+	  (rb_gcd_gmp): New function.
+	  (f_gcd_normal): Renamed from f_gcd.
+	  (rb_gcd_normal): New function.
+	  (f_gcd): Invoke rb_gcd_gmp or f_gcd_normal.
+
+	* internal.h (rb_gcd_normal): Declared.
+	  (rb_gcd_gmp): Ditto.
+
+	* ext/-test-/rational: New directory.
+
+	* test/-ext-/rational: New directory.
+
+Fri Sep  6 14:23:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (clock_getres): required as well as clock_gettime().
+	  [ruby-dev:47699] [Bug #8869]
+
+Fri Sep  6 11:45:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_append): new function to append a string data
+	  with converting its encoding.  split from rb_econv_substr_append.
+
+Fri Sep  6 02:37:22 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: use double quotes when
+	  strings start with special characters.
+	  https://github.com/tenderlove/psych/issues/157
+
+	* test/psych/test_string.rb: test for change.
+
+Fri Sep  6 00:05:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rewrite_cref_stack): remove recursion.
+
+Thu Sep  5 18:05:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* string.c (fstring_cmp): take string encoding into account when
+	  comparing fstrings [ruby-core:57037] [Bug #8866]
+
+	* test/ruby/test_string.rb: add test
+
+Thu Sep  5 17:25:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring, rb_str_free): use st_data_t instead of VALUE.
+
+	* string.c (rb_fstring): get rid of duplicating already frozen object.
+
+	* parse.y (str_suffix_gen): freeze in advance to reduce objects.
+
+Thu Sep  5 14:01:22 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/optparse.rb:  The Integer acceptable now allows binary and
+	  hexadecimal numbers per the documentation.  [ruby-trunk - Bug #8865]
+
+	  DecimalInteger, OctalInteger, DecimalNumeric now validate their input
+	  before converting to a number.  [ruby-trunk - Bug #8865]
+
+	* test/optparse/test_acceptable.rb:  Tests for the above, tests for all
+	  numeric acceptables for existing behavior.
+
+Thu Sep  5 13:49:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* include/ruby/ruby.h: add RSTRING_FSTR flag
+
+	* internal.h: add rb_fstring() prototype
+
+	* parse.y (str_suffix_gen): deduplicate frozen string literals
+
+	* string.c (rb_fstring): deduplicate frozen string literals
+
+	* string.c (rb_str_free): delete fstrings from frozen_strings table when
+	  they are GC'd
+
+	* string.c (Init_String): initialize frozen_strings table
+
+	* test/ruby/test_string.rb: test frozen strings are deduplicated
+
+Thu Sep  5 12:48:00 2013  Kenta Murata  <mrkn@cookpad.com>
+
+	* configure.in (with_gmp): set with_gmp no if it is empty.
+
+Thu Sep  5 10:41:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): use class sequence to check class
+	  identity, instead of pointer + vm state
+
+	* vm_insnhelper.c (vm_setivar): ditto
+
+Thu Sep  5 08:20:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (GMP_DIV_DIGITS): New macro.
+	  (bary_divmod_gmp): New function.
+	  (rb_big_divrem_gmp): Ditto.
+	  (bary_divmod_branch): Ditto.
+	  (bary_divmod): Use bary_divmod_branch.
+	  (bigdivrem): Ditto.
+
+	* internal.h (rb_big_divrem_gmp): Declared.
+
+Thu Sep  5 06:22:42 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bary_divmod_normal): Reduce temporary array allocations.
+
+Thu Sep  5 02:17:06 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_divrem_normal): Add GC guards.
+
+Thu Sep  5 00:38:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_divrem_normal): New function.
+
+	* internal.h (rb_big_divrem_normal): Declared.
+
+	* ext/-test-/bignum/div.c: New file.
+
+	* test/-ext-/bignum/test_div.rb: New file.
+
+Thu Sep  5 00:08:44 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_normal): Removed.
+	  (bary_divmod_normal): New function.
+	  (bary_divmod): Use bary_divmod_normal.
+	  (bigdivrem): Use bary_divmod_normal.
+
+Wed Sep  4 23:02:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem): Useless declaration removed.
+
+Wed Sep  4 22:56:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (NUM_STEP_GET_INF): split from NUM_STEP_SCAN_ARGS(), since
+	  inf is not used in num_step_size().
+
+Wed Sep  4 20:22:43 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigdivrem_normal): Add assertions.
+
+Wed Sep  4 19:18:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (vm_state_version_t): prefer LONG_LONG to uint64_t.
+
+Wed Sep  4 16:28:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (vm_state_version_t): use uint64_t when it is larger than
+	  LONG_LONG, and fallback to unsigned long.
+
+Wed Sep  4 15:37:05 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac-tbl.rb: fix r42789.
+	  Fix conversion table and logic. [ruby-dev:47680]
+
+Wed Sep  4 14:08:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c, compile.c, eval.c, gc.h, insns.def, internal.h, method.h,
+	  variable.c, vm.c, vm_core.c, vm_insnhelper.c, vm_insnhelper.h,
+	  vm_method.c: Implement class hierarchy method cache invalidation.
+
+	  [ruby-core:55053] [Feature #8426] [GH-387]
+
+Wed Sep  4 11:13:40 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_gsub): use BEG(0) for whole matched position not
+	  return value from rb_reg_search(), for \K matching.
+	  [ruby-dev:47694] [Bug #8856]
+
+Wed Sep  4 11:11:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (SOLIBS): LIBRUBY_SO also needs linking with gmp, to
+	  run worker processes in test-all on non-ELF platforms.
+
+Tue Sep  3 23:01:41 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_tree.rb
+	  (TestTreeParser::TestInvalid#test_unmatched_close_tag):
+	  Compute expected value from test value.
+
+Tue Sep  3 22:59:58 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
+	  Add source information to parse exception on no close tag error.
+	  [Bug #8844]  [ruby-dev:47672]
+	  Patch by Ippei Obayashi. Thanks!!!
+	* test/rexml/parser/test_tree.rb: Add a test for the above case.
+
+Tue Sep  3 22:57:57 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/parser/test_tree.rb: Fix test name to describe test
+	  content.
+
+Tue Sep  3 22:54:46 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/treeparser.rb (REXML::Parsers::TreeParser#parse):
+	  Remove needless nested parse exception information.
+	  [Bug #8844]  [ruby-dev:47672]
+	  Reported by Ippei Obayashi. Thanks!!!
+	* test/rexml/parser/test_tree.rb: Add a test for the above case.
+
+Tue Sep  3 22:03:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_str_new_cstr): new function to create a string from
+	  the C-string pointer with the specified encoding.
+
+Tue Sep  3 21:41:37 2013  Akira Matsuda  <ronnie@dio.jp>
+
+	* eval.c (Init_eval): Make Module#include and Module#prepend public
+	  [Feature #8846]
+
+	* test/ruby/test_module.rb (class TestModule): Test for above
+
+Tue Sep  3 21:35:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (sys/dyntune.h): for gettune().
+
+	* thread_pthread.c (hpux_attr_getstackaddr): fix missing *.
+	  [ruby-core:56983] [Feature #8793]
+
+Tue Sep  3 20:12:46 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (GMP_STR2BIG_DIGITS): New macro.
+	  (str2big_gmp): New function.
+	  (rb_cstr_to_inum): Use str2big_gmp for big bignums.
+	  (rb_str2big_gmp): New function.
+
+	* internal.h (rb_str2big_gmp): Declared.
+
+Tue Sep  3 19:44:40 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#values): added.
+	  [Feature #7763] [ruby-core:51783]
+
+Tue Sep  3 18:26:00 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/inf-ruby.el (inf-ruby-keys, run-ruby): Add magic autoload
+	  comments.
+
+	* misc/rdoc-mode.el (rdoc-mode): Ditto.
+
+	* misc/ruby-electric.el (ruby-electric-mode): Ditto.
+
+	* misc/ruby-style.el (ruby-style-c-mode): Ditto.
+
+Tue Sep  3 17:06:15 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb
+	  (TestRubyOptions::SEGVTest::ExpectedStderr): the URL was changed at
+	  r42800.
+
+Tue Sep  3 14:48:25 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/thread.rb: [DOC] CV#wait typo by @avdi [Fixes GH-386]
+	  https://github.com/ruby/ruby/pull/386
+
+Tue Sep  3 14:37:53 2013  Zachary Scott  <e@zzak.io>
+
+	* error.c: [DOC] Update bug tracker url by @ScotterC [Fixes GH-390]
+	  https://github.com/ruby/ruby/pull/390
+
+Tue Sep  3 12:45:23 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_str2big_poweroftwo): New function.
+	  (rb_str2big_normal): Ditto.
+	  (rb_str2big_karatsuba): Ditto.
+
+	* internal.h (rb_str2big_poweroftwo): Declared.
+	  (rb_str2big_normal): Ditto.
+	  (rb_str2big_karatsuba): Ditto.
+
+	* ext/-test-/bignum/str2big.c: New file.
+
+	* test/-ext-/bignum/test_str2big.rb: New file.
+
+	* ext/-test-/bignum/depend: Add the dependency for str2big.c.
+
+Tue Sep  3 12:09:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_clock_gettime): Support times() based monotonic clock.
+	  (rb_clock_getres): Ditto.
+
+Tue Sep  3 12:03:02 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (str2big_scan_digits): Extracted from rb_cstr_to_inum.
+
+Tue Sep  3 11:23:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select_with_thread): rounding up the fraction of
+	  tv_usec instead of rounding down.
+	  this change is an experiment to get rid of failures on vc10-x64 CI.
+
+Tue Sep  3 11:00:28 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (do_select): constify timeout.
+
+	* win32/win32.c (rb_w32_select_with_thread): constify 10ms wait and
+	  0ms wait structs.
+
+Tue Sep  3 10:03:42 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/openssl/test_pair.rb
+	  (OpenSSL::TestPair#test_write_nonblock_no_exceptions): on some CIs
+	  such as Debian 6.0, Ubuntu 10.04, CentOS and vc10-x64 (maybe depend
+	  on OpenSSL version), writing to SSLSocket after SSL_ERROR_WANT_WRITE
+	  causes SSL_ERROR_SSL "bad write retry".
+
+Tue Sep  3 08:20:46 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/utf8_mac-tbl.rb: update conversion table to recent OS X.
+	  Previous table is used on Mac OS X 10.1 or prior.
+	  This table is used on 10.2 or later. [ruby-dev:47680]
+
+Tue Sep  3 07:49:25 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (NUM_STEP_SCAN_ARGS): On second thought, keep
+	  Numeric#step backward compatible in that it raises TypeError
+	  when nil is given as second argument.
+
+	* test/ruby/test_float.rb (TestFloat#test_num2dbl): Revert.
+
+	* test/ruby/test_numeric.rb (TestNumeric#test_step): Fix test
+	  cases for the above change.
+
+Tue Sep  3 07:39:58 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bytes_2comp): Define it only for little endian
+	  environment.
+
+Tue Sep  3 07:31:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (NUM_STEP_SCAN_ARGS): Numeric#step should raise
+	  TypeError if a non-numeric parameter is given.
+
+	* test/ruby/test_float.rb (TestFloat#test_num2dbl): Allow nil as
+	  step, as with the keyword argument.
+
+	* test/ruby/test_numeric.rb (TestNumeric#test_step): Add tests for
+	  nil as step or limit.
+
+Tue Sep  3 07:28:49 2013  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (bit_length): Add casts to fix compilation error with
+	  clang 3.0 -Werror,-Wshorten-64-to-32.
+	  [ruby-dev:47687] reported by SASADA Koichi.
+
+Tue Sep  3 03:17:26 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_super_method): use ci->argc instead of
+	  ci->orig_argc. ci->argc can be changed by splat arguments.
+	  [ruby-list:49575]
+	  This fix should be applied to Ruby 2.0.0 series.
+
+	* test/ruby/test_super.rb: add a test for above.
+
+Mon Sep  2 23:46:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (num_step): Default the limit argument to infinity and
+	  allow it to be omitted.  Keyword arguments (by: and to:) are
+	  introduced for ease of use. [Feature #8838] [ruby-dev:47662]
+	  [ruby-dev:42194]
+
+	* numeric.c (num_step): Optimize for infinite loop.
+
+Mon Sep  2 23:46:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_str_options): use valid suffix word only, as well as
+	  numeric literal, for the backward compatibility.
+
+Mon Sep  2 22:55:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (ISDIGIT): Unused macro removed.
+
+Mon Sep  2 22:49:15 2013  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (str2big_poweroftwo): Extracted from rb_cstr_to_inum.
+	  (str2big_normal): Ditto.
+	  (str2big_karatsuba): Ditto.
+
+Mon Sep  2 17:53:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (str_suffix_gen): String#b creates new string object, use
+	  force_encoding instead.
+
+Mon Sep  2 16:06:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* NEWS: Add note about frozen string literals
+
+	* compile.c (case_when_optimizable_literal): optimize NODE_LIT strings
+	  in when clauses of case statements
+
+	* ext/ripper/eventids2.c: add tSTRING_SUFFIX
+
+	* parse.y: add 'f' suffix on string literals for frozen strings
+
+	* test/ripper/test_scanner_events.rb: add scanner tests
+
+	* test/ruby/test_string.rb: add frozen string tests
+
+	[Feature #8579] [ruby-core:55699]
+
+Mon Sep  2 14:39:29 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.c (Process#setproctitle): [DOC] Fix and improve rdoc.
+
+	* ruby.c (Process#argv0): [DOC] Improve rdoc.
+
 Mon Sep  2 14:15:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
 	* NEWS: fix description of number literal suffixes.
@@ -180,7 +677,7 @@ Thu Aug 29 02:40:45 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: invalid floats should be
 	  treated as strings.
-	  [Fixes GH-156] https://github.com/tenderlove/psych/issues/156
+	  https://github.com/tenderlove/psych/issues/156
 
 	* test/psych/test_string.rb: test for change
 

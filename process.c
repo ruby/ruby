@@ -6926,6 +6926,17 @@ get_mach_timebase_info(void)
  *  [:MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC]
  *    Use mach_absolute_time(), available on Darwin.
  *    The resolution is CPU dependent.
+ *  [:TIMES_BASED_CLOCK_MONOTONIC]
+ *    Use the result value of times() defined by POSIX.
+ *    POSIX defines it as "times() shall return the elapsed real time, in clock ticks, since an arbitrary point in the past (for example, system start-up time)".
+ *    For example, GNU/Linux returns a value based on jiffies and it is monotonic.
+ *    However, 4.4BSD uses gettimeofday() and it is not monotonic.
+ *    (FreeBSD uses clock_gettime(CLOCK_MONOTONIC) instead, though.)
+ *    The resolution is the clock tick.
+ *    "getconf CLK_TCK" command shows the clock ticks per second.
+ *    (The clock ticks per second is defined by HZ macro in older systems.)
+ *    If it is 100 and clock_t is 32 bits integer type, the resolution is 10 milli second and
+ *    cannot represent over 497 days.
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
  *  [:GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID]
@@ -7021,6 +7032,24 @@ rb_clock_gettime(int argc, VALUE *argv)
             denominators[num_denominators++] = 1000000000;
             goto success;
         }
+
+#ifdef HAVE_TIMES
+#define RUBY_TIMES_BASED_CLOCK_MONOTONIC \
+        ID2SYM(rb_intern("TIMES_BASED_CLOCK_MONOTONIC"))
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_MONOTONIC) {
+            struct tms buf;
+            clock_t c;
+            unsigned_clock_t uc;
+            c = times(&buf);
+            if (c ==  (clock_t)-1)
+                rb_sys_fail("times");
+            uc = (unsigned_clock_t)c;
+            tt.count = (int32_t)(uc % 1000000000);
+            tt.giga_count = (uc / 1000000000);
+            denominators[num_denominators++] = get_clk_tck();
+            goto success;
+        }
+#endif
 
 #ifdef RUSAGE_SELF
 #define RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID \
@@ -7182,6 +7211,15 @@ rb_clock_getres(int argc, VALUE *argv)
             tt.giga_count = 1;
             tt.count = 0;
             denominators[num_denominators++] = 1000000000;
+            goto success;
+        }
+#endif
+
+#ifdef RUBY_TIMES_BASED_CLOCK_MONOTONIC
+        if (clk_id == RUBY_TIMES_BASED_CLOCK_MONOTONIC) {
+            tt.count = 1;
+            tt.giga_count = 0;
+            denominators[num_denominators++] = get_clk_tck();
             goto success;
         }
 #endif

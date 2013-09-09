@@ -217,33 +217,73 @@ nlz_int128(uint128_t x)
 
 #if defined(HAVE_UINT128_T)
 #   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x) : \
-         SIZEOF_INT128_T * CHAR_BIT - nlz_int128(x))
+    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
+     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
+     sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)) : \
+     SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
 #elif defined(HAVE_LONG_LONG)
 #   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long(x) : \
-         SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long(x))
+    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
+     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
+     SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)))
 #else
 #   define bit_length(x) \
-        (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int(x) : \
-         SIZEOF_LONG * CHAR_BIT - nlz_long(x))
+    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
+     SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)))
 #endif
 
 struct rb_deprecated_classext_struct {
     char conflict[sizeof(VALUE) * 3];
 };
 
+struct rb_subclass_entry;
+typedef struct rb_subclass_entry rb_subclass_entry_t;
+
+struct rb_subclass_entry {
+    VALUE klass;
+    rb_subclass_entry_t *next;
+};
+
+#if defined(HAVE_LONG_LONG)
+typedef unsigned LONG_LONG vm_state_version_t;
+#elif defined(HAVE_UINT64_T)
+typedef uint64_t vm_state_version_t;
+#else
+typedef unsigned long vm_state_version_t;
+#endif
+
+struct rb_method_entry_struct;
+
+typedef struct method_cache_entry {
+    vm_state_version_t vm_state;
+    vm_state_version_t seq;
+    ID mid;
+    VALUE defined_class;
+    struct rb_method_entry_struct *me;
+} method_cache_entry_t;
+
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
+    struct st_table *mc_tbl;
+    rb_subclass_entry_t *subclasses;
+    rb_subclass_entry_t **parent_subclasses;
+    /**
+     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
+     * in the module's `subclasses` list that indicates that the klass has been
+     * included. Hopefully that makes sense.
+     */
+    rb_subclass_entry_t **module_subclasses;
+    vm_state_version_t seq;
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
 };
+
+/* class.c */
+void rb_class_subclass_add(VALUE super, VALUE klass);
+void rb_class_remove_from_super_subclasses(VALUE);
 
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
@@ -263,6 +303,10 @@ RCLASS_SUPER(VALUE klass)
 static inline VALUE
 RCLASS_SET_SUPER(VALUE klass, VALUE super)
 {
+    if (super) {
+	rb_class_remove_from_super_subclasses(klass);
+	rb_class_subclass_add(super, klass);
+    }
     OBJ_WRITE(klass, &RCLASS_EXT(klass)->super, super);
     return super;
 }
@@ -282,6 +326,10 @@ VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
+void rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE));
+void rb_class_detach_subclasses(VALUE);
+void rb_class_detach_module_subclasses(VALUE);
+void rb_class_remove_from_module_subclasses(VALUE);
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
@@ -552,6 +600,7 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 #endif
 
 /* string.c */
+VALUE rb_fstring(VALUE);
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
@@ -587,6 +636,9 @@ void ruby_kill(rb_pid_t pid, int sig);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
+
+/* vm_insnhelper.h */
+vm_state_version_t rb_next_class_sequence(void);
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
@@ -645,11 +697,17 @@ VALUE rb_big_mul_balance(VALUE x, VALUE y);
 VALUE rb_big_mul_karatsuba(VALUE x, VALUE y);
 VALUE rb_big_mul_toom3(VALUE x, VALUE y);
 VALUE rb_big_sq_fast(VALUE x);
+VALUE rb_big_divrem_normal(VALUE x, VALUE y);
 VALUE rb_big2str_poweroftwo(VALUE x, int base);
 VALUE rb_big2str_generic(VALUE x, int base);
+VALUE rb_str2big_poweroftwo(VALUE arg, int base, int badcheck);
+VALUE rb_str2big_normal(VALUE arg, int base, int badcheck);
+VALUE rb_str2big_karatsuba(VALUE arg, int base, int badcheck);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_big_mul_gmp(VALUE x, VALUE y);
+VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
+VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
 
 /* file.c */
@@ -674,6 +732,12 @@ void rb_execarg_fixup(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
+
+/* rational.c */
+VALUE rb_gcd_normal(VALUE self, VALUE other);
+#if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
+VALUE rb_gcd_gmp(VALUE x, VALUE y);
+#endif
 
 /* util.c */
 extern const signed char ruby_digit36_to_number_table[];

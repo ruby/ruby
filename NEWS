@@ -24,13 +24,17 @@ with all sufficient information, see the ChangeLog file.
 
 * def-expr now returns the symbol of its name instead of nil.
 
+* Added 'f' suffix for string literals that returns a frozen String object.
+
 === Core classes updates (outstanding ones only)
 
 * Bignum
   * New methods
     * Fixnum#bit_length
   * Performance improvement
-    * Use GMP for multiplication of big numbers if it is available.
+    * Use GMP if available.
+      GMP is used only for several operations:
+      multiplication, division, radix conversion, GCD
 
 * Binding
   * New methods
@@ -65,10 +69,17 @@ with all sufficient information, see the ChangeLog file.
       or false if it is an ordinary class or module.
   * extended methods:
     * Module#refine is no longer experimental.
+    * Module#include and Module#prepend are now public methods.
 
 * Mutex
   * misc
     * Mutex#owned? is no longer experimental.
+
+* Numeric
+  * extended methods:
+    * Numeric#step allows the limit argument to be omitted, in which
+      case an infinite sequence of numbers is generated.  Keyword
+      arguments `to` and `by` are introduced for ease of use.
 
 * Process
   * New methods:

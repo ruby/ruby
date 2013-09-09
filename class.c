@@ -34,6 +34,109 @@
 extern st_table *rb_class_tbl;
 #define id_attached id__attached__
 
+void
+rb_class_subclass_add(VALUE super, VALUE klass)
+{
+    rb_subclass_entry_t *entry, *head;
+
+    if (super && super != Qundef) {
+	entry = malloc(sizeof(*entry));
+	entry->klass = klass;
+	entry->next = NULL;
+
+	head = RCLASS_EXT(super)->subclasses;
+	if (head) {
+	    entry->next = head;
+	    RCLASS_EXT(head->klass)->parent_subclasses = &entry->next;
+	}
+
+	RCLASS_EXT(super)->subclasses = entry;
+	RCLASS_EXT(klass)->parent_subclasses = &RCLASS_EXT(super)->subclasses;
+    }
+}
+
+static void
+rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
+{
+    rb_subclass_entry_t *entry, *head;
+
+    entry = malloc(sizeof(*entry));
+    entry->klass = iclass;
+    entry->next = NULL;
+
+    head = RCLASS_EXT(module)->subclasses;
+    if (head) {
+	entry->next = head;
+	RCLASS_EXT(head->klass)->module_subclasses = &entry->next;
+    }
+
+    RCLASS_EXT(module)->subclasses = entry;
+    RCLASS_EXT(iclass)->module_subclasses = &RCLASS_EXT(module)->subclasses;
+}
+
+void
+rb_class_remove_from_super_subclasses(VALUE klass)
+{
+    rb_subclass_entry_t *entry;
+
+    if (RCLASS_EXT(klass)->parent_subclasses) {
+	entry = *RCLASS_EXT(klass)->parent_subclasses;
+
+	*RCLASS_EXT(klass)->parent_subclasses = entry->next;
+	if (entry->next) {
+	    RCLASS_EXT(entry->next->klass)->parent_subclasses = RCLASS_EXT(klass)->parent_subclasses;
+	}
+	free(entry);
+    }
+
+    RCLASS_EXT(klass)->parent_subclasses = NULL;
+}
+
+void
+rb_class_remove_from_module_subclasses(VALUE klass)
+{
+    rb_subclass_entry_t *entry;
+
+    if (RCLASS_EXT(klass)->module_subclasses) {
+	entry = *RCLASS_EXT(klass)->module_subclasses;
+	*RCLASS_EXT(klass)->module_subclasses = entry->next;
+
+	if (entry->next) {
+	    RCLASS_EXT(entry->next->klass)->module_subclasses = RCLASS_EXT(klass)->module_subclasses;
+	}
+
+	free(entry);
+    }
+
+    RCLASS_EXT(klass)->module_subclasses = NULL;
+}
+
+void
+rb_class_foreach_subclass(VALUE klass, void(*f)(VALUE))
+{
+    rb_subclass_entry_t *cur = RCLASS_EXT(klass)->subclasses;
+
+    /* do not be tempted to simplify this loop into a for loop, the order of
+       operations is important here if `f` modifies the linked list */
+    while (cur) {
+	VALUE curklass = cur->klass;
+	cur = cur->next;
+	f(curklass);
+    }
+}
+
+void
+rb_class_detach_subclasses(VALUE klass)
+{
+    rb_class_foreach_subclass(klass, rb_class_remove_from_super_subclasses);
+}
+
+void
+rb_class_detach_module_subclasses(VALUE klass)
+{
+    rb_class_foreach_subclass(klass, rb_class_remove_from_module_subclasses);
+}
+
 /**
  * Allocates a struct RClass for a new class.
  *
@@ -57,6 +160,13 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_SET_SUPER((VALUE)obj, 0);
     RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
+
+    RCLASS_EXT(obj)->subclasses = NULL;
+    RCLASS_EXT(obj)->parent_subclasses = NULL;
+    RCLASS_EXT(obj)->module_subclasses = NULL;
+    RCLASS_EXT(obj)->seq = rb_next_class_sequence();
+    RCLASS_EXT(obj)->mc_tbl = NULL;
+
     RCLASS_REFINED_CLASS(obj) = Qnil;
     RCLASS_EXT(obj)->allocator = 0;
     return (VALUE)obj;
@@ -121,21 +231,23 @@ rb_class_new(VALUE super)
     return rb_class_boot(super);
 }
 
-static NODE*
-rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass)
+static void
+rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr)
 {
     NODE *new_node;
-    if (!node) {
-	return NULL;
-    }
-    if (node->nd_clss == old_klass) {
-	new_node = NEW_CREF(new_klass);
-	new_node->nd_next = node->nd_next;
-    } else {
+    while (node) {
+	if (node->nd_clss == old_klass) {
+	    new_node = NEW_CREF(new_klass);
+	    new_node->nd_next = node->nd_next;
+	    *new_cref_ptr = new_node;
+	    return;
+	}
 	new_node = NEW_CREF(node->nd_clss);
-	new_node->nd_next = rewrite_cref_stack(node->nd_next, old_klass, new_klass);
+	node = node->nd_next;
+	*new_cref_ptr = new_node;
+	new_cref_ptr = &new_node->nd_next;
     }
-    return new_node;
+    *new_cref_ptr = NULL;
 }
 
 static void
@@ -144,9 +256,11 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
     VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
 	rb_iseq_t *iseq;
+	NODE *new_cref;
 	newiseqval = rb_iseq_clone(me->def->body.iseq->self, klass);
 	GetISeqPtr(newiseqval, iseq);
-	OBJ_WRITE(iseq->self, &iseq->cref_stack, rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass));
+	rewrite_cref_stack(me->def->body.iseq->cref_stack, me->klass, klass, &new_cref);
+	OBJ_WRITE(iseq->self, &iseq->cref_stack, new_cref);
 	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, iseq, me->flag);
 	RB_GC_GUARD(newiseqval);
     }
@@ -723,7 +837,6 @@ rb_include_module(VALUE klass, VALUE module)
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module);
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic include detected");
-    if (changed) rb_clear_cache();
 }
 
 static int
@@ -736,8 +849,8 @@ add_refined_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 static int
 include_modules_at(const VALUE klass, VALUE c, VALUE module)
 {
-    VALUE p;
-    int changed = 0;
+    VALUE p, iclass;
+    int method_changed = 0, constant_changed = 0;
     const st_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
 
     while (module) {
@@ -763,7 +876,15 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 		break;
 	    }
 	}
-	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
+	iclass = rb_include_class_new(module, RCLASS_SUPER(c));
+	c = RCLASS_SET_SUPER(c, iclass);
+
+	if (BUILTIN_TYPE(module) == T_ICLASS) {
+	    rb_module_add_to_subclasses_list(RBASIC(module)->klass, iclass);
+	} else {
+	    rb_module_add_to_subclasses_list(module, iclass);
+	}
+
 	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
@@ -773,14 +894,17 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
-	    changed = 1;
+	    method_changed = 1;
 	if (RMODULE_CONST_TBL(module) && RMODULE_CONST_TBL(module)->num_entries)
-	    changed = 1;
+	    constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }
 
-    return changed;
+    if (method_changed) rb_clear_cache_by_class(klass);
+    if (constant_changed) rb_clear_cache();
+
+    return method_changed;
 }
 
 static int
@@ -839,7 +963,6 @@ rb_prepend_module(VALUE klass, VALUE module)
     if (changed < 0)
 	rb_raise(rb_eArgError, "cyclic prepend detected");
     if (changed) {
-	rb_clear_cache();
 	rb_vm_check_redefinition_by_prepend(klass);
     }
 }

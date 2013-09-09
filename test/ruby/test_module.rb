@@ -351,6 +351,12 @@ class TestModule < Test::Unit::TestCase
     refute_equal original, b.inspect, bug6454
   end
 
+  def test_public_include
+    assert_nothing_raised('#8846') do
+      Module.new.include(Module.new { def foo; end }).instance_methods == [:foo]
+    end
+  end
+
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
@@ -1378,6 +1384,12 @@ class TestModule < Test::Unit::TestCase
     obj = C1.new
     expected = [:M2,:M3,:C1,:M4,:M1,:C0,:M0]
     assert_equal(expected, obj.m1)
+  end
+
+  def test_public_prepend
+    assert_nothing_raised('#8846') do
+      Class.new.prepend(Module.new)
+    end
   end
 
   def test_prepend_inheritance

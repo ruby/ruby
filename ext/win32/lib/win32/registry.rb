@@ -570,6 +570,15 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     alias each each_value
 
     #
+    # return values as an array
+    #
+    def values
+      vals_ary = []
+      each_value { |*, val| vals_ary << val }
+      vals_ary
+    end
+
+    #
     # Enumerate subkeys.
     #
     # subkey is String which contains name of subkey.

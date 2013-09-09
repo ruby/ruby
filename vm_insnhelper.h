@@ -257,8 +257,7 @@ enum vm_regan_acttype {
     CALL_METHOD(ci); \
 } while (0)
 
-static VALUE ruby_vm_global_state_version = 1;
-
+#define NEXT_CLASS_SEQUENCE() (++ruby_vm_sequence)
 #define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
 #define INC_VM_STATE_VERSION() do { \
     ruby_vm_global_state_version = (ruby_vm_global_state_version + 1); \

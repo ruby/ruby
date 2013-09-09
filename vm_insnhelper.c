@@ -510,7 +510,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
-	if (LIKELY((!is_attr && (ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION())) ||
+	if (LIKELY((!is_attr && ic->ic_seq == RCLASS_EXT(klass)->seq) ||
 		   (is_attr && ci->aux.index > 0))) {
 	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index - 1;
 	    long len = ROBJECT_NUMIV(obj);
@@ -532,9 +532,8 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 			val = ptr[index];
 		    }
 		    if (!is_attr) {
-			ic->ic_class = klass;
 			ic->ic_value.index = index;
-			ic->ic_vmstat = GET_VM_STATE_VERSION();
+			ic->ic_seq = RCLASS_EXT(klass)->seq;
 		    }
 		    else { /* call_info */
 			ci->aux.index = index + 1;
@@ -566,7 +565,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	st_data_t index;
 
 	if (LIKELY(
-	    (!is_attr && ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION()) ||
+	    (!is_attr && ic->ic_seq == RCLASS_EXT(klass)->seq) ||
 	    (is_attr && ci->aux.index > 0))) {
 	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index-1;
 	    long len = ROBJECT_NUMIV(obj);
@@ -582,9 +581,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 		if (!is_attr) {
-		    ic->ic_class = klass;
 		    ic->ic_value.index = index;
-		    ic->ic_vmstat = GET_VM_STATE_VERSION();
+		    ic->ic_seq = RCLASS_EXT(klass)->seq;
 		}
 		else {
 		    ci->aux.index = index + 1;
@@ -848,16 +846,18 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     VALUE klass = CLASS_OF(recv);
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && klass == ci->klass)) {
+    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && RCLASS_EXT(klass)->seq == ci->seq)) {
 	/* cache hit! */
 	return;
     }
 #endif
+
     ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
-    ci->call = vm_call_general;
     ci->klass = klass;
+    ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
     ci->vmstat = GET_VM_STATE_VERSION();
+    ci->seq = RCLASS_EXT(klass)->seq;
 #endif
 }
 
@@ -931,18 +931,23 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
 }
 
 static VALUE
+vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_method_entry_t*, VALUE);
+
+static VALUE
 check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 {
     switch (type) {
       case VM_CHECKMATCH_TYPE_WHEN:
 	return pattern;
-      case VM_CHECKMATCH_TYPE_CASE:
-	return rb_funcall2(pattern, idEqq, 1, &target);
-      case VM_CHECKMATCH_TYPE_RESCUE: {
+      case VM_CHECKMATCH_TYPE_RESCUE:
 	if (!rb_obj_is_kind_of(pattern, rb_cModule)) {
 	    rb_raise(rb_eTypeError, "class or module required for rescue clause");
 	}
-	return RTEST(rb_funcall2(pattern, idEqq, 1, &target));
+	/* fall through */
+      case VM_CHECKMATCH_TYPE_CASE: {
+	VALUE defined_class;
+	rb_method_entry_t *me = rb_method_entry_with_refinements(CLASS_OF(pattern), idEqq, &defined_class);
+	return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
       }
       default:
 	rb_bug("check_match: unreachable");
@@ -2016,7 +2021,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 {
     VALUE current_defined_class;
     rb_iseq_t *iseq = GET_ISEQ();
-    VALUE sigval = TOPN(ci->orig_argc);
+    VALUE sigval = TOPN(ci->argc);
 
     current_defined_class = GET_CFP()->klass;
     if (NIL_P(current_defined_class)) {

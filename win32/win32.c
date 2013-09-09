@@ -2766,7 +2766,7 @@ is_invalid_handle(SOCKET sock)
 /* License: Artistic or GPL */
 static int
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-            struct timeval *timeout)
+	  struct timeval *timeout)
 {
     int r = 0;
 
@@ -2910,10 +2910,8 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
     {
 	struct timeval rest;
-	struct timeval wait;
-	struct timeval zero;
-	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
-	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
+	const struct timeval wait = {0, 10 * 1000}; // 10ms
+	struct timeval zero = {0, 0};		    // 0ms
 	for (;;) {
 	    if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
 		r = -1;
@@ -2936,7 +2934,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
-		struct timeval *dowait = &wait;
+		const struct timeval *dowait = &wait;
 
 		fd_set orig_rd;
 		fd_set orig_wr;
@@ -2962,7 +2960,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    if (!rb_w32_time_subtract(&rest, &now)) break;
 		    if (compare(&rest, &wait) < 0) dowait = &rest;
 		}
-		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
+		Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
 	    }
 	}
     }
@@ -4339,6 +4337,34 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
 		sp->tv_nsec = (count.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
 	    else
 		sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * (1000000000.0 / freq.QuadPart));
+	    return 0;
+	}
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+}
+
+/* License: Ruby's */
+int
+clock_getres(clockid_t clock_id, struct timespec *sp)
+{
+    switch (clock_id) {
+      case CLOCK_REALTIME:
+	{
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = 1000;
+	    return 0;
+	}
+      case CLOCK_MONOTONIC:
+	{
+	    LARGE_INTEGER freq;
+	    if (!QueryPerformanceFrequency(&freq)) {
+		errno = map_errno(GetLastError());
+		return -1;
+	    }
+	    sp->tv_sec = 0;
+	    sp->tv_nsec = (long)(1000000000.0 / freq.QuadPart);
 	    return 0;
 	}
       default:

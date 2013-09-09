@@ -210,6 +210,40 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_encoding_ascii
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w"){}
+      Dir.mkdir("#{d}/b")
+      a = []
+      Find.find(d.encode(Encoding::US_ASCII)) {|f| a << f }
+      a.each do |i|
+        assert(Encoding.compatible?(d.encode(Encoding.find('filesystem')), i))
+      end
+    }
+  end
+
+  def test_encoding_non_ascii
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w"){}
+      Dir.mkdir("#{d}/b")
+      euc_jp = Encoding::EUC_JP
+      win_31j = Encoding::Windows_31J
+      utf_8 = Encoding::UTF_8
+      a = []
+      Find.find(d.encode(euc_jp), d.encode(win_31j), d.encode(utf_8)) {|f| a << [f, f.encoding] }
+      assert_equal([[d, euc_jp], ["#{d}/a", euc_jp], ["#{d}/b", euc_jp],
+                    [d, win_31j], ["#{d}/a", win_31j], ["#{d}/b", win_31j],
+                    [d, utf_8], ["#{d}/a", utf_8], ["#{d}/b", utf_8]],
+                   a)
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        a = []
+        Dir.mkdir("#{d}/\u{2660}")
+        Find.find("#{d}".encode(utf_8)) {|f| a << [f, f.encoding] }
+        assert_equal([[d, utf_8], ["#{d}/a", utf_8], ["#{d}/b", utf_8], ["#{d}/\u{2660}", utf_8]], a)
+      end
+    }
+  end
+
   class TestInclude < Test::Unit::TestCase
     include Find
 

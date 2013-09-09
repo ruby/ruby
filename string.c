@@ -34,6 +34,7 @@
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
+#undef rb_enc_str_new_cstr
 #undef rb_external_str_new_cstr
 #undef rb_locale_str_new_cstr
 #undef rb_str_dup_frozen
@@ -129,6 +130,40 @@ VALUE rb_cSymbol;
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 
 #define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
+
+static int fstring_cmp(VALUE a, VALUE b);
+
+static st_table* frozen_strings;
+
+static const struct st_hash_type fstring_hash_type = {
+    fstring_cmp,
+    rb_str_hash,
+};
+
+VALUE
+rb_fstring(VALUE str)
+{
+    st_data_t fstr;
+    if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
+	str = (VALUE)fstr;
+    }
+    else {
+	str = rb_str_new_frozen(str);
+	RBASIC(str)->flags |= RSTRING_FSTR;
+	st_insert(frozen_strings, str, str);
+    }
+    return str;
+}
+
+static int
+fstring_cmp(VALUE a, VALUE b)
+{
+    int cmp = rb_str_hash_cmp(a, b);
+    if (cmp != 0) {
+	return cmp;
+    }
+    return ENCODING_GET(b) - ENCODING_GET(a);
+}
 
 static inline int
 single_byte_optimizable(VALUE str)
@@ -471,6 +506,18 @@ rb_usascii_str_new_cstr(const char *ptr)
     VALUE str = rb_str_new2(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
+}
+
+VALUE
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
+{
+    if (!ptr) {
+	rb_raise(rb_eArgError, "NULL pointer given");
+    }
+    if (rb_enc_mbminlen(enc) != 1) {
+	rb_raise(rb_eArgError, "wchar encoding given");
+    }
+    return rb_enc_str_new(ptr, strlen(ptr), enc);
 }
 
 VALUE
@@ -825,6 +872,10 @@ rb_free_tmp_buffer(volatile VALUE *store)
 void
 rb_str_free(VALUE str)
 {
+    if (FL_TEST(str, RSTRING_FSTR)) {
+	st_data_t fstr = (st_data_t)str;
+	st_delete(frozen_strings, &fstr, NULL);
+    }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
 	xfree(RSTRING(str)->as.heap.ptr);
     }
@@ -4066,7 +4117,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
 	if (OBJ_TAINTED(val)) tainted = 1;
 
-	len = beg - offset;	/* copy pre-match substr */
+	len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
             rb_enc_str_buf_cat(dest, cp, len, str_enc);
         }
@@ -8658,6 +8709,8 @@ Init_String(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
+
+    frozen_strings = st_init_table(&fstring_hash_type);
 
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);

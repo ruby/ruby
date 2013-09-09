@@ -962,6 +962,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
 	}
     }
     ci->vmstat = 0;
+    ci->seq = 0;
     ci->blockptr = 0;
     ci->recv = Qundef;
     ci->call = 0; /* TODO: should set default function? */
@@ -2504,7 +2505,8 @@ case_when_optimizable_literal(NODE * node)
 	    modf(RFLOAT_VALUE(v), &ival) == 0.0) {
 	    return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
-	if (SYMBOL_P(v) || rb_obj_is_kind_of(v, rb_cNumeric)) {
+	if (SYMBOL_P(v) || RB_TYPE_P(v, T_STRING) ||
+	    rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    return v;
 	}
 	break;

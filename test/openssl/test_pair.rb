@@ -157,6 +157,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10) }
       assert_equal("def\n", ret)
       s1.close
+      sleep 0.1
       assert_raise(EOFError) { s2.read_nonblock(10) }
     }
   end
@@ -172,6 +173,7 @@ class OpenSSL::TestPair < Test::Unit::TestCase
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10, exception: false) }
       assert_equal("def\n", ret)
       s1.close
+      sleep 0.1
       assert_equal(nil, s2.read_nonblock(10, exception: false))
     }
   end
@@ -206,12 +208,18 @@ class OpenSSL::TestPair < Test::Unit::TestCase
   def test_write_nonblock_no_exceptions
     ssl_pair {|s1, s2|
       n = 0
-      n += write_nonblock_no_ex s1, "a" * 100000
-      n += write_nonblock_no_ex s1, "b" * 100000
-      n += write_nonblock_no_ex s1, "c" * 100000
-      n += write_nonblock_no_ex s1, "d" * 100000
-      n += write_nonblock_no_ex s1, "e" * 100000
-      n += write_nonblock_no_ex s1, "f" * 100000
+      begin
+        n += write_nonblock_no_ex s1, "a" * 100000
+        n += write_nonblock_no_ex s1, "b" * 100000
+        n += write_nonblock_no_ex s1, "c" * 100000
+        n += write_nonblock_no_ex s1, "d" * 100000
+        n += write_nonblock_no_ex s1, "e" * 100000
+        n += write_nonblock_no_ex s1, "f" * 100000
+      rescue OpenSSL::SSL::SSLError => e
+        # on some platforms (maybe depend on OpenSSL version), writing to
+        # SSLSocket after SSL_ERROR_WANT_WRITE causes this error.
+        raise e if n == 0
+      end
       s1.close
       assert_equal(n, s2.read.length)
     }
