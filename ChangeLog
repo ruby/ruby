@@ -1,3 +1,9 @@
+Mon Sep  9 16:55:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_refined_method_entry): clear cache in the
+	  refined class since refining a method entry is modifying the class.
+	  [ruby-core:57079] [Bug #8880]
+
 Mon Sep  9 09:14:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (Gem::Specification#initialize): default date to

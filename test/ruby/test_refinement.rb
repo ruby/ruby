@@ -982,6 +982,29 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_refine_after_using
+    assert_separately([], <<-"end;")
+      bug8880 = '[ruby-core:57079] [Bug #8880]'
+      module Test
+        refine(String) do
+        end
+      end
+      using Test
+      def t
+        'Refinements are broken!'.chop!
+      end
+      t
+      module Test
+        refine(String) do
+          def chop!
+            self.sub!(/broken/, 'fine')
+          end
+        end
+      end
+      assert_equal('Refinements are fine!', t, bug8880)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)

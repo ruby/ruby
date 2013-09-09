@@ -190,6 +190,7 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 
     if (me) {
 	make_method_entry_refined(me);
+	rb_clear_cache_by_class(refined_class);
     }
     else {
 	rb_add_method(refined_class, mid, VM_METHOD_TYPE_REFINED, 0,
