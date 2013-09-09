@@ -1464,7 +1464,8 @@ call_cfunc_15(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv)
 static int vm_profile_counter[4];
 #define VM_PROFILE_UP(x) (vm_profile_counter[x]++)
 #define VM_PROFILE_ATEXIT() atexit(vm_profile_show_result)
-static void vm_profile_show_result(void)
+static void
+vm_profile_show_result(void)
 {
     fprintf(stderr, "VM Profile results: \n");
     fprintf(stderr, "r->c call: %d\n", vm_profile_counter[0]);
