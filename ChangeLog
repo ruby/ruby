@@ -1,3 +1,11 @@
+Tue Sep 10 14:37:01 2013  Shota Fukumori  <sorah@tubusu.net>
+
+	* vm_backtrace.c (vm_backtrace_to_ary): Ignore the second argument if
+	  it is nil. [Bug #8884] [ruby-core:57094]
+
+	* test/ruby/test_backtrace.rb (test_caller_with_nil_length):
+	  Test for above.
+
 Tue Sep 10 12:39:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (method_entry_i): should exclude refined methods from
