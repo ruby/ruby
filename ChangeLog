@@ -1,3 +1,8 @@
+Wed Sep 11 07:55:17 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_unlock): Mutex#unlock no longer raise
+	  an exception even if uses on trap. [Bug #8891]
+
 Tue Sep 10 14:37:01 2013  Shota Fukumori  <sorah@tubusu.net>
 
 	* vm_backtrace.c (vm_backtrace_to_ary): Ignore the second argument if
