@@ -598,7 +598,7 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 
 static rb_method_entry_t *
 get_original_method_entry(VALUE refinements,
-			  rb_method_entry_t *me,
+			  const rb_method_entry_t *me,
 			  VALUE *defined_class_ptr)
 {
     if (me->def->body.orig_me) {
@@ -614,7 +614,7 @@ get_original_method_entry(VALUE refinements,
 }
 
 rb_method_entry_t *
-rb_resolve_refined_method(VALUE refinements, rb_method_entry_t *me,
+rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me,
 			  VALUE *defined_class_ptr)
 {
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
@@ -637,7 +637,7 @@ rb_resolve_refined_method(VALUE refinements, rb_method_entry_t *me,
 	}
     }
     else {
-	return me;
+	return (rb_method_entry_t *)me;
     }
 }
 
