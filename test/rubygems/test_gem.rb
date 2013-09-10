@@ -1183,23 +1183,28 @@ class TestGem < Gem::TestCase
 
   def test_default_gems_use_full_paths
     begin
-      engine = RUBY_ENGINE
-      Object.send :remove_const, :RUBY_ENGINE
+      if defined?(RUBY_ENGINE) then
+        engine = RUBY_ENGINE
+        Object.send :remove_const, :RUBY_ENGINE
+      end
       Object.const_set :RUBY_ENGINE, 'ruby'
+
       refute Gem.default_gems_use_full_paths?
     ensure
       Object.send :remove_const, :RUBY_ENGINE
-      Object.const_set :RUBY_ENGINE, engine
+      Object.const_set :RUBY_ENGINE, engine if engine
     end
 
     begin
-      engine = RUBY_ENGINE
-      Object.send :remove_const, :RUBY_ENGINE
+      if defined?(RUBY_ENGINE) then
+        engine = RUBY_ENGINE
+        Object.send :remove_const, :RUBY_ENGINE
+      end
       Object.const_set :RUBY_ENGINE, 'jruby'
       assert Gem.default_gems_use_full_paths?
     ensure
       Object.send :remove_const, :RUBY_ENGINE
-      Object.const_set :RUBY_ENGINE, engine
+      Object.const_set :RUBY_ENGINE, engine if engine
     end
   end
 

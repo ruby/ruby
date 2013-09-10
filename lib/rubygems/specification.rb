@@ -34,7 +34,7 @@ class Date; end
 #     s.homepage    = 'https://rubygems.org/gems/example'
 #   end
 #
-# Starting in RubyGems 1.9.0, a Specification can hold arbitrary
+# Starting in RubyGems 2.0, a Specification can hold arbitrary
 # metadata. This metadata is accessed via Specification#metadata
 # and has the following restrictions:
 #
@@ -2097,7 +2097,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns an object you can use to sort specifications in #sort_by.
 
   def sort_obj
-    # TODO: this is horrible. Deprecate it.
     [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
   end
 

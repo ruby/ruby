@@ -79,7 +79,9 @@ class Gem::DependencyResolver
     needed = nil
 
     @needed.reverse_each do |n|
-      needed = Gem::List.new(Gem::DependencyResolver::DependencyRequest.new(n, nil), needed)
+      request = Gem::DependencyResolver::DependencyRequest.new n, nil
+
+      needed = Gem::List.new request, needed
     end
 
     res = resolve_for needed, nil
@@ -162,7 +164,9 @@ class Gem::DependencyResolver
 
         # Sort them so that we try the highest versions
         # first.
-        possible = possible.sort_by { |s| [s.source, s.version] }
+        possible = possible.sort_by do |s|
+          [s.source, s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
+        end
 
         # We track the conflicts seen so that we can report them
         # to help the user figure out how to fix the situation.

@@ -1,3 +1,15 @@
+Tue Sep 10 09:51:22 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.1.0.  Fixes CVE-2013-4287.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/CVE-2013-4287_txt.html
+	  for CVE information.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.0+%2F+2013-09-09
+	  for release notes.
+
+	* test/rubygems:  Tests for the above.
+
 Mon Sep  9 21:31:45 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Remove spaces between SI prefix and unit to follow

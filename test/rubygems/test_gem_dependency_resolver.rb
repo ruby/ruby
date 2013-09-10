@@ -66,6 +66,27 @@ class TestGemDependencyResolver < Gem::TestCase
     assert_set [a2], res.resolve
   end
 
+  def test_picks_best_platform
+    is = Gem::DependencyResolver::IndexSpecification
+    a2_p = quick_spec 'a' do |s| s.platform = Gem::Platform.local end
+    version = Gem::Version.new 2
+    source = Gem::Source.new @gem_repo
+
+    s = set
+
+    a2   = is.new s, 'a', version, source, Gem::Platform::RUBY
+    a2_p = is.new s, 'a', version, source, Gem::Platform.local.to_s
+
+    s.add a2_p
+    s.add a2
+
+    ad = make_dep "a"
+
+    res = Gem::DependencyResolver.new([ad], s)
+
+    assert_set [a2_p], res.resolve
+  end
+
   def test_only_returns_spec_once
     a1 = util_spec "a", "1", "c" => "= 1"
     b1 = util_spec "b", "1", "c" => "= 1"

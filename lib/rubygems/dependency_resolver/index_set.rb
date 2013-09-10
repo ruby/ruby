@@ -43,9 +43,14 @@ class Gem::DependencyResolver::IndexSet
   # Called from IndexSpecification to get a true Specification
   # object.
 
-  def load_spec name, ver, source
-    key = "#{name}-#{ver}"
-    @specs[key] ||= source.fetch_spec(Gem::NameTuple.new(name, ver))
+  def load_spec name, ver, platform, source
+    key = "#{name}-#{ver}-#{platform}"
+
+    @specs.fetch key do
+      tuple = Gem::NameTuple.new name, ver, platform
+
+      @specs[key] = source.fetch_spec tuple
+    end
   end
 
   ##

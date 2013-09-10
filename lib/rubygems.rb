@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.1.0.rc.2'
+  VERSION = '2.1.0'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -315,7 +315,7 @@ module Gem
     @paths         = nil
     @user_home     = nil
     Gem::Specification.reset
-    Gem::Security.reset if const_defined? :Security
+    Gem::Security.reset if defined?(Gem::Security)
   end
 
   ##
