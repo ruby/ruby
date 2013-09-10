@@ -1121,6 +1121,10 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     st_table *list = (st_table *)data;
     long type;
 
+    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = rb_resolve_refined_method(Qnil, me, NULL);
+	if (!me) return ST_CONTINUE;
+    }
     if (!st_lookup(list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	    type = -1; /* none */

@@ -1005,6 +1005,17 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_instance_methods
+    bug8881 = '[ruby-core:57080] [Bug #8881]'
+    assert_not_include(Foo.instance_methods(false), :z, bug8881)
+    assert_not_include(FooSub.instance_methods(true), :z, bug8881)
+  end
+
+  def test_method_defined
+    assert_not_send([Foo, :method_defined?, :z])
+    assert_not_send([FooSub, :method_defined?, :z])
+  end
+
   private
 
   def eval_using(mod, s)

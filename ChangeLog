@@ -1,3 +1,8 @@
+Tue Sep 10 12:39:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (method_entry_i): should exclude refined methods from
+	  instance method list.  [ruby-core:57080] [Bug #8881]
+
 Tue Sep 10 12:05:04 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_f_printf): [DOC] add missing parenthesis in rdoc.
