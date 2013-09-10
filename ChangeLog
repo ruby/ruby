@@ -1,3 +1,7 @@
+Tue Sep 10 12:05:04 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* io.c (rb_f_printf): [DOC] add missing parenthesis in rdoc.
+
 Tue Sep 10 10:08:00 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: Update RubyGems note.
