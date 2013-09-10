@@ -376,6 +376,8 @@ nucomp_canonicalization(int f)
 {
     canonicalization = f;
 }
+#else
+# define canonicalization <<<No canonicalization>>>
 #endif
 
 inline static void

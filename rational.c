@@ -494,6 +494,8 @@ nurat_canonicalization(int f)
 {
     canonicalization = f;
 }
+#else
+# define canonicalization <<<No canonicalization>>>
 #endif
 
 inline static void
@@ -1867,10 +1869,13 @@ numeric_quo(VALUE x, VALUE y)
         return f_fdiv(x, y);
     }
 
+#ifdef CANON
     if (canonicalization) {
         x = rb_rational_raw1(x);
     }
-    else {
+    else
+#endif
+    {
         x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
     }
     return rb_funcall(x, '/', 1, y);
