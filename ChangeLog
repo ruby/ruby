@@ -1,3 +1,7 @@
+Tue Sep 10 10:08:00 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: Update RubyGems note.
+
 Tue Sep 10 09:51:22 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.1.0.  Fixes CVE-2013-4287.

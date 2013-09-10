@@ -175,8 +175,8 @@ with all sufficient information, see the ChangeLog file.
     Rinda::RingFinger for details.
 
 * RubyGems
-  * Updated to 2.0.3.  See
-    http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.0.3+%2F+2012-03-1
+  * Updated to 2.1.0.  See
+    http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.0+%2F+2013-09-09
     for release notes.
 
 * Socket
