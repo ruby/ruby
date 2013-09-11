@@ -1,3 +1,8 @@
+Thu Sep 12 01:18:44 2013  Michal Rokos  <michal@rokos.cz>
+
+	* configure.in (sys/pstat.h): fix missing header check for
+	  missing/setproctitle.c on HP-UX.  [ruby-core:56644] [Bug #8792]
+
 Thu Sep 12 01:02:56 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ruby/test_time.rb: use the in_timezone() helper
