@@ -1,3 +1,10 @@
+Thu Sep 12 01:34:07 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): allow iclasses to be tested for
+	  inheritance. [Bug #8686] [ruby-core:56174]
+
+	* test/ruby/test_method.rb: add test
+
 Thu Sep 12 01:18:44 2013  Michal Rokos  <michal@rokos.cz>
 
 	* configure.in (sys/pstat.h): fix missing header check for
