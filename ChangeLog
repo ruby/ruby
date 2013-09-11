@@ -1,3 +1,11 @@
+Thu Sep 12 00:22:22 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* variable.c (classname): the name of class that has
+	  non class id should not be nil. This bug was introduced
+	  in r36577.
+
+	* test/thread/test_cv.rb: test for change.
+
 Thu Aug 29 21:51:33 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (zstream_run):  Fix handling of deflate streams that
