@@ -15,6 +15,15 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def in_timezone(zone)
+    orig_zone = ENV['TZ']
+
+    ENV['TZ'] = zone
+    yield
+  ensure
+    ENV['TZ'] = orig_zone
+  end
+
   def no_leap_seconds?
     # 1972-06-30T23:59:60Z is the first leap second.
     Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
@@ -291,18 +300,15 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone
-    orig_zone = ENV['TZ']
-
     t = Time.utc(2013, 2, 24)
     assert_equal('UTC', t.zone)
     assert_equal('UTC', Marshal.load(Marshal.dump(t)).zone)
 
-    ENV['TZ'] = 'JST-9'
-    t = Time.local(2013, 2, 24)
-    assert_equal('JST', Time.local(2013, 2, 24).zone)
-    assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
-  ensure
-    ENV['TZ'] = orig_zone
+    in_timezone('JST-9') do
+      t = Time.local(2013, 2, 24)
+      assert_equal('JST', Time.local(2013, 2, 24).zone)
+      assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
+    end
   end
 
   def test_marshal_to_s
@@ -319,6 +325,34 @@ class TestTime < Test::Unit::TestCase
         $SAFE = 4
         t.localtime
       end.join
+    end
+  end
+
+  Bug8795 = '[ruby-core:56648] [Bug #8795]'
+
+  def test_marshal_broken_offset
+    data = "\x04\bIu:\tTime\r\xEFF\x1C\x80\x00\x00\x00\x00\x06:\voffset"
+    t1 = t2 = nil
+    in_timezone('UTC') do
+      assert_nothing_raised(TypeError, ArgumentError, Bug8795) do
+        t1 = Marshal.load(data + "T")
+        t2 = Marshal.load(data + "\"\x0ebadoffset")
+      end
+      assert_equal(0, t1.utc_offset)
+      assert_equal(0, t2.utc_offset)
+    end
+  end
+
+  def test_marshal_broken_zone
+    data = "\x04\bIu:\tTime\r\xEFF\x1C\x80\x00\x00\x00\x00\x06:\tzone"
+    t1 = t2 = nil
+    in_timezone('UTC') do
+      assert_nothing_raised(TypeError, ArgumentError, Bug8795) do
+        t1 = Marshal.load(data + "T")
+        t2 = Marshal.load(data + "\"\b\0\0\0")
+      end
+      assert_equal('UTC', t1.zone)
+      assert_equal('UTC', t2.zone)
     end
   end
 
