@@ -1,3 +1,9 @@
+Wed Sep 11 17:30:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUNRUBY): append -- only after runruby.rb, not
+	  cross-compiling baseruby, so that $(RUN_OPT) can be command line
+	  options.  [ruby-dev:47703] [Bug #8893]
+
 Wed Sep 11 07:55:17 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_unlock): Mutex#unlock no longer raise
