@@ -1,3 +1,9 @@
+Thu Sep 12 01:44:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_gsub): use BEG(0) for whole matched position not
+	  return value from rb_reg_search(), for \K matching.
+	  [ruby-dev:47694] [Bug #8856]
+
 Thu Sep 12 01:34:07 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* object.c (rb_class_inherited_p): allow iclasses to be tested for
