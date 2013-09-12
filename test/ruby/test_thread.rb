@@ -877,6 +877,23 @@ Thread.new(Thread.current) {|mth|
     end
   end
 
+  def test_mutex_unlock_on_trap
+    assert_in_out_err([], <<-INPUT, %w(locked unlocked false), [])
+      m = Mutex.new
+
+      Signal.trap("INT") { |signo|
+        m.unlock
+        puts "unlocked"
+      }
+
+      m.lock
+      puts "locked"
+      Process.kill("INT", $$)
+      sleep 0.01
+      puts m.locked?
+    INPUT
+  end
+
   def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true
     env = {}
     env['RUBY_THREAD_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
