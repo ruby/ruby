@@ -545,7 +545,7 @@ class TestSprintfComb < Test::Unit::TestCase
 
   combination(%w[e E f g G],
               [nil, 0, 5, 20],
-              ["", ".", ".0", ".8", ".20", ".200"],
+              ["", ".", ".0", ".8", ".20", ".200", ".9999"],
               *FLAGS) {|type, width, precision, sp, hs, pl, mi, zr|
     format = "%#{sp}#{hs}#{pl}#{mi}#{zr}#{width}#{precision}#{type}"
     define_method("test_format_float(#{format})", assertions_format_float(format))

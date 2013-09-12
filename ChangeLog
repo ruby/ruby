@@ -1,3 +1,13 @@
+Thu Sep 12 20:07:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
+	  float.h.
+
+	* vsnprintf.c (BSD_vfprintf): limit length for cvt() to get rid of
+	  buffer overflow.  [ruby-core:57023] [Bug #8864]
+
+	* vsnprintf.c (exponent): make expbuf size more precise.
+
 Wed Sep 11 17:30:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUNRUBY): append -- only after runruby.rb, not
