@@ -1,3 +1,9 @@
+Thu Sep 12 21:35:46 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* Makefile.in (libruby-static.a): change LDFLAGS order. LDFLAGS may
+	  include library path that should be specified before LIBS.
+	  [ruby-dev:47707] [Bug #8901]
+
 Thu Sep 12 20:07:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
