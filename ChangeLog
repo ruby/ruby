@@ -1,3 +1,12 @@
+Thu Sep 12 22:37:08 2013  Anton Ovchinnikov  <revolver112@gmail.com>
+
+	* ext/bigdecimal/bigdecimal.c, ext/digest/md5/md5.c,
+	  ext/json/fbuffer/fbuffer.h, ext/json/generator/generator.c:
+	  Eliminate less-than-zero checks for unsigned variables.
+	  According to section 4.1.5 of C89 standard, size_t is an unsigned
+	  type.  These checks were found with 'cppcheck' static analysis tool.
+	  [ruby-core:57117] [Feature #8890]
+
 Thu Sep 12 21:35:46 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* Makefile.in (libruby-static.a): change LDFLAGS order. LDFLAGS may
