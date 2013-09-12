@@ -826,6 +826,27 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([:foo, :ref, bug7925], x, bug7925)
   end
 
+  def test_case_dispatch_is_aware_of_refinements
+    assert_in_out_err([], <<-RUBY, ["refinement used"], ["-:2: warning: Refinements are experimental, and the behavior may change in future versions of Ruby!"])
+      module RefineSymbol
+        refine Symbol do
+          def ===(other)
+            true
+          end
+        end
+      end
+
+      using RefineSymbol
+
+      case :a
+      when :b
+        puts "refinement used"
+      else
+        puts "refinement not used"
+      end
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
