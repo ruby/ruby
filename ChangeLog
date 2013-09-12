@@ -1,3 +1,11 @@
+Thu Sep 12 22:40:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIGNEDNESS): macro to check signedness of a
+	  type.
+
+	* configure.in (size_t): must be unsigned.
+	  [ruby-core:57149] [Feature #8890]
+
 Thu Sep 12 22:37:08 2013  Anton Ovchinnikov  <revolver112@gmail.com>
 
 	* ext/bigdecimal/bigdecimal.c, ext/digest/md5/md5.c,

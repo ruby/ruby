@@ -1213,6 +1213,11 @@ elif test "x$ac_cv_type___int64" = xyes; then
     RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
 fi
 
+dnl RUBY_CHECK_SIZEOF [typename] [if-signed] [if-unsigned] [included]
+AC_DEFUN([RUBY_CHECK_SIGNEDNESS], [dnl
+    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])], [($1)-1 > 0])],
+		      [$3], [$2])])
+
 dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
     AC_CHECK_TYPE([$1],
@@ -1225,10 +1230,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	  [*" signed "*], [ ],
 	  [*" unsigned "*], [
 	    u=U],
-	  [
-	    AC_COMPILE_IFELSE(
-		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])], [($n)-1 > 0])],
-		[u=U])])
+	  [RUBY_CHECK_SIGNEDNESS($n, [], [u=U], [$4])])
 	if test x"$t" = x; then
 	    for t in "long long" long int short; do
 		test -n "$u" && t="unsigned $t"
@@ -1514,6 +1516,8 @@ fi
 
 
 AC_TYPE_SIZE_T
+RUBY_CHECK_SIGNEDNESS(size_t, [AC_MSG_ERROR(size_t is signed)], [],
+		      [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(size_t, [int long void*], [], [@%:@include <sys/types.h>])
 RUBY_CHECK_SIZEOF(ptrdiff_t, size_t, [], [@%:@include <stddef.h>])
 RUBY_CHECK_PRINTF_PREFIX(size_t, z)
