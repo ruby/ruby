@@ -1,3 +1,11 @@
+Fri Sep 13 23:20:29 2013  Kenichi Kamiya  <kachick1@gmail.com>
+
+	* object.c (Init_Object): undef Module#prepend_features on Class, as
+	  well as Module#append_features.  [Fixes GH-376]
+
+	* test_class.rb: Added test for above. And ensure type checking
+	  on similar methods as module_function.
+
 Fri Sep 13 23:16:12 2013  Zachary Scott  <e@zzak.io>
 
 	* enumerator.c: [DOC] Remove reference to Enumerator::Lazy#cycle
