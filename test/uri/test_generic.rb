@@ -760,12 +760,12 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://192.0.2.2/").find_proxy)
     }
     with_env('http_proxy'=>'') {
-      assert_equal(URI(''), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
     with_env('ftp_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
-      assert_equal(URI(''), URI("ftp://192.0.2.1/").find_proxy)
+      assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
   end
 

@@ -1,3 +1,9 @@
+Thu Sep 12 14:58:58 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.find_proxy): return nil if
+	  http_proxy environment variable is empty string.
+	  [ruby-core:57140] [Bug #8898]
+
 Fri Sep 13 10:40:28 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.1.3
