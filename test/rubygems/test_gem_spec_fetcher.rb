@@ -168,7 +168,7 @@ class TestGemSpecFetcher < Gem::TestCase
     specs, _ = @sf.available_specs(:latest)
 
     assert_equal [@source], specs.keys
-    assert_equal @latest_specs, specs[@source]
+    assert_equal @latest_specs, specs[@source].sort
   end
 
   def test_available_specs_released
@@ -176,7 +176,7 @@ class TestGemSpecFetcher < Gem::TestCase
 
     assert_equal [@source], specs.keys
 
-    assert_equal @released, specs[@source]
+    assert_equal @released, specs[@source].sort
   end
 
   def test_available_specs_complete
@@ -184,9 +184,9 @@ class TestGemSpecFetcher < Gem::TestCase
 
     assert_equal [@source], specs.keys
 
-    expected = (@prerelease_specs + @released).sort
+    comp = @prerelease_specs + @released
 
-    assert_equal expected, specs[@source]
+    assert_equal comp.sort, specs[@source].sort
   end
 
   def test_available_specs_complete_handles_no_prerelease
@@ -197,8 +197,11 @@ class TestGemSpecFetcher < Gem::TestCase
 
     assert_equal [@source], specs.keys
 
-    assert_equal @released, specs[@source]
+    comp = @released
+
+    assert_equal comp.sort, specs[@source].sort
   end
+
 
   def test_available_specs_cache
     specs, _ = @sf.available_specs(:latest)
@@ -227,7 +230,7 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_available_specs_prerelease
     specs, _ = @sf.available_specs(:prerelease)
 
-    assert_equal @prerelease_specs, specs[@source]
+    assert_equal @prerelease_specs, specs[@source].sort
   end
 
   def test_available_specs_with_bad_source

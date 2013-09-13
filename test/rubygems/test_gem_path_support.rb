@@ -64,21 +64,4 @@ class TestGemPathSupport < Gem::TestCase
   def util_path
     ENV["GEM_PATH"].split(File::PATH_SEPARATOR)
   end
-
-  def test_initialize_spec
-    ENV["GEM_SPEC_CACHE"] = nil
-
-    ps = Gem::PathSupport.new
-    assert_equal Gem.default_spec_cache_dir, ps.spec_cache_dir
-
-    ENV["GEM_SPEC_CACHE"] = 'bar'
-
-    ps = Gem::PathSupport.new
-    assert_equal ENV["GEM_SPEC_CACHE"], ps.spec_cache_dir
-
-    ENV["GEM_SPEC_CACHE"] = File.join @tempdir, 'spec_cache'
-
-    ps = Gem::PathSupport.new "GEM_SPEC_CACHE" => "foo"
-    assert_equal "foo", ps.spec_cache_dir
-  end
 end

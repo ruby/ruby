@@ -1,5 +1,5 @@
 require 'rubygems/test_case'
-require 'rubygems/source/local'
+require 'rubygems/source_local'
 
 require 'fileutils'
 
@@ -66,41 +66,18 @@ class TestGemSourceLocal < Gem::TestCase
     assert_equal s, @a
   end
 
-  def test_inspect
-    assert_equal '#<Gem::Source::Local specs: "NOT LOADED">', @sl.inspect
-
-    @sl.load_specs :released
-
-    inner = [@a, @ap, @b].map { |t| t.name_tuple }.inspect
-
-    assert_equal "#<Gem::Source::Local specs: #{inner}>", @sl.inspect
-  end
-
   def test_download
     path = @sl.download @a
 
     assert_equal File.expand_path(@a.file_name), path
   end
 
-  def test_spaceship
-    a1 = quick_gem 'a', '1'
-    util_build_gem a1
+  def test_compare
+    uri = URI.parse "http://gems.example/foo"
+    s = Gem::Source.new uri
 
-    remote    = Gem::Source.new @gem_repo
-    specific  = Gem::Source::SpecificFile.new a1.cache_file
-    installed = Gem::Source::Installed.new
-    local     = Gem::Source::Local.new
-
-    assert_equal( 0, local.    <=>(local),     'local     <=> local')
-
-    assert_equal(-1, remote.   <=>(local),     'remote    <=> local')
-    assert_equal( 1, local.    <=>(remote),    'local     <=> remote')
-
-    assert_equal( 1, installed.<=>(local),     'installed <=> local')
-    assert_equal(-1, local.    <=>(installed), 'local     <=> installed')
-
-    assert_equal(-1, specific. <=>(local),     'specific  <=> local')
-    assert_equal( 1, local.    <=>(specific),  'local     <=> specific')
+    assert_equal(-1, (@sl <=> s))
+    assert_equal 1, (s <=> @sl)
+    assert_equal 0, (@sl <=> @sl)
   end
-
 end

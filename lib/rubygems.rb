@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.1.3'
+  VERSION = '2.0.8'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -115,7 +115,7 @@ module Gem
   RUBYGEMS_DIR = File.dirname File.expand_path(__FILE__)
 
   ##
-  # An Array of Regexps that match windows Ruby platforms.
+  # An Array of Regexps that match windows ruby platforms.
 
   WIN_PATTERNS = [
     /bccwin/i,
@@ -141,14 +141,6 @@ module Gem
     doc
     gems
     specifications
-  ]
-
-  ##
-  # Subdirectories in a gem repository for default gems
-
-  REPOSITORY_DEFAULT_GEM_SUBDIRECTORIES = %w[
-    gems
-    specifications/default
   ]
 
   @@win_platform = nil
@@ -387,10 +379,6 @@ module Gem
     paths.path
   end
 
-  def self.spec_cache_dir
-    paths.spec_cache_dir
-  end
-
   ##
   # Quietly ensure the Gem directory +dir+ contains all the proper
   # subdirectories.  If we can't create a directory due to a permission
@@ -401,23 +389,6 @@ module Gem
   # World-writable directories will never be created.
 
   def self.ensure_gem_subdirectories dir = Gem.dir, mode = nil
-    ensure_subdirectories(dir, mode, REPOSITORY_SUBDIRECTORIES)
-  end
-
-  ##
-  # Quietly ensure the Gem directory +dir+ contains all the proper
-  # subdirectories for handling default gems.  If we can't create a
-  # directory due to a permission problem, then we will silently continue.
-  #
-  # If +mode+ is given, missing directories are created with this mode.
-  #
-  # World-writable directories will never be created.
-
-  def self.ensure_default_gem_subdirectories dir = Gem.dir, mode = nil
-    ensure_subdirectories(dir, mode, REPOSITORY_DEFAULT_GEM_SUBDIRECTORIES)
-  end
-
-  def self.ensure_subdirectories dir, mode, subdirs # :nodoc:
     old_umask = File.umask
     File.umask old_umask | 002
 
@@ -427,7 +398,7 @@ module Gem
 
     options[:mode] = mode if mode
 
-    subdirs.each do |name|
+    REPOSITORY_SUBDIRECTORIES.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
       FileUtils.mkdir_p subdir, options rescue nil
@@ -446,48 +417,18 @@ module Gem
   # $LOAD_PATH for files as well as gems.
   #
   # Note that find_files will return all files even if they are from different
-  # versions of the same gem.  See also find_latest_files
+  # versions of the same gem.
 
   def self.find_files(glob, check_load_path=true)
     files = []
 
-    files = find_files_from_load_path glob if check_load_path
+    if check_load_path
+      files = $LOAD_PATH.map { |load_path|
+        Dir["#{File.expand_path glob, load_path}#{Gem.suffix_pattern}"]
+      }.flatten.select { |file| File.file? file.untaint }
+    end
 
     files.concat Gem::Specification.map { |spec|
-      spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
-    }.flatten
-
-    # $LOAD_PATH might contain duplicate entries or reference
-    # the spec dirs directly, so we prune.
-    files.uniq! if check_load_path
-
-    return files
-  end
-
-  def self.find_files_from_load_path glob # :nodoc:
-    $LOAD_PATH.map { |load_path|
-      Dir["#{File.expand_path glob, load_path}#{Gem.suffix_pattern}"]
-    }.flatten.select { |file| File.file? file.untaint }
-  end
-
-  ##
-  # Returns a list of paths matching +glob+ from the latest gems that can be
-  # used by a gem to pick up features from other gems.  For example:
-  #
-  #   Gem.find_latest_files('rdoc/discover').each do |path| load path end
-  #
-  # if +check_load_path+ is true (the default), then find_latest_files also
-  # searches $LOAD_PATH for files as well as gems.
-  #
-  # Unlike find_files, find_latest_files will return only files from the
-  # latest version of a gem.
-
-  def self.find_latest_files(glob, check_load_path=true)
-    files = []
-
-    files = find_files_from_load_path glob if check_load_path
-
-    files.concat Gem::Specification.latest_specs(true).map { |spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -852,7 +793,7 @@ module Gem
   end
 
   ##
-  # A Gem::Version for the currently running Ruby.
+  # A Gem::Version for the currently running ruby.
 
   def self.ruby_version
     return @ruby_version if defined? @ruby_version
@@ -975,9 +916,9 @@ module Gem
   end
 
   ##
-  # Load +plugins+ as Ruby files
+  # Load +plugins+ as ruby files
 
-  def self.load_plugin_files plugins # :nodoc:
+  def self.load_plugin_files(plugins)
     plugins.each do |plugin|
 
       # Skip older versions of the GemCutter plugin: Its commands are in
@@ -995,16 +936,10 @@ module Gem
   end
 
   ##
-  # Find the 'rubygems_plugin' files in the latest installed gems and load
-  # them
+  # Find all 'rubygems_plugin' files in installed gems and load them
 
   def self.load_plugins
-    # Remove this env var by at least 3.0
-    if ENV['RUBYGEMS_LOAD_ALL_PLUGINS']
-      load_plugin_files find_files('rubygems_plugin', false)
-    else
-      load_plugin_files find_latest_files('rubygems_plugin', false)
-    end
+    load_plugin_files find_files('rubygems_plugin', false)
   end
 
   ##
@@ -1036,31 +971,10 @@ module Gem
     attr_reader :loaded_specs
 
     ##
-    # Register a Gem::Specification for default gem.
-    #
-    # Two formats for the specification are supported:
-    #
-    # * MRI 2.0 style, where spec.files contains unprefixed require names.
-    #   The spec's filenames will be registered as-is.
-    # * New style, where spec.files contains files prefixed with paths
-    #   from spec.require_paths. The prefixes are stripped before
-    #   registering the spec's filenames. Unprefixed files are omitted.
-    #
+    # Register a Gem::Specification for default gem
 
     def register_default_spec(spec)
-      new_format = Gem.default_gems_use_full_paths? || spec.require_paths.any? {|path| spec.files.any? {|f| f.start_with? path } }
-
-      if new_format
-        prefix_group = spec.require_paths.map {|f| f + "/"}.join("|")
-        prefix_pattern = /^(#{prefix_group})/
-      end
-
       spec.files.each do |file|
-        if new_format
-          file = file.sub(prefix_pattern, "")
-          next unless $~
-        end
-
         @path_to_default_spec_map[file] = spec
       end
     end
@@ -1177,7 +1091,7 @@ unless gem_preluded then # TODO: remove guard after 1.9.2 dropped
   if defined?(RUBY_ENGINE) then
     begin
       ##
-      # Defaults the Ruby implementation wants to provide for RubyGems
+      # Defaults the ruby implementation wants to provide for RubyGems
 
       require "rubygems/defaults/#{RUBY_ENGINE}"
     rescue LoadError

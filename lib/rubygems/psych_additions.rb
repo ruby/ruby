@@ -3,7 +3,7 @@
 # in Specification._load, but if we don't have the constant, Marshal
 # blows up.
 
-module Psych # :nodoc:
+module Psych
   class PrivateType
   end
 end

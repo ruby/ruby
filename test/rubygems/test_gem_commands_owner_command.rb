@@ -6,7 +6,6 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
   def setup
     super
 
-    ENV["RUBYGEMS_HOST"] = nil
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
     Gem.configuration.rubygems_api_key = "ed244fbf2b1a52e012da8616c512fa47f9aa5250"
@@ -33,36 +32,6 @@ EOF
     assert_match %r{Owners for gem: freewill}, @ui.output
     assert_match %r{- user1@example.com}, @ui.output
     assert_match %r{- user2@example.com}, @ui.output
-  end
-
-  def test_show_owners_setting_up_host_through_env_var
-    response = "- email: user1@example.com\n"
-    host = "http://rubygems.example"
-    ENV["RUBYGEMS_HOST"] = host
-
-    @fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
-
-    use_ui @ui do
-      @cmd.show_owners("freewill")
-    end
-
-    assert_match %r{Owners for gem: freewill}, @ui.output
-    assert_match %r{- user1@example.com}, @ui.output
-  end
-
-  def test_show_owners_setting_up_host
-    response = "- email: user1@example.com\n"
-    host = "http://rubygems.example"
-    @cmd.host = host
-
-    @fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
-
-    use_ui @ui do
-      @cmd.show_owners("freewill")
-    end
-
-    assert_match %r{Owners for gem: freewill}, @ui.output
-    assert_match %r{- user1@example.com}, @ui.output
   end
 
   def test_show_owners_denied
@@ -116,24 +85,6 @@ EOF
     end
 
     assert_match response, @ui.output
-  end
-
-  def test_add_owner_with_host_option_through_execute
-    host = "http://rubygems.example"
-    add_owner_response = "Owner added successfully."
-    show_owners_response = "- email: user1@example.com\n"
-    @fetcher.data["#{host}/api/v1/gems/freewill/owners"] = [add_owner_response, 200, 'OK']
-    @fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [show_owners_response, 200, 'OK']
-
-    @cmd.handle_options %W[--host #{host} --add user-new1@example.com freewill]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_match add_owner_response, @ui.output
-    assert_match %r{Owners for gem: freewill}, @ui.output
-    assert_match %r{- user1@example.com}, @ui.output
   end
 
   def test_add_owners_key

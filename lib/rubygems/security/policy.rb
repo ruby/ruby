@@ -1,5 +1,3 @@
-require 'rubygems/user_interaction'
-
 ##
 # A Gem::Security::Policy object encapsulates the settings for verifying
 # signed gem files.  This is the base class.  You can either declare an
@@ -7,8 +5,6 @@ require 'rubygems/user_interaction'
 # Gem::Security::Policies.
 
 class Gem::Security::Policy
-
-  include Gem::UserInteraction
 
   attr_reader :name
 
@@ -179,19 +175,6 @@ class Gem::Security::Policy
     true
   end
 
-  ##
-  # Extracts the email or subject from +certificate+
-
-  def subject certificate # :nodoc:
-    certificate.extensions.each do |extension|
-      next unless extension.oid == 'subjectAltName'
-
-      return extension.value
-    end
-
-    certificate.subject.to_s
-  end
-
   def inspect # :nodoc:
     ("[Policy: %s - data: %p signer: %p chain: %p root: %p " +
      "signed-only: %p trusted-only: %p]") % [
@@ -201,24 +184,16 @@ class Gem::Security::Policy
   end
 
   ##
-  # For +full_name+, verifies the certificate +chain+ is valid, the +digests+
-  # match the signatures +signatures+ created by the signer depending on the
-  # +policy+ settings.
+  # Verifies the certificate +chain+ is valid, the +digests+ match the
+  # signatures +signatures+ created by the signer depending on the +policy+
+  # settings.
   #
   # If +key+ is given it is used to validate the signing certificate.
 
-  def verify chain, key = nil, digests = {}, signatures = {},
-             full_name = '(unknown)'
-    if signatures.empty? then
-      if @only_signed then
-        raise Gem::Security::Exception,
-          "unsigned gems are not allowed by the #{name} policy"
-      elsif digests.empty? then
-        # lack of signatures is irrelevant if there is nothing to check
-        # against
-      else
-        alert_warning "#{full_name} is not signed"
-      end
+  def verify chain, key = nil, digests = {}, signatures = {}
+    if @only_signed and signatures.empty? then
+      raise Gem::Security::Exception,
+        "unsigned gems are not allowed by the #{name} policy"
     end
 
     opt       = @opt
@@ -247,13 +222,7 @@ class Gem::Security::Policy
 
     check_root chain, time if @verify_root
 
-    if @only_trusted then
-      check_trust chain, digester, trust_dir
-    elsif signatures.empty? and digests.empty? then
-      # trust is irrelevant if there's no signatures to verify
-    else
-      alert_warning "#{subject signer} is not trusted for #{full_name}"
-    end
+    check_trust chain, digester, trust_dir if @only_trusted
 
     signatures.each do |file, _|
       digest = signer_digests[file]
@@ -283,7 +252,7 @@ class Gem::Security::Policy
       OpenSSL::X509::Certificate.new cert_pem
     end
 
-    verify chain, nil, digests, signatures, spec.full_name
+    verify chain, nil, digests, signatures
 
     true
   end

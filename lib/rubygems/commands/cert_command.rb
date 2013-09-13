@@ -1,11 +1,6 @@
 require 'rubygems/command'
 require 'rubygems/security'
-begin
-  require 'openssl'
-rescue LoadError => e
-  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
-               e.message =~ / -- openssl$/
-end
+require 'openssl'
 
 class Gem::Commands::CertCommand < Gem::Command
 
@@ -26,8 +21,7 @@ class Gem::Commands::CertCommand < Gem::Command
 
     OptionParser.accept OpenSSL::PKey::RSA do |key_file|
       begin
-        passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-        key = OpenSSL::PKey::RSA.new File.read(key_file), passphrase
+        key = OpenSSL::PKey::RSA.new File.read key_file
       rescue Errno::ENOENT
         raise OptionParser::InvalidArgument, "#{key_file}: does not exist"
       rescue OpenSSL::PKey::RSAError
@@ -85,67 +79,52 @@ class Gem::Commands::CertCommand < Gem::Command
     end
   end
 
-  def add_certificate certificate # :nodoc:
-    Gem::Security.trust_dir.trust_cert certificate
-
-    say "Added '#{certificate.subject}'"
-  end
-
   def execute
     options[:add].each do |certificate|
-      add_certificate certificate
+      Gem::Security.trust_dir.trust_cert certificate
+
+      say "Added '#{certificate.subject}'"
     end
 
     options[:remove].each do |filter|
-      remove_certificates_matching filter
+      certificates_matching filter do |certificate, path|
+        FileUtils.rm path
+        say "Removed '#{certificate.subject}'"
+      end
     end
 
     options[:list].each do |filter|
-      list_certificates_matching filter
+      certificates_matching filter do |certificate, _|
+        # this could probably be formatted more gracefully
+        say certificate.subject.to_s
+      end
     end
 
     options[:build].each do |name|
       build name
     end
 
-    sign_certificates unless options[:sign].empty?
+    unless options[:sign].empty? then
+      load_default_cert unless options[:issuer_cert]
+      load_default_key  unless options[:key]
+    end
+
+    options[:sign].each do |cert_file|
+      sign cert_file
+    end
   end
 
   def build name
-    key, key_path = build_key
-    cert_path = build_cert name, key
+    key = options[:key] || Gem::Security.create_key
+
+    cert = Gem::Security.create_cert_email name, key
+
+    key_path  = Gem::Security.write key, "gem-private_key.pem"
+    cert_path = Gem::Security.write cert, "gem-public_cert.pem"
 
     say "Certificate: #{cert_path}"
-
-    if key_path
-      say "Private Key: #{key_path}"
-      say "Don't forget to move the key file to somewhere private!"
-    end
-  end
-
-  def build_cert name, key # :nodoc:
-    cert = Gem::Security.create_cert_email name, key
-    Gem::Security.write cert, "gem-public_cert.pem"
-  end
-
-  def build_key # :nodoc:
-    if options[:key] then
-      options[:key]
-    else
-      passphrase = ask_for_password 'Passphrase for your Private Key:'
-      say "\n"
-
-      passphrase_confirmation = ask_for_password 'Please repeat the passphrase for your Private Key:'
-      say "\n"
-
-      raise Gem::CommandLineError,
-            "Passphrase and passphrase confirmation don't match" unless passphrase == passphrase_confirmation
-
-      key      = Gem::Security.create_key
-      key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
-
-      return key, key_path
-    end
+    say "Private Key: #{key_path}"
+    say "Don't forget to move the key file to somewhere private!"
   end
 
   def certificates_matching filter
@@ -200,13 +179,6 @@ For further reading on signing gems see `ri Gem::Security`.
     EOF
   end
 
-  def list_certificates_matching filter # :nodoc:
-    certificates_matching filter do |certificate, _|
-      # this could probably be formatted more gracefully
-      say certificate.subject.to_s
-    end
-  end
-
   def load_default_cert
     cert_file = File.join Gem.default_cert_path
     cert = File.read cert_file
@@ -226,8 +198,7 @@ For further reading on signing gems see `ri Gem::Security`.
   def load_default_key
     key_file = File.join Gem.default_key_path
     key = File.read key_file
-    passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    options[:key] = OpenSSL::PKey::RSA.new key, passphrase
+    options[:key] = OpenSSL::PKey::RSA.new key
   rescue Errno::ENOENT
     alert_error \
       "--private-key not specified and ~/.gem/gem-private_key.pem does not exist"
@@ -238,18 +209,6 @@ For further reading on signing gems see `ri Gem::Security`.
       "--private-key not specified and ~/.gem/gem-private_key.pem is not valid"
 
     terminate_interaction 1
-  end
-
-  def load_defaults # :nodoc:
-    load_default_cert unless options[:issuer_cert]
-    load_default_key  unless options[:key]
-  end
-
-  def remove_certificates_matching filter # :nodoc:
-    certificates_matching filter do |certificate, path|
-      FileUtils.rm path
-      say "Removed '#{certificate.subject}'"
-    end
   end
 
   def sign cert_file
@@ -266,13 +225,5 @@ For further reading on signing gems see `ri Gem::Security`.
     Gem::Security.write cert, cert_file, permissions
   end
 
-  def sign_certificates # :nodoc:
-    load_defaults unless options[:sign].empty?
-
-    options[:sign].each do |cert_file|
-      sign cert_file
-    end
-  end
-
-end if defined?(OpenSSL::SSL)
+end
 

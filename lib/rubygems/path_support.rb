@@ -13,10 +13,6 @@ class Gem::PathSupport
   attr_reader :path
 
   ##
-  # Directory with spec cache
-  attr_reader :spec_cache_dir # :nodoc:
-
-  ##
   #
   # Constructor. Takes a single argument which is to be treated like a
   # hashtable, or defaults to ENV, the system environment.
@@ -32,12 +28,6 @@ class Gem::PathSupport
     end
 
     self.path = env["GEM_PATH"] || ENV["GEM_PATH"]
-
-    @spec_cache_dir =
-      env["GEM_SPEC_CACHE"] || ENV["GEM_SPEC_CACHE"] ||
-        Gem.default_spec_cache_dir
-
-    @spec_cache_dir = @spec_cache_dir.dup.untaint
   end
 
   private

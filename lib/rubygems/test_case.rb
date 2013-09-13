@@ -58,7 +58,7 @@ module Gem
   end
 
   ##
-  # Allows setting path to Ruby.  This method is available when requiring
+  # Allows setting path to ruby.  This method is available when requiring
   # 'rubygems/test_case'
 
   def self.ruby= ruby
@@ -83,23 +83,6 @@ end
 # Tests are always run at a safe level of 1.
 
 class Gem::TestCase < MiniTest::Unit::TestCase
-
-  def assert_activate expected, *specs
-    specs.each do |spec|
-      case spec
-      when String then
-        Gem::Specification.find_by_name(spec).activate
-      when Gem::Specification then
-        spec.activate
-      else
-        flunk spec.inspect
-      end
-    end
-
-    loaded = Gem.loaded_specs.values.map(&:full_name)
-
-    assert_equal expected.sort, loaded.sort if expected
-  end
 
   # TODO: move to minitest
   def assert_path_exists path, msg = nil
@@ -223,11 +206,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     @gemhome  = File.join @tempdir, 'gemhome'
     @userhome = File.join @tempdir, 'userhome'
-    ENV["GEM_SPEC_CACHE"] = File.join @tempdir, 'spec_cache'
 
     @orig_ruby = if ENV['RUBY'] then
-                   ruby = Gem.ruby
-                   Gem.ruby = ENV['RUBY']
+                   ruby = Gem.instance_variable_get :@ruby
+                   Gem.instance_variable_set :@ruby, ENV['RUBY']
                    ruby
                  end
 
@@ -244,9 +226,6 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     FileUtils.mkdir_p @gemhome
     FileUtils.mkdir_p @userhome
-
-    @orig_gem_private_key_passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
-    ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = PRIVATE_KEY_PASSPHRASE
 
     @default_dir = File.join @tempdir, 'default'
     @default_spec_dir = File.join @default_dir, "specifications", "default"
@@ -293,47 +272,18 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
-  end
 
-  ##
-  # #teardown restores the process to its original state and removes the
-  # tempdir unless the +KEEP_FILES+ environment variable was set.
+    # TODO: move to installer test cases
+    Gem.post_build_hooks.clear
+    Gem.post_install_hooks.clear
+    Gem.done_installing_hooks.clear
+    Gem.post_reset_hooks.clear
+    Gem.post_uninstall_hooks.clear
+    Gem.pre_install_hooks.clear
+    Gem.pre_reset_hooks.clear
+    Gem.pre_uninstall_hooks.clear
 
-  def teardown
-    $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
-
-    Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
-    Gem::ConfigMap[:arch] = @orig_arch
-
-    if defined? Gem::RemoteFetcher then
-      Gem::RemoteFetcher.fetcher = nil
-    end
-
-    Dir.chdir @current_dir
-
-    FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
-
-    ENV['GEM_HOME'] = @orig_gem_home
-    ENV['GEM_PATH'] = @orig_gem_path
-
-    Gem.ruby = @orig_ruby if @orig_ruby
-
-    if @orig_ENV_HOME then
-      ENV['HOME'] = @orig_ENV_HOME
-    else
-      ENV.delete 'HOME'
-    end
-
-    Gem.instance_variable_set :@default_dir, nil
-
-    ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = @orig_gem_private_key_passphrase
-
-    Gem::Specification._clear_load_cache
-  end
-
-  def common_installer_setup
-    common_installer_teardown
-
+    # TODO: move to installer test cases
     Gem.post_build do |installer|
       @post_build_hook_arg = installer
       true
@@ -357,15 +307,37 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
   end
 
-  def common_installer_teardown
-    Gem.post_build_hooks.clear
-    Gem.post_install_hooks.clear
-    Gem.done_installing_hooks.clear
-    Gem.post_reset_hooks.clear
-    Gem.post_uninstall_hooks.clear
-    Gem.pre_install_hooks.clear
-    Gem.pre_reset_hooks.clear
-    Gem.pre_uninstall_hooks.clear
+  ##
+  # #teardown restores the process to its original state and removes the
+  # tempdir unless the +KEEP_FILES+ environment variable was set.
+
+  def teardown
+    $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
+
+    Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
+    Gem::ConfigMap[:arch] = @orig_arch
+
+    if defined? Gem::RemoteFetcher then
+      Gem::RemoteFetcher.fetcher = nil
+    end
+
+    Dir.chdir @current_dir
+
+    FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
+
+    ENV['GEM_HOME'] = @orig_gem_home
+    ENV['GEM_PATH'] = @orig_gem_path
+
+    _ = @orig_ruby
+    Gem.instance_variable_set :@ruby, @orig_ruby if @orig_ruby
+
+    if @orig_ENV_HOME then
+      ENV['HOME'] = @orig_ENV_HOME
+    else
+      ENV.delete 'HOME'
+    end
+
+    Gem.instance_variable_set :@default_dir, nil
   end
 
   ##
@@ -594,21 +566,6 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
   end
 
-  def loaded_spec_names
-    Gem.loaded_specs.values.map(&:full_name).sort
-  end
-
-  def unresolved_names
-    Gem::Specification.unresolved_deps.values.map(&:to_s).sort
-  end
-
-  def save_loaded_features
-    old_loaded_features = $LOADED_FEATURES.dup
-    yield
-  ensure
-    $LOADED_FEATURES.replace old_loaded_features
-  end
-
   ##
   # Create a new spec (or gem if passed an array of files) and set it
   # up properly. Use this instead of util_spec and util_gem.
@@ -785,7 +742,7 @@ Also, a list:
     @a_evil9 = quick_gem('a_evil', '9', &init)
     @b2      = quick_gem('b', '2',      &init)
     @c1_2    = quick_gem('c', '1.2',    &init)
-    @x       = quick_gem('x', '1',      &init)
+    @x       = quick_gem('x', '1', &init)
     @dep_x   = quick_gem('dep_x', '1') do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
@@ -805,15 +762,14 @@ Also, a list:
       util_build_gem @a2_pre
     end
 
-    write_file File.join(*%W[gems #{@a1.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a3a.original_name}     lib code.rb])
-    write_file File.join(*%W[gems #{@a_evil9.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@b2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@c1_2.original_name}    lib code.rb])
-    write_file File.join(*%W[gems #{@pl1.original_name}     lib code.rb])
-    write_file File.join(*%W[gems #{@x.original_name}       lib code.rb])
-    write_file File.join(*%W[gems #{@dep_x.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@a1.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@a2.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@a3a.original_name}  lib code.rb])
+    write_file File.join(*%W[gems #{@b2.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@pl1.original_name}  lib code.rb])
+    write_file File.join(*%W[gems #{@x.original_name}  lib code.rb])
+    write_file File.join(*%W[gems #{@dep_x.original_name}  lib code.rb])
 
     [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1, @x, @dep_x].each do |spec|
       util_build_gem spec
@@ -1016,7 +972,7 @@ Also, a list:
   end
 
   ##
-  # Finds the path to the Ruby executable
+  # Finds the path to the ruby executable
 
   def self.rubybin
     ruby = ENV["RUBY"]
@@ -1056,24 +1012,6 @@ Also, a list:
   end
 
   ##
-  # Constructs a Gem::DependencyResolver::DependencyRequest from a
-  # Gem::Dependency +dep+, a +from_name+ and +from_version+ requesting the
-  # dependency and a +parent+ DependencyRequest
-
-  def dependency_request dep, from_name, from_version, parent = nil
-    remote = Gem::Source.new @uri
-
-    parent ||= Gem::DependencyResolver::DependencyRequest.new \
-      dep, nil
-
-    spec = Gem::DependencyResolver::IndexSpecification.new \
-      nil, from_name, from_version, remote, Gem::Platform::RUBY
-    activation = Gem::DependencyResolver::ActivationRequest.new spec, parent
-
-    Gem::DependencyResolver::DependencyRequest.new dep, activation
-  end
-
-  ##
   # Constructs a new Gem::Requirement.
 
   def req *requirements
@@ -1097,11 +1035,7 @@ Also, a list:
 
   class StaticSet
     def initialize(specs)
-      @specs = specs
-    end
-
-    def add spec
-      @specs << spec
+      @specs = specs.sort_by { |s| s.full_name }
     end
 
     def find_spec(dep)
@@ -1112,15 +1046,6 @@ Also, a list:
 
     def find_all(dep)
       @specs.find_all { |s| dep.matches_spec? s }
-    end
-
-    def load_spec name, ver, platform, source
-      dep = Gem::Dependency.new name, ver
-      spec = find_spec dep
-
-      Gem::Specification.new spec.name, spec.version do |s|
-        s.platform = spec.platform
-      end
     end
 
     def prefetch(reqs)
@@ -1155,18 +1080,18 @@ Also, a list:
   end
 
   ##
-  # Loads an RSA private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
+  # Loads an RSA private key named +key_name+ in <tt>test/rubygems/</tt>
 
-  def self.load_key key_name, passphrase = nil
+  def self.load_key key_name
     key_file = key_path key_name
 
     key = File.read key_file
 
-    OpenSSL::PKey::RSA.new key, passphrase
+    OpenSSL::PKey::RSA.new key
   end
 
   ##
-  # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
+  # Returns the path tot he key named +key_name+ from <tt>test/rubygems</tt>
 
   def self.key_path key_name
     File.expand_path "../../../test/rubygems/#{key_name}_key.pem", __FILE__
@@ -1175,24 +1100,17 @@ Also, a list:
   # :stopdoc:
   # only available in RubyGems tests
 
-  PRIVATE_KEY_PASSPHRASE      = 'Foo bar'
-
   begin
-    PRIVATE_KEY                 = load_key 'private'
-    PRIVATE_KEY_PATH            = key_path 'private'
+    PRIVATE_KEY      = load_key 'private'
+    PRIVATE_KEY_PATH = key_path 'private'
+    PUBLIC_KEY       = PRIVATE_KEY.public_key
 
-    # ENCRYPTED_PRIVATE_KEY is PRIVATE_KEY encrypted with PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY       = load_key 'encrypted_private', PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY_PATH  = key_path 'encrypted_private'
-
-    PUBLIC_KEY                  = PRIVATE_KEY.public_key
-
-    PUBLIC_CERT                 = load_cert 'public'
-    PUBLIC_CERT_PATH            = cert_path 'public'
+    PUBLIC_CERT      = load_cert 'public'
+    PUBLIC_CERT_PATH = cert_path 'public'
   rescue Errno::ENOENT
     PRIVATE_KEY = nil
     PUBLIC_KEY  = nil
     PUBLIC_CERT = nil
-  end if defined?(OpenSSL::SSL)
+  end
 
 end

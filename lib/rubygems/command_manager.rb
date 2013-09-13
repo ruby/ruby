@@ -33,39 +33,6 @@ class Gem::CommandManager
 
   include Gem::UserInteraction
 
-  BUILTIN_COMMANDS = [ # :nodoc:
-    :build,
-    :cert,
-    :check,
-    :cleanup,
-    :contents,
-    :dependency,
-    :environment,
-    :fetch,
-    :generate_index,
-    :help,
-    :install,
-    :list,
-    :lock,
-    :mirror,
-    :outdated,
-    :owner,
-    :pristine,
-    :push,
-    :query,
-    :rdoc,
-    :search,
-    :server,
-    :sources,
-    :specification,
-    :stale,
-    :uninstall,
-    :unpack,
-    :update,
-    :which,
-    :yank,
-  ]
-
   ##
   # Return the authoritative instance of the command manager.
 
@@ -94,10 +61,36 @@ class Gem::CommandManager
   def initialize
     require 'timeout'
     @commands = {}
-
-    BUILTIN_COMMANDS.each do |name|
-      register_command name
-    end
+    register_command :build
+    register_command :cert
+    register_command :check
+    register_command :cleanup
+    register_command :contents
+    register_command :dependency
+    register_command :environment
+    register_command :fetch
+    register_command :generate_index
+    register_command :help
+    register_command :install
+    register_command :list
+    register_command :lock
+    register_command :mirror
+    register_command :outdated
+    register_command :owner
+    register_command :pristine
+    register_command :push
+    register_command :query
+    register_command :rdoc
+    register_command :search
+    register_command :server
+    register_command :sources
+    register_command :specification
+    register_command :stale
+    register_command :uninstall
+    register_command :unpack
+    register_command :update
+    register_command :which
+    register_command :yank
   end
 
   ##
@@ -139,6 +132,14 @@ class Gem::CommandManager
     alert_error "While executing gem ... (#{ex.class})\n    #{ex.to_s}"
     ui.backtrace ex
 
+    if Gem.configuration.really_verbose and \
+         ex.kind_of?(Gem::Exception) and ex.source_exception
+      e = ex.source_exception
+
+      ui.errs.puts "Because of: (#{e.class})\n    #{e.to_s}"
+      ui.backtrace e
+    end
+
     terminate_interaction(1)
   rescue Interrupt
     alert_error "Interrupted"
@@ -146,6 +147,8 @@ class Gem::CommandManager
   end
 
   def process_args(args, build_args=nil)
+    args = args.to_str.split(/\s+/) if args.respond_to?(:to_str)
+
     if args.empty? then
       say Gem::Command::HELP
       terminate_interaction 1

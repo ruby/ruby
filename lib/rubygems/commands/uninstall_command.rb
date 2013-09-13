@@ -1,7 +1,6 @@
 require 'rubygems/command'
 require 'rubygems/version_option'
 require 'rubygems/uninstaller'
-require 'fileutils'
 
 ##
 # Gem uninstaller command line tool
@@ -15,7 +14,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
   def initialize
     super 'uninstall', 'Uninstall gems from the local repository',
           :version => Gem::Requirement.default, :user_install => true,
-          :install_dir => Gem.dir, :check_dev => false
+          :check_dev => false
 
     add_option('-a', '--[no-]all',
       'Uninstall all matching versions'
@@ -68,12 +67,6 @@ class Gem::Commands::UninstallCommand < Gem::Command
       options[:force] = value
     end
 
-    add_option('--[no-]abort-on-dependent',
-               'Prevent uninstalling gems that are',
-               'depended on by other gems.') do |value, options|
-      options[:abort_on_dependent] = value
-    end
-
     add_version_option
     add_platform_option
   end
@@ -88,49 +81,13 @@ class Gem::Commands::UninstallCommand < Gem::Command
     "--user-install"
   end
 
-  def description # :nodoc:
-    <<-EOF
-The uninstall command removes a previously installed gem.
-
-RubyGems will ask for confirmation if you are attempting to uninstall a gem
-that is a dependency of an existing gem.  You can use the
---ignore-dependencies option to skip this check.
-    EOF
-  end
-
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
 
   def execute
-    if options[:all] and not options[:args].empty? then
-      alert_error 'Gem names and --all may not be used together'
-      terminate_interaction 1
-    elsif options[:all] then
-      uninstall_all
-    else
-      uninstall_specific
-    end
-  end
-
-  def uninstall_all
-    _, specs = Gem::Specification.partition { |spec| spec.default_gem? }
-
-    specs.each do |spec|
-      options[:version] = spec.version
-
-      begin
-        Gem::Uninstaller.new(spec.name, options).uninstall
-      rescue Gem::InstallError
-      end
-    end
-
-    alert "Uninstalled all gems in #{options[:install_dir]}"
-  end
-
-  def uninstall_specific
+    # REFACTOR: stolen from cleanup_command
     deplist = Gem::DependencyList.new
-
     get_all_gem_names.uniq.each do |name|
       Gem::Specification.find_all_by_name(name).each do |spec|
         deplist.add spec

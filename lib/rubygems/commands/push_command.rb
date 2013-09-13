@@ -8,13 +8,7 @@ class Gem::Commands::PushCommand < Gem::Command
   include Gem::GemcutterUtilities
 
   def description # :nodoc:
-    <<-EOF
-The push command uploads a gem to the push server (the default is
-https://rubygems.org) and adds it to the index.
-
-The gem can be removed from the index (but only the index) using the yank
-command.  For further discussion see the help for the yank command.
-    EOF
+    'Push a gem up to RubyGems.org'
   end
 
   def arguments # :nodoc:
@@ -26,7 +20,7 @@ command.  For further discussion see the help for the yank command.
   end
 
   def initialize
-    super 'push', 'Push a gem up to the gem server', :host => self.host
+    super 'push', description, :host => self.host
 
     add_proxy_option
     add_key_option

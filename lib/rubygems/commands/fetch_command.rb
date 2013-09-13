@@ -28,16 +28,6 @@ class Gem::Commands::FetchCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
-  def description # :nodoc:
-    <<-EOF
-The fetch command fetches gem files that can be stored for later use or
-unpacked to examine their contents.
-
-See the build command help for an example of unpacking a gem, modifying it,
-then repackaging it.
-    EOF
-  end
-
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
@@ -52,15 +42,13 @@ then repackaging it.
       dep = Gem::Dependency.new gem_name, version
       dep.prerelease = options[:prerelease]
 
-      specs_and_sources, errors =
-        Gem::SpecFetcher.fetcher.spec_for_dependency dep
-
+      specs_and_sources, errors = Gem::SpecFetcher.fetcher.spec_for_dependency dep
       if platform then
         filtered = specs_and_sources.select { |s,| s.platform == platform }
         specs_and_sources = filtered unless filtered.empty?
       end
 
-      spec, source = specs_and_sources.max_by { |s,| s.version }
+      spec, source = specs_and_sources.sort_by { |s,| s.version }.first
 
       if spec.nil? then
         show_lookup_failure gem_name, version, errors, options[:domain]

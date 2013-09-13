@@ -50,22 +50,6 @@ FIELD         name of gemspec field to show
     "--local --version '#{Gem::Requirement.default}' --yaml"
   end
 
-  def description # :nodoc:
-    <<-EOF
-The specification command allows you to extract the specification from
-a gem for examination.
-
-The specification can be output in YAML, ruby or Marshal formats.
-
-Specific fields in the specification can be extracted in YAML format:
-
-  $ gem spec rake summary
-  --- Ruby based make-like utility.
-  ...
-
-    EOF
-  end
-
   def usage # :nodoc:
     "#{program_name} [GEMFILE] [FIELD]"
   end

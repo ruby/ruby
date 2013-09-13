@@ -194,7 +194,7 @@ beta-gems.example.com is not a URI
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
 
-    dir = Gem.spec_cache_dir
+    dir = File.join Gem.user_home, '.gem', 'specs'
     refute File.exist?(dir), 'cache dir removed'
   end
 

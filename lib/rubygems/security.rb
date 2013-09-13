@@ -12,6 +12,20 @@ begin
 rescue LoadError => e
   raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
                e.message =~ / -- openssl$/
+
+  module OpenSSL # :nodoc:
+    class Digest # :nodoc:
+      class SHA1 # :nodoc:
+        def name
+          'SHA1'
+        end
+      end
+    end
+    module PKey # :nodoc:
+      class RSA # :nodoc:
+      end
+    end
+  end
 end
 
 ##
@@ -338,37 +352,22 @@ module Gem::Security
   ##
   # Digest algorithm used to sign gems
 
-  DIGEST_ALGORITHM =
-    if defined?(OpenSSL::Digest) then
-      OpenSSL::Digest::SHA1
-    end
+  DIGEST_ALGORITHM = OpenSSL::Digest::SHA1
 
   ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = # :nodoc:
-    if DIGEST_ALGORITHM then
-      DIGEST_ALGORITHM.new.name
-    end
+  DIGEST_NAME = DIGEST_ALGORITHM.new.name # :nodoc:
 
   ##
   # Algorithm for creating the key pair used to sign gems
 
-  KEY_ALGORITHM =
-    if defined?(OpenSSL::PKey) then
-      OpenSSL::PKey::RSA
-    end
+  KEY_ALGORITHM = OpenSSL::PKey::RSA
 
   ##
   # Length of keys created by KEY_ALGORITHM
 
   KEY_LENGTH = 2048
-
-  ##
-  # Cipher used to encrypt the key pair used to sign gems.
-  # Must be in the list returned by OpenSSL::Cipher.ciphers
-
-  KEY_CIPHER = OpenSSL::Cipher.new('AES-256-CBC') if defined?(OpenSSL::Cipher)
 
   ##
   # One year in seconds
@@ -564,18 +563,13 @@ module Gem::Security
 
   ##
   # Writes +pemmable+, which must respond to +to_pem+ to +path+ with the given
-  # +permissions+. If passed +cipher+ and +passphrase+ those arguments will be
-  # passed to +to_pem+.
+  # +permissions+.
 
-  def self.write pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER
+  def self.write pemmable, path, permissions = 0600
     path = File.expand_path path
 
     open path, 'wb', permissions do |io|
-      if passphrase and cipher
-        io.write pemmable.to_pem cipher, passphrase
-      else
-        io.write pemmable.to_pem
-      end
+      io.write pemmable.to_pem
     end
 
     path
@@ -585,11 +579,8 @@ module Gem::Security
 
 end
 
-if defined?(OpenSSL::SSL) then
-  require 'rubygems/security/policy'
-  require 'rubygems/security/policies'
-  require 'rubygems/security/trust_dir'
-end
-
+require 'rubygems/security/policy'
+require 'rubygems/security/policies'
 require 'rubygems/security/signer'
+require 'rubygems/security/trust_dir'
 
