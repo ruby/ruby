@@ -1,3 +1,10 @@
+Sat Sep 14 00:01:20 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems to 2.0.8. [ruby-core:57155]
+	  [Backport #8900]
+	  the patch is provided by drbrain (Eric Hodel).
+	  this update contains a security fix for CVE-2013-4287.
+
 Fri Sep 13 23:20:29 2013  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* object.c (Init_Object): undef Module#prepend_features on Class, as
@@ -136,7 +143,7 @@ Sat Aug 17 00:36:24 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 Sat Aug 17 00:32:17 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
-	* lib/rubygems: update to RubyGems 2.0.6. the patch by drbrain.
+	* lib/rubygems: update to RubyGems 2.0.7. the patch by drbrain.
 	  [ruby-core:56633] [Backport #8787]
 
 Sat Aug 10 23:59:47 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
