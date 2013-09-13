@@ -142,6 +142,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib updates (outstanding ones only)
 
+* CGI::Util
+  * All class methods modulized.
+
 * Digest
   * extended methods:
     * Digest::Class.file takes optional arguments for its constructor
@@ -170,6 +173,19 @@ with all sufficient information, see the ChangeLog file.
   * One-shot multicast DNS support
   * Support LOC resources
 
+* REXML::Parsers::SAX2Parser
+  * Fixes wrong number of arguments of entitydecl event. Document of the event
+    says "an array of the entity declaration" but implemenation passes two
+    or more arguments. It is an implementation bug but it breaks backword
+    compatibility.
+
+* REXML::Parsers::StreamParser
+  * Supports "entity" event.
+
+* REXML::Text
+  * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
+  * REXML::Text#<< supports not "raw" mode.
+
 * Rinda::RingServer, Rinda::RingFinger
   * Rinda now supports multicast sockets.  See Rinda::RingServer and
     Rinda::RingFinger for details.
@@ -178,6 +194,11 @@ with all sufficient information, see the ChangeLog file.
   * Updated to 2.1.3.  See
     http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.3+%2F+2013-09-12
     for release notes.
+
+* Set
+  * New methods:
+    * Set#intersect?
+    * Set#disjoint?
 
 * Socket
   * New methods:
@@ -194,8 +215,6 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Tempfile.create
 
-* CGI::Util
-  * All class methods modulized.
 
 * WEBrick
   * The body of a response may now be a StringIO or other IO-like that responds
@@ -208,24 +227,6 @@ with all sufficient information, see the ChangeLog file.
       options. You can change major HTTP client options by XMLRPC::Client
       methods. You should use XMLRPC::Client methods for changing major
       HTTP client options instead of XMLRPC::Client#http.
-
-* REXML::Parsers::StreamParser
-  * Supports "entity" event.
-
-* REXML::Parsers::SAX2Parser
-  * Fixes wrong number of arguments of entitydecl event. Document of the event
-    says "an array of the entity declaration" but implemenation passes two
-    or more arguments. It is an implementation bug but it breaks backword
-    compatibility.
-
-* REXML::Text
-  * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
-  * REXML::Text#<< supports not "raw" mode.
-
-* Set
-  * New methods:
-    * Set#intersect?
-    * Set#disjoint?
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
