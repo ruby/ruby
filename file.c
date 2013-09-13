@@ -5567,6 +5567,8 @@ static const char null_device[] =
  *  <code>0644</code>, which means read/write for owner, read-only for
  *  all others. The only change that can be made is to make the file
  *  read-only, which is reported as <code>0444</code>.
+ *
+ *  Various constants for the methods in File can be found in File::Constants.
  */
 
 void

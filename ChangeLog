@@ -1,3 +1,13 @@
+Sat Sep 14 06:08:10 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* dir.c (dir_s_glob):  [DOC] Improve wording and layout.
+
+	* dir.c (file_s_fnmatch):  ditto.
+
+	* dir.c (Init_Dir):  [DOC] Document File::Constants::FNM_XXX
+	  constants.  (These won't show up in RDoc until a new RDoc is
+	  imported.)
+
 Sat Sep 14 04:57:51 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.1.3
