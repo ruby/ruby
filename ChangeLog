@@ -1,3 +1,12 @@
+Fri Sep 13 22:40:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_super_method): use ci->argc instead of
+	  ci->orig_argc. ci->argc can be changed by splat arguments.
+	  [ruby-list:49575]
+	  This fix should be applied to Ruby 2.0.0 series.
+
+	* test/ruby/test_super.rb: add a test for above.
+
 Fri Sep 13 01:44:54 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_unlock): Mutex#unlock no longer raise
