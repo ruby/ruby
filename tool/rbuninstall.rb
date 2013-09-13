@@ -1,12 +1,15 @@
 #! /usr/bin/ruby -nl
 BEGIN {
   $dryrun = false
+  $tty = STDOUT.tty?
   until ARGV.empty?
     case ARGV[0]
     when /\A--destdir=(.*)/
       $destdir = $1
     when /\A-n\z/
       $dryrun = true
+    when /\A--(?:no-)?tty\z/
+      $tty = !$1
     else
       break
     end
@@ -20,10 +23,10 @@ $_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
   status = true
+  $\ = ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
   $files.each do |file|
-    if $dryrun
-      puts "rm #{file}"
-    else
+    print "rm #{file}"
+    unless $dryrun
       begin
         File.unlink(file)
       rescue Errno::ENOENT
@@ -38,9 +41,8 @@ END {
     unlink[dir] = true
   end
   while dir = $dirs.pop
-    if $dryrun
-      puts "rmdir #{dir}"
-    else
+    print "rmdir #{dir}"
+    unless $dryrun
       begin
         begin
           unlink.delete(dir)
@@ -59,5 +61,7 @@ END {
       end
     end
   end
+  $\ = nil
+  print ors.chomp
   exit(status)
 }
