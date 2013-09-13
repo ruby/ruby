@@ -276,8 +276,8 @@ ancillary_unix_rights(VALUE self)
  * returns the timestamp as a time object.
  *
  * _ancillarydata_ should be one of following type:
- * - SOL_SOCKET/SCM_TIMESTAMP (micro second) GNU/Linux, FreeBSD, NetBSD, OpenBSD, Solaris, MacOS X
- * - SOL_SOCKET/SCM_TIMESTAMPNS (nano second) GNU/Linux
+ * - SOL_SOCKET/SCM_TIMESTAMP (microsecond) GNU/Linux, FreeBSD, NetBSD, OpenBSD, Solaris, MacOS X
+ * - SOL_SOCKET/SCM_TIMESTAMPNS (nanosecond) GNU/Linux
  * - SOL_SOCKET/SCM_BINTIME (2**(-64) second) FreeBSD
  *
  *   Addrinfo.udp("127.0.0.1", 0).bind {|s1|

@@ -6917,7 +6917,7 @@ get_mach_timebase_info(void)
  *  [:GETTIMEOFDAY_BASED_CLOCK_REALTIME]
  *    Use gettimeofday() defined by SUS.
  *    (SUSv4 obsoleted it, though.)
- *    The resolution is 1 micro second.
+ *    The resolution is 1 microsecond.
  *  [:TIME_BASED_CLOCK_REALTIME]
  *    Use time() defined by ISO C.
  *    The resolution is 1 second.
@@ -6935,7 +6935,7 @@ get_mach_timebase_info(void)
  *    The resolution is the clock tick.
  *    "getconf CLK_TCK" command shows the clock ticks per second.
  *    (The clock ticks per second is defined by HZ macro in older systems.)
- *    If it is 100 and clock_t is 32 bits integer type, the resolution is 10 milli second and
+ *    If it is 100 and clock_t is 32 bits integer type, the resolution is 10 millisecond and
  *    cannot represent over 497 days.
  *
  *  Emulations for +CLOCK_PROCESS_CPUTIME_ID+:
@@ -6944,7 +6944,7 @@ get_mach_timebase_info(void)
  *    getrusage() is used with RUSAGE_SELF to obtain the time only for
  *    the calling process (excluding the time for child processes).
  *    The result is addition of user time (ru_utime) and system time (ru_stime).
- *    The resolution is 1 micro second.
+ *    The resolution is 1 microsecond.
  *  [:TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use times() defined by POSIX.
  *    The result is addition of user time (tms_utime) and system time (tms_stime).
@@ -6952,14 +6952,14 @@ get_mach_timebase_info(void)
  *    The resolution is the clock tick.
  *    "getconf CLK_TCK" command shows the clock ticks per second.
  *    (The clock ticks per second is defined by HZ macro in older systems.)
- *    If it is 100, the resolution is 10 milli second.
+ *    If it is 100, the resolution is 10 millisecond.
  *  [:CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID]
  *    Use clock() defined by ISO C.
  *    The resolution is 1/CLOCKS_PER_SEC.
  *    CLOCKS_PER_SEC is the C-level macro defined by time.h.
  *    SUS defines CLOCKS_PER_SEC is 1000000.
  *    Non-Unix systems may define it a different value, though.
- *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 micro second.
+ *    If CLOCKS_PER_SEC is 1000000 as SUS, the resolution is 1 microsecond.
  *    If CLOCKS_PER_SEC is 1000000 and clock_t is 32 bits integer type, it cannot represent over 72 minutes.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
@@ -7157,7 +7157,7 @@ rb_clock_gettime(int argc, VALUE *argv)
  *  +clock_id+ can be a symbol as +Process.clock_gettime+.
  *  However the result may not be accurate.
  *  For example, +Process.clock_getres(:GETTIMEOFDAY_BASED_CLOCK_REALTIME)+
- *  returns 1.0e-06 which means 1 micro second, but actual resolution can be more coarse.
+ *  returns 1.0e-06 which means 1 microsecond, but actual resolution can be more coarse.
  *
  *  If the given +clock_id+ is not supported, Errno::EINVAL is raised.
  *

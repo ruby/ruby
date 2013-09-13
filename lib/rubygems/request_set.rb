@@ -28,7 +28,10 @@ class Gem::RequestSet
 
     @always_install = []
     @development    = false
+    @requests       = []
     @soft_missing   = false
+    @sorted         = nil
+    @specs          = nil
 
     yield self if block_given?
   end

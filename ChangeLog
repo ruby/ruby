@@ -1,3 +1,121 @@
+Thu Sep 12 14:58:58 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.find_proxy): return nil if
+	  http_proxy environment variable is empty string.
+	  [ruby-core:57140] [Bug #8898]
+
+Fri Sep 13 10:40:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.1.3
+
+	  Fixed installing platform gems
+
+	  Restored concurrent requires
+
+	  Fixed installing gems with extensions with --install-dir
+
+	  Fixed `gem fetch -v` to install the latest version
+
+	  Fixed installing gems with "./" in their files entries
+
+	* test/rubygems/test_gem_package.rb:  Tests for the above.
+
+	* NEWS:  Updated for RubyGems 2.1.3
+
+Thu Sep 12 22:40:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIGNEDNESS): macro to check signedness of a
+	  type.
+
+	* configure.in (size_t): must be unsigned.
+	  [ruby-core:57149] [Feature #8890]
+
+Thu Sep 12 22:37:08 2013  Anton Ovchinnikov  <revolver112@gmail.com>
+
+	* ext/bigdecimal/bigdecimal.c, ext/digest/md5/md5.c,
+	  ext/json/fbuffer/fbuffer.h, ext/json/generator/generator.c:
+	  Eliminate less-than-zero checks for unsigned variables.
+	  According to section 4.1.5 of C89 standard, size_t is an unsigned
+	  type.  These checks were found with 'cppcheck' static analysis tool.
+	  [ruby-core:57117] [Feature #8890]
+
+Thu Sep 12 21:35:46 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* Makefile.in (libruby-static.a): change LDFLAGS order. LDFLAGS may
+	  include library path that should be specified before LIBS.
+	  [ruby-dev:47707] [Bug #8901]
+
+Thu Sep 12 20:07:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
+	  float.h.
+
+	* vsnprintf.c (BSD_vfprintf): limit length for cvt() to get rid of
+	  buffer overflow.  [ruby-core:57023] [Bug #8864]
+
+	* vsnprintf.c (exponent): make expbuf size more precise.
+
+Wed Sep 11 17:30:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUNRUBY): append -- only after runruby.rb, not
+	  cross-compiling baseruby, so that $(RUN_OPT) can be command line
+	  options.  [ruby-dev:47703] [Bug #8893]
+
+Wed Sep 11 07:55:17 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_unlock): Mutex#unlock no longer raise
+	  an exception even if uses on trap. [Bug #8891]
+
+Tue Sep 10 14:37:01 2013  Shota Fukumori  <sorah@tubusu.net>
+
+	* vm_backtrace.c (vm_backtrace_to_ary): Ignore the second argument if
+	  it is nil. [Bug #8884] [ruby-core:57094]
+
+	* test/ruby/test_backtrace.rb (test_caller_with_nil_length):
+	  Test for above.
+
+Tue Sep 10 12:39:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (method_entry_i): should exclude refined methods from
+	  instance method list.  [ruby-core:57080] [Bug #8881]
+
+Tue Sep 10 12:05:04 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* io.c (rb_f_printf): [DOC] add missing parenthesis in rdoc.
+
+Tue Sep 10 10:08:00 2013  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: Update RubyGems note.
+
+Tue Sep 10 09:51:22 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.1.0.  Fixes CVE-2013-4287.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/CVE-2013-4287_txt.html
+	  for CVE information.
+
+	  See http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.0+%2F+2013-09-09
+	  for release notes.
+
+	* test/rubygems:  Tests for the above.
+
+Mon Sep  9 21:31:45 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: Remove spaces between SI prefix and unit to follow
+	  SI brochure.
+	  http://www.bipm.org/en/si/si_brochure/
+	  https://www.nmij.jp/library/units/si/
+
+	* time.c: Ditto.
+
+	* ext/socket/ancdata.c: Ditto.
+
+Mon Sep  9 16:55:59 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_add_refined_method_entry): clear cache in the
+	  refined class since refining a method entry is modifying the class.
+	  [ruby-core:57079] [Bug #8880]
+
 Mon Sep  9 09:14:58 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (Gem::Specification#initialize): default date to

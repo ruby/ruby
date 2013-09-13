@@ -1464,7 +1464,8 @@ call_cfunc_15(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv)
 static int vm_profile_counter[4];
 #define VM_PROFILE_UP(x) (vm_profile_counter[x]++)
 #define VM_PROFILE_ATEXIT() atexit(vm_profile_show_result)
-static void vm_profile_show_result(void)
+static void
+vm_profile_show_result(void)
 {
     fprintf(stderr, "VM Profile results: \n");
     fprintf(stderr, "r->c call: %d\n", vm_profile_counter[0]);
@@ -1477,12 +1478,39 @@ static void vm_profile_show_result(void)
 #define VM_PROFILE_ATEXIT()
 #endif
 
+static inline
+const rb_method_cfunc_t *
+vm_method_cfunc_entry(const rb_method_entry_t *me)
+{
+#if VM_DEBUG_VERIFY_METHOD_CACHE
+    switch (me->def->type) {
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+	break;
+# define METHOD_BUG(t) case VM_METHOD_TYPE_##t: rb_bug("wrong method type: " #t)
+	METHOD_BUG(ISEQ);
+	METHOD_BUG(ATTRSET);
+	METHOD_BUG(IVAR);
+	METHOD_BUG(BMETHOD);
+	METHOD_BUG(ZSUPER);
+	METHOD_BUG(UNDEF);
+	METHOD_BUG(OPTIMIZED);
+	METHOD_BUG(MISSING);
+	METHOD_BUG(REFINED);
+# undef METHOD_BUG
+      default:
+	rb_bug("wrong method type: %d", me->def->type);
+    }
+#endif
+    return &me->def->body.cfunc;
+}
+
 static VALUE
 vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     VALUE val;
     const rb_method_entry_t *me = ci->me;
-    const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+    const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(me);
     int len = cfunc->argc;
 
     /* don't use `ci' after EXEC_EVENT_HOOK because ci can be override */
@@ -1522,7 +1550,7 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_
     VALUE val;
     int argc = ci->argc;
     VALUE *argv = STACK_ADDR_FROM_TOP(argc);
-    const rb_method_cfunc_t *cfunc = &ci->me->def->body.cfunc;
+    const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(ci->me);
 
     th->passed_ci = ci;
     reg_cfp->sp -= argc + 1;
@@ -1553,7 +1581,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     VALUE val;
     const rb_method_entry_t *me = ci->me;
-    int len = me->def->body.cfunc.argc;
+    int len = vm_method_cfunc_entry(me)->argc;
     VALUE recv = ci->recv;
 
     if (len >= 0) rb_check_arity(ci->argc, len, len);

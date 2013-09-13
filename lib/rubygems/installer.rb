@@ -213,6 +213,8 @@ class Gem::Installer
 
     FileUtils.mkdir_p gem_dir
 
+    spec.loaded_from = spec_file
+
     if @options[:install_as_default]
       extract_bin
       write_default_spec
@@ -229,8 +231,6 @@ class Gem::Installer
     end
 
     say spec.post_install_message unless spec.post_install_message.nil?
-
-    spec.loaded_from = spec_file
 
     Gem::Specification.add_spec spec unless Gem::Specification.include? spec
 

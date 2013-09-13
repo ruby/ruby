@@ -1144,7 +1144,8 @@ rb_using_module(NODE *cref, VALUE module)
     using_module_recursive(cref, module);
 }
 
-VALUE rb_refinement_module_get_refined_class(VALUE module)
+VALUE
+rb_refinement_module_get_refined_class(VALUE module)
 {
     ID id_refined_class;
 

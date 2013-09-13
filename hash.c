@@ -2585,16 +2585,32 @@ getenvblocksize()
 }
 #endif
 
+#if !defined(HAVE_SETENV) || !defined(HAVE_UNSETENV)
+NORETURN(static void invalid_envname(const char *name));
+
+static void
+invalid_envname(const char *name)
+{
+    rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
+}
+
+static const char *
+check_envname(const char *name)
+{
+    if (strchr(name, '=')) {
+	invalid_envname(name);
+    }
+    return name;
+}
+#endif
+
 void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
     VALUE buf;
     int failed = 0;
-    if (strchr(name, '=')) {
-      fail:
-	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
-    }
+    check_envname(name);
     if (value) {
 	const char* p = GetEnvironmentStringsA();
 	if (!p) goto fail; /* never happen */
@@ -2615,14 +2631,18 @@ ruby_setenv(const char *name, const char *value)
 	if (!SetEnvironmentVariable(name, value) &&
 	    GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
     }
-    if (failed) goto fail;
+    if (failed) {
+      fail:
+	invalid_envname(name);
+    }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
     if (value) {
 	if (setenv(name, value, 1))
 	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
-    } else {
+    }
+    else {
 #ifdef VOID_UNSETENV
 	unsetenv(name);
 #else
@@ -2633,9 +2653,7 @@ ruby_setenv(const char *name, const char *value)
 #elif defined __sun
     size_t len;
     char **env_ptr, *str;
-    if (strchr(name, '=')) {
-	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
-    }
+
     len = strlen(name);
     for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
 	if (!strncmp(str, name, len) && str[len] == '=') {
@@ -2653,9 +2671,7 @@ ruby_setenv(const char *name, const char *value)
 #else  /* WIN32 */
     size_t len;
     int i;
-    if (strchr(name, '=')) {
-	rb_syserr_fail_str(EINVAL, rb_sprintf("ruby_setenv(%s)", name));
-    }
+
     i=envix(name);		        /* where does it go? */
 
     if (environ == origenviron) {	/* need we copy environment? */

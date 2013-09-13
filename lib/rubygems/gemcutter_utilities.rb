@@ -77,7 +77,8 @@ module Gem::GemcutterUtilities
   # Signs in with the RubyGems API at +sign_in_host+ and sets the rubygems API
   # key.
 
-  def sign_in sign_in_host = self.host
+  def sign_in sign_in_host = nil
+    sign_in_host ||= self.host
     return if Gem.configuration.rubygems_api_key
 
     pretty_host = if Gem::DEFAULT_HOST == sign_in_host then

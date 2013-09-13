@@ -1097,7 +1097,11 @@ Also, a list:
 
   class StaticSet
     def initialize(specs)
-      @specs = specs.sort_by { |s| s.full_name }
+      @specs = specs
+    end
+
+    def add spec
+      @specs << spec
     end
 
     def find_spec(dep)
@@ -1108,6 +1112,15 @@ Also, a list:
 
     def find_all(dep)
       @specs.find_all { |s| dep.matches_spec? s }
+    end
+
+    def load_spec name, ver, platform, source
+      dep = Gem::Dependency.new name, ver
+      spec = find_spec dep
+
+      Gem::Specification.new spec.name, spec.version do |s|
+        s.platform = spec.platform
+      end
     end
 
     def prefetch(reqs)

@@ -6732,9 +6732,9 @@ rb_io_printf(int argc, VALUE *argv, VALUE out)
  *     printf(string [, obj ... ])        -> nil
  *
  *  Equivalent to:
- *     io.write(sprintf(string, obj, ...)
+ *     io.write(sprintf(string, obj, ...))
  *  or
- *     $stdout.write(sprintf(string, obj, ...)
+ *     $stdout.write(sprintf(string, obj, ...))
  */
 
 static VALUE
