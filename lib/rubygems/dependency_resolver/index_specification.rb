@@ -43,7 +43,7 @@ class Gem::DependencyResolver::IndexSpecification
 
       unless Gem::Platform::RUBY == @platform then
         q.breakable
-        q.text @platform
+        q.text @platform.to_s
       end
 
       q.breakable

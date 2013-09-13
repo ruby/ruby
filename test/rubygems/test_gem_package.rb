@@ -396,6 +396,19 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
+  def test_extract_tar_gz_dot_slash
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file './dot_slash.rb', 0644 do |io| io.write 'hi' end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, 'dot_slash.rb'
+    assert_path_exists extracted
+  end
+
   def test_install_location
     package = Gem::Package.new @gem
 

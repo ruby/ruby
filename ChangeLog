@@ -1,3 +1,21 @@
+Fri Sep 13 10:40:28 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.1.3
+
+	  Fixed installing platform gems
+
+	  Restored concurrent requires
+
+	  Fixed installing gems with extensions with --install-dir
+
+	  Fixed `gem fetch -v` to install the latest version
+
+	  Fixed installing gems with "./" in their files entries
+
+	* test/rubygems/test_gem_package.rb:  Tests for the above.
+
+	* NEWS:  Updated for RubyGems 2.1.3
+
 Thu Sep 12 22:40:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SIGNEDNESS): macro to check signedness of a

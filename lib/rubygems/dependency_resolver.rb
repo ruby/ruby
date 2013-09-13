@@ -131,8 +131,9 @@ class Gem::DependencyResolver
         return conflict
       end
 
-      # Get a list of all specs that satisfy dep
+      # Get a list of all specs that satisfy dep and platform
       possible = @set.find_all dep
+      possible = select_local_platforms possible
 
       case possible.size
       when 0
@@ -226,6 +227,15 @@ class Gem::DependencyResolver
     end
 
     specs
+  end
+
+  ##
+  # Returns the gems in +specs+ that match the local platform.
+
+  def select_local_platforms specs # :nodoc:
+    specs.select do |spec|
+      Gem::Platform.match spec.platform
+    end
   end
 
 end
