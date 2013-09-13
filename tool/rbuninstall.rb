@@ -20,15 +20,10 @@ $_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
   status = true
-  if $dryrun
-    $files.each do |file|
+  $files.each do |file|
+    if $dryrun
       puts "rm #{file}"
-    end
-    $dirs.reverse_each do |dir|
-      puts "rmdir #{dir}"
-    end
-  else
-    $files.each do |file|
+    else
       begin
         File.unlink(file)
       rescue Errno::ENOENT
@@ -37,9 +32,18 @@ END {
         puts $!
       end
     end
-    $dirs.reverse_each do |dir|
+  end
+  unlink = {}
+  $dirs.each do |dir|
+    unlink[dir] = true
+  end
+  while dir = $dirs.pop
+    if $dryrun
+      puts "rmdir #{dir}"
+    else
       begin
         begin
+          unlink.delete(dir)
           Dir.rmdir(dir)
         rescue Errno::ENOTDIR
           raise unless File.symlink?(dir)
@@ -49,6 +53,9 @@ END {
       rescue
         status = false
         puts $!
+      else
+        parent = File.dirname(dir)
+        $dirs.push(parent) unless parent == dir or unlink[parent]
       end
     end
   end
