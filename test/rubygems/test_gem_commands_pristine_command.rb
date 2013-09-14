@@ -80,6 +80,36 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_execute_env_shebang
+    a = quick_spec 'a' do |s|
+      s.executables = %w[foo]
+      s.files = %w[bin/foo]
+    end
+    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem a
+
+    gem_exec = File.join @gemhome, 'bin', 'foo'
+
+    FileUtils.rm gem_exec
+
+    @cmd.handle_options %w[--all --env-shebang]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_path_exists gem_exec
+
+    if win_platform?
+      assert_match %r%\A#!\s*ruby%, File.read(gem_exec)
+    else
+      assert_match %r%\A#!\s*/usr/bin/env ruby%, File.read(gem_exec)
+    end
+  end
+
   def test_execute_no_extension
     a = quick_spec 'a' do |s| s.extensions << 'ext/a/extconf.rb' end
 

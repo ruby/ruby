@@ -26,6 +26,9 @@ module Gem::InstallUpdateOptions
     OptionParser.accept Gem::Security::Policy do |value|
       require 'rubygems/security'
 
+      raise OptionParser::InvalidArgument, 'OpenSSL not installed' unless
+        defined?(Gem::Security::HighSecurity)
+
       value = Gem::Security::Policies[value]
       valid = Gem::Security::Policies.keys.sort
       message = "#{value} (#{valid.join ', '} are valid)"

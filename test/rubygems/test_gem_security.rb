@@ -2,6 +2,10 @@ require 'rubygems/test_case'
 require 'rubygems/security'
 require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Security tests.  openssl not found.'
+end
+
 class TestGemSecurity < Gem::TestCase
 
   CHILD_KEY = load_key 'child'
@@ -95,7 +99,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_create_key
-    key = @SEC.create_key 256
+    key = @SEC.create_key 1024
 
     assert_kind_of OpenSSL::PKey::RSA, key
   end
@@ -246,5 +250,57 @@ class TestGemSecurity < Gem::TestCase
     assert_equal expected, trust_dir.dir
   end
 
-end
+  def test_class_write
+    key = @SEC.create_key 1024
+
+    path = File.join @tempdir, 'test-private_key.pem'
+
+    @SEC.write key, path
+
+    assert_path_exists path
+
+    key_from_file = File.read path
+
+    assert_equal key.to_pem, key_from_file
+  end
+
+  def test_class_write_encrypted
+    key = @SEC.create_key 1024
+
+    path = File.join @tempdir, 'test-private_encrypted_key.pem'
+
+    passphrase = 'It should be long.'
+
+    @SEC.write key, path, 0600, passphrase
+
+    assert_path_exists path
+
+    key_from_file =  OpenSSL::PKey::RSA.new File.read(path), passphrase
+
+    assert_equal key.to_pem, key_from_file.to_pem
+  end
+
+  def test_class_write_encrypted_cipher
+    key = @SEC.create_key 1024
+
+    path = File.join @tempdir, 'test-private_encrypted__with_non_default_cipher_key.pem'
+
+    passphrase = 'It should be long.'
+
+    cipher = OpenSSL::Cipher.new 'AES-192-CBC'
+
+    @SEC.write key, path, 0600, passphrase, cipher
+
+    assert_path_exists path
+
+    key_file_contents = File.read(path)
+
+    assert key_file_contents.split("\n")[2].match(cipher.name)
+
+    key_from_file = OpenSSL::PKey::RSA.new key_file_contents, passphrase
+
+    assert_equal key.to_pem, key_from_file.to_pem
+  end
+
+end if defined?(OpenSSL::SSL)
 

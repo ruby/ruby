@@ -7,6 +7,7 @@ class TestGemGemRunner < Gem::TestCase
     super
 
     @orig_args = Gem::Command.build_args
+    @runner = Gem::GemRunner.new
   end
 
   def teardown
@@ -41,23 +42,26 @@ class TestGemGemRunner < Gem::TestCase
     assert_equal %w[--commands], Gem::Command.extra_args
   end
 
-  def test_build_args_are_handled
-    Gem.clear_paths
+  def test_extract_build_args
+    args = %w[]
+    assert_equal [], @runner.extract_build_args(args)
+    assert_equal %w[], args
 
-    cls = Class.new(Gem::Command) do
-      def execute
-      end
-    end
+    args = %w[foo]
+    assert_equal [], @runner.extract_build_args(args)
+    assert_equal %w[foo], args
 
-    test_obj = cls.new :ba_test
+    args = %w[--foo]
+    assert_equal [], @runner.extract_build_args(args)
+    assert_equal %w[--foo], args
 
-    cmds = Gem::CommandManager.new
-    cmds.register_command :ba_test, test_obj
+    args = %w[--foo --]
+    assert_equal [], @runner.extract_build_args(args)
+    assert_equal %w[--foo], args
 
-    runner = Gem::GemRunner.new :command_manager => cmds
-    runner.run(%W[ba_test -- --build_arg1 --build_arg2])
-
-    assert_equal %w[--build_arg1 --build_arg2], test_obj.options[:build_args]
+    args = %w[--foo -- --bar]
+    assert_equal %w[--bar], @runner.extract_build_args(args)
+    assert_equal %w[--foo], args
   end
 
 end

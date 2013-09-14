@@ -15,6 +15,21 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     install_gem @a_2
   end
 
+  def test_handle_options_d
+    @cmd.handle_options %w[-d]
+    assert @cmd.options[:dryrun]
+  end
+
+  def test_handle_options_dry_run
+    @cmd.handle_options %w[--dryrun]
+    assert @cmd.options[:dryrun]
+  end
+
+  def test_handle_options_n
+    @cmd.handle_options %w[-n]
+    assert @cmd.options[:dryrun]
+  end
+
   def test_execute
     @cmd.options[:args] = %w[a]
 

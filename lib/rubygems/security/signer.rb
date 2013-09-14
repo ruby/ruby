@@ -29,7 +29,7 @@ class Gem::Security::Signer
   # +chain+ containing X509 certificates, encoding certificates or paths to
   # certificates.
 
-  def initialize key, cert_chain
+  def initialize key, cert_chain, passphrase = nil
     @cert_chain = cert_chain
     @key        = key
 
@@ -46,7 +46,7 @@ class Gem::Security::Signer
     @digest_algorithm = Gem::Security::DIGEST_ALGORITHM
     @digest_name      = Gem::Security::DIGEST_NAME
 
-    @key = OpenSSL::PKey::RSA.new File.read @key if
+    @key = OpenSSL::PKey::RSA.new File.read(@key), passphrase if
       @key and not OpenSSL::PKey::RSA === @key
 
     if @cert_chain then
@@ -59,6 +59,22 @@ class Gem::Security::Signer
       end
 
       load_cert_chain
+    end
+  end
+
+  ##
+  # Extracts the full name of +cert+.  If the certificate has a subjectAltName
+  # this value is preferred, otherwise the subject is used.
+
+  def extract_name cert # :nodoc:
+    subject_alt_name = cert.extensions.find { |e| 'subjectAltName' == e.oid }
+
+    if subject_alt_name then
+      /\Aemail:/ =~ subject_alt_name.value
+
+      $' || subject_alt_name.value
+    else
+      cert.subject
     end
   end
 
@@ -89,7 +105,9 @@ class Gem::Security::Signer
       re_sign_key
     end
 
-    Gem::Security::SigningPolicy.verify @cert_chain, @key
+    full_name = extract_name @cert_chain.last
+
+    Gem::Security::SigningPolicy.verify @cert_chain, @key, {}, {}, full_name
 
     @key.sign @digest_algorithm.new, data
   end

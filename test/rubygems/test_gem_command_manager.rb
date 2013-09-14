@@ -58,7 +58,7 @@ class TestGemCommandManager < Gem::TestCase
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::TermError do
-        @command_manager.run 'interrupt'
+        @command_manager.run %w[interrupt]
       end
       assert_equal '', ui.output
       assert_equal "ERROR:  Interrupted\n", ui.error
@@ -75,7 +75,7 @@ class TestGemCommandManager < Gem::TestCase
     @command_manager.register_command :crash
     use_ui @ui do
       assert_raises Gem::MockGemUi::TermError do
-        @command_manager.run 'crash'
+        @command_manager.run %w[crash]
       end
       assert_equal '', ui.output
       err = ui.error.split("\n").first
@@ -89,7 +89,7 @@ class TestGemCommandManager < Gem::TestCase
   def test_process_args_bad_arg
     use_ui @ui do
       assert_raises Gem::MockGemUi::TermError do
-        @command_manager.process_args("--bad-arg")
+        @command_manager.process_args %w[--bad-arg]
       end
     end
 
@@ -107,7 +107,7 @@ class TestGemCommandManager < Gem::TestCase
       end
 
       #check defaults
-      @command_manager.process_args("install")
+      @command_manager.process_args %w[install]
       assert_equal %w[ri], check_options[:document].sort
       assert_equal false, check_options[:force]
       assert_equal :both, check_options[:domain]
@@ -118,8 +118,10 @@ class TestGemCommandManager < Gem::TestCase
 
       #check settings
       check_options = nil
-      @command_manager.process_args(
-        "install --force --local --rdoc --install-dir . --version 3.0 --no-wrapper --bindir . ")
+      @command_manager.process_args %w[
+        install --force --local --rdoc --install-dir .
+                --version 3.0 --no-wrapper --bindir .
+      ]
       assert_equal %w[rdoc ri], check_options[:document].sort
       assert_equal true, check_options[:force]
       assert_equal :local, check_options[:domain]
@@ -130,17 +132,17 @@ class TestGemCommandManager < Gem::TestCase
 
       #check remote domain
       check_options = nil
-      @command_manager.process_args("install --remote")
+      @command_manager.process_args %w[install --remote]
       assert_equal :remote, check_options[:domain]
 
       #check both domain
       check_options = nil
-      @command_manager.process_args("install --both")
+      @command_manager.process_args %w[install --both]
       assert_equal :both, check_options[:domain]
 
       #check both domain
       check_options = nil
-      @command_manager.process_args("install --both")
+      @command_manager.process_args %w[install --both]
       assert_equal :both, check_options[:domain]
     end
   end
@@ -155,12 +157,12 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     #check defaults
-    @command_manager.process_args("uninstall")
+    @command_manager.process_args %w[uninstall]
     assert_equal Gem::Requirement.default, check_options[:version]
 
     #check settings
     check_options = nil
-    @command_manager.process_args("uninstall foobar --version 3.0")
+    @command_manager.process_args %w[uninstall foobar --version 3.0]
     assert_equal "foobar", check_options[:args].first
     assert_equal Gem::Requirement.new('3.0'), check_options[:version]
   end
@@ -175,12 +177,12 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     #check defaults
-    @command_manager.process_args("check")
+    @command_manager.process_args %w[check]
     assert_equal true, check_options[:alien]
 
     #check settings
     check_options = nil
-    @command_manager.process_args("check foobar --alien")
+    @command_manager.process_args %w[check foobar --alien]
     assert_equal true, check_options[:alien]
   end
 
@@ -194,12 +196,12 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     #check defaults
-    @command_manager.process_args("build")
+    @command_manager.process_args %w[build]
     #NOTE: Currently no defaults
 
     #check settings
     check_options = nil
-    @command_manager.process_args("build foobar.rb")
+    @command_manager.process_args %w[build foobar.rb]
     assert_equal 'foobar.rb', check_options[:args].first
   end
 
@@ -213,26 +215,26 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     #check defaults
-    @command_manager.process_args("query")
+    @command_manager.process_args %w[query]
     assert_equal(//, check_options[:name])
     assert_equal :local, check_options[:domain]
     assert_equal false, check_options[:details]
 
     #check settings
     check_options = nil
-    @command_manager.process_args("query --name foobar --local --details")
+    @command_manager.process_args %w[query --name foobar --local --details]
     assert_equal(/foobar/i, check_options[:name])
     assert_equal :local, check_options[:domain]
     assert_equal true, check_options[:details]
 
     #remote domain
     check_options = nil
-    @command_manager.process_args("query --remote")
+    @command_manager.process_args %w[query --remote]
     assert_equal :remote, check_options[:domain]
 
     #both (local/remote) domains
     check_options = nil
-    @command_manager.process_args("query --both")
+    @command_manager.process_args %w[query --both]
     assert_equal :both, check_options[:domain]
   end
 
@@ -246,12 +248,12 @@ class TestGemCommandManager < Gem::TestCase
     end
 
     #check defaults
-    @command_manager.process_args("update")
+    @command_manager.process_args %w[update]
     assert_includes check_options[:document], 'rdoc'
 
     #check settings
     check_options = nil
-    @command_manager.process_args("update --force --rdoc --install-dir .")
+    @command_manager.process_args %w[update --force --rdoc --install-dir .]
     assert_includes check_options[:document], 'ri'
     assert_equal true, check_options[:force]
     assert_equal Dir.pwd, check_options[:install_dir]

@@ -43,14 +43,15 @@ class Gem::Uninstaller
 
   def initialize(gem, options = {})
     # TODO document the valid options
-    @gem               = gem
-    @version           = options[:version] || Gem::Requirement.default
-    @gem_home          = File.expand_path(options[:install_dir] || Gem.dir)
-    @force_executables = options[:executables]
-    @force_all         = options[:all]
-    @force_ignore      = options[:ignore]
-    @bin_dir           = options[:bin_dir]
-    @format_executable = options[:format_executable]
+    @gem                = gem
+    @version            = options[:version] || Gem::Requirement.default
+    @gem_home           = File.expand_path(options[:install_dir] || Gem.dir)
+    @force_executables  = options[:executables]
+    @force_all          = options[:all]
+    @force_ignore       = options[:ignore]
+    @bin_dir            = options[:bin_dir]
+    @format_executable  = options[:format_executable]
+    @abort_on_dependent = options[:abort_on_dependent]
 
     # Indicate if development dependencies should be checked when
     # uninstalling. (default: false)
@@ -143,7 +144,7 @@ class Gem::Uninstaller
     @spec = spec
 
     unless dependencies_ok? spec
-      unless ask_if_ok(spec)
+      if abort_on_dependent? || !ask_if_ok(spec)
         raise Gem::DependencyRemovalException,
           "Uninstallation aborted due to dependent gem(s)"
       end
@@ -288,6 +289,10 @@ class Gem::Uninstaller
 
     deplist = Gem::DependencyList.from_specs
     deplist.ok_to_remove?(spec.full_name, @check_dev)
+  end
+
+  def abort_on_dependent?
+    @abort_on_dependent
   end
 
   def ask_if_ok(spec)

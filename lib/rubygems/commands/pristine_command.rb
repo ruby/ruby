@@ -31,6 +31,12 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:only_executables] = value
     end
 
+    add_option('-E', '--[no-]env-shebang',
+               'Rewrite executables with a shebang',
+               'of /usr/bin/env') do |value, options|
+      options[:env_shebang] = value
+    end
+
     add_version_option('restore to', 'pristine condition')
   end
 
@@ -105,16 +111,21 @@ with an extension.
         Gem::RemoteFetcher.fetcher.download_to_cache dep
       end
 
-      # TODO use installer options
-      install_defaults = Gem::ConfigFile::PLATFORM_DEFAULTS['install']
-      installer_env_shebang = install_defaults.to_s['--env-shebang']
+      env_shebang =
+        if options.include? :env_shebang then
+          options[:env_shebang]
+        else
+          install_defaults = Gem::ConfigFile::PLATFORM_DEFAULTS['install']
+          install_defaults.to_s['--env-shebang']
+        end
 
       installer = Gem::Installer.new(gem,
                                      :wrappers => true,
                                      :force => true,
                                      :install_dir => spec.base_dir,
-                                     :env_shebang => installer_env_shebang,
+                                     :env_shebang => env_shebang,
                                      :build_args => spec.build_args)
+
       if options[:only_executables] then
         installer.generate_bin
       else

@@ -18,7 +18,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
   def test_gem_help_bad
     util_gem 'bad' do |out, err|
       assert_equal('', out)
-      assert_match(/Unknown command bad. Try gem help commands\n/, err)
+      assert_match "Unknown command bad", err
     end
   end
 
@@ -36,9 +36,12 @@ class TestGemCommandsHelpCommand < Gem::TestCase
       mgr.command_names.each do |cmd|
         assert_match(/\s+#{cmd}\s+\S+/, out)
       end
-      assert_equal '', err
 
-      refute_match 'No command found for ', out
+      if defined?(OpenSSL::SSL) then
+        assert_empty err
+
+        refute_match 'No command found for ', out
+      end
     end
   end
 

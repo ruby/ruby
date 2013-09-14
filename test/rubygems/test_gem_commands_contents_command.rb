@@ -91,6 +91,34 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_missing_single
+    @cmd.options[:args] = %w[foo]
+
+    assert_raises Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "Unable to find gem 'foo'", @ui.output
+    assert_empty @ui.error
+  end
+
+  def test_execute_missing_multiple
+    @cmd.options[:args] = %w[foo bar]
+
+    gem 'foo'
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match "lib/foo.rb",               @ui.output
+    assert_match "Unable to find gem 'bar'", @ui.output
+
+    assert_empty @ui.error
+  end
+
   def test_execute_multiple
     @cmd.options[:args] = %w[foo bar]
 
@@ -140,10 +168,10 @@ lib/foo.rb
       @cmd.execute
     end
 
-    expected = %W[
-      #{Gem::ConfigMap[:bindir]}/default_command
-      #{Gem::ConfigMap[:rubylibdir]}/default/gem.rb
-      #{Gem::ConfigMap[:archdir]}/default_gem.so
+    expected = [
+      File.join(Gem::ConfigMap[:bindir], 'default_command'),
+      File.join(Gem::ConfigMap[:rubylibdir], 'default/gem.rb'),
+      File.join(Gem::ConfigMap[:archdir], 'default_gem.so')
     ].sort.join "\n"
 
     assert_equal expected, @ui.output.chomp

@@ -45,8 +45,12 @@ class Gem::Commands::RdocCommand < Gem::Command
 
   def description # :nodoc:
     <<-DESC
-The rdoc command builds RDoc and RI documentation for installed gems.  Use
---overwrite to force rebuilding of documentation.
+The rdoc command builds documentation for installed gems.  By default
+only documentation is built using rdoc, but additional types of
+documentation may be built through rubygems plugins and the
+Gem.post_installs hook.
+
+Use --overwrite to force rebuilding of documentation.
     DESC
   end
 

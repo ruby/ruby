@@ -7,7 +7,13 @@
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
 # subclass of this one.
 class Gem::Exception < RuntimeError
-  attr_accessor :source_exception
+
+  ##
+  #--
+  # TODO: remove in RubyGems 3, nobody sets this
+
+  attr_accessor :source_exception # :nodoc:
+
 end
 
 class Gem::CommandLineError < Gem::Exception; end
@@ -15,6 +21,28 @@ class Gem::CommandLineError < Gem::Exception; end
 class Gem::DependencyError < Gem::Exception; end
 
 class Gem::DependencyRemovalException < Gem::Exception; end
+
+##
+# Raised by Gem::DependencyResolver when a Gem::DependencyConflict reaches the
+# toplevel.  Indicates which dependencies were incompatible through #conflict
+# and #conflicting_dependencies
+
+class Gem::DependencyResolutionError < Gem::Exception
+
+  attr_reader :conflict
+
+  def initialize conflict
+    @conflict = conflict
+    a, b = conflicting_dependencies
+
+    super "unable to resolve conflicting dependencies '#{a}' and '#{b}'"
+  end
+
+  def conflicting_dependencies
+    @conflict.conflicting_dependencies
+  end
+
+end
 
 ##
 # Raised when attempting to uninstall a gem that isn't in GEM_HOME.
@@ -65,6 +93,42 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   attr_reader :name, :version, :errors
 end
 
+##
+# Raised by Gem::DependencyResolver when dependencies conflict and create the
+# inability to find a valid possible spec for a request.
+
+class Gem::ImpossibleDependenciesError < Gem::Exception
+
+  attr_reader :conflicts
+  attr_reader :request
+
+  def initialize request, conflicts
+    @request   = request
+    @conflicts = conflicts
+
+    super build_message
+  end
+
+  def build_message # :nodoc:
+    requester  = @request.requester
+    requester  = requester ? requester.spec.full_name : 'The user'
+    dependency = @request.dependency
+
+    message = "#{requester} requires #{dependency} but it conflicted:\n"
+
+    @conflicts.each do |_, conflict|
+      message << conflict.explanation
+    end
+
+    message
+  end
+
+  def dependency
+    @request.dependency
+  end
+
+end
+
 class Gem::InstallError < Gem::Exception; end
 
 ##
@@ -106,4 +170,27 @@ class Gem::SystemExitException < SystemExit
   end
 
 end
+
+##
+# Raised by DependencyResolver when a dependency requests a gem for which
+# there is no spec.
+
+class Gem::UnsatisfiableDependencyError < Gem::Exception
+
+  attr_reader :dependency
+
+  def initialize dep
+    requester = dep.requester ? dep.requester.request : '(unknown)'
+
+    super "Unable to resolve dependency: #{requester} requires #{dep}"
+
+    @dependency = dep
+  end
+
+end
+
+##
+# Backwards compatible typo'd exception class for early RubyGems 2.0.x
+
+Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
 

@@ -1,7 +1,13 @@
 require 'rubygems/test_case'
-require 'ostruct'
+
 require 'webrick'
-require 'webrick/https'
+begin
+  require 'webrick/https'
+rescue LoadError => e
+  raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
+               e.message =~ / -- openssl$/
+end
+
 require 'rubygems/remote_fetcher'
 require 'rubygems/package'
 require 'minitest/mock'
@@ -128,19 +134,7 @@ gems:
 
     refute_nil fetcher
     assert_kind_of Gem::RemoteFetcher, fetcher
-    assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy_uri).to_s
-  end
-
-  def test_self_fetcher_with_proxy_URI
-    proxy_uri = URI.parse 'http://proxy.example.com'
-    Gem.configuration[:http_proxy] = proxy_uri
-    Gem::RemoteFetcher.fetcher = nil
-
-    fetcher = Gem::RemoteFetcher.fetcher
-    refute_nil fetcher
-
-    assert_kind_of Gem::RemoteFetcher, fetcher
-    assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy_uri)
+    assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy).to_s
   end
 
   def test_fetch_size_bad_uri
@@ -155,7 +149,7 @@ gems:
 
   def test_fetch_size_socket_error
     fetcher = Gem::RemoteFetcher.new nil
-    def fetcher.connection_for(uri)
+    def fetcher.request(uri, request_class, last_modified = nil)
       raise SocketError, "tarded"
     end
 
@@ -414,70 +408,6 @@ gems:
     assert_equal @a2.file_name, File.basename(gem)
   end
 
-  def test_explicit_proxy
-    use_ui @ui do
-      fetcher = Gem::RemoteFetcher.new @proxy_uri
-      assert_equal PROXY_DATA.size, fetcher.fetch_size(@server_uri)
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-  end
-
-  def test_explicit_proxy_with_user_auth
-    use_ui @ui do
-      uri = URI.parse @proxy_uri
-      uri.user, uri.password = 'foo', 'bar'
-      fetcher = Gem::RemoteFetcher.new uri.to_s
-      proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'foo', proxy.user
-      assert_equal 'bar', proxy.password
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-
-    use_ui @ui do
-      uri = URI.parse @proxy_uri
-      uri.user, uri.password = 'domain%5Cuser', 'bar'
-      fetcher = Gem::RemoteFetcher.new uri.to_s
-      proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'domain\user', fetcher.unescape(proxy.user)
-      assert_equal 'bar', proxy.password
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-
-    use_ui @ui do
-      uri = URI.parse @proxy_uri
-      uri.user, uri.password = 'user', 'my%20pass'
-      fetcher = Gem::RemoteFetcher.new uri.to_s
-      proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'user', proxy.user
-      assert_equal 'my pass', fetcher.unescape(proxy.password)
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-  end
-
-  def test_explicit_proxy_with_user_auth_in_env
-    use_ui @ui do
-      ENV['http_proxy'] = @proxy_uri
-      ENV['http_proxy_user'] = 'foo'
-      ENV['http_proxy_pass'] = 'bar'
-      fetcher = Gem::RemoteFetcher.new nil
-      proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'foo', proxy.user
-      assert_equal 'bar', proxy.password
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-
-    use_ui @ui do
-      ENV['http_proxy'] = @proxy_uri
-      ENV['http_proxy_user'] = 'foo\user'
-      ENV['http_proxy_pass'] = 'my bar'
-      fetcher = Gem::RemoteFetcher.new nil
-      proxy = fetcher.instance_variable_get("@proxy_uri")
-      assert_equal 'foo\user', fetcher.unescape(proxy.user)
-      assert_equal 'my bar', fetcher.unescape(proxy.password)
-      assert_data_from_proxy fetcher.fetch_path(@server_uri)
-    end
-  end
-
   def test_fetch_path_gzip
     fetcher = Gem::RemoteFetcher.new nil
 
@@ -560,22 +490,6 @@ gems:
     assert_equal nil, fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
   end
 
-  def test_get_proxy_from_env_auto_normalizes
-    fetcher = Gem::RemoteFetcher.new(nil)
-    ENV['HTTP_PROXY'] = 'fakeurl:12345'
-
-    assert_equal('http://fakeurl:12345', fetcher.get_proxy_from_env.to_s)
-  end
-
-  def test_get_proxy_from_env_empty
-    ENV['HTTP_PROXY'] = ''
-    ENV.delete 'http_proxy'
-
-    fetcher = Gem::RemoteFetcher.new nil
-
-    assert_equal nil, fetcher.send(:get_proxy_from_env)
-  end
-
   def test_implicit_no_proxy
     use_ui @ui do
       ENV['http_proxy'] = 'http://fakeurl:12345'
@@ -611,9 +525,7 @@ gems:
     fetcher = Gem::RemoteFetcher.new nil
     url = 'http://gems.example.com/redirect'
 
-    conn = Object.new
-    def conn.started?() true end
-    def conn.request(req)
+    def fetcher.request(uri, request_class, last_modified = nil)
       url = 'http://gems.example.com/redirect'
       unless defined? @requested then
         @requested = true
@@ -627,9 +539,6 @@ gems:
       end
     end
 
-    conn = { "#{Thread.current.object_id}:gems.example.com:80" => conn }
-    fetcher.instance_variable_set :@connections, conn
-
     data = fetcher.fetch_http URI.parse(url)
 
     assert_equal 'real_path', data
@@ -639,31 +548,18 @@ gems:
     fetcher = Gem::RemoteFetcher.new nil
     url = 'http://gems.example.com/redirect'
 
-    conn = Object.new
-    def conn.started?() true end
-    def conn.request(req)
+    def fetcher.request(uri, request_class, last_modified = nil)
       url = 'http://gems.example.com/redirect'
       res = Net::HTTPMovedPermanently.new nil, 301, nil
       res.add_field 'Location', url
       res
     end
 
-    conn = { "#{Thread.current.object_id}:gems.example.com:80" => conn }
-    fetcher.instance_variable_set :@connections, conn
-
     e = assert_raises Gem::RemoteFetcher::FetchError do
       fetcher.fetch_http URI.parse(url)
     end
 
     assert_equal "too many redirects (#{url})", e.message
-  end
-
-  def test_normalize_uri
-    assert_equal 'FILE://example/',  @fetcher.normalize_uri('FILE://example/')
-    assert_equal 'FTP://example/',   @fetcher.normalize_uri('FTP://example/')
-    assert_equal 'HTTP://example/',  @fetcher.normalize_uri('HTTP://example/')
-    assert_equal 'HTTPS://example/', @fetcher.normalize_uri('HTTPS://example/')
-    assert_equal 'http://example/',  @fetcher.normalize_uri('example/')
   end
 
   def test_observe_no_proxy_env_single_host
@@ -684,115 +580,15 @@ gems:
     end
   end
 
-  def test_request
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    util_stub_connection_for :body => :junk, :code => 200
+  def test_request_block
+    fetcher = Gem::RemoteFetcher.new nil
 
-    response = @fetcher.request uri, Net::HTTP::Get
-
-    assert_equal 200, response.code
-    assert_equal :junk, response.body
-  end
-
-  def test_request_head
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    util_stub_connection_for :body => '', :code => 200
-    response = @fetcher.request uri, Net::HTTP::Head
-
-    assert_equal 200, response.code
-    assert_equal '', response.body
-  end
-
-  def test_request_unmodified
-    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    conn = util_stub_connection_for :body => '', :code => 304
-
-    t = Time.now
-    response = @fetcher.request uri, Net::HTTP::Head, t
-
-    assert_equal 304, response.code
-    assert_equal '', response.body
-
-    assert_equal t.rfc2822, conn.payload['if-modified-since']
-  end
-
-  def test_user_agent
-    ua = @fetcher.user_agent
-
-    assert_match %r%^RubyGems/\S+ \S+ Ruby/\S+ \(.*?\)%,          ua
-    assert_match %r%RubyGems/#{Regexp.escape Gem::VERSION}%,      ua
-    assert_match %r% #{Regexp.escape Gem::Platform.local.to_s} %, ua
-    assert_match %r%Ruby/#{Regexp.escape RUBY_VERSION}%,          ua
-    assert_match %r%\(#{Regexp.escape RUBY_RELEASE_DATE} %,       ua
-  end
-
-  def test_user_agent_engine
-    util_save_version
-
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
-    Object.send :const_set,    :RUBY_ENGINE, 'vroom'
-
-    ua = @fetcher.user_agent
-
-    assert_match %r%\) vroom%, ua
-  ensure
-    util_restore_version
-  end
-
-  def test_user_agent_engine_ruby
-    util_save_version
-
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
-    Object.send :const_set,    :RUBY_ENGINE, 'ruby'
-
-    ua = @fetcher.user_agent
-
-    assert_match %r%\)%, ua
-  ensure
-    util_restore_version
-  end
-
-  def test_user_agent_patchlevel
-    util_save_version
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, 5
-
-    ua = @fetcher.user_agent
-
-    assert_match %r% patchlevel 5\)%, ua
-  ensure
-    util_restore_version
-  end
-
-  def test_user_agent_revision
-    util_save_version
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
-    Object.send :const_set,    :RUBY_REVISION, 6
-
-    ua = @fetcher.user_agent
-
-    assert_match %r% revision 6\)%, ua
-    assert_match %r%Ruby/#{Regexp.escape RUBY_VERSION}dev%, ua
-  ensure
-    util_restore_version
-  end
-
-  def test_user_agent_revision_missing
-    util_save_version
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
-
-    ua = @fetcher.user_agent
-
-    assert_match %r%\(#{Regexp.escape RUBY_RELEASE_DATE}\)%, ua
-  ensure
-    util_restore_version
+    assert_throws :block_called do
+      fetcher.request URI('http://example'), Net::HTTP::Get do |req|
+        assert_kind_of Net::HTTPGenericRequest, req
+        throw :block_called
+      end
+    end
   end
 
   def test_yaml_error_on_size
@@ -808,6 +604,42 @@ gems:
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+    end
+  end
+
+  def test_ssl_client_cert_auth_connection
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
+    ssl_server = self.class.start_ssl_server({
+      :SSLVerifyClient =>
+        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+
+    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
+    temp_client_cert = File.join(DIR, 'client.pem')
+
+    with_configured_fetcher(
+      ":ssl_ca_cert: #{temp_ca_cert}\n" +
+      ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
+      fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+    end
+  end
+
+  def test_do_not_allow_invalid_client_cert_auth_connection
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
+    ssl_server = self.class.start_ssl_server({
+      :SSLVerifyClient =>
+        OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+
+    temp_ca_cert = File.join(DIR, 'ca_cert.pem')
+    temp_client_cert = File.join(DIR, 'invalid_client.pem')
+
+    with_configured_fetcher(
+      ":ssl_ca_cert: #{temp_ca_cert}\n" +
+      ":ssl_client_cert: #{temp_client_cert}\n") do |fetcher|
+        assert_raises Gem::RemoteFetcher::FetchError do
+          fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
+        end
     end
   end
 
@@ -850,18 +682,6 @@ gems:
     Gem.configuration = nil
   end
 
-  def util_stub_connection_for hash
-    def @fetcher.connection= conn
-      @conn = conn
-    end
-
-    def @fetcher.connection_for uri
-      @conn
-    end
-
-    @fetcher.connection = Conn.new OpenStruct.new(hash)
-  end
-
   def assert_error(exception_class=Exception)
     got_exception = false
 
@@ -882,20 +702,6 @@ gems:
     assert_match(/0\.4\.2/, data, "Data is not from proxy")
   end
 
-  class Conn
-    attr_accessor :payload
-
-    def initialize(response)
-      @response = response
-      self.payload = nil
-    end
-
-    def request(req)
-      self.payload = req
-      @response
-    end
-  end
-
   class NilLog < WEBrick::Log
     def log(level, data) #Do nothing
     end
@@ -913,9 +719,11 @@ gems:
     end
 
     DIR = File.expand_path(File.dirname(__FILE__))
-    DH_PARAM = OpenSSL::PKey::DH.new(128)
 
     def start_ssl_server(config = {})
+      raise MiniTest::Skip, 'openssl not installed' unless
+        defined?(OpenSSL::SSL)
+
       null_logger = NilLog.new
       server = WEBrick::HTTPServer.new({
         :Port => 0,
@@ -934,7 +742,7 @@ gems:
       server.mount_proc("/insecure_redirect") { |req, res|
         res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
       }
-      server.ssl_context.tmp_dh_callback = proc { DH_PARAM }
+      server.ssl_context.tmp_dh_callback = proc { OpenSSL::PKey::DH.new 128 }
       t = Thread.new do
         begin
           server.start
@@ -952,8 +760,6 @@ gems:
       end
       server
     end
-
-
 
     private
 
@@ -1013,25 +819,6 @@ gems:
 
     path = "/home/skillet"
     assert_equal "/home/skillet", @fetcher.correct_for_windows_path(path)
-  end
-
-  def util_save_version
-    @orig_RUBY_ENGINE     = RUBY_ENGINE if defined? RUBY_ENGINE
-    @orig_RUBY_PATCHLEVEL = RUBY_PATCHLEVEL
-    @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
-  end
-
-  def util_restore_version
-    Object.send :remove_const, :RUBY_ENGINE if defined?(RUBY_ENGINE)
-    Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE if
-      defined?(@orig_RUBY_ENGINE)
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_RUBY_PATCHLEVEL
-
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
-    Object.send :const_set,    :RUBY_REVISION, @orig_RUBY_REVISION if
-      defined?(@orig_RUBY_REVISION)
   end
 
 end

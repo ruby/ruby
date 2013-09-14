@@ -79,6 +79,13 @@ class Gem::Commands::CheckCommand < Gem::Command
     '--gems --alien'
   end
 
+  def description # :nodoc:
+    <<-EOF
+The check command can list and repair problems with installed gems and
+specifications and will clean up gems that have been partially uninstalled.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} [OPTIONS] [GEMNAME ...]"
   end

@@ -5,6 +5,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def setup
     super
+    common_installer_setup
 
     build_rake_in do
       use_ui ui do
@@ -375,6 +376,19 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_equal "Successfully uninstalled q-1.0", lines.shift
   end
 
+  def test_uninstall_doesnt_prompt_and_raises_when_abort_on_dependent_set
+    quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
+    quick_gem 'q', '1'
+
+    un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
+    ui = Gem::MockGemUi.new("y\n")
+
+    assert_raises Gem::DependencyRemovalException do
+      use_ui ui do
+        un.uninstall
+      end
+    end
+  end
 
   def test_uninstall_prompt_includes_dep_type
     quick_gem 'r', '1' do |s|

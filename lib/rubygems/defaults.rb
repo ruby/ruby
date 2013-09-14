@@ -15,6 +15,14 @@ module Gem
   end
 
   ##
+  # Default spec directory path to be used if an alternate value is not
+  # specified in the environment
+
+  def self.default_spec_cache_dir
+    File.join Gem.user_home, '.gem', 'specs'
+  end
+
+  ##
   # Default home directory path to be used if an alternate value is not
   # specified in the environment
 
@@ -125,5 +133,12 @@ module Gem
 
   def self.default_cert_path
     File.join Gem.user_home, ".gem", "gem-public_cert.pem"
+  end
+
+  ##
+  # Whether to expect full paths in default gems - true for non-MRI
+  # ruby implementations
+  def self.default_gems_use_full_paths?
+    ruby_engine != 'ruby'
   end
 end

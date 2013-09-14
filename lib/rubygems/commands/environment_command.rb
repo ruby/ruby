@@ -21,6 +21,9 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def description # :nodoc:
     <<-EOF
+The environment command lets you query rubygems for its configuration for
+use in shell scripts or as a debugging aid.
+
 The RubyGems environment can be controlled through command line arguments,
 gemrc files, environment variables and built-in defaults.
 
@@ -69,66 +72,83 @@ lib/rubygems/defaults/operating_system.rb
   def execute
     out = ''
     arg = options[:args][0]
-    case arg
-    when /^packageversion/ then
-      out << Gem::RubyGemsPackageVersion
-    when /^version/ then
-      out << Gem::VERSION
-    when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
-      out << Gem.dir
-    when /^gempath/, /^path/, /^GEM_PATH/ then
-      out << Gem.path.join(File::PATH_SEPARATOR)
-    when /^remotesources/ then
-      out << Gem.sources.to_a.join("\n")
-    when /^platform/ then
-      out << Gem.platforms.join(File::PATH_SEPARATOR)
-    when nil then
-      out = "RubyGems Environment:\n"
-
-      out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
-
-      out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
-      out << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-      out << ") [#{RUBY_PLATFORM}]\n"
-
-      out << "  - INSTALLATION DIRECTORY: #{Gem.dir}\n"
-
-      out << "  - RUBYGEMS PREFIX: #{Gem.prefix}\n" unless Gem.prefix.nil?
-
-      out << "  - RUBY EXECUTABLE: #{Gem.ruby}\n"
-
-      out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
-
-      out << "  - RUBYGEMS PLATFORMS:\n"
-      Gem.platforms.each do |platform|
-        out << "    - #{platform}\n"
+    out <<
+      case arg
+      when /^packageversion/ then
+        Gem::RubyGemsPackageVersion
+      when /^version/ then
+        Gem::VERSION
+      when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
+        Gem.dir
+      when /^gempath/, /^path/, /^GEM_PATH/ then
+        Gem.path.join(File::PATH_SEPARATOR)
+      when /^remotesources/ then
+        Gem.sources.to_a.join("\n")
+      when /^platform/ then
+        Gem.platforms.join(File::PATH_SEPARATOR)
+      when nil then
+        show_environment
+      else
+        raise Gem::CommandLineError, "Unknown environment option [#{arg}]"
       end
-
-      out << "  - GEM PATHS:\n"
-      out << "     - #{Gem.dir}\n"
-
-      path = Gem.path.dup
-      path.delete Gem.dir
-      path.each do |p|
-        out << "     - #{p}\n"
-      end
-
-      out << "  - GEM CONFIGURATION:\n"
-      Gem.configuration.each do |name, value|
-        value = value.gsub(/./, '*') if name == 'gemcutter_key'
-        out << "     - #{name.inspect} => #{value.inspect}\n"
-      end
-
-      out << "  - REMOTE SOURCES:\n"
-      Gem.sources.each do |s|
-        out << "     - #{s}\n"
-      end
-
-    else
-      raise Gem::CommandLineError, "Unknown environment option [#{arg}]"
-    end
     say out
     true
+  end
+
+  def add_path out, path
+    path.each do |component|
+      out << "     - #{component}\n"
+    end
+  end
+
+  def show_environment # :nodoc:
+    out = "RubyGems Environment:\n"
+
+    out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
+
+    out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
+    out << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
+    out << ") [#{RUBY_PLATFORM}]\n"
+
+    out << "  - INSTALLATION DIRECTORY: #{Gem.dir}\n"
+
+    out << "  - RUBYGEMS PREFIX: #{Gem.prefix}\n" unless Gem.prefix.nil?
+
+    out << "  - RUBY EXECUTABLE: #{Gem.ruby}\n"
+
+    out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
+
+    out << "  - SPEC CACHE DIRECTORY: #{Gem.spec_cache_dir}\n"
+
+    out << "  - RUBYGEMS PLATFORMS:\n"
+    Gem.platforms.each do |platform|
+      out << "    - #{platform}\n"
+    end
+
+    out << "  - GEM PATHS:\n"
+    out << "     - #{Gem.dir}\n"
+
+    gem_path = Gem.path.dup
+    gem_path.delete Gem.dir
+    add_path out, gem_path
+
+    out << "  - GEM CONFIGURATION:\n"
+    Gem.configuration.each do |name, value|
+      value = value.gsub(/./, '*') if name == 'gemcutter_key'
+      out << "     - #{name.inspect} => #{value.inspect}\n"
+    end
+
+    out << "  - REMOTE SOURCES:\n"
+    Gem.sources.each do |s|
+      out << "     - #{s}\n"
+    end
+
+    out << "  - SHELL PATH:\n"
+
+    shell_path = ENV['PATH'].split(File::PATH_SEPARATOR)
+    add_path out, shell_path
+
+    out
   end
 
 end

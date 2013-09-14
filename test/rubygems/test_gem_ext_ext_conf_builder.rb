@@ -120,8 +120,13 @@ checking for main\(\) in .*?nonexistent/m, error.message)
       extconf.puts <<-'EXTCONF'
 include RbConfig
 
-ruby_exe = "#{CONFIG['RUBY_INSTALL_NAME']}#{CONFIG['EXEEXT']}"
-ruby = File.join CONFIG['bindir'], ruby_exe
+ruby =
+  if ENV['RUBY'] then
+    ENV['RUBY']
+  else
+    ruby_exe = "#{CONFIG['RUBY_INSTALL_NAME']}#{CONFIG['EXEEXT']}"
+    File.join CONFIG['bindir'], ruby_exe
+  end
 
 open 'Makefile', 'w' do |io|
   io.write <<-Makefile
