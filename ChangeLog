@@ -1,3 +1,10 @@
+Sun Sep 15 22:59:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (Gem::Specification#initialize): default date to
+	  RUBY_RELEASE_DATE.  [ruby-core:57072] [Bug #8878]
+
+	* tool/rbinstall.rb (Gem::Specification#to_ruby): add date.
+
 Sun Sep 15 22:55:44 2013  Zachary Scott  <e@zzak.io>
 
 	* hash.c (rb_hash_aset): [DOC] Document key dup patch by @kachick
