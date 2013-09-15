@@ -1,3 +1,8 @@
+Mon Sep 16 00:44:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* ext/socket/mkconstants.rb: define MSG_FASTOPEN.
+	  [ruby-core:57138] [Feature #8897]
+
 Sun Sep 15 13:31:23 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_div): reverted r28844, r28886 and r28887.
