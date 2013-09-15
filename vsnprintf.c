@@ -489,14 +489,19 @@ BSD__ultoa(register u_long val, char *endp, int base, int octzero, const char *x
 
 #ifdef FLOATING_POINT
 #include <math.h>
+#include <float.h>
 /* #include "floatio.h" */
 
 #ifndef MAXEXP
-# define MAXEXP 1024
+# if DBL_MAX_10_EXP > -DBL_MIN_10_EXP
+#   define MAXEXP (DBL_MAX_10_EXP)
+# else
+#   define MAXEXP (-DBL_MIN_10_EXP)
+# endif
 #endif
 
 #ifndef MAXFRACT
-# define MAXFRACT 64
+# define MAXFRACT (MAXEXP*10/3)
 #endif
 
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
@@ -547,6 +552,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int expt;		/* integer value of exponent */
 	int expsize = 0;	/* character count for expstr */
 	int ndig = 0;		/* actual number of digits returned by cvt */
+	int fprec = 0;		/* floating point precision */
 	char expstr[7];		/* buffer for exponent string */
 #endif
 	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
@@ -851,6 +857,7 @@ reswitch:	switch (ch) {
 			if (prec > 0) {
 				flags |= ALT;
 				prec++;
+				fprec = prec;
 			}
 			goto fp_begin;
 		case 'e':		/* anomalous precision */
@@ -858,7 +865,7 @@ reswitch:	switch (ch) {
 			if (prec != 0)
 				flags |= ALT;
 			prec = (prec == -1) ?
-				DEFPREC + 1 : prec + 1;
+				DEFPREC + 1 : (fprec = prec + 1);
 			/* FALLTHROUGH */
 			goto fp_begin;
 		case 'f':		/* always print trailing zeroes */
@@ -868,6 +875,8 @@ reswitch:	switch (ch) {
 		case 'G':
 			if (prec == -1)
 				prec = DEFPREC;
+			else
+				fprec = prec;
 fp_begin:		_double = va_arg(ap, double);
 			/* do this before tricky precision changes */
 			if (isinf(_double)) {
@@ -883,7 +892,7 @@ fp_begin:		_double = va_arg(ap, double);
 				break;
 			}
 			flags |= FPT;
-			cp = cvt(_double, prec, flags, &softsign,
+			cp = cvt(_double, (prec < MAXFRACT ? prec : MAXFRACT), flags, &softsign,
 				&expt, ch, &ndig, buf);
 			if (ch == 'g' || ch == 'G') {
 				if (expt <= -4 || (expt > prec && expt > 1))
@@ -905,7 +914,7 @@ fp_begin:		_double = va_arg(ap, double);
 				expsize = exponent(expstr, expt, ch);
 				size = expsize + ndig;
 				if (ndig > 1 || flags & ALT)
-					++size;
+					++fprec, ++size;
 			} else if (ch == 'f') {		/* f fmt */
 				if (expt > 0) {
 					size = expt;
@@ -1137,6 +1146,7 @@ long_len:
 					if (ndig > 0) PRINT(cp, ndig-1);
 				} else	/* XpYYY */
 					PRINT(cp, 1);
+				PAD(fprec-ndig, zeroes);
 				PRINT(expstr, expsize);
 			}
 			else if (ch >= 'f') {	/* 'f' or 'g' */
@@ -1147,7 +1157,8 @@ long_len:
 						PRINT("0", 1);
 					} else {
 						PRINT("0.", 2);
-						PAD(ndig - 1, zeroes);
+						PAD((ndig >= fprec ? ndig - 1 : fprec - (ch != 'f')),
+						    zeroes);
 					}
 				} else if (expt == 0 && ndig == 0 && (flags & ALT) == 0) {
 					PRINT("0", 1);
@@ -1155,6 +1166,8 @@ long_len:
 					PRINT("0.", 2);
 					PAD(-expt, zeroes);
 					PRINT(cp, ndig);
+					if (flags & ALT)
+						PAD(fprec - ndig + (ch == 'f' ? expt : 0), zeroes);
 				} else if (expt >= ndig) {
 					PRINT(cp, ndig);
 					PAD(expt - ndig, zeroes);
@@ -1165,6 +1178,8 @@ long_len:
 					cp += expt;
 					PRINT(".", 1);
 					PRINT(cp, ndig-expt);
+					if (flags & ALT)
+						PAD(fprec - ndig + (ch == 'f' ? expt : 0), zeroes);
 				}
 			} else {	/* 'e' or 'E' */
 				if (ndig > 1 || flags & ALT) {
@@ -1176,6 +1191,7 @@ long_len:
 					} else	/* 0.[0..] */
 						/* __dtoa irregularity */
 						PAD(ndig - 1, zeroes);
+					if (flags & ALT) PAD(fprec - ndig - 1, zeroes);
 				} else	/* XeYYY */
 					PRINT(cp, 1);
 				PRINT(expstr, expsize);
@@ -1255,7 +1271,7 @@ static int
 exponent(char *p0, int exp, int fmtch)
 {
 	register char *p, *t;
-	char expbuf[MAXEXP];
+	char expbuf[2 + (MAXEXP < 1000 ? 3 : MAXEXP < 10000 ? 4 : 5)]; /* >= 2 + ceil(log10(MAXEXP)) */
 
 	p = p0;
 	*p++ = fmtch;
@@ -1265,13 +1281,13 @@ exponent(char *p0, int exp, int fmtch)
 	}
 	else
 		*p++ = '+';
-	t = expbuf + MAXEXP;
+	t = expbuf + sizeof(expbuf);
 	if (exp > 9) {
 		do {
 			*--t = to_char(exp % 10);
 		} while ((exp /= 10) > 9);
 		*--t = to_char(exp);
-		for (; t < expbuf + MAXEXP; *p++ = *t++);
+		for (; t < expbuf + sizeof(expbuf); *p++ = *t++);
 	}
 	else {
 		if (fmtch & 15) *p++ = '0'; /* other than p or P */
