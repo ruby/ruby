@@ -34,6 +34,32 @@ class TestGemCommandsFetchCommand < Gem::TestCase
                        'gem repository directories must not be created'
   end
 
+  def test_execute_latest
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher @a1, @a2
+
+    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
+      File.read(@a1.cache_file)
+    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
+      File.read(@a2.cache_file)
+
+    refute_path_exists File.join(@tempdir, 'cache'), 'sanity check'
+
+    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:version] = req('>= 0.1')
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert_path_exists(File.join(@tempdir, @a2.file_name),
+                       "#{@a2.full_name} not fetched")
+    refute_path_exists File.join(@tempdir, 'cache'),
+                       'gem repository directories must not be created'
+  end
+
   def test_execute_prerelease
     util_setup_fake_fetcher true
     util_clear_gems
@@ -53,8 +79,8 @@ class TestGemCommandsFetchCommand < Gem::TestCase
       end
     end
 
-    assert_path_exists(File.join(@tempdir, @a2_pre.file_name),
-                       "#{@a2_pre.full_name} not fetched")
+    assert_path_exists(File.join(@tempdir, @a2.file_name),
+                       "#{@a2.full_name} not fetched")
   end
 
   def test_execute_specific_prerelease

@@ -43,12 +43,13 @@ class Gem::Commands::FetchCommand < Gem::Command
       dep.prerelease = options[:prerelease]
 
       specs_and_sources, errors = Gem::SpecFetcher.fetcher.spec_for_dependency dep
+
       if platform then
         filtered = specs_and_sources.select { |s,| s.platform == platform }
         specs_and_sources = filtered unless filtered.empty?
       end
 
-      spec, source = specs_and_sources.sort_by { |s,| s.version }.first
+      spec, source = specs_and_sources.max_by { |s,| s.version }
 
       if spec.nil? then
         show_lookup_failure gem_name, version, errors, options[:domain]

@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.0.8'
+  VERSION = '2.0.9'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
