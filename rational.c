@@ -999,7 +999,6 @@ f_odd_p(VALUE integer)
 	return Qtrue;
     }
     return Qfalse;
-
 }
 
 /*
