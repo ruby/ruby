@@ -1,3 +1,8 @@
+Mon Sep 16 07:32:35 2013  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: removed meaningless lines.
+	* rational.c: ditto.
+
 Mon Sep 16 00:44:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* ext/socket/mkconstants.rb: define MSG_FASTOPEN.
