@@ -1,3 +1,8 @@
+Sun Sep 15 22:55:44 2013  Zachary Scott  <e@zzak.io>
+
+	* hash.c (rb_hash_aset): [DOC] Document key dup patch by @kachick
+	  [Fixes GH-382] https://github.com/ruby/ruby/pull/382
+
 Sun Sep 15 22:03:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
