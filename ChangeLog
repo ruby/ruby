@@ -1,4 +1,8 @@
-Tue Sep 17 15:53:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 17 15:54:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/shell/command-processor.rb (Shell::CommandProcessor#find_system_command):
+	  return executable file only, should ignore directories and
+	  unexecutable files.  [ruby-core:57235] [Bug #8918]
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_throw):
 	  assertion for throw.  MiniTest::Assertions#assert_throws discards
