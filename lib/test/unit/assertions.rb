@@ -170,6 +170,25 @@ module Test
       end
 
       # :call-seq:
+      #   assert_throw( tag, failure_message = nil, &block )
+      #
+      #Fails unless the given block throws +tag+, returns the caught
+      #value otherwise.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    tag = Object.new
+      #    assert_throw(tag, "#{tag} was not thrown!") do
+      #      throw tag
+      #    end
+      def assert_throw(tag, msg = nil)
+        catch(tag) do
+          yield(tag)
+          assert(false, message(msg) {"Expected #{mu_pp(tag)} to have been thrown"})
+        end
+      end
+
+      # :call-seq:
       #   assert_equal( expected, actual, failure_message = nil )
       #
       #Tests if +expected+ is equal to +actual+.
