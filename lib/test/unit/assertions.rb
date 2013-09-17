@@ -149,7 +149,8 @@ module Test
       # :call-seq:
       #   assert_nothing_thrown( failure_message = nil, &block )
       #
-      #Fails if the given block uses a call to Kernel#throw.
+      #Fails if the given block uses a call to Kernel#throw, and
+      #returns the result of the block otherwise.
       #
       #An optional failure message may be provided as the final argument.
       #
@@ -158,13 +159,14 @@ module Test
       #    end
       def assert_nothing_thrown(msg=nil)
         begin
-          yield
+          ret = yield
         rescue ArgumentError => error
           raise error if /\Auncaught throw (.+)\z/m !~ error.message
           msg = message(msg) { "<#{$1}> was thrown when nothing was expected" }
           flunk(msg)
         end
         assert(true, "Expected nothing to be thrown")
+        ret
       end
 
       # :call-seq:

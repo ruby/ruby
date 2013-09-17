@@ -1,3 +1,8 @@
+Tue Sep 17 15:52:32 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_nothing_thrown):
+	  returns the result of the given block.
+
 Tue Sep 17 12:55:58 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/regexp.rdoc:  [DOC] Replace paragraphs in verbatim sections with
