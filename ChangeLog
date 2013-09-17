@@ -11,6 +11,10 @@ Mon Sep 16 00:44:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
 Sun Sep 15 13:31:23 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_div): reverted r28844, r28886 and r28887.
+	REASON: Nobuyoshi Nakada  <nobu@ruby-lang.org>'s commits are buggy.
+	So Rational#/ may produces exact number with inexact number.
+	Moreover, without reducing.
+	REALLY NONSENSE COMMITS.
 
 Sat Sep 14 06:08:10 2013  Eric Hodel  <drbrain@segment7.net>
 
