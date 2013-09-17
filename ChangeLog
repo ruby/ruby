@@ -1,3 +1,8 @@
+Tue Sep 17 12:55:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/regexp.rdoc:  [DOC] Replace paragraphs in verbatim sections with
+	  plain paragraphs to improve readability as ri and HTML.
+
 Mon Sep 16 07:32:35 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: removed meaningless lines.

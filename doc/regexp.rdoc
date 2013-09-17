@@ -16,9 +16,12 @@ example:
 If a string contains the pattern it is said to <i>match</i>. A literal
 string matches itself.
 
-    # 'haystack' does not contain the pattern 'needle', so doesn't match.
+Here 'haystack' does not contain the pattern 'needle', so it doesn't match:
+
     /needle/.match('haystack') #=> nil
-    # 'haystack' does contain the pattern 'hay', so it matches
+
+Here 'haystack' contains the pattern 'hay', so it matches:
+
     /hay/.match('haystack')    #=> #<MatchData "hay">
 
 Specifically, <tt>/st/</tt> requires that the string contains the letter
@@ -50,7 +53,7 @@ object. Regexp.last_match is equivalent to <tt>$~</tt>.
 
 === Regexp#match method
 
-#match method return a MatchData object :
+The #match method returns a MatchData object:
 
     /st/.match('haystack')   #=> #<MatchData "st">
 
@@ -108,7 +111,9 @@ operator which performs set intersection on its arguments. The two can be
 combined as follows:
 
     /[a-w&&[^c-g]z]/ # ([a-w] AND ([^c-g] OR z))
-    # This is equivalent to:
+
+This is equivalent to:
+
     /[abh-w]/
 
 The following metacharacters also behave like character classes:
@@ -173,8 +178,9 @@ to occur. Such metacharacters are called <i>quantifiers</i>.
 * <tt>{</tt><i>n</i><tt>,</tt><i>m</i><tt>}</tt> - At least <i>n</i> and
   at most <i>m</i> times
 
-    # At least one uppercase character ('H'), at least one lowercase
-    # character ('e'), two 'l' characters, then one 'o'
+At least one uppercase character ('H'), at least one lowercase character
+('e'), two 'l' characters, then one 'o':
+
     "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
 
 Repetition is <i>greedy</i> by default: as many occurrences as possible
@@ -183,9 +189,10 @@ contrast, <i>lazy</i> matching makes the minimal amount of matches
 necessary for overall success. A greedy metacharacter can be made lazy by
 following it with <tt>?</tt>.
 
-    # Both patterns below match the string. The first uses a greedy
-    # quantifier so '.+' matches '<a><b>'; the second uses a lazy
-    # quantifier so '.+?' matches '<a>'.
+Both patterns below match the string. The first uses a greedy quantifier so
+'.+' matches '<a><b>'; the second uses a lazy quantifier so '.+?' matches
+'<a>':
+
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
@@ -202,12 +209,15 @@ with <i>n</i>. Within a pattern use the <i>backreference</i>
 <tt>\n</tt>; outside of the pattern use
 <tt>MatchData[</tt><i>n</i><tt>]</tt>.
 
-    # 'at' is captured by the first group of parentheses, then referred to
-    # later with \1
+'at' is captured by the first group of parentheses, then referred to later
+with <tt>\1</tt>:
+
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
         #=> #<MatchData "cat sat in" 1:"at">
-    # Regexp#match returns a MatchData object which makes the captured
-    # text available with its #[] method.
+
+Regexp#match returns a MatchData object which makes the captured text
+available with its #[] method:
+
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
 
 Capture groups can be referred to by name when defined with the
@@ -239,11 +249,13 @@ also assigned to local variables with corresponding names.
 Parentheses also <i>group</i> the terms they enclose, allowing them to be
 quantified as one <i>atomic</i> whole.
 
-    # The pattern below matches a vowel followed by 2 word characters:
-    # 'aen'
+The pattern below matches a vowel followed by 2 word characters:
+
     /[aeiou]\w{2}/.match("Caenorhabditis elegans") #=> #<MatchData "aen">
-    # Whereas the following pattern matches a vowel followed by a word
-    # character, twice, i.e. <tt>[aeiou]\w[aeiou]\w</tt>: 'enor'.
+
+Whereas the following pattern matches a vowel followed by a word character,
+twice, i.e. <tt>[aeiou]\w[aeiou]\w</tt>: 'enor'.
+
     /([aeiou]\w){2}/.match("Caenorhabditis elegans")
         #=> #<MatchData "enor" 1:"or">
 
@@ -252,13 +264,16 @@ capturing. That is, it combines the terms it contains into an atomic whole
 without creating a backreference. This benefits performance at the slight
 expense of readability.
 
-    # The group of parentheses captures 'n' and the second 'ti'. The
-    # second group is referred to later with the backreference \2
+The first group of parentheses captures 'n' and the second 'ti'. The second
+group is referred to later with the backreference <tt>\2</tt>:
+
     /I(n)ves(ti)ga\2ons/.match("Investigations")
         #=> #<MatchData "Investigations" 1:"n" 2:"ti">
-    # The first group of parentheses is now made non-capturing with '?:',
-    # so it still matches 'n', but doesn't create the backreference. Thus,
-    # the backreference \1 now refers to 'ti'.
+
+The first group of parentheses is now made non-capturing with '?:', so it
+still matches 'n', but doesn't create the backreference. Thus, the
+backreference <tt>\1</tt> now refers to 'ti'.
+
     /I(?:n)ves(ti)ga\1ons/.match("Investigations")
         #=> #<MatchData "Investigations" 1:"ti">
 
@@ -273,14 +288,16 @@ way <i>pat</i> is treated as a non-divisible whole. Atomic grouping is
 typically used to optimise patterns so as to prevent the regular
 expression engine from backtracking needlessly.
 
-    # The <tt>"</tt> in the pattern below matches the first character of
-    # the string, then <tt>.*</tt> matches <i>Quote"</i>. This causes the
-    # overall match to fail, so the text matched by <tt>.*</tt> is
-    # backtracked by one position, which leaves the final character of the
-    # string available to match <tt>"</tt>
+The <tt>"</tt> in the pattern below matches the first character of the string,
+then <tt>.*</tt> matches <i>Quote"</i>. This causes the overall match to fail,
+so the text matched by <tt>.*</tt> is backtracked by one position, which
+leaves the final character of the string available to match <tt>"</tt>
+
           /".*"/.match('"Quote"')     #=> #<MatchData "\"Quote\"">
-    # If <tt>.*</tt> is grouped atomically, it refuses to backtrack
-    # <i>Quote"</i>, even though this means that the overall match fails
+
+If <tt>.*</tt> is grouped atomically, it refuses to backtrack <i>Quote"</i>,
+even though this means that the overall match fails
+
     /"(?>.*)"/.match('"Quote"') #=> nil
 
 == Subexpression Calls
@@ -290,9 +307,10 @@ subexpression named _name_, which can be a group name or number, again.
 This differs from backreferences in that it re-executes the group rather
 than simply trying to re-match the same text.
 
-    # Matches a <i>(</i> character and assigns it to the <tt>paren</tt>
-    # group, tries to call that the <tt>paren</tt> sub-expression again
-    # but fails, then matches a literal <i>)</i>.
+This pattern matches a <i>(</i> character and assigns it to the <tt>paren</tt>
+group, tries to call that the <tt>paren</tt> sub-expression again but fails,
+then matches a literal <i>)</i>:
+
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
 
 
@@ -426,15 +444,17 @@ following scripts are supported: <i>Arabic</i>, <i>Armenian</i>,
 <i>Tamil</i>, <i>Telugu</i>, <i>Thaana</i>, <i>Thai</i>, <i>Tibetan</i>,
 <i>Tifinagh</i>, <i>Ugaritic</i>, <i>Vai</i>, and <i>Yi</i>.
 
-    # Unicode codepoint U+06E9 is named "ARABIC PLACE OF SAJDAH" and
-    # belongs to the Arabic script.
+Unicode codepoint U+06E9 is named "ARABIC PLACE OF SAJDAH" and belongs to the
+Arabic script:
+
     /\p{Arabic}/.match("\u06E9") #=> #<MatchData "\u06E9">
 
 All character properties can be inverted by prefixing their name with a
 caret (<tt>^</tt>).
 
-    # Letter 'A' is not in the Unicode Ll (Letter; Lowercase) category, so
-    # this match succeeds
+Letter 'A' is not in the Unicode Ll (Letter; Lowercase) category, so this
+match succeeds:
+
     /\p{^Ll}/.match("A") #=> #<MatchData "A">
 
 == Anchors
@@ -465,22 +485,30 @@ characters, <i>anchoring</i> the match to a specific position.
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
 
-    # If a pattern isn't anchored it can begin at any point in the string
+If a pattern isn't anchored it can begin at any point in the string:
+
     /real/.match("surrealist") #=> #<MatchData "real">
-    # Anchoring the pattern to the beginning of the string forces the
-    # match to start there. 'real' doesn't occur at the beginning of the
-    # string, so now the match fails
+
+Anchoring the pattern to the beginning of the string forces the match to start
+there. 'real' doesn't occur at the beginning of the string, so now the match
+fails:
+
     /\Areal/.match("surrealist") #=> nil
-    # The match below fails because although 'Demand' contains 'and', the
-    pattern does not occur at a word boundary.
+
+The match below fails because although 'Demand' contains 'and', the pattern
+does not occur at a word boundary.
+
     /\band/.match("Demand")
-    # Whereas in the following example 'and' has been anchored to a
-    # non-word boundary so instead of matching the first 'and' it matches
-    # from the fourth letter of 'demand' instead
+
+Whereas in the following example 'and' has been anchored to a non-word
+boundary so instead of matching the first 'and' it matches from the fourth
+letter of 'demand' instead:
+
     /\Band.+/.match("Supply and demand curve") #=> #<MatchData "and curve">
-    # The pattern below uses positive lookahead and positive lookbehind to
-    # match text appearing in <b></b> tags without including the tags in the
-    # match
+
+The pattern below uses positive lookahead and positive lookbehind to match
+text appearing in <b></b> tags without including the tags in the match:
+
     /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favours the <b>bold</b>")
         #=> #<MatchData "bold">
 
@@ -518,7 +546,8 @@ octothorpe (<tt>#</tt>) character introduces a comment until the end of
 the line. This allows the components of the pattern to be organised in a
 potentially more readable fashion.
 
-    # A contrived pattern to match a number with optional decimal places
+A contrived pattern to match a number with optional decimal places:
+
     float_pat = /\A
         [[:digit:]]+ # 1 or more digits before the decimal point
         (\.          # Decimal point
@@ -634,8 +663,9 @@ backtracking:
 A similar case is typified by the following example, which takes
 approximately 60 seconds to execute for me:
 
-    # Match a string of 29 <i>a</i>s against a pattern of 29 optional
-    # <i>a</i>s followed by 29 mandatory <i>a</i>s.
+Match a string of 29 <i>a</i>s against a pattern of 29 optional <i>a</i>s
+followed by 29 mandatory <i>a</i>s:
+
     Regexp.new('a?' * 29 + 'a' * 29) =~ 'a' * 29
 
 The 29 optional <i>a</i>s match the string, but this prevents the 29
