@@ -494,8 +494,6 @@ nurat_canonicalization(int f)
 {
     canonicalization = f;
 }
-#else
-# define canonicalization <<<No canonicalization>>>
 #endif
 
 inline static void
@@ -952,19 +950,8 @@ nurat_div(VALUE self, VALUE other)
 			    other, ONE, '/');
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	{
-	    double x = RFLOAT_VALUE(other), den;
-	    get_dat1(self);
-
-	    if (isnan(x)) return DBL2NUM(NAN);
-	    if (isinf(x)) return INT2FIX(0);
-	    if (x != 0.0 && modf(x, &den) == 0.0) {
-		return rb_rational_raw2(dat->num, f_mul(rb_dbl2big(den), dat->den));
-	    }
-	}
+    else if (RB_TYPE_P(other, T_FLOAT))
 	return rb_funcall(f_to_f(self), '/', 1, other);
-    }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
 	    rb_raise_zerodiv();
@@ -1010,7 +997,6 @@ f_odd_p(VALUE integer)
 	return Qtrue;
     }
     return Qfalse;
-
 }
 
 /*
