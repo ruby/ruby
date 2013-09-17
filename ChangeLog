@@ -12,9 +12,13 @@ Sun Sep 15 13:31:23 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_div): reverted r28844, r28886 and r28887.
 	REASON: Nobuyoshi Nakada  <nobu@ruby-lang.org>'s commits are buggy.
-	So Rational#/ may produces exact number with inexact number.
+	So Rational#/ may produce exact number with inexact number.
 	Moreover, without reducing.
 	REALLY NONSENSE COMMITS.
+	A bug report by me [ruby-dev:44710] is also caused by this behavior.
+	Kenta Murata  <mrkn@mrkn.jp> patched it up.
+	But he did not fix the origin.
+	Today, the bug is still alive in ruby 1.9.3 and 2.0.0.
 
 Sat Sep 14 06:08:10 2013  Eric Hodel  <drbrain@segment7.net>
 
