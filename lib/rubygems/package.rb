@@ -349,11 +349,20 @@ EOM
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname destination
+        mkdir_options = {}
+        mkdir_options[:mode] = entry.header.mode if entry.directory?
+        mkdir =
+          if entry.directory? then
+            destination
+          else
+            File.dirname destination
+          end
+
+        FileUtils.mkdir_p mkdir, mkdir_options
 
         open destination, 'wb', entry.header.mode do |out|
           out.write entry.read
-        end
+        end if entry.file?
 
         say destination if Gem.configuration.really_verbose
       end

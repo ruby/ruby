@@ -69,13 +69,18 @@ You can upgrade or downgrade to the latest release version with:
       terminate_interaction 1
     end
 
+    gem_data = Gem::Package.new(name)
+
     unless @host then
-      if gem_data = Gem::Package.new(name) then
-        @host = gem_data.spec.metadata['default_gem_server']
-      end
+      @host = gem_data.spec.metadata['default_gem_server']
     end
 
-    args << @host if @host
+    # Always include this, even if it's nil
+    args << @host
+
+    if gem_data.spec.metadata.has_key?('allowed_push_host')
+      args << gem_data.spec.metadata['allowed_push_host']
+    end
 
     say "Pushing gem to #{@host || Gem.host}..."
 

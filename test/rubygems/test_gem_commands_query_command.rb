@@ -281,10 +281,46 @@ pl (1)
     assert_equal 1, e.exit_code
   end
 
+  def test_execute_local
+    @cmd.options[:domain] = :local
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_local_notty
     @cmd.handle_options %w[]
 
     @ui.outs.tty = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_local_quiet
+    @cmd.options[:domain] = :local
+    Gem.configuration.verbose = false
 
     use_ui @ui do
       @cmd.execute
@@ -371,6 +407,60 @@ pl (1 i386-linux)
 
     assert_equal expected, @ui.output
     assert_equal "WARNING:  prereleases are always shown locally\n", @ui.error
+  end
+
+  def test_execute_remote
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_remote_notty
+    @cmd.handle_options %w[]
+
+    @ui.outs.tty = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (3.a, 2, 1)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_remote_quiet
+    @cmd.options[:domain] = :remote
+    Gem.configuration.verbose = false
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+a (2)
+pl (1 i386-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
   end
 
   def test_execute_local_details
@@ -472,6 +562,19 @@ pl \(1\)
     entry = @cmd.send :make_entry, entry_tuples, platforms
 
     assert_equal 'a (2)', entry
+  end
+
+  # Test for multiple args handling!
+  def test_execute_multiple_args
+    @cmd.handle_options %w[a pl]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match %r%^a %, @ui.output
+    assert_match %r%^pl %, @ui.output
+    assert_equal '', @ui.error
   end
 
 end

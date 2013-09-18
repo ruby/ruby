@@ -396,6 +396,24 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
+  def test_extract_tar_gz_directory
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir    'lib',        0755
+      tar.add_file 'lib/foo.rb', 0644 do |io| io.write 'hi' end
+      tar.mkdir    'lib/foo',    0755
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, 'lib/foo.rb'
+    assert_path_exists extracted
+
+    extracted = File.join @destination, 'lib/foo'
+    assert_path_exists extracted
+  end
+
   def test_extract_tar_gz_dot_slash
     package = Gem::Package.new @gem
 

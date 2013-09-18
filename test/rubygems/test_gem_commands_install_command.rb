@@ -13,10 +13,14 @@ class TestGemCommandsInstallCommand < Gem::TestCase
 
     @gemdeps = "tmp_install_gemdeps"
     @orig_args = Gem::Command.build_args
+
+    common_installer_setup
   end
 
   def teardown
     super
+
+    common_installer_teardown
 
     Gem::Command.build_args = @orig_args
     File.unlink @gemdeps if File.file? @gemdeps
@@ -90,9 +94,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "1 gem installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "1 gem installed", @ui.output
   end
 
   def test_execute_no_user_install
@@ -418,9 +420,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "1 gem installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "1 gem installed", @ui.output
   end
 
   def test_execute_remote_ignores_files
@@ -457,9 +457,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[a-1], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "1 gem installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "1 gem installed", @ui.output
 
     fin = Dir["#{gemdir}/*"]
 
@@ -491,9 +489,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[a-2 b-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "2 gems installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "2 gems installed", @ui.output
   end
 
   def test_execute_two_version
@@ -543,10 +539,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[b-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
     assert_equal "", @ui.error
-    assert_equal "1 gem installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "1 gem installed", @ui.output
   end
 
   def test_parses_requirement_from_gemname
@@ -623,9 +617,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "1 gem installed", out.shift
-    assert out.empty?, out.inspect
+    assert_match "1 gem installed", @ui.output
 
     e = @ui.error
 
@@ -657,9 +649,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "Using a (2)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Using a (2)", @ui.output
   end
 
   def test_execute_installs_from_a_gemdeps
@@ -687,9 +677,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
 
-    out = @ui.output.split "\n"
-    assert_equal "Installing a (2)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Installing a (2)", @ui.output
   end
 
   def test_execute_installs_deps_a_gemdeps
@@ -722,10 +710,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[q-1.0 r-2.0], names
 
-    out = @ui.output.split "\n"
-    assert_equal "Installing q (1.0)", out.shift
-    assert_equal "Installing r (2.0)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Installing q (1.0)", @ui.output
+    assert_match "Installing r (2.0)", @ui.output
   end
 
   def test_execute_uses_deps_a_gemdeps
@@ -759,10 +745,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[r-2.0], names
 
-    out = @ui.output.split "\n"
-    assert_equal "Using q (1.0)", out.shift
-    assert_equal "Installing r (2.0)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Using q (1.0)",      @ui.output
+    assert_match "Installing r (2.0)", @ui.output
   end
 
   def test_execute_installs_deps_a_gemdeps_into_a_path
@@ -796,10 +780,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[q-1.0 r-2.0], names
 
-    out = @ui.output.split "\n"
-    assert_equal "Installing q (1.0)", out.shift
-    assert_equal "Installing r (2.0)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Installing q (1.0)", @ui.output
+    assert_match "Installing r (2.0)", @ui.output
 
     assert File.file?("gf-path/specifications/q-1.0.gemspec"), "not installed"
     assert File.file?("gf-path/specifications/r-2.0.gemspec"), "not installed"
@@ -838,10 +820,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[q-1.0 r-2.0], names
 
-    out = @ui.output.split "\n"
-    assert_equal "Installing q (1.0)", out.shift
-    assert_equal "Installing r (2.0)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Installing q (1.0)", @ui.output
+    assert_match "Installing r (2.0)", @ui.output
 
     assert File.file?("gf-path/specifications/q-1.0.gemspec"), "not installed"
     assert File.file?("gf-path/specifications/r-2.0.gemspec"), "not installed"
@@ -882,10 +862,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_equal %w[r-2.0], names
 
-    out = @ui.output.split "\n"
-    assert_equal "Using q (1.0)", out.shift
-    assert_equal "Installing r (2.0)", out.shift
-    assert out.empty?, out.inspect
+    assert_match "Using q (1.0)", @ui.output
+    assert_match "Installing r (2.0)", @ui.output
   end
 
 

@@ -1,3 +1,13 @@
+Thu Sep 19 06:29:30 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 2.2.0.preview.1
+
+	  This brings several new features to RubyGems summarized here:
+
+	  https://github.com/rubygems/rubygems/blob/v2.2.0.preview.1/History.txt
+
+	* test/rubygems:  ditto.
+
 Wed Sep 18 23:14:58 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* string.c (rb_str_enumerate_lines): make String#each_line and

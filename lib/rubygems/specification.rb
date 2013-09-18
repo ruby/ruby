@@ -327,7 +327,7 @@ class Gem::Specification < Gem::BasicSpecification
               add_bindir(@executables),
               @extra_rdoc_files,
               @extensions,
-             ].flatten.uniq.compact
+             ].flatten.sort.uniq.compact
   end
 
   ######################################################################
@@ -1321,9 +1321,7 @@ class Gem::Specification < Gem::BasicSpecification
   def add_self_to_load_path
     return if default_gem?
 
-    paths = require_paths.map do |path|
-      File.join full_gem_path, path
-    end
+    paths = full_require_paths
 
     # gem directories must come after -I and ENV['RUBYLIB']
     insert_index = Gem.load_path_insert_index
@@ -2017,6 +2015,17 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Full paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
+  # activated.
+  #
+
+  def full_require_paths
+    require_paths.map do |path|
+      File.join full_gem_path, path
+    end
+  end
+
+  ##
   # The RubyGems version required by this gem
 
   def required_rubygems_version= req
@@ -2378,6 +2387,11 @@ class Gem::Specification < Gem::BasicSpecification
     unless not packaging or non_files.empty? then
       raise Gem::InvalidSpecificationException,
             "[\"#{non_files.join "\", \""}\"] are not files"
+    end
+
+    if files.include? file_name then
+      raise Gem::InvalidSpecificationException,
+            "#{full_name} contains itself (#{file_name}), check your files list"
     end
 
     unless specification_version.is_a?(Fixnum)

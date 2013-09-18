@@ -240,7 +240,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert File.exist?(executable), 'executable must still exist'
   end
 
-  def test_uninstall_user
+  def test_uninstall_user_install
     @user_spec = Gem::Specification.find_by_name 'b'
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
