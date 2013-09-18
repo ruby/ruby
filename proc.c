@@ -1125,7 +1125,6 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     VALUE rclass = klass;
     ID rid = id;
     struct METHOD *data;
-    rb_method_entry_t meb;
     rb_method_definition_t *def = 0;
     rb_method_flag_t flag = NOEX_UNDEF;
 
@@ -1136,18 +1135,7 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 
 	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
 	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue))) {
-		def = ALLOC(rb_method_definition_t);
-		def->type = VM_METHOD_TYPE_MISSING;
-		def->original_id = id;
-		def->alias_count = 0;
-
-		meb.flag = 0;
-		meb.mark = 0;
-		meb.called_id = id;
-		meb.klass = klass;
-		meb.def = def;
-		me = &meb;
-		def = 0;
+		me = 0;
 
 		goto gen_method;
 	    }
@@ -1196,9 +1184,27 @@ mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     data->defined_class = defined_class;
     data->id = rid;
     data->me = ALLOC(rb_method_entry_t);
-    *data->me = *me;
-    data->me->def->alias_count++;
+    if (me) {
+	*data->me = *me;
+    }
+    else {
+	me = data->me;
+	me->flag = 0;
+	me->mark = 0;
+	me->called_id = id;
+	me->klass = klass;
+	me->def = 0;
+
+	def = ALLOC(rb_method_definition_t);
+	me->def = def;
+
+	def->type = VM_METHOD_TYPE_MISSING;
+	def->original_id = id;
+	def->alias_count = 0;
+
+    }
     data->ume = ALLOC(struct unlinked_method_entry_list_entry);
+    data->me->def->alias_count++;
 
     OBJ_INFECT(method, klass);
 

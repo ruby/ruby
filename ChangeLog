@@ -1,3 +1,8 @@
+Wed Sep 18 16:32:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew_from_me): allocate structs after allocated wrapper
+	  object successfully, to get rid of potential memory leak.
+
 Tue Sep 17 15:54:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/shell/command-processor.rb (Shell::CommandProcessor#find_system_command):
