@@ -11,7 +11,7 @@ Tue Sep 17 15:54:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_throw):
 	  assertion for throw.  MiniTest::Assertions#assert_throws discards
-	  the cautht value.
+	  the caught value.
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_nothing_thrown):
 	  returns the result of the given block.
