@@ -1,3 +1,9 @@
+Thu Sep 19 06:39:40 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/dependency_resolver.rb:  Switch the iterative resolver
+	  algorithm from recursive to iterative to avoid possible
+	  SystemStackError.
+
 Thu Sep 19 06:29:30 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 2.2.0.preview.1
