@@ -6352,21 +6352,17 @@ static VALUE
 rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 {
     rb_encoding *enc;
-    VALUE rs;
-    unsigned int newline;
-    const char *p, *pend, *s, *ptr;
-    long len, rslen;
-    VALUE line;
-    int n;
-    VALUE orig = str;
+    VALUE line, rs, orig = str;
+    const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
+    long pos, len, rslen;
+    int paragraph_mode = 0;
+
     VALUE UNINITIALIZED_VAR(ary);
 
-    if (argc == 0) {
+    if (argc == 0)
 	rs = rb_rs;
-    }
-    else {
+    else
 	rb_scan_args(argc, argv, "01", &rs);
-    }
 
     if (rb_block_given_p()) {
 	if (wantarray) {
@@ -6396,76 +6392,63 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    return orig;
 	}
     }
+
     str = rb_str_new4(str);
-    ptr = p = s = RSTRING_PTR(str);
-    pend = p + RSTRING_LEN(str);
+    ptr = subptr = RSTRING_PTR(str);
+    pend = RSTRING_END(str);
     len = RSTRING_LEN(str);
     StringValue(rs);
-    if (rs == rb_default_rs) {
-	enc = rb_enc_get(str);
-	while (p < pend) {
-	    char *p0;
-
-	    p = memchr(p, '\n', pend - p);
-	    if (!p) break;
-	    p0 = rb_enc_left_char_head(s, p, pend, enc);
-	    if (!rb_enc_is_newline(p0, pend, enc)) {
-		p++;
-		continue;
-	    }
-	    p = p0 + rb_enc_mbclen(p0, pend, enc);
-	    line = rb_str_subseq(str, s - ptr, p - s);
-	    if (wantarray)
-		rb_ary_push(ary, line);
-	    else
-		rb_yield(line);
-	    str_mod_check(str, ptr, len);
-	    s = p;
-	}
-	goto finish;
-    }
-
-    enc = rb_enc_check(str, rs);
     rslen = RSTRING_LEN(rs);
+
+    if (rs == rb_default_rs)
+	enc = rb_enc_get(str);
+    else
+	enc = rb_enc_check(str, rs);
+
     if (rslen == 0) {
-	newline = '\n';
+	rsptr = "\n\n";
+	rslen = 2;
+	paragraph_mode = 1;
     }
     else {
-	newline = rb_enc_codepoint(RSTRING_PTR(rs), RSTRING_END(rs), enc);
+	rsptr = RSTRING_PTR(rs);
     }
 
-    while (p < pend) {
-	unsigned int c = rb_enc_codepoint_len(p, pend, &n, enc);
+    if ((rs == rb_default_rs || paragraph_mode) && !rb_enc_asciicompat(enc)) {
+	rs = rb_str_new(rsptr, rslen);
+	rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+	rsptr = RSTRING_PTR(rs);
+	rslen = RSTRING_LEN(rs);
+    }
 
-      again:
-	if (rslen == 0 && c == newline) {
-	    p += n;
-	    if (p < pend && (c = rb_enc_codepoint_len(p, pend, &n, enc)) != newline) {
-		goto again;
-	    }
-	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
-		p += n;
-	    }
-	    p -= n;
+    while (subptr < pend) {
+	pos = rb_memsearch(rsptr, rslen, subptr, pend - subptr, enc);
+	if (pos < 0) break;
+	hit = subptr + pos;
+	adjusted = rb_enc_right_char_head(subptr, hit, pend, enc);
+	if (hit != adjusted) {
+	    subptr = adjusted;
+	    continue;
 	}
-	if (c == newline &&
-	    (rslen <= 1 ||
-	     (pend - p >= rslen && memcmp(RSTRING_PTR(rs), p, rslen) == 0))) {
-	    const char *pp = p + (rslen ? rslen : n);
-	    line = rb_str_subseq(str, s - ptr, pp - s);
-	    if (wantarray)
-		rb_ary_push(ary, line);
-	    else
-		rb_yield(line);
+	subend = hit + rslen;
+	if (paragraph_mode) {
+	    while (subend < pend && rb_enc_is_newline(subend, pend, enc)) {
+		subend += rb_enc_mbclen(subend, pend, enc);
+	    }
+	}
+	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
+	if (wantarray) {
+	    rb_ary_push(ary, line);
+	}
+	else {
+	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = pp;
 	}
-	p += n;
+	subptr = subend;
     }
 
-  finish:
-    if (s != pend) {
-	line = rb_str_subseq(str, s - ptr, pend - s);
+    if (subptr != pend) {
+	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
 	if (wantarray)
 	    rb_ary_push(ary, line);
 	else

@@ -1,3 +1,14 @@
+Wed Sep 18 23:14:58 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* string.c (rb_str_enumerate_lines): make String#each_line and
+	  #lines not raise invalid byte sequence error when it is called
+	  with an argument. The patch also causes performance improvement.
+	  [ruby-dev:47549] [Bug #8698]
+
+	* test/ruby/test_m17n_comb.rb (test_str_each_line): remove
+	  assertions which check that String#each_line and #lines will
+	  raise an error if the receiver includes invalid byte sequence.
+
 Wed Sep 18 16:32:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_from_me): allocate structs after allocated wrapper
