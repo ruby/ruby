@@ -1,3 +1,21 @@
+Tue Sep 17 15:54:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/shell/command-processor.rb (Shell::CommandProcessor#find_system_command):
+	  return executable file only, should ignore directories and
+	  unexecutable files.  [ruby-core:57235] [Bug #8918]
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_throw):
+	  assertion for throw.  MiniTest::Assertions#assert_throws discards
+	  the cautht value.
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_nothing_thrown):
+	  returns the result of the given block.
+
+Tue Sep 17 12:55:58 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/regexp.rdoc:  [DOC] Replace paragraphs in verbatim sections with
+	  plain paragraphs to improve readability as ri and HTML.
+
 Mon Sep 16 07:32:35 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: removed meaningless lines.
@@ -11,6 +29,14 @@ Mon Sep 16 00:44:23 2013  Masaki Matsushita  <glass.saga@gmail.com>
 Sun Sep 15 13:31:23 2013  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_div): reverted r28844, r28886 and r28887.
+	  REASON: Nobuyoshi Nakada  <nobu@ruby-lang.org>'s commits are buggy.
+	  So Rational#/ may produce exact number with inexact number.
+	  Moreover, without reducing.
+	  REALLY NONSENSE COMMITS.
+	  A bug report by me [ruby-dev:44710] is also caused by this behavior.
+	  Kenta Murata  <mrkn@mrkn.jp> patched it up.
+	  But he did not fix the origin.
+	  Today, the bug is still alive in ruby 1.9.3 and 2.0.0.
 
 Sat Sep 14 06:08:10 2013  Eric Hodel  <drbrain@segment7.net>
 
