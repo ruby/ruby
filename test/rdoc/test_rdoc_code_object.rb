@@ -100,24 +100,56 @@ class TestRDocCodeObject < XrefTestCase
     refute @co.display?
   end
 
+  def test_display_eh_suppress
+    assert @co.display?
+
+    @co.suppress
+
+    refute @co.display?
+
+    @co.comment = comment('hi')
+
+    refute @co.display?
+
+    @co.done_documenting = false
+
+    assert @co.display?
+
+    @co.ignore
+    @co.done_documenting = false
+
+    refute @co.display?
+  end
+
   def test_document_children_equals
     @co.document_children = false
+
     refute @co.document_children
 
-    # TODO this is not true anymore:
-    # test all the nodoc stuff etc...
-    #@c2.document_children = false
-    #assert_empty @c2.classes
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+    
+    assert @co.document_children
+
+    @co.document_children = false
+
+    assert @co.document_children
   end
 
   def test_document_self_equals
     @co.document_self = false
     refute @co.document_self
 
-    # TODO this is not true anymore:
-    # test all the nodoc stuff etc...
-    #@c1.document_self = false
-    #assert_empty @c1.method_list
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+    
+    assert @co.document_self
+
+    @co.document_self = false
+
+    assert @co.document_self
   end
 
   def test_documented_eh
@@ -159,6 +191,18 @@ class TestRDocCodeObject < XrefTestCase
     @co.done_documenting = false
     assert @co.document_self
     assert @co.document_children
+
+    @co.done_documenting = true
+
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+    
+    refute @co.done_documenting
+
+    @co.done_documenting = true
+
+    refute @co.done_documenting
   end
 
   def test_each_parent
@@ -195,6 +239,18 @@ class TestRDocCodeObject < XrefTestCase
     refute @co.document_self
     refute @co.document_children
     assert @co.ignored?
+
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+
+    assert @co.document_self
+    assert @co.document_children
+    refute @co.ignored?
+
+    @co.ignore
+
+    refute @co.ignored?
   end
 
   def test_ignore_eh
@@ -229,6 +285,14 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal 5, @c1_m.offset
   end
 
+  def test_options
+    assert_kind_of RDoc::Options, @co.options
+
+    @co.store = @store
+
+    assert_same @options, @co.options
+  end
+
   def test_parent_file_name
     assert_equal '(unknown)', @co.parent_file_name
     assert_equal 'xref_data.rb', @c1.parent_file_name
@@ -261,6 +325,13 @@ class TestRDocCodeObject < XrefTestCase
     @co.record_location @xref_data
 
     refute @co.ignored?
+  end
+
+  def test_record_location_suppressed
+    @co.suppress
+    @co.record_location @xref_data
+
+    refute @co.suppressed?
   end
 
   def test_section
@@ -303,6 +374,30 @@ class TestRDocCodeObject < XrefTestCase
     refute @co.ignored?
   end
 
+  def test_start_doc_suppressed
+    @co.suppress
+
+    @co.start_doc
+
+    assert @co.document_self
+    assert @co.document_children
+    refute @co.suppressed?
+  end
+
+  def test_store_equals
+    @co.document_self = false
+
+    @co.store = @store
+
+    refute @co.document_self
+
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+
+    assert @co.document_self
+  end
+
   def test_stop_doc
     @co.document_self = true
     @co.document_children = true
@@ -311,6 +406,44 @@ class TestRDocCodeObject < XrefTestCase
 
     refute @co.document_self
     refute @co.document_children
+
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+    
+    assert @co.document_self
+    assert @co.document_children
+
+    @co.stop_doc
+
+    assert @co.document_self
+    assert @co.document_children
+  end
+
+  def test_suppress
+    @co.suppress
+
+    refute @co.document_self
+    refute @co.document_children
+    assert @co.suppressed?
+
+    @store.rdoc.options.visibility = :nodoc
+
+    @co.store = @store
+    
+    refute @co.suppressed?
+
+    @co.suppress
+
+    refute @co.suppressed?
+  end
+
+  def test_suppress_eh
+    refute @co.suppressed?
+
+    @co.suppress
+
+    assert @co.suppressed?
   end
 
 end

@@ -1,8 +1,9 @@
-<nav id="home-section" class="section">
-  <h3 class="section-header">Documentation</h3>
+<div id="home-section" class="nav-section">
+  <h3>Documentation</h3>
 
   <ul>
-  <% installed.each do |name, href, exists| %>
+  <% installed.each do |name, href, exists, type, _| %>
+    <% next if type == :extra %>
     <li class="folder">
     <% if exists then %>
       <a href="<%= href %>"><%= h name %></a>
@@ -11,4 +12,4 @@
     <% end %>
   <% end %>
   </ul>
-</nav>
+</div>

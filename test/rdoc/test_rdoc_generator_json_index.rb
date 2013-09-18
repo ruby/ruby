@@ -57,17 +57,6 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     FileUtils.rm_rf @tmpdir
   end
 
-  def assert_file path
-    assert File.file?(path), "#{path} is not a file"
-  end
-
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_build_index
     index = @g.build_index
 

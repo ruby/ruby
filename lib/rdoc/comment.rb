@@ -118,9 +118,6 @@ class RDoc::Comment
       seq.gsub!(/^\s*/, '')
       method.call_seq = seq
     end
-    #elsif @text.sub!(/\A\/\*\s*call-seq:(.*?)\*\/\Z/, '') then
-    #  method.call_seq = $1.strip
-    #end
 
     method
   end

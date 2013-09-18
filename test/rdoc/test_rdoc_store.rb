@@ -9,6 +9,7 @@ class TestRDocStore < XrefTestCase
 
     @tmpdir = File.join Dir.tmpdir, "test_rdoc_ri_store_#{$$}"
     @s = RDoc::RI::Store.new @tmpdir
+    @s.rdoc = @rdoc
 
     @top_level = @s.add_file 'file.rb'
 
@@ -71,13 +72,6 @@ class TestRDocStore < XrefTestCase
     FileUtils.rm_rf @tmpdir
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def assert_cache imethods, cmethods, attrs, modules,
                    ancestors = {}, pages = [], main = nil, title = nil
     imethods ||= { 'Object' => %w[method method! method_bang] }
@@ -104,18 +98,6 @@ class TestRDocStore < XrefTestCase
     @s.save_cache
 
     assert_equal expected, @s.cache
-  end
-
-  def assert_directory path
-    assert File.directory?(path), "#{path} is not a directory"
-  end
-
-  def assert_file path
-    assert File.file?(path), "#{path} is not a file"
-  end
-
-  def refute_file path
-    refute File.exist?(path), "#{path} exists"
   end
 
   def test_add_c_enclosure
@@ -247,6 +229,16 @@ class TestRDocStore < XrefTestCase
 
     assert_equal 'C2::A1', a1.full_name
     refute_empty a1.aliases
+  end
+
+  def test_complete_nodoc
+    c_nodoc = @top_level.add_class RDoc::NormalClass, 'Nodoc'
+    c_nodoc.record_location @top_level
+    c_nodoc.document_self = nil
+
+    @s.complete :nodoc
+
+    assert_includes @s.classes_hash.keys, 'Nodoc'
   end
 
   def test_find_c_enclosure

@@ -129,7 +129,8 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   def initialize
     super
 
-    @section = nil
+    @section      = nil
+    @seen_returns = false
   end
 
   # Internal: Builds a heading from the token stream
@@ -176,9 +177,17 @@ class RDoc::TomDoc < RDoc::Markup::Parser
     until @tokens.empty? do
       type, data, = get
 
-      if type == :TEXT then
+      case type
+      when :TEXT then
+        @section = 'Returns' if data =~ /\AReturns/
+
         paragraph << data
-        skip :NEWLINE
+      when :NEWLINE then
+        if :TEXT == peek_token[0] then
+          paragraph << ' '
+        else
+          break
+        end
       else
         unget
         break
@@ -188,6 +197,21 @@ class RDoc::TomDoc < RDoc::Markup::Parser
     p :paragraph_end => margin if @debug
 
     paragraph
+  end
+
+  ##
+  # Detects a section change to "Returns" and adds a heading
+
+  def parse_text parent, indent # :nodoc:
+    paragraph = build_paragraph indent
+
+    if false == @seen_returns and 'Returns' == @section then
+      @seen_returns = true
+      parent << RDoc::Markup::Heading.new(3, 'Returns')
+      parent << RDoc::Markup::BlankLine.new
+    end
+
+    parent << paragraph
   end
 
   # Internal: Turns text into an Array of tokens

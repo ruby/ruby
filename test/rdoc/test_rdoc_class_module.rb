@@ -2,13 +2,6 @@ require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocClassModule < XrefTestCase
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_add_comment
     tl1 = @store.add_file 'one.rb'
     tl2 = @store.add_file 'two.rb'
@@ -108,23 +101,23 @@ class TestRDocClassModule < XrefTestCase
   def test_documented_eh
     cm = RDoc::ClassModule.new 'C'
 
-    refute cm.documented?
+    refute cm.documented?, 'no comments, no markers'
+
+    cm.add_comment '', @top_level
+
+    refute cm.documented?, 'empty comment'
 
     cm.add_comment 'hi', @top_level
 
-    assert cm.documented?
-
-    cm.comment.replace ''
-
-    assert cm.documented?
+    assert cm.documented?, 'commented'
 
     cm.comment_location.clear
 
-    refute cm.documented?
+    refute cm.documented?, 'no comment'
 
     cm.document_self = nil # notify :nodoc:
 
-    assert cm.documented?
+    assert cm.documented?, ':nodoc:'
   end
 
   def test_each_ancestor
@@ -165,6 +158,7 @@ class TestRDocClassModule < XrefTestCase
     ns = tl.add_module RDoc::NormalModule, 'Namespace'
 
     cm = ns.add_class RDoc::NormalClass, 'Klass', 'Super'
+    cm.document_self = true
     cm.record_location tl
 
     a1 = RDoc::Attr.new nil, 'a1', 'RW', ''
@@ -234,6 +228,59 @@ class TestRDocClassModule < XrefTestCase
     assert_equal tl, loaded.extends.first.file
 
     assert_equal tl, loaded.method_list.first.file
+  end
+
+  def test_marshal_dump_visibilty
+    @store.path = Dir.tmpdir
+    tl = @store.add_file 'file.rb'
+
+    ns = tl.add_module RDoc::NormalModule, 'Namespace'
+
+    cm = ns.add_class RDoc::NormalClass, 'Klass', 'Super'
+    cm.record_location tl
+
+    a1 = RDoc::Attr.new nil, 'a1', 'RW', ''
+    a1.record_location tl
+    a1.document_self = false
+
+    m1 = RDoc::AnyMethod.new nil, 'm1'
+    m1.record_location tl
+    m1.document_self = false
+
+    c1 = RDoc::Constant.new 'C1', nil, ''
+    c1.record_location tl
+    c1.document_self = false
+
+    i1 = RDoc::Include.new 'I1', ''
+    i1.record_location tl
+    i1.document_self = false
+
+    e1 = RDoc::Extend.new 'E1', ''
+    e1.record_location tl
+    e1.document_self = false
+
+    section_comment = RDoc::Comment.new('section comment')
+    section_comment.location = tl
+
+    assert_equal 1, cm.sections.length, 'sanity, default section only'
+
+    cm.add_attribute a1
+    cm.add_method m1
+    cm.add_constant c1
+    cm.add_include i1
+    cm.add_extend e1
+    cm.add_comment 'this is a comment', tl
+
+    loaded = Marshal.load Marshal.dump cm
+    loaded.store = @store
+
+    assert_equal cm, loaded
+
+    assert_empty loaded.attributes
+    assert_empty loaded.constants
+    assert_empty loaded.includes
+    assert_empty loaded.extends
+    assert_empty loaded.method_list
   end
 
   def test_marshal_load_version_0
@@ -1401,7 +1448,7 @@ class TestRDocClassModule < XrefTestCase
 
     @c1.update_extends
 
-    assert_equal [a, c], @c1.extends
+    assert_equal [a, b, c], @c1.extends
   end
 
   def test_update_extends_trim

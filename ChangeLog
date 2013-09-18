@@ -1,3 +1,14 @@
+Thu Sep 19 08:33:14 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 4.1.0.preview.1
+
+	  RDoc 4.1.0 contains a number of enhancements including a new default
+          style and accessibility support.  You can see the changelog here:
+
+	  https://github.com/rdoc/rdoc/blob/v4.1.0.preview.1/History.rdoc
+
+	* test/rdoc:  ditto.
+
 Thu Sep 19 07:16:26 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: updating Psych version

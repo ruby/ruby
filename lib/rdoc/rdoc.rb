@@ -217,7 +217,7 @@ option)
       end unless @options.force_output
     else
       FileUtils.mkdir_p dir
-      FileUtils.touch output_flag_file dir
+      FileUtils.touch flag_file
     end
 
     last
@@ -289,6 +289,7 @@ option)
     file_list = []
 
     relative_files.each do |rel_file_name|
+      next if rel_file_name.end_with? 'created.rid'
       next if exclude_pattern && exclude_pattern =~ rel_file_name
       stat = File.stat rel_file_name rescue next
 
@@ -341,6 +342,8 @@ option)
     end
 
     @stats.add_file filename
+
+    return if RDoc::Parser.binary? filename
 
     content = RDoc::Encoding.read_file filename, encoding
 
@@ -493,7 +496,7 @@ The internal error was:
     if @options.coverage_report then
       puts
 
-      puts @stats.report
+      puts @stats.report.accept RDoc::Markup::ToRdoc.new
     elsif file_info.empty? then
       $stderr.puts "\nNo newer files." unless @options.quiet
     else
@@ -506,7 +509,7 @@ The internal error was:
 
     if @stats and (@options.coverage_report or not @options.quiet) then
       puts
-      puts @stats.summary
+      puts @stats.summary.accept RDoc::Markup::ToRdoc.new
     end
 
     exit @stats.fully_documented? if @options.coverage_report

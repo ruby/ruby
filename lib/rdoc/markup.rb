@@ -59,7 +59,7 @@
 #
 #   require 'rdoc'
 #
-#   h = RDoc::Markup::ToHtml.new
+#   h = RDoc::Markup::ToHtml.new(RDoc::Options.new)
 #
 #   puts h.convert(input_string)
 #
@@ -171,22 +171,13 @@
 # === Rules
 #
 # A line starting with three or more hyphens (at the current indent)
-# generates a horizontal rule.  The more hyphens, the thicker the rule
-# (within reason, and if supported by the output device).
-#
-# In the case of HTML output, three dashes generate a 1-pixel high rule,
-# four dashes result in 2 pixels, and so on. The actual height is limited
-# to 10 pixels:
+# generates a horizontal rule.
 #
 #   ---
-#   -----
-#   -----------------------------------------------------
 #
 # produces:
 #
 # ---
-# -----
-# -----------------------------------------------------
 #
 # === Simple Lists
 #
@@ -356,11 +347,17 @@
 # with <tt>+</tt> like <tt>RDoc::Markup@Escaping+Text+Markup</tt>.
 # Punctuation and other special characters must be escaped like CGI.escape.
 #
+# The <tt>@</tt> can also be used to link to sections.  If a section and a
+# heading share the same name the section is preferred for the link.
+#
 # Links can also be of the form <tt>label[url]</tt>, in which case +label+ is
 # used in the displayed text, and +url+ is used as the target.  If +label+
 # contains multiple words, put it in braces: <tt>{multi word label}[url]</tt>.
 # The +url+ may be an +http:+-type link or a cross-reference to a class,
 # module or method with a label.
+#
+# Links with the <code>rdoc-image:</code> scheme will create an image tag for
+# HTML output.  Only fully-qualified URLs are supported.
 #
 # Links with the <tt>rdoc-ref:</tt> scheme will link to the referenced class,
 # module, method, file, etc.  If the referenced item is does not exist
@@ -713,7 +710,7 @@
 #     def some_method
 #       # ...
 #
-#   See Markup@DEVELOPERS for instructions on adding a new markup format.
+#   See Markup@CONTRIBUTING for instructions on adding a new markup format.
 #
 # [+:include:+ _filename_]
 #   Include the contents of the named file at this point. This directive

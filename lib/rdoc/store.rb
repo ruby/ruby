@@ -305,8 +305,10 @@ class RDoc::Store
     # cache included modules before they are removed from the documentation
     all_classes_and_modules.each { |cm| cm.ancestors }
 
-    remove_nodoc @classes_hash
-    remove_nodoc @modules_hash
+    unless min_visibility == :nodoc then
+      remove_nodoc @classes_hash
+      remove_nodoc @modules_hash
+    end
 
     @unique_classes = find_unique @classes_hash
     @unique_modules = find_unique @modules_hash

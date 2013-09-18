@@ -169,6 +169,18 @@ class RDoc::ClassModule < RDoc::Context
     includes.map { |i| i.module }.reverse
   end
 
+  def aref_prefix # :nodoc:
+    raise NotImplementedError, "missing aref_prefix for #{self.class}"
+  end
+
+  ##
+  # HTML fragment reference for this module or class.  See
+  # RDoc::NormalClass#aref and RDoc::NormalModule#aref
+
+  def aref
+    "#{aref_prefix}-#{full_name}"
+  end
+
   ##
   # Ancestors of this class or module only
 
@@ -224,7 +236,9 @@ class RDoc::ClassModule < RDoc::Context
   # #received_nodoc true?
 
   def documented?
-    super or !@comment_location.empty?
+    return true if @received_nodoc
+    return false if @comment_location.empty?
+    @comment_location.any? { |comment, _| not comment.empty? }
   end
 
   ##
@@ -282,16 +296,18 @@ class RDoc::ClassModule < RDoc::Context
 
   def marshal_dump # :nodoc:
     attrs = attributes.sort.map do |attr|
+      next unless attr.display?
       [ attr.name, attr.rw,
         attr.visibility, attr.singleton, attr.file_name,
       ]
-    end
+    end.compact
 
     method_types = methods_by_type.map do |type, visibilities|
       visibilities = visibilities.map do |visibility, methods|
         method_names = methods.map do |method|
+          next unless method.display?
           [method.name, method.file_name]
-        end
+        end.compact
 
         [visibility, method_names.uniq]
       end
@@ -305,14 +321,16 @@ class RDoc::ClassModule < RDoc::Context
       @superclass,
       parse(@comment_location),
       attrs,
-      constants,
+      constants.select { |constant| constant.display? },
       includes.map do |incl|
+        next unless incl.display?
         [incl.name, parse(incl.comment), incl.file_name]
-      end,
+      end.compact,
       method_types,
       extends.map do |ext|
+        next unless ext.display?
         [ext.name, parse(ext.comment), ext.file_name]
-      end,
+      end.compact,
       @sections.values,
       @in_files.map do |tl|
         tl.relative_name

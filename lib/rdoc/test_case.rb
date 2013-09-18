@@ -1,4 +1,11 @@
 require 'rubygems'
+
+begin
+  gem 'minitest', '~> 4.0'
+rescue NoMethodError
+  # for ruby tests
+end
+
 require 'minitest/autorun'
 require 'minitest/benchmark' if ENV['BENCHMARK']
 
@@ -45,11 +52,33 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
 
     @rdoc = RDoc::RDoc.new
     @rdoc.store = @store
+    @rdoc.options = RDoc::Options.new
 
     g = Object.new
     def g.class_dir() end
     def g.file_dir() end
     @rdoc.generator = g
+  end
+
+  ##
+  # Asserts +path+ is a file
+
+  def assert_file path
+    assert File.file?(path), "#{path} is not a file"
+  end
+
+  ##
+  # Asserts +path+ is a directory
+
+  def assert_directory path
+    assert File.directory?(path), "#{path} is not a directory"
+  end
+
+  ##
+  # Refutes +path+ exists
+
+  def refute_file path
+    refute File.exist?(path), "#{path} exists"
   end
 
   ##
@@ -107,6 +136,16 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
 
   def list type = nil, *items
     @RM::List.new type, *items
+  end
+
+  ##
+  # Enables pretty-print output
+
+  def mu_pp obj # :nodoc:
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s.chomp
   end
 
   ##

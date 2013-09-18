@@ -46,13 +46,6 @@ class TestRDocRIDriver < RDoc::TestCase
     ENV['RI_PAGER'] = pager_env
   end
 
-  def mu_pp(obj)
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding(Encoding.default_external) if defined? Encoding
-    s.chomp
-  end
-
   def test_self_dump
     util_store
 
@@ -696,6 +689,14 @@ Foo::Bar#bother
     assert_equal expected, out
   end
 
+  def test_display_name_not_found_special
+    util_store
+
+    assert_raises RDoc::RI::Driver::NotFoundError do
+      assert_equal false, @driver.display_name('Set#[]')
+    end
+  end
+
   def test_display_method_params
     util_store
 
@@ -939,7 +940,10 @@ Foo::Bar#bother
     tty = Object.new
     def tty.tty?() true; end
 
-    driver = RDoc::RI::Driver.new
+    @options.delete :use_stdout
+    @options.delete :formatter
+
+    driver = RDoc::RI::Driver.new @options
 
     assert_instance_of @RM::ToAnsi, driver.formatter(tty)
 
@@ -1092,6 +1096,17 @@ Foo::Bar#bother
     expected = [[@store1, [@inherit]]]
 
     assert_equal expected, @driver.load_methods_matching('Bar#inherit')
+  end
+
+  def test_load_method_missing
+    util_store
+
+    FileUtils.rm @store1.method_file 'Foo', '#inherit'
+
+    method = @driver.load_method(@store1, :instance_methods, 'Foo', '#',
+                                 'inherit')
+
+    assert_equal '(unknown)#inherit', method.full_name
   end
 
   def _test_page # this test doesn't do anything anymore :(

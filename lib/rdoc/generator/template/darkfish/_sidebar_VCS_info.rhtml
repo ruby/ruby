@@ -1,6 +1,7 @@
 <% if !svninfo.empty? then %>
-<nav id="file-svninfo-section" class="section">
-  <h3 class="section-header">VCS Info</h3>
+<div id="file-svninfo-section" class="nav-section">
+  <h3>VCS Info</h3>
+
   <div class="section-body">
     <dl class="svninfo">
       <dt>Rev
@@ -14,5 +15,5 @@
       <dd><%= svninfo[:committer] %>
     </dl>
   </div>
-</nav>
+</div>
 <% end %>

@@ -30,7 +30,7 @@ class RDoc::TopLevel < RDoc::Context
   attr_accessor :diagram # :nodoc:
 
   ##
-  # The parser that processed this file
+  # The parser class that processed this file
 
   attr_accessor :parser
 

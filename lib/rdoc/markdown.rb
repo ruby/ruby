@@ -8,6 +8,16 @@
 # RDoc::Options@Saved+Options for instructions on setting up a `.doc_options`
 # file to store your project default.
 #
+# ## Usage
+#
+# Here is a brief example of using this parse to read a markdown file by hand.
+#
+#     data = File.read("README.md")
+#     formatter = RDoc::Markup::ToHtml.new(RDoc::Options.new, nil)
+#     html = RDoc::Markdown.parse(data).accept(@formatter)
+#
+#     # do something with html
+#
 # ## Extensions
 #
 # The following markdown extensions are supported by the parser, but not all
@@ -120,7 +130,6 @@
 # ## Limitations
 #
 # * Link titles are not used
-# * Image links are not generated correctly
 # * Footnotes are collapsed into a single paragraph
 #
 # ## Author
@@ -172,8 +181,7 @@ class RDoc::Markdown
     # Prepares for parsing +str+.  If you define a custom initialize you must
     # call this method before #parse
     def setup_parser(str, debug=false)
-      @string = str
-      @pos = 0
+      set_string str, 0
       @memoizations = Hash.new { |h,k| h[k] = {} }
       @result = nil
       @failed_rule = nil
@@ -186,7 +194,7 @@ class RDoc::Markdown
     attr_reader :failing_rule_offset
     attr_accessor :result, :pos
 
-
+    
     def current_column(target=pos)
       if c = string.rindex("\n", target-1)
         return target - c - 1
@@ -218,6 +226,13 @@ class RDoc::Markdown
 
     def get_text(start)
       @string[start..@pos-1]
+    end
+
+    # Sets the string and current parsing position for the parser.
+    def set_string string, pos
+      @string = string
+      @string_size = string ? string.size : 0
+      @pos = pos
     end
 
     def show_pos
@@ -326,19 +341,19 @@ class RDoc::Markdown
       return nil
     end
 
-    if "".respond_to? :getbyte
+    if "".respond_to? :ord
       def get_byte
-        if @pos >= @string.size
+        if @pos >= @string_size
           return nil
         end
 
-        s = @string.getbyte @pos
+        s = @string[@pos].ord
         @pos += 1
         s
       end
     else
       def get_byte
-        if @pos >= @string.size
+        if @pos >= @string_size
           return nil
         end
 
@@ -387,8 +402,7 @@ class RDoc::Markdown
       old_pos = @pos
       old_string = @string
 
-      @pos = other.pos
-      @string = other.string
+      set_string other.string, other.pos
 
       begin
         if val = __send__(rule, *args)
@@ -399,8 +413,7 @@ class RDoc::Markdown
         end
         val
       ensure
-        @pos = old_pos
-        @string = old_string
+        set_string old_string, old_pos
       end
     end
 
@@ -548,15 +561,13 @@ class RDoc::Markdown
   def self.extension name
     EXTENSIONS << name
 
-    eval <<-RUBY
-      def #{name}?
-        extension? __method__
-      end
+    define_method "#{name}?" do
+      extension? name
+    end
 
-      def #{name}= enable
-        extension __method__, enable
-      end
-    RUBY
+    define_method "#{name}=" do |enable|
+      extension name, enable
+    end
   end
 
   ##
@@ -636,8 +647,6 @@ class RDoc::Markdown
   # Is the extension `name` enabled?
 
   def extension? name
-    name = name.to_s.delete('?').intern
-
     @extensions.include? name
   end
 
@@ -647,8 +656,6 @@ class RDoc::Markdown
   # Enables or disables the extension with `name`
 
   def extension name, enable
-    name = name.to_s.delete('=').intern
-
     if enable then
       @extensions |= [name]
     else
@@ -870,13 +877,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Block = BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)
+  # Block = @BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)
   def _Block
 
     _save = self.pos
     while true # sequence
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         break unless _tmp
       end
       _tmp = true
@@ -942,12 +949,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Para = NonindentSpace Inlines:a BlankLine+ { paragraph a }
+  # Para = @NonindentSpace Inlines:a @BlankLine+ { paragraph a }
   def _Para
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -959,10 +966,10 @@ class RDoc::Markdown
         break
       end
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -1008,13 +1015,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxInline = !Newline !(Sp? "#"* Sp Newline) Inline
+  # AtxInline = !@Newline !(@Sp? /#*/ @Sp @Newline) Inline
   def _AtxInline
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -1026,7 +1033,7 @@ class RDoc::Markdown
       _save3 = self.pos
       while true # sequence
         _save4 = self.pos
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           _tmp = true
           self.pos = _save4
@@ -1035,21 +1042,17 @@ class RDoc::Markdown
           self.pos = _save3
           break
         end
-        while true
-          _tmp = match_string("#")
-          break unless _tmp
-        end
-        _tmp = true
+        _tmp = scan(/\A(?-mix:#*)/)
         unless _tmp
           self.pos = _save3
           break
         end
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           self.pos = _save3
           break
         end
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         unless _tmp
           self.pos = _save3
         end
@@ -1073,36 +1076,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxStart = < ("######" | "#####" | "####" | "###" | "##" | "#") > { text.length }
+  # AtxStart = < /\#{1,6}/ > { text.length }
   def _AtxStart
 
     _save = self.pos
     while true # sequence
       _text_start = self.pos
-
-      _save1 = self.pos
-      while true # choice
-        _tmp = match_string("######")
-        break if _tmp
-        self.pos = _save1
-        _tmp = match_string("#####")
-        break if _tmp
-        self.pos = _save1
-        _tmp = match_string("####")
-        break if _tmp
-        self.pos = _save1
-        _tmp = match_string("###")
-        break if _tmp
-        self.pos = _save1
-        _tmp = match_string("##")
-        break if _tmp
-        self.pos = _save1
-        _tmp = match_string("#")
-        break if _tmp
-        self.pos = _save1
-        break
-      end # end choice
-
+      _tmp = scan(/\A(?-mix:\#{1,6})/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -1122,7 +1102,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s Sp? AtxInline+:a (Sp? "#"* Sp)? Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Sp? AtxInline+:a (@Sp? /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1134,7 +1114,7 @@ class RDoc::Markdown
         break
       end
       _save1 = self.pos
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         _tmp = true
         self.pos = _save1
@@ -1168,7 +1148,7 @@ class RDoc::Markdown
       _save4 = self.pos
       while true # sequence
         _save5 = self.pos
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           _tmp = true
           self.pos = _save5
@@ -1177,16 +1157,12 @@ class RDoc::Markdown
           self.pos = _save4
           break
         end
-        while true
-          _tmp = match_string("#")
-          break unless _tmp
-        end
-        _tmp = true
+        _tmp = scan(/\A(?-mix:#*)/)
         unless _tmp
           self.pos = _save4
           break
         end
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           self.pos = _save4
         end
@@ -1201,7 +1177,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
@@ -1236,26 +1212,17 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextBottom1 = "===" "="* Newline
+  # SetextBottom1 = /={3,}/ @Newline
   def _SetextBottom1
 
     _save = self.pos
     while true # sequence
-      _tmp = match_string("===")
+      _tmp = scan(/\A(?-mix:={3,})/)
       unless _tmp
         self.pos = _save
         break
       end
-      while true
-        _tmp = match_string("=")
-        break unless _tmp
-      end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
       end
@@ -1266,26 +1233,17 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextBottom2 = "---" "-"* Newline
+  # SetextBottom2 = /-{3,}/ @Newline
   def _SetextBottom2
 
     _save = self.pos
     while true # sequence
-      _tmp = match_string("---")
+      _tmp = scan(/\A(?-mix:-{3,})/)
       unless _tmp
         self.pos = _save
         break
       end
-      while true
-        _tmp = match_string("-")
-        break unless _tmp
-      end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
       end
@@ -1296,7 +1254,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextHeading1 = &(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }
+  # SetextHeading1 = &(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }
   def _SetextHeading1
 
     _save = self.pos
@@ -1305,7 +1263,7 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # sequence
-        _tmp = apply(:_RawLine)
+        _tmp = _RawLine()
         unless _tmp
           self.pos = _save2
           break
@@ -1322,7 +1280,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -1333,7 +1291,7 @@ class RDoc::Markdown
       _save4 = self.pos
       while true # sequence
         _save5 = self.pos
-        _tmp = apply(:_Endline)
+        _tmp = _Endline()
         _tmp = _tmp ? nil : true
         self.pos = _save5
         unless _tmp
@@ -1360,7 +1318,7 @@ class RDoc::Markdown
           _save6 = self.pos
           while true # sequence
             _save7 = self.pos
-            _tmp = apply(:_Endline)
+            _tmp = _Endline()
             _tmp = _tmp ? nil : true
             self.pos = _save7
             unless _tmp
@@ -1392,7 +1350,7 @@ class RDoc::Markdown
         break
       end
       _save8 = self.pos
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         _tmp = true
         self.pos = _save8
@@ -1401,7 +1359,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
@@ -1423,7 +1381,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextHeading2 = &(RawLine SetextBottom2) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }
+  # SetextHeading2 = &(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }
   def _SetextHeading2
 
     _save = self.pos
@@ -1432,7 +1390,7 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # sequence
-        _tmp = apply(:_RawLine)
+        _tmp = _RawLine()
         unless _tmp
           self.pos = _save2
           break
@@ -1449,7 +1407,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -1460,7 +1418,7 @@ class RDoc::Markdown
       _save4 = self.pos
       while true # sequence
         _save5 = self.pos
-        _tmp = apply(:_Endline)
+        _tmp = _Endline()
         _tmp = _tmp ? nil : true
         self.pos = _save5
         unless _tmp
@@ -1487,7 +1445,7 @@ class RDoc::Markdown
           _save6 = self.pos
           while true # sequence
             _save7 = self.pos
-            _tmp = apply(:_Endline)
+            _tmp = _Endline()
             _tmp = _tmp ? nil : true
             self.pos = _save7
             unless _tmp
@@ -1519,7 +1477,7 @@ class RDoc::Markdown
         break
       end
       _save8 = self.pos
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         _tmp = true
         self.pos = _save8
@@ -1528,7 +1486,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
@@ -1591,12 +1549,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # BlockQuoteRaw = StartList:a (">" " "? Line:l { a << l } (!">" !BlankLine Line:c { a << c })* (BlankLine:n { a << n })*)+ { inner_parse a.join }
+  # BlockQuoteRaw = @StartList:a (">" " "? Line:l { a << l } (!">" !@BlankLine Line:c { a << c })* (@BlankLine:n { a << n })*)+ { inner_parse a.join }
   def _BlockQuoteRaw
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -1646,7 +1604,7 @@ class RDoc::Markdown
               break
             end
             _save7 = self.pos
-            _tmp = apply(:_BlankLine)
+            _tmp = _BlankLine()
             _tmp = _tmp ? nil : true
             self.pos = _save7
             unless _tmp
@@ -1678,7 +1636,7 @@ class RDoc::Markdown
 
           _save9 = self.pos
           while true # sequence
-            _tmp = apply(:_BlankLine)
+            _tmp = _BlankLine()
             n = @result
             unless _tmp
               self.pos = _save9
@@ -1746,7 +1704,7 @@ class RDoc::Markdown
                   break
                 end
                 _save15 = self.pos
-                _tmp = apply(:_BlankLine)
+                _tmp = _BlankLine()
                 _tmp = _tmp ? nil : true
                 self.pos = _save15
                 unless _tmp
@@ -1778,7 +1736,7 @@ class RDoc::Markdown
 
               _save17 = self.pos
               while true # sequence
-                _tmp = apply(:_BlankLine)
+                _tmp = _BlankLine()
                 n = @result
                 unless _tmp
                   self.pos = _save17
@@ -1823,13 +1781,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # NonblankIndentedLine = !BlankLine IndentedLine
+  # NonblankIndentedLine = !@BlankLine IndentedLine
   def _NonblankIndentedLine
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -1847,14 +1805,14 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # VerbatimChunk = BlankLine*:a NonblankIndentedLine+:b { a.concat b }
+  # VerbatimChunk = @BlankLine*:a NonblankIndentedLine+:b { a.concat b }
   def _VerbatimChunk
 
     _save = self.pos
     while true # sequence
       _ary = []
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         _ary << @result if _tmp
         break unless _tmp
       end
@@ -1934,12 +1892,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # HorizontalRule = NonindentSpace ("*" Sp "*" Sp "*" (Sp "*")* | "-" Sp "-" Sp "-" (Sp "-")* | "_" Sp "_" Sp "_" (Sp "_")*) Sp Newline BlankLine+ { RDoc::Markup::Rule.new 1 }
+  # HorizontalRule = @NonindentSpace ("*" @Sp "*" @Sp "*" (@Sp "*")* | "-" @Sp "-" @Sp "-" (@Sp "-")* | "_" @Sp "_" @Sp "_" (@Sp "_")*) @Sp @Newline @BlankLine+ { RDoc::Markup::Rule.new 1 }
   def _HorizontalRule
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -1955,7 +1913,7 @@ class RDoc::Markdown
             self.pos = _save2
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save2
             break
@@ -1965,7 +1923,7 @@ class RDoc::Markdown
             self.pos = _save2
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save2
             break
@@ -1979,7 +1937,7 @@ class RDoc::Markdown
 
             _save4 = self.pos
             while true # sequence
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save4
                 break
@@ -2010,7 +1968,7 @@ class RDoc::Markdown
             self.pos = _save5
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save5
             break
@@ -2020,7 +1978,7 @@ class RDoc::Markdown
             self.pos = _save5
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save5
             break
@@ -2034,7 +1992,7 @@ class RDoc::Markdown
 
             _save7 = self.pos
             while true # sequence
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save7
                 break
@@ -2065,7 +2023,7 @@ class RDoc::Markdown
             self.pos = _save8
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save8
             break
@@ -2075,7 +2033,7 @@ class RDoc::Markdown
             self.pos = _save8
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save8
             break
@@ -2089,7 +2047,7 @@ class RDoc::Markdown
 
             _save10 = self.pos
             while true # sequence
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save10
                 break
@@ -2119,21 +2077,21 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
       end
       _save11 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -2156,7 +2114,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Bullet = !HorizontalRule NonindentSpace ("+" | "*" | "-") Spacechar+
+  # Bullet = !HorizontalRule @NonindentSpace /[+*-]/ @Spacechar+
   def _Bullet
 
     _save = self.pos
@@ -2169,40 +2127,26 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
       end
-
+      _tmp = scan(/\A(?-mix:[+*-])/)
+      unless _tmp
+        self.pos = _save
+        break
+      end
       _save2 = self.pos
-      while true # choice
-        _tmp = match_string("+")
-        break if _tmp
-        self.pos = _save2
-        _tmp = match_string("*")
-        break if _tmp
-        self.pos = _save2
-        _tmp = match_string("-")
-        break if _tmp
-        self.pos = _save2
-        break
-      end # end choice
-
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save3 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       if _tmp
         while true
-          _tmp = apply(:_Spacechar)
+          _tmp = _Spacechar()
           break unless _tmp
         end
         _tmp = true
       else
-        self.pos = _save3
+        self.pos = _save2
       end
       unless _tmp
         self.pos = _save
@@ -2255,7 +2199,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListTight = ListItemTight+:a BlankLine* !(Bullet | Enumerator) { a }
+  # ListTight = ListItemTight+:a @BlankLine* !(Bullet | Enumerator) { a }
   def _ListTight
 
     _save = self.pos
@@ -2281,7 +2225,7 @@ class RDoc::Markdown
         break
       end
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         break unless _tmp
       end
       _tmp = true
@@ -2320,12 +2264,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListLoose = StartList:a (ListItem:b BlankLine* { a << b })+ { a }
+  # ListLoose = @StartList:a (ListItem:b @BlankLine* { a << b })+ { a }
   def _ListLoose
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -2342,7 +2286,7 @@ class RDoc::Markdown
           break
         end
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -2370,7 +2314,7 @@ class RDoc::Markdown
               break
             end
             while true
-              _tmp = apply(:_BlankLine)
+              _tmp = _BlankLine()
               break unless _tmp
             end
             _tmp = true
@@ -2408,7 +2352,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListItem = (Bullet | Enumerator) StartList:a ListBlock:b { a << b } (ListContinuationBlock:c { a.push(*c) })* { list_item_from a }
+  # ListItem = (Bullet | Enumerator) @StartList:a ListBlock:b { a << b } (ListContinuationBlock:c { a.push(*c) })* { list_item_from a }
   def _ListItem
 
     _save = self.pos
@@ -2429,7 +2373,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -2484,7 +2428,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListItemTight = (Bullet | Enumerator) ListBlock:a (!BlankLine ListContinuationBlock:b { a.push(*b) })* !ListContinuationBlock { list_item_from a }
+  # ListItemTight = (Bullet | Enumerator) ListBlock:a (!@BlankLine ListContinuationBlock:b { a.push(*b) })* !ListContinuationBlock { list_item_from a }
   def _ListItemTight
 
     _save = self.pos
@@ -2516,7 +2460,7 @@ class RDoc::Markdown
         _save3 = self.pos
         while true # sequence
           _save4 = self.pos
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           _tmp = _tmp ? nil : true
           self.pos = _save4
           unless _tmp
@@ -2564,13 +2508,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListBlock = !BlankLine Line:a ListBlockLine*:c { [a, *c] }
+  # ListBlock = !@BlankLine Line:a ListBlockLine*:c { [a, *c] }
   def _ListBlock
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -2608,19 +2552,19 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListContinuationBlock = StartList:a BlankLine* { a << "\n" } (Indent ListBlock:b { a.concat b })+ { a }
+  # ListContinuationBlock = @StartList:a @BlankLine* { a << "\n" } (Indent ListBlock:b { a.concat b })+ { a }
   def _ListContinuationBlock
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         break unless _tmp
       end
       _tmp = true
@@ -2703,12 +2647,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Enumerator = NonindentSpace [0-9]+ "." Spacechar+
+  # Enumerator = @NonindentSpace [0-9]+ "." @Spacechar+
   def _Enumerator
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -2748,10 +2692,10 @@ class RDoc::Markdown
         break
       end
       _save4 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       if _tmp
         while true
-          _tmp = apply(:_Spacechar)
+          _tmp = _Spacechar()
           break unless _tmp
         end
         _tmp = true
@@ -2809,13 +2753,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ListBlockLine = !BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine
+  # ListBlockLine = !@BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine
   def _ListBlockLine
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -8457,7 +8401,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # HtmlBlock = < (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }
+  # HtmlBlock = < (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > @BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }
   def _HtmlBlock
 
     _save = self.pos
@@ -8489,10 +8433,10 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -9017,7 +8961,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # StyleBlock = < InStyleTags > BlankLine* { if css? then                     RDoc::Markup::Raw.new text                   end }
+  # StyleBlock = < InStyleTags > @BlankLine* { if css? then                     RDoc::Markup::Raw.new text                   end }
   def _StyleBlock
 
     _save = self.pos
@@ -9032,7 +8976,7 @@ class RDoc::Markdown
         break
       end
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         break unless _tmp
       end
       _tmp = true
@@ -9054,7 +8998,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Inlines = (!Endline Inline:i { i } | Endline:c &Inline { c })+:chunks Endline? { chunks }
+  # Inlines = (!@Endline Inline:i { i } | @Endline:c &Inline { c })+:chunks @Endline? { chunks }
   def _Inlines
 
     _save = self.pos
@@ -9068,7 +9012,7 @@ class RDoc::Markdown
         _save3 = self.pos
         while true # sequence
           _save4 = self.pos
-          _tmp = apply(:_Endline)
+          _tmp = _Endline()
           _tmp = _tmp ? nil : true
           self.pos = _save4
           unless _tmp
@@ -9094,7 +9038,7 @@ class RDoc::Markdown
 
         _save5 = self.pos
         while true # sequence
-          _tmp = apply(:_Endline)
+          _tmp = _Endline()
           c = @result
           unless _tmp
             self.pos = _save5
@@ -9130,7 +9074,7 @@ class RDoc::Markdown
             _save8 = self.pos
             while true # sequence
               _save9 = self.pos
-              _tmp = apply(:_Endline)
+              _tmp = _Endline()
               _tmp = _tmp ? nil : true
               self.pos = _save9
               unless _tmp
@@ -9156,7 +9100,7 @@ class RDoc::Markdown
 
             _save10 = self.pos
             while true # sequence
-              _tmp = apply(:_Endline)
+              _tmp = _Endline()
               c = @result
               unless _tmp
                 self.pos = _save10
@@ -9196,7 +9140,7 @@ class RDoc::Markdown
         break
       end
       _save12 = self.pos
-      _tmp = apply(:_Endline)
+      _tmp = _Endline()
       unless _tmp
         _tmp = true
         self.pos = _save12
@@ -9217,7 +9161,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Inline = (Str | Endline | UlOrStarLine | Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)
+  # Inline = (Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)
   def _Inline
 
     _save = self.pos
@@ -9225,13 +9169,13 @@ class RDoc::Markdown
       _tmp = apply(:_Str)
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_Endline)
+      _tmp = _Endline()
       break if _tmp
       self.pos = _save
       _tmp = apply(:_UlOrStarLine)
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_Space)
+      _tmp = _Space()
       break if _tmp
       self.pos = _save
       _tmp = apply(:_Strong)
@@ -9274,16 +9218,16 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Space = Spacechar+ { " " }
+  # Space = @Spacechar+ { " " }
   def _Space
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       if _tmp
         while true
-          _tmp = apply(:_Spacechar)
+          _tmp = _Spacechar()
           break unless _tmp
         end
         _tmp = true
@@ -9306,12 +9250,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Str = StartList:a < NormalChar+ > { a = text } (StrChunk:c { a << c })* { a }
+  # Str = @StartList:a < @NormalChar+ > { a = text } (StrChunk:c { a << c })* { a }
   def _Str
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -9319,10 +9263,10 @@ class RDoc::Markdown
       end
       _text_start = self.pos
       _save1 = self.pos
-      _tmp = apply(:_NormalChar)
+      _tmp = _NormalChar()
       if _tmp
         while true
-          _tmp = apply(:_NormalChar)
+          _tmp = _NormalChar()
           break unless _tmp
         end
         _tmp = true
@@ -9379,7 +9323,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # StrChunk = < (NormalChar | "_"+ &Alphanumeric)+ > { text }
+  # StrChunk = < (@NormalChar | /_+/ &Alphanumeric)+ > { text }
   def _StrChunk
 
     _save = self.pos
@@ -9389,30 +9333,20 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # choice
-        _tmp = apply(:_NormalChar)
+        _tmp = _NormalChar()
         break if _tmp
         self.pos = _save2
 
         _save3 = self.pos
         while true # sequence
-          _save4 = self.pos
-          _tmp = match_string("_")
-          if _tmp
-            while true
-              _tmp = match_string("_")
-              break unless _tmp
-            end
-            _tmp = true
-          else
-            self.pos = _save4
-          end
+          _tmp = scan(/\A(?-mix:_+)/)
           unless _tmp
             self.pos = _save3
             break
           end
-          _save5 = self.pos
+          _save4 = self.pos
           _tmp = apply(:_Alphanumeric)
-          self.pos = _save5
+          self.pos = _save4
           unless _tmp
             self.pos = _save3
           end
@@ -9427,40 +9361,30 @@ class RDoc::Markdown
       if _tmp
         while true
 
-          _save6 = self.pos
+          _save5 = self.pos
           while true # choice
-            _tmp = apply(:_NormalChar)
+            _tmp = _NormalChar()
             break if _tmp
-            self.pos = _save6
+            self.pos = _save5
 
-            _save7 = self.pos
+            _save6 = self.pos
             while true # sequence
-              _save8 = self.pos
-              _tmp = match_string("_")
-              if _tmp
-                while true
-                  _tmp = match_string("_")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save8
-              end
+              _tmp = scan(/\A(?-mix:_+)/)
               unless _tmp
-                self.pos = _save7
+                self.pos = _save6
                 break
               end
-              _save9 = self.pos
+              _save7 = self.pos
               _tmp = apply(:_Alphanumeric)
-              self.pos = _save9
+              self.pos = _save7
               unless _tmp
-                self.pos = _save7
+                self.pos = _save6
               end
               break
             end # end sequence
 
             break if _tmp
-            self.pos = _save6
+            self.pos = _save5
             break
           end # end choice
 
@@ -9489,7 +9413,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # EscapedChar = "\\" !Newline < /[:\\`|*_{}\[\]()#+.!><-]/ > { text }
+  # EscapedChar = "\\" !@Newline < /[:\\`|*_{}\[\]()#+.!><-]/ > { text }
   def _EscapedChar
 
     _save = self.pos
@@ -9500,7 +9424,7 @@ class RDoc::Markdown
         break
       end
       _save1 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -9565,18 +9489,18 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Endline = (LineBreak | TerminalEndline | NormalEndline)
+  # Endline = (@LineBreak | @TerminalEndline | @NormalEndline)
   def _Endline
 
     _save = self.pos
     while true # choice
-      _tmp = apply(:_LineBreak)
+      _tmp = _LineBreak()
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_TerminalEndline)
+      _tmp = _TerminalEndline()
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_NormalEndline)
+      _tmp = _NormalEndline()
       break if _tmp
       self.pos = _save
       break
@@ -9586,23 +9510,23 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # NormalEndline = Sp Newline !BlankLine !">" !AtxStart !(Line ("===" "="* | "---" "-"*) Newline) { "\n" }
+  # NormalEndline = @Sp @Newline !@BlankLine !">" !AtxStart !(Line /={3,}|-{3,}=/ @Newline) { "\n" }
   def _NormalEndline
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
       end
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -9634,59 +9558,12 @@ class RDoc::Markdown
           self.pos = _save5
           break
         end
-
-        _save6 = self.pos
-        while true # choice
-
-          _save7 = self.pos
-          while true # sequence
-            _tmp = match_string("===")
-            unless _tmp
-              self.pos = _save7
-              break
-            end
-            while true
-              _tmp = match_string("=")
-              break unless _tmp
-            end
-            _tmp = true
-            unless _tmp
-              self.pos = _save7
-            end
-            break
-          end # end sequence
-
-          break if _tmp
-          self.pos = _save6
-
-          _save9 = self.pos
-          while true # sequence
-            _tmp = match_string("---")
-            unless _tmp
-              self.pos = _save9
-              break
-            end
-            while true
-              _tmp = match_string("-")
-              break unless _tmp
-            end
-            _tmp = true
-            unless _tmp
-              self.pos = _save9
-            end
-            break
-          end # end sequence
-
-          break if _tmp
-          self.pos = _save6
-          break
-        end # end choice
-
+        _tmp = scan(/\A(?-mix:={3,}|-{3,}=)/)
         unless _tmp
           self.pos = _save5
           break
         end
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         unless _tmp
           self.pos = _save5
         end
@@ -9711,22 +9588,22 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TerminalEndline = Sp Newline Eof
+  # TerminalEndline = @Sp @Newline @Eof
   def _TerminalEndline
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Eof)
+      _tmp = _Eof()
       unless _tmp
         self.pos = _save
       end
@@ -9737,7 +9614,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # LineBreak = "  " NormalEndline { RDoc::Markup::HardBreak.new }
+  # LineBreak = "  " @NormalEndline { RDoc::Markup::HardBreak.new }
   def _LineBreak
 
     _save = self.pos
@@ -9747,7 +9624,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_NormalEndline)
+      _tmp = _NormalEndline()
       unless _tmp
         self.pos = _save
         break
@@ -9764,13 +9641,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Symbol = < SpecialChar > { text }
+  # Symbol = < @SpecialChar > { text }
   def _Symbol
 
     _save = self.pos
     while true # sequence
       _text_start = self.pos
-      _tmp = apply(:_SpecialChar)
+      _tmp = _SpecialChar()
       if _tmp
         text = get_text(_text_start)
       end
@@ -9824,7 +9701,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # StarLine = (< "****" "*"* > { text } | < Spacechar "*"+ &Spacechar > { text })
+  # StarLine = (< /\*{4,}/ > { text } | < @Spacechar /\*+/ &@Spacechar > { text })
   def _StarLine
 
     _save = self.pos
@@ -9833,25 +9710,7 @@ class RDoc::Markdown
       _save1 = self.pos
       while true # sequence
         _text_start = self.pos
-
-        _save2 = self.pos
-        while true # sequence
-          _tmp = match_string("****")
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          while true
-            _tmp = match_string("*")
-            break unless _tmp
-          end
-          _tmp = true
-          unless _tmp
-            self.pos = _save2
-          end
-          break
-        end # end sequence
-
+        _tmp = scan(/\A(?-mix:\*{4,})/)
         if _tmp
           text = get_text(_text_start)
         end
@@ -9870,37 +9729,27 @@ class RDoc::Markdown
       break if _tmp
       self.pos = _save
 
-      _save4 = self.pos
+      _save2 = self.pos
       while true # sequence
         _text_start = self.pos
 
-        _save5 = self.pos
+        _save3 = self.pos
         while true # sequence
-          _tmp = apply(:_Spacechar)
+          _tmp = _Spacechar()
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
             break
           end
-          _save6 = self.pos
-          _tmp = match_string("*")
-          if _tmp
-            while true
-              _tmp = match_string("*")
-              break unless _tmp
-            end
-            _tmp = true
-          else
-            self.pos = _save6
-          end
+          _tmp = scan(/\A(?-mix:\*+)/)
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
             break
           end
-          _save7 = self.pos
-          _tmp = apply(:_Spacechar)
-          self.pos = _save7
+          _save4 = self.pos
+          _tmp = _Spacechar()
+          self.pos = _save4
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
           end
           break
         end # end sequence
@@ -9909,13 +9758,13 @@ class RDoc::Markdown
           text = get_text(_text_start)
         end
         unless _tmp
-          self.pos = _save4
+          self.pos = _save2
           break
         end
         @result = begin;  text ; end
         _tmp = true
         unless _tmp
-          self.pos = _save4
+          self.pos = _save2
         end
         break
       end # end sequence
@@ -9929,7 +9778,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # UlLine = (< "____" "_"* > { text } | < Spacechar "_"+ &Spacechar > { text })
+  # UlLine = (< /_{4,}/ > { text } | < @Spacechar /_+/ &@Spacechar > { text })
   def _UlLine
 
     _save = self.pos
@@ -9938,25 +9787,7 @@ class RDoc::Markdown
       _save1 = self.pos
       while true # sequence
         _text_start = self.pos
-
-        _save2 = self.pos
-        while true # sequence
-          _tmp = match_string("____")
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          while true
-            _tmp = match_string("_")
-            break unless _tmp
-          end
-          _tmp = true
-          unless _tmp
-            self.pos = _save2
-          end
-          break
-        end # end sequence
-
+        _tmp = scan(/\A(?-mix:_{4,})/)
         if _tmp
           text = get_text(_text_start)
         end
@@ -9975,37 +9806,27 @@ class RDoc::Markdown
       break if _tmp
       self.pos = _save
 
-      _save4 = self.pos
+      _save2 = self.pos
       while true # sequence
         _text_start = self.pos
 
-        _save5 = self.pos
+        _save3 = self.pos
         while true # sequence
-          _tmp = apply(:_Spacechar)
+          _tmp = _Spacechar()
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
             break
           end
-          _save6 = self.pos
-          _tmp = match_string("_")
-          if _tmp
-            while true
-              _tmp = match_string("_")
-              break unless _tmp
-            end
-            _tmp = true
-          else
-            self.pos = _save6
-          end
+          _tmp = scan(/\A(?-mix:_+)/)
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
             break
           end
-          _save7 = self.pos
-          _tmp = apply(:_Spacechar)
-          self.pos = _save7
+          _save4 = self.pos
+          _tmp = _Spacechar()
+          self.pos = _save4
           unless _tmp
-            self.pos = _save5
+            self.pos = _save3
           end
           break
         end # end sequence
@@ -10014,13 +9835,13 @@ class RDoc::Markdown
           text = get_text(_text_start)
         end
         unless _tmp
-          self.pos = _save4
+          self.pos = _save2
           break
         end
         @result = begin;  text ; end
         _tmp = true
         unless _tmp
-          self.pos = _save4
+          self.pos = _save2
         end
         break
       end # end sequence
@@ -10052,7 +9873,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneStarOpen = !StarLine "*" !Spacechar !Newline
+  # OneStarOpen = !StarLine "*" !@Spacechar !@Newline
   def _OneStarOpen
 
     _save = self.pos
@@ -10071,7 +9892,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10079,7 +9900,7 @@ class RDoc::Markdown
         break
       end
       _save3 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save3
       unless _tmp
@@ -10092,13 +9913,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneStarClose = !Spacechar !Newline Inline:a "*" { a }
+  # OneStarClose = !@Spacechar !@Newline Inline:a "*" { a }
   def _OneStarClose
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -10106,7 +9927,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10136,7 +9957,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # EmphStar = OneStarOpen StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }
+  # EmphStar = OneStarOpen @StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }
   def _EmphStar
 
     _save = self.pos
@@ -10146,7 +9967,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -10209,7 +10030,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneUlOpen = !UlLine "_" !Spacechar !Newline
+  # OneUlOpen = !UlLine "_" !@Spacechar !@Newline
   def _OneUlOpen
 
     _save = self.pos
@@ -10228,7 +10049,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10236,7 +10057,7 @@ class RDoc::Markdown
         break
       end
       _save3 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save3
       unless _tmp
@@ -10249,13 +10070,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneUlClose = !Spacechar !Newline Inline:a "_" { a }
+  # OneUlClose = !@Spacechar !@Newline Inline:a "_" { a }
   def _OneUlClose
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -10263,7 +10084,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10293,7 +10114,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # EmphUl = OneUlOpen StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }
+  # EmphUl = OneUlOpen @StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }
   def _EmphUl
 
     _save = self.pos
@@ -10303,7 +10124,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -10384,7 +10205,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoStarOpen = !StarLine "**" !Spacechar !Newline
+  # TwoStarOpen = !StarLine "**" !@Spacechar !@Newline
   def _TwoStarOpen
 
     _save = self.pos
@@ -10403,7 +10224,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10411,7 +10232,7 @@ class RDoc::Markdown
         break
       end
       _save3 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save3
       unless _tmp
@@ -10424,13 +10245,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoStarClose = !Spacechar !Newline Inline:a "**" { a }
+  # TwoStarClose = !@Spacechar !@Newline Inline:a "**" { a }
   def _TwoStarClose
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -10438,7 +10259,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10468,7 +10289,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # StrongStar = TwoStarOpen StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }
+  # StrongStar = TwoStarOpen @StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }
   def _StrongStar
 
     _save = self.pos
@@ -10478,7 +10299,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -10541,7 +10362,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoUlOpen = !UlLine "__" !Spacechar !Newline
+  # TwoUlOpen = !UlLine "__" !@Spacechar !@Newline
   def _TwoUlOpen
 
     _save = self.pos
@@ -10560,7 +10381,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10568,7 +10389,7 @@ class RDoc::Markdown
         break
       end
       _save3 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save3
       unless _tmp
@@ -10581,13 +10402,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoUlClose = !Spacechar !Newline Inline:a "__" { a }
+  # TwoUlClose = !@Spacechar !@Newline Inline:a "__" { a }
   def _TwoUlClose
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -10595,7 +10416,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -10625,7 +10446,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # StrongUl = TwoUlOpen StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }
+  # StrongUl = TwoUlOpen @StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }
   def _StrongUl
 
     _save = self.pos
@@ -10635,7 +10456,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -10698,7 +10519,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Image = "!" (ExplicitLink | ReferenceLink):a { a }
+  # Image = "!" (ExplicitLink | ReferenceLink):a { "rdoc-image:#{a[/\[(.*)\]/, 1]}" }
   def _Image
 
     _save = self.pos
@@ -10725,7 +10546,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  a ; end
+      @result = begin;  "rdoc-image:#{a[/\[(.*)\]/, 1]}" ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -10873,7 +10694,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ExplicitLink = Label:l Spnl "(" Sp Source:s Spnl Title Sp ")" { "{#{l}}[#{s}]" }
+  # ExplicitLink = Label:l Spnl "(" @Sp Source:s Spnl Title @Sp ")" { "{#{l}}[#{s}]" }
   def _ExplicitLink
 
     _save = self.pos
@@ -10894,7 +10715,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
@@ -10915,7 +10736,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
@@ -11162,7 +10983,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TitleSingle = "'" (!("'" Sp (")" | Newline)) .)* "'"
+  # TitleSingle = "'" (!("'" @Sp (")" | @Newline)) .)* "'"
   def _TitleSingle
 
     _save = self.pos
@@ -11185,7 +11006,7 @@ class RDoc::Markdown
               self.pos = _save4
               break
             end
-            _tmp = apply(:_Sp)
+            _tmp = _Sp()
             unless _tmp
               self.pos = _save4
               break
@@ -11196,7 +11017,7 @@ class RDoc::Markdown
               _tmp = match_string(")")
               break if _tmp
               self.pos = _save5
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               break if _tmp
               self.pos = _save5
               break
@@ -11239,7 +11060,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TitleDouble = "\"" (!("\"" Sp (")" | Newline)) .)* "\""
+  # TitleDouble = "\"" (!("\"" @Sp (")" | @Newline)) .)* "\""
   def _TitleDouble
 
     _save = self.pos
@@ -11262,7 +11083,7 @@ class RDoc::Markdown
               self.pos = _save4
               break
             end
-            _tmp = apply(:_Sp)
+            _tmp = _Sp()
             unless _tmp
               self.pos = _save4
               break
@@ -11273,7 +11094,7 @@ class RDoc::Markdown
               _tmp = match_string(")")
               break if _tmp
               self.pos = _save5
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               break if _tmp
               self.pos = _save5
               break
@@ -11334,7 +11155,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AutoLinkUrl = "<" < /[A-Za-z]+/ "://" (!Newline !">" .)+ > ">" { text }
+  # AutoLinkUrl = "<" < /[A-Za-z]+/ "://" (!@Newline !">" .)+ > ">" { text }
   def _AutoLinkUrl
 
     _save = self.pos
@@ -11363,7 +11184,7 @@ class RDoc::Markdown
         _save3 = self.pos
         while true # sequence
           _save4 = self.pos
-          _tmp = apply(:_Newline)
+          _tmp = _Newline()
           _tmp = _tmp ? nil : true
           self.pos = _save4
           unless _tmp
@@ -11391,7 +11212,7 @@ class RDoc::Markdown
             _save6 = self.pos
             while true # sequence
               _save7 = self.pos
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               _tmp = _tmp ? nil : true
               self.pos = _save7
               unless _tmp
@@ -11449,7 +11270,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AutoLinkEmail = "<" "mailto:"? < /[\w+.\/!%~$-]+/i "@" (!Newline !">" .)+ > ">" { "mailto:#{text}" }
+  # AutoLinkEmail = "<" "mailto:"? < /[\w+.\/!%~$-]+/i "@" (!@Newline !">" .)+ > ">" { "mailto:#{text}" }
   def _AutoLinkEmail
 
     _save = self.pos
@@ -11488,7 +11309,7 @@ class RDoc::Markdown
         _save4 = self.pos
         while true # sequence
           _save5 = self.pos
-          _tmp = apply(:_Newline)
+          _tmp = _Newline()
           _tmp = _tmp ? nil : true
           self.pos = _save5
           unless _tmp
@@ -11516,7 +11337,7 @@ class RDoc::Markdown
             _save7 = self.pos
             while true # sequence
               _save8 = self.pos
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               _tmp = _tmp ? nil : true
               self.pos = _save8
               unless _tmp
@@ -11574,12 +11395,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Reference = NonindentSpace !"[]" Label:label ":" Spnl RefSrc:link RefTitle BlankLine+ { # TODO use title               reference label, link               nil             }
+  # Reference = @NonindentSpace !"[]" Label:label ":" Spnl RefSrc:link RefTitle @BlankLine+ { # TODO use title               reference label, link               nil             }
   def _Reference
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -11620,10 +11441,10 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -11649,7 +11470,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Label = "[" (!"^" &{ notes? } | &. &{ !notes? }) StartList:a (!"]" Inline:l { a << l })* "]" { a.join.gsub(/\s+/, ' ') }
+  # Label = "[" (!"^" &{ notes? } | &. &{ !notes? }) @StartList:a (!"]" Inline:l { a << l })* "]" { a.join.gsub(/\s+/, ' ') }
   def _Label
 
     _save = self.pos
@@ -11712,7 +11533,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -11835,7 +11656,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RefTitleSingle = Spnl "'" < (!("'" Sp Newline | Newline) .)* > "'" { text }
+  # RefTitleSingle = Spnl "'" < (!("'" @Sp @Newline | @Newline) .)* > "'" { text }
   def _RefTitleSingle
 
     _save = self.pos
@@ -11867,12 +11688,12 @@ class RDoc::Markdown
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               unless _tmp
                 self.pos = _save5
               end
@@ -11881,7 +11702,7 @@ class RDoc::Markdown
 
             break if _tmp
             self.pos = _save4
-            _tmp = apply(:_Newline)
+            _tmp = _Newline()
             break if _tmp
             self.pos = _save4
             break
@@ -11927,7 +11748,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RefTitleDouble = Spnl "\"" < (!("\"" Sp Newline | Newline) .)* > "\"" { text }
+  # RefTitleDouble = Spnl "\"" < (!("\"" @Sp @Newline | @Newline) .)* > "\"" { text }
   def _RefTitleDouble
 
     _save = self.pos
@@ -11959,12 +11780,12 @@ class RDoc::Markdown
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               unless _tmp
                 self.pos = _save5
               end
@@ -11973,7 +11794,7 @@ class RDoc::Markdown
 
             break if _tmp
             self.pos = _save4
-            _tmp = apply(:_Newline)
+            _tmp = _Newline()
             break if _tmp
             self.pos = _save4
             break
@@ -12019,7 +11840,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RefTitleParens = Spnl "(" < (!(")" Sp Newline | Newline) .)* > ")" { text }
+  # RefTitleParens = Spnl "(" < (!(")" @Sp @Newline | @Newline) .)* > ")" { text }
   def _RefTitleParens
 
     _save = self.pos
@@ -12051,12 +11872,12 @@ class RDoc::Markdown
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Sp)
+              _tmp = _Sp()
               unless _tmp
                 self.pos = _save5
                 break
               end
-              _tmp = apply(:_Newline)
+              _tmp = _Newline()
               unless _tmp
                 self.pos = _save5
               end
@@ -12065,7 +11886,7 @@ class RDoc::Markdown
 
             break if _tmp
             self.pos = _save4
-            _tmp = apply(:_Newline)
+            _tmp = _Newline()
             break if _tmp
             self.pos = _save4
             break
@@ -12253,7 +12074,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Code = (Ticks1 Sp < ((!"`" Nonspacechar)+ | !Ticks1 "`"+ | !(Sp Ticks1) (Spacechar | Newline !BlankLine))+ > Sp Ticks1 | Ticks2 Sp < ((!"`" Nonspacechar)+ | !Ticks2 "`"+ | !(Sp Ticks2) (Spacechar | Newline !BlankLine))+ > Sp Ticks2 | Ticks3 Sp < ((!"`" Nonspacechar)+ | !Ticks3 "`"+ | !(Sp Ticks3) (Spacechar | Newline !BlankLine))+ > Sp Ticks3 | Ticks4 Sp < ((!"`" Nonspacechar)+ | !Ticks4 "`"+ | !(Sp Ticks4) (Spacechar | Newline !BlankLine))+ > Sp Ticks4 | Ticks5 Sp < ((!"`" Nonspacechar)+ | !Ticks5 "`"+ | !(Sp Ticks5) (Spacechar | Newline !BlankLine))+ > Sp Ticks5) { "<code>#{text}</code>" }
+  # Code = (Ticks1 @Sp < ((!"`" Nonspacechar)+ | !Ticks1 /`+/ | !(@Sp Ticks1) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks1 | Ticks2 @Sp < ((!"`" Nonspacechar)+ | !Ticks2 /`+/ | !(@Sp Ticks2) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks2 | Ticks3 @Sp < ((!"`" Nonspacechar)+ | !Ticks3 /`+/ | !(@Sp Ticks3) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks3 | Ticks4 @Sp < ((!"`" Nonspacechar)+ | !Ticks4 /`+/ | !(@Sp Ticks4) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks4 | Ticks5 @Sp < ((!"`" Nonspacechar)+ | !Ticks5 /`+/ | !(@Sp Ticks5) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks5) { "<code>#{text}</code>" }
   def _Code
 
     _save = self.pos
@@ -12269,7 +12090,7 @@ class RDoc::Markdown
             self.pos = _save2
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save2
             break
@@ -12337,17 +12158,7 @@ class RDoc::Markdown
                 self.pos = _save10
                 break
               end
-              _save12 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save12
-              end
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save10
               end
@@ -12357,61 +12168,61 @@ class RDoc::Markdown
             break if _tmp
             self.pos = _save4
 
-            _save13 = self.pos
+            _save12 = self.pos
             while true # sequence
-              _save14 = self.pos
+              _save13 = self.pos
 
-              _save15 = self.pos
+              _save14 = self.pos
               while true # sequence
-                _tmp = apply(:_Sp)
+                _tmp = _Sp()
                 unless _tmp
-                  self.pos = _save15
+                  self.pos = _save14
                   break
                 end
                 _tmp = apply(:_Ticks1)
                 unless _tmp
-                  self.pos = _save15
+                  self.pos = _save14
                 end
                 break
               end # end sequence
 
               _tmp = _tmp ? nil : true
-              self.pos = _save14
+              self.pos = _save13
               unless _tmp
-                self.pos = _save13
+                self.pos = _save12
                 break
               end
 
-              _save16 = self.pos
+              _save15 = self.pos
               while true # choice
-                _tmp = apply(:_Spacechar)
+                _tmp = _Spacechar()
                 break if _tmp
-                self.pos = _save16
+                self.pos = _save15
 
-                _save17 = self.pos
+                _save16 = self.pos
                 while true # sequence
-                  _tmp = apply(:_Newline)
+                  _tmp = _Newline()
                   unless _tmp
-                    self.pos = _save17
+                    self.pos = _save16
                     break
                   end
-                  _save18 = self.pos
-                  _tmp = apply(:_BlankLine)
+                  _save17 = self.pos
+                  _tmp = _BlankLine()
                   _tmp = _tmp ? nil : true
-                  self.pos = _save18
+                  self.pos = _save17
                   unless _tmp
-                    self.pos = _save17
+                    self.pos = _save16
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save16
+                self.pos = _save15
                 break
               end # end choice
 
               unless _tmp
-                self.pos = _save13
+                self.pos = _save12
               end
               break
             end # end sequence
@@ -12424,23 +12235,23 @@ class RDoc::Markdown
           if _tmp
             while true
 
-              _save19 = self.pos
+              _save18 = self.pos
               while true # choice
-                _save20 = self.pos
+                _save19 = self.pos
 
-                _save21 = self.pos
+                _save20 = self.pos
                 while true # sequence
-                  _save22 = self.pos
+                  _save21 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save22
+                  self.pos = _save21
                   unless _tmp
-                    self.pos = _save21
+                    self.pos = _save20
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save21
+                    self.pos = _save20
                   end
                   break
                 end # end sequence
@@ -12448,19 +12259,19 @@ class RDoc::Markdown
                 if _tmp
                   while true
 
-                    _save23 = self.pos
+                    _save22 = self.pos
                     while true # sequence
-                      _save24 = self.pos
+                      _save23 = self.pos
                       _tmp = match_string("`")
                       _tmp = _tmp ? nil : true
-                      self.pos = _save24
+                      self.pos = _save23
                       unless _tmp
-                        self.pos = _save23
+                        self.pos = _save22
                         break
                       end
                       _tmp = apply(:_Nonspacechar)
                       unless _tmp
-                        self.pos = _save23
+                        self.pos = _save22
                       end
                       break
                     end # end sequence
@@ -12469,102 +12280,92 @@ class RDoc::Markdown
                   end
                   _tmp = true
                 else
-                  self.pos = _save20
+                  self.pos = _save19
                 end
                 break if _tmp
-                self.pos = _save19
+                self.pos = _save18
 
-                _save25 = self.pos
+                _save24 = self.pos
                 while true # sequence
-                  _save26 = self.pos
+                  _save25 = self.pos
                   _tmp = apply(:_Ticks1)
                   _tmp = _tmp ? nil : true
-                  self.pos = _save26
+                  self.pos = _save25
                   unless _tmp
-                    self.pos = _save25
+                    self.pos = _save24
                     break
                   end
-                  _save27 = self.pos
-                  _tmp = match_string("`")
-                  if _tmp
-                    while true
-                      _tmp = match_string("`")
-                      break unless _tmp
-                    end
-                    _tmp = true
-                  else
-                    self.pos = _save27
-                  end
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
-                    self.pos = _save25
+                    self.pos = _save24
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save19
+                self.pos = _save18
 
-                _save28 = self.pos
+                _save26 = self.pos
                 while true # sequence
-                  _save29 = self.pos
+                  _save27 = self.pos
 
-                  _save30 = self.pos
+                  _save28 = self.pos
                   while true # sequence
-                    _tmp = apply(:_Sp)
+                    _tmp = _Sp()
                     unless _tmp
-                      self.pos = _save30
+                      self.pos = _save28
                       break
                     end
                     _tmp = apply(:_Ticks1)
                     unless _tmp
-                      self.pos = _save30
+                      self.pos = _save28
                     end
                     break
                   end # end sequence
 
                   _tmp = _tmp ? nil : true
-                  self.pos = _save29
+                  self.pos = _save27
                   unless _tmp
-                    self.pos = _save28
+                    self.pos = _save26
                     break
                   end
 
-                  _save31 = self.pos
+                  _save29 = self.pos
                   while true # choice
-                    _tmp = apply(:_Spacechar)
+                    _tmp = _Spacechar()
                     break if _tmp
-                    self.pos = _save31
+                    self.pos = _save29
 
-                    _save32 = self.pos
+                    _save30 = self.pos
                     while true # sequence
-                      _tmp = apply(:_Newline)
+                      _tmp = _Newline()
                       unless _tmp
-                        self.pos = _save32
+                        self.pos = _save30
                         break
                       end
-                      _save33 = self.pos
-                      _tmp = apply(:_BlankLine)
+                      _save31 = self.pos
+                      _tmp = _BlankLine()
                       _tmp = _tmp ? nil : true
-                      self.pos = _save33
+                      self.pos = _save31
                       unless _tmp
-                        self.pos = _save32
+                        self.pos = _save30
                       end
                       break
                     end # end sequence
 
                     break if _tmp
-                    self.pos = _save31
+                    self.pos = _save29
                     break
                   end # end choice
 
                   unless _tmp
-                    self.pos = _save28
+                    self.pos = _save26
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save19
+                self.pos = _save18
                 break
               end # end choice
 
@@ -12581,7 +12382,7 @@ class RDoc::Markdown
             self.pos = _save2
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
             self.pos = _save2
             break
@@ -12596,38 +12397,38 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save34 = self.pos
+        _save32 = self.pos
         while true # sequence
           _tmp = apply(:_Ticks2)
           unless _tmp
-            self.pos = _save34
+            self.pos = _save32
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save34
+            self.pos = _save32
             break
           end
           _text_start = self.pos
-          _save35 = self.pos
+          _save33 = self.pos
 
-          _save36 = self.pos
+          _save34 = self.pos
           while true # choice
-            _save37 = self.pos
+            _save35 = self.pos
 
-            _save38 = self.pos
+            _save36 = self.pos
             while true # sequence
-              _save39 = self.pos
+              _save37 = self.pos
               _tmp = match_string("`")
               _tmp = _tmp ? nil : true
-              self.pos = _save39
+              self.pos = _save37
               unless _tmp
-                self.pos = _save38
+                self.pos = _save36
                 break
               end
               _tmp = apply(:_Nonspacechar)
               unless _tmp
-                self.pos = _save38
+                self.pos = _save36
               end
               break
             end # end sequence
@@ -12635,19 +12436,19 @@ class RDoc::Markdown
             if _tmp
               while true
 
-                _save40 = self.pos
+                _save38 = self.pos
                 while true # sequence
-                  _save41 = self.pos
+                  _save39 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save41
+                  self.pos = _save39
                   unless _tmp
-                    self.pos = _save40
+                    self.pos = _save38
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save40
+                    self.pos = _save38
                   end
                   break
                 end # end sequence
@@ -12656,32 +12457,84 @@ class RDoc::Markdown
               end
               _tmp = true
             else
-              self.pos = _save37
+              self.pos = _save35
             end
             break if _tmp
-            self.pos = _save36
+            self.pos = _save34
+
+            _save40 = self.pos
+            while true # sequence
+              _save41 = self.pos
+              _tmp = apply(:_Ticks2)
+              _tmp = _tmp ? nil : true
+              self.pos = _save41
+              unless _tmp
+                self.pos = _save40
+                break
+              end
+              _tmp = scan(/\A(?-mix:`+)/)
+              unless _tmp
+                self.pos = _save40
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save34
 
             _save42 = self.pos
             while true # sequence
               _save43 = self.pos
-              _tmp = apply(:_Ticks2)
+
+              _save44 = self.pos
+              while true # sequence
+                _tmp = _Sp()
+                unless _tmp
+                  self.pos = _save44
+                  break
+                end
+                _tmp = apply(:_Ticks2)
+                unless _tmp
+                  self.pos = _save44
+                end
+                break
+              end # end sequence
+
               _tmp = _tmp ? nil : true
               self.pos = _save43
               unless _tmp
                 self.pos = _save42
                 break
               end
-              _save44 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save44
-              end
+
+              _save45 = self.pos
+              while true # choice
+                _tmp = _Spacechar()
+                break if _tmp
+                self.pos = _save45
+
+                _save46 = self.pos
+                while true # sequence
+                  _tmp = _Newline()
+                  unless _tmp
+                    self.pos = _save46
+                    break
+                  end
+                  _save47 = self.pos
+                  _tmp = _BlankLine()
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save47
+                  unless _tmp
+                    self.pos = _save46
+                  end
+                  break
+                end # end sequence
+
+                break if _tmp
+                self.pos = _save45
+                break
+              end # end choice
+
               unless _tmp
                 self.pos = _save42
               end
@@ -12689,92 +12542,30 @@ class RDoc::Markdown
             end # end sequence
 
             break if _tmp
-            self.pos = _save36
-
-            _save45 = self.pos
-            while true # sequence
-              _save46 = self.pos
-
-              _save47 = self.pos
-              while true # sequence
-                _tmp = apply(:_Sp)
-                unless _tmp
-                  self.pos = _save47
-                  break
-                end
-                _tmp = apply(:_Ticks2)
-                unless _tmp
-                  self.pos = _save47
-                end
-                break
-              end # end sequence
-
-              _tmp = _tmp ? nil : true
-              self.pos = _save46
-              unless _tmp
-                self.pos = _save45
-                break
-              end
-
-              _save48 = self.pos
-              while true # choice
-                _tmp = apply(:_Spacechar)
-                break if _tmp
-                self.pos = _save48
-
-                _save49 = self.pos
-                while true # sequence
-                  _tmp = apply(:_Newline)
-                  unless _tmp
-                    self.pos = _save49
-                    break
-                  end
-                  _save50 = self.pos
-                  _tmp = apply(:_BlankLine)
-                  _tmp = _tmp ? nil : true
-                  self.pos = _save50
-                  unless _tmp
-                    self.pos = _save49
-                  end
-                  break
-                end # end sequence
-
-                break if _tmp
-                self.pos = _save48
-                break
-              end # end choice
-
-              unless _tmp
-                self.pos = _save45
-              end
-              break
-            end # end sequence
-
-            break if _tmp
-            self.pos = _save36
+            self.pos = _save34
             break
           end # end choice
 
           if _tmp
             while true
 
-              _save51 = self.pos
+              _save48 = self.pos
               while true # choice
-                _save52 = self.pos
+                _save49 = self.pos
 
-                _save53 = self.pos
+                _save50 = self.pos
                 while true # sequence
-                  _save54 = self.pos
+                  _save51 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save54
+                  self.pos = _save51
                   unless _tmp
-                    self.pos = _save53
+                    self.pos = _save50
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save53
+                    self.pos = _save50
                   end
                   break
                 end # end sequence
@@ -12782,19 +12573,19 @@ class RDoc::Markdown
                 if _tmp
                   while true
 
-                    _save55 = self.pos
+                    _save52 = self.pos
                     while true # sequence
-                      _save56 = self.pos
+                      _save53 = self.pos
                       _tmp = match_string("`")
                       _tmp = _tmp ? nil : true
-                      self.pos = _save56
+                      self.pos = _save53
                       unless _tmp
-                        self.pos = _save55
+                        self.pos = _save52
                         break
                       end
                       _tmp = apply(:_Nonspacechar)
                       unless _tmp
-                        self.pos = _save55
+                        self.pos = _save52
                       end
                       break
                     end # end sequence
@@ -12803,102 +12594,92 @@ class RDoc::Markdown
                   end
                   _tmp = true
                 else
-                  self.pos = _save52
+                  self.pos = _save49
                 end
                 break if _tmp
-                self.pos = _save51
+                self.pos = _save48
 
-                _save57 = self.pos
+                _save54 = self.pos
                 while true # sequence
-                  _save58 = self.pos
+                  _save55 = self.pos
                   _tmp = apply(:_Ticks2)
                   _tmp = _tmp ? nil : true
-                  self.pos = _save58
+                  self.pos = _save55
                   unless _tmp
-                    self.pos = _save57
+                    self.pos = _save54
                     break
                   end
-                  _save59 = self.pos
-                  _tmp = match_string("`")
-                  if _tmp
-                    while true
-                      _tmp = match_string("`")
-                      break unless _tmp
-                    end
-                    _tmp = true
-                  else
-                    self.pos = _save59
-                  end
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
-                    self.pos = _save57
+                    self.pos = _save54
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save51
+                self.pos = _save48
 
-                _save60 = self.pos
+                _save56 = self.pos
                 while true # sequence
-                  _save61 = self.pos
+                  _save57 = self.pos
 
-                  _save62 = self.pos
+                  _save58 = self.pos
                   while true # sequence
-                    _tmp = apply(:_Sp)
+                    _tmp = _Sp()
                     unless _tmp
-                      self.pos = _save62
+                      self.pos = _save58
                       break
                     end
                     _tmp = apply(:_Ticks2)
                     unless _tmp
-                      self.pos = _save62
+                      self.pos = _save58
                     end
                     break
                   end # end sequence
 
                   _tmp = _tmp ? nil : true
-                  self.pos = _save61
+                  self.pos = _save57
                   unless _tmp
-                    self.pos = _save60
+                    self.pos = _save56
                     break
                   end
 
-                  _save63 = self.pos
+                  _save59 = self.pos
                   while true # choice
-                    _tmp = apply(:_Spacechar)
+                    _tmp = _Spacechar()
                     break if _tmp
-                    self.pos = _save63
+                    self.pos = _save59
 
-                    _save64 = self.pos
+                    _save60 = self.pos
                     while true # sequence
-                      _tmp = apply(:_Newline)
+                      _tmp = _Newline()
                       unless _tmp
-                        self.pos = _save64
+                        self.pos = _save60
                         break
                       end
-                      _save65 = self.pos
-                      _tmp = apply(:_BlankLine)
+                      _save61 = self.pos
+                      _tmp = _BlankLine()
                       _tmp = _tmp ? nil : true
-                      self.pos = _save65
+                      self.pos = _save61
                       unless _tmp
-                        self.pos = _save64
+                        self.pos = _save60
                       end
                       break
                     end # end sequence
 
                     break if _tmp
-                    self.pos = _save63
+                    self.pos = _save59
                     break
                   end # end choice
 
                   unless _tmp
-                    self.pos = _save60
+                    self.pos = _save56
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save51
+                self.pos = _save48
                 break
               end # end choice
 
@@ -12906,23 +12687,23 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save35
+            self.pos = _save33
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save34
+            self.pos = _save32
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save34
+            self.pos = _save32
             break
           end
           _tmp = apply(:_Ticks2)
           unless _tmp
-            self.pos = _save34
+            self.pos = _save32
           end
           break
         end # end sequence
@@ -12930,185 +12711,175 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save66 = self.pos
+        _save62 = self.pos
         while true # sequence
           _tmp = apply(:_Ticks3)
           unless _tmp
-            self.pos = _save66
+            self.pos = _save62
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save66
+            self.pos = _save62
             break
           end
           _text_start = self.pos
-          _save67 = self.pos
+          _save63 = self.pos
 
-          _save68 = self.pos
+          _save64 = self.pos
           while true # choice
-            _save69 = self.pos
+            _save65 = self.pos
+
+            _save66 = self.pos
+            while true # sequence
+              _save67 = self.pos
+              _tmp = match_string("`")
+              _tmp = _tmp ? nil : true
+              self.pos = _save67
+              unless _tmp
+                self.pos = _save66
+                break
+              end
+              _tmp = apply(:_Nonspacechar)
+              unless _tmp
+                self.pos = _save66
+              end
+              break
+            end # end sequence
+
+            if _tmp
+              while true
+
+                _save68 = self.pos
+                while true # sequence
+                  _save69 = self.pos
+                  _tmp = match_string("`")
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save69
+                  unless _tmp
+                    self.pos = _save68
+                    break
+                  end
+                  _tmp = apply(:_Nonspacechar)
+                  unless _tmp
+                    self.pos = _save68
+                  end
+                  break
+                end # end sequence
+
+                break unless _tmp
+              end
+              _tmp = true
+            else
+              self.pos = _save65
+            end
+            break if _tmp
+            self.pos = _save64
 
             _save70 = self.pos
             while true # sequence
               _save71 = self.pos
-              _tmp = match_string("`")
+              _tmp = apply(:_Ticks3)
               _tmp = _tmp ? nil : true
               self.pos = _save71
               unless _tmp
                 self.pos = _save70
                 break
               end
-              _tmp = apply(:_Nonspacechar)
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
                 self.pos = _save70
               end
               break
             end # end sequence
 
-            if _tmp
-              while true
-
-                _save72 = self.pos
-                while true # sequence
-                  _save73 = self.pos
-                  _tmp = match_string("`")
-                  _tmp = _tmp ? nil : true
-                  self.pos = _save73
-                  unless _tmp
-                    self.pos = _save72
-                    break
-                  end
-                  _tmp = apply(:_Nonspacechar)
-                  unless _tmp
-                    self.pos = _save72
-                  end
-                  break
-                end # end sequence
-
-                break unless _tmp
-              end
-              _tmp = true
-            else
-              self.pos = _save69
-            end
             break if _tmp
-            self.pos = _save68
+            self.pos = _save64
 
-            _save74 = self.pos
+            _save72 = self.pos
             while true # sequence
-              _save75 = self.pos
-              _tmp = apply(:_Ticks3)
-              _tmp = _tmp ? nil : true
-              self.pos = _save75
-              unless _tmp
-                self.pos = _save74
-                break
-              end
-              _save76 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save76
-              end
-              unless _tmp
-                self.pos = _save74
-              end
-              break
-            end # end sequence
+              _save73 = self.pos
 
-            break if _tmp
-            self.pos = _save68
-
-            _save77 = self.pos
-            while true # sequence
-              _save78 = self.pos
-
-              _save79 = self.pos
+              _save74 = self.pos
               while true # sequence
-                _tmp = apply(:_Sp)
+                _tmp = _Sp()
                 unless _tmp
-                  self.pos = _save79
+                  self.pos = _save74
                   break
                 end
                 _tmp = apply(:_Ticks3)
                 unless _tmp
-                  self.pos = _save79
+                  self.pos = _save74
                 end
                 break
               end # end sequence
 
               _tmp = _tmp ? nil : true
-              self.pos = _save78
+              self.pos = _save73
               unless _tmp
-                self.pos = _save77
+                self.pos = _save72
                 break
               end
 
-              _save80 = self.pos
+              _save75 = self.pos
               while true # choice
-                _tmp = apply(:_Spacechar)
+                _tmp = _Spacechar()
                 break if _tmp
-                self.pos = _save80
+                self.pos = _save75
 
-                _save81 = self.pos
+                _save76 = self.pos
                 while true # sequence
-                  _tmp = apply(:_Newline)
+                  _tmp = _Newline()
                   unless _tmp
-                    self.pos = _save81
+                    self.pos = _save76
                     break
                   end
-                  _save82 = self.pos
-                  _tmp = apply(:_BlankLine)
+                  _save77 = self.pos
+                  _tmp = _BlankLine()
                   _tmp = _tmp ? nil : true
-                  self.pos = _save82
+                  self.pos = _save77
                   unless _tmp
-                    self.pos = _save81
+                    self.pos = _save76
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save80
+                self.pos = _save75
                 break
               end # end choice
 
               unless _tmp
-                self.pos = _save77
+                self.pos = _save72
               end
               break
             end # end sequence
 
             break if _tmp
-            self.pos = _save68
+            self.pos = _save64
             break
           end # end choice
 
           if _tmp
             while true
 
-              _save83 = self.pos
+              _save78 = self.pos
               while true # choice
-                _save84 = self.pos
+                _save79 = self.pos
 
-                _save85 = self.pos
+                _save80 = self.pos
                 while true # sequence
-                  _save86 = self.pos
+                  _save81 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save86
+                  self.pos = _save81
                   unless _tmp
-                    self.pos = _save85
+                    self.pos = _save80
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save85
+                    self.pos = _save80
                   end
                   break
                 end # end sequence
@@ -13116,19 +12887,19 @@ class RDoc::Markdown
                 if _tmp
                   while true
 
-                    _save87 = self.pos
+                    _save82 = self.pos
                     while true # sequence
-                      _save88 = self.pos
+                      _save83 = self.pos
                       _tmp = match_string("`")
                       _tmp = _tmp ? nil : true
-                      self.pos = _save88
+                      self.pos = _save83
                       unless _tmp
-                        self.pos = _save87
+                        self.pos = _save82
                         break
                       end
                       _tmp = apply(:_Nonspacechar)
                       unless _tmp
-                        self.pos = _save87
+                        self.pos = _save82
                       end
                       break
                     end # end sequence
@@ -13137,102 +12908,92 @@ class RDoc::Markdown
                   end
                   _tmp = true
                 else
-                  self.pos = _save84
+                  self.pos = _save79
                 end
                 break if _tmp
-                self.pos = _save83
+                self.pos = _save78
 
-                _save89 = self.pos
+                _save84 = self.pos
                 while true # sequence
-                  _save90 = self.pos
+                  _save85 = self.pos
                   _tmp = apply(:_Ticks3)
                   _tmp = _tmp ? nil : true
-                  self.pos = _save90
+                  self.pos = _save85
                   unless _tmp
-                    self.pos = _save89
+                    self.pos = _save84
                     break
                   end
-                  _save91 = self.pos
-                  _tmp = match_string("`")
-                  if _tmp
-                    while true
-                      _tmp = match_string("`")
-                      break unless _tmp
-                    end
-                    _tmp = true
-                  else
-                    self.pos = _save91
-                  end
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
-                    self.pos = _save89
+                    self.pos = _save84
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save83
+                self.pos = _save78
 
-                _save92 = self.pos
+                _save86 = self.pos
                 while true # sequence
-                  _save93 = self.pos
+                  _save87 = self.pos
 
-                  _save94 = self.pos
+                  _save88 = self.pos
                   while true # sequence
-                    _tmp = apply(:_Sp)
+                    _tmp = _Sp()
                     unless _tmp
-                      self.pos = _save94
+                      self.pos = _save88
                       break
                     end
                     _tmp = apply(:_Ticks3)
                     unless _tmp
-                      self.pos = _save94
+                      self.pos = _save88
                     end
                     break
                   end # end sequence
 
                   _tmp = _tmp ? nil : true
-                  self.pos = _save93
+                  self.pos = _save87
                   unless _tmp
-                    self.pos = _save92
+                    self.pos = _save86
                     break
                   end
 
-                  _save95 = self.pos
+                  _save89 = self.pos
                   while true # choice
-                    _tmp = apply(:_Spacechar)
+                    _tmp = _Spacechar()
                     break if _tmp
-                    self.pos = _save95
+                    self.pos = _save89
 
-                    _save96 = self.pos
+                    _save90 = self.pos
                     while true # sequence
-                      _tmp = apply(:_Newline)
+                      _tmp = _Newline()
                       unless _tmp
-                        self.pos = _save96
+                        self.pos = _save90
                         break
                       end
-                      _save97 = self.pos
-                      _tmp = apply(:_BlankLine)
+                      _save91 = self.pos
+                      _tmp = _BlankLine()
                       _tmp = _tmp ? nil : true
-                      self.pos = _save97
+                      self.pos = _save91
                       unless _tmp
-                        self.pos = _save96
+                        self.pos = _save90
                       end
                       break
                     end # end sequence
 
                     break if _tmp
-                    self.pos = _save95
+                    self.pos = _save89
                     break
                   end # end choice
 
                   unless _tmp
-                    self.pos = _save92
+                    self.pos = _save86
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save83
+                self.pos = _save78
                 break
               end # end choice
 
@@ -13240,23 +13001,23 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save67
+            self.pos = _save63
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save66
+            self.pos = _save62
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save66
+            self.pos = _save62
             break
           end
           _tmp = apply(:_Ticks3)
           unless _tmp
-            self.pos = _save66
+            self.pos = _save62
           end
           break
         end # end sequence
@@ -13264,185 +13025,175 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save98 = self.pos
+        _save92 = self.pos
         while true # sequence
           _tmp = apply(:_Ticks4)
           unless _tmp
-            self.pos = _save98
+            self.pos = _save92
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save98
+            self.pos = _save92
             break
           end
           _text_start = self.pos
-          _save99 = self.pos
+          _save93 = self.pos
 
-          _save100 = self.pos
+          _save94 = self.pos
           while true # choice
-            _save101 = self.pos
+            _save95 = self.pos
+
+            _save96 = self.pos
+            while true # sequence
+              _save97 = self.pos
+              _tmp = match_string("`")
+              _tmp = _tmp ? nil : true
+              self.pos = _save97
+              unless _tmp
+                self.pos = _save96
+                break
+              end
+              _tmp = apply(:_Nonspacechar)
+              unless _tmp
+                self.pos = _save96
+              end
+              break
+            end # end sequence
+
+            if _tmp
+              while true
+
+                _save98 = self.pos
+                while true # sequence
+                  _save99 = self.pos
+                  _tmp = match_string("`")
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save99
+                  unless _tmp
+                    self.pos = _save98
+                    break
+                  end
+                  _tmp = apply(:_Nonspacechar)
+                  unless _tmp
+                    self.pos = _save98
+                  end
+                  break
+                end # end sequence
+
+                break unless _tmp
+              end
+              _tmp = true
+            else
+              self.pos = _save95
+            end
+            break if _tmp
+            self.pos = _save94
+
+            _save100 = self.pos
+            while true # sequence
+              _save101 = self.pos
+              _tmp = apply(:_Ticks4)
+              _tmp = _tmp ? nil : true
+              self.pos = _save101
+              unless _tmp
+                self.pos = _save100
+                break
+              end
+              _tmp = scan(/\A(?-mix:`+)/)
+              unless _tmp
+                self.pos = _save100
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save94
 
             _save102 = self.pos
             while true # sequence
               _save103 = self.pos
-              _tmp = match_string("`")
+
+              _save104 = self.pos
+              while true # sequence
+                _tmp = _Sp()
+                unless _tmp
+                  self.pos = _save104
+                  break
+                end
+                _tmp = apply(:_Ticks4)
+                unless _tmp
+                  self.pos = _save104
+                end
+                break
+              end # end sequence
+
               _tmp = _tmp ? nil : true
               self.pos = _save103
               unless _tmp
                 self.pos = _save102
                 break
               end
-              _tmp = apply(:_Nonspacechar)
+
+              _save105 = self.pos
+              while true # choice
+                _tmp = _Spacechar()
+                break if _tmp
+                self.pos = _save105
+
+                _save106 = self.pos
+                while true # sequence
+                  _tmp = _Newline()
+                  unless _tmp
+                    self.pos = _save106
+                    break
+                  end
+                  _save107 = self.pos
+                  _tmp = _BlankLine()
+                  _tmp = _tmp ? nil : true
+                  self.pos = _save107
+                  unless _tmp
+                    self.pos = _save106
+                  end
+                  break
+                end # end sequence
+
+                break if _tmp
+                self.pos = _save105
+                break
+              end # end choice
+
               unless _tmp
                 self.pos = _save102
               end
               break
             end # end sequence
 
-            if _tmp
-              while true
-
-                _save104 = self.pos
-                while true # sequence
-                  _save105 = self.pos
-                  _tmp = match_string("`")
-                  _tmp = _tmp ? nil : true
-                  self.pos = _save105
-                  unless _tmp
-                    self.pos = _save104
-                    break
-                  end
-                  _tmp = apply(:_Nonspacechar)
-                  unless _tmp
-                    self.pos = _save104
-                  end
-                  break
-                end # end sequence
-
-                break unless _tmp
-              end
-              _tmp = true
-            else
-              self.pos = _save101
-            end
             break if _tmp
-            self.pos = _save100
-
-            _save106 = self.pos
-            while true # sequence
-              _save107 = self.pos
-              _tmp = apply(:_Ticks4)
-              _tmp = _tmp ? nil : true
-              self.pos = _save107
-              unless _tmp
-                self.pos = _save106
-                break
-              end
-              _save108 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save108
-              end
-              unless _tmp
-                self.pos = _save106
-              end
-              break
-            end # end sequence
-
-            break if _tmp
-            self.pos = _save100
-
-            _save109 = self.pos
-            while true # sequence
-              _save110 = self.pos
-
-              _save111 = self.pos
-              while true # sequence
-                _tmp = apply(:_Sp)
-                unless _tmp
-                  self.pos = _save111
-                  break
-                end
-                _tmp = apply(:_Ticks4)
-                unless _tmp
-                  self.pos = _save111
-                end
-                break
-              end # end sequence
-
-              _tmp = _tmp ? nil : true
-              self.pos = _save110
-              unless _tmp
-                self.pos = _save109
-                break
-              end
-
-              _save112 = self.pos
-              while true # choice
-                _tmp = apply(:_Spacechar)
-                break if _tmp
-                self.pos = _save112
-
-                _save113 = self.pos
-                while true # sequence
-                  _tmp = apply(:_Newline)
-                  unless _tmp
-                    self.pos = _save113
-                    break
-                  end
-                  _save114 = self.pos
-                  _tmp = apply(:_BlankLine)
-                  _tmp = _tmp ? nil : true
-                  self.pos = _save114
-                  unless _tmp
-                    self.pos = _save113
-                  end
-                  break
-                end # end sequence
-
-                break if _tmp
-                self.pos = _save112
-                break
-              end # end choice
-
-              unless _tmp
-                self.pos = _save109
-              end
-              break
-            end # end sequence
-
-            break if _tmp
-            self.pos = _save100
+            self.pos = _save94
             break
           end # end choice
 
           if _tmp
             while true
 
-              _save115 = self.pos
+              _save108 = self.pos
               while true # choice
-                _save116 = self.pos
+                _save109 = self.pos
 
-                _save117 = self.pos
+                _save110 = self.pos
                 while true # sequence
-                  _save118 = self.pos
+                  _save111 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save118
+                  self.pos = _save111
                   unless _tmp
-                    self.pos = _save117
+                    self.pos = _save110
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save117
+                    self.pos = _save110
                   end
                   break
                 end # end sequence
@@ -13450,19 +13201,19 @@ class RDoc::Markdown
                 if _tmp
                   while true
 
-                    _save119 = self.pos
+                    _save112 = self.pos
                     while true # sequence
-                      _save120 = self.pos
+                      _save113 = self.pos
                       _tmp = match_string("`")
                       _tmp = _tmp ? nil : true
-                      self.pos = _save120
+                      self.pos = _save113
                       unless _tmp
-                        self.pos = _save119
+                        self.pos = _save112
                         break
                       end
                       _tmp = apply(:_Nonspacechar)
                       unless _tmp
-                        self.pos = _save119
+                        self.pos = _save112
                       end
                       break
                     end # end sequence
@@ -13471,102 +13222,92 @@ class RDoc::Markdown
                   end
                   _tmp = true
                 else
-                  self.pos = _save116
+                  self.pos = _save109
                 end
                 break if _tmp
-                self.pos = _save115
+                self.pos = _save108
 
-                _save121 = self.pos
+                _save114 = self.pos
                 while true # sequence
-                  _save122 = self.pos
+                  _save115 = self.pos
                   _tmp = apply(:_Ticks4)
                   _tmp = _tmp ? nil : true
-                  self.pos = _save122
+                  self.pos = _save115
                   unless _tmp
-                    self.pos = _save121
+                    self.pos = _save114
                     break
                   end
-                  _save123 = self.pos
-                  _tmp = match_string("`")
-                  if _tmp
-                    while true
-                      _tmp = match_string("`")
-                      break unless _tmp
-                    end
-                    _tmp = true
-                  else
-                    self.pos = _save123
-                  end
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
-                    self.pos = _save121
+                    self.pos = _save114
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save115
+                self.pos = _save108
 
-                _save124 = self.pos
+                _save116 = self.pos
                 while true # sequence
-                  _save125 = self.pos
+                  _save117 = self.pos
 
-                  _save126 = self.pos
+                  _save118 = self.pos
                   while true # sequence
-                    _tmp = apply(:_Sp)
+                    _tmp = _Sp()
                     unless _tmp
-                      self.pos = _save126
+                      self.pos = _save118
                       break
                     end
                     _tmp = apply(:_Ticks4)
                     unless _tmp
-                      self.pos = _save126
+                      self.pos = _save118
                     end
                     break
                   end # end sequence
 
                   _tmp = _tmp ? nil : true
-                  self.pos = _save125
+                  self.pos = _save117
                   unless _tmp
-                    self.pos = _save124
+                    self.pos = _save116
                     break
                   end
 
-                  _save127 = self.pos
+                  _save119 = self.pos
                   while true # choice
-                    _tmp = apply(:_Spacechar)
+                    _tmp = _Spacechar()
                     break if _tmp
-                    self.pos = _save127
+                    self.pos = _save119
 
-                    _save128 = self.pos
+                    _save120 = self.pos
                     while true # sequence
-                      _tmp = apply(:_Newline)
+                      _tmp = _Newline()
                       unless _tmp
-                        self.pos = _save128
+                        self.pos = _save120
                         break
                       end
-                      _save129 = self.pos
-                      _tmp = apply(:_BlankLine)
+                      _save121 = self.pos
+                      _tmp = _BlankLine()
                       _tmp = _tmp ? nil : true
-                      self.pos = _save129
+                      self.pos = _save121
                       unless _tmp
-                        self.pos = _save128
+                        self.pos = _save120
                       end
                       break
                     end # end sequence
 
                     break if _tmp
-                    self.pos = _save127
+                    self.pos = _save119
                     break
                   end # end choice
 
                   unless _tmp
-                    self.pos = _save124
+                    self.pos = _save116
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save115
+                self.pos = _save108
                 break
               end # end choice
 
@@ -13574,23 +13315,23 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save99
+            self.pos = _save93
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save98
+            self.pos = _save92
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save98
+            self.pos = _save92
             break
           end
           _tmp = apply(:_Ticks4)
           unless _tmp
-            self.pos = _save98
+            self.pos = _save92
           end
           break
         end # end sequence
@@ -13598,38 +13339,38 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save130 = self.pos
+        _save122 = self.pos
         while true # sequence
           _tmp = apply(:_Ticks5)
           unless _tmp
-            self.pos = _save130
+            self.pos = _save122
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save130
+            self.pos = _save122
             break
           end
           _text_start = self.pos
-          _save131 = self.pos
+          _save123 = self.pos
 
-          _save132 = self.pos
+          _save124 = self.pos
           while true # choice
-            _save133 = self.pos
+            _save125 = self.pos
 
-            _save134 = self.pos
+            _save126 = self.pos
             while true # sequence
-              _save135 = self.pos
+              _save127 = self.pos
               _tmp = match_string("`")
               _tmp = _tmp ? nil : true
-              self.pos = _save135
+              self.pos = _save127
               unless _tmp
-                self.pos = _save134
+                self.pos = _save126
                 break
               end
               _tmp = apply(:_Nonspacechar)
               unless _tmp
-                self.pos = _save134
+                self.pos = _save126
               end
               break
             end # end sequence
@@ -13637,19 +13378,19 @@ class RDoc::Markdown
             if _tmp
               while true
 
-                _save136 = self.pos
+                _save128 = self.pos
                 while true # sequence
-                  _save137 = self.pos
+                  _save129 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save137
+                  self.pos = _save129
                   unless _tmp
-                    self.pos = _save136
+                    self.pos = _save128
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save136
+                    self.pos = _save128
                   end
                   break
                 end # end sequence
@@ -13658,125 +13399,115 @@ class RDoc::Markdown
               end
               _tmp = true
             else
-              self.pos = _save133
+              self.pos = _save125
             end
             break if _tmp
-            self.pos = _save132
+            self.pos = _save124
 
-            _save138 = self.pos
+            _save130 = self.pos
             while true # sequence
-              _save139 = self.pos
+              _save131 = self.pos
               _tmp = apply(:_Ticks5)
               _tmp = _tmp ? nil : true
-              self.pos = _save139
+              self.pos = _save131
               unless _tmp
-                self.pos = _save138
+                self.pos = _save130
                 break
               end
-              _save140 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save140
-              end
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
-                self.pos = _save138
+                self.pos = _save130
               end
               break
             end # end sequence
 
             break if _tmp
-            self.pos = _save132
+            self.pos = _save124
 
-            _save141 = self.pos
+            _save132 = self.pos
             while true # sequence
-              _save142 = self.pos
+              _save133 = self.pos
 
-              _save143 = self.pos
+              _save134 = self.pos
               while true # sequence
-                _tmp = apply(:_Sp)
+                _tmp = _Sp()
                 unless _tmp
-                  self.pos = _save143
+                  self.pos = _save134
                   break
                 end
                 _tmp = apply(:_Ticks5)
                 unless _tmp
-                  self.pos = _save143
+                  self.pos = _save134
                 end
                 break
               end # end sequence
 
               _tmp = _tmp ? nil : true
-              self.pos = _save142
+              self.pos = _save133
               unless _tmp
-                self.pos = _save141
+                self.pos = _save132
                 break
               end
 
-              _save144 = self.pos
+              _save135 = self.pos
               while true # choice
-                _tmp = apply(:_Spacechar)
+                _tmp = _Spacechar()
                 break if _tmp
-                self.pos = _save144
+                self.pos = _save135
 
-                _save145 = self.pos
+                _save136 = self.pos
                 while true # sequence
-                  _tmp = apply(:_Newline)
+                  _tmp = _Newline()
                   unless _tmp
-                    self.pos = _save145
+                    self.pos = _save136
                     break
                   end
-                  _save146 = self.pos
-                  _tmp = apply(:_BlankLine)
+                  _save137 = self.pos
+                  _tmp = _BlankLine()
                   _tmp = _tmp ? nil : true
-                  self.pos = _save146
+                  self.pos = _save137
                   unless _tmp
-                    self.pos = _save145
+                    self.pos = _save136
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save144
+                self.pos = _save135
                 break
               end # end choice
 
               unless _tmp
-                self.pos = _save141
+                self.pos = _save132
               end
               break
             end # end sequence
 
             break if _tmp
-            self.pos = _save132
+            self.pos = _save124
             break
           end # end choice
 
           if _tmp
             while true
 
-              _save147 = self.pos
+              _save138 = self.pos
               while true # choice
-                _save148 = self.pos
+                _save139 = self.pos
 
-                _save149 = self.pos
+                _save140 = self.pos
                 while true # sequence
-                  _save150 = self.pos
+                  _save141 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save150
+                  self.pos = _save141
                   unless _tmp
-                    self.pos = _save149
+                    self.pos = _save140
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save149
+                    self.pos = _save140
                   end
                   break
                 end # end sequence
@@ -13784,19 +13515,19 @@ class RDoc::Markdown
                 if _tmp
                   while true
 
-                    _save151 = self.pos
+                    _save142 = self.pos
                     while true # sequence
-                      _save152 = self.pos
+                      _save143 = self.pos
                       _tmp = match_string("`")
                       _tmp = _tmp ? nil : true
-                      self.pos = _save152
+                      self.pos = _save143
                       unless _tmp
-                        self.pos = _save151
+                        self.pos = _save142
                         break
                       end
                       _tmp = apply(:_Nonspacechar)
                       unless _tmp
-                        self.pos = _save151
+                        self.pos = _save142
                       end
                       break
                     end # end sequence
@@ -13805,102 +13536,92 @@ class RDoc::Markdown
                   end
                   _tmp = true
                 else
-                  self.pos = _save148
+                  self.pos = _save139
                 end
                 break if _tmp
-                self.pos = _save147
+                self.pos = _save138
 
-                _save153 = self.pos
+                _save144 = self.pos
                 while true # sequence
-                  _save154 = self.pos
+                  _save145 = self.pos
                   _tmp = apply(:_Ticks5)
                   _tmp = _tmp ? nil : true
-                  self.pos = _save154
+                  self.pos = _save145
                   unless _tmp
-                    self.pos = _save153
+                    self.pos = _save144
                     break
                   end
-                  _save155 = self.pos
-                  _tmp = match_string("`")
-                  if _tmp
-                    while true
-                      _tmp = match_string("`")
-                      break unless _tmp
-                    end
-                    _tmp = true
-                  else
-                    self.pos = _save155
-                  end
+                  _tmp = scan(/\A(?-mix:`+)/)
                   unless _tmp
-                    self.pos = _save153
+                    self.pos = _save144
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save147
+                self.pos = _save138
 
-                _save156 = self.pos
+                _save146 = self.pos
                 while true # sequence
-                  _save157 = self.pos
+                  _save147 = self.pos
 
-                  _save158 = self.pos
+                  _save148 = self.pos
                   while true # sequence
-                    _tmp = apply(:_Sp)
+                    _tmp = _Sp()
                     unless _tmp
-                      self.pos = _save158
+                      self.pos = _save148
                       break
                     end
                     _tmp = apply(:_Ticks5)
                     unless _tmp
-                      self.pos = _save158
+                      self.pos = _save148
                     end
                     break
                   end # end sequence
 
                   _tmp = _tmp ? nil : true
-                  self.pos = _save157
+                  self.pos = _save147
                   unless _tmp
-                    self.pos = _save156
+                    self.pos = _save146
                     break
                   end
 
-                  _save159 = self.pos
+                  _save149 = self.pos
                   while true # choice
-                    _tmp = apply(:_Spacechar)
+                    _tmp = _Spacechar()
                     break if _tmp
-                    self.pos = _save159
+                    self.pos = _save149
 
-                    _save160 = self.pos
+                    _save150 = self.pos
                     while true # sequence
-                      _tmp = apply(:_Newline)
+                      _tmp = _Newline()
                       unless _tmp
-                        self.pos = _save160
+                        self.pos = _save150
                         break
                       end
-                      _save161 = self.pos
-                      _tmp = apply(:_BlankLine)
+                      _save151 = self.pos
+                      _tmp = _BlankLine()
                       _tmp = _tmp ? nil : true
-                      self.pos = _save161
+                      self.pos = _save151
                       unless _tmp
-                        self.pos = _save160
+                        self.pos = _save150
                       end
                       break
                     end # end sequence
 
                     break if _tmp
-                    self.pos = _save159
+                    self.pos = _save149
                     break
                   end # end choice
 
                   unless _tmp
-                    self.pos = _save156
+                    self.pos = _save146
                   end
                   break
                 end # end sequence
 
                 break if _tmp
-                self.pos = _save147
+                self.pos = _save138
                 break
               end # end choice
 
@@ -13908,23 +13629,23 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save131
+            self.pos = _save123
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save130
+            self.pos = _save122
             break
           end
-          _tmp = apply(:_Sp)
+          _tmp = _Sp()
           unless _tmp
-            self.pos = _save130
+            self.pos = _save122
             break
           end
           _tmp = apply(:_Ticks5)
           unless _tmp
-            self.pos = _save130
+            self.pos = _save122
           end
           break
         end # end sequence
@@ -13990,17 +13711,17 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # BlankLine = Sp Newline { "\n" }
+  # BlankLine = @Sp @Newline { "\n" }
   def _BlankLine
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
@@ -14394,13 +14115,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Nonspacechar = !Spacechar !Newline .
+  # Nonspacechar = !@Spacechar !@Newline .
   def _Nonspacechar
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       _tmp = _tmp ? nil : true
       self.pos = _save1
       unless _tmp
@@ -14408,7 +14129,7 @@ class RDoc::Markdown
         break
       end
       _save2 = self.pos
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       _tmp = _tmp ? nil : true
       self.pos = _save2
       unless _tmp
@@ -14426,10 +14147,10 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Sp = Spacechar*
+  # Sp = @Spacechar*
   def _Sp
     while true
-      _tmp = apply(:_Spacechar)
+      _tmp = _Spacechar()
       break unless _tmp
     end
     _tmp = true
@@ -14437,12 +14158,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Spnl = Sp (Newline Sp)?
+  # Spnl = @Sp (@Newline @Sp)?
   def _Spnl
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
@@ -14451,12 +14172,12 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # sequence
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         unless _tmp
           self.pos = _save2
           break
         end
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           self.pos = _save2
         end
@@ -14477,54 +14198,15 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SpecialChar = ("*" | "_" | "`" | "&" | "[" | "]" | "(" | ")" | "<" | "!" | "#" | "\\" | "'" | "\"" | ExtendedSpecialChar)
+  # SpecialChar = (/[*_`&\[\]()<!#\\'"]/ | @ExtendedSpecialChar)
   def _SpecialChar
 
     _save = self.pos
     while true # choice
-      _tmp = match_string("*")
+      _tmp = scan(/\A(?-mix:[*_`&\[\]()<!#\\'"])/)
       break if _tmp
       self.pos = _save
-      _tmp = match_string("_")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("`")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("&")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("[")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("]")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("(")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string(")")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("<")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("!")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("#")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("\\")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("'")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("\"")
-      break if _tmp
-      self.pos = _save
-      _tmp = apply(:_ExtendedSpecialChar)
+      _tmp = _ExtendedSpecialChar()
       break if _tmp
       self.pos = _save
       break
@@ -14534,7 +14216,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # NormalChar = !(SpecialChar | Spacechar | Newline) .
+  # NormalChar = !(@SpecialChar | @Spacechar | @Newline) .
   def _NormalChar
 
     _save = self.pos
@@ -14543,13 +14225,13 @@ class RDoc::Markdown
 
       _save2 = self.pos
       while true # choice
-        _tmp = apply(:_SpecialChar)
+        _tmp = _SpecialChar()
         break if _tmp
         self.pos = _save2
-        _tmp = apply(:_Spacechar)
+        _tmp = _Spacechar()
         break if _tmp
         self.pos = _save2
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         break if _tmp
         self.pos = _save2
         break
@@ -14628,22 +14310,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # HexEntity = "&" "#" /[Xx]/ < /[0-9a-fA-F]+/ > ";" { [text.to_i(16)].pack 'U' }
+  # HexEntity = /&#x/i < /[0-9a-fA-F]+/ > ";" { [text.to_i(16)].pack 'U' }
   def _HexEntity
 
     _save = self.pos
     while true # sequence
-      _tmp = match_string("&")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("#")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = scan(/\A(?-mix:[Xx])/)
+      _tmp = scan(/\A(?i-mx:&#x)/)
       unless _tmp
         self.pos = _save
         break
@@ -14674,17 +14346,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DecEntity = "&" "#" < /[0-9]+/ > ";" { [text.to_i].pack 'U' }
+  # DecEntity = "&#" < /[0-9]+/ > ";" { [text.to_i].pack 'U' }
   def _DecEntity
 
     _save = self.pos
     while true # sequence
-      _tmp = match_string("&")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("#")
+      _tmp = match_string("&#")
       unless _tmp
         self.pos = _save
         break
@@ -14756,44 +14423,16 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # NonindentSpace = ("   " | "  " | " " | "")
+  # NonindentSpace = / {0,3}/
   def _NonindentSpace
-
-    _save = self.pos
-    while true # choice
-      _tmp = match_string("   ")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("  ")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string(" ")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("")
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
+    _tmp = scan(/\A(?-mix: {0,3})/)
     set_failed_rule :_NonindentSpace unless _tmp
     return _tmp
   end
 
-  # Indent = ("\t" | "    ")
+  # Indent = /\t|    /
   def _Indent
-
-    _save = self.pos
-    while true # choice
-      _tmp = match_string("\t")
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("    ")
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
-
+    _tmp = scan(/\A(?-mix:\t|    )/)
     set_failed_rule :_Indent unless _tmp
     return _tmp
   end
@@ -14869,12 +14508,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Line = RawLine:a { a }
+  # Line = @RawLine:a { a }
   def _Line
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_RawLine)
+      _tmp = _RawLine()
       a = @result
       unless _tmp
         self.pos = _save
@@ -14892,7 +14531,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawLine = (< (!"\r" !"\n" .)* Newline > | < .+ > Eof) { text }
+  # RawLine = (< (!"\r" !"\n" .)* @Newline > | < .+ > @Eof) { text }
   def _RawLine
 
     _save = self.pos
@@ -14938,7 +14577,7 @@ class RDoc::Markdown
             self.pos = _save2
             break
           end
-          _tmp = apply(:_Newline)
+          _tmp = _Newline()
           unless _tmp
             self.pos = _save2
           end
@@ -14972,7 +14611,7 @@ class RDoc::Markdown
             self.pos = _save7
             break
           end
-          _tmp = apply(:_Eof)
+          _tmp = _Eof()
           unless _tmp
             self.pos = _save7
           end
@@ -15000,7 +14639,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SkipBlock = (HtmlBlock | (!"#" !SetextBottom1 !SetextBottom2 !BlankLine RawLine)+ BlankLine* | BlankLine+ | RawLine)
+  # SkipBlock = (HtmlBlock | (!"#" !SetextBottom1 !SetextBottom2 !@BlankLine @RawLine)+ @BlankLine* | @BlankLine+ | @RawLine)
   def _SkipBlock
 
     _save = self.pos
@@ -15040,14 +14679,14 @@ class RDoc::Markdown
             break
           end
           _save7 = self.pos
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           _tmp = _tmp ? nil : true
           self.pos = _save7
           unless _tmp
             self.pos = _save3
             break
           end
-          _tmp = apply(:_RawLine)
+          _tmp = _RawLine()
           unless _tmp
             self.pos = _save3
           end
@@ -15084,14 +14723,14 @@ class RDoc::Markdown
                 break
               end
               _save12 = self.pos
-              _tmp = apply(:_BlankLine)
+              _tmp = _BlankLine()
               _tmp = _tmp ? nil : true
               self.pos = _save12
               unless _tmp
                 self.pos = _save8
                 break
               end
-              _tmp = apply(:_RawLine)
+              _tmp = _RawLine()
               unless _tmp
                 self.pos = _save8
               end
@@ -15109,7 +14748,7 @@ class RDoc::Markdown
           break
         end
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -15122,10 +14761,10 @@ class RDoc::Markdown
       break if _tmp
       self.pos = _save
       _save14 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -15134,7 +14773,7 @@ class RDoc::Markdown
       end
       break if _tmp
       self.pos = _save
-      _tmp = apply(:_RawLine)
+      _tmp = _RawLine()
       break if _tmp
       self.pos = _save
       break
@@ -15197,7 +14836,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawNoteReference = "[^" < (!Newline !"]" .)+ > "]" { text }
+  # RawNoteReference = "[^" < (!@Newline !"]" .)+ > "]" { text }
   def _RawNoteReference
 
     _save = self.pos
@@ -15213,7 +14852,7 @@ class RDoc::Markdown
       _save2 = self.pos
       while true # sequence
         _save3 = self.pos
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         _tmp = _tmp ? nil : true
         self.pos = _save3
         unless _tmp
@@ -15241,7 +14880,7 @@ class RDoc::Markdown
           _save5 = self.pos
           while true # sequence
             _save6 = self.pos
-            _tmp = apply(:_Newline)
+            _tmp = _Newline()
             _tmp = _tmp ? nil : true
             self.pos = _save6
             unless _tmp
@@ -15293,7 +14932,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Note = &{ notes? } NonindentSpace RawNoteReference:ref ":" Sp StartList:a RawNoteBlock (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }
+  # Note = &{ notes? } @NonindentSpace RawNoteReference:ref ":" @Sp @StartList:a RawNoteBlock:i { a.concat i } (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }
   def _Note
 
     _save = self.pos
@@ -15305,7 +14944,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -15321,18 +14960,25 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
       _tmp = apply(:_RawNoteBlock)
+      i = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  a.concat i ; end
+      _tmp = true
       unless _tmp
         self.pos = _save
         break
@@ -15384,7 +15030,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # InlineNote = &{ notes? } "^[" StartList:a (!"]" Inline:l { a << l })+ "]" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
+  # InlineNote = &{ notes? } "^[" @StartList:a (!"]" Inline:l { a << l })+ "]" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
   def _InlineNote
 
     _save = self.pos
@@ -15401,7 +15047,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -15475,7 +15121,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;
+      @result = begin; 
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 
@@ -15514,12 +15160,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawNoteBlock = StartList:a (!BlankLine OptionallyIndentedLine:l { a << l })+ < BlankLine* > { a << text } { a }
+  # RawNoteBlock = @StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }
   def _RawNoteBlock
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StartList)
+      _tmp = _StartList()
       a = @result
       unless _tmp
         self.pos = _save
@@ -15530,7 +15176,7 @@ class RDoc::Markdown
       _save2 = self.pos
       while true # sequence
         _save3 = self.pos
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         _tmp = _tmp ? nil : true
         self.pos = _save3
         unless _tmp
@@ -15557,7 +15203,7 @@ class RDoc::Markdown
           _save4 = self.pos
           while true # sequence
             _save5 = self.pos
-            _tmp = apply(:_BlankLine)
+            _tmp = _BlankLine()
             _tmp = _tmp ? nil : true
             self.pos = _save5
             unless _tmp
@@ -15590,7 +15236,7 @@ class RDoc::Markdown
       end
       _text_start = self.pos
       while true
-        _tmp = apply(:_BlankLine)
+        _tmp = _BlankLine()
         break unless _tmp
       end
       _tmp = true
@@ -15619,7 +15265,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # CodeFence = &{ github? } Ticks3 (Sp StrChunk:format)? Spnl < ((!"`" Nonspacechar)+ | !Ticks3 "`"+ | Spacechar | Newline)+ > Ticks3 Sp Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format               verbatim             }
+  # CodeFence = &{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!"`" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format               verbatim             }
   def _CodeFence
 
     _save = self.pos
@@ -15640,7 +15286,7 @@ class RDoc::Markdown
 
       _save3 = self.pos
       while true # sequence
-        _tmp = apply(:_Sp)
+        _tmp = _Sp()
         unless _tmp
           self.pos = _save3
           break
@@ -15729,17 +15375,7 @@ class RDoc::Markdown
             self.pos = _save11
             break
           end
-          _save13 = self.pos
-          _tmp = match_string("`")
-          if _tmp
-            while true
-              _tmp = match_string("`")
-              break unless _tmp
-            end
-            _tmp = true
-          else
-            self.pos = _save13
-          end
+          _tmp = scan(/\A(?-mix:`+)/)
           unless _tmp
             self.pos = _save11
           end
@@ -15751,7 +15387,7 @@ class RDoc::Markdown
         _tmp = apply(:_Spacechar)
         break if _tmp
         self.pos = _save5
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         break if _tmp
         self.pos = _save5
         break
@@ -15760,23 +15396,23 @@ class RDoc::Markdown
       if _tmp
         while true
 
-          _save14 = self.pos
+          _save13 = self.pos
           while true # choice
-            _save15 = self.pos
+            _save14 = self.pos
 
-            _save16 = self.pos
+            _save15 = self.pos
             while true # sequence
-              _save17 = self.pos
+              _save16 = self.pos
               _tmp = match_string("`")
               _tmp = _tmp ? nil : true
-              self.pos = _save17
+              self.pos = _save16
               unless _tmp
-                self.pos = _save16
+                self.pos = _save15
                 break
               end
               _tmp = apply(:_Nonspacechar)
               unless _tmp
-                self.pos = _save16
+                self.pos = _save15
               end
               break
             end # end sequence
@@ -15784,19 +15420,19 @@ class RDoc::Markdown
             if _tmp
               while true
 
-                _save18 = self.pos
+                _save17 = self.pos
                 while true # sequence
-                  _save19 = self.pos
+                  _save18 = self.pos
                   _tmp = match_string("`")
                   _tmp = _tmp ? nil : true
-                  self.pos = _save19
+                  self.pos = _save18
                   unless _tmp
-                    self.pos = _save18
+                    self.pos = _save17
                     break
                   end
                   _tmp = apply(:_Nonspacechar)
                   unless _tmp
-                    self.pos = _save18
+                    self.pos = _save17
                   end
                   break
                 end # end sequence
@@ -15805,46 +15441,36 @@ class RDoc::Markdown
               end
               _tmp = true
             else
-              self.pos = _save15
+              self.pos = _save14
             end
             break if _tmp
-            self.pos = _save14
+            self.pos = _save13
 
-            _save20 = self.pos
+            _save19 = self.pos
             while true # sequence
-              _save21 = self.pos
+              _save20 = self.pos
               _tmp = apply(:_Ticks3)
               _tmp = _tmp ? nil : true
-              self.pos = _save21
+              self.pos = _save20
               unless _tmp
-                self.pos = _save20
+                self.pos = _save19
                 break
               end
-              _save22 = self.pos
-              _tmp = match_string("`")
-              if _tmp
-                while true
-                  _tmp = match_string("`")
-                  break unless _tmp
-                end
-                _tmp = true
-              else
-                self.pos = _save22
-              end
+              _tmp = scan(/\A(?-mix:`+)/)
               unless _tmp
-                self.pos = _save20
+                self.pos = _save19
               end
               break
             end # end sequence
 
             break if _tmp
-            self.pos = _save14
+            self.pos = _save13
             _tmp = apply(:_Spacechar)
             break if _tmp
-            self.pos = _save14
-            _tmp = apply(:_Newline)
+            self.pos = _save13
+            _tmp = _Newline()
             break if _tmp
-            self.pos = _save14
+            self.pos = _save13
             break
           end # end choice
 
@@ -15866,13 +15492,13 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
       while true
-        _tmp = apply(:_Newline)
+        _tmp = _Newline()
         break unless _tmp
       end
       _tmp = true
@@ -16005,7 +15631,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListLabel = StrChunk:label Sp Newline { label }
+  # DefinitionListLabel = StrChunk:label @Sp @Newline { label }
   def _DefinitionListLabel
 
     _save = self.pos
@@ -16016,12 +15642,12 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Sp)
+      _tmp = _Sp()
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_Newline)
+      _tmp = _Newline()
       unless _tmp
         self.pos = _save
         break
@@ -16038,12 +15664,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListDefinition = NonindentSpace ":" Space Inlines:a BlankLine+ { paragraph a }
+  # DefinitionListDefinition = @NonindentSpace ":" @Space Inlines:a @BlankLine+ { paragraph a }
   def _DefinitionListDefinition
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_NonindentSpace)
+      _tmp = _NonindentSpace()
       unless _tmp
         self.pos = _save
         break
@@ -16053,7 +15679,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_Space)
+      _tmp = _Space()
       unless _tmp
         self.pos = _save
         break
@@ -16065,10 +15691,10 @@ class RDoc::Markdown
         break
       end
       _save1 = self.pos
-      _tmp = apply(:_BlankLine)
+      _tmp = _BlankLine()
       if _tmp
         while true
-          _tmp = apply(:_BlankLine)
+          _tmp = _BlankLine()
           break unless _tmp
         end
         _tmp = true
@@ -16094,35 +15720,35 @@ class RDoc::Markdown
   Rules = {}
   Rules[:_root] = rule_info("root", "Doc")
   Rules[:_Doc] = rule_info("Doc", "BOM? Block*:a { RDoc::Markup::Document.new(*a.compact) }")
-  Rules[:_Block] = rule_info("Block", "BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)")
-  Rules[:_Para] = rule_info("Para", "NonindentSpace Inlines:a BlankLine+ { paragraph a }")
+  Rules[:_Block] = rule_info("Block", "@BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)")
+  Rules[:_Para] = rule_info("Para", "@NonindentSpace Inlines:a @BlankLine+ { paragraph a }")
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
-  Rules[:_AtxInline] = rule_info("AtxInline", "!Newline !(Sp? \"\#\"* Sp Newline) Inline")
-  Rules[:_AtxStart] = rule_info("AtxStart", "< (\"\#\#\#\#\#\#\" | \"\#\#\#\#\#\" | \"\#\#\#\#\" | \"\#\#\#\" | \"\#\#\" | \"\#\") > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s Sp? AtxInline+:a (Sp? \"\#\"* Sp)? Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp? /\#*/ @Sp @Newline) Inline")
+  Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp? AtxInline+:a (@Sp? /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
-  Rules[:_SetextBottom1] = rule_info("SetextBottom1", "\"===\" \"=\"* Newline")
-  Rules[:_SetextBottom2] = rule_info("SetextBottom2", "\"---\" \"-\"* Newline")
-  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(RawLine SetextBottom1) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }")
-  Rules[:_SetextHeading2] = rule_info("SetextHeading2", "&(RawLine SetextBottom2) StartList:a (!Endline Inline:b { a << b })+ Sp? Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }")
+  Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={3,}/ @Newline")
+  Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{3,}/ @Newline")
+  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }")
+  Rules[:_SetextHeading2] = rule_info("SetextHeading2", "&(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }")
   Rules[:_Heading] = rule_info("Heading", "(SetextHeading | AtxHeading)")
   Rules[:_BlockQuote] = rule_info("BlockQuote", "BlockQuoteRaw:a { RDoc::Markup::BlockQuote.new(*a) }")
-  Rules[:_BlockQuoteRaw] = rule_info("BlockQuoteRaw", "StartList:a (\">\" \" \"? Line:l { a << l } (!\">\" !BlankLine Line:c { a << c })* (BlankLine:n { a << n })*)+ { inner_parse a.join }")
-  Rules[:_NonblankIndentedLine] = rule_info("NonblankIndentedLine", "!BlankLine IndentedLine")
-  Rules[:_VerbatimChunk] = rule_info("VerbatimChunk", "BlankLine*:a NonblankIndentedLine+:b { a.concat b }")
+  Rules[:_BlockQuoteRaw] = rule_info("BlockQuoteRaw", "@StartList:a (\">\" \" \"? Line:l { a << l } (!\">\" !@BlankLine Line:c { a << c })* (@BlankLine:n { a << n })*)+ { inner_parse a.join }")
+  Rules[:_NonblankIndentedLine] = rule_info("NonblankIndentedLine", "!@BlankLine IndentedLine")
+  Rules[:_VerbatimChunk] = rule_info("VerbatimChunk", "@BlankLine*:a NonblankIndentedLine+:b { a.concat b }")
   Rules[:_Verbatim] = rule_info("Verbatim", "VerbatimChunk+:a { RDoc::Markup::Verbatim.new(*a.flatten) }")
-  Rules[:_HorizontalRule] = rule_info("HorizontalRule", "NonindentSpace (\"*\" Sp \"*\" Sp \"*\" (Sp \"*\")* | \"-\" Sp \"-\" Sp \"-\" (Sp \"-\")* | \"_\" Sp \"_\" Sp \"_\" (Sp \"_\")*) Sp Newline BlankLine+ { RDoc::Markup::Rule.new 1 }")
-  Rules[:_Bullet] = rule_info("Bullet", "!HorizontalRule NonindentSpace (\"+\" | \"*\" | \"-\") Spacechar+")
+  Rules[:_HorizontalRule] = rule_info("HorizontalRule", "@NonindentSpace (\"*\" @Sp \"*\" @Sp \"*\" (@Sp \"*\")* | \"-\" @Sp \"-\" @Sp \"-\" (@Sp \"-\")* | \"_\" @Sp \"_\" @Sp \"_\" (@Sp \"_\")*) @Sp @Newline @BlankLine+ { RDoc::Markup::Rule.new 1 }")
+  Rules[:_Bullet] = rule_info("Bullet", "!HorizontalRule @NonindentSpace /[+*-]/ @Spacechar+")
   Rules[:_BulletList] = rule_info("BulletList", "&Bullet (ListTight | ListLoose):a { RDoc::Markup::List.new(:BULLET, *a) }")
-  Rules[:_ListTight] = rule_info("ListTight", "ListItemTight+:a BlankLine* !(Bullet | Enumerator) { a }")
-  Rules[:_ListLoose] = rule_info("ListLoose", "StartList:a (ListItem:b BlankLine* { a << b })+ { a }")
-  Rules[:_ListItem] = rule_info("ListItem", "(Bullet | Enumerator) StartList:a ListBlock:b { a << b } (ListContinuationBlock:c { a.push(*c) })* { list_item_from a }")
-  Rules[:_ListItemTight] = rule_info("ListItemTight", "(Bullet | Enumerator) ListBlock:a (!BlankLine ListContinuationBlock:b { a.push(*b) })* !ListContinuationBlock { list_item_from a }")
-  Rules[:_ListBlock] = rule_info("ListBlock", "!BlankLine Line:a ListBlockLine*:c { [a, *c] }")
-  Rules[:_ListContinuationBlock] = rule_info("ListContinuationBlock", "StartList:a BlankLine* { a << \"\\n\" } (Indent ListBlock:b { a.concat b })+ { a }")
-  Rules[:_Enumerator] = rule_info("Enumerator", "NonindentSpace [0-9]+ \".\" Spacechar+")
+  Rules[:_ListTight] = rule_info("ListTight", "ListItemTight+:a @BlankLine* !(Bullet | Enumerator) { a }")
+  Rules[:_ListLoose] = rule_info("ListLoose", "@StartList:a (ListItem:b @BlankLine* { a << b })+ { a }")
+  Rules[:_ListItem] = rule_info("ListItem", "(Bullet | Enumerator) @StartList:a ListBlock:b { a << b } (ListContinuationBlock:c { a.push(*c) })* { list_item_from a }")
+  Rules[:_ListItemTight] = rule_info("ListItemTight", "(Bullet | Enumerator) ListBlock:a (!@BlankLine ListContinuationBlock:b { a.push(*b) })* !ListContinuationBlock { list_item_from a }")
+  Rules[:_ListBlock] = rule_info("ListBlock", "!@BlankLine Line:a ListBlockLine*:c { [a, *c] }")
+  Rules[:_ListContinuationBlock] = rule_info("ListContinuationBlock", "@StartList:a @BlankLine* { a << \"\\n\" } (Indent ListBlock:b { a.concat b })+ { a }")
+  Rules[:_Enumerator] = rule_info("Enumerator", "@NonindentSpace [0-9]+ \".\" @Spacechar+")
   Rules[:_OrderedList] = rule_info("OrderedList", "&Enumerator (ListTight | ListLoose):a { RDoc::Markup::List.new(:NUMBER, *a) }")
-  Rules[:_ListBlockLine] = rule_info("ListBlockLine", "!BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine")
+  Rules[:_ListBlockLine] = rule_info("ListBlockLine", "!@BlankLine !(Indent? (Bullet | Enumerator)) !HorizontalRule OptionallyIndentedLine")
   Rules[:_HtmlBlockOpenAddress] = rule_info("HtmlBlockOpenAddress", "\"<\" Spnl (\"address\" | \"ADDRESS\") Spnl HtmlAttribute* \">\"")
   Rules[:_HtmlBlockCloseAddress] = rule_info("HtmlBlockCloseAddress", "\"<\" Spnl \"/\" (\"address\" | \"ADDRESS\") Spnl \">\"")
   Rules[:_HtmlBlockAddress] = rule_info("HtmlBlockAddress", "HtmlBlockOpenAddress (HtmlBlockAddress | !HtmlBlockCloseAddress .)* HtmlBlockCloseAddress")
@@ -16223,7 +15849,7 @@ class RDoc::Markdown
   Rules[:_HtmlBlockCloseScript] = rule_info("HtmlBlockCloseScript", "\"<\" Spnl \"/\" (\"script\" | \"SCRIPT\") Spnl \">\"")
   Rules[:_HtmlBlockScript] = rule_info("HtmlBlockScript", "HtmlBlockOpenScript (!HtmlBlockCloseScript .)* HtmlBlockCloseScript")
   Rules[:_HtmlBlockInTags] = rule_info("HtmlBlockInTags", "(HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)")
-  Rules[:_HtmlBlock] = rule_info("HtmlBlock", "< (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }")
+  Rules[:_HtmlBlock] = rule_info("HtmlBlock", "< (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > @BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }")
   Rules[:_HtmlUnclosed] = rule_info("HtmlUnclosed", "\"<\" Spnl HtmlUnclosedType Spnl HtmlAttribute* Spnl \">\"")
   Rules[:_HtmlUnclosedType] = rule_info("HtmlUnclosedType", "(\"HR\" | \"hr\")")
   Rules[:_HtmlBlockSelfClosing] = rule_info("HtmlBlockSelfClosing", "\"<\" Spnl HtmlBlockType Spnl HtmlAttribute* \"/\" Spnl \">\"")
@@ -16231,77 +15857,77 @@ class RDoc::Markdown
   Rules[:_StyleOpen] = rule_info("StyleOpen", "\"<\" Spnl (\"style\" | \"STYLE\") Spnl HtmlAttribute* \">\"")
   Rules[:_StyleClose] = rule_info("StyleClose", "\"<\" Spnl \"/\" (\"style\" | \"STYLE\") Spnl \">\"")
   Rules[:_InStyleTags] = rule_info("InStyleTags", "StyleOpen (!StyleClose .)* StyleClose")
-  Rules[:_StyleBlock] = rule_info("StyleBlock", "< InStyleTags > BlankLine* { if css? then                     RDoc::Markup::Raw.new text                   end }")
-  Rules[:_Inlines] = rule_info("Inlines", "(!Endline Inline:i { i } | Endline:c &Inline { c })+:chunks Endline? { chunks }")
-  Rules[:_Inline] = rule_info("Inline", "(Str | Endline | UlOrStarLine | Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)")
-  Rules[:_Space] = rule_info("Space", "Spacechar+ { \" \" }")
-  Rules[:_Str] = rule_info("Str", "StartList:a < NormalChar+ > { a = text } (StrChunk:c { a << c })* { a }")
-  Rules[:_StrChunk] = rule_info("StrChunk", "< (NormalChar | \"_\"+ &Alphanumeric)+ > { text }")
-  Rules[:_EscapedChar] = rule_info("EscapedChar", "\"\\\\\" !Newline < /[:\\\\`|*_{}\\[\\]()\#+.!><-]/ > { text }")
+  Rules[:_StyleBlock] = rule_info("StyleBlock", "< InStyleTags > @BlankLine* { if css? then                     RDoc::Markup::Raw.new text                   end }")
+  Rules[:_Inlines] = rule_info("Inlines", "(!@Endline Inline:i { i } | @Endline:c &Inline { c })+:chunks @Endline? { chunks }")
+  Rules[:_Inline] = rule_info("Inline", "(Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)")
+  Rules[:_Space] = rule_info("Space", "@Spacechar+ { \" \" }")
+  Rules[:_Str] = rule_info("Str", "@StartList:a < @NormalChar+ > { a = text } (StrChunk:c { a << c })* { a }")
+  Rules[:_StrChunk] = rule_info("StrChunk", "< (@NormalChar | /_+/ &Alphanumeric)+ > { text }")
+  Rules[:_EscapedChar] = rule_info("EscapedChar", "\"\\\\\" !@Newline < /[:\\\\`|*_{}\\[\\]()\#+.!><-]/ > { text }")
   Rules[:_Entity] = rule_info("Entity", "(HexEntity | DecEntity | CharEntity):a { a }")
-  Rules[:_Endline] = rule_info("Endline", "(LineBreak | TerminalEndline | NormalEndline)")
-  Rules[:_NormalEndline] = rule_info("NormalEndline", "Sp Newline !BlankLine !\">\" !AtxStart !(Line (\"===\" \"=\"* | \"---\" \"-\"*) Newline) { \"\\n\" }")
-  Rules[:_TerminalEndline] = rule_info("TerminalEndline", "Sp Newline Eof")
-  Rules[:_LineBreak] = rule_info("LineBreak", "\"  \" NormalEndline { RDoc::Markup::HardBreak.new }")
-  Rules[:_Symbol] = rule_info("Symbol", "< SpecialChar > { text }")
+  Rules[:_Endline] = rule_info("Endline", "(@LineBreak | @TerminalEndline | @NormalEndline)")
+  Rules[:_NormalEndline] = rule_info("NormalEndline", "@Sp @Newline !@BlankLine !\">\" !AtxStart !(Line /={3,}|-{3,}=/ @Newline) { \"\\n\" }")
+  Rules[:_TerminalEndline] = rule_info("TerminalEndline", "@Sp @Newline @Eof")
+  Rules[:_LineBreak] = rule_info("LineBreak", "\"  \" @NormalEndline { RDoc::Markup::HardBreak.new }")
+  Rules[:_Symbol] = rule_info("Symbol", "< @SpecialChar > { text }")
   Rules[:_UlOrStarLine] = rule_info("UlOrStarLine", "(UlLine | StarLine):a { a }")
-  Rules[:_StarLine] = rule_info("StarLine", "(< \"****\" \"*\"* > { text } | < Spacechar \"*\"+ &Spacechar > { text })")
-  Rules[:_UlLine] = rule_info("UlLine", "(< \"____\" \"_\"* > { text } | < Spacechar \"_\"+ &Spacechar > { text })")
+  Rules[:_StarLine] = rule_info("StarLine", "(< /\\*{4,}/ > { text } | < @Spacechar /\\*+/ &@Spacechar > { text })")
+  Rules[:_UlLine] = rule_info("UlLine", "(< /_{4,}/ > { text } | < @Spacechar /_+/ &@Spacechar > { text })")
   Rules[:_Emph] = rule_info("Emph", "(EmphStar | EmphUl)")
-  Rules[:_OneStarOpen] = rule_info("OneStarOpen", "!StarLine \"*\" !Spacechar !Newline")
-  Rules[:_OneStarClose] = rule_info("OneStarClose", "!Spacechar !Newline Inline:a \"*\" { a }")
-  Rules[:_EmphStar] = rule_info("EmphStar", "OneStarOpen StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }")
-  Rules[:_OneUlOpen] = rule_info("OneUlOpen", "!UlLine \"_\" !Spacechar !Newline")
-  Rules[:_OneUlClose] = rule_info("OneUlClose", "!Spacechar !Newline Inline:a \"_\" { a }")
-  Rules[:_EmphUl] = rule_info("EmphUl", "OneUlOpen StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }")
+  Rules[:_OneStarOpen] = rule_info("OneStarOpen", "!StarLine \"*\" !@Spacechar !@Newline")
+  Rules[:_OneStarClose] = rule_info("OneStarClose", "!@Spacechar !@Newline Inline:a \"*\" { a }")
+  Rules[:_EmphStar] = rule_info("EmphStar", "OneStarOpen @StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }")
+  Rules[:_OneUlOpen] = rule_info("OneUlOpen", "!UlLine \"_\" !@Spacechar !@Newline")
+  Rules[:_OneUlClose] = rule_info("OneUlClose", "!@Spacechar !@Newline Inline:a \"_\" { a }")
+  Rules[:_EmphUl] = rule_info("EmphUl", "OneUlOpen @StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }")
   Rules[:_Strong] = rule_info("Strong", "(StrongStar | StrongUl)")
-  Rules[:_TwoStarOpen] = rule_info("TwoStarOpen", "!StarLine \"**\" !Spacechar !Newline")
-  Rules[:_TwoStarClose] = rule_info("TwoStarClose", "!Spacechar !Newline Inline:a \"**\" { a }")
-  Rules[:_StrongStar] = rule_info("StrongStar", "TwoStarOpen StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }")
-  Rules[:_TwoUlOpen] = rule_info("TwoUlOpen", "!UlLine \"__\" !Spacechar !Newline")
-  Rules[:_TwoUlClose] = rule_info("TwoUlClose", "!Spacechar !Newline Inline:a \"__\" { a }")
-  Rules[:_StrongUl] = rule_info("StrongUl", "TwoUlOpen StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }")
-  Rules[:_Image] = rule_info("Image", "\"!\" (ExplicitLink | ReferenceLink):a { a }")
+  Rules[:_TwoStarOpen] = rule_info("TwoStarOpen", "!StarLine \"**\" !@Spacechar !@Newline")
+  Rules[:_TwoStarClose] = rule_info("TwoStarClose", "!@Spacechar !@Newline Inline:a \"**\" { a }")
+  Rules[:_StrongStar] = rule_info("StrongStar", "TwoStarOpen @StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }")
+  Rules[:_TwoUlOpen] = rule_info("TwoUlOpen", "!UlLine \"__\" !@Spacechar !@Newline")
+  Rules[:_TwoUlClose] = rule_info("TwoUlClose", "!@Spacechar !@Newline Inline:a \"__\" { a }")
+  Rules[:_StrongUl] = rule_info("StrongUl", "TwoUlOpen @StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }")
+  Rules[:_Image] = rule_info("Image", "\"!\" (ExplicitLink | ReferenceLink):a { \"rdoc-image:\#{a[/\\[(.*)\\]/, 1]}\" }")
   Rules[:_Link] = rule_info("Link", "(ExplicitLink | ReferenceLink | AutoLink)")
   Rules[:_ReferenceLink] = rule_info("ReferenceLink", "(ReferenceLinkDouble | ReferenceLinkSingle)")
   Rules[:_ReferenceLinkDouble] = rule_info("ReferenceLinkDouble", "Label:content < Spnl > !\"[]\" Label:label { link_to content, label, text }")
   Rules[:_ReferenceLinkSingle] = rule_info("ReferenceLinkSingle", "Label:content < (Spnl \"[]\")? > { link_to content, content, text }")
-  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l Spnl \"(\" Sp Source:s Spnl Title Sp \")\" { \"{\#{l}}[\#{s}]\" }")
+  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l Spnl \"(\" @Sp Source:s Spnl Title @Sp \")\" { \"{\#{l}}[\#{s}]\" }")
   Rules[:_Source] = rule_info("Source", "(\"<\" < SourceContents > \">\" | < SourceContents >) { text }")
   Rules[:_SourceContents] = rule_info("SourceContents", "(((!\"(\" !\")\" !\">\" Nonspacechar)+ | \"(\" SourceContents \")\")* | \"\")")
   Rules[:_Title] = rule_info("Title", "(TitleSingle | TitleDouble | \"\"):a { a }")
-  Rules[:_TitleSingle] = rule_info("TitleSingle", "\"'\" (!(\"'\" Sp (\")\" | Newline)) .)* \"'\"")
-  Rules[:_TitleDouble] = rule_info("TitleDouble", "\"\\\"\" (!(\"\\\"\" Sp (\")\" | Newline)) .)* \"\\\"\"")
+  Rules[:_TitleSingle] = rule_info("TitleSingle", "\"'\" (!(\"'\" @Sp (\")\" | @Newline)) .)* \"'\"")
+  Rules[:_TitleDouble] = rule_info("TitleDouble", "\"\\\"\" (!(\"\\\"\" @Sp (\")\" | @Newline)) .)* \"\\\"\"")
   Rules[:_AutoLink] = rule_info("AutoLink", "(AutoLinkUrl | AutoLinkEmail)")
-  Rules[:_AutoLinkUrl] = rule_info("AutoLinkUrl", "\"<\" < /[A-Za-z]+/ \"://\" (!Newline !\">\" .)+ > \">\" { text }")
-  Rules[:_AutoLinkEmail] = rule_info("AutoLinkEmail", "\"<\" \"mailto:\"? < /[\\w+.\\/!%~$-]+/i \"@\" (!Newline !\">\" .)+ > \">\" { \"mailto:\#{text}\" }")
-  Rules[:_Reference] = rule_info("Reference", "NonindentSpace !\"[]\" Label:label \":\" Spnl RefSrc:link RefTitle BlankLine+ { \# TODO use title               reference label, link               nil             }")
-  Rules[:_Label] = rule_info("Label", "\"[\" (!\"^\" &{ notes? } | &. &{ !notes? }) StartList:a (!\"]\" Inline:l { a << l })* \"]\" { a.join.gsub(/\\s+/, ' ') }")
+  Rules[:_AutoLinkUrl] = rule_info("AutoLinkUrl", "\"<\" < /[A-Za-z]+/ \"://\" (!@Newline !\">\" .)+ > \">\" { text }")
+  Rules[:_AutoLinkEmail] = rule_info("AutoLinkEmail", "\"<\" \"mailto:\"? < /[\\w+.\\/!%~$-]+/i \"@\" (!@Newline !\">\" .)+ > \">\" { \"mailto:\#{text}\" }")
+  Rules[:_Reference] = rule_info("Reference", "@NonindentSpace !\"[]\" Label:label \":\" Spnl RefSrc:link RefTitle @BlankLine+ { \# TODO use title               reference label, link               nil             }")
+  Rules[:_Label] = rule_info("Label", "\"[\" (!\"^\" &{ notes? } | &. &{ !notes? }) @StartList:a (!\"]\" Inline:l { a << l })* \"]\" { a.join.gsub(/\\s+/, ' ') }")
   Rules[:_RefSrc] = rule_info("RefSrc", "< Nonspacechar+ > { text }")
   Rules[:_RefTitle] = rule_info("RefTitle", "(RefTitleSingle | RefTitleDouble | RefTitleParens | EmptyTitle)")
   Rules[:_EmptyTitle] = rule_info("EmptyTitle", "\"\"")
-  Rules[:_RefTitleSingle] = rule_info("RefTitleSingle", "Spnl \"'\" < (!(\"'\" Sp Newline | Newline) .)* > \"'\" { text }")
-  Rules[:_RefTitleDouble] = rule_info("RefTitleDouble", "Spnl \"\\\"\" < (!(\"\\\"\" Sp Newline | Newline) .)* > \"\\\"\" { text }")
-  Rules[:_RefTitleParens] = rule_info("RefTitleParens", "Spnl \"(\" < (!(\")\" Sp Newline | Newline) .)* > \")\" { text }")
+  Rules[:_RefTitleSingle] = rule_info("RefTitleSingle", "Spnl \"'\" < (!(\"'\" @Sp @Newline | @Newline) .)* > \"'\" { text }")
+  Rules[:_RefTitleDouble] = rule_info("RefTitleDouble", "Spnl \"\\\"\" < (!(\"\\\"\" @Sp @Newline | @Newline) .)* > \"\\\"\" { text }")
+  Rules[:_RefTitleParens] = rule_info("RefTitleParens", "Spnl \"(\" < (!(\")\" @Sp @Newline | @Newline) .)* > \")\" { text }")
   Rules[:_References] = rule_info("References", "(Reference | SkipBlock)*")
   Rules[:_Ticks1] = rule_info("Ticks1", "\"`\" !\"`\"")
   Rules[:_Ticks2] = rule_info("Ticks2", "\"``\" !\"`\"")
   Rules[:_Ticks3] = rule_info("Ticks3", "\"```\" !\"`\"")
   Rules[:_Ticks4] = rule_info("Ticks4", "\"````\" !\"`\"")
   Rules[:_Ticks5] = rule_info("Ticks5", "\"`````\" !\"`\"")
-  Rules[:_Code] = rule_info("Code", "(Ticks1 Sp < ((!\"`\" Nonspacechar)+ | !Ticks1 \"`\"+ | !(Sp Ticks1) (Spacechar | Newline !BlankLine))+ > Sp Ticks1 | Ticks2 Sp < ((!\"`\" Nonspacechar)+ | !Ticks2 \"`\"+ | !(Sp Ticks2) (Spacechar | Newline !BlankLine))+ > Sp Ticks2 | Ticks3 Sp < ((!\"`\" Nonspacechar)+ | !Ticks3 \"`\"+ | !(Sp Ticks3) (Spacechar | Newline !BlankLine))+ > Sp Ticks3 | Ticks4 Sp < ((!\"`\" Nonspacechar)+ | !Ticks4 \"`\"+ | !(Sp Ticks4) (Spacechar | Newline !BlankLine))+ > Sp Ticks4 | Ticks5 Sp < ((!\"`\" Nonspacechar)+ | !Ticks5 \"`\"+ | !(Sp Ticks5) (Spacechar | Newline !BlankLine))+ > Sp Ticks5) { \"<code>\#{text}</code>\" }")
+  Rules[:_Code] = rule_info("Code", "(Ticks1 @Sp < ((!\"`\" Nonspacechar)+ | !Ticks1 /`+/ | !(@Sp Ticks1) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks1 | Ticks2 @Sp < ((!\"`\" Nonspacechar)+ | !Ticks2 /`+/ | !(@Sp Ticks2) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks2 | Ticks3 @Sp < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | !(@Sp Ticks3) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks3 | Ticks4 @Sp < ((!\"`\" Nonspacechar)+ | !Ticks4 /`+/ | !(@Sp Ticks4) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks4 | Ticks5 @Sp < ((!\"`\" Nonspacechar)+ | !Ticks5 /`+/ | !(@Sp Ticks5) (@Spacechar | @Newline !@BlankLine))+ > @Sp Ticks5) { \"<code>\#{text}</code>\" }")
   Rules[:_RawHtml] = rule_info("RawHtml", "< (HtmlComment | HtmlBlockScript | HtmlTag) > { if html? then text else '' end }")
-  Rules[:_BlankLine] = rule_info("BlankLine", "Sp Newline { \"\\n\" }")
+  Rules[:_BlankLine] = rule_info("BlankLine", "@Sp @Newline { \"\\n\" }")
   Rules[:_Quoted] = rule_info("Quoted", "(\"\\\"\" (!\"\\\"\" .)* \"\\\"\" | \"'\" (!\"'\" .)* \"'\")")
   Rules[:_HtmlAttribute] = rule_info("HtmlAttribute", "(AlphanumericAscii | \"-\")+ Spnl (\"=\" Spnl (Quoted | (!\">\" Nonspacechar)+))? Spnl")
   Rules[:_HtmlComment] = rule_info("HtmlComment", "\"<!--\" (!\"-->\" .)* \"-->\"")
   Rules[:_HtmlTag] = rule_info("HtmlTag", "\"<\" Spnl \"/\"? AlphanumericAscii+ Spnl HtmlAttribute* \"/\"? Spnl \">\"")
   Rules[:_Eof] = rule_info("Eof", "!.")
-  Rules[:_Nonspacechar] = rule_info("Nonspacechar", "!Spacechar !Newline .")
-  Rules[:_Sp] = rule_info("Sp", "Spacechar*")
-  Rules[:_Spnl] = rule_info("Spnl", "Sp (Newline Sp)?")
-  Rules[:_SpecialChar] = rule_info("SpecialChar", "(\"*\" | \"_\" | \"`\" | \"&\" | \"[\" | \"]\" | \"(\" | \")\" | \"<\" | \"!\" | \"\#\" | \"\\\\\" | \"'\" | \"\\\"\" | ExtendedSpecialChar)")
-  Rules[:_NormalChar] = rule_info("NormalChar", "!(SpecialChar | Spacechar | Newline) .")
+  Rules[:_Nonspacechar] = rule_info("Nonspacechar", "!@Spacechar !@Newline .")
+  Rules[:_Sp] = rule_info("Sp", "@Spacechar*")
+  Rules[:_Spnl] = rule_info("Spnl", "@Sp (@Newline @Sp)?")
+  Rules[:_SpecialChar] = rule_info("SpecialChar", "(/[*_`&\\[\\]()<!\#\\\\'\"]/ | @ExtendedSpecialChar)")
+  Rules[:_NormalChar] = rule_info("NormalChar", "!(@SpecialChar | @Spacechar | @Newline) .")
   Rules[:_Digit] = rule_info("Digit", "[0-9]")
   Rules[:_Alphanumeric] = rule_info("Alphanumeric", "%literals.Alphanumeric")
   Rules[:_AlphanumericAscii] = rule_info("AlphanumericAscii", "%literals.AlphanumericAscii")
@@ -16309,28 +15935,28 @@ class RDoc::Markdown
   Rules[:_Newline] = rule_info("Newline", "%literals.Newline")
   Rules[:_NonAlphanumeric] = rule_info("NonAlphanumeric", "%literals.NonAlphanumeric")
   Rules[:_Spacechar] = rule_info("Spacechar", "%literals.Spacechar")
-  Rules[:_HexEntity] = rule_info("HexEntity", "\"&\" \"\#\" /[Xx]/ < /[0-9a-fA-F]+/ > \";\" { [text.to_i(16)].pack 'U' }")
-  Rules[:_DecEntity] = rule_info("DecEntity", "\"&\" \"\#\" < /[0-9]+/ > \";\" { [text.to_i].pack 'U' }")
+  Rules[:_HexEntity] = rule_info("HexEntity", "/&\#x/i < /[0-9a-fA-F]+/ > \";\" { [text.to_i(16)].pack 'U' }")
+  Rules[:_DecEntity] = rule_info("DecEntity", "\"&\#\" < /[0-9]+/ > \";\" { [text.to_i].pack 'U' }")
   Rules[:_CharEntity] = rule_info("CharEntity", "\"&\" < /[A-Za-z0-9]+/ > \";\" { if entity = HTML_ENTITIES[text] then                  entity.pack 'U*'                else                  \"&\#{text};\"                end              }")
-  Rules[:_NonindentSpace] = rule_info("NonindentSpace", "(\"   \" | \"  \" | \" \" | \"\")")
-  Rules[:_Indent] = rule_info("Indent", "(\"\\t\" | \"    \")")
+  Rules[:_NonindentSpace] = rule_info("NonindentSpace", "/ {0,3}/")
+  Rules[:_Indent] = rule_info("Indent", "/\\t|    /")
   Rules[:_IndentedLine] = rule_info("IndentedLine", "Indent Line")
   Rules[:_OptionallyIndentedLine] = rule_info("OptionallyIndentedLine", "Indent? Line")
   Rules[:_StartList] = rule_info("StartList", "&. { [] }")
-  Rules[:_Line] = rule_info("Line", "RawLine:a { a }")
-  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\r\" !\"\\n\" .)* Newline > | < .+ > Eof) { text }")
-  Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !BlankLine RawLine)+ BlankLine* | BlankLine+ | RawLine)")
+  Rules[:_Line] = rule_info("Line", "@RawLine:a { a }")
+  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\\r\" !\"\\n\" .)* @Newline > | < .+ > @Eof) { text }")
+  Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !@BlankLine @RawLine)+ @BlankLine* | @BlankLine+ | @RawLine)")
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
-  Rules[:_RawNoteReference] = rule_info("RawNoteReference", "\"[^\" < (!Newline !\"]\" .)+ > \"]\" { text }")
-  Rules[:_Note] = rule_info("Note", "&{ notes? } NonindentSpace RawNoteReference:ref \":\" Sp StartList:a RawNoteBlock (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
-  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" StartList:a (!\"]\" Inline:l { a << l })+ \"]\" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
+  Rules[:_RawNoteReference] = rule_info("RawNoteReference", "\"[^\" < (!@Newline !\"]\" .)+ > \"]\" { text }")
+  Rules[:_Note] = rule_info("Note", "&{ notes? } @NonindentSpace RawNoteReference:ref \":\" @Sp @StartList:a RawNoteBlock:i { a.concat i } (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
+  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" @StartList:a (!\"]\" Inline:l { a << l })+ \"]\" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
-  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "StartList:a (!BlankLine OptionallyIndentedLine:l { a << l })+ < BlankLine* > { a << text } { a }")
-  Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 \"`\"+ | Spacechar | Newline)+ > Ticks3 Sp Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format               verbatim             }")
+  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
+  Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format               verbatim             }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
-  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label Sp Newline { label }")
-  Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "NonindentSpace \":\" Space Inlines:a BlankLine+ { paragraph a }")
+  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
+  Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "@NonindentSpace \":\" @Space Inlines:a @BlankLine+ { paragraph a }")
   # :startdoc:
 end

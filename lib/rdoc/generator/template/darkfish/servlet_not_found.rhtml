@@ -1,5 +1,5 @@
-<body>
-<nav id="metadata">
+<body role="document">
+<nav role="navigation">
   <%= render '_sidebar_navigation.rhtml' %>
 
   <%= render '_sidebar_search.rhtml' %>
@@ -10,9 +10,9 @@
   </div>
 </nav>
 
-<div id="documentation" class="description">
+<main role="main">
   <h1>Not Found</h1>
 
-  <p>The page <kbd><%=h path %></kbd> was not found
-</div>
+  <p><%= message %>
+</main>
 

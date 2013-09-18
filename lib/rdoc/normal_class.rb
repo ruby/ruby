@@ -20,6 +20,10 @@ class RDoc::NormalClass < RDoc::ClassModule
     end
   end
 
+  def aref_prefix # :nodoc:
+    'class'
+  end
+
   ##
   # The definition of this class, <tt>class MyClassName</tt>
 
