@@ -663,7 +663,7 @@ class RDoc::Store
   end
 
   ##
-  # Converts the variable => ClassModule map +variables+ from a C parser into 
+  # Converts the variable => ClassModule map +variables+ from a C parser into
   # a variable => class name map.
 
   def make_variable_map variables

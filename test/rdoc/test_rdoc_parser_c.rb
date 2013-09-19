@@ -1718,7 +1718,7 @@ path_to_s(VALUE self) { }
  */
 static VALUE
 path_aref_m(int argc, VALUE *argv, VALUE str) { }
- 
+
 /*
  *  call-seq:
  *     string <=> other_string   -> -1, 0, +1 or nil

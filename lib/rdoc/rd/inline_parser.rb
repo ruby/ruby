@@ -732,12 +732,12 @@ Racc_debug_parser = false
 # reduce 1 omitted
 
 def _reduce_2(val, _values, result)
- result.append val[1] 
+ result.append val[1]
     result
 end
 
 def _reduce_3(val, _values, result)
- result = val[0] 
+ result = val[0]
     result
 end
 
@@ -762,28 +762,28 @@ end
 def _reduce_13(val, _values, result)
       content = val[1]
       result = inline "<em>#{content}</em>", content
-    
+
     result
 end
 
 def _reduce_14(val, _values, result)
       content = val[1]
       result = inline "<code>#{content}</code>", content
-    
+
     result
 end
 
 def _reduce_15(val, _values, result)
       content = val[1]
       result = inline "+#{content}+", content
-    
+
     result
 end
 
 def _reduce_16(val, _values, result)
       content = val[1]
       result = inline "<tt>#{content}</tt>", content
-    
+
     result
 end
 
@@ -791,13 +791,13 @@ def _reduce_17(val, _values, result)
       label = val[1]
       @block_parser.add_label label.reference
       result = "<span id=\"label-#{label}\">#{label}</span>"
-    
+
     result
 end
 
 def _reduce_18(val, _values, result)
       result = "{#{val[1]}}[#{val[2].join}]"
-    
+
     result
 end
 
@@ -805,13 +805,13 @@ def _reduce_19(val, _values, result)
       scheme, inline = val[1]
 
       result = "{#{inline}}[#{scheme}#{inline.reference}]"
-    
+
     result
 end
 
 def _reduce_20(val, _values, result)
       result = [nil, inline(val[1])]
-    
+
     result
 end
 
@@ -820,25 +820,25 @@ def _reduce_21(val, _values, result)
         'rdoc-label:',
         inline("#{val[0].reference}/#{val[1].reference}")
       ]
-    
+
     result
 end
 
 def _reduce_22(val, _values, result)
       result = ['rdoc-label:', val[0].reference]
-    
+
     result
 end
 
 def _reduce_23(val, _values, result)
       result = ['rdoc-label:', "#{val[0].reference}/"]
-    
+
     result
 end
 
 def _reduce_24(val, _values, result)
       result = [nil, inline(val[1])]
-    
+
     result
 end
 
@@ -847,92 +847,92 @@ def _reduce_25(val, _values, result)
         'rdoc-label:',
         inline("#{val[0].reference}/#{val[1].reference}")
       ]
-    
+
     result
 end
 
 def _reduce_26(val, _values, result)
       result = ['rdoc-label:', val[0]]
-    
+
     result
 end
 
 def _reduce_27(val, _values, result)
       ref = val[0].reference
       result = ['rdoc-label:', inline(ref, "#{ref}/")]
-    
+
     result
 end
 
 # reduce 28 omitted
 
 def _reduce_29(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
 def _reduce_30(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
 def _reduce_31(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 def _reduce_32(val, _values, result)
       result = inline "\"#{val[1]}\""
-    
+
     result
 end
 
 def _reduce_33(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 def _reduce_34(val, _values, result)
       result = inline "\"#{val[1]}\""
-    
+
     result
 end
 
 # reduce 35 omitted
 
 def _reduce_36(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
 def _reduce_37(val, _values, result)
- result = inline val[1] 
+ result = inline val[1]
     result
 end
 
 def _reduce_38(val, _values, result)
       result = val[0].append val[1]
-    
+
     result
 end
 
 def _reduce_39(val, _values, result)
       result = val[0].append val[1]
-    
+
     result
 end
 
 def _reduce_40(val, _values, result)
       result = val[0]
-    
+
     result
 end
 
 def _reduce_41(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
@@ -940,25 +940,25 @@ end
 
 def _reduce_43(val, _values, result)
       result = val[0].append val[1]
-    
+
     result
 end
 
 def _reduce_44(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 def _reduce_45(val, _values, result)
       result = val[0].append val[1]
-    
+
     result
 end
 
 def _reduce_46(val, _values, result)
       result = val[0]
-    
+
     result
 end
 
@@ -984,24 +984,24 @@ end
 
 def _reduce_57(val, _values, result)
       result = val[0]
-    
+
     result
 end
 
 def _reduce_58(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 def _reduce_59(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 def _reduce_60(val, _values, result)
- result << val[1] 
+ result << val[1]
     result
 end
 
@@ -1009,7 +1009,7 @@ end
 
 def _reduce_62(val, _values, result)
       result << val[1]
-    
+
     result
 end
 
@@ -1017,7 +1017,7 @@ end
 
 def _reduce_64(val, _values, result)
       result << val[1]
-    
+
     result
 end
 
@@ -1048,7 +1048,7 @@ end
 # reduce 77 omitted
 
 def _reduce_78(val, _values, result)
- result << val[1] 
+ result << val[1]
     result
 end
 
@@ -1099,13 +1099,13 @@ end
 def _reduce_101(val, _values, result)
       index = @block_parser.add_footnote val[1].rdoc
       result = "{*#{index}}[rdoc-label:foottext-#{index}:footmark-#{index}]"
-    
+
     result
 end
 
 def _reduce_102(val, _values, result)
       result = inline "<tt>#{val[1]}</tt>", val[1]
-    
+
     result
 end
 
@@ -1122,7 +1122,7 @@ end
 # reduce 108 omitted
 
 def _reduce_109(val, _values, result)
- result << val[1] 
+ result << val[1]
     result
 end
 
@@ -1130,24 +1130,24 @@ end
 
 def _reduce_111(val, _values, result)
       result = inline val[0]
-    
+
     result
 end
 
 # reduce 112 omitted
 
 def _reduce_113(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
 def _reduce_114(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
 def _reduce_115(val, _values, result)
- result = val[1] 
+ result = val[1]
     result
 end
 
@@ -1192,7 +1192,7 @@ end
 # reduce 135 omitted
 
 def _reduce_136(val, _values, result)
- result << val[1] 
+ result << val[1]
     result
 end
 
