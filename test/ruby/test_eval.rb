@@ -128,7 +128,7 @@ class TestEval < Test::Unit::TestCase
   end
 
   def forall_TYPE
-    objects = [Object.new, [], nil, true, false, :sym] # TODO: check
+    objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
       obj.instance_variable_set :@ivar, 12
       yield obj
