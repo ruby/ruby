@@ -1,3 +1,12 @@
+Thu Sep 19 08:59:41 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markdown/literals_1_9.rb:  Fix trailing whitespace.
+
+	  Previously kpeg (which generates this file) added trailing
+	  whitespace, but this bug is now fixed.
+
+	* lib/rdoc/markdown.rb:  ditto.
+
 Thu Sep 19 08:33:14 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 4.1.0.preview.1

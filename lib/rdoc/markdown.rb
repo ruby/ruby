@@ -194,7 +194,6 @@ class RDoc::Markdown
     attr_reader :failing_rule_offset
     attr_accessor :result, :pos
 
-    
     def current_column(target=pos)
       if c = string.rindex("\n", target-1)
         return target - c - 1
