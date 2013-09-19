@@ -167,6 +167,13 @@ with all sufficient information, see the ChangeLog file.
 * open-uri
   * Support multiple fields with same field name (like Set-Cookie).
 
+* RDoc
+  * Updated to 4.1.0.preview.1.  Major enhancements include a modified default
+    template and accessibility enhancements.
+
+    For a list of minor enhancements and bug fixes see:
+    https://github.com/rdoc/rdoc/blob/v4.1.0.preview.1/History.rdoc
+
 * Resolv
   * New methods:
     * Resolv::DNS.fetch_resource
@@ -191,9 +198,8 @@ with all sufficient information, see the ChangeLog file.
     Rinda::RingFinger for details.
 
 * RubyGems
-  * Updated to 2.1.3.  See
-    http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.3+%2F+2013-09-12
-    for release notes.
+  * Updated to 2.2.0.preview.1  For a list of enhancements and bug fixes see:
+    https://github.com/rubygems/rubygems/blob/v2.2.0.preview.1/History.txt
 
 * Set
   * New methods:

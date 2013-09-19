@@ -1,3 +1,7 @@
+Thu Sep 19 09:11:33 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS:  Update for RDoc 4.1.0.preview.1 and RubyGems 2.2.0.preview.1
+
 Thu Sep 19 08:59:41 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markdown/literals_1_9.rb:  Fix trailing whitespace.
