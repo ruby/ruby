@@ -1060,6 +1060,7 @@ number:			if ((dprec = prec) >= 0)
 			 * explicit precision of zero is no characters.''
 			 *	-- ANSI X3J11
 			 */
+			cp = ebuf;
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				if (uqval != 0 || prec != 0)

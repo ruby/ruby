@@ -1,3 +1,8 @@
+Thu Sep 19 16:25:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): initialize cp so that size is 0 in the
+	  commented case.  fix an accidental bug at r16716.
+
 Thu Sep 19 14:33:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: add a news for r42974.
