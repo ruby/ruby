@@ -97,6 +97,9 @@ with all sufficient information, see the ChangeLog file.
       invalid byte sequence even if the destination encoding equals to
       the source encoding.
 
+* Symbol
+  * All symbols are now frozen.
+
 * pack/unpack (Array/String)
   * Q! and q! directives for long long type if platform has the type.
 
