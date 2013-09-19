@@ -119,7 +119,7 @@ class TestLambdaParameters < Test::Unit::TestCase
     end
     file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno, "must be ")
+    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
   end
 
   def test_brace_lambda_source_location
@@ -131,6 +131,6 @@ class TestLambdaParameters < Test::Unit::TestCase
     }
     file, lineno = lmd.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno, "must be ")
+    assert_equal(exp_lineno, lineno, "must be at the beginning of the block")
   end
 end
