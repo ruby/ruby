@@ -1,3 +1,7 @@
+Thu Sep 19 16:59:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda): adjust position to the beginning of the block.
+
 Thu Sep 19 16:25:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): initialize cp so that size is 0 in the

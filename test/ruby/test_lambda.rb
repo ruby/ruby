@@ -109,4 +109,28 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(42, return_in_current(42), feature8693)
     assert_equal(42, return_in_callee(42), feature8693)
   end
+
+  def test_do_lambda_source_location
+    exp_lineno = __LINE__ + 3
+    lmd = ->(x,
+             y,
+             z) do
+      #
+    end
+    file, lineno = lmd.source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(exp_lineno, lineno, "must be ")
+  end
+
+  def test_brace_lambda_source_location
+    exp_lineno = __LINE__ + 3
+    lmd = ->(x,
+             y,
+             z) {
+      #
+    }
+    file, lineno = lmd.source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(exp_lineno, lineno, "must be ")
+  end
 end
