@@ -554,7 +554,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     if (!to) return str;
     if (!from) from = rb_enc_get(str);
     if (from == to) return str;
-    if ((rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) ||
+    if ((rb_enc_asciicompat(to) && is_ascii_string(str)) ||
 	to == rb_ascii8bit_encoding()) {
 	if (STR_ENC_GET(str) != to) {
 	    str = rb_str_dup(str);

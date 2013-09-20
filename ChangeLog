@@ -1,3 +1,8 @@
+Sat Sep 21 00:47:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_conv_enc_opts): make sure to scan coderange to get
+	  rid of unnecessary conversion.
+
 Sat Sep 21 00:21:08 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/ssl.rb: [DOC] Document OpenSSL::SSLServer
