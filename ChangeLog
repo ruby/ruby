@@ -1,3 +1,8 @@
+Sat Sep 21 00:50:02 2013  Zachary Scott  <e@zzak.io>
+
+	* enumerator.c: [DOC] Enumerator#each arguments documentation [GH-388]
+	  Patch by @kachick  https://github.com/ruby/ruby/pull/388
+
 Sat Sep 21 00:49:16 2013  Zachary Scott  <e@zzak.io>
 
 	* enum.c: [DOC] Enumerable#to_a accepts arguments [GH-388]
