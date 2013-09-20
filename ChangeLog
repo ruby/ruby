@@ -1,3 +1,10 @@
+Fri Sep 20 15:01:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (intern_str): sigil only names are junk, at least one
+	  identifier character is needed.  [ruby-dev:47723] [Bug #8928]
+
+	* parse.y (rb_enc_symname_type): fix out of bound access.
+
 Fri Sep 20 14:14:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/printf/printf.c (printf_test_call): Fix an end of buffer
