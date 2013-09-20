@@ -316,6 +316,36 @@ define rp_id
   if $id == idASET
     printf "(:[]=)\n"
   else
+    if $id <= tLAST_OP_ID
+      printf "O"
+    else
+      set $id_type = $id & RUBY_ID_SCOPE_MASK
+      if $id_type == RUBY_ID_LOCAL
+        printf "l"
+      else
+      if $id_type == RUBY_ID_INSTANCE
+        printf "i"
+      else
+      if $id_type == RUBY_ID_GLOBAL
+        printf "G"
+      else
+      if $id_type == RUBY_ID_ATTRSET
+        printf "a"
+      else
+      if $id_type == RUBY_ID_CONST
+        printf "C"
+      else
+      if $id_type == RUBY_ID_CLASS
+        printf "c"
+      else
+        printf "j"
+      end
+      end
+      end
+      end
+      end
+      end
+    end
     printf "(%ld): ", $id
     rb_numtable_entry global_symbols.id_str $id
     if $rb_numtable_rec
