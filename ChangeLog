@@ -1,3 +1,8 @@
+Fri Sep 20 23:34:48 2013  Zachary Scott  <e@zzak.io>
+
+	* benchmark/bm_app_answer.rb: removed duplicate code [Fixes GH-393]
+	  https://github.com/ruby/ruby/pull/393
+
 Fri Sep 20 23:24:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (btest, btest-ruby, test-knownbug): add $(RUN_OPTS) to
