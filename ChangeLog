@@ -1,3 +1,13 @@
+Fri Sep 20 23:24:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (btest, btest-ruby, test-knownbug): add $(RUN_OPTS) to
+	  ruby to be run, so that tests are runnable before making exts.
+
+	* common.mk (test-sample): ditto, and use $(MINIRUBY) as rubytest.rb
+	  does not need extension libraries.
+
+	* tool/rubytest.rb: pass $(RUN_OPTS) to testing ruby using --run-opt.
+
 Fri Sep 20 15:01:46 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (intern_str): sigil only names are junk, at least one
