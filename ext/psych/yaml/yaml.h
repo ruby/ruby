@@ -1851,7 +1851,7 @@ YAML_DECLARE(void)
 yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical);
 
 /**
- * Set the intendation increment.
+ * Set the indentation increment.
  *
  * @param[in,out]   emitter     An emitter object.
  * @param[in]       indent      The indentation increment (1 < . < 10).

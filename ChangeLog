@@ -1,3 +1,8 @@
+Fri Sep 20 23:48:34 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/psych/yaml/yaml.h: [DOC] merge upstream typo fix by @GreenGeorge
+	  https://github.com/tenderlove/psych/pull/161
+
 Fri Sep 20 23:37:40 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/securerandom.rb: [DOC] SecureRandom.hex length argument
