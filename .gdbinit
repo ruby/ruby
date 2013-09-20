@@ -80,39 +80,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRING
     printf "%sT_STRING%s: ", $color_type, $color_end
-    set print address off
-    output (char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
-    set print address on
-    printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
-            ((struct RString*)($arg0))->as.heap.len : \
-            (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
-    if !($flags & RUBY_FL_USER1)
-      printf "(embed) "
-    else
-      if ($flags & RUBY_FL_USER2)
-        printf "(shared) "
-      end
-      if ($flags & RUBY_FL_USER3)
-        printf "(assoc) "
-      end
-    end
-    printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == 0
-      printf "coderange:unknown "
-    else
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_7BIT
-      printf "coderange:7bit "
-    else
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_VALID
-      printf "coderange:valid "
-    else
-      printf "coderange:broken "
-    end
-    end
-    end
-    print (struct RString *)($arg0)
+    rp_string $arg0 $flags
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
     set $regsrc = ((struct RRegexp*)($arg0))->src
@@ -351,7 +319,7 @@ define rp_id
     printf "(%ld): ", $id
     rb_numtable_entry global_symbols.id_str $id
     if $rb_numtable_rec
-      rp $rb_numtable_rec
+      rp_string $rb_numtable_rec
     else
       echo undef\n
     end
@@ -375,6 +343,46 @@ define rp_id
 end
 document rp_id
   Print an ID.
+end
+
+define rp_string
+  set $flags = ((struct RBasic*)($arg0))->flags
+  set print address off
+  output (char *)(($flags & RUBY_FL_USER1) ? \
+	    ((struct RString*)($arg0))->as.heap.ptr : \
+	    ((struct RString*)($arg0))->as.ary)
+  set print address on
+  printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
+          ((struct RString*)($arg0))->as.heap.len : \
+          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  if !($flags & RUBY_FL_USER1)
+    printf "(embed) "
+  else
+    if ($flags & RUBY_FL_USER2)
+      printf "(shared) "
+    end
+    if ($flags & RUBY_FL_USER3)
+      printf "(assoc) "
+    end
+  end
+  printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == 0
+    printf "coderange:unknown "
+  else
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_7BIT
+    printf "coderange:7bit "
+  else
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_VALID
+    printf "coderange:valid "
+  else
+    printf "coderange:broken "
+  end
+  end
+  end
+  print (struct RString *)($arg0)
+end
+document rp_string
+  Print the content of a String.
 end
 
 define rp_class
