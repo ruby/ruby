@@ -1,3 +1,8 @@
+Sat Sep 21 01:04:25 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/benchmark.rb: [DOC] grammar of Benchmark#bm [Bug #8888]
+	  Patch by Prathamesh Sonpatki
+
 Sat Sep 21 00:50:02 2013  Zachary Scott  <e@zzak.io>
 
 	* enumerator.c: [DOC] Enumerator#each arguments documentation [GH-388]
