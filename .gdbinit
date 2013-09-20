@@ -27,75 +27,8 @@ define rp
   else
   if ((VALUE)($arg0) & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     set $id = (($arg0) >> RUBY_SPECIAL_SHIFT)
-    if $id == '!' || $id == '+' || $id == '-' || $id == '*' || $id == '/' || $id == '%' || $id == '<' || $id == '>' || $id == '`'
-      printf "SYMBOL(:%c)\n", $id
-    else
-    if $id == idDot2
-      printf "%sSYMBOL%s(:..)\n", $color_type, $color_end
-    else
-    if $id == idDot3
-      printf "%sSYMBOL%s(:...)\n", $color_type, $color_end
-    else
-    if $id == idUPlus
-      printf "%sSYMBOL%s(:+@)\n", $color_type, $color_end
-    else
-    if $id == idUMinus
-      printf "%sSYMBOL%s(:-@)\n", $color_type, $color_end
-    else
-    if $id == idPow
-      printf "%sSYMBOL%s(:**)\n", $color_type, $color_end
-    else
-    if $id == idCmp
-      printf "%sSYMBOL%s(:<=>)\n", $color_type, $color_end
-    else
-    if $id == idLTLT
-      printf "%sSYMBOL%s(:<<)\n", $color_type, $color_end
-    else
-    if $id == idLE
-      printf "%sSYMBOL%s(:<=)\n", $color_type, $color_end
-    else
-    if $id == idGE
-      printf "%sSYMBOL%s(:>=)\n", $color_type, $color_end
-    else
-    if $id == idEq
-      printf "%sSYMBOL%s(:==)\n", $color_type, $color_end
-    else
-    if $id == idEqq
-      printf "%sSYMBOL%s(:===)\n", $color_type, $color_end
-    else
-    if $id == idNeq
-      printf "%sSYMBOL%s(:!=)\n", $color_type, $color_end
-    else
-    if $id == idEqTilde
-      printf "%sSYMBOL%s(:=~)\n", $color_type, $color_end
-    else
-    if $id == idNeqTilde
-      printf "%sSYMBOL%s(:!~)\n", $color_type, $color_end
-    else
-    if $id == idAREF
-      printf "%sSYMBOL%s(:[])\n", $color_type, $color_end
-    else
-    if $id == idASET
-      printf "%sSYMBOL%s(:[]=)\n", $color_type, $color_end
-    else
-      printf "%sSYMBOL%s(%ld)\n", $color_type, $color_end, $id
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
+    printf "%sSYMBOL%s", $color_type, $color_end
+    rp_id $id
   else
   if ($arg0) == RUBY_Qfalse
     echo false\n
@@ -360,6 +293,88 @@ define rp
 end
 document rp
   Print a Ruby's VALUE.
+end
+
+define rp_id
+  set $id = (ID)$arg0
+  if $id == '!' || $id == '+' || $id == '-' || $id == '*' || $id == '/' || $id == '%' || $id == '<' || $id == '>' || $id == '`'
+    printf "(:%c)\n", $id
+  else
+  if $id == idDot2
+    printf "(:..)\n"
+  else
+  if $id == idDot3
+    printf "(:...)\n"
+  else
+  if $id == idUPlus
+    printf "(:+@)\n"
+  else
+  if $id == idUMinus
+    printf "(:-@)\n"
+  else
+  if $id == idPow
+    printf "(:**)\n"
+  else
+  if $id == idCmp
+    printf "(:<=>)\n"
+  else
+  if $id == idLTLT
+    printf "(:<<)\n"
+  else
+  if $id == idLE
+    printf "(:<=)\n"
+  else
+  if $id == idGE
+    printf "(:>=)\n"
+  else
+  if $id == idEq
+    printf "(:==)\n"
+  else
+  if $id == idEqq
+    printf "(:===)\n"
+  else
+  if $id == idNeq
+    printf "(:!=)\n"
+  else
+  if $id == idEqTilde
+    printf "(:=~)\n"
+  else
+  if $id == idNeqTilde
+    printf "(:!~)\n"
+  else
+  if $id == idAREF
+    printf "(:[])\n"
+  else
+  if $id == idASET
+    printf "(:[]=)\n"
+  else
+    printf "(%ld): ", $id
+    rb_numtable_entry global_symbols.id_str $id
+    if $rb_numtable_rec
+      rp $rb_numtable_rec
+    else
+      echo undef\n
+    end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+end
+document rp_id
+  Print an ID.
 end
 
 define rp_class
@@ -689,12 +704,8 @@ define rb_numtable_entry
 end
 
 define rb_id2name
-  rb_numtable_entry global_symbols.id_str (ID)$arg0
-  if $rb_numtable_rec
-    rp $rb_numtable_rec
-  else
-    echo undef\n
-  end
+  printf "%sID%s: ", $color_type, $color_end
+  rp_id $arg0
 end
 document rb_id2name
   Print the name of id
