@@ -487,13 +487,16 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *     enum.to_a      -> array
- *     enum.entries   -> array
+ *     enum.to_a(*args)      -> array
+ *     enum.entries(*args)   -> array
  *
  *  Returns an array containing the items in <i>enum</i>.
  *
  *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
  *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ *
+ *     require 'prime'
+ *     Prime.entries 10                  #=> [2, 3, 5, 7]
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
