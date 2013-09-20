@@ -79,7 +79,7 @@ printf_test_call(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(v = rb_hash_aref(opt, ID2SYM(rb_intern("prec"))))) {
 	    *p++ = '.';
 	    if (FIXNUM_P(v))
-		p = utoa(p, p + sizeof(format), NUM2UINT(v));
+		p = utoa(p, format + sizeof(format), NUM2UINT(v));
 	}
     }
     *p++ = cnv;

@@ -1,3 +1,8 @@
+Fri Sep 20 14:14:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/printf/printf.c (printf_test_call): Fix an end of buffer
+	  argument.
+
 Thu Sep 19 16:59:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda): adjust position to the beginning of the block.
