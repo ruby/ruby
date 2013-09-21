@@ -8485,6 +8485,69 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  if optional <i>timeout</i> value is given and no <code>IO</code> object
  *  is ready in <i>timeout</i> seconds.
  *
+ *  The best way to use <code>IO.select</code> is invoking it
+ *  after nonblocking methods such as <code>read_nonblock</code>.
+ *  The methods raises an exception which is extended by
+ *  <code>IO::WaitReadable</code> or <code>IO::WaitWritable</code>.
+ *  The modules notify how the caller should wait with <code>IO.select</code>.
+ *  If <code>IO::WaitReadable</code> is raised, the caller should wait for reading.
+ *  If <code>IO::WaitWritable</code> is raised, the caller should wait for writing.
+ *
+ *  So, blocking read (<code>readpartial</code>) can be emulated using
+ *  <code>read_nonblock</code> and <code>IO.select</code> as follows:
+ *
+ *    begin
+ *      result = io_like.read_nonblock(maxlen)
+ *    rescue IO::WaitReadable
+ *      IO.select([io_like])
+ *      retry
+ *    rescue IO::WaitWritable
+ *      IO.select(nil, [io_like])
+ *      retry
+ *    end
+ *
+ *  Especially, the combination of nonblocking methods and
+ *  <code>IO.select</code> is preferred for <code>IO</code> like
+ *  objects such as <code>OpenSSL::SSL::SSLSocket</code>.
+ *  It has <code>to_io</code> method to return underlying <code>IO</code> object.
+ *  <code>IO.select</code> calls <code>to_io</code> to obtain the file descriptor to wait.
+ *
+ *  This means that readability notified by <code>IO.select</code> doesn't mean
+ *  readability from <code>OpenSSL::SSL::SSLSocket</code> object.
+ *
+ *  Most possible situation is <code>OpenSSL::SSL::SSLSocket</code> buffers some data.
+ *  <code>IO.select</code> doesn't see the buffer.
+ *  So <code>IO.select</code> can block when <code>OpenSSL::SSL::SSLSocket#readpartial</code> doesn't block.
+ *
+ *  However several more complicated situation exists.
+ *
+ *  SSL is a protocol which is sequence of records.
+ *  The record consists multiple bytes.
+ *  So, the remote side of SSL sends a partial record,
+ *  <code>IO.select</code> notifies readability but
+ *  <code>OpenSSL::SSL::SSLSocket</code> cannot decrypt a byte and
+ *  <code>OpenSSL::SSL::SSLSocket#readpartial</code> will blocks.
+ *
+ *  Also, the remote side can request SSL renegotiation which forces
+ *  the local SSL engine writes some data.
+ *  This means <code>OpenSSL::SSL::SSLSocket#readpartial</code> may
+ *  invoke <code>write</code> system call and it can block.
+ *  In such situation, <code>OpenSSL::SSL::SSLSocket#read_nonblock</code>
+ *  raises IO::WaitWritable instead of blocking.
+ *  So, the caller should wait for ready for writability as above example.
+ *
+ *  The combination of nonblocking methods and <code>IO.select</code> is
+ *  also useful for streams such as tty, pipe socket socket when
+ *  multiple process read form a stream.
+ *
+ *  Finally, Linux kernel developers doesn't guarantee that
+ *  readability of select(2) means readability of following read(2) even
+ *  for single process.
+ *  See select(2) manual on GNU/Linux system.
+ *
+ *  Invoking <code>IO.select</code> before <code>IO#readpartial</code> works well in usual.
+ *  However it is not the best way to use <code>IO.select</code>.
+ *
  *  === Parameters
  *  read_array:: an array of <code>IO</code> objects that wait until ready for read
  *  write_array:: an array of <code>IO</code> objects that wait until ready for write
@@ -8496,6 +8559,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *      rp, wp = IO.pipe
  *      mesg = "ping "
  *      100.times {
+   *      # IO.select follows IO#read.  Not the best way to use IO.select.
  *        rs, ws, = IO.select([rp], [wp])
  *        if r = rs[0]
  *          ret = r.read(5)
