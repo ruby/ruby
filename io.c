@@ -8486,6 +8486,12 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  if optional <i>timeout</i> value is given and no <code>IO</code> object
  *  is ready in <i>timeout</i> seconds.
  *
+ *  <code>IO.select</code> peeks the buffer of <code>IO</code> objects for testing readability.
+ *  If the <code>IO</code> buffer is not empty,
+ *  <code>IO.select</code> immediately notify readability.
+ *  This "peek" is only happen for <code>IO</code> objects.
+ *  It is not happen for IO-like objects such as OpenSSL::SSL::SSLSocket.
+ *
  *  The best way to use <code>IO.select</code> is invoking it
  *  after nonblocking methods such as <code>read_nonblock</code>.
  *  The methods raises an exception which is extended by
