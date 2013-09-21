@@ -8559,7 +8559,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *      rp, wp = IO.pipe
  *      mesg = "ping "
  *      100.times {
-   *      # IO.select follows IO#read.  Not the best way to use IO.select.
+ *        # IO.select follows IO#read.  Not the best way to use IO.select.
  *        rs, ws, = IO.select([rp], [wp])
  *        if r = rs[0]
  *          ret = r.read(5)
