@@ -1,3 +1,9 @@
+Sat Sep 21 20:11:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_internal): remove cloexec setting on pipes
+	  created by rb_cloexec_pipe.  patch by normalperson (Eric Wong) at
+	  [ruby-core:56523].  [Bug #8769]
+
 Sat Sep 21 01:04:25 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/benchmark.rb: [DOC] grammar of Benchmark#bm [Bug #8888]

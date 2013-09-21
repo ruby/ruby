@@ -3389,10 +3389,6 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     }
     else {
 	if (pipe_nocrash(ep, fds)) return -1;
-	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
-	    preserving_errno((close(ep[0]), close(ep[1])));
-	    return -1;
-	}
         pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
         if (pid < 0)
             return pid;
