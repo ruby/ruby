@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/symbol/symbol"
+require "-test-/symbol"
 
 module Test_Symbol
   class TestInadvertent < Test::Unit::TestCase

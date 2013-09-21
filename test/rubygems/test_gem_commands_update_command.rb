@@ -405,4 +405,31 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal expected, @cmd.options
   end
 
+  def test_update_rubygems_arguments
+    @cmd.options[:system] = true
+
+    arguments = @cmd.update_rubygems_arguments
+
+    assert_equal '--prefix',           arguments.shift
+    assert_equal Gem.prefix,           arguments.shift
+    assert_equal '--no-rdoc',          arguments.shift
+    assert_equal '--no-ri',            arguments.shift
+    assert_equal '--previous-version', arguments.shift
+    assert_equal Gem::VERSION,         arguments.shift
+    assert_empty arguments
+  end
+
+  def test_update_rubygems_arguments_1_8_x
+    @cmd.options[:system] = '1.8.26'
+
+    arguments = @cmd.update_rubygems_arguments
+
+    assert_equal '--prefix',           arguments.shift
+    assert_equal Gem.prefix,           arguments.shift
+    assert_equal '--no-rdoc',          arguments.shift
+    assert_equal '--no-ri',            arguments.shift
+    assert_empty arguments
+  end
+
 end
+

@@ -12,6 +12,15 @@ class TestRDocMarkupHeading < RDoc::TestCase
     assert_equal 'label-Hello+Friend%21', @h.aref
   end
 
+  def test_label
+    assert_equal 'label-Hello+Friend%21', @h.label
+    assert_equal 'label-Hello+Friend%21', @h.label(nil)
+
+    context = RDoc::NormalClass.new 'Foo'
+
+    assert_equal 'class-Foo-label-Hello+Friend%21', @h.label(context)
+  end
+
   def test_plain_html
     assert_equal 'Hello <strong>Friend</strong>!', @h.plain_html
   end

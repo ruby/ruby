@@ -15,13 +15,6 @@ class TestRDocMarkdownTest < RDoc::TestCase
     @parser = RDoc::Markdown.new
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_amps_and_angle_encoding
     input = File.read "#{MARKDOWN_TEST_PATH}/Amps and angle encoding.text"
 

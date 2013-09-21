@@ -186,8 +186,9 @@ class RDoc::Markup::AttributeManager
     # protect __send__, __FILE__, etc.
     @str.gsub!(/__([a-z]+)__/i,
       "_#{PROTECT_ATTR}_#{PROTECT_ATTR}\\1_#{PROTECT_ATTR}_#{PROTECT_ATTR}")
-    @str.gsub!(/\\([#{Regexp.escape @protectable.join('')}])/,
-               "\\1#{PROTECT_ATTR}")
+    @str.gsub!(/(\A|[^\\])\\([#{Regexp.escape @protectable.join}])/m,
+               "\\1\\2#{PROTECT_ATTR}")
+    @str.gsub!(/\\(\\[#{Regexp.escape @protectable.join}])/m, "\\1")
   end
 
   ##

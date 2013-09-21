@@ -198,4 +198,12 @@ class TestSymbol < Test::Unit::TestCase
   def test_singleton_method
     assert_raise(TypeError) { a = :foo; def a.foo; end }
   end
+
+  def test_frozen_symbol
+    assert_equal(true, :foo.frozen?)
+    assert_equal(true, :each.frozen?)
+    assert_equal(true, :+.frozen?)
+    assert_equal(true, "foo#{Time.now.to_i}".to_sym.frozen?)
+    assert_equal(true, :foo.to_sym.frozen?)
+  end
 end

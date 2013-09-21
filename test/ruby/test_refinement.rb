@@ -982,6 +982,40 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_refine_after_using
+    assert_separately([], <<-"end;")
+      bug8880 = '[ruby-core:57079] [Bug #8880]'
+      module Test
+        refine(String) do
+        end
+      end
+      using Test
+      def t
+        'Refinements are broken!'.chop!
+      end
+      t
+      module Test
+        refine(String) do
+          def chop!
+            self.sub!(/broken/, 'fine')
+          end
+        end
+      end
+      assert_equal('Refinements are fine!', t, bug8880)
+    end;
+  end
+
+  def test_instance_methods
+    bug8881 = '[ruby-core:57080] [Bug #8881]'
+    assert_not_include(Foo.instance_methods(false), :z, bug8881)
+    assert_not_include(FooSub.instance_methods(true), :z, bug8881)
+  end
+
+  def test_method_defined
+    assert_not_send([Foo, :method_defined?, :z])
+    assert_not_send([FooSub, :method_defined?, :z])
+  end
+
   private
 
   def eval_using(mod, s)

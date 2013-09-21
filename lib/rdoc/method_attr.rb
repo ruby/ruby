@@ -95,6 +95,18 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
   ##
+  # Resets cached data for the object so it can be rebuilt by accessor methods
+
+  def initialize_copy other # :nodoc:
+    @full_name = nil
+  end
+
+  def initialize_visibility # :nodoc:
+    super
+    @see = nil
+  end
+
+  ##
   # Order by #singleton then #name
 
   def <=>(other)

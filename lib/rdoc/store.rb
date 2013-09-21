@@ -305,8 +305,10 @@ class RDoc::Store
     # cache included modules before they are removed from the documentation
     all_classes_and_modules.each { |cm| cm.ancestors }
 
-    remove_nodoc @classes_hash
-    remove_nodoc @modules_hash
+    unless min_visibility == :nodoc then
+      remove_nodoc @classes_hash
+      remove_nodoc @modules_hash
+    end
 
     @unique_classes = find_unique @classes_hash
     @unique_modules = find_unique @modules_hash
@@ -661,7 +663,7 @@ class RDoc::Store
   end
 
   ##
-  # Converts the variable => ClassModule map +variables+ from a C parser into 
+  # Converts the variable => ClassModule map +variables+ from a C parser into
   # a variable => class name map.
 
   def make_variable_map variables

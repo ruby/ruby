@@ -56,14 +56,21 @@ module Gem::GemcutterUtilities
 
   ##
   # Creates an RubyGems API to +host+ and +path+ with the given HTTP +method+.
+  #
+  # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
-  def rubygems_api_request(method, path, host = nil, &block)
+  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, &block)
     require 'net/http'
 
     self.host = host if host
     unless self.host
       alert_error "You must specify a gem server"
       terminate_interaction 1 # TODO: question this
+    end
+
+    if allowed_push_host and self.host != allowed_push_host
+      alert_error "#{self.host.inspect} is not allowed by the gemspec, which only allows #{allowed_push_host.inspect}"
+      terminate_interaction 1
     end
 
     uri = URI.parse "#{self.host}/#{path}"
@@ -77,7 +84,8 @@ module Gem::GemcutterUtilities
   # Signs in with the RubyGems API at +sign_in_host+ and sets the rubygems API
   # key.
 
-  def sign_in sign_in_host = self.host
+  def sign_in sign_in_host = nil
+    sign_in_host ||= self.host
     return if Gem.configuration.rubygems_api_key
 
     pretty_host = if Gem::DEFAULT_HOST == sign_in_host then

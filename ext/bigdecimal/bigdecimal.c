@@ -3936,7 +3936,7 @@ VpAlloc(size_t mx, const char *szVal)
     }
     nalloc = (ni + nf + BASE_FIG - 1) / BASE_FIG + 1;    /* set effective allocation  */
     /* units for szVal[]  */
-    if (mx <= 0) mx = 1;
+    if (mx == 0) mx = 1;
     nalloc = Max(nalloc, mx);
     mx = nalloc;
     vp = VpAllocReal(mx);
@@ -5029,7 +5029,7 @@ VpFormatSt(char *psz, size_t fFmt)
     size_t ie, i, nf = 0;
     char ch;
 
-    if (fFmt <= 0) return;
+    if (fFmt == 0) return;
 
     ie = strlen(psz);
     for (i = 0; i < ie; ++i) {
@@ -6162,12 +6162,12 @@ VpVarCheck(Real * v)
 {
     size_t i;
 
-    if (v->MaxPrec <= 0) {
+    if (v->MaxPrec == 0) {
 	printf("ERROR(VpVarCheck): Illegal Max. Precision(=%"PRIuSIZE")\n",
 	       v->MaxPrec);
 	return 1;
     }
-    if (v->Prec <= 0 || v->Prec > v->MaxPrec) {
+    if (v->Prec == 0 || v->Prec > v->MaxPrec) {
 	printf("ERROR(VpVarCheck): Illegal Precision(=%"PRIuSIZE")\n", v->Prec);
 	printf("       Max. Prec.=%"PRIuSIZE"\n", v->MaxPrec);
 	return 2;

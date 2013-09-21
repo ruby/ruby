@@ -1,12 +1,15 @@
 #! /usr/bin/ruby -nl
 BEGIN {
   $dryrun = false
+  $tty = STDOUT.tty?
   until ARGV.empty?
     case ARGV[0]
     when /\A--destdir=(.*)/
       $destdir = $1
     when /\A-n\z/
       $dryrun = true
+    when /\A--(?:no-)?tty\z/
+      $tty = !$1
     else
       break
     end
@@ -20,15 +23,10 @@ $_ = File.join($destdir, $_) if $destdir
 list << $_
 END {
   status = true
-  if $dryrun
-    $files.each do |file|
-      puts "rm #{file}"
-    end
-    $dirs.reverse_each do |dir|
-      puts "rmdir #{dir}"
-    end
-  else
-    $files.each do |file|
+  $\ = ors = (!$dryrun and $tty) ? "\e[K\r" : "\n"
+  $files.each do |file|
+    print "rm #{file}"
+    unless $dryrun
       begin
         File.unlink(file)
       rescue Errno::ENOENT
@@ -37,9 +35,17 @@ END {
         puts $!
       end
     end
-    $dirs.reverse_each do |dir|
+  end
+  unlink = {}
+  $dirs.each do |dir|
+    unlink[dir] = true
+  end
+  while dir = $dirs.pop
+    print "rmdir #{dir}"
+    unless $dryrun
       begin
         begin
+          unlink.delete(dir)
           Dir.rmdir(dir)
         rescue Errno::ENOTDIR
           raise unless File.symlink?(dir)
@@ -49,8 +55,13 @@ END {
       rescue
         status = false
         puts $!
+      else
+        parent = File.dirname(dir)
+        $dirs.push(parent) unless parent == dir or unlink[parent]
       end
     end
   end
+  $\ = nil
+  print ors.chomp
   exit(status)
 }

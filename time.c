@@ -4399,14 +4399,14 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *      %L - Millisecond of the second (000..999)
  *           The digits under millisecond are truncated to not produce 1000.
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  milli second (3 digits)
- *              %6N  micro second (6 digits)
- *              %9N  nano second (9 digits)
- *              %12N pico second (12 digits)
- *              %15N femto second (15 digits)
- *              %18N atto second (18 digits)
- *              %21N zepto second (21 digits)
- *              %24N yocto second (24 digits)
+ *              %3N  millisecond (3 digits)
+ *              %6N  microsecond (6 digits)
+ *              %9N  nanosecond (9 digits)
+ *              %12N picosecond (12 digits)
+ *              %15N femtosecond (15 digits)
+ *              %18N attosecond (18 digits)
+ *              %21N zeptosecond (21 digits)
+ *              %24N yoctosecond (24 digits)
  *           The digits under the specified length are truncated to avoid
  *           carry up.
  *

@@ -11,6 +11,8 @@ class XrefTestCase < RDoc::TestCase
     @options = RDoc::Options.new
     @options.quiet = true
 
+    @rdoc.options = @options
+
     @file_name = 'xref_data.rb'
     @xref_data = @store.add_file @file_name
     @top_level = @xref_data

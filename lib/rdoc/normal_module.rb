@@ -3,6 +3,10 @@
 
 class RDoc::NormalModule < RDoc::ClassModule
 
+  def aref_prefix # :nodoc:
+    'module'
+  end
+
   def inspect # :nodoc:
     "#<%s:0x%x module %s includes: %p extends: %p attributes: %p methods: %p aliases: %p>" % [
       self.class, object_id,

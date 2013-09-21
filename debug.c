@@ -24,6 +24,7 @@ const union {
     enum ruby_tag_type          tag_type;
     enum node_type              node_type;
     enum ruby_method_ids        method_ids;
+    enum ruby_id_types          id_types;
     enum {
         RUBY_ENCODING_INLINE_MAX = ENCODING_INLINE_MAX,
         RUBY_ENCODING_SHIFT = ENCODING_SHIFT,

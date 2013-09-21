@@ -434,10 +434,38 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 
 /*
  * call-seq:
- *   enum.each {...}
+ *   enum.each { |elm| block }                    -> obj
+ *   enum.each                                    -> enum
+ *   enum.each(*appending_args) { |elm| block }   -> obj
+ *   enum.each(*appending_args)                   -> an_enumerator
  *
- * Iterates over the block according to how this Enumerable was constructed.
- * If no block is given, returns self.
+ * Iterates over the block according to how this Enumerator was constructed.
+ * If no block and no arguments are given, returns self.
+ *
+ * === Examples
+ *
+ *   "Hello, world!".scan(/\w+/)                     #=> ["Hello", "world"]
+ *   "Hello, world!".to_enum(:scan, /\w+/).to_a      #=> ["Hello", "world"]
+ *   "Hello, world!".to_enum(:scan).each(/\w+/).to_a #=> ["Hello", "world"]
+ *
+ *   obj = Object.new
+ *
+ *   def obj.each_arg(a, b=:b, *rest)
+ *     yield a
+ *     yield b
+ *     yield rest
+ *     :method_returned
+ *   end
+ *
+ *   enum = obj.to_enum :each_arg, :a, :x
+ *
+ *   enum.each.to_a                  #=> [:a, :x, []]
+ *   enum.each.equal?(enum)          #=> true
+ *   enum.each { |elm| elm }         #=> :method_returned
+ *
+ *   enum.each(:y, :z).to_a          #=> [:a, :x, [:y, :z]]
+ *   enum.each(:y, :z).equal?(enum)  #=> false
+ *   enum.each(:y, :z) { |elm| elm } #=> :method_returned
  *
  */
 static VALUE

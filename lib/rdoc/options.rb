@@ -52,6 +52,18 @@ require 'pathname'
 #     end
 #   end
 #
+# Of course, RDoc::Options does not respond to +spell_dictionary+ by default
+# so you will need to add it:
+#
+#   class RDoc::Options
+#
+#     ##
+#     # The spell dictionary used by the spell-checking plugin.
+#
+#     attr_accessor :spell_dictionary
+#
+#   end
+#
 # == Option Validators
 #
 # OptionParser validators will validate and cast user input values.  In
@@ -229,6 +241,10 @@ class RDoc::Options
   attr_accessor :option_parser
 
   ##
+  # Output heading decorations?
+  attr_accessor :output_decoration
+
+  ##
   # Directory where guides, FAQ, and other pages not associated with a class
   # live.  You may leave this unset if these are at the root of your project.
 
@@ -277,6 +293,11 @@ class RDoc::Options
   attr_accessor :template_dir
 
   ##
+  # Additional template stylesheets
+
+  attr_accessor :template_stylesheets
+
+  ##
   # Documentation title
 
   attr_accessor :title
@@ -297,9 +318,12 @@ class RDoc::Options
   attr_accessor :webcvs
 
   ##
-  # Minimum visibility of a documented method. One of +:public+,
-  # +:protected+, +:private+. May be overridden on a per-method
-  # basis with the :doc: directive.
+  # Minimum visibility of a documented method. One of +:public+, +:protected+,
+  # +:private+ or +:nodoc+.
+  #
+  # The +:nodoc+ visibility ignores all directives related to visibility.  The
+  # other visibilities may be overridden on a per-method basis with the :doc:
+  # directive.
 
   attr_accessor :visibility
 
@@ -325,6 +349,7 @@ class RDoc::Options
     @op_dir = nil
     @page_dir = nil
     @pipe = false
+    @output_decoration = true
     @rdoc_include = []
     @root = Pathname(Dir.pwd)
     @show_hash = false
@@ -333,6 +358,7 @@ class RDoc::Options
     @tab_width = 8
     @template = nil
     @template_dir = nil
+    @template_stylesheets = []
     @title = nil
     @update_output_dir = true
     @verbosity = 1
@@ -466,7 +492,7 @@ class RDoc::Options
     @op_dir ||= 'doc'
 
     @rdoc_include << "." if @rdoc_include.empty?
-    root = @root.to_path
+    root = @root.to_s
     @rdoc_include << root unless @rdoc_include.include?(root)
 
     if @exclude.nil? or Regexp === @exclude then
@@ -583,6 +609,7 @@ Usage: #{opt.program_name} [options] [names...]
       parsers.sort.each do |parser, regexp|
         opt.banner << "  - #{parser}: #{regexp.join ', '}\n"
       end
+      opt.banner << "  - TomDoc:  Only in ruby files\n"
 
       opt.banner << "\n  The following options are deprecated:\n\n"
 
@@ -697,17 +724,19 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--tab-width=WIDTH", "-w", OptionParser::DecimalInteger,
+      opt.on("--tab-width=WIDTH", "-w", Integer,
              "Set the width of tab characters.") do |value|
+        raise OptionParser::InvalidArgument,
+              "#{value} is an invalid tab width" if value <= 0
         @tab_width = value
       end
 
       opt.separator nil
 
-      opt.on("--visibility=VISIBILITY", "-V", RDoc::VISIBILITIES,
+      opt.on("--visibility=VISIBILITY", "-V", RDoc::VISIBILITIES + [:nodoc],
              "Minimum visibility to document a method.",
-             "One of 'public', 'protected' (the default)",
-             "or 'private'. Can be abbreviated.") do |value|
+             "One of 'public', 'protected' (the default),",
+             "'private' or 'nodoc' (show everything)") do |value|
         @visibility = value
       end
 
@@ -863,6 +892,14 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
+      opt.on("--template-stylesheets=FILES", PathArray,
+             "Set (or add to) the list of files to",
+             "include with the html template.") do |value|
+        @template_stylesheets << value
+      end
+
+      opt.separator nil
+
       opt.on("--title=TITLE", "-t",
              "Set TITLE as the title for HTML output.") do |value|
         @title = value
@@ -918,7 +955,7 @@ Usage: #{opt.program_name} [options] [names...]
         check_generator
 
         @generator_name = "ri"
-        @op_dir = RDoc::RI::Paths::SITEDIR
+        @op_dir = RDoc::RI::Paths.site_dir
         setup_generator
       end
 
@@ -965,9 +1002,16 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
-      opt.on("--verbose", "-v",
+      opt.on("--verbose", "-V",
              "Display extra progress as RDoc parses") do |value|
         @verbosity = 2
+      end
+
+      opt.separator nil
+
+      opt.on("--version", "-v", "print the version") do
+        puts opt.version
+        exit
       end
 
       opt.separator nil
@@ -993,7 +1037,7 @@ Usage: #{opt.program_name} [options] [names...]
 
     begin
       opts.parse! argv
-    rescue OptionParser::InvalidArgument, OptionParser::InvalidOption => e
+    rescue OptionParser::ParseError => e
       if DEPRECATED[e.args.first] then
         deprecated << e.args.first
       elsif %w[--format --ri -r --ri-site -R].include? e.args.first then
@@ -1019,18 +1063,22 @@ Usage: #{opt.program_name} [options] [names...]
       deprecated.each do |opt|
         $stderr.puts 'option ' << opt << ' is deprecated: ' << DEPRECATED[opt]
       end
+    end
 
-      unless invalid.empty? then
-        invalid = "invalid options: #{invalid.join ', '}"
+    unless invalid.empty? then
+      invalid = "invalid options: #{invalid.join ', '}"
 
-        if ignore_invalid then
+      if ignore_invalid then
+        unless quiet then
           $stderr.puts invalid
           $stderr.puts '(invalid options are ignored)'
-        else
-          $stderr.puts opts
-          $stderr.puts invalid
-          exit 1
         end
+      else
+        unless quiet then
+          $stderr.puts opts
+        end
+        $stderr.puts invalid
+        exit 1
       end
     end
 

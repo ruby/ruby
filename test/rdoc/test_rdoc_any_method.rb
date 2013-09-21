@@ -38,8 +38,37 @@ method(a, b) { |c, d| ... }
     assert_equal 'my_c1_m', @c1_m.c_function
   end
 
+  def test_call_seq_equals
+    m = RDoc::AnyMethod.new nil, nil
+
+    m.call_seq = ''
+
+    assert_nil m.call_seq
+
+    m.call_seq = 'foo'
+
+    assert_equal 'foo', m.call_seq
+  end
+
   def test_full_name
     assert_equal 'C1::m', @c1.method_list.first.full_name
+  end
+
+  def test_is_alias_for
+    assert_equal @c2_b, @c2_a.is_alias_for
+
+    # set string on instance variable
+    loaded = Marshal.load Marshal.dump @c2_a
+
+    loaded.store = @store
+
+    assert_equal @c2_b, loaded.is_alias_for, 'Marshal.load'
+
+    m1 = RDoc::AnyMethod.new nil, 'm1'
+    m1.store = @store
+    m1.instance_variable_set :@is_alias_for, ['Missing', false, 'method']
+
+    assert_nil m1.is_alias_for, 'missing alias'
   end
 
   def test_markup_code
@@ -101,11 +130,14 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_load_aliased_method
-    aliased_method = Marshal.load Marshal.dump(@c2.method_list.last)
+    aliased_method = Marshal.load Marshal.dump(@c2_a)
+
+    aliased_method.store = @store
 
     assert_equal 'C2#a',  aliased_method.full_name
     assert_equal 'C2',    aliased_method.parent_name
     assert_equal '()',    aliased_method.params
+    assert_equal @c2_b,   aliased_method.is_alias_for, 'is_alias_for'
     assert                aliased_method.display?
   end
 
@@ -170,14 +202,85 @@ method(a, b) { |c, d| ... }
     assert_equal nil,            loaded.file
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
+    assert_nil                   loaded.is_alias_for
 
     assert loaded.display?
+  end
+
+  def test_marshal_dump_version_2
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.block_params = 'some_block'
+    m.call_seq     = 'call_seq'
+    m.comment      = 'this is a comment'
+    m.params       = 'param'
+    m.record_location top_level
+
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
+    cm.add_method m
+
+    section = cm.sections.first
+
+    al = RDoc::Alias.new nil, 'method', 'aliased', 'alias comment'
+    al_m = m.add_alias al, cm
+
+    loaded = Marshal.load "\x04\bU:\x14RDoc::AnyMethod[\x14i\bI" +
+                          "\"\vmethod\x06:\x06ETI" +
+                          "\"\x11Klass#method\x06;\x06T0:\vpublic" +
+                          "o:\eRDoc::Markup::Document\b:\v@parts[\x06" +
+                          "o:\x1CRDoc::Markup::Paragraph\x06;\t[\x06I" +
+                          "\"\x16this is a comment\x06;\x06T:\n@file0" +
+                          ":0@omit_headings_from_table_of_contents_below0" +
+                          "I\"\rcall_seq\x06;\x06TI\"\x0Fsome_block\x06" +
+                          ";\x06T[\x06[\aI\"\faliased\x06;\x06To;\b\b;\t" +
+                          "[\x06o;\n\x06;\t[\x06I\"\x12alias comment\x06" +
+                          ";\x06T;\v0;\f0I\"\nparam\x06;\x06TI" +
+                          "\"\ffile.rb\x06;\x06TFI\"\nKlass\x06;\x06T" +
+                          "c\x16RDoc::ClassModule0"
+
+    loaded.store = @store
+
+    comment = doc(para('this is a comment'))
+
+    assert_equal m, loaded
+
+    assert_equal [al_m.name],    loaded.aliases.map { |alas| alas.name }
+    assert_equal 'some_block',   loaded.block_params
+    assert_equal 'call_seq',     loaded.call_seq
+    assert_equal comment,        loaded.comment
+    assert_equal top_level,      loaded.file
+    assert_equal 'Klass#method', loaded.full_name
+    assert_equal 'method',       loaded.name
+    assert_equal 'param',        loaded.params
+    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_equal :public,        loaded.visibility
+    assert_equal cm,             loaded.parent
+    assert_equal section,        loaded.section
+    assert_nil                   loaded.is_alias_for
   end
 
   def test_name
     m = RDoc::AnyMethod.new nil, nil
 
     assert_nil m.name
+  end
+
+  def test_name_call_seq
+    m = RDoc::AnyMethod.new nil, nil
+
+    m.call_seq = "yields(name)\nyields(name, description)"
+
+    assert_equal 'yields', m.name
+  end
+
+  def test_name_call_seq_dot
+    m = RDoc::AnyMethod.new nil, nil
+
+    m.call_seq = "obj.yields(name)\nobj.yields(name, description)"
+
+    assert_equal 'yields', m.name
   end
 
   def test_param_list_block_params

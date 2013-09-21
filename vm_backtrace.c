@@ -787,6 +787,8 @@ vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int
 
     rb_scan_args(argc, argv, "02", &level, &vn);
 
+    if (argc == 2 && NIL_P(vn)) argc--;
+
     switch (argc) {
       case 0:
 	lev = lev_default + lev_plus;

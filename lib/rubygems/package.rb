@@ -339,17 +339,30 @@ EOM
   def extract_tar_gz io, destination_dir, pattern = "*" # :nodoc:
     open_tar_gz io do |tar|
       tar.each do |entry|
-        next unless File.fnmatch pattern, entry.full_name
+        # Some entries start with "./" which fnmatch does not like, see github
+        # issue #644
+        full_name = entry.full_name.sub %r%\A\./%, ''
 
-        destination = install_location entry.full_name, destination_dir
+        next unless File.fnmatch pattern, full_name
+
+        destination = install_location full_name, destination_dir
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname destination
+        mkdir_options = {}
+        mkdir_options[:mode] = entry.header.mode if entry.directory?
+        mkdir =
+          if entry.directory? then
+            destination
+          else
+            File.dirname destination
+          end
+
+        FileUtils.mkdir_p mkdir, mkdir_options
 
         open destination, 'wb', entry.header.mode do |out|
           out.write entry.read
-        end
+        end if entry.file?
 
         say destination if Gem.configuration.really_verbose
       end

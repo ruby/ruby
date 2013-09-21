@@ -453,6 +453,7 @@ MSG_RST
 MSG_ERRQUEUE	nil	Fetch message from error queue
 MSG_NOSIGNAL	nil	Do not generate SIGPIPE
 MSG_MORE	nil	Sender will send more
+MSG_FASTOPEN nil Reduce step of the handshake process
 
 SOL_SOCKET	nil	Socket-level options
 SOL_IP	nil	IP socket options

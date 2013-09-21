@@ -244,6 +244,9 @@ command to remove old versions.
     args << '--no-rdoc' unless options[:document].include? 'rdoc'
     args << '--no-ri'   unless options[:document].include? 'ri'
     args << '--no-format-executable' if options[:no_format_executable]
+    args << '--previous-version' << Gem::VERSION if
+      options[:system] == true or
+        Gem::Version.new(options[:system]) >= Gem::Version.new(2)
     args
   end
 

@@ -168,6 +168,24 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
+  # Adds an item of type +klass+ with the given +name+ and +comment+ to the
+  # context.
+  #
+  # Currently only RDoc::Extend and RDoc::Include are supported.
+
+  def add klass, name, comment
+    if RDoc::Extend == klass then
+      ext = RDoc::Extend.new name, comment
+      add_extend ext
+    elsif RDoc::Include == klass then
+      incl = RDoc::Include.new name, comment
+      add_include incl
+    else
+      raise NotImplementedError, "adding a #{klass} is not implemented"
+    end
+  end
+
+  ##
   # Adds +an_alias+ that is automatically resolved
 
   def add_alias an_alias
@@ -1041,8 +1059,8 @@ class RDoc::Context < RDoc::CodeObject
   #--
   # TODO mark the visibility of attributes in the template (if not public?)
 
-  def remove_invisible(min_visibility)
-    return if min_visibility == :private
+  def remove_invisible min_visibility
+    return if [:private, :nodoc].include? min_visibility
     remove_invisible_in @method_list, min_visibility
     remove_invisible_in @attributes, min_visibility
   end

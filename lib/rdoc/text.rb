@@ -140,7 +140,7 @@ module RDoc::Text
   def snippet text, limit = 100
     document = parse text
 
-    RDoc::Markup::ToHtmlSnippet.new(limit).convert document
+    RDoc::Markup::ToHtmlSnippet.new(options, limit).convert document
   end
 
   ##

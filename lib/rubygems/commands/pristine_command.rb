@@ -12,6 +12,7 @@ class Gem::Commands::PristineCommand < Gem::Command
           'Restores installed gems to pristine condition from files located in the gem cache',
           :version => Gem::Requirement.default,
           :extensions => true,
+          :extensions_set => false,
           :all => false
 
     add_option('--all',
@@ -23,7 +24,8 @@ class Gem::Commands::PristineCommand < Gem::Command
     add_option('--[no-]extensions',
                'Restore gems with extensions',
                'in addition to regular gems') do |value, options|
-      options[:extensions] = value
+      options[:extensions_set] = true
+      options[:extensions]     = value
     end
 
     add_option('--only-executables',
@@ -62,6 +64,9 @@ If the cached gem cannot be found it will be downloaded.
 
 If --no-extensions is provided pristine will not attempt to restore a gem
 with an extension.
+
+If --extensions is given (but not --all or gem names) only gems with
+extensions will be restored.
     EOF
   end
 
@@ -72,6 +77,14 @@ with an extension.
   def execute
     specs = if options[:all] then
               Gem::Specification.map
+
+            # `--extensions` must be explicitly given to pristine only gems
+            # with extensions.
+            elsif options[:extensions_set] and
+                  options[:extensions] and options[:args].empty? then
+              Gem::Specification.select do |spec|
+                spec.extensions and not spec.extensions.empty?
+              end
             else
               get_all_gem_names.map do |gem_name|
                 Gem::Specification.find_all_by_name gem_name, options[:version]

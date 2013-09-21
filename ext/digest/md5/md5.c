@@ -368,7 +368,7 @@ MD5_Update(MD5_CTX *pms, const uint8_t *data, size_t nbytes)
     size_t offset = (pms->count[0] >> 3) & 63;
     uint32_t nbits = (uint32_t)(nbytes << 3);
 
-    if (nbytes <= 0)
+    if (nbytes == 0)
 	return;
 
     /* Update the message length. */

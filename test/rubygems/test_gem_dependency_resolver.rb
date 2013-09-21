@@ -66,6 +66,32 @@ class TestGemDependencyResolver < Gem::TestCase
     assert_set [a2], res.resolve
   end
 
+  def test_picks_best_platform
+    is = Gem::DependencyResolver::IndexSpecification
+    unknown = Gem::Platform.new 'unknown'
+    a2_p1 = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+    a3_p2 = quick_spec 'a', 3 do |s| s.platform = unknown end
+    v2 = v(2)
+    v3 = v(3)
+    source = Gem::Source.new @gem_repo
+
+    s = set
+
+    a2    = is.new s, 'a', v2, source, Gem::Platform::RUBY
+    a2_p1 = is.new s, 'a', v2, source, Gem::Platform.local.to_s
+    a3_p2 = is.new s, 'a', v3, source, unknown
+
+    s.add a3_p2
+    s.add a2_p1
+    s.add a2
+
+    ad = make_dep "a"
+
+    res = Gem::DependencyResolver.new([ad], s)
+
+    assert_set [a2_p1], res.resolve
+  end
+
   def test_only_returns_spec_once
     a1 = util_spec "a", "1", "c" => "= 1"
     b1 = util_spec "b", "1", "c" => "= 1"
@@ -327,4 +353,18 @@ class TestGemDependencyResolver < Gem::TestCase
 
     assert_set [b1, c1, d2], r.resolve
   end
+
+  def test_select_local_platforms
+    r = Gem::DependencyResolver.new nil, nil
+
+    a1    = quick_spec 'a', 1
+    a1_p1 = quick_spec 'a', 1 do |s| s.platform = Gem::Platform.local end
+    a1_p2 = quick_spec 'a', 1 do |s| s.platform = 'unknown'           end
+
+    selected = r.select_local_platforms [a1, a1_p1, a1_p2]
+
+    assert_equal [a1, a1_p1], selected
+  end
+
 end
+

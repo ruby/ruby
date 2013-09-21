@@ -62,17 +62,15 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_execute
-    open 'example', 'w' do |io| io.write 'hello' end
-
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, 'OK']
 
-    @cmd.options[:args] = %w[example]
+    @cmd.options[:args] = [@path]
 
     @cmd.execute
 
     assert_equal Net::HTTP::Post, @fetcher.last_request.class
-    assert_equal 'hello', @fetcher.last_request.body
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
   end
@@ -80,20 +78,18 @@ class TestGemCommandsPushCommand < Gem::TestCase
   def test_execute_host
     host = 'https://other.example'
 
-    open 'example', 'w' do |io| io.write 'hello' end
-
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
       ['fail', 500, 'Internal Server Error']
 
     @cmd.options[:host] = host
-    @cmd.options[:args] = %w[example]
+    @cmd.options[:args] = [@path]
 
     @cmd.execute
 
     assert_equal Net::HTTP::Post, @fetcher.last_request.class
-    assert_equal 'hello', @fetcher.last_request.body
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
   end
@@ -152,6 +148,78 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
 
     send_battery
+  end
+
+  def test_sending_gem_to_allowed_push_host
+    @host = "http://privategemserver.com"
+
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata['allowed_push_host'] = @host
+    end
+
+    @api_key = "PRIVKEY"
+
+    keys = {
+      :rubygems_api_key => 'KEY',
+      @host => @api_key
+    }
+
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+    Gem.configuration.load_api_keys
+
+    FileUtils.rm Gem.configuration.credentials_path
+
+    @response = "Successfully registered gem: freebird (1.0.1)"
+    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    send_battery
+  end
+
+  def test_sending_gem_to_disallowed_default_host
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata['allowed_push_host'] = "https://privategemserver.com"
+    end
+
+    response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.com"}
+
+    assert_raises Gem::MockGemUi::TermError do
+      send_battery
+    end
+
+    assert_match response, @ui.error
+  end
+
+  def test_sending_gem_to_disallowed_push_host
+    @host = "https://somebodyelse.com"
+
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata['allowed_push_host'] = "https://privategemserver.com"
+    end
+
+    @api_key = "PRIVKEY"
+
+    keys = {
+      :rubygems_api_key => 'KEY',
+      @host => @api_key
+    }
+
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+    Gem.configuration.load_api_keys
+
+    FileUtils.rm Gem.configuration.credentials_path
+
+    response = 'ERROR:  "https://somebodyelse.com" is not allowed by the gemspec, which only allows "https://privategemserver.com"'
+
+    assert_raises Gem::MockGemUi::TermError do
+      send_battery
+    end
+
+    assert_match response, @ui.error
   end
 
   def test_raises_error_with_no_arguments

@@ -26,6 +26,10 @@ class Gem::DependencyResolver::InstalledSpecification
     @spec.name
   end
 
+  def platform
+    @spec.platform
+  end
+
   def source
     @source ||= Gem::Source::Installed.new
   end

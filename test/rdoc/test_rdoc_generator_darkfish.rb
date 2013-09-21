@@ -65,21 +65,6 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     FileUtils.rm_rf @tmpdir
   end
 
-  def assert_file path
-    assert File.file?(path), "#{path} is not a file"
-  end
-
-  def refute_file path
-    refute File.exist?(path), "#{path} exists"
-  end
-
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_generate
     top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
@@ -91,16 +76,20 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_file 'table_of_contents.html'
     assert_file 'js/search_index.js'
 
+    assert_hard_link 'rdoc.css'
+    assert_hard_link 'fonts.css'
+
+    assert_hard_link 'fonts/SourceCodePro-Bold.ttf'
+    assert_hard_link 'fonts/SourceCodePro-Regular.ttf'
+
     encoding = if Object.const_defined? :Encoding then
                  Regexp.escape Encoding::UTF_8.name
                else
                  Regexp.escape 'UTF-8'
                end
 
-    assert_match(/<meta content="text\/html; charset=#{encoding}"/,
-                 File.read('index.html'))
-    assert_match(/<meta content="text\/html; charset=#{encoding}"/,
-                 File.read('Object.html'))
+    assert_match %r%<meta charset="#{encoding}">%, File.read('index.html')
+    assert_match %r%<meta charset="#{encoding}">%, File.read('Object.html')
 
     refute_match(/Ignored/, File.read('index.html'))
   end
@@ -145,6 +134,36 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     refute_file 'image.png'
   end
 
+  def test_install_rdoc_static_file
+    src = Pathname(__FILE__)
+    dst = File.join @tmpdir, File.basename(src)
+    options = {}
+
+    @g.install_rdoc_static_file src, dst, options
+
+    assert_file dst
+
+    begin
+      assert_hard_link dst
+    rescue MiniTest::Assertion
+      return # hard links are not supported, no further tests needed
+    end
+
+    @g.install_rdoc_static_file src, dst, options
+
+    assert_hard_link dst
+  end
+
+  def test_install_rdoc_static_file_missing
+    src = Pathname(__FILE__) + 'nonexistent'
+    dst = File.join @tmpdir, File.basename(src)
+    options = {}
+
+    @g.install_rdoc_static_file src, dst, options
+
+    refute_file dst
+  end
+
   def test_setup
     @g.setup
 
@@ -181,6 +200,27 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_kind_of RDoc::ERBPartial, template
 
     assert_same template, @g.send(:template_for, partial)
+  end
+
+  ##
+  # Asserts that +filename+ has a link count greater than 1 if hard links to
+  # @tmpdir are supported.
+
+  def assert_hard_link filename
+    assert_file filename
+
+    src = @g.template_dir + '_head.rhtml'
+    dst = File.join @tmpdir, 'hardlinktest'
+
+    begin
+      FileUtils.ln src, dst
+      FileUtils.rm dst
+    rescue SystemCallError
+      return
+    end
+
+    assert_operator File.stat(filename).nlink, :>, 1,
+                    "#{filename} is not hard-linked"
   end
 
 end

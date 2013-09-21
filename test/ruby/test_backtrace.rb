@@ -85,6 +85,10 @@ class TestBacktrace < Test::Unit::TestCase
     rec[m]
   end
 
+  def test_caller_with_nil_length
+    assert_equal caller(0), caller(0, nil)
+  end
+
   def test_caller_locations
     cs = caller(0); locs = caller_locations(0).map{|loc|
       loc.to_s

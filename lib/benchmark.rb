@@ -179,7 +179,7 @@ module Benchmark
   end
 
 
-  # A simple interface to the #benchmark method, #bm is generates sequential
+  # A simple interface to the #benchmark method, #bm generates sequential
   # reports with labels.  The parameters have the same meaning as for
   # #benchmark.
   #

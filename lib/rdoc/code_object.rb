@@ -20,8 +20,9 @@
 #     * RDoc::MetaMethod
 # * RDoc::Alias
 # * RDoc::Constant
-# * RDoc::Require
-# * RDoc::Include
+# * RDoc::Mixin
+#   * RDoc::Require
+#   * RDoc::Include
 
 class RDoc::CodeObject
 
@@ -92,7 +93,7 @@ class RDoc::CodeObject
   ##
   # The RDoc::Store for this object.
 
-  attr_accessor :store
+  attr_reader :store
 
   ##
   # We are the model of the code, but we know that at some point we will be
@@ -105,16 +106,17 @@ class RDoc::CodeObject
   # Creates a new CodeObject that will document itself and its children
 
   def initialize
-    @metadata      = {}
-    @comment       = ''
-    @parent        = nil
-    @parent_name   = nil # for loading
-    @parent_class  = nil # for loading
-    @section       = nil
-    @section_title = nil # for loading
-    @file          = nil
-    @full_name     = nil
-    @store         = nil
+    @metadata         = {}
+    @comment          = ''
+    @parent           = nil
+    @parent_name      = nil # for loading
+    @parent_class     = nil # for loading
+    @section          = nil
+    @section_title    = nil # for loading
+    @file             = nil
+    @full_name        = nil
+    @store            = nil
+    @track_visibility = true
 
     initialize_visibility
   end
@@ -129,6 +131,8 @@ class RDoc::CodeObject
     @force_documentation = false
     @received_nodoc      = false
     @ignored             = false
+    @suppressed          = false
+    @track_visibility    = true
   end
 
   ##
@@ -155,10 +159,17 @@ class RDoc::CodeObject
   end
 
   ##
-  # Should this CodeObject be shown in documentation?
+  # Should this CodeObject be displayed in output?
+  #
+  # A code object should be displayed if:
+  #
+  # * The item didn't have a nodoc or wasn't in a container that had nodoc
+  # * The item wasn't ignored
+  # * The item has documentation and was not suppressed
 
   def display?
-    @document_self and not @ignored
+    @document_self and not @ignored and
+      (documented? or not @suppressed)
   end
 
   ##
@@ -166,6 +177,8 @@ class RDoc::CodeObject
   # has been turned off by :enddoc:
 
   def document_children=(document_children)
+    return unless @track_visibility
+
     @document_children = document_children unless @done_documenting
   end
 
@@ -175,6 +188,7 @@ class RDoc::CodeObject
   # documentation is turned off by +:nodoc:+.
 
   def document_self=(document_self)
+    return unless @track_visibility
     return if @done_documenting
 
     @document_self = document_self
@@ -198,8 +212,9 @@ class RDoc::CodeObject
   # will have no effect in the current file.
 
   def done_documenting=(value)
-    @done_documenting = value
-    @document_self = !value
+    return unless @track_visibility
+    @done_documenting  = value
+    @document_self     = !value
     @document_children = @document_self
   end
 
@@ -249,7 +264,7 @@ class RDoc::CodeObject
 
   ##
   # Use this to ignore a CodeObject and all its children until found again
-  # (#record_location is called).  An ignored item will not be shown in
+  # (#record_location is called).  An ignored item will not be displayed in
   # documentation.
   #
   # See github issue #55
@@ -259,10 +274,13 @@ class RDoc::CodeObject
   # and modules to add new documentation to previously created classes.
   #
   # If a class was ignored (via stopdoc) then reopened later with additional
-  # documentation it should be shown.  If a class was ignored and never
-  # reopened it should not be shown.  The ignore flag allows this to occur.
+  # documentation it should be displayed.  If a class was ignored and never
+  # reopened it should not be displayed.  The ignore flag allows this to
+  # occur.
 
   def ignore
+    return unless @track_visibility
+
     @ignored = true
 
     stop_doc
@@ -270,9 +288,25 @@ class RDoc::CodeObject
 
   ##
   # Has this class been ignored?
+  #
+  # See also #ignore
 
   def ignored?
     @ignored
+  end
+
+  ##
+  # The options instance from the store this CodeObject is attached to, or a
+  # default options instance if the CodeObject is not attached.
+  #
+  # This is used by Text#snippet
+
+  def options
+    if @store and @store.rdoc then
+      @store.rdoc.options
+    else
+      RDoc::Options.new
+    end
   end
 
   ##
@@ -316,8 +350,9 @@ class RDoc::CodeObject
   # Records the RDoc::TopLevel (file) where this code object was defined
 
   def record_location top_level
-    @ignored = false
-    @file = top_level
+    @ignored    = false
+    @suppressed = false
+    @file       = top_level
   end
 
   ##
@@ -339,15 +374,55 @@ class RDoc::CodeObject
 
     @document_self = true
     @document_children = true
-    @ignored = false
+    @ignored    = false
+    @suppressed = false
   end
 
   ##
   # Disable capture of documentation
 
   def stop_doc
+    return unless @track_visibility
+
     @document_self = false
     @document_children = false
+  end
+
+  ##
+  # Sets the +store+ that contains this CodeObject
+
+  def store= store
+    @store = store
+
+    return unless @track_visibility
+
+    if :nodoc == options.visibility then
+      initialize_visibility
+      @track_visibility = false
+    end
+  end
+
+  ##
+  # Use this to suppress a CodeObject and all its children until the next file
+  # it is seen in or documentation is discovered.  A suppressed item with
+  # documentation will be displayed while an ignored item with documentation
+  # may not be displayed.
+
+  def suppress
+    return unless @track_visibility
+
+    @suppressed = true
+
+    stop_doc
+  end
+
+  ##
+  # Has this class been suppressed?
+  #
+  # See also #suppress
+
+  def suppressed?
+    @suppressed
   end
 
 end

@@ -688,6 +688,7 @@ class TestModule < Test::Unit::TestCase
     c.class_eval('@@foo = :foo')
     assert_equal(:foo, c.class_variable_get(:@@foo))
     assert_raise(NameError) { c.class_variable_get(:@@bar) } # c.f. instance_variable_get
+    assert_raise(NameError) { c.class_variable_get(:'@@') }
     assert_raise(NameError) { c.class_variable_get('@@') }
     assert_raise(NameError) { c.class_variable_get(:foo) }
     assert_raise(NameError) { c.class_variable_get("bar") }
@@ -704,6 +705,7 @@ class TestModule < Test::Unit::TestCase
     c = Class.new
     c.class_variable_set(:@@foo, :foo)
     assert_equal(:foo, c.class_eval('@@foo'))
+    assert_raise(NameError) { c.class_variable_set(:'@@', 1) }
     assert_raise(NameError) { c.class_variable_set('@@', 1) }
     assert_raise(NameError) { c.class_variable_set(:foo, 1) }
     assert_raise(NameError) { c.class_variable_set("bar", 1) }
@@ -722,6 +724,8 @@ class TestModule < Test::Unit::TestCase
     c.class_eval('@@foo = :foo')
     assert_equal(true, c.class_variable_defined?(:@@foo))
     assert_equal(false, c.class_variable_defined?(:@@bar))
+    assert_raise(NameError) { c.class_variable_defined?(:'@@') }
+    assert_raise(NameError) { c.class_variable_defined?('@@') }
     assert_raise(NameError) { c.class_variable_defined?(:foo) }
     assert_raise(NameError) { c.class_variable_defined?("bar") }
     assert_raise(TypeError) { c.class_variable_defined?(1) }

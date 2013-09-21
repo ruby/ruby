@@ -15,13 +15,6 @@ class TestRDocOptions < RDoc::TestCase
     RDoc::RDoc::GENERATORS.replace @generators
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_check_files
     skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
 
@@ -69,21 +62,23 @@ class TestRDocOptions < RDoc::TestCase
     encoding = Object.const_defined?(:Encoding) ? 'UTF-8' : nil
 
     expected = {
-      'charset'        => 'UTF-8',
-      'encoding'       => encoding,
-      'exclude'        => [],
-      'hyperlink_all'  => false,
-      'line_numbers'   => false,
-      'main_page'      => nil,
-      'markup'         => 'rdoc',
-      'page_dir'       => nil,
-      'rdoc_include'   => [],
-      'show_hash'      => false,
-      'static_path'    => [],
-      'tab_width'      => 8,
-      'title'          => nil,
-      'visibility'     => :protected,
-      'webcvs'         => nil,
+      'charset'              => 'UTF-8',
+      'encoding'             => encoding,
+      'exclude'              => [],
+      'hyperlink_all'        => false,
+      'line_numbers'         => false,
+      'main_page'            => nil,
+      'markup'               => 'rdoc',
+      'output_decoration'    => true,
+      'page_dir'             => nil,
+      'rdoc_include'         => [],
+      'show_hash'            => false,
+      'static_path'          => [],
+      'tab_width'            => 8,
+      'template_stylesheets' => [],
+      'title'                => nil,
+      'visibility'           => :protected,
+      'webcvs'               => nil,
     }
 
     assert_equal expected, coder
@@ -372,6 +367,20 @@ rdoc_include:
     assert_equal 1, out.scan(/test generator options:/).length
   end
 
+  def test_parse_format_for_extra_generator
+    RDoc::RDoc::GENERATORS['test'] = Class.new do
+      def self.setup_options options
+        op = options.option_parser
+
+        op.separator 'test generator options:'
+      end
+    end
+
+    @options.setup_generator 'test'
+
+    assert_equal @options.generator_name, 'test'
+  end
+
   def test_parse_ignore_invalid
     out, err = capture_io do
       @options.parse %w[--ignore-invalid --bogus]
@@ -405,6 +414,39 @@ rdoc_include:
 
     assert_match %r%^Usage: %, err
     assert_match %r%^invalid options: --bogus=arg, --bobogus, --visibility=extended%, err
+
+    assert_empty out
+  end
+
+  def test_parse_ignore_invalid_no_quiet
+    out, err = capture_io do
+      assert_raises SystemExit do
+        @options.parse %w[--quiet --no-ignore-invalid --bogus=arg --bobogus --visibility=extended]
+      end
+    end
+
+    refute_match %r%^Usage: %, err
+    assert_match %r%^invalid options: --bogus=arg, --bobogus, --visibility=extended%, err
+
+    assert_empty out
+  end
+
+  def test_ignore_needless_arg
+    out, err = capture_io do
+      @options.parse %w[--ri=foo]
+    end
+
+    assert_match %r%^invalid options: --ri=foo%, err
+
+    assert_empty out
+  end
+
+  def test_ignore_missing_arg
+    out, err = capture_io do
+      @options.parse %w[--copy-files]
+    end
+
+    assert_match %r%^invalid options: --copy-files%, err
 
     assert_empty out
   end
@@ -468,6 +510,13 @@ rdoc_include:
     end
   end
 
+  def test_parse_ri_site
+    @options.parse %w[--ri-site]
+
+    assert_equal RDoc::Generator::RI,      @options.generator
+    assert_equal RDoc::RI::Paths.site_dir, @options.op_dir
+  end
+
   def test_parse_root
     assert_equal Pathname(Dir.pwd), @options.root
 
@@ -479,7 +528,27 @@ rdoc_include:
     assert_empty err
 
     assert_equal Pathname(Dir.tmpdir), @options.root
-    assert_includes @options.rdoc_include, @options.root.to_path
+    assert_includes @options.rdoc_include, @options.root.to_s
+  end
+
+  def test_parse_tab_width
+    @options.parse %w[--tab-width=1]
+    assert_equal 1, @options.tab_width
+
+    @options.parse %w[-w2]
+    assert_equal 2, @options.tab_width
+
+    _, err = capture_io do
+      @options.parse %w[-w=2]
+    end
+
+    assert_match 'invalid options', err
+
+    _, err = capture_io do
+      @options.parse %w[-w0]
+    end
+
+    assert_match 'invalid options', err
   end
 
   def test_parse_template
@@ -531,6 +600,20 @@ rdoc_include:
     assert_equal template_dir, @options.template_dir
   ensure
     $LOAD_PATH.replace orig_LOAD_PATH
+  end
+
+  def test_parse_visibility
+    @options.parse %w[--visibility=public]
+    assert_equal :public, @options.visibility
+
+    @options.parse %w[--visibility=protected]
+    assert_equal :protected, @options.visibility
+
+    @options.parse %w[--visibility=private]
+    assert_equal :private, @options.visibility
+
+    @options.parse %w[--visibility=nodoc]
+    assert_equal :nodoc, @options.visibility
   end
 
   def test_parse_write_options
@@ -638,6 +721,26 @@ rdoc_include:
 
       assert_equal @options, YAML.load(File.read('.rdoc_options'))
     end
+  end
+
+  def test_version
+    out, _ = capture_io do
+      begin
+        @options.parse %w[--version]
+      rescue SystemExit
+      end
+    end
+
+    assert out.include?(RDoc::VERSION)
+
+    out, _ = capture_io do
+      begin
+        @options.parse %w[-v]
+      rescue SystemExit
+      end
+    end
+
+    assert out.include?(RDoc::VERSION)
   end
 
 end

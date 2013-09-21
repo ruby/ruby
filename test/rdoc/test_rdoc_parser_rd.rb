@@ -22,13 +22,6 @@ class TestRDocParserRd < RDoc::TestCase
     @tempfile.close
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
-    s.chomp
-  end
-
   def test_file
     assert_kind_of RDoc::Parser::Text, util_parser('')
   end

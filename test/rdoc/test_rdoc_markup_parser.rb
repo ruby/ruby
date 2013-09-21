@@ -12,13 +12,6 @@ class TestRDocMarkupParser < RDoc::TestCase
     @RMP = @RM::Parser
   end
 
-  def mu_pp(obj)
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding(Encoding.default_external) if @have_encoding
-    s.chomp
-  end
-
   def test_build_heading
     parser = @RMP.new
 

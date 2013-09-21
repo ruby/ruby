@@ -626,15 +626,15 @@ This routine modifies its +comment+ parameter.
   def test_convert_RDOCLINK_label_foottext
     result = @to.convert 'rdoc-label:foottext-1'
 
-    assert_equal "<p>*1\n", result
-    assert_equal 2, @to.characters
+    assert_equal "<p>1\n", result
+    assert_equal 1, @to.characters
   end
 
   def test_convert_RDOCLINK_label_footmark
     result = @to.convert 'rdoc-label:footmark-1'
 
-    assert_equal "<p>^1\n", result
-    assert_equal 2, @to.characters
+    assert_equal "<p>1\n", result
+    assert_equal 1, @to.characters
   end
 
   def test_convert_RDOCLINK_ref

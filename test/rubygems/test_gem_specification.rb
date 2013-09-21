@@ -75,6 +75,10 @@ end
       s.files = %w[lib/code.rb]
     end
 
+    @a3 = quick_spec 'a', '3' do |s|
+      s.metadata['allowed_push_host'] = "https://privategemserver.com"
+    end
+
     @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
 
     load 'rubygems/syck_hack.rb'
@@ -946,7 +950,7 @@ dependencies: []
     assert_same spec.summary, new_spec.summary
 
     assert_equal %w[lib/file.rb test/file.rb bin/exec README.txt
-                    ext/extconf.rb],
+                    ext/extconf.rb].sort,
                  spec.files
     refute_same spec.files, new_spec.files, 'files'
 
@@ -1055,7 +1059,7 @@ dependencies: []
     @a2.executable = 'app'
 
     assert_equal nil, @a2.bindir
-    assert_equal %w[lib/code.rb app], @a2.files
+    assert_equal %w[lib/code.rb app].sort, @a2.files
   end
 
   def test_date
@@ -1155,7 +1159,7 @@ dependencies: []
   def test_executable_equals
     @a2.executable = 'app'
     assert_equal 'app', @a2.executable
-    assert_equal %w[lib/code.rb bin/app], @a2.files
+    assert_equal %w[lib/code.rb bin/app].sort, @a2.files
   end
 
   def test_extensions
@@ -1177,7 +1181,7 @@ dependencies: []
       files
       test_files
     ]
-    assert_equal expected, @a1.files.sort
+    assert_equal expected, @a1.files
   end
 
   def test_files_append
@@ -1195,14 +1199,14 @@ dependencies: []
       files
       test_files
     ]
-    assert_equal expected, @a1.files.sort
+    assert_equal expected, @a1.files
 
     @a1.files << "generated_file.c"
 
     expected << "generated_file.c"
     expected.sort!
 
-    assert_equal expected, @a1.files.sort
+    assert_equal expected, @a1.files
   end
 
   def test_files_duplicate
@@ -1228,7 +1232,7 @@ dependencies: []
     @a1.extra_rdoc_files = "ERF"
     @a1.extensions = "E"
 
-    assert_equal %w[E ERF F TF bin/X], @a1.files.sort
+    assert_equal %w[E ERF F TF bin/X], @a1.files
   end
 
   def test_files_non_array_pathological
@@ -1238,7 +1242,7 @@ dependencies: []
     @a1.instance_variable_set :@extensions, "E"
     @a1.instance_variable_set :@executables, "X"
 
-    assert_equal %w[E ERF F TF bin/X], @a1.files.sort
+    assert_equal %w[E ERF F TF bin/X], @a1.files
     assert_kind_of Integer, @a1.hash
   end
 
@@ -1428,6 +1432,12 @@ dependencies: []
     assert_equal %w[lib], @a1.require_paths
   end
 
+  def test_full_require_paths
+    @a1.require_path = 'lib'
+    assert_equal [File.join(@gemhome, 'gems', @a1.original_name, 'lib')],
+                 @a1.full_require_paths
+  end
+
   def test_require_already_activated
     save_loaded_features do
       a1 = new_spec "a", "1", nil, "lib/d.rb"
@@ -1470,6 +1480,11 @@ dependencies: []
 
   def test_requirements
     assert_equal ['A working computer'], @a1.requirements
+  end
+
+  def test_allowed_push_host
+    assert_equal nil, @a1.metadata['allowed_push_host']
+    assert_equal 'https://privategemserver.com', @a3.metadata['allowed_push_host']
   end
 
   def test_runtime_dependencies_legacy
@@ -1653,7 +1668,7 @@ Gem::Specification.new do |s|
   s.email = "example@example.com"
   s.executables = ["exec"]
   s.extensions = ["ext/a/extconf.rb"]
-  s.files = ["lib/code.rb", "test/suite.rb", "bin/exec", "ext/a/extconf.rb"]
+  s.files = ["bin/exec", "ext/a/extconf.rb", "lib/code.rb", "test/suite.rb"]
   s.homepage = "http://example.com"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
@@ -1985,8 +2000,22 @@ end
       assert_equal '["lib2"] are not files', e.message
     end
 
-    assert_equal %w[lib/code.rb test/suite.rb bin/exec ext/a/extconf.rb lib2],
+    assert_equal %w[lib/code.rb test/suite.rb bin/exec ext/a/extconf.rb lib2].sort,
                  @a1.files
+  end
+
+  def test_validate_files_recursive
+    util_setup_validate
+    FileUtils.touch @a1.file_name
+
+    @a1.files = [@a1.file_name]
+
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+
+    assert_equal "#{@a1.full_name} contains itself (#{@a1.file_name}), check your files list",
+                 e.message
   end
 
   def test_validate_homepage
