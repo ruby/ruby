@@ -1,3 +1,8 @@
+Sun Sep 22 20:55:20 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (vm_make_proc_with_iseq): fix bug message.
+	  This is follow up to changes in r42637.
+
 Sun Sep 22 20:35:38 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/-test-/tracepoint/tracepoint.c (Init_tracepoint): prevent from GC.

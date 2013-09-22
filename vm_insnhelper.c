@@ -2405,7 +2405,7 @@ vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp == 0) {
-	rb_bug("m_core_set_postexe: unreachable");
+	rb_bug("vm_make_proc_with_iseq: unreachable");
     }
 
     blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
