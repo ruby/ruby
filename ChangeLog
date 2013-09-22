@@ -1,3 +1,9 @@
+Sun Sep 22 19:00:28 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* benchmark/bm_app_answer.rb: revert r42990, benchmark scripts should
+	  be self-contained and avoid dependencies, especially such small one.
+	  See https://github.com/ruby/ruby/pull/393#issuecomment-24861301.
+
 Sat Sep 21 20:11:06 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork_internal): remove cloexec setting on pipes
