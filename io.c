@@ -8493,7 +8493,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  It is not happen for IO-like objects such as OpenSSL::SSL::SSLSocket.
  *
  *  The best way to use <code>IO.select</code> is invoking it
- *  after nonblocking methods such as <code>read_nonblock</code>.
+ *  after nonblocking methods such as <code>read_nonblock</code>, <code>write_nonblock</code>, etc.
  *  The methods raises an exception which is extended by
  *  <code>IO::WaitReadable</code> or <code>IO::WaitWritable</code>.
  *  The modules notify how the caller should wait with <code>IO.select</code>.
@@ -8554,6 +8554,26 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *
  *  Invoking <code>IO.select</code> before <code>IO#readpartial</code> works well in usual.
  *  However it is not the best way to use <code>IO.select</code>.
+ *
+ *  The writability notified by select(2) doesn't show
+ *  how many bytes writable.
+ *  <code>IO#write</code> method blocks until given whole string is written.
+ *  So, <code>IO#write(two or more bytes)</code> can block after writability is notified by <code>IO.select</code>.
+ *  <code>IO#write_nonblock</code> is required to avoid the blocking.
+ *
+ *  Blocking write (<code>write</code>) can be emulated using
+ *  <code>write_nonblock</code> and <code>IO.select</code> as follows:
+ *  IO::WaitReadable should also be rescued for SSL renegotiation in <code>OpenSSL::SSL::SSLSocket</code>.
+ *
+ *    begin
+ *      result = io_like.write_nonblock(string)
+ *    rescue IO::WaitReadable
+ *      IO.select([io_like])
+ *      retry
+ *    rescue IO::WaitWritable
+ *      IO.select(nil, [io_like])
+ *      retry
+ *    end
  *
  *  === Parameters
  *  read_array:: an array of <code>IO</code> objects that wait until ready for read
