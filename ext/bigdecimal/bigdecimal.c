@@ -2957,7 +2957,7 @@ get_vp_value:
  * For example, try:
  *
  *   sum = 0
- *   for i in (1..10000)
+ *   10_000.times do
  *     sum = sum + 0.0001
  *   end
  *   print sum #=> 0.9999999999999062
@@ -2967,7 +2967,7 @@ get_vp_value:
  *   require 'bigdecimal'
  *
  *   sum = BigDecimal.new("0")
- *   for i in (1..10000)
+ *   10_000.times do
  *     sum = sum + BigDecimal.new("0.0001")
  *   end
  *   print sum #=> 0.1E1
