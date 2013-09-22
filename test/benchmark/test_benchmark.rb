@@ -73,7 +73,7 @@ BENCH
   describe 'benchmark' do
     it 'does not print any space if the given caption is empty' do
       capture_bench_output(:benchmark).must_equal <<-BENCH
-first  --time--   --time--   --time-- (  --time--)
+ first  --time--   --time--   --time-- (  --time--)
 second  --time--   --time--   --time-- (  --time--)
 third  --time--   --time--   --time-- (  --time--)
 BENCH

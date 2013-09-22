@@ -6,7 +6,7 @@ if RbConfig::CONFIG['GCC'] == 'yes'
 end
 
 $INSTALLFILES = [
-  ["dl.h", "$(HDRDIR)"],
+  ["dl.h", "$(HDRDIR)"]
 ]
 
 check = true
