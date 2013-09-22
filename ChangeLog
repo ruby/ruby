@@ -1,3 +1,7 @@
+Sun Sep 22 20:35:38 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/-test-/tracepoint/tracepoint.c (Init_tracepoint): prevent from GC.
+
 Sun Sep 22 19:00:28 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* benchmark/bm_app_answer.rb: revert r42990, benchmark scripts should

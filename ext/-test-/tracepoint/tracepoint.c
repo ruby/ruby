@@ -69,6 +69,10 @@ tracepoint_track_objspace_events(VALUE self)
 void
 Init_tracepoint(void)
 {
+    size_t i;
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
+    for (i=0; i<sizeof(objects)/sizeof(VALUE); i++) {
+	rb_global_variable(objects+i);
+    }
 }
