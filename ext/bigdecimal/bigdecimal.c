@@ -3009,8 +3009,8 @@ get_vp_value:
  * NaN is never considered to be the same as any other value, even NaN itself:
  *
  *	n = BigDecimal.new('NaN')
- *	n == 0.0 #=> nil
- *	n == n #=> nil
+ *	n == 0.0 #=> false
+ *	n == n #=> false
  *
  * === Positive and negative zero
  *
