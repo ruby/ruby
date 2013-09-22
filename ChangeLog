@@ -1,3 +1,8 @@
+Mon Sep 23 05:07:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_ary_cat): move from internal.h, since it
+	  is described in README.EXT.
+
 Sun Sep 22 20:55:20 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (vm_make_proc_with_iseq): fix bug message.
