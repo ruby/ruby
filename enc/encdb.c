@@ -20,7 +20,7 @@ void rb_encdb_set_unicode(int index);
 #define ENC_DUMMY(name) rb_encdb_dummy(name)
 #define ENC_DEFINE(name) rb_encdb_declare(name)
 #define ENC_SET_BASE(name, orig) rb_enc_set_base((name), (orig))
-#define ENC_DUMMY_UNICODE(name) rb_encdb_set_unicode(ENC_DUMMY(name))
+#define ENC_DUMMY_UNICODE(name) rb_encdb_set_unicode(ENC_REPLICATE((name), name "BE"))
 
 void
 Init_encdb(void)

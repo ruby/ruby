@@ -1,3 +1,9 @@
+Mon Sep 23 22:16:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/encdb.c, enc/utf_16_32.h (ENC_DUMMY_UNICODE): Unicode with BOM
+	  must be based on big endian variants, so that actual encodings would
+	  work.  [ruby-core:57318] [Bug #8940]
+
 Mon Sep 23 12:11:26 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* hash.c (env_each_pair): do not call rb_assoc_new() if
