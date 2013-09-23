@@ -1,3 +1,9 @@
+Mon Sep 23 10:42:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_module.rb (TestModule#test_include_toplevel): test
+	  for top level main.include.  based on a part of the patch by
+	  kyrylo at [GH-395].
+
 Mon Sep 23 05:07:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_ary_cat): move from internal.h, since it

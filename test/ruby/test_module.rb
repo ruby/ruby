@@ -357,6 +357,16 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_include_toplevel
+    assert_separately([], <<-EOS)
+      Mod = Module.new {def foo; :include_foo end}
+      TOPLEVEL_BINDING.eval('include Mod')
+
+      assert_equal(:include_foo, TOPLEVEL_BINDING.eval('foo'))
+      assert_equal([Object, Mod], Object.ancestors.slice(0, 2))
+    EOS
+  end
+
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
