@@ -844,7 +844,7 @@ static void Init_ossl_locks(void)
  *   cipher = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
  *
  *   open 'ca_key.pem', 'w', 0400 do |io|
- *     io.write key.export(cipher, pass_phrase)
+ *     io.write ca_key.export(cipher, pass_phrase)
  *   end
  *
  * === CA Certificate
