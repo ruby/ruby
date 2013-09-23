@@ -50,7 +50,7 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 static VALUE
 tracepoint_track_objspace_events(VALUE self)
 {
-    struct tracepoint_track track = {0, 0, 0, 0, 0, {}};
+    struct tracepoint_track track = {0, 0, 0, 0, 0,};
     VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ |
 				    RUBY_INTERNAL_EVENT_GC_START | RUBY_INTERNAL_EVENT_GC_END,
 				    tracepoint_track_objspace_events_i, &track);
