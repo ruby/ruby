@@ -1800,18 +1800,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal :bar, retvals[1]
   end
 
-  private
-
-  def assert_top_method_is_private(method)
-    top = eval("self", TOPLEVEL_BINDING)
-    methods = top.singleton_class.private_instance_methods(false)
-    assert(methods.include?(method), "#{method} should be private")
-
-    assert_in_out_err([], <<-INPUT, [], /private method `#{method}' called for main:Object \(NoMethodError\)/)
-      self.#{method}
-    INPUT
-  end
-
   def test_prepend_gc
     assert_separately [], %{
       module Foo
@@ -1825,6 +1813,19 @@ class TestModule < Test::Unit::TestCase
         attr_reader :bar
       end
       1_000_000.times{''} # cause GC
+    }
+  end
+
+  private
+
+  def assert_top_method_is_private(method)
+    assert_separately [], %{
+      methods = singleton_class.private_instance_methods(false)
+      assert_include(methods, :#{method}, ":#{method} should be private")
+
+      assert_raise_with_message(NoMethodError, "private method `#{method}' called for main:Object") {
+        self.#{method}
+      }
     }
   end
 end
