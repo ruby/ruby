@@ -8565,14 +8565,17 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  <code>write_nonblock</code> and <code>IO.select</code> as follows:
  *  IO::WaitReadable should also be rescued for SSL renegotiation in <code>OpenSSL::SSL::SSLSocket</code>.
  *
- *    begin
- *      result = io_like.write_nonblock(string)
- *    rescue IO::WaitReadable
- *      IO.select([io_like])
- *      retry
- *    rescue IO::WaitWritable
- *      IO.select(nil, [io_like])
- *      retry
+ *    while 0 < string.bytesize
+ *      begin
+ *        written = io_like.write_nonblock(string)
+ *      rescue IO::WaitReadable
+ *        IO.select([io_like])
+ *        retry
+ *      rescue IO::WaitWritable
+ *        IO.select(nil, [io_like])
+ *        retry
+ *      end
+ *      string = string.byteslice(written..-1)
  *    end
  *
  *  === Parameters
