@@ -212,6 +212,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Win32 APIs
     #
     module API
+      include Constants
       extend Importer
       dlload "advapi32.dll"
       [
@@ -289,7 +290,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)/WCHAR_SIZE].encode
+        name[0, unpackdw(size)].encode
       end
 
       def EnumKey(hkey, index)
