@@ -1261,10 +1261,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    }
 	    RCLASS_EXT(obj)->subclasses = NULL;
 	}
-	if (RCLASS_EXT(obj)->mc_tbl) {
-	    rb_free_mc_table(RCLASS_EXT(obj)->mc_tbl);
-	    RCLASS_EXT(obj)->mc_tbl = NULL;
-	}
 	rb_class_remove_from_module_subclasses(obj);
 	rb_class_remove_from_super_subclasses(obj);
 	if (RANY(obj)->as.klass.ptr)

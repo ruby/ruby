@@ -2,6 +2,10 @@
  * This file is included by vm.c
  */
 
+#define GLOBAL_METHOD_CACHE_SIZE 0x800
+#define GLOBAL_METHOD_CACHE_MASK 0x7ff
+#define GLOBAL_METHOD_CACHE_KEY(c,m) ((((c)>>3)^(m))&GLOBAL_METHOD_CACHE_MASK)
+#define GLOBAL_METHOD_CACHE(c,m) (global_method_cache + GLOBAL_METHOD_CACHE_KEY(c,m))
 #include "method.h"
 
 #define NOEX_NOREDEF 0
@@ -20,6 +24,15 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VAL
 #define singleton_undefined idSingleton_method_undefined
 #define attached            id__attached__
 
+struct cache_entry {
+    vm_state_version_t vm_state;
+    vm_state_version_t seq;
+    ID mid;
+    rb_method_entry_t* me;
+    VALUE defined_class;
+};
+
+static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
@@ -520,26 +533,25 @@ rb_method_entry_at(VALUE klass, ID id)
  */
 rb_method_entry_t *
 rb_method_entry_get_without_cache(VALUE klass, ID id,
-				  VALUE *defined_class_ptr,
-				  method_cache_entry_t *ent)
+				  VALUE *defined_class_ptr)
 {
     VALUE defined_class;
     rb_method_entry_t *me = search_method(klass, id, &defined_class);
 
     if (ruby_running) {
+	struct cache_entry *ent;
+	ent = GLOBAL_METHOD_CACHE(klass, id);
 	ent->seq = RCLASS_EXT(klass)->seq;
 	ent->vm_state = GET_VM_STATE_VERSION();
+	ent->defined_class = defined_class;
+	ent->mid = id;
 
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->mid = id;
 	    ent->me = 0;
-	    ent->defined_class = defined_class;
 	    me = 0;
 	}
 	else {
-	    ent->mid = id;
 	    ent->me = me;
-	    ent->defined_class = defined_class;
 	}
     }
 
@@ -555,7 +567,7 @@ verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *
     VALUE actual_defined_class;
     method_cache_entry_t ent;
     rb_method_entry_t *actual_me =
-	rb_method_entry_get_without_cache(klass, id, &actual_defined_class, &ent);
+	rb_method_entry_get_without_cache(klass, id, &actual_defined_class);
 
     if (me != actual_me || defined_class != actual_defined_class) {
 	rb_bug("method cache verification failed");
@@ -567,19 +579,10 @@ rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
 #if OPT_GLOBAL_METHOD_CACHE
-    method_cache_entry_t *ent;
-
-    if (RCLASS_EXT(klass)->mc_tbl == NULL) {
-	RCLASS_EXT(klass)->mc_tbl = st_init_numtable();
-    }
-
-    if (!st_lookup(RCLASS_EXT(klass)->mc_tbl, (st_index_t)id, (st_data_t *)&ent)) {
-	ent = calloc(1, sizeof(*ent));
-	st_insert(RCLASS_EXT(klass)->mc_tbl, (st_index_t)id, (st_data_t)ent);
-    }
-
-    if (ent->seq == RCLASS_EXT(klass)->seq &&
-	ent->vm_state == GET_VM_STATE_VERSION() &&
+    struct cache_entry *ent;
+    ent = GLOBAL_METHOD_CACHE(klass, id);
+    if (ent->vm_state == GET_VM_STATE_VERSION() &&
+	ent->seq == RCLASS_EXT(klass)->seq &&
 	ent->mid == id) {
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;
@@ -593,7 +596,7 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
     method_cache_entry_t* ent = &ent_;
 #endif
 
-    return rb_method_entry_get_without_cache(klass, id, defined_class_ptr, ent);
+    return rb_method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
 
 static rb_method_entry_t *

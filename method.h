@@ -122,7 +122,7 @@ rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id,
 rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id,
 						       VALUE *defined_class_ptr);
 
-rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr, method_cache_entry_t *ent);
+rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);

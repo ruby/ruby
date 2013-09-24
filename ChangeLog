@@ -1,3 +1,18 @@
+Tue Sep 24 14:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c (class_alloc): remove mc_tbl
+
+	* gc.c (obj_free): ditto
+
+	* internal.h (struct rb_classext_struct): ditto
+
+	* method.h (rb_method_entry): remove ent param
+
+	* vm_method.c: restore the global method cache. Per class cache tables
+	  turned out to be far too slow.
+
+	  [ruby-core:57289] [Bug #8930]
+
 Tue Sep 24 12:51:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::API): need
