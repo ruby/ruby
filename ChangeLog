@@ -1,3 +1,10 @@
+Tue Sep 24 17:38:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): get rid of out-of-bound access.
+
+	* string.c (rb_str_inspect): when a UTF-16/32 string doesn't have a
+	  BOM, inspect as a dummy encoding string.
+
 Tue Sep 24 17:15:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/encdb.c (ENC_DUMMY_UNICODE): make BOM-encodings dummy.

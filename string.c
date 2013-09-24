@@ -4735,23 +4735,27 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
-    if (encidx == ENCINDEX_UTF_16) {
+    if (encidx == ENCINDEX_UTF_16 && p + 2 <= pend) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0xFE && q[1] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_16BE);
 	else if (q[0] == 0xFF && q[1] == 0xFE)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_16LE);
-	else
+	else {
+	    enc = rb_ascii8bit_encoding();
 	    unicode_p = 0;
+	}
     }
-    else if (encidx == ENCINDEX_UTF_32) {
+    else if (encidx == ENCINDEX_UTF_32 && p + 4 <= pend) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_32BE);
 	else if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_32LE);
-	else
+	else {
+	    enc = rb_ascii8bit_encoding();
 	    unicode_p = 0;
+	}
     }
     while (p < pend) {
 	unsigned int c, cc;
