@@ -290,7 +290,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)].encode
+        name[0, unpackdw(size)]
       end
 
       def EnumKey(hkey, index)
@@ -298,7 +298,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)].encode, unpackqw(wtime) ]
+        [ name[0, unpackdw(size)], unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
@@ -558,6 +558,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         rescue Error
           break
         end
+        subkey = export_string(subkey)
         begin
           type, data = read(subkey)
         rescue Error
@@ -594,6 +595,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         rescue Error
           break
         end
+        subkey = export_string(subkey)
         yield subkey, wtime
         index += 1
       end
@@ -882,6 +884,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
           info[#{i}]
         end
       __END__
+    end
+
+    private
+
+    def export_string(str, enc = Encoding.default_internal || LOCALE) # :nodoc:
+      str.encode(enc)
     end
   end
 end

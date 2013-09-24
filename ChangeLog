@@ -1,3 +1,13 @@
+Tue Sep 24 16:39:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#each_value): encode
+	  name.
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#each_key): ditto.
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#export_string):
+	  encode to locale encoding if default internal is not set.
+
 Tue Sep 24 16:35:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::API#EnumKey):
