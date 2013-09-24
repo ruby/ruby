@@ -1,3 +1,15 @@
+Tue Sep 24 14:07:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* gc.c (free_method_cache_entry_i): unused function
+
+	* gc.c (rb_free_mc_table): ditto
+
+	* internal.h (method_cache_entry_t): unused struct
+
+	* vm_method.c (verify_method_cache): remove unused variable
+
+	* vm_method.c (rb_method_entry): ditto
+
 Tue Sep 24 14:01:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* class.c (class_alloc): remove mc_tbl

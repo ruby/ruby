@@ -565,7 +565,6 @@ static void
 verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *me)
 {
     VALUE actual_defined_class;
-    method_cache_entry_t ent;
     rb_method_entry_t *actual_me =
 	rb_method_entry_get_without_cache(klass, id, &actual_defined_class);
 
@@ -591,9 +590,6 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 #endif
 	return ent->me;
     }
-#else
-    method_cache_entry_t ent_;
-    method_cache_entry_t* ent = &ent_;
 #endif
 
     return rb_method_entry_get_without_cache(klass, id, defined_class_ptr);

@@ -1122,20 +1122,6 @@ rb_free_m_table(st_table *tbl)
 }
 
 static int
-free_method_cache_entry_i(ID key, method_cache_entry_t *entry, st_data_t data)
-{
-    free(entry);
-    return ST_CONTINUE;
-}
-
-void
-rb_free_mc_table(st_table *tbl)
-{
-    st_foreach(tbl, free_method_cache_entry_i, 0);
-    st_free_table(tbl);
-}
-
-static int
 free_const_entry_i(ID key, rb_const_entry_t *ce, st_data_t data)
 {
     xfree(ce);

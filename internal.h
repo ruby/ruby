@@ -252,16 +252,6 @@ typedef uint64_t vm_state_version_t;
 typedef unsigned long vm_state_version_t;
 #endif
 
-struct rb_method_entry_struct;
-
-typedef struct method_cache_entry {
-    vm_state_version_t vm_state;
-    vm_state_version_t seq;
-    ID mid;
-    VALUE defined_class;
-    struct rb_method_entry_struct *me;
-} method_cache_entry_t;
-
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
