@@ -1,3 +1,9 @@
+Tue Sep 24 17:15:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/encdb.c (ENC_DUMMY_UNICODE): make BOM-encodings dummy.
+
+	* encoding.c (enc_autoload): keep dummy encodings dummy.
+
 Tue Sep 24 16:41:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry#write): data size

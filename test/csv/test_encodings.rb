@@ -326,7 +326,6 @@ class TestCSV::Encodings < TestCSV
   def each_encoding
     Encoding.list.each do |encoding|
       next if encoding.dummy?  # skip "dummy" encodings
-      next if encoding == Encoding::UTF_32 or encoding == Encoding::UTF_16
       yield encoding
     end
   end

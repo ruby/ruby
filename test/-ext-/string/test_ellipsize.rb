@@ -34,7 +34,6 @@ class Test_StringEllipsize < Test::Unit::TestCase
     a = "\u3042"
     encs = Encoding.list.each do |enc|
       next if enc.dummy?
-      next if enc == Encoding::UTF_16 or enc == Encoding::UTF_32
       begin
         s = a.encode(enc)
         e = "...".encode(enc)
