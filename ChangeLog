@@ -1,3 +1,8 @@
+Tue Sep 24 16:41:15 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#write): data size
+	  is in bytes, not chars.  terminators should be placed automatically.
+
 Tue Sep 24 16:39:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry#each_value): encode
