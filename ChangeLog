@@ -1,3 +1,8 @@
+Tue Sep 24 16:35:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry::API#EnumKey):
+	  size of the name is in WCHARs, not in bytes.
+
 Tue Sep 24 14:07:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* gc.c (free_method_cache_entry_i): unused function
@@ -31,7 +36,7 @@ Tue Sep 24 12:51:07 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  Constants.
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::API#EnumValue):
-	  size of the name is in WCHARs, not in bytes
+	  size of the name is in WCHARs, not in bytes.
 
 Mon Sep 23 22:16:09 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

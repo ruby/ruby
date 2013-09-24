@@ -298,7 +298,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)/WCHAR_SIZE].encode, unpackqw(wtime) ]
+        [ name[0, unpackdw(size)].encode, unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
