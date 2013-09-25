@@ -1,3 +1,10 @@
+Wed Sep 25 17:41:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* README.EXT, README.EXT.ja: remove description of RARRAY_PTR()
+	  and add a caution of accessing internal data structure directly.
+	  Also add a description of rb_ary_store().
+	  [Bug #8399]
+
 Wed Sep 25 17:12:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: rename RARRAY_RAWPTR() to RARRAY_CONST_PTR().
