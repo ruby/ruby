@@ -779,7 +779,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assocs assocs_no_comma assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
@@ -4893,7 +4893,7 @@ singleton	: var_ref
 		;
 
 assoc_list	: none
-		| assocs trailer
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = $1;
@@ -4911,6 +4911,31 @@ assocs		: assoc
 		    }
 		    %*/
 		| assocs ',' assoc
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*%
+			$$ = rb_ary_push($1, $3);
+		    %*/
+		    }
+		;
+
+assocs_no_comma		: assoc
+		    /*%c%*/
+		    /*%c
+		    {
+			$$ = rb_ary_new3(1, $1);
+		    }
+		    %*/
+		| assocs_no_comma ',' assoc
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*%
+			$$ = rb_ary_push($1, $3);
+		    %*/
+		    }
+		| assocs_no_comma '\n' assoc
 		    {
 		    /*%%%*/
 			$$ = list_concat($1, $3);
