@@ -632,7 +632,7 @@ random_load(VALUE obj, VALUE dump)
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_RAWPTR(dump);
+    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
 	seed = ary[2];

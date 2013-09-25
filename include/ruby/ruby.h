@@ -881,13 +881,12 @@ struct RArray {
 
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 
-/* DO NOT USE THIS MACRO DIRECTLY */
-#define RARRAY_RAWPTR(a) \
-  ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-   RARRAY(a)->as.ary : \
-   RARRAY(a)->as.heap.ptr)
+#define RARRAY_CONST_PTR(a) \
+  ((const VALUE *)((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
+		   RARRAY(a)->as.ary : \
+		   RARRAY(a)->as.heap.ptr))
 
-#define RARRAY_PTR_USE_START(a) RARRAY_RAWPTR(a)
+#define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR(a))
 #define RARRAY_PTR_USE_END(a) /* */
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
@@ -897,13 +896,13 @@ struct RArray {
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
-#define RARRAY_AREF(a, i)    (RARRAY_RAWPTR(a)[i])
+#define RARRAY_AREF(a, i)    (RARRAY_CONST_PTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary_ = (a); \
-    OBJ_WRITE(_ary_, &RARRAY_RAWPTR(_ary_)[i], (v)); \
+    OBJ_WRITE(_ary_, &RARRAY_CONST_PTR(_ary_)[i], (v)); \
 } while (0)
 
-#define RARRAY_PTR(a) ((VALUE *)RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
+#define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
 
 struct RRegexp {
     struct RBasic basic;
@@ -1056,14 +1055,14 @@ struct RStruct {
             (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
      RSTRUCT(st)->as.heap.len)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
-#define RSTRUCT_RAWPTR(st) \
+#define RSTRUCT_CONST_PTR(st) \
   ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
    RSTRUCT(st)->as.ary : \
    RSTRUCT(st)->as.heap.ptr)
-#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_RAWPTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
 
-#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_RAWPTR(st)[idx], (v))
-#define RSTRUCT_GET(st, idx)    (RSTRUCT_RAWPTR(st)[idx])
+#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
+#define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
 #ifndef RBIGNUM_EMBED_LEN_MAX
 # define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))

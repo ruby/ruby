@@ -1151,7 +1151,7 @@ rb_fiber_start(void)
 	int argc;
 	const VALUE *argv, args = cont->value;
 	GetProcPtr(cont->saved_thread.first_proc, proc);
-	argv = (argc = cont->argc) > 1 ? RARRAY_RAWPTR(args) : &args;
+	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
 	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);

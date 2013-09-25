@@ -3277,7 +3277,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
-	    const VALUE *ptr = RARRAY_RAWPTR(obj);
+	    const VALUE *ptr = RARRAY_CONST_PTR(obj);
 	    for (i=0; i < len; i++) {
 		gc_mark(objspace, *ptr++);
 	    }
@@ -3357,7 +3357,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
       case T_STRUCT:
 	{
 	    long len = RSTRUCT_LEN(obj);
-	    const VALUE *ptr = RSTRUCT_RAWPTR(obj);
+	    const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
 	    while (len--) {
 		gc_mark(objspace, *ptr++);

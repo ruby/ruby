@@ -792,7 +792,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 
     cfp->sp += space_size;
 
-    ptr = RARRAY_RAWPTR(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     len = (rb_num_t)RARRAY_LEN(ary);
 
     if (flag & 0x02) {
@@ -1068,7 +1068,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	}
 	else {
 	    long len = RARRAY_LEN(tmp);
-	    ptr = RARRAY_RAWPTR(tmp);
+	    ptr = RARRAY_CONST_PTR(tmp);
 	    cfp->sp -= 1;
 
 	    CHECK_VM_STACK_OVERFLOW(cfp, len);
@@ -2244,7 +2244,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
 	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
-	MEMCPY(argv, RARRAY_RAWPTR(ary), VALUE, argc);
+	MEMCPY(argv, RARRAY_CONST_PTR(ary), VALUE, argc);
     }
     else {
 	/* vm_push_frame current argv is at the top of sp because vm_invoke_block

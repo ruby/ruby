@@ -207,7 +207,7 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
-    ptr_members = RARRAY_RAWPTR(members);
+    ptr_members = RARRAY_CONST_PTR(members);
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
 	ID id = SYM2ID(ptr_members[i]);
@@ -448,7 +448,7 @@ rb_struct_initialize_m(int argc, VALUE *argv, VALUE self)
 	RSTRUCT_SET(self, i, argv[i]);
     }
     if (n > argc) {
-	rb_mem_clear((VALUE *)RSTRUCT_RAWPTR(self)+argc, n-argc);
+	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
     }
     return Qnil;
 }
@@ -666,7 +666,7 @@ rb_struct_inspect(VALUE s)
 static VALUE
 rb_struct_to_a(VALUE s)
 {
-    return rb_ary_new4(RSTRUCT_LEN(s), RSTRUCT_RAWPTR(s));
+    return rb_ary_new4(RSTRUCT_LEN(s), RSTRUCT_CONST_PTR(s));
 }
 
 /*
@@ -911,8 +911,8 @@ recursive_equal(VALUE s, VALUE s2, int recur)
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_RAWPTR(s);
-    ptr2 = RSTRUCT_RAWPTR(s2);
+    ptr = RSTRUCT_CONST_PTR(s);
+    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
 	if (!rb_equal(ptr[i], ptr2[i])) return Qfalse;
@@ -958,7 +958,7 @@ recursive_hash(VALUE s, VALUE dummy, int recur)
 
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
     if (!recur) {
-	ptr = RSTRUCT_RAWPTR(s);
+	ptr = RSTRUCT_CONST_PTR(s);
 	len = RSTRUCT_LEN(s);
 	for (i = 0; i < len; i++) {
 	    n = rb_hash(ptr[i]);
@@ -989,8 +989,8 @@ recursive_eql(VALUE s, VALUE s2, int recur)
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_RAWPTR(s);
-    ptr2 = RSTRUCT_RAWPTR(s2);
+    ptr = RSTRUCT_CONST_PTR(s);
+    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
 	if (!rb_eql(ptr[i], ptr2[i])) return Qfalse;
