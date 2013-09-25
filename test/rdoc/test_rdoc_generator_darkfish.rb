@@ -219,8 +219,13 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
       return
     end
 
-    assert_operator File.stat(filename).nlink, :>, 1,
-                    "#{filename} is not hard-linked"
+    # This guard is quoted from test/ruby/test_file_exhaustive.rb
+    unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
+      # on Windows, nlink is always 1. but this behavior will be changed
+      # in the future.
+      assert_operator File.stat(filename).nlink, :>, 1,
+                      "#{filename} is not hard-linked"
+    end
   end
 
 end

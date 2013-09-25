@@ -1,3 +1,7 @@
+Wed Sep 25 15:37:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/rdoc/test_rdoc_generator_darkfish.rb: add a guard for windows.
+
 Wed Sep 25 09:53:11 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Fix CVE-2013-4363.  Miscellaneous minor improvements.
