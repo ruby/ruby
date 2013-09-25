@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+* Now the default values of keyword arguments can be omitted.  Those
+  "required keyword arguments" need giving explicitly at the call time.
+
 * Added suffixes for integer and float literals: 'r', 'i', and 'ri'.
   * "42r" and "3.14r" are evaluated as Rational(42, 1) and 3.14.rationalize,
     respectively.  But exponential form with 'r' suffix like "6.022e+23r" is
