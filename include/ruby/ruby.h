@@ -805,84 +805,9 @@ struct RFloat {
     double float_value;
 };
 
+double rb_float_value(VALUE);
+VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
-
-#if USE_FLONUM
-#define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
-#define RUBY_BIT_ROTR(v, n) (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)))
-
-static inline double
-rb_float_value(VALUE v)
-{
-    if (FLONUM_P(v)) {
-	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
-	    union {
-		double d;
-		VALUE v;
-	    } t;
-
-	    VALUE b63 = (v >> 63);
-	    /* e: xx1... -> 011... */
-	    /*    xx0... -> 100... */
-	    /*      ^b63           */
-	    t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
-	    return t.d;
-	}
-	else {
-	    return 0.0;
-	}
-    }
-    else {
-	return ((struct RFloat *)v)->float_value;
-    }
-}
-
-static inline VALUE
-rb_float_new(double d)
-{
-    union {
-	double d;
-	VALUE v;
-    } t;
-    int bits;
-
-    t.d = d;
-    bits = (int)((VALUE)(t.v >> 60) & 0x7);
-    /* bits contains 3 bits of b62..b60. */
-    /* bits - 3 = */
-    /*   b011 -> b000 */
-    /*   b100 -> b001 */
-
-    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
-	!((bits-3) & ~0x01)) {
-	return (RUBY_BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | 0x02;
-    }
-    else {
-	if (t.v == (VALUE)0) {
-	    /* +0.0 */
-	    return 0x8000000000000002;
-	}
-	else {
-	    /* out of range */
-	    return rb_float_new_in_heap(d);
-	}
-    }
-}
-
-#else /* USE_FLONUM */
-
-static inline double
-rb_float_value(VALUE v)
-{
-    return ((struct RFloat *)v)->float_value;
-}
-
-static inline VALUE
-rb_float_new(double d)
-{
-    return rb_float_new_in_heap(d);
-}
-#endif
 
 #define RFLOAT_VALUE(v) rb_float_value(v)
 #define DBL2NUM(dbl)  rb_float_new(dbl)
