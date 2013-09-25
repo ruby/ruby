@@ -134,7 +134,7 @@ command to remove old versions.
       g.name == spec.name and g.match_platform?
     end
 
-    highest_remote_gem = matching_gems.sort_by { |g,_| g.version }.last
+    highest_remote_gem = matching_gems.max_by { |g,_| g.version }
 
     highest_remote_gem ||= [Gem::NameTuple.null]
 

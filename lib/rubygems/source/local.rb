@@ -88,7 +88,7 @@ class Gem::Source::Local < Gem::Source
       end
     end
 
-    found.sort_by { |s| s.version }.last
+    found.max_by { |s| s.version }
   end
 
   def fetch_spec(name)

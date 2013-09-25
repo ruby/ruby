@@ -1,8 +1,7 @@
 ##
-# Represents a possible Specification object returned
-# from IndexSet. Used to delay needed to download full
-# Specification objects when only the +name+ and +version+
-# are needed.
+# Represents a possible Specification object returned from IndexSet.  Used to
+# delay needed to download full Specification objects when only the +name+
+# and +version+ are needed.
 
 class Gem::DependencyResolver::IndexSpecification
 

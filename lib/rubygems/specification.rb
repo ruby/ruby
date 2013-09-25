@@ -1509,7 +1509,6 @@ class Gem::Specification < Gem::BasicSpecification
   #   [depending_gem, dependency, [list_of_gems_that_satisfy_dependency]]
 
   def dependent_gems
-    # REFACTOR: out = []; each; out; ? Really? No #collect love?
     out = []
     Gem::Specification.each do |spec|
       spec.dependencies.each do |dep|
@@ -1937,7 +1936,6 @@ class Gem::Specification < Gem::BasicSpecification
     q.group 2, 'Gem::Specification.new do |s|', 'end' do
       q.breakable
 
-      # REFACTOR: each_attr - use in to_yaml as well
       @@attributes.each do |attr_name|
         current_value = self.send attr_name
         if current_value != default_value(attr_name) or
@@ -2186,10 +2184,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns a Ruby code representation of this specification, such that it can
   # be eval'ed and reconstruct the same specification later.  Attributes that
   # still have their default values are omitted.
-  #
-  # REFACTOR: This, plus stuff like #ruby_code and #pretty_print, should
-  # probably be extracted out into some sort of separate class. SRP, do you
-  # speak it!??!
 
   def to_ruby
     mark_version

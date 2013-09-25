@@ -1,3 +1,9 @@
+Wed Sep 25 09:53:11 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Fix CVE-2013-4363.  Miscellaneous minor improvements.
+
+	* test/rubygems:  Tests for the above.
+
 Tue Sep 24 17:38:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): get rid of out-of-bound access.
