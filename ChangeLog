@@ -1,3 +1,12 @@
+Thu Sep 26 16:43:42 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el: Avoid use of the interactive function
+	  `self-insert-command` which fires `post-self-insert-hook` and
+	  `post-command-hook`, to make the ruby-electric commands work
+	  nicely with those minor modes that make use of them to do
+	  similar input assistance, such as electric-pair-mode,
+	  autopair-mode and smartparens-mode.
+
 Thu Sep 26 16:24:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* insns.def (opt_regexpmatch1): check Regexp#=~ is not defined before

@@ -131,7 +131,7 @@ strings. Note that you must have Font Lock enabled."
 
 (defun ruby-electric-space (arg)
   (interactive "P")
-  (self-insert-command (prefix-numeric-value arg))
+  (insert (make-string (prefix-numeric-value arg) last-command-event))
   (if (ruby-electric-space-can-be-expanded-p)
       (save-excursion
         (ruby-indent-line t)
@@ -198,11 +198,11 @@ strings. Note that you must have Font Lock enabled."
          ((and
            (null ,arg)
            (ruby-electric-is-last-command-char-expandable-punct-p))
-          (self-insert-command 1)
+          (insert last-command-event)
           ,@body)
          (t
           (setq this-command 'self-insert-command)
-          (self-insert-command (prefix-numeric-value ,arg)))))
+          (insert (make-string (prefix-numeric-value ,arg) last-command-event)))))
 
 (defun ruby-electric-curlies(arg)
   (interactive "P")
@@ -294,7 +294,7 @@ strings. Note that you must have Font Lock enabled."
     (ruby-electric-cua-replace-region))
    (arg
     (setq this-command 'self-insert-command)
-    (self-insert-command (prefix-numeric-value arg)))
+    (insert (make-string (prefix-numeric-value arg) last-command-event)))
    ((and
      (eq last-command 'ruby-electric-curlies)
      (= last-command-event ?})) ;; {}
