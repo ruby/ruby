@@ -4927,15 +4927,7 @@ assocs_no_comma		: assoc
 			$$ = rb_ary_new3(1, $1);
 		    }
 		    %*/
-		| assocs_no_comma ',' assoc
-		    {
-		    /*%%%*/
-			$$ = list_concat($1, $3);
-		    /*%
-			$$ = rb_ary_push($1, $3);
-		    %*/
-		    }
-		| assocs_no_comma '\n' assoc
+		| assocs_no_comma assoc_seperator assoc
 		    {
 		    /*%%%*/
 			$$ = list_concat($1, $3);
@@ -5016,7 +5008,10 @@ rbracket	: opt_nl ']'
 		;
 
 trailer		: /* none */
-		| '\n'
+		| assoc_seperator
+		;
+
+assoc_seperator	: '\n'
 		| ','
 		;
 
