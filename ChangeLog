@@ -1,3 +1,8 @@
+Thu Sep 26 22:08:11 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/observer.rb: [DOC] syntax improvement in example by @chastell
+	  [Fixes GH-400] https://github.com/ruby/ruby/pull/400
+
 Thu Sep 26 22:03:15 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/digest/digest.c: [DOC] typo in overview by @chastell
