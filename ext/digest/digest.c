@@ -30,7 +30,7 @@ RUBY_EXTERN void Init_digest_base(void);
  *
  * This module provides a framework for message digest libraries.
  *
- * You may want to look at OpenSSL::Digest as it supports support more
+ * You may want to look at OpenSSL::Digest as it supports more
  * algorithms.
  *
  * A cryptographic hash function is a procedure that takes data and return a
