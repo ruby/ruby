@@ -1,3 +1,14 @@
+Thu Sep 26 16:51:00 2013  Shota Fukumori  <her@sorah.jp>
+
+	* insns.def (opt_regexpmatch2): Check String#=~ hasn't overridden
+	  before calling rb_reg_match().
+
+	* test/ruby/test_string.rb: Test for above.
+
+	* vm.c (vm_init_redefined_flag): Add BOP flag for String#=~
+
+	[ruby-core:57385] [Bug #8953]
+
 Thu Sep 26 16:43:42 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el: Avoid use of the interactive function

@@ -2098,7 +2098,8 @@ opt_regexpmatch2
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 {
-    if (RB_TYPE_P(obj2, T_STRING)) {
+    if (RB_TYPE_P(obj2, T_STRING) &&
+	BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
 	val = rb_reg_match(obj1, obj2);
     }
     else {

@@ -2256,6 +2256,18 @@ class TestString < Test::Unit::TestCase
     assert_equal Encoding::UTF_8, a.encoding
     assert_equal Encoding::US_ASCII, b.encoding
   end
+
+  def test_eq_tilde_can_be_overridden
+    assert_in_out_err([], <<-RUBY, ["foo"], [])
+      class String
+        def =~(str)
+          "foo"
+        end
+      end
+
+      puts "" =~ //
+    RUBY
+  end
 end
 
 class TestString2 < TestString
