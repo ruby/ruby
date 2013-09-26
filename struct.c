@@ -373,7 +373,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  The last two forms create a new instance of a struct subclass.  The number
  *  of +value+ parameters must be less than or equal to the number of
  *  attributes defined for the structure.  Unset parameters default to +nil+.
- *  Passing too many parameters will raise an ArgumentError.
+ *  Passing more parameters than number of attributes will raise
+ *  an ArgumentError.
  *
  *     # Create a structure named by its constant
  *     Customer = Struct.new(:name, :address)
