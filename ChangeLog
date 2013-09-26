@@ -1,3 +1,7 @@
+Fri Sep 27 01:05:00 2013  Zachary Scott  <e@zzak.io>
+
+	* re.c: [DOC] arguments of Regexp::union receive #to_regexp [Bug #8205]
+
 Fri Sep 27 00:39:27 2013  Zachary Scott  <e@zzak.io>
 
 	* struct.c: [DOC] grammar of ArgumentError in Struct.new [Bug #8936]
