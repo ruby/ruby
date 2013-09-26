@@ -1,3 +1,9 @@
+Fri Sep 27 01:02:59 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.find_proxy): return nil if
+	  http_proxy environment variable is empty string.
+	  [ruby-core:57140] [Bug #8898]
+
 Fri Sep 27 00:58:57 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/gserver.rb: [DOC] correct gserver.rb license [Bug #8913]
