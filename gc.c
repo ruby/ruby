@@ -4766,15 +4766,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     oldsize = ((size_t *)ptr)[0];
 #endif
 
-    mem = realloc(ptr, size);
-    if (!mem) {
-	if (garbage_collect_with_gvl(objspace, 1, 1, GPR_FLAG_MALLOC)) {
-	    mem = realloc(ptr, size);
-	}
-	if (!mem) {
-	    ruby_memerror();
-        }
-    }
+    TRY_WITH_GC(mem = realloc(ptr, size));
     ATOMIC_SIZE_ADD(malloc_increase, size);
 
 #if CALC_EXACT_MALLOC_SIZE
