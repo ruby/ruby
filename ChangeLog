@@ -1,3 +1,9 @@
+Thu Sep 26 14:46:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (mark_locations_array): disable AddressSanitizer.  based on a
+	  patch by halfie (Ruby Guy) at [ruby-core:57372].
+	  [ruby-core:56155] [Bug #8680]
+
 Wed Sep 25 17:41:29 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* README.EXT, README.EXT.ja: remove description of RARRAY_PTR()
