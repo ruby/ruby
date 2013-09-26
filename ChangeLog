@@ -1,3 +1,8 @@
+Thu Sep 26 22:03:15 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/digest/digest.c: [DOC] typo in overview by @chastell
+	  [Fixes GH-399] https://github.com/ruby/ruby/pull/399
+
 Thu Sep 26 22:00:42 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl.c: [DOC] typo in example by @zoranzaric
