@@ -100,7 +100,7 @@ Wed Sep 25 17:12:08 2013  Koichi Sasada  <ko1@atdot.net>
 	  RSTRUCT_RAWPTR() is also renamed to RSTRUCT_CONST_PTR()
 	  (I expect that nobody use it).
 
-	* array.c, compile.c, cont.c, enumerator.c, gc.c, proc.c, random.c, 
+	* array.c, compile.c, cont.c, enumerator.c, gc.c, proc.c, random.c,
 	  string.c, struct.c, thread.c, vm_eval.c, vm_insnhelper.c:
 	  catch up this change.
 
