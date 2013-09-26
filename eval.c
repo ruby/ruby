@@ -1617,6 +1617,9 @@ Init_eval(void)
     rb_define_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_method(rb_cModule, "prepend", rb_mod_prepend, -1);
 
+    rb_define_method(rb_singleton_class(rb_vm_top_self()), "include", top_include, -1);
+    rb_define_method(rb_singleton_class(rb_vm_top_self()), "prepend", top_prepend, -1);
+
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
@@ -1632,10 +1635,6 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
-    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
-			     "include", top_include, -1);
-    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
-			     "prepend", top_prepend, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "using", top_using, 1);
 
