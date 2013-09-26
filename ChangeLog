@@ -1,3 +1,7 @@
+Fri Sep 27 00:58:57 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/gserver.rb: [DOC] correct gserver.rb license [Bug #8913]
+
 Sun Sep 15 23:15:32 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to Rubygems 2.0.9. [ruby-core:57183]
