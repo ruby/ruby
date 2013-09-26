@@ -3462,13 +3462,17 @@ lambda		:   {
 			lpar_beg = ++paren_nest;
 		    }
 		  f_larglist
+		    {
+			$<num>$ = ruby_sourceline;
+		    }
 		  lambda_body
 		    {
 			lpar_beg = $<num>2;
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, $4);
+			$$ = NEW_LAMBDA($3, $5);
+			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch2(lambda, $3, $4);
+			$$ = dispatch2(lambda, $3, $5);
 		    %*/
 			dyna_pop($<vars>1);
 		    }
