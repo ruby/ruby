@@ -1,3 +1,10 @@
+Fri Sep 27 01:24:20 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to Rubygems 2.0.10. [ruby-core:57360]
+	  [Backport #8950]
+	  the patch is provided by drbrain (Eric Hodel).
+	  this update contains a security fix for CVE-2013-4363.
+
 Fri Sep 27 01:11:21 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda): adjust position to the beginning of the block.

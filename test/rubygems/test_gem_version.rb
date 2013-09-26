@@ -67,12 +67,18 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_initialize_bad
-    ["junk", "1.0\n2.0"].each do |bad|
-      e = assert_raises ArgumentError do
+    %W[
+      junk
+      1.0\n2.0
+      1..2
+      1.2\ 3.4
+      1-2-3
+    ].each do |bad|
+      e = assert_raises ArgumentError, bad do
         Gem::Version.new bad
       end
 
-      assert_equal "Malformed version number string #{bad}", e.message
+      assert_equal "Malformed version number string #{bad}", e.message, bad
     end
   end
 

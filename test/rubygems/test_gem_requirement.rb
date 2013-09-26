@@ -47,17 +47,19 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_parse_bad
-    e = assert_raises Gem::Requirement::BadRequirementError do
-      Gem::Requirement.parse nil
+    [
+      nil,
+      '',
+      '! 1',
+      '= junk',
+      '1..2',
+    ].each do |bad|
+      e = assert_raises Gem::Requirement::BadRequirementError do
+        Gem::Requirement.parse bad
+      end
+
+      assert_equal "Illformed requirement [#{bad.inspect}]", e.message
     end
-
-    assert_equal 'Illformed requirement [nil]', e.message
-
-    e = assert_raises Gem::Requirement::BadRequirementError do
-      Gem::Requirement.parse ""
-    end
-
-    assert_equal 'Illformed requirement [""]', e.message
 
     assert_equal Gem::Requirement::BadRequirementError.superclass, ArgumentError
   end
