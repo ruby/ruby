@@ -179,22 +179,23 @@ strings. Note that you must have Font Lock enabled."
                      (beginning-of-line)
                      (looking-at ruby-electric-single-keyword-in-line-re))))))))
 
-(defun ruby-electric-cua-replace-region-p()
-  (eq (key-binding "a") 'cua-replace-region))
+(defun ruby-electric-cua-replace-region-maybe()
+  (let ((func (key-binding [remap self-insert-command])))
+    (when (memq func '(cua-replace-region
+                       sp--cua-replace-region))
+      (setq this-original-command 'self-insert-command)
+      (funcall (setq this-command func))
+      t)))
 
-(defun ruby-electric-cua-replace-region()
-  (setq this-original-command 'self-insert-command)
-  (setq this-command 'cua-replace-region)
-  (cua-replace-region))
-
-(defun ruby-electric-cua-delete-region()
-  (setq this-original-command 'delete-backward-char)
-  (setq this-command 'cua-delete-region)
-  (cua-delete-region))
+(defun ruby-electric-cua-delete-region-maybe()
+  (let ((func (key-binding [remap delete-backward-char])))
+    (when (eq func 'cua-delete-region)
+      (setq this-original-command 'delete-backward-char)
+      (funcall (setq this-command func))
+      t)))
 
 (defmacro ruby-electric-insert (arg &rest body)
-  `(cond ((ruby-electric-cua-replace-region-p)
-          (ruby-electric-cua-replace-region))
+  `(cond ((ruby-electric-cua-replace-region-maybe))
          ((and
            (null ,arg)
            (ruby-electric-is-last-command-char-expandable-punct-p))
@@ -290,8 +291,7 @@ strings. Note that you must have Font Lock enabled."
 (defun ruby-electric-closing-char(arg)
   (interactive "P")
   (cond
-   ((ruby-electric-cua-replace-region-p)
-    (ruby-electric-cua-replace-region))
+   ((ruby-electric-cua-replace-region-maybe))
    (arg
     (setq this-command 'self-insert-command)
     (insert (make-string (prefix-numeric-value arg) last-command-event)))
@@ -322,8 +322,7 @@ strings. Note that you must have Font Lock enabled."
 
 (defun ruby-electric-delete-backward-char(arg)
   (interactive "P")
-  (if (ruby-electric-cua-replace-region-p)
-      (ruby-electric-cua-delete-region)
+  (unless (ruby-electric-cua-delete-region-maybe)
     (cond ((memq last-command '(ruby-electric-matching-char
                                 ruby-electric-bar))
            (delete-char 1))
