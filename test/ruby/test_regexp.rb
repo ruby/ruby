@@ -1011,6 +1011,18 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(1, pr4.call(1))
   end
 
+  def test_eq_tilde_can_be_overridden
+    assert_in_out_err([], <<-RUBY, ["foo"], [])
+      class Regexp
+        def =~(str)
+          "foo"
+        end
+      end
+
+      puts // =~ ""
+    RUBY
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)

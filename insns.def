@@ -2080,7 +2080,11 @@ opt_regexpmatch1
 (VALUE obj)
 (VALUE val)
 {
-    val = rb_reg_match(r, obj);
+    if (BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
+	val = rb_reg_match(r, obj);
+    } else {
+	val = rb_funcall(r, idEqTilde, 1, obj);
+    }
 }
 
 /**

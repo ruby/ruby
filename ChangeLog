@@ -1,3 +1,21 @@
+Thu Sep 26 16:24:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* insns.def (opt_regexpmatch1): check Regexp#=~ is not defined before
+	  calling rb_reg_match()
+
+	* test/ruby/test_regexp.rb: add test
+
+	* vm.c (ruby_vm_redefined_flag): change type to short[]
+
+	* vm.c (vm_redefinition_check_flag): return REGEXP_REDEFINED_OP_FLAG if
+	  klass == rb_cRegexp
+
+	* vm.c (vm_init_redefined_flag): setup BOP flag for Regexp#=~
+
+	* vm_insnhelper.h: add REGEXP_REDEFINED_OP_FLAG
+
+	[ruby-core:57385] [Bug #8953]
+
 Thu Sep 26 14:46:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (mark_locations_array): disable AddressSanitizer.  based on a

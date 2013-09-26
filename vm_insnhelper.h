@@ -55,11 +55,12 @@ enum {
   BOP_GE,
   BOP_NOT,
   BOP_NEQ,
+  BOP_MATCH,
 
   BOP_LAST_
 };
 
-extern char ruby_vm_redefined_flag[BOP_LAST_];
+extern short ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -237,6 +238,7 @@ enum vm_regan_acttype {
 #define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
+#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 

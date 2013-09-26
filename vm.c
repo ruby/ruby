@@ -99,7 +99,7 @@ VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
 
 VALUE ruby_vm_const_missing_count = 0;
-char ruby_vm_redefined_flag[BOP_LAST_];
+short ruby_vm_redefined_flag[BOP_LAST_];
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
 rb_event_flag_t ruby_vm_event_flags;
@@ -1016,6 +1016,7 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cBignum) return BIGNUM_REDEFINED_OP_FLAG;
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
+    if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
     return 0;
 }
 
@@ -1094,6 +1095,7 @@ vm_init_redefined_flag(void)
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
     OP(Succ, SUCC), (C(Fixnum), C(String), C(Time));
+    OP(EqTilde, MATCH), (C(Regexp));
 #undef C
 #undef OP
 }
