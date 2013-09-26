@@ -2362,7 +2362,7 @@ gc_before_sweep(rb_objspace_t *objspace)
     }
     objspace->freelist = NULL;
 
-    malloc_increase2 += ATOMIC_SIZE_EXCHANGE(malloc_increase,0);
+    ATOMIC_SIZE_ADD(malloc_increase2, ATOMIC_SIZE_EXCHANGE(malloc_increase, 0));
 
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
@@ -2394,8 +2394,7 @@ gc_after_sweep(rb_objspace_t *objspace)
     gc_prof_set_heap_info(objspace);
 
     inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
-    inc += malloc_increase2;
-    malloc_increase2 = 0;
+    inc += ATOMIC_SIZE_EXCHANGE(malloc_increase2, 0);
 
     if (inc > malloc_limit) {
 	malloc_limit +=
@@ -3670,10 +3669,10 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	}
 
 #if RGENGC_PROFILE > 0
-    if (gc_prof_record(objspace)) {
-	gc_profile_record *record = gc_prof_record(objspace);
-	record->oldgen_objects = objspace->rgengc.oldgen_object_count;
-    }
+	if (gc_prof_record(objspace)) {
+	    gc_profile_record *record = gc_prof_record(objspace);
+	    record->oldgen_objects = objspace->rgengc.oldgen_object_count;
+	}
 #endif
 
 #else /* USE_RGENGC */
