@@ -31,8 +31,12 @@
 #include <sys/types.h>
 #include <assert.h>
 
-#if /* is ASAN enabled? */ defined(__has_feature) ? \
-    __has_feature(address_sanitizer) /* Clang */ : \
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#if /* is ASAN enabled? */ \
+    __has_feature(address_sanitizer) /* Clang */ || \
     defined(__SANITIZE_ADDRESS__)  /* GCC 4.8.x */
   #define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS \
         __attribute__((no_address_safety_analysis)) \
