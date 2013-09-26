@@ -1,3 +1,8 @@
+Thu Sep 26 22:00:42 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl.c: [DOC] typo in example by @zoranzaric
+	  [Fixes GH-401] https://github.com/ruby/ruby/pull/401
+
 Thu Sep 26 21:07:49 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-delete-backward-char): Add
