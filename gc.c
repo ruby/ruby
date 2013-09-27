@@ -77,28 +77,44 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 }
 #endif
 
+#ifndef GC_FREE_MIN
+#define GC_FREE_MIN  4096
+#endif
+#ifndef GC_HEAP_MIN_SLOTS
+#define GC_HEAP_MIN_SLOTS 10000
+#endif
+#ifndef GC_HEAP_GROWTH_FACTOR
+#define GC_HEAP_GROWTH_FACTOR 1.8
+#endif
 #ifndef GC_MALLOC_LIMIT
 #define GC_MALLOC_LIMIT 8000000
 #endif
-#define HEAP_MIN_SLOTS 10000
-#define FREE_MIN  4096
-#define HEAP_GROWTH_FACTOR 1.8
+#ifndef GC_MALLOC_LIMIT_MAX
+#define GC_MALLOC_LIMIT_MAX (256 /* 256 MB */ * 1024 * 1024 /* 1MB */)
+#endif
+#ifndef GC_MALLOC_LIMIT_FACTOR
+#define GC_MALLOC_LIMIT_FACTOR 1.8
+#endif
 
 typedef struct {
-    unsigned int initial_malloc_limit;
     unsigned int initial_heap_min_slots;
     unsigned int initial_free_min;
     double initial_growth_factor;
+    unsigned int initial_malloc_limit;
+    unsigned int initial_malloc_limit_max;
+    double initial_malloc_limit_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
 #endif
 } ruby_gc_params_t;
 
 static ruby_gc_params_t initial_params = {
+    GC_HEAP_MIN_SLOTS,
+    GC_FREE_MIN,
+    GC_HEAP_GROWTH_FACTOR,
     GC_MALLOC_LIMIT,
-    HEAP_MIN_SLOTS,
-    FREE_MIN,
-    HEAP_GROWTH_FACTOR,
+    GC_MALLOC_LIMIT_MAX,
+    GC_MALLOC_LIMIT_FACTOR,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
 #endif
@@ -302,7 +318,6 @@ typedef struct rb_objspace {
     struct {
 	size_t limit;
 	size_t increase;
-	size_t increase2;
 #if CALC_EXACT_MALLOC_SIZE
 	size_t allocated_size;
 	size_t allocations;
@@ -474,7 +489,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
-#define malloc_increase2 	objspace->malloc_params.increase2
 #define malloc_allocated_size 	objspace->malloc_params.allocated_size
 #define heap_slots		objspace->heap.slots
 #define heap_length		objspace->heap.length
@@ -489,10 +503,11 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define deferred_final_list	objspace->final.deferred
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
-#define initial_malloc_limit	initial_params.initial_malloc_limit
-#define initial_heap_min_slots	initial_params.initial_heap_min_slots
-#define initial_free_min	initial_params.initial_free_min
-#define initial_growth_factor	initial_params.initial_growth_factor
+#define initial_malloc_limit	 initial_params.initial_malloc_limit
+#define initial_malloc_limit_max initial_params.initial_malloc_limit_max
+#define initial_heap_min_slots	 initial_params.initial_heap_min_slots
+#define initial_free_min	 initial_params.initial_free_min
+#define initial_growth_factor	 initial_params.initial_growth_factor
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
 
@@ -837,7 +852,7 @@ heap_add_slots(rb_objspace_t *objspace, size_t add)
 static void
 heap_init(rb_objspace_t *objspace)
 {
-    heap_add_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
+    heap_add_slots(objspace, initial_heap_min_slots / HEAP_OBJ_LIMIT);
     init_mark_stack(&objspace->mark_stack);
 
 #ifdef USE_SIGALTSTACK
@@ -2362,9 +2377,10 @@ gc_before_sweep(rb_objspace_t *objspace)
     objspace->heap.do_heap_free = (size_t)((heap_used * HEAP_OBJ_LIMIT) * 0.65);
     objspace->heap.free_min = (size_t)((heap_used * HEAP_OBJ_LIMIT)  * 0.2);
     if (objspace->heap.free_min < initial_free_min) {
-        objspace->heap.free_min = initial_free_min;
-	if (objspace->heap.do_heap_free < initial_free_min)
+	objspace->heap.free_min = initial_free_min;
+	if (objspace->heap.do_heap_free < initial_free_min) {
 	    objspace->heap.do_heap_free = initial_free_min;
+	}
     }
     objspace->heap.sweep_slots = heap_slots;
     objspace->heap.free_num = 0;
@@ -2376,19 +2392,41 @@ gc_before_sweep(rb_objspace_t *objspace)
     }
     objspace->freelist = NULL;
 
-    ATOMIC_SIZE_ADD(malloc_increase2, ATOMIC_SIZE_EXCHANGE(malloc_increase, 0));
-
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
 	rb_sweep_method_entry(GET_VM());
+    }
+
+
+    gc_prof_set_malloc_info(objspace);
+
+    /* reset malloc info */
+    {
+	size_t inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
+	size_t old_limit = malloc_limit;
+
+	if (inc > malloc_limit) {
+	    malloc_limit += malloc_limit * (initial_params.initial_malloc_limit_factor - 1); /* 1 > factor */
+	    if (malloc_limit > initial_malloc_limit_max) {
+		malloc_limit = initial_malloc_limit_max;
+	    }
+	}
+	else {
+	    malloc_limit -= malloc_limit * ((initial_params.initial_malloc_limit_factor - 1) / 4);
+	    if (malloc_limit < initial_malloc_limit) {
+		malloc_limit = initial_malloc_limit;
+	    }
+	}
+
+	if (0) {
+	    fprintf(stderr, "malloc_limit: %zu -> %zu\n", old_limit, malloc_limit);
+	}
     }
 }
 
 static void
 gc_after_sweep(rb_objspace_t *objspace)
 {
-    size_t inc;
-
     rgengc_report(1, objspace, "after_gc_sweep: objspace->heap.free_num: %d, objspace->heap.free_min: %d\n",
 		  objspace->heap.free_num, objspace->heap.free_min);
 
@@ -2404,17 +2442,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 #endif
     }
 
-    gc_prof_set_malloc_info(objspace);
     gc_prof_set_heap_info(objspace);
-
-    inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
-    inc += ATOMIC_SIZE_EXCHANGE(malloc_increase2, 0);
-
-    if (inc > malloc_limit) {
-	malloc_limit +=
-	  (size_t)((inc - malloc_limit) * (double)objspace_live_num(objspace) / (heap_used * HEAP_OBJ_LIMIT));
-	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
-    }
 
     free_unused_slots(objspace);
 
@@ -4682,6 +4710,17 @@ aligned_free(void *ptr)
 #endif
 }
 
+static void
+vm_malloc_increase(rb_objspace_t *objspace, size_t size)
+{
+    ATOMIC_SIZE_ADD(malloc_increase, size);
+
+    if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
+	malloc_increase > malloc_limit) {
+	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+    }
+}
+
 static inline size_t
 vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
@@ -4694,11 +4733,7 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
-    ATOMIC_SIZE_ADD(malloc_increase, size);
-    if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
-	malloc_increase > malloc_limit) {
-	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
-    }
+    vm_malloc_increase(objspace, size);
 
     return size;
 }
@@ -4757,8 +4792,8 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 	vm_xfree(objspace, ptr);
 	return 0;
     }
-    if (ruby_gc_stress && !ruby_disable_gc_stress)
-	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+
+    vm_malloc_increase(objspace, size);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
@@ -4767,7 +4802,6 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 #endif
 
     TRY_WITH_GC(mem = realloc(ptr, size));
-    ATOMIC_SIZE_ADD(malloc_increase, size);
 
 #if CALC_EXACT_MALLOC_SIZE
     ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size - oldsize);
@@ -5276,7 +5310,7 @@ gc_prof_set_malloc_info(rb_objspace_t *objspace)
 #if GC_PROFILE_MORE_DETAIL
     if (objspace->profile.run) {
         gc_profile_record *record = gc_prof_record(objspace);
-	record->allocate_increase = malloc_increase + malloc_increase2;
+	record->allocate_increase = malloc_increase;
 	record->allocate_limit = malloc_limit;
     }
 #endif

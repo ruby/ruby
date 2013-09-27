@@ -1,3 +1,27 @@
+Fri Sep 27 16:32:27 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: simplify threshold of GC caused by malloc_increase.
+	  Now, malloc_limit is increased/decreased by mysterious logic.
+	  This fix simplify malloc_limit increase/decrease logic such as:
+	    if (malloc_increase > malloc_limit) /* so many malloc */
+	      malloc_limit += malloc_limit * (GC_MALLOC_LIMIT_FACTOR-1);
+	    else
+	      malloc_limit -= malloc_limit * (GC_MALLOC_LIMIT_FACTOR-1)/4;
+	  Default value of GC_MALLOC_LIMIT_FACTOR is 1.8.
+	  malloc_limit is bounded by GC_MALLOC_LIMIT_MAX (256MB by default).
+	  This logic runs at before_sweeep(). So there are no effect from
+	  caused by lazy sweep. And we can remove malloc_increase2.
+
+	* gc.c (HEAP_MIN_SLOTS, FREE_MIN, HEAP_GROWTH_FACTOR): rename to
+	  GC_HEAP_MIN_SLOTS, GC_FREE_MIN, GC_HEAP_GROWTH_FACTOR respectively.
+	  Check them by `#ifndef' so you can specify these values outside gc.c.
+
+	* gc.c (ruby_gc_params_t): add initial_malloc_limit_factor and 
+	  initial_malloc_limit_max.
+
+	* gc.c (vm_malloc_prepare, vm_xrealloc): use vm_malloc_increase to
+	  add and check malloc_increase.
+
 Fri Sep 27 01:05:00 2013  Zachary Scott  <e@zzak.io>
 
 	* re.c: [DOC] arguments of Regexp::union receive #to_regexp [Bug #8205]
