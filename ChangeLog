@@ -23,7 +23,7 @@ Fri Sep 27 16:32:27 2013  Koichi Sasada  <ko1@atdot.net>
 	  GC_HEAP_MIN_SLOTS, GC_FREE_MIN, GC_HEAP_GROWTH_FACTOR respectively.
 	  Check them by `#ifndef' so you can specify these values outside gc.c.
 
-	* gc.c (ruby_gc_params_t): add initial_malloc_limit_factor and 
+	* gc.c (ruby_gc_params_t): add initial_malloc_limit_factor and
 	  initial_malloc_limit_max.
 
 	* gc.c (vm_malloc_prepare, vm_xrealloc): use vm_malloc_increase to
