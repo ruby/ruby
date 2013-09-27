@@ -92,8 +92,8 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #ifndef GC_MALLOC_LIMIT_MAX
 #define GC_MALLOC_LIMIT_MAX (256 /* 256 MB */ * 1024 * 1024 /* 1MB */)
 #endif
-#ifndef GC_MALLOC_LIMIT_FACTOR
-#define GC_MALLOC_LIMIT_FACTOR 1.8
+#ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
+#define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.8
 #endif
 
 typedef struct {
@@ -102,7 +102,7 @@ typedef struct {
     double initial_growth_factor;
     unsigned int initial_malloc_limit;
     unsigned int initial_malloc_limit_max;
-    double initial_malloc_limit_factor;
+    double initial_malloc_limit_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
 #endif
@@ -114,7 +114,7 @@ static ruby_gc_params_t initial_params = {
     GC_HEAP_GROWTH_FACTOR,
     GC_MALLOC_LIMIT,
     GC_MALLOC_LIMIT_MAX,
-    GC_MALLOC_LIMIT_FACTOR,
+    GC_MALLOC_LIMIT_GROWTH_FACTOR,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
 #endif
@@ -503,13 +503,15 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define deferred_final_list	objspace->final.deferred
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
-#define initial_malloc_limit	 initial_params.initial_malloc_limit
-#define initial_malloc_limit_max initial_params.initial_malloc_limit_max
-#define initial_heap_min_slots	 initial_params.initial_heap_min_slots
-#define initial_free_min	 initial_params.initial_free_min
-#define initial_growth_factor	 initial_params.initial_growth_factor
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
+
+#define initial_malloc_limit	           initial_params.initial_malloc_limit
+#define initial_malloc_limit_max           initial_params.initial_malloc_limit_max
+#define initial_malloc_limit_growth_factor initial_params.initial_malloc_limit_growth_factor
+#define initial_heap_min_slots	           initial_params.initial_heap_min_slots
+#define initial_free_min	           initial_params.initial_free_min
+#define initial_growth_factor	           initial_params.initial_growth_factor
 
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
@@ -2405,13 +2407,13 @@ gc_before_sweep(rb_objspace_t *objspace)
 	size_t old_limit = malloc_limit;
 
 	if (inc > malloc_limit) {
-	    malloc_limit += (size_t)(malloc_limit * (initial_params.initial_malloc_limit_factor - 1));
+	    malloc_limit += (size_t)(malloc_limit * (initial_malloc_limit_growth_factor - 1));
 	    if (malloc_limit > initial_malloc_limit_max) {
 		malloc_limit = initial_malloc_limit_max;
 	    }
 	}
 	else {
-	    malloc_limit -= (size_t)(malloc_limit * ((initial_params.initial_malloc_limit_factor - 1) / 4));
+	    malloc_limit -= (size_t)(malloc_limit * ((initial_malloc_limit_growth_factor - 1) / 4));
 	    if (malloc_limit < initial_malloc_limit) {
 		malloc_limit = initial_malloc_limit;
 	    }
@@ -4600,63 +4602,67 @@ rb_gc_disable(void)
     return old ? Qtrue : Qfalse;
 }
 
+static int
+get_envparam_int(const char *name, unsigned int *default_value, int lower_bound)
+{
+    char *ptr = getenv(name);
+    int val;
+
+    if (ptr != NULL) {
+	val = atoi(ptr);
+	if (val > lower_bound) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d)\n", name, val, *default_value);
+	    *default_value = val;
+	    return 1;
+	}
+	else {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%d (%d), but ignored because lower than %d\n", name, val, *default_value, lower_bound);
+	}
+    }
+    return 0;
+}
+
+static int
+get_envparam_double(const char *name, double *default_value, double lower_bound)
+{
+    char *ptr = getenv(name);
+    double val;
+
+    if (ptr != NULL) {
+	val = strtod(ptr, NULL);
+	if (val > lower_bound) {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f)\n", name, val, *default_value);
+	    *default_value = val;
+	    return 1;
+	}
+	else {
+	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (%f), but ignored because lower than %f\n", name, val, *default_value, lower_bound);
+	}
+    }
+    return 0;
+}
+
 void
 rb_gc_set_params(void)
 {
-    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr, *growth_factor_ptr;
-
     if (rb_safe_level() > 0) return;
 
-    malloc_limit_ptr = getenv("RUBY_GC_MALLOC_LIMIT");
-    if (malloc_limit_ptr != NULL) {
-	int malloc_limit_i = atoi(malloc_limit_ptr);
-	if (RTEST(ruby_verbose))
-	    fprintf(stderr, "malloc_limit=%d (%d)\n",
-		    malloc_limit_i, initial_malloc_limit);
-	if (malloc_limit_i > 0) {
-	    initial_malloc_limit = malloc_limit_i;
+    get_envparam_int   ("RUBY_FREE_MIN", &initial_free_min, 0);
+
+    get_envparam_double("RUBY_HEAP_SLOTS_GROWTH_FACTOR", &initial_growth_factor, 1.0);
+    if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &initial_heap_min_slots, 0)) {
+	size_t min_size;
+	rb_objspace_t *objspace = &rb_objspace;
+
+	min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
+	if (min_size > heap_used) {
+	    heap_add_slots(objspace, min_size - heap_used);
 	}
     }
 
-    heap_min_slots_ptr = getenv("RUBY_HEAP_MIN_SLOTS");
-    if (heap_min_slots_ptr != NULL) {
-	int heap_min_slots_i = atoi(heap_min_slots_ptr);
-	if (RTEST(ruby_verbose))
-	    fprintf(stderr, "heap_min_slots=%d (%d)\n",
-		    heap_min_slots_i, initial_heap_min_slots);
-	if (heap_min_slots_i > 0) {
-	    size_t min_size;
-	    rb_objspace_t *objspace = &rb_objspace;
-
-	    initial_heap_min_slots = heap_min_slots_i;
-	    min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
-
-	    if (min_size > heap_used) {
-		heap_add_slots(objspace, min_size - heap_used);
-	    }
-	}
-    }
-
-    growth_factor_ptr = getenv("RUBY_HEAP_SLOTS_GROWTH_FACTOR");
-    if (growth_factor_ptr != NULL) {
-	double growth_factor_f = strtod(growth_factor_ptr, NULL);
-	if (RTEST(ruby_verbose))
-	    fprintf(stderr, "heap_slots_growth_factor=%f (%f)\n",
-		    growth_factor_f, initial_growth_factor);
-	if (growth_factor_f > 1) {
-	    initial_growth_factor = growth_factor_f;
-	}
-    }
-
-    free_min_ptr = getenv("RUBY_FREE_MIN");
-    if (free_min_ptr != NULL) {
-	int free_min_i = atoi(free_min_ptr);
-	if (RTEST(ruby_verbose))
-	    fprintf(stderr, "free_min=%d (%d)\n", free_min_i, initial_free_min);
-	if (free_min_i > 0) {
-	    initial_free_min = free_min_i;
-	}
-    }
+    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit, 0);
+    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, initial_malloc_limit);
+    get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &initial_malloc_limit_growth_factor, 1.0);
 }
 
 void

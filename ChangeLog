@@ -1,3 +1,15 @@
+Fri Sep 27 18:33:23 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add two GC tuning environment variables.
+	  RUBY_GC_MALLOC_LIMIT_MAX and RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR.
+	  See r43067 for details.
+
+	* gc.c (rb_gc_set_params): refactoring. And change verbose notation.
+	  Mostly duplicated functions get_envparam_int/double is not cool.
+	  Please rewrite it.
+
+	* test/ruby/test_gc.rb: fix a test for this change.
+
 Fri Sep 27 17:44:41 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (GC_MALLOC_LIMIT): 8,000,000 -> 8 * 1,024 * 1,024.
