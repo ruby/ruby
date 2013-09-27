@@ -2405,13 +2405,13 @@ gc_before_sweep(rb_objspace_t *objspace)
 	size_t old_limit = malloc_limit;
 
 	if (inc > malloc_limit) {
-	    malloc_limit += malloc_limit * (initial_params.initial_malloc_limit_factor - 1); /* 1 > factor */
+	    malloc_limit += (size_t)(malloc_limit * (initial_params.initial_malloc_limit_factor - 1));
 	    if (malloc_limit > initial_malloc_limit_max) {
 		malloc_limit = initial_malloc_limit_max;
 	    }
 	}
 	else {
-	    malloc_limit -= malloc_limit * ((initial_params.initial_malloc_limit_factor - 1) / 4);
+	    malloc_limit -= (size_t)(malloc_limit * ((initial_params.initial_malloc_limit_factor - 1) / 4));
 	    if (malloc_limit < initial_malloc_limit) {
 		malloc_limit = initial_malloc_limit;
 	    }
