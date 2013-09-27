@@ -31,27 +31,24 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
-* Bignum
-  * New methods
-    * Fixnum#bit_length
-  * Performance improvement
-    * Use GMP if available.
-      GMP is used only for several operations:
-      multiplication, division, radix conversion, GCD
-
 * Binding
   * New methods
     * Binding#local_variable_get(symbol)
     * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
 
-* Fixnum
-  * New methods
-    * Fixnum#bit_length
-
 * GC
   * added environment variable:
     * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
+
+* Integer
+  * New methods
+    * Fixnum#bit_length
+    * Bignum#bit_length
+  * Bignum performance improvement
+    * Use GMP if available.
+      GMP is used only for several operations:
+      multiplication, division, radix conversion, GCD
 
 * IO
   * extended methods:
