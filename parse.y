@@ -5012,6 +5012,9 @@ trailer		: /* none */
 		;
 
 assoc_seperator	: '\n'
+       {
+     command_start = FALSE;
+       }
 		| ','
 		;
 
