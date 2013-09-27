@@ -129,5 +129,13 @@ if header_library
     warn "unexpeted value for --with-curses-version: #{with_curses_version}"
   end
 
+  for type in ["long", "int"]
+    if try_static_assert("sizeof(chtype) == sizeof(unsigned #{type})",
+                         %w[stdio.h stdlib.h]+curses)
+      $defs << "-DCHTYPE_IS_U#{type.upcase}"
+      break
+    end
+  end
+
   create_makefile("curses")
 end

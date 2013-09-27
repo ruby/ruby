@@ -58,8 +58,18 @@
 # define USE_MOUSE 1
 #endif
 
-#define NUM2CH NUM2CHR
-#define CH2FIX CHR2FIX
+#if CHTYPE_IS_ULONG
+# define NUM2CH NUM2ULONG
+# define CH2NUM ULONG2NUM
+#else
+# if CHTYPE_IS_UINT
+#  define NUM2CH NUM2UINT
+#  define CH2NUM UINT2NUM
+# else
+#  define NUM2CH NUM2CHR
+#  define CH2NUM CHR2FIX
+# endif
+#endif
 
 static VALUE mCurses;
 static VALUE mKey;
@@ -581,7 +591,7 @@ static VALUE
 curses_inch(VALUE obj)
 {
     curses_stdscr();
-    return CH2FIX(inch());
+    return CH2NUM(inch());
 }
 
 /*
@@ -1865,7 +1875,7 @@ window_inch(VALUE obj)
     struct windata *winp;
 
     GetWINDOW(obj, winp);
-    return CH2FIX(winch(winp->window));
+    return CH2NUM(winch(winp->window));
 }
 
 /*
@@ -2360,7 +2370,7 @@ window_getbkgd(VALUE obj)
     struct windata *winp;
 
     GetWINDOW(obj,winp);
-    return (c = getbkgd(winp->window) != ERR) ? CH2FIX(c) : Qnil;
+    return (c = getbkgd(winp->window) != ERR) ? CH2NUM(c) : Qnil;
 #else
     return Qnil;
 #endif

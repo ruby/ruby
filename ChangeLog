@@ -1,3 +1,12 @@
+Sat Sep 28 00:19:41 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/extconf.rb: check the size of chtype.
+
+	* ext/curses/curses.c (NUM2CH, CH2NUM): use proper macros for
+	  the size of chtype.
+	  
+	[ruby-core:56090] [Bug #8659]
+
 Fri Sep 27 18:33:23 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add two GC tuning environment variables.
