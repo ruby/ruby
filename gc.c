@@ -2397,7 +2397,6 @@ gc_before_sweep(rb_objspace_t *objspace)
 	rb_sweep_method_entry(GET_VM());
     }
 
-
     gc_prof_set_malloc_info(objspace);
 
     /* reset malloc info */
@@ -3432,11 +3431,103 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
     shrink_stack_chunk_cache(mstack);
 }
 
+#define RGENGC_PRINT_TICK 0
+/* the following code is only for internal tuning. */
+
+/* Source code to use RDTSC is quoted and modified from
+ * http://www.mcs.anl.gov/~kazutomo/rdtsc.html
+ * written by Kazutomo Yoshii <kazutomo@mcs.anl.gov>
+ */
+
+#if RGENGC_PRINT_TICK
+#if defined(__GNUC__) && defined(__i386__)
+typedef unsigned long long tick_t;
+
+static inline tick_t
+tick(void)
+{
+    unsigned long long int x;
+    __asm__ __volatile__ ("rdtsc" : "=A" (x));
+    return x;
+}
+
+#elif defined(__GCC__) && defined(__x86_64__)
+typedef unsigned long long tick_t;
+
+static __inline__ tick_t
+tick(void)
+{
+    unsigned long hi, lo;
+    __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+    return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
+}
+
+#elif defined(_WIN32) && defined(_MSC_VER)
+#include <intrin.h>
+typedef unsigned __int64 tick_t;
+
+static inline tick_t
+tick(void)
+{
+    return __rdtsc();
+}
+
+#else /* use clock */
+typedef clock_t tick_t;
+static inline tick_t
+tick(void)
+{
+    return clock();
+}
+#endif
+
+#define MAX_TICKS 0x100
+static tick_t mark_ticks[MAX_TICKS];
+static int mark_ticks_start_line;
+
+static void
+show_mark_ticks(void)
+{
+    int i;
+    fprintf(stderr, "mark ticks result:\n");
+    for (i=0; i<MAX_TICKS; i++) {
+      if (mark_ticks[i] > 0) {
+	  fprintf(stderr, "@%4d\t%8lu\n", i+mark_ticks_start_line, (unsigned long)mark_ticks[i]);
+      }
+    }
+}
+
+#endif /* RGENGC_PRINT_TICK */
+
 static void
 gc_marks_body(rb_objspace_t *objspace, int minor_gc)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
+
+#if RGENGC_PRINT_TICK
+    tick_t start_tick = tick();
+    if (mark_ticks_start_line == 0) {
+	mark_ticks_start_line = __LINE__;
+	atexit(show_mark_ticks);
+    }
+#endif
+
+#define MARK_CHECKPOINT_PRINT_TICK do { \
+    tick_t t = tick(); \
+    mark_ticks[__LINE__ - mark_ticks_start_line] = t - start_tick; \
+    start_tick = tick(); \
+} while (0)
+
+#if RGENGC_CHECK_MODE > 1
+#define MARK_CHECKPOINT do { \
+    objspace->rgengc.parent_object = INT2FIX(__LINE__); \
+} while (0)
+#elif RGENGC_PRINT_TICK
+#define MARK_CHECKPOINT MARK_CHECKPOINT_PRINT_TICK
+#else
+#define MARK_CHECKPOINT /* do nothing */
+#endif
 
     /* start marking */
     rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", minor_gc ? "minor" : "major");
@@ -3454,12 +3545,6 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
 	objspace->profile.major_gc_count++;
 	rgengc_mark_and_rememberset_clear(objspace);
     }
-#endif
-
-#if RGENGC_CHECK_MODE > 1
-#define MARK_CHECKPOINT do {objspace->rgengc.parent_object = INT2FIX(__LINE__);} while (0)
-#else
-#define MARK_CHECKPOINT
 #endif
 
     MARK_CHECKPOINT;
@@ -3504,8 +3589,10 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
     /* marking-loop */
+    MARK_CHECKPOINT;
     gc_mark_stacked_objects(objspace);
 
+    MARK_CHECKPOINT;
 #undef MARK_CHECKPOINT
 
     /* cleanup */

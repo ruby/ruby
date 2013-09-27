@@ -1,3 +1,10 @@
+Fri Sep 27 17:07:55 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add some fine-grained profiling codes to tuning marking phase.
+	  If you enable RGENGC_PRINT_TICK to 1, then profiling results by RDTSC
+	  (on x86/amd64 environment) are printed at last.
+	  Thanks Yoshii-san.
+
 Fri Sep 27 16:32:27 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: simplify threshold of GC caused by malloc_increase.
