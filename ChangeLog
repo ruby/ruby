@@ -1,3 +1,7 @@
+Fri Sep 27 17:44:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (GC_MALLOC_LIMIT): 8,000,000 -> 8 * 1,024 * 1,024.
+
 Fri Sep 27 17:19:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_before_sweep): cast to size_t to suppress warnings.
