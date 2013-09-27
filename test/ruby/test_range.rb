@@ -368,6 +368,13 @@ class TestRange < Test::Unit::TestCase
     assert_equal 42, (1..42).each.size
   end
 
+  def test_length
+    assert_equal 42, (1..42).length
+    assert_equal 41, (1...42).length
+    assert_equal 6, (1...6.3).length
+    assert_equal 5, (1.1...6).length
+  end
+
   def test_bsearch_typechecks_return_values
     assert_raise(TypeError) do
       (1..42).bsearch{ "not ok" }

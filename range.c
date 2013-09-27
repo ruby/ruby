@@ -1346,6 +1346,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "min", range_min, 0);
     rb_define_method(rb_cRange, "max", range_max, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
+    rb_define_alias(rb_cRange,  "length", "size");
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 
