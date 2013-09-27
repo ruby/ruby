@@ -27,7 +27,7 @@ define rp
   else
   if ((VALUE)($arg0) & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     set $id = (($arg0) >> RUBY_SPECIAL_SHIFT)
-    printf "%sSYMBOL%s", $color_type, $color_end
+    printf "%sSYMBOL%s: ", $color_type, $color_end
     rp_id $id
   else
   if ($arg0) == RUBY_Qfalse
