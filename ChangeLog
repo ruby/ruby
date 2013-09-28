@@ -1,3 +1,8 @@
+Sat Sep 28 21:40:40 2013  Kenichi Kamiya  <kachick1@gmail.com>
+
+	* random.c (rb_random_ulong_limited): coerce before check negative.
+	  [Fixes GH-379]
+
 Fri Sep 27 01:24:20 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to Rubygems 2.0.10. [ruby-core:57360]

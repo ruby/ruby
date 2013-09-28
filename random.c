@@ -965,7 +965,7 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
     if (!rnd) {
 	extern int rb_num_negative_p(VALUE);
 	VALUE lim = ulong_to_num_plus_1(limit);
-	VALUE v = rb_funcall2(obj, id_rand, 1, &lim);
+	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
 	unsigned long r = NUM2ULONG(v);
 	if (rb_num_negative_p(v)) {
 	    rb_raise(rb_eRangeError, "random number too small %ld", r);

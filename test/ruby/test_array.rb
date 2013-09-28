@@ -2020,6 +2020,19 @@ class TestArray < Test::Unit::TestCase
       alias rand call
     end
     assert_raise(RuntimeError) {ary.shuffle!(random: gen)}
+
+    zero = Object.new
+    def zero.to_int
+      0
+    end
+    gen_to_int = proc do |max|
+      zero
+    end
+    class << gen_to_int
+      alias rand call
+    end
+    ary = (0...10000).to_a
+    assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
   end
 
   def test_sample
@@ -2103,6 +2116,19 @@ class TestArray < Test::Unit::TestCase
     assert_equal([5000, 0, 5001, 2, 5002, 4, 5003, 6, 5004, 8, 5005], ary.sample(11, random: gen0))
     ary.sample(11, random: gen1) # implementation detail, may change in the future
     assert_equal([], ary)
+
+    half = Object.new
+    def half.to_int
+      5000
+    end
+    gen_to_int = proc do |max|
+      half
+    end
+    class << gen_to_int
+      alias rand call
+    end
+    ary = (0...10000).to_a
+    assert_equal(5000, ary.sample(random: gen_to_int))
   end
 
   def test_cycle
