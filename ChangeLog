@@ -2,6 +2,7 @@ Sat Sep 28 14:30:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/dl/test_base.rb: {libc, libm} detection now handle GNU/Hurd
 	  correctly. Patch by Gabriele Giacone (1o5g4r8o@gmail.com).
+	  [Bug #8937][ruby-core:57311]
 	* test/fiddle/helper.rb: ditto.
 
 Sat Sep 28 00:19:41 2013  Shugo Maeda  <shugo@ruby-lang.org>
