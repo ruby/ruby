@@ -1,3 +1,8 @@
+Sat Sep 28 23:25:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (math_log, math_log2, math_log10): fix for Bignum argument.
+	  numbits should be add only when right shifted.
+
 Sat Sep 28 14:30:29 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/dl/test_base.rb: {libc, libm} detection now handle GNU/Hurd
