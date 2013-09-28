@@ -762,7 +762,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 }
 
 VALUE
-rb_funcall_ci(rb_call_info_t *ci, VALUE recv, VALUE *argv)
+rb_funcall_ci(rb_call_info_t *ci, VALUE recv, const VALUE *argv)
 {
     rb_thread_t *th = GET_THREAD();
     ci->recv = recv;
