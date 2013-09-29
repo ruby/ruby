@@ -765,9 +765,18 @@ VALUE
 rb_funcall_ci(rb_call_info_t *ci, VALUE recv, const VALUE *argv)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    int i;
+
     ci->recv = recv;
     vm_search_method(ci, recv);
-    return vm_call0_body(th, ci, argv);
+
+    *cfp->sp++ = recv;
+    for (i = 0; i < ci->argc; i++) {
+	*cfp->sp++ = argv[i];
+    }
+
+    return (*ci->call)(th, cfp, ci);
 }
 
 /*!
