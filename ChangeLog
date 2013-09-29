@@ -122,7 +122,7 @@ Thu Sep 26 22:00:42 2013  Zachary Scott  <e@zzak.io>
 Thu Sep 26 21:07:49 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-electric.el (ruby-electric-delete-backward-char): Add
-	  support for smartparen-mode.
+	  support for smartparens-mode.
 
 	* misc/ruby-electric.el (ruby-electric-cua-replace-region-maybe)
 	  (ruby-electric-cua-delete-region-maybe): New functions that
