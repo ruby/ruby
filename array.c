@@ -2293,6 +2293,7 @@ struct ary_sort_data {
     VALUE ary;
     int opt_methods;
     int opt_inited;
+    rb_call_info_t ci;
 };
 
 enum {
@@ -2389,14 +2390,22 @@ rb_ary_sort_bang(VALUE ary)
 	VALUE tmp = ary_make_substitution(ary); /* only ary refers tmp */
 	struct ary_sort_data data;
 	long len = RARRAY_LEN(ary);
+	int (*sort_func)(const void *, const void *, void *);
 
 	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
 	data.opt_methods = 0;
 	data.opt_inited = 0;
+	if (rb_block_given_p()) {
+	    sort_func = sort_1;
+	} else {
+	    sort_func = sort_2;
+	    memset(&data.ci, 0, sizeof(data.ci));
+	    data.ci.mid = id_cmp;
+	    data.ci.argc = 1;
+	}
 	RARRAY_PTR_USE(tmp, ptr, {
-	    ruby_qsort(ptr, len, sizeof(VALUE),
-		       rb_block_given_p()?sort_1:sort_2, &data);
+	    ruby_qsort(ptr, len, sizeof(VALUE), sort_func, &data);
 	}); /* WB: no new reference */
 	rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
