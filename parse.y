@@ -8895,7 +8895,7 @@ rb_id_attrset(ID id)
 	int scope = (int)(id & ID_SCOPE_MASK);
 	switch (scope) {
 	  case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
-	  case ID_CONST: case ID_CLASS:
+	  case ID_CONST: case ID_CLASS: case ID_JUNK:
 	    break;
 	  case ID_ATTRSET:
 	    return id;
@@ -10541,7 +10541,7 @@ intern_str(VALUE str)
     }
     if (name[last] == '=') {
 	/* attribute assignment */
-	if (!rb_enc_symname2_p(name, last, enc))
+	if (last > 1 && name[last-1] == '=')
 	    goto junk;
 	id = rb_intern3(name, last, enc);
 	if (id > tLAST_OP_ID && !is_attrset_id(id)) {

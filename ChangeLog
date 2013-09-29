@@ -1,4 +1,7 @@
-Sun Sep 29 22:56:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 29 23:45:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset, intern_str): allow junk attrset ID for
+	  Struct.
 
 	* parse.y (rb_id_attrset): fix inconsistency with literals, allow
 	  ID_ATTRSET and return it itself, but ID_JUNK cannot make ID_ATTRSET.
