@@ -73,6 +73,14 @@
 #if OPT_DIRECT_THREADED_CODE
 #undef OPT_DIRECT_THREADED_CODE
 #endif
+#if OPT_CONTEXT_THREADED_CODE
+#undef OPT_CONTEXT_THREADED_CODE
+#endif
+#endif
+
+#if defined(__GNUC__) && defined(__x86_64__)
+#elif OPT_CONTEXT_THREADED_CODE
+error !
 #endif
 
 #else /* defined(__GNUC__) && __GNUC__ >= 2 */
@@ -83,6 +91,9 @@
 #endif
 #if OPT_TOKEN_THREADED_CODE
 #undef OPT_TOKEN_THREADED_CODE
+#endif
+#if OPT_CONTEXT_THREADED_CODE
+#undef OPT_CONTEXT_THREADED_CODE
 #endif
 #endif
 
@@ -227,6 +238,9 @@ struct rb_iseq_struct {
     VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
+#if OPT_CONTEXT_THREADED_CODE
+    void *context_threading_table;
+#endif
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
     const VALUE coverage;     /* coverage array */
 

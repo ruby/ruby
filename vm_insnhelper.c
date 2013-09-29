@@ -88,7 +88,7 @@ vm_push_frame(rb_thread_t *th,
 	}
     }
 
-    if (VMDEBUG == 2) {
+    if (VMDEBUG >= 2) {
 	SDR();
     }
 
@@ -100,7 +100,7 @@ vm_pop_frame(rb_thread_t *th)
 {
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 
-    if (VMDEBUG == 2) {
+    if (VMDEBUG >= 2) {
 	SDR();
     }
 }

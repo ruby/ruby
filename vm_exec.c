@@ -15,7 +15,7 @@
 static void vm_analysis_insn(int insn);
 #endif
 
-#if VMDEBUG > 0
+#if VMDEBUG > 0 && 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
 #elif defined(__GNUC__) && defined(__x86_64__)
@@ -77,7 +77,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #define SET_PC(x) (reg_cfp->pc = REG_PC = (x))
 #endif
 
-#if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
+#if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE || OPT_CONTEXT_THREADED_CODE
 #include "vmtc.inc"
     if (UNLIKELY(th == 0)) {
 	return (VALUE)insns_address_table;
@@ -90,7 +90,8 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
     reg_a = initial;
     reg_b = 0;
 #endif
-
+        DEBUG_ENTER_INSN(0);
+        DEBUG_END_INSN();
   first:
     INSN_DISPATCH();
 /*****************/
