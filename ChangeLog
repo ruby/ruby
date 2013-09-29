@@ -75,7 +75,7 @@ Fri Sep 27 16:32:27 2013  Koichi Sasada  <ko1@atdot.net>
 	      malloc_limit -= malloc_limit * (GC_MALLOC_LIMIT_FACTOR-1)/4;
 	  Default value of GC_MALLOC_LIMIT_FACTOR is 1.8.
 	  malloc_limit is bounded by GC_MALLOC_LIMIT_MAX (256MB by default).
-	  This logic runs at before_sweeep(). So there are no effect from
+	  This logic runs at gc_before_sweep(). So there are no effect from
 	  caused by lazy sweep. And we can remove malloc_increase2.
 
 	* gc.c (HEAP_MIN_SLOTS, FREE_MIN, HEAP_GROWTH_FACTOR): rename to
