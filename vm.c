@@ -2590,6 +2590,8 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("token threaded code"));
 #elif OPT_CALL_THREADED_CODE
     rb_ary_push(opts, rb_str_new2("call threaded code"));
+#elif OPT_CONTEXT_THREADED_CODE
+    rb_ary_push(opts, rb_str_new2("context threaded code"));
 #endif
 
 #if OPT_STACK_CACHING

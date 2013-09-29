@@ -19,6 +19,10 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
+#if OPT_CONTEXT_THREADED_CODE
+#include <sys/mman.h>
+#endif
+
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -557,11 +561,142 @@ rb_iseq_compile_node(VALUE self, NODE *node)
     return iseq_setup(iseq, ret);
 }
 
+#if OPT_CONTEXT_THREADED_CODE
+static inline unsigned char *
+call_instruction_body(unsigned char *code, VALUE body)
+{
+    *code++ = 0xe8;
+    *(int *)code = (int)((unsigned char *)(body) - code - 4);
+    return code + 4;
+}
+
+static inline unsigned char *
+jump_to_instruction_body(unsigned char *code, VALUE body)
+{
+    *code++ = 0xe9;
+    *(int *)code = (int)((unsigned char *)(body) - code - 4);
+    return code + 4;
+}
+
+static inline unsigned char *
+call_through_vpc_if_carry(unsigned char *code)
+{
+    *code++ = 0x73; /* jnc +3 */
+    *code++ = 3;
+    *code++ = 0x41; /* callq *(%r14) */
+    *code++ = 0xff;
+    *code++ = 0x16;
+    return code;
+}
+
+static inline unsigned char *
+jump_to_vpc(unsigned char *code)
+{
+    *code++ = 0x41; /* jmpq *(%r14) */
+    *code++ = 0xff;
+    *code++ = 0x26;
+    return code;
+}
+
+static int
+translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
+{
+    const void * const *table = rb_vm_get_insns_address_table();
+    unsigned long i = 0;
+    void *ctt = mmap(NULL, ctt_size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    unsigned char *code = (unsigned char *)ctt;
+#if 0
+    int has_jumps = 0;
+#endif
+
+    while (i < iseq->iseq_size) {
+        int insn = (int)iseq->iseq[i];
+        VALUE insn_body = (VALUE)table[insn];
+        iseq->iseq_encoded[i] = (VALUE)code;
+        switch (insn) {
+          case BIN(throw):
+            code = jump_to_instruction_body(code, insn_body);
+            break;
+          case BIN(invokeblock):
+          case BIN(defineclass):
+          case BIN(opt_call_c_function):
+          case BIN(send):
+          case BIN(opt_send_simple):
+          case BIN(invokesuper):
+          case BIN(opt_regexpmatch2):
+          case BIN(opt_succ):
+          case BIN(opt_empty_p):
+          case BIN(opt_size):
+          case BIN(opt_length):
+          case BIN(opt_aset):
+          case BIN(opt_aref):
+          case BIN(opt_ltlt):
+          case BIN(opt_ge):
+          case BIN(opt_gt):
+          case BIN(opt_le):
+          case BIN(opt_lt):
+          case BIN(opt_neq):
+          case BIN(opt_eq):
+          case BIN(opt_mod):
+          case BIN(opt_div):
+          case BIN(opt_mult):
+          case BIN(opt_minus):
+          case BIN(opt_plus): /* fall through */
+            code = call_instruction_body(code, insn_body);
+            code = call_through_vpc_if_carry(code);
+            break;
+          case BIN(jump):
+#if 0
+            code = call_instruction_body(code, insn_body);
+            code = jump_to_instruction_body(code, (VALUE)code);
+            has_jumps = 1;
+            break;
+#endif
+          case BIN(branchif):
+          case BIN(branchunless):
+          case BIN(getinlinecache):
+          case BIN(opt_case_dispatch): /* fall through */
+            code = call_instruction_body(code, insn_body);
+            code = jump_to_vpc(code);
+            break;
+          case BIN(leave):
+            code = jump_to_instruction_body(code, insn_body);
+            break;
+          default:
+            code = call_instruction_body(code, insn_body);
+            break;
+        }
+        i += insn_len(insn);
+    }
+#if 0
+    if (has_jumps) {
+        i = 0;
+        while (i < iseq->iseq_size) {
+            int insn = (int)iseq->iseq[i];
+            long offset = (long)iseq->iseq_encoded[i + 1];
+            code = (unsigned char *)iseq->iseq_encoded[i];
+            code += 6;
+            *(int *)code = (int)((unsigned char *)(iseq->iseq_encoded[i + offset]) - (code));
+            i += insn_len(insn);
+        }
+    }
+#endif
+    if (mprotect(ctt, ctt_size, PROT_READ | PROT_EXEC)) {
+        rb_sys_fail("mprotect");
+    }
+    return COMPILE_OK;
+}
+#endif
+
 int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE || OPT_CONTEXT_THREADED_CODE
+#if OPT_CONTEXT_THREADED_CODE
+    unsigned long ctt_size = 0;
+#else
     const void * const *table = rb_vm_get_insns_address_table();
+#endif
     unsigned long i;
 
     iseq->iseq_encoded = ALLOC_N(VALUE, iseq->iseq_size);
@@ -570,13 +705,63 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
     for (i = 0; i < iseq->iseq_size; /* */ ) {
 	int insn = (int)iseq->iseq_encoded[i];
 	int len = insn_len(insn);
-	iseq->iseq_encoded[i] = (VALUE)table[insn];
+#if OPT_CONTEXT_THREADED_CODE
+        switch (insn) {
+          case BIN(invokeblock):
+          case BIN(defineclass):
+          case BIN(opt_call_c_function):
+          case BIN(send):
+          case BIN(opt_send_simple):
+          case BIN(invokesuper):
+          case BIN(opt_regexpmatch2):
+          case BIN(opt_succ):
+          case BIN(opt_empty_p):
+          case BIN(opt_size):
+          case BIN(opt_length):
+          case BIN(opt_aset):
+          case BIN(opt_aref):
+          case BIN(opt_ltlt):
+          case BIN(opt_ge):
+          case BIN(opt_gt):
+          case BIN(opt_le):
+          case BIN(opt_lt):
+          case BIN(opt_neq):
+          case BIN(opt_eq):
+          case BIN(opt_mod):
+          case BIN(opt_div):
+          case BIN(opt_mult):
+          case BIN(opt_minus):
+          case BIN(opt_plus): /* fall through */
+            ctt_size += 10;
+            break;
+          case BIN(jump):
+#if 0
+            ctt_size += 10;
+            break;
+#endif
+          case BIN(branchif):
+          case BIN(branchunless):
+          case BIN(getinlinecache):
+          case BIN(opt_case_dispatch): /* fall through */
+            ctt_size += 8;
+            break;
+          default:
+            ctt_size += 5;
+            break;
+        }
+#else
+        iseq->iseq_encoded[i] = (VALUE)table[insn];
+#endif
 	i += len;
     }
 #else
     iseq->iseq_encoded = iseq->iseq;
 #endif
+#if OPT_CONTEXT_THREADED_CODE
+    return translate_context_threaded_code(iseq, ctt_size);
+#else
     return COMPILE_OK;
+#endif
 }
 
 /*********************************************/
