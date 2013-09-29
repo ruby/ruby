@@ -396,4 +396,23 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([{}, {}], a.new.foo({}))
     assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"))
   end
+
+  def test_gced_object_in_stack
+    bug8964 = '[ruby-dev:47729] [Bug #8964]'
+    assert_normal_exit %q{
+      def m(a: [])
+      end
+      GC.stress = true
+      tap { m }
+      GC.start
+      tap { m }
+    }, bug8964
+    assert_normal_exit %q{
+      prc = Proc.new {|a: []|}
+      GC.stress = true
+      tap { prc.call }
+      GC.start
+      tap { prc.call }
+    }, bug8964
+  end
 end

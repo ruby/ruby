@@ -1226,6 +1226,11 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
+	int i;
+	int arg_keywords_end = iseq->arg_keyword - (iseq->arg_block != -1);
+	for (i = iseq->arg_keywords; 0 < i; i--) {
+	    orig_argv[arg_keywords_end - i] = Qnil;
+	}
 	orig_argv[iseq->arg_keyword] = keyword_hash;
     }
 
@@ -2302,6 +2307,10 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
+	int arg_keywords_end = iseq->arg_keyword - (iseq->arg_block != -1);
+	for (i = iseq->arg_keywords; 0 < i; i--) {
+	    argv[arg_keywords_end - i] = Qnil;
+	}
 	argv[iseq->arg_keyword] = keyword_hash;
     }
 

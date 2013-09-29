@@ -1,3 +1,12 @@
+Sun Sep 29 18:45:05 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (vm_callee_setup_arg_complex, vm_yield_setup_block_args):
+	  clear keyword arguments to prevent GC bug which occurs
+	  while marking VM stack.
+	  [ruby-dev:47729] [Bug #8964]
+
+	* test/ruby/test_keyword.rb: tests for the above.
+
 Sat Sep 28 23:25:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (math_log, math_log2, math_log10): fix for Bignum argument.
