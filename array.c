@@ -2350,7 +2350,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 	return rb_str_cmp(a, b);
     }
 
-    retval = rb_funcall(a, id_cmp, 1, b);
+    retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
     sort_reentered(data->ary);
 
@@ -2545,7 +2545,8 @@ rb_ary_bsearch(VALUE ary)
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
-	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) {
+	    const VALUE zero = INT2FIX(0);
+	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, INT2FIX(0))) {
 		case 0: return val;
 		case 1: smaller = 1; break;
 		case -1: smaller = 0;
@@ -3794,7 +3795,8 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 	len = RARRAY_LEN(ary2);
     }
     for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(rb_ary_elt(ary1, i), id_cmp, 1, rb_ary_elt(ary2, i));
+	VALUE e1 = rb_ary_elt(ary1, i), e2 = rb_ary_elt(ary2, i);
+	VALUE v = rb_funcallv(e1, id_cmp, 1, &e2);
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
@@ -4596,7 +4598,8 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (n == Qnil) return DBL2NUM(INFINITY);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
-    return rb_funcall(rb_ary_length(self), '*', 1, LONG2FIX(mul));
+    n = LONG2FIX(mul);
+    return rb_funcallv(rb_ary_length(self), '*', 1, &n);
 }
 
 /*
@@ -4704,7 +4707,8 @@ descending_factorial(long from, long how_many)
 {
     VALUE cnt = LONG2FIX(how_many >= 0);
     while (how_many-- > 0) {
-        cnt = rb_funcall(cnt, '*', 1, LONG2FIX(from--));
+	VALUE v = LONG2FIX(from--);
+	cnt = rb_funcallv(cnt, '*', 1, &v);
     }
     return cnt;
 }
@@ -4712,13 +4716,16 @@ descending_factorial(long from, long how_many)
 static VALUE
 binomial_coefficient(long comb, long size)
 {
+    VALUE r, v;
     if (comb > size-comb) {
 	comb = size-comb;
     }
     if (comb < 0) {
 	return LONG2FIX(0);
     }
-    return rb_funcall(descending_factorial(size, comb), id_div, 1, descending_factorial(comb, comb));
+    r = descending_factorial(size, comb);
+    v = descending_factorial(comb, comb);
+    return rb_funcallv(r, id_div, 1, &v);
 }
 
 static VALUE
@@ -4926,12 +4933,14 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
+    VALUE v;
 
     if (k < 0) {
 	return LONG2FIX(0);
     }
 
-    return rb_funcall(LONG2NUM(n), id_power, 1, LONG2NUM(k));
+    v = LONG2NUM(k);
+    return rb_funcallv(LONG2NUM(n), id_power, 1, &v);
 }
 
 /*
