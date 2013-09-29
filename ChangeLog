@@ -1,3 +1,15 @@
+Sun Sep 29 22:56:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): fix inconsistency with literals, allow
+	  ID_ATTRSET and return it itself, but ID_JUNK cannot make ID_ATTRSET.
+	  and raise a NameError instead of rb_bug() for invalid argument.
+
+Sun Sep 29 22:55:44 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id_attrset): fix inconsistency with literals, allow
+	  ID_ATTRSET and return it itself, but ID_JUNK cannot make ID_ATTRSET.
+	  and raise a NameError instead of rb_bug() for invalid argument.
+
 Sun Sep 29 18:45:05 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (vm_callee_setup_arg_complex, vm_yield_setup_block_args):

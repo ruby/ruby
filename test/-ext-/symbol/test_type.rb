@@ -91,6 +91,19 @@ module Test_Symbol
       assert_not_symtype("@@foo", :attrset?)
       assert_not_symtype("$foo", :attrset?)
       assert_not_symtype("[foo]", :attrset?)
+      assert_not_symtype("[foo]=", :attrset?)
+      assert_equal(:"foo=", Bug::Symbol.attrset("foo"))
+      assert_symtype(Bug::Symbol.attrset("foo"), :attrset?)
+      assert_equal(:"Foo=", Bug::Symbol.attrset("Foo"))
+      assert_symtype(Bug::Symbol.attrset("Foo"), :attrset?)
+      assert_equal(:"@foo=", Bug::Symbol.attrset("@foo"))
+      assert_symtype(Bug::Symbol.attrset("@foo"), :attrset?)
+      assert_equal(:"@@foo=", Bug::Symbol.attrset("@@foo"))
+      assert_symtype(Bug::Symbol.attrset("@@foo"), :attrset?)
+      assert_equal(:"$foo=", Bug::Symbol.attrset("$foo"))
+      assert_symtype(Bug::Symbol.attrset("$foo"), :attrset?)
+      assert_raise(NameError) {Bug::Symbol.attrset("[foo]")}
+      assert_equal(:[]=, Bug::Symbol.attrset(:[]))
     end
   end
 end

@@ -8885,17 +8885,23 @@ ID
 rb_id_attrset(ID id)
 {
     if (!is_notop_id(id)) {
-	rb_bug("rb_id_attrset: operator ID - %"PRIdVALUE, (VALUE)id);
+	switch (id) {
+	  case tAREF: case tASET:
+	    return tASET;	/* only exception */
+	}
+	rb_name_error(id, "cannot make operator ID :%s attrset", rb_id2name(id));
     }
     else {
 	int scope = (int)(id & ID_SCOPE_MASK);
 	switch (scope) {
 	  case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
-	  case ID_CONST: case ID_CLASS: case ID_JUNK:
+	  case ID_CONST: case ID_CLASS:
 	    break;
+	  case ID_ATTRSET:
+	    return id;
 	  default:
-	    rb_bug("rb_id_attrset: %s ID - %"PRIdVALUE, id_type_names[scope],
-		   (VALUE)id);
+	    rb_name_error(id, "cannot make %s ID %+"PRIsVALUE" attrset",
+			  id_type_names[scope], ID2SYM(id));
 
 	}
     }
