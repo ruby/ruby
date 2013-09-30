@@ -2420,7 +2420,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	}
 
 	if (0) {
-	    fprintf(stderr, "malloc_limit: %zu -> %zu\n", old_limit, malloc_limit);
+	    fprintf(stderr, "malloc_limit: %"PRIuSIZE" -> %"PRIuSIZE"\n", old_limit, malloc_limit);
 	}
     }
 }
