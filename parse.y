@@ -773,7 +773,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value fcall
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
-%type <node> args call_args opt_call_args
+%type <node> args args_no_comma call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
@@ -2337,11 +2337,11 @@ arg_value	: arg
 		;
 
 aref_args	: none
-		| args trailer
+		| args_no_comma trailer
 		    {
 			$$ = $1;
 		    }
-		| args ',' assocs trailer
+		| args_no_comma assoc_seperator assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2349,7 +2349,7 @@ aref_args	: none
 			$$ = arg_add_assocs($1, $3);
 		    %*/
 		    }
-		| assocs trailer
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -2505,6 +2505,52 @@ args		: arg_value
 		    %*/
 		    }
 		| args ',' tSTAR arg_value
+		    {
+		    /*%%%*/
+			NODE *n1;
+			if ((nd_type($4) == NODE_ARRAY) && (n1 = splat_array($1)) != 0) {
+			    $$ = list_concat(n1, $4);
+			}
+			else {
+			    $$ = arg_concat($1, $4);
+			}
+		    /*%
+			$$ = arg_add_star($1, $4);
+		    %*/
+		    }
+		;
+
+args_no_comma		: arg_value
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST($1);
+		    /*%
+			$$ = arg_add(arg_new(), $1);
+		    %*/
+		    }
+		| tSTAR arg_value
+		    {
+		    /*%%%*/
+			$$ = NEW_SPLAT($2);
+		    /*%
+			$$ = arg_add_star(arg_new(), $2);
+		    %*/
+		    }
+		| args_no_comma assoc_seperator arg_value
+		    {
+		    /*%%%*/
+			NODE *n1;
+			if ((n1 = splat_array($1)) != 0) {
+			    $$ = list_append(n1, $3);
+			}
+			else {
+			    $$ = arg_append($1, $3);
+			}
+		    /*%
+			$$ = arg_add($1, $3);
+		    %*/
+		    }
+		| args_no_comma assoc_seperator tSTAR arg_value
 		    {
 		    /*%%%*/
 			NODE *n1;
