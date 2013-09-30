@@ -1,3 +1,10 @@
+Mon Sep 30 11:18:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_disable): do rest_sweep() before disable GC.
+	  This fix may solve a failure of
+	  TestTracepointObj#test_tracks_objspace_events
+	  [test/-ext-/tracepoint/test_tracepoint.rb:43].
+
 Mon Sep 30 10:40:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_undef): raise a NameError if the original method
