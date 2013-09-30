@@ -1,3 +1,8 @@
+Mon Sep 30 23:14:36 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/objspace/objspace.c: [DOC] Cleaned up many rdoc formatting
+	  issues and several duplicate grammar bugs.
+
 Mon Sep 30 23:01:01 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/objspace/object_tracing.c: [DOC] Adjust rdoc formatting and fix

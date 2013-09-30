@@ -5,7 +5,7 @@
   $Author$
   created at: Wed Jun 17 07:39:17 2009
 
-  NOTE: This extension library is not expected to exist except C Ruby.
+  NOTE: This extension library is only expected to exist with C Ruby.
 
   All the files in this distribution are covered under the Ruby's
   license (see the file COPYING).
@@ -150,11 +150,11 @@ memsize_of(VALUE obj)
  *
  *  Return consuming memory size of obj.
  *
- *  Note that the return size is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especially, the size of
- *  T_DATA may not be correct.
+ *  Note that the return size is incomplete.  You need to deal with this
+ *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
+ *  correct.
  *
- *  This method is not expected to work except C Ruby.
+ *  This method is only expected to work with C Ruby.
  */
 
 static VALUE
@@ -201,26 +201,27 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
  *    ObjectSpace.memsize_of_all([klass]) -> Integer
  *
  *  Return consuming memory size of all living objects.
- *  If klass (should be Class object) is given, return the total
- *  memory size of instances of the given class.
  *
- *  Note that the returned size is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especially, the size of
- *  T_DATA may not be correct.
+ *  If +klass+ (should be Class object) is given, return the total memory size
+ *  of instances of the given class.
+ *
+ *  Note that the returned size is incomplete. You need to deal with this
+ *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
+ *  correct.
  *
  *  Note that this method does *NOT* return total malloc'ed memory size.
  *
  *  This method can be defined by the following Ruby code:
  *
- *  def memsize_of_all klass = false
- *    total = 0
- *    ObjectSpace.each_object{|e|
- *      total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
- *    }
- *    total
- *  end
+ *	def memsize_of_all klass = false
+ *  	  total = 0
+ *  	  ObjectSpace.each_object{|e|
+ *  	    total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
+ *  	  }
+ *  	  total
+ *  	end
  *
- *  This method is not expected to work except C Ruby.
+ *  This method is only expected to work with C Ruby.
  */
 
 static VALUE
@@ -316,7 +317,7 @@ type2sym(enum ruby_value_type i)
  *  The contents of the returned hash is implementation defined.
  *  It may be changed in future.
  *
- *  This method is not expected to work except C Ruby.
+ *  This method is only expected to work with C Ruby.
  */
 
 static VALUE
@@ -378,20 +379,21 @@ cn_i(void *vstart, void *vend, size_t stride, void *n)
  *
  *  Counts nodes for each node type.
  *
- *  This method is not for ordinary Ruby programmers, but for MRI developers
- *  who have interest in MRI performance and memory usage.
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
  *
  *  It returns a hash as:
- *  {:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
  *
- *  If the optional argument, result_hash, is given,
- *  it is overwritten and returned.
- *  This is intended to avoid probe effect.
+ *	{:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
  *
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  Note:
  *  The contents of the returned hash is implementation defined.
  *  It may be changed in future.
  *
- *  This method is not expected to work except C Ruby.
+ *  This method is only expected to work with C Ruby.
  */
 
 static VALUE
@@ -575,31 +577,32 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
  *  call-seq:
  *     ObjectSpace.count_tdata_objects([result_hash]) -> hash
  *
- *  Counts objects for each T_DATA type.
+ *  Counts objects for each +T_DATA+ type.
  *
- *  This method is not for ordinary Ruby programmers, but for MRI developers
- *  who interest on MRI performance.
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
  *
  *  It returns a hash as:
- *  {RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
- *   :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
- *   ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
- *   Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
- *  # T_DATA objects existing at startup on r32276.
  *
- *  If the optional argument, result_hash, is given,
- *  it is overwritten and returned.
- *  This is intended to avoid probe effect.
+ *	{RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
+ *  	 :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
+ *  	 ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
+ *  	 Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
+ *  	# T_DATA objects existing at startup on r32276.
  *
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  The contents of the returned hash is implementation specific and may change
+ *  in the future.
  *
  *  In this version, keys are Class object or Symbol object.
+ *
  *  If object is kind of normal (accessible) object, the key is Class object.
  *  If object is not a kind of normal (internal) object, the key is symbol
  *  name, registered by rb_data_type_struct.
  *
- *  This method is not expected to work except C Ruby.
+ *  This method is only expected to work with C Ruby.
  */
 
 static VALUE
@@ -712,24 +715,25 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
  *  [MRI specific feature] Return all reachable objects from `obj'.
  *
  *  This method returns all reachable objects from `obj'.
- *  If `obj' has two or more references to the same object `x',
- *  then returned array only includes one `x' object.
- *  If `obj' is a non-markable (non-heap management) object such as
- *  true, false, nil, symbols and Fixnums (and Flonum) then it simply
- *  returns nil.
  *
- *  If `obj' has references to an internal object, then it returns
- *  instances of `ObjectSpace::InternalObjectWrapper' class.
- *  This object contains a reference to an internal object and
- *  you can check the type of internal object with `type' method.
+ *  If `obj' has two or more references to the same object `x', then returned
+ *  array only includes one `x' object.
  *
- *  If `obj' is instance of `ObjectSpace::InternalObjectWrapper'
- *  class, then this method returns all reachable object from
- *  an internal object, which is pointed by `obj'.
+ *  If `obj' is a non-markable (non-heap management) object such as true,
+ *  false, nil, symbols and Fixnums (and Flonum) then it simply returns nil.
+ *
+ *  If `obj' has references to an internal object, then it returns instances of
+ *  ObjectSpace::InternalObjectWrapper class. This object contains a reference
+ *  to an internal object and you can check the type of internal object with
+ *  `type' method.
+ *
+ *  If `obj' is instance of ObjectSpace::InternalObjectWrapper class, then this
+ *  method returns all reachable object from an internal object, which is
+ *  pointed by `obj'.
  *
  *  With this method, you can find memory leaks.
  *
- *  This method is not expected to work except in C Ruby.
+ *  This method is only expected to work except with C Ruby.
  *
  *  Example:
  *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
@@ -775,8 +779,6 @@ void Init_gc_hook(VALUE rb_mObjSpace);
 
 /*
  * Document-module: ObjectSpace
- *
- * == The objspace library
  *
  * The objspace library extends the ObjectSpace module and adds several
  * methods to get internal statistic information about
