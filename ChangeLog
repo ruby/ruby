@@ -1,3 +1,15 @@
+Mon Sep 30 16:46:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c: add new 3 methods to control tracing.
+	  * ObjectSpace::trace_object_allocations_start
+	  * ObjectSpace::trace_object_allocations_stop
+	  * ObjectSpace::trace_object_allocations_clear
+	  And some refactoring.
+
+	* test/objspace/test_objspace.rb: add a test for new methods.
+
+	* NEWS: add a description for new methods.
+
 Mon Sep 30 11:18:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_disable): do rest_sweep() before disable GC.

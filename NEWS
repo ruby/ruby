@@ -239,6 +239,18 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* objspace
+  * new method:
+    * ObjectSpace.trace_object_allocations
+    * ObjectSpace.trace_object_allocations_start
+    * ObjectSpace.trace_object_allocations_stop
+    * ObjectSpace.trace_object_allocations_clear
+    * ObjectSpace.allocation_sourcefile
+    * ObjectSpace.allocation_sourceline
+    * ObjectSpace.allocation_class_path
+    * ObjectSpace.allocation_method_id
+    * ObjectSpace.allocation_generation
+
 * Set
   * incompatible changes:
     * Set#to_set now returns self instead of generating a copy.

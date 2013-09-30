@@ -19,15 +19,15 @@
 size_t rb_gc_count(void); /* from gc.c */
 
 struct traceobj_arg {
+    int running;
     VALUE newobj_trace;
     VALUE freeobj_trace;
-    st_table *object_table;
-    st_table *str_table;
+    st_table *object_table; /* obj (VALUE) -> allocation_info */
+    st_table *str_table;    /* cstr -> refcount */
     struct traceobj_arg *prev_traceobj_arg;
 };
 
-struct traceobj_arg *traceobj_arg; /* TODO: do not use GLOBAL VARIABLE!!! */
-
+/* all of information don't need marking. */
 struct allocation_info {
     const char *path;
     unsigned long line;
@@ -129,17 +129,94 @@ free_values_i(st_data_t key, st_data_t value, void *data)
     return ST_CONTINUE;
 }
 
-static VALUE
-stop_trace_object_allocations(void *data)
+static struct traceobj_arg *tmp_trace_arg; /* TODO: Do not use global variables */
+
+static struct traceobj_arg *
+get_traceobj_arg(void)
 {
-    struct traceobj_arg *arg = (struct traceobj_arg *)data;
-    rb_tracepoint_disable(arg->newobj_trace);
-    rb_tracepoint_disable(arg->freeobj_trace);
+    if (tmp_trace_arg == 0) {
+	tmp_trace_arg = ALLOC_N(struct traceobj_arg, 1);
+	tmp_trace_arg->running = 0;
+	tmp_trace_arg->newobj_trace = 0;
+	tmp_trace_arg->freeobj_trace = 0;
+	tmp_trace_arg->object_table = st_init_numtable();
+	tmp_trace_arg->str_table = st_init_strtable();
+    }
+    return tmp_trace_arg;
+}
+
+/*
+ * call-seq: trace_object_allocations_start
+ *
+ * Starts tracing object allocations.
+ *
+ */
+static VALUE
+trace_object_allocations_start(VALUE self)
+{
+    struct traceobj_arg *arg = get_traceobj_arg();
+
+    if (arg->running++ > 0) {
+	/* do nothing */
+    }
+    else {
+	if (arg->newobj_trace == 0) {
+	    arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
+	    arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
+	}
+	rb_tracepoint_enable(arg->newobj_trace);
+	rb_tracepoint_enable(arg->freeobj_trace);
+    }
+
+    return Qnil;
+}
+
+/*
+ * call-seq: trace_object_allocations_stop
+ *
+ * Stop tracing object allocations.
+ *
+ * Note that if trace_object_allocations_start is called n-times, then
+ * stop tracing after calling trace_object_allocations_stop n-times.
+ *
+ */
+static VALUE
+trace_object_allocations_stop(VALUE self)
+{
+    struct traceobj_arg *arg = get_traceobj_arg();
+
+    if (arg->running > 0) {
+	arg->running--;
+    }
+
+    if (arg->running == 0) {
+	rb_tracepoint_disable(arg->newobj_trace);
+	rb_tracepoint_disable(arg->freeobj_trace);
+	arg->newobj_trace = 0;
+	arg->freeobj_trace = 0;
+    }
+
+    return Qnil;
+}
+
+/*
+ * call-seq: trace_object_allocations_clear
+ *
+ * Clear recorded tracing information.
+ *
+ */
+static VALUE
+trace_object_allocations_clear(VALUE self)
+{
+    struct traceobj_arg *arg = get_traceobj_arg();
+
+    /* clear tables */
     st_foreach(arg->object_table, free_values_i, 0);
+    st_clear(arg->object_table);
     st_foreach(arg->str_table, free_keys_i, 0);
-    st_free_table(arg->object_table);
-    st_free_table(arg->str_table);
-    traceobj_arg = arg->prev_traceobj_arg;
+    st_clear(arg->str_table);
+
+    /* do not touch TracePoints */
 
     return Qnil;
 }
@@ -171,30 +248,18 @@ stop_trace_object_allocations(void *data)
  * "<code>ObjectSpace::trace_object_allocations</code>" notation.
  */
 static VALUE
-trace_object_allocations(VALUE objspace)
+trace_object_allocations(VALUE self)
 {
-    struct traceobj_arg arg;
-
-    arg.newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, &arg);
-    arg.freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, &arg);
-    arg.object_table = st_init_numtable();
-    arg.str_table = st_init_strtable();
-
-    arg.prev_traceobj_arg = traceobj_arg;
-    traceobj_arg = &arg;
-
-    rb_tracepoint_enable(arg.newobj_trace);
-    rb_tracepoint_enable(arg.freeobj_trace);
-
-    return rb_ensure(rb_yield, Qnil, stop_trace_object_allocations, (VALUE)&arg);
+    trace_object_allocations_start(self);
+    return rb_ensure(rb_yield, Qnil, trace_object_allocations_stop, self);
 }
 
 static struct allocation_info *
 lookup_allocation_info(VALUE obj)
 {
-    if (traceobj_arg) {
+    if (tmp_trace_arg) {
 	struct allocation_info *info;
-	if (st_lookup(traceobj_arg->object_table, obj, (st_data_t *)&info)) {
+	if (st_lookup(tmp_trace_arg->object_table, obj, (st_data_t *)&info)) {
 	    return info;
 	}
     }
@@ -209,11 +274,12 @@ lookup_allocation_info(VALUE obj)
  * See ::trace_object_allocations for more information and examples.
  */
 static VALUE
-allocation_sourcefile(VALUE objspace, VALUE obj)
+allocation_sourcefile(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
-    if (info) {
-	return info->path ? rb_str_new2(info->path) : Qnil;
+
+    if (info && info->path) {
+	return rb_str_new2(info->path);
     }
     else {
 	return Qnil;
@@ -228,9 +294,10 @@ allocation_sourcefile(VALUE objspace, VALUE obj)
  * See ::trace_object_allocations for more information and examples.
  */
 static VALUE
-allocation_sourceline(VALUE objspace, VALUE obj)
+allocation_sourceline(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
+
     if (info) {
 	return INT2FIX(info->line);
     }
@@ -258,11 +325,12 @@ allocation_sourceline(VALUE objspace, VALUE obj)
  * See ::trace_object_allocations for more information and examples.
  */
 static VALUE
-allocation_class_path(VALUE objspace, VALUE obj)
+allocation_class_path(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
-    if (info) {
-	return info->class_path ? rb_str_new2(info->class_path) : Qnil;
+
+    if (info && info->class_path) {
+	return rb_str_new2(info->class_path);
     }
     else {
 	return Qnil;
@@ -290,7 +358,7 @@ allocation_class_path(VALUE objspace, VALUE obj)
  * See ::trace_object_allocations for more information and examples.
  */
 static VALUE
-allocation_method_id(VALUE objspace, VALUE obj)
+allocation_method_id(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
@@ -322,7 +390,7 @@ allocation_method_id(VALUE objspace, VALUE obj)
  * See ::trace_object_allocations for more information and examples.
  */
 static VALUE
-allocation_generation(VALUE objspace, VALUE obj)
+allocation_generation(VALUE self, VALUE obj)
 {
     struct allocation_info *info = lookup_allocation_info(obj);
     if (info) {
@@ -341,6 +409,10 @@ Init_object_tracing(VALUE rb_mObjSpace)
 #endif
 
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations", trace_object_allocations, 0);
+    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_start", trace_object_allocations_start, 0);
+    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_stop", trace_object_allocations_stop, 0);
+    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_clear", trace_object_allocations_clear, 0);
+
     rb_define_module_function(rb_mObjSpace, "allocation_sourcefile", allocation_sourcefile, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_sourceline", allocation_sourceline, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_class_path", allocation_class_path, 1);

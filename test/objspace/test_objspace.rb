@@ -109,7 +109,7 @@ class TestObjSpace < Test::Unit::TestCase
     eom
   end
 
-  def test_traceobject
+  def test_trace_object_allocations
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
       o1 = Object.new; line1 = __LINE__; c1 = GC.count
@@ -138,5 +138,38 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(self.class.name, ObjectSpace.allocation_class_path(o3))
       assert_equal(__method__,      ObjectSpace.allocation_method_id(o3))
     }
+  end
+
+  def test_trace_object_allocations_start_stop_clear
+    begin
+      ObjectSpace.trace_object_allocations_start
+      begin
+        ObjectSpace.trace_object_allocations_start
+        begin
+          ObjectSpace.trace_object_allocations_start
+          obj0 = Object.new
+        ensure
+          ObjectSpace.trace_object_allocations_stop
+          obj1 = Object.new
+        end
+      ensure
+        ObjectSpace.trace_object_allocations_stop
+        obj2 = Object.new
+      end
+    ensure
+      ObjectSpace.trace_object_allocations_stop
+      obj3 = Object.new
+    end
+
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj0))
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj1))
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj2))
+    assert_equal(nil     , ObjectSpace.allocation_sourcefile(obj3)) # after tracing
+
+    ObjectSpace.trace_object_allocations_clear
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj0))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
   end
 end
