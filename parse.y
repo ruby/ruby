@@ -2341,7 +2341,7 @@ aref_args	: none
 		    {
 			$$ = $1;
 		    }
-		| args_no_comma assoc_seperator assocs_no_comma trailer
+		| args_no_comma nl_or_comma assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2536,7 +2536,7 @@ args_no_comma		: arg_value
 			$$ = arg_add_star(arg_new(), $2);
 		    %*/
 		    }
-		| args_no_comma assoc_seperator arg_value
+		| args_no_comma nl_or_comma arg_value
 		    {
 		    /*%%%*/
 			NODE *n1;
@@ -2550,7 +2550,7 @@ args_no_comma		: arg_value
 			$$ = arg_add($1, $3);
 		    %*/
 		    }
-		| args_no_comma assoc_seperator tSTAR arg_value
+		| args_no_comma nl_or_comma tSTAR arg_value
 		    {
 		    /*%%%*/
 			NODE *n1;
@@ -4973,7 +4973,7 @@ assocs_no_comma		: assoc
 			$$ = rb_ary_new3(1, $1);
 		    }
 		    %*/
-		| assocs_no_comma assoc_seperator assoc
+		| assocs_no_comma nl_or_comma assoc
 		    {
 		    /*%%%*/
 			$$ = list_concat($1, $3);
@@ -5054,10 +5054,10 @@ rbracket	: opt_nl ']'
 		;
 
 trailer		: /* none */
-		| assoc_seperator
+		| nl_or_comma
 		;
 
-assoc_seperator	: '\n'
+nl_or_comma	: '\n'
        {
      command_start = FALSE;
        }
