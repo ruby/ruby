@@ -2,6 +2,8 @@
 #
 # Documentation by James Edward Gray II and Gavin Sinclair
 
+require 'monitor'
+
 ##
 # This library provides three different ways to delegate method calls to an
 # object.  The easiest to use is SimpleDelegator.  Pass an object to the
@@ -384,6 +386,23 @@ def DelegateClass(superclass)
     super(all) | superclass.protected_instance_methods
   end
   return klass
+end
+
+class SynchronizedDelegator < SimpleDelegator
+  def initialize(*)
+    super
+    @monitor = Monitor.new
+  end
+  
+  def method_missing(m, *args, &block)
+    begin
+      monitor = @monitor
+      monitor.mon_enter
+      super
+    ensure
+      monitor.mon_exit
+    end
+  end
 end
 
 # :enddoc:

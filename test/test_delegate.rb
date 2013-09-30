@@ -134,3 +134,43 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
   end
 end
+
+class TestSynchronizedDelegate < Test::Unit::TestCase
+  class Foo
+    def initialize
+      @i = 0
+    end
+
+    def i
+      @i
+    end
+
+    def increment
+      old_i = @i
+      Thread.pass # increase possibility of overlap
+      @i = old_i + 1
+    end
+  end
+
+  def test_initialize
+    f = Foo.new
+    d = SynchronizedDelegator.new(f)
+    assert_equal f, d.__getobj__
+    assert_equal 0, f.i
+  end
+
+  def test_multithreaded
+    f = Foo.new
+    d = SynchronizedDelegator.new(f)
+    (1..100).map do
+      Thread.new do
+        1000.times do
+          Thread.pass # increase possibility of overlap
+          d.increment
+        end
+      end
+    end.each(&:join)
+
+    assert_equal 100_000, f.i
+  end
+end
