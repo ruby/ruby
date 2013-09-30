@@ -1,3 +1,12 @@
+Mon Sep 30 10:40:20 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_undef): raise a NameError if the original method
+	  of a refined method is not defined. 
+
+	* vm_insnhelper.c (rb_method_entry_eq): added NULL check to avoid SEGV.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Sun Sep 29 23:45:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id_attrset, intern_str): allow junk attrset ID for
