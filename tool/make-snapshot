@@ -244,7 +244,7 @@ def package(rev, destdir)
           ["gzip tarball", ".tar.gz", %w"tar czf"],
           ["zip archive", ".zip", %w"zip -qr"]
          ].collect do |mesg, ext, cmd|
-    file = File.join(destdir, "#{v||$archname}#{ext}")
+    file = File.join(destdir, "#{$archname||v}#{ext}")
     print "creating #{mesg}... #{file}"
     if system(*(cmd + [file, v]))
       puts " done"

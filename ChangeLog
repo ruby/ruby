@@ -1,3 +1,7 @@
+Tue Oct  1 00:28:40 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* tool/make-snapshot: Fix order of priority for option parameter.
+
 Sat Sep 28 21:40:40 2013  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* random.c (rb_random_ulong_limited): coerce before check negative.
