@@ -176,8 +176,8 @@ trace_object_allocations_start(VALUE self)
  *
  * Stop tracing object allocations.
  *
- * Note that if trace_object_allocations_start is called n-times, then
- * stop tracing after calling trace_object_allocations_stop n-times.
+ * Note that if ::trace_object_allocations_start is called n-times, then stop
+ * tracing after calling ::trace_object_allocations_stop n-times.
  *
  */
 static VALUE
@@ -244,11 +244,10 @@ trace_object_allocations_clear(VALUE self)
  *	C.new.foo #=> "objtrace.rb:8"
  *
  * This example has included the ObjectSpace module to make it easier to read,
- * but you can also use the
- * "<code>ObjectSpace::trace_object_allocations</code>" notation (recommended).
+ * but you can also use the ::trace_object_allocations notation (recommended).
  *
- * Note that this feature introduces huge performance down and huge memory
- * consumption.
+ * Note that this feature introduces a huge performance decrease and huge
+ * memory consumption.
  */
 static VALUE
 trace_object_allocations(VALUE self)

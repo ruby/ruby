@@ -1,3 +1,8 @@
+Mon Sep 30 23:01:01 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/objspace/object_tracing.c: [DOC] Adjust rdoc formatting and fix
+	  small grammar typo
+
 Mon Sep 30 17:28:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c: [DOC] add some nots for 
