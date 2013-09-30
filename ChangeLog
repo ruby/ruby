@@ -1,3 +1,8 @@
+Mon Sep 30 17:28:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c: [DOC] add some nots for 
+	  ObjectSpace::trace_object_allocations.
+
 Mon Sep 30 16:46:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c: add new 3 methods to control tracing.

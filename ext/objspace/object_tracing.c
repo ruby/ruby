@@ -245,7 +245,10 @@ trace_object_allocations_clear(VALUE self)
  *
  * This example has included the ObjectSpace module to make it easier to read,
  * but you can also use the
- * "<code>ObjectSpace::trace_object_allocations</code>" notation.
+ * "<code>ObjectSpace::trace_object_allocations</code>" notation (recommended).
+ *
+ * Note that this feature introduces huge performance down and huge memory
+ * consumption.
  */
 static VALUE
 trace_object_allocations(VALUE self)
