@@ -685,6 +685,7 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
     if (mprotect(ctt, ctt_size, PROT_READ | PROT_EXEC)) {
         rb_sys_fail("mprotect");
     }
+    iseq->context_threading_table = ctt;
     return COMPILE_OK;
 }
 #endif
