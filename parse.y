@@ -2375,7 +2375,7 @@ opt_paren_args	: none
 
 opt_call_args	: none
 		| call_args_no_comma
-		| args_no_comma nl_or_comma
+		| args_no_comma trailer
 		    {
 		      $$ = $1;
 		    }
