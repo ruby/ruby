@@ -1,3 +1,9 @@
+Tue Oct  1 22:03:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): finalizer is no longer needed
+	  after unlinking.  patched by by normalperson (Eric Wong) at
+	  [ruby-core:56521] [Bug #8768]
+
 Tue Oct  1 20:54:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (stat_new_0): constify.
