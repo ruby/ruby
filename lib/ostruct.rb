@@ -188,6 +188,10 @@ class OpenStruct
     end
   end
 
+  def respond_to_missing?(method, include_private = false) # :nodoc:
+    true
+  end
+
   # Returns the value of a member.
   #
   #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
