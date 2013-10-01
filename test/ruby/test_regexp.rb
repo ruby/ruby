@@ -380,7 +380,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/a/, eval(%q(s="\u0061";/#{s}/n)))
     assert_raise(RegexpError) { s = "\u3042"; eval(%q(/#{s}/n)) }
     assert_raise(RegexpError) { s = "\u0061"; eval(%q(/\u3042#{s}/n)) }
-    assert_raise(RegexpError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)) }
+    assert_raise(RegexpError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)); [s1, s2] }
 
     assert_raise(ArgumentError) { s = '\x'; /#{ s }/ }
 
@@ -593,7 +593,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\80\z/, "80", ["\100", ""])
     check(/\A\77\z/, "?")
     check(/\A\78\z/, "\7" + '8', ["\100", ""])
-    check(/\A\Qfoo\E\z/, "QfooE")
+    check(eval('/\A\Qfoo\E\z/'), "QfooE")
     check(/\Aa++\z/, "aaa")
     check('\Ax]\z', "x]")
     check(/x#foo/x, "x", "#foo")
@@ -767,9 +767,9 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_posix_bracket
     check(/\A[[:alpha:]0]\z/, %w(0 a), %w(1 .))
-    check(/\A[[:^alpha:]0]\z/, %w(0 1 .), "a")
-    check(/\A[[:alpha\:]]\z/, %w(a l p h a :), %w(b 0 1 .))
-    check(/\A[[:alpha:foo]0]\z/, %w(0 a), %w(1 .))
+    check(eval('/\A[[:^alpha:]0]\z/'), %w(0 1 .), "a")
+    check(eval('/\A[[:alpha\:]]\z/'), %w(a l p h a :), %w(b 0 1 .))
+    check(eval('/\A[[:alpha:foo]0]\z/'), %w(0 a), %w(1 .))
     check(/\A[[:xdigit:]&&[:alpha:]]\z/, "a", %w(g 0))
     check('\A[[:abcdefghijklmnopqrstu:]]+\z', "[]")
     failcheck('[[:alpha')
@@ -1003,7 +1003,7 @@ class TestRegexp < Test::Unit::TestCase
     # escape
     pr4 = proc{|i|
       catch(:xyzzy){
-        /#{throw :xyzzy, i}/o
+        /#{throw :xyzzy, i}/o =~ ""
         :ng
       }
     }
