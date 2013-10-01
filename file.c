@@ -365,7 +365,7 @@ static const rb_data_type_t stat_data_type = {
 };
 
 static VALUE
-stat_new_0(VALUE klass, struct stat *st)
+stat_new_0(VALUE klass, const struct stat *st)
 {
     struct stat *nst = 0;
 
@@ -376,8 +376,8 @@ stat_new_0(VALUE klass, struct stat *st)
     return TypedData_Wrap_Struct(klass, &stat_data_type, nst);
 }
 
-static VALUE
-stat_new(struct stat *st)
+VALUE
+rb_stat_new(const struct stat *st)
 {
     return stat_new_0(rb_cStat, st);
 }
@@ -987,7 +987,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
     if (rb_stat(fname, &st) < 0) {
 	rb_sys_fail_path(fname);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 }
 
 /*
@@ -1015,7 +1015,7 @@ rb_io_stat(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 }
 
 /*
@@ -1044,7 +1044,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
     if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 #else
     return rb_file_s_stat(klass, fname);
 #endif
@@ -1079,7 +1079,7 @@ rb_file_lstat(VALUE obj)
     if (lstat(RSTRING_PTR(path), &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 #else
     return rb_io_stat(obj);
 #endif

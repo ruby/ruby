@@ -1,3 +1,10 @@
+Tue Oct  1 20:54:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (stat_new_0): constify.
+
+	* file.c (rb_stat_new): constify and export.  based on a patch by
+	  Hanmac (Hans Mackowiak) at [ruby-core:53225].  [Feature #8050]
+
 Tue Oct  1 16:03:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_safe_level_4_warning): needed by extension

@@ -197,6 +197,11 @@ void rb_io_read_check(rb_io_t*);
 int rb_io_read_pending(rb_io_t*);
 DEPRECATED(void rb_read_check(FILE*));
 
+struct stat;
+VALUE rb_stat_new(const struct stat *);
+
+/* gc.c */
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
