@@ -1014,6 +1014,7 @@ class TestRegexp < Test::Unit::TestCase
   def test_eq_tilde_can_be_overridden
     assert_in_out_err([], <<-RUBY, ["foo"], [])
       class Regexp
+        undef =~
         def =~(str)
           "foo"
         end
