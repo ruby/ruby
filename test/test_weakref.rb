@@ -53,4 +53,21 @@ class TestWeakRef < Test::Unit::TestCase
       end
     }, bug7304
   end
+  
+  def test_queue
+    o = Object.new
+    q = Object.new
+    def q.pushed; @pushed; end
+    def q.push(obj); @pushed = obj; end
+    
+    ref = WeakRef.new(o, q)
+    assert_equal(o, ref.__getobj__)
+    assert_equal(nil, q.pushed)
+    
+    o = nil
+    5.times { GC.start }
+    
+    assert_equal(nil, ref.__getobj__)
+    assert_equal(ref, q.pushed)
+  end
 end

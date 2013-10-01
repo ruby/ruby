@@ -71,22 +71,35 @@ class WeakRef < Delegator
   class RefError < StandardError
   end
 
-  @@__map = ::ObjectSpace::WeakMap.new
+  @@__map = ::ObjectSpace::WeakMap.new 
+    
+  QUEUE_FINALIZER = ->(queue, weakref, id) do
+    queue.push(weakref)
+  end
 
   ##
   # Creates a weak reference to +orig+
   #
   # Raises an ArgumentError if the given +orig+ is immutable, such as Symbol,
   # Fixnum, or Float.
+  #
+  # If +queue+ is provided, it will receive (via Queue#push) the WeakRef object
+  # when the weakly-referenced +orig+ has been collected.
 
-  def initialize(orig)
+  def initialize(orig, queue = nil)
     case orig
     when true, false, nil
       @delegate_sd_obj = orig
     else
       @@__map[self] = orig
+    
+      if queue
+        finalizer = QUEUE_FINALIZER.curry[queue][self]
+        ObjectSpace.define_finalizer(orig, finalizer)
+      end
     end
-    super
+
+    super(orig)
   end
 
   def __getobj__ # :nodoc:
