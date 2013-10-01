@@ -1,3 +1,8 @@
+Tue Oct  1 16:03:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ruby_safe_level_4_warning): needed by extension
+	  libraries which check safe level 4.  [ruby-dev:47517] [Bug #8652]
+
 Mon Sep 30 23:14:36 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/objspace/objspace.c: [DOC] Cleaned up many rdoc formatting

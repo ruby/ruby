@@ -568,10 +568,9 @@ int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
 int ruby_safe_level_4_error(void) __attribute__((error("$SAFE=4 is obsolete")));
+int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
 # ifdef RUBY_EXPORT
 #   define ruby_safe_level_4_warning() ruby_safe_level_4_error()
-# else
-int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
 # endif
 #define RUBY_SAFE_LEVEL_INVALID_P(level) \
     __extension__(__builtin_constant_p(level) && \
