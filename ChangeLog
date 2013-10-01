@@ -1,3 +1,9 @@
+Tue Oct  1 23:44:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm_core.h: use __attribute__((unused)) in UNINTIALIZED_VAR on clang
+	  4.0+ instead of just on 4.2. Clang has supported the unused attribute
+	  since before version 4, so this should be safe.
+
 Tue Oct  1 22:03:48 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#unlink): finalizer is no longer needed
