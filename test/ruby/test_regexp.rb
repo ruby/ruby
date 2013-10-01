@@ -1012,7 +1012,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_eq_tilde_can_be_overridden
-    assert_in_out_err([], <<-RUBY, ["foo"], [])
+    assert_separately([], <<-RUBY)
       class Regexp
         undef =~
         def =~(str)
@@ -1020,7 +1020,7 @@ class TestRegexp < Test::Unit::TestCase
         end
       end
 
-      puts // =~ ""
+      assert_equal("foo", // =~ "")
     RUBY
   end
 
