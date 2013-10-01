@@ -773,7 +773,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value fcall
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
-%type <node> args args_no_comma call_args opt_call_args
+%type <node> args args_no_comma call_args call_args_no_comma opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
@@ -2374,12 +2374,12 @@ opt_paren_args	: none
 		;
 
 opt_call_args	: none
-		| call_args
-		| args ','
+		| call_args_no_comma
+		| args_no_comma nl_or_comma
 		    {
 		      $$ = $1;
 		    }
-		| args ',' assocs ','
+		| args_no_comma nl_or_comma assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2387,7 +2387,7 @@ opt_call_args	: none
 			$$ = arg_add_assocs($1, $3);
 		    %*/
 		    }
-		| assocs ','
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -2425,6 +2425,51 @@ call_args	: command
 		    %*/
 		    }
 		| args ',' assocs opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = arg_append($1, NEW_HASH($3));
+			$$ = arg_blk_pass($$, $4);
+		    /*%
+			$$ = arg_add_optblock(arg_add_assocs($1, $3), $4);
+		    %*/
+		    }
+		| block_arg
+		    /*%c%*/
+		    /*%c
+		    {
+			$$ = arg_add_block(arg_new(), $1);
+		    }
+		    %*/
+		;
+
+call_args_no_comma	: command
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_LIST($1);
+		    /*%
+			$$ = arg_add(arg_new(), $1);
+		    %*/
+		    }
+		| args_no_comma opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = arg_blk_pass($1, $2);
+		    /*%
+			$$ = arg_add_optblock($1, $2);
+		    %*/
+		    }
+		| assocs_no_comma opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = arg_blk_pass($$, $2);
+		    /*%
+			$$ = arg_add_assocs(arg_new(), $1);
+			$$ = arg_add_optblock($$, $2);
+		    %*/
+		    }
+		| args_no_comma nl_or_comma assocs_no_comma opt_block_arg
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
