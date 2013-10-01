@@ -139,6 +139,11 @@ error !
 #if OPT_CONTEXT_THREADED_CODE
 
 #define INSN_DISPATCH()     \
+  if (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(REG_CFP))) { \
+    if (RUBY_VM_PREVIOUS_CONTROL_FRAME(REG_CFP)->pc != 0) { \
+      __asm__ __volatile__("pushq %0" : : "r" (*RUBY_VM_PREVIOUS_CONTROL_FRAME(REG_CFP)->pc) : "%rsp"); \
+    } \
+  } \
   goto *(void const *)GET_CURRENT_INSN(); \
   {
 
