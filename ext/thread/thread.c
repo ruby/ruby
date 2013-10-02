@@ -517,20 +517,22 @@ Init_thread(void)
 	    rb_const_set(rb_cObject, id, rb_c##name); \
 	}                                             \
     } while (0)
+#define OUTER rb_cThread
 #else
 #define ALIAS_GLOBCAL_CONST(name) do { /* nothing */ } while (0)
+#define OUTER 0
 #endif
 
     VALUE rb_cConditionVariable = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"ConditionVariable", rb_cObject, rb_struct_alloc_noinit,
 	"waiters", NULL);
     VALUE rb_cQueue = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"Queue", rb_cObject, rb_struct_alloc_noinit,
 	"que", "waiters", NULL);
     VALUE rb_cSizedQueue = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"SizedQueue", rb_cQueue, rb_struct_alloc_noinit,
 	"que", "waiters", "queue_waiters", "size", NULL);
 
