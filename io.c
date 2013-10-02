@@ -4433,6 +4433,8 @@ rb_io_close_read(VALUE io)
     if (io != write_io) {
 	rb_io_t *wfptr;
 	GetOpenFile(write_io, wfptr);
+	wfptr->pid = fptr->pid;
+	fptr->pid = 0;
         RFILE(io)->fptr = wfptr;
 	/* bind to write_io temporarily to get rid of memory/fd leak */
 	fptr->tied_io_for_writing = 0;

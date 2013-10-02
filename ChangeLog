@@ -1,3 +1,8 @@
+Wed Oct  2 16:26:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): duplex IO should wait its child process
+	  even after close_read.
+
 Wed Oct  2 15:39:13 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_core.h: use __has_attribute() instead of __clang__major__ because
