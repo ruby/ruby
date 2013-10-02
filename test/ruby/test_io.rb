@@ -1409,6 +1409,17 @@ class TestIO < Test::Unit::TestCase
     assert_raise(IOError) { pipe.pid }
   end
 
+  def tesst_pid_after_close_read
+    pid1 = pid2 = nil
+    IO.popen(["echo", ""], "r+") do |io|
+      pid1 = io.pid
+      io.close_read
+      pid2 = io.pid
+    end
+    assert_not_nil(pid1)
+    assert_equal(pid1, pid2)
+  end
+
   def make_tempfile
     t = Tempfile.new("test_io")
     t.binmode
