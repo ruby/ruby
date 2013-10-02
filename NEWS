@@ -89,6 +89,10 @@ with all sufficient information, see the ChangeLog file.
     * Process.clock_gettime
     * Process.clock_getres
 
+* RbConfig
+  * New constants:
+    * RbConfig::SIZEOF is added to provide the size of C types.
+
 * String
   * New methods:
     * String#scrub and String#scrub! verify and fix invalid byte sequence.
