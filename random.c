@@ -495,10 +495,10 @@ make_seed_value(const uint32_t *ptr)
 {
     VALUE seed;
     size_t len;
+    uint32_t buf[DEFAULT_SEED_CNT+1];
 
     if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
         /* set leading-zero-guard */
-        uint32_t buf[DEFAULT_SEED_CNT+1];
         MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
         buf[DEFAULT_SEED_CNT] = 1;
         ptr = buf;

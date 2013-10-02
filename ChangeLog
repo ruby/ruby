@@ -1,3 +1,8 @@
+Wed Oct  2 21:37:04 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* random.c (make_seed_value): a local array declaration was accessed
+	  out of scope.  Coverity Scan found this bug.
+
 Wed Oct  2 18:52:40 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: relax GC condition due to malloc_limit.
