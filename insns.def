@@ -969,14 +969,12 @@ defineclass
     COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
 
     /* enter scope */
-    /*__asm__ __volatile__("mov (%%rsp), %0" : "=r" (dummy));*/
     __asm__ __volatile__("subq $96, %%rsp" : : : "%rsp");
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
     __asm__ __volatile__("addq $96, %%rsp" : : : "%rsp");
-    /*__asm__ __volatile__("mov %0, (%%rsp)" : : "r" (dummy));*/
     RESTORE_REGS();
     NEXT_INSN();
 }
@@ -1134,6 +1132,13 @@ throw
     val = vm_throw(th, GET_CFP(), throw_state, throwobj);
 #if OPT_CONTEXT_THREADED_CODE
     __asm__ __volatile__("movq 8(%%rsp), %%rsp" : : : "%rsp");
+    if (!VM_FRAME_TYPE_FINISH_P(GET_CFP())) {
+        rb_control_frame_t *cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_CFP());
+        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp_cursor) && !VM_FRAME_TYPE_FINISH_P(cfp_cursor)) {
+            cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp_cursor);
+        }
+        __asm__ __volatile__("addq %0, %%rsp" : : "r" (sizeof(VALUE) * (cfp_cursor - GET_CFP())) : "%rsp");
+    }
 #endif
     THROW_EXCEPTION(val);
     /* unreachable */
