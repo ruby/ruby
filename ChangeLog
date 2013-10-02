@@ -1,3 +1,11 @@
+Wed Oct  2 15:39:13 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_core.h: use __has_attribute() instead of __clang__major__ because
+	  clang says "Note that marketing version numbers should not be used
+	  to check for language features, as different vendors use different
+	  numbering schemes. Instead, use the Feature Checking Macros."
+	  http://clang.llvm.org/docs/LanguageExtensions.html
+
 Wed Oct  2 14:19:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_close_write): detach tied IO for writing before closing

@@ -109,7 +109,11 @@
 #define UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
-#if (defined(__clang__) && __clang_major__ >= 4)
+#ifndef __has_attribute
+# define __has_attribute(x) 0
+#endif
+
+#if __has_attribute(unused)
 #define UNINITIALIZED_VAR(x) x __attribute__((unused))
 #elif defined(__GNUC__) && __GNUC__ >= 3
 #define UNINITIALIZED_VAR(x) x = x
