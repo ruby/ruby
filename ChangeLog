@@ -1,3 +1,8 @@
+Thu Oct  3 00:17:15 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-additional.el: Properly quote the body.  An unquoted
+	  body given to eval-after-load is evaluated immediately!
+
 Wed Oct  2 21:38:30 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/socket/ifaddr.c (rsock_getifaddrs): fix possible memory leak.
