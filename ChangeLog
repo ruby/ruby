@@ -1,3 +1,14 @@
+Wed Oct  2 18:52:40 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: relax GC condition due to malloc_limit.
+
+	* gc.c (GC_MALLOC_LIMIT_MAX): change default value
+	  (256MB -> 512MB) and permit zero to ignore max value.
+
+	* gc.c (vm_malloc_increase, vm_xrealloc): do not cause GC on realloc.
+
+	* gc.c (gc_before_sweep): change debug messages.
+
 Wed Oct  2 16:26:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_close_read): duplex IO should wait its child process

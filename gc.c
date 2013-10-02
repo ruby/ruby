@@ -90,7 +90,7 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_MALLOC_LIMIT (8 /* 8 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
-#define GC_MALLOC_LIMIT_MAX (256 /* 256 MB */ * 1024 * 1024 /* 1MB */)
+#define GC_MALLOC_LIMIT_MAX (512 /* 512 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
 #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.8
@@ -2374,7 +2374,7 @@ __attribute__((noinline))
 static void
 gc_before_sweep(rb_objspace_t *objspace)
 {
-    rgengc_report(1, objspace, "before_gc_sweep\n");
+    rgengc_report(1, objspace, "gc_before_sweep\n");
 
     objspace->heap.do_heap_free = (size_t)((heap_used * HEAP_OBJ_LIMIT) * 0.65);
     objspace->heap.free_min = (size_t)((heap_used * HEAP_OBJ_LIMIT)  * 0.2);
@@ -2408,7 +2408,8 @@ gc_before_sweep(rb_objspace_t *objspace)
 
 	if (inc > malloc_limit) {
 	    malloc_limit += (size_t)(malloc_limit * (initial_malloc_limit_growth_factor - 1));
-	    if (malloc_limit > initial_malloc_limit_max) {
+	    if (initial_malloc_limit_max > 0 && /* ignore max-check if 0 */
+		malloc_limit > initial_malloc_limit_max) {
 		malloc_limit = initial_malloc_limit_max;
 	    }
 	}
@@ -2420,7 +2421,14 @@ gc_before_sweep(rb_objspace_t *objspace)
 	}
 
 	if (0) {
-	    fprintf(stderr, "malloc_limit: %"PRIuSIZE" -> %"PRIuSIZE"\n", old_limit, malloc_limit);
+	    if (old_limit != malloc_limit) {
+		fprintf(stderr, "[%"PRIuSIZE"] malloc_limit: %"PRIuSIZE" -> %"PRIuSIZE"\n",
+			rb_gc_count(), old_limit, malloc_limit);
+	    }
+	    else {
+		fprintf(stderr, "[%"PRIuSIZE"] malloc_limit: not changed (%"PRIuSIZE")\n",
+			rb_gc_count(), malloc_limit);
+	    }
 	}
     }
 }
@@ -4663,7 +4671,7 @@ rb_gc_set_params(void)
     }
 
     get_envparam_int   ("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit, 0);
-    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, initial_malloc_limit);
+    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &initial_malloc_limit_growth_factor, 1.0);
 }
 
@@ -4806,12 +4814,12 @@ aligned_free(void *ptr)
 }
 
 static void
-vm_malloc_increase(rb_objspace_t *objspace, size_t size)
+vm_malloc_increase(rb_objspace_t *objspace, size_t size, int do_gc)
 {
     ATOMIC_SIZE_ADD(malloc_increase, size);
 
     if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
-	malloc_increase > malloc_limit) {
+	(do_gc && (malloc_increase > malloc_limit))) {
 	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
     }
 }
@@ -4828,7 +4836,7 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
-    vm_malloc_increase(objspace, size);
+    vm_malloc_increase(objspace, size, TRUE);
 
     return size;
 }
@@ -4888,7 +4896,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 	return 0;
     }
 
-    vm_malloc_increase(objspace, size);
+    vm_malloc_increase(objspace, size, FALSE);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
