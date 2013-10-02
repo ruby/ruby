@@ -4492,12 +4492,12 @@ rb_io_close_write(VALUE io)
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
 
-    rb_io_close(write_io);
     if (io != write_io) {
 	GetOpenFile(io, fptr);
 	fptr->tied_io_for_writing = 0;
 	fptr->mode &= ~FMODE_DUPLEX;
     }
+    rb_io_close(write_io);
     return Qnil;
 }
 

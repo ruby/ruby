@@ -1,4 +1,7 @@
-Wed Oct  2 14:18:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct  2 14:19:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_write): detach tied IO for writing before closing
+	  to get rid of race condition.  [ruby-list:49598]
 
 	* io.c (rb_io_close_read): keep fptr in write_io to be discarded, to
 	  fix freed pointer access when it is in use by other threads, and get

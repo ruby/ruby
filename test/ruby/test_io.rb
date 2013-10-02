@@ -1380,6 +1380,19 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_close_read_write_separately
+    bug = '[ruby-list:49598]'
+    (1..10).each do |i|
+      assert_nothing_raised(IOError, "#{bug} trying ##{i}") do
+        IO.popen(EnvUtil.rubybin, "r+") {|f|
+          th = Thread.new {f.close_write}
+          f.close_read
+          th.join
+        }
+      end
+    end
+  end
+
   def test_pid
     r, w = IO.pipe
     assert_equal(nil, r.pid)
