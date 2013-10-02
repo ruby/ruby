@@ -3552,7 +3552,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Accessing a value in a Hash requires using its key:
  *
- *    puts grades["Jane Doe"] # => 10
+ *    puts grades["Jane Doe"] # => 0
  *
  *  === Common Uses
  *
