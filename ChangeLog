@@ -1,3 +1,11 @@
+Wed Oct  2 21:38:30 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/socket/ifaddr.c (rsock_getifaddrs): fix possible memory leak.
+	  When a system had no interface, this function used xmalloc for root
+	  but did not return any reference to it.  This patch fixes it by
+	  immediately returning an empty array if no interface is found.
+	  Coverity Scan found this bug.
+
 Wed Oct  2 21:37:04 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* random.c (make_seed_value): a local array declaration was accessed
