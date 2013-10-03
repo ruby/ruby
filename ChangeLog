@@ -6,7 +6,7 @@ Thu Oct  3 18:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Oct  3 18:01:44 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: define gc_profile_record::allocated_size if 
+	* gc.c: define gc_profile_record::allocated_size if
 	  CALC_EXACT_MALLOC_SIZE is true.
 
 Thu Oct  3 13:42:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -101,7 +101,7 @@ Mon Sep 30 23:01:01 2013  Zachary Scott  <e@zzak.io>
 
 Mon Sep 30 17:28:39 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* ext/objspace/object_tracing.c: [DOC] add some notes for 
+	* ext/objspace/object_tracing.c: [DOC] add some notes for
 	  ObjectSpace::trace_object_allocations.
 
 Mon Sep 30 16:46:58 2013  Koichi Sasada  <ko1@atdot.net>
