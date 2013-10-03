@@ -1,3 +1,8 @@
+Thu Oct  3 13:42:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (yes-test-sample): use RUNRUBY instead of MINIRUBY to set
+	  runtime library path and run the built ruby.  [Bug #8971]
+
 Thu Oct  3 00:17:15 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-additional.el: Properly quote the body.  An unquoted
