@@ -114,4 +114,15 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal true, os1.eql?(os1.dup)
     assert_equal os1.hash, os1.dup.hash
   end
+
+  def test_respond_to
+    os = OpenStruct.new
+    assert os.respond_to?(:name)
+    assert os.respond_to?(:name=)
+
+    assert_nothing_raises do
+      os.method(:name)
+      os.method(:name=)
+    end
+  end
 end
