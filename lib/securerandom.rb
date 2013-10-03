@@ -37,7 +37,7 @@ module SecureRandom
   #
   # The argument _n_ specifies the length of the result string.
   #
-  # If _n_ is not specified, 16 is assumed.
+  # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain any byte: "\x00" - "\xff".
@@ -121,7 +121,7 @@ module SecureRandom
   # The argument _n_ specifies the length, in bytes, of the random number to be generated.
   # The length of the resulting hexadecimal string is twice _n_.
   #
-  # If _n_ is not specified, 16 is assumed.
+  # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain 0-9 and a-f.
@@ -140,7 +140,7 @@ module SecureRandom
   # The argument _n_ specifies the length, in bytes, of the random number
   # to be generated. The length of the result string is about 4/3 of _n_.
   #
-  # If _n_ is not specified, 16 is assumed.
+  # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in future.
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
@@ -161,7 +161,7 @@ module SecureRandom
   # The argument _n_ specifies the length, in bytes, of the random number
   # to be generated. The length of the result string is about 4/3 of _n_.
   #
-  # If _n_ is not specified, 16 is assumed.
+  # If _n_ is not specified or is nil, 16 is assumed.
   # It may be larger in future.
   #
   # The boolean argument _padding_ specifies the padding.
