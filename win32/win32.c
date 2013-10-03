@@ -39,6 +39,8 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
+#include <psapi.h>
+#include <shlwapi.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
 #include <rtcapi.h>
@@ -604,6 +606,7 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
+#define conlist_disabled ((st_table *)-1)
 static char *envarea;
 static char *uenvarea;
 
@@ -629,7 +632,7 @@ free_conlist(st_data_t key, st_data_t val, st_data_t arg)
 static void
 constat_delete(HANDLE h)
 {
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_data_t key = (st_data_t)h, val;
 	st_delete(conlist, &key, &val);
 	xfree((struct constat *)val);
@@ -649,7 +652,7 @@ exit_handler(void)
 	DeleteCriticalSection(&select_mutex);
 	NtSocketsInitialized = 0;
     }
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
@@ -5832,13 +5835,47 @@ rb_w32_pipe(int fds[2])
 }
 
 /* License: Ruby's */
+static int
+console_emulator_p(void)
+{
+    HMODULE module_buf[10], *pmodule = module_buf;
+    DWORD nmodule = numberof(module_buf), needed = 0, i;
+    HANDLE proch = GetCurrentProcess();
+
+    if (!EnumProcessModules(proch, pmodule, nmodule * sizeof(HMODULE), &needed))
+	return FALSE;
+    if (needed / sizeof(HMODULE) > nmodule) {
+	nmodule = needed / sizeof(HMODULE);
+	pmodule = alloca(sizeof(HMODULE) * nmodule);
+	if (!EnumProcessModules(proch, pmodule, needed, &needed))
+	    return FALSE;
+    }
+    for (i = 0; i < nmodule; i++) {
+	WCHAR modname[MAX_PATH];
+
+	if (GetModuleBaseNameW(proch, pmodule[i], modname, numberof(modname))) {
+	    if (PathMatchSpecW(modname, L"conemu*.dll")) return TRUE;
+        }
+    }
+
+    return 0;
+}
+
+/* License: Ruby's */
 static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
     if (!conlist) {
+	if (console_emulator_p()) {
+	    conlist = conlist_disabled;
+	    return NULL;
+	}
 	conlist = st_init_numtable();
+    }
+    else if (conlist == conlist_disabled) {
+	return NULL;
     }
     if (st_lookup(conlist, (st_data_t)h, &data)) {
 	p = (struct constat *)data;
@@ -6483,6 +6520,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	return -1L;
 
     s = constat_handle(handle);
+    if (!s) return -1L;
     encindex = ENCODING_GET(str);
     switch (encindex) {
       default:

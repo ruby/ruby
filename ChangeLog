@@ -1,3 +1,9 @@
+Thu Oct  3 18:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (console_emulator_p, constat_handle): disable built-in
+	  console colorizing when console-emulator-like DLL is injected.
+	  [Feature #8201]
+
 Thu Oct  3 18:01:44 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: define gc_profile_record::allocated_size if 
