@@ -1409,7 +1409,7 @@ class TestIO < Test::Unit::TestCase
     assert_raise(IOError) { pipe.pid }
   end
 
-  def tesst_pid_after_close_read
+  def test_pid_after_close_read
     pid1 = pid2 = nil
     IO.popen(["echo", ""], "r+") do |io|
       pid1 = io.pid
