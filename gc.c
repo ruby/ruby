@@ -217,13 +217,14 @@ typedef struct gc_profile_record {
 
     size_t allocate_increase;
     size_t allocate_limit;
-#if CALC_EXACT_MALLOC_SIZE
-    size_t allocated_size;
-#endif
 
     double prepare_time;
     size_t removing_objects;
     size_t empty_objects;
+#endif
+
+#if CALC_EXACT_MALLOC_SIZE
+    size_t allocated_size;
 #endif
 
 #if RGENGC_PROFILE > 0

@@ -1,3 +1,8 @@
+Thu Oct  3 18:01:44 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: define gc_profile_record::allocated_size if 
+	  CALC_EXACT_MALLOC_SIZE is true.
+
 Thu Oct  3 13:42:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (yes-test-sample): use RUNRUBY instead of MINIRUBY to set
