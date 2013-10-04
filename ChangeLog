@@ -1,3 +1,8 @@
+Fri Oct  4 18:53:42 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: add rb_objspace.limit to keep accurate count of total heap
+	  slots [ruby-core:57633] [Bug #8983]
+
 Fri Oct  4 09:32:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV.foreach): support enumerator.  based on a patch by

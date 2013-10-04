@@ -333,6 +333,7 @@ typedef struct rb_objspace {
 	struct heap_slot **sorted;
 	size_t length;
 	size_t used;
+	size_t limit;
 	RVALUE *range[2];
 	size_t free_num;
 	size_t free_min;
@@ -494,6 +495,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heap_slots		objspace->heap.slots
 #define heap_length		objspace->heap.length
 #define heap_used		objspace->heap.used
+#define heap_limit		objspace->heap.limit
 #define lomem			objspace->heap.range[0]
 #define himem			objspace->heap.range[1]
 #define heap_inc		objspace->heap.increment
@@ -706,6 +708,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 	}
 	free(objspace->heap.sorted);
 	heap_used = 0;
+	heap_limit = 0;
 	heap_slots = 0;
     }
     free_stack_chunks(&objspace->mark_stack);
@@ -824,6 +827,7 @@ heap_assign_slot(rb_objspace_t *objspace)
     if (lomem == 0 || lomem > start) lomem = start;
     if (himem < end) himem = end;
     heap_used++;
+    heap_limit += limit;
 
     for (p = start; p != end; p++) {
 	rgengc_report(3, objspace, "assign_heap_slot: %p is added to freelist\n");
@@ -2344,6 +2348,7 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 	    RDATA(pp)->dmark = (void (*)(void *))(VALUE)sweep_slot;
             pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
         }
+        heap_limit -= sweep_slot->limit;
         sweep_slot->limit = final_num;
         unlink_heap_slot(objspace, sweep_slot);
     }
@@ -2377,8 +2382,8 @@ gc_before_sweep(rb_objspace_t *objspace)
 {
     rgengc_report(1, objspace, "gc_before_sweep\n");
 
-    objspace->heap.do_heap_free = (size_t)((heap_used * HEAP_OBJ_LIMIT) * 0.65);
-    objspace->heap.free_min = (size_t)((heap_used * HEAP_OBJ_LIMIT)  * 0.2);
+    objspace->heap.do_heap_free = (size_t)(heap_limit * 0.65);
+    objspace->heap.free_min = (size_t)(heap_limit * 0.2);
     if (objspace->heap.free_min < initial_free_min) {
 	objspace->heap.free_min = initial_free_min;
 	if (objspace->heap.do_heap_free < initial_free_min) {
