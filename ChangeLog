@@ -1,3 +1,12 @@
+Sat Oct  5 01:59:50 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_undef): raise a NameError if the original method
+	  of a refined method is not defined.
+
+	* vm_insnhelper.c (rb_method_entry_eq): added NULL check to avoid SEGV.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Sat Oct  5 00:16:33 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c (rb_daemon): daemon(3) is implemented with fork(2).

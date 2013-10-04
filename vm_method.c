@@ -852,7 +852,9 @@ rb_undef(VALUE klass, ID id)
 
     me = search_method(klass, id, 0);
 
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+    if (UNDEFINED_METHOD_ENTRY_P(me) ||
+	(me->def->type == VM_METHOD_TYPE_REFINED &&
+	 UNDEFINED_METHOD_ENTRY_P(me->def->body.orig_me))) {
 	const char *s0 = " class";
 	VALUE c = klass;
 
@@ -1092,9 +1094,9 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 static int
 rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
 {
-    if (d1 && d1->type == VM_METHOD_TYPE_REFINED)
+    if (d1 && d1->type == VM_METHOD_TYPE_REFINED && d1->body.orig_me)
 	d1 = d1->body.orig_me->def;
-    if (d2 && d2->type == VM_METHOD_TYPE_REFINED)
+    if (d2 && d2->type == VM_METHOD_TYPE_REFINED && d2->body.orig_me)
 	d2 = d2->body.orig_me->def;
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;

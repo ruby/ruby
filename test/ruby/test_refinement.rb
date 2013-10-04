@@ -827,7 +827,8 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_case_dispatch_is_aware_of_refinements
-    assert_in_out_err([], <<-RUBY, ["refinement used"], ["-:2: warning: Refinements are experimental, and the behavior may change in future versions of Ruby!"])
+    assert_in_out_err([], <<-RUBY, ["refinement used"], [])
+      $VERBOSE = nil #to suppress warning "Refinements are experimental, ..."
       module RefineSymbol
         refine Symbol do
           def ===(other)
@@ -856,6 +857,52 @@ class TestRefinement < Test::Unit::TestCase
   def test_method_defined
     assert_not_send([Foo, :method_defined?, :z])
     assert_not_send([FooSub, :method_defined?, :z])
+  end
+
+  def test_undef_refined_method
+    bug8966 = '[ruby-core:57466] [Bug #8966]'
+
+    assert_in_out_err([], <<-INPUT, ["NameError"], [], bug8966)
+      $VERBOSE = nil #to suppress warning "Refinements are experimental, ..."
+      module Foo
+        refine Object do
+          def foo
+            puts "foo"
+          end
+        end
+      end
+
+      using Foo
+
+      class Object
+        begin
+          undef foo
+        rescue Exception => e
+          p e.class
+        end
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, ["NameError"], [], bug8966)
+      $VERBOSE = nil #to suppress warning "Refinements are experimental, ..."
+      module Foo
+        refine Object do
+          def foo
+            puts "foo"
+          end
+        end
+      end
+
+      # without `using Foo'
+
+      class Object
+        begin
+          undef foo
+        rescue Exception => e
+          p e.class
+        end
+      end
+    INPUT
   end
 
   private
