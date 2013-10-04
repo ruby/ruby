@@ -40,6 +40,12 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_foreach_enum
+    CSV.foreach(@path, col_sep: "\t", row_sep: "\r\n").zip(@expected) do |row, exp|
+      assert_equal(exp, row)
+    end
+  end
+
   def test_open_and_close
     csv = CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n")
     assert_not_nil(csv)

@@ -1,3 +1,9 @@
+Fri Oct  4 09:32:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV.foreach): support enumerator.  based on a patch by
+	  Hanmac (Hans Mackowiak) at [ruby-core:57643].  [ruby-core:57283]
+	  [Feature #8929]
+
 Thu Oct  3 18:20:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (console_emulator_p, constat_handle): disable built-in
