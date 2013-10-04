@@ -1,3 +1,8 @@
+Fri Oct  4 19:54:09 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/dbm/dbm.c: [DOC] Fix wrong constant name in DBM by @edward
+	  [Fixes GH-409] https://github.com/ruby/ruby/pull/409
+
 Fri Oct  4 19:49:42 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: rename heap.free_num as heap.swept_num to clarify meaning and
