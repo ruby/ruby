@@ -1,3 +1,14 @@
+Sat Oct  5 02:14:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): duplex IO should wait its child process
+	  even after close_read.
+
+Sat Oct  5 02:14:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): keep fptr in write_io to be discarded, to
+	  fix freed pointer access when it is in use by other threads, and get
+	  rid of potential memory/fd leak.
+
 Sat Oct  5 01:59:50 2013  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_undef): raise a NameError if the original method
