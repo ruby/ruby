@@ -1471,6 +1471,15 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ok?\n", data)
     end
 
+    def test_daemon_pid
+      cpid, dpid = IO.popen("-", "r+") do |f|
+        break f.pid, Integer(f.read) if f
+        Process.daemon(false, true)
+        puts $$
+      end
+      assert_not_equal(cpid, dpid)
+    end
+
     if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
       def test_daemon_no_threads
         pid, data = IO.popen("-", "r+") do |f|
@@ -1481,6 +1490,18 @@ class TestProcess < Test::Unit::TestCase
         bug4920 = '[ruby-dev:43873]'
         assert_equal(2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
+      end
+    else # darwin
+      def test_daemon_no_threads
+        data = Timeout.timeout(3) do
+          IO.popen("-") do |f|
+            break f.readlines.map(&:chomp) if f
+            th = Thread.start {sleep 3}
+            Process.daemon(true, true)
+            puts Thread.list.size, th.status.inspect
+          end
+        end
+        assert_equal(["1", "false"], data)
       end
     end
   end

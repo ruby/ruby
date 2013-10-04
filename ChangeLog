@@ -1,3 +1,18 @@
+Sat Oct  5 00:16:33 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (rb_daemon): daemon(3) is implemented with fork(2).
+	  Therefore it needs rb_thread_atfork(). (and revert r41903)
+
+Sat Oct  5 00:16:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (fork_daemon): kill the other threads all and abandon the
+	  kept mutexes.
+
+Sat Oct  5 00:16:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (fork_daemon): kill the other threads all and abandon the
+	  kept mutexes.
+
 Tue Oct  1 00:28:40 2013  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/make-snapshot: Fix order of priority for option parameter.
