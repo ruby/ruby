@@ -3884,6 +3884,40 @@ rb_thread_atfork_internal(int (*atfork)(st_data_t, st_data_t, st_data_t))
     clear_coverage();
 }
 
+#define GetMutexPtr(obj, tobj) \
+    TypedData_Get_Struct((obj), rb_mutex_t, &mutex_data_type, (tobj))
+
+static const char *rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
+
+#define mutex_mark NULL
+
+static void
+mutex_free(void *ptr)
+{
+    if (ptr) {
+	rb_mutex_t *mutex = ptr;
+	if (mutex->th) {
+	    /* rb_warn("free locked mutex"); */
+	    const char *err = rb_mutex_unlock_th(mutex, mutex->th);
+	    if (err) rb_bug("%s", err);
+	}
+	native_mutex_destroy(&mutex->lock);
+	native_cond_destroy(&mutex->cond);
+    }
+    ruby_xfree(ptr);
+}
+
+static size_t
+mutex_memsize(const void *ptr)
+{
+    return ptr ? sizeof(rb_mutex_t) : 0;
+}
+
+static const rb_data_type_t mutex_data_type = {
+    "mutex",
+    {mutex_mark, mutex_free, mutex_memsize,},
+};
+
 static int
 terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
 {
@@ -3896,6 +3930,13 @@ terminate_atfork_i(st_data_t key, st_data_t val, st_data_t current_th)
 	    rb_mutex_abandon_all(th->keeping_mutexes);
 	}
 	th->keeping_mutexes = NULL;
+	if (th->locking_mutex) {
+		rb_mutex_t *mutex;
+		GetMutexPtr(th->locking_mutex, mutex);
+		if (mutex->th == th) {
+			rb_mutex_abandon_all(mutex);
+		}
+	}
 	thread_cleanup_func(th, TRUE);
     }
     return ST_CONTINUE;
@@ -4151,40 +4192,6 @@ thgroup_add(VALUE group, VALUE thread)
  *    }
  *
  */
-
-#define GetMutexPtr(obj, tobj) \
-    TypedData_Get_Struct((obj), rb_mutex_t, &mutex_data_type, (tobj))
-
-static const char *rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
-
-#define mutex_mark NULL
-
-static void
-mutex_free(void *ptr)
-{
-    if (ptr) {
-	rb_mutex_t *mutex = ptr;
-	if (mutex->th) {
-	    /* rb_warn("free locked mutex"); */
-	    const char *err = rb_mutex_unlock_th(mutex, mutex->th);
-	    if (err) rb_bug("%s", err);
-	}
-	native_mutex_destroy(&mutex->lock);
-	native_cond_destroy(&mutex->cond);
-    }
-    ruby_xfree(ptr);
-}
-
-static size_t
-mutex_memsize(const void *ptr)
-{
-    return ptr ? sizeof(rb_mutex_t) : 0;
-}
-
-static const rb_data_type_t mutex_data_type = {
-    "mutex",
-    {mutex_mark, mutex_free, mutex_memsize,},
-};
 
 VALUE
 rb_obj_is_mutex(VALUE obj)
