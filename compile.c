@@ -581,11 +581,20 @@ jump_to_instruction_body(unsigned char *code, VALUE body)
 static inline unsigned char *
 call_through_vpc_if_carry(unsigned char *code)
 {
-    *code++ = 0x73; /* jnc +3 */
-    *code++ = 3;
+    *code++ = 0x48; /* testq %rax, %rax */
+    *code++ = 0x85;
+    *code++ = 0xc0;
+    *code++ = 0x75; /* jnz +9 */
+    *code++ = 9;
+    *code++ = 0x6a; /* pushq $0 */
+    *code++ = 0;
     *code++ = 0x41; /* callq *(%r14) */
     *code++ = 0xff;
     *code++ = 0x16;
+    *code++ = 0x48; /* addq $8, %rsp */
+    *code++ = 0x83;
+    *code++ = 0xc4;
+    *code++ = 0x08;
     return code;
 }
 
@@ -614,9 +623,11 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
         VALUE insn_body = (VALUE)table[insn];
         iseq->iseq_encoded[i] = (VALUE)code;
         switch (insn) {
+#if 0
           case BIN(throw):
             code = jump_to_instruction_body(code, insn_body);
             break;
+#endif
           case BIN(invokeblock):
           case BIN(defineclass):
           case BIN(opt_call_c_function):
@@ -733,7 +744,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
           case BIN(opt_mult):
           case BIN(opt_minus):
           case BIN(opt_plus): /* fall through */
-            ctt_size += 10;
+            ctt_size += 5 + 14;
             break;
           case BIN(jump):
 #if 0
