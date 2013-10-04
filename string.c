@@ -115,6 +115,7 @@ VALUE rb_cSymbol;
 	}\
     }\
     else {\
+	xwillfree(RSTRING(str)->as.heap.aux.capa);\
 	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+termlen);\
 	if (!STR_NOCAPA_P(str))\
 	    RSTRING(str)->as.heap.aux.capa = (capacity);\
@@ -877,6 +878,7 @@ rb_str_free(VALUE str)
 	st_delete(frozen_strings, &fstr, NULL);
     }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
+	xwillfree(RSTRING(str)->as.heap.aux.capa);
 	xfree(RSTRING(str)->as.heap.ptr);
     }
 }
@@ -1434,6 +1436,7 @@ rb_str_modify_expand(VALUE str, long expand)
 	long capa = len + expand;
 	int termlen = TERM_LEN(str);
 	if (!STR_EMBED_P(str)) {
+	    xwillfree(RSTRING(str)->as.heap.aux.capa);
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
@@ -1460,6 +1463,7 @@ str_discard(VALUE str)
 {
     str_modifiable(str);
     if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
+	xwillfree(RSTRING(str)->as.heap.aux.capa);
 	xfree(RSTRING_PTR(str));
 	RSTRING(str)->as.heap.ptr = 0;
 	RSTRING(str)->as.heap.len = 0;
@@ -1978,18 +1982,23 @@ rb_str_resize(VALUE str, long len)
 	}
 	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 	    char *ptr = RSTRING(str)->as.heap.ptr;
+            ssize_t oldlen = RSTRING(str)->as.heap.aux.capa;
 	    STR_SET_EMBED(str);
 	    if (slen > len) slen = len;
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) xfree(ptr);
+	    if (independent) {
+                xwillfree(oldlen);
+                xfree(ptr);
+            }
 	    return str;
 	}
 	else if (!independent) {
 	    str_make_independent_expand(str, len - slen);
 	}
 	else if (slen < len || slen - len > 1024) {
+	    xwillfree(RSTRING(str)->as.heap.aux.capa);
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
 	}
 	if (!STR_NOCAPA_P(str)) {
@@ -3571,11 +3580,15 @@ rb_str_drop_bytes(VALUE str, long len)
     if (nlen <= RSTRING_EMBED_LEN_MAX) {
 	char *oldptr = ptr;
 	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
+        ssize_t oldlen = RSTRING(str)->as.heap.aux.capa;
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
 	memmove(ptr, oldptr + len, nlen);
-	if (fl == STR_NOEMBED) xfree(oldptr);
+	if (fl == STR_NOEMBED) {
+            xwillfree(oldlen);
+            xfree(oldptr);
+        }
     }
     else {
 	if (!STR_SHARED_P(str)) rb_str_new4(str);
@@ -5494,6 +5507,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
+	    xwillfree(RSTRING(str)->as.heap.aux.capa);
 	    xfree(RSTRING(str)->as.heap.ptr);
 	}
 	*t = '\0';
@@ -5570,6 +5584,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
+	    xwillfree(RSTRING(str)->as.heap.aux.capa);
 	    xfree(RSTRING(str)->as.heap.ptr);
 	}
 	*t = '\0';

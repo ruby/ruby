@@ -210,6 +210,7 @@ ary_resize_capa(VALUE ary, long capacity)
             ARY_SET_HEAP_LEN(ary, len);
         }
         else {
+            xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
             REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, (capacity));
         }
         ARY_SET_CAPA(ary, (capacity));
@@ -218,6 +219,7 @@ ary_resize_capa(VALUE ary, long capacity)
         if (!ARY_EMBED_P(ary)) {
             long len = RARRAY_LEN(ary);
 	    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+            xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
@@ -234,8 +236,10 @@ ary_shrink_capa(VALUE ary)
     long old_capa = RARRAY(ary)->as.heap.aux.capa;
     assert(!ARY_SHARED_P(ary));
     assert(old_capa >= capacity);
-    if (old_capa > capacity)
+    if (old_capa > capacity) {
+	xwillfree(old_capa * sizeof(VALUE));
 	REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity);
+    }
 }
 
 static void
@@ -533,6 +537,7 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
+	xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
 	xfree((void *)ARY_HEAP_PTR(ary));
     }
 }
@@ -712,6 +717,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc == 0) {
 	if (ARY_OWNS_HEAP_P(ary) && RARRAY_CONST_PTR(ary) != 0) {
+	    xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
 	    xfree((void *)RARRAY_CONST_PTR(ary));
 	}
         rb_ary_unshare_safe(ary);
@@ -1633,6 +1639,7 @@ rb_ary_resize(VALUE ary, long len)
     }
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
+	    xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
 	    REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, len);
 	    ARY_SET_CAPA(ary, len);
 	}
@@ -2420,6 +2427,7 @@ rb_ary_sort_bang(VALUE ary)
                     rb_ary_unshare(ary);
                 }
                 else {
+		    xwillfree(RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE));
 		    xfree((void *)ARY_HEAP_PTR(ary));
                 }
                 ARY_SET_PTR(ary, RARRAY_CONST_PTR(tmp));
@@ -3284,6 +3292,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         VALUE shared = 0;
 
         if (ARY_OWNS_HEAP_P(copy)) {
+	    xwillfree(RARRAY(copy)->as.heap.aux.capa * sizeof(VALUE));
 	    RARRAY_PTR_USE(copy, ptr, xfree(ptr));
 	}
         else if (ARY_SHARED_P(copy)) {
@@ -3300,6 +3309,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
     else {
         VALUE shared = ary_make_shared(orig);
         if (ARY_OWNS_HEAP_P(copy)) {
+	    xwillfree(RARRAY(copy)->as.heap.aux.capa * sizeof(VALUE));
 	    RARRAY_PTR_USE(copy, ptr, xfree(ptr));
         }
         else {
