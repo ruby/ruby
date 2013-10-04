@@ -78,6 +78,9 @@ static void rehash(st_table *);
 #define calloc xcalloc
 #define realloc xrealloc
 #define free(x) xfree(x)
+#define willfree(x) xwillfree(x)
+#else
+#define willfree(x)
 #endif
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
@@ -89,11 +92,11 @@ static void rehash(st_table *);
 
 /* preparation for possible allocation improvements */
 #define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
-#define st_free_entry(entry) free(entry)
+#define st_free_entry(entry) do { xwillfree(sizeof(*entry)); free(entry); } while(0)
 #define st_alloc_table() (st_table *)malloc(sizeof(st_table))
-#define st_dealloc_table(table) free(table)
+#define st_dealloc_table(table) do { xwillfree(sizeof(*table)); free(table); } while(0)
 #define st_alloc_bins(size) (st_table_entry **)calloc(size, sizeof(st_table_entry *))
-#define st_free_bins(bins, size) free(bins)
+#define st_free_bins(bins, size) do { xwillfree(size*sizeof(*bins)); free(bins); } while(0)
 static inline st_table_entry**
 st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
 {

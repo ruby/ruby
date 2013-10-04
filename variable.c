@@ -1171,6 +1171,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                     ROBJECT(obj)->as.heap.ivptr = newptr;
                 }
                 else {
+                    xwillfree(ROBJECT(obj)->as.heap.numiv * sizeof(VALUE));
                     REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, newsize);
                     newptr = ROBJECT(obj)->as.heap.ivptr;
                 }

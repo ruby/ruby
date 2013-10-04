@@ -317,8 +317,8 @@ typedef struct mark_stack {
 
 typedef struct rb_objspace {
     struct {
-	size_t limit;
-	size_t increase;
+	ssize_t limit;
+	ssize_t increase;
 #if CALC_EXACT_MALLOC_SIZE
 	size_t allocated_size;
 	size_t allocations;
@@ -1257,6 +1257,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
 	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
             RANY(obj)->as.object.as.heap.ivptr) {
+	    xwillfree(RANY(obj)->as.object.as.heap.numiv * sizeof(VALUE));
 	    xfree(RANY(obj)->as.object.as.heap.ivptr);
 	}
 	break;
@@ -1354,6 +1355,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
       case T_BIGNUM:
 	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
+	    xwillfree(RANY(obj)->as.bignum.as.heap.len * sizeof(BDIGIT));
 	    xfree(RBIGNUM_DIGITS(obj));
 	}
 	break;
@@ -1378,6 +1380,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
+	    xwillfree(RANY(obj)->as.rstruct.as.heap.len * sizeof(VALUE));
 	    xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
 	}
 	break;
@@ -2415,8 +2418,8 @@ gc_before_sweep(rb_objspace_t *objspace)
 
     /* reset malloc info */
     {
-	size_t inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
-	size_t old_limit = malloc_limit;
+	ssize_t inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
+	ssize_t old_limit = malloc_limit;
 
 	if (inc > malloc_limit) {
 	    malloc_limit += (size_t)(malloc_limit * (initial_malloc_limit_growth_factor - 1));
@@ -4836,6 +4839,12 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t size, int do_gc)
     }
 }
 
+static void
+vm_malloc_decrease(rb_objspace_t *objspace, size_t size)
+{
+	ATOMIC_SIZE_SUB(malloc_increase, size);
+}
+
 static inline size_t
 vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
@@ -5007,6 +5016,11 @@ ruby_xfree(void *x)
 	vm_xfree(&rb_objspace, x);
 }
 
+void
+ruby_xwill_free(ssize_t size)
+{
+    vm_malloc_decrease(&rb_objspace, size);
+}
 
 /* Mimic ruby_xmalloc, but need not rb_objspace.
  * should return pointer suitable for ruby_xfree

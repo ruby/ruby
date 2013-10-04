@@ -1784,7 +1784,10 @@ time_mark(void *ptr)
 static void
 time_free(void *tobj)
 {
-    if (tobj) xfree(tobj);
+    if (tobj) {
+        xwillfree(sizeof(struct time_object));
+        xfree(tobj);
+    }
 }
 
 static size_t

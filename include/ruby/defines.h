@@ -111,6 +111,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xrealloc ruby_xrealloc
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
+#define xwillfree ruby_xwill_free
 
 #if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 3
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
@@ -124,6 +125,7 @@ void *xcalloc(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
 void *xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
 void *xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
 void xfree(void*);
+void xwillfree(ssize_t);
 
 #define STRINGIZE(expr) STRINGIZE0(expr)
 #ifndef STRINGIZE0
