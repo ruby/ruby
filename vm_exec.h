@@ -82,7 +82,6 @@ error !
 #if OPT_CONTEXT_THREADED_CODE
 #define INSN_ENTRY(insn) \
   LABEL(insn): \
-  __asm__ __volatile__("pushq %%rsp\npushq (%%rsp)\nandq $-0x10, %%rsp" : : : "%rsp"); \
   INSN_ENTRY_SIG(insn);
 #else
 #define INSN_ENTRY(insn) \
@@ -125,8 +124,7 @@ error !
 
 #define TC_DISPATCH(insn) \
   INSN_DISPATCH_SIG(insn); \
-  __asm__ __volatile__("movq 8(%%rsp), %%rsp" : : : "%rsp"); \
-  __asm__ __volatile__("clc"); \
+  __asm__ __volatile__("movl $1, %%eax" : : : "%rax"); \
   __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP)); \
   goto *(void const *)GET_CURRENT_INSN()
 
@@ -139,12 +137,12 @@ error !
 #if OPT_CONTEXT_THREADED_CODE
 
 #define INSN_DISPATCH()     \
+  __asm__ __volatile__("movq %%rsp, %0\npushq $0" : "=r" (rsp)); \
   goto *(void const *)GET_CURRENT_INSN(); \
   {
 
 #define NEXT_INSN() \
-  __asm__ __volatile__("movq 8(%%rsp), %%rsp" : : : "%rsp"); \
-  __asm__ __volatile__("stc"); \
+  __asm__ __volatile__("xor %%rax, %%rax" : : : "%rax"); \
   __asm__ __volatile__("ret")
 
 #else

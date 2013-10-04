@@ -60,6 +60,10 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
     VALUE *reg_pc;
 #endif
 
+#if OPT_CONTEXT_THREADED_CODE
+    VALUE rsp;
+#endif
+
 #if USE_MACHINE_REGS
 
 #undef  RESTORE_REGS
@@ -89,20 +93,6 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #if OPT_STACK_CACHING
     reg_a = initial;
     reg_b = 0;
-#endif
-
-#if OPT_CONTEXT_THREADED_CODE
-    if (!VM_FRAME_TYPE_FINISH_P(reg_cfp)) {
-        rb_control_frame_t *cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);
-        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp_cursor) && !VM_FRAME_TYPE_FINISH_P(cfp_cursor)) {
-            /* if (cfp_cursor->pc != 0)? */
-            cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp_cursor);
-        }
-        while (cfp_cursor != reg_cfp) {
-            __asm__ __volatile__("pushq %0" : : "r" (*cfp_cursor->pc) : "%rsp");
-            cfp_cursor = RUBY_VM_NEXT_CONTROL_FRAME(cfp_cursor);
-        }
-    }
 #endif
 
   first:

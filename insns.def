@@ -1074,6 +1074,10 @@ leave
 (VALUE val)
 (VALUE val)
 {
+#if OPT_CONTEXT_THREADED_CODE
+    __asm__ __volatile__("pushq $0" : : : "%rsp");
+#endif
+
     if (OPT_CHECKED_RUN) {
 	if (reg_cfp->sp != vm_base_ptr(reg_cfp)) {
 	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
@@ -1090,7 +1094,7 @@ leave
 	th->retval = val;
 	return 0;
 #elif OPT_CONTEXT_THREADED_CODE
-        __asm__ __volatile__("movq 8(%%rsp), %%rsp" : : : "%rsp");
+        __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp");
         return val;
 #else
 	return val;
@@ -1099,6 +1103,18 @@ leave
     else {
 	vm_pop_frame(th);
 	RESTORE_REGS();
+#if OPT_CONTEXT_THREADED_CODE
+        {
+            register VALUE next_pc;
+            __asm__ __volatile__("popq %%rax\nmovq (%%rsp), %0" : "=r" (next_pc) : : "%rax", "%rsp");
+            if (GET_CURRENT_INSN() != next_pc + 4) {
+                CHECK_VM_STACK_OVERFLOW_FOR_INSN(REG_CFP, 1);
+                PUSH(val);
+                DEBUG_END_INSN();
+                goto *(void const *)GET_CURRENT_INSN();
+            }
+        }
+#endif
     }
 }
 
@@ -1120,14 +1136,7 @@ throw
     RUBY_VM_CHECK_INTS(th);
     val = vm_throw(th, GET_CFP(), throw_state, throwobj);
 #if OPT_CONTEXT_THREADED_CODE
-    __asm__ __volatile__("movq 8(%%rsp), %%rsp" : : : "%rsp");
-    if (!VM_FRAME_TYPE_FINISH_P(GET_CFP())) {
-        rb_control_frame_t *cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_CFP());
-        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp_cursor) && !VM_FRAME_TYPE_FINISH_P(cfp_cursor)) {
-            cfp_cursor = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp_cursor);
-        }
-        __asm__ __volatile__("addq %0, %%rsp" : : "r" (sizeof(VALUE) * (cfp_cursor - GET_CFP())) : "%rsp");
-    }
+    __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp");
 #endif
     THROW_EXCEPTION(val);
     /* unreachable */
