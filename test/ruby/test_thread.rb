@@ -909,4 +909,35 @@ Thread.new(Thread.current) {|mth|
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large, "large size")
   end
+
+  def test_blocking_mutex_unlocked_on_fork
+    mutex = Mutex.new
+    mutex.lock
+    flag = false
+
+    Thread.new do
+      mutex.synchronize do
+        begin
+          sleep
+        ensure
+          1 until flag
+        end
+      end
+    end
+
+    sleep 0.5
+
+    mutex.unlock
+    pid = Process.fork do
+      if mutex.locked?
+        exit(1)
+      else
+        exit(2)
+      end
+    end
+
+    pid, status = Process.waitpid2(pid)
+    flag = true
+    assert_equal(2, status.exitstatus)
+  end
 end
