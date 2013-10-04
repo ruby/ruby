@@ -1,3 +1,8 @@
+Fri Oct  4 19:49:42 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: rename heap.free_num as heap.swept_num to clarify meaning and
+	  avoid confusion with objspace_free_num().
+
 Fri Oct  4 19:02:01 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (objspace_free_num): new method for available/free slots on

@@ -335,7 +335,7 @@ typedef struct rb_objspace {
 	size_t used;
 	size_t limit;
 	RVALUE *range[2];
-	size_t free_num;
+	size_t swept_num;
 	size_t free_min;
 	size_t final_num;
 	size_t do_heap_free;
@@ -1787,7 +1787,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	objspace->total_freed_object_num++;
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
 	    heap_slot_add_freeobj(objspace, GET_HEAP_SLOT(p), (VALUE)p);
-	    objspace->heap.free_num++;
+	    objspace->heap.swept_num++;
 	}
 	else {
 	    struct heap_slot *slot = (struct heap_slot *)(VALUE)RDATA(p)->dmark;
@@ -2347,7 +2347,7 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 #endif
 
     if (final_num + freed_num + empty_num == sweep_slot->limit &&
-	objspace->heap.free_num > objspace->heap.do_heap_free) {
+	objspace->heap.swept_num > objspace->heap.do_heap_free) {
         RVALUE *pp;
 
         for (pp = deferred_final_list; pp != final; pp = pp->as.free.next) {
@@ -2365,7 +2365,7 @@ gc_slot_sweep(rb_objspace_t *objspace, struct heap_slot *sweep_slot)
 	else {
 	    sweep_slot->free_next = NULL;
 	}
-	objspace->heap.free_num += freed_num + empty_num;
+	objspace->heap.swept_num += freed_num + empty_num;
     }
     objspace->total_freed_object_num += freed_num;
     objspace->heap.final_num += final_num;
@@ -2397,7 +2397,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	}
     }
     objspace->heap.sweep_slots = heap_slots;
-    objspace->heap.free_num = 0;
+    objspace->heap.swept_num = 0;
     objspace->heap.free_slots = NULL;
 
     if (objspace->heap.using_slot) {
@@ -2448,10 +2448,10 @@ gc_before_sweep(rb_objspace_t *objspace)
 static void
 gc_after_sweep(rb_objspace_t *objspace)
 {
-    rgengc_report(1, objspace, "after_gc_sweep: objspace->heap.free_num: %d, objspace->heap.free_min: %d\n",
-		  objspace->heap.free_num, objspace->heap.free_min);
+    rgengc_report(1, objspace, "after_gc_sweep: objspace->heap.swept_num: %d, objspace->heap.free_min: %d\n",
+		  objspace->heap.swept_num, objspace->heap.free_min);
 
-    if (objspace->heap.free_num < objspace->heap.free_min) {
+    if (objspace->heap.swept_num < objspace->heap.free_min) {
 	heap_set_increment(objspace);
 	heap_increment(objspace);
 
@@ -4153,7 +4153,7 @@ rb_gc_force_recycle(VALUE p)
     heap_slot_add_freeobj(objspace, GET_HEAP_SLOT(p), p);
 
     if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
-	objspace->heap.free_num++;
+	objspace->heap.swept_num++;
     }
 }
 
