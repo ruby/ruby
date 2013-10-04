@@ -70,6 +70,13 @@ class TestGc < Test::Unit::TestCase
     GC.stat(stat)
     ObjectSpace.count_objects(count)
     assert_equal(count[:TOTAL]-count[:FREE], stat[:heap_live_num])
+    assert_equal(count[:FREE], stat[:heap_free_num])
+
+    # measure again without GC.start
+    1000.times{ "a" + "b" }
+    GC.stat(stat)
+    ObjectSpace.count_objects(count)
+    assert_equal(count[:FREE], stat[:heap_free_num])
   end
 
   def test_singleton_method

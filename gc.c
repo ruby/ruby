@@ -2259,6 +2259,12 @@ objspace_live_num(rb_objspace_t *objspace)
     return objspace->total_allocated_object_num - objspace->total_freed_object_num;
 }
 
+static size_t
+objspace_free_num(rb_objspace_t *objspace)
+{
+    return objspace->heap.limit - (objspace_live_num(objspace) - objspace->heap.final_num);
+}
+
 static void
 gc_setup_mark_bits(struct heap_slot *slot)
 {
@@ -4506,7 +4512,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_heap_length, SIZET2NUM(objspace->heap.length));
     rb_hash_aset(hash, sym_heap_increment, SIZET2NUM(objspace->heap.increment));
     rb_hash_aset(hash, sym_heap_live_num, SIZET2NUM(objspace_live_num(objspace)));
-    rb_hash_aset(hash, sym_heap_free_num, SIZET2NUM(objspace->heap.free_num));
+    rb_hash_aset(hash, sym_heap_free_num, SIZET2NUM(objspace_free_num(objspace)));
     rb_hash_aset(hash, sym_heap_final_num, SIZET2NUM(objspace->heap.final_num));
     rb_hash_aset(hash, sym_total_allocated_object, SIZET2NUM(objspace->total_allocated_object_num));
     rb_hash_aset(hash, sym_total_freed_object, SIZET2NUM(objspace->total_freed_object_num));
