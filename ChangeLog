@@ -1,4 +1,4 @@
-Sat Oct  5 11:20:24 2013  Aaron Pfeifer  <aaron.pfeifer@gmail.com>
+Sat Oct  5 11:21:01 2013  Aaron Pfeifer  <aaron.pfeifer@gmail.com>
 
 	* thread.c (terminate_atfork_i): fix locking mutexes not unlocked in
 	  forks when not tracked in thread.  [ruby-core:55102] [Bug #8433]
