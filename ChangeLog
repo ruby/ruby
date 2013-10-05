@@ -1,3 +1,8 @@
+Sun Oct  6 08:37:39 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/webrick.rb: [DOC] fix grammar in WEBrick overview [Fixes GH-413]
+	  Based on patch by @chastell https://github.com/ruby/ruby/pull/413
+
 Sat Oct  5 11:21:01 2013  Aaron Pfeifer  <aaron.pfeifer@gmail.com>
 
 	* thread.c (terminate_atfork_i): fix locking mutexes not unlocked in
