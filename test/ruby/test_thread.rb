@@ -909,4 +909,31 @@ Thread.new(Thread.current) {|mth|
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large, "large size")
   end
+
+  def test_blocking_mutex_unlocked_on_fork
+    bug8433 = '[ruby-core:55102] [Bug #8433]'
+
+    mutex = Mutex.new
+    flag = false
+    mutex.lock
+
+    th = Thread.new do
+      mutex.synchronize do
+        flag = true
+        sleep
+      end
+    end
+
+    Thread.pass until th.stop?
+    mutex.unlock
+
+    pid = Process.fork do
+      exit(mutex.locked?)
+    end
+
+    th.kill
+
+    pid, status = Process.waitpid2(pid)
+    assert_equal(false, status.success?, bug8433)
+  end
 end
