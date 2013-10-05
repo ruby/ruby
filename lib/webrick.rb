@@ -42,7 +42,8 @@
 #     res.body = 'Hello, world!'
 #   end
 #
-# Remember that <tt>server.mount_proc</tt> must <tt>server.start</tt>.
+# Remember that <tt>server.mount_proc</tt>
+# calls must precede <tt>server.start</tt>.
 #
 # == Servlets
 #
