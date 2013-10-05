@@ -910,9 +910,9 @@ id.c: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.c.tmpl $(srcdir)/defs/
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/id.c.tmpl
 
-sizes.c: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/sizes.c.tmpl $(srcdir)/configure.in $(PREP)
+sizes.c: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/sizes.c.tmpl $(srcdir)/configure.in
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/sizes.c.tmpl $(srcdir)/configure.in
 
 node_name.inc: {$(VPATH)}node.h
