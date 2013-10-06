@@ -4678,12 +4678,9 @@ rb_io_binmode(VALUE io)
     return io;
 }
 
-VALUE
-rb_io_ascii8bit_binmode(VALUE io)
+static void
+io_ascii8bit_binmode(rb_io_t *fptr)
 {
-    rb_io_t *fptr;
-
-    GetOpenFile(io, fptr);
     if (fptr->readconv) {
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
@@ -4701,6 +4698,15 @@ rb_io_ascii8bit_binmode(VALUE io)
     fptr->encs.ecflags = 0;
     fptr->encs.ecopts = Qnil;
     clear_codeconv(fptr);
+}
+
+VALUE
+rb_io_ascii8bit_binmode(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    io_ascii8bit_binmode(fptr);
 
     return io;
 }
@@ -10259,7 +10265,6 @@ static VALUE
 copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
-    VALUE src_io, dst_io;
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
     const int common_oflags = 0
@@ -10279,8 +10284,8 @@ copy_stream_body(VALUE arg)
         src_fd = -1;
     }
     else {
-        src_io = RB_TYPE_P(stp->src, T_FILE) ? stp->src : Qnil;
-        if (NIL_P(src_io)) {
+	VALUE src_io = stp->src;
+	if (!RB_TYPE_P(src_io, T_FILE)) {
             VALUE args[2];
             const int oflags = O_RDONLY|common_oflags;
             FilePathValue(stp->src);
@@ -10303,8 +10308,8 @@ copy_stream_body(VALUE arg)
         dst_fd = -1;
     }
     else {
-        dst_io = RB_TYPE_P(stp->dst, T_FILE) ? stp->dst : Qnil;
-        if (NIL_P(dst_io)) {
+	VALUE dst_io = stp->dst;
+	if (!RB_TYPE_P(stp->dst, T_FILE)) {
             VALUE args[3];
             const int oflags = O_WRONLY|O_CREAT|O_TRUNC|common_oflags;
             FilePathValue(stp->dst);
@@ -10330,7 +10335,7 @@ copy_stream_body(VALUE arg)
 	SET_BINARY_MODE_WITH_SEEK_CUR(src_fptr);
 #endif
     if (dst_fptr)
-	rb_io_ascii8bit_binmode(dst_io);
+	io_ascii8bit_binmode(dst_fptr);
 
     if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf.len) {
         size_t len = src_fptr->rbuf.len;
