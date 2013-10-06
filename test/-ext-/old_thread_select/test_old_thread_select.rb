@@ -5,6 +5,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
 
   ANCIENT_LINUX = RUBY_PLATFORM =~ /linux/ && `uname -r`.chomp < '2.6.32'
   DARWIN_10     = RUBY_PLATFORM =~ /darwin10/
+  WINDOWS       = RUBY_PLATFORM =~ /mswin|mingw/
 
   def with_pipe
     r, w = IO.pipe
@@ -88,7 +89,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
       end
     end
 
-    unless ANCIENT_LINUX || DARWIN_10
+    unless ANCIENT_LINUX || DARWIN_10 || WINDOWS
       assert_operator diff, :>=, 1, "interrupted or short wait: diff=#{diff}"
     end
     assert_equal 0, rc
