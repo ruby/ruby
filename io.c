@@ -10265,6 +10265,7 @@ static VALUE
 copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
+    VALUE src_io = stp->src, dst_io = stp->dst;
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
     const int common_oflags = 0
@@ -10277,20 +10278,18 @@ copy_stream_body(VALUE arg)
 
     stp->total = 0;
 
-    if (stp->src == argf ||
-        !(RB_TYPE_P(stp->src, T_FILE) ||
-          RB_TYPE_P(stp->src, T_STRING) ||
-          rb_respond_to(stp->src, rb_intern("to_path")))) {
+    if (src_io == argf ||
+        !(RB_TYPE_P(src_io, T_FILE) ||
+          RB_TYPE_P(src_io, T_STRING) ||
+          rb_respond_to(src_io, rb_intern("to_path")))) {
         src_fd = -1;
     }
     else {
-	VALUE src_io = stp->src;
 	if (!RB_TYPE_P(src_io, T_FILE)) {
             VALUE args[2];
-            const int oflags = O_RDONLY|common_oflags;
-            FilePathValue(stp->src);
-            args[0] = stp->src;
-            args[1] = INT2NUM(oflags);
+	    FilePathValue(src_io);
+	    args[0] = src_io;
+	    args[1] = INT2NUM(O_RDONLY|common_oflags);
             src_io = rb_class_new_instance(2, args, rb_cFile);
             stp->src = src_io;
             stp->close_src = 1;
@@ -10301,20 +10300,18 @@ copy_stream_body(VALUE arg)
     }
     stp->src_fd = src_fd;
 
-    if (stp->dst == argf ||
-        !(RB_TYPE_P(stp->dst, T_FILE) ||
-          RB_TYPE_P(stp->dst, T_STRING) ||
-          rb_respond_to(stp->dst, rb_intern("to_path")))) {
+    if (dst_io == argf ||
+        !(RB_TYPE_P(dst_io, T_FILE) ||
+          RB_TYPE_P(dst_io, T_STRING) ||
+          rb_respond_to(dst_io, rb_intern("to_path")))) {
         dst_fd = -1;
     }
     else {
-	VALUE dst_io = stp->dst;
-	if (!RB_TYPE_P(stp->dst, T_FILE)) {
+	if (!RB_TYPE_P(dst_io, T_FILE)) {
             VALUE args[3];
-            const int oflags = O_WRONLY|O_CREAT|O_TRUNC|common_oflags;
-            FilePathValue(stp->dst);
-            args[0] = stp->dst;
-            args[1] = INT2NUM(oflags);
+	    FilePathValue(dst_io);
+	    args[0] = dst_io;
+	    args[1] = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC|common_oflags);
             args[2] = INT2FIX(0666);
             dst_io = rb_class_new_instance(3, args, rb_cFile);
             stp->dst = dst_io;
@@ -10351,7 +10348,7 @@ copy_stream_body(VALUE arg)
                 rb_sys_fail(0);
         }
         else /* others such as StringIO */
-            rb_io_write(stp->dst, str);
+	    rb_io_write(dst_io, str);
         stp->total += len;
         if (stp->copy_length != (off_t)-1)
             stp->copy_length -= len;
