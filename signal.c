@@ -453,6 +453,8 @@ static struct {
 
 #ifdef __dietlibc__
 #define sighandler_t sh_t
+#else
+#define sighandler_t ruby_sighandler_t
 #endif
 
 typedef RETSIGTYPE (*sighandler_t)(int);
