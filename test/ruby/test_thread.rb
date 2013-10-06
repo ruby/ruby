@@ -935,5 +935,5 @@ Thread.new(Thread.current) {|mth|
 
     pid, status = Process.waitpid2(pid)
     assert_equal(false, status.success?, bug8433)
-  end
+  end if Process.respond_to?(:fork)
 end
