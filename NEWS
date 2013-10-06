@@ -228,6 +228,10 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Tempfile.create
 
+* Timeout
+  * No longer an exception to terminate the given block can be rescued
+    inside the block, by default, unless the exception class is given
+    explicitly.
 
 * WEBrick
   * The body of a response may now be a StringIO or other IO-like that responds
