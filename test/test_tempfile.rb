@@ -212,6 +212,7 @@ puts Tempfile.new('foo').path
     assert_in_out_err(args, <<-'EOS') do |(filename), (error)|
       tmp = Tempfile.new('foo')
       puts tmp.path
+      tmp.close
       tmp.unlink
       $DEBUG = true
       EOS
