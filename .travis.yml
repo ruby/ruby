@@ -69,6 +69,13 @@ notifications:
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
+  # Update ruby-head installed on Travis CI so other projects can test against it.
+  webhooks:
+    urls:
+      - "https://rubies.travis-ci.org/rebuild/ruby-head"
+    on_success: always
+    on_failure: never
+
 # Local Variables:
 # mode: YAML
 # coding: utf-8-unix
