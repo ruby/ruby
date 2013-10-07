@@ -1,7 +1,6 @@
-Mon Oct  7 21:03:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct  7 22:45:20 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in, win32/Makefile.sub (FIBER_USE_NATIVE): move conditions
-	  from cont.c
+	* cont.c (FIBER_USE_NATIVE): split long conditions.
 
 Mon Oct  7 20:29:31 2013  Zachary Scott  <e@zzak.io>
 

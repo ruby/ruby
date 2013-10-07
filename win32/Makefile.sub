@@ -692,9 +692,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
 !endif
-!if "$(ARCH)" != "ia64" && NTVER >= 0x0400 # r27646
-#define FIBER_USE_NATIVE 1
-!endif
 #define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
 !if "$(ENABLE_DEBUG_ENV)" == "yes"
