@@ -290,7 +290,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		break;
 	    }
 	    if (iseq && !NIL_P(iseq->location.path)) {
-		int line = iseq->line_info_table ? rb_iseq_first_lineno(iseq->self) : 0;
+		int line = iseq->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq->self)) : 0;
 		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
 				   "previous definition of %s was here",
 				   rb_id2name(old_def->original_id));
