@@ -1,7 +1,31 @@
+Mon Oct  7 16:12:36 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h: add backtrace collecting APIs for profiler.
+	  * int rb_profile_frames(int start, int limit, VALUE *buff, int *lines);
+	    Collect information of frame information.
+
+	  * VALUE rb_profile_frame_path(VALUE frame);
+	  * VALUE rb_profile_frame_absolute_path(VALUE frame);
+	  * VALUE rb_profile_frame_label(VALUE frame);
+	  * VALUE rb_profile_frame_base_label(VALUE frame);
+	  * VALUE rb_profile_frame_first_lineno(VALUE frame);
+	  * VALUE rb_profile_frame_classpath(VALUE frame);
+	  * VALUE rb_profile_frame_singleton_method_p(VALUE frame);
+	    Get information about each frame.
+
+	  These APIs are designed for profilers, for example, no objectallocation,
+	  and enough information for profilers.
+	  In this version, this API collects only collect Ruby level frames.
+	  This issue will be fixed after Ruby 2.1.
+
+	* vm_backtrace.c: implement above APIs.
+
+	* iseq.c (rb_iseq_klass): return local_iseq's class.
+
 Mon Oct  7 14:26:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: catch up last commit.
-	  Type of return value of rb_iseq_first_lineno() is now VALUE.
+	  Type of return value of rb_iseq_first_lioneno() is now VALUE.
 
 	* vm_insnhelper.c (argument_error): ditto.
 

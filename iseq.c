@@ -956,7 +956,7 @@ rb_iseq_klass(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
-    return iseq->klass;
+    return iseq->local_iseq->klass;
 }
 
 static

@@ -24,6 +24,17 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* Note: This file contains experimental APIs. */
 /* APIs can be replaced at Ruby 2.0.1 or later */
 
+
+/* profile frames APIs */
+int rb_profile_frames(int start, int limit, VALUE *buff, int *lines);
+VALUE rb_profile_frame_path(VALUE frame);
+VALUE rb_profile_frame_absolute_path(VALUE frame);
+VALUE rb_profile_frame_label(VALUE frame);
+VALUE rb_profile_frame_base_label(VALUE frame);
+VALUE rb_profile_frame_first_lineno(VALUE frame);
+VALUE rb_profile_frame_classpath(VALUE frame);
+VALUE rb_profile_frame_singleton_method_p(VALUE frame);
+
 /* debug inspector APIs */
 typedef struct rb_debug_inspector_struct rb_debug_inspector_t;
 typedef VALUE (*rb_debug_inspector_func_t)(const rb_debug_inspector_t *, void *);

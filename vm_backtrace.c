@@ -1200,3 +1200,90 @@ rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc)
     return dc->backtrace;
 }
 
+int
+rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
+{
+    int i;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+
+    for (i=0; i<limit && cfp != end_cfp;) {
+	if (cfp->iseq && cfp->pc) { /* should be NORMAL_ISEQ */
+	    if (start > 0) {
+		start--;
+		continue;
+	    }
+
+	    /* record frame info */
+	    buff[i] = cfp->iseq->self;
+	    if (lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+	    i++;
+	}
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+
+    return i;
+}
+
+#define frame2iseq(frame) frame
+
+VALUE
+rb_profile_frame_path(VALUE frame)
+{
+    return rb_iseq_path(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_absolute_path(VALUE frame)
+{
+    return rb_iseq_absolute_path(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_label(VALUE frame)
+{
+    return rb_iseq_label(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_base_label(VALUE frame)
+{
+    return rb_iseq_base_label(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_first_lineno(VALUE frame)
+{
+    return rb_iseq_first_lineno(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_classpath(VALUE frame)
+{
+    VALUE klass = rb_iseq_klass(frame2iseq(frame));
+
+    if (klass && !NIL_P(klass)) {
+	if (RB_TYPE_P(klass, T_ICLASS)) {
+	    klass = RBASIC(klass)->klass;
+	}
+	else if (FL_TEST(klass, FL_SINGLETON)) {
+	    klass = rb_ivar_get(klass, id__attached__);
+	}
+	return rb_class_path(klass);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+VALUE
+rb_profile_frame_singleton_method_p(VALUE frame)
+{
+    VALUE klass = rb_iseq_klass(frame2iseq(frame));
+    if (klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
+}
