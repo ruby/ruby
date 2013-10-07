@@ -36,7 +36,7 @@ Mon Oct  7 16:12:36 2013  Koichi Sasada  <ko1@atdot.net>
 Mon Oct  7 14:26:01 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: catch up last commit.
-	  Type of return value of rb_iseq_first_lioneno() is now VALUE.
+	  Type of return value of rb_iseq_first_lineno() is now VALUE.
 
 	* vm_insnhelper.c (argument_error): ditto.
 
