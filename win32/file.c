@@ -176,7 +176,8 @@ system_code_page(void)
 static UINT
 code_page(rb_encoding *enc)
 {
-    st_data_t enc_name, code_page_value;
+    int enc_idx;
+    st_data_t code_page_value;
     VALUE encoding, names_ary = Qundef, name;
     ID names;
     long i;
@@ -184,19 +185,19 @@ code_page(rb_encoding *enc)
     if (!enc)
 	return system_code_page();
 
+    enc_idx = rb_enc_to_index(enc);
+
     /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
-    if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
+    if (enc_idx == rb_usascii_encindex() || enc_idx == rb_ascii8bit_encindex()) {
 	return 1252;
     }
 
-    enc_name = (st_data_t)rb_enc_name(enc);
-
     if (rb_code_page) {
-	if (st_lookup(rb_code_page, enc_name, &code_page_value))
+	if (st_lookup(rb_code_page, enc_idx, &code_page_value))
 	    return (UINT)code_page_value;
     }
     else {
-	rb_code_page = st_init_strcasetable();
+	rb_code_page = st_init_numtable();
     }
 
     code_page_value = INVALID_CODE_PAGE;
@@ -216,7 +217,7 @@ code_page(rb_encoding *enc)
 	}
     }
 
-    st_insert(rb_code_page, enc_name, code_page_value);
+    st_insert(rb_code_page, enc_idx, code_page_value);
     return (UINT)code_page_value;
 }
 
