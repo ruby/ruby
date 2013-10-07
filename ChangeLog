@@ -6,7 +6,7 @@ Mon Oct  7 16:47:27 2013  Koichi Sasada  <ko1@atdot.net>
 
 Mon Oct  7 16:33:10 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* ext/-test-/debug/profile_frames.c: 
+	* ext/-test-/debug/profile_frames.c:
 	  test/-ext-/debug/test_profile_frames.rb: add a test for new C-APIs.
 
 Mon Oct  7 16:12:36 2013  Koichi Sasada  <ko1@atdot.net>
