@@ -10,7 +10,7 @@
 #endif
 
 /* cache 'encoding name' => 'code page' into a hash */
-static VALUE rb_code_page;
+static st_table *rb_code_page;
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
@@ -176,10 +176,8 @@ system_code_page(void)
 static UINT
 code_page(rb_encoding *enc)
 {
-    VALUE code_page_value, name_key;
+    st_data_t enc_name, code_page_value;
     VALUE encoding, names_ary = Qundef, name;
-    char *enc_name;
-    struct RString fake_str;
     ID names;
     long i;
 
@@ -191,22 +189,17 @@ code_page(rb_encoding *enc)
 	return 1252;
     }
 
-    enc_name = (char *)rb_enc_name(enc);
+    enc_name = (st_data_t)rb_enc_name(enc);
 
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-    RBASIC_SET_CLASS_RAW((VALUE)&fake_str, rb_cString);
-    fake_str.as.heap.len = strlen(enc_name);
-    fake_str.as.heap.ptr = enc_name;
-    fake_str.as.heap.aux.capa = fake_str.as.heap.len;
-    name_key = (VALUE)&fake_str;
-    ENCODING_CODERANGE_SET(name_key, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+    if (rb_code_page) {
+	if (st_lookup(rb_code_page, enc_name, &code_page_value))
+	    return (UINT)code_page_value;
+    }
+    else {
+	rb_code_page = st_init_strcasetable();
+    }
 
-    code_page_value = rb_hash_lookup(rb_code_page, name_key);
-    if (code_page_value != Qnil)
-	return (UINT)FIX2INT(code_page_value);
-
-    name_key = rb_usascii_str_new2(enc_name);
-
+    code_page_value = INVALID_CODE_PAGE;
     encoding = rb_enc_from_encoding(enc);
     if (!NIL_P(encoding)) {
 	CONST_ID(names, "names");
@@ -216,15 +209,15 @@ code_page(rb_encoding *enc)
 	    if (strncmp("CP", RSTRING_PTR(name), 2) == 0) {
 		int code_page = atoi(RSTRING_PTR(name) + 2);
 		if (code_page != 0) {
-		    rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-		    return (UINT)code_page;
+		    code_page_value = code_page;
+		    break;
 		}
 	    }
 	}
     }
 
-    rb_hash_aset(rb_code_page, name_key, INT2FIX(INVALID_CODE_PAGE));
-    return INVALID_CODE_PAGE;
+    st_insert(rb_code_page, enc_name, code_page_value);
+    return (UINT)code_page_value;
 }
 
 #define fix_string_encoding(str, encoding) rb_str_conv_enc((str), (encoding), rb_utf8_encoding())
@@ -703,8 +696,4 @@ rb_file_load_ok(const char *path)
 void
 rb_w32_init_file(void)
 {
-    rb_code_page = rb_hash_new();
-
-    /* prevent GC removing rb_code_page */
-    rb_gc_register_mark_object(rb_code_page);
 }
