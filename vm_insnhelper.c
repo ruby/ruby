@@ -131,7 +131,7 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
     VALUE err_line = 0;
 
     if (iseq) {
-	int line_no = rb_iseq_first_lineno(iseq);
+	int line_no = rb_iseq_first_lineno(iseq->self);
 
 	err_line = rb_sprintf("%s:%d:in `%s'",
 			      RSTRING_PTR(iseq->location.path),

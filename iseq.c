@@ -842,8 +842,8 @@ iseq_inspect(VALUE self)
  *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
  *	> iseq.path #=> /tmp/method.rb
  */
-static VALUE
-iseq_path(VALUE self)
+VALUE
+rb_iseq_path(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
@@ -866,8 +866,8 @@ iseq_path(VALUE self)
  *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
  *	> iseq.absolute_path #=> /tmp/method.rb
  */
-static VALUE
-iseq_absolute_path(VALUE self)
+VALUE
+rb_iseq_absolute_path(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
@@ -897,8 +897,8 @@ iseq_absolute_path(VALUE self)
  *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
  *	> iseq.label #=> <main>
  */
-static VALUE
-iseq_label(VALUE self)
+VALUE
+rb_iseq_label(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
@@ -925,8 +925,8 @@ iseq_label(VALUE self)
  *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
  *	> iseq.base_label #=> <main>
  */
-static VALUE
-iseq_base_label(VALUE self)
+VALUE
+rb_iseq_base_label(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
@@ -943,12 +943,20 @@ iseq_base_label(VALUE self)
  *	iseq.first_lineno
  *	#=> 1
  */
-static VALUE
-iseq_first_lineno(VALUE self)
+VALUE
+rb_iseq_first_lineno(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
     return iseq->location.first_lineno;
+}
+
+VALUE
+rb_iseq_klass(VALUE self)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    return iseq->klass;
 }
 
 static
@@ -1045,12 +1053,6 @@ iseq_to_a(VALUE self)
     rb_iseq_t *iseq = iseq_check(self);
     rb_secure(1);
     return iseq_data_to_ary(iseq);
-}
-
-int
-rb_iseq_first_lineno(const rb_iseq_t *iseq)
-{
-    return FIX2INT(iseq->location.first_lineno);
 }
 
 /* TODO: search algorithm is brute force.
@@ -2259,11 +2261,11 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 
     /* location APIs */
-    rb_define_method(rb_cISeq, "path", iseq_path, 0);
-    rb_define_method(rb_cISeq, "absolute_path", iseq_absolute_path, 0);
-    rb_define_method(rb_cISeq, "label", iseq_label, 0);
-    rb_define_method(rb_cISeq, "base_label", iseq_base_label, 0);
-    rb_define_method(rb_cISeq, "first_lineno", iseq_first_lineno, 0);
+    rb_define_method(rb_cISeq, "path", rb_iseq_path, 0);
+    rb_define_method(rb_cISeq, "absolute_path", rb_iseq_absolute_path, 0);
+    rb_define_method(rb_cISeq, "label", rb_iseq_label, 0);
+    rb_define_method(rb_cISeq, "base_label", rb_iseq_base_label, 0);
+    rb_define_method(rb_cISeq, "first_lineno", rb_iseq_first_lineno, 0);
 
 #if 0
     /* Now, it is experimental. No discussions, no tests. */

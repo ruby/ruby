@@ -449,6 +449,12 @@ VALUE rb_io_flush_raw(VALUE, int);
 
 /* iseq.c */
 VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
+VALUE rb_iseq_path(VALUE iseqval);
+VALUE rb_iseq_absolute_path(VALUE iseqval);
+VALUE rb_iseq_label(VALUE iseqval);
+VALUE rb_iseq_base_label(VALUE iseqval);
+VALUE rb_iseq_first_lineno(VALUE iseqval);
+VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary fucntion */
 
 /* load.c */
 VALUE rb_get_load_path(void);

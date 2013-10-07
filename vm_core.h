@@ -666,7 +666,6 @@ VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VA
 VALUE rb_iseq_disasm(VALUE self);
 int rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, size_t pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
-int rb_iseq_first_lineno(const rb_iseq_t *iseq);
 
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;

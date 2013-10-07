@@ -924,7 +924,7 @@ iseq_location(rb_iseq_t *iseq)
     if (!iseq) return Qnil;
     loc[0] = iseq->location.path;
     if (iseq->line_info_table) {
-	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq));
+	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq->self));
     }
     else {
 	loc[1] = Qnil;
@@ -1038,7 +1038,7 @@ proc_to_s(VALUE self)
 	int first_lineno = 0;
 
 	if (iseq->line_info_table) {
-	    first_lineno = rb_iseq_first_lineno(iseq);
+	    first_lineno = rb_iseq_first_lineno(iseq->self);
 	}
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
 			 iseq->location.path, first_lineno, is_lambda);
@@ -2382,7 +2382,7 @@ proc_binding(VALUE self)
     bind->env = proc->envval;
     if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
 	bind->path = proc->block.iseq->location.path;
-	bind->first_lineno = rb_iseq_first_lineno(proc->block.iseq);
+	bind->first_lineno = rb_iseq_first_lineno(proc->block.iseq->self);
     }
     else {
 	bind->path = Qnil;

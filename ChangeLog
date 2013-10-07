@@ -1,3 +1,20 @@
+Mon Oct  7 14:07:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c, internal.h: change to public (but internal) functions
+	  * VALUE rb_iseq_path(VALUE iseqval);
+	  * VALUE rb_iseq_absolute_path(VALUE iseqval);
+	  * VALUE rb_iseq_label(VALUE iseqval);
+	  * VALUE rb_iseq_base_label(VALUE iseqval);
+	  * VALUE rb_iseq_first_lineno(VALUE iseqval);
+	  And new (temporary) function:
+	  * VALUE rb_iseq_klass(VALUE iseqval);
+
+	* iseq.c. vm_core.h (int rb_iseq_first_lineno): remove
+	  function `int rb_iseq_first_lineno(const rb_iseq_t *iseq)'.
+	  Use `VALUE rb_iseq_first_lineno(VALUE iseqval)' instead.
+
+	* proc.c. vm_insnhelper.c, vm_method.c: catch up this change.
+
 Sun Oct  6 08:37:39 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/webrick.rb: [DOC] fix grammar in WEBrick overview [Fixes GH-413]
