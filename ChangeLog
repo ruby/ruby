@@ -1,3 +1,8 @@
+Mon Oct  7 20:29:31 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/time.rb: [DOC] typo in Time.rb overview by @srt32 [Fixes GH-416]
+	  https://github.com/ruby/ruby/pull/416
+
 Mon Oct  7 20:07:20 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.strptime): Use :offset.
