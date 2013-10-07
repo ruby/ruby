@@ -186,6 +186,11 @@ code_page(rb_encoding *enc)
     if (!enc)
 	return system_code_page();
 
+    /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
+    if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
+	return 1252;
+    }
+
     enc_name = (char *)rb_enc_name(enc);
 
     fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
@@ -206,16 +211,6 @@ code_page(rb_encoding *enc)
     if (!NIL_P(encoding)) {
 	CONST_ID(names, "names");
 	names_ary = rb_funcall(encoding, names, 0);
-    }
-
-    /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
-    if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
-	UINT code_page = 1252;
-	rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-	return code_page;
-    }
-
-    if (names_ary != Qundef) {
 	for (i = 0; i < RARRAY_LEN(names_ary); i++) {
 	    name = RARRAY_PTR(names_ary)[i];
 	    if (strncmp("CP", RSTRING_PTR(name), 2) == 0) {
