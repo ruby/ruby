@@ -54,9 +54,6 @@
   "Minor mode providing electric editing commands for ruby files"
   :group 'ruby)
 
-(defconst ruby-electric-expandable-do-re
-  "do\\s-$")
-
 (defconst ruby-electric-expandable-bar
   "\\s-\\(do\\|{\\)\\s-+|")
 
@@ -67,10 +64,39 @@
     (?\` . ?\`)
     (?\" . ?\")))
 
-(defcustom ruby-electric-simple-keywords-re
-  (regexp-opt '("def" "if" "class" "module" "unless" "case" "while" "do" "until" "for" "begin") t)
-  "*Regular expresion matching keywords for which closing 'end'
-is to be inserted."
+(defvar ruby-electric-expandable-do-re)
+
+(defvar ruby-electric-expandable-keyword-re)
+
+(defcustom ruby-electric-keywords
+  '("begin"
+    "case"
+    "class"
+    "def"
+    "do"
+    "for"
+    "if"
+    "module"
+    "unless"
+    "until"
+    "while")
+  "List of keywords for which closing 'end' is to be inserted
+after typing a space."
+  :type '(repeat string)
+  :set (lambda (sym val)
+         (set sym val)
+         (setq ruby-electric-expandable-do-re
+               (and (member "do" val)
+                    "\\S-\\s-+\\(do\\)\\s-?$")
+               ruby-electric-expandable-keyword-re
+               (concat "^\\s-*"
+                       (regexp-opt (remove "do" val) t)
+                       "\\s-?$")))
+  :group 'ruby-electric)
+
+(defcustom ruby-electric-simple-keywords-re nil
+  "Obsolete and ignored.  Customize `ruby-electric-keywords'
+instead."
   :type 'regexp :group 'ruby-electric)
 
 (defcustom ruby-electric-expand-delimiters-list '(all)
@@ -103,9 +129,10 @@ mode.
 When Ruby Electric mode is enabled, an indented 'end' is
 heuristicaly inserted whenever typing a word like 'module',
 'class', 'def', 'if', 'unless', 'case', 'until', 'for', 'begin',
-'do'. Simple, double and back quotes as well as braces are paired
-auto-magically. Expansion does not occur inside comments and
-strings. Note that you must have Font Lock enabled."
+'do' followed by a space.  Single, double and back quotes as well
+as braces are paired auto-magically.  Expansion does not occur
+inside comments and strings. Note that you must have Font Lock
+enabled."
   ;; initial value.
   nil
   ;;indicator for the mode line.
@@ -166,18 +193,27 @@ strings. Note that you must have Font Lock enabled."
 
 (defun ruby-electric-space-can-be-expanded-p()
   (if (ruby-electric-code-at-point-p)
-      (let* ((ruby-electric-keywords-re
-              (concat ruby-electric-simple-keywords-re "\\s-$"))
-             (ruby-electric-single-keyword-in-line-re
-              (concat "\\s-*" ruby-electric-keywords-re)))
-        (save-excursion
-          (backward-word 1)
-          (or (looking-at ruby-electric-expandable-do-re)
-              (and (looking-at ruby-electric-keywords-re)
-                   (not (string= "do" (match-string 1)))
-                   (progn
-                     (beginning-of-line)
-                     (looking-at ruby-electric-single-keyword-in-line-re))))))))
+      (cond ((and ruby-electric-expandable-do-re
+                  (looking-back ruby-electric-expandable-do-re))
+             (not (ruby-electric-space--sp-has-pair-p "do")))
+            ((looking-back ruby-electric-expandable-keyword-re)
+             (not (ruby-electric-space--sp-has-pair-p (match-string 1)))))))
+
+(defun ruby-electric-space--sp-has-pair-p(keyword)
+  (and (boundp 'smartparens-mode)
+       smartparens-mode
+       (let ((plist (sp-get-pair keyword)))
+         (and plist
+              ;; Check for :actions '(insert)
+              (memq 'insert (plist-get plist :actions))
+              ;; Check for :when '(("SPC" "RET" "<evil-ret>"))
+              (let ((x (plist-get plist :when)) when-space)
+                (while (and x
+                            (not (let ((it (car x)))
+                                   (setq when-space (and (listp it)
+                                                         (member "SPC" it))))))
+                  (setq x (cdr x)))
+                when-space)))))
 
 (defun ruby-electric-cua-replace-region-maybe()
   (let ((func (key-binding [remap self-insert-command])))

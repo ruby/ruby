@@ -1,3 +1,12 @@
+Mon Oct  7 22:52:45 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el (ruby-electric-space-can-be-expanded-p):
+	  Return nil to avoid "end" insertion when in smartparens-mode
+	  that is configured to insert "end" for the same keyword.
+
+	* misc/ruby-electric.el (ruby-electric-keywords): New custom
+	  variable to replace `ruby-electric-simple-keywords-re` with.
+
 Mon Oct  7 22:52:16 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-additional.el: Use preceding-char/following-char
