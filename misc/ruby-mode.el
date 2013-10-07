@@ -360,7 +360,8 @@ Emacs to Ruby."
                                  (coding-system-get default-buffer-file-coding-system :coding-type)
                                  'ascii-8bit)))
                         ((memq coding-type '(utf-8 shift-jis))
-                         coding-type))))))
+                         coding-type)
+                        (t coding-system))))))
          (coding-system
           (or coding-system
               'us-ascii))
