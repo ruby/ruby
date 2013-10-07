@@ -1,7 +1,7 @@
 require 'test/unit'
 require '-test-/debug'
 
-class C
+class SampleClassForTestProfileFrames
   def self.bar(block)
     block.call
   end
@@ -14,7 +14,7 @@ end
 class TestProfileFrames < Test::Unit::TestCase
   def test_profile_frames
     frames = Fiber.new{
-      Fiber.yield C.new.foo(lambda{ Bug::Debug.profile_frames(0, 10) })
+      Fiber.yield SampleClassForTestProfileFrames.new.foo(lambda{ Bug::Debug.profile_frames(0, 10) })
     }.resume
 
     assert_equal(4, frames.size)
@@ -33,8 +33,8 @@ class TestProfileFrames < Test::Unit::TestCase
     ]
     classes = [
       TestProfileFrames,
-      C, # singleton method
-      C,
+      SampleClassForTestProfileFrames, # singleton method
+      SampleClassForTestProfileFrames,
       TestProfileFrames,
     ]
     singleton_method_p = [
