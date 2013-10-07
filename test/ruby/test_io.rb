@@ -1411,7 +1411,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_pid_after_close_read
     pid1 = pid2 = nil
-    IO.popen(["echo", ""], "r+") do |io|
+    IO.popen(["exit"], "r+") do |io|
       pid1 = io.pid
       io.close_read
       pid2 = io.pid
