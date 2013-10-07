@@ -1,4 +1,20 @@
-;; missing functions in Emacs 24.
+;;; ruby-additional.el --- ruby-mode extensions yet to be merged into Emacs
+
+;; Authors: Yukihiro Matsumoto, Nobuyoshi Nakada, Akinori MUSHA
+;; URL: http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/trunk/misc/
+;; Created: 3 Sep 2012
+;; Package-Requires: ((ruby-mode "1.2"))
+;; Keywords: ruby, languages
+
+;;; Commentary:
+;;
+;; This package contains ruby-mode extensions yet to be merged into
+;; the Emacs distribution.
+
+;;; Code:
+
+(eval-when-compile
+  (require 'ruby-mode))
 
 (eval-after-load 'ruby-mode
   '(progn
@@ -98,3 +114,7 @@ Now encoding needs to be set always explicitly actually."
                       (insert "# -*- coding: " coding-system " -*-\n")))))))
 
      ))
+
+(provide 'ruby-additional)
+
+;;; ruby-additional.el ends here
