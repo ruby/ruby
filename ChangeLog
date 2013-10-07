@@ -1,3 +1,10 @@
+Tue Oct  8 04:28:25 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-mode.el: Use preceding-char/following-char
+	  (returning 0 at BOF/EOF) instead of char-before/char-after
+	  (returning nil at BOF/EOF) to avoid error from char-syntax when
+	  at BOF/EOF.
+
 Tue Oct  8 04:12:45 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-additional.el (ruby-mode-set-encoding): Add a missing
