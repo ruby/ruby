@@ -240,8 +240,16 @@ Also ignores spaces after parenthesis when 'space."
   "Default deep indent style."
   :options '(t nil space) :group 'ruby)
 
-(defcustom ruby-encoding-map '((shift_jis . cp932) (shift-jis . cp932))
-  "Alist to map encoding name from emacs to ruby."
+(defcustom ruby-encoding-map
+  '((us-ascii       . nil)       ;; Do not put coding: us-ascii
+    (utf-8          . nil)       ;; Do not put coding: utf-8
+    (shift-jis      . cp932)     ;; Emacs charset name of Shift_JIS
+    (shift_jis      . cp932)     ;; MIME charset name of Shift_JIS
+    (japanese-cp932 . cp932))    ;; Emacs charset name of CP932
+  "Alist to map encoding name from Emacs to Ruby.
+Associating an encoding name with nil means it needs not be
+explicitly declared in magic comment."
+  :type '(repeat (cons (symbol :tag "From") (symbol :tag "To")))
   :group 'ruby)
 
 (defcustom ruby-use-encoding-map t
@@ -326,39 +334,58 @@ Also ignores spaces after parenthesis when 'space."
   (setq paragraph-ignore-fill-prefix t))
 
 (defun ruby-mode-set-encoding ()
-  (save-excursion
-    (widen)
-    (goto-char (point-min))
-    (when (re-search-forward "[^\0-\177]" nil t)
-      (goto-char (point-min))
-      (let ((coding-system
-             (or coding-system-for-write
-                 buffer-file-coding-system)))
-        (if coding-system
-            (setq coding-system
-                  (or (coding-system-get coding-system 'mime-charset)
-                      (coding-system-change-eol-conversion coding-system nil))))
-        (setq coding-system
-              (if coding-system
-                  (symbol-name
-                   (or (and ruby-use-encoding-map
-                            (cdr (assq coding-system ruby-encoding-map)))
-                       coding-system))
-                "ascii-8bit"))
-        (if (looking-at "^#!") (beginning-of-line 2))
-        (cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]*\\)\\s *\\(;\\|-\*-\\)")
-               (unless (string= (match-string 2) coding-system)
-                 (goto-char (match-beginning 2))
-                 (delete-region (point) (match-end 2))
-                 (and (looking-at "-\*-")
-                      (let ((n (skip-chars-backward " ")))
-                        (cond ((= n 0) (insert "  ") (backward-char))
-                              ((= n -1) (insert " "))
-                              ((forward-char)))))
-                 (insert coding-system)))
-              ((looking-at "\\s *#.*coding\\s *[:=]"))
-              (t (insert "# -*- coding: " coding-system " -*-\n"))
-              )))))
+  "Insert or update a magic comment header with the proper encoding.
+`ruby-encoding-map' is looked up to convert an encoding name from
+Emacs to Ruby."
+  (let* ((nonascii
+          (save-excursion
+            (widen)
+            (goto-char (point-min))
+            (re-search-forward "[^\0-\177]" nil t)))
+         (coding-system
+          (or coding-system-for-write
+              buffer-file-coding-system))
+         (coding-system
+          (and coding-system
+               (coding-system-change-eol-conversion coding-system nil)))
+         (coding-system
+          (and coding-system
+               (or
+                (coding-system-get coding-system :mime-charset)
+                (let ((coding-type (coding-system-get coding-system :coding-type)))
+                  (cond ((eq coding-type 'undecided)
+                         (if nonascii
+                             (if (coding-system-get coding-system :prefer-utf-8)
+                                 'utf-8 'ascii-8bit)))
+                        ((memq coding-type '(utf-8 shift-jis))
+                         coding-type))))))
+         (coding-system
+          (or coding-system
+              'us-ascii))
+         (coding-system
+          (let ((cons (assq coding-system ruby-encoding-map)))
+            (if cons (cdr cons) coding-system)))
+         (coding-system
+          (and coding-system
+               (symbol-name coding-system))))
+    (if coding-system
+        (save-excursion
+          (widen)
+          (goto-char (point-min))
+          (if (looking-at "^#!") (beginning-of-line 2))
+          (cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]*\\)\\s *\\(;\\|-\*-\\)")
+                 (unless (string= (match-string 2) coding-system)
+                   (goto-char (match-beginning 2))
+                   (delete-region (point) (match-end 2))
+                   (and (looking-at "-\*-")
+                        (let ((n (skip-chars-backward " ")))
+                          (cond ((= n 0) (insert "  ") (backward-char))
+                                ((= n -1) (insert " "))
+                                ((forward-char)))))
+                   (insert coding-system)))
+                ((looking-at "\\s *#.*coding\\s *[:=]"))
+                (t (when ruby-insert-encoding-magic-comment
+                     (insert "# -*- coding: " coding-system " -*-\n"))))))))
 
 (defun ruby-current-indentation ()
   (save-excursion
