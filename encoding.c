@@ -1931,3 +1931,8 @@ rb_toupper(int c)
     return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) : c;
 }
 
+void
+rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg)
+{
+    st_foreach(enc_table.names, func, arg);
+}

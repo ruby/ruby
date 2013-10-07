@@ -168,6 +168,21 @@ system_code_page(void)
     return AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 }
 
+void rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg);
+
+static int
+code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
+{
+    const char *n = (const char *)name;
+    if (strncmp("CP", n, 2) == 0) {
+	int code_page = atoi(n + 2);
+	if (code_page != 0) {
+	    st_insert((st_table *)arg, (st_data_t)idx, (st_data_t)code_page);
+	}
+    }
+    return ST_CONTINUE;
+}
+
 /*
   Return code page number of the encoding.
   Cache code page into a hash for performance since finding the code page in
@@ -178,9 +193,6 @@ code_page(rb_encoding *enc)
 {
     int enc_idx;
     st_data_t code_page_value;
-    VALUE encoding, names_ary = Qundef, name;
-    ID names;
-    long i;
 
     if (!enc)
 	return system_code_page();
@@ -192,33 +204,10 @@ code_page(rb_encoding *enc)
 	return 1252;
     }
 
-    if (rb_code_page) {
-	if (st_lookup(rb_code_page, enc_idx, &code_page_value))
-	    return (UINT)code_page_value;
-    }
-    else {
-	rb_code_page = st_init_numtable();
-    }
+    if (st_lookup(rb_code_page, enc_idx, &code_page_value))
+	return (UINT)code_page_value;
 
-    code_page_value = INVALID_CODE_PAGE;
-    encoding = rb_enc_from_encoding(enc);
-    if (!NIL_P(encoding)) {
-	CONST_ID(names, "names");
-	names_ary = rb_funcall(encoding, names, 0);
-	for (i = 0; i < RARRAY_LEN(names_ary); i++) {
-	    name = RARRAY_PTR(names_ary)[i];
-	    if (strncmp("CP", RSTRING_PTR(name), 2) == 0) {
-		int code_page = atoi(RSTRING_PTR(name) + 2);
-		if (code_page != 0) {
-		    code_page_value = code_page;
-		    break;
-		}
-	    }
-	}
-    }
-
-    st_insert(rb_code_page, enc_idx, code_page_value);
-    return (UINT)code_page_value;
+    return INVALID_CODE_PAGE;
 }
 
 #define fix_string_encoding(str, encoding) rb_str_conv_enc((str), (encoding), rb_utf8_encoding())
@@ -697,4 +686,6 @@ rb_file_load_ok(const char *path)
 void
 rb_w32_init_file(void)
 {
+    rb_code_page = st_init_numtable();
+    rb_enc_foreach_name(code_page_i, (st_data_t)rb_code_page);
 }
