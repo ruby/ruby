@@ -73,12 +73,17 @@
        (or (ruby-brace-to-do-end)
            (ruby-do-end-to-brace)))
 
-     (defcustom ruby-encoding-map
+     (defconst ruby-default-encoding-map
        '((us-ascii       . nil)       ;; Do not put coding: us-ascii
          (utf-8          . nil)       ;; Do not put coding: utf-8
          (shift-jis      . cp932)     ;; Emacs charset name of Shift_JIS
          (shift_jis      . cp932)     ;; MIME charset name of Shift_JIS
          (japanese-cp932 . cp932))    ;; Emacs charset name of CP932
+       )
+
+     (custom-set-default 'ruby-encoding-map ruby-default-encoding-map)
+
+     (defcustom ruby-encoding-map ruby-default-encoding-map
        "Alist to map encoding name from Emacs to Ruby.
 Associating an encoding name with nil means it needs not be
 explicitly declared in magic comment."
@@ -107,8 +112,10 @@ Emacs to Ruby."
                      (let ((coding-type (coding-system-get coding-system :coding-type)))
                        (cond ((eq coding-type 'undecided)
                               (if nonascii
-                                  (if (coding-system-get coding-system :prefer-utf-8)
-                                      'utf-8 'ascii-8bit)))
+                                  (or (and (coding-system-get coding-system :prefer-utf-8)
+                                           'utf-8)
+                                      (coding-system-get default-buffer-file-coding-system :coding-type)
+                                      'ascii-8bit)))
                              ((memq coding-type '(utf-8 shift-jis))
                               coding-type))))))
               (coding-system

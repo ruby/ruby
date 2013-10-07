@@ -355,8 +355,10 @@ Emacs to Ruby."
                 (let ((coding-type (coding-system-get coding-system :coding-type)))
                   (cond ((eq coding-type 'undecided)
                          (if nonascii
-                             (if (coding-system-get coding-system :prefer-utf-8)
-                                 'utf-8 'ascii-8bit)))
+                             (or (and (coding-system-get coding-system :prefer-utf-8)
+                                      'utf-8)
+                                 (coding-system-get default-buffer-file-coding-system :coding-type)
+                                 'ascii-8bit)))
                         ((memq coding-type '(utf-8 shift-jis))
                          coding-type))))))
          (coding-system
