@@ -2352,6 +2352,7 @@ if test x"$enable_pthread" = xyes; then
       AC_CHECK_FUNCS(pthread_attr_init)
     fi
 fi
+FIBER_USE_NATIVE=0
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
@@ -2360,10 +2361,14 @@ if test x"$ac_cv_header_ucontext_h" = xyes; then
 		[*-netbsd*], [],
 		[ia64-*], [], # r38766
 		[*-sunos*|*-solaris*], [], # r32408
-		[AC_DEFINE(FIBER_USE_NATIVE, 1)])
+		[FIBER_USE_NATIVE=1])
 	fi
     fi
+else
+    AS_CASE("$target_os", [mingw*|mswin*],
+	    [test "[$[with_winnt_ver]]" -ge [$[0x0400]] && FIBER_USE_NATIVE=1])
 fi
+AC_DEFINE(FIBER_USE_NATIVE)
 
 if test "$ac_cv_func_fork" = "yes" -a "$rb_with_pthread" = "yes"; then
     AC_CACHE_CHECK([if fork works with pthread], rb_cv_fork_with_pthread,
