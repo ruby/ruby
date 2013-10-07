@@ -1,3 +1,8 @@
+Mon Oct  7 20:07:20 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Use :offset.
+	  Patch by Felipe Contreras.  [ruby-core:57694]
+
 Mon Oct  7 16:47:27 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/-ext-/debug/test_profile_frames.rb: rename class C to
