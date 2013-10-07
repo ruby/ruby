@@ -1,3 +1,8 @@
+Mon Oct  7 21:03:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (FIBER_USE_NATIVE): move conditions
+	  from cont.c
+
 Mon Oct  7 20:29:31 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/time.rb: [DOC] typo in Time.rb overview by @srt32 [Fixes GH-416]

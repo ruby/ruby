@@ -15,9 +15,6 @@
 #include "gc.h"
 #include "eval_intern.h"
 
-#if ((defined(_WIN32) && _WIN32_WINNT >= 0x0400) || (defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT))) && !defined(__NetBSD__) && !defined(__sun) && !defined(__ia64) && !defined(FIBER_USE_NATIVE)
-#define FIBER_USE_NATIVE 1
-
 /* FIBER_USE_NATIVE enables Fiber performance improvement using system
  * dependent method such as make/setcontext on POSIX system or
  * CreateFiber() API on Windows.
@@ -34,7 +31,7 @@
  * are represented by stack pointer (higher bits of stack pointer).
  * TODO: check such constraint on configure.
  */
-#elif !defined(FIBER_USE_NATIVE)
+#if !defined(FIBER_USE_NATIVE)
 #define FIBER_USE_NATIVE 0
 #endif
 

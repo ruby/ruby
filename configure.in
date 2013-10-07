@@ -2355,6 +2355,13 @@ fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
+	if test x"$ac_cv_func_getcontext" = xyes -a x"$ac_cv_func_setcontext" = xyes; then
+	    AS_CASE("$target_cpu-$target_os",
+		[*-netbsd*], [],
+		[ia64-*], [], # r38766
+		[*-sunos*|*-solaris*], [], # r32408
+		[AC_DEFINE(FIBER_USE_NATIVE, 1)])
+	fi
     fi
 fi
 
