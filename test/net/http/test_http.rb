@@ -403,7 +403,7 @@ module TestNetHTTP_version_1_1_methods
 
       conn = Net::HTTP.new('localhost', port)
       conn.read_timeout = 0.01
-      conn.open_timeout = 0.01
+      conn.open_timeout = 0.1
 
       th = Thread.new do
         assert_raise(Net::ReadTimeout) {
