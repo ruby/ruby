@@ -1207,7 +1207,7 @@ static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 /* License: Artistic or GPL */
-rb_pid_t
+static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
     char fbuf[MAXPATHLEN];
@@ -1346,7 +1346,7 @@ rb_w32_uspawn(int mode, const char *cmd, const char *prog)
 }
 
 /* License: Artistic or GPL */
-rb_pid_t
+static rb_pid_t
 w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UINT cp)
 {
     int c_switch = 0;
