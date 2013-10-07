@@ -1,3 +1,8 @@
+Tue Oct  8 05:58:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Time.strptime('0', '%s') returns local
+	  time Time object as Ruby 2.0 and before.
+
 Tue Oct  8 05:40:37 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* .travis.yml:  Rebuild Travis CI's "ruby-head" version on successful

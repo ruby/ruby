@@ -393,8 +393,11 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        offset = d[:offset] || 0
-        Time.at(seconds).localtime(offset)
+        if offset = d[:offset]
+          Time.at(seconds).localtime(offset)
+        else
+          Time.at(seconds)
+        end
       else
         year = d[:year]
         year = yield(year) if year && block_given?
