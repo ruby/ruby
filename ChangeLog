@@ -1,3 +1,9 @@
+Tue Oct  8 10:56:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c: disable FIBER_USE_NATIVE on GNU/Hurd because it doesn't
+	  support a combination getcontext() and threads. Patch by
+	  Gabriele Giacone (1o5g4r8o@gmail.com). [Bug #8990][ruby-core:57685]
+
 Tue Oct  8 05:58:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.strptime): Time.strptime('0', '%s') returns local

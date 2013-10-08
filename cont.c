@@ -44,6 +44,13 @@
 /* At least, Linux/ia64's getcontext(3) doesn't save register window.
  */
 #     define FIBER_USE_NATIVE 0
+#   elif defined(__GNU__)
+/* GNU/Hurd doesn't fully support getcontext, setcontext, makecontext
+ * and swapcontext functions. Disabling their usage till support is
+ * implemented. More info at
+ * http://darnassus.sceen.net/~hurd-web/open_issues/glibc/#getcontext
+ */
+#     define FIBER_USE_NATIVE 0
 #   else
 #     define FIBER_USE_NATIVE 1
 #   endif
