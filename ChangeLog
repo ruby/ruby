@@ -1,3 +1,15 @@
+Tue Oct  8 21:03:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c, include/ruby/debug.h: add new APIs
+	  * VALUE rb_profile_frame_method_name(VALUE frame)
+	  * VALUE rb_profile_frame_qualified_method_name(VALUE frame)
+
+	* iseq.c (rb_iseq_klass), internal.h: add new internal function
+	  rb_iseq_method_name().
+
+	* ext/-test-/debug/profile_frames.c (profile_frames),
+	  test/-ext-/debug/test_profile_frames.rb: add a test.
+
 Tue Oct  8 16:11:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_uniq): use rb_hash_values(), as well as the case no

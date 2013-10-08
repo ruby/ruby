@@ -457,6 +457,7 @@ VALUE rb_iseq_label(VALUE iseqval);
 VALUE rb_iseq_base_label(VALUE iseqval);
 VALUE rb_iseq_first_lineno(VALUE iseqval);
 VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary fucntion */
+VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */
 VALUE rb_get_load_path(void);

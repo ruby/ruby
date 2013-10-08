@@ -26,6 +26,8 @@ profile_frames(VALUE self, VALUE start_v, VALUE num_v)
 	rb_ary_push(ary, rb_profile_frame_first_lineno(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_classpath(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_singleton_method_p(buff[i]));
+	rb_ary_push(ary, rb_profile_frame_method_name(buff[i]));
+	rb_ary_push(ary, rb_profile_frame_qualified_method_name(buff[i]));
 
 	rb_ary_push(result, ary);
     }

@@ -1287,3 +1287,30 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 	return Qfalse;
     }
 }
+
+VALUE
+rb_profile_frame_method_name(VALUE frame)
+{
+    return rb_iseq_method_name(frame2iseq(frame));
+}
+
+VALUE
+rb_profile_frame_qualified_method_name(VALUE frame)
+{
+    VALUE method_name = rb_iseq_method_name(frame2iseq(frame));
+    if (method_name != Qnil) {
+	VALUE classpath = rb_profile_frame_classpath(frame);
+	VALUE singleton_p = rb_profile_frame_singleton_method_p(frame);
+
+	if (classpath != Qnil) {
+	    return rb_sprintf("%"PRIsVALUE"%s%"PRIsVALUE,
+			      classpath, singleton_p == Qtrue ? "." : "#", method_name);
+	}
+	else {
+	    return method_name;
+	}
+    }
+    else {
+	return Qnil;
+    }
+}

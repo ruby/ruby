@@ -959,6 +959,20 @@ rb_iseq_klass(VALUE self)
     return iseq->local_iseq->klass;
 }
 
+VALUE
+rb_iseq_method_name(VALUE self)
+{
+    rb_iseq_t *iseq, *local_iseq;
+    GetISeqPtr(self, iseq);
+    local_iseq = iseq->local_iseq;
+    if (local_iseq->type == ISEQ_TYPE_METHOD) {
+	return local_iseq->location.base_label;
+    }
+    else {
+	return Qnil;
+    }
+}
+
 static
 VALUE iseq_data_to_ary(rb_iseq_t *iseq);
 

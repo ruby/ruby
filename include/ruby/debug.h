@@ -34,6 +34,8 @@ VALUE rb_profile_frame_base_label(VALUE frame);
 VALUE rb_profile_frame_first_lineno(VALUE frame);
 VALUE rb_profile_frame_classpath(VALUE frame);
 VALUE rb_profile_frame_singleton_method_p(VALUE frame);
+VALUE rb_profile_frame_method_name(VALUE frame);
+VALUE rb_profile_frame_qualified_method_name(VALUE frame);
 
 /* debug inspector APIs */
 typedef struct rb_debug_inspector_struct rb_debug_inspector_t;

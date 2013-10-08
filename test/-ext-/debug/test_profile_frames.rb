@@ -2,8 +2,14 @@ require 'test/unit'
 require '-test-/debug'
 
 class SampleClassForTestProfileFrames
+  class Sample2
+    def baz(block)
+      block.call
+    end
+  end
+  
   def self.bar(block)
-    block.call
+    Sample2.new.baz(block)
   end
 
   def foo(block)
@@ -17,31 +23,49 @@ class TestProfileFrames < Test::Unit::TestCase
       Fiber.yield SampleClassForTestProfileFrames.new.foo(lambda{ Bug::Debug.profile_frames(0, 10) })
     }.resume
 
-    assert_equal(4, frames.size)
-
     labels = [
       "block (2 levels) in test_profile_frames",
+      "baz",
       "bar",
       "foo",
       "block in test_profile_frames",
     ]
     base_labels = [
       "test_profile_frames",
+      "baz",
       "bar",
       "foo",
       "test_profile_frames",
     ]
     classes = [
       TestProfileFrames,
+      SampleClassForTestProfileFrames::Sample2,
       SampleClassForTestProfileFrames, # singleton method
       SampleClassForTestProfileFrames,
       TestProfileFrames,
     ]
     singleton_method_p = [
-      false, true, false, false, false,
+      false, false, true, false, false, false,
+    ]
+    methdo_names = [
+      "test_profile_frames",
+      "baz",
+      "bar",
+      "foo",
+      "test_profile_frames",
+    ]
+    qualified_method_names = [
+      "TestProfileFrames#test_profile_frames",
+      "SampleClassForTestProfileFrames::Sample2#baz",
+      "SampleClassForTestProfileFrames.bar",
+      "SampleClassForTestProfileFrames#foo",
+      "TestProfileFrames#test_profile_frames",
     ]
 
-    frames.each.with_index{|(path, absolute_path, label, base_label, first_lineno, classpath, singleton_p), i|
+    assert_equal(labels.size, frames.size)
+
+    frames.each.with_index{|(path, absolute_path, label, base_label, first_lineno,
+                            classpath, singleton_p, method_name, qualified_method_name), i|
       err_msg = "#{i}th frame"
       assert_equal(__FILE__, path, err_msg)
       assert_equal(__FILE__, absolute_path, err_msg)
@@ -49,6 +73,8 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(base_labels[i], base_label, err_msg)
       assert_equal(classes[i].to_s, classpath, err_msg)
       assert_equal(singleton_method_p[i], singleton_p, err_msg)
+      assert_equal(methdo_names[i], method_name, err_msg)
+      assert_equal(qualified_method_names[i], qualified_method_name, err_msg)
     }
   end
 end
