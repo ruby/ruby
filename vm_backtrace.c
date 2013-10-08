@@ -768,6 +768,35 @@ rb_backtrace(void)
     vm_backtrace_print(stderr);
 }
 
+static void
+oldbt_print_to(void *data, VALUE file, int lineno, VALUE name)
+{
+    VALUE output = (VALUE)data;
+    VALUE str = rb_sprintf("\tfrom %"PRIsVALUE":%d:in ", file, lineno);
+
+    if (NIL_P(name)) {
+	rb_str_cat2(str, "unknown method\n");
+    }
+    else {
+	rb_str_catf(str, " `%"PRIsVALUE"'\n", name);
+    }
+    rb_io_write(output, str);
+}
+
+void
+rb_backtrace_print_to(VALUE output)
+{
+    struct oldbt_arg arg;
+
+    arg.func = oldbt_print_to;
+    arg.data = (void *)output;
+    backtrace_each(GET_THREAD(),
+		   oldbt_init,
+		   oldbt_iter_iseq,
+		   oldbt_iter_cfunc,
+		   &arg);
+}
+
 VALUE
 rb_make_backtrace(void)
 {

@@ -399,6 +399,7 @@ class TestRequire < Test::Unit::TestCase
   def test_race_exception
     bug5754 = '[ruby-core:41618]'
     path = nil
+    stderr = $stderr
     Tempfile.create(%w"bug5754 .rb") {|tmp|
       path = tmp.path
       tmp.print %{\
@@ -416,12 +417,11 @@ class TestRequire < Test::Unit::TestCase
       }
       tmp.close
 
-      # "circular require" warnings to $stderr, but backtraces to stderr
-      # in C-level.  And redirecting stderr to a pipe seems to change
-      # some blocking timings and causes a deadlock, so run in a
-      # separated process for the time being.
-      assert_separately(["-w", "-", path, bug5754], <<-'end;', ignore_stderr: true)
-      path, bug5754 = *ARGV
+      class << (output = "")
+        alias write concat
+      end
+      $stderr = output
+
       start = false
 
       scratch = []
@@ -454,9 +454,12 @@ class TestRequire < Test::Unit::TestCase
 
       assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
       assert_equal([:pre, :post], scratch, bug5754)
-      end;
+
+      assert_match(/circular require/, output)
+      assert_match(/in #{__method__}'$/o, output)
     }
   ensure
+    $stderr = stderr
     $".delete(path)
   end
 

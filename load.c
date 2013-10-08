@@ -706,8 +706,7 @@ load_lock(const char *ftptr)
     }
     if (RTEST(ruby_verbose)) {
 	rb_warning("loading in progress, circular require considered harmful - %s", ftptr);
-	/* TODO: display to $stderr, not stderr in C */
-	rb_backtrace();
+	rb_backtrace_print_to(rb_stderr);
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
