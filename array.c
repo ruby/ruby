@@ -4124,8 +4124,7 @@ rb_ary_uniq(VALUE ary)
         return rb_ary_dup(ary);
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
-	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
-	st_foreach(rb_hash_tbl_raw(hash), push_value, uniq);
+	uniq = rb_hash_values(hash);
     }
     else {
 	hash = ary_make_hash(ary);

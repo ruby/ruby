@@ -436,6 +436,7 @@ void rb_gc_writebarrier_remember_promoted(VALUE obj);
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
+VALUE rb_hash_values(VALUE hash);
 
 /* inits.c */
 void rb_call_inits(void);

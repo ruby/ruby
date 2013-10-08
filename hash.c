@@ -1712,7 +1712,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_values(VALUE hash)
 {
     VALUE ary;
