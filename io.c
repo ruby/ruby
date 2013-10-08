@@ -1428,7 +1428,7 @@ io_write_m(VALUE io, VALUE str)
 VALUE
 rb_io_write(VALUE io, VALUE str)
 {
-    return rb_funcall(io, id_write, 1, str);
+    return rb_funcallv(io, id_write, 1, &str);
 }
 
 /*
