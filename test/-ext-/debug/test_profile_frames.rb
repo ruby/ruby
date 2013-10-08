@@ -7,7 +7,7 @@ class SampleClassForTestProfileFrames
       block.call
     end
   end
-  
+
   def self.bar(block)
     Sample2.new.baz(block)
   end
