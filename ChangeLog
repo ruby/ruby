@@ -1,3 +1,11 @@
+Tue Oct  8 13:53:21 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_uniq): use rb_hash_keys().
+
+	* internal.h: define rb_hash_keys() as internal API.
+
+	* hash.c (rb_hash_keys): ditto.
+
 Tue Oct  8 10:56:39 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c: disable FIBER_USE_NATIVE on GNU/Hurd because it doesn't

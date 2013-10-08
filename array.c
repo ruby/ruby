@@ -4130,13 +4130,7 @@ rb_ary_uniq(VALUE ary)
     }
     else {
 	hash = ary_make_hash(ary);
-	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
-	    if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
-		rb_ary_push(uniq, v);
-	    }
-	}
+	uniq = rb_hash_keys(hash);
     }
     ary_recycle_hash(hash);
 
