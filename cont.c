@@ -15,20 +15,6 @@
 #include "gc.h"
 #include "eval_intern.h"
 
-#if !defined(FIBER_USE_NATIVE)
-# if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
-#   if defined(__NetBSD__)
-#   elif defined(__sun)
-#   elif defined(__ia64)
-#   else
-#     define FIBER_USE_NATIVE 1
-#   endif
-# elif defined(_WIN32)
-#   if _WIN32_WINNT >= 0x0400
-#     define FIBER_USE_NATIVE 1
-#   endif
-# endif
-
 /* FIBER_USE_NATIVE enables Fiber performance improvement using system
  * dependent method such as make/setcontext on POSIX system or
  * CreateFiber() API on Windows.
@@ -40,11 +26,36 @@
  * in Proc. of 51th Programming Symposium, pp.21--28 (2010) (in Japanese).
  */
 
+#if !defined(FIBER_USE_NATIVE)
+# if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
+#   if 0
+#   elif defined(__NetBSD__)
 /* On our experience, NetBSD doesn't support using setcontext() and pthread
  * simultaneously.  This is because pthread_self(), TLS and other information
  * are represented by stack pointer (higher bits of stack pointer).
  * TODO: check such constraint on configure.
  */
+#     define FIBER_USE_NATIVE 0
+#   elif defined(__sun)
+/* On Solaris because resuming any Fiber caused SEGV, for some reason.
+ */
+#     define FIBER_USE_NATIVE 0
+#   elif defined(__ia64)
+/* At least, Linux/ia64's getcontext(3) doesn't save register window.
+ */
+#     define FIBER_USE_NATIVE 0
+#   else
+#     define FIBER_USE_NATIVE 1
+#   endif
+# elif defined(_WIN32)
+#   if _WIN32_WINNT >= 0x0400
+/* only when _WIN32_WINNT >= 0x0400 on Windows because Fiber APIs are
+ * supported only such building (and running) environments.
+ * [ruby-dev:41192]
+ */
+#     define FIBER_USE_NATIVE 1
+#   endif
+# endif
 #endif
 #if !defined(FIBER_USE_NATIVE)
 #define FIBER_USE_NATIVE 0
