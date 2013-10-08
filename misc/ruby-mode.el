@@ -448,7 +448,7 @@ Emacs to Ruby."
        ((progn
           (forward-char -1)
           (and (looking-at "\\?")
-               (or (eq (char-syntax (preceging-char)) ?w)
+               (or (eq (char-syntax (preceding-char)) ?w)
                    (ruby-special-char-p))))
         nil)
        ((and (eq option 'heredoc) (< space 0))
