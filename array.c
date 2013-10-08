@@ -4131,6 +4131,7 @@ rb_ary_uniq(VALUE ary)
 	hash = ary_make_hash(ary);
 	uniq = rb_hash_keys(hash);
     }
+    RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
     ary_recycle_hash(hash);
 
     return uniq;
