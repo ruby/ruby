@@ -4118,8 +4118,7 @@ rb_ary_uniq_bang(VALUE ary)
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    VALUE hash, uniq, v;
-    long i;
+    VALUE hash, uniq;
 
     if (RARRAY_LEN(ary) <= 1)
         return rb_ary_dup(ary);
