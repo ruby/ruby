@@ -5,7 +5,7 @@ Wed Oct  9 18:03:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Oct  9 17:40:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_fstring): because of lazy sweep, str may be unmaked
+	* string.c (rb_fstring): because of lazy sweep, str may be unmarked
 	  already and swept at next time, so mark it for the time being.
 	  [ruby-core:57756]
 
@@ -14,7 +14,7 @@ Wed Oct  9 13:53:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* compar.c (cmp_eq): fail if recursion.  [ruby-core:57736] [Bug #9003]
 
 	* thread.c (rb_exec_recursive_paired_outer): new function which is
-	  combinnation of paired and outer variants.
+	  combination of paired and outer variants.
 
 Wed Oct  9 09:18:14 2013  Koichi Sasada  <ko1@atdot.net>
 
