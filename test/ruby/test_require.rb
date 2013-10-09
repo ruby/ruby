@@ -400,6 +400,7 @@ class TestRequire < Test::Unit::TestCase
     bug5754 = '[ruby-core:41618]'
     path = nil
     stderr = $stderr
+    verbose = $VERBOSE
     Tempfile.create(%w"bug5754 .rb") {|tmp|
       path = tmp.path
       tmp.print %{\
@@ -447,10 +448,13 @@ class TestRequire < Test::Unit::TestCase
       t1[:t] = t2
       t2[:t] = t1
 
+      $VERBOSE = true
       start = true
 
       assert_nothing_raised(ThreadError, bug5754) {t1.join}
       assert_nothing_raised(ThreadError, bug5754) {t2.join}
+
+      $VERBOSE = false
 
       assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
       assert_equal([:pre, :post], scratch, bug5754)
@@ -459,6 +463,7 @@ class TestRequire < Test::Unit::TestCase
       assert_match(/in #{__method__}'$/o, output)
     }
   ensure
+    $VERBOSE = verbose
     $stderr = stderr
     $".delete(path)
   end
