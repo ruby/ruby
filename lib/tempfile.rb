@@ -190,7 +190,6 @@ class Tempfile < DelegateClass(File)
   def close!
     _close
     unlink
-    ObjectSpace.undefine_finalizer(self)
   end
 
   # Unlinks (deletes) the file from the filesystem. One should always unlink
@@ -238,6 +237,7 @@ class Tempfile < DelegateClass(File)
     # remove tmpname from remover
     @data[0] = @data[1] = nil
     @tmpname = nil
+    ObjectSpace.undefine_finalizer(self)
   end
   alias delete unlink
 

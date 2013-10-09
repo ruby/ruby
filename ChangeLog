@@ -1,3 +1,9 @@
+Thu Oct 10 01:07:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): finalizer is no longer needed
+	  after unlinking.  patched by by normalperson (Eric Wong) at
+	  [ruby-core:56521] [Bug #8768]
+
 Thu Oct 10 00:58:39 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ruby/test_array.rb (test_count): add a test case for #count
