@@ -1,3 +1,9 @@
+Thu Oct 10 00:02:35 2013  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* numeric.c (fix_aref): avoid a possible undefined behavior.
+	  1L << 63 on 64-bit platform is undefined, at least, according to
+	  ISO/IEC 9899 (C99) 6.5.7.
+
 Wed Oct  9 23:57:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (id_for_attr): avoid inadvertent symbol creation.

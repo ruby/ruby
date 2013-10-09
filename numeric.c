@@ -3443,7 +3443,7 @@ fix_aref(VALUE fix, VALUE idx)
     i = FIX2LONG(idx);
 
     if (i < 0) return INT2FIX(0);
-    if (SIZEOF_LONG*CHAR_BIT-1 < i) {
+    if (SIZEOF_LONG*CHAR_BIT-1 <= i) {
 	if (val < 0) return INT2FIX(1);
 	return INT2FIX(0);
     }
