@@ -31,6 +31,7 @@ VALUE rb_profile_frame_path(VALUE frame);
 VALUE rb_profile_frame_absolute_path(VALUE frame);
 VALUE rb_profile_frame_label(VALUE frame);
 VALUE rb_profile_frame_base_label(VALUE frame);
+VALUE rb_profile_frame_full_label(VALUE frame);
 VALUE rb_profile_frame_first_lineno(VALUE frame);
 VALUE rb_profile_frame_classpath(VALUE frame);
 VALUE rb_profile_frame_singleton_method_p(VALUE frame);

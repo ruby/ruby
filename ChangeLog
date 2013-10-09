@@ -1,3 +1,16 @@
+Wed Oct  9 09:18:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h,
+	  vm_backtrace.c (rb_profile_frame_full_label): add new C API
+	  rb_profile_frame_full_label() which returns label with
+	  qualified method name.
+	  Note that in future version of Ruby label() may return
+	  same return value of full_label().
+
+	* ext/-test-/debug/profile_frames.c,
+	  test/-ext-/debug/test_profile_frames.rb: fix a test for this change.
+
+
 Wed Oct  9 00:55:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_lock): display backtrace to $stderr at circular

@@ -1343,3 +1343,22 @@ rb_profile_frame_qualified_method_name(VALUE frame)
 	return Qnil;
     }
 }
+
+VALUE
+rb_profile_frame_full_label(VALUE frame)
+{
+    VALUE label = rb_profile_frame_label(frame);
+    VALUE base_label = rb_profile_frame_base_label(frame);
+    VALUE qualified_method_name = rb_profile_frame_qualified_method_name(frame);
+
+    if (NIL_P(qualified_method_name) || base_label == qualified_method_name) {
+	return label;
+    }
+    else {
+	long label_length = RSTRING_LEN(label);
+	long base_label_length = RSTRING_LEN(base_label);
+	VALUE prefix = rb_str_new(RSTRING_PTR(label), label_length - base_label_length);
+
+	return rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, prefix, qualified_method_name);
+    }
+}

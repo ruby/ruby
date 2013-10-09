@@ -23,6 +23,7 @@ profile_frames(VALUE self, VALUE start_v, VALUE num_v)
 	rb_ary_push(ary, rb_profile_frame_absolute_path(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_label(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_base_label(buff[i]));
+	rb_ary_push(ary, rb_profile_frame_full_label(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_first_lineno(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_classpath(buff[i]));
 	rb_ary_push(ary, rb_profile_frame_singleton_method_p(buff[i]));
