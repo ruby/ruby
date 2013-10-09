@@ -1,3 +1,14 @@
+Thu Oct 10 00:24:01 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c: disable FIBER_USE_NATIVE on GNU/Hurd because it doesn't
+	  support a combination getcontext() and threads. Patch by
+	  Gabriele Giacone (1o5g4r8o@gmail.com). [Bug #8990][ruby-core:57685]
+
+Mon Oct  7 21:03:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (FIBER_USE_NATIVE): move conditions
+	  from cont.c
+
 Thu Oct 10 00:17:56 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/dl/test_base.rb: {libc, libm} detection now handle GNU/Hurd
