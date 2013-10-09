@@ -441,12 +441,11 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_refine_without_block
     c1 = Class.new
-    e = assert_raise(ArgumentError) {
+    assert_raise_with_message(ArgumentError, "no block given") {
       Module.new do
         refine c1
       end
     }
-    assert_equal("no block given", e.message)
   end
 
   module Inspect

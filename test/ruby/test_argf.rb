@@ -799,8 +799,7 @@ class TestArgf < Test::Unit::TestCase
     end
     argf = ARGF.class.new(*paths)
     paths.each do |path|
-      e = assert_raise(Errno::ENOENT) {argf.gets}
-      assert_match(/- #{Regexp.quote(path)}\z/, e.message)
+      assert_raise_with_message(Errno::ENOENT, /- #{Regexp.quote(path)}\z/) {argf.gets}
     end
     assert_nil(argf.gets, bug4274)
   end
