@@ -22,7 +22,9 @@ class TestTracepointObj < Test::Unit::TestCase
     assert_equal 2, newobjs.size
     assert_equal 'foobar', newobjs[0]
     assert_equal Object, newobjs[1].class
+  end
 
+  def test_tracks_objspace_count
     stat1 = {}
     stat2 = {}
     GC.disable
@@ -40,7 +42,7 @@ class TestTracepointObj < Test::Unit::TestCase
     assert_operator stat2[:total_allocated_object] - stat1[:total_allocated_object], :>=, newobj_count
     assert_operator 1_000_000, :<=, newobj_count
 
-    assert_operator stat2[:total_freed_object] - stat1[:total_freed_object], :>=, free_count
+    assert_operator stat2[:total_freed_object] + stat2[:heap_final_num] - stat1[:total_freed_object], :>=, free_count
     assert_operator stat2[:count] - stat1[:count], :==, gc_start_count
 
     assert_operator gc_start_count, :>=, gc_end_count
