@@ -83,7 +83,7 @@ class TestThread < Test::Unit::TestCase
   def test_thread_variable_frozen
     t = Thread.new { }.join
     t.freeze
-    assert_raises(RuntimeError) do
+    assert_raise(RuntimeError) do
       t.thread_variable_set(:foo, "bar")
     end
   end
@@ -748,13 +748,13 @@ _eom
   end
 
   def test_thread_join_current
-    assert_raises(ThreadError) do
+    assert_raise(ThreadError) do
       Thread.current.join
     end
   end
 
   def test_thread_join_main_thread
-    assert_raises(ThreadError) do
+    assert_raise(ThreadError) do
       Thread.new(Thread.current) {|t|
         t.join
       }.join

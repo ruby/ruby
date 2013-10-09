@@ -339,7 +339,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_file_open_double_mode
-    e = assert_raises(ArgumentError) { File.open("a", 'w', :mode => 'rw+') }
+    e = assert_raise(ArgumentError) { File.open("a", 'w', :mode => 'rw+') }
     assert_equal 'mode specified twice', e.message
   end
 

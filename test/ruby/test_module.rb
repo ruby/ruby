@@ -248,7 +248,7 @@ class TestModule < Test::Unit::TestCase
       ":",
       ["String::", "[Bug #7573]"],
     ].each do |name, msg|
-      e = assert_raises(NameError, "#{msg}#{': ' if msg}wrong constant name #{name.dump}") {
+      e = assert_raise(NameError, "#{msg}#{': ' if msg}wrong constant name #{name.dump}") {
         Object.const_get name
       }
       assert_equal("wrong constant name %s" % name, e.message)
@@ -296,7 +296,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_nested_bad_class
-    assert_raises(TypeError) do
+    assert_raise(TypeError) do
       self.class.const_get([User, 'USER', 'Foo'].join('::'))
     end
   end
@@ -1656,7 +1656,7 @@ class TestModule < Test::Unit::TestCase
       @@foo
       $foo
     ].each do |name|
-      assert_raises(NameError) do
+      assert_raise(NameError) do
         Module.new { attr_accessor name.to_sym }
       end
     end

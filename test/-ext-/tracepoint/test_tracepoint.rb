@@ -3,7 +3,7 @@ require '-test-/tracepoint'
 
 class TestTracepointObj < Test::Unit::TestCase
   def test_not_available_from_ruby
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       TracePoint.trace(:obj_new){}
     end
   end
