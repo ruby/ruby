@@ -146,6 +146,9 @@ rb_fstring(VALUE str)
     st_data_t fstr;
     if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
 	str = (VALUE)fstr;
+	/* because of lazy sweep, str may be unmaked already and swept
+	 * at next time */
+	rb_gc_mark(str);
     }
     else {
 	str = rb_str_new_frozen(str);

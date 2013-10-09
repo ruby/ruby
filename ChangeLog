@@ -1,3 +1,9 @@
+Wed Oct  9 17:40:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring): because of lazy sweep, str may be unmaked
+	  already and swept at next time, so mark it for the time being.
+	  [ruby-core:57756]
+
 Wed Oct  9 13:53:14 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compar.c (cmp_eq): fail if recursion.  [ruby-core:57736] [Bug #9003]
