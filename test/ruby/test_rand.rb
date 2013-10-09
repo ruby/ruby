@@ -514,7 +514,7 @@ END
 
     bug7903 = '[ruby-dev:47061] [Bug #7903]'
     def (gen = Object.new).rand(*) -1 end
-    assert_raise_with_message(RangeError, /small -1\z/, e.message, bug7903) {[1,2,3].sample(random: gen)}
+    assert_raise_with_message(RangeError, /small -1\z/, bug7903) {[1,2,3].sample(random: gen)}
 
     bug7935 = '[ruby-core:52779] [Bug #7935]'
     class << (gen = Object.new)

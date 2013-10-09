@@ -1,3 +1,8 @@
+Thu Oct 10 06:02:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_rand.rb: fix r43224. local variable `e' is
+	  no longer available.
+
 Thu Oct 10 00:02:35 2013  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* numeric.c (fix_aref): avoid a possible undefined behavior.
