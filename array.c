@@ -4113,27 +4113,28 @@ rb_ary_compact(VALUE ary)
 static VALUE
 rb_ary_count(int argc, VALUE *argv, VALUE ary)
 {
-    long n = 0;
+    long i, n = 0;
 
     if (argc == 0) {
-	VALUE *p, *pend;
+	VALUE v;
 
 	if (!rb_block_given_p())
 	    return LONG2NUM(RARRAY_LEN(ary));
 
-	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
-	    if (RTEST(rb_yield(*p))) n++;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    v = RARRAY_PTR(ary)[i];
+	    if (RTEST(rb_yield(v))) n++;
 	}
     }
     else {
-	VALUE obj, *p, *pend;
+	VALUE obj;
 
 	rb_scan_args(argc, argv, "1", &obj);
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
 	}
-	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
-	    if (rb_equal(*p, obj)) n++;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    if (rb_equal(RARRAY_PTR(ary)[i], obj)) n++;
 	}
     }
 

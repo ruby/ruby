@@ -1,3 +1,21 @@
+Thu Oct 10 00:58:39 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_array.rb (test_count): add a test case for #count
+	  with an argument. See Bug #8654.
+
+Thu Oct 10 00:58:39 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* array.c (rb_ary_count): check length to avoid SEGV
+	  while iterating. Remove other pointer loop when arg is given.
+
+	* test/ruby/test_array.rb (test_count): add test for bug.
+	  [ruby-core:56072] [Bug #8654]
+
+Thu Oct 10 00:58:39 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_count): iterate items appropriately.
+	  [Bug #8654]
+
 Thu Oct 10 00:44:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork_internal): remove cloexec setting on pipes
