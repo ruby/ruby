@@ -3285,6 +3285,8 @@ rb_gc_disable(void)
     rb_objspace_t *objspace = &rb_objspace;
     int old = dont_gc;
 
+    rest_sweep(objspace);
+
     dont_gc = TRUE;
     return old ? Qtrue : Qfalse;
 }

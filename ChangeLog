@@ -1,3 +1,10 @@
+Wed Oct  9 23:32:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_disable): do rest_sweep() before disable GC.
+	  This fix may solve a failure of
+	  TestTracepointObj#test_tracks_objspace_events
+	  [test/-ext-/tracepoint/test_tracepoint.rb:43].
+
 Sat Oct  5 02:14:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_close_read): duplex IO should wait its child process
