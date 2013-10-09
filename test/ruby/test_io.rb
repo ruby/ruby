@@ -2098,8 +2098,9 @@ End
       assert_equal(["foo\n", "bar\n", "baz\n"], a, bug)
 
       bug6054 = '[ruby-dev:45267]'
-      e = assert_raise(IOError, bug6054) {IO.foreach(t.path, mode:"w").next}
-      assert_match(/not opened for reading/, e.message, bug6054)
+      assert_raise_with_message(IOError, /not opened for reading/, bug6054) do
+        IO.foreach(t.path, mode:"w").next
+      end
     }
   end
 

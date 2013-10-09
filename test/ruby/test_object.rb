@@ -488,11 +488,10 @@ class TestObject < Test::Unit::TestCase
       end
     end
 
-    e = assert_raise(ArgumentError, '[bug:6000]') do
+    msg = 'respond_to? must accept 1 or 2 arguments (requires 3)'
+    assert_raise_with_message(ArgumentError, msg, '[bug:6000]') do
       [[p]].flatten
     end
-
-    assert_equal('respond_to? must accept 1 or 2 arguments (requires 3)', e.message)
   end
 
   def test_method_missing_passed_block
@@ -803,9 +802,7 @@ class TestObject < Test::Unit::TestCase
 
   def test_type_error_message
     issue = "Bug #7539"
-    err = assert_raise(TypeError){ Integer([42]) }
-    assert_equal "can't convert Array into Integer", err.message, issue
-    err = assert_raise(TypeError){ [].first([42]) }
-    assert_equal 'no implicit conversion of Array into Integer', err.message, issue
+    assert_raise_with_message(TypeError, "can't convert Array into Integer") {Integer([42])}
+    assert_raise_with_message(TypeError, 'no implicit conversion of Array into Integer') {[].first([42])}
   end
 end

@@ -28,7 +28,7 @@ class TestException < Test::Unit::TestCase
 
   def test_exception_in_rescue
     string = "this must be handled no.3"
-    e = assert_raise(RuntimeError) do
+    assert_raise_with_message(RuntimeError, string) do
       begin
         raise "exception in rescue clause"
       rescue
@@ -36,12 +36,11 @@ class TestException < Test::Unit::TestCase
       end
       assert(false)
     end
-    assert_equal(string, e.message)
   end
 
   def test_exception_in_ensure
     string = "exception in ensure clause"
-    e = assert_raise(RuntimeError) do
+    assert_raise_with_message(RuntimeError, string) do
       begin
         raise "this must be handled no.4"
       ensure
@@ -51,7 +50,6 @@ class TestException < Test::Unit::TestCase
       end
       assert(false)
     end
-    assert_equal(string, e.message)
   end
 
   def test_exception_ensure
@@ -333,8 +331,10 @@ end.join
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    e = assert_raise(NoMethodError) {str.__send__(id)}
-    assert_equal("undefined method `#{id}' for #{str.inspect}:String", e.message, bug3237)
+    msg = "undefined method `#{id}' for #{str.inspect}:String"
+    assert_raise_with_message(NoMethodError, msg, bug3237) do
+      str.__send__(id)
+    end
   end
 
   def test_errno

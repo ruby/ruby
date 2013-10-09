@@ -763,10 +763,12 @@ EOT
            assert_equal(eucjp, r.read)
          end)
 
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}
+    end
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8".encode("UTF-32BE")) {}
+    end
 
     ENCS.each {|enc|
       pipe(enc,

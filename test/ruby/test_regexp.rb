@@ -946,8 +946,9 @@ class TestRegexp < Test::Unit::TestCase
   def test_error_message_on_failed_conversion
     bug7539 = '[ruby-core:50733]'
     assert_equal false, /x/=== 42
-    err = assert_raise(TypeError){ Regexp.quote(42) }
-    assert_equal 'no implicit conversion of Fixnum into String', err.message, bug7539
+    assert_raise_with_message(TypeError, 'no implicit conversion of Fixnum into String', bug7539) {
+      Regexp.quote(42)
+    }
   end
 
   def test_conditional_expression

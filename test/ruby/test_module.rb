@@ -248,10 +248,11 @@ class TestModule < Test::Unit::TestCase
       ":",
       ["String::", "[Bug #7573]"],
     ].each do |name, msg|
-      e = assert_raise(NameError, "#{msg}#{': ' if msg}wrong constant name #{name.dump}") {
+      expected = "wrong constant name %s" % name
+      msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
+      assert_raise_with_message(NameError, expected, msg) {
         Object.const_get name
       }
-      assert_equal("wrong constant name %s" % name, e.message)
     end
   end
 
@@ -624,8 +625,9 @@ class TestModule < Test::Unit::TestCase
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_get(1) }
     bug7574 = '[ruby-dev:46749]'
-    e = assert_raise(NameError) { Object.const_get("String\0") }
-    assert_equal("wrong constant name \"String\\u0000\"", e.message, bug7574)
+    assert_raise_with_message(NameError, "wrong constant name \"String\\u0000\"", bug7574) {
+      Object.const_get("String\0")
+    }
   end
 
   def test_const_defined_invalid_name
@@ -634,8 +636,9 @@ class TestModule < Test::Unit::TestCase
     bug5084 = '[ruby-dev:44200]'
     assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
     bug7574 = '[ruby-dev:46749]'
-    e = assert_raise(NameError) { Object.const_defined?("String\0") }
-    assert_equal("wrong constant name \"String\\u0000\"", e.message, bug7574)
+    assert_raise_with_message(NameError, "wrong constant name \"String\\u0000\"", bug7574) {
+      Object.const_defined?("String\0")
+    }
   end
 
   def test_const_get_no_inherited
@@ -1656,7 +1659,7 @@ class TestModule < Test::Unit::TestCase
       @@foo
       $foo
     ].each do |name|
-      assert_raise(NameError) do
+      assert_raise_with_message(NameError, /#{Regexp.quote(name)}/) do
         Module.new { attr_accessor name.to_sym }
       end
     end

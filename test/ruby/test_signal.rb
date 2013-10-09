@@ -16,12 +16,10 @@ class TestSignal < Test::Unit::TestCase
       assert_equal 2, x
 
       Signal.trap(:INT) { raise "Interrupt" }
-      ex = assert_raise(RuntimeError) {
+      assert_raise_with_message(RuntimeError, /Interrupt/) {
         Process.kill :INT, Process.pid
         sleep 0.1
       }
-      assert_kind_of Exception, ex
-      assert_match(/Interrupt/, ex.message)
     ensure
       Signal.trap :INT, oldtrap if oldtrap
     end

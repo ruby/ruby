@@ -99,6 +99,7 @@ module Test
         ex = assert_raise(exception, msg) {yield}
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
         __send__(assert, expected, ex.message, msg)
+        ex
       end
 
       # :call-seq:

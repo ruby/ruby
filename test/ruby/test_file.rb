@@ -339,8 +339,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_file_open_double_mode
-    e = assert_raise(ArgumentError) { File.open("a", 'w', :mode => 'rw+') }
-    assert_equal 'mode specified twice', e.message
+    assert_raise_with_message(ArgumentError, 'mode specified twice') {
+      File.open("a", 'w', :mode => 'rw+')
+    }
   end
 
   def test_conflicting_encodings
