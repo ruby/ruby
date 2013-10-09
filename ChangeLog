@@ -1,3 +1,13 @@
+Thu Oct 10 00:00:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Time.strptime('0', '%s') returns local
+	  time Time object as Ruby 2.0 and before.
+
+Thu Oct 10 00:00:30 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Use :offset.
+	  Patch by Felipe Contreras.  [ruby-core:57694]
+
 Wed Oct  9 23:32:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_disable): do rest_sweep() before disable GC.
