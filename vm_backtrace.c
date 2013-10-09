@@ -1357,8 +1357,8 @@ rb_profile_frame_full_label(VALUE frame)
     else {
 	long label_length = RSTRING_LEN(label);
 	long base_label_length = RSTRING_LEN(base_label);
-	VALUE prefix = rb_str_new(RSTRING_PTR(label), label_length - base_label_length);
+	int prefix_len = rb_long2int(label_length - base_label_length);
 
-	return rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, prefix, qualified_method_name);
+	return rb_sprintf("%.*s%"PRIsVALUE, prefix_len, RSTRING_PTR(label), qualified_method_name);
     }
 }
