@@ -1,3 +1,10 @@
+Thu Oct 10 01:14:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compar.c (cmp_eq): fail if recursion.  [ruby-core:57736] [Bug #9003]
+
+	* thread.c (rb_exec_recursive_paired_outer): new function which is
+	  combinnation of paired and outer variants.
+
 Thu Oct 10 01:07:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#unlink): finalizer is no longer needed
