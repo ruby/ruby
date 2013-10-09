@@ -1,3 +1,8 @@
+Wed Oct  9 18:03:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_attr): preserve encoding of the attribute ID in
+	  error message.
+
 Wed Oct  9 17:40:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fstring): because of lazy sweep, str may be unmaked

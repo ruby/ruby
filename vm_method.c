@@ -812,7 +812,6 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
-    const char *name;
     ID attriv;
     VALUE aname;
     rb_method_flag_t noex;
@@ -836,15 +835,13 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     }
 
     if (!rb_is_local_id(id) && !rb_is_const_id(id)) {
-	rb_name_error(id, "invalid attribute name `%s'", rb_id2name(id));
+	rb_name_error_str(id, "invalid attribute name `%"PRIsVALUE"'", QUOTE_ID(id));
     }
-    name = rb_id2name(id);
-    if (!name) {
+    aname = rb_id2str(id);
+    if (NIL_P(aname)) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    aname = rb_sprintf("@%s", name);
-    rb_enc_copy(aname, rb_id2str(id));
-    attriv = rb_intern_str(aname);
+    attriv = rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
     if (read) {
 	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
