@@ -400,6 +400,10 @@ typedef struct rb_vm_struct {
     struct rb_objspace *objspace;
 #endif
 
+#if OPT_CONTEXT_THREADED_CODE
+    VALUE *context_threading_regions;
+#endif
+
     /*
      * @shyouhei notes that this is not for storing normal Ruby
      * objects so do *NOT* mark this when you GC.

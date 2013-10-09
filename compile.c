@@ -579,65 +579,138 @@ jump_to_instruction_body(unsigned char *code, VALUE body) /* size: 5 */
 }
 
 static inline unsigned char *
+copy_instructions(unsigned char *code, const unsigned char *instructions, size_t size)
+{
+    MEMCPY(code, instructions, unsigned char, size);
+    return code + size;
+}
+
+static inline unsigned char *
 call_through_vpc_if_carry(unsigned char *code) /* size: 3 + 2 + 2 + 3 + 4 = 14 */
 {
-    *code++ = 0x48; /* testq %rax, %rax */
-    *code++ = 0x85;
-    *code++ = 0xc0;
-    *code++ = 0x75; /* jnz +9 */
-    *code++ = 9;
-    *code++ = 0x6a; /* pushq $0 */
-    *code++ = 0;
-    *code++ = 0x41; /* callq *(%r14) */
-    *code++ = 0xff;
-    *code++ = 0x16;
-    *code++ = 0x48; /* addq $8, %rsp */
-    *code++ = 0x83;
-    *code++ = 0xc4;
-    *code++ = 0x08;
-    return code;
+    static const unsigned char instructions[] = {
+        0x48, 0x85, 0xc0,       /* testq %rax, %rax */
+        0x75, 9,                /* jnz +9 */
+        0x6a, 0,                /* pushq $0 */
+        0x41, 0xff, 0x16,       /* callq *(%r14) */
+        0x48, 0x83, 0xc4, 0x08  /* addq $8, %rsp */
+    };
+    return copy_instructions(code, instructions, sizeof(instructions));
 }
 
 static inline unsigned char *
 jumpers_gonna_jump(unsigned char *code) /* size: 7 + 3 + 6 = 16 */
 {
-    *code++ = 0x48; /* leaq 9(%rip), %rax */
-    *code++ = 0x8d;
-    *code++ = 0x05;
-    *code++ = 0x09;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0x49; /* cmpq (%r14), %rax */
-    *code++ = 0x3b;
-    *code++ = 0x06;
-    *code++ = 0x0f; /* jne ? */
-    *code++ = 0x85;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0;
-    return code;
+    static const unsigned char instructions[] = {
+        0x48, 0x8d, 0x05, 0x09, 0, 0, 0,/* leaq 9(%rip), %rax */
+        0x49, 0x3b, 0x06,               /* cmpq (%r14), %rax */
+        0x0f, 0x85, 0, 0, 0, 0          /* jne 0 */
+    };
+    return copy_instructions(code, instructions, sizeof(instructions));
 }
 
 static inline unsigned char *
 jump(unsigned char *code) /* size: 5 */
 {
-    *code++ = 0xe9;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0;
-    *code++ = 0;
-    return code;
+    static const unsigned char instructions[] = {0xe9, 0, 0, 0, 0}; /* jmpq 0 */
+    return copy_instructions(code, instructions, sizeof(instructions));
 }
 
 static inline unsigned char *
 jump_to_vpc(unsigned char *code) /* size: 3 */
 {
-    *code++ = 0x41; /* jmpq *(%r14) */
-    *code++ = 0xff;
-    *code++ = 0x26;
-    return code;
+    static const unsigned char instructions[] = {0x41, 0xff, 0x26}; /* jmpq *(%r14) */
+    return copy_instructions(code, instructions, sizeof(instructions));
+}
+
+static void *
+alloc_context_threading_table(VALUE ctt_size)
+{
+    rb_vm_t *vm = GET_VM();
+
+    /* Region is a tuple (size, next, free-list) */
+    VALUE *region = vm->context_threading_regions;
+    VALUE slot_count = (ctt_size + sizeof(VALUE) - 1) / sizeof(VALUE);
+    slot_count++;
+    while (region) {
+        /* Free list is a pair of (slot-count, next) */
+        VALUE *prev_chunk = NULL;
+        VALUE *chunk = (VALUE *) region[2];
+        while (chunk && chunk[0] < slot_count) {
+            prev_chunk = chunk;
+            chunk = (VALUE *) chunk[1];
+        }
+        if (chunk) {
+            if (chunk[0] - slot_count > 2) {
+                chunk[0] -= slot_count;
+                chunk += chunk[0];
+                chunk[0] = slot_count;
+            } else {
+                if (prev_chunk) {
+                    prev_chunk[1] = chunk[1];
+                } else {
+                    region[2] = chunk[1];
+                }
+            }
+            return chunk + 1;
+        }
+        region = (VALUE *) region[1];
+    }
+    {
+        const VALUE TWO_MB = 2 * 1024 * 1024;
+        VALUE size = ((slot_count + 3) * sizeof(VALUE) + TWO_MB - 1) & ~(TWO_MB - 1);
+        void *page = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE | MAP_JIT, -1, 0);
+        if (page != MAP_FAILED) {
+            VALUE *chunk;
+            VALUE *region = (VALUE *) page;
+            region[0] = size / sizeof(VALUE);
+            region[1] = (VALUE) vm->context_threading_regions;
+            vm->context_threading_regions = region;
+            region[2] = 0;
+            region[3] = region[0] - 3;
+            if (region[3] - slot_count > 2) {
+                region[3] -= slot_count;
+                region[4] = 0;
+                region[2] = (VALUE) (region + 3);
+                chunk = region + 3 + region[3];
+                chunk[0] = slot_count;
+            } else {
+                chunk = region + 3;
+            }
+            return chunk + 1;
+        } else {
+            rb_sys_fail("mmap");
+        }
+    }
+    return NULL;
+}
+
+static VALUE *
+region_for_context_threading_table(void *ctt)
+{
+    rb_vm_t *vm = GET_VM();
+    VALUE *region = vm->context_threading_regions;
+    VALUE *addr = (VALUE *) ctt;
+    while (region) {
+        if (region <= addr && addr < region + region[0]) {
+            return region;
+        }
+        region = (VALUE *) region[1];
+    }
+    return NULL;
+}
+
+void
+rb_iseq_free_context_threading_table(void *ctt)
+{
+    VALUE *region = region_for_context_threading_table(ctt);
+    if (region) {
+        VALUE *chunk = (VALUE *) ctt;
+        chunk--;
+        /* TODO coalesce adjacent free chunks */
+        chunk[1] = region[2];
+        region[2] = (VALUE) chunk;
+    }
 }
 
 static int
@@ -645,7 +718,7 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
 {
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned long i = 0;
-    void *ctt = mmap(NULL, ctt_size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void *ctt = alloc_context_threading_table(ctt_size);
     unsigned char *code = (unsigned char *)ctt;
     int has_jumps = 0;
 
@@ -727,9 +800,6 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
                 break;
             }
         }
-    }
-    if (mprotect(ctt, ctt_size, PROT_READ | PROT_EXEC)) {
-        rb_sys_fail("mprotect");
     }
     iseq->context_threading_table = ctt;
     return COMPILE_OK;
