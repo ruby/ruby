@@ -1,3 +1,9 @@
+Thu Oct 10 00:44:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_internal): remove cloexec setting on pipes
+	  created by rb_cloexec_pipe.  patch by normalperson (Eric Wong) at
+	  [ruby-core:56523].  [Bug #8769]
+
 Thu Oct 10 00:24:01 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c: disable FIBER_USE_NATIVE on GNU/Hurd because it doesn't
