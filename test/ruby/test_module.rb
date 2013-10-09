@@ -247,9 +247,9 @@ class TestModule < Test::Unit::TestCase
       "",
       ":",
       ["String::", "[Bug #7573]"],
-      "\u{3042}",
+      "\u3042",
     ].each do |name, msg|
-      expected = "wrong constant name %s" % name
+      expected = "wrong constant name %s" % quote(name)
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
       assert_raise_with_message(NameError, expected, msg) {
         Object.const_get name
@@ -1659,12 +1659,17 @@ class TestModule < Test::Unit::TestCase
       @foo
       @@foo
       $foo
-      \u{3042}$
+      \u3042$
     ].each do |name|
-      assert_raise_with_message(NameError, /#{Regexp.quote(name)}/) do
+      assert_raise_with_message(NameError, /#{Regexp.quote(quote(name))}/) do
         Module.new { attr_accessor name.to_sym }
       end
     end
+  end
+
+  private def quote(name)
+    encoding = Encoding.default_internal || Encoding.default_external
+    (name.encoding == encoding || name.ascii_only?) ? name : name.inspect
   end
 
   class AttrTest
