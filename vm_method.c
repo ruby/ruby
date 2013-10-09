@@ -809,6 +809,8 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     return 0;
 }
 
+extern ID rb_check_attr_id(ID id);
+
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
@@ -834,10 +836,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	}
     }
 
-    if (!rb_is_local_id(id) && !rb_is_const_id(id)) {
-	rb_name_error_str(id, "invalid attribute name `%"PRIsVALUE"'", QUOTE_ID(id));
-    }
-    aname = rb_id2str(id);
+    aname = rb_id2str(rb_check_attr_id(id));
     if (NIL_P(aname)) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }

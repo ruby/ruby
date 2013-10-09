@@ -1,3 +1,7 @@
+Wed Oct  9 23:57:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (id_for_attr): avoid inadvertent symbol creation.
+
 Wed Oct  9 18:03:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_attr): preserve encoding of the attribute ID in

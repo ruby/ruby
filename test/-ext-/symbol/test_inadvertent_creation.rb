@@ -234,5 +234,33 @@ module Test_Symbol
       assert_raise(NameError) {s[name] = true}
       assert_not_interned(name)
     end
+
+    def test_invalid_attr
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_reader
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_reader(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_writer
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_writer(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_accessor
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_accessor(name)}}
+      assert_not_interned(name)
+    end
   end
 end
