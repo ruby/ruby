@@ -189,9 +189,9 @@ Mon Oct  7 16:12:36 2013  Koichi Sasada  <ko1@atdot.net>
 	  * VALUE rb_profile_frame_singleton_method_p(VALUE frame);
 	    Get information about each frame.
 
-	  These APIs are designed for profilers, for example, no objectallocation,
+	  These APIs are designed for profilers, for example, no object allocation,
 	  and enough information for profilers.
-	  In this version, this API collects only collect Ruby level frames.
+	  In this version, this API collects only Ruby level frames.
 	  This issue will be fixed after Ruby 2.1.
 
 	* vm_backtrace.c: implement above APIs.
