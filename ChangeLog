@@ -1,3 +1,14 @@
+Thu Oct 10 13:52:37 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (postponed_job): use preallocated buffer.
+	  Pre-allocate MAX_POSTPONED_JOB (1024) sized buffer
+	  and use it.
+	  If rb_postponed_job_register() cause overflow, simply it
+	  fails and returns 0.
+	  And maybe rb_postponed_job_register() is signal safe.
+
+	* vm_core.h: change data structure.
+
 Thu Oct 10 11:11:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (Init_VM): hide also the singleton class of frozen-core, not

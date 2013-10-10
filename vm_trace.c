@@ -1280,6 +1280,8 @@ tracepoint_inspect(VALUE self)
     }
 }
 
+static void Init_postponed_job(void);
+
 /* This function is called from inits.c */
 void
 Init_vm_trace(void)
@@ -1370,33 +1372,54 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
+
+    /* initialized for postponed job */
+
+    Init_postponed_job();
 }
 
 typedef struct rb_postponed_job_struct {
-    unsigned long flags; /* reserve */
-    rb_thread_t *th; /* created thread, reserve */
+    unsigned long flags; /* reserved */
+    struct rb_thread_struct *th; /* created thread, reserved */
     rb_postponed_job_func_t func;
     void *data;
-    struct rb_postponed_job_struct *next;
 } rb_postponed_job_t;
 
+#define MAX_POSTPONED_JOB 1024
+
+static void
+Init_postponed_job(void)
+{
+    rb_vm_t *vm = GET_VM();
+    vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
+    vm->postponed_job_index = 0;
+}
+
+/* return 0 if job buffer is full */
 int
 rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
     rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
-    rb_postponed_job_t *pjob = (rb_postponed_job_t *)ruby_xmalloc(sizeof(rb_postponed_job_t));
-    if (pjob == NULL) return 0; /* failed */
+    rb_postponed_job_t *pjob;
+
+    while (1) {
+	int index = vm->postponed_job_index;
+	if (index >= MAX_POSTPONED_JOB) return 0; /* failed */
+
+	if (ATOMIC_CAS(vm->postponed_job_index, index, index+1) == index) {
+	    pjob = &vm->postponed_job_buffer[index];
+	    break;
+	}
+    }
 
     pjob->flags = flags;
     pjob->th = th;
     pjob->func = func;
     pjob->data = data;
 
-    pjob->next = vm->postponed_job;
-    vm->postponed_job = pjob;
-
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th);
+
     return 1;
 }
 
@@ -1404,13 +1427,15 @@ int
 rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
     rb_vm_t *vm = GET_VM();
-    rb_postponed_job_t *pjob = vm->postponed_job;
+    rb_postponed_job_t *pjob;
+    int i;
 
-    while (pjob) {
+    /* TODO: this check is not signal safe, but I believe this is not critical prbolem */
+    for (i=0; i<vm->postponed_job_index; i++) {
+	pjob = &vm->postponed_job_buffer[i];
 	if (pjob->func == func) {
 	    return 2;
 	}
-	pjob = pjob->next;
     }
 
     return rb_postponed_job_register(flags, func, data);
@@ -1419,13 +1444,19 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_postponed_job_t *pjob = vm->postponed_job, *next_pjob;
-    vm->postponed_job = 0;
+    rb_postponed_job_t *pjob;
 
-    while (pjob) {
-	next_pjob = pjob->next;
-	pjob->func(pjob->data);
-	ruby_xfree(pjob);
-	pjob = next_pjob;
+    while (1) {
+	int index = vm->postponed_job_index;
+
+	if (index <= 0) {
+	    return; /* finished */
+	}
+
+	if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
+	    pjob = &vm->postponed_job_buffer[index-1];
+	    /* do postponed job */
+	    pjob->func(pjob->data);
+	}
     }
 }
