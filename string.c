@@ -1006,7 +1006,7 @@ rb_str_resurrect(VALUE str)
 	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
 				  rb_sourcefile(), rb_sourceline());
     }
-    return str_replace(str_alloc(rb_cString), str);
+    return str_duplicate(rb_cString, str);
 }
 
 /*
