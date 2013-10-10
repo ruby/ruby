@@ -30,7 +30,7 @@
 #include <ieeefp.h>
 #endif
 
-#if defined HAVE_FINITE && !defined finite
+#if defined HAVE_FINITE && !defined finite && !defined _WIN32
 extern int finite(double);
 #endif
 
