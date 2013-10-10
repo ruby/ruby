@@ -581,7 +581,7 @@ class TestArray < Test::Unit::TestCase
     assert_in_out_err [], <<-EOS, ["0"], [], bug8654
       a1 = []
       a2 = Array.new(100) { |i| i }
-      r = a2.count do |i|
+      a2.count do |i|
         p i
         a2.replace(a1) if i == 0
       end
@@ -590,6 +590,7 @@ class TestArray < Test::Unit::TestCase
     assert_in_out_err [], <<-EOS, ["[]", "0"], [], bug8654
       ARY = Array.new(100) { |i| i }
       class Fixnum
+        alias old_equal ==
         def == other
           ARY.replace([]) if self.equal?(0)
           p ARY
@@ -1694,8 +1695,8 @@ class TestArray < Test::Unit::TestCase
                       [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]],
                  a.repeated_combination(4).to_a.sort)
     assert_equal(@cls[], a.repeated_combination(-1).to_a)
-    assert_equal("abcde".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort,
-                 "edcba".each_char.to_a.repeated_combination(5).map{|a|a.sort}.sort)
+    assert_equal("abcde".each_char.to_a.repeated_combination(5).map{|e|e.sort}.sort,
+                 "edcba".each_char.to_a.repeated_combination(5).map{|e|e.sort}.sort)
     assert_equal(@cls[].repeated_combination(0).to_a, @cls[[]])
     assert_equal(@cls[].repeated_combination(1).to_a, @cls[])
 
