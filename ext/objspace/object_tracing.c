@@ -176,8 +176,8 @@ trace_object_allocations_start(VALUE self)
  *
  * Stop tracing object allocations.
  *
- * Note that if ::trace_object_allocations_start is called n-times, then stop
- * tracing after calling ::trace_object_allocations_stop n-times.
+ * Note that if ::trace_object_allocations_start is called n times, then tracing
+ * will stop after calling ::trace_object_allocations_stop n times.
  *
  */
 static VALUE
@@ -202,7 +202,9 @@ trace_object_allocations_stop(VALUE self)
 /*
  * call-seq: trace_object_allocations_clear
  *
- * Clear recorded tracing information.
+ * Clear recorded tracing information. Objects that were allocated while tracing
+ * was enabled cannot be garbage-collected until
+ * ::trace_object_allocations_clear is called.
  *
  */
 static VALUE
