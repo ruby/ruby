@@ -1663,13 +1663,6 @@ rb_hash_to_h(VALUE hash)
     return hash;
 }
 
-static int
-keys_i(VALUE key, VALUE value, VALUE ary)
-{
-    rb_ary_push(ary, key);
-    return ST_CONTINUE;
-}
-
 /*
  *  call-seq:
  *     hsh.keys    -> array
@@ -1685,12 +1678,10 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 VALUE
 rb_hash_keys(VALUE hash)
 {
-    VALUE ary;
+    st_table *table = RHASH(hash)->ntbl;
 
-    ary = rb_ary_new_capa(RHASH_SIZE(hash));
-    rb_hash_foreach(hash, keys_i, ary);
-
-    return ary;
+    if (!table) return rb_ary_new();
+    return st_keys(table);
 }
 
 static int

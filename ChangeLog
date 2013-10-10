@@ -1,3 +1,12 @@
+Thu Oct 10 21:00:38 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* st.c (st_keys): define st_keys() for performance improvement of
+	  Hash#keys and Array#uniq.
+
+	* st.h: ditto.
+
+	* hash.c (rb_hash_keys): use st_keys().
+
 Thu Oct 10 17:25:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_exec): support :b_return event for "lambda{return}.call".
