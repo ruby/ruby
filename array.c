@@ -4166,10 +4166,7 @@ rb_ary_compact_bang(VALUE ary)
     if (RARRAY_LEN(ary) == n) {
 	return Qnil;
     }
-    ARY_SET_LEN(ary, n);
-    if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
-	ary_resize_capa(ary, n * 2);
-    }
+    ary_resize_smaller(ary, n);
 
     return ary;
 }
