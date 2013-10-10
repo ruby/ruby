@@ -1091,37 +1091,6 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     return 0;
 }
 
-VALUE
-st_keys(st_table *table)
-{
-    st_table_entry *ptr = NULL;
-    st_data_t key, never = (st_data_t)Qundef;
-    VALUE keys = rb_ary_new_capa(table->num_entries);
-
-    if (table->entries_packed) {
-	st_index_t i;
-
-	for (i = 0; i < table->real_entries; i++) {
-	    key = PKEY(table, i);
-	    if (key == never) continue;
-	    rb_ary_push(keys, (VALUE)key);
-	}
-    }
-    else {
-	ptr = table->head;
-    }
-
-    if (ptr != 0) {
-	do {
-	    key = ptr->key;
-	    if (key != never) rb_ary_push(keys, (VALUE)key);
-	    ptr = ptr->fore;
-	} while (ptr && table->head);
-    }
-
-    return keys;
-}
-
 #if 0  /* unused right now */
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
