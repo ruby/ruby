@@ -1924,28 +1924,32 @@ rb_threadptr_to_kill(rb_thread_t *th)
     TH_JUMP_TAG(th, TAG_FATAL);
 }
 
+static inline rb_atomic_t
+threadptr_get_interrupts(rb_thread_t *th)
+{
+    rb_atomic_t interrupt;
+    rb_atomic_t old;
+
+    do {
+	interrupt = th->interrupt_flag;
+	old = ATOMIC_CAS(th->interrupt_flag, interrupt, interrupt & th->interrupt_mask);
+    } while (old != interrupt);
+    return interrupt & (rb_atomic_t)~th->interrupt_mask;
+}
+
 void
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
+    rb_atomic_t interrupt;
+    int postponed_job_interrupt = 0;
+
     if (th->raised_flag) return;
 
-    while (1) {
-	rb_atomic_t interrupt;
-	rb_atomic_t old;
+    while ((interrupt = threadptr_get_interrupts(th)) != 0) {
 	int sig;
 	int timer_interrupt;
 	int pending_interrupt;
-	int postponed_job_interrupt;
 	int trap_interrupt;
-
-	do {
-	    interrupt = th->interrupt_flag;
-	    old = ATOMIC_CAS(th->interrupt_flag, interrupt, interrupt & th->interrupt_mask);
-	} while (old != interrupt);
-
-	interrupt &= (rb_atomic_t)~th->interrupt_mask;
-	if (!interrupt)
-	    return;
 
 	timer_interrupt = interrupt & TIMER_INTERRUPT_MASK;
 	pending_interrupt = interrupt & PENDING_INTERRUPT_MASK;
@@ -1984,10 +1988,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    }
 	}
 
-	if (postponed_job_interrupt) {
-	    rb_postponed_job_flush(th->vm);
-	}
-
 	if (timer_interrupt) {
 	    unsigned long limits_us = TIME_QUANTUM_USEC;
 
@@ -2003,6 +2003,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
 	    rb_thread_schedule_limits(limits_us);
 	}
+    }
+
+    if (postponed_job_interrupt) {
+	rb_postponed_job_flush(th->vm);
     }
 }
 

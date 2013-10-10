@@ -1444,19 +1444,46 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_postponed_job_t *pjob;
+    rb_thread_t *cur_th = GET_THREAD();
+    volatile struct {
+	rb_thread_t *thread;
+	unsigned long interrupt_mask;
+	int index, old_index;
+    } save;
+    int index = vm->postponed_job_index, old_index = index;
 
-    while (1) {
-	int index = vm->postponed_job_index;
+    save.thread = cur_th;
+    save.interrupt_mask = cur_th->interrupt_mask;
 
-	if (index <= 0) {
-	    return; /* finished */
+    cur_th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
+    TH_PUSH_TAG(cur_th);
+    if (EXEC_TAG()) {
+	/* ignore all jumps, just continue */
+	cur_th = save.thread;
+	index = save.index;
+	old_index = save.old_index;
+    }
+    while (index > 0) {
+	rb_postponed_job_t *pjob = &vm->postponed_job_buffer[--index];
+	void *data = pjob->data;
+	rb_postponed_job_func_t func = pjob->func;
+
+	pjob->func = 0;		/* not to execute again */
+	if (old_index > 0) {
+	    if (ATOMIC_CAS(vm->postponed_job_index, old_index, index) == old_index) {
+		old_index = index;
+	    }
+	    else {
+		old_index = 0;
+	    }
 	}
-
-	if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
-	    pjob = &vm->postponed_job_buffer[index-1];
+	save.index = index;
+	save.old_index = old_index;
+	if (func) {
 	    /* do postponed job */
-	    pjob->func(pjob->data);
+	    (*func)(data);
 	}
     }
+    TH_POP_TAG();
+    cur_th->interrupt_mask = save.interrupt_mask;
 }

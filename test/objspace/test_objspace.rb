@@ -172,4 +172,23 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
   end
+
+  def test_after_gc_start_hook_with_GC_stress
+    bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
+    assert_nothing_raised(Timeout::Error, bug8492) do
+      assert_in_out_err(%w[-robjspace], <<-'end;', /\A[1-9]/, timeout: 2)
+        stress, GC.stress = GC.stress, false
+        count = 0
+        ObjectSpace.after_gc_start_hook = proc {count += 1}
+        begin
+          GC.stress = true
+          3.times {Object.new}
+        ensure
+          GC.stress = stress
+          ObjectSpace.after_gc_start_hook = nil
+        end
+        puts count
+      end;
+    end
+  end
 end

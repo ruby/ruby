@@ -1,3 +1,12 @@
+Fri Oct 11 03:36:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_execute_interrupts): flush postponed job only
+	  once at last.
+
+	* vm_trace.c (rb_postponed_job_flush): defer calling postponed jobs
+	  registered while flushing to get rid of infinite reentrance of
+	  ObjectSpace.after_gc_start_hook.  [ruby-dev:47400] [Bug #8492]
+
 Thu Oct 10 23:04:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_or): remove unused variables.
