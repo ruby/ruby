@@ -372,6 +372,8 @@ scalb(double a, long b)
 {
     return _scalb(a, b);
 }
+#else
+__declspec(dllimport) extern int finite(double);
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
