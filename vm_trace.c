@@ -1456,7 +1456,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     save.index = index;
     save.interrupt_mask = cur_th->interrupt_mask;
 
-    cur_th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(cur_th);
     TH_PUSH_TAG(cur_th);
     EXEC_TAG();
     /* ignore all jumps, just continue */
