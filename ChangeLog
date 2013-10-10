@@ -1,3 +1,7 @@
+Thu Oct 10 23:01:16 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_or): use rb_hash_keys().
+
 Thu Oct 10 21:36:16 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_compact_bang): use ary_resize_smaller().
