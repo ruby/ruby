@@ -1,3 +1,8 @@
+Thu Oct 10 11:11:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (Init_VM): hide also the singleton class of frozen-core, not
+	  only frozen-core itself.
+
 Thu Oct 10 06:02:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_rand.rb: fix r43224. local variable `e' is
