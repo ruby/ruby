@@ -1453,16 +1453,16 @@ rb_postponed_job_flush(rb_vm_t *vm)
     int index = vm->postponed_job_index, old_index = index;
 
     save.thread = cur_th;
+    save.index = index;
     save.interrupt_mask = cur_th->interrupt_mask;
 
     cur_th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
-    if (EXEC_TAG()) {
-	/* ignore all jumps, just continue */
-	cur_th = save.thread;
-	index = save.index;
-	old_index = save.old_index;
-    }
+    EXEC_TAG();
+    /* ignore all jumps, just continue */
+    cur_th = save.thread;
+    index = save.index;
+    old_index = save.old_index;
     while (index > 0) {
 	rb_postponed_job_t *pjob = &vm->postponed_job_buffer[--index];
 	void *data = pjob->data;
