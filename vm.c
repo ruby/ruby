@@ -1290,6 +1290,13 @@ vm_exec(rb_thread_t *th)
 			if (!catch_iseqval) {
 			    result = GET_THROWOBJ_VAL(err);
 			    th->errinfo = Qnil;
+
+			    switch (VM_FRAME_TYPE(cfp)) {
+			      case VM_FRAME_MAGIC_LAMBDA:
+				EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+				break;
+			    }
+
 			    vm_pop_frame(th);
 			    goto finish_vme;
 			}
@@ -1435,6 +1442,7 @@ vm_exec(rb_thread_t *th)
 		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_BLOCK:
+	      case VM_FRAME_MAGIC_LAMBDA:
 		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
 		break;
 	      case VM_FRAME_MAGIC_CLASS:

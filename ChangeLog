@@ -1,3 +1,10 @@
+Thu Oct 10 17:25:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_exec): support :b_return event for "lambda{return}.call".
+	  [Bug #8622]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Thu Oct 10 13:52:37 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (postponed_job): use preallocated buffer.
