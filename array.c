@@ -3999,9 +3999,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3, v;
-    st_data_t vv;
-    long i;
+    VALUE hash, ary3;
 
     ary2 = to_ary(ary2);
     hash = ary_add_hash(ary_make_hash(ary1), ary2);

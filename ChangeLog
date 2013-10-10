@@ -1,3 +1,7 @@
+Thu Oct 10 23:04:00 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_or): remove unused variables.
+
 Thu Oct 10 23:01:16 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_or): use rb_hash_keys().
