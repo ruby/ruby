@@ -3473,7 +3473,7 @@ tick(void)
     return x;
 }
 
-#elif defined(__GCC__) && defined(__x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__)
 typedef unsigned long long tick_t;
 
 static __inline__ tick_t
