@@ -10238,9 +10238,9 @@ Init_sym(void)
 }
 
 void
-rb_gc_mark_symbols(int full_marking)
+rb_gc_mark_symbols(int full_mark)
 {
-    if (full_marking || global_symbols.minor_marked == 0) {
+    if (full_mark || global_symbols.minor_marked == 0) {
 	rb_mark_tbl(global_symbols.id_str);
 	rb_gc_mark_locations(global_symbols.op_sym,
 			     global_symbols.op_sym + numberof(global_symbols.op_sym));
