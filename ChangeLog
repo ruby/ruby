@@ -1,3 +1,34 @@
+Fri Oct 11 17:33:24 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el: Import ruby-electric.el 2.0 from
+	  https://github.com/knu/ruby-electric.el which integrates changes
+	  from another fork by @qoobaa.
+
+	  * Allow ruby-electric-mode to be disabled by introducing a
+	    dedicated key map.  Electric key bindings are now defined in
+	    ruby-electric-mode-map instead of overwriting ruby-mode-map.
+
+	  * Add ruby-electric-mode-hook.
+
+	  * Use a remap in binding ruby-electric-delete-backward-char.
+
+	  * Totally revamp electric keywords and then introduce electric
+	    return.  Modifier keywords are now properly detected making
+	    use of ruby-mode's indentation level calculator, and
+
+	  * block-mid keywords (then, else, elsif, when, rescue and
+	    ensure) also become electric with automatic reindentation.
+
+	  * Add standarized comments for ELPA integration.
+
+	  * Fix interaction with smartparens-mode by disabling its end
+	    keyword completion, since ruby-electric has become more clever
+	    at it.
+
+	  * The custom variable `ruby-electric-keywords` is changed to
+	    `ruby-electric-keywords-alist`, allowing user to fine-grained
+	    configuration.
+
 Fri Oct 11 16:53:28 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_postponed_job_flush): simplify.
