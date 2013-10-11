@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.0
+;; Version: 2.0.1
 
 ;;; Commentary:
 ;;
@@ -79,15 +79,16 @@
 (defun ruby-electric--modifier-keyword-at-point-p ()
   "Test if there is a modifier keyword at point."
   (and (looking-at ruby-modifier-beg-symbol-re)
-       (not (looking-back "\\."))
-       (save-excursion
-         (let ((indent1 (ruby-electric--try-insert-and-do "\n"
-                          (ruby-calculate-indent)))
-               (indent2 (save-excursion
-                          (ruby-forward-sexp 1)
-                          (ruby-electric--try-insert-and-do " x\n"
-                            (ruby-calculate-indent)))))
-           (= indent1 indent2)))))
+       (let ((end (match-end 1)))
+         (not (looking-back "\\."))
+         (save-excursion
+           (let ((indent1 (ruby-electric--try-insert-and-do "\n"
+                            (ruby-calculate-indent)))
+                 (indent2 (save-excursion
+                            (goto-char end)
+                            (ruby-electric--try-insert-and-do " x\n"
+                              (ruby-calculate-indent)))))
+             (= indent1 indent2))))))
 
 (defconst ruby-block-mid-symbol-re
   (regexp-opt ruby-block-mid-keywords 'symbols))
@@ -105,7 +106,7 @@
   (and (looking-at ruby-block-beg-symbol-re)
        (if (string= (match-string 1) "do")
            (looking-back "\\s-")
-         (not (looking-back "[^.]")))
+         (not (looking-back "\\.")))
        ;; (not (ruby-electric--modifier-keyword-at-point-p)) ;; implicit assumption
        ))
 
@@ -157,7 +158,7 @@ cons, ACTION can be set to one of the following values:
                    (setq keywords (cons keyword keywords)))))
            (setq ruby-electric-expandable-keyword-re
                  (concat (regexp-opt keywords 'symbols)
-                         "\\s-*$"))))
+                         "$"))))
   :group 'ruby-electric)
 
 (defcustom ruby-electric-simple-keywords-re nil
@@ -232,7 +233,7 @@ enabled."
        (setq sp-delayed-pair nil))
   (cond (arg
          (insert (make-string (prefix-numeric-value arg) last-command-event)))
-        ((ruby-electric-space-can-be-expanded-p)
+        ((ruby-electric-space/return-can-be-expanded-p)
          (let (action)
            (save-excursion
              (goto-char (match-beginning 0))
@@ -286,7 +287,7 @@ enabled."
   (or (memq 'all ruby-electric-expand-delimiters-list)
       (memq char ruby-electric-expand-delimiters-list)))
 
-(defun ruby-electric-space-can-be-expanded-p()
+(defun ruby-electric-space/return-can-be-expanded-p()
   (and (ruby-electric-code-at-point-p)
        (looking-back ruby-electric-expandable-keyword-re)))
 
