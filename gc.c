@@ -3522,7 +3522,7 @@ show_mark_ticks(void)
 #endif /* RGENGC_PRINT_TICK */
 
 static void
-gc_marks_body(rb_objspace_t *objspace, int minor_gc)
+gc_marks_body(rb_objspace_t *objspace, int full_mark)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
@@ -3552,12 +3552,12 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
 #endif
 
     /* start marking */
-    rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", minor_gc ? "minor" : "major");
+    rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", full_mark ? "full" : "minor");
 
 #if USE_RGENGC
     objspace->rgengc.parent_object_is_promoted = FALSE;
     objspace->rgengc.parent_object = Qundef;
-    objspace->rgengc.during_minor_gc = minor_gc;
+    objspace->rgengc.during_minor_gc = full_mark ? FALSE : TRUE;
 
     if (objspace->rgengc.during_minor_gc) {
 	objspace->profile.minor_gc_count++;
@@ -3580,7 +3580,7 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
     mark_current_machine_context(objspace, th);
 
     MARK_CHECKPOINT;
-    rb_gc_mark_symbols(minor_gc == 0);
+    rb_gc_mark_symbols(full_mark);
 
     MARK_CHECKPOINT;
     rb_gc_mark_encodings();
@@ -3618,7 +3618,7 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
 #undef MARK_CHECKPOINT
 
     /* cleanup */
-    rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", minor_gc ? "minor" : "major");
+    rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
 }
 
 #if RGENGC_CHECK_MODE >= 2
@@ -3735,7 +3735,7 @@ gc_marks_test(rb_objspace_t *objspace)
 
     rgengc_report(1, objspace, "gc_marks_test: minor gc\n");
     {
-	gc_marks_body(objspace, TRUE);
+	gc_marks_body(objspace, FALSE);
     }
     exported_bitmaps = gc_export_bitmaps(objspace);
 
@@ -3745,7 +3745,7 @@ gc_marks_test(rb_objspace_t *objspace)
     stored_oldgen = objspace->rgengc.oldgen_object_count;
     stored_shady = objspace->rgengc.remembered_shady_object_count;
     {
-	gc_marks_body(objspace, FALSE);
+	gc_marks_body(objspace, TRUE);
     }
     objspace->rgengc.during_minor_gc = TRUE;
     objspace->rgengc.oldgen_object_count = stored_oldgen;
@@ -3776,7 +3776,7 @@ gc_marks_test(rb_objspace_t *objspace)
 		monitor_level ++;
 		fprintf(stderr, "!!!! restart major gc for get more information !!!!\n");
 		gc_load_bitmaps(objspace);
-		gc_marks_body(objspace, FALSE);
+		gc_marks_body(objspace, TRUE);
 	    } while (old_num != monitored_object_table->num_entries);
 	}
 	rb_bug("WriteBarrier Error\n");
@@ -3791,7 +3791,7 @@ gc_marks_test(rb_objspace_t *objspace)
 #endif /* RGENGC_CHECK_MODE >= 2 */
 
 static void
-gc_marks(rb_objspace_t *objspace, int minor_gc)
+gc_marks(rb_objspace_t *objspace, int full_mark)
 {
     struct mark_func_data_struct *prev_mark_func_data;
 
@@ -3802,11 +3802,11 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 	objspace->mark_func_data = 0;
 
 #if USE_RGENGC
-	if (minor_gc == FALSE) { /* major/full GC */
+	if (full_mark == TRUE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.oldgen_object_count = 0;
 
-	    gc_marks_body(objspace, FALSE);
+	    gc_marks_body(objspace, TRUE);
 
 	    /* Do full GC if old/remembered_shady object counts is greater than counts two times at last full GC counts */
 	    objspace->rgengc.remembered_shady_object_limit = objspace->rgengc.remembered_shady_object_count * 2;
@@ -3816,7 +3816,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 #if RGENGC_CHECK_MODE >= 2
 	    gc_marks_test(objspace);
 #else
-	    gc_marks_body(objspace, TRUE);
+	    gc_marks_body(objspace, FALSE);
 #endif
 	}
 
@@ -3828,7 +3828,7 @@ gc_marks(rb_objspace_t *objspace, int minor_gc)
 #endif
 
 #else /* USE_RGENGC */
-	gc_marks_body(objspace, FALSE);
+	gc_marks_body(objspace, TRUE);
 #endif
 
 	objspace->mark_func_data = prev_mark_func_data;
@@ -4222,16 +4222,19 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
 #if USE_RGENGC
     else {
-	if (full_mark)
+	if (full_mark) {
 	    reason |= GPR_FLAG_MAJOR_BY_NOFREE;
+	}
 	if (objspace->rgengc.need_major_gc) {
 	    objspace->rgengc.need_major_gc = FALSE;
 	    reason |= GPR_FLAG_MAJOR_BY_RESCAN;
 	}
-	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit)
+	if (objspace->rgengc.remembered_shady_object_count > objspace->rgengc.remembered_shady_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_SHADY;
-	if (objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit)
+	}
+	if (objspace->rgengc.oldgen_object_count > objspace->rgengc.oldgen_object_limit) {
 	    reason |= GPR_FLAG_MAJOR_BY_OLDGEN;
+	}
 
 	if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_lazy_sweep) {
 	    immediate_sweep = TRUE;
@@ -4239,8 +4242,8 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     }
 #endif
 
-    if(immediate_sweep)
-	reason |= GPR_FLAG_IMMEDIATE_SWEEP;
+    if (immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
+    full_mark = (reason & GPR_FLAG_MAJOR_MASK) ? TRUE : FALSE;
 
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
@@ -4254,7 +4257,7 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
     gc_prof_timer_start(objspace);
     {
 	assert(during_gc > 0);
-	gc_marks(objspace, (reason & GPR_FLAG_MAJOR_MASK) ? FALSE : TRUE);
+	gc_marks(objspace, full_mark);
 	gc_sweep(objspace, immediate_sweep);
 	during_gc = 0;
     }

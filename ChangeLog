@@ -1,3 +1,8 @@
+Fri Oct 11 20:58:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: use terminology `full_mark' instead of `minor_gc'
+	  in mark functions.
+
 Fri Oct 11 20:46:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: use __GNUC__ instead of __GCC__.
