@@ -2,13 +2,45 @@ require File.expand_path('../helper', __FILE__)
 require 'rake/clean'
 
 class TestRakeClean < Rake::TestCase
-  include Rake
   def test_clean
     load 'rake/clean.rb', true
 
-    assert Task['clean'], "Should define clean"
-    assert Task['clobber'], "Should define clobber"
-    assert Task['clobber'].prerequisites.include?("clean"),
+    assert Rake::Task['clean'], "Should define clean"
+    assert Rake::Task['clobber'], "Should define clobber"
+    assert Rake::Task['clobber'].prerequisites.include?("clean"),
       "Clobber should require clean"
+  end
+
+  def test_cleanup
+    file_name = create_undeletable_file
+
+    out, _ = capture_io do
+      Rake::Cleaner.cleanup(file_name, verbose: false)
+    end
+    assert_match(/failed to remove/i, out)
+
+  ensure
+    remove_undeletable_file
+  end
+
+  private
+
+  def create_undeletable_file
+    dir_name = File.join(@tempdir, "deletedir")
+    file_name = File.join(dir_name, "deleteme")
+    FileUtils.mkdir(dir_name)
+    FileUtils.touch(file_name)
+    FileUtils.chmod(0, file_name)
+    FileUtils.chmod(0, dir_name)
+    file_name
+  end
+
+  def remove_undeletable_file
+    dir_name = File.join(@tempdir, "deletedir")
+    file_name = File.join(dir_name, "deleteme")
+    FileUtils.chmod(0777, dir_name)
+    FileUtils.chmod(0777, file_name)
+    Rake::Cleaner.cleanup(file_name, verbose: false)
+    Rake::Cleaner.cleanup(dir_name, verbose: false)
   end
 end

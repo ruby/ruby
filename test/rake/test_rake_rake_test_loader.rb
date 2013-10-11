@@ -3,7 +3,7 @@ require File.expand_path('../helper', __FILE__)
 class TestRakeRakeTestLoader < Rake::TestCase
 
   def test_pattern
-    orig_LOADED_FEATURES = $:.dup
+    orig_loaded_features = $:.dup
     FileUtils.touch 'foo.rb'
     FileUtils.touch 'test_a.rb'
     FileUtils.touch 'test_b.rb'
@@ -14,8 +14,7 @@ class TestRakeRakeTestLoader < Rake::TestCase
 
     assert_equal %w[-v], ARGV
   ensure
-    $:.replace orig_LOADED_FEATURES
+    $:.replace orig_loaded_features
   end
 
 end
-

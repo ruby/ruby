@@ -50,8 +50,10 @@ module Rake
         rescue Exception => e
           stat :joined
           $stderr.puts e
-          $stderr.print "Queue contains #{@queue.size} items. Thread pool contains #{@threads.count} threads\n"
-          $stderr.print "Current Thread #{Thread.current} status = #{Thread.current.status}\n"
+          $stderr.print "Queue contains #{@queue.size} items. " +
+            "Thread pool contains #{@threads.count} threads\n"
+          $stderr.print "Current Thread #{Thread.current} status = " +
+            "#{Thread.current.status}\n"
           $stderr.puts e.backtrace.join("\n")
           @threads.each do |t|
             $stderr.print "Thread #{t} status = #{t.status}\n"
@@ -125,8 +127,12 @@ module Rake
           end
         end
         @threads << t
-        stat :spawned, :new_thread => t.object_id, :thread_count => @threads.count
-        @total_threads_in_play = @threads.count if @threads.count > @total_threads_in_play
+        stat(
+          :spawned,
+          :new_thread   => t.object_id,
+          :thread_count => @threads.count)
+        @total_threads_in_play = @threads.count if
+          @threads.count > @total_threads_in_play
       end
     end
 

@@ -1,14 +1,9 @@
-# :include: doc/README.rdoc
 module Rake
-  VERSION = '0.9.6'
+  VERSION = '10.1.0'
 
   module Version # :nodoc: all
-    MAJOR, MINOR, BUILD, = Rake::VERSION.split '.'
+    MAJOR, MINOR, BUILD, *OTHER = Rake::VERSION.split '.'
 
-    NUMBERS = [
-      MAJOR,
-      MINOR,
-      BUILD,
-    ]
+    NUMBERS = [MAJOR, MINOR, BUILD, *OTHER]
   end
 end

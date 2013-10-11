@@ -39,7 +39,7 @@ module Rake::AltSystem
     end
   end
 
-  if WINDOWS and RUBY_VERSION < "1.9.0"
+  if WINDOWS && RUBY_VERSION < "1.9.0"
     RUNNABLE_EXTS = %w[com exe bat cmd]
     RUNNABLE_PATTERN = %r!\.(#{RUNNABLE_EXTS.join('|')})\Z!i
 
@@ -73,9 +73,8 @@ module Rake::AltSystem
         file
       else
         RUNNABLE_EXTS.each { |ext|
-          if File.exist?(test = "#{file}.#{ext}")
-            return test
-          end
+          test = "#{file}.#{ext}"
+          return test if File.exist?(test)
         }
         nil
       end

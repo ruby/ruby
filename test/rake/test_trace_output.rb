@@ -6,10 +6,12 @@ class TestTraceOutput < Rake::TestCase
 
   class PrintSpy
     attr_reader :result, :calls
+
     def initialize
       @result = ""
       @calls = 0
     end
+
     def print(string)
       @result << string
       @calls += 1
@@ -26,6 +28,13 @@ class TestTraceOutput < Rake::TestCase
   def test_trace_issues_single_io_for_args_multiple_strings
     spy = PrintSpy.new
     trace_on(spy, "HI\n", "LO")
+    assert_equal "HI\nLO\n", spy.result
+    assert_equal 1, spy.calls
+  end
+
+  def test_trace_handles_nil_objects
+    spy = PrintSpy.new
+    trace_on(spy, "HI\n", nil, "LO")
     assert_equal "HI\nLO\n", spy.result
     assert_equal 1, spy.calls
   end

@@ -28,7 +28,7 @@ class TestRakeTestTask < Rake::TestCase
     assert Task.task_defined?(:example)
   end
 
-  def test_file_list_ENV_TEST
+  def test_file_list_env_test
     ENV['TEST'] = 'testfile.rb'
     tt = Rake::TestTask.new do |t|
       t.pattern = '*'
@@ -117,4 +117,3 @@ class TestRakeTestTask < Rake::TestCase
   end
 
 end
-

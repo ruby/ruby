@@ -32,7 +32,6 @@ class TestRakeTask < Rake::TestCase
   end
 
   def test_inspect
-#    t = task(:foo, :needs => [:bar, :baz])
     t = task(:foo => [:bar, :baz])
     assert_equal "<Rake::Task foo => [bar, baz]>", t.inspect
   end
@@ -157,8 +156,8 @@ class TestRakeTask < Rake::TestCase
   def test_multi_invocations
     runs = []
     p = proc do |t| runs << t.name end
-    task({:t1=>[:t2,:t3]}, &p)
-    task({:t2=>[:t3]}, &p)
+    task({ :t1 => [:t2, :t3] }, &p)
+    task({ :t2 => [:t3] }, &p)
     task(:t3, &p)
     Task[:t1].invoke
     assert_equal ["t1", "t2", "t3"], runs.sort
@@ -167,7 +166,7 @@ class TestRakeTask < Rake::TestCase
   def test_task_list
     task :t2
     task :t1 => [:t2]
-    assert_equal ["t1", "t2"], Task.tasks.collect {|t| t.name}
+    assert_equal ["t1", "t2"], Task.tasks.map { |t| t.name }
   end
 
   def test_task_gives_name_on_to_s
@@ -221,6 +220,31 @@ class TestRakeTask < Rake::TestCase
     assert_equal [b, c], a.prerequisite_tasks
   end
 
+  def test_all_prerequisite_tasks_includes_all_prerequisites
+    a = task :a => "b"
+    b = task :b => ["c", "d"]
+    c = task :c => "e"
+    d = task :d
+    e = task :e
+
+    assert_equal [b, c, d, e], a.all_prerequisite_tasks.sort_by { |t| t.name }
+  end
+
+  def test_all_prerequisite_tasks_does_not_include_duplicates
+    a = task :a => ["b", "c"]
+    b = task :b => "c"
+    c = task :c
+
+    assert_equal [b, c], a.all_prerequisite_tasks.sort_by { |t| t.name }
+  end
+
+  def test_all_prerequisite_tasks_includes_self_on_cyclic_dependencies
+    a = task :a => "b"
+    b = task :b => "a"
+
+    assert_equal [a, b], a.all_prerequisite_tasks.sort_by { |t| t.name }
+  end
+
   def test_timestamp_returns_now_if_all_prereqs_have_no_times
     a = task :a => ["b", "c"]
     task :b
@@ -238,7 +262,7 @@ class TestRakeTask < Rake::TestCase
     def b.timestamp() Time.now + 10 end
     def c.timestamp() Time.now + 5 end
 
-    assert_in_delta now + 10, a.timestamp, 0.1, 'computer too slow?'
+    assert_in_delta now, a.timestamp, 0.1, 'computer too slow?'
   end
 
   def test_always_multitask
@@ -247,15 +271,15 @@ class TestRakeTask < Rake::TestCase
 
     t_a = task(:a) do |t|
       sleep 0.02
-      mx.synchronize{ result << t.name }
+      mx.synchronize { result << t.name }
     end
 
     t_b = task(:b) do |t|
-      mx.synchronize{ result << t.name }
+      mx.synchronize { result << t.name }
     end
 
-    t_c = task(:c => [:a,:b]) do |t|
-      mx.synchronize{ result << t.name }
+    t_c = task(:c => [:a, :b]) do |t|
+      mx.synchronize { result << t.name }
     end
 
     t_c.invoke
@@ -283,6 +307,30 @@ class TestRakeTask < Rake::TestCase
     assert_match(/pre-requisites:\s*--t[23]/, out)
   end
 
+  # NOTE: Rail-ties uses comment=.
+  def test_comment_setting
+    t = task(:t, :name, :rev)
+    t.comment = "A Comment"
+    assert_equal "A Comment", t.comment
+  end
+
+  def test_comments_with_sentences
+    desc "Comment 1. Comment 2."
+    t = task(:t, :name, :rev)
+    assert_equal "Comment 1", t.comment
+  end
+
+  def test_comments_with_tabbed_sentences
+    desc "Comment 1.\tComment 2."
+    t = task(:t, :name, :rev)
+    assert_equal "Comment 1", t.comment
+  end
+
+  def test_comments_with_decimal_points
+    desc "Revision 1.2.3."
+    t = task(:t, :name, :rev)
+    assert_equal "Revision 1.2.3", t.comment
+  end
 
   def test_extended_comments
     desc %{
@@ -294,7 +342,7 @@ class TestRakeTask < Rake::TestCase
     }
     t = task(:t, :name, :rev)
     assert_equal "[name,rev]", t.arg_description
-    assert_equal "This is a comment.", t.comment
+    assert_equal "This is a comment", t.comment
     assert_match(/^\s*name -- Name/, t.full_comment)
     assert_match(/^\s*rev  -- Software/, t.full_comment)
     assert_match(/\A\s*This is a comment\.$/, t.full_comment)
@@ -308,9 +356,21 @@ class TestRakeTask < Rake::TestCase
     assert_equal "line one / line two", t.comment
   end
 
-  def test_settable_comments
+  def test_duplicate_comments
+    desc "line one"
     t = task(:t)
-    t.comment = "HI"
-    assert_equal "HI", t.comment
+    desc "line one"
+    task(:t)
+    assert_equal "line one", t.comment
+  end
+
+  def test_interspersed_duplicate_comments
+    desc "line one"
+    t = task(:t)
+    desc "line two"
+    task(:t)
+    desc "line one"
+    task(:t)
+    assert_equal "line one / line two", t.comment
   end
 end

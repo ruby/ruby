@@ -174,6 +174,17 @@ with all sufficient information, see the ChangeLog file.
 * open-uri
   * Support multiple fields with same field name (like Set-Cookie).
 
+* rake
+  * Updated to 10.1.0.  Major changes include removal of the class namespace,
+    Rake::DSL to hold the rake DSL methods and removal of support for legacy
+    rake features.
+
+    For a complete list of changes since rake 0.9.6 see:
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_1_0_rdoc.html
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
+
 * RDoc
   * Updated to 4.1.0.preview.1.  Major enhancements include a modified default
     template and accessibility enhancements.

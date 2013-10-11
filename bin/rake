@@ -28,10 +28,6 @@ begin
 rescue LoadError
 end
 
-module Rake
-  REDUCE_COMPAT = true if ARGV.include?("--reduce-compat")
-end
-
 require 'rake'
 
 Rake.application.run

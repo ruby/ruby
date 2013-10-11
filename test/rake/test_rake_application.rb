@@ -9,13 +9,6 @@ class TestRakeApplication < Rake::TestCase
     @app.options.rakelib = []
   end
 
-  def test_constant_warning
-    _, err = capture_io do @app.instance_eval { const_warning("Task") } end
-    assert_match(/warning/i, err)
-    assert_match(/deprecated/i, err)
-    assert_match(/Task/i, err)
-  end
-
   def test_display_tasks
     @app.options.show_tasks = :tasks
     @app.options.show_task_pattern = //
@@ -30,13 +23,14 @@ class TestRakeApplication < Rake::TestCase
     @app.terminal_columns = 80
     @app.options.show_tasks = :tasks
     @app.options.show_task_pattern = //
-    @app.last_description = "1234567890" * 8
+    numbers = "1234567890" * 8
+    @app.last_description = numbers
     @app.define_task(Rake::Task, "t")
 
     out, = capture_io do @app.instance_eval { display_tasks_and_comments } end
 
     assert_match(/^rake t/, out)
-    assert_match(/# 12345678901234567890123456789012345678901234567890123456789012345\.\.\./, out)
+    assert_match(/# #{numbers[0, 65]}\.\.\./, out)
   end
 
   def test_display_tasks_with_task_name_wider_than_tty_display
@@ -45,7 +39,7 @@ class TestRakeApplication < Rake::TestCase
     @app.options.show_task_pattern = //
     task_name = "task name" * 80
     @app.last_description = "something short"
-    @app.define_task(Rake::Task, task_name )
+    @app.define_task(Rake::Task, task_name)
 
     out, = capture_io do @app.instance_eval { display_tasks_and_comments } end
 
@@ -60,7 +54,7 @@ class TestRakeApplication < Rake::TestCase
     description = "something short"
     task_name = "task name" * 80
     @app.last_description = "something short"
-    @app.define_task(Rake::Task, task_name )
+    @app.define_task(Rake::Task, task_name)
 
     out, = capture_io do @app.instance_eval { display_tasks_and_comments } end
 
@@ -79,18 +73,19 @@ class TestRakeApplication < Rake::TestCase
     assert_match(/# #{@app.last_description}/, out)
   end
 
-  def test_display_tasks_with_long_comments_to_a_non_tty_with_columns_set_truncates_comments
+  def test_truncating_comments_to_a_non_tty
     @app.terminal_columns = 80
     @app.options.show_tasks = :tasks
     @app.options.show_task_pattern = //
     @app.tty_output = false
-    @app.last_description = "1234567890" * 8
+    numbers = "1234567890" * 8
+    @app.last_description = numbers
     @app.define_task(Rake::Task, "t")
 
     out, = capture_io do @app.instance_eval { display_tasks_and_comments } end
 
     assert_match(/^rake t/, out)
-    assert_match(/# 12345678901234567890123456789012345678901234567890123456789012345\.\.\./, out)
+    assert_match(/# #{numbers[0, 65]}\.\.\./, out)
   end
 
   def test_describe_tasks
@@ -121,7 +116,7 @@ class TestRakeApplication < Rake::TestCase
 
   def test_not_finding_rakefile
     @app.instance_eval { @rakefiles = ['NEVER_FOUND'] }
-    assert( ! @app.instance_eval do have_rakefile end )
+    assert(! @app.instance_eval do have_rakefile end)
     assert_nil @app.rakefile
   end
 
@@ -252,7 +247,7 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_terminal_columns
-    old_RAKE_COLUMNS = ENV['RAKE_COLUMNS']
+    old_rake_columns = ENV['RAKE_COLUMNS']
 
     ENV['RAKE_COLUMNS'] = '42'
 
@@ -260,10 +255,10 @@ class TestRakeApplication < Rake::TestCase
 
     assert_equal 42, app.terminal_columns
   ensure
-    if old_RAKE_COLUMNS then
+    if old_rake_columns
       ENV['RAKE_COLUMNS'].delete
     else
-      ENV['RAKE_COLUMNS'] = old_RAKE_COLUMNS
+      ENV['RAKE_COLUMNS'] = old_rake_columns
     end
   end
 
@@ -296,7 +291,7 @@ class TestRakeApplication < Rake::TestCase
     # HACK no assertions
   end
 
-  def test_handle_options_should_strip_options_from_ARGV
+  def test_handle_options_should_strip_options_from_argv
     assert !@app.options.trace
 
     valid_option = '--trace'
@@ -437,15 +432,6 @@ class TestRakeApplication < Rake::TestCase
     }
   ensure
     ARGV.clear
-  end
-
-  def test_deprecation_message
-    _, err = capture_io do
-      @app.deprecate("a", "b", "c")
-    end
-    assert_match(/'a' is deprecated/i, err)
-    assert_match(/use 'b' instead/i, err)
-    assert_match(/at c$/i, err)
   end
 
   def test_standard_exception_handling_invalid_option

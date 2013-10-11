@@ -40,6 +40,8 @@ require 'rake/ext/time'
 
 require 'rake/win32'
 
+require 'rake/linked_list'
+require 'rake/scope'
 require 'rake/task_argument_error'
 require 'rake/rule_recursion_overflow_error'
 require 'rake/rake_module'

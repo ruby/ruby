@@ -1,3 +1,11 @@
+2013-10-11  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake:  Update to rake 10.1.0
+	* bin/rake:  ditto.
+	* test/rake:  ditto.
+
+	* NEWS:  Update NEWS to include rake 10.1.0 and links to release notes.
+
 Sat Oct 12 03:26:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c, variable.c, gc.c (rb_class_tbl): removed.

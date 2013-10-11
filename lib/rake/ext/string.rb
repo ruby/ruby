@@ -13,9 +13,7 @@ class String
     # +ext+ is a user added method for the String class.
     def ext(newext='')
       return self.dup if ['.', '..'].include? self
-      if newext != ''
-        newext = (newext =~ /^\./) ? newext : ("." + newext)
-      end
+      newext = (newext =~ /^\./) ? newext : ("." + newext) if newext != ''
       self.chomp(File.extname(self)) << newext
     end
   end
