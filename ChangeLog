@@ -1,3 +1,17 @@
+Sat Oct 12 03:26:04 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c, variable.c, gc.c (rb_class_tbl): removed.
+
+	* vm.c, vm_core.h (rb_vm_add_root_module): added to register as a
+	  defined root module or class.
+	  This guard helps mark miss from defined classes/modules they are
+	  only refered from C's global variables in C-exts.
+	  Basically, it is extension's bug.
+	  Register to hash object VM has.
+	  Marking a hash objects allows generational GC supports.
+
+	* gc.c (RGENGC_PRINT_TICK): disable (revert).
+
 Sat Oct 12 03:24:49 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_gc_mark_unlinked_live_method_entries): 

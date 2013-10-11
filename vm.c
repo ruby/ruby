@@ -1611,6 +1611,7 @@ rb_vm_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(vm->loaded_features_snapshot);
 	RUBY_MARK_UNLESS_NULL(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
+	RUBY_MARK_UNLESS_NULL(vm->defined_module_hash);
 	rb_gc_mark_locations(vm->special_exceptions, vm->special_exceptions + ruby_special_error_count);
 
 	if (vm->loading_table) {
@@ -1632,6 +1633,17 @@ rb_vm_mark(void *ptr)
     }
 
     RUBY_MARK_LEAVE("vm");
+}
+
+
+int
+rb_vm_add_root_module(ID id, VALUE module)
+{
+    rb_vm_t *vm = GET_VM();
+    if (vm->defined_module_hash) {
+	rb_hash_aset(vm->defined_module_hash, ID2SYM(id), module);
+    }
+    return TRUE;
 }
 
 #define vm_free 0
@@ -2619,8 +2631,9 @@ Init_top_self(void)
     rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
     rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
 
-    /* initialize mark object array */
+    /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(1);
+    vm->defined_module_hash = rb_hash_new();
 }
 
 VALUE *
