@@ -1,3 +1,7 @@
+Fri Oct 11 16:53:28 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_postponed_job_flush): simplify.
+
 Fri Oct 11 03:36:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts): flush postponed job only
