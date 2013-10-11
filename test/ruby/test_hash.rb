@@ -995,6 +995,42 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def test_hash_no_comma
+    feature8956 = {
+      :foo => 'bar',
+      :bar => 'foo',
+      :baz => {
+        :qux => 'quux',
+        :corge => 'grault'
+      }
+    }
+
+    assert_equal(feature8956, {
+      :foo => 'bar'
+      :bar => 'foo'
+      :baz => {
+        :qux => 'quux'
+        :corge => 'grault'
+      }
+    })
+    assert_equal(feature8956, @cls[
+      :foo => 'bar'
+      :bar => 'foo'
+      :baz => {
+        :qux => 'quux'
+        :corge => 'grault'
+      }
+    ])
+    assert_equal(feature8956, @cls.[](
+      :foo => 'bar'
+      :bar => 'foo'
+      :baz => {
+        :qux => 'quux'
+        :corge => 'grault'
+      }
+    ))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
     end
