@@ -3580,7 +3580,7 @@ gc_marks_body(rb_objspace_t *objspace, int minor_gc)
     mark_current_machine_context(objspace, th);
 
     MARK_CHECKPOINT;
-    rb_gc_mark_symbols();
+    rb_gc_mark_symbols(minor_gc == 0);
 
     MARK_CHECKPOINT;
     rb_gc_mark_encodings();

@@ -10183,6 +10183,7 @@ static struct symbols {
     st_table *id_ivar2;
 #endif
     VALUE op_sym[tLAST_OP_ID];
+    int minor_marked;
 } global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
@@ -10237,11 +10238,14 @@ Init_sym(void)
 }
 
 void
-rb_gc_mark_symbols(void)
+rb_gc_mark_symbols(int full_marking)
 {
-    rb_mark_tbl(global_symbols.id_str);
-    rb_gc_mark_locations(global_symbols.op_sym,
-			 global_symbols.op_sym + numberof(global_symbols.op_sym));
+    if (full_marking || global_symbols.minor_marked == 0) {
+	rb_mark_tbl(global_symbols.id_str);
+	rb_gc_mark_locations(global_symbols.op_sym,
+			     global_symbols.op_sym + numberof(global_symbols.op_sym));
+	global_symbols.minor_marked = 1;
+    }
 }
 #endif /* !RIPPER */
 
@@ -10425,6 +10429,7 @@ register_symid_str(ID id, VALUE str)
 
     st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);
+    global_symbols.minor_marked = 0;
     return id;
 }
 
@@ -10628,6 +10633,7 @@ rb_id2str(ID id)
 		str = rb_usascii_str_new(name, 1);
 		OBJ_FREEZE(str);
 		global_symbols.op_sym[i] = str;
+		global_symbols.minor_marked = 0;
 	    }
 	    return str;
 	}
@@ -10638,6 +10644,7 @@ rb_id2str(ID id)
 		    str = rb_usascii_str_new2(op_tbl[i].name);
 		    OBJ_FREEZE(str);
 		    global_symbols.op_sym[i] = str;
+		    global_symbols.minor_marked = 0;
 		}
 		return str;
 	    }
