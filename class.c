@@ -31,7 +31,6 @@
 #include "internal.h"
 #include <ctype.h>
 
-extern st_table *rb_class_tbl;
 #define id_attached id__attached__
 
 void
@@ -517,12 +516,10 @@ make_singleton_class(VALUE obj)
 static VALUE
 boot_defclass(const char *name, VALUE super)
 {
-    extern st_table *rb_class_tbl;
     VALUE obj = rb_class_boot(super);
     ID id = rb_intern(name);
 
     rb_name_class(obj, id);
-    st_add_direct(rb_class_tbl, id, obj);
     rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
     return obj;
 }
@@ -643,7 +640,6 @@ rb_define_class(const char *name, VALUE super)
 	rb_warn("no super class for `%s', Object assumed", name);
     }
     klass = rb_define_class_id(id, super);
-    st_add_direct(rb_class_tbl, id, klass);
     rb_name_class(klass, id);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
@@ -754,7 +750,6 @@ rb_define_module(const char *name)
 	rb_raise(rb_eTypeError, "%s is not a module", rb_obj_classname(module));
     }
     module = rb_define_module_id(id);
-    st_add_direct(rb_class_tbl, id, module);
     rb_const_set(rb_cObject, id, module);
 
     return module;
