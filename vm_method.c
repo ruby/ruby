@@ -105,13 +105,15 @@ rb_gc_mark_unlinked_live_method_entries(void *pvm)
 {
     rb_vm_t *vm = pvm;
     struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list;
+    int i=0;
 
     while (ume) {
 	if (ume->me->mark) {
 	    rb_mark_method_entry(ume->me);
 	}
-	ume = ume->next;
+	ume = ume->next; i++;
     }
+    fprintf(stderr, "rb_gc_mark_unlinked_live_method_entries: %d entries\n", i);
 }
 
 void

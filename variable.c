@@ -21,12 +21,14 @@
 #include "id.h"
 
 st_table *rb_global_tbl;
+st_table *rb_class_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
 
 void
 Init_var_tables(void)
 {
     rb_global_tbl = st_init_numtable();
+    rb_class_tbl = st_init_numtable();
     CONST_ID(autoload, "__autoload__");
     /* __classpath__: fully qualified class path */
     CONST_ID(classpath, "__classpath__");
@@ -132,6 +134,9 @@ find_class_path(VALUE klass, ID preferred)
     arg.prev = 0;
     if (RCLASS_CONST_TBL(rb_cObject)) {
 	st_foreach_safe(RCLASS_CONST_TBL(rb_cObject), fc_i, (st_data_t)&arg);
+    }
+    if (arg.path == 0) {
+	st_foreach_safe(rb_class_tbl, fc_i, (st_data_t)&arg);
     }
     if (arg.path) {
 	st_data_t tmp = tmp_classpath;

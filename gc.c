@@ -535,6 +535,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
+extern st_table *rb_class_tbl;
 int ruby_disable_gc_stress = 0;
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
@@ -3452,7 +3453,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
     shrink_stack_chunk_cache(mstack);
 }
 
-#define RGENGC_PRINT_TICK 0
+#define RGENGC_PRINT_TICK 1
 /* the following code is only for internal tuning. */
 
 /* Source code to use RDTSC is quoted and modified from
@@ -3573,18 +3574,13 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
     MARK_CHECKPOINT;
-    rb_gc_mark(rb_cObject);
+    mark_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT;
     mark_current_machine_context(objspace, th);
 
     MARK_CHECKPOINT;
-    mark_tbl(objspace, finalizer_table);
-
-    MARK_CHECKPOINT;
-    objspace->rgengc.parent_object_is_promoted = TRUE;
     rb_gc_mark_symbols(full_mark);
-    objspace->rgengc.parent_object_is_promoted = FALSE;
 
     MARK_CHECKPOINT;
     rb_gc_mark_encodings();
@@ -3600,6 +3596,9 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 
     MARK_CHECKPOINT;
     rb_gc_mark_global_tbl();
+
+    MARK_CHECKPOINT;
+    mark_tbl(objspace, rb_class_tbl);
 
     /* mark generic instance variables for special constants */
     MARK_CHECKPOINT;
