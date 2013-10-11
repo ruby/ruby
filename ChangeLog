@@ -22,7 +22,7 @@ Sat Oct 12 03:26:04 2013  Koichi Sasada  <ko1@atdot.net>
 
 Sat Oct 12 03:24:49 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_method.c (rb_gc_mark_unlinked_live_method_entries): 
+	* vm_method.c (rb_gc_mark_unlinked_live_method_entries):
 	  revert last commit to introduce debug prints.
 
 Fri Oct 11 21:05:19 2013  Koichi Sasada  <ko1@atdot.net>
