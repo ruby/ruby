@@ -191,4 +191,18 @@ class TestObjSpace < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_heap_dump
+    entry = /"value":"this is a test string", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please"/
+    assert_in_out_err(%w[-robjspace], <<-'end;', entry)
+      def dump_my_heap_please
+        ObjectSpace.trace_object_allocations_start
+        GC.start
+        "this is a test string".force_encoding("UTF-8")
+        ObjectSpace.heap_dump
+      end
+
+      dump_my_heap_please
+    end;
+  end
 end
