@@ -13,7 +13,7 @@ Sat Oct 12 03:26:04 2013  Koichi Sasada  <ko1@atdot.net>
 	* vm.c, vm_core.h (rb_vm_add_root_module): added to register as a
 	  defined root module or class.
 	  This guard helps mark miss from defined classes/modules they are
-	  only refered from C's global variables in C-exts.
+	  only referred from C's global variables in C-exts.
 	  Basically, it is extension's bug.
 	  Register to hash object VM has.
 	  Marking a hash objects allows generational GC supports.
@@ -40,7 +40,7 @@ Fri Oct 11 20:46:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 Fri Oct 11 20:35:59 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c, parse.y: support generational Symbol relatetd marking.
+	* gc.c, parse.y: support generational Symbol related marking.
 	  Each symbols has String objects respectively to represent
 	  Symbols.
 	  These objects are marked only when:
@@ -97,7 +97,7 @@ Fri Oct 11 17:33:24 2013  Akinori MUSHA  <knu@iDaemons.org>
 	  * block-mid keywords (then, else, elsif, when, rescue and
 	    ensure) also become electric with automatic reindentation.
 
-	  * Add standarized comments for ELPA integration.
+	  * Add standardized comments for ELPA integration.
 
 	  * Fix interaction with smartparens-mode by disabling its end
 	    keyword completion, since ruby-electric has become more clever
