@@ -52,7 +52,7 @@ Fri Oct 11 20:35:59 2013  Koichi Sasada  <ko1@atdot.net>
 	  with 40k symbols (similar symbol number on Rails 3.2.14 app,
 	  @jugyo tells me) boosts, from 7.3sec to 4.2sec.
 
-`	* internal.h: change prototype of rb_gc_mark_symbols().
+	* internal.h: change prototype of rb_gc_mark_symbols().
 
 Fri Oct 11 19:27:22 2013  Akinori MUSHA  <knu@iDaemons.org>
 
