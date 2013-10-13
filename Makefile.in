@@ -258,16 +258,16 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 
 $(MKFILES): config.status
-		@[ -f Makefile ] && mv Makefile Makefile.old
-		MAKE=$(MAKE) $(SHELL) ./config.status
-		@cmp Makefile Makefile.old > /dev/null 2>&1 && echo Makefile unchanged && exit 0; \
+		@[ -f $@ ] && mv $@ $@.old
+		MAKE=$(MAKE) $(SHELL) ./config.status $@
+		@cmp $@ $@.old > /dev/null 2>&1 && echo $@ unchanged && exit 0; \
 		{ \
 		    echo "all:; -@rm -f conftest.mk"; \
 		    echo "conftest.mk: .force; @echo AUTO_REMAKE"; \
 		    echo ".force:"; \
 		} > conftest.mk || exit 1; \
 		$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
-		{ echo "Makefile updated, restart."; exit 1; }
+		{ echo "$@ updated, restart."; exit 1; }
 
 uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@
