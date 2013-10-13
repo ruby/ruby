@@ -1,3 +1,10 @@
+2013-10-13  Andrew Grimm  <andrew.j.grimm@gmail.com>
+
+	* vsnprintf.c: Fix spelling from compliment to complement.
+	  Patch by @agrimm.
+
+	* include/ruby/ruby.h: ditto
+
 2013-10-13  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (Init_BareVM): initialize defined_module_hash here,
