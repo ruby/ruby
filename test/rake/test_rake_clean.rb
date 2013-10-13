@@ -32,7 +32,13 @@ class TestRakeClean < Rake::TestCase
     FileUtils.touch(file_name)
     FileUtils.chmod(0, file_name)
     FileUtils.chmod(0, dir_name)
-    file_name
+    begin
+      FileUtils.chmod(0644, file_name)
+    rescue
+      file_name
+    else
+      skip "Permission to delete files is different on thie system"
+    end
   end
 
   def remove_undeletable_file
