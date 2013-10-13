@@ -1,3 +1,10 @@
+2013-10-13  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_array_): no hash to merge if it is empty.
+
+	* vm.c (m_core_hash_merge_kwd): just check keys if only one argument
+	  is given, without merging.
+
 2013-10-11  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update to rake 10.1.0
