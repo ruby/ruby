@@ -11,6 +11,16 @@ assert_equal 'C',       %q( class C; end
                             C.new.class.name )
 assert_equal 'Class',   %q( class C; end
                             C.new.class.class )
+assert_equal 'true',    %q( Object.__send__(:remove_const, :TrueClass)
+                            GC.start
+                            true.inspect)
+assert_equal 'false',   %q( Object.__send__(:remove_const, :FalseClass)
+                            GC.start
+                            false.inspect)
+assert_equal 'nil',     %q( Object.__send__(:remove_const, :NilClass)
+                            GC.start
+                            nil.inspect)
+
 
 # inherited class
 assert_equal 'true',    %q( class A; end

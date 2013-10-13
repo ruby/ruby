@@ -1,5 +1,8 @@
 2013-10-13  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* vm.c (Init_BareVM): initialize defined_module_hash here,
+	  Init_top_self() is too late to register core classes/modules.
+
 	* compile.c (compile_array_): no hash to merge if it is empty.
 
 	* vm.c (m_core_hash_merge_kwd): just check keys if only one argument

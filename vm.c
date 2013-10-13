@@ -2617,6 +2617,7 @@ Init_BareVM(void)
     th->vm = vm;
     th_init(th, 0);
     ruby_thread_init_stack(th);
+    vm->defined_module_hash = rb_hash_new();
 }
 
 /* top self */
@@ -2644,7 +2645,6 @@ Init_top_self(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(1);
-    vm->defined_module_hash = rb_hash_new();
 }
 
 VALUE *
