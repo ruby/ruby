@@ -459,6 +459,8 @@ extern rb_gid_t  getegid (void);
 extern int       setuid (rb_uid_t);
 extern int       setgid (rb_gid_t);
 
+extern int fstati64(int, struct stati64 *);
+
 extern char *rb_w32_strerror(int);
 
 #ifdef RUBY_EXPORT
