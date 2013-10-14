@@ -54,7 +54,7 @@ class TestProfileFrames < Test::Unit::TestCase
     singleton_method_p = [
       false, false, true, false, false, false,
     ]
-    methdo_names = [
+    method_names = [
       "test_profile_frames",
       "baz",
       "bar",
@@ -83,7 +83,7 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(full_labels[i], full_label, err_msg)
       assert_equal(classes[i].to_s, classpath, err_msg)
       assert_equal(singleton_method_p[i], singleton_p, err_msg)
-      assert_equal(methdo_names[i], method_name, err_msg)
+      assert_equal(method_names[i], method_name, err_msg)
       assert_equal(qualified_method_names[i], qualified_method_name, err_msg)
     }
   end
