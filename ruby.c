@@ -561,7 +561,6 @@ require_libraries(VALUE *req_list)
     int prev_parse_in_eval = th->parse_in_eval;
     th->parse_in_eval = 0;
 
-    Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
@@ -1448,6 +1447,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 			rb_enc_associate(rb_str_dup(RARRAY_AREF(load_path, i)), lenc));
 	}
     }
+    Init_ext();		/* load statically linked extensions before rubygems */
     if (!(opt->disable & DISABLE_BIT(gems))) {
 	rb_define_module("Gem");
     }

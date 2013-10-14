@@ -1,4 +1,7 @@
-Mon Oct 14 12:22:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 14 12:32:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): load statically linked extensions before
+	  rubygems, because of ext/thread.
 
 	* ruby.c (process_options): use gem_prelude instead of requiring
 	  rubygems directly when --enable=gems is given.
