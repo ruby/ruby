@@ -1,4 +1,4 @@
-2013-10-14  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 14 12:22:24 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): use gem_prelude instead of requiring
 	  rubygems directly when --enable=gems is given.
@@ -6,20 +6,22 @@
 	* Makefile.in (DEFAULT_PRELUDES): always use gem_prelude regardless of
 	  --disable-rubygems.
 
+Mon Oct 14 11:07:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* lib/mkmf.rb (have_framework): should append framework options to
 	  $LIBS, not $LDFLAGS.  the former is propagated to exts.mk when
 	  enable-static-linked-ext.
 
 	* lib/mkmf.rb (create_makefile): ranlib on static library, not DLLIB.
 
-2013-10-13  Andrew Grimm  <andrew.j.grimm@gmail.com>
+Sun Oct 13 23:53:40 2013  Andrew Grimm  <andrew.j.grimm@gmail.com>
 
 	* vsnprintf.c: Fix spelling from compliment to complement.
 	  Patch by @agrimm.
 
 	* include/ruby/ruby.h: ditto
 
-2013-10-13  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 13 20:59:27 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (Init_BareVM): initialize defined_module_hash here,
 	  Init_top_self() is too late to register core classes/modules.
@@ -29,7 +31,7 @@
 	* vm.c (m_core_hash_merge_kwd): just check keys if only one argument
 	  is given, without merging.
 
-2013-10-11  Eric Hodel  <drbrain@segment7.net>
+Sat Oct 12 06:35:01 2013-10-11  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update to rake 10.1.0
 	* bin/rake:  ditto.
