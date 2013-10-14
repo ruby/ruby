@@ -1,5 +1,11 @@
 2013-10-14  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* ruby.c (process_options): use gem_prelude instead of requiring
+	  rubygems directly when --enable=gems is given.
+
+	* Makefile.in (DEFAULT_PRELUDES): always use gem_prelude regardless of
+	  --disable-rubygems.
+
 	* lib/mkmf.rb (have_framework): should append framework options to
 	  $LIBS, not $LDFLAGS.  the former is propagated to exts.mk when
 	  enable-static-linked-ext.
