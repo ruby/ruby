@@ -32,7 +32,7 @@ class Test_StringEllipsize < Test::Unit::TestCase
 
   def test_nonascii
     a = "\u3042"
-    encs = Encoding.list.each do |enc|
+    Encoding.list.each do |enc|
       next if enc.dummy?
       begin
         s = a.encode(enc)

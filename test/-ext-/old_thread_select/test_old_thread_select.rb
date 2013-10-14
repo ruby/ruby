@@ -46,8 +46,10 @@ class TestOldThreadSelect < Test::Unit::TestCase
         w.syswrite '.'
         rfds = [ r.fileno, r2.fileno ]
         rc = IO.old_thread_select(rfds, nil, nil, nil)
+        diff = Time.now - t0
         assert_equal [ r.fileno ], rfds, bug5306
         assert_equal 1, rc, bug5306
+        assert_operator diff, :>=, 0, "returned too early: diff=#{diff}"
       end
     end
   end
