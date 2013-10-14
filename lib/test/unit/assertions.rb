@@ -27,6 +27,8 @@ module Test
       def assert(test, *msgs)
         case msg = msgs.first
         when String, Proc
+        when nil
+          msgs.shift
         else
           bt = caller.reject { |s| s.start_with?(MINI_DIR) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
