@@ -1098,7 +1098,7 @@ SRC
         # TODO: non-worse way than this hack, to get rid of separating
         # option and its argument.
         $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
-        $LDFLAGS << opt
+        $LIBS << opt
         true
       else
         false
