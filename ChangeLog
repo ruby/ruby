@@ -1,3 +1,7 @@
+2013-10-14  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): ranlib on static library, not DLLIB.
+
 2013-10-13  Andrew Grimm  <andrew.j.grimm@gmail.com>
 
 	* vsnprintf.c: Fix spelling from compliment to complement.
