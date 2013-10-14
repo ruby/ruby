@@ -85,6 +85,11 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(singleton_method_p[i], singleton_p, err_msg)
       assert_equal(method_names[i], method_name, err_msg)
       assert_equal(qualified_method_names[i], qualified_method_name, err_msg)
+      if label == method_name
+        c = classes[i]
+        m = singleton_p ? c.method(method_name) : c.instance_method(method_name)
+        assert_equal(m.source_location[1], first_lineno, err_msg)
+      end
     }
   end
 end
