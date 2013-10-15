@@ -111,13 +111,13 @@ rb_arg_error_new(int argc, int min, int max)
 {
     VALUE err_mess = 0;
     if (min == max) {
-	err_mess = rb_sprintf("wrong number of arguments (%d for %d)", argc, min);
+	err_mess = rb_sprintf("wrong number of arguments (%d instead of %d)", argc, min);
     }
     else if (max == UNLIMITED_ARGUMENTS) {
-	err_mess = rb_sprintf("wrong number of arguments (%d for %d+)", argc, min);
+	err_mess = rb_sprintf("wrong number of arguments (%d instead of %d+)", argc, min);
     }
     else {
-	err_mess = rb_sprintf("wrong number of arguments (%d for %d..%d)", argc, min, max);
+	err_mess = rb_sprintf("wrong number of arguments (%d instead of %d..%d)", argc, min, max);
     }
     return rb_exc_new3(rb_eArgError, err_mess);
 }

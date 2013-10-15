@@ -305,7 +305,7 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     VALUE pri;
 
     if (argc < 2) {
-        rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", argc);
+        rb_raise(rb_eArgError, "wrong number of arguments (%d instead of 2+)", argc);
     }
 
     argc--;

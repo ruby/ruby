@@ -43,7 +43,7 @@ if defined?(WIN32OLE_VARIANT)
         ex = $!
       end
       assert_instance_of(ArgumentError, ex)
-      assert_equal("wrong number of arguments (0 for 1..3)", ex.message);
+      assert_equal("wrong number of arguments (0 instead of 1..3)", ex.message);
     end
 
     def test_s_new_one_argument

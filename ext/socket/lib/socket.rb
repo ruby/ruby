@@ -298,7 +298,7 @@ class Socket < BasicSocket
   #
   def self.tcp(host, port, *rest) # :yield: socket
     opts = Hash === rest.last ? rest.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
+    raise ArgumentError, "wrong number of arguments (#{rest.length} instead of 2)" if 2 < rest.length
     local_host, local_port = rest
     last_error = nil
     ret = nil

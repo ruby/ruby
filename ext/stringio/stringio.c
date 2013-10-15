@@ -1305,7 +1305,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	}
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d instead of 0)", argc);
     }
     if (NIL_P(str)) {
 	str = strio_substr(ptr, ptr->pos, len);

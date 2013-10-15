@@ -120,7 +120,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
 
     if(argc != RARRAY_LENINT(types)) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+	rb_raise(rb_eArgError, "wrong number of arguments (%d instead of %d)",
 		argc, RARRAY_LENINT(types));
     }
 

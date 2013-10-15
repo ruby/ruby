@@ -46,7 +46,7 @@ module OpenSSL
         define_method(:initialize){|*data|
           if data.length > 1
             raise ArgumentError,
-              "wrong number of arguments (#{data.length} for 1)"
+              "wrong number of arguments (#{data.length} instead of 1)"
           end
           super(name, data.first)
         }
