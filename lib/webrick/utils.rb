@@ -142,17 +142,13 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def TimeoutHandler.register(seconds, exception)
-        TimeoutMutex.synchronize{
-          instance.register(Thread.current, Time.now + seconds, exception)
-        }
+        instance.register(Thread.current, Time.now + seconds, exception)
       end
 
       ##
       # Cancels the timeout handler +id+
       def TimeoutHandler.cancel(id)
-        TimeoutMutex.synchronize{
-          instance.cancel(Thread.current, id)
-        }
+        instance.cancel(Thread.current, id)
       end
 
       ##
@@ -163,12 +159,12 @@ module WEBrick
         Thread.start{
           while true
             now = Time.now
-            @timeout_info.keys.each{|thread|
-              ary = @timeout_info[thread]
-              next unless ary
-              ary.dup.each{|info|
-                time, exception = *info
-                interrupt(thread, info.object_id, exception) if time < now
+            TimeoutMutex.synchronize{
+              @timeout_info.each{|thread, ary|
+                ary.each{|info|
+                  time, exception = *info
+                  interrupt(thread, info.object_id, exception) if time < now
+                }
               }
             }
             sleep 0.5
@@ -179,11 +175,9 @@ module WEBrick
       ##
       # Interrupts the timeout handler +id+ and raises +exception+
       def interrupt(thread, id, exception)
-        TimeoutMutex.synchronize{
-          if cancel(thread, id) && thread.alive?
-            thread.raise(exception, "execution timeout")
-          end
-        }
+        if cancel(thread, id) && thread.alive?
+          thread.raise(exception, "execution timeout")
+        end
       end
 
       ##
@@ -192,22 +186,26 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
-        @timeout_info[thread] ||= Array.new
-        @timeout_info[thread] << [time, exception]
-        return @timeout_info[thread].last.object_id
+        TimeoutMutex.synchronize{
+          @timeout_info[thread] ||= Array.new
+          @timeout_info[thread] << [time, exception]
+          return @timeout_info[thread].last.object_id
+        }
       end
 
       ##
       # Cancels the timeout handler +id+
       def cancel(thread, id)
-        if ary = @timeout_info[thread]
-          ary.delete_if{|info| info.object_id == id }
-          if ary.empty?
-            @timeout_info.delete(thread)
+        TimeoutMutex.synchronize{
+          if ary = @timeout_info[thread]
+            ary.delete_if{|info| info.object_id == id }
+            if ary.empty?
+              @timeout_info.delete(thread)
+            end
+            return true
           end
-          return true
-        end
-        return false
+          return false
+        }
       end
     end
 
