@@ -3452,7 +3452,9 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
     shrink_stack_chunk_cache(mstack);
 }
 
+#ifndef RGENGC_PRINT_TICK
 #define RGENGC_PRINT_TICK 0
+#endif
 /* the following code is only for internal tuning. */
 
 /* Source code to use RDTSC is quoted and modified from
@@ -3504,7 +3506,7 @@ tick(void)
 
 #define MAX_TICKS 0x100
 static tick_t mark_ticks[MAX_TICKS];
-static int mark_ticks_start_line;
+static const char *mark_ticks_categories[MAX_TICKS];
 
 static void
 show_mark_ticks(void)
@@ -3512,44 +3514,112 @@ show_mark_ticks(void)
     int i;
     fprintf(stderr, "mark ticks result:\n");
     for (i=0; i<MAX_TICKS; i++) {
-      if (mark_ticks[i] > 0) {
-	  fprintf(stderr, "@%4d\t%8lu\n", i+mark_ticks_start_line, (unsigned long)mark_ticks[i]);
-      }
+	const char *category = mark_ticks_categories[i];
+	if (category) {
+	    fprintf(stderr, "%s\t%8lu\n", category, (unsigned long)mark_ticks[i]);
+	}
+	else {
+	    break;
+	}
     }
 }
 
 #endif /* RGENGC_PRINT_TICK */
 
 static void
-gc_marks_body(rb_objspace_t *objspace, int full_mark)
+gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
 
 #if RGENGC_PRINT_TICK
     tick_t start_tick = tick();
-    if (mark_ticks_start_line == 0) {
-	mark_ticks_start_line = __LINE__;
+    int tick_count = 0;
+    const char *prev_category = 0;
+
+    if (mark_ticks_categories[0] == 0) {
 	atexit(show_mark_ticks);
     }
 #endif
 
-#define MARK_CHECKPOINT_PRINT_TICK do { \
-    tick_t t = tick(); \
-    mark_ticks[__LINE__ - mark_ticks_start_line] = t - start_tick; \
-    start_tick = tick(); \
-} while (0)
-
 #if RGENGC_CHECK_MODE > 1
-#define MARK_CHECKPOINT do { \
+#define MARK_CHECKPOINT_DEBUG(category) do { \
     objspace->rgengc.parent_object = INT2FIX(__LINE__); \
 } while (0)
-#elif RGENGC_PRINT_TICK
-#define MARK_CHECKPOINT MARK_CHECKPOINT_PRINT_TICK
-#else
-#define MARK_CHECKPOINT /* do nothing */
+#else /* RGENGC_CHECK_MODE > 1 */
+#define MARK_CHECKPOINT_DEBUG(category)
 #endif
 
+#if RGENGC_PRINT_TICK
+#define MARK_CHECKPOINT_PRINT_TICK(category) do { \
+    if (prev_category) { \
+	tick_t t = tick(); \
+	mark_ticks[tick_count] = t - start_tick; \
+	mark_ticks_categories[tick_count] = prev_category; \
+	tick_count++; \
+    } \
+    prev_category = category; \
+    start_tick = tick(); \
+} while (0)
+#else /* RGENGC_PRINT_TICK */
+#define MARK_CHECKPOINT_PRINT_TICK(category)
+#endif
+
+#define MARK_CHECKPOINT(category) do { \
+    if (categoryp) *categoryp = category; \
+    MARK_CHECKPOINT_DEBUG(category); \
+    MARK_CHECKPOINT_PRINT_TICK(category); \
+} while (0)
+
+    MARK_CHECKPOINT("vm");
+    SET_STACK_END;
+    th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
+
+    MARK_CHECKPOINT("finalizer_table");
+    mark_tbl(objspace, finalizer_table);
+
+    MARK_CHECKPOINT("mark_current_machine_context");
+    mark_current_machine_context(objspace, th);
+
+    MARK_CHECKPOINT("rb_gc_mark_symbols");
+    rb_gc_mark_symbols(full_mark);
+
+    MARK_CHECKPOINT("rb_gc_mark_encodings");
+    rb_gc_mark_encodings();
+
+    /* mark protected global variables */
+    MARK_CHECKPOINT("global_List");
+    for (list = global_List; list; list = list->next) {
+	rb_gc_mark_maybe(*list->varptr);
+    }
+
+    MARK_CHECKPOINT("rb_mark_end_proc");
+    rb_mark_end_proc();
+
+    MARK_CHECKPOINT("rb_gc_mark_global_tbl");
+    rb_gc_mark_global_tbl();
+
+    /* mark generic instance variables for special constants */
+    MARK_CHECKPOINT("rb_mark_generic_ivar_tbl");
+    rb_mark_generic_ivar_tbl();
+
+    MARK_CHECKPOINT("rb_gc_mark_parser");
+    rb_gc_mark_parser();
+
+    MARK_CHECKPOINT("rb_gc_mark_unlinked_live_method_entries");
+    rb_gc_mark_unlinked_live_method_entries(th->vm);
+
+    /* marking-loop */
+    MARK_CHECKPOINT("gc_mark_stacked_objects");
+    gc_mark_stacked_objects(objspace);
+
+    MARK_CHECKPOINT("finish");
+#undef MARK_CHECKPOINT
+}
+
+static void
+gc_marks_body(rb_objspace_t *objspace, int full_mark)
+{
     /* start marking */
     rgengc_report(1, objspace, "gc_marks_body: start (%s)\n", full_mark ? "full" : "minor");
 
@@ -3567,51 +3637,7 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 	rgengc_mark_and_rememberset_clear(objspace);
     }
 #endif
-
-    MARK_CHECKPOINT;
-    SET_STACK_END;
-    th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
-
-    MARK_CHECKPOINT;
-    mark_tbl(objspace, finalizer_table);
-
-    MARK_CHECKPOINT;
-    mark_current_machine_context(objspace, th);
-
-    MARK_CHECKPOINT;
-    rb_gc_mark_symbols(full_mark);
-
-    MARK_CHECKPOINT;
-    rb_gc_mark_encodings();
-
-    /* mark protected global variables */
-    MARK_CHECKPOINT;
-    for (list = global_List; list; list = list->next) {
-	rb_gc_mark_maybe(*list->varptr);
-    }
-
-    MARK_CHECKPOINT;
-    rb_mark_end_proc();
-
-    MARK_CHECKPOINT;
-    rb_gc_mark_global_tbl();
-
-    /* mark generic instance variables for special constants */
-    MARK_CHECKPOINT;
-    rb_mark_generic_ivar_tbl();
-
-    MARK_CHECKPOINT;
-    rb_gc_mark_parser();
-
-    MARK_CHECKPOINT;
-    rb_gc_mark_unlinked_live_method_entries(th->vm);
-
-    /* marking-loop */
-    MARK_CHECKPOINT;
-    gc_mark_stacked_objects(objspace);
-
-    MARK_CHECKPOINT;
-#undef MARK_CHECKPOINT
+    gc_mark_roots(objspace, full_mark, 0);
 
     /* cleanup */
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
@@ -4699,6 +4725,39 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
 	gc_mark_children(objspace, obj);
 	objspace->mark_func_data = 0;
     }
+}
+
+struct root_objects_data {
+    const char *category;
+    void (*func)(const char *category, VALUE, void *);
+    void *data;
+};
+
+static void
+root_objects_from(VALUE obj, void *ptr)
+{
+    const struct root_objects_data *data = (struct root_objects_data *)ptr;
+    (*data->func)(data->category, obj, data->data);
+}
+
+void
+rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    struct root_objects_data data;
+    struct mark_func_data_struct mfd;
+
+    data.func = func;
+    data.data = passing_data;
+    
+    mfd.mark_func = root_objects_from;
+    mfd.data = &data;
+
+    objspace->mark_func_data = &mfd;
+    {
+	gc_mark_roots(objspace, FALSE, &data.category);
+    }
+    objspace->mark_func_data = 0;
 }
 
 /*

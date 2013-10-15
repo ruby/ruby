@@ -1,3 +1,11 @@
+Tue Oct 15 19:18:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.h (rb_objspace_reachable_objects_from_root): added.
+	  This API provides information which objects are root objects.
+	  `category' shows what kind of root objects.
+
+	* gc.c (gc_mark_roots): separate from gc_marks_body().
+
 Tue Oct 15 17:47:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Fix a typo.  MacOS X doesn't have ENOTSUPP.
