@@ -1081,7 +1081,7 @@ before_exec_non_async_signal_safe(void)
 {
     if (!forked_child) {
 	/*
-	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
+	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
 	 * if the process have multiple threads. Therefore we have to kill
 	 * internal threads temporary. [ruby-core:10583]
 	 * This is also true on Haiku. It returns Errno::EPERM against exec()

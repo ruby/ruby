@@ -1,3 +1,7 @@
+Tue Oct 15 17:47:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: Fix a typo.  MacOS X don't have ENOTSUPP.
+
 Mon Oct 14 12:32:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): load statically linked extensions before
