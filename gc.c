@@ -4749,7 +4749,7 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
 
     data.func = func;
     data.data = passing_data;
-    
+
     mfd.mark_func = root_objects_from;
     mfd.data = &data;
 
