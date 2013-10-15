@@ -3575,42 +3575,42 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
     SET_STACK_END;
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
-    MARK_CHECKPOINT("finalizer_table");
+    MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);
 
-    MARK_CHECKPOINT("mark_current_machine_context");
+    MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, th);
 
-    MARK_CHECKPOINT("rb_gc_mark_symbols");
+    MARK_CHECKPOINT("symbols");
     rb_gc_mark_symbols(full_mark);
 
-    MARK_CHECKPOINT("rb_gc_mark_encodings");
+    MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();
 
     /* mark protected global variables */
-    MARK_CHECKPOINT("global_List");
+    MARK_CHECKPOINT("global_list");
     for (list = global_List; list; list = list->next) {
 	rb_gc_mark_maybe(*list->varptr);
     }
 
-    MARK_CHECKPOINT("rb_mark_end_proc");
+    MARK_CHECKPOINT("end_proc");
     rb_mark_end_proc();
 
-    MARK_CHECKPOINT("rb_gc_mark_global_tbl");
+    MARK_CHECKPOINT("global_tbl");
     rb_gc_mark_global_tbl();
 
     /* mark generic instance variables for special constants */
-    MARK_CHECKPOINT("rb_mark_generic_ivar_tbl");
+    MARK_CHECKPOINT("generic_ivars");
     rb_mark_generic_ivar_tbl();
 
-    MARK_CHECKPOINT("rb_gc_mark_parser");
+    MARK_CHECKPOINT("parser");
     rb_gc_mark_parser();
 
-    MARK_CHECKPOINT("rb_gc_mark_unlinked_live_method_entries");
+    MARK_CHECKPOINT("live_method_entries");
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
     /* marking-loop */
-    MARK_CHECKPOINT("gc_mark_stacked_objects");
+    MARK_CHECKPOINT("stacked_objects");
     gc_mark_stacked_objects(objspace);
 
     MARK_CHECKPOINT("finish");

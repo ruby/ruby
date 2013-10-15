@@ -1,3 +1,8 @@
+Wed Oct 16 07:25:02 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_mark_roots): rename roots to be categories
+	  instead of function names.
+
 Tue Oct 15 19:18:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.h (rb_objspace_reachable_objects_from_root): added.
