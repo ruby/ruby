@@ -1794,6 +1794,11 @@ class TestArray < Test::Unit::TestCase
     assert_raise(ArgumentError) { [0].first(-1) }
   end
 
+  def test_last2
+    assert_equal([0], [0].last(2))
+    assert_raise(ArgumentError) { [0].last(-1) }
+  end
+
   def test_shift2
     assert_equal(0, ([0] * 16).shift)
     # check
