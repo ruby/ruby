@@ -773,13 +773,13 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value fcall
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
-%type <node> args call_args opt_call_args
+%type <node> args args_no_comma call_args call_args_no_comma opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assocs assocs_no_comma assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
@@ -2337,11 +2337,11 @@ arg_value	: arg
 		;
 
 aref_args	: none
-		| args trailer
+		| args_no_comma trailer
 		    {
 			$$ = $1;
 		    }
-		| args ',' assocs trailer
+		| args_no_comma nl_or_comma assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2349,7 +2349,7 @@ aref_args	: none
 			$$ = arg_add_assocs($1, $3);
 		    %*/
 		    }
-		| assocs trailer
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -2374,12 +2374,12 @@ opt_paren_args	: none
 		;
 
 opt_call_args	: none
-		| call_args
-		| args ','
+		| call_args_no_comma
+		| args_no_comma trailer
 		    {
 		      $$ = $1;
 		    }
-		| args ',' assocs ','
+		| args_no_comma nl_or_comma assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2387,7 +2387,7 @@ opt_call_args	: none
 			$$ = arg_add_assocs($1, $3);
 		    %*/
 		    }
-		| assocs ','
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -2425,6 +2425,51 @@ call_args	: command
 		    %*/
 		    }
 		| args ',' assocs opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = arg_append($1, NEW_HASH($3));
+			$$ = arg_blk_pass($$, $4);
+		    /*%
+			$$ = arg_add_optblock(arg_add_assocs($1, $3), $4);
+		    %*/
+		    }
+		| block_arg
+		    /*%c%*/
+		    /*%c
+		    {
+			$$ = arg_add_block(arg_new(), $1);
+		    }
+		    %*/
+		;
+
+call_args_no_comma	: command
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_LIST($1);
+		    /*%
+			$$ = arg_add(arg_new(), $1);
+		    %*/
+		    }
+		| args_no_comma opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = arg_blk_pass($1, $2);
+		    /*%
+			$$ = arg_add_optblock($1, $2);
+		    %*/
+		    }
+		| assocs_no_comma opt_block_arg
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = arg_blk_pass($$, $2);
+		    /*%
+			$$ = arg_add_assocs(arg_new(), $1);
+			$$ = arg_add_optblock($$, $2);
+		    %*/
+		    }
+		| args_no_comma nl_or_comma assocs_no_comma opt_block_arg
 		    {
 		    /*%%%*/
 			$$ = arg_append($1, NEW_HASH($3));
@@ -2505,6 +2550,52 @@ args		: arg_value
 		    %*/
 		    }
 		| args ',' tSTAR arg_value
+		    {
+		    /*%%%*/
+			NODE *n1;
+			if ((nd_type($4) == NODE_ARRAY) && (n1 = splat_array($1)) != 0) {
+			    $$ = list_concat(n1, $4);
+			}
+			else {
+			    $$ = arg_concat($1, $4);
+			}
+		    /*%
+			$$ = arg_add_star($1, $4);
+		    %*/
+		    }
+		;
+
+args_no_comma		: arg_value
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST($1);
+		    /*%
+			$$ = arg_add(arg_new(), $1);
+		    %*/
+		    }
+		| tSTAR arg_value
+		    {
+		    /*%%%*/
+			$$ = NEW_SPLAT($2);
+		    /*%
+			$$ = arg_add_star(arg_new(), $2);
+		    %*/
+		    }
+		| args_no_comma nl_or_comma arg_value
+		    {
+		    /*%%%*/
+			NODE *n1;
+			if ((n1 = splat_array($1)) != 0) {
+			    $$ = list_append(n1, $3);
+			}
+			else {
+			    $$ = arg_append($1, $3);
+			}
+		    /*%
+			$$ = arg_add($1, $3);
+		    %*/
+		    }
+		| args_no_comma nl_or_comma tSTAR arg_value
 		    {
 		    /*%%%*/
 			NODE *n1;
@@ -4893,7 +4984,7 @@ singleton	: var_ref
 		;
 
 assoc_list	: none
-		| assocs trailer
+		| assocs_no_comma trailer
 		    {
 		    /*%%%*/
 			$$ = $1;
@@ -4911,6 +5002,23 @@ assocs		: assoc
 		    }
 		    %*/
 		| assocs ',' assoc
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*%
+			$$ = rb_ary_push($1, $3);
+		    %*/
+		    }
+		;
+
+assocs_no_comma		: assoc
+		    /*%c%*/
+		    /*%c
+		    {
+			$$ = rb_ary_new3(1, $1);
+		    }
+		    %*/
+		| assocs_no_comma nl_or_comma assoc
 		    {
 		    /*%%%*/
 			$$ = list_concat($1, $3);
@@ -4991,7 +5099,13 @@ rbracket	: opt_nl ']'
 		;
 
 trailer		: /* none */
-		| '\n'
+		| nl_or_comma
+		;
+
+nl_or_comma	: '\n'
+       {
+     command_start = FALSE;
+       }
 		| ','
 		;
 

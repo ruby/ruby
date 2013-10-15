@@ -2344,4 +2344,40 @@ class TestArray < Test::Unit::TestCase
 
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
+
+  def test_array_no_comma
+    feature8956 = [
+      :foo,
+      :bar,
+      [
+        :baz,
+        :qux
+      ]
+    ]
+
+    assert_equal(feature8956, [
+      :foo
+      :bar
+      [
+        :baz
+        :qux
+      ]
+    ])
+    assert_equal(feature8956, @cls[
+      :foo
+      :bar
+      [
+        :baz
+        :qux
+      ]
+    ])
+    assert_equal(feature8956, @cls.[](
+      :foo
+      :bar
+      [
+        :baz
+        :qux
+      ]
+    ))
+  end
 end
