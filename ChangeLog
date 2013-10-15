@@ -1,6 +1,6 @@
 Tue Oct 15 17:47:59 2013  Tanaka Akira  <akr@fsij.org>
 
-	* process.c: Fix a typo.  MacOS X don't have ENOTSUPP.
+	* process.c: Fix a typo.  MacOS X doesn't have ENOTSUPP.
 
 Mon Oct 14 12:32:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -16,7 +16,7 @@ Mon Oct 14 12:32:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Oct 14 11:07:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_framework): should append framework options to
-	  $LIBS, not $LDFLAGS.  the former is propagated to exts.mk when
+	  $LIBS, not $LDFLAGS.  The former is propagated to exts.mk when
 	  enable-static-linked-ext.
 
 	* lib/mkmf.rb (create_makefile): ranlib on static library, not DLLIB.
