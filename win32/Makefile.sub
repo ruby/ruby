@@ -308,7 +308,7 @@ STACK = $(STACK),$(STACK_COMMIT)
 !endif
 ORGLIBPATH = $(LIB)
 
-!if defined(HAVE_PSAPI_H)
+!if !defined(HAVE_PSAPI_H)
 HAVE_PSAPI_H = 0
 !endif
 #### End of system configuration section. ####
