@@ -65,7 +65,7 @@ install (FILES test.txt DESTINATION bin)
 
   def test_self_build_has_makefile
     File.open File.join(@ext, 'Makefile'), 'w' do |makefile|
-      makefile.puts "clean:\n\t@echo ok\nall:\n\t@echo ok\ninstall:\n\t@echo ok"
+      makefile.puts "all:\n\t@echo ok\ninstall:\n\t@echo ok"
     end
 
     output = []

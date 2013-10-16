@@ -19,11 +19,6 @@ class Gem::Ext::Builder
 
   CHDIR_MUTEX = Mutex.new # :nodoc:
 
-  ##
-  # `make` targets to run when building the extension
-
-  MAKE_TARGETS = ['clean', '', 'install'] # :nodoc:
-
   attr_accessor :build_args # :nodoc:
 
   def self.class_name
@@ -45,14 +40,18 @@ class Gem::Ext::Builder
 
     destdir = '"DESTDIR=%s"' % ENV['DESTDIR'] if RUBY_VERSION > '2.0'
 
-    self::MAKE_TARGETS.each do |target|
+    ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
       cmd = [
         make_program,
         destdir,
         target
       ].join(' ').rstrip
-      run(cmd, results, "make #{target}".rstrip)
+      begin
+        run(cmd, results, "make #{target}".rstrip)
+      rescue Gem::InstallError
+        raise unless target == 'clean' # ignore clean failure
+      end
     end
   end
 

@@ -32,9 +32,13 @@ class Gem::Commands::InstallCommand < Gem::Command
     add_version_option
     add_prerelease_option "to be installed. (Only for listed gems)"
 
-    add_option(:"Install/Update", '-g', '--file FILE',
+    add_option(:"Install/Update", '-g', '--file [FILE]',
                'Read from a gem dependencies API file and',
                'install the listed gems') do |v,o|
+      v = %w[gem.deps.rb Gemfile Isolate].find do |file|
+        File.exist? file
+      end unless v
+
       o[:gemdeps] = v
     end
 

@@ -1,3 +1,13 @@
+Wed Oct 16 09:42:42 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 278d00d.  Changes:
+
+	  Fixes building extensions without a "clean" make rule
+
+	  Adds gem dependency file autodetection to "gem install -g"
+
+	* test/rubygems:  Tests for the above.
+
 Wed Oct 16 09:12:23 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master commit 2a74263.  This fixes

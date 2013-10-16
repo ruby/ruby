@@ -66,6 +66,37 @@ install:
     end
   end
 
+  def test_class_make_no_clean
+    ENV['DESTDIR'] = 'destination'
+    results = []
+
+    Dir.chdir @ext do
+      open 'Makefile', 'w' do |io|
+        io.puts <<-MAKEFILE
+all:
+\t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
+
+install:
+\t@#{Gem.ruby} -e "puts %Q{install: \#{ENV['DESTDIR']}}"
+        MAKEFILE
+      end
+
+      Gem::Ext::Builder.make @dest_path, results
+    end
+
+    results = results.join "\n"
+
+    if RUBY_VERSION > '2.0' then
+      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+      assert_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
+    else
+      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" clean$%,   results
+      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}"$%,         results
+      refute_match %r%"DESTDIR=#{ENV['DESTDIR']}" install$%, results
+    end
+  end
+
   def test_build_extensions
     @spec.extensions << 'extconf.rb'
 

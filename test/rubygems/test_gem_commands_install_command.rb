@@ -866,5 +866,32 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "Installing r (2.0)", @ui.output
   end
 
+  def test_handle_options_file
+    @cmd.handle_options %w[-g Gemfile]
+
+    assert_equal 'Gemfile', @cmd.options[:gemdeps]
+
+    @cmd.handle_options %w[--file gem.deps.rb]
+
+    assert_equal 'gem.deps.rb', @cmd.options[:gemdeps]
+
+    FileUtils.touch 'Isolate'
+
+    @cmd.handle_options %w[-g]
+
+    assert_equal 'Isolate', @cmd.options[:gemdeps]
+
+    FileUtils.touch 'Gemfile'
+
+    @cmd.handle_options %w[-g]
+
+    assert_equal 'Gemfile', @cmd.options[:gemdeps]
+
+    FileUtils.touch 'gem.deps.rb'
+
+    @cmd.handle_options %w[-g]
+
+    assert_equal 'gem.deps.rb', @cmd.options[:gemdeps]
+  end
 
 end
