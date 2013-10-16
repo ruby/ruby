@@ -1,3 +1,7 @@
+Wed Oct 16 22:35:27 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/io/nonblock/nonblock.c: use rb_cIO instead of VALUE
+
 Wed Oct 16 17:45:13 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb: check nil before calling `signal?'
