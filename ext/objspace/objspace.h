@@ -2,7 +2,7 @@
 #define OBJSPACE_H 1
 
 /* objspace.c */
-size_t memsize_of(VALUE obj);
+size_t objspace_memsize_of(VALUE obj);
 
 /* object_tracing.c */
 struct allocation_info {
@@ -12,6 +12,6 @@ struct allocation_info {
     VALUE mid;
     size_t generation;
 };
-struct allocation_info *lookup_allocation_info(VALUE obj);
+struct allocation_info *objspace_lookup_allocation_info(VALUE obj);
 
 #endif

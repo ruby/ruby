@@ -248,7 +248,7 @@ trace_object_allocations(VALUE self)
     return rb_ensure(rb_yield, Qnil, trace_object_allocations_stop, self);
 }
 
-struct allocation_info *
+static struct allocation_info *
 lookup_allocation_info(VALUE obj)
 {
     if (tmp_trace_arg) {
@@ -258,6 +258,12 @@ lookup_allocation_info(VALUE obj)
 	}
     }
     return NULL;
+}
+
+struct allocation_info *
+objspace_lookup_allocation_info(VALUE obj)
+{
+    return lookup_allocation_info(obj);
 }
 
 /*

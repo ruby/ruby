@@ -27,7 +27,7 @@ size_t rb_io_memsize(const rb_io_t *);
 size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
 
-size_t
+static size_t
 memsize_of(VALUE obj)
 {
     size_t size = 0;
@@ -142,6 +142,12 @@ memsize_of(VALUE obj)
     }
 
     return size;
+}
+
+size_t
+objspace_memsize_of(VALUE obj)
+{
+    return memsize_of(obj);
 }
 
 /*

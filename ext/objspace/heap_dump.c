@@ -218,14 +218,14 @@ dump_object(VALUE obj, struct heap_dump_config *hdc)
     if (hdc->cur_obj_references > 0)
 	fprintf(hdc->stream, "]");
 
-    if ((ainfo = lookup_allocation_info(obj))) {
+    if ((ainfo = objspace_lookup_allocation_info(obj))) {
 	fprintf(hdc->stream, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid))
 	    fprintf(hdc->stream, ", \"method\":\"%s\"", rb_id2name(SYM2ID(ainfo->mid)));
 	fprintf(hdc->stream, ", \"generation\":%zu", ainfo->generation);
     }
 
-    if ((memsize = memsize_of(obj)) > 0)
+    if ((memsize = objspace_memsize_of(obj)) > 0)
 	fprintf(hdc->stream, ", \"memsize\":%zu", memsize);
 
     fprintf(hdc->stream, "}\n");
