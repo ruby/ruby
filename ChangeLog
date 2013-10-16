@@ -1,3 +1,7 @@
+Wed Oct 16 15:14:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add a line into NEWS for last commit.
+
 Wed Oct 16 15:09:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add a new method `reachable_objects_from_root'.
