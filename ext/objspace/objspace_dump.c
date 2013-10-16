@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  heap_dump.c - Heap dumping ObjectSpace extender for MRI.
+  objspace_dump.c - Heap dumping ObjectSpace extender for MRI.
 
   $Author$
   created at: Sat Oct 11 10:11:00 2013
@@ -33,7 +33,7 @@
 /* from hash.c */
 #define HASH_PROC_DEFAULT FL_USER2
 
-struct heap_dump_config {
+struct dump_config {
     FILE *stream;
     int roots;
     const char *root_category;
@@ -80,17 +80,17 @@ obj_type(VALUE obj)
 static void
 reachable_object_i(VALUE ref, void *data)
 {
-    struct heap_dump_config *hdc = (struct heap_dump_config *)data;
+    struct dump_config *dc = (struct dump_config *)data;
 
-    if (hdc->cur_obj_klass == ref)
+    if (dc->cur_obj_klass == ref)
 	return;
 
-    if (hdc->cur_obj_references == 0)
-	fprintf(hdc->stream, ", \"references\":[\"%p\"", (void *)ref);
+    if (dc->cur_obj_references == 0)
+	fprintf(dc->stream, ", \"references\":[\"%p\"", (void *)ref);
     else
-	fprintf(hdc->stream, ", \"%p\"", (void *)ref);
+	fprintf(dc->stream, ", \"%p\"", (void *)ref);
 
-    hdc->cur_obj_references++;
+    dc->cur_obj_references++;
 }
 
 static void
@@ -129,106 +129,106 @@ json_dump_string(FILE *stream, VALUE obj)
 }
 
 static void
-dump_object(VALUE obj, struct heap_dump_config *hdc)
+dump_object(VALUE obj, struct dump_config *dc)
 {
     int enc;
     long length;
     size_t memsize;
     struct allocation_info *ainfo;
 
-    hdc->cur_obj = obj;
-    hdc->cur_obj_references = 0;
-    hdc->cur_obj_klass = BUILTIN_TYPE(obj) == T_NODE ? 0 : RBASIC_CLASS(obj);
+    dc->cur_obj = obj;
+    dc->cur_obj_references = 0;
+    dc->cur_obj_klass = BUILTIN_TYPE(obj) == T_NODE ? 0 : RBASIC_CLASS(obj);
 
-    fprintf(hdc->stream, "{\"address\":\"%p\", \"type\":\"%s\"", (void *)obj, obj_type(obj));
+    fprintf(dc->stream, "{\"address\":\"%p\", \"type\":\"%s\"", (void *)obj, obj_type(obj));
 
-    if (hdc->cur_obj_klass)
-	fprintf(hdc->stream, ", \"class\":\"%p\"", (void *)hdc->cur_obj_klass);
+    if (dc->cur_obj_klass)
+	fprintf(dc->stream, ", \"class\":\"%p\"", (void *)dc->cur_obj_klass);
     if (rb_obj_frozen_p(obj))
-	fprintf(hdc->stream, ", \"frozen\":true");
+	fprintf(dc->stream, ", \"frozen\":true");
 
     switch (BUILTIN_TYPE(obj)) {
 	case T_NODE:
-	    fprintf(hdc->stream, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
+	    fprintf(dc->stream, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
 	    break;
 
 	case T_STRING:
 	    if (STR_EMBED_P(obj))
-		fprintf(hdc->stream, ", \"embedded\":true");
+		fprintf(dc->stream, ", \"embedded\":true");
 	    if (STR_ASSOC_P(obj))
-		fprintf(hdc->stream, ", \"associated\":true");
+		fprintf(dc->stream, ", \"associated\":true");
 	    if (is_broken_string(obj))
-		fprintf(hdc->stream, ", \"broken\":true");
+		fprintf(dc->stream, ", \"broken\":true");
 	    if (STR_SHARED_P(obj))
-		fprintf(hdc->stream, ", \"shared\":true");
+		fprintf(dc->stream, ", \"shared\":true");
 	    else {
-		fprintf(hdc->stream, ", \"bytesize\":%ld", RSTRING_LEN(obj));
+		fprintf(dc->stream, ", \"bytesize\":%ld", RSTRING_LEN(obj));
 		if (!STR_EMBED_P(obj) && !STR_NOCAPA_P(obj) && rb_str_capacity(obj) != RSTRING_LEN(obj))
-		    fprintf(hdc->stream, ", \"capacity\":%ld", rb_str_capacity(obj));
+		    fprintf(dc->stream, ", \"capacity\":%ld", rb_str_capacity(obj));
 
 		if (is_ascii_string(obj)) {
-		    fprintf(hdc->stream, ", \"value\":");
-		    json_dump_string(hdc->stream, obj);
+		    fprintf(dc->stream, ", \"value\":");
+		    json_dump_string(dc->stream, obj);
 		}
 	    }
 
 	    if (!ENCODING_IS_ASCII8BIT(obj))
-		fprintf(hdc->stream, ", \"encoding\":\"%s\"", rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
+		fprintf(dc->stream, ", \"encoding\":\"%s\"", rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
 	    break;
 
 	case T_HASH:
-	    fprintf(hdc->stream, ", \"size\":%ld", RHASH_SIZE(obj));
+	    fprintf(dc->stream, ", \"size\":%ld", RHASH_SIZE(obj));
 	    if (FL_TEST(obj, HASH_PROC_DEFAULT))
-		fprintf(hdc->stream, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
+		fprintf(dc->stream, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
 	    break;
 
 	case T_ARRAY:
-	    fprintf(hdc->stream, ", \"length\":%ld", RARRAY_LEN(obj));
+	    fprintf(dc->stream, ", \"length\":%ld", RARRAY_LEN(obj));
 	    if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
-		fprintf(hdc->stream, ", \"shared\":true");
+		fprintf(dc->stream, ", \"shared\":true");
 	    if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_EMBED_FLAG))
-		fprintf(hdc->stream, ", \"embedded\":true");
+		fprintf(dc->stream, ", \"embedded\":true");
 	    break;
 
 	case T_CLASS:
 	case T_MODULE:
-	    if (hdc->cur_obj_klass)
-		fprintf(hdc->stream, ", \"name\":\"%s\"", rb_class2name(obj));
+	    if (dc->cur_obj_klass)
+		fprintf(dc->stream, ", \"name\":\"%s\"", rb_class2name(obj));
 	    break;
 
 	case T_DATA:
 	    if (RTYPEDDATA_P(obj))
-		fprintf(hdc->stream, ", \"struct\":\"%s\"", RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+		fprintf(dc->stream, ", \"struct\":\"%s\"", RTYPEDDATA_TYPE(obj)->wrap_struct_name);
 	    break;
 
 	case T_FLOAT:
-	    fprintf(hdc->stream, ", \"value\":\"%g\"", RFLOAT_VALUE(obj));
+	    fprintf(dc->stream, ", \"value\":\"%g\"", RFLOAT_VALUE(obj));
 	    break;
 
 	case T_OBJECT:
-	    fprintf(hdc->stream, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
+	    fprintf(dc->stream, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
 	    break;
 
 	case T_ZOMBIE:
-	    fprintf(hdc->stream, "}\n");
+	    fprintf(dc->stream, "}\n");
 	    return;
     }
 
-    rb_objspace_reachable_objects_from(obj, reachable_object_i, hdc);
-    if (hdc->cur_obj_references > 0)
-	fprintf(hdc->stream, "]");
+    rb_objspace_reachable_objects_from(obj, reachable_object_i, dc);
+    if (dc->cur_obj_references > 0)
+	fprintf(dc->stream, "]");
 
     if ((ainfo = objspace_lookup_allocation_info(obj))) {
-	fprintf(hdc->stream, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
+	fprintf(dc->stream, ", \"file\":\"%s\", \"line\":%lu", ainfo->path, ainfo->line);
 	if (RTEST(ainfo->mid))
-	    fprintf(hdc->stream, ", \"method\":\"%s\"", rb_id2name(SYM2ID(ainfo->mid)));
-	fprintf(hdc->stream, ", \"generation\":%zu", ainfo->generation);
+	    fprintf(dc->stream, ", \"method\":\"%s\"", rb_id2name(SYM2ID(ainfo->mid)));
+	fprintf(dc->stream, ", \"generation\":%zu", ainfo->generation);
     }
 
     if ((memsize = objspace_memsize_of(obj)) > 0)
-	fprintf(hdc->stream, ", \"memsize\":%zu", memsize);
+	fprintf(dc->stream, ", \"memsize\":%zu", memsize);
 
-    fprintf(hdc->stream, "}\n");
+    fprintf(dc->stream, "}\n");
 }
 
 static int
@@ -245,17 +245,17 @@ heap_i(void *vstart, void *vend, int stride, void *data)
 static void
 root_obj_i(const char *category, VALUE obj, void *data)
 {
-    struct heap_dump_config *hdc = (struct heap_dump_config *)data;
+    struct dump_config *dc = (struct dump_config *)data;
 
-    if (hdc->root_category != NULL && category != hdc->root_category)
-	fprintf(hdc->stream, "]}\n");
-    if (hdc->root_category == NULL || category != hdc->root_category)
-	fprintf(hdc->stream, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%p\"", category, (void *)obj);
+    if (dc->root_category != NULL && category != dc->root_category)
+	fprintf(dc->stream, "]}\n");
+    if (dc->root_category == NULL || category != dc->root_category)
+	fprintf(dc->stream, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%p\"", category, (void *)obj);
     else
-	fprintf(hdc->stream, ", \"%p\"", (void *)obj);
+	fprintf(dc->stream, ", \"%p\"", (void *)obj);
 
-    hdc->root_category = category;
-    hdc->roots++;
+    dc->root_category = category;
+    dc->roots++;
 }
 
 /*
@@ -275,19 +275,19 @@ static VALUE
 objspace_dump(int argc, VALUE *argv, VALUE os)
 {
     VALUE obj, filename;
-    struct heap_dump_config hdc = {
+    struct dump_config dc = {
 	.stream = stdout
     };
 
     if (rb_scan_args(argc, argv, "11", &obj, &filename) == 2) {
 	FilePathStringValue(filename);
-	hdc.stream = fopen(RSTRING_PTR(filename), "w");
+	dc.stream = fopen(RSTRING_PTR(filename), "w");
     }
 
-    dump_object(obj, &hdc);
+    dump_object(obj, &dc);
 
-    if (hdc.stream != stdout)
-	fclose(hdc.stream);
+    if (dc.stream != stdout)
+	fclose(dc.stream);
 }
 
 /*
@@ -307,7 +307,7 @@ static VALUE
 objspace_dump_all(int argc, VALUE *argv, VALUE os)
 {
     VALUE filename = Qnil;
-    struct heap_dump_config hdc = {
+    struct dump_config dc = {
 	.stream = stdout,
 	.roots = 0,
 	.root_category = NULL
@@ -315,24 +315,24 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     if (rb_scan_args(argc, argv, "01", &filename) == 1) {
 	FilePathStringValue(filename);
-	hdc.stream = fopen(RSTRING_PTR(filename), "w");
+	dc.stream = fopen(RSTRING_PTR(filename), "w");
     }
 
     /* dump roots */
-    rb_objspace_reachable_objects_from_root(root_obj_i, &hdc);
-    if (hdc.roots) fprintf(hdc.stream, "]}\n");
+    rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
+    if (dc.roots) fprintf(dc.stream, "]}\n");
 
     /* dump objects */
-    rb_objspace_each_objects(heap_i, &hdc);
+    rb_objspace_each_objects(heap_i, &dc);
 
-    if (hdc.stream != stdout)
-	fclose(hdc.stream);
+    if (dc.stream != stdout)
+	fclose(dc.stream);
 
     return Qnil;
 }
 
 void
-Init_heap_dump(VALUE rb_mObjSpace)
+Init_objspace_dump(VALUE rb_mObjSpace)
 {
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */

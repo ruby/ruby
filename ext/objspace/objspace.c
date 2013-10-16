@@ -832,5 +832,5 @@ Init_objspace(void)
 
     Init_object_tracing(rb_mObjSpace);
     Init_gc_hook(rb_mObjSpace);
-    Init_heap_dump(rb_mObjSpace);
+    Init_objspace_dump(rb_mObjSpace);
 }
