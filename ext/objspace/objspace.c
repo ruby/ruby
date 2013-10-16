@@ -774,6 +774,70 @@ reachable_objects_from(VALUE self, VALUE obj)
     }
 }
 
+struct rofr_data {
+    VALUE categories;
+    const char *last_category;
+    VALUE last_category_str;
+    VALUE last_category_objects;
+};
+
+static void
+reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
+{
+    struct rofr_data *data = (struct rofr_data *)ptr;
+    VALUE category_str;
+    VALUE category_objects;
+
+    if (category == data->last_category) {
+	category_str = data->last_category_str;
+	category_objects = data->last_category_objects;
+    }
+    else {
+	data->last_category = category;
+	category_str = data->last_category_str = rb_str_new2(category);
+	category_objects = data->last_category_objects = rb_hash_new();
+	if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
+	    rb_bug("reachable_object_from_root_i: category should insert at once");
+	}
+	rb_hash_aset(data->categories, category_str, category_objects);
+    }
+
+    if (rb_objspace_markable_object_p(obj)) {
+	if (rb_objspace_internal_object_p(obj)) {
+	    obj = iow_newobj(obj);
+	}
+	rb_hash_aset(category_objects, obj, obj);
+    }
+}
+
+static int
+collect_values_of_values(VALUE category, VALUE category_objects, VALUE categories)
+{
+    VALUE ary = rb_ary_new();
+    st_foreach(rb_hash_tbl(category_objects), collect_values, ary);
+    rb_hash_aset(categories, category, ary);
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.reachable_objects_from_root -> hash
+ *
+ *  [MRI specific feature] Return all reachable objects from root.
+ */
+static VALUE
+reachable_objects_from_root(VALUE self)
+{
+    struct rofr_data data;
+    VALUE hash = data.categories = rb_hash_new();
+    data.last_category = 0;
+
+    rb_objspace_reachable_objects_from_root(reachable_object_from_root_i, &data);
+    rb_hash_foreach(hash, collect_values_of_values, hash);
+
+    return hash;
+}
+
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_gc_hook(VALUE rb_mObjSpace);
 
@@ -809,6 +873,7 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
+    rb_define_module_function(rb_mObjSpace, "reachable_objects_from_root", reachable_objects_from_root, 0);
 
     /*
      * This class is used as a return value from

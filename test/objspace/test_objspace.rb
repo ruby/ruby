@@ -97,6 +97,18 @@ class TestObjSpace < Test::Unit::TestCase
     eom
   end
 
+  def test_reachable_objects_from_root
+    root_objects = ObjectSpace.reachable_objects_from_root
+
+    assert_operator(root_objects.size, :>, 0)
+
+    root_objects.each{|category, objects|
+      assert_kind_of(String, category)
+      assert_kind_of(Array, objects)
+      assert_operator(objects.size, :>, 0)
+    }
+  end
+
   def test_reachable_objects_size
     assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     ObjectSpace.each_object{|o|

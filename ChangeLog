@@ -1,3 +1,12 @@
+Wed Oct 16 15:09:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add a new method `reachable_objects_from_root'.
+	  ObjectSpace.reachable_objects_from_root returns all objects refered
+	  from root (called "root objects").
+	  This feature is for deep object analysis.
+
+	* test/objspace/test_objspace.rb: add a test.
+
 Wed Oct 16 15:00:21 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master b955554.  Changes:
