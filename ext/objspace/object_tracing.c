@@ -99,7 +99,7 @@ newobj_i(VALUE tpval, void *data)
     const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
 
     if (arg->keep_remains && st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
-	if (info->living) rb_bug("newobj_i: reuse living object: %p", (void *)obj);
+	if (0 /* workaround */) if (info->living) rb_bug("newobj_i: reuse living object: %p", (void *)obj);
 	delete_unique_str(arg->str_table, info->path);
 	delete_unique_str(arg->str_table, info->class_path);
     }
@@ -294,7 +294,7 @@ object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
 
     fprintf(out, "-- %p (%s F: %p, ", (void *)obj, info->living ? "live" : "dead", (void *)info->flags);
     if (info->class_path) fprintf(out, "C: %s", info->class_path);
-    else                  fprintf(out, "C: %p", info->klass);
+    else                  fprintf(out, "C: %p", (void *)info->klass);
     fprintf(out, "@%s:%lu", info->path ? info->path : "", info->line);
     if (!NIL_P(info->mid)) fprintf(out, " (%s)", rb_id2name(SYM2ID(info->mid)));
     fprintf(out, ")\n");

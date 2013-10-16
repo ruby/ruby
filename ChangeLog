@@ -1,3 +1,10 @@
+Thu Oct 17 08:08:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c (newobj_i): add workaround.
+	  some bugs hits this check.
+
+	* ext/objspace/object_tracing.c (object_allocations_reporter_i): cast as pointer.
+
 Thu Oct 17 07:36:53 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 2abce58.  Changes:
