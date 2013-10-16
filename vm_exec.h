@@ -193,6 +193,11 @@ default:                        \
     th->errinfo = (VALUE)(exc); \
     return 0; \
 } while (0)
+#elif OPT_CONTEXT_THREADED_CODE
+#define THROW_EXCEPTION(exc) do { \
+    __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp"); \
+    return (VALUE)(exc); \
+} while (0)
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
