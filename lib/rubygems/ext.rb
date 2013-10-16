@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-
 ##
 # Classes for building C extensions live here.
 

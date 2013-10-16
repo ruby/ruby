@@ -1,3 +1,16 @@
+Wed Oct 16 15:00:21 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master b955554.  Changes:
+
+	  Fixed NameError for Gem::Ext due to re-entering file lookup in
+	  RubyGems' overridden require.  Bug by Koichi Sasada.
+
+	  Fixed possible circular require warning in tests.
+
+	  Used existing constant for `gem install -g` dependecy file list.
+
+	* test/rubygems:  ditto.
+
 Wed Oct 16 09:42:42 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 278d00d.  Changes:
