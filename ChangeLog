@@ -1,3 +1,9 @@
+Thu Oct 17 05:52:31 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/io/nonblock/nonblock.c: [DOC] Document io/nonblock by reprah
+	  [Fixes GH-418] https://github.com/ruby/ruby/pull/418 based on the
+	  original discussion from documenting-ruby/ruby#18
+
 Thu Oct 17 05:40:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (objspace_each_objects): do not skip empty RVALUEs.

@@ -30,6 +30,12 @@ io_nonblock_mode(int fd)
 #endif
 
 #ifdef F_GETFL
+/*
+ * call-seq:
+ *   io.nonblock? -> boolean
+ *
+ * Returns +true+ if an IO object is in non-blocking mode.
+ */
 static VALUE
 rb_io_nonblock_p(VALUE io)
 {
@@ -61,6 +67,13 @@ io_nonblock_set(int fd, int f, int nb)
 	rb_sys_fail(0);
 }
 
+/*
+ * call-seq:
+ *   io.nonblock = boolean -> boolean
+ *
+ * Enables non-blocking mode on a stream when set to
+ * +true+, and blocking mode when set to +false+.
+ */
 static VALUE
 rb_io_nonblock_set(VALUE io, VALUE nb)
 {
@@ -79,6 +92,16 @@ io_nonblock_restore(VALUE arg)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   io.nonblock {|io| } -> io
+ *   io.nonblock(boolean) {|io| } -> io
+ *
+ * Yields +self+ in non-blocking mode.
+ *
+ * When +false+ is given as an argument, +self+ is yielded in blocking mode.
+ * The original mode is restored after the block is executed.
+ */
 static VALUE
 rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 {
