@@ -5,6 +5,19 @@ require 'rubygems/dependency_list'
 require 'rubygems/installer'
 require 'tsort'
 
+##
+# A RequestSet groups a request to activate a set of dependencies.
+#
+#   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
+#   pg = Gem::Dependency.new 'pg', '~> 0.14'
+#
+#   set = Gem::RequestSet.new nokogiri, pg
+#
+#   requests = set.resolve
+#
+#   p requests.map { |r| r.full_name }
+#   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
+
 class Gem::RequestSet
 
   include TSort
@@ -22,6 +35,15 @@ class Gem::RequestSet
   # Treat missing dependencies as silent errors
 
   attr_accessor :soft_missing
+
+  ##
+  # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
+  # can then #resolve and #install the resolved list of dependencies.
+  #
+  #   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
+  #   pg = Gem::Dependency.new 'pg', '~> 0.14'
+  #
+  #   set = Gem::RequestSet.new nokogiri, pg
 
   def initialize *deps
     @dependencies = deps

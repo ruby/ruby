@@ -1,3 +1,12 @@
+Thu Oct 17 07:36:53 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 2abce58.  Changes:
+
+	  Fixed documentation generation when sdoc and json are installed as
+	  gems.
+
+	  Added some missing documentation.
+
 Thu Oct 17 07:10:26 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/curses/curses.c: [DOC] Cleaned up formatting consistency of rdoc

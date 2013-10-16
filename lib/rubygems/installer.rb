@@ -4,6 +4,7 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems/command'
 require 'rubygems/exceptions'
 require 'rubygems/package'
 require 'rubygems/ext'

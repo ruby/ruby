@@ -1390,16 +1390,27 @@ class Gem::Specification < Gem::BasicSpecification
 
   def build_extensions # :nodoc:
     return if default_gem?
+    return if extensions.empty?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir) &&
               !File.exist?(File.join(base_dir, 'extensions'))
 
-    gem_original_require 'rubygems/ext'
-    gem_original_require 'rubygems/user_interaction'
+    begin
+      # We need to require things in $LOAD_PATH without looking for the
+      # extension we are about to build.
+      unresolved_deps = Gem::Specification.unresolved_deps.dup
+      Gem::Specification.unresolved_deps.clear
 
-    Gem::DefaultUserInteraction.use_ui Gem::SilentUI.new do
-      builder = Gem::Ext::Builder.new self
-      builder.build_extensions
+      require 'rubygems/config_file'
+      require 'rubygems/ext'
+      require 'rubygems/user_interaction'
+
+      Gem::DefaultUserInteraction.use_ui Gem::SilentUI.new do
+        builder = Gem::Ext::Builder.new self
+        builder.build_extensions
+      end
+    ensure
+      Gem::Specification.unresolved_deps.replace unresolved_deps
     end
   end
 

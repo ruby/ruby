@@ -1210,6 +1210,15 @@ dependencies: []
     FileUtils.chmod 0755, @gemhome
   end
 
+  def test_build_extensions_none
+    refute_path_exists @a1.extension_install_dir, 'sanity check'
+    assert_empty @a1.extensions, 'sanity check'
+
+    @a1.build_extensions
+
+    refute_path_exists @a1.extension_install_dir
+  end
+
   def test_contains_requirable_file_eh
     code_rb = File.join @a1.gem_dir, 'lib', 'code.rb'
     FileUtils.mkdir_p File.dirname code_rb
