@@ -192,6 +192,18 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump
+    ObjectSpace.trace_object_allocations do
+      str = "hello world"
+      info = ObjectSpace.dump(str)
+
+      assert_match /"type":"STRING"/, info
+      assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
+      assert_match /"file":"#{Regexp.escape __FILE__}", "line":197/, info
+      assert_match /"method":"test_dump"/, info
+    end
+  end
+
   def test_dump_all
     entry = /"value":"this is a test string", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please"/
     assert_in_out_err(%w[-robjspace], <<-'end;', entry)
