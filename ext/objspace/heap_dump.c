@@ -260,18 +260,51 @@ root_obj_i(const char *category, VALUE obj, void *data)
 
 /*
  *  call-seq:
- *    ObjectSpace.heap_dump([filename]) -> nil
+ *    ObjectSpace.dump(obj, [filename]) -> nil
+ *
+ *  Dump the contents of a ruby object as JSON.
+ *
+ *  If the optional argument, filename, is given,
+ *  the dump is written to filename instead of stdout.
+ *
+ *  This method is only expected to work with C Ruby.
+ *  This is an experimental method and is subject to change.
+ */
+
+static VALUE
+objspace_dump(int argc, VALUE *argv, VALUE os)
+{
+    VALUE obj, filename;
+    struct heap_dump_config hdc = {
+	.stream = stdout
+    };
+
+    if (rb_scan_args(argc, argv, "11", &obj, &filename) == 2) {
+	FilePathStringValue(filename);
+	hdc.stream = fopen(RSTRING_PTR(filename), "w");
+    }
+
+    dump_object(obj, &hdc);
+
+    if (hdc.stream != stdout)
+	fclose(hdc.stream);
+}
+
+/*
+ *  call-seq:
+ *    ObjectSpace.dump_all([filename]) -> nil
  *
  *  Dump the contents of the ruby heap as JSON.
  *
  *  If the optional argument, filename, is given,
- *  the heap dump is written to filename instead of stdout.
+ *  the dump is written to filename instead of stdout.
  *
  *  This method is only expected to work with C Ruby.
+ *  This is an experimental method and is subject to change.
  */
 
 static VALUE
-heap_dump(int argc, VALUE *argv, VALUE os)
+objspace_dump_all(int argc, VALUE *argv, VALUE os)
 {
     VALUE filename = Qnil;
     struct heap_dump_config hdc = {
@@ -305,5 +338,6 @@ Init_heap_dump(VALUE rb_mObjSpace)
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif
 
-    rb_define_module_function(rb_mObjSpace, "heap_dump", heap_dump, -1);
+    rb_define_module_function(rb_mObjSpace, "dump", objspace_dump, -1);
+    rb_define_module_function(rb_mObjSpace, "dump_all", objspace_dump_all, -1);
 }
