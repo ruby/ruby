@@ -1,3 +1,11 @@
+Thu Oct 17 07:10:26 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/curses/curses.c: [DOC] Cleaned up formatting consistency of rdoc
+	  comments for Curses, including period spacing and column width.
+
+	  This patch also fixed some typos. Thanks to @postmodern for the patch!
+	  [Fixes GH-420] https://github.com/ruby/ruby/pull/420
+
 Thu Oct 17 06:58:42 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/date/date_core.c: [DOC] plural grammar fixed by @scott113341
