@@ -26,7 +26,7 @@ Wed Oct 16 15:14:21 2013  Koichi Sasada  <ko1@atdot.net>
 Wed Oct 16 15:09:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add a new method `reachable_objects_from_root'.
-	  ObjectSpace.reachable_objects_from_root returns all objects refered
+	  ObjectSpace.reachable_objects_from_root returns all objects referred
 	  from root (called "root objects").
 	  This feature is for deep object analysis.
 
@@ -41,7 +41,7 @@ Wed Oct 16 15:00:21 2013  Eric Hodel  <drbrain@segment7.net>
 
 	  Fixed possible circular require warning in tests.
 
-	  Used existing constant for `gem install -g` dependecy file list.
+	  Used existing constant for `gem install -g` dependency file list.
 
 	* test/rubygems:  ditto.
 
