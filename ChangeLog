@@ -1,3 +1,7 @@
+Thu Oct 17 05:40:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_each_objects): do not skip empty RVALUEs.
+
 Thu Oct 17 05:31:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c (rb_bug_reporter_add): return simply 0 if failed.

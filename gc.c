@@ -1411,16 +1411,12 @@ objspace_each_objects(VALUE arg)
     RVALUE *pstart, *pend;
     rb_objspace_t *objspace = &rb_objspace;
     struct each_obj_args *args = (struct each_obj_args *)arg;
-    volatile VALUE v;
 
     i = 0;
     while (i < heap_used) {
-	while (0 < i && last_body < objspace->heap.sorted[i-1]->body)
-	    i--;
-	while (i < heap_used && objspace->heap.sorted[i]->body <= last_body)
-	    i++;
-	if (heap_used <= i)
-	  break;
+	while (0 < i && last_body < objspace->heap.sorted[i-1]->body)        i--;
+	while (i < heap_used && objspace->heap.sorted[i]->body <= last_body) i++;
+	if (heap_used <= i) break;
 
 	slot = objspace->heap.sorted[i];
 	last_body = slot->body;
@@ -1428,19 +1424,10 @@ objspace_each_objects(VALUE arg)
 	pstart = slot->start;
 	pend = pstart + slot->limit;
 
-	for (; pstart != pend; pstart++) {
-	    if (pstart->as.basic.flags) {
-		v = (VALUE)pstart; /* acquire to save this object */
-		break;
-	    }
-	}
-	if (pstart != pend) {
-	    if ((*args->callback)(pstart, pend, sizeof(RVALUE), args->data)) {
-		break;
-	    }
+	if ((*args->callback)(pstart, pend, sizeof(RVALUE), args->data)) {
+	    break;
 	}
     }
-    RB_GC_GUARD(v);
 
     return Qnil;
 }
