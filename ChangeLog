@@ -1,3 +1,8 @@
+Thu Oct 17 05:31:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c (rb_bug_reporter_add): return simply 0 if failed.
+	  Please check return value.
+
 Thu Oct 17 05:17:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c: add new method

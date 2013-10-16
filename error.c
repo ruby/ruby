@@ -278,13 +278,13 @@ rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
 {
     struct bug_reporters *reporter;
     if (bug_reporters_size >= MAX_BUG_REPORTERS) {
-	rb_bug("rb_bug_reporter_add: overflow");
+	return 0; /* failed to register */
     }
     reporter = &bug_reporters[bug_reporters_size++];
     reporter->func = func;
     reporter->data = data;
 
-    return bug_reporters_size;
+    return 1;
 }
 
 static void
