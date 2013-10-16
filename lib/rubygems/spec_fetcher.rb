@@ -225,13 +225,14 @@ class Gem::SpecFetcher
 
     tuples =
       begin
-        cache[source.uri] ||= source.load_specs(type)
+        cache[source.uri] ||=
+          source.load_specs(type).sort_by { |tup| tup.name }
       rescue Gem::RemoteFetcher::FetchError
         raise unless gracefully_ignore
         []
       end
 
-    tuples.sort_by { |tup| tup.name }
+    tuples
   end
 
 end

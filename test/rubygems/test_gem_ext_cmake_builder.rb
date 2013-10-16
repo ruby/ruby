@@ -57,13 +57,7 @@ install (FILES test.txt DESTINATION bin)
     shell_error_msg = %r{(CMake Error: .*)}
     sh_prefix_cmake = "cmake . -DCMAKE_INSTALL_PREFIX="
 
-    expected = %r(cmake failed:
-
-#{Regexp.escape sh_prefix_cmake}#{Regexp.escape @dest_path}
-#{shell_error_msg}
-)
-
-    assert_match expected, error.message
+    assert_match 'cmake failed', error.message
 
     assert_match %r%^#{sh_prefix_cmake}#{Regexp.escape @dest_path}%, output
     assert_match %r%#{shell_error_msg}%, output
@@ -71,7 +65,7 @@ install (FILES test.txt DESTINATION bin)
 
   def test_self_build_has_makefile
     File.open File.join(@ext, 'Makefile'), 'w' do |makefile|
-      makefile.puts "all:\n\t@echo ok\ninstall:\n\t@echo ok"
+      makefile.puts "clean:\n\t@echo ok\nall:\n\t@echo ok\ninstall:\n\t@echo ok"
     end
 
     output = []

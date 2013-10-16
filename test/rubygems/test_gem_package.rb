@@ -427,6 +427,19 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_exists extracted
   end
 
+  def test_extract_tar_gz_dot_file
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file '.dot_file.rb', 0644 do |io| io.write 'hi' end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, '.dot_file.rb'
+    assert_path_exists extracted
+  end
+
   def test_install_location
     package = Gem::Package.new @gem
 
@@ -448,6 +461,22 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal("installing into parent path /absolute.rb of " +
                  "#{@destination} is not allowed", e.message)
+  end
+
+  def test_install_location_dots
+    package = Gem::Package.new @gem
+
+    file = 'file.rb'
+
+    destination = File.join @destination, 'foo', '..', 'bar'
+
+    FileUtils.mkdir_p File.join @destination, 'foo'
+    FileUtils.mkdir_p File.expand_path destination
+
+    destination = package.install_location file, destination
+
+    # this test only fails on ruby missing File.realpath
+    assert_equal File.join(@destination, 'bar', 'file.rb'), destination
   end
 
   def test_install_location_extra_slash

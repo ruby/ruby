@@ -117,8 +117,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
         f.puts "all:\n\techo built\n"
-        f.puts "install:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
       end
       RUBY
     end
@@ -177,8 +178,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
         f.puts "all:\n\techo built\n"
-        f.puts "install:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
       end
       RUBY
     end

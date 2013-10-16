@@ -79,7 +79,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal [], output
 
     if check_licenses
-      assert_equal "WARNING:  licenses is empty\n", @ui.error
+      assert_match "WARNING:  licenses is empty", @ui.error
     end
 
     gem_file = File.join @tempdir, File.basename(gem.cache_file)

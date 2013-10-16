@@ -373,6 +373,36 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert user_install, 'user_install must be set on the installer'
   end
 
+  def test_fetch_remote_gems
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
+  def test_fetch_remote_gems_error
+    Gem.sources.replace %w[http://nonexistent.example]
+
+    assert_raises Gem::RemoteFetcher::FetchError do
+      @cmd.fetch_remote_gems @a1
+    end
+  end
+
+  def test_fetch_remote_gems_prerelease
+    @cmd.options[:prerelease] = true
+
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+      [Gem::NameTuple.new('a', v('3.a'), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
   def test_handle_options_system
     @cmd.handle_options %w[--system]
 

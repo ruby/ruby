@@ -388,6 +388,41 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[b-1], inst.installed_gems.map { |s| s.full_name }
   end
 
+  def test_install_dependency_existing_extension
+    extconf_rb = File.join @gemhome, 'gems', 'e-1', 'extconf.rb'
+    FileUtils.mkdir_p File.dirname extconf_rb
+
+    open extconf_rb, 'w' do |io|
+      io.write <<-EXTCONF_RB
+        require 'mkmf'
+        create_makefile 'e'
+      EXTCONF_RB
+    end
+
+    e1 = new_spec 'e', '1', nil, 'extconf.rb' do |s|
+      s.extensions << 'extconf.rb'
+    end
+    e1_gem = File.join @tempdir, 'gems', "#{e1.full_name}.gem"
+
+    _, f1_gem = util_gem 'f', '1', 'e' => nil
+
+    Gem::Installer.new(e1_gem).install
+    FileUtils.rm_r e1.extension_install_dir
+
+    FileUtils.mv e1_gem, @tempdir
+    FileUtils.mv f1_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install 'f'
+    end
+
+    assert_equal %w[f-1], inst.installed_gems.map { |s| s.full_name }
+
+    assert_path_exists e1.extension_install_dir
+  end
+
   def test_install_dependency_old
     _, e1_gem = util_gem 'e', '1'
     _, f1_gem = util_gem 'f', '1', 'e' => nil

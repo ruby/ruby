@@ -13,12 +13,12 @@ class Gem::DependencyResolver::IndexSpecification
 
   attr_reader :version
 
-  def initialize set, name, version, source, plat
+  def initialize set, name, version, source, platform
     @set = set
     @name = name
     @version = version
     @source = source
-    @platform = plat
+    @platform = platform.to_s
 
     @spec = nil
   end

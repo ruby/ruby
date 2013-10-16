@@ -577,5 +577,18 @@ pl \(1\)
     assert_equal '', @ui.error
   end
 
+  def test_show_gems
+    @cmd.options[:name] = //
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.send :show_gems, /a/i, false
+    end
+
+    assert_match %r%^a %,  @ui.output
+    refute_match %r%^pl %, @ui.output
+    assert_empty @ui.error
+  end
+
 end
 

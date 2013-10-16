@@ -35,18 +35,8 @@ class Date; end
 #   end
 #
 # Starting in RubyGems 2.0, a Specification can hold arbitrary
-# metadata. This metadata is accessed via Specification#metadata
-# and has the following restrictions:
-#
-# * Must be a Hash object
-# * All keys and values must be Strings
-# * Keys can be a maximum of 128 bytes and values can be a
-#   maximum of 1024 bytes
-# * All strings must be UTF8, no binary data is allowed
-#
-# For example, to add metadata for the location of a bugtracker:
-#
-#   s.metadata = { "bugtracker" => "http://somewhere.com/blah" }
+# metadata.  See #metadata for restrictions on the format and size of metadata
+# items you may add to a specification.
 
 class Gem::Specification < Gem::BasicSpecification
 
@@ -209,6 +199,8 @@ class Gem::Specification < Gem::BasicSpecification
   # Paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
   # activated.
   #
+  # See also #require_paths
+  #
   # If you have an extension you do not need to add <code>"ext"</code> to the
   # require path, the extension build process will copy the extension files
   # into "lib" for you.
@@ -220,7 +212,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   # If all library files are in the root directory...
   #   spec.require_path = '.'
 
-  attr_accessor :require_paths
+  attr_writer :require_paths
 
   ##
   # The version of RubyGems used to create this gem.
@@ -398,10 +390,21 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # :attr_accessor: metadata
   #
-  # Arbitrary metadata for this gem. An instance of Hash.
+  # The metadata holds extra data for this gem that may be useful to other
+  # consumers and is settable by gem authors without requiring an update to
+  # the rubygems software.
   #
-  # metadata is simply a Symbol => String association that contains arbitary
-  # data that could be useful to other consumers.
+  # Metadata items have the following restrictions:
+  #
+  # * The metadata must be a Hash object
+  # * All keys and values must be Strings
+  # * Keys can be a maximum of 128 bytes and values can be a maximum of 1024
+  #   bytes
+  # * All strings must be UTF-8, no binary data is allowed
+  #
+  # To add metadata for the location of a issue tracker:
+  #
+  #   s.metadata = { "issue_tracker" => "https://example/issues" }
 
   attr_accessor :metadata
 
@@ -510,6 +513,9 @@ class Gem::Specification < Gem::BasicSpecification
   # This should just be the name of your license. The full
   # text of the license should be inside of the gem when you build it.
   #
+  # See http://opensource.org/licenses/alphabetical for a list of licenses and
+  # their abbreviations (or short names).
+  #
   # You can set multiple licenses with #licenses=
   #
   # Usage:
@@ -526,6 +532,8 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # This should just be the name of your license. The full
   # text of the license should be inside of the gem when you build it.
+  #
+  # See #license= for more discussion
   #
   # Usage:
   #   spec.licenses = ['MIT', 'GPL-2']
@@ -665,8 +673,7 @@ class Gem::Specification < Gem::BasicSpecification
     LOAD_CACHE.clear
   end
 
-  # :nodoc:
-  def self.each_gemspec(dirs)
+  def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
       Dir[File.join(dir, "*.gemspec")].each do |path|
         yield path.untaint
@@ -674,16 +681,14 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  # :nodoc:
-  def self.each_stub(dirs)
+  def self.each_stub(dirs) # :nodoc:
     each_gemspec(dirs) do |path|
       stub = Gem::StubSpecification.new(path)
       yield stub if stub.valid?
     end
   end
 
-  # :nodoc:
-  def self.each_spec(dirs)
+  def self.each_spec(dirs) # :nodoc:
     each_gemspec(dirs) do |path|
       spec = self.load path
       yield spec if spec
@@ -1380,6 +1385,25 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Builds extensions for this platform if the gem has extensions listed and
+  # the gem.build_complete file is missing.
+
+  def build_extensions # :nodoc:
+    return if default_gem?
+    return if File.exist? gem_build_complete_path
+    return if !File.writable?(base_dir) &&
+              !File.exist?(File.join(base_dir, 'extensions'))
+
+    gem_original_require 'rubygems/ext'
+    gem_original_require 'rubygems/user_interaction'
+
+    Gem::DefaultUserInteraction.use_ui Gem::SilentUI.new do
+      builder = Gem::Ext::Builder.new self
+      builder.build_extensions
+    end
+  end
+
+  ##
   # Returns the full path to the build info directory
 
   def build_info_dir
@@ -1668,8 +1692,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec
   end
 
-  # :nodoc:
-  def find_full_gem_path
+  def find_full_gem_path # :nodoc:
     super || File.expand_path(File.join(gems_dir, original_name))
   end
   private :find_full_gem_path
@@ -1679,11 +1702,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Returns the full path to this spec's gem directory.
-  # eg: /usr/local/lib/ruby/1.8/gems/mygem-1.0
+  # The path to the gem.build_complete file within the extension install
+  # directory.
 
-  def gem_dir
-    @gem_dir ||= File.expand_path File.join(gems_dir, full_name)
+  def gem_build_complete_path # :nodoc:
+    File.join extension_install_dir, 'gem.build_complete'
   end
 
   ##
@@ -1832,6 +1855,8 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Plural accessor for setting licenses
+  #
+  # See #license= for details
 
   def licenses
     @licenses ||= []
@@ -2013,17 +2038,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Full paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
-  # activated.
-  #
-
-  def full_require_paths
-    require_paths.map do |path|
-      File.join full_gem_path, path
-    end
-  end
-
-  ##
   # The RubyGems version required by this gem
 
   def required_rubygems_version= req
@@ -2189,7 +2203,9 @@ class Gem::Specification < Gem::BasicSpecification
     mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
-    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{require_paths.join("\0")}"
+    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{@require_paths.join("\0")}"
+    result << "#{Gem::StubSpecification::PREFIX}#{extensions.join "\0"}" unless
+      extensions.empty?
     result << nil
     result << "Gem::Specification.new do |s|"
 
@@ -2204,11 +2220,13 @@ class Gem::Specification < Gem::BasicSpecification
     if metadata and !metadata.empty?
       result << "  s.metadata = #{ruby_code metadata} if s.respond_to? :metadata="
     end
+    result << "  s.require_paths = #{ruby_code @require_paths}"
 
     handled = [
       :dependencies,
       :name,
       :platform,
+      :require_paths,
       :required_rubygems_version,
       :specification_version,
       :version,
@@ -2335,6 +2353,7 @@ class Gem::Specification < Gem::BasicSpecification
   # checks..
 
   def validate packaging = true
+    @warnings = 0
     require 'rubygems/user_interaction'
     extend Gem::UserInteraction
     normalize
@@ -2365,7 +2384,7 @@ class Gem::Specification < Gem::BasicSpecification
             "invalid value for attribute name: \"#{name.inspect}\""
     end
 
-    if require_paths.empty? then
+    if @require_paths.empty? then
       raise Gem::InvalidSpecificationException,
             'specification must have at least one require_path'
     end
@@ -2458,7 +2477,10 @@ class Gem::Specification < Gem::BasicSpecification
       end
     }
 
-    alert_warning 'licenses is empty' if licenses.empty?
+    warning <<-warning if licenses.empty?
+licenses is empty.  Use a license abbreviation from:
+  http://opensource.org/licenses/alphabetical
+    warning
 
     validate_permissions
 
@@ -2493,21 +2515,21 @@ class Gem::Specification < Gem::BasicSpecification
 
     %w[author description email homepage summary].each do |attribute|
       value = self.send attribute
-      alert_warning "no #{attribute} specified" if value.nil? or value.empty?
+      warning "no #{attribute} specified" if value.nil? or value.empty?
     end
 
     if description == summary then
-      alert_warning 'description and summary are identical'
+      warning 'description and summary are identical'
     end
 
     # TODO: raise at some given date
-    alert_warning "deprecated autorequire specified" if autorequire
+    warning "deprecated autorequire specified" if autorequire
 
     executables.each do |executable|
       executable_path = File.join(bindir, executable)
       shebang = File.read(executable_path, 2) == '#!'
 
-      alert_warning "#{executable_path} is missing #! line" unless shebang
+      warning "#{executable_path} is missing #! line" unless shebang
     end
 
     dependencies.each do |dep|
@@ -2515,11 +2537,15 @@ class Gem::Specification < Gem::BasicSpecification
         Gem::Requirement.new(req).prerelease?
       end
 
-      alert_warning "prerelease dependency on #{dep} is not recommended" if
+      warning "prerelease dependency on #{dep} is not recommended" if
         prerelease_dep
     end
 
     true
+  ensure
+    if $! or @warnings > 0 then
+      alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
+    end
   end
 
   ##
@@ -2530,13 +2556,13 @@ class Gem::Specification < Gem::BasicSpecification
 
     files.each do |file|
       next if File.stat(file).mode & 0444 == 0444
-      alert_warning "#{file} is not world-readable"
+      warning "#{file} is not world-readable"
     end
 
     executables.each do |name|
       exec = File.join @bindir, name
       next if File.stat(exec).executable?
-      alert_warning "#{exec} is not executable"
+      warning "#{exec} is not executable"
     end
   end
 
@@ -2587,6 +2613,12 @@ class Gem::Specification < Gem::BasicSpecification
 
       instance_variable_set "@#{attribute}", value
     end
+  end
+
+  def warning statement # :nodoc:
+    @warnings += 1
+
+    alert_warning statement
   end
 
   extend Gem::Deprecate

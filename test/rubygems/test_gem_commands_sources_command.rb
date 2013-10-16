@@ -198,6 +198,23 @@ beta-gems.example.com is not a URI
     refute File.exist?(dir), 'cache dir removed'
   end
 
+  def test_execute_list
+    @cmd.handle_options %w[--list]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+*** CURRENT SOURCES ***
+
+#{@gem_repo}
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_remove
     @cmd.handle_options %W[--remove #{@gem_repo}]
 

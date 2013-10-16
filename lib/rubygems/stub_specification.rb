@@ -41,6 +41,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   def initialize(filename)
     self.loaded_from = filename
     @data            = nil
+    @extensions      = nil
     @spec            = nil
   end
 
@@ -52,17 +53,31 @@ class Gem::StubSpecification < Gem::BasicSpecification
     loaded && loaded.version == version
   end
 
+  def build_extensions # :nodoc:
+    return if default_gem?
+    return if extensions.empty?
+
+    to_spec.build_extensions
+  end
+
   ##
   # If the gemspec contains a stubline, returns a StubLine instance. Otherwise
   # returns the full Gem::Specification.
 
   def data
     unless @data
+      @extensions = []
+
       open loaded_from, OPEN_MODE do |file|
         begin
           file.readline # discard encoding line
           stubline = file.readline.chomp
-          @data = StubLine.new(stubline) if stubline.start_with?(PREFIX)
+          if stubline.start_with?(PREFIX) then
+            @data = StubLine.new stubline
+
+            @extensions = $'.split "\0" if
+              /\A#{PREFIX}/ =~ file.readline.chomp
+          end
         rescue EOFError
         end
       end
@@ -72,6 +87,38 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
   private :data
+
+  ##
+  # Extensions for this gem
+
+  def extensions
+    return @extensions if @extensions
+
+    data # load
+
+    @extensions
+  end
+
+  ##
+  # If a gem has a stub specification it doesn't need to bother with
+  # compatibility with original_name gems.  It was installed with the
+  # normalized name.
+
+  def find_full_gem_path # :nodoc:
+    path = File.expand_path File.join gems_dir, full_name
+    path.untaint
+    path
+  end
+
+  ##
+  # Full paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
+  # activated.
+
+  def full_require_paths
+    @require_paths ||= data.require_paths
+
+    super
+  end
 
   ##
   # Name of the gem
@@ -92,6 +139,8 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def require_paths
     @require_paths ||= data.require_paths
+
+    super
   end
 
   ##

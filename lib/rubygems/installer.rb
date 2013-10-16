@@ -32,9 +32,9 @@ class Gem::Installer
   ENV_PATHS = %w[/usr/bin/env /bin/env]
 
   ##
-  # Raised when there is an error while building extensions.
-  #
-  class ExtensionBuildError < Gem::InstallError; end
+  # Deprecated in favor of Gem::Ext::BuildError
+
+  ExtensionBuildError = Gem::Ext::BuildError # :nodoc:
 
   include Gem::UserInteraction
 
@@ -667,7 +667,7 @@ TEXT
   end
 
   ##
-  # Logs the build +output+ in +build_dir+, then raises ExtensionBuildError.
+  # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
   #
   # TODO:  Delete this for RubyGems 3.  It remains for API compatibility
 

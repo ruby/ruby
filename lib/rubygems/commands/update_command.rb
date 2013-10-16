@@ -110,7 +110,9 @@ command to remove old versions.
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples, _ = fetcher.search_for_dependency dependency
+    spec_tuples, errors = fetcher.search_for_dependency dependency
+
+    raise errors.first unless errors.empty?
 
     spec_tuples
   end

@@ -1,3 +1,10 @@
+Wed Oct 16 09:12:23 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master commit 2a74263.  This fixes
+	  several bugs in RubyGems 2.2.0.preview.1.
+
+	* test/rubygems:  ditto.
+
 Wed Oct 16 07:25:02 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_mark_roots): rename roots to be categories

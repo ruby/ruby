@@ -97,7 +97,7 @@ class Gem::Source::Local < Gem::Source
     if data = @specs[name]
       data.last.spec
     else
-      raise Gem::Exception, "Unable to find spec for '#{name}'"
+      raise Gem::Exception, "Unable to find spec for #{name.inspect}"
     end
   end
 

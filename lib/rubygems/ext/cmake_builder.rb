@@ -1,4 +1,7 @@
 class Gem::Ext::CmakeBuilder < Gem::Ext::Builder
+
+  MAKE_TARGETS = ['', 'install'] # :nodoc:
+
   def self.build(extension, directory, dest_path, results)
     unless File.exist?('Makefile') then
       cmd = "cmake . -DCMAKE_INSTALL_PREFIX=#{dest_path}"
