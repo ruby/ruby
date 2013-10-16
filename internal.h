@@ -772,6 +772,9 @@ VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
 
+/* error.c */
+int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
+
 /* file.c */
 #ifdef __APPLE__
 VALUE rb_str_normalize_ospath(const char *ptr, long len);

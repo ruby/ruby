@@ -264,6 +264,29 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
     return Qnil;
 }
 
+#define MAX_BUG_REPORTERS 0x100
+
+static struct bug_reporters {
+    void (*func)(FILE *out, void *data);
+    void *data;
+} bug_reporters[MAX_BUG_REPORTERS];
+
+static int bug_reporters_size;
+
+int
+rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
+{
+    struct bug_reporters *reporter;
+    if (bug_reporters_size >= MAX_BUG_REPORTERS) {
+	rb_bug("rb_bug_reporter_add: overflow");
+    }
+    reporter = &bug_reporters[bug_reporters_size++];
+    reporter->func = func;
+    reporter->data = data;
+
+    return bug_reporters_size;
+}
+
 static void
 report_bug(const char *file, int line, const char *fmt, va_list args)
 {
@@ -281,9 +304,16 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 	snprintf(buf, 256, "\n%s\n\n", ruby_description);
 	fputs(buf, out);
 
-
 	rb_vm_bugreport();
 
+	/* call additional bug reporters */
+	{
+	    int i;
+	    for (i=0; i<bug_reporters_size; i++) {
+		struct bug_reporters *reporter = &bug_reporters[i];
+		(*reporter->func)(out, reporter->data);
+	    }
+	}
 	fprintf(out, REPORTBUG_MSG);
     }
 }

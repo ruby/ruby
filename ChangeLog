@@ -1,3 +1,15 @@
+Wed Oct 16 17:37:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c, internal.h (rb_bug_reporter_add): add a new C-API.
+	  rb_bug_reporter_add() allows to register a function which
+	  is called at rb_bug() called.
+
+	* ext/-test-/bug_reporter/bug_reporter.c: add a test for this C-API.
+
+	* ext/-test-/bug_reporter/extconf.rb: ditto.
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb: ditto.
+
 Wed Oct 16 15:14:21 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: add a line into NEWS for last commit.
