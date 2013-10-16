@@ -106,9 +106,7 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 void
 Init_nonblock(void)
 {
-    VALUE io = rb_cIO;
-
-    rb_define_method(io, "nonblock?", rb_io_nonblock_p, 0);
-    rb_define_method(io, "nonblock=", rb_io_nonblock_set, 1);
-    rb_define_method(io, "nonblock", rb_io_nonblock_block, -1);
+    rb_define_method(rb_cIO, "nonblock?", rb_io_nonblock_p, 0);
+    rb_define_method(rb_cIO, "nonblock=", rb_io_nonblock_set, 1);
+    rb_define_method(rb_cIO, "nonblock", rb_io_nonblock_block, -1);
 }
