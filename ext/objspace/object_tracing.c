@@ -20,6 +20,7 @@ size_t rb_gc_count(void); /* from gc.c */
 
 struct traceobj_arg {
     int running;
+    int keep_remains;
     VALUE newobj_trace;
     VALUE freeobj_trace;
     st_table *object_table; /* obj (VALUE) -> allocation_info */
@@ -29,6 +30,11 @@ struct traceobj_arg {
 
 /* all of information don't need marking. */
 struct allocation_info {
+    int living;
+    VALUE flags;
+    VALUE klass;
+
+    /* allocation info */
     const char *path;
     unsigned long line;
     const char *class_path;
@@ -87,10 +93,22 @@ newobj_i(VALUE tpval, void *data)
     VALUE line = rb_tracearg_lineno(tparg);
     VALUE mid = rb_tracearg_method_id(tparg);
     VALUE klass = rb_tracearg_defined_class(tparg);
-    struct allocation_info *info = (struct allocation_info *)ruby_xmalloc(sizeof(struct allocation_info));
+    struct allocation_info *info;
     const char *path_cstr = RTEST(path) ? make_unique_str(arg->str_table, RSTRING_PTR(path), RSTRING_LEN(path)) : 0;
     VALUE class_path = RTEST(klass) ? rb_class_path(klass) : Qnil;
     const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
+
+    if (arg->keep_remains && st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
+	if (info->living) rb_bug("newobj_i: reuse living object: %p", (void *)obj);
+	delete_unique_str(arg->str_table, info->path);
+	delete_unique_str(arg->str_table, info->class_path);
+    }
+    else {
+	info = (struct allocation_info *)ruby_xmalloc(sizeof(struct allocation_info));
+    }
+    info->living = 1;
+    info->flags = RBASIC(obj)->flags;
+    info->klass = RBASIC_CLASS(obj);
 
     info->path = path_cstr;
     info->line = NUM2INT(line);
@@ -108,10 +126,16 @@ freeobj_i(VALUE tpval, void *data)
     VALUE obj = rb_tracearg_object(tparg);
     struct allocation_info *info;
 
-    if (st_delete(arg->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
-	delete_unique_str(arg->str_table, info->path);
-	delete_unique_str(arg->str_table, info->class_path);
-	ruby_xfree(info);
+    if (st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
+	if (arg->keep_remains) {
+	    info->living = 0;
+	}
+	else {
+	    st_delete(arg->object_table, (st_data_t *)&obj, (st_data_t *)&info);
+	    delete_unique_str(arg->str_table, info->path);
+	    delete_unique_str(arg->str_table, info->class_path);
+	    ruby_xfree(info);
+	}
     }
 }
 
@@ -130,6 +154,7 @@ free_values_i(st_data_t key, st_data_t value, void *data)
 }
 
 static struct traceobj_arg *tmp_trace_arg; /* TODO: Do not use global variables */
+static int tmp_keep_remains;               /* TODO: Do not use global variables */
 
 static struct traceobj_arg *
 get_traceobj_arg(void)
@@ -137,6 +162,7 @@ get_traceobj_arg(void)
     if (tmp_trace_arg == 0) {
 	tmp_trace_arg = ALLOC_N(struct traceobj_arg, 1);
 	tmp_trace_arg->running = 0;
+	tmp_trace_arg->keep_remains = tmp_keep_remains;
 	tmp_trace_arg->newobj_trace = 0;
 	tmp_trace_arg->freeobj_trace = 0;
 	tmp_trace_arg->object_table = st_init_numtable();
@@ -256,11 +282,53 @@ trace_object_allocations(VALUE self)
     return rb_ensure(rb_yield, Qnil, trace_object_allocations_stop, self);
 }
 
+int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
+static int object_allocations_reporter_registerd = 0;
+
+static int
+object_allocations_reporter_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    FILE *out = (FILE *)ptr;
+    VALUE obj = (VALUE)key;
+    struct allocation_info *info = (struct allocation_info *)val;
+
+    fprintf(out, "-- %p (%s F: %p, ", (void *)obj, info->living ? "live" : "dead", (void *)info->flags);
+    if (info->class_path) fprintf(out, "C: %s", info->class_path);
+    else                  fprintf(out, "C: %p", info->klass);
+    fprintf(out, "@%s:%lu", info->path ? info->path : "", info->line);
+    if (!NIL_P(info->mid)) fprintf(out, " (%s)", rb_id2name(SYM2ID(info->mid)));
+    fprintf(out, ")\n");
+
+    return ST_CONTINUE;
+}
+
+static void
+object_allocations_reporter(FILE *out, void *ptr)
+{
+    fprintf(out, "== object_allocations_reporter: START\n");
+    if (tmp_trace_arg) {
+	st_foreach(tmp_trace_arg->object_table, object_allocations_reporter_i, (st_data_t)out);
+    }
+    fprintf(out, "== object_allocations_reporter: END\n");
+}
+
+static VALUE
+trace_object_allocations_debug_start(VALUE self)
+{
+    tmp_keep_remains = 1;
+    if (object_allocations_reporter_registerd == 0) {
+	object_allocations_reporter_registerd = 1;
+	rb_bug_reporter_add(object_allocations_reporter, 0);
+    }
+
+    return trace_object_allocations_start(self);
+}
+
 static struct allocation_info *
 lookup_allocation_info(VALUE obj)
 {
     if (tmp_trace_arg) {
-	struct allocation_info *info;
+ 	struct allocation_info *info;
 	if (st_lookup(tmp_trace_arg->object_table, obj, (st_data_t *)&info)) {
 	    return info;
 	}
@@ -414,6 +482,8 @@ Init_object_tracing(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations_start", trace_object_allocations_start, 0);
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations_stop", trace_object_allocations_stop, 0);
     rb_define_module_function(rb_mObjSpace, "trace_object_allocations_clear", trace_object_allocations_clear, 0);
+
+    rb_define_module_function(rb_mObjSpace, "trace_object_allocations_debug_start", trace_object_allocations_debug_start, 0);
 
     rb_define_module_function(rb_mObjSpace, "allocation_sourcefile", allocation_sourcefile, 1);
     rb_define_module_function(rb_mObjSpace, "allocation_sourceline", allocation_sourceline, 1);

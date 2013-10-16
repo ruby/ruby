@@ -1,3 +1,10 @@
+Thu Oct 17 05:17:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c: add new method
+	  ObjectSpace.trace_object_allocations_debug_start for GC debugging.
+	  If you encounter the BUG "... is T_NONE" (and so on) on your
+	  application, please try this method at the beggining of your app.
+
 Wed Oct 16 22:35:27 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/io/nonblock/nonblock.c: use rb_cIO instead of VALUE
