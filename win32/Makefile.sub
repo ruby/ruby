@@ -678,6 +678,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_DAYLIGHT 1
 #define HAVE_GMTIME_R 1
 #define HAVE_TYPE_NET_LUID 1
+!if defined(HAVE_PSAPI_H) && $(HAVE_PSAPI_H)
+#define HAVE_PSAPI_H 1
+!endif
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1

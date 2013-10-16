@@ -39,7 +39,12 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
+#ifdef HAVE_PSAPI_H
 #include <psapi.h>
+# define CHECK_CONSOLE_EMULATOR 1
+#else
+# define CHECK_CONSOLE_EMULATOR 0
+#endif
 #include <shlwapi.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
@@ -606,7 +611,11 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
+#if CHECK_CONSOLE_EMULATOR
 #define conlist_disabled ((st_table *)-1)
+#else
+#define conlist_disabled ((st_table *)NULL)
+#endif
 static char *envarea;
 static char *uenvarea;
 
@@ -5834,6 +5843,7 @@ rb_w32_pipe(int fds[2])
     return 0;
 }
 
+#if CHECK_CONSOLE_EMULATOR
 /* License: Ruby's */
 static int
 console_emulator_p(void)
@@ -5860,6 +5870,9 @@ console_emulator_p(void)
 
     return 0;
 }
+#else
+#define console_emulator_p() 0
+#endif
 
 /* License: Ruby's */
 static struct constat *

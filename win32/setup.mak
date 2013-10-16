@@ -70,11 +70,11 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 	@echo !endif>> $(MAKEFILE)
 !endif
 
--system-vars-: -osname- -runtime-
+-system-vars-: -osname- -runtime- -headers-
 
--system-vars32-: -osname32- -runtime-
+-system-vars32-: -osname32- -runtime- -headers-
 
--system-vars64-: -osname64- -runtime-
+-system-vars64-: -osname64- -runtime- -headers-
 
 -osname32-: nul
 	@echo TARGET_OS = mswin32>>$(MAKEFILE)
@@ -99,6 +99,15 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 <<
 	@$(WIN32DIR:/=\)\rtname conftest.exe >>$(MAKEFILE)
 	@$(WIN32DIR:/=\)\rm.bat conftest.*
+
+-headers-: check-psapi.h
+
+check-psapi.h: nul
+	($(CC) -MD <<conftest.c psapi.lib -link && echo>>$(MAKEFILE) HAVE_PSAPI_H=1) & $(WIN32DIR:/=\)\rm.bat conftest.*
+#include <windows.h>
+#include <psapi.h>
+int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
+<<
 
 -version-: nul
 	@$(APPEND)
