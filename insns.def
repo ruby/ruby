@@ -888,7 +888,6 @@ defineclass
 (VALUE val)
 {
     VALUE klass;
-    /*VALUE dummy;*/
     rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
 
     switch (type) {
@@ -969,12 +968,17 @@ defineclass
     COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
 
     /* enter scope */
+#if OPT_CONTEXT_THREADED_CODE
+    /* Protect stacked return addresses */
     __asm__ __volatile__("subq $96, %%rsp" : : : "%rsp");
+#endif
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
+#if OPT_CONTEXT_THREADED_CODE
     __asm__ __volatile__("addq $96, %%rsp" : : : "%rsp");
+#endif
     RESTORE_REGS();
     NEXT_INSN();
 }
@@ -1086,6 +1090,7 @@ leave
 (VALUE val)
 {
 #if OPT_CONTEXT_THREADED_CODE
+    /* 16-byte align C stack pointer */
     __asm__ __volatile__("pushq $0" : : : "%rsp");
 #endif
 
@@ -1146,9 +1151,6 @@ throw
 {
     RUBY_VM_CHECK_INTS(th);
     val = vm_throw(th, GET_CFP(), throw_state, throwobj);
-#if OPT_CONTEXT_THREADED_CODE
-    __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp");
-#endif
     THROW_EXCEPTION(val);
     /* unreachable */
 }
@@ -2206,14 +2208,6 @@ opt_call_c_function
     if (reg_cfp == 0) {
 	VALUE err = th->errinfo;
 	th->errinfo = Qnil;
-#if OPT_CONTEXT_THREADED_CODE
-        {
-            register VALUE dummy;
-            __asm__ __volatile__("popq %0" : "=r" (dummy) : : "%rsp");
-            dummy = (VALUE)42;
-            *(int *)dummy = 42;
-        }
-#endif
 	THROW_EXCEPTION(err);
     }
 
