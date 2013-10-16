@@ -1,3 +1,9 @@
+Thu Oct 17 06:58:42 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/date/date_core.c: [DOC] plural grammar fixed by @scott113341
+	  Contributed via documenting-ruby.org: documenting-ruby/ruby#16
+	  https://github.com/documenting-ruby/ruby/pull/16
+
 Thu Oct 17 05:52:31 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/io/nonblock/nonblock.c: [DOC] Document io/nonblock by reprah
