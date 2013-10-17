@@ -215,7 +215,7 @@ module Test
         else
           child_env = []
         end
-        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, opt)
+        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
         assert !status.signaled?, FailDesc[status, message, out]
       end
 
@@ -246,7 +246,7 @@ module Test
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, opt)
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
           raise "test_stderr ignored, use block only or without block" if test_stderr != []
@@ -271,7 +271,7 @@ module Test
       end
 
       def assert_ruby_status(args, test_stdin="", message=nil, **opt)
-        out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, opt)
+        out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
         assert(!status.signaled?, FailDesc[status, message, out])
         message ||= "ruby exit status is not success:"
         assert(status.success?, "#{message} (#{status.inspect})")
@@ -299,7 +299,7 @@ module Test
 eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), *$:.map {|l| "-I#{l}"})
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, opt)
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
