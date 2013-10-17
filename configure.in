@@ -3511,7 +3511,9 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(PLATFORM_DIR)
 
-MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'`"
+firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
+firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`
+MAKEFILES="Makefile $firstmf"
 MAKEFILES="`echo $MAKEFILES`"
 AC_SUBST(MAKEFILES)
 
@@ -3786,7 +3788,7 @@ AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AC_CONFIG_FILES($FIRSTMAKEFILE)
+AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 AC_CONFIG_FILES(Makefile, [
     tmpmk=confmk$$.tmp
     {
