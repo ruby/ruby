@@ -143,7 +143,7 @@ class Gem::RequestSet
   # Load a dependency management file.
 
   def load_gemdeps path
-    gf = Gem::RequestSet::GemDepedencyAPI.new self, path
+    gf = Gem::RequestSet::GemDependencyAPI.new self, path
     gf.load
   end
 

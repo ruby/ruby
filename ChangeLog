@@ -1,3 +1,13 @@
+Thu Oct 17 11:07:06 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 941c21a.  Changes:
+
+	  Restored method bundler wants to remove for compatibility.
+
+	  Improvements to Gemfile compatibility.
+
+	* test/rubygems:  ditto.
+
 Thu Oct 17 08:08:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c (newobj_i): add workaround.

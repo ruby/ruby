@@ -1721,6 +1721,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Work around bundler removing my methods
+
+  def gem_dir # :nodoc:
+    super
+  end
+
+  ##
   # Deprecated and ignored, defaults to true.
   #
   # Formerly used to indicate this gem was RDoc-capable.
