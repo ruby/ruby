@@ -434,6 +434,7 @@ void rb_gc_writebarrier_remember_promoted(VALUE obj);
 
 void *ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));;
 void ruby_xsizedfree(void *x, size_t size);
+#define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_xsizedrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
 
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);

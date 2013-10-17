@@ -1,3 +1,9 @@
+Thu Oct 17 17:32:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c, string.c: use ruby_xsizedfree() and ruby_xsizedrealloc().
+
+	* internal.h (SIZED_REALLOC_N): define a macro as REALLOC_N().
+
 Thu Oct 17 17:11:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (console_emulator_p): check by comparison between
