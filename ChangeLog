@@ -1,3 +1,10 @@
+Thu Oct 17 14:06:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c (newobj_i): fix memory leak.
+	  There is possibility to remain info due to missing FREEOBJ event.
+	  FREEOBJ events are skipped while suppress_tracing state, for example,
+	  during trace events are invoking.
+
 Thu Oct 17 12:30:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tsort.rb (TSort.each_strongly_connected_component_from):

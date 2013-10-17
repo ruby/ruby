@@ -98,8 +98,13 @@ newobj_i(VALUE tpval, void *data)
     VALUE class_path = RTEST(klass) ? rb_class_path(klass) : Qnil;
     const char *class_path_cstr = RTEST(class_path) ? make_unique_str(arg->str_table, RSTRING_PTR(class_path), RSTRING_LEN(class_path)) : 0;
 
-    if (arg->keep_remains && st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
-	if (0 /* workaround */) if (info->living) rb_bug("newobj_i: reuse living object: %p", (void *)obj);
+    if (st_lookup(arg->object_table, (st_data_t)obj, (st_data_t *)&info)) {
+	if (arg->keep_remains) {
+	    if (info->living) {
+		/* do nothing. there is possibility to keep living if FREEOBJ events while suppressing tracing */
+	    }
+	}
+	/* reuse info */
 	delete_unique_str(arg->str_table, info->path);
 	delete_unique_str(arg->str_table, info->class_path);
     }
