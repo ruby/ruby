@@ -3788,7 +3788,9 @@ AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
+if test x"$firstmf" != x; then
+    AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
+fi
 AC_CONFIG_FILES(Makefile, [
     tmpmk=confmk$$.tmp
     {
