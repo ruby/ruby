@@ -1,3 +1,11 @@
+Thu Oct 17 17:11:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (console_emulator_p): check by comparison between
+	  module handle of WriteConsoleW and kernel32.dll.
+
+	* configure.in, win32/Makefile.sub, win32/setup.mak: no longer need
+	  psapi.lib.
+
 Thu Oct 17 16:53:30 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, internal.h: add new internal memory mangement functions.

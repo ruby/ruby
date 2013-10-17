@@ -232,7 +232,7 @@ LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
-LIBS = $(LIBS) psapi.lib imagehlp.lib shlwapi.lib $(EXTLIBS)
+LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
@@ -308,9 +308,6 @@ STACK = $(STACK),$(STACK_COMMIT)
 !endif
 ORGLIBPATH = $(LIB)
 
-!if !defined(HAVE_PSAPI_H)
-HAVE_PSAPI_H = 0
-!endif
 #### End of system configuration section. ####
 
 LIBRUBY_A     = $(RUBY_SO_NAME)-static.lib
@@ -681,9 +678,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_DAYLIGHT 1
 #define HAVE_GMTIME_R 1
 #define HAVE_TYPE_NET_LUID 1
-!if $(HAVE_PSAPI_H)
-#define HAVE_PSAPI_H 1
-!endif
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1

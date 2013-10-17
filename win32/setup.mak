@@ -100,7 +100,7 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 	@$(WIN32DIR:/=\)\rtname conftest.exe >>$(MAKEFILE)
 	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
--headers-: check-psapi.h
+-headers-: nul
 
 check-psapi.h: nul
 	($(CC) -MD <<conftest.c psapi.lib -link && echo>>$(MAKEFILE) HAVE_PSAPI_H=1) & $(WIN32DIR:/=\)\rm.bat conftest.*

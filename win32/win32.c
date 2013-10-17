@@ -39,12 +39,6 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
-#ifdef HAVE_PSAPI_H
-#include <psapi.h>
-# define CHECK_CONSOLE_EMULATOR 1
-#else
-# define CHECK_CONSOLE_EMULATOR 0
-#endif
 #include <shlwapi.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
@@ -611,11 +605,7 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
-#if CHECK_CONSOLE_EMULATOR
 #define conlist_disabled ((st_table *)-1)
-#else
-#define conlist_disabled ((st_table *)NULL)
-#endif
 static char *envarea;
 static char *uenvarea;
 
@@ -5843,36 +5833,26 @@ rb_w32_pipe(int fds[2])
     return 0;
 }
 
-#if CHECK_CONSOLE_EMULATOR
 /* License: Ruby's */
 static int
 console_emulator_p(void)
 {
-    HMODULE module_buf[10], *pmodule = module_buf;
-    DWORD nmodule = numberof(module_buf), needed = 0, i;
-    HANDLE proch = GetCurrentProcess();
-
-    if (!EnumProcessModules(proch, pmodule, nmodule * sizeof(HMODULE), &needed))
-	return FALSE;
-    if (needed / sizeof(HMODULE) > nmodule) {
-	nmodule = needed / sizeof(HMODULE);
-	pmodule = alloca(sizeof(HMODULE) * nmodule);
-	if (!EnumProcessModules(proch, pmodule, needed, &needed))
-	    return FALSE;
-    }
-    for (i = 0; i < nmodule; i++) {
-	WCHAR modname[MAX_PATH];
-
-	if (GetModuleBaseNameW(proch, pmodule[i], modname, numberof(modname))) {
-	    if (PathMatchSpecW(modname, L"conemu*.dll")) return TRUE;
-        }
-    }
-
-    return 0;
-}
+#ifdef _WIN32_WCE
+    return FALSE;
 #else
-#define console_emulator_p() 0
+    const void *const func = WriteConsoleW;
+    HMODULE k;
+    MEMORY_BASIC_INFORMATION m;
+
+    memset(&m, 0, sizeof(m));
+    if (!VirtualQuery(func, &m, sizeof(m))) {
+	return FALSE;
+    }
+    k = GetModuleHandle("kernel32.dll");
+    if (!k) return FALSE;
+    return (HMODULE)m.AllocationBase != k;
 #endif
+}
 
 /* License: Ruby's */
 static struct constat *
