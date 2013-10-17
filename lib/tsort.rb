@@ -267,7 +267,7 @@ module TSort
   #   end
   #
   #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
-  #   graph.each_strongly_connected_component_from(2) {|scc| p scc } 
+  #   graph.each_strongly_connected_component_from(2) {|scc| p scc }
   #   #=> [4]
   #   #   [2]
   #
