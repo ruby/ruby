@@ -6,14 +6,14 @@ int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 static void
 sample_bug_reporter(FILE *out, void *ptr)
 {
-    int n = (int)ptr;
+    int n = (int)(uintptr_t)ptr;
     fprintf(out, "Sample bug reporter: %d\n", n);
 }
 
 static VALUE
 register_sample_bug_reporter(VALUE self, VALUE obj)
 {
-    rb_bug_reporter_add(sample_bug_reporter, (void *)NUM2INT(obj));
+    rb_bug_reporter_add(sample_bug_reporter, (void *)(uintptr_t)NUM2INT(obj));
     return Qnil;
 }
 
