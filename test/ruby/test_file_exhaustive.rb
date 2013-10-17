@@ -519,6 +519,33 @@ class TestFileExhaustive < Test::Unit::TestCase
     ENV["HOME"] = home
   end
 
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    def test_expand_path_home_memory_leak_in_path
+      assert_no_memory_leak_at_expand_path_home('', 'in path')
+    end
+
+    def test_expand_path_home_memory_leak_in_base
+      assert_no_memory_leak_at_expand_path_home('".",', 'in base')
+    end
+
+    def assert_no_memory_leak_at_expand_path_home(arg, message)
+      prep = 'ENV["HOME"] = "foo"*100'
+      assert_no_memory_leak([], prep, <<-TRY, "memory leaked at non-absolute home #{message}")
+      10000.times do
+        begin
+          File.expand_path(#{arg}"~/a")
+        rescue ArgumentError => e
+          next
+        ensure
+          abort("ArgumentError (non-absolute home) expected") unless e
+        end
+      end
+      GC.start
+      TRY
+    end
+  end
+
+
   def test_expand_path_remove_trailing_alternative_data
     assert_equal File.join(@rootdir, "aaa"), File.expand_path("#{@rootdir}/aaa::$DATA")
     assert_equal File.join(@rootdir, "aa:a"), File.expand_path("#{@rootdir}/aa:a:$DATA")
