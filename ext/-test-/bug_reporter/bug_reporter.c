@@ -13,7 +13,7 @@ sample_bug_reporter(FILE *out, void *ptr)
 static VALUE
 register_sample_bug_reporter(VALUE self, VALUE obj)
 {
-    rb_bug_reporter_add(sample_bug_reporter, NUM2INT(obj));
+    rb_bug_reporter_add(sample_bug_reporter, (void *)NUM2INT(obj));
     return Qnil;
 }
 
