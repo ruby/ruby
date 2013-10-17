@@ -1,3 +1,9 @@
+Thu Oct 17 18:50:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE): introduced.
+	  This macro enable checker compare with allocated memory and
+	  declared old_size of sized_xfree and sized_xrealloc.
+
 Thu Oct 17 18:45:41 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c (STR_HEAP_SIZE): includes TERM_LEN(str).

@@ -173,6 +173,9 @@ static ruby_gc_params_t initial_params = {
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
 #endif
+#ifndef CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE
+#define CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE 0
+#endif
 
 typedef enum {
     GPR_FLAG_NONE            = 0x000,
@@ -4970,16 +4973,20 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
     vm_malloc_increase(objspace, new_size, old_size, FALSE);
 
 #if CALC_EXACT_MALLOC_SIZE
-    size += sizeof(size_t);
+    new_size += sizeof(size_t);
     ptr = (size_t *)ptr - 1;
     cem_oldsize = ((size_t *)ptr)[0];
+
+    if (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE && old_size > 0 && cem_oldsize - sizeof(size_t) != old_size) {
+	fprintf(stderr, "vm_xrealloc: old_size mismatch: expected %d, but %d\n", (int)(cem_oldsize-sizeof(size_t)), (int)old_size);
+    }
 #endif
 
     TRY_WITH_GC(mem = realloc(ptr, new_size));
 
 #if CALC_EXACT_MALLOC_SIZE
-    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size - cem_oldsize);
-    ((size_t *)mem)[0] = size;
+    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, new_size - cem_oldsize);
+    ((size_t *)mem)[0] = new_size;
     mem = (size_t *)mem + 1;
 #endif
 
@@ -4990,12 +4997,16 @@ static void
 vm_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #if CALC_EXACT_MALLOC_SIZE
-    size_t size;
+    size_t cem_oldsize;
     ptr = ((size_t *)ptr) - 1;
-    size = ((size_t*)ptr)[0];
-    if (size) {
-	ATOMIC_SIZE_SUB(objspace->malloc_params.allocated_size, size);
+    cem_oldsize = ((size_t*)ptr)[0];
+    if (cem_oldsize) {
+	ATOMIC_SIZE_SUB(objspace->malloc_params.allocated_size, cem_oldsize);
 	ATOMIC_SIZE_DEC(objspace->malloc_params.allocations);
+    }
+
+    if (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE && old_size > 0 && cem_oldsize - sizeof(size_t) != old_size) {
+	fprintf(stderr, "vm_xfree: old_size mismatch: expected %d, but %d\n", (int)(cem_oldsize-sizeof(size_t)), (int)old_size);
     }
 #endif
     vm_malloc_increase(objspace, 0, old_size, FALSE);
