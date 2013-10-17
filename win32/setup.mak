@@ -202,7 +202,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 # CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
-# XLDFLAGS = 
+# XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
 
