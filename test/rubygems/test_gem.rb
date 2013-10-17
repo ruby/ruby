@@ -338,6 +338,24 @@ class TestGem < Gem::TestCase
     end
   end
 
+  def test_self_extension_install_dir_shared
+    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
+      RbConfig::CONFIG['ENABLE_SHARED'], 'yes'
+
+    assert_equal Gem.ruby_api_version, Gem.extension_api_version
+  ensure
+    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+  end
+
+  def test_self_extension_install_dir_static
+    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
+      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+
+    assert_equal "#{Gem.ruby_api_version}-static", Gem.extension_api_version
+  ensure
+    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+  end
+
   def test_self_find_files
     cwd = File.expand_path("test/rubygems", @@project_dir)
     $LOAD_PATH.unshift cwd

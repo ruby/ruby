@@ -1,3 +1,11 @@
+Fri Oct 18 06:02:49 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master f738c67.  Changes:
+
+	  Fixed test bug for ruby with ENABLE_SHARED = no
+
+	* test/rubygems:  ditto.
+
 Fri Oct 18 00:57:07 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tsort.rb (TSort.tsort): Extracted from TSort#tsort.
