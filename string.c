@@ -127,7 +127,7 @@ VALUE rb_cSymbol;
 } while (0)
 
 #define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
-#define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa)
+#define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
 
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
@@ -891,7 +891,7 @@ RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	return RSTRING(str)->as.heap.aux.capa;
+	return STR_HEAP_SIZE(str);
     }
     else {
 	return 0;
