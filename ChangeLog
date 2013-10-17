@@ -1,3 +1,13 @@
+Thu Oct 17 17:43:00 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): set ci->me to 0 when the
+	  original method of a refined method is undef to avoid SEGV.
+
+	* vm_method.c (rb_method_entry_without_refinements): return 0 when
+	  the original method of a refined method is undef to avoid SEGV.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Thu Oct 17 17:38:36 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, internal.h: rename ruby_xsizefree/realloc to

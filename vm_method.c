@@ -670,7 +670,12 @@ rb_method_entry_without_refinements(VALUE klass, ID id,
     }
     if (defined_class_ptr)
 	*defined_class_ptr = defined_class;
-    return me;
+    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	return 0;
+    }
+    else {
+	return me;
+    }
 }
 
 static void
