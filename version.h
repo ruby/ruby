@@ -19,7 +19,7 @@
 #if RUBY_PATCHLEVEL == -1
 #define RUBY_PATCHLEVEL_STR "dev"
 #else
-#define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL) "-github"
+#define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL)
 #endif
 
 #ifndef RUBY_REVISION
@@ -42,8 +42,8 @@
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
     RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATE	    \
-    RUBY_REVISION_STR") "	    \
+    "-github"			    \
+    " (development) "		    \
     "["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \
