@@ -4751,7 +4751,7 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
   ------------------------ Extended allocator ------------------------
 */
 
-static void vm_xfree(rb_objspace_t *objspace, void *ptr);
+static void vm_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
 
 static void *
 negative_size_allocation_error_with_gvl(void *ptr)
@@ -4871,13 +4871,27 @@ aligned_free(void *ptr)
 }
 
 static void
-vm_malloc_increase(rb_objspace_t *objspace, size_t size, int do_gc)
+vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, int do_gc)
 {
-    ATOMIC_SIZE_ADD(malloc_increase, size);
+    if (new_size > old_size) {
+	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
+    }
+    else {
+	size_t sub = old_size - new_size;
+	if (sub > 0) {
+	    if (malloc_increase > sub) {
+		ATOMIC_SIZE_SUB(malloc_increase, sub);
+	    }
+	    else {
+		malloc_increase = 0;
+	    }
+	}
+    }
 
-    if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
-	(do_gc && (malloc_increase > malloc_limit))) {
-	garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+    if (do_gc) {
+	if ((ruby_gc_stress && !ruby_disable_gc_stress) || (malloc_increase > malloc_limit)) {
+	    garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+	}
     }
 }
 
@@ -4893,7 +4907,7 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
-    vm_malloc_increase(objspace, size, TRUE);
+    vm_malloc_increase(objspace, size, 0, TRUE);
 
     return size;
 }
@@ -4930,41 +4944,41 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 }
 
 static void *
-vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
+vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
     void *mem;
 #if CALC_EXACT_MALLOC_SIZE
-    size_t oldsize;
+    size_t cem_oldsize;
 #endif
 
-    if ((ssize_t)size < 0) {
+    if ((ssize_t)new_size < 0) {
 	negative_size_allocation_error("negative re-allocation size");
     }
 
-    if (!ptr) return vm_xmalloc(objspace, size);
+    if (!ptr) return vm_xmalloc(objspace, new_size);
 
     /*
      * The behavior of realloc(ptr, 0) is implementation defined.
      * Therefore we don't use realloc(ptr, 0) for portability reason.
      * see http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_400.htm
      */
-    if (size == 0) {
-	vm_xfree(objspace, ptr);
+    if (new_size == 0) {
+	vm_xfree(objspace, ptr, old_size);
 	return 0;
     }
 
-    vm_malloc_increase(objspace, size, FALSE);
+    vm_malloc_increase(objspace, new_size, old_size, FALSE);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
     ptr = (size_t *)ptr - 1;
-    oldsize = ((size_t *)ptr)[0];
+    cem_oldsize = ((size_t *)ptr)[0];
 #endif
 
-    TRY_WITH_GC(mem = realloc(ptr, size));
+    TRY_WITH_GC(mem = realloc(ptr, new_size));
 
 #if CALC_EXACT_MALLOC_SIZE
-    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size - oldsize);
+    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size - cem_oldsize);
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
 #endif
@@ -4973,7 +4987,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 }
 
 static void
-vm_xfree(rb_objspace_t *objspace, void *ptr)
+vm_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 {
 #if CALC_EXACT_MALLOC_SIZE
     size_t size;
@@ -4984,6 +4998,7 @@ vm_xfree(rb_objspace_t *objspace, void *ptr)
 	ATOMIC_SIZE_DEC(objspace->malloc_params.allocations);
     }
 #endif
+    vm_malloc_increase(objspace, 0, old_size, FALSE);
 
     free(ptr);
 }
@@ -5030,9 +5045,15 @@ ruby_xcalloc(size_t n, size_t size)
 }
 
 void *
-ruby_xrealloc(void *ptr, size_t size)
+ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
 {
-    return vm_xrealloc(&rb_objspace, ptr, size);
+    return vm_xrealloc(&rb_objspace, ptr, new_size, old_size);
+}
+
+void *
+ruby_xrealloc(void *ptr, size_t new_size)
+{
+    return ruby_xsizedrealloc(ptr, new_size, 0);
 }
 
 void *
@@ -5046,12 +5067,18 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 }
 
 void
-ruby_xfree(void *x)
+ruby_xsizedfree(void *x, size_t size)
 {
-    if (x)
-	vm_xfree(&rb_objspace, x);
+    if (x) {
+	vm_xfree(&rb_objspace, x, size);
+    }
 }
 
+void
+ruby_xfree(void *x)
+{
+    ruby_xsizedfree(x, 0);
+}
 
 /* Mimic ruby_xmalloc, but need not rb_objspace.
  * should return pointer suitable for ruby_xfree

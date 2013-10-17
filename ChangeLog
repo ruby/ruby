@@ -1,3 +1,12 @@
+Thu Oct 17 16:53:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, internal.h: add new internal memory mangement functions.
+	  * void *ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
+	  * void ruby_xsizedfree(void *x, size_t size)
+	  These functions acccept additional size parameter to calculate more
+	  accurate malloc_increase parameter which control GC timing.
+	  [Feature #8985]
+
 Thu Oct 17 14:21:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (rb_file_expand_path_internal): fix memory leaks at
