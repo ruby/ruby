@@ -244,6 +244,10 @@ with all sufficient information, see the ChangeLog file.
     inside the block, by default, unless the exception class is given
     explicitly.
 
+* TSort
+  * New methods:
+    * TSort.each_strongly_connected_component_from
+
 * WEBrick
   * The body of a response may now be a StringIO or other IO-like that responds
     to #readpartial and #read.

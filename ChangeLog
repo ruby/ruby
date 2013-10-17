@@ -1,3 +1,8 @@
+Thu Oct 17 12:30:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb (TSort.each_strongly_connected_component_from):
+	  Extracted from TSort#each_strongly_connected_component_from.
+
 Thu Oct 17 11:07:06 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 941c21a.  Changes:

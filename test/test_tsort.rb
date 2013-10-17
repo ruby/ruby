@@ -40,5 +40,15 @@ class TSortTest < Test::Unit::TestCase # :nodoc:
     assert_equal([[0], [1]],
       a.strongly_connected_components.map {|nodes| nodes.sort})
   end
+
+  def test_noclass
+    g = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+    each_child = lambda {|n, &b| g[n].each(&b) }
+    r = []
+    TSort.each_strongly_connected_component_from(1, each_child) {|scc|
+      r << scc
+    }
+    assert_equal([[4], [2, 3], [1]], r)
+  end
 end
 

@@ -195,18 +195,40 @@ module TSort
   #
   # #each_strongly_connected_component_from doesn't call #tsort_each_node.
   #
-  def each_strongly_connected_component_from(node, id_map={}, stack=[]) # :yields: nodes
+  def each_strongly_connected_component_from(node, id_map={}, stack=[], &block) # :yields: nodes
+    TSort.each_strongly_connected_component_from(node, method(:tsort_each_child), id_map, stack, &block)
+  end
+
+  # Iterates over strongly connected components in a graph.
+  # The graph is represented by _node_ and _each_child_.
+  #
+  # _node_ is the first node.
+  # _each_child_ should have +call+ method which takes a node argument
+  # and yields for each adjacent node.
+  #
+  # Return value is unspecified.
+  #
+  # #TSort.each_strongly_connected_component_from is a class method and
+  # it doesn't need a class to represent a graph which includes TSort.
+  #
+  #   graph = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+  #   each_child = lambda {|n, &b| graph[n].each(&b) }
+  #   TSort.each_strongly_connected_component_from(1, each_child) {|scc|
+  #     p scc #=> [4], [2, 3], [1]
+  #   }
+  #
+  def TSort.each_strongly_connected_component_from(node, each_child, id_map={}, stack=[]) # :yields: nodes
     minimum_id = node_id = id_map[node] = id_map.size
     stack_length = stack.length
     stack << node
 
-    tsort_each_child(node) {|child|
+    each_child.call(node) {|child|
       if id_map.include? child
         child_id = id_map[child]
         minimum_id = child_id if child_id && child_id < minimum_id
       else
         sub_minimum_id =
-          each_strongly_connected_component_from(child, id_map, stack) {|c|
+          TSort.each_strongly_connected_component_from(child, each_child, id_map, stack) {|c|
             yield c
           }
         minimum_id = sub_minimum_id if sub_minimum_id < minimum_id
