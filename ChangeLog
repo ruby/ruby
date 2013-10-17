@@ -1,3 +1,8 @@
+Thu Oct 17 14:21:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): fix memory leaks at
+	  a non-absolute home exception.
+
 Thu Oct 17 14:06:39 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/object_tracing.c (newobj_i): fix memory leak.

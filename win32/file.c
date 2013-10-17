@@ -373,6 +373,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
 	    xfree(wpath);
+	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
@@ -441,6 +442,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
 		xfree(wpath);
 		xfree(wdir);
+		xfree(whome);
 		rb_raise(rb_eArgError, "non-absolute home");
 	    }
 
