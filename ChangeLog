@@ -1,3 +1,13 @@
+Fri Oct 18 02:10:00 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): set ci->me to 0 when the
+	  original method of a refined method is undef to avoid SEGV.
+
+	* vm_method.c (rb_method_entry_without_refinements): return 0 when
+	  the original method of a refined method is undef to avoid SEGV.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Fri Oct 18 02:05:45 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (rb_file_expand_path_internal): fix memory leaks at
