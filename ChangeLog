@@ -1,3 +1,12 @@
+Fri Oct 18 00:57:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb (TSort.tsort): Extracted from TSort#tsort.
+	  (TSort.tsort_each): Extracted from TSort#tsort_each.
+	  (TSort.strongly_connected_components): Extracted from
+	  TSort#strongly_connected_components.
+	  (TSort.each_strongly_connected_component): Extracted from
+	  TSort#each_strongly_connected_component.
+
 Thu Oct 17 18:50:08 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE): introduced.

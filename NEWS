@@ -246,6 +246,10 @@ with all sufficient information, see the ChangeLog file.
 
 * TSort
   * New methods:
+    * TSort.tsort
+    * TSort.tsort_each
+    * TSort.strongly_connected_components
+    * TSort.each_strongly_connected_component
     * TSort.each_strongly_connected_component_from
 
 * WEBrick
