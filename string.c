@@ -883,7 +883,7 @@ rb_str_free(VALUE str)
 	st_delete(frozen_strings, &fstr, NULL);
     }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	ruby_xsizedfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
 
@@ -1466,7 +1466,7 @@ str_discard(VALUE str)
 {
     str_modifiable(str);
     if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	ruby_xsizedfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	RSTRING(str)->as.heap.ptr = 0;
 	RSTRING(str)->as.heap.len = 0;
     }
@@ -1990,7 +1990,7 @@ rb_str_resize(VALUE str, long len)
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) ruby_xsizedfree(ptr, size);
+	    if (independent) ruby_sized_xfree(ptr, size);
 	    return str;
 	}
 	else if (!independent) {
@@ -5501,7 +5501,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    ruby_xsizedfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;
@@ -5577,7 +5577,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    ruby_xsizedfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;

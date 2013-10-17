@@ -1,3 +1,12 @@
+Thu Oct 17 17:38:36 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, internal.h: rename ruby_xsizefree/realloc to
+	  rb_sized_free/realloc.
+
+	* array.c: catch up these changes.
+
+	* string.c: ditto.
+
 Thu Oct 17 17:32:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, string.c: use ruby_xsizedfree() and ruby_xsizedrealloc().

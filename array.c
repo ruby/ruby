@@ -225,7 +225,7 @@ ary_resize_capa(VALUE ary, long capacity)
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
-	    ruby_xsizedfree((VALUE *)ptr, size);
+	    ruby_sized_xfree((VALUE *)ptr, size);
         }
     }
 }
@@ -536,7 +536,7 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	ruby_xsizedfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
+	ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
     }
 }
 
@@ -716,7 +716,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc == 0) {
 	if (ARY_OWNS_HEAP_P(ary) && RARRAY_CONST_PTR(ary) != 0) {
-	    ruby_xsizedfree((void *)RARRAY_CONST_PTR(ary), ARY_HEAP_SIZE(ary));
+	    ruby_sized_xfree((void *)RARRAY_CONST_PTR(ary), ARY_HEAP_SIZE(ary));
 	}
         rb_ary_unshare_safe(ary);
         FL_SET_EMBED(ary);
@@ -2436,7 +2436,7 @@ rb_ary_sort_bang(VALUE ary)
                     rb_ary_unshare(ary);
                 }
                 else {
-		    ruby_xsizedfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
+		    ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
                 }
                 ARY_SET_PTR(ary, RARRAY_CONST_PTR(tmp));
                 ARY_SET_HEAP_LEN(ary, len);
@@ -3300,7 +3300,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         VALUE shared = 0;
 
         if (ARY_OWNS_HEAP_P(copy)) {
-	    RARRAY_PTR_USE(copy, ptr, ruby_xsizedfree(ptr, ARY_HEAP_SIZE(copy)));
+	    RARRAY_PTR_USE(copy, ptr, ruby_sized_xfree(ptr, ARY_HEAP_SIZE(copy)));
 	}
         else if (ARY_SHARED_P(copy)) {
             shared = ARY_SHARED(copy);
@@ -3316,7 +3316,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
     else {
         VALUE shared = ary_make_shared(orig);
         if (ARY_OWNS_HEAP_P(copy)) {
-	    RARRAY_PTR_USE(copy, ptr, ruby_xsizedfree(ptr, ARY_HEAP_SIZE(copy)));
+	    RARRAY_PTR_USE(copy, ptr, ruby_sized_xfree(ptr, ARY_HEAP_SIZE(copy)));
         }
         else {
             rb_ary_unshare_safe(copy);

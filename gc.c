@@ -5045,7 +5045,7 @@ ruby_xcalloc(size_t n, size_t size)
 }
 
 void *
-ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
+ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 {
     return vm_xrealloc(&rb_objspace, ptr, new_size, old_size);
 }
@@ -5053,7 +5053,7 @@ ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
 void *
 ruby_xrealloc(void *ptr, size_t new_size)
 {
-    return ruby_xsizedrealloc(ptr, new_size, 0);
+    return ruby_sized_xrealloc(ptr, new_size, 0);
 }
 
 void *
@@ -5067,7 +5067,7 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 }
 
 void
-ruby_xsizedfree(void *x, size_t size)
+ruby_sized_xfree(void *x, size_t size)
 {
     if (x) {
 	vm_xfree(&rb_objspace, x, size);
@@ -5077,7 +5077,7 @@ ruby_xsizedfree(void *x, size_t size)
 void
 ruby_xfree(void *x)
 {
-    ruby_xsizedfree(x, 0);
+    ruby_sized_xfree(x, 0);
 }
 
 /* Mimic ruby_xmalloc, but need not rb_objspace.
