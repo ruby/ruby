@@ -1,3 +1,15 @@
+Fri Oct 18 15:23:34 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change terminology of heap.
+	  Change "slot" to "page". "Slot" is a space of RVALUE.
+	  1. "Heap" consists of a set of "heap_page"s (pages).
+	  2. Each "heap_page" has "heap_page_body".
+	  3. "heap_page_body" has RVALUE (a.k.a. "slot") spaces.
+	  4. "sorted" is a sorted array of "heap_page"s, sorted
+	     by address of heap_page_body (for "is_pointer_to_heap").
+
+	  See https://bugs.ruby-lang.org/attachments/4008/data-heap_structure.png.
+
 Fri Oct 18 09:40:43 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master cee6788.  Changes:
