@@ -101,7 +101,7 @@ class WeakRef < Delegator
   # Returns true if the referenced object is still alive.
 
   def weakref_alive?
-    !!(@@__map[self] or defined?(@delegate_sd_obj))
+    @@__map.key?(self) or defined?(@delegate_sd_obj)
   end
 end
 

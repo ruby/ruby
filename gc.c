@@ -5305,6 +5305,13 @@ wmap_aref(VALUE self, VALUE wmap)
     return obj;
 }
 
+/* Returns +true+ if +key+ is registered */
+static VALUE
+wmap_has_key(VALUE self, VALUE key)
+{
+    return NIL_P(wmap_aref(self, key)) ? Qfalse : Qtrue;
+}
+
 
 /*
   ------------------------------ GC profiler ------------------------------
@@ -6081,6 +6088,9 @@ Init_GC(void)
 	rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
 	rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
 	rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
+	rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
+	rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
+	rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 0);
 	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
     }
 
