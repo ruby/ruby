@@ -5265,6 +5265,165 @@ wmap_finalize(VALUE self, VALUE objid)
     return self;
 }
 
+struct wmap_iter_arg {
+    rb_objspace_t *objspace;
+    VALUE value;
+};
+
+static int
+wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct wmap_iter_arg *args = (struct wmap_iter_arg *)arg;
+    VALUE str = args->value;
+    VALUE k = (VALUE)key, v = (VALUE)val;
+
+    if (RSTRING_PTR(str)[0] != '#') {
+	rb_str_cat2(str, ", ");
+	RSTRING_PTR(str)[0] = '#';
+    }
+    k = SPECIAL_CONST_P(k) ? rb_inspect(k) : rb_any_to_s(k);
+    rb_str_append(str, k);
+    rb_str_cat2(str, " => ");
+    v = SPECIAL_CONST_P(v) ? rb_inspect(v) : rb_any_to_s(v);
+    rb_str_append(str, v);
+    OBJ_INFECT(str, k);
+    OBJ_INFECT(str, v);
+
+    return ST_CONTINUE;
+}
+
+static VALUE
+wmap_inspect(VALUE self)
+{
+    VALUE str;
+    VALUE c = rb_class_name(CLASS_OF(self));
+    struct weakmap *w;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void *)self);
+    if (w->obj2wmap) {
+	st_foreach(w->obj2wmap, wmap_inspect_i, str);
+    }
+    RSTRING_PTR(str)[0] = '#';
+    return str;
+}
+
+static int
+wmap_each_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+	rb_yield_values(2, (VALUE)key, obj);
+    }
+    return ST_CONTINUE;
+}
+
+/* Iterates over keys and objects in a weakly referenced object */
+static VALUE
+wmap_each(VALUE self)
+{
+    struct weakmap *w;
+    rb_objspace_t *objspace = &rb_objspace;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    st_foreach(w->wmap2obj, wmap_each_i, (st_data_t)objspace);
+    return self;
+}
+
+static int
+wmap_each_key_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+	rb_yield((VALUE)key);
+    }
+    return ST_CONTINUE;
+}
+
+/* Iterates over keys and objects in a weakly referenced object */
+static VALUE
+wmap_each_key(VALUE self)
+{
+    struct weakmap *w;
+    rb_objspace_t *objspace = &rb_objspace;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    st_foreach(w->wmap2obj, wmap_each_key_i, (st_data_t)objspace);
+    return self;
+}
+
+static int
+wmap_each_value_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+	rb_yield(obj);
+    }
+    return ST_CONTINUE;
+}
+
+/* Iterates over keys and objects in a weakly referenced object */
+static VALUE
+wmap_each_value(VALUE self)
+{
+    struct weakmap *w;
+    rb_objspace_t *objspace = &rb_objspace;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    st_foreach(w->wmap2obj, wmap_each_value_i, (st_data_t)objspace);
+    return self;
+}
+
+static int
+wmap_keys_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_ary_push((VALUE)arg, (VALUE)key);
+    return ST_CONTINUE;
+}
+
+/* Iterates over keys and objects in a weakly referenced object */
+static VALUE
+wmap_keys(VALUE self)
+{
+    struct weakmap *w;
+    VALUE ary;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    ary = rb_ary_new();
+    st_foreach(w->wmap2obj, wmap_keys_i, (st_data_t)ary);
+    return ary;
+}
+
+static int
+wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct wmap_iter_arg *argp = (struct wmap_iter_arg *)arg;
+    rb_objspace_t *objspace = argp->objspace;
+    VALUE ary = argp->value;
+    VALUE obj = (VALUE)val;
+    if (is_id_value(objspace, obj) && is_live_object(objspace, obj)) {
+	rb_ary_push(ary, obj);
+    }
+    return ST_CONTINUE;
+}
+
+/* Iterates over values and objects in a weakly referenced object */
+static VALUE
+wmap_values(VALUE self)
+{
+    struct weakmap *w;
+    struct wmap_iter_arg args;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    args.objspace = &rb_objspace;
+    args.value = rb_ary_new();
+    st_foreach(w->wmap2obj, wmap_values_i, (st_data_t)&args);
+    return args.value;
+}
+
 /* Creates a weak reference from the given key to the given value */
 static VALUE
 wmap_aset(VALUE self, VALUE wmap, VALUE orig)
@@ -6091,7 +6250,15 @@ Init_GC(void)
 	rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
 	rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
 	rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 0);
+	rb_define_method(rb_cWeakMap, "inspect", wmap_inspect, 0);
+	rb_define_method(rb_cWeakMap, "each", wmap_each, 0);
+	rb_define_method(rb_cWeakMap, "each_pair", wmap_each, 0);
+	rb_define_method(rb_cWeakMap, "each_key", wmap_each_key, 0);
+	rb_define_method(rb_cWeakMap, "each_value", wmap_each_value, 0);
+	rb_define_method(rb_cWeakMap, "keys", wmap_keys, 0);
+	rb_define_method(rb_cWeakMap, "values", wmap_values, 0);
 	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
+	rb_include_module(rb_cWeakMap, rb_mEnumerable);
     }
 
 #if CALC_EXACT_MALLOC_SIZE
