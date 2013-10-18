@@ -17,6 +17,7 @@ class TestStubSpecification < Gem::TestCase
     assert_equal Gem::Version.new("0.0.1"), @foo.version
     assert_equal Gem::Platform.new("mswin32"), @foo.platform
     assert_equal ["lib", "lib/f oo/ext"], @foo.require_paths
+    assert @foo.stubbed?
   end
 
   def test_initialize_extension
@@ -24,17 +25,16 @@ class TestStubSpecification < Gem::TestCase
 
     gem_dir = File.join stub.gems_dir, stub.full_name
 
-    lib = Pathname File.join gem_dir, 'lib'
+    ext_install_dir = Pathname(stub.extension_install_dir)
+    full_gem_path = Pathname(stub.full_gem_path)
+    relative_install_dir = ext_install_dir.relative_path_from full_gem_path
+    relative_install_dir = relative_install_dir.to_s
 
-    ext_install_dir =
-      Pathname(stub.extension_install_dir).relative_path_from lib
-    ext_install_dir = ext_install_dir.to_s
-
-    assert_equal 'stub_e',                  stub.name
-    assert_equal v(2),                      stub.version
-    assert_equal Gem::Platform::RUBY,       stub.platform
-    assert_equal ['lib', ext_install_dir],  stub.require_paths
-    assert_equal %w[ext/stub_e/extconf.rb], stub.extensions
+    assert_equal 'stub_e',                      stub.name
+    assert_equal v(2),                          stub.version
+    assert_equal Gem::Platform::RUBY,           stub.platform
+    assert_equal ['lib', relative_install_dir], stub.require_paths
+    assert_equal %w[ext/stub_e/extconf.rb],     stub.extensions
   end
 
   def test_initialize_missing_stubline
@@ -43,6 +43,7 @@ class TestStubSpecification < Gem::TestCase
     assert_equal Gem::Version.new("0.0.2"), stub.version
     assert_equal Gem::Platform.new("ruby"), stub.platform
     assert_equal ["lib"], stub.require_paths
+    assert !stub.stubbed?
   end
 
   def test_contains_requirable_file_eh

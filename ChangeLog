@@ -1,3 +1,19 @@
+Sat Oct 19 06:55:52 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 0a3814b.  Changes:
+
+	  Fixed extension directory in Gem::Specification#require_paths.
+
+	  Allow installation of gems when $HOME is nonexistent or unwritable.
+
+	  Use proper API in InstallCommand.
+
+	  Improve support for path option in gem dependency files.
+
+	  Remove warnings.
+
+	* test/rubygems:  ditto.
+
 Fri Oct 18 15:23:34 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change terminology of heap.

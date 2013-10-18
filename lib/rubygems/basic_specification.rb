@@ -176,7 +176,7 @@ class Gem::BasicSpecification
     return @require_paths if @extensions.empty?
 
     relative_extension_install_dir =
-      File.join '..', '..', '..', 'extensions', Gem::Platform.local.to_s,
+      File.join '..', '..', 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, full_name
 
     @require_paths + [relative_extension_install_dir]

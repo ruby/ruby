@@ -47,12 +47,7 @@ class Gem::Source
   include Comparable
 
   def ==(other)
-    case other
-    when self.class
-      @uri == other.uri
-    else
-      false
-    end
+    self.class === other and @uri == other.uri
   end
 
   alias_method :eql?, :==
@@ -71,7 +66,12 @@ class Gem::Source
   end
 
   def update_cache?
-    @update_cache ||= File.stat(Gem.user_home).uid == Process.uid
+    @update_cache ||=
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::ENOENT
+        false
+      end
   end
 
   def fetch_spec(name)

@@ -52,6 +52,24 @@ class TestGemSpecFetcher < Gem::TestCase
                   ['x',  Gem::Version.new(1),     'ruby']]
   end
 
+  def test_initialize_unwritable_home_dir
+    FileUtils.rmdir Gem.user_home
+
+    assert Gem::SpecFetcher.new
+  end
+
+  def test_initialize_unwritable_home_dir
+    skip 'chmod not supported' if Gem.win_platform?
+
+    FileUtils.chmod 0000, Gem.user_home
+
+    begin
+      assert Gem::SpecFetcher.new
+    ensure
+      FileUtils.chmod 0755, Gem.user_home
+    end
+  end
+
   def test_spec_for_dependency_all
     d = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}"
     @fetcher.data["#{d}#{@a1.spec_name}.rz"]    = util_zip(Marshal.dump(@a1))

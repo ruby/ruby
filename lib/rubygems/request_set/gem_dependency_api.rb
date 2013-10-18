@@ -51,8 +51,8 @@ class Gem::RequestSet::GemDependencyAPI
       @vendor_set.add_vendor_gem name, directory
     end
 
-    group = options.delete :group
-    all_groups  = group ? Array(group) : []
+    g = options.delete :group
+    all_groups  = g ? Array(g) : []
 
     groups = options.delete :groups
     all_groups |= groups if groups

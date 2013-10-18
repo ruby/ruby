@@ -135,7 +135,7 @@ to write the specification by hand.  For example:
   def execute
     if gf = options[:gemdeps] then
       install_from_gemdeps gf
-      return
+      return # not reached
     end
 
     @installed_specs = []
@@ -151,7 +151,7 @@ to write the specification by hand.  For example:
 
     show_installed
 
-    raise Gem::SystemExitException, exit_code
+    terminate_interaction exit_code
   end
 
   def install_from_gemdeps gf # :nodoc:
@@ -173,7 +173,7 @@ to write the specification by hand.  For example:
 
     @installed_specs = specs
 
-    raise Gem::SystemExitException, 0
+    terminate_interaction
   end
 
   def install_gem name, version # :nodoc:

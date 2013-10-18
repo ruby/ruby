@@ -38,7 +38,12 @@ class Gem::SpecFetcher
   end
 
   def initialize
-    @update_cache = File.stat(Gem.user_home).uid == Process.uid
+    @update_cache =
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::EACCES, Errno::ENOENT
+        false
+      end
 
     @specs = {}
     @latest_specs = {}

@@ -10,15 +10,6 @@ class TestGemDependencyResolverVendorSpecification < Gem::TestCase
     @spec = Gem::Specification.new 'a', 1
   end
 
-  def test_initialize
-    v_spec = Gem::DependencyResolver::VendorSpecification.new @set, @spec
-
-    assert_equal 'a',                     v_spec.name
-    assert_equal v(1),                    v_spec.version
-    assert_equal Gem::Platform::RUBY,     v_spec.platform
-    assert_equal Gem::Source::Vendor.new, v_spec.source
-  end
-
   def test_equals2
     v_spec_a = Gem::DependencyResolver::VendorSpecification.new @set, @spec
 
@@ -80,7 +71,7 @@ class TestGemDependencyResolverVendorSpecification < Gem::TestCase
 
     v_spec = Gem::DependencyResolver::VendorSpecification.new @set, spec
 
-    assert_equal v(1), spec.version
+    assert_equal v(1), v_spec.version
   end
 
 end

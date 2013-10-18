@@ -165,5 +165,12 @@ class Gem::StubSpecification < Gem::BasicSpecification
     @version ||= data.version
   end
 
+  ##
+  # Is there a stub line present for this StubSpecification?
+
+  def stubbed?
+    data.is_a? StubLine
+  end
+
 end
 

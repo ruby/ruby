@@ -56,6 +56,34 @@ class TestGemRequestSet < Gem::TestCase
     assert_equal ["a-2", "b-2"], names
   end
 
+  def test_resolve_vendor
+    a_name, _, a_directory = vendor_gem 'a', 1 do |s|
+      s.add_dependency 'b', '~> 2.0'
+    end
+
+    b_name, _, b_directory = vendor_gem 'b', 2
+
+    rs = Gem::RequestSet.new
+
+    Tempfile.open 'gem.deps.rb' do |io|
+      io.puts <<-gems_deps_rb
+        gem "#{a_name}", :path => "#{a_directory}"
+        gem "#{b_name}", :path => "#{b_directory}"
+      gems_deps_rb
+
+      io.flush
+
+      rs.load_gemdeps io.path
+    end
+
+    res = rs.resolve
+    assert_equal 2, res.size
+
+    names = res.map { |s| s.full_name }.sort
+
+    assert_equal ["a-1", "b-2"], names
+  end
+
   def test_sorted_requests
     a = util_spec "a", "2", "b" => ">= 2"
     b = util_spec "b", "2", "c" => ">= 2"

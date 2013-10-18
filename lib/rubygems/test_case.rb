@@ -1098,11 +1098,15 @@ Also, a list:
   ##
   # A vendor_gem is used with a gem dependencies file.  The gem created here
   # has no files, just a gem specification for the given +name+ and +version+.
+  #
+  # Yields the +specification+ to the block, if given
 
   def vendor_gem name = 'a', version = 1
     directory = File.join 'vendor', name
 
-    vendor_spec = Gem::Specification.new name, version
+    vendor_spec = Gem::Specification.new name, version do |specification|
+      yield specification if block_given?
+    end
 
     FileUtils.mkdir_p directory
 

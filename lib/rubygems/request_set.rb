@@ -159,7 +159,15 @@ class Gem::RequestSet
   # Resolve the requested dependencies and return an Array of Specification
   # objects to be activated.
 
-  def resolve set = nil
+  def resolve set = Gem::DependencyResolver::IndexSet.new
+    sets = [set, @vendor_set].compact
+
+    set = if sets.size == 1 then
+            sets.first
+          else
+            Gem::DependencyResolver.compose_sets(*sets)
+          end
+
     resolver = Gem::DependencyResolver.new @dependencies, set
     resolver.development  = @development
     resolver.soft_missing = @soft_missing
