@@ -1,3 +1,15 @@
+Sat Oct 19 08:25:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix rb_objspace_t.
+	  * make "struct heap" and move most of variables
+	    in rb_objspace_t::heap.
+	  * rename rb_objspace_t::heap::sorted to
+	    rb_objspace_t::heap_sorted_pages
+	    and make a macro heap_sorted_pages.
+	  * rename rb_objspace_t::heap::range to
+	    rb_objspace_t::heap_range and rename macros
+	    lomem/himem to heap_lomem/heap_himem.
+
 Sat Oct 19 07:14:40 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 42543b6.  Changes:

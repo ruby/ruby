@@ -318,6 +318,21 @@ typedef struct mark_stack {
     size_t unused_cache_size;
 } mark_stack_t;
 
+struct heap {
+    struct heap_page *pages;
+    struct heap_page *free_pages;
+    struct heap_page *using_page;
+    struct heap_page *sweep_pages;
+    size_t used;
+    size_t length;
+    size_t increment;
+    size_t limit;
+    size_t swept_num;
+    size_t free_min;
+    size_t final_num;
+    size_t do_heap_free;
+};
+
 typedef struct rb_objspace {
     struct {
 	size_t limit;
@@ -327,22 +342,11 @@ typedef struct rb_objspace {
 	size_t allocations;
 #endif
     } malloc_params;
-    struct {
-	size_t increment;
-	struct heap_page *pages;
-	struct heap_page *sweep_pages;
-	struct heap_page *free_pages;
-	struct heap_page *using_page;
-	struct heap_page **sorted;
-	size_t length;
-	size_t used;
-	size_t limit;
-	RVALUE *range[2];
-	size_t swept_num;
-	size_t free_min;
-	size_t final_num;
-	size_t do_heap_free;
-    } heap;
+
+    struct heap heap;
+    struct heap_page **heap_sorted_pages;
+    RVALUE *heap_range[2];
+
     struct {
 	int dont_gc;
 	int dont_lazy_sweep;
@@ -499,8 +503,9 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heap_length		objspace->heap.length
 #define heap_used		objspace->heap.used
 #define heap_limit		objspace->heap.limit
-#define lomem			objspace->heap.range[0]
-#define himem			objspace->heap.range[1]
+#define heap_sorted_pages       objspace->heap_sorted_pages
+#define heap_lomem		objspace->heap_range[0]
+#define heap_himem		objspace->heap_range[1]
 #define heap_inc		objspace->heap.increment
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
@@ -703,12 +708,12 @@ rb_objspace_free(rb_objspace_t *objspace)
 	    xfree(list);
 	}
     }
-    if (objspace->heap.sorted) {
+    if (heap_sorted_pages) {
 	size_t i;
 	for (i = 0; i < heap_used; ++i) {
-	    free_heap_page(objspace, objspace->heap.sorted[i]);
+	    free_heap_page(objspace, heap_sorted_pages[i]);
 	}
-	free(objspace->heap.sorted);
+	free(heap_sorted_pages);
 	heap_used = 0;
 	heap_limit = 0;
 	heap_pages = 0;
@@ -727,11 +732,11 @@ heap_allocate_sorted_array(rb_objspace_t *objspace, size_t next_heap_length)
     size = next_heap_length * sizeof(struct heap_page *);
 
     if (heap_used > 0) {
-	p = (struct heap_page **)realloc(objspace->heap.sorted, size);
-	if (p) objspace->heap.sorted = p;
+	p = (struct heap_page **)realloc(heap_sorted_pages, size);
+	if (p) heap_sorted_pages = p;
     }
     else {
-	p = objspace->heap.sorted = (struct heap_page **)malloc(size);
+	p = heap_sorted_pages = (struct heap_page **)malloc(size);
     }
 
     if (p == 0) {
@@ -799,14 +804,14 @@ heap_assign_page(rb_objspace_t *objspace)
     }
     end = start + limit;
 
-    /* setup objspace->heap.sorted */
+    /* setup heap_sorted_pages */
     lo = 0;
     hi = heap_used;
     while (lo < hi) {
 	struct heap_page *mid_page;
 
 	mid = (lo + hi) / 2;
-	mid_page = objspace->heap.sorted[mid];
+	mid_page = heap_sorted_pages[mid];
 	if (mid_page->body < page_body) {
 	    lo = mid + 1;
 	}
@@ -818,16 +823,16 @@ heap_assign_page(rb_objspace_t *objspace)
 	}
     }
     if (hi < heap_used) {
-	MEMMOVE(&objspace->heap.sorted[hi+1], &objspace->heap.sorted[hi], struct heap_page_header*, heap_used - hi);
+	MEMMOVE(&heap_sorted_pages[hi+1], &heap_sorted_pages[hi], struct heap_page_header*, heap_used - hi);
     }
 
     /* setup page */
     page->start = start;
     page->limit = limit;
-    page_body->header.page = objspace->heap.sorted[hi] = page;
+    page_body->header.page = heap_sorted_pages[hi] = page;
 
-    if (lomem == 0 || lomem > start) lomem = start;
-    if (himem < end) himem = end;
+    if (heap_lomem == 0 || heap_lomem > start) heap_lomem = start;
+    if (heap_himem < end) heap_himem = end;
     heap_used++;
     heap_limit += limit;
 
@@ -1121,7 +1126,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     register struct heap_page *page;
     register size_t hi, lo, mid;
 
-    if (p < lomem || p > himem) return FALSE;
+    if (p < heap_lomem || p > heap_himem) return FALSE;
     if ((VALUE)p % sizeof(RVALUE) != 0) return FALSE;
 
     /* check if p looks like a pointer using bsearch*/
@@ -1129,7 +1134,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     hi = heap_used;
     while (lo < hi) {
 	mid = (lo + hi) / 2;
-	page = objspace->heap.sorted[mid];
+	page = heap_sorted_pages[mid];
 	if (page->start <= p) {
 	    if (p < page->start + page->limit) {
 		return TRUE;
@@ -1201,7 +1206,7 @@ free_unused_pages(rb_objspace_t *objspace)
     size_t i, j;
 
     for (i = j = 1; j < heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 
 	if (page->limit == 0) {
 	    free_heap_page(objspace, page);
@@ -1209,7 +1214,7 @@ free_unused_pages(rb_objspace_t *objspace)
 	}
 	else {
 	    if (i != j) {
-		objspace->heap.sorted[j] = page;
+		heap_sorted_pages[j] = page;
 	    }
 	    j++;
 	}
@@ -1417,11 +1422,11 @@ objspace_each_objects(VALUE arg)
 
     i = 0;
     while (i < heap_used) {
-	while (0 < i && last_body < objspace->heap.sorted[i-1]->body)        i--;
-	while (i < heap_used && objspace->heap.sorted[i]->body <= last_body) i++;
+	while (0 < i && last_body < heap_sorted_pages[i-1]->body)        i--;
+	while (i < heap_used && heap_sorted_pages[i]->body <= last_body) i++;
 	if (heap_used <= i) break;
 
-	page = objspace->heap.sorted[i];
+	page = heap_sorted_pages[i];
 	last_body = page->body;
 
 	pstart = page->start;
@@ -1877,7 +1882,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run data object's finalizers */
     for (i = 0; i < heap_used; i++) {
-	p = objspace->heap.sorted[i]->start; pend = p + objspace->heap.sorted[i]->limit;
+	p = heap_sorted_pages[i]->start; pend = p + heap_sorted_pages[i]->limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
@@ -2164,7 +2169,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     }
 
     for (i = 0; i < heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 	RVALUE *p, *pend;
 
 	p = page->start; pend = p + page->limit;
@@ -3658,7 +3663,7 @@ gc_export_bitmaps(rb_objspace_t *objspace)
     if (exported_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
 
     for (i=0; i<heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 
 	memcpy(&exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], &page->mark_bits[0],        HEAP_BITMAP_SIZE);
 	memcpy(&exported_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], &page->rememberset_bits[0], HEAP_BITMAP_SIZE);
@@ -3674,7 +3679,7 @@ gc_restore_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 
 	/* restore bitmaps */
 	memcpy(&page->mark_bits[0],        &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
@@ -3698,7 +3703,7 @@ gc_save_bitmaps(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 
 	/* save bitmaps */
 	memcpy(&page->saved_mark_bits[0],        &page->mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3715,7 +3720,7 @@ gc_load_bitmaps(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 
 	/* load bitmaps */
 	memcpy(&page->mark_bits[0],        &page->saved_mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3766,9 +3771,9 @@ gc_marks_test(rb_objspace_t *objspace)
     /* check */
     for (i=0; i<heap_used; i++) {
 	bits_t *minor_mark_bits = &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
-	bits_t *major_mark_bits = objspace->heap.sorted[i]->mark_bits;
-	RVALUE *p = objspace->heap.sorted[i]->start;
-	RVALUE *pend = p + objspace->heap.sorted[i]->limit;
+	bits_t *major_mark_bits = heap_sorted_pages[i]->mark_bits;
+	RVALUE *p = heap_sorted_pages[i]->start;
+	RVALUE *pend = p + heap_sorted_pages[i]->limit;
 
 	while (p < pend) {
 	    if (MARKED_IN_BITMAP(major_mark_bits, p) &&  /* should be lived */
@@ -3962,7 +3967,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace)
 #endif
 
     for (i=0; i<heap_used; i++) {
-	p = objspace->heap.sorted[i]->start;
+	p = heap_sorted_pages[i]->start;
 	bits = GET_HEAP_REMEMBERSET_BITS(p);
 
 	offset = p - NUM_IN_PAGE(p);
@@ -4016,7 +4021,7 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace)
     size_t i;
 
     for (i=0; i<heap_used; i++) {
-	struct heap_page *page = objspace->heap.sorted[i];
+	struct heap_page *page = heap_sorted_pages[i];
 	memset(&page->mark_bits[0],        0, HEAP_BITMAP_SIZE);
 	memset(&page->rememberset_bits[0], 0, HEAP_BITMAP_SIZE);
     }
