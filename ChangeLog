@@ -73,10 +73,10 @@ Thu Oct 17 17:11:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Oct 17 16:53:30 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c, internal.h: add new internal memory mangement functions.
+	* gc.c, internal.h: add new internal memory management functions.
 	  * void *ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
 	  * void ruby_xsizedfree(void *x, size_t size)
-	  These functions acccept additional size parameter to calculate more
+	  These functions accept additional size parameter to calculate more
 	  accurate malloc_increase parameter which control GC timing.
 	  [Feature #8985]
 
@@ -157,7 +157,7 @@ Thu Oct 17 05:17:33 2013  Koichi Sasada  <ko1@atdot.net>
 	* ext/objspace/object_tracing.c: add new method
 	  ObjectSpace.trace_object_allocations_debug_start for GC debugging.
 	  If you encounter the BUG "... is T_NONE" (and so on) on your
-	  application, please try this method at the beggining of your app.
+	  application, please try this method at the beginning of your app.
 
 Wed Oct 16 22:35:27 2013  Zachary Scott  <e@zzak.io>
 
