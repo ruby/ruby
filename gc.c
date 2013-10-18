@@ -6257,7 +6257,7 @@ Init_GC(void)
 	rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
 	rb_define_method(rb_cWeakMap, "include?", wmap_has_key, 1);
 	rb_define_method(rb_cWeakMap, "member?", wmap_has_key, 1);
-	rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 0);
+	rb_define_method(rb_cWeakMap, "key?", wmap_has_key, 1);
 	rb_define_method(rb_cWeakMap, "inspect", wmap_inspect, 0);
 	rb_define_method(rb_cWeakMap, "each", wmap_each, 0);
 	rb_define_method(rb_cWeakMap, "each_pair", wmap_each, 0);
