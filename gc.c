@@ -5276,8 +5276,11 @@ wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
     VALUE str = (VALUE)arg;
     VALUE k = (VALUE)key, v = (VALUE)val;
 
-    if (RSTRING_PTR(str)[0] != '#') {
+    if (RSTRING_PTR(str)[0] == '#') {
 	rb_str_cat2(str, ", ");
+    }
+    else {
+	rb_str_cat2(str, ": ");
 	RSTRING_PTR(str)[0] = '#';
     }
     k = SPECIAL_CONST_P(k) ? rb_inspect(k) : rb_any_to_s(k);
