@@ -278,7 +278,7 @@ class Gem::DependencyInstaller
   # Gathers all dependencies necessary for the installation from local and
   # remote sources unless the ignore_dependencies was given.
   #--
-  # TODO remove, no longer used
+  # TODO remove at RubyGems 3
 
   def gather_dependencies # :nodoc:
     specs = @available.all_specs

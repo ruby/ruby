@@ -1095,6 +1095,24 @@ Also, a list:
     Gem::Version.create string
   end
 
+  ##
+  # A vendor_gem is used with a gem dependencies file.  The gem created here
+  # has no files, just a gem specification for the given +name+ and +version+.
+
+  def vendor_gem name = 'a', version = 1
+    directory = File.join 'vendor', name
+
+    vendor_spec = Gem::Specification.new name, version
+
+    FileUtils.mkdir_p directory
+
+    open File.join(directory, "#{name}.gemspec"), 'w' do |io|
+      io.write vendor_spec.to_ruby
+    end
+
+    return name, vendor_spec.version, directory
+  end
+
   class StaticSet
     def initialize(specs)
       @specs = specs

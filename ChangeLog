@@ -1,3 +1,14 @@
+Fri Oct 18 09:40:43 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master cee6788.  Changes:
+
+	  Fix test failure on vc10-x64 Server on rubyci.org due to attempting
+	  to File.chmod where it is not supported.
+
+	  Continuing work on improved gem dependencies file (Gemfile) support.
+
+	* test:  ditto.
+
 Fri Oct 18 06:02:49 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master f738c67.  Changes:

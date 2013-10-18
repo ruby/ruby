@@ -9,6 +9,11 @@ class Gem::RequestSet::GemDependencyAPI
   attr_reader :dependency_groups
 
   ##
+  # A set of gems that are loaded via the +:path+ option to #gem
+
+  attr_reader :vendor_set # :nodoc:
+
+  ##
   # Creates a new GemDependencyAPI that will add dependencies to the
   # Gem::RequestSet +set+ based on the dependency API description in +path+.
 
@@ -18,6 +23,7 @@ class Gem::RequestSet::GemDependencyAPI
 
     @current_groups    = nil
     @dependency_groups = Hash.new { |h, group| h[group] = [] }
+    @vendor_set        = @set.vendor_set
   end
 
   ##
@@ -41,13 +47,20 @@ class Gem::RequestSet::GemDependencyAPI
     options = requirements.pop if requirements.last.kind_of?(Hash)
     options ||= {}
 
-    groups =
-      (group = options.delete(:group) and Array(group)) ||
-      options.delete(:groups) ||
-      @current_groups
+    if directory = options.delete(:path) then
+      @vendor_set.add_vendor_gem name, directory
+    end
 
-    if groups then
-      groups.each do |group|
+    group = options.delete :group
+    all_groups  = group ? Array(group) : []
+
+    groups = options.delete :groups
+    all_groups |= groups if groups
+
+    all_groups |= @current_groups if @current_groups
+
+    unless all_groups.empty? then
+      all_groups.each do |group|
         gem_arguments = [name, *requirements]
         gem_arguments << options unless options.empty?
         @dependency_groups[group] << gem_arguments

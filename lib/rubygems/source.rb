@@ -162,3 +162,5 @@ end
 require 'rubygems/source/installed'
 require 'rubygems/source/specific_file'
 require 'rubygems/source/local'
+require 'rubygems/source/vendor'
+

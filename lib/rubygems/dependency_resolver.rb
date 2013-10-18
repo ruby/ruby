@@ -43,10 +43,10 @@ class Gem::DependencyResolver
 
   ##
   # Create DependencyResolver object which will resolve the tree starting
-  # with +needed+ Depedency objects.
+  # with +needed+ Dependency objects.
   #
   # +set+ is an object that provides where to look for specifications to
-  # satisify the Dependencies. This defaults to IndexSet, which will query
+  # satisfy the Dependencies. This defaults to IndexSet, which will query
   # rubygems.org.
 
   def initialize needed, set = nil
@@ -119,15 +119,12 @@ class Gem::DependencyResolver
   end
 
   def handle_conflict(dep, existing)
-    # There is a conflict! We return the conflict
-    # object which will be seen by the caller and be
-    # handled at the right level.
+    # There is a conflict! We return the conflict object which will be seen by
+    # the caller and be handled at the right level.
 
-    # If the existing activation indicates that there
-    # are other possibles for it, then issue the conflict
-    # on the dep for the activation itself. Otherwise, issue
-    # it on the requester's request itself.
-    #
+    # If the existing activation indicates that there are other possibles for
+    # it, then issue the conflict on the dependency for the activation itself.
+    # Otherwise, issue it on the requester's request itself.
     if existing.others_possible?
       conflict =
         Gem::DependencyResolver::DependencyConflict.new dep, existing
@@ -146,7 +143,7 @@ class Gem::DependencyResolver
   # +needed+ is a Gem::List of DependencyRequest objects that, well, need
   # to be satisfied.
   # +specs+ is the List of ActivationRequest that are being tested.
-  # +dep+ is the DepedencyRequest that was used to generate this state.
+  # +dep+ is the DependencyRequest that was used to generate this state.
   # +spec+ is the Specification for this state.
   # +possible+ is List of DependencyRequest objects that can be tried to
   # find a  complete set.
@@ -307,4 +304,6 @@ require 'rubygems/dependency_resolver/index_set'
 require 'rubygems/dependency_resolver/index_specification'
 require 'rubygems/dependency_resolver/installed_specification'
 require 'rubygems/dependency_resolver/installer_set'
+require 'rubygems/dependency_resolver/vendor_set'
+require 'rubygems/dependency_resolver/vendor_specification'
 

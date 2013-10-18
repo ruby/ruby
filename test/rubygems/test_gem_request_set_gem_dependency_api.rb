@@ -10,7 +10,10 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @set = Gem::RequestSet.new
 
+    @vendor_set = Gem::DependencyResolver::VendorSet.new
+
     @gda = @GDA.new @set, 'gem.deps.rb'
+    @gda.instance_variable_set :@vendor_set, @vendor_set
   end
 
   def test_gem
@@ -42,6 +45,18 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal expected, @gda.dependency_groups
 
     assert_empty @set.dependencies
+  end
+
+  def test_gem_path
+    name, version, directory = vendor_gem
+
+    @gda.gem name, :path => directory
+
+    assert_equal [dep(name)], @set.dependencies
+
+    loaded = @vendor_set.load_spec(name, version, Gem::Platform::RUBY, nil)
+
+    assert_equal "#{name}-#{version}", loaded.full_name
   end
 
   def test_gem_requirement
@@ -78,6 +93,17 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     assert_equal [['a']], @gda.dependency_groups[:test]
 
     assert_empty @set.dependencies
+  end
+
+  def test_group_multiple
+    @gda.group :a do
+      @gda.gem 'a', :group => :b, :groups => [:c, :d]
+    end
+
+    assert_equal [['a']], @gda.dependency_groups[:a]
+    assert_equal [['a']], @gda.dependency_groups[:b]
+    assert_equal [['a']], @gda.dependency_groups[:c]
+    assert_equal [['a']], @gda.dependency_groups[:d]
   end
 
   def test_load

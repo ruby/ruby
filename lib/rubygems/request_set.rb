@@ -37,6 +37,11 @@ class Gem::RequestSet
   attr_accessor :soft_missing
 
   ##
+  # The set of vendor gems imported via load_gemdeps.
+
+  attr_reader :vendor_set # :nodoc:
+
+  ##
   # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
   # can then #resolve and #install the resolved list of dependencies.
   #
@@ -54,6 +59,7 @@ class Gem::RequestSet
     @soft_missing   = false
     @sorted         = nil
     @specs          = nil
+    @vendor_set     = nil
 
     yield self if block_given?
   end
@@ -69,7 +75,7 @@ class Gem::RequestSet
   # Add +deps+ Gem::Dependency objects to the set.
 
   def import deps
-    @dependencies += deps
+    @dependencies.concat deps
   end
 
   def install options, &block
@@ -143,6 +149,8 @@ class Gem::RequestSet
   # Load a dependency management file.
 
   def load_gemdeps path
+    @vendor_set = Gem::DependencyResolver::VendorSet.new
+
     gf = Gem::RequestSet::GemDependencyAPI.new self, path
     gf.load
   end
