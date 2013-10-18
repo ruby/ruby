@@ -5273,8 +5273,7 @@ struct wmap_iter_arg {
 static int
 wmap_inspect_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    struct wmap_iter_arg *args = (struct wmap_iter_arg *)arg;
-    VALUE str = args->value;
+    VALUE str = (VALUE)arg;
     VALUE k = (VALUE)key, v = (VALUE)val;
 
     if (RSTRING_PTR(str)[0] != '#') {
@@ -5305,6 +5304,7 @@ wmap_inspect(VALUE self)
 	st_foreach(w->obj2wmap, wmap_inspect_i, str);
     }
     RSTRING_PTR(str)[0] = '#';
+    rb_str_cat2(str, ">");
     return str;
 }
 
