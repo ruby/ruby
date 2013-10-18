@@ -390,6 +390,20 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     end
   end
 
+  def test_fetch_remote_gems_mismatch
+    platform = Gem::Platform.new 'x86-freebsd9'
+    a2_p = quick_spec 'a', 2 do |s| s.platform = platform end
+
+    util_setup_spec_fetcher @a2, a2_p
+
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
   def test_fetch_remote_gems_prerelease
     @cmd.options[:prerelease] = true
 

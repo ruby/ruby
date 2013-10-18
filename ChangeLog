@@ -1,3 +1,11 @@
+Sat Oct 19 07:14:40 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 42543b6.  Changes:
+
+	  Fix `gem update` for gems with multiple platforms.
+
+	* test/rubygems:  ditto.
+
 Sat Oct 19 06:55:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 0a3814b.  Changes:
