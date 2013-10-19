@@ -4,9 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/ext/builder'
-require 'rubygems/command'
-
 class Gem::Ext::RakeBuilder < Gem::Ext::Builder
 
   def self.build(extension, directory, dest_path, results, args=[])

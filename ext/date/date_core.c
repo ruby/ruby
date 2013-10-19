@@ -9221,23 +9221,23 @@ Init_date_core(void)
 
     rb_include_module(cDate, rb_mComparable);
 
-    /* An array of string of full month name in English.  The first
+    /* An array of strings of full month names in English.  The first
      * element is nil.
      */
     rb_define_const(cDate, "MONTHNAMES", mk_ary_of_str(13, monthnames));
 
-    /* An array of string of abbreviated month name in English.  The
+    /* An array of strings of abbreviated month names in English.  The
      * first element is nil.
      */
     rb_define_const(cDate, "ABBR_MONTHNAMES",
 		    mk_ary_of_str(13, abbr_monthnames));
 
-    /* An array of string of full name of days of the week in English.
+    /* An array of strings of the full names of days of the week in English.
      * The first is "Sunday".
      */
     rb_define_const(cDate, "DAYNAMES", mk_ary_of_str(7, daynames));
 
-    /* An array of string of abbreviated day name in English.  The
+    /* An array of strings of abbreviated day names in English.  The
      * first is "Sun".
      */
     rb_define_const(cDate, "ABBR_DAYNAMES", mk_ary_of_str(7, abbr_daynames));

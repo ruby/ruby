@@ -89,6 +89,17 @@ class TestGemRequest < Gem::TestCase
     assert_equal 'my bar', Gem::UriFormatter.new(proxy.password).unescape
   end
 
+  def test_get_proxy_from_env_escape
+    ENV['http_proxy'] = @proxy_uri
+    ENV['http_proxy_user'] = 'foo@user'
+    ENV['http_proxy_pass'] = 'my@bar'
+
+    proxy = @request.get_proxy_from_env
+
+    assert_equal 'foo%40user', proxy.user
+    assert_equal 'my%40bar',   proxy.password
+  end
+
   def test_get_proxy_from_env_normalize
     ENV['HTTP_PROXY'] = 'fakeurl:12345'
 
@@ -126,7 +137,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_unmodified
     uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    t = Time.now
+    t = Time.utc(2013, 1, 2, 3, 4, 5)
     @request = Gem::Request.new(uri, Net::HTTP::Get, t, nil)
     conn = util_stub_connection_for :body => '', :code => 304
 
@@ -135,7 +146,9 @@ class TestGemRequest < Gem::TestCase
     assert_equal 304, response.code
     assert_equal '', response.body
 
-    assert_equal t.rfc2822, conn.payload['if-modified-since']
+    modified_header = conn.payload['if-modified-since']
+
+    assert_equal 'Wed, 02 Jan 2013 03:04:05 GMT', modified_header
   end
 
   def test_user_agent

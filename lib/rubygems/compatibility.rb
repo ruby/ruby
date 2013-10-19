@@ -34,6 +34,9 @@ module Gem
   RubyGemsVersion = VERSION
 
   RbConfigPriorities = %w[
+    MAJOR
+    MINOR
+    TEENY
     EXEEXT RUBY_SO_NAME arch bindir datadir libdir ruby_install_name
     ruby_version rubylibprefix sitedir sitelibdir vendordir vendorlibdir
     rubylibdir

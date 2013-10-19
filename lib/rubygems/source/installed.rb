@@ -1,6 +1,7 @@
 class Gem::Source::Installed < Gem::Source
 
   def initialize
+    @uri = nil
   end
 
   ##

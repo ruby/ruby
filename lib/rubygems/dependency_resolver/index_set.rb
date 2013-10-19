@@ -30,7 +30,7 @@ class Gem::DependencyResolver::IndexSet
     name = req.dependency.name
 
     @all[name].each do |uri, n|
-      if req.dependency.match? n
+      if req.dependency.match? n then
         res << Gem::DependencyResolver::IndexSpecification.new(
           self, n.name, n.version, uri, n.platform)
       end

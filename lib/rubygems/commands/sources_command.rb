@@ -154,8 +154,7 @@ To remove a source use the --remove argument:
   end
 
   def list? # :nodoc:
-    !(options[:list] ||
-      options[:add] ||
+    !(options[:add] ||
       options[:clear_all] ||
       options[:remove] ||
       options[:update])

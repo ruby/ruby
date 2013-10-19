@@ -18,9 +18,11 @@ class TestWeakRef < Test::Unit::TestCase
   def test_recycled
     weak, str = make_weakref
     assert_nothing_raised(WeakRef::RefError) {weak.to_s}
+    assert_predicate(weak, :weakref_alive?)
     ObjectSpace.garbage_collect
     ObjectSpace.garbage_collect
     assert_raise(WeakRef::RefError) {weak.to_s}
+    assert_not_predicate(weak, :weakref_alive?)
   end
 
   def test_not_reference_different_object

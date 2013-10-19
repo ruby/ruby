@@ -1,3 +1,4 @@
+require 'cgi'
 require 'uri'
 
 class Gem::UriFormatter
@@ -9,7 +10,7 @@ class Gem::UriFormatter
 
   def escape
     return unless @uri
-    escaper.escape @uri
+    CGI.escape @uri
   end
 
   ##
@@ -21,18 +22,7 @@ class Gem::UriFormatter
 
   def unescape
     return unless @uri
-    escaper.unescape @uri
-  end
-
-  private
-
-  def escaper
-    @uri_parser ||=
-      begin
-        URI::Parser.new
-      rescue NameError
-        URI
-      end
+    CGI.unescape @uri
   end
 
 end

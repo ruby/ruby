@@ -5,7 +5,13 @@
 size_t objspace_memsize_of(VALUE obj);
 
 /* object_tracing.c */
+/* all of information don't need marking. */
 struct allocation_info {
+    int living;
+    VALUE flags;
+    VALUE klass;
+
+    /* allocation info */
     const char *path;
     unsigned long line;
     const char *class_path;

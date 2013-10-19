@@ -24,6 +24,7 @@ class Gem::Doctor
     ['build_info',     '.info'],
     ['cache',          '.gem'],
     ['doc',            ''],
+    ['extensions',     ''],
     ['gems',           ''],
   ]
 

@@ -32,9 +32,13 @@ class Gem::Commands::InstallCommand < Gem::Command
     add_version_option
     add_prerelease_option "to be installed. (Only for listed gems)"
 
-    add_option(:"Install/Update", '-g', '--file FILE',
+    add_option(:"Install/Update", '-g', '--file [FILE]',
                'Read from a gem dependencies API file and',
                'install the listed gems') do |v,o|
+      v = Gem::GEM_DEP_FILES.find do |file|
+        File.exist? file
+      end unless v
+
       o[:gemdeps] = v
     end
 
@@ -131,7 +135,7 @@ to write the specification by hand.  For example:
   def execute
     if gf = options[:gemdeps] then
       install_from_gemdeps gf
-      return
+      return # not reached
     end
 
     @installed_specs = []
@@ -147,7 +151,7 @@ to write the specification by hand.  For example:
 
     show_installed
 
-    raise Gem::SystemExitException, exit_code
+    terminate_interaction exit_code
   end
 
   def install_from_gemdeps gf # :nodoc:
@@ -169,7 +173,7 @@ to write the specification by hand.  For example:
 
     @installed_specs = specs
 
-    raise Gem::SystemExitException, 0
+    terminate_interaction
   end
 
   def install_gem name, version # :nodoc:

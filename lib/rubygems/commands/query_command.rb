@@ -161,11 +161,11 @@ is too hard to use.
                :latest
              end
 
-      if options[:name].source.empty?
+      if name.source.empty?
         spec_tuples = fetcher.detect(type) { true }
       else
         spec_tuples = fetcher.detect(type) do |name_tuple|
-          options[:name] === name_tuple.name
+          name === name_tuple.name
         end
       end
 

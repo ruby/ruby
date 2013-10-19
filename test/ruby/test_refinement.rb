@@ -1059,6 +1059,54 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_refine_undefed_method_and_call
+    assert_in_out_err([], <<-INPUT, ["NoMethodError"], [])
+      class Foo
+        def foo
+        end
+
+        undef foo
+      end
+
+      module FooExt
+        refine Foo do
+          def foo
+          end
+        end
+      end
+
+      begin
+        Foo.new.foo
+      rescue => e
+        p e.class
+      end
+    INPUT
+  end
+
+  def test_refine_undefed_method_and_send
+    assert_in_out_err([], <<-INPUT, ["NoMethodError"], [])
+      class Foo
+        def foo
+        end
+
+        undef foo
+      end
+
+      module FooExt
+        refine Foo do
+          def foo
+          end
+        end
+      end
+
+      begin
+        Foo.new.send(:foo)
+      rescue => e
+        p e.class
+      end
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

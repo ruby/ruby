@@ -1272,7 +1272,13 @@ rb_locale_encindex(void)
     else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
         idx = ENCINDEX_ASCII;
 
-    if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
+    if (rb_enc_registered("locale") < 0) {
+# if defined _WIN32
+	void Init_w32_codepage(void);
+	Init_w32_codepage();
+# endif
+	enc_alias_internal("locale", idx);
+    }
 
     return idx;
 }

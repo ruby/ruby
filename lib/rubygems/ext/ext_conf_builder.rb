@@ -4,8 +4,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/ext/builder'
-require 'rubygems/command'
 require 'fileutils'
 require 'tempfile'
 

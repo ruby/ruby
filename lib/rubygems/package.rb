@@ -339,13 +339,9 @@ EOM
   def extract_tar_gz io, destination_dir, pattern = "*" # :nodoc:
     open_tar_gz io do |tar|
       tar.each do |entry|
-        # Some entries start with "./" which fnmatch does not like, see github
-        # issue #644
-        full_name = entry.full_name.sub %r%\A\./%, ''
+        next unless File.fnmatch pattern, entry.full_name, File::FNM_DOTMATCH
 
-        next unless File.fnmatch pattern, full_name
-
-        destination = install_location full_name, destination_dir
+        destination = install_location entry.full_name, destination_dir
 
         FileUtils.rm_rf destination
 
@@ -395,6 +391,7 @@ EOM
 
     destination_dir = File.realpath destination_dir if
       File.respond_to? :realpath
+    destination_dir = File.expand_path destination_dir
 
     destination = File.join destination_dir, filename
     destination = File.expand_path destination

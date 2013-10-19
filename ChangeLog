@@ -1,3 +1,293 @@
+Sun Oct 20 05:24:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_class2name): should return real class name, not
+	  singleton class or iclass.
+
+Sun Oct 20 04:18:48 2013  Aman Gupta <ruby@tmm1.net>
+
+	* variable.c (rb_class2name): call rb_tmp_class_path() directly to
+	  avoid extra rb_str_dup() from rb_class_name().
+
+Sat Oct 19 19:59:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (code_page): use simple array instead of st_table.
+
+	* encoding.c (rb_locale_encindex): defer initialization of win32 code
+	  page table until encoding db loaded.
+
+Sat Oct 19 08:25:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: fix rb_objspace_t.
+	  * make "struct heap" and move most of variables
+	    in rb_objspace_t::heap.
+	  * rename rb_objspace_t::heap::sorted to
+	    rb_objspace_t::heap_sorted_pages
+	    and make a macro heap_sorted_pages.
+	  * rename rb_objspace_t::heap::range to
+	    rb_objspace_t::heap_range and rename macros
+	    lomem/himem to heap_lomem/heap_himem.
+
+Sat Oct 19 07:14:40 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 42543b6.  Changes:
+
+	  Fix `gem update` for gems with multiple platforms.
+
+	* test/rubygems:  ditto.
+
+Sat Oct 19 06:55:52 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 0a3814b.  Changes:
+
+	  Fixed extension directory in Gem::Specification#require_paths.
+
+	  Allow installation of gems when $HOME is nonexistent or unwritable.
+
+	  Use proper API in InstallCommand.
+
+	  Improve support for path option in gem dependency files.
+
+	  Remove warnings.
+
+	* test/rubygems:  ditto.
+
+Fri Oct 18 15:23:34 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change terminology of heap.
+	  Change "slot" to "page". "Slot" is a space of RVALUE.
+	  1. "Heap" consists of a set of "heap_page"s (pages).
+	  2. Each "heap_page" has "heap_page_body".
+	  3. "heap_page_body" has RVALUE (a.k.a. "slot") spaces.
+	  4. "sorted" is a sorted array of "heap_page"s, sorted
+	     by address of heap_page_body (for "is_pointer_to_heap").
+
+	  See https://bugs.ruby-lang.org/attachments/4008/data-heap_structure.png.
+
+Fri Oct 18 09:40:43 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master cee6788.  Changes:
+
+	  Fix test failure on vc10-x64 Server on rubyci.org due to attempting
+	  to File.chmod where it is not supported.
+
+	  Continuing work on improved gem dependencies file (Gemfile) support.
+
+	* test:  ditto.
+
+Fri Oct 18 06:02:49 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master f738c67.  Changes:
+
+	  Fixed test bug for ruby with ENABLE_SHARED = no
+
+	* test/rubygems:  ditto.
+
+Fri Oct 18 00:57:07 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb (TSort.tsort): Extracted from TSort#tsort.
+	  (TSort.tsort_each): Extracted from TSort#tsort_each.
+	  (TSort.strongly_connected_components): Extracted from
+	  TSort#strongly_connected_components.
+	  (TSort.each_strongly_connected_component): Extracted from
+	  TSort#each_strongly_connected_component.
+
+Thu Oct 17 18:50:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE): introduced.
+	  This macro enable checker compare with allocated memory and
+	  declared old_size of sized_xfree and sized_xrealloc.
+
+Thu Oct 17 18:45:41 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c (STR_HEAP_SIZE): includes TERM_LEN(str).
+
+	* string.c (rb_str_memsize): use STR_HEAP_SIZE().
+
+Thu Oct 17 17:43:00 2013  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): set ci->me to 0 when the
+	  original method of a refined method is undef to avoid SEGV.
+
+	* vm_method.c (rb_method_entry_without_refinements): return 0 when
+	  the original method of a refined method is undef to avoid SEGV.
+
+	* test/ruby/test_refinement.rb: related test.
+
+Thu Oct 17 17:38:36 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, internal.h: rename ruby_xsizefree/realloc to
+	  rb_sized_free/realloc.
+
+	* array.c: catch up these changes.
+
+	* string.c: ditto.
+
+Thu Oct 17 17:32:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c, string.c: use ruby_xsizedfree() and ruby_xsizedrealloc().
+
+	* internal.h (SIZED_REALLOC_N): define a macro as REALLOC_N().
+
+Thu Oct 17 17:11:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (console_emulator_p): check by comparison between
+	  module handle of WriteConsoleW and kernel32.dll.
+
+	* configure.in, win32/Makefile.sub, win32/setup.mak: no longer need
+	  psapi.lib.
+
+Thu Oct 17 16:53:30 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, internal.h: add new internal memory management functions.
+	  * void *ruby_xsizedrealloc(void *ptr, size_t new_size, size_t old_size)
+	  * void ruby_xsizedfree(void *x, size_t size)
+	  These functions accept additional size parameter to calculate more
+	  accurate malloc_increase parameter which control GC timing.
+	  [Feature #8985]
+
+Thu Oct 17 14:21:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): fix memory leaks at
+	  a non-absolute home exception.
+
+Thu Oct 17 14:06:39 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c (newobj_i): fix memory leak.
+	  There is possibility to remain info due to missing FREEOBJ event.
+	  FREEOBJ events are skipped while suppress_tracing state, for example,
+	  during trace events are invoking.
+
+Thu Oct 17 12:30:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb (TSort.each_strongly_connected_component_from):
+	  Extracted from TSort#each_strongly_connected_component_from.
+
+Thu Oct 17 11:07:06 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 941c21a.  Changes:
+
+	  Restored method bundler wants to remove for compatibility.
+
+	  Improvements to Gemfile compatibility.
+
+	* test/rubygems:  ditto.
+
+Thu Oct 17 08:08:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c (newobj_i): add workaround.
+	  some bugs hits this check.
+
+	* ext/objspace/object_tracing.c (object_allocations_reporter_i): cast as pointer.
+
+Thu Oct 17 07:36:53 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 2abce58.  Changes:
+
+	  Fixed documentation generation when sdoc and json are installed as
+	  gems.
+
+	  Added some missing documentation.
+
+Thu Oct 17 07:10:26 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/curses/curses.c: [DOC] Cleaned up formatting consistency of rdoc
+	  comments for Curses, including period spacing and column width.
+
+	  This patch also fixed some typos. Thanks to @postmodern for the patch!
+	  [Fixes GH-420] https://github.com/ruby/ruby/pull/420
+
+Thu Oct 17 06:58:42 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/date/date_core.c: [DOC] plural grammar fixed by @scott113341
+	  Contributed via documenting-ruby.org: documenting-ruby/ruby#16
+	  https://github.com/documenting-ruby/ruby/pull/16
+
+Thu Oct 17 05:52:31 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/io/nonblock/nonblock.c: [DOC] Document io/nonblock by reprah
+	  [Fixes GH-418] https://github.com/ruby/ruby/pull/418 based on the
+	  original discussion from documenting-ruby/ruby#18
+
+Thu Oct 17 05:40:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (objspace_each_objects): do not skip empty RVALUEs.
+
+Thu Oct 17 05:31:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c (rb_bug_reporter_add): return simply 0 if failed.
+	  Please check return value.
+
+Thu Oct 17 05:17:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/object_tracing.c: add new method
+	  ObjectSpace.trace_object_allocations_debug_start for GC debugging.
+	  If you encounter the BUG "... is T_NONE" (and so on) on your
+	  application, please try this method at the beginning of your app.
+
+Wed Oct 16 22:35:27 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/io/nonblock/nonblock.c: use rb_cIO instead of VALUE
+
+Wed Oct 16 17:45:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: check nil before calling `signal?'
+	  for a process status.
+
+Wed Oct 16 17:37:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c, internal.h (rb_bug_reporter_add): add a new C-API.
+	  rb_bug_reporter_add() allows to register a function which
+	  is called at rb_bug() called.
+
+	* ext/-test-/bug_reporter/bug_reporter.c: add a test for this C-API.
+
+	* ext/-test-/bug_reporter/extconf.rb: ditto.
+
+	* test/-ext-/bug_reporter/test_bug_reporter.rb: ditto.
+
+Wed Oct 16 15:14:21 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add a line into NEWS for last commit.
+
+Wed Oct 16 15:09:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add a new method `reachable_objects_from_root'.
+	  ObjectSpace.reachable_objects_from_root returns all objects referred
+	  from root (called "root objects").
+	  This feature is for deep object analysis.
+
+	* test/objspace/test_objspace.rb: add a test.
+
+Wed Oct 16 15:00:21 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master b955554.  Changes:
+
+	  Fixed NameError for Gem::Ext due to re-entering file lookup in
+	  RubyGems' overridden require.  Bug by Koichi Sasada.
+
+	  Fixed possible circular require warning in tests.
+
+	  Used existing constant for `gem install -g` dependency file list.
+
+	* test/rubygems:  ditto.
+
+Wed Oct 16 09:42:42 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 278d00d.  Changes:
+
+	  Fixes building extensions without a "clean" make rule
+
+	  Adds gem dependency file autodetection to "gem install -g"
+
+	* test/rubygems:  Tests for the above.
+
+Wed Oct 16 09:12:23 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master commit 2a74263.  This fixes
+	  several bugs in RubyGems 2.2.0.preview.1.
+
+	* test/rubygems:  ditto.
+
 Wed Oct 16 07:25:02 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_mark_roots): rename roots to be categories

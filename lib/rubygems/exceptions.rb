@@ -154,6 +154,12 @@ class Gem::RemoteInstallationSkipped < Gem::Exception; end
 # Represents an error communicating via HTTP.
 class Gem::RemoteSourceException < Gem::Exception; end
 
+##
+# Raised when a gem dependencies file specifies a ruby version that does not
+# match the current version.
+
+class Gem::RubyVersionMismatch < Gem::Exception; end
+
 class Gem::VerificationError < Gem::Exception; end
 
 ##

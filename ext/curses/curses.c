@@ -694,7 +694,7 @@ getstr_func(void *arg)
 /*
  * Document-method: Curses.getstr
  *
- * This is equivalent to a series f Curses::Window.getch calls
+ * This is equivalent to a series of Curses::Window.getch calls
  *
  */
 static VALUE
@@ -1120,8 +1120,8 @@ curses_init_pair(VALUE obj, VALUE pair, VALUE f, VALUE b)
  * * the amount of green, +g+
  * * the amount of blue, +b+
  *
- * The value of the first argument must be between 0 and  COLORS.
- * (See the section Colors for the default color index.)  Each
+ * The value of the first argument must be between 0 and COLORS.
+ * (See the section Colors for the default color index.) Each
  * of the last three arguments must be a value between 0 and 1000.
  * When Curses.init_color is used, all occurrences of that color
  * on the screen immediately change to the new definition.
@@ -1301,7 +1301,8 @@ static const rb_data_type_t mousedata_type = {
  *
  * This will read and pop the mouse event data off the queue
  *
- * See the BUTTON*, ALL_MOUSE_EVENTS and REPORT_MOUSE_POSITION constants, to examine the mask of the event
+ * See the BUTTON*, ALL_MOUSE_EVENTS and REPORT_MOUSE_POSITION constants,
+ * to examine the mask of the event
  */
 static VALUE
 curses_getmouse(VALUE obj)
@@ -1405,7 +1406,7 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_z, z)
 /*
  * Document-method: Curses::MouseEvent.bstate
  *
- * Returns the current mouse's button state.  Use this with the button state
+ * Returns the current mouse's button state. Use this with the button state
  * constants to determine which buttons were pressed.
  */
 DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
@@ -1488,7 +1489,8 @@ window_s_allocate(VALUE class)
  * call-seq: new(height, width, top, left)
  *
  * Construct a new Curses::Window with constraints of
- * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
+ * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most
+ * column.
  *
  * A new window using full screen is called as
  * 	Curses::Window.new(0,0,0,0)
@@ -1514,8 +1516,9 @@ window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
  * Document-method: Curses::Window.subwin
  * call-seq: subwin(height, width, top, left)
  *
- * Construct a new subwindow with constraints of
- * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most column.
+ * Construct a new sub-window with constraints of
+ * +height+ lines, +width+ columns, begin at +top+ line, and begin +left+ most
+ * column.
  *
  */
 static VALUE
@@ -1665,7 +1668,7 @@ window_setpos(VALUE obj, VALUE y, VALUE x)
 /*
  * Document-method: Curses::Window.cury
  *
- * A getter for the current line (Y coord) of the window
+ * A getter for the current line (Y coordinate) of the window
  */
 static VALUE
 window_cury(VALUE obj)
@@ -1681,7 +1684,7 @@ window_cury(VALUE obj)
 /*
  * Document-method: Curses::Window.curx
  *
- * A getter for the current column (X coord) of the window
+ * A getter for the current column (X coordinate) of the window
  */
 static VALUE
 window_curx(VALUE obj)
@@ -1745,7 +1748,7 @@ window_maxx(VALUE obj)
 /*
  * Document-method: Curses::Window.begy
  *
- * A getter for the beginning line (Y coord) of the window
+ * A getter for the beginning line (Y coordinate) of the window
  */
 static VALUE
 window_begy(VALUE obj)
@@ -1765,7 +1768,7 @@ window_begy(VALUE obj)
 /*
  * Document-method: Curses::Window.begx
  *
- * A getter for the beginning column (X coord) of the window
+ * A getter for the beginning column (X coordinate) of the window
  */
 static VALUE
 window_begx(VALUE obj)
@@ -1882,7 +1885,8 @@ window_inch(VALUE obj)
  * Document-method: Curses::Window.addch
  * call-seq: addch(ch)
  *
- * Add a character +ch+, with attributes, to the window, then advance the cursor.
+ * Add a character +ch+, with attributes, to the window, then advance the
+ * cursor.
  *
  * see also the system manual for curs_addch(3)
  */
@@ -2014,7 +2018,7 @@ wgetstr_func(void *_arg)
 /*
  * Document-method: Curses::Window.getstr
  *
- * This is equivalent to a series f Curses::Window.getch calls
+ * This is equivalent to a series of Curses::Window.getch calls
  *
  */
 static VALUE
@@ -2119,7 +2123,8 @@ window_scrollok(VALUE obj, VALUE bf)
  *
  * It is disabled by default because insert/delete line tends to be visually
  * annoying when used in applications where it is not really needed.
- * If insert/delete line cannot be used, curses redraws the changed portions of all lines.
+ * If insert/delete line cannot be used, curses redraws the changed portions of
+ * all lines.
  *
  */
 static VALUE
@@ -2142,7 +2147,7 @@ window_idlok(VALUE obj, VALUE bf)
  *
  * If this option and Curses::Window.scrollok are enabled, an attempt to move
  * off the bottom margin line causes all lines in the scrolling region to
- * scroll one line in the direction of the first line.  Only the text of the
+ * scroll one line in the direction of the first line. Only the text of the
  * window is scrolled.
  *
  */
@@ -2415,9 +2420,9 @@ window_resize(VALUE obj, VALUE lin, VALUE col)
  *
  * If enabled (+bool+ is +true+), the user can press a function key
  * (such as an arrow key) and wgetch returns a single value representing
- * the function key, as in KEY_LEFT.  If disabled (+bool+ is +false+),
+ * the function key, as in KEY_LEFT. If disabled (+bool+ is +false+),
  * curses does not treat function keys specially and the program has to
- * interpret the escape sequences itself.  If the keypad in the terminal
+ * interpret the escape sequences itself. If the keypad in the terminal
  * can be turned on (made to transmit) and off (made to work locally),
  * turning on this option causes the terminal keypad to be turned on when
  * Curses::Window.getch is called.
@@ -2451,7 +2456,7 @@ window_keypad(VALUE obj, VALUE val)
  * call-seq:
  *   window.nodelay = bool
  *
- * When in no-delay mode Curses::Window#getch is a non-blocking call.  If no
+ * When in no-delay mode Curses::Window#getch is a non-blocking call. If no
  * input is ready #getch returns ERR.
  *
  * When in delay mode (+bool+ is +false+ which is the default),
@@ -2482,9 +2487,12 @@ window_nodelay(VALUE obj, VALUE val)
  * call-seq: timeout=(delay)
  *
  * Sets block and non-blocking reads for the window.
- * - If delay is negative, blocking read is used (i.e., waits indefinitely for input).
- * - If delay is zero, then non-blocking read is used (i.e., read returns ERR if no input is waiting).
- * - If delay is positive, then read blocks for delay milliseconds, and returns ERR if there is still no input.
+ * - If delay is negative, blocking read is used (i.e., waits indefinitely for
+ *   input).
+ * - If delay is zero, then non-blocking read is used (i.e., read returns ERR
+ *   if no input is waiting).
+ * - If delay is positive, then read blocks for delay milliseconds, and returns
+ *   ERR if there is still no input.
  *
  */
 static VALUE
@@ -2567,8 +2575,8 @@ pad_subpad(VALUE obj, VALUE height, VALUE width, VALUE begin_x, VALUE begin_y)
  * call-seq:
  *   pad.refresh(pad_minrow, pad_mincol, screen_minrow, screen_mincol, screen_maxrow, screen_maxcol)
  *
- * Refreshes the pad.  +pad_minrow+ and pad_mincol+ define the upper-left
- * corner of the rectangle to be displayed.  +screen_minrow+, +screen_mincol+,
+ * Refreshes the pad. +pad_minrow+ and pad_mincol+ define the upper-left
+ * corner of the rectangle to be displayed. +screen_minrow+, +screen_mincol+,
  * +screen_maxrow+, +screen_maxcol+ define the edges of the rectangle to be
  * displayed on the screen.
  *
@@ -2599,8 +2607,8 @@ pad_refresh(VALUE obj, VALUE pminrow, VALUE pmincol, VALUE sminrow,
  * call-seq:
  *   pad.noutrefresh(pad_minrow, pad_mincol, screen_minrow, screen_mincol, screen_maxrow, screen_maxcol)
  *
- * Refreshes the pad.  +pad_minrow+ and pad_mincol+ define the upper-left
- * corner of the rectangle to be displayed.  +screen_minrow+, +screen_mincol+,
+ * Refreshes the pad. +pad_minrow+ and pad_mincol+ define the upper-left
+ * corner of the rectangle to be displayed. +screen_minrow+, +screen_mincol+,
  * +screen_maxrow+, +screen_maxcol+ define the edges of the rectangle to be
  * displayed on the screen.
  *

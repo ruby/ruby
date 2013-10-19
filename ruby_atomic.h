@@ -60,14 +60,14 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 #   define ATOMIC_CAS(var, oldval, newval) rb_w32_atomic_cas(&(var), (oldval), (newval))
 # endif
 # ifdef _M_AMD64
-#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64(&(var), (val))
-#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64(&(var), -(val))
+#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64((LONG_LONG *)&(var), (val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64((LONG_LONG *)&(var), -(LONG)(val))
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement64(&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd((LONG *)&(var), (val))
-#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(LONG)(val))
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement((LONG *)&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement((LONG *)&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))

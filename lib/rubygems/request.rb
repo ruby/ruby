@@ -78,8 +78,8 @@ class Gem::Request
       net_http_args += [
         @proxy_uri.host,
         @proxy_uri.port,
-        @proxy_uri.user,
-        @proxy_uri.password
+        Gem::UriFormatter.new(@proxy_uri.user).unescape,
+        Gem::UriFormatter.new(@proxy_uri.password).unescape,
       ]
     end
 
@@ -114,8 +114,7 @@ class Gem::Request
     request.add_field 'Keep-Alive', '30'
 
     if @last_modified then
-      @last_modified = @last_modified.utc
-      request.add_field 'If-Modified-Since', @last_modified.rfc2822
+      request.add_field 'If-Modified-Since', @last_modified.httpdate
     end
 
     yield request if block_given?

@@ -207,5 +207,15 @@ class TestGemSource < Gem::TestCase
     assert_equal(-1, remote.   <=>(no_uri),    'remote <=> no_uri')
   end
 
+  def test_update_cache_eh
+    assert @source.update_cache?
+  end
+
+  def test_update_cache_eh_home_nonexistent
+    FileUtils.rmdir Gem.user_home
+
+    refute @source.update_cache?
+  end
+
 end
 
