@@ -625,10 +625,40 @@ jump_to_vpc(unsigned char *code) /* size: 3 */
     return copy_instructions(code, instructions, sizeof(instructions));
 }
 
+static int
+is_valid_context_threading_region(void *start, VALUE size)
+{
+    const void * const *table = rb_vm_get_insns_address_table();
+    VALUE s = (VALUE) start;
+    VALUE e = s + size;
+    VALUE t = (VALUE) table[0];
+    if (s > t) {
+        return (s - t < UINT_MAX) && (e - t < UINT_MAX);
+    }
+    return (t - s < UINT_MAX) && (t - e < UINT_MAX);
+}
+
+static void
+enable_execution_in_context_threading_region(VALUE *region)
+{
+    if (mprotect(region, region[0] * sizeof(VALUE), PROT_READ | PROT_EXEC)) {
+        rb_sys_fail("mprotect");
+    }
+}
+
+static void
+enable_write_in_context_threading_region(VALUE *region)
+{
+    if (mprotect(region, region[0] * sizeof(VALUE), PROT_READ | PROT_WRITE)) {
+        rb_sys_fail("mprotect");
+    }
+}
+
 static void *
 alloc_context_threading_table(VALUE ctt_size)
 {
     rb_vm_t *vm = GET_VM();
+    void *badpage = NULL;
 
     /* Region is a tuple (size, next, free-list) */
     VALUE *region = vm->context_threading_regions;
@@ -643,6 +673,7 @@ alloc_context_threading_table(VALUE ctt_size)
             chunk = (VALUE *) chunk[1];
         }
         if (chunk) {
+            enable_write_in_context_threading_region(region);
             if (chunk[0] - slot_count > 2) {
                 chunk[0] -= slot_count;
                 chunk += chunk[0];
@@ -658,15 +689,26 @@ alloc_context_threading_table(VALUE ctt_size)
         }
         region = (VALUE *) region[1];
     }
-    {
+    while (1) {
         const VALUE TWO_MB = 2 * 1024 * 1024;
         VALUE size = ((slot_count + 3) * sizeof(VALUE) + TWO_MB - 1) & ~(TWO_MB - 1);
-        void *page = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE | MAP_JIT, -1, 0);
+        void *page = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
         if (page != MAP_FAILED) {
             VALUE *chunk;
             VALUE *region = (VALUE *) page;
+            if (!is_valid_context_threading_region(page, size)) {
+                if (badpage) {
+                    if (-1 == munmap(badpage, size)) {
+                        rb_sys_fail("munmap");
+                        break;
+                    }
+                }
+                badpage = page;
+                continue;
+            }
             if (-1 == minherit(page, size, VM_INHERIT_COPY)) {
               rb_sys_fail("minherit");
+              break;
             }
             region[0] = size / sizeof(VALUE);
             region[1] = (VALUE) vm->context_threading_regions;
@@ -682,9 +724,16 @@ alloc_context_threading_table(VALUE ctt_size)
             } else {
                 chunk = region + 3;
             }
+            if (badpage) {
+                if (-1 == munmap(badpage, size)) {
+                    rb_sys_fail("munmap");
+                    break;
+                }
+            }
             return chunk + 1;
         } else {
             rb_sys_fail("mmap");
+            break;
         }
     }
     return NULL;
@@ -713,8 +762,10 @@ rb_iseq_free_context_threading_table(void *ctt)
         VALUE *chunk = (VALUE *) ctt;
         chunk--;
         /* TODO coalesce adjacent free chunks */
+        enable_write_in_context_threading_region(region);
         chunk[1] = region[2];
         region[2] = (VALUE) chunk;
+        enable_execution_in_context_threading_region(region);
     }
 }
 
@@ -724,6 +775,7 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned long i = 0;
     void *ctt = alloc_context_threading_table(ctt_size);
+    VALUE *region = region_for_context_threading_table(ctt);
     unsigned char *code = (unsigned char *)ctt;
     int has_jumps = 0;
 
@@ -807,6 +859,7 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
         }
     }
     iseq->context_threading_table = ctt;
+    enable_execution_in_context_threading_region(region);
     return COMPILE_OK;
 }
 #endif
