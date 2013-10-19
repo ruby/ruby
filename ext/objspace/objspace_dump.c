@@ -15,6 +15,7 @@
 #include "ruby/ruby.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "node.h"
 #include "vm_core.h"
 #include "objspace.h"
@@ -158,6 +159,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     long length;
     size_t memsize;
     struct allocation_info *ainfo;
+    rb_io_t *fptr;
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
@@ -233,6 +235,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 
 	case T_OBJECT:
 	    dump_append(dc, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
+	    break;
+
+	case T_FILE:
+	    fptr = RFILE(obj)->fptr;
+	    dump_append(dc, ", \"fd\":%d", fptr->fd);
 	    break;
 
 	case T_ZOMBIE:
