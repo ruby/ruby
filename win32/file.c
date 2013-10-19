@@ -10,7 +10,10 @@
 #endif
 
 /* cache 'encoding name' => 'code page' into a hash */
-static st_table *rb_code_page;
+static struct code_page_table {
+    USHORT *table;
+    unsigned int count;
+} rb_code_page;
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
@@ -177,7 +180,16 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
     if (strncmp("CP", n, 2) == 0) {
 	int code_page = atoi(n + 2);
 	if (code_page != 0) {
-	    st_insert((st_table *)arg, (st_data_t)idx, (st_data_t)code_page);
+	    struct code_page_table *cp = (struct code_page_table *)arg;
+	    unsigned int count = cp->count;
+	    USHORT *table = cp->table;
+	    if (count <= idx) {
+		unsigned int i = count;
+		cp->count = count = ((idx + 4) & ~31 | 28);
+		cp->table = table = realloc(table, count * sizeof(*table));
+		while (i < count) table[i++] = INVALID_CODE_PAGE;
+	    }
+	    table[idx] = (USHORT)code_page;
 	}
     }
     return ST_CONTINUE;
@@ -192,7 +204,6 @@ static UINT
 code_page(rb_encoding *enc)
 {
     int enc_idx;
-    st_data_t code_page_value;
 
     if (!enc)
 	return system_code_page();
@@ -204,8 +215,8 @@ code_page(rb_encoding *enc)
 	return 1252;
     }
 
-    if (st_lookup(rb_code_page, enc_idx, &code_page_value))
-	return (UINT)code_page_value;
+    if (0 <= enc_idx && (unsigned int)enc_idx < rb_code_page.count)
+	return rb_code_page.table[enc_idx];
 
     return INVALID_CODE_PAGE;
 }
@@ -377,9 +388,11 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
-	/* use filesystem encoding if expanding home dir */
-	path_encoding = rb_filesystem_encoding();
-	cp = path_cp = system_code_page();
+	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
+	    /* use filesystem encoding if expanding home dir */
+	    path_encoding = rb_filesystem_encoding();
+	    cp = path_cp = system_code_page();
+	}
 
 	/* ignores dir since we are expanding home */
 	ignore_dir = 1;
@@ -688,6 +701,6 @@ rb_file_load_ok(const char *path)
 void
 Init_w32_codepage(void)
 {
-    rb_code_page = st_init_numtable();
-    rb_enc_foreach_name(code_page_i, (st_data_t)rb_code_page);
+    if (rb_code_page.count) return;
+    rb_enc_foreach_name(code_page_i, (st_data_t)&rb_code_page);
 }

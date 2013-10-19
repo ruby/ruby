@@ -1,4 +1,6 @@
-Sat Oct 19 19:55:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct 19 19:59:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (code_page): use simple array instead of st_table.
 
 	* encoding.c (rb_locale_encindex): defer initialization of win32 code
 	  page table until encoding db loaded.
