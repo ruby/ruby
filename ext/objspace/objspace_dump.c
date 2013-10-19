@@ -75,6 +75,9 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	    case '"':
 		dump_append(dc, "\\%c", c);
 		break;
+	    case '\0':
+		dump_append(dc, "\\u0000");
+		break;
 	    case '\b':
 		dump_append(dc, "\\b");
 		break;
