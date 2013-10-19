@@ -386,7 +386,7 @@ const char *
 rb_class2name(VALUE klass)
 {
     int permanent;
-    VALUE path = rb_tmp_class_path(klass, &permanent, rb_ivar_set);
+    VALUE path = rb_tmp_class_path(rb_class_real(klass), &permanent, rb_ivar_set);
     if (NIL_P(path)) return NULL;
     return RSTRING_PTR(path);
 }

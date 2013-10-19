@@ -1,3 +1,8 @@
+Sun Oct 20 05:24:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_class2name): should return real class name, not
+	  singleton class or iclass.
+
 Sun Oct 20 04:18:48 2013  Aman Gupta <ruby@tmm1.net>
 
 	* variable.c (rb_class2name): call rb_tmp_class_path() directly to
