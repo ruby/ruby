@@ -5813,8 +5813,4 @@ Init_File(void)
     rb_define_method(rb_cStat, "setuid?",  rb_stat_suid, 0);
     rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
     rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
-
-#ifdef _WIN32
-    rb_w32_init_file();
-#endif
 }

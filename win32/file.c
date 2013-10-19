@@ -686,7 +686,7 @@ rb_file_load_ok(const char *path)
 }
 
 void
-rb_w32_init_file(void)
+Init_w32_codepage(void)
 {
     rb_code_page = st_init_numtable();
     rb_enc_foreach_name(code_page_i, (st_data_t)rb_code_page);
