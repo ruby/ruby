@@ -1,3 +1,9 @@
+##
+# RubyGems adds the #gem method to allow activation of specific gem versions
+# and overrides the #require method on Kernel to make gems appear as if they
+# live on the <code>$LOAD_PATH</code>.  See the documentation of these methods
+# for further detail.
+
 module Kernel
 
   # REFACTOR: This should be pulled out into some kind of hacks file.

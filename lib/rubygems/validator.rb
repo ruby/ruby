@@ -14,7 +14,7 @@ class Gem::Validator
 
   include Gem::UserInteraction
 
-  def initialize
+  def initialize # :nodoc:
     require 'find'
   end
 
@@ -57,8 +57,11 @@ class Gem::Validator
 
   public
 
+  ##
+  # Describes a problem with a file in a gem.
+
   ErrorData = Struct.new :path, :problem do
-    def <=> other
+    def <=> other # :nodoc:
       return nil unless self.class === other
 
       [path, problem] <=> [other.path, other.problem]

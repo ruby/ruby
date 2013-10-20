@@ -1,3 +1,9 @@
+Sun Oct 20 10:32:48 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update RubyGems to master 0886307.  This commit
+	  improves documentation and should bring ruby above 75% documented on
+	  rubyci.
+
 Sun Oct 20 09:30:56 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 3de7e0f.  Changes:

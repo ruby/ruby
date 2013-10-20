@@ -71,13 +71,13 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # NOTE RubyGems < 1.2 cannot load specification versions > 2.
 
-  CURRENT_SPECIFICATION_VERSION = 4
+  CURRENT_SPECIFICATION_VERSION = 4 # :nodoc:
 
   ##
   # An informal list of changes to the specification.  The highest-valued
   # key should be equal to the CURRENT_SPECIFICATION_VERSION.
 
-  SPECIFICATION_VERSION_HISTORY = {
+  SPECIFICATION_VERSION_HISTORY = { # :nodoc:
     -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
     1  => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
@@ -95,12 +95,18 @@ class Gem::Specification < Gem::BasicSpecification
     ]
   }
 
-  MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16, 3 => 17, 4 => 18 }
+  MARSHAL_FIELDS = { # :nodoc:
+    -1 => 16,
+     1 => 16,
+     2 => 16,
+     3 => 17,
+     4 => 18,
+  }
 
   today = Time.now.utc
-  TODAY = Time.utc(today.year, today.month, today.day)
+  TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  LOAD_CACHE = {}
+  LOAD_CACHE = {} # :nodoc:
 
   private_constant :LOAD_CACHE if defined? private_constant
 
@@ -153,7 +159,7 @@ class Gem::Specification < Gem::BasicSpecification
     :version                   => nil,
   }
 
-  Dupable = { }
+  Dupable = { } # :nodoc:
 
   @@default_value.each do |k,v|
     case v
@@ -1486,10 +1492,11 @@ class Gem::Specification < Gem::BasicSpecification
     @date ||= TODAY
   end
 
-  DateTimeFormat = /\A
-                     (\d{4})-(\d{2})-(\d{2})
-                     (\s+ \d{2}:\d{2}:\d{2}\.\d+ \s* (Z | [-+]\d\d:\d\d) )?
-                   \Z/x
+  DateTimeFormat = # :nodoc:
+    /\A
+     (\d{4})-(\d{2})-(\d{2})
+     (\s+ \d{2}:\d{2}:\d{2}\.\d+ \s* (Z | [-+]\d\d:\d\d) )?
+     \Z/x
 
   ##
   # The date this gem was created
@@ -1850,7 +1857,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   private :invalidate_memoized_attributes
 
-  def inspect
+  def inspect # :nodoc:
     if $DEBUG
       super
     else

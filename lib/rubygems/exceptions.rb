@@ -81,7 +81,16 @@ end
 
 class Gem::GemNotFoundException < Gem::Exception; end
 
+##
+# Raised by the DependencyInstaller when a specific gem cannot be found
+
 class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
+
+  ##
+  # Creates a new SpecificGemNotFoundException for a gem with the given +name+
+  # and +version+.  Any +errors+ encountered when attempting to find the gem
+  # are also stored.
+
   def initialize(name, version, errors=nil)
     super "Could not find a valid gem '#{name}' (#{version}) locally or in a repository"
 
@@ -90,7 +99,21 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
     @errors = errors
   end
 
-  attr_reader :name, :version, :errors
+  ##
+  # The name of the gem that could not be found.
+
+  attr_reader :name
+
+  ##
+  # The version of the gem that could not be found.
+
+  attr_reader :version
+
+  ##
+  # Errors encountered attempting to find the gem.
+
+  attr_reader :errors
+
 end
 
 ##
@@ -160,6 +183,9 @@ class Gem::RemoteSourceException < Gem::Exception; end
 
 class Gem::RubyVersionMismatch < Gem::Exception; end
 
+##
+# Raised by Gem::Validator when something is not right in a gem.
+
 class Gem::VerificationError < Gem::Exception; end
 
 ##
@@ -167,7 +193,14 @@ class Gem::VerificationError < Gem::Exception; end
 # exit_code
 
 class Gem::SystemExitException < SystemExit
+
+  ##
+  # The exit code for the process
+
   attr_accessor :exit_code
+
+  ##
+  # Creates a new SystemExitException with the given +exit_code+
 
   def initialize(exit_code)
     @exit_code = exit_code
@@ -183,7 +216,15 @@ end
 
 class Gem::UnsatisfiableDependencyError < Gem::Exception
 
+  ##
+  # The unsatisfiable dependency.  This is a
+  # Gem::DependencyResolver::DependencyRequest, not a Gem::Dependency
+
   attr_reader :dependency
+
+  ##
+  # Creates a new UnsatisfiableDepedencyError for the unsatisfiable
+  # Gem::DependencyResolver::DependencyRequest +dep+
 
   def initialize dep
     requester = dep.requester ? dep.requester.request : '(unknown)'
