@@ -1,3 +1,16 @@
+Sun Oct 20 09:30:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 3de7e0f.  Changes:
+
+	  Only attempt to build extensions for newly-installed gems.  This
+	  prevents compilation attempts at gem activation time for gems that
+	  already have extensions built.
+
+	  Fix crash in the dependency resolver for dependencies that cannot be
+	  resolved.
+
+	* test/rubygems:  ditto.
+
 Sun Oct 20 05:24:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_class2name): should return real class name, not

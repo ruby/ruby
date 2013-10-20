@@ -11,13 +11,17 @@ class TestGemDependencyResolver < Gem::TestCase
     StaticSet.new(specs)
   end
 
-  def assert_set(expected, actual)
+  def assert_resolves_to expected, resolver
+    actual = resolver.resolve
+
     exp = expected.sort_by { |s| s.full_name }
     act = actual.map { |a| a.spec }.sort_by { |s| s.full_name }
 
     msg = "Set of gems was not the same: #{exp.map { |x| x.full_name}.inspect} != #{act.map { |x| x.full_name}.inspect}"
 
     assert_equal exp, act, msg
+  rescue Gem::DependencyResolutionError => e
+    flunk "#{e.message}\n#{e.conflict.explanation}"
   end
 
   def test_no_overlap_specificly
@@ -33,7 +37,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new(deps, s)
 
-    assert_set [a, b], res.resolve
+    assert_resolves_to [a, b], res
   end
 
   def test_pulls_in_dependencies
@@ -50,7 +54,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new(deps, s)
 
-    assert_set [a, b, c], res.resolve
+    assert_resolves_to [a, b, c], res
   end
 
   def test_picks_highest_version
@@ -63,7 +67,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new([ad], s)
 
-    assert_set [a2], res.resolve
+    assert_resolves_to [a2], res
   end
 
   def test_picks_best_platform
@@ -89,7 +93,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new([ad], s)
 
-    assert_set [a2_p1], res.resolve
+    assert_resolves_to [a2_p1], res
   end
 
   def test_only_returns_spec_once
@@ -105,7 +109,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new([ad, bd], s)
 
-    assert_set [a1, b1, c1], res.resolve
+    assert_resolves_to [a1, b1, c1], res
   end
 
   def test_picks_lower_version_when_needed
@@ -122,7 +126,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new([ad, bd], s)
 
-    assert_set [a1, b1, c1], res.resolve
+    assert_resolves_to [a1, b1, c1], res
 
     cons = res.conflicts
 
@@ -150,7 +154,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     res = Gem::DependencyResolver.new([ad, bd], s)
 
-    assert_set [a1, b1, c1, d4], res.resolve
+    assert_resolves_to [a1, b1, c1, d4], res
 
     cons = res.conflicts
 
@@ -266,7 +270,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([ad, bd], s)
 
-    assert_set [a1, b1, c1], r.resolve
+    assert_resolves_to [a1, b1, c1], r
   end
 
   def test_common_rack_activation_scenario
@@ -285,13 +289,13 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([d1, d2], s)
 
-    assert_set [rails, ap, rack101, lib1], r.resolve
+    assert_resolves_to [rails, ap, rack101, lib1], r
 
     # check it with the deps reverse too
 
     r = Gem::DependencyResolver.new([d2, d1], s)
 
-    assert_set [lib1, rack101, rails, ap], r.resolve
+    assert_resolves_to [lib1, rack101, rails, ap], r
   end
 
   def test_backtracks_to_the_first_conflict
@@ -309,6 +313,24 @@ class TestGemDependencyResolver < Gem::TestCase
     r = Gem::DependencyResolver.new([d1, d2, d3], s)
 
     assert_raises Gem::ImpossibleDependenciesError do
+      r.resolve
+    end
+  end
+
+  def test_resolve_conflict
+    a1 = util_spec 'a', 1
+    a2 = util_spec 'a', 2
+
+    b2 = util_spec 'b', 2, 'a' => '~> 2.0'
+
+    s = set a1, a2, b2
+
+    a_dep = dep 'a', '~> 1.0'
+    b_dep = dep 'b'
+
+    r = Gem::DependencyResolver.new [a_dep, b_dep], s
+
+    assert_raises Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -333,7 +355,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([d1, d2], s)
 
-    assert_set [merch, mail, sup1], r.resolve
+    assert_resolves_to [merch, mail, sup1], r
   end
 
   def test_second_level_backout
@@ -351,7 +373,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([p1, p2], s)
 
-    assert_set [b1, c1, d2], r.resolve
+    assert_resolves_to [b1, c1, d2], r
   end
 
   def test_select_local_platforms

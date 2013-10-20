@@ -346,7 +346,10 @@ class Gem::Installer
 
   def write_spec
     open spec_file, 'w' do |file|
+      spec.installed_by_version = Gem.rubygems_version
+
       file.puts spec.to_ruby_for_cache
+
       file.fsync rescue nil # for filesystems without fsync(2)
     end
   end

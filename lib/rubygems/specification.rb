@@ -506,6 +506,23 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # The version of RubyGems that installed this gem.  Returns
+  # <code>Gem::Version.new(0)</code> for gems installed by versions earlier
+  # than RubyGems 2.2.0.
+
+  def installed_by_version # :nodoc:
+    @installed_by_version ||= Gem::Version.new(0)
+  end
+
+  ##
+  # Sets the version of RubyGems that installed this gem.  See also
+  # #installed_by_version.
+
+  def installed_by_version= version # :nodoc:
+    @installed_by_version = Gem::Version.new version
+  end
+
+  ##
   # The license for this gem.
   #
   # The license must be a short name, no more than 64 characters.
@@ -1391,6 +1408,7 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if default_gem?
     return if extensions.empty?
+    return if installed_by_version < Gem::Version.new('2.2')
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir) &&
               !File.exist?(File.join(base_dir, 'extensions'))
@@ -1776,6 +1794,7 @@ class Gem::Specification < Gem::BasicSpecification
     @activated = false
     self.loaded_from = nil
     @original_platform = nil
+    @installed_by_version = nil
 
     @@nil_attributes.each do |key|
       instance_variable_set "@#{key}", nil
@@ -1979,7 +1998,12 @@ class Gem::Specification < Gem::BasicSpecification
     q.group 2, 'Gem::Specification.new do |s|', 'end' do
       q.breakable
 
-      @@attributes.each do |attr_name|
+      attributes = @@attributes - [:name, :version]
+      attributes.unshift :installed_by_version
+      attributes.unshift :version
+      attributes.unshift :name
+
+      attributes.each do |attr_name|
         current_value = self.send attr_name
         if current_value != default_value(attr_name) or
            self.class.required_attribute? attr_name then
@@ -2260,6 +2284,11 @@ class Gem::Specification < Gem::BasicSpecification
          self.class.required_attribute? attr_name then
         result << "  s.#{attr_name} = #{ruby_code current_value}"
       end
+    end
+
+    if @installed_by_version then
+      result << nil
+      result << "  s.installed_by_version = \"#{Gem::VERSION}\""
     end
 
     unless dependencies.empty? then
