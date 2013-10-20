@@ -1,3 +1,11 @@
+Sun Oct 20 15:29:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_syserr_fail_path_in): new function split from
+	  rb_sys_fail_path_in to raise SystemCallError without errno.
+
+	* internal.h (rb_syserr_fail_path): like rb_sys_fail_path but without
+	  errno.
+
 Sun Oct 20 13:58:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_obj_wb_unprotect, rb_obj_written),

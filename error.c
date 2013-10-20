@@ -1967,9 +1967,16 @@ void
 rb_sys_fail_path_in(const char *func_name, VALUE path)
 {
     int n = errno;
-    VALUE args[2];
 
     errno = 0;
+    rb_syserr_fail_path_in(func_name, n, path);
+}
+
+void
+rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
+{
+    VALUE args[2];
+
     if (!path) path = Qnil;
     if (n == 0) {
 	const char *s = !NIL_P(path) ? RSTRING_PTR(path) : "";
