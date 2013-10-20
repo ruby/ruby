@@ -421,11 +421,6 @@ NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
 #endif
 
-#ifdef _WIN32
-/* file.c, win32/file.c */
-void rb_w32_init_file(void);
-#endif
-
 /* gc.c */
 void Init_heap(void);
 void *ruby_mimmalloc(size_t size);
