@@ -1200,7 +1200,7 @@ void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #endif
 
 static inline VALUE
-rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
+rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
@@ -1220,7 +1220,7 @@ rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
 }
 
 static inline VALUE
-rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
+rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_OBJ_WRITTEN
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
@@ -1238,7 +1238,7 @@ rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
 }
 
 static inline VALUE
-rb_obj_write(VALUE a, VALUE *slot, VALUE b, const char *filename, int line)
+rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WRITE
     RGENGC_LOGGING_WRITE(a, slot, b, filename, line);

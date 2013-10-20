@@ -1,3 +1,8 @@
+Sun Oct 20 13:58:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_obj_wb_unprotect, rb_obj_written),
+	  (rb_obj_write): suppress unused-parameter warnings.
+
 Sun Oct 20 10:32:48 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update RubyGems to master 0886307.  This commit
