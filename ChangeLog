@@ -1,3 +1,12 @@
+Sun Oct 20 15:41:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): create a new, temporary FD via rb_sysopen and
+	  call rb_cloexec_dup2 on it to atomically replace the file fptr->fd
+	  points to.  This leaves no possible window where fptr->fd is invalid
+	  to userspace (even for any threads running w/o GVL).  based on the
+	  patch by Eric Wong <normalperson@yhbt.net> at [ruby-core:57943].
+	  [Bug #9036]
+
 Sun Oct 20 15:29:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_syserr_fail_path_in): new function split from
