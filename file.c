@@ -1409,7 +1409,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
 	s = "File.";
     }
-    rb_warning("%sexists? is deprecated name, use %sexist? instead", s, s);
+    rb_warning("%sexists? is a deprecated name, use %sexist? instead", s, s);
     return rb_file_exist_p(obj, fname);
 }
 

@@ -2157,6 +2157,13 @@ rb_file_directory_p()
 }
 #endif
 
+static VALUE
+rb_dir_exists_p(VALUE obj, VALUE fname)
+{
+    rb_warning("Dir.exists? is a deprecated name, use Dir.exist? instead");
+    return rb_file_directory_p(obj, fname);
+}
+
 /*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
@@ -2206,7 +2213,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
-    rb_define_singleton_method(rb_cDir,"exists?", rb_file_directory_p, 1);
+    rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
