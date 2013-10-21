@@ -108,4 +108,13 @@ class TestEncoding < Test::Unit::TestCase
     asc = "b".force_encoding(Encoding::US_ASCII)
     assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
   end
+
+  def test_errinfo_after_autoload
+    bug9038 = '[ruby-core:57949] [Bug #9038]'
+    assert_separately(%w[--disable=gems], <<-"end;")
+      assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, #{bug9038.dump}) {
+        eval("/regexp/sQ")
+      }
+    end;
+  end
 end

@@ -1,3 +1,8 @@
+Mon Oct 21 23:57:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): should preserve outer errinfo, so that
+	  expected exception may not be lost.  [ruby-core:57949] [Bug #9038]
+
 Sun Oct 20 15:41:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_reopen): create a new, temporary FD via rb_sysopen and
