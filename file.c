@@ -1400,7 +1400,16 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_exists_p(VALUE obj, VALUE fname)
 {
-    rb_warning("File.exists? is deprecated name, use File.exist? instead");
+    const char *s = "FileTest#";
+    if (obj == rb_mFileTest) {
+	s = "FileTest.";
+    }
+    else if (obj == rb_cFile ||
+	     (RB_TYPE_P(obj, T_CLASS) &&
+	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
+	s = "File.";
+    }
+    rb_warning("%sexists? is deprecated name, use %sexist? instead", s, s);
     return rb_file_exist_p(obj, fname);
 }
 
