@@ -1397,6 +1397,13 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
+static VALUE
+rb_file_exists_p(VALUE obj, VALUE fname)
+{
+    rb_warning("File.exists? is deprecated name, use File.exist? instead");
+    return rb_file_exist_p(obj, fname);
+}
+
 /*
  * call-seq:
  *    File.readable?(file_name)   -> true or false
@@ -5579,7 +5586,7 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
-    define_filetest_function("exists?", rb_file_exist_p, 1);
+    define_filetest_function("exists?", rb_file_exists_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);

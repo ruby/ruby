@@ -1,3 +1,7 @@
+Tue Oct 22 00:06:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_exists_p): warn deprecated name.  [Bug #9041]
+
 Mon Oct 21 23:57:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (load_encoding): should preserve outer errinfo, so that
