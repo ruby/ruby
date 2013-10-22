@@ -5,7 +5,7 @@ Tue Oct 22 14:53:11 2013  Koichi Sasada  <ko1@atdot.net>
 	  Because there is a pass to miss finalizer postponed job
 	  with multi-threading. This patch solve this issue.
 
-	* vm_trace.c (rb_postponed_job_register_one): set 
+	* vm_trace.c (rb_postponed_job_register_one): set
 	  RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th) if another same job
 	  is registered.
 	  There is a possibility to remain a postponed job without
