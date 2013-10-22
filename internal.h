@@ -421,7 +421,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
-# define rb_syserr_fail_path(err, path) rb_sys_fail_str((err), (path))
+# define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
 #endif
 
 /* gc.c */
