@@ -893,27 +893,6 @@ heap_add_pages(rb_objspace_t *objspace, rb_heap_t *heap, size_t add)
 }
 
 static void
-heap_pages_init(rb_objspace_t *objspace)
-{
-    heap_add_pages(objspace, heap_eden, initial_heap_min_slots / HEAP_OBJ_LIMIT);
-
-    init_mark_stack(&objspace->mark_stack);
-
-#ifdef USE_SIGALTSTACK
-    {
-	/* altstack of another threads are allocated in another place */
-	rb_thread_t *th = GET_THREAD();
-	void *tmp = th->altstack;
-	th->altstack = malloc(rb_sigaltstack_size());
-	free(tmp); /* free previously allocated area */
-    }
-#endif
-
-    objspace->profile.invoke_time = getrusage_time();
-    finalizer_table = st_init_numtable();
-}
-
-static void
 heap_pages_set_increment(rb_objspace_t *objspace)
 {
     size_t next_used_limit = (size_t)(heap_pages_used * initial_growth_factor);
@@ -1417,7 +1396,24 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 void
 Init_heap(void)
 {
-    heap_pages_init(&rb_objspace);
+    rb_objspace_t *objspace = &rb_objspace;
+
+    heap_add_pages(objspace, heap_eden, initial_heap_min_slots / HEAP_OBJ_LIMIT);
+
+    init_mark_stack(&objspace->mark_stack);
+
+#ifdef USE_SIGALTSTACK
+    {
+	/* altstack of another threads are allocated in another place */
+	rb_thread_t *th = GET_THREAD();
+	void *tmp = th->altstack;
+	th->altstack = malloc(rb_sigaltstack_size());
+	free(tmp); /* free previously allocated area */
+    }
+#endif
+
+    objspace->profile.invoke_time = getrusage_time();
+    finalizer_table = st_init_numtable();
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
