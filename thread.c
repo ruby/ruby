@@ -1956,6 +1956,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	postponed_job_interrupt = interrupt & POSTPONED_JOB_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
+	if (postponed_job_interrupt) {
+	    rb_postponed_job_flush(th->vm);
+	}
+
 	/* signal handling */
 	if (trap_interrupt && (th == th->vm->main_thread)) {
 	    enum rb_thread_status prev_status = th->status;
@@ -2003,10 +2007,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
 	    rb_thread_schedule_limits(limits_us);
 	}
-    }
-
-    if (postponed_job_interrupt) {
-	rb_postponed_job_flush(th->vm);
     }
 }
 

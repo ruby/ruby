@@ -1,3 +1,28 @@
+Tue Oct 22 14:53:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: exterminate Zombies.
+	  There is a bug that T_ZOMBIE objects are not collected.
+	  Because there is a pass to miss finalizer postponed job
+	  with multi-threading. This patch solve this issue.
+
+	* vm_trace.c (rb_postponed_job_register_one): set 
+	  RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th) if another same job
+	  is registered.
+	  There is a possibility to remain a postponed job without
+	  interrupt flag.
+
+	* vm_trace.c (rb_postponed_job_register_one): check interrupt
+	  carefully.
+
+	* vm_trace.c (rb_postponed_job_register_one): use additional space
+	  to avoid buffer full.
+
+	* gc.c (gc_finalize_deferred_register): check failure.
+
+	* thread.c (rb_threadptr_execute_interrupts): check
+	  `postponed_job_interrupt' immediately.  There is a possibility
+	  to miss this flag.
+
 Tue Oct 22 12:11:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if the given CFLAGS and LDFLAGS are working, and

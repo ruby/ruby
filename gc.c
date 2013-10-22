@@ -1821,7 +1821,9 @@ rb_gc_finalize_deferred(void)
 static void
 gc_finalize_deferred_register()
 {
-    rb_postponed_job_register_one(0, gc_finalize_deferred, 0);
+    if (rb_postponed_job_register_one(0, gc_finalize_deferred, 0) == 0) {
+	rb_bug("gc_finalize_deferred_register: can't register finalizer.");
+    }
 }
 
 struct force_finalize_list {
