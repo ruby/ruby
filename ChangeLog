@@ -19,14 +19,14 @@ Tue Oct 22 19:19:05 2013  Koichi Sasada  <ko1@atdot.net>
 
 	  * Functions heap_* and rb_heap_t manages heap data structure.
 	  * Functions heap_page_* and struct heap_page manage page data
-	    strcuture.
-	  * Functions heap_pagse_* and struct rb_objspace_t::heap_pages
+	    structure.
+	  * Functions heap_pages_* and struct rb_objspace_t::heap_pages
 	    maintains all pages.
-	    For example, pagaes are allocated from the heap_pages.
+	    For example, pages are allocated from the heap_pages.
 
 	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
 	  and https://bugs.ruby-lang.org/attachments/4015/data-heap_structure_with_multiple_heaps.png
-	  for more deitals.
+	  for more details.
 
 	  Now, there is only one heap called `eden', which is a space for all
 	  new generated objects.
