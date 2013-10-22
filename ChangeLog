@@ -1,3 +1,23 @@
+Tue Oct 22 19:19:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: allow multiple heaps.
+	  Now, objects are managed by page. And a set of pages is called heap.
+	  This commit supports multiple heaps in the object space.
+
+	  * Functions heap_* and rb_heap_t manages heap data structure.
+	  * Functions heap_page_* and struct heap_page manage page data
+	    strcuture.
+	  * Functions heap_pagse_* and struct rb_objspace_t::heap_pages
+	    maintains all pages.
+	    For example, pagaes are allocated from the heap_pages.
+
+	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
+	  and https://bugs.ruby-lang.org/attachments/4015/data-heap_structure_with_multiple_heaps.png
+	  for more deitals.
+
+	  Now, there is only one heap called `eden', which is a space for all
+	  new generated objects.
+
 Tue Oct 22 18:26:12 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (object_address_group): Use Kernel#to_s to obtain the class
