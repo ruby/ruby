@@ -1,3 +1,11 @@
+Tue Oct 22 18:26:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (object_address_group): Use Kernel#to_s to obtain the class
+	  name and object address.
+	  This fix a problem caused by %p in C generates variable length
+	  address.
+	  Reported by ko1 via IRC.
+
 Tue Oct 22 16:57:48 2013  Benoit Daloze  <eregontp@gmail.com>
 
 	* file.c (File#expand_path): [DOC] improve documentation of File#expand_path.
