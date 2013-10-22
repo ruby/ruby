@@ -614,14 +614,48 @@ private
       if @shift_age.is_a?(Integer)
         # Note: always returns false if '0'.
         if @filename && (@shift_age > 0) && (@dev.stat.size > @shift_size)
-          shift_log_age
+          lock_shift_log { shift_log_age }
         end
       else
         now = Time.now
         period_end = previous_period_end(now)
         if @dev.stat.mtime <= period_end
-          shift_log_period(period_end)
+          lock_shift_log { shift_log_period(period_end) }
         end
+      end
+    end
+
+    def lock_shift_log
+      begin
+        retry_limit = 8
+        retry_sleep = 0.1
+        begin
+          lock = File.open(@filename, File::WRONLY | File::APPEND)
+          begin
+            # inter-process locking
+            lock.flock(File::LOCK_EX)
+            ino = lock.stat.ino
+            if ino == File.stat(@filename).ino
+              yield # log shifting
+            else
+              @dev.close rescue nil
+              @dev = File.open(@filename, File::WRONLY | File::APPEND)
+              @dev.sync = true
+            end
+          ensure
+            lock.flock(File::LOCK_UN)
+            lock.close
+          end
+        rescue Errno::ENOENT => e
+          # @filename file would not exist right after #rename and before #create_logfile
+          raise e if retry_limit <= 0
+          sleep retry_sleep
+          retry_limit -= 1
+          retry_sleep *= 2
+          retry
+        end
+      rescue
+        warn("log rotation inter-process lock failed. #{$!}")
       end
     end
 
