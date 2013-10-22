@@ -1,3 +1,8 @@
+Tue Oct 22 16:57:48 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* file.c (File#expand_path): [DOC] improve documentation of File#expand_path.
+	  Based on patch by Prathamesh Sonpatki. [ruby-core:57734] [Bug #9002]
+
 Tue Oct 22 15:59:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): don't skip current directories if FNM_DOTMATCH
