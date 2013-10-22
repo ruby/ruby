@@ -1,3 +1,8 @@
+Tue Oct 22 15:59:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): don't skip current directories if FNM_DOTMATCH
+	  is given.  [ruby-core:53108] [Bug #8006]
+
 Tue Oct 22 14:53:11 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: exterminate Zombies.
