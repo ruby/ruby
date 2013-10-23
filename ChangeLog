@@ -1,3 +1,13 @@
+Thu Oct 24 07:41:42 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: add new initial_growth_max tuning parameter.
+	  [ruby-core:57928] [Bug #9035]
+	* gc.c (heap_set_increment): when initial_growth_max is set,
+	  do not grow number of slots by more than growth_max at a time.
+	* gc.c (rb_gc_set_params): load optional new tuning value from
+	  RUBY_HEAP_SLOTS_GROWTH_MAX environment variable.
+	* test/ruby/test_gc.rb (class TestGc): test for above.
+
 Thu Oct 24 01:34:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (rb_infinity_float): suppress overflow in

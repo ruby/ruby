@@ -86,6 +86,9 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #ifndef GC_HEAP_GROWTH_FACTOR
 #define GC_HEAP_GROWTH_FACTOR 1.8
 #endif
+#ifndef GC_HEAP_GROWTH_MAX
+#define GC_HEAP_GROWTH_MAX 0 /* 0 is disable */
+#endif
 #ifndef GC_MALLOC_LIMIT
 #define GC_MALLOC_LIMIT (8 /* 8 MB */ * 1024 * 1024 /* 1MB */)
 #endif
@@ -100,6 +103,7 @@ typedef struct {
     unsigned int initial_heap_min_slots;
     unsigned int initial_heap_min_free_slots;
     double initial_growth_factor;
+    unsigned int initial_growth_max;
     unsigned int initial_malloc_limit;
     unsigned int initial_malloc_limit_max;
     double initial_malloc_limit_growth_factor;
@@ -112,6 +116,7 @@ static ruby_gc_params_t initial_params = {
     GC_HEAP_MIN_SLOTS,
     GC_HEAP_MIN_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
+    GC_HEAP_GROWTH_MAX,
     GC_MALLOC_LIMIT,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
@@ -536,6 +541,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define initial_heap_min_slots	           initial_params.initial_heap_min_slots
 #define initial_heap_min_free_slots	   initial_params.initial_heap_min_free_slots
 #define initial_growth_factor	           initial_params.initial_growth_factor
+#define initial_growth_max	           initial_params.initial_growth_max
 
 #define is_lazy_sweeping(heap) ((heap)->sweep_pages != 0)
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -994,6 +1000,10 @@ heap_set_increment(rb_objspace_t *objspace)
 {
     size_t used = heap_pages_used - heap_tomb->used;
     size_t next_used_limit = (size_t)(used * initial_growth_factor);
+    if (initial_growth_max > 0) {
+	size_t max_used_limit = (size_t)(used + initial_growth_max/HEAP_OBJ_LIMIT);
+	if (next_used_limit > max_used_limit) next_used_limit = max_used_limit;
+    }
     if (next_used_limit == heap_pages_used) next_used_limit++;
     heap_pages_increment = next_used_limit - used;
     heap_pages_expand_sorted(objspace);
@@ -4813,6 +4823,7 @@ rb_gc_set_params(void)
     get_envparam_int   ("RUBY_FREE_MIN", &initial_heap_min_free_slots, 0);
 
     get_envparam_double("RUBY_HEAP_SLOTS_GROWTH_FACTOR", &initial_growth_factor, 1.0);
+    get_envparam_int   ("RUBY_HEAP_SLOTS_GROWTH_MAX", &initial_growth_max, 0);
     if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &initial_heap_min_slots, 0)) {
 	size_t min_size;
 	rb_objspace_t *objspace = &rb_objspace;
