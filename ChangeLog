@@ -1,3 +1,8 @@
+Wed Oct 23 22:51:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): VC 2013 supports C99 mathematics
+	  functions.  [ruby-core:57981] [Bug #9044]
+
 Wed Oct 23 19:13:18 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: move increment from heap to heap_pages.
