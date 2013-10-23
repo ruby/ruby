@@ -1,3 +1,10 @@
+Wed Oct 23 23:48:28 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: Rename free_min to min_free_slots and free_min_page to
+	  max_free_slots. The algorithm for heap growth is:
+	    if (swept_slots < min_free_slots) pages++
+	    if (swept_slots > max_free_slots) pages--
+
 Wed Oct 23 22:51:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): VC 2013 supports C99 mathematics

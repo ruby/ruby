@@ -77,8 +77,8 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 }
 #endif
 
-#ifndef GC_FREE_MIN
-#define GC_FREE_MIN  4096
+#ifndef GC_HEAP_MIN_FREE_SLOTS
+#define GC_HEAP_MIN_FREE_SLOTS  4096
 #endif
 #ifndef GC_HEAP_MIN_SLOTS
 #define GC_HEAP_MIN_SLOTS 10000
@@ -98,7 +98,7 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 
 typedef struct {
     unsigned int initial_heap_min_slots;
-    unsigned int initial_free_min;
+    unsigned int initial_heap_min_free_slots;
     double initial_growth_factor;
     unsigned int initial_malloc_limit;
     unsigned int initial_malloc_limit_max;
@@ -110,7 +110,7 @@ typedef struct {
 
 static ruby_gc_params_t initial_params = {
     GC_HEAP_MIN_SLOTS,
-    GC_FREE_MIN,
+    GC_HEAP_MIN_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_MALLOC_LIMIT,
     GC_MALLOC_LIMIT_MAX,
@@ -351,8 +351,8 @@ typedef struct rb_objspace {
 	size_t swept_num;
 	size_t increment;
 
-	size_t free_min;
-	size_t free_min_page;
+	size_t min_free_slots;
+	size_t max_free_slots;
 
 	/* final */
 	size_t final_num;
@@ -515,8 +515,8 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heap_pages_himem	objspace->heap_pages.range[1]
 #define heap_pages_swept_num	objspace->heap_pages.swept_num
 #define heap_pages_increment	objspace->heap_pages.increment
-#define heap_pages_free_min		objspace->heap_pages.free_min
-#define heap_pages_free_min_page	objspace->heap_pages.free_min_page
+#define heap_pages_min_free_slots	objspace->heap_pages.min_free_slots
+#define heap_pages_max_free_slots	objspace->heap_pages.max_free_slots
 #define heap_pages_final_num		objspace->heap_pages.final_num
 #define heap_pages_deferred_final	objspace->heap_pages.deferred_final
 #define heap_eden               (&objspace->eden_heap)
@@ -534,7 +534,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define initial_malloc_limit_max           initial_params.initial_malloc_limit_max
 #define initial_malloc_limit_growth_factor initial_params.initial_malloc_limit_growth_factor
 #define initial_heap_min_slots	           initial_params.initial_heap_min_slots
-#define initial_free_min	           initial_params.initial_free_min
+#define initial_heap_min_free_slots	   initial_params.initial_heap_min_free_slots
 #define initial_growth_factor	           initial_params.initial_growth_factor
 
 #define is_lazy_sweeping(heap) ((heap)->sweep_pages != 0)
@@ -827,9 +827,9 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 	struct heap_page *page = heap_pages_sorted[i];
 
 	if (page->heap == heap_tomb && page->final_num == 0) {
-	    if (heap_pages_swept_num - page->limit > heap_pages_free_min_page) {
-		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_num: %d, heap_pages_do_heap_free: %d\n",
-			       (int)i, page, (int)heap_pages_swept_num, (int)heap_pages_free_min_page);
+	    if (heap_pages_swept_num - page->limit > heap_pages_max_free_slots) {
+		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_num: %d, heap_pages_max_free_slots: %d\n",
+			       (int)i, page, (int)heap_pages_swept_num, (int)heap_pages_max_free_slots);
 		heap_pages_swept_num -= page->limit;
 		heap_unlink_page(objspace, heap_tomb, page);
 		heap_page_free(objspace, page);
@@ -2498,16 +2498,16 @@ gc_before_sweep(rb_objspace_t *objspace)
     heap_pages_swept_num = 0;
     total_limit_num = objspace_limit_num(objspace);
 
-    heap_pages_free_min = (size_t)(total_limit_num * 0.20);
-    if (heap_pages_free_min < initial_free_min) {
-	heap_pages_free_min = initial_free_min;
+    heap_pages_min_free_slots = (size_t)(total_limit_num * 0.20);
+    if (heap_pages_min_free_slots < initial_heap_min_free_slots) {
+	heap_pages_min_free_slots = initial_heap_min_free_slots;
     }
-    heap_pages_free_min_page = (size_t)(total_limit_num * 0.80);
-    if (heap_pages_free_min_page < initial_heap_min_slots) {
-	heap_pages_free_min_page = initial_heap_min_slots;
+    heap_pages_max_free_slots = (size_t)(total_limit_num * 0.80);
+    if (heap_pages_max_free_slots < initial_heap_min_slots) {
+	heap_pages_max_free_slots = initial_heap_min_slots;
     }
-    if (0) fprintf(stderr, "heap_pages_free_min: %d, heap_pages_free_min_page: %d\n",
-		   (int)heap_pages_free_min, (int)heap_pages_free_min_page);
+    if (0) fprintf(stderr, "heap_pages_min_free_slots: %d, heap_pages_max_free_slots: %d\n",
+		   (int)heap_pages_min_free_slots, (int)heap_pages_max_free_slots);
 
     heap = heap_eden;
     gc_before_heap_sweep(objspace, heap);
@@ -2551,10 +2551,10 @@ gc_after_sweep(rb_objspace_t *objspace)
 {
     rb_heap_t *heap = heap_eden;
 
-    rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_num: %d, free_min: %d\n",
-		  (int)heap->limit, (int)heap_pages_swept_num, (int)heap_pages_free_min);
+    rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_num: %d, min_free_slots: %d\n",
+		  (int)heap->limit, (int)heap_pages_swept_num, (int)heap_pages_min_free_slots);
 
-    if (heap_pages_swept_num < heap_pages_free_min) {
+    if (heap_pages_swept_num < heap_pages_min_free_slots) {
 	heap_set_increment(objspace);
 	heap_increment(objspace, heap);
 
@@ -4810,7 +4810,7 @@ rb_gc_set_params(void)
 {
     if (rb_safe_level() > 0) return;
 
-    get_envparam_int   ("RUBY_FREE_MIN", &initial_free_min, 0);
+    get_envparam_int   ("RUBY_FREE_MIN", &initial_heap_min_free_slots, 0);
 
     get_envparam_double("RUBY_HEAP_SLOTS_GROWTH_FACTOR", &initial_growth_factor, 1.0);
     if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &initial_heap_min_slots, 0)) {
