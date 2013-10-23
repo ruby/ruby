@@ -184,7 +184,9 @@ class OpenStruct
     elsif len == 0
       @table[mid]
     else
-      raise NoMethodError, "undefined method `#{mid}' for #{self}", caller(1)
+      err = NoMethodError.new "undefined method `#{mid}' for #{self}", mid, args
+      err.set_backtrace caller(1)
+      raise err
     end
   end
 

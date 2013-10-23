@@ -1,3 +1,14 @@
+Thu Oct 24 00:11:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: raise NoMethodError with a #name and #args.
+	  Raise RuntimeError when modifying frozen instances
+      instead of TypeError.
+      (OpenStruct#each_pair): Return an enumerator with size
+	  (OpenStruct#delete): Use the converted argument.
+      Patches by Kenichi Kamiya. [Fixes GH-383]
+
+	* test/ostruct/test_ostruct.rb: Added tests for above.
+
 Thu Oct 24 00:10:22 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* array.c: Add Array#to_h [Feature #7292]

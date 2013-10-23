@@ -125,4 +125,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal true, os1.eql?(os1.dup)
     assert_equal os1.hash, os1.dup.hash
   end
+
+  def test_method_missing
+    os = OpenStruct.new
+    e = assert_raise(NoMethodError) { os.foo true }
+    assert_equal :foo, e.name
+    assert_equal [true], e.args
+    assert_match /#{__callee__}/, e.backtrace[0]
+    e = assert_raise(ArgumentError) { os.send :foo=, true, true }
+    assert_match /#{__callee__}/, e.backtrace[0]
+  end
 end
