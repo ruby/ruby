@@ -1,3 +1,8 @@
+Thu Oct 24 01:34:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_infinity_float): suppress overflow in
+	  constant arithmetic warnings.  [ruby-core:57981] [Bug #9044]
+
 Thu Oct 24 00:11:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: raise NoMethodError with a #name and #args.
