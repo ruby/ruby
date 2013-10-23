@@ -3424,16 +3424,16 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  *
  *  Converts a pathname to an absolute pathname. Relative paths are
  *  referenced from the current working directory of the process unless
- *  <i>dir_string</i> is given, in which case it will be used as the
+ *  +dir_string+ is given, in which case it will be used as the
  *  starting point. The given pathname may start with a
  *  ``<code>~</code>'', which expands to the process owner's home
- *  directory (the environment variable <code>HOME</code> must be set
+ *  directory (the environment variable +HOME+ must be set
  *  correctly). ``<code>~</code><i>user</i>'' expands to the named
  *  user's home directory.
  *
  *     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
  *
- *  A simple example of using <i>dir_string</i> is as follows.
+ *  A simple example of using +dir_string+ is as follows.
  *     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
  *
  *  A more complex example which also resolves parent directory is as follows.

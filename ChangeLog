@@ -1,3 +1,7 @@
+Wed Oct 23 11:43:27 2013  Zachary Scott  <e@zzak.io>
+
+	* file.c: [DOC] fix rdoc format of File#expand_path from r43386
+
 Tue Oct 22 21:58:28 2013  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* vm_core.h (enum): avoid syntax error.
