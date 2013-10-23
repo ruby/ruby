@@ -552,6 +552,31 @@ class TestLogDevice < Test::Unit::TestCase
       end
     end
   end
+
+  def test_open_logfile_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    tmpfile.close(true)
+    logdev = Logger::LogDevice.new(logfile)
+    File.unlink(logfile) if File.exist?(logfile)
+    begin
+      20.times do
+        pid1 = Process.fork do
+          logdev.send(:open_logfile, logfile)
+        end
+        pid2 = Process.fork do
+          logdev.send(:open_logfile, logfile)
+        end
+        Process.waitpid pid1
+        Process.waitpid pid2
+        assert_not_equal(2, File.readlines(logfile).grep(/# Logfile created on/).size)
+        File.unlink(logfile)
+      end
+    ensure
+      logdev.close if logdev
+      File.unlink(logfile) if File.exist?(logfile)
+    end
+  end
 end
 
 
