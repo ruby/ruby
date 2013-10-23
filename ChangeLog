@@ -1,3 +1,8 @@
+Wed Oct 23 17:52:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_pages_free_unused_pages): cast to (int) for size_t
+	  variable `i'.
+
 Wed Oct 23 17:39:35 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: introduce tomb heap.

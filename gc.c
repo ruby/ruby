@@ -829,7 +829,7 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 	if (page->heap == heap_tomb && page->final_num == 0) {
 	    if (heap_pages_swept_num - page->limit > heap_pages_free_min_page) {
 		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_num: %d, heap_pages_do_heap_free: %d\n",
-			       i, page, (int)heap_pages_swept_num, (int)heap_pages_free_min_page);
+			       (int)i, page, (int)heap_pages_swept_num, (int)heap_pages_free_min_page);
 		heap_pages_swept_num -= page->limit;
 		heap_unlink_page(objspace, heap_tomb, page);
 		heap_page_free(objspace, page);
