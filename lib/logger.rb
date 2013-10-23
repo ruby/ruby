@@ -630,10 +630,8 @@ private
         retry_limit = 8
         retry_sleep = 0.1
         begin
-          lock = File.open(@filename, File::WRONLY | File::APPEND)
-          begin
-            # inter-process locking
-            lock.flock(File::LOCK_EX)
+          File.open(@filename, File::WRONLY | File::APPEND) do |lock|
+            lock.flock(File::LOCK_EX) # inter-process locking. will be unlocked at closing file
             ino = lock.stat.ino
             if ino == File.stat(@filename).ino
               yield # log shifting
@@ -642,17 +640,17 @@ private
               @dev = File.open(@filename, File::WRONLY | File::APPEND)
               @dev.sync = true
             end
-          ensure
-            lock.flock(File::LOCK_UN)
-            lock.close
           end
-        rescue Errno::ENOENT => e
+        rescue Errno::ENOENT
           # @filename file would not exist right after #rename and before #create_logfile
-          raise e if retry_limit <= 0
-          sleep retry_sleep
-          retry_limit -= 1
-          retry_sleep *= 2
-          retry
+          if retry_limit <= 0
+            warn("log rotation inter-process lock failed. #{$!}")
+          else
+            sleep retry_sleep
+            retry_limit -= 1
+            retry_sleep *= 2
+            retry
+          end
         end
       rescue
         warn("log rotation inter-process lock failed. #{$!}")
