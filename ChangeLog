@@ -1,3 +1,12 @@
+Wed Oct 23 19:13:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: move increment from heap to heap_pages.
+	  Share `increment' information with heaps.
+
+	* gc.c: change ratio of heap_pages_free_min_page
+	  to 0.80.
+	  This change means slow down page freeing speed.
+
 Wed Oct 23 17:52:03 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_pages_free_unused_pages): cast to (int) for size_t
