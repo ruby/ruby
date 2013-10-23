@@ -5724,7 +5724,7 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 
 #if GC_PROFILE_MORE_DETAIL
 	record->gc_sweep_time += sweep_time;
-	if (deferred_final_list) record->flags |= GPR_FLAG_HAVE_FINALIZE;
+	if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
 #endif
     }
 }
