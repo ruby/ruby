@@ -658,7 +658,9 @@ static void *
 alloc_context_threading_table(VALUE ctt_size)
 {
     rb_vm_t *vm = GET_VM();
-    void *badpage = NULL;
+    VALUE start_region_range, end_region_range, region_size, region_address;
+    const void * const *table;
+    static const VALUE TWO_MB = 2 * 1024 * 1024;
 
     /* Region is a tuple (size, next, free-list) */
     VALUE *region = vm->context_threading_regions;
@@ -689,28 +691,36 @@ alloc_context_threading_table(VALUE ctt_size)
         }
         region = (VALUE *) region[1];
     }
-    while (1) {
-        const VALUE TWO_MB = 2 * 1024 * 1024;
-        VALUE size = ((slot_count + 3) * sizeof(VALUE) + TWO_MB - 1) & ~(TWO_MB - 1);
-        void *page = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-        if (page != MAP_FAILED) {
+    region_size = ((slot_count + 3) * sizeof(VALUE) + TWO_MB - 1) & ~(TWO_MB - 1);
+    table = rb_vm_get_insns_address_table();
+    /* TODO start scan at end of last allocated region */
+    start_region_range = (((VALUE) table[VM_INSTRUCTION_SIZE - 1]) + INT_MIN) & ~(TWO_MB - 1);
+    end_region_range = (((VALUE) table[0]) + INT_MAX - region_size) & ~(TWO_MB - 1);
+    if (start_region_range > (VALUE) table[VM_INSTRUCTION_SIZE - 1]) {
+        start_region_range = 0;
+    }
+    if (end_region_range < (VALUE) table[0]) {
+        end_region_range = (SIZE_MAX - region_size) & ~(TWO_MB - 1);
+    }
+    for (region_address = start_region_range; region_address != end_region_range; region_address += TWO_MB) {
+        void *address = mmap((void *) region_address, region_size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if (address != MAP_FAILED) {
             VALUE *chunk;
-            VALUE *region = (VALUE *) page;
-            if (!is_valid_context_threading_region(page, size)) {
-                if (badpage) {
-                    if (-1 == munmap(badpage, size)) {
-                        rb_sys_fail("munmap");
-                        break;
-                    }
+            VALUE *region = (VALUE *) address;
+            if (address == (void *) region_address) {
+                /* address is as expected */
+            } else if (!is_valid_context_threading_region(address, region_size)) {
+                if (-1 == munmap(address, region_size)) {
+                    rb_sys_fail("munmap");
+                    break;
                 }
-                badpage = page;
                 continue;
             }
-            if (-1 == minherit(page, size, VM_INHERIT_COPY)) {
+            if (-1 == minherit(address, region_size, VM_INHERIT_COPY)) {
               rb_sys_fail("minherit");
               break;
             }
-            region[0] = size / sizeof(VALUE);
+            region[0] = region_size / sizeof(VALUE);
             region[1] = (VALUE) vm->context_threading_regions;
             vm->context_threading_regions = region;
             region[2] = 0;
@@ -723,12 +733,6 @@ alloc_context_threading_table(VALUE ctt_size)
                 chunk[0] = slot_count;
             } else {
                 chunk = region + 3;
-            }
-            if (badpage) {
-                if (-1 == munmap(badpage, size)) {
-                    rb_sys_fail("munmap");
-                    break;
-                }
             }
             return chunk + 1;
         } else {
