@@ -113,6 +113,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     os = OpenStruct.new(h)
     assert_equal '#<Enumerator: #<OpenStruct name="John Smith", age=70, pension=300>:each_pair>', os.each_pair.inspect
     assert_equal [[:name, "John Smith"], [:age, 70], [:pension, 300]], os.each_pair.to_a
+    assert_equal 3, os.each_pair.size
   end
 
   def test_eql_and_hash

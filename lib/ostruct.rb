@@ -125,7 +125,7 @@ class OpenStruct
   #   data.each_pair.to_a  # => [[:country, "Australia"], [:population, 20000000]]
   #
   def each_pair
-    return to_enum __method__ unless block_given?
+    return to_enum(__method__) { @table.size } unless block_given?
     @table.each_pair{|p| yield p}
   end
 
