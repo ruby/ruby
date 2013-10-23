@@ -2126,6 +2126,32 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.to_h     -> hash
+ *
+ *  Returns the result of interpreting <i>ary</i> as an array of
+ *  <tt>[key, value]</tt> pairs. Elements other than pairs of
+ *  values are ignored.
+ *
+ *     [[:foo, :bar], [1, 2]].to_h
+ *       # => {:foo => :bar, 1 => 2}
+ */
+
+static VALUE
+rb_ary_to_h(VALUE ary)
+{
+    long i;
+    VALUE hash = rb_hash_new();
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	VALUE key_value_pair = rb_check_array_type(rb_ary_elt(ary, i));
+	if (!NIL_P(key_value_pair) && (RARRAY_LEN(key_value_pair) == 2)) {
+	    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
+	}
+    }
+    return hash;
+}
+
+/*
+ *  call-seq:
  *     ary.to_ary -> ary
  *
  *  Returns +self+.
@@ -5564,6 +5590,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_alias(rb_cArray,  "to_s", "inspect");
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
+    rb_define_method(rb_cArray, "to_h", rb_ary_to_h, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
     rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
 

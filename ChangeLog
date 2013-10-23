@@ -1,3 +1,9 @@
+Thu Oct 24 00:10:22 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c: Add Array#to_h [Feature #7292]
+
+	* enum.c: Add Enumerable#to_h
+
 Wed Oct 23 23:48:28 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: Rename free_min to min_free_slots and free_min_page to
