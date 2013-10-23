@@ -806,6 +806,7 @@ translate_context_threaded_code(rb_iseq_t *iseq, unsigned long ctt_size)
           case BIN(opt_le):
           case BIN(opt_lt):
           case BIN(opt_neq):
+          case BIN(opt_not):
           case BIN(opt_eq):
           case BIN(opt_mod):
           case BIN(opt_div):
@@ -905,6 +906,7 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
           case BIN(opt_le):
           case BIN(opt_lt):
           case BIN(opt_neq):
+          case BIN(opt_not):
           case BIN(opt_eq):
           case BIN(opt_mod):
           case BIN(opt_div):
