@@ -588,24 +588,32 @@ private
   private
 
     def open_logfile(filename)
-      if (FileTest.exist?(filename))
+      begin
         open(filename, (File::WRONLY | File::APPEND))
-      else
+      rescue Errno::ENOENT
         create_logfile(filename)
       end
     end
 
     def create_logfile(filename)
-      logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT))
-      logdev.sync = true
-      add_log_header(logdev)
+      begin
+        logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
+        logdev.flock(File::LOCK_EX)
+        logdev.sync = true
+        add_log_header(logdev)
+        logdev.flock(File::LOCK_UN)
+      rescue Errno::EEXIST
+        # file is created by another process
+        logdev = open_logfile(filename)
+        logdev.sync = true
+      end
       logdev
     end
 
     def add_log_header(file)
       file.write(
         "# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
-      )
+      ) if file.size == 0
     end
 
     SiD = 24 * 60 * 60
@@ -636,8 +644,9 @@ private
             if ino == File.stat(@filename).ino
               yield # log shifting
             else
+              # log shifted by another process (i-node before locking and i-node after locking are different)
               @dev.close rescue nil
-              @dev = File.open(@filename, File::WRONLY | File::APPEND)
+              @dev = open_logfile(@filename)
               @dev.sync = true
             end
           end
