@@ -1,3 +1,21 @@
+Wed Oct 23 17:39:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce tomb heap.
+	  Tomb heap is where zombie objects and ghost (freed slot) lived in.
+	  Separate from other heaps (now there is only eden heap) at sweeping
+	  helps freeing pages more efficiently.
+	  Before this patch, even if there is an empty page at former phase
+	  of sweeping, we can't free it.
+
+	  Algorithm:
+	    (1) Sweeping all pages in a heap and move empty pages from the
+	        heap to tomb_heap.
+	    (2) Check all exsisting pages and free a page
+	        if all slots of this page are empty and
+	           there is enough empty slots (checking by swept_num)
+
+	  To introduce this pach, there are several tuning of GC parameters.
+
 Wed Oct 23 14:20:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_prof_sweep_timer_stop): catch up recent changes
