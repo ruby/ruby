@@ -220,7 +220,7 @@ class OpenStruct
   #
   def delete_field(name)
     sym = name.to_sym
-    singleton_class.__send__(:remove_method, sym, "#{name}=")
+    singleton_class.__send__(:remove_method, sym, "#{sym}=")
     @table.delete sym
   end
 

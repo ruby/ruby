@@ -68,6 +68,16 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :a, bug)
     assert_not_respond_to(o, :a=, bug)
     assert_equal(a, 'a')
+    s = Object.new
+    def s.to_sym
+      :foo
+    end
+    o[s] = true
+    assert_respond_to(o, :foo)
+    assert_respond_to(o, :foo=)
+    o.delete_field s
+    assert_not_respond_to(o, :foo)
+    assert_not_respond_to(o, :foo=)
   end
 
   def test_setter
