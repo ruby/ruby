@@ -1,3 +1,11 @@
+Thu Oct 24 12:45:53 2013  Zachary Scott  <e@zzak.io>
+
+	* object.c: [DOC] Document first argument also takes string for:
+
+	  rb_mod_const_get, rb_mod_const_set, rb_mod_const_defined
+
+	  Also added note about NameError exception for invalid constant name
+
 Thu Oct 24 12:23:58 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): add a comment why we need

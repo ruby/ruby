@@ -2034,6 +2034,12 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
  *
  *     Object.const_get 'Foo::Baz::VAL'         # => 10
  *     Object.const_get 'Foo::Baz::VAL', false  # => NameError
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_get 'foobar' #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
@@ -2136,6 +2142,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.const_set(sym, obj)    -> obj
+ *     mod.const_set(str, obj)    -> obj
  *
  *  Sets the named constant to the given object, returning that object.
  *  Creates a new constant if no constant with the given name previously
@@ -2143,6 +2150,12 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
  *
  *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.14285714285714
  *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.00126448926734968
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_set('foobar', 42) #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
@@ -2156,6 +2169,7 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 /*
  *  call-seq:
  *     mod.const_defined?(sym, inherit=true)   -> true or false
+ *     mod.const_defined?(str, inherit=true)   -> true or false
  *
  *  Checks for a constant with the given name in <i>mod</i>
  *  If +inherit+ is set, the lookup will also search
@@ -2166,6 +2180,12 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
  *     Math.const_defined? "PI"   #=> true
  *     IO.const_defined? :SYNC   #=> true
  *     IO.const_defined? :SYNC, false   #=> false
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Hash.const_defined? 'foobar' #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
