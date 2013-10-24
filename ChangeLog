@@ -1,3 +1,8 @@
+Thu Oct 24 12:23:58 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): add a comment why we need
+	  state check and call terminate_i again.
+
 Thu Oct 24 12:15:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): add a comment why infinite

@@ -449,6 +449,11 @@ rb_thread_terminate_all(void)
 	}
 	TH_POP_TAG();
 
+	/*
+	 * When caught an exception (e.g. Ctrl+C), let's broadcast
+	 * kill request again to ensure killing all threads even
+	 * if they are blocked on sleep, mutex, etc.
+	 */
 	if (state) {
 	    goto retry;
 	}
