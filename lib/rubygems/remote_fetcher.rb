@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'rubygems/user_interaction'
+require 'cgi'
 require 'thread'
 require 'uri'
 require 'resolv'
@@ -321,6 +322,14 @@ class Gem::RemoteFetcher
     response['content-length'].to_i
   end
 
+  def escape_auth_info(str)
+    str && CGI.escape(str)
+  end
+
+  def unescape_auth_info(str)
+    str && CGI.unescape(str)
+  end
+
   def escape(str)
     return unless str
     @uri_parser ||= uri_escaper
@@ -362,8 +371,8 @@ class Gem::RemoteFetcher
 
     if uri and uri.user.nil? and uri.password.nil? then
       # Probably we have http_proxy_* variables?
-      uri.user = escape(ENV['http_proxy_user'] || ENV['HTTP_PROXY_USER'])
-      uri.password = escape(ENV['http_proxy_pass'] || ENV['HTTP_PROXY_PASS'])
+      uri.user = escape_auth_info(ENV['http_proxy_user'] || ENV['HTTP_PROXY_USER'])
+      uri.password = escape_auth_info(ENV['http_proxy_pass'] || ENV['HTTP_PROXY_PASS'])
     end
 
     uri
@@ -387,8 +396,8 @@ class Gem::RemoteFetcher
       net_http_args += [
         @proxy_uri.host,
         @proxy_uri.port,
-        @proxy_uri.user,
-        @proxy_uri.password
+        unescape_auth_info(@proxy_uri.user),
+        unescape_auth_info(@proxy_uri.password)
       ]
     end
 

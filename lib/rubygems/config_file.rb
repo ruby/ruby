@@ -5,6 +5,7 @@
 #++
 
 require 'rubygems/user_interaction'
+require 'rbconfig'
 
 ##
 # Gem::ConfigFile RubyGems options and gem command options from gemrc.
