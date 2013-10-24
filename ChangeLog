@@ -1,3 +1,8 @@
+Thu Oct 24 22:49:28 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* parse.y: Remove +(binary) and -(binary) special cases
+	  [Feature #9048]
+
 Thu Oct 24 22:36:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (load_encoding): should preserve outer errinfo, so that

@@ -1230,7 +1230,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_symbol_op
     ops = %w"
-      .. ... + - +(binary) -(binary) * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
+      .. ... + - * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
       === != =~ !~ ~ ! [] []= << >> :: `
     "
     ops.each do |op|
