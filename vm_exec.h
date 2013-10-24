@@ -143,7 +143,7 @@ error !
 
 #define NEXT_INSN() \
   __asm__ __volatile__("xor %%rax, %%rax" : : : "%rax"); \
-  __asm__ __volatile__("ret")
+  __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP))
 
 #else
 
