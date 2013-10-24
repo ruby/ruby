@@ -440,6 +440,10 @@ rb_thread_terminate_all(void)
 
 	TH_PUSH_TAG(th);
 	if ((state = TH_EXEC_TAG()) == 0) {
+	    /*
+	     * Thread exiting routine in thread_start_func_2 notify
+	     * me when the last sub-thread exit.
+	     */
 	    native_sleep(th, 0);
 	    RUBY_VM_CHECK_INTS_BLOCKING(th);
 	}

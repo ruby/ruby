@@ -1,3 +1,8 @@
+Thu Oct 24 12:15:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): add a comment why infinite
+	  sleep is safe.
+
 Thu Oct 24 07:41:42 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c: add new initial_growth_max tuning parameter.
