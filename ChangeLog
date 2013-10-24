@@ -1,3 +1,8 @@
+Thu Oct 24 21:57:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* parse.y: Remove +(binary) and -(binary) special cases
+	  [Feature #9048]
+
 Thu Oct 24 12:45:53 2013  Zachary Scott  <e@zzak.io>
 
 	* object.c: [DOC] Document first argument also takes string for:

@@ -10147,8 +10147,6 @@ static const struct {
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
-    {'+',	"+(binary)"},
-    {'-',	"-(binary)"},
     {tPOW,	"**"},
     {tDSTAR,	"**"},
     {tUPLUS,	"+@"},
