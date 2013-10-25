@@ -1,0 +1,11 @@
+#!/bin/bash -xe
+
+if [ -z "$CORES" ]; then
+  CORES=64
+fi
+
+git clean -f -x
+autoconf
+./configure --disable-install-doc
+make -j $CORES
+make TESTS="-j $CORES" test-all
