@@ -25,12 +25,15 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
 #define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
+#define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
+#define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
+#define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 static inline VALUE
 SET_EXCL(VALUE r, VALUE v)
 {
-    RSTRUCT_SET(r, 2, v);
+    RANGE_SET_EXCL(r, v);
     return v ? Qtrue : Qfalse;
 }
 
@@ -64,8 +67,8 @@ range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
     }
 
     SET_EXCL(range, exclude_end);
-    RSTRUCT_SET(range, 0, beg);
-    RSTRUCT_SET(range, 1, end);
+    RANGE_SET_BEG(range, beg);
+    RANGE_SET_END(range, end);
 }
 
 VALUE
@@ -1239,9 +1242,9 @@ range_loader(VALUE range, VALUE obj)
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
-    RSTRUCT_SET(range, 0, rb_ivar_get(obj, id_beg));
-    RSTRUCT_SET(range, 1, rb_ivar_get(obj, id_end));
-    RSTRUCT_SET(range, 2, rb_ivar_get(obj, id_excl));
+    RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
+    RANGE_SET_END(range, rb_ivar_get(obj, id_end));
+    RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
     return range;
 }
 
