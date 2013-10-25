@@ -113,7 +113,7 @@ fun_so_iso2022jp_kddi_decoder(void *statep, const unsigned char *s, size_t l, un
     }
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_iso2022jp_kddi_decoder = {
     "ISO-2022-JP-KDDI", "stateless-ISO-2022-JP-KDDI", iso2022jp_kddi_decoder,
     TRANSCODE_TABLE_INFO,
@@ -194,7 +194,7 @@ finish_iso2022jp_kddi_encoder(void *statep, unsigned char *o, size_t osize)
     return o - output0;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_iso2022jp_kddi_encoder = {
     "stateless-ISO-2022-JP-KDDI", "ISO-2022-JP-KDDI", iso2022jp_kddi_encoder,
     TRANSCODE_TABLE_INFO,

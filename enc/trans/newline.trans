@@ -89,7 +89,7 @@ universal_newline_finish(void *statep, unsigned char *o, size_t osize)
     return len;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_universal_newline = {
     "", "universal_newline", universal_newline,
     TRANSCODE_TABLE_INFO,
@@ -102,7 +102,7 @@ rb_universal_newline = {
     universal_newline_finish
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_crlf_newline = {
     "", "crlf_newline", crlf_newline,
     TRANSCODE_TABLE_INFO,
@@ -114,7 +114,7 @@ rb_crlf_newline = {
     NULL, NULL, NULL, NULL
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_cr_newline = {
     "", "cr_newline", cr_newline,
     TRANSCODE_TABLE_INFO,

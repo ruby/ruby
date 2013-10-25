@@ -1,6 +1,6 @@
 <%
 #
-# static const rb_transcoder
+# static rb_transcoder
 # rb_from_US_ASCII = {
 #     "US-ASCII", "UTF-8", &from_US_ASCII, 1, 0,
 #     NULL, NULL,
@@ -37,7 +37,7 @@ transdirs.each do |transdir|
     path = File.join(transdir,fn)
     open(path) do |f|
       f.each_line do |line|
-        if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
+        if (/^static rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
           if $1 && $2
             from_to = "%s to %s" % [$1, $2]
             if converters[from_to]

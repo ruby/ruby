@@ -128,7 +128,7 @@ fun_so_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l, unsigne
     }
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_iso2022jp_decoder = {
     "ISO-2022-JP", "stateless-ISO-2022-JP", iso2022jp_decoder,
     TRANSCODE_TABLE_INFO,
@@ -210,7 +210,7 @@ finish_iso2022jp_encoder(void *statep, unsigned char *o, size_t osize)
     return o - output0;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_iso2022jp_encoder = {
     "stateless-ISO-2022-JP", "ISO-2022-JP", iso2022jp_encoder,
     TRANSCODE_TABLE_INFO,
@@ -232,7 +232,7 @@ fun_so_stateless_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t
     return 2;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_stateless_iso2022jp_to_eucjp = {
     "stateless-ISO-2022-JP", "EUC-JP", stateless_iso2022jp_to_eucjp,
     TRANSCODE_TABLE_INFO,
@@ -253,7 +253,7 @@ fun_so_eucjp_to_stateless_iso2022jp(void *statep, const unsigned char *s, size_t
     return 3;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_eucjp_to_stateless_iso2022jp = {
     "EUC-JP", "stateless-ISO-2022-JP", eucjp_to_stateless_iso2022jp,
     TRANSCODE_TABLE_INFO,
@@ -357,7 +357,7 @@ fun_so_cp50221_decoder(void *statep, const unsigned char *s, size_t l, unsigned 
     }
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_cp50220_decoder = {
     "CP50220", "cp51932", cp50221_decoder,
     TRANSCODE_TABLE_INFO,
@@ -369,7 +369,7 @@ rb_cp50220_decoder = {
     NULL, fun_si_cp50221_decoder, NULL, fun_so_cp50221_decoder
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_cp50221_decoder = {
     "CP50221", "cp51932", cp50221_decoder,
     TRANSCODE_TABLE_INFO,
@@ -429,7 +429,7 @@ fun_so_cp5022x_encoder(void *statep, const unsigned char *s, size_t l,
     return o - output0;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_cp50221_encoder = {
     "CP51932", "CP50221", cp50221_encoder,
     TRANSCODE_TABLE_INFO,
@@ -539,7 +539,7 @@ finish_cp50220_encoder(void *statep, unsigned char *o, size_t osize)
     return o - output0;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_cp50220_encoder = {
     "CP51932", "CP50220", cp50221_encoder,
     TRANSCODE_TABLE_INFO,

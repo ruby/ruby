@@ -68,7 +68,7 @@ class ArrayCode
 
   def to_s
     <<"End"
-static const #{@type}
+static #{@type}
 #{@name}[#{@len}] = {
 #{@content}};
 End
@@ -847,7 +847,7 @@ def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   input_unit_length = UnitLength[from]
   max_output = map.map {|k,v| String === v ? v.length/2 : 1 }.max
   transcoder_code = <<"End"
-static const rb_transcoder
+static rb_transcoder
 #{transcoder_name} = {
     #{c_esc from}, #{c_esc to}, #{real_tree_name},
     TRANSCODE_TABLE_INFO,

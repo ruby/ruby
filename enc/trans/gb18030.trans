@@ -150,7 +150,7 @@ fun_sio_to_gb18030(void *statep, const unsigned char *s, size_t l, VALUE info, u
 }
 
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_GB18030 = {
     "GB18030", "UTF-8", from_GB18030,
     TRANSCODE_TABLE_INFO,
@@ -162,7 +162,7 @@ rb_from_GB18030 = {
     NULL, NULL, NULL, fun_so_from_gb18030,
     NULL, NULL, NULL, fun_sio_from_gb18030
 };
-static const rb_transcoder
+static rb_transcoder
 rb_to_GB18030 = {
     "UTF-8", "GB18030", to_GB18030,
     TRANSCODE_TABLE_INFO,

@@ -395,7 +395,7 @@ fun_so_to_utf_32(void *statep, const unsigned char *s, size_t l, unsigned char *
     return fun_so_to_utf_32be(statep, s, l, o, osize);
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_16BE = {
     "UTF-16BE", "UTF-8", from_UTF_16BE,
     TRANSCODE_TABLE_INFO,
@@ -407,7 +407,7 @@ rb_from_UTF_16BE = {
     NULL, NULL, NULL, fun_so_from_utf_16be
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_16BE = {
     "UTF-8", "UTF-16BE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -419,7 +419,7 @@ rb_to_UTF_16BE = {
     NULL, NULL, NULL, fun_so_to_utf_16be
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_16LE = {
     "UTF-16LE", "UTF-8", from_UTF_16LE,
     TRANSCODE_TABLE_INFO,
@@ -431,7 +431,7 @@ rb_from_UTF_16LE = {
     NULL, NULL, NULL, fun_so_from_utf_16le
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_16LE = {
     "UTF-8", "UTF-16LE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -443,7 +443,7 @@ rb_to_UTF_16LE = {
     NULL, NULL, NULL, fun_so_to_utf_16le
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_32BE = {
     "UTF-32BE", "UTF-8", from_UTF_32BE,
     TRANSCODE_TABLE_INFO,
@@ -455,7 +455,7 @@ rb_from_UTF_32BE = {
     NULL, NULL, NULL, fun_so_from_utf_32be
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_32BE = {
     "UTF-8", "UTF-32BE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -467,7 +467,7 @@ rb_to_UTF_32BE = {
     NULL, NULL, NULL, fun_so_to_utf_32be
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_32LE = {
     "UTF-32LE", "UTF-8", from_UTF_32LE,
     TRANSCODE_TABLE_INFO,
@@ -479,7 +479,7 @@ rb_from_UTF_32LE = {
     NULL, NULL, NULL, fun_so_from_utf_32le
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_32LE = {
     "UTF-8", "UTF-32LE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -491,7 +491,7 @@ rb_to_UTF_32LE = {
     NULL, NULL, NULL, fun_so_to_utf_32le
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_16 = {
     "UTF-16", "UTF-8", from_UTF_16,
     TRANSCODE_TABLE_INFO,
@@ -503,7 +503,7 @@ rb_from_UTF_16 = {
     NULL, fun_si_from_utf_16, NULL, fun_so_from_utf_16
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF_32 = {
     "UTF-32", "UTF-8", from_UTF_32,
     TRANSCODE_TABLE_INFO,
@@ -515,7 +515,7 @@ rb_from_UTF_32 = {
     NULL, fun_si_from_utf_32, NULL, fun_so_from_utf_32
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_16 = {
     "UTF-8", "UTF-16", from_UTF_8,
     TRANSCODE_TABLE_INFO,
@@ -527,7 +527,7 @@ rb_to_UTF_16 = {
     NULL, NULL, NULL, fun_so_to_utf_16
 };
 
-static const rb_transcoder
+static rb_transcoder
 rb_to_UTF_32 = {
     "UTF-8", "UTF-32", from_UTF_8,
     TRANSCODE_TABLE_INFO,

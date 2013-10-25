@@ -72,7 +72,7 @@ escape_xml_attr_quote_finish(void *statep, unsigned char *o, size_t osize)
     return n;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_escape_xml_attr_quote = {
     "", "xml_attr_quote", escape_xml_attr_quote,
     TRANSCODE_TABLE_INFO,
