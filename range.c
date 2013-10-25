@@ -28,13 +28,15 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
 #define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
+#define RBOOL(v) ((v) ? Qtrue : Qfalse)
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 static inline VALUE
 SET_EXCL(VALUE r, VALUE v)
 {
+    v = RBOOL(RTEST(v));
     RANGE_SET_EXCL(r, v);
-    return v ? Qtrue : Qfalse;
+    return v;
 }
 
 static VALUE
@@ -51,7 +53,7 @@ range_check(VALUE *args)
 }
 
 static void
-range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
+range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
     VALUE args[2];
 
@@ -66,7 +68,7 @@ range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
 	    range_failed();
     }
 
-    SET_EXCL(range, exclude_end);
+    RANGE_SET_EXCL(range, exclude_end);
     RANGE_SET_BEG(range, beg);
     RANGE_SET_END(range, end);
 }
@@ -76,7 +78,7 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 {
     VALUE range = rb_obj_alloc(rb_cRange);
 
-    range_init(range, beg, end, exclude_end);
+    range_init(range, beg, end, RBOOL(exclude_end));
     return range;
 }
 
@@ -99,7 +101,7 @@ range_initialize(int argc, VALUE *argv, VALUE range)
     if (RANGE_EXCL(range) != Qnil) {
 	rb_name_error(idInitialize, "`initialize' called twice");
     }
-    range_init(range, beg, end, RTEST(flags));
+    range_init(range, beg, end, RBOOL(RTEST(flags)));
     return Qnil;
 }
 
