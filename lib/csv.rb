@@ -1300,8 +1300,8 @@ class CSV
 
   #
   # This method is a shortcut for converting a single line of a CSV String into
-  # a into an Array.  Note that if +line+ contains multiple rows, anything
-  # beyond the first row is ignored.
+  # an Array.  Note that if +line+ contains multiple rows, anything beyond the
+  # first row is ignored.
   #
   # The +options+ parameter can be anything CSV::new() understands.
   #
