@@ -236,7 +236,7 @@ fun_so_from_utf8_mac(void *statep,
     return n;
 }
 
-static const rb_transcoder
+static rb_transcoder
 rb_from_UTF8_MAC = {
     "UTF8-MAC", "UTF-8", from_UTF8_MAC,
     TRANSCODE_TABLE_INFO,
