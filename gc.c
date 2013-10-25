@@ -2483,18 +2483,11 @@ gc_before_heap_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->free_pages = NULL;
 
     if (heap->using_page) {
-	if (heap->using_page->freelist) {
-	    RVALUE *pstart = heap->using_page->freelist;
-	    RVALUE *p = heap->using_page->freelist;
-	    while (p->as.free.next) {
-		p = p->as.free.next;
-	    }
-	    p->as.free.next = heap->freelist;
-	    heap->using_page->freelist = pstart;
+	RVALUE **p = &heap->using_page->freelist;
+	while (*p) {
+	    p = &(*p)->as.free.next;
 	}
-	else {
-	    heap->using_page->freelist = heap->freelist;
-	}
+	*p = heap->freelist;
 	heap->using_page = NULL;
     }
     heap->freelist = NULL;
