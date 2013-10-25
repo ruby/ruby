@@ -1,3 +1,9 @@
+Sat Oct 26 04:01:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_before_heap_sweep): fix freelist management.
+	  After rb_gc_force_recycle() for a object blonging to heap->freelist,
+	  `heap->using_page->freelist' is not null.
+
 Thu Oct 24 21:57:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* parse.y: Remove +(binary) and -(binary) special cases
