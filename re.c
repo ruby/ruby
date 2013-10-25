@@ -1272,15 +1272,16 @@ static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
     rb_encoding *enc = 0;
+    enc = rb_enc_get(str);
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
-        rb_raise(rb_eArgError,
-            "invalid byte sequence in %s",
-            rb_enc_name(rb_enc_get(str)));
+        if (!(rb_encoding_compat && enc == rb_utf8_encoding()))
+            rb_raise(rb_eArgError,
+                "invalid byte sequence in %s",
+                rb_enc_name(rb_enc_get(str)));
     }
 
     rb_reg_check(re);
-    enc = rb_enc_get(str);
     if (!rb_enc_str_asciicompat_p(str)) {
         if (RREGEXP(re)->ptr->enc != enc) {
 	    reg_enc_error(re, str);
@@ -1290,6 +1291,11 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
         if (RREGEXP(re)->ptr->enc != enc &&
 	    (!rb_enc_asciicompat(RREGEXP(re)->ptr->enc) ||
 	     rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)) {
+            if (rb_encoding_compat &&
+                ((RREGEXP(re)->ptr->enc == rb_ascii8bit_encoding() && enc == rb_utf8_encoding()) ||
+                 (enc == rb_ascii8bit_encoding() && RREGEXP(re)->ptr->enc == rb_utf8_encoding()))) {
+                return rb_ascii8bit_encoding();
+            }
 	    reg_enc_error(re, str);
 	}
 	enc = RREGEXP(re)->ptr->enc;
@@ -1297,8 +1303,9 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
 	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-	rb_warn("regexp match /.../n against to %s string",
-		rb_enc_name(enc));
+        if (!(rb_encoding_compat && enc == rb_utf8_encoding()))
+	    rb_warn("regexp match /.../n against to %s string",
+	        rb_enc_name(enc));
     }
     return enc;
 }

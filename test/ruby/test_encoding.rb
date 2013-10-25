@@ -117,4 +117,8 @@ class TestEncoding < Test::Unit::TestCase
       }
     end;
   end
+
+  def test_compatibility_mode
+    assert_in_out_err(%W[--encoding-compatibility #{File.expand_path('../enc/compatibility_mode.rb', __FILE__)}], "", /15 tests, 41 assertions, 0 failures, 0 errors, 0 skips/, [])
+  end
 end
