@@ -2,11 +2,13 @@
 
 <%
   us_ascii_map = [["{00-7f}", :nomap]]
+  binary_map   = [["{00-ff}", :nomap]]
 
   transcode_tblgen "US-ASCII", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "US-ASCII", us_ascii_map
   transcode_tblgen "ASCII-8BIT", "UTF-8", us_ascii_map
   transcode_tblgen "UTF-8", "ASCII-8BIT", us_ascii_map
+  transcode_tblgen "UTF-8-COMPAT", "ASCII-8BIT", binary_map, '{00-ff}'
 
   CONTROL1_TO_UCS_TBL = (0x80..0x9f).map {|c| ["%02X" % c, c] }
 
@@ -84,8 +86,14 @@
 
 <%= transcode_generated_code %>
 
+extern int rb_encoding_compat;
+
 TRANS_INIT(single_byte)
 {
+    if (rb_encoding_compat) {
+        ((struct rb_transcoder *)&rb_from_ASCII_8BIT)->conv_tree_start = from_UTF_8_COMPAT_to_ASCII_8BIT;
+        ((struct rb_transcoder *)  &rb_to_ASCII_8BIT)->conv_tree_start = from_UTF_8_COMPAT_to_ASCII_8BIT;
+    }
 <%= transcode_register_code %>
 }
 

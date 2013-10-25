@@ -1117,6 +1117,9 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		set_source_encoding_once(opt, s, 0);
 	    }
 #endif
+	    else if (strcmp("encoding-compatibility", s) == 0) {
+                rb_encoding_compat = 1;
+            }
 	    else if (strcmp("version", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(version);
