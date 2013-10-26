@@ -3786,12 +3786,12 @@ gc_oldgen_bitmap2flag(struct heap_page *page)
 static bits_t *
 gc_export_bitmaps(rb_objspace_t *objspace)
 {
-    bits_t *exported_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heap_used * 3);
+    bits_t *exported_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heap_pages_used * 3);
     size_t i;
 
     if (exported_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	memcpy(&exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], &page->mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3807,7 +3807,7 @@ gc_restore_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* restore bitmaps */
@@ -3831,7 +3831,7 @@ gc_save_bitmaps(rb_objspace_t *objspace)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* save bitmaps */
@@ -3848,7 +3848,7 @@ gc_load_bitmaps(rb_objspace_t *objspace)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* load bitmaps */
@@ -3898,7 +3898,7 @@ gc_marks_test(rb_objspace_t *objspace)
     objspace->rgengc.remembered_shady_object_count = stored_shady;
 
     /* check */
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	bits_t *minor_mark_bits = &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
 	bits_t *major_mark_bits = heap_pages_sorted[i]->mark_bits;
 	RVALUE *p = heap_pages_sorted[i]->start;
@@ -6271,7 +6271,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
     fprintf(stderr, "remembered?: %s\n", MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "true" : "false");
 #endif
 
-    if (is_lazy_sweeping(objspace)) {
+    if (is_lazy_sweeping(heap_eden)) {
         fprintf(stderr, "lazy sweeping?: true\n");
         fprintf(stderr, "swept?: %s\n", is_swept_object(objspace, obj) ? "done" : "not yet");
     }

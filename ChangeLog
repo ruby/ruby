@@ -1,3 +1,8 @@
+Sat Oct 26 19:31:28 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c: catch up recent changes to compile on GC_DEBUG,
+	  RGENGC_CHECK_MODE.
+
 Sat Oct 26 19:08:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_initialize_copy): disallow to modify after
