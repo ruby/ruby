@@ -1,3 +1,8 @@
+Sat Oct 26 19:08:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_initialize_copy): disallow to modify after
+	  initialized.
+
 Sat Oct 26 17:48:54 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (meta_add_field): : Re-implemented.

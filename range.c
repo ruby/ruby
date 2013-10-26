@@ -82,6 +82,15 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
     return range;
 }
 
+static void
+range_modify(VALUE range)
+{
+    /* Ranges are immutable, so that they should be initialized only once. */
+    if (RANGE_EXCL(range) != Qnil) {
+	rb_name_error(idInitialize, "`initialize' called twice");
+    }
+}
+
 /*
  *  call-seq:
  *     Range.new(begin, end, exclude_end=false)    -> rng
@@ -97,15 +106,19 @@ range_initialize(int argc, VALUE *argv, VALUE range)
     VALUE beg, end, flags;
 
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
-    /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
-	rb_name_error(idInitialize, "`initialize' called twice");
-    }
+    range_modify(range);
     range_init(range, beg, end, RBOOL(RTEST(flags)));
     return Qnil;
 }
 
-#define range_initialize_copy rb_struct_init_copy /* :nodoc: */
+/* :nodoc: */
+static VALUE
+range_initialize_copy(VALUE range, VALUE orig)
+{
+    range_modify(range);
+    rb_struct_init_copy(range, orig);
+    return range;
+}
 
 /*
  *  call-seq:
@@ -1244,6 +1257,7 @@ range_loader(VALUE range, VALUE obj)
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
+    range_modify(range);
     RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
     RANGE_SET_END(range, rb_ivar_get(obj, id_end));
     RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
