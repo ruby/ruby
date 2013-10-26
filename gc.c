@@ -6031,7 +6031,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if CALC_EXACT_MALLOC_SIZE
 				    "  Allocated Size"
 #endif
-				    "  Use Slot     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  LivingObj    FreeObj RemovedObj   EmptyObj"
+				    "  Use Page     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  LivingObj    FreeObj RemovedObj   EmptyObj"
 #if RGENGC_PROFILE
 				    " OldgenObj RemNormObj RemShadObj"
 #endif
