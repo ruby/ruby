@@ -1,3 +1,8 @@
+Sat Oct 26 17:48:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (meta_add_field): : Re-implemented.
+	   [ruby-core:58017] [Bug #9051] patch by Eamonn Webster.
+
 Sat Oct 26 14:35:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_profile_dump_on): use "Page" terminology.
