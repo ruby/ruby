@@ -1,3 +1,11 @@
+Sat Oct 26 11:30:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): do gc_rest_sweep() before GC.
+	  gc_rest_sweep() can reduce malloc_increase, so try it before GC.
+	  Otherwise, malloc_increase can be less than malloc_limit at
+	  gc_before_sweep(). This means that re-calculation of malloc_limit
+	  may be wrong value.
+
 Sat Oct 26 06:35:41 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_before_heap_sweep): Restructure code to mean clearly.
