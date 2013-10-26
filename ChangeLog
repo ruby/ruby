@@ -1,3 +1,8 @@
+Sat Oct 26 13:25:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_sweep, gc_heap_lazy_sweep): fix measurement code.
+	  We only need one sweep time measurement without lazy sweep.
+
 Sat Oct 26 11:59:13 2013  Tanaka Akira  <akr@fsij.org>
 
 	* addr2line.c: Include ELF header after system headers (especially

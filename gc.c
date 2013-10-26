@@ -2601,7 +2601,9 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 
     if (page == NULL) return FALSE;
 
+#if GC_ENABLE_LAZY_SWEEP
     gc_prof_sweep_timer_start(objspace);
+#endif
 
     while (page) {
 	heap->sweep_pages = next = page->next;
@@ -2618,7 +2620,9 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 	page = next;
     }
 
+#if GC_ENABLE_LAZY_SWEEP
     gc_prof_sweep_timer_stop(objspace);
+#endif
 
     return result;
 }
@@ -2646,12 +2650,14 @@ static void
 gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 {
     if (immediate_sweep) {
+#if !GC_ENABLE_LAZY_SWEEP
 	gc_prof_sweep_timer_start(objspace);
+#endif
 	gc_before_sweep(objspace);
-
 	gc_heap_rest_sweep(objspace, heap_eden);
-
+#if !GC_ENABLE_LAZY_SWEEP
 	gc_prof_sweep_timer_stop(objspace);
+#endif
     }
     else {
 	gc_before_sweep(objspace);
