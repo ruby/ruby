@@ -1,3 +1,9 @@
+Sat Oct 26 16:04:36 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* gc.c (gc_prof_set_heap_info): fix compile error when
+	  GC_PROFILE_MORE_DETAIL != 0.
+	  the patch is provided by ko1 (Koichi Sasada).
+
 Thu Oct 24 23:27:12 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.0.12. [ruby-core:57818]
