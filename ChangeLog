@@ -1,3 +1,14 @@
+Sat Oct 26 11:35:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: tuning parameters.
+
+	* gc.c (GC_MALLOC_LIMIT): change default value to 16MB.
+
+	* gc.c (GC_MALLOC_LIMIT_GROWTH_FACTOR): change default value to 2.0.
+
+	* gc.c (gc_before_sweep): change decrease ratio of `malloc_limit'
+	  from 1/4 to 1/10.
+
 Sat Oct 26 11:30:07 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (vm_malloc_increase): do gc_rest_sweep() before GC.

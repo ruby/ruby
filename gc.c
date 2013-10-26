@@ -90,13 +90,13 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_HEAP_GROWTH_MAX 0 /* 0 is disable */
 #endif
 #ifndef GC_MALLOC_LIMIT
-#define GC_MALLOC_LIMIT (8 /* 8 MB */ * 1024 * 1024 /* 1MB */)
+#define GC_MALLOC_LIMIT (16 /* 16 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
 #define GC_MALLOC_LIMIT_MAX (512 /* 512 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
-#define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.8
+#define GC_MALLOC_LIMIT_GROWTH_FACTOR 2.0
 #endif
 
 typedef struct {
@@ -2541,7 +2541,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
 	else {
-	    malloc_limit -= (size_t)(malloc_limit * ((initial_malloc_limit_growth_factor - 1) / 4));
+	    malloc_limit -= (size_t)(malloc_limit * ((initial_malloc_limit_growth_factor - 1) / 10));
 	    if (malloc_limit < initial_malloc_limit) {
 		malloc_limit = initial_malloc_limit;
 	    }
