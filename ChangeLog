@@ -1,3 +1,10 @@
+Sat Oct 26 11:59:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* addr2line.c: Include ELF header after system headers (especially
+	  sys/types.h) to avoid compilation failure,
+	  "usr/include/sh3/elf_machdep.h:4:2: error: #error Define _BYTE_ORDER!",
+	  on NetBSD/sh3 (dreamcast, hpcsh, landisk, mmeye).
+
 Sat Oct 26 11:35:22 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: tuning parameters.
