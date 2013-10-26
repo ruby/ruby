@@ -1,3 +1,9 @@
+Sun Oct 27 01:04:28 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.0.13. [ruby-core:58031]
+	  [Backport #9052]
+	  the patch is provided by drbrain (Eric Hodel).
+
 Sat Oct 26 16:04:36 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* gc.c (gc_prof_set_heap_info): fix compile error when

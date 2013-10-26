@@ -184,5 +184,15 @@ class TestGemSource < Gem::TestCase
     end
   end
 
+  def test_update_cache_eh
+    assert @source.update_cache?
+  end
+
+  def test_update_cache_eh_home_nonexistent
+    FileUtils.rmdir Gem.user_home
+
+    refute @source.update_cache?
+  end
+
 end
 

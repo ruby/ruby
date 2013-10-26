@@ -461,9 +461,9 @@ with all sufficient information, see the ChangeLog file.
     XML declaration is used for XML document encoding.
 
 * RubyGems
-  * Updated to 2.0.12.
+  * Updated to 2.0.13.
 
-    See http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.0.12+%2F+2013-10-14
+    See http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.0.13+%2F+2013-10-24
     for release notes.
 
   * Updated to 2.0.10.  This fixes CVE_2013-4363:

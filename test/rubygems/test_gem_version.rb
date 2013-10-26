@@ -23,14 +23,13 @@ class TestGemVersion < Gem::TestCase
     assert_bumped_version_equal "6", "5"
   end
 
-  # FIX: For "legacy reasons," any object that responds to +version+
-  # is returned unchanged. I'm not certain why.
+  # A Gem::Version is already a Gem::Version and therefore not transformed by
+  # Gem::Version.create
 
   def test_class_create
-    fake = Object.new
-    def fake.version; "1.0" end
+    real = Gem::Version.new(1.0)
 
-    assert_same  fake, Gem::Version.create(fake)
+    assert_same  real, Gem::Version.create(real)
     assert_nil   Gem::Version.create(nil)
     assert_equal v("5.1"), Gem::Version.create("5.1")
 

@@ -63,7 +63,12 @@ class Gem::Source
   end
 
   def update_cache?
-    @update_cache ||= File.stat(Gem.user_home).uid == Process.uid
+    @update_cache ||=
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::ENOENT
+        false
+      end
   end
 
   def fetch_spec(name)
