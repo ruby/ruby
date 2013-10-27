@@ -35,6 +35,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -128,6 +129,8 @@ static char **readline_attempted_completion_function(const char *text,
 
 static VALUE readline_instream;
 static VALUE readline_outstream;
+static FILE *readline_rl_instream;
+static FILE *readline_rl_outstream;
 
 #if defined HAVE_RL_GETC_FUNCTION
 
@@ -135,14 +138,19 @@ static VALUE readline_outstream;
 #define rl_getc(f) EOF
 #endif
 
-static int readline_getc(FILE *);
+struct getc_struct {
+  FILE *input;
+  int fd;
+  int ret;
+  int err;
+};
+
 static int
-readline_getc(FILE *input)
+getc_body(struct getc_struct *p)
 {
-    rb_io_t *ifp = 0;
-    VALUE c;
-    if (!readline_instream) return rl_getc(input);
-    GetOpenFile(readline_instream, ifp);
+    char ch;
+    ssize_t ss;
+
 #if defined(_WIN32)
     {
         INPUT_RECORD ir;
@@ -150,19 +158,19 @@ readline_getc(FILE *input)
         static int prior_key = '0';
         for (;;) {
             if (prior_key > 0xff) {
-                prior_key = rl_getc(rl_instream);
+                prior_key = rl_getc(p->input);
                 return prior_key;
             }
-            if (PeekConsoleInput((HANDLE)_get_osfhandle(ifp->fd), &ir, 1, &n)) {
+            if (PeekConsoleInput((HANDLE)_get_osfhandle(p->fd), &ir, 1, &n)) {
                 if (n == 1) {
                     if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
-                        prior_key = rl_getc(rl_instream);
+                        prior_key = rl_getc(p->input);
                         return prior_key;
                     } else {
-                        ReadConsoleInput((HANDLE)_get_osfhandle(ifp->fd), &ir, 1, &n);
+                        ReadConsoleInput((HANDLE)_get_osfhandle(p->fd), &ir, 1, &n);
                     }
                 } else {
-                    HANDLE h = (HANDLE)_get_osfhandle(ifp->fd);
+                    HANDLE h = (HANDLE)_get_osfhandle(p->fd);
                     rb_w32_wait_events(&h, 1, INFINITE);
                 }
             } else {
@@ -171,22 +179,60 @@ readline_getc(FILE *input)
         }
     }
 #endif
-    c = rb_io_getbyte(readline_instream);
-    if (NIL_P(c)) return EOF;
-#ifdef ESC
-    if (c == INT2FIX(ESC) &&
-        RL_ISSTATE(RL_STATE_ISEARCH) && /* isn't needed in other states? */
-        rb_io_read_pending(ifp)) {
-        int meta = 0;
-        c = rb_io_getbyte(readline_instream);
-        if (FIXNUM_P(c) && isascii(FIX2INT(c))) meta = 1;
-        rb_io_ungetbyte(readline_instream, c);
-        if (meta) rl_execute_next(ESC);
-        return ESC;
+
+    ss = read(p->fd, &ch, 1);
+    if (ss == 0) {
+        errno = 0;
+        return EOF;
     }
-#endif
-    return FIX2INT(c);
+    if (ss != 1)
+        return EOF;
+    return (unsigned char)ch;
 }
+
+static void *
+getc_func(void *data1)
+{
+    struct getc_struct *p = data1;
+    errno = 0;
+    p->ret = getc_body(p);
+    p->err = errno;
+    return NULL;
+}
+
+static int
+readline_getc(FILE *input)
+{
+    struct getc_struct data;
+    data.input = input;
+    data.fd = fileno(input);
+  again:
+    data.ret = EOF;
+    data.err = EINTR; /* getc_func is not called if already interrupted. */
+    rb_thread_call_without_gvl2(getc_func, &data, RUBY_UBF_IO, NULL);
+    if (data.ret == EOF) {
+        if (data.err == 0) {
+            return EOF;
+        }
+        if (data.err == EINTR) {
+            rb_thread_check_ints();
+            goto again;
+        }
+        if (data.err == EWOULDBLOCK || data.err == EAGAIN) {
+            int ret;
+            if (fileno(input) != data.fd)
+                rb_bug("readline_getc: input closed unexpectedly or memory corrupted");
+            ret = rb_wait_for_single_fd(data.fd, RB_WAITFD_IN, NULL);
+            if (ret != -1 || errno == EINTR)
+                goto again;
+            rb_sys_fail("rb_wait_for_single_fd");
+        }
+        errno = data.err;
+        rb_sys_fail("read");
+    }
+    return data.ret;
+}
+
 #elif defined HAVE_RL_EVENT_HOOK
 #define BUSY_WAIT 0
 
@@ -285,6 +331,30 @@ readline_get(VALUE prompt)
     readline_completion_append_character = rl_completion_append_character;
 #endif
     return (VALUE)readline((char *)prompt);
+}
+
+static void
+clear_rl_instream(void)
+{
+    if (readline_rl_instream) {
+        fclose(readline_rl_instream);
+        if (rl_instream == readline_rl_instream)
+            rl_instream = NULL;
+        readline_rl_instream = NULL;
+    }
+    readline_instream = Qfalse;
+}
+
+static void
+clear_rl_outstream(void)
+{
+    if (readline_rl_outstream) {
+        fclose(readline_rl_outstream);
+        if (rl_outstream == readline_rl_outstream)
+            rl_outstream = NULL;
+        readline_rl_outstream = NULL;
+    }
+    readline_outstream = Qfalse;
 }
 
 /*
@@ -390,27 +460,19 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 
     if (readline_instream) {
         rb_io_t *ifp;
-        GetOpenFile(readline_instream, ifp);
+        rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
         if (ifp->fd < 0) {
-            if (rl_instream) {
-                fclose(rl_instream);
-                rl_instream = NULL;
-            }
-            readline_instream = Qfalse;
-            rb_raise(rb_eIOError, "closed stdin");
+            clear_rl_instream();
+            rb_raise(rb_eIOError, "closed readline input");
         }
     }
 
     if (readline_outstream) {
         rb_io_t *ofp;
-        GetOpenFile(readline_outstream, ofp);
+        rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
         if (ofp->fd < 0) {
-            if (rl_outstream) {
-                fclose(rl_outstream);
-                rl_outstream = NULL;
-            }
-            readline_outstream = Qfalse;
-            rb_raise(rb_eIOError, "closed stdout");
+            clear_rl_outstream();
+            rb_raise(rb_eIOError, "closed readline output");
         }
     }
 
@@ -453,23 +515,6 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     return result;
 }
 
-static void
-clear_rl_instream(void)
-{
-    rb_io_t *ifp;
-    if (rl_instream) {
-        if (readline_instream) {
-            rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
-            if (ifp->fd < 0 || fileno(rl_instream) == ifp->fd) {
-                fclose(rl_instream);
-                rl_instream = NULL;
-            }
-        }
-        readline_instream = Qfalse;
-        rl_instream = NULL;
-    }
-}
-
 /*
  * call-seq:
  *   Readline.input = input
@@ -501,27 +546,10 @@ readline_s_set_input(VALUE self, VALUE input)
             errno = save_errno;
             rb_sys_fail("fdopen");
         }
-        rl_instream = f;
+        rl_instream = readline_rl_instream = f;
         readline_instream = input;
     }
     return input;
-}
-
-static void
-clear_rl_outstream(void)
-{
-    rb_io_t *ofp;
-    if (rl_outstream) {
-        if (readline_outstream) {
-            rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
-            if (ofp->fd < 0 || fileno(rl_outstream) == ofp->fd) {
-                fclose(rl_outstream);
-                rl_outstream = NULL;
-            }
-        }
-        readline_outstream = Qfalse;
-        rl_outstream = NULL;
-    }
 }
 
 /*
@@ -555,7 +583,7 @@ readline_s_set_output(VALUE self, VALUE output)
             errno = save_errno;
             rb_sys_fail("fdopen");
         }
-        rl_outstream = f;
+        rl_outstream = readline_rl_outstream = f;
         readline_outstream = output;
     }
     return output;
@@ -1955,6 +1983,4 @@ Init_readline()
 
     rb_gc_register_address(&readline_instream);
     rb_gc_register_address(&readline_outstream);
-
-    readline_s_set_input(mReadline, rb_stdin);
 }

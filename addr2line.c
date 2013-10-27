@@ -17,11 +17,6 @@
 
 #ifdef USE_ELF
 
-#ifdef __OpenBSD__
-#include <elf_abi.h>
-#else
-#include <elf.h>
-#endif
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
@@ -32,6 +27,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef __OpenBSD__
+#include <elf_abi.h>
+#else
+#include <elf.h>
+#endif
 
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__

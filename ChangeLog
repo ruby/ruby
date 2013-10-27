@@ -1,3 +1,95 @@
+Mon Oct 28 04:10:41 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm_backtrace.c (rb_profile_frame_classpath): handle singleton
+	  methods defined directly on an object.
+	* test/-ext-/debug/test_profile_frames.rb: test for above.
+
+Mon Oct 28 00:52:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (new_struct): fix warning message, class name and encoding.
+
+Sun Oct 27 20:53:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c: Include ruby/thread.h for
+	  rb_thread_call_without_gvl2.
+	  (readline_rl_instream, readline_rl_outstream): Record FILE
+	  structures allocated by this extension.
+	  (getc_body): New function extracted from readline_getc.
+	  (getc_func): New function.
+	  (readline_getc): Use rb_thread_call_without_gvl2 to invoke getc_func.
+	  [ruby-dev:47033] [Bug #8749]
+	  (clear_rl_instream, clear_rl_outstream): Close FILE structure
+	  allocated by this extention reliably.  [ruby-core:57951] [Bug #9040]
+	  (readline_readline): Use clear_rl_instream and clear_rl_outstream.
+	  (readline_s_set_input): Set readline_rl_instream.
+	  (readline_s_set_output): Set readline_rl_outstream.
+	  (Init_readline): Don't call readline_s_set_input because
+	  readline_getc doesn't block other threads for any FILE structure now.
+
+	  [ruby-dev:47033] [Bug #8749] reported by Nobuhiro IMAI.
+	  [ruby-core:57951] [Bug #9040] reporeted by Eamonn Webster.
+
+Sat Oct 26 19:31:28 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c: catch up recent changes to compile on GC_DEBUG,
+	  RGENGC_CHECK_MODE.
+
+Sat Oct 26 19:08:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_initialize_copy): disallow to modify after
+	  initialized.
+
+Sat Oct 26 17:48:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (meta_add_field): : Re-implemented.
+	   [ruby-core:58017] [Bug #9051] patch by Eamonn Webster.
+
+Sat Oct 26 14:35:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_dump_on): use "Page" terminology.
+
+Sat Oct 26 13:25:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_sweep, gc_heap_lazy_sweep): fix measurement code.
+	  We only need one sweep time measurement without lazy sweep.
+
+Sat Oct 26 11:59:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* addr2line.c: Include ELF header after system headers (especially
+	  sys/types.h) to avoid compilation failure,
+	  "usr/include/sh3/elf_machdep.h:4:2: error: #error Define _BYTE_ORDER!",
+	  on NetBSD/sh3 (dreamcast, hpcsh, landisk, mmeye).
+
+Sat Oct 26 11:35:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: tuning parameters.
+
+	* gc.c (GC_MALLOC_LIMIT): change default value to 16MB.
+
+	* gc.c (GC_MALLOC_LIMIT_GROWTH_FACTOR): change default value to 2.0.
+
+	* gc.c (gc_before_sweep): change decrease ratio of `malloc_limit'
+	  from 1/4 to 1/10.
+
+Sat Oct 26 11:30:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): do gc_rest_sweep() before GC.
+	  gc_rest_sweep() can reduce malloc_increase, so try it before GC.
+	  Otherwise, malloc_increase can be less than malloc_limit at
+	  gc_before_sweep(). This means that re-calculation of malloc_limit
+	  may be wrong value.
+
+Sat Oct 26 06:35:41 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_before_heap_sweep): Restructure code to mean clearly.
+	  heap->freelist is connected to end of list.
+
+Sat Oct 26 04:01:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_before_heap_sweep): fix freelist management.
+	  After rb_gc_force_recycle() for a object blonging to heap->freelist,
+	  `heap->using_page->freelist' is not null.
+
 Thu Oct 24 21:57:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* parse.y: Remove +(binary) and -(binary) special cases

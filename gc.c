@@ -90,13 +90,13 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_HEAP_GROWTH_MAX 0 /* 0 is disable */
 #endif
 #ifndef GC_MALLOC_LIMIT
-#define GC_MALLOC_LIMIT (8 /* 8 MB */ * 1024 * 1024 /* 1MB */)
+#define GC_MALLOC_LIMIT (16 /* 16 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
 #define GC_MALLOC_LIMIT_MAX (512 /* 512 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
-#define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.8
+#define GC_MALLOC_LIMIT_GROWTH_FACTOR 2.0
 #endif
 
 typedef struct {
@@ -2483,7 +2483,11 @@ gc_before_heap_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
     heap->free_pages = NULL;
 
     if (heap->using_page) {
-	heap->using_page->freelist = heap->freelist;
+	RVALUE **p = &heap->using_page->freelist;
+	while (*p) {
+	    p = &(*p)->as.free.next;
+	}
+	*p = heap->freelist;
 	heap->using_page = NULL;
     }
     heap->freelist = NULL;
@@ -2537,7 +2541,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
 	else {
-	    malloc_limit -= (size_t)(malloc_limit * ((initial_malloc_limit_growth_factor - 1) / 4));
+	    malloc_limit -= (size_t)(malloc_limit * ((initial_malloc_limit_growth_factor - 1) / 10));
 	    if (malloc_limit < initial_malloc_limit) {
 		malloc_limit = initial_malloc_limit;
 	    }
@@ -2597,7 +2601,9 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 
     if (page == NULL) return FALSE;
 
+#if GC_ENABLE_LAZY_SWEEP
     gc_prof_sweep_timer_start(objspace);
+#endif
 
     while (page) {
 	heap->sweep_pages = next = page->next;
@@ -2614,7 +2620,9 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 	page = next;
     }
 
+#if GC_ENABLE_LAZY_SWEEP
     gc_prof_sweep_timer_stop(objspace);
+#endif
 
     return result;
 }
@@ -2642,12 +2650,14 @@ static void
 gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 {
     if (immediate_sweep) {
+#if !GC_ENABLE_LAZY_SWEEP
 	gc_prof_sweep_timer_start(objspace);
+#endif
 	gc_before_sweep(objspace);
-
 	gc_heap_rest_sweep(objspace, heap_eden);
-
+#if !GC_ENABLE_LAZY_SWEEP
 	gc_prof_sweep_timer_stop(objspace);
+#endif
     }
     else {
 	gc_before_sweep(objspace);
@@ -3776,12 +3786,12 @@ gc_oldgen_bitmap2flag(struct heap_page *page)
 static bits_t *
 gc_export_bitmaps(rb_objspace_t *objspace)
 {
-    bits_t *exported_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heap_used * 3);
+    bits_t *exported_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heap_pages_used * 3);
     size_t i;
 
     if (exported_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	memcpy(&exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], &page->mark_bits[0],        HEAP_BITMAP_SIZE);
@@ -3797,7 +3807,7 @@ gc_restore_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* restore bitmaps */
@@ -3821,7 +3831,7 @@ gc_save_bitmaps(rb_objspace_t *objspace)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* save bitmaps */
@@ -3838,7 +3848,7 @@ gc_load_bitmaps(rb_objspace_t *objspace)
 {
     size_t i;
 
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	struct heap_page *page = heap_pages_sorted[i];
 
 	/* load bitmaps */
@@ -3888,7 +3898,7 @@ gc_marks_test(rb_objspace_t *objspace)
     objspace->rgengc.remembered_shady_object_count = stored_shady;
 
     /* check */
-    for (i=0; i<heap_used; i++) {
+    for (i=0; i<heap_pages_used; i++) {
 	bits_t *minor_mark_bits = &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
 	bits_t *major_mark_bits = heap_pages_sorted[i]->mark_bits;
 	RVALUE *p = heap_pages_sorted[i]->start;
@@ -5029,8 +5039,18 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
     }
 
     if (do_gc) {
-	if ((ruby_gc_stress && !ruby_disable_gc_stress) || (malloc_increase > malloc_limit)) {
+	if (ruby_gc_stress && !ruby_disable_gc_stress) {
 	    garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+	}
+	else {
+	  retry:
+	    if (malloc_increase > malloc_limit) {
+		if (is_lazy_sweeping(heap_eden)) {
+		    gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
+		    goto retry;
+		}
+		garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+	    }
 	}
     }
 }
@@ -6011,7 +6031,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if CALC_EXACT_MALLOC_SIZE
 				    "  Allocated Size"
 #endif
-				    "  Use Slot     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  LivingObj    FreeObj RemovedObj   EmptyObj"
+				    "  Use Page     Mark Time(ms)    Sweep Time(ms)  Prepare Time(ms)  LivingObj    FreeObj RemovedObj   EmptyObj"
 #if RGENGC_PROFILE
 				    " OldgenObj RemNormObj RemShadObj"
 #endif
@@ -6251,7 +6271,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
     fprintf(stderr, "remembered?: %s\n", MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "true" : "false");
 #endif
 
-    if (is_lazy_sweeping(objspace)) {
+    if (is_lazy_sweeping(heap_eden)) {
         fprintf(stderr, "lazy sweeping?: true\n");
         fprintf(stderr, "swept?: %s\n", is_swept_object(objspace, obj) ? "done" : "not yet");
     }
