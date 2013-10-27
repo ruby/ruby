@@ -1,3 +1,24 @@
+Sun Oct 27 20:53:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c: Include ruby/thread.h for
+	  rb_thread_call_without_gvl2.
+	  (readline_rl_instream, readline_rl_outstream): Record FILE
+	  structures allocated by this extension.
+	  (getc_body): New function extracted from readline_getc.
+	  (getc_func): New function.
+	  (readline_getc): Use rb_thread_call_without_gvl2 to invoke getc_func.
+	  [ruby-dev:47033] [Bug #8749]
+	  (clear_rl_instream, clear_rl_outstream): Close FILE structure
+	  allocated by this extention reliably.  [ruby-core:57951] [Bug #9040]
+	  (readline_readline): Use clear_rl_instream and clear_rl_outstream.
+	  (readline_s_set_input): Set readline_rl_instream.
+	  (readline_s_set_output): Set readline_rl_outstream.
+	  (Init_readline): Don't call readline_s_set_input because
+	  readline_getc doesn't block other threads for any FILE structure now.
+
+	  [ruby-dev:47033] [Bug #8749] reported by Nobuhiro IMAI.
+	  [ruby-core:57951] [Bug #9040] reporeted by Eamonn Webster.
+
 Sat Oct 26 19:31:28 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gc.c: catch up recent changes to compile on GC_DEBUG,
