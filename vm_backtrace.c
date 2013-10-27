@@ -1297,6 +1297,8 @@ rb_profile_frame_classpath(VALUE frame)
 	}
 	else if (FL_TEST(klass, FL_SINGLETON)) {
 	    klass = rb_ivar_get(klass, id__attached__);
+	    if (!RB_TYPE_P(klass, T_CLASS))
+		return rb_inspect(klass);
 	}
 	return rb_class_path(klass);
     }

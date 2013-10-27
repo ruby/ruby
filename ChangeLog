@@ -1,3 +1,9 @@
+Mon Oct 28 04:10:41 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm_backtrace.c (rb_profile_frame_classpath): handle singleton
+	  methods defined directly on an object.
+	* test/-ext-/debug/test_profile_frames.rb: test for above.
+
 Mon Oct 28 00:52:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (new_struct): fix warning message, class name and encoding.
