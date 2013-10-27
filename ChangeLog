@@ -1,3 +1,7 @@
+Mon Oct 28 00:52:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (new_struct): fix warning message, class name and encoding.
+
 Sun Oct 27 20:53:08 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/readline/readline.c: Include ruby/thread.h for
