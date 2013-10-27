@@ -993,24 +993,6 @@ name_err_name(VALUE self)
 
 /*
  * call-seq:
- *  name_error.to_s   -> string
- *
- * Produce a nicely-formatted string representing the +NameError+.
- */
-
-static VALUE
-name_err_to_s(VALUE exc)
-{
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
-    VALUE str = mesg;
-
-    if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    StringValue(str);
-    return str;
-}
-
-/*
- * call-seq:
  *   NoMethodError.new(msg, name [, args])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
@@ -1790,7 +1772,6 @@ Init_Exception(void)
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
-    rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
     rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
