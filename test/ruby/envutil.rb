@@ -297,8 +297,8 @@ module Test
     @@stop_auto_run = true
   end
 eom
-        args = ["--disable=gems", *args]
-        args.insert((Hash === args.first ? 1 : 0), *$:.map {|l| "-I#{l}"})
+        args = args.dup
+        args.insert((Hash === args.first ? 1 : 0), "--disable=gems", *$:.map {|l| "-I#{l}"})
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, stderr])
