@@ -1,3 +1,17 @@
+Mon Oct 28 14:41:27 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el: Import ruby-electric.el 2.1 from
+	  https://github.com/knu/ruby-electric.el.
+
+	  * Hitting the newline-and-indent key within a comment fires
+	    comment-indent-new-line.
+
+	  * Introduce a new feature
+	    `ruby-electric-autoindent-on-closing-char`.
+
+	  * Fix fallback behavior of ruby-electric-space/return that
+	    caused error with auto-complete.
+
 Mon Oct 28 13:17:17 2013  Or Cohen  <orc@fewbytes.com>
 
 	* error.c (name_err_to_s): remove no longer needed overriding, since
