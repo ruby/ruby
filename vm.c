@@ -106,22 +106,6 @@ rb_event_flag_t ruby_vm_event_flags;
 
 static void thread_free(void *ptr);
 
-static void
-vm_clear_all_inline_method_cache(void)
-{
-    /* TODO: Clear all inline cache entries in all iseqs.
-             How to iterate all iseqs in sweep phase?
-             rb_objspace_each_objects() doesn't work at sweep phase.
-     */
-}
-
-static void
-vm_clear_all_cache()
-{
-    vm_clear_all_inline_method_cache();
-    ruby_vm_global_state_version = 1;
-}
-
 void
 rb_vm_inc_const_missing_count(void)
 {

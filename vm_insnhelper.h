@@ -263,9 +263,7 @@ enum vm_regan_acttype {
 #define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
 #define INC_VM_STATE_VERSION() do { \
     ruby_vm_global_state_version = (ruby_vm_global_state_version + 1); \
-    if (ruby_vm_global_state_version == 0) vm_clear_all_cache(); \
 } while (0)
-static void vm_clear_all_cache(void);
 
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);

@@ -1,3 +1,10 @@
+Mon Oct 28 09:29:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm.c: vm_clear_all_cache is not necessary now we use a 64 bit counter
+	  for global state version.
+
+	* vm_insnhelper.h: ruby_vm_global_state_version overflow is unnecessary
+
 Mon Oct 28 07:47:32 2013  Aman Gupta <ruby@tmm1.net>
 
 	* vm_backtrace.c (rb_profile_frame_classpath): do not use rb_inspect
