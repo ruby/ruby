@@ -1,3 +1,11 @@
+Mon Oct 28 15:32:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/depend (ossl.o): work around of dependency of
+	  thread_native.h, which depends on headers by THREAD_MODEL.
+	  [ruby-dev:47777]
+
+	* ext/openssl/extconf.rb: need THREAD_MODEL.
+
 Mon Oct 28 14:57:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (ruby_init_ext): share feature names between frame name and
