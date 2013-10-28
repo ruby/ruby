@@ -1,3 +1,7 @@
 $(OBJS): $(ruby_headers)
-date_core.o: date_tmx.h
+date_core.o: date_tmx.h $(hdrdir)/ruby/encoding.h $(hdrdir)/ruby/oniguruma.h
 date_strftime.o: date_tmx.h
+date_parse.o: $(hdrdir)/ruby/encoding.h $(hdrdir)/ruby/oniguruma.h $(hdrdir)/ruby/re.h $(hdrdir)/ruby/regex.h
+date_strptime.o: $(hdrdir)/ruby/encoding.h $(hdrdir)/ruby/oniguruma.h $(hdrdir)/ruby/re.h $(hdrdir)/ruby/regex.h
+
+

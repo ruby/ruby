@@ -3,3 +3,4 @@ $(OBJS): $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/encoding.h \
   $(hdrdir)/ruby/oniguruma.h \
   $(hdrdir)/ruby/thread.h
+ossl.o: $(top_srcdir)/thread_native.h $(top_srcdir)/thread_pthread.h

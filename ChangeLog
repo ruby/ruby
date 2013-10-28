@@ -1,3 +1,8 @@
+Mon Oct 28 12:42:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk, ext/objspace/depend, ext/coverage/depend,
+	  ext/-test-/debug/depend, ext/date/depend: Update dependencies.
+
 Mon Oct 28 09:29:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* vm.c: vm_clear_all_cache is not necessary now we use a 64 bit counter
