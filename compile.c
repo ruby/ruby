@@ -21,7 +21,6 @@
 
 #if OPT_CONTEXT_THREADED_CODE
 #include <sys/mman.h>
-#include <mach/vm_inherit.h>
 #endif
 
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
@@ -714,10 +713,6 @@ alloc_context_threading_table(VALUE ctt_size)
                     break;
                 }
                 continue;
-            }
-            if (-1 == minherit(address, region_size, VM_INHERIT_COPY)) {
-              rb_sys_fail("minherit");
-              break;
             }
             region[0] = region_size / sizeof(VALUE);
             region[1] = (VALUE) vm->context_threading_regions;
