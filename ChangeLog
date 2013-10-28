@@ -1,3 +1,8 @@
+Mon Oct 28 21:35:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/file/depend, ext/-test-/postponed_job/depend,
+	  ext/-test-/tracepoint/depend: New files for dependencies.
+
 Mon Oct 28 15:32:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/depend (ossl.o): work around of dependency of
