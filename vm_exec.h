@@ -67,7 +67,7 @@ error !
 #define NEXT_INSN() return reg_cfp;
 
 /************************************************/
-#elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
+#elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE || OPT_CONTEXT_THREADED_CODE
 /* threaded code with gcc */
 
 #define LABEL(x)  INSN_LABEL_##x
@@ -79,9 +79,15 @@ error !
 
 #define INSN_DISPATCH_SIG(insn)
 
+#if OPT_CONTEXT_THREADED_CODE
 #define INSN_ENTRY(insn) \
   LABEL(insn): \
-  INSN_ENTRY_SIG(insn); \
+  INSN_ENTRY_SIG(insn);
+#else
+#define INSN_ENTRY(insn) \
+  LABEL(insn): \
+  INSN_ENTRY_SIG(insn);
+#endif
 
 /* dispatcher */
 #if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
@@ -104,7 +110,7 @@ error !
   goto *(void const *)GET_CURRENT_INSN(); \
   ;
 
-#else
+#elif OPT_TOKEN_THREADED_CODE
 /* token threaded code */
 
 #define TC_DISPATCH(insn)  \
@@ -113,6 +119,14 @@ error !
   goto *insns_address_table[GET_CURRENT_INSN()]; \
   rb_bug("tc error");
 
+#elif OPT_CONTEXT_THREADED_CODE
+/* context threaded code */
+
+#define TC_DISPATCH(insn) \
+  INSN_DISPATCH_SIG(insn); \
+  __asm__ __volatile__("movl $1, %%eax" : : : "%rax"); \
+  __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP)); \
+  goto *(void const *)GET_CURRENT_INSN()
 
 #endif /* DISPATCH_DIRECT_THREADED_CODE */
 
@@ -120,15 +134,30 @@ error !
   DEBUG_END_INSN();         \
   TC_DISPATCH(insn);
 
+#if OPT_CONTEXT_THREADED_CODE
+
+#define INSN_DISPATCH()     \
+  __asm__ __volatile__("movq %%rsp, %0\npushq $0" : "=r" (rsp)); \
+  goto *(void const *)GET_CURRENT_INSN(); \
+  {
+
+#define NEXT_INSN() \
+  __asm__ __volatile__("xor %%rax, %%rax" : : : "%rax"); \
+  __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP))
+
+#else
+
 #define INSN_DISPATCH()     \
   TC_DISPATCH(__START__)    \
   {
 
+#define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
+
+#endif
+
 #define END_INSNS_DISPATCH()    \
       rb_bug("unknown insn: %"PRIdVALUE, GET_CURRENT_INSN());   \
   }   /* end of while loop */   \
-
-#define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
 /************************************************/
 #else /* no threaded code */
@@ -163,6 +192,11 @@ default:                        \
 #define THROW_EXCEPTION(exc) do { \
     th->errinfo = (VALUE)(exc); \
     return 0; \
+} while (0)
+#elif OPT_CONTEXT_THREADED_CODE
+#define THROW_EXCEPTION(exc) do { \
+    __asm__ __volatile__("movq %0, %%rsp" : : "r" (rsp) : "%rsp"); \
+    return (VALUE)(exc); \
 } while (0)
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)

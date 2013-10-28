@@ -78,6 +78,12 @@ iseq_free(void *ptr)
 		RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
 	    }
 
+#if OPT_CONTEXT_THREADED_CODE
+            if (iseq->context_threading_table) {
+                rb_iseq_free_context_threading_table(iseq->context_threading_table);
+            }
+#endif
+
 	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
 	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
