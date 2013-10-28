@@ -288,6 +288,17 @@ end.join
     assert_equal(e.inspect, e.new.inspect)
   end
 
+  def test_to_s
+    e = StandardError.new("foo")
+    assert_equal("foo", e.to_s)
+
+    def (s = Object.new).to_s
+      "bar"
+    end
+    e = StandardError.new(s)
+    assert_equal("bar", e.to_s)
+  end
+
   def test_set_backtrace
     e = Exception.new
 
