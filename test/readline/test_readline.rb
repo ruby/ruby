@@ -22,6 +22,8 @@ class TestReadline < Test::Unit::TestCase
       Readline.point = 0
     rescue NotImplementedError
     end
+    Readline.input = nil
+    Readline.output = nil
   end
 
   if !/EditLine/n.match(Readline::VERSION)

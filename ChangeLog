@@ -1,3 +1,8 @@
+Mon Oct 28 23:26:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/readline/test_readline.rb (teardown): Clear Readline.input and
+	  Readline.output.
+
 Mon Oct 28 21:35:31 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/file/depend, ext/-test-/postponed_job/depend,
