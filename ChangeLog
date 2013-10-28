@@ -1,3 +1,8 @@
+Mon Oct 28 13:17:17 2013  Or Cohen  <orc@fewbytes.com>
+
+	* error.c (name_err_to_s): remove no longer needed overriding, since
+	  r30455 which made exc_to_s almost same.  Fixes [GH-413].
+
 Mon Oct 28 12:42:11 2013  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk, ext/objspace/depend, ext/coverage/depend,
