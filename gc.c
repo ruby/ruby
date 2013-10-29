@@ -1196,7 +1196,7 @@ VALUE
 rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     if (klass) Check_Type(klass, T_CLASS);
-    return newobj_of(klass, T_DATA | type->flags, (VALUE)type, (VALUE)1, (VALUE)datap);
+    return newobj_of(klass, T_DATA | (type->flags & ~T_MASK), (VALUE)type, (VALUE)1, (VALUE)datap);
 }
 
 size_t
@@ -1373,15 +1373,23 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
+	    int free_immediately = 0;
+
 	    if (RTYPEDDATA_P(obj)) {
+		free_immediately = RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY;
 		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->function.dfree;
 	    }
-	    if (RANY(obj)->as.data.dfree == (RUBY_DATA_FUNC)-1) {
+	    if (RANY(obj)->as.data.dfree == RUBY_DEFAULT_FREE) {
 		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
-		make_deferred(RANY(obj));
-		return 1;
+		if (free_immediately) {
+		    (RDATA(obj)->dfree)(DATA_PTR(obj));
+		}
+		else {
+		    make_deferred(RANY(obj));
+		    return 1;
+		}
 	    }
 	}
 	break;
