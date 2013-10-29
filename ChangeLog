@@ -1,3 +1,7 @@
+Tue Oct 29 22:11:37 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_uniq_bang): use st_foreach() instead of for loop.
+
 Tue Oct 29 20:01:58 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* add RUBY_TYPED_FREE_IMMEDIATELY to data types which only use

@@ -4051,6 +4051,13 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 }
 
 static int
+push_key(st_data_t key, st_data_t val, st_data_t ary)
+{
+    rb_ary_push((VALUE)ary, (VALUE)key);
+    return ST_CONTINUE;
+}
+
+static int
 push_value(st_data_t key, st_data_t val, st_data_t ary)
 {
     rb_ary_push((VALUE)ary, (VALUE)val);
@@ -4085,15 +4092,16 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
 {
-    VALUE hash, v;
-    long i, j;
+    VALUE hash;
+    long hash_size;
 
     rb_ary_modify_check(ary);
     if (RARRAY_LEN(ary) <= 1)
         return Qnil;
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
-	if (RARRAY_LEN(ary) == (i = RHASH_SIZE(hash))) {
+	hash_size = RHASH_SIZE(hash);
+	if (RARRAY_LEN(ary) == hash_size) {
 	    return Qnil;
 	}
 	rb_ary_modify(ary);
@@ -4102,21 +4110,23 @@ rb_ary_uniq_bang(VALUE ary)
 	    rb_ary_unshare(ary);
 	    FL_SET_EMBED(ary);
 	}
-	ary_resize_capa(ary, i);
+	ary_resize_capa(ary, hash_size);
 	st_foreach(rb_hash_tbl_raw(hash), push_value, ary);
     }
     else {
 	hash = ary_make_hash(ary);
-	if (RARRAY_LEN(ary) == (long)RHASH_SIZE(hash)) {
+	hash_size = RHASH_SIZE(hash);
+	if (RARRAY_LEN(ary) == hash_size) {
 	    return Qnil;
 	}
-	for (i=j=0; i<RARRAY_LEN(ary); i++) {
-	    st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
-	    if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
-		rb_ary_store(ary, j++, v);
-	    }
+	rb_ary_modify(ary);
+	ARY_SET_LEN(ary, 0);
+	if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
+	    rb_ary_unshare(ary);
+	    FL_SET_EMBED(ary);
 	}
-	ARY_SET_LEN(ary, j);
+	ary_resize_capa(ary, hash_size);
+	st_foreach(rb_hash_tbl_raw(hash), push_key, ary);
     }
     ary_recycle_hash(hash);
 
