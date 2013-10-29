@@ -1,3 +1,9 @@
+Tue Oct 29 11:10:08 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_profile_total_time): fix off-by-one error in
+	  GC::Profiler.total_time.
+	* test/ruby/test_gc.rb (class TestGc): test for above.
+
 Tue Oct 29 09:53:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* insns.def, vm.c, vm_insnhelper.c, vm_insnhelper.h, vm_method.c: split

@@ -6140,7 +6140,7 @@ gc_profile_total_time(VALUE self)
 
     if (objspace->profile.run && objspace->profile.next_index > 0) {
 	size_t i;
-	size_t count = objspace->profile.next_index - 1;
+	size_t count = objspace->profile.next_index;
 
 	for (i = 0; i < count; i++) {
 	    time += objspace->profile.records[i].gc_time;
