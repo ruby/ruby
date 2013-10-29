@@ -1,3 +1,7 @@
+Tue Oct 29 23:01:18 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): some refactoring.
+
 Tue Oct 29 22:11:37 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_uniq_bang): use st_foreach() instead of for loop.
