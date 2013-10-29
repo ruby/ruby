@@ -621,12 +621,6 @@ tp_mark(void *ptr)
     }
 }
 
-static void
-tp_free(void *ptr)
-{
-    /* do nothing */
-}
-
 static size_t
 tp_memsize(const void *ptr)
 {
@@ -635,7 +629,7 @@ tp_memsize(const void *ptr)
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
-    {tp_mark, tp_free, tp_memsize,},
+    {tp_mark, RUBY_TYPED_NEVER_FREE, tp_memsize,},
 };
 
 static VALUE
