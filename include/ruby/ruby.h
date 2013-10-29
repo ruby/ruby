@@ -1010,7 +1010,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 
 /* bits for rb_data_type_struct::flags */
 #define RUBY_TYPED_FREE_IMMEDIATELY  1 /* TYPE field */
-#define RUBY_TYPED_WB_PROTECTED      FL_WB_PROTECT
+#define RUBY_TYPED_WB_PROTECTED      FL_WB_PROTECTED
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
