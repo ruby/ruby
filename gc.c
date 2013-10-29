@@ -5022,12 +5022,12 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
     }
     else {
 	size_t sub = old_size - new_size;
-	if (sub > 0) {
-	    if (malloc_increase > sub) {
-		ATOMIC_SIZE_SUB(malloc_increase, sub);
-	    }
-	    else {
-		malloc_increase = 0;
+	if (sub != 0) {
+	  retry_sub:;
+	    {
+		size_t old_increase = malloc_increase;
+		size_t new_increase = old_increase > sub ? old_increase - sub : 0;
+		if (ATOMIC_SIZE_CAS(malloc_increase, old_increase, new_increase) != old_increase) goto retry_sub;
 	    }
 	}
     }

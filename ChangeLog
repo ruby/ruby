@@ -1,3 +1,7 @@
+Tue Oct 29 16:49:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): decrease it more carefully.
+
 Tue Oct 29 16:24:52 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_page_resurrect): return a page in tomb heap even if
