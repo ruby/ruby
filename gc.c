@@ -936,17 +936,11 @@ heap_page_resurrect(rb_objspace_t *objspace)
 {
     struct heap_page *page;
 
-    if (heap_tomb->pages) {
-	page = heap_tomb->pages;
-	while (page) {
-	    if (page->freelist) {
-		heap_unlink_page(objspace, heap_tomb, page);
-		return page;
-	    }
-	    page = page->next;
-	}
+    if ((page = heap_tomb->pages) != NULL) {
+	heap_unlink_page(objspace, heap_tomb, page);
+	return page;
     }
-    return 0;
+    return NULL;
 }
 
 static struct heap_page *

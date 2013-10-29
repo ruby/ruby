@@ -1,3 +1,8 @@
+Tue Oct 29 16:24:52 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_page_resurrect): return a page in tomb heap even if
+	  freelist is NULL.
+
 Tue Oct 29 15:46:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_SIZE_CAS): new macro, compare and swap size_t.
