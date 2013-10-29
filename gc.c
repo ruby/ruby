@@ -18,6 +18,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/debug.h"
+#include "thread_native.h"
 #include "eval_intern.h"
 #include "vm_core.h"
 #include "internal.h"
@@ -170,10 +171,13 @@ static ruby_gc_params_t initial_params = {
 #endif
 
 #ifndef GC_PROFILE_MORE_DETAIL
-#define GC_PROFILE_MORE_DETAIL 0
+#define GC_PROFILE_MORE_DETAIL 1
 #endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP   1
+#endif
+#ifndef GC_ENABLE_PARALLEL_SWEEP
+#define GC_ENABLE_PARALLEL_SWEEP 1
 #endif
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
@@ -443,6 +447,14 @@ typedef struct rb_objspace {
 #endif
     } rgengc;
 #endif /* USE_RGENGC */
+
+#if GC_ENABLE_PARALLEL_SWEEP
+    pthread_t sweep_thread;
+    rb_nativethread_lock_t freelist_lock;
+    rb_nativethread_lock_t ps_lock;
+    pthread_cond_t ps_cond;
+    struct heap_page *sweep_worker_page;
+#endif
 } rb_objspace_t;
 
 
@@ -472,6 +484,19 @@ struct heap_page {
     struct heap_page *prev;
     struct heap_page *free_next;
     rb_heap_t *heap;
+
+    struct {
+	size_t freed_num;
+	size_t empty_num;
+	size_t final_num;
+	RVALUE *free_list;
+	RVALUE *fina_list;
+#if GC_ENABLE_PARALLEL_SWEEP
+	size_t finished;
+	rb_nativethread_lock_t lock;
+	pthread_cond_t cond;
+#endif
+    } sweep;
 
     bits_t mark_bits[HEAP_BITMAP_LIMIT];
 #if USE_RGENGC
@@ -905,6 +930,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     heap_pages_sorted[hi] = page;
 
     heap_pages_used++;
+
     assert(heap_pages_used <= heap_pages_length);
 
     /* adjust obj_limit (object number available in this page) */
@@ -928,6 +954,11 @@ heap_page_allocate(rb_objspace_t *objspace)
 	heap_page_add_freeobj(objspace, page, (VALUE)p);
     }
 
+#if GC_ENABLE_PARALLEL_SWEEP
+    rb_nativethread_lock_initialize(&page->sweep.lock);
+    pthread_cond_init(&page->sweep.cond, 0);
+#endif
+
     return page;
 }
 
@@ -943,6 +974,7 @@ heap_page_resurrect(rb_objspace_t *objspace)
 		heap_unlink_page(objspace, heap_tomb, page);
 		return page;
 	    }
+	    fprintf(stderr, "heap_page_resurrect: failed: %p, f: %p\n", page, page->freelist);
 	    page = page->next;
 	}
     }
@@ -963,6 +995,16 @@ heap_page_create(rb_objspace_t *objspace)
     return page;
 }
 
+#if 1 /* for debug */
+static const char *
+heap_name(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    if (heap == heap_eden) return "eden";
+    if (heap == heap_tomb) return "tomb";
+    return "unkn";
+}
+#endif
+
 static void
 heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
@@ -972,6 +1014,8 @@ heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
     heap->pages = page;
     heap->used++;
     heap->limit += page->limit;
+
+    if (0) fprintf(stderr, "heap_add_page (%s <-%p), freelist: %p\n", heap_name(objspace, heap), page, page->freelist);
 }
 
 static void
@@ -2367,11 +2411,11 @@ gc_setup_mark_bits(struct heap_page *page)
 }
 
 static inline void
-gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
+gc_page_sweep1(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
     int i;
     size_t empty_num = 0, freed_num = 0, final_num = 0;
-    RVALUE *p, *pend,*offset;
+    RVALUE *p, *pend, *offset, *free_list = 0, *fina_list;
     int deferred;
     bits_t *bits, bitset;
 
@@ -2402,14 +2446,16 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 				p->as.free.flags = T_ZOMBIE;
 				RDATA(p)->dfree = 0;
 			    }
-			    p->as.free.next = heap_pages_deferred_final;
-			    heap_pages_deferred_final = p;
+			    p->as.free.next = fina_list;
+			    fina_list = p;
 			    assert(BUILTIN_TYPE(p) == T_ZOMBIE);
 			    final_num++;
 			}
 			else {
 			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
+			    p->as.free.flags = 0;
+			    p->as.free.next = free_list;
+			    free_list = p;
 			    rgengc_report(3, objspace, "page_sweep: %p (%s) is added to freelist\n", p, obj_type_name((VALUE)p));
 			    freed_num++;
 			}
@@ -2423,8 +2469,54 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	    } while (bitset);
 	}
     }
+    if (0) fprintf(stderr, "sweep1: page: %p, freelist: %p\n", sweep_page, sweep_page->freelist);
+    sweep_page->sweep.freed_num = freed_num;
+    sweep_page->sweep.empty_num = empty_num;
+    sweep_page->sweep.final_num = final_num;
+    sweep_page->sweep.free_list = free_list;
+    sweep_page->sweep.fina_list = fina_list;
 
     gc_setup_mark_bits(sweep_page);
+}
+
+static inline void
+gc_page_sweep2(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
+{
+    size_t freed_num = sweep_page->sweep.freed_num;
+    size_t empty_num = sweep_page->sweep.empty_num;
+    size_t final_num = sweep_page->sweep.final_num;
+
+    if (sweep_page->sweep.free_list) {
+	if (sweep_page->freelist) {
+	    /* concatenate freelist */
+	    RVALUE *p = sweep_page->freelist;
+	    while (p->as.free.next) {
+		p = p->as.free.next;
+	    }
+	    p->as.free.next = sweep_page->sweep.free_list;
+	}
+	else {
+	    sweep_page->freelist = sweep_page->sweep.free_list;
+	}
+    }
+
+    if (sweep_page->sweep.fina_list) {
+	RVALUE *p = sweep_page->sweep.fina_list;
+
+	while (p) {
+	    RVALUE *next_p = p->as.free.next;
+	    p->as.free.next = heap_pages_deferred_final;
+	    heap_pages_deferred_final = p;
+	    p = next_p;
+	}
+
+	if (!finalizing) {
+	    rb_thread_t *th = GET_THREAD();
+	    if (th) {
+		gc_finalize_deferred_register();
+	    }
+	}
+    }
 
 #if GC_PROFILE_MORE_DETAIL
     if (objspace->profile.run) {
@@ -2452,14 +2544,16 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     heap_pages_final_num += final_num;
     sweep_page->final_num = final_num;
 
-    if (heap_pages_deferred_final && !finalizing) {
-        rb_thread_t *th = GET_THREAD();
-        if (th) {
-	    gc_finalize_deferred_register();
-        }
-    }
+    if (0) fprintf(stderr, "sweep2: page: %p, freelist: %p\n", sweep_page, sweep_page->freelist);
 
     rgengc_report(1, objspace, "page_sweep: end.\n");
+}
+
+static inline void
+gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
+{
+    gc_page_sweep1(objspace, heap, sweep_page);
+    gc_page_sweep2(objspace, heap, sweep_page);
 }
 
 /* allocate additional minimum page to work */
@@ -2476,10 +2570,47 @@ gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
+#if GC_ENABLE_PARALLEL_SWEEP
+void *
+sweep_worker(void *ptr)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)ptr;
+
+    while (1) {
+	struct heap_page *page;
+
+	rb_nativethread_lock_lock(&objspace->ps_lock);
+	{
+	    while (objspace->sweep_worker_page == NULL) {
+		pthread_cond_wait(&objspace->ps_cond, &objspace->ps_lock);
+	    }
+	    page = objspace->sweep_worker_page;
+	    objspace->sweep_worker_page = NULL;
+	}
+	rb_nativethread_lock_unlock(&objspace->ps_lock);
+
+	while (page) {
+	    struct heap_page *next_page;
+
+	    rb_nativethread_lock_lock(&page->sweep.lock);
+	    {
+		next_page = page->next;
+		if (page->sweep.finished == 0) {
+		    gc_page_sweep1(objspace, heap_eden, page);
+		    page->sweep.finished = 1;
+		    pthread_cond_signal(&page->sweep.cond);
+		}
+	    }
+	    rb_nativethread_lock_unlock(&page->sweep.lock);
+	    page = next_page;
+	}
+    }
+}
+#endif /* GC_ENABLE_PARALLEL_SWEEP */
+
 static void
 gc_before_heap_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    heap->sweep_pages = heap->pages;
     heap->free_pages = NULL;
 
     if (heap->using_page) {
@@ -2491,6 +2622,40 @@ gc_before_heap_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
 	heap->using_page = NULL;
     }
     heap->freelist = NULL;
+
+    heap->sweep_pages = heap->pages;
+
+#if GC_ENABLE_PARALLEL_SWEEP
+    {
+	struct heap_page *start_page = heap->sweep_pages;
+
+	/* parepare for minimum (`n') pages */
+	int n = 2;
+	while (start_page && n-- > 0) {
+	    gc_page_sweep1(objspace, heap, start_page);
+	    start_page->sweep.finished = 1;
+	    start_page = start_page->next;
+	}
+
+	/* start parallel sweep */
+	rb_nativethread_lock_lock(&objspace->ps_lock);
+	{
+	    if (objspace->sweep_thread == 0) {
+		/* initialize sweeping threads */
+		rb_nativethread_lock_initialize(&objspace->freelist_lock);
+		rb_nativethread_lock_initialize(&objspace->ps_lock);
+		pthread_cond_init(&objspace->ps_cond, 0);
+
+		if (pthread_create(&objspace->sweep_thread, 0, sweep_worker, objspace) != 0) {
+		    rb_bug("parallel_sweep: pthread_create error.");
+		}
+	    }
+	    objspace->sweep_worker_page = start_page;
+	    pthread_cond_signal(&objspace->ps_cond);
+	}
+	rb_nativethread_lock_unlock(&objspace->ps_lock);
+    }
+#endif
 }
 
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
@@ -2512,7 +2677,7 @@ gc_before_sweep(rb_objspace_t *objspace)
     heap_pages_swept_num = 0;
     total_limit_num = objspace_limit_num(objspace);
 
-    heap_pages_min_free_slots = (size_t)(total_limit_num * 0.20);
+    heap_pages_min_free_slots = (size_t)(total_limit_num * 0.40);
     if (heap_pages_min_free_slots < initial_heap_min_free_slots) {
 	heap_pages_min_free_slots = initial_heap_min_free_slots;
     }
@@ -2522,9 +2687,6 @@ gc_before_sweep(rb_objspace_t *objspace)
     }
     if (0) fprintf(stderr, "heap_pages_min_free_slots: %d, heap_pages_max_free_slots: %d\n",
 		   (int)heap_pages_min_free_slots, (int)heap_pages_max_free_slots);
-
-    heap = heap_eden;
-    gc_before_heap_sweep(objspace, heap);
 
     gc_prof_set_malloc_info(objspace);
 
@@ -2558,6 +2720,9 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
     }
+
+    heap = heap_eden;
+    gc_before_heap_sweep(objspace, heap);
 }
 
 static void
@@ -2567,6 +2732,7 @@ gc_after_sweep(rb_objspace_t *objspace)
 
     rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_num: %d, min_free_slots: %d\n",
 		  (int)heap->limit, (int)heap_pages_swept_num, (int)heap_pages_min_free_slots);
+
 
     if (heap_pages_swept_num < heap_pages_min_free_slots) {
 	heap_set_increment(objspace);
@@ -2584,11 +2750,16 @@ gc_after_sweep(rb_objspace_t *objspace)
 
     heap_pages_free_unused_pages(objspace);
 
+    if (0) fprintf(stderr, "heap_eden->used: %d, heap_tomb->used: %d, length: %d, used: %d, increment: %d\n",
+		   (int)heap_eden->used, (int)heap_tomb->used,
+		   (int)heap_pages_length, (int)heap_pages_used, (int)heap_pages_increment);
     /* if heap_pages has unused pages, then assign them to increment */
     if (heap_pages_increment < heap_tomb->used) {
 	heap_pages_increment = heap_tomb->used;
-	heap_pages_expand_sorted(objspace);
     }
+    if (0) fprintf(stderr, "heap_eden->used: %d, heap_tomb->used: %d, length: %d, used: %d, increment: %d\n",
+		   (int)heap_eden->used, (int)heap_tomb->used,
+		   (int)heap_pages_length, (int)heap_pages_used, (int)heap_pages_increment);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END, 0 /* TODO: pass minor/immediate flag? */);
 }
@@ -2608,7 +2779,17 @@ gc_heap_lazy_sweep(rb_objspace_t *objspace, rb_heap_t *heap)
     while (page) {
 	heap->sweep_pages = next = page->next;
 
+#if GC_ENABLE_PARALLEL_SWEEP
+	rb_nativethread_lock_lock(&page->sweep.lock);
+	while (page->sweep.finished == 0) {
+	    pthread_cond_wait(&page->sweep.cond, &page->sweep.lock);
+	}
+	rb_nativethread_lock_unlock(&page->sweep.lock);
+	gc_page_sweep2(objspace, heap, page);
+	page->sweep.finished = 0;
+#else
 	gc_page_sweep(objspace, heap, page);
+#endif
 
 	if (!next) gc_after_sweep(objspace);
 
@@ -5028,9 +5209,11 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
     }
     else {
 	size_t sub = old_size - new_size;
-	if (sub > 0) {
-	    if (malloc_increase > sub) {
-		ATOMIC_SIZE_SUB(malloc_increase, sub);
+
+	if (sub != 0) {
+	    size_t increase = malloc_increase;
+	    if (increase > sub) {
+		malloc_increase = increase - sub;
 	    }
 	    else {
 		malloc_increase = 0;
