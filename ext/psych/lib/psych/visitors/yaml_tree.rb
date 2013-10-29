@@ -264,13 +264,6 @@ module Psych
         @emitter.scalar o._dump, nil, '!ruby/object:BigDecimal', false, false, Nodes::Scalar::ANY
       end
 
-      def binary? string
-        (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
-          string.index("\x00") ||
-          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3
-      end
-      private :binary?
-
       def visit_String o
         plain = true
         quote = true
@@ -380,6 +373,17 @@ module Psych
       end
 
       private
+      # FIXME: Remove the index and count checks in Psych 3.0
+      NULL         = "\x00"
+      BINARY_RANGE = "\x00-\x7F"
+      WS_RANGE     = "^ -~\t\r\n"
+
+      def binary? string
+        (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
+          string.index(NULL) ||
+          string.count(BINARY_RANGE, WS_RANGE).fdiv(string.length) > 0.3
+      end
+
       def visit_array_subclass o
         tag = "!ruby/array:#{o.class}"
         if o.instance_variables.empty?

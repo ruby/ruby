@@ -1,3 +1,8 @@
+Wed Oct 30 03:25:10 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: make less garbage when
+	  testing if a string is binary.
+
 Wed Oct 30 03:08:24 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: string subclasses should
