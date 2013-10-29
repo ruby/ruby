@@ -1,3 +1,7 @@
+Tue Oct 29 15:46:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): new macro, compare and swap size_t.
+
 Tue Oct 29 12:08:05 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/readline/readline.c (readline_getc): Consider
