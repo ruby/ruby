@@ -166,6 +166,16 @@ class TestGc < Test::Unit::TestCase
     eom
   end
 
+  def test_profiler_total_time
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.start
+    assert_operator(GC::Profiler.total_time, :>, 0)
+  ensure
+    GC::Profiler.disable
+  end
+
   def test_finalizing_main_thread
     assert_in_out_err(%w[--disable-gems], <<-EOS, ["\"finalize\""], [], "[ruby-dev:46647]")
       ObjectSpace.define_finalizer(Thread.main) { p 'finalize' }
