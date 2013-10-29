@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+* Now the default values of keyword arguments can be omitted.  Those
+  "required keyword arguments" need giving explicitly at the call time.
+
 * Added suffixes for integer and float literals: 'r', 'i', and 'ri'.
   * "42r" and "3.14r" are evaluated as Rational(42, 1) and 3.14.rationalize,
     respectively.  But exponential form with 'r' suffix like "6.022e+23r" is
@@ -28,13 +31,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
-* Bignum
+* Array
   * New methods
-    * Fixnum#bit_length
-  * Performance improvement
-    * Use GMP if available.
-      GMP is used only for several operations:
-      multiplication, division, radix conversion, GCD
+    * Array#to_h converts an array of key-value pairs into a Hash.
 
 * Binding
   * New methods
@@ -42,13 +41,22 @@ with all sufficient information, see the ChangeLog file.
     * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
 
-* Fixnum
+* Enumerable
   * New methods
-    * Fixnum#bit_length
+    * Enumerable#to_h converts a list of key-value pairs into a Hash.
 
 * GC
   * added environment variable:
     * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
+
+* Integer
+  * New methods
+    * Fixnum#bit_length
+    * Bignum#bit_length
+  * Bignum performance improvement
+    * Use GMP if available.
+      GMP is used only for several operations:
+      multiplication, division, radix conversion, GCD
 
 * IO
   * extended methods:
@@ -89,6 +97,10 @@ with all sufficient information, see the ChangeLog file.
     * Process.clock_gettime
     * Process.clock_getres
 
+* RbConfig
+  * New constants:
+    * RbConfig::SIZEOF is added to provide the size of C types.
+
 * String
   * New methods:
     * String#scrub and String#scrub! verify and fix invalid byte sequence.
@@ -96,6 +108,9 @@ with all sufficient information, see the ChangeLog file.
     * If invalid: :replace is specified for String#encode, replace
       invalid byte sequence even if the destination encoding equals to
       the source encoding.
+
+* Symbol
+  * All symbols are now frozen.
 
 * pack/unpack (Array/String)
   * Q! and q! directives for long long type if platform has the type.
@@ -167,6 +182,24 @@ with all sufficient information, see the ChangeLog file.
 * open-uri
   * Support multiple fields with same field name (like Set-Cookie).
 
+* rake
+  * Updated to 10.1.0.  Major changes include removal of the class namespace,
+    Rake::DSL to hold the rake DSL methods and removal of support for legacy
+    rake features.
+
+    For a complete list of changes since rake 0.9.6 see:
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_1_0_rdoc.html
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
+
+* RDoc
+  * Updated to 4.1.0.preview.1.  Major enhancements include a modified default
+    template and accessibility enhancements.
+
+    For a list of minor enhancements and bug fixes see:
+    https://github.com/rdoc/rdoc/blob/v4.1.0.preview.1/History.rdoc
+
 * Resolv
   * New methods:
     * Resolv::DNS.fetch_resource
@@ -191,9 +224,8 @@ with all sufficient information, see the ChangeLog file.
     Rinda::RingFinger for details.
 
 * RubyGems
-  * Updated to 2.1.3.  See
-    http://rubygems.rubyforge.org/rubygems-update/History_txt.html#label-2.1.3+%2F+2013-09-12
-    for release notes.
+  * Updated to 2.2.0.preview.1  For a list of enhancements and bug fixes see:
+    https://github.com/rubygems/rubygems/blob/v2.2.0.preview.1/History.txt
 
 * Set
   * New methods:
@@ -215,6 +247,18 @@ with all sufficient information, see the ChangeLog file.
   * New methods:
     * Tempfile.create
 
+* Timeout
+  * No longer an exception to terminate the given block can be rescued
+    inside the block, by default, unless the exception class is given
+    explicitly.
+
+* TSort
+  * New methods:
+    * TSort.tsort
+    * TSort.tsort_each
+    * TSort.strongly_connected_components
+    * TSort.each_strongly_connected_component
+    * TSort.each_strongly_connected_component_from
 
 * WEBrick
   * The body of a response may now be a StringIO or other IO-like that responds
@@ -229,6 +273,19 @@ with all sufficient information, see the ChangeLog file.
       HTTP client options instead of XMLRPC::Client#http.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
+
+* objspace
+  * new method:
+    * ObjectSpace.trace_object_allocations
+    * ObjectSpace.trace_object_allocations_start
+    * ObjectSpace.trace_object_allocations_stop
+    * ObjectSpace.trace_object_allocations_clear
+    * ObjectSpace.allocation_sourcefile
+    * ObjectSpace.allocation_sourceline
+    * ObjectSpace.allocation_class_path
+    * ObjectSpace.allocation_method_id
+    * ObjectSpace.allocation_generation
+    * ObjectSpace.reachable_objects_from_root
 
 * Set
   * incompatible changes:

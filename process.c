@@ -1081,7 +1081,7 @@ before_exec_non_async_signal_safe(void)
 {
     if (!forked_child) {
 	/*
-	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
+	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUP
 	 * if the process have multiple threads. Therefore we have to kill
 	 * internal threads temporary. [ruby-core:10583]
 	 * This is also true on Haiku. It returns Errno::EPERM against exec()
@@ -3389,10 +3389,6 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     }
     else {
 	if (pipe_nocrash(ep, fds)) return -1;
-	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
-	    preserving_errno((close(ep[0]), close(ep[1])));
-	    return -1;
-	}
         pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
         if (pid < 0)
             return pid;
@@ -6634,9 +6630,9 @@ get_clk_tck(void)
 
 /*
  *  call-seq:
- *     Process.times   -> aStructTms
+ *     Process.times   -> aProcessTms
  *
- *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>)
+ *  Returns a <code>Tms</code> structure (see <code>Process::Tms</code>)
  *  that contains user and system CPU times for this process,
  *  and also for children processes.
  *
@@ -7619,7 +7615,8 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-    rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);
+    rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
+    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms); /* for the backward compatibility */
 #endif
 
     SAVED_USER_ID = geteuid();

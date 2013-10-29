@@ -49,13 +49,13 @@
 #     end
 #
 #     def run
-#       lastPrice = nil
+#       last_price = nil
 #       loop do
 #         price = Price.fetch(@symbol)
 #         print "Current price: #{price}\n"
-#         if price != lastPrice
+#         if price != last_price
 #           changed                 # notify observers
-#           lastPrice = price
+#           last_price = price
 #           notify_observers(Time.now, price)
 #         end
 #         sleep 1
@@ -64,7 +64,7 @@
 #   end
 #
 #   class Price           ### A mock class to fetch a stock price (60 - 140).
-#     def Price.fetch(symbol)
+#     def self.fetch(symbol)
 #       60 + rand(80)
 #     end
 #   end

@@ -55,7 +55,7 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 {
     rb_atomic_t old = *ptr;
     if (old == cmp) {
-      *ptr = newval;
+	*ptr = newval;
     }
     return old;
 }
@@ -453,6 +453,8 @@ static struct {
 
 #ifdef __dietlibc__
 #define sighandler_t sh_t
+#else
+#define sighandler_t ruby_sighandler_t
 #endif
 
 typedef RETSIGTYPE (*sighandler_t)(int);

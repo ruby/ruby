@@ -105,6 +105,10 @@ rsock_getifaddrs(void)
     if (ret == -1)
         rb_sys_fail("getifaddrs");
 
+    if (!ifaddrs) {
+	return rb_ary_new();
+    }
+
     numifaddrs = 0;
     for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next)
         numifaddrs++;

@@ -449,10 +449,10 @@ check_rounding_mode(VALUE const v)
  * When computation continues, results are as follows:
  *
  * EXCEPTION_NaN:: NaN
- * EXCEPTION_INFINITY:: +infinity or -infinity
+ * EXCEPTION_INFINITY:: +Infinity or -Infinity
  * EXCEPTION_UNDERFLOW:: 0
- * EXCEPTION_OVERFLOW:: +infinity or -infinity
- * EXCEPTION_ZERODIVIDE:: +infinity or -infinity
+ * EXCEPTION_OVERFLOW:: +Infinity or -Infinity
+ * EXCEPTION_ZERODIVIDE:: +Infinity or -Infinity
  *
  * One value of the mode parameter controls the rounding of numeric values:
  * BigDecimal::ROUND_MODE. The values it can take are:
@@ -598,7 +598,7 @@ BigDecimal_IsNaN(VALUE self)
 }
 
 /* Returns nil, -1, or +1 depending on whether the value is finite,
- * -infinity, or +infinity.
+ * -Infinity, or +Infinity.
  */
 static VALUE
 BigDecimal_IsInfinite(VALUE self)
@@ -2552,8 +2552,8 @@ BigDecimal_limit(int argc, VALUE *argv, VALUE self)
  * BigDecimal::SIGN_NaN:: value is Not a Number
  * BigDecimal::SIGN_POSITIVE_ZERO:: value is +0
  * BigDecimal::SIGN_NEGATIVE_ZERO:: value is -0
- * BigDecimal::SIGN_POSITIVE_INFINITE:: value is +infinity
- * BigDecimal::SIGN_NEGATIVE_INFINITE:: value is -infinity
+ * BigDecimal::SIGN_POSITIVE_INFINITE:: value is +Infinity
+ * BigDecimal::SIGN_NEGATIVE_INFINITE:: value is -Infinity
  * BigDecimal::SIGN_POSITIVE_FINITE:: value is positive
  * BigDecimal::SIGN_NEGATIVE_FINITE:: value is negative
  */
@@ -2957,7 +2957,7 @@ get_vp_value:
  * For example, try:
  *
  *   sum = 0
- *   for i in (1..10000)
+ *   10_000.times do
  *     sum = sum + 0.0001
  *   end
  *   print sum #=> 0.9999999999999062
@@ -2967,7 +2967,7 @@ get_vp_value:
  *   require 'bigdecimal'
  *
  *   sum = BigDecimal.new("0")
- *   for i in (1..10000)
+ *   10_000.times do
  *     sum = sum + BigDecimal.new("0.0001")
  *   end
  *   print sum #=> 0.1E1
@@ -2988,8 +2988,8 @@ get_vp_value:
  * BigDecimal sometimes needs to return infinity, for example if you divide
  * a value by zero.
  *
- *	BigDecimal.new("1.0") / BigDecimal.new("0.0")  #=> infinity
- *	BigDecimal.new("-1.0") / BigDecimal.new("0.0")  #=> -infinity
+ *	BigDecimal.new("1.0") / BigDecimal.new("0.0")  #=> Infinity
+ *	BigDecimal.new("-1.0") / BigDecimal.new("0.0")  #=> -Infinity
  *
  * You can represent infinite numbers to BigDecimal using the strings
  * <code>'Infinity'</code>, <code>'+Infinity'</code> and
@@ -3009,8 +3009,8 @@ get_vp_value:
  * NaN is never considered to be the same as any other value, even NaN itself:
  *
  *	n = BigDecimal.new('NaN')
- *	n == 0.0 #=> nil
- *	n == n #=> nil
+ *	n == 0.0 #=> false
+ *	n == n #=> false
  *
  * === Positive and negative zero
  *
@@ -3152,10 +3152,10 @@ Init_bigdecimal(void)
      * See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "ROUND_HALF_DOWN", INT2FIX(VP_ROUND_HALF_DOWN));
-    /* 5: Round towards +infinity. See BigDecimal.mode. */
+    /* 5: Round towards +Infinity. See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_CEILING", INT2FIX(VP_ROUND_CEIL));
 
-    /* 6: Round towards -infinity. See BigDecimal.mode. */
+    /* 6: Round towards -Infinity. See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_FLOOR", INT2FIX(VP_ROUND_FLOOR));
 
     /* 7: Round towards the even neighbor. See BigDecimal.mode. */

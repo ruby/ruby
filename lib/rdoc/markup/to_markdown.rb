@@ -147,15 +147,17 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
 
   def handle_rdoc_link url
     case url
-    when /\Ardoc-ref:/ then
+    when /^rdoc-ref:/ then
       $'
-    when /\Ardoc-label:footmark-(\d+)/ then
+    when /^rdoc-label:footmark-(\d+)/ then
       "[^#{$1}]:"
-    when /\Ardoc-label:foottext-(\d+)/ then
+    when /^rdoc-label:foottext-(\d+)/ then
       "[^#{$1}]"
-    when /\Ardoc-label:label-/ then
+    when /^rdoc-label:label-/ then
       gen_url url, $'
-    when /\Ardoc-[a-z]+:/ then
+    when /^rdoc-image:/ then
+      "![](#{$'})"
+    when /^rdoc-[a-z]+:/ then
       $'
     end
   end

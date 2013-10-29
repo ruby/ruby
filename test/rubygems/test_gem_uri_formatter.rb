@@ -16,5 +16,13 @@ class TestGemUriFormatter < Gem::TestCase
       Gem::UriFormatter.new('example/').normalize
   end
 
+  def test_escape
+    assert_equal 'a%40b%5Cc', Gem::UriFormatter.new('a@b\c').escape
+  end
+
+  def test_unescape
+    assert_equal 'a@b\c', Gem::UriFormatter.new('a%40b%5Cc').unescape
+  end
+
 end
 

@@ -39,6 +39,7 @@
 #include <share.h>
 #include <shlobj.h>
 #include <mbstring.h>
+#include <shlwapi.h>
 #if _MSC_VER >= 1400
 #include <crtdbg.h>
 #include <rtcapi.h>
@@ -604,6 +605,7 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
+#define conlist_disabled ((st_table *)-1)
 static char *envarea;
 static char *uenvarea;
 
@@ -629,7 +631,7 @@ free_conlist(st_data_t key, st_data_t val, st_data_t arg)
 static void
 constat_delete(HANDLE h)
 {
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_data_t key = (st_data_t)h, val;
 	st_delete(conlist, &key, &val);
 	xfree((struct constat *)val);
@@ -649,7 +651,7 @@ exit_handler(void)
 	DeleteCriticalSection(&select_mutex);
 	NtSocketsInitialized = 0;
     }
-    if (conlist) {
+    if (conlist && conlist != conlist_disabled) {
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
@@ -1204,7 +1206,7 @@ static char *wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 /* License: Artistic or GPL */
-rb_pid_t
+static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
     char fbuf[MAXPATHLEN];
@@ -1343,7 +1345,7 @@ rb_w32_uspawn(int mode, const char *cmd, const char *prog)
 }
 
 /* License: Artistic or GPL */
-rb_pid_t
+static rb_pid_t
 w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UINT cp)
 {
     int c_switch = 0;
@@ -5832,13 +5834,41 @@ rb_w32_pipe(int fds[2])
 }
 
 /* License: Ruby's */
+static int
+console_emulator_p(void)
+{
+#ifdef _WIN32_WCE
+    return FALSE;
+#else
+    const void *const func = WriteConsoleW;
+    HMODULE k;
+    MEMORY_BASIC_INFORMATION m;
+
+    memset(&m, 0, sizeof(m));
+    if (!VirtualQuery(func, &m, sizeof(m))) {
+	return FALSE;
+    }
+    k = GetModuleHandle("kernel32.dll");
+    if (!k) return FALSE;
+    return (HMODULE)m.AllocationBase != k;
+#endif
+}
+
+/* License: Ruby's */
 static struct constat *
 constat_handle(HANDLE h)
 {
     st_data_t data;
     struct constat *p;
     if (!conlist) {
+	if (console_emulator_p()) {
+	    conlist = conlist_disabled;
+	    return NULL;
+	}
 	conlist = st_init_numtable();
+    }
+    else if (conlist == conlist_disabled) {
+	return NULL;
     }
     if (st_lookup(conlist, (st_data_t)h, &data)) {
 	p = (struct constat *)data;
@@ -6483,6 +6513,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	return -1L;
 
     s = constat_handle(handle);
+    if (!s) return -1L;
     encindex = ENCODING_GET(str);
     switch (encindex) {
       default:
@@ -6496,6 +6527,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	/* assume UTF-8 */
       case ENCINDEX_UTF_8:
 	ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);
+	if (!ptr) return -1L;
 	break;
       case ENCINDEX_UTF_16LE:
 	ptr = (const WCHAR *)RSTRING_PTR(str);

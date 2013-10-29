@@ -52,7 +52,10 @@
 char *getenv();
 #endif
 
-#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+#ifndef DISABLE_RUBYGEMS
+# define DISABLE_RUBYGEMS 0
+#endif
+#if DISABLE_RUBYGEMS
 #define DEFAULT_RUBYGEMS_ENABLED "disabled"
 #else
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
@@ -114,7 +117,7 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
-#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+#if DISABLE_RUBYGEMS
     opt->disable |= DISABLE_BIT(gems);
 #endif
     return opt;
@@ -558,7 +561,6 @@ require_libraries(VALUE *req_list)
     int prev_parse_in_eval = th->parse_in_eval;
     th->parse_in_eval = 0;
 
-    Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
@@ -1445,12 +1447,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 			rb_enc_associate(rb_str_dup(RARRAY_AREF(load_path, i)), lenc));
 	}
     }
+    Init_ext();		/* load statically linked extensions before rubygems */
     if (!(opt->disable & DISABLE_BIT(gems))) {
-#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
-	rb_require("rubygems");
-#else
 	rb_define_module("Gem");
-#endif
     }
     ruby_init_prelude();
     ruby_set_argv(argc, argv);

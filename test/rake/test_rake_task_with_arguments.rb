@@ -33,21 +33,11 @@ class TestRakeTaskWithArguments < Rake::TestCase
     assert_equal ["pre"], t.prerequisites
   end
 
-  def test_name_args_and_explicit_needs
-    ignore_deprecations do
-      t = task(:t, :x, :y, :needs => [:pre])
-      assert_equal "t", t.name
-      assert_equal [:x, :y], t.arg_names
-      assert_equal ["pre"], t.prerequisites
-    end
-  end
-
-  def test_illegal_keys_in_task_name_hash
-    ignore_deprecations do
-      assert_raises RuntimeError do
-        task(:t, :x, :y => 1, :needs => [:pre])
-      end
-    end
+  def test_name_args_and_prereqs
+    t = task(:t, [:x, :y] => [:pre])
+    assert_equal "t", t.name
+    assert_equal [:x, :y], t.arg_names
+    assert_equal ["pre"], t.prerequisites
   end
 
   def test_arg_list_is_empty_if_no_args_given
@@ -91,7 +81,7 @@ class TestRakeTaskWithArguments < Rake::TestCase
 
   def test_arguments_are_passed_to_block
     t = task(:t, :a, :b) { |tt, args|
-      assert_equal( { :a => 1, :b => 2 }, args.to_hash )
+      assert_equal({ :a => 1, :b => 2 }, args.to_hash)
     }
     t.invoke(1, 2)
   end
@@ -131,7 +121,7 @@ class TestRakeTaskWithArguments < Rake::TestCase
     assert_equal "T", t.comment
     assert_equal "[a,b]", t.arg_description
     assert_equal "tt[a,b]", t.name_with_args
-    assert_equal [:a, :b],t.arg_names
+    assert_equal [:a, :b], t.arg_names
   end
 
   def test_named_args_are_passed_to_prereqs

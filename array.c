@@ -109,6 +109,7 @@ ary_memcpy(VALUE ary, long beg, long argc, const VALUE *argv)
     (assert(ARY_EMBED_P(a)), \
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
 	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
+#define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), RARRAY(a)->as.heap.aux.capa * sizeof(VALUE))
 
 #define ARY_OWNS_HEAP_P(a) (!FL_TEST((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
 #define FL_SET_EMBED(a) do { \
@@ -210,19 +211,21 @@ ary_resize_capa(VALUE ary, long capacity)
             ARY_SET_HEAP_LEN(ary, len);
         }
         else {
-            REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, (capacity));
+	    SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, RARRAY(ary)->as.heap.aux.capa);
         }
         ARY_SET_CAPA(ary, (capacity));
     }
     else {
         if (!ARY_EMBED_P(ary)) {
             long len = RARRAY_LEN(ary);
-	    const VALUE *ptr = RARRAY_RAWPTR(ary);
-            if (len > capacity) len = capacity;
+	    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+	    size_t size = ARY_HEAP_SIZE(ary);
+
+	    if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
-            xfree((VALUE *)ptr);
+	    ruby_sized_xfree((VALUE *)ptr, size);
         }
     }
 }
@@ -313,7 +316,7 @@ rb_ary_modify(VALUE ary)
 {
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-        long len = RARRAY_LEN(ary);
+	long shared_len, len = RARRAY_LEN(ary);
 	VALUE shared = ARY_SHARED(ary);
         if (len <= RARRAY_EMBED_LEN_MAX) {
 	    const VALUE *ptr = ARY_HEAP_PTR(ary);
@@ -323,11 +326,11 @@ rb_ary_modify(VALUE ary)
             rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
-	else if (ARY_SHARED_OCCUPIED(shared) && len > (RARRAY_LEN(shared)>>1)) {
-	    long shift = RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared);
+	else if (ARY_SHARED_OCCUPIED(shared) && len > ((shared_len = RARRAY_LEN(shared))>>1)) {
+	    long shift = RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared);
 	    FL_UNSET_SHARED(ary);
-	    ARY_SET_PTR(ary, RARRAY_RAWPTR(shared));
-	    ARY_SET_CAPA(ary, RARRAY_LEN(shared));
+	    ARY_SET_PTR(ary, RARRAY_CONST_PTR(shared));
+	    ARY_SET_CAPA(ary, shared_len);
 	    RARRAY_PTR_USE(ary, ptr, {
 		MEMMOVE(ptr, ptr+shift, VALUE, len);
 	    });
@@ -336,7 +339,7 @@ rb_ary_modify(VALUE ary)
 	}
         else {
             VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, RARRAY_RAWPTR(ary), VALUE, len);
+            MEMCPY(ptr, RARRAY_CONST_PTR(ary), VALUE, len);
             rb_ary_unshare(ary);
             ARY_SET_CAPA(ary, len);
             ARY_SET_PTR(ary, ptr);
@@ -354,7 +357,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
 	    if (ARY_SHARED_OCCUPIED(shared)) {
-		if (RARRAY_RAWPTR(ary) - RARRAY_RAWPTR(shared) + new_len <= RARRAY_LEN(shared)) {
+		if (RARRAY_CONST_PTR(ary) - RARRAY_CONST_PTR(shared) + new_len <= RARRAY_LEN(shared)) {
 		    rb_ary_modify_check(ary);
 		}
 		else {
@@ -533,7 +536,7 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	xfree((void *)ARY_HEAP_PTR(ary));
+	ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
     }
 }
 
@@ -573,12 +576,13 @@ ary_make_shared(VALUE ary)
 	return ary;
     }
     else {
+	long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
 	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY); /* keep shared ary as shady */
         FL_UNSET_EMBED(shared);
 
-        ARY_SET_LEN((VALUE)shared, ARY_CAPA(ary));
-	ARY_SET_PTR((VALUE)shared, RARRAY_RAWPTR(ary));
-	ary_mem_clear((VALUE)shared, RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
+	ARY_SET_LEN((VALUE)shared, capa);
+	ARY_SET_PTR((VALUE)shared, RARRAY_CONST_PTR(ary));
+	ary_mem_clear((VALUE)shared, len, capa - len);
 	FL_SET_SHARED_ROOT(shared);
 	ARY_SET_SHARED_NUM((VALUE)shared, 1);
 	FL_SET_SHARED(ary);
@@ -595,7 +599,7 @@ ary_make_substitution(VALUE ary)
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
 	VALUE subst = rb_ary_new2(len);
-	ary_memcpy(subst, 0, len, RARRAY_RAWPTR(ary));
+	ary_memcpy(subst, 0, len, RARRAY_CONST_PTR(ary));
         ARY_SET_EMBED_LEN(subst, len);
         return subst;
     }
@@ -711,8 +715,8 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 
     rb_ary_modify(ary);
     if (argc == 0) {
-	if (ARY_OWNS_HEAP_P(ary) && RARRAY_RAWPTR(ary) != 0) {
-	    xfree((void *)RARRAY_RAWPTR(ary));
+	if (ARY_OWNS_HEAP_P(ary) && RARRAY_CONST_PTR(ary) != 0) {
+	    ruby_sized_xfree((void *)RARRAY_CONST_PTR(ary), ARY_HEAP_SIZE(ary));
 	}
         rb_ary_unshare_safe(ary);
         FL_SET_EMBED(ary);
@@ -817,7 +821,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 
     if (len <= RARRAY_EMBED_LEN_MAX) {
         VALUE result = ary_alloc(klass);
-	ary_memcpy(result, 0, len, RARRAY_RAWPTR(ary) + offset);
+	ary_memcpy(result, 0, len, RARRAY_CONST_PTR(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
         return result;
     }
@@ -826,7 +830,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         FL_UNSET_EMBED(result);
 
         shared = ary_make_shared(ary);
-        ARY_SET_PTR(result, RARRAY_RAWPTR(ary));
+        ARY_SET_PTR(result, RARRAY_CONST_PTR(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
         rb_ary_set_shared(result, shared);
 
@@ -853,18 +857,20 @@ ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags
 {
     VALUE nv;
     long n;
+    long len;
     long offset = 0;
 
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
-    if (n > RARRAY_LEN(ary)) {
-	n = RARRAY_LEN(ary);
+    len = RARRAY_LEN(ary);
+    if (n > len) {
+	n = len;
     }
     else if (n < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
     if (last) {
-	offset = RARRAY_LEN(ary) - n;
+	offset = len - n;
     }
     return ary_make_partial(ary, rb_cArray, offset, n);
 }
@@ -944,14 +950,15 @@ rb_ary_pop(VALUE ary)
 {
     long n;
     rb_ary_modify_check(ary);
-    if (RARRAY_LEN(ary) == 0) return Qnil;
+    n = RARRAY_LEN(ary);
+    if (n == 0) return Qnil;
     if (ARY_OWNS_HEAP_P(ary) &&
-	RARRAY_LEN(ary) * 3 < ARY_CAPA(ary) &&
+	n * 3 < ARY_CAPA(ary) &&
 	ARY_CAPA(ary) > ARY_DEFAULT_SIZE)
     {
-	ary_resize_capa(ary, RARRAY_LEN(ary) * 2);
+	ary_resize_capa(ary, n * 2);
     }
-    n = RARRAY_LEN(ary)-1;
+    --n;
     ARY_SET_LEN(ary, n);
     return RARRAY_AREF(ary, n);
 }
@@ -993,14 +1000,15 @@ VALUE
 rb_ary_shift(VALUE ary)
 {
     VALUE top;
+    long len = RARRAY_LEN(ary);
 
     rb_ary_modify_check(ary);
-    if (RARRAY_LEN(ary) == 0) return Qnil;
+    if (len == 0) return Qnil;
     top = RARRAY_AREF(ary, 0);
     if (!ARY_SHARED_P(ary)) {
-	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
+	if (len < ARY_DEFAULT_SIZE) {
 	    RARRAY_PTR_USE(ary, ptr, {
-		MEMMOVE(ptr, ptr+1, VALUE, RARRAY_LEN(ary)-1);
+		MEMMOVE(ptr, ptr+1, VALUE, len-1);
 	    }); /* WB: no new reference */
             ARY_INCREASE_LEN(ary, -1);
 	    return top;
@@ -1081,8 +1089,8 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	VALUE shared = ARY_SHARED(ary);
 	capa = RARRAY_LEN(shared);
 	if (ARY_SHARED_OCCUPIED(shared) && capa > new_len) {
-	    head = RARRAY_RAWPTR(ary);
-	    sharedp = RARRAY_RAWPTR(shared);
+	    head = RARRAY_CONST_PTR(ary);
+	    sharedp = RARRAY_CONST_PTR(shared);
 	    goto makeroom_if_need;
 	}
     }
@@ -1099,7 +1107,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 	capa = ARY_CAPA(ary);
 	ary_make_shared(ary);
 
-	head = sharedp = RARRAY_RAWPTR(ary);
+	head = sharedp = RARRAY_CONST_PTR(ary);
 	goto makeroom;
       makeroom_if_need:
 	if (head - sharedp < argc) {
@@ -1158,8 +1166,9 @@ rb_ary_unshift(VALUE ary, VALUE item)
 static inline VALUE
 rb_ary_elt(VALUE ary, long offset)
 {
-    if (RARRAY_LEN(ary) == 0) return Qnil;
-    if (offset < 0 || RARRAY_LEN(ary) <= offset) {
+    long len = RARRAY_LEN(ary);
+    if (len == 0) return Qnil;
+    if (offset < 0 || len <= offset) {
 	return Qnil;
     }
     return RARRAY_AREF(ary, offset);
@@ -1178,12 +1187,13 @@ VALUE
 rb_ary_subseq(VALUE ary, long beg, long len)
 {
     VALUE klass;
+    long alen = RARRAY_LEN(ary);
 
-    if (beg > RARRAY_LEN(ary)) return Qnil;
+    if (beg > alen) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
 
-    if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < beg + len) {
-	len = RARRAY_LEN(ary) - beg;
+    if (alen < len || alen < beg + len) {
+	len = alen - beg;
     }
     klass = rb_obj_class(ary);
     if (len == 0) return ary_new(klass, 0);
@@ -1326,8 +1336,9 @@ VALUE
 rb_ary_last(int argc, VALUE *argv, VALUE ary)
 {
     if (argc == 0) {
-	if (RARRAY_LEN(ary) == 0) return Qnil;
-	return RARRAY_AREF(ary, RARRAY_LEN(ary)-1);
+	long len = RARRAY_LEN(ary);
+	if (len == 0) return Qnil;
+	return RARRAY_AREF(ary, len-1);
     }
     else {
 	return ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
@@ -1432,7 +1443,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
     if (rb_block_given_p())
 	rb_warn("given block not used");
     len = RARRAY_LEN(ary);
-    ptr = RARRAY_RAWPTR(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     for (i=0; i<len; i++) {
 	VALUE e = ptr[i];
 	switch (rb_equal_opt(e, val)) {
@@ -1444,7 +1455,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 	    continue;
 	}
 	len = RARRAY_LEN(ary);
-	ptr = RARRAY_RAWPTR(ary);
+	ptr = RARRAY_CONST_PTR(ary);
     }
     return Qnil;
 }
@@ -1485,8 +1496,8 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	while (i--) {
 	    if (RTEST(rb_yield(RARRAY_AREF(ary, i))))
 		return LONG2NUM(i);
-	    if (i > RARRAY_LEN(ary)) {
-		i = RARRAY_LEN(ary);
+	    if (i > (len = RARRAY_LEN(ary))) {
+		i = len;
 	    }
 	}
 	return Qnil;
@@ -1495,7 +1506,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    ptr = RARRAY_RAWPTR(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     while (i--) {
 	VALUE e = ptr[i];
 	switch (rb_equal_opt(e, val)) {
@@ -1509,7 +1520,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 	if (i > (len = RARRAY_LEN(ary))) {
 	    i = len;
 	}
-	ptr = RARRAY_RAWPTR(ary);
+	ptr = RARRAY_CONST_PTR(ary);
     }
     return Qnil;
 }
@@ -1527,17 +1538,19 @@ static void
 rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 {
     long rlen;
+    long olen;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
+    olen = RARRAY_LEN(ary);
     if (beg < 0) {
-	beg += RARRAY_LEN(ary);
+	beg += olen;
 	if (beg < 0) {
 	    rb_raise(rb_eIndexError, "index %ld too small for array; minimum: %ld",
-		     beg - RARRAY_LEN(ary), -RARRAY_LEN(ary));
+		     beg - olen, -olen);
 	}
     }
-    if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < beg + len) {
-	len = RARRAY_LEN(ary) - beg;
+    if (olen < len || olen < beg + len) {
+	len = olen - beg;
     }
 
     if (rpl == Qundef) {
@@ -1546,16 +1559,17 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     else {
 	rpl = rb_ary_to_ary(rpl);
 	rlen = RARRAY_LEN(rpl);
+	olen = RARRAY_LEN(ary);	/* ary may be resized in rpl.to_ary too */
     }
-    if (beg >= RARRAY_LEN(ary)) {
+    if (beg >= olen) {
 	if (beg > ARY_MAX_SIZE - rlen) {
 	    rb_raise(rb_eIndexError, "index %ld too big", beg);
 	}
 	ary_ensure_room_for_push(ary, rlen-len); /* len is 0 or negative */
 	len = beg + rlen;
-	ary_mem_clear(ary, RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
+	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    ary_memcpy(ary, beg, rlen, RARRAY_RAWPTR(rpl));
+	    ary_memcpy(ary, beg, rlen, RARRAY_CONST_PTR(rpl));
 	}
 	ARY_SET_LEN(ary, len);
     }
@@ -1563,7 +1577,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	long alen;
 
 	rb_ary_modify(ary);
-	alen = RARRAY_LEN(ary) + rlen - len;
+	alen = olen + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
 	    ary_double_capa(ary, alen);
 	}
@@ -1571,11 +1585,11 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	if (len != rlen) {
 	    RARRAY_PTR_USE(ary, ptr,
 			   MEMMOVE(ptr + beg + rlen, ptr + beg + len,
-				   VALUE, RARRAY_LEN(ary) - (beg + len)));
+				   VALUE, olen - (beg + len)));
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {
-	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_RAWPTR(rpl), VALUE, rlen);
+	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_CONST_PTR(rpl), VALUE, rlen);
 	}
     }
 }
@@ -1633,7 +1647,7 @@ rb_ary_resize(VALUE ary, long len)
     }
     else {
 	if (olen > len + ARY_DEFAULT_SIZE) {
-	    REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, len);
+	    SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, len, RARRAY(ary)->as.heap.aux.capa);
 	    ARY_SET_CAPA(ary, len);
 	}
 	ARY_SET_HEAP_LEN(ary, len);
@@ -1832,9 +1846,11 @@ rb_ary_reverse_each(VALUE ary)
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     len = RARRAY_LEN(ary);
     while (len--) {
+	long nlen;
 	rb_yield(RARRAY_AREF(ary, len));
-	if (RARRAY_LEN(ary) < len) {
-	    len = RARRAY_LEN(ary);
+	nlen = RARRAY_LEN(ary);
+	if (nlen < len) {
+	    len = nlen;
 	}
     }
     return ary;
@@ -1879,7 +1895,7 @@ rb_ary_dup(VALUE ary)
 {
     long len = RARRAY_LEN(ary);
     VALUE dup = rb_ary_new2(len);
-    ary_memcpy(dup, 0, len, RARRAY_RAWPTR(ary));
+    ary_memcpy(dup, 0, len, RARRAY_CONST_PTR(ary));
     ARY_SET_LEN(dup, len);
     return dup;
 }
@@ -1887,7 +1903,7 @@ rb_ary_dup(VALUE ary)
 VALUE
 rb_ary_resurrect(VALUE ary)
 {
-    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_RAWPTR(ary));
+    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
 }
 
 extern VALUE rb_output_fs;
@@ -2110,6 +2126,32 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
+ *     ary.to_h     -> hash
+ *
+ *  Returns the result of interpreting <i>ary</i> as an array of
+ *  <tt>[key, value]</tt> pairs. Elements other than pairs of
+ *  values are ignored.
+ *
+ *     [[:foo, :bar], [1, 2]].to_h
+ *       # => {:foo => :bar, 1 => 2}
+ */
+
+static VALUE
+rb_ary_to_h(VALUE ary)
+{
+    long i;
+    VALUE hash = rb_hash_new();
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	VALUE key_value_pair = rb_check_array_type(rb_ary_elt(ary, i));
+	if (!NIL_P(key_value_pair) && (RARRAY_LEN(key_value_pair) == 2)) {
+	    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
+	}
+    }
+    return hash;
+}
+
+/*
+ *  call-seq:
  *     ary.to_ary -> ary
  *
  *  Returns +self+.
@@ -2179,8 +2221,8 @@ rb_ary_reverse_m(VALUE ary)
     VALUE dup = rb_ary_new2(len);
 
     if (len > 0) {
-	const VALUE *p1 = RARRAY_RAWPTR(ary);
-	VALUE *p2 = (VALUE *)RARRAY_RAWPTR(dup) + len - 1;
+	const VALUE *p1 = RARRAY_CONST_PTR(ary);
+	VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
 	do *p2-- = *p1++; while (--len > 0);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
@@ -2279,7 +2321,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     rotated = rb_ary_new2(len);
     if (len > 0) {
 	cnt = rotate_count(cnt, len);
-	ptr = RARRAY_RAWPTR(ary);
+	ptr = RARRAY_CONST_PTR(ary);
 	len -= cnt;
 	ary_memcpy(rotated, 0, len, ptr + cnt);
 	ary_memcpy(rotated, len, cnt, ptr);
@@ -2350,7 +2392,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 	return rb_str_cmp(a, b);
     }
 
-    retval = rb_funcall(a, id_cmp, 1, b);
+    retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);
     sort_reentered(data->ary);
 
@@ -2420,9 +2462,9 @@ rb_ary_sort_bang(VALUE ary)
                     rb_ary_unshare(ary);
                 }
                 else {
-		    xfree((void *)ARY_HEAP_PTR(ary));
+		    ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
                 }
-                ARY_SET_PTR(ary, RARRAY_RAWPTR(tmp));
+                ARY_SET_PTR(ary, RARRAY_CONST_PTR(tmp));
                 ARY_SET_HEAP_LEN(ary, len);
                 ARY_SET_CAPA(ary, RARRAY_LEN(tmp));
             }
@@ -2545,7 +2587,8 @@ rb_ary_bsearch(VALUE ary)
 	    smaller = 0;
 	}
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
-	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) {
+	    const VALUE zero = INT2FIX(0);
+	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, INT2FIX(0))) {
 		case 0: return val;
 		case 1: smaller = 1; break;
 		case -1: smaller = 0;
@@ -2784,8 +2827,8 @@ rb_ary_select_bang(VALUE ary)
 	i2++;
     }
 
-    if (RARRAY_LEN(ary) == i2) return Qnil;
-    if (i2 < RARRAY_LEN(ary))
+    if (i1 == i2) return Qnil;
+    if (i2 < i1)
 	ARY_SET_LEN(ary, i2);
     return ary;
 }
@@ -2915,7 +2958,7 @@ rb_ary_delete_at(VALUE ary, long pos)
     rb_ary_modify(ary);
     del = RARRAY_AREF(ary, pos);
     RARRAY_PTR_USE(ary, ptr, {
-	MEMMOVE(ptr+pos, ptr+pos+1, VALUE, RARRAY_LEN(ary)-pos-1);
+	MEMMOVE(ptr+pos, ptr+pos+1, VALUE, len-pos-1);
     });
     ARY_INCREASE_LEN(ary, -1);
 
@@ -2986,7 +3029,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	    len = orig_len - pos;
 	}
 	if (len == 0) return rb_ary_new2(0);
-	arg2 = rb_ary_new4(len, RARRAY_RAWPTR(ary)+pos);
+	arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
 	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
 	rb_ary_splice(ary, pos, len, Qundef);
 	return arg2;
@@ -3283,14 +3326,14 @@ rb_ary_replace(VALUE copy, VALUE orig)
         VALUE shared = 0;
 
         if (ARY_OWNS_HEAP_P(copy)) {
-	    RARRAY_PTR_USE(copy, ptr, xfree(ptr));
+	    RARRAY_PTR_USE(copy, ptr, ruby_sized_xfree(ptr, ARY_HEAP_SIZE(copy)));
 	}
         else if (ARY_SHARED_P(copy)) {
             shared = ARY_SHARED(copy);
             FL_UNSET_SHARED(copy);
         }
         FL_SET_EMBED(copy);
-	ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_RAWPTR(orig));
+	ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR(orig));
         if (shared) {
             rb_ary_decrement_share(shared);
         }
@@ -3299,13 +3342,13 @@ rb_ary_replace(VALUE copy, VALUE orig)
     else {
         VALUE shared = ary_make_shared(orig);
         if (ARY_OWNS_HEAP_P(copy)) {
-	    RARRAY_PTR_USE(copy, ptr, xfree(ptr));
+	    RARRAY_PTR_USE(copy, ptr, ruby_sized_xfree(ptr, ARY_HEAP_SIZE(copy)));
         }
         else {
             rb_ary_unshare_safe(copy);
         }
         FL_UNSET_EMBED(copy);
-        ARY_SET_PTR(copy, RARRAY_RAWPTR(orig));
+        ARY_SET_PTR(copy, RARRAY_CONST_PTR(orig));
         ARY_SET_LEN(copy, RARRAY_LEN(orig));
         rb_ary_set_shared(copy, shared);
     }
@@ -3463,8 +3506,8 @@ rb_ary_plus(VALUE x, VALUE y)
     len = xlen + ylen;
     z = rb_ary_new2(len);
 
-    ary_memcpy(z, 0, xlen, RARRAY_RAWPTR(x));
-    ary_memcpy(z, xlen, ylen, RARRAY_RAWPTR(y));
+    ary_memcpy(z, 0, xlen, RARRAY_CONST_PTR(x));
+    ary_memcpy(z, xlen, ylen, RARRAY_CONST_PTR(y));
     ARY_SET_LEN(z, len);
     return z;
 }
@@ -3540,16 +3583,16 @@ rb_ary_times(VALUE ary, VALUE times)
     ary2 = ary_new(rb_obj_class(ary), len);
     ARY_SET_LEN(ary2, len);
 
-    ptr = RARRAY_RAWPTR(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     t = RARRAY_LEN(ary);
     if (0 < t) {
 	ary_memcpy(ary2, 0, t, ptr);
 	while (t <= len/2) {
-	    ary_memcpy(ary2, t, t, RARRAY_RAWPTR(ary2));
+	    ary_memcpy(ary2, t, t, RARRAY_CONST_PTR(ary2));
             t *= 2;
         }
         if (t < len) {
-	    ary_memcpy(ary2, t, len-t, RARRAY_RAWPTR(ary2));
+	    ary_memcpy(ary2, t, len-t, RARRAY_CONST_PTR(ary2));
         }
     }
   out:
@@ -3635,8 +3678,8 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 
     if (recur) return Qtrue; /* Subtle! */
 
-    p1 = RARRAY_RAWPTR(ary1);
-    p2 = RARRAY_RAWPTR(ary2);
+    p1 = RARRAY_CONST_PTR(ary1);
+    p2 = RARRAY_CONST_PTR(ary2);
     len1 = RARRAY_LEN(ary1);
 
     for (i = 0; i < len1; i++) {
@@ -3647,8 +3690,8 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 		    return Qfalse;
 		if (len1 < i)
 		    return Qtrue;
-		p1 = RARRAY_RAWPTR(ary1) + i;
-		p2 = RARRAY_RAWPTR(ary2) + i;
+		p1 = RARRAY_CONST_PTR(ary1) + i;
+		p2 = RARRAY_CONST_PTR(ary2) + i;
 	    }
 	    else {
 		return Qfalse;
@@ -3685,7 +3728,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 	return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    if (RARRAY_RAWPTR(ary1) == RARRAY_RAWPTR(ary2)) return Qtrue;
+    if (RARRAY_CONST_PTR(ary1) == RARRAY_CONST_PTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_equal, ary1, ary2, ary2);
 }
 
@@ -3716,7 +3759,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     if (ary1 == ary2) return Qtrue;
     if (!RB_TYPE_P(ary2, T_ARRAY)) return Qfalse;
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    if (RARRAY_RAWPTR(ary1) == RARRAY_RAWPTR(ary2)) return Qtrue;
+    if (RARRAY_CONST_PTR(ary1) == RARRAY_CONST_PTR(ary2)) return Qtrue;
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
@@ -3794,7 +3837,8 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 	len = RARRAY_LEN(ary2);
     }
     for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(rb_ary_elt(ary1, i), id_cmp, 1, rb_ary_elt(ary2, i));
+	VALUE e1 = rb_ary_elt(ary1, i), e2 = rb_ary_elt(ary2, i);
+	VALUE v = rb_funcallv(e1, id_cmp, 1, &e2);
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
@@ -3997,26 +4041,11 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, ary3, v;
-    st_data_t vv;
-    long i;
+    VALUE hash, ary3;
 
     ary2 = to_ary(ary2);
-    ary3 = rb_ary_new2(RARRAY_LEN(ary1)+RARRAY_LEN(ary2));
     hash = ary_add_hash(ary_make_hash(ary1), ary2);
-
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
-	if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
-	    rb_ary_push(ary3, v);
-	}
-    }
-    for (i=0; i<RARRAY_LEN(ary2); i++) {
-	vv = (st_data_t)(v = rb_ary_elt(ary2, i));
-	if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
-	    rb_ary_push(ary3, v);
-	}
-    }
+    ary3 = rb_hash_keys(hash);
     ary_recycle_hash(hash);
     return ary3;
 }
@@ -4116,26 +4145,19 @@ rb_ary_uniq_bang(VALUE ary)
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    VALUE hash, uniq, v;
-    long i;
+    VALUE hash, uniq;
 
     if (RARRAY_LEN(ary) <= 1)
         return rb_ary_dup(ary);
     if (rb_block_given_p()) {
 	hash = ary_make_hash_by(ary);
-	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
-	st_foreach(rb_hash_tbl_raw(hash), push_value, uniq);
+	uniq = rb_hash_values(hash);
     }
     else {
 	hash = ary_make_hash(ary);
-	uniq = ary_new(rb_obj_class(ary), RHASH_SIZE(hash));
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    st_data_t vv = (st_data_t)(v = rb_ary_elt(ary, i));
-	    if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
-		rb_ary_push(uniq, v);
-	    }
-	}
+	uniq = rb_hash_keys(hash);
     }
+    RBASIC_SET_CLASS(uniq, rb_obj_class(ary));
     ary_recycle_hash(hash);
 
     return uniq;
@@ -4160,21 +4182,18 @@ rb_ary_compact_bang(VALUE ary)
     long n;
 
     rb_ary_modify(ary);
-    p = t = (VALUE *)RARRAY_RAWPTR(ary); /* WB: no new reference */
+    p = t = (VALUE *)RARRAY_CONST_PTR(ary); /* WB: no new reference */
     end = p + RARRAY_LEN(ary);
 
     while (t < end) {
 	if (NIL_P(*t)) t++;
 	else *p++ = *t++;
     }
-    n = p - RARRAY_RAWPTR(ary);
+    n = p - RARRAY_CONST_PTR(ary);
     if (RARRAY_LEN(ary) == n) {
 	return Qnil;
     }
-    ARY_SET_LEN(ary, n);
-    if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
-	ary_resize_capa(ary, n * 2);
-    }
+    ary_resize_smaller(ary, n);
 
     return ary;
 }
@@ -4596,7 +4615,8 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (n == Qnil) return DBL2NUM(INFINITY);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
-    return rb_funcall(rb_ary_length(self), '*', 1, LONG2FIX(mul));
+    n = LONG2FIX(mul);
+    return rb_funcallv(rb_ary_length(self), '*', 1, &n);
 }
 
 /*
@@ -4704,7 +4724,8 @@ descending_factorial(long from, long how_many)
 {
     VALUE cnt = LONG2FIX(how_many >= 0);
     while (how_many-- > 0) {
-        cnt = rb_funcall(cnt, '*', 1, LONG2FIX(from--));
+	VALUE v = LONG2FIX(from--);
+	cnt = rb_funcallv(cnt, '*', 1, &v);
     }
     return cnt;
 }
@@ -4712,13 +4733,16 @@ descending_factorial(long from, long how_many)
 static VALUE
 binomial_coefficient(long comb, long size)
 {
+    VALUE r, v;
     if (comb > size-comb) {
 	comb = size-comb;
     }
     if (comb < 0) {
 	return LONG2FIX(0);
     }
-    return rb_funcall(descending_factorial(size, comb), id_div, 1, descending_factorial(comb, comb));
+    r = descending_factorial(size, comb);
+    v = descending_factorial(comb, comb);
+    return rb_funcallv(r, id_div, 1, &v);
 }
 
 static VALUE
@@ -4926,12 +4950,14 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
+    VALUE v;
 
     if (k < 0) {
 	return LONG2FIX(0);
     }
 
-    return rb_funcall(LONG2NUM(n), id_power, 1, LONG2NUM(k));
+    v = LONG2NUM(k);
+    return rb_funcallv(LONG2NUM(n), id_power, 1, &v);
 }
 
 /*
@@ -5564,6 +5590,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_alias(rb_cArray,  "to_s", "inspect");
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
+    rb_define_method(rb_cArray, "to_h", rb_ary_to_h, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
     rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
 

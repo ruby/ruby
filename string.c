@@ -126,6 +126,9 @@ VALUE rb_cSymbol;
     FL_SET((str), ELTS_SHARED); \
 } while (0)
 
+#define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
+#define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
+
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 
@@ -146,6 +149,9 @@ rb_fstring(VALUE str)
     st_data_t fstr;
     if (st_lookup(frozen_strings, (st_data_t)str, &fstr)) {
 	str = (VALUE)fstr;
+	/* because of lazy sweep, str may be unmaked already and swept
+	 * at next time */
+	rb_gc_mark(str);
     }
     else {
 	str = rb_str_new_frozen(str);
@@ -554,7 +560,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     if (!to) return str;
     if (!from) from = rb_enc_get(str);
     if (from == to) return str;
-    if ((rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) ||
+    if ((rb_enc_asciicompat(to) && is_ascii_string(str)) ||
 	to == rb_ascii8bit_encoding()) {
 	if (STR_ENC_GET(str) != to) {
 	    str = rb_str_dup(str);
@@ -877,7 +883,7 @@ rb_str_free(VALUE str)
 	st_delete(frozen_strings, &fstr, NULL);
     }
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	xfree(RSTRING(str)->as.heap.ptr);
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
 
@@ -885,7 +891,7 @@ RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
     if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	return RSTRING(str)->as.heap.aux.capa;
+	return STR_HEAP_SIZE(str);
     }
     else {
 	return 0;
@@ -1003,7 +1009,7 @@ rb_str_resurrect(VALUE str)
 	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
 				  rb_sourcefile(), rb_sourceline());
     }
-    return str_replace(str_alloc(rb_cString), str);
+    return str_duplicate(rb_cString, str);
 }
 
 /*
@@ -1366,7 +1372,7 @@ rb_str_format_m(VALUE str, VALUE arg)
     volatile VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-	return rb_str_format(RARRAY_LENINT(tmp), RARRAY_RAWPTR(tmp), str);
+	return rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
     }
     return rb_str_format(1, &arg, str);
 }
@@ -1460,7 +1466,7 @@ str_discard(VALUE str)
 {
     str_modifiable(str);
     if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	RSTRING(str)->as.heap.ptr = 0;
 	RSTRING(str)->as.heap.len = 0;
     }
@@ -1977,13 +1983,14 @@ rb_str_resize(VALUE str, long len)
 	    STR_SET_NOEMBED(str);
 	}
 	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
-	    char *ptr = RSTRING(str)->as.heap.ptr;
+	    char *ptr = STR_HEAP_PTR(str);
+	    size_t size = STR_HEAP_SIZE(str);
 	    STR_SET_EMBED(str);
 	    if (slen > len) slen = len;
 	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
 	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) xfree(ptr);
+	    if (independent) ruby_sized_xfree(ptr, size);
 	    return str;
 	}
 	else if (!independent) {
@@ -4735,23 +4742,27 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
-    if (encidx == ENCINDEX_UTF_16) {
+    if (encidx == ENCINDEX_UTF_16 && p + 2 <= pend) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0xFE && q[1] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_16BE);
 	else if (q[0] == 0xFF && q[1] == 0xFE)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_16LE);
-	else
+	else {
+	    enc = rb_ascii8bit_encoding();
 	    unicode_p = 0;
+	}
     }
-    else if (encidx == ENCINDEX_UTF_32) {
+    else if (encidx == ENCINDEX_UTF_32 && p + 4 <= pend) {
 	const unsigned char *q = (const unsigned char *)p;
 	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_32BE);
 	else if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF)
 	    enc = rb_enc_from_index(ENCINDEX_UTF_32LE);
-	else
+	else {
+	    enc = rb_ascii8bit_encoding();
 	    unicode_p = 0;
+	}
     }
     while (p < pend) {
 	unsigned int c, cc;
@@ -5490,7 +5501,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    xfree(RSTRING(str)->as.heap.ptr);
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;
@@ -5566,7 +5577,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    xfree(RSTRING(str)->as.heap.ptr);
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;
@@ -6352,21 +6363,17 @@ static VALUE
 rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 {
     rb_encoding *enc;
-    VALUE rs;
-    unsigned int newline;
-    const char *p, *pend, *s, *ptr;
-    long len, rslen;
-    VALUE line;
-    int n;
-    VALUE orig = str;
+    VALUE line, rs, orig = str;
+    const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
+    long pos, len, rslen;
+    int paragraph_mode = 0;
+
     VALUE UNINITIALIZED_VAR(ary);
 
-    if (argc == 0) {
+    if (argc == 0)
 	rs = rb_rs;
-    }
-    else {
+    else
 	rb_scan_args(argc, argv, "01", &rs);
-    }
 
     if (rb_block_given_p()) {
 	if (wantarray) {
@@ -6396,76 +6403,63 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    return orig;
 	}
     }
+
     str = rb_str_new4(str);
-    ptr = p = s = RSTRING_PTR(str);
-    pend = p + RSTRING_LEN(str);
+    ptr = subptr = RSTRING_PTR(str);
+    pend = RSTRING_END(str);
     len = RSTRING_LEN(str);
     StringValue(rs);
-    if (rs == rb_default_rs) {
-	enc = rb_enc_get(str);
-	while (p < pend) {
-	    char *p0;
-
-	    p = memchr(p, '\n', pend - p);
-	    if (!p) break;
-	    p0 = rb_enc_left_char_head(s, p, pend, enc);
-	    if (!rb_enc_is_newline(p0, pend, enc)) {
-		p++;
-		continue;
-	    }
-	    p = p0 + rb_enc_mbclen(p0, pend, enc);
-	    line = rb_str_subseq(str, s - ptr, p - s);
-	    if (wantarray)
-		rb_ary_push(ary, line);
-	    else
-		rb_yield(line);
-	    str_mod_check(str, ptr, len);
-	    s = p;
-	}
-	goto finish;
-    }
-
-    enc = rb_enc_check(str, rs);
     rslen = RSTRING_LEN(rs);
+
+    if (rs == rb_default_rs)
+	enc = rb_enc_get(str);
+    else
+	enc = rb_enc_check(str, rs);
+
     if (rslen == 0) {
-	newline = '\n';
+	rsptr = "\n\n";
+	rslen = 2;
+	paragraph_mode = 1;
     }
     else {
-	newline = rb_enc_codepoint(RSTRING_PTR(rs), RSTRING_END(rs), enc);
+	rsptr = RSTRING_PTR(rs);
     }
 
-    while (p < pend) {
-	unsigned int c = rb_enc_codepoint_len(p, pend, &n, enc);
+    if ((rs == rb_default_rs || paragraph_mode) && !rb_enc_asciicompat(enc)) {
+	rs = rb_str_new(rsptr, rslen);
+	rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+	rsptr = RSTRING_PTR(rs);
+	rslen = RSTRING_LEN(rs);
+    }
 
-      again:
-	if (rslen == 0 && c == newline) {
-	    p += n;
-	    if (p < pend && (c = rb_enc_codepoint_len(p, pend, &n, enc)) != newline) {
-		goto again;
-	    }
-	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
-		p += n;
-	    }
-	    p -= n;
+    while (subptr < pend) {
+	pos = rb_memsearch(rsptr, rslen, subptr, pend - subptr, enc);
+	if (pos < 0) break;
+	hit = subptr + pos;
+	adjusted = rb_enc_right_char_head(subptr, hit, pend, enc);
+	if (hit != adjusted) {
+	    subptr = adjusted;
+	    continue;
 	}
-	if (c == newline &&
-	    (rslen <= 1 ||
-	     (pend - p >= rslen && memcmp(RSTRING_PTR(rs), p, rslen) == 0))) {
-	    const char *pp = p + (rslen ? rslen : n);
-	    line = rb_str_subseq(str, s - ptr, pp - s);
-	    if (wantarray)
-		rb_ary_push(ary, line);
-	    else
-		rb_yield(line);
+	subend = hit + rslen;
+	if (paragraph_mode) {
+	    while (subend < pend && rb_enc_is_newline(subend, pend, enc)) {
+		subend += rb_enc_mbclen(subend, pend, enc);
+	    }
+	}
+	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
+	if (wantarray) {
+	    rb_ary_push(ary, line);
+	}
+	else {
+	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = pp;
 	}
-	p += n;
+	subptr = subend;
     }
 
-  finish:
-    if (s != pend) {
-	line = rb_str_subseq(str, s - ptr, pend - s);
+    if (subptr != pend) {
+	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
 	if (wantarray)
 	    rb_ary_push(ary, line);
 	else

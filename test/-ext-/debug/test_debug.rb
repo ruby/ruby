@@ -3,42 +3,42 @@ require '-test-/debug'
 
 class TestDebug < Test::Unit::TestCase
 
-  def binds_check binds
+  def binds_check(binds, msg = nil)
     count = Hash.new(0)
-    assert_instance_of(Array, binds)
+    assert_instance_of(Array, binds, msg)
     binds.each{|(_self, bind, klass, iseq, loc)|
       if _self == self
         count[:self] += 1
       end
 
       if bind
-        assert_instance_of(Binding, bind)
+        assert_instance_of(Binding, bind, msg)
         count[:bind] += 1
       end
 
       if klass
-        assert(klass.instance_of?(Module) || klass.instance_of?(Class))
+        assert(klass.instance_of?(Module) || klass.instance_of?(Class), msg)
         count[:class] += 1
       end
 
       if iseq
         count[:iseq] += 1
-        assert_instance_of(RubyVM::InstructionSequence, iseq)
+        assert_instance_of(RubyVM::InstructionSequence, iseq, msg)
 
         # check same location
-        assert_equal(loc.path, iseq.path)
-        assert_equal(loc.absolute_path, iseq.absolute_path)
-        assert_equal(loc.label, iseq.label)
-        assert_operator(loc.lineno, :>=, iseq.first_lineno)
+        assert_equal(loc.path, iseq.path, msg)
+        assert_equal(loc.absolute_path, iseq.absolute_path, msg)
+        assert_equal(loc.label, iseq.label, msg)
+        assert_operator(loc.lineno, :>=, iseq.first_lineno, msg)
       end
 
-      assert_instance_of(Thread::Backtrace::Location, loc)
+      assert_instance_of(Thread::Backtrace::Location, loc, msg)
 
     }
-    assert_operator(0, :<, count[:self])
-    assert_operator(0, :<, count[:bind])
-    assert_operator(0, :<, count[:iseq])
-    assert_operator(0, :<, count[:class])
+    assert_operator(0, :<, count[:self], msg)
+    assert_operator(0, :<, count[:bind], msg)
+    assert_operator(0, :<, count[:iseq], msg)
+    assert_operator(0, :<, count[:class], msg)
   end
 
   def test_inspector_open
@@ -53,6 +53,6 @@ class TestDebug < Test::Unit::TestCase
   def test_inspector_open_in_eval
     bug7635 = '[ruby-core:51640]'
     binds = inspector_in_eval
-    binds_check binds
+    binds_check binds, bug7635
   end
 end

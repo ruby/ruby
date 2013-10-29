@@ -218,7 +218,6 @@ setconstant
 {
     vm_check_if_namespace(cbase);
     rb_const_set(cbase, id, val);
-    rb_clear_cache_by_class(cbase);
 }
 
 /**
@@ -974,8 +973,6 @@ defineclass
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
     RESTORE_REGS();
-
-    rb_clear_cache_by_class(klass);
     NEXT_INSN();
 }
 
@@ -1186,7 +1183,7 @@ getinlinecache
 ()
 (VALUE val)
 {
-    if (ic->ic_vmstat == GET_VM_STATE_VERSION()) {
+    if (ic->ic_vmstat == GET_CONSTANT_STATE_VERSION()) {
 	val = ic->ic_value.value;
 	JUMP(dst);
     }
@@ -1211,7 +1208,7 @@ setinlinecache
 	rb_iseq_add_mark_object(GET_ISEQ(), val);
     }
     ic->ic_value.value = val;
-    ic->ic_vmstat = GET_VM_STATE_VERSION() - ruby_vm_const_missing_count;
+    ic->ic_vmstat = GET_CONSTANT_STATE_VERSION() - ruby_vm_const_missing_count;
     ruby_vm_const_missing_count = 0;
 }
 
@@ -2080,7 +2077,11 @@ opt_regexpmatch1
 (VALUE obj)
 (VALUE val)
 {
-    val = rb_reg_match(r, obj);
+    if (BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
+	val = rb_reg_match(r, obj);
+    } else {
+	val = rb_funcall(r, idEqTilde, 1, obj);
+    }
 }
 
 /**
@@ -2094,7 +2095,8 @@ opt_regexpmatch2
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 {
-    if (RB_TYPE_P(obj2, T_STRING)) {
+    if (RB_TYPE_P(obj2, T_STRING) &&
+	BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
 	val = rb_reg_match(obj1, obj2);
     }
     else {

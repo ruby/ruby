@@ -3460,13 +3460,17 @@ lambda		:   {
 			lpar_beg = ++paren_nest;
 		    }
 		  f_larglist
+		    {
+			$<num>$ = ruby_sourceline;
+		    }
 		  lambda_body
 		    {
 			lpar_beg = $<num>2;
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, $4);
+			$$ = NEW_LAMBDA($3, $5);
+			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch2(lambda, $3, $4);
+			$$ = dispatch2(lambda, $3, $5);
 		    %*/
 			dyna_pop($<vars>1);
 		    }
@@ -3482,11 +3486,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 		    }
 		| f_args
 		    {
-		    /*%%%*/
 			$$ = $1;
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		;
 
@@ -8885,7 +8885,11 @@ ID
 rb_id_attrset(ID id)
 {
     if (!is_notop_id(id)) {
-	rb_bug("rb_id_attrset: operator ID - %"PRIdVALUE, (VALUE)id);
+	switch (id) {
+	  case tAREF: case tASET:
+	    return tASET;	/* only exception */
+	}
+	rb_name_error(id, "cannot make operator ID :%s attrset", rb_id2name(id));
     }
     else {
 	int scope = (int)(id & ID_SCOPE_MASK);
@@ -8893,9 +8897,11 @@ rb_id_attrset(ID id)
 	  case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
 	  case ID_CONST: case ID_CLASS: case ID_JUNK:
 	    break;
+	  case ID_ATTRSET:
+	    return id;
 	  default:
-	    rb_bug("rb_id_attrset: %s ID - %"PRIdVALUE, id_type_names[scope],
-		   (VALUE)id);
+	    rb_name_error(id, "cannot make %s ID %+"PRIsVALUE" attrset",
+			  id_type_names[scope], ID2SYM(id));
 
 	}
     }
@@ -10141,8 +10147,6 @@ static const struct {
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
-    {'+',	"+(binary)"},
-    {'-',	"-(binary)"},
     {tPOW,	"**"},
     {tDSTAR,	"**"},
     {tUPLUS,	"+@"},
@@ -10177,6 +10181,7 @@ static struct symbols {
     st_table *id_ivar2;
 #endif
     VALUE op_sym[tLAST_OP_ID];
+    int minor_marked;
 } global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
@@ -10231,11 +10236,14 @@ Init_sym(void)
 }
 
 void
-rb_gc_mark_symbols(void)
+rb_gc_mark_symbols(int full_mark)
 {
-    rb_mark_tbl(global_symbols.id_str);
-    rb_gc_mark_locations(global_symbols.op_sym,
-			 global_symbols.op_sym + numberof(global_symbols.op_sym));
+    if (full_mark || global_symbols.minor_marked == 0) {
+	rb_mark_tbl(global_symbols.id_str);
+	rb_gc_mark_locations(global_symbols.op_sym,
+			     global_symbols.op_sym + numberof(global_symbols.op_sym));
+	global_symbols.minor_marked = 1;
+    }
 }
 #endif /* !RIPPER */
 
@@ -10367,6 +10375,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m)))
 	    return -1;
 	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
+	if (m >= e) break;
 	switch (*m) {
 	  case '!': case '?':
 	    if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
@@ -10418,6 +10427,7 @@ register_symid_str(ID id, VALUE str)
 
     st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);
+    global_symbols.minor_marked = 0;
     return id;
 }
 
@@ -10484,7 +10494,8 @@ intern_str(VALUE str)
     enc = rb_enc_get(str);
     symenc = enc;
 
-    if (rb_cString && !rb_enc_asciicompat(enc)) {
+    if (!len || (rb_cString && !rb_enc_asciicompat(enc))) {
+      junk:
 	id = ID_JUNK;
 	goto new_id;
     }
@@ -10492,6 +10503,7 @@ intern_str(VALUE str)
     id = 0;
     switch (*m) {
       case '$':
+	if (len < 2) goto junk;
 	id |= ID_GLOBAL;
 	if ((mb = is_special_global_name(++m, e, enc)) != 0) {
 	    if (!--mb) symenc = rb_usascii_encoding();
@@ -10500,10 +10512,12 @@ intern_str(VALUE str)
 	break;
       case '@':
 	if (m[1] == '@') {
+	    if (len < 3) goto junk;
 	    m++;
 	    id |= ID_CLASS;
 	}
 	else {
+	    if (len < 2) goto junk;
 	    id |= ID_INSTANCE;
 	}
 	m++;
@@ -10530,6 +10544,8 @@ intern_str(VALUE str)
     }
     if (name[last] == '=') {
 	/* attribute assignment */
+	if (last > 1 && name[last-1] == '=')
+	    goto junk;
 	id = rb_intern3(name, last, enc);
 	if (id > tLAST_OP_ID && !is_attrset_id(id)) {
 	    enc = rb_enc_get(rb_id2str(id));
@@ -10615,6 +10631,7 @@ rb_id2str(ID id)
 		str = rb_usascii_str_new(name, 1);
 		OBJ_FREEZE(str);
 		global_symbols.op_sym[i] = str;
+		global_symbols.minor_marked = 0;
 	    }
 	    return str;
 	}
@@ -10625,6 +10642,7 @@ rb_id2str(ID id)
 		    str = rb_usascii_str_new2(op_tbl[i].name);
 		    OBJ_FREEZE(str);
 		    global_symbols.op_sym[i] = str;
+		    global_symbols.minor_marked = 0;
 		}
 		return str;
 	    }

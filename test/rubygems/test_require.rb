@@ -67,6 +67,18 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  def test_require_can_use_a_pathname_object
+    a1 = new_spec "a", "1", nil, "lib/test_gem_require_a.rb"
+
+    install_specs a1
+
+    save_loaded_features do
+      assert_require Pathname.new 'test_gem_require_a'
+      assert_equal %w(a-1), loaded_spec_names
+      assert_equal unresolved_names, []
+    end
+  end
+
   def test_activate_via_require_respects_loaded_files
     require 'benchmark' # stdlib
     save_loaded_features do

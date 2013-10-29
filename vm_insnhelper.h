@@ -55,11 +55,12 @@ enum {
   BOP_GE,
   BOP_NOT,
   BOP_NEQ,
+  BOP_MATCH,
 
   BOP_LAST_
 };
 
-extern char ruby_vm_redefined_flag[BOP_LAST_];
+extern short ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -237,6 +238,7 @@ enum vm_regan_acttype {
 #define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
+#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 
@@ -258,12 +260,10 @@ enum vm_regan_acttype {
 } while (0)
 
 #define NEXT_CLASS_SEQUENCE() (++ruby_vm_sequence)
-#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
-#define INC_VM_STATE_VERSION() do { \
-    ruby_vm_global_state_version = (ruby_vm_global_state_version + 1); \
-    if (ruby_vm_global_state_version == 0) vm_clear_all_cache(); \
-} while (0)
-static void vm_clear_all_cache(void);
+#define GET_METHOD_STATE_VERSION() (ruby_vm_method_state_version)
+#define INC_METHOD_STATE_VERSION() (++ruby_vm_method_state_version)
+#define GET_CONSTANT_STATE_VERSION() (ruby_vm_constant_state_version)
+#define INC_CONSTANT_STATE_VERSION() (++ruby_vm_constant_state_version)
 
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);

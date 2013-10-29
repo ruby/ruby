@@ -1,6 +1,6 @@
 require File.expand_path('../helper', __FILE__)
 
-TESTING_REQUIRE = [ ]
+TESTING_REQUIRE = []
 
 class TestRakeApplicationOptions < Rake::TestCase
 
@@ -22,15 +22,12 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def clear_argv
-    while ! ARGV.empty?
-      ARGV.pop
-    end
+    ARGV.pop until ARGV.empty?
   end
 
   def test_default_options
     opts = command_line
     assert_nil opts.backtrace
-    assert_nil opts.classic_namespace
     assert_nil opts.dryrun
     assert_nil opts.ignore_system
     assert_nil opts.load_system
@@ -147,7 +144,11 @@ class TestRakeApplicationOptions < Rake::TestCase
 
   def test_rakelib
     dirs = %w(A B C).join(File::PATH_SEPARATOR)
-    flags(['--rakelibdir', dirs], ["--rakelibdir=#{dirs}"], ['-R', dirs], ["-R#{dirs}"]) do |opts|
+    flags(
+      ['--rakelibdir', dirs],
+      ["--rakelibdir=#{dirs}"],
+      ['-R', dirs],
+      ["-R#{dirs}"]) do |opts|
       assert_equal ['A', 'B', 'C'], opts.rakelib
     end
   end
@@ -186,9 +187,10 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def test_quiet
+    Rake::FileUtilsExt.verbose_flag = true
     flags('--quiet', '-q') do |opts|
-      assert ! Rake::FileUtilsExt.verbose_flag
-      assert ! opts.silent
+      assert ! Rake::FileUtilsExt.verbose_flag, "verbose flag shoud be false"
+      assert ! opts.silent, "should not be silent"
     end
   end
 
@@ -199,9 +201,10 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def test_silent
+    Rake::FileUtilsExt.verbose_flag = true
     flags('--silent', '-s') do |opts|
-      assert ! Rake::FileUtilsExt.verbose_flag
-      assert opts.silent
+      assert ! Rake::FileUtilsExt.verbose_flag, "verbose flag should be false"
+      assert opts.silent, "should be silent"
     end
   end
 
@@ -353,40 +356,22 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def test_verbose
-    out, = capture_io do
-      flags('--verbose', '-V') do |opts|
-        assert Rake::FileUtilsExt.verbose_flag
-        assert ! opts.silent
+    capture_io do
+      flags('--verbose', '-v') do |opts|
+        assert Rake::FileUtilsExt.verbose_flag, "verbose should be true"
+        assert ! opts.silent, "opts should not be silent"
       end
     end
-
-    assert_equal "rake, version #{Rake::VERSION}\n", out
   end
 
   def test_version
-    out, = capture_io do
+    out, _ = capture_io do
       flags '--version', '-V'
     end
 
     assert_match(/\bversion\b/, out)
     assert_match(/\b#{RAKEVERSION}\b/, out)
     assert_equal :exit, @exit
-  end
-
-  def test_classic_namespace
-    _, err = capture_io do
-      flags(['--classic-namespace'],
-            ['-C', '-T', '-P', '-n', '-s', '-t']) do |opts|
-        assert opts.classic_namespace
-        assert_equal opts.show_tasks, $show_tasks
-        assert_equal opts.show_prereqs, $show_prereqs
-        assert_equal opts.trace, $trace
-        assert_equal opts.dryrun, $dryrun
-        assert_equal opts.silent, $silent
-      end
-    end
-
-    assert_match(/deprecated/, err)
   end
 
   def test_bad_option
@@ -418,9 +403,21 @@ class TestRakeApplicationOptions < Rake::TestCase
 
   def test_environment_definition
     ENV.delete('TESTKEY')
-    command_line("a", "TESTKEY=12")
-    assert_equal ["a"], @tasks.sort
-    assert '12', ENV['TESTKEY']
+    command_line("TESTKEY=12")
+    assert_equal '12', ENV['TESTKEY']
+  end
+
+  def test_multiline_environment_definition
+    ENV.delete('TESTKEY')
+    command_line("TESTKEY=a\nb\n")
+    assert_equal "a\nb\n", ENV['TESTKEY']
+  end
+
+  def test_environment_and_tasks_together
+    ENV.delete('TESTKEY')
+    command_line("a", "b", "TESTKEY=12")
+    assert_equal ["a", "b"], @tasks.sort
+    assert_equal '12', ENV['TESTKEY']
   end
 
   def test_rake_explicit_task_library

@@ -24,6 +24,7 @@
 #pragma GCC visibility push(default)
 int rb_enc_register(const char *name, rb_encoding *encoding);
 void rb_enc_set_base(const char *name, const char *orig);
+int rb_enc_set_dummy(int index);
 void rb_encdb_declare(const char *name);
 int rb_encdb_replicate(const char *name, const char *orig);
 int rb_encdb_dummy(const char *name);
@@ -362,6 +363,18 @@ rb_enc_set_base(const char *name, const char *orig)
     set_base_encoding(idx, rb_enc_from_index(origidx));
 }
 
+/* for encdb.h
+ * Set encoding dummy.
+ */
+int
+rb_enc_set_dummy(int index)
+{
+    rb_encoding *enc = enc_table.list[index].enc;
+
+    ENC_SET_DUMMY(enc);
+    return index;
+}
+
 int
 rb_enc_replicate(const char *name, rb_encoding *encoding)
 {
@@ -610,6 +623,7 @@ load_encoding(const char *name)
     VALUE enclib = rb_sprintf("enc/%s.so", name);
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
+    VALUE errinfo;
     VALUE loaded;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
     int idx;
@@ -623,10 +637,11 @@ load_encoding(const char *name)
     OBJ_FREEZE(enclib);
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
+    errinfo = rb_errinfo();
     loaded = rb_protect(require_enc, enclib, 0);
     ruby_verbose = verbose;
     ruby_debug = debug;
-    rb_set_errinfo(Qnil);
+    rb_set_errinfo(errinfo);
     if (NIL_P(loaded)) return -1;
     if ((idx = rb_enc_registered(name)) < 0) return -1;
     if (enc_autoload_p(enc_table.list[idx].enc)) return -1;
@@ -647,8 +662,9 @@ enc_autoload(rb_encoding *enc)
 	if (enc_autoload_p(base)) {
 	    if (enc_autoload(base) < 0) return -1;
 	}
-	i = ENC_TO_ENCINDEX(enc);
-	enc_register_at(i, rb_enc_name(enc), base);
+	i = enc->ruby_encoding_index;
+	enc_register_at(i & ENC_INDEX_MASK, rb_enc_name(enc), base);
+	enc->ruby_encoding_index = i;
     }
     else {
 	i = load_encoding(rb_enc_name(enc));
@@ -1258,7 +1274,13 @@ rb_locale_encindex(void)
     else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
         idx = ENCINDEX_ASCII;
 
-    if (rb_enc_registered("locale") < 0) enc_alias_internal("locale", idx);
+    if (rb_enc_registered("locale") < 0) {
+# if defined _WIN32
+	void Init_w32_codepage(void);
+	Init_w32_codepage();
+# endif
+	enc_alias_internal("locale", idx);
+    }
 
     return idx;
 }
@@ -1917,3 +1939,8 @@ rb_toupper(int c)
     return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) : c;
 }
 
+void
+rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg)
+{
+    st_foreach(enc_table.names, func, arg);
+}

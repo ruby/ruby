@@ -14,19 +14,42 @@
 require 'rake'
 
 # :stopdoc:
-CLEAN = Rake::FileList["**/*~", "**/*.bak", "**/core"]
+
+module Rake
+  module Cleaner
+    extend FileUtils
+
+    module_function
+
+    def cleanup_files(file_names)
+      file_names.each do |file_name|
+        cleanup(file_name)
+      end
+    end
+
+    def cleanup(file_name, opts={})
+      begin
+        rm_r file_name, opts
+      rescue StandardError => ex
+        puts "Failed to remove #{file_name}: #{ex}"
+      end
+    end
+  end
+end
+
+CLEAN = ::Rake::FileList["**/*~", "**/*.bak", "**/core"]
 CLEAN.clear_exclude.exclude { |fn|
   fn.pathmap("%f").downcase == 'core' && File.directory?(fn)
 }
 
 desc "Remove any temporary products."
 task :clean do
-  CLEAN.each { |fn| rm_r fn rescue nil }
+  Rake::Cleaner.cleanup_files(CLEAN)
 end
 
-CLOBBER = Rake::FileList.new
+CLOBBER = ::Rake::FileList.new
 
 desc "Remove any generated file."
 task :clobber => [:clean] do
-  CLOBBER.each { |fn| rm_r fn rescue nil }
+  Rake::Cleaner.cleanup_files(CLOBBER)
 end

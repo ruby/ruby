@@ -50,8 +50,7 @@ class TestRequire < Test::Unit::TestCase
   def test_require_nonascii
     bug3758 = '[ruby-core:31915]'
     ["\u{221e}", "\x82\xa0".force_encoding("cp932")].each do |path|
-      e = assert_raise(LoadError, bug3758) {require path}
-      assert_match(/#{path}\z/, e.message, bug3758)
+      assert_raise_with_message(LoadError, /#{path}\z/, bug3758) {require path}
     end
   end
 
@@ -399,6 +398,8 @@ class TestRequire < Test::Unit::TestCase
   def test_race_exception
     bug5754 = '[ruby-core:41618]'
     path = nil
+    stderr = $stderr
+    verbose = $VERBOSE
     Tempfile.create(%w"bug5754 .rb") {|tmp|
       path = tmp.path
       tmp.print %{\
@@ -416,12 +417,11 @@ class TestRequire < Test::Unit::TestCase
       }
       tmp.close
 
-      # "circular require" warnings to $stderr, but backtraces to stderr
-      # in C-level.  And redirecting stderr to a pipe seems to change
-      # some blocking timings and causes a deadlock, so run in a
-      # separated process for the time being.
-      assert_separately(["-w", "-", path, bug5754], <<-'end;', ignore_stderr: true)
-      path, bug5754 = *ARGV
+      class << (output = "")
+        alias write concat
+      end
+      $stderr = output
+
       start = false
 
       scratch = []
@@ -447,16 +447,23 @@ class TestRequire < Test::Unit::TestCase
       t1[:t] = t2
       t2[:t] = t1
 
+      $VERBOSE = true
       start = true
 
       assert_nothing_raised(ThreadError, bug5754) {t1.join}
       assert_nothing_raised(ThreadError, bug5754) {t2.join}
 
+      $VERBOSE = false
+
       assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
       assert_equal([:pre, :post], scratch, bug5754)
-      end;
+
+      assert_match(/circular require/, output)
+      assert_match(/in #{__method__}'$/o, output)
     }
   ensure
+    $VERBOSE = verbose
+    $stderr = stderr
     $".delete(path)
   end
 

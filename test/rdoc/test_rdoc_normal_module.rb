@@ -23,6 +23,11 @@ class TestRDocNormalModule < XrefTestCase
     assert_equal [mod2, incl.name], mod.ancestors
   end
 
+  def test_aref
+    assert_equal 'module-M1',     @m1.aref
+    assert_equal 'module-M1::M2', @m1_m2.aref
+  end
+
   def test_definition
     m = RDoc::NormalModule.new 'M'
 

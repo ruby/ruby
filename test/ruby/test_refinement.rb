@@ -441,12 +441,11 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_refine_without_block
     c1 = Class.new
-    e = assert_raise(ArgumentError) {
+    assert_raise_with_message(ArgumentError, "no block given") {
       Module.new do
         refine c1
       end
     }
-    assert_equal("no block given", e.message)
   end
 
   module Inspect
@@ -1014,6 +1013,98 @@ class TestRefinement < Test::Unit::TestCase
   def test_method_defined
     assert_not_send([Foo, :method_defined?, :z])
     assert_not_send([FooSub, :method_defined?, :z])
+  end
+
+  def test_undef_refined_method
+    bug8966 = '[ruby-core:57466] [Bug #8966]'
+
+    assert_in_out_err([], <<-INPUT, ["NameError"], [], bug8966)
+      module Foo
+        refine Object do
+          def foo
+            puts "foo"
+          end
+        end
+      end
+
+      using Foo
+
+      class Object
+        begin
+          undef foo
+        rescue Exception => e
+          p e.class
+        end
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, ["NameError"], [], bug8966)
+      module Foo
+        refine Object do
+          def foo
+            puts "foo"
+          end
+        end
+      end
+
+      # without `using Foo'
+
+      class Object
+        begin
+          undef foo
+        rescue Exception => e
+          p e.class
+        end
+      end
+    INPUT
+  end
+
+  def test_refine_undefed_method_and_call
+    assert_in_out_err([], <<-INPUT, ["NoMethodError"], [])
+      class Foo
+        def foo
+        end
+
+        undef foo
+      end
+
+      module FooExt
+        refine Foo do
+          def foo
+          end
+        end
+      end
+
+      begin
+        Foo.new.foo
+      rescue => e
+        p e.class
+      end
+    INPUT
+  end
+
+  def test_refine_undefed_method_and_send
+    assert_in_out_err([], <<-INPUT, ["NoMethodError"], [])
+      class Foo
+        def foo
+        end
+
+        undef foo
+      end
+
+      module FooExt
+        refine Foo do
+          def foo
+          end
+        end
+      end
+
+      begin
+        Foo.new.send(:foo)
+      rescue => e
+        p e.class
+      end
+    INPUT
   end
 
   private

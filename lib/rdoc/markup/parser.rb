@@ -389,7 +389,7 @@ class RDoc::Markup::Parser
         skip :NEWLINE
       when :TEXT then
         unget
-        parent << build_paragraph(indent)
+        parse_text parent, indent
       when *LIST_TOKENS then
         unget
         parent << build_list(indent)
@@ -403,6 +403,13 @@ class RDoc::Markup::Parser
 
     parent
 
+  end
+
+  ##
+  # Small hook that is overridden by RDoc::TomDoc
+
+  def parse_text parent, indent # :nodoc:
+    parent << build_paragraph(indent)
   end
 
   ##

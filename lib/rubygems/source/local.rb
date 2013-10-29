@@ -88,7 +88,7 @@ class Gem::Source::Local < Gem::Source
       end
     end
 
-    found.sort_by { |s| s.version }.last
+    found.max_by { |s| s.version }
   end
 
   def fetch_spec(name)
@@ -97,7 +97,7 @@ class Gem::Source::Local < Gem::Source
     if data = @specs[name]
       data.last.spec
     else
-      raise Gem::Exception, "Unable to find spec for '#{name}'"
+      raise Gem::Exception, "Unable to find spec for #{name.inspect}"
     end
   end
 

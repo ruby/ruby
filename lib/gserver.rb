@@ -3,7 +3,7 @@
 #
 # Author::        John W. Small
 # Documentation:: Gavin Sinclair
-# Licence::       Freeware.
+# Licence::       Ruby License
 
 require "socket"
 require "thread"

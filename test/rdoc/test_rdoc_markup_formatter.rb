@@ -71,20 +71,46 @@ class TestRDocMarkupFormatter < RDoc::TestCase
     @to.add_special_RDOCLINK
 
     assert_includes special_names, 'RDOCLINK'
+
+    def @to.handle_special_RDOCLINK special
+      "<#{special.text}>"
+    end
+
+    document = doc(para('{foo}[rdoc-label:bar].'))
+
+    formatted = document.accept @to
+
+    assert_equal '{foo}[<rdoc-label:bar>].', formatted
   end
 
   def test_add_special_TIDYLINK
     @to.add_special_TIDYLINK
 
     assert_includes special_names, 'TIDYLINK'
+
+    def @to.handle_special_TIDYLINK special
+      "<#{special.text}>"
+    end
+
+    document = doc(para('foo[rdoc-label:bar].'))
+
+    formatted = document.accept @to
+
+    assert_equal '<foo[rdoc-label:bar]>.', formatted
+
+    document = doc(para('{foo}[rdoc-label:bar].'))
+
+    formatted = document.accept @to
+
+    assert_equal '<{foo}[rdoc-label:bar]>.', formatted
   end
 
   def test_parse_url
     scheme, url, id = @to.parse_url 'example/foo'
 
-    assert_equal 'http',               scheme
-    assert_equal 'http://example/foo', url
-    assert_equal nil,                  id
+    assert_equal 'http',        scheme
+    assert_equal 'example/foo', url
+    assert_equal nil,           id
   end
 
   def test_parse_url_anchor

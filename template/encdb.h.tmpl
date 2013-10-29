@@ -82,14 +82,10 @@ encdirs.each do |encdir|
 end
 encodings.each_with_index do |e, i|
 %>ENC_DEFINE("<%=e%>");
-#define ENCIDX_<%=e.tr('-', '_')%> <%=i%>
 % end
 % encidx = encodings.size - 1
 % lines.each do |line|
 <%=line%>
-%  if /^ENC_(?:DUMMY(?:_UNICODE)?|REPLICATE)\(\s*"([^"]+)/ =~ line
-#define ENCIDX_<%=$1.tr('-', '_')%> <%=encidx+=1%>
-%  end
 % end
 
 #define ENCODING_COUNT <%=count%>

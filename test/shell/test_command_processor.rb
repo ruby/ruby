@@ -18,12 +18,16 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
     tc
   end
 
+  def exeext
+    RbConfig::CONFIG["EXECUTABLE_EXTS"][/\S+\z/]
+  end
+
   def test_system_external
-    ext = RbConfig::CONFIG["EXECUTABLE_EXTS"][/\S+\z/]
-    path = File.join(@tmpdir, "foo#{ext}")
+    name = "foo#{exeext}"
+    path = File.join(@tmpdir, name)
     open(path, "w", 0755) {}
 
-    cmd = assert_throw(catch_command_start) {@shell.system("foo")}
+    cmd = assert_throw(catch_command_start) {@shell.system(name)}
     assert_equal(path, cmd.command)
   ensure
     File.unlink(path)
@@ -32,14 +36,30 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
   def test_system_not_found
     bug8918 = '[ruby-core:57235] [Bug #8918]'
 
-    path = File.join(@tmpdir, "foo")
+    name = "foo"
+    path = File.join(@tmpdir, name)
     open(path, "w", 0644) {}
 
     assert_raise(Shell::Error::CommandNotFound, bug8918) {
-      catch(catch_command_start) {@shell.system("foo")}
+      catch(catch_command_start) {@shell.system(name)}
     }
   ensure
     Process.waitall
     File.unlink(path)
+  end
+
+  def test_system_directory
+    bug8918 = '[ruby-core:57235] [Bug #8918]'
+
+    name = "foo#{exeext}"
+    path = File.join(@tmpdir, name)
+    Dir.mkdir(path)
+
+    assert_raise(Shell::Error::CommandNotFound, bug8918) {
+      catch(catch_command_start) {@shell.system(name)}
+    }
+  ensure
+    Process.waitall
+    Dir.rmdir(path)
   end
 end

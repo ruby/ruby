@@ -966,4 +966,29 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     assert_equal 4, n
   end
+
+  def test_tracepoint_b_return_with_lambda
+    n = 0
+    TracePoint.new(:b_return){
+      n+=1
+    }.enable{
+      lambda{
+        return
+      }.call     # n += 1 #=> 1
+      3.times{
+        lambda{
+          return # n += 3 #=> 4
+        }.call
+      }          # n += 3 #=> 7
+      begin
+        lambda{
+          raise
+        }.call   # n += 1 #=> 8
+      rescue
+        # ignore
+      end        # n += 1 #=> 9
+    }
+
+    assert_equal 9, n
+  end
 end

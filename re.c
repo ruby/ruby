@@ -3276,6 +3276,9 @@ rb_reg_s_union(VALUE self, VALUE args0)
  *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
  *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
  *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ *
+ *  Note: the arguments for ::union will try to be converted into a regular
+ *  expression literal via #to_regexp.
  */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)

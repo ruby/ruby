@@ -1,15 +1,11 @@
-<body id="top" class="<%= klass.type %>">
-<nav id="metadata">
-  <%= render '_sidebar_navigation.rhtml' %>
-
-  <%= render '_sidebar_search.rhtml' %>
+<body id="top" role="document" class="<%= klass.type %>">
+<nav role="navigation">
+  <div id="project-navigation">
+    <%= render '_sidebar_navigation.rhtml' %>
+    <%= render '_sidebar_search.rhtml' %>
+  </div>
 
   <%= render '_sidebar_table_of_contents.rhtml' %>
-
-  <div id="file-metadata">
-    <%= render '_sidebar_in_files.rhtml' %>
-    <%= render '_sidebar_VCS_info.rhtml' %>
-  </div>
 
   <div id="class-metadata">
     <%= render '_sidebar_sections.rhtml' %>
@@ -18,52 +14,50 @@
     <%= render '_sidebar_extends.rhtml' %>
     <%= render '_sidebar_methods.rhtml' %>
   </div>
-
-  <div id="project-metadata">
-    <%= render '_sidebar_pages.rhtml' %>
-    <%= render '_sidebar_classes.rhtml' %>
-  </div>
 </nav>
 
-<div id="documentation">
-  <h1 class="<%= klass.type %>"><%= klass.type %> <%= klass.full_name %></h1>
+<main role="main" aria-labelledby="<%=h klass.aref %>">
+  <h1 id="<%=h klass.aref %>" class="<%= klass.type %>">
+    <%= klass.type %> <%= klass.full_name %>
+  </h1>
 
-  <div id="description" class="description">
+  <section class="description">
     <%= klass.description %>
-  </div><!-- description -->
+  </section>
 
   <% klass.each_section do |section, constants, attributes| %>
   <% constants = constants.select { |const| const.display? } %>
   <% attributes = attributes.select { |attr| attr.display? } %>
   <section id="<%= section.aref %>" class="documentation-section">
     <% if section.title then %>
-    <div class="documentation-section-title">
-      <h2 class="section-header">
+    <header class="documentation-section-title">
+      <h2>
         <%= section.title %>
       </h2>
       <span class="section-click-top">
         <a href="#top">&uarr; top</a>
       </span>
-    </div>
+    </header>
     <% end %>
 
     <% if section.comment then %>
-    <div class="description">
+    <div>
       <%= section.description %>
     </div>
     <% end %>
 
     <% unless constants.empty? then %>
-    <!-- Constants -->
-    <section id="constants-list" class="section">
-      <h3 class="section-header">Constants</h3>
+    <section class="constants-list">
+      <header>
+        <h3>Constants</h3>
+      </header>
       <dl>
       <% constants.each do |const| %>
         <dt id="<%= const.name %>"><%= const.name %>
         <% if const.comment then %>
-        <dd class="description"><%= const.description.strip %>
+        <dd><%= const.description.strip %>
         <% else %>
-        <dd class="description missing-docs">(Not documented)
+        <dd class="missing-docs">(Not documented)
         <% end %>
       <% end %>
       </dl>
@@ -71,9 +65,10 @@
     <% end %>
 
     <% unless attributes.empty? then %>
-    <!-- Attributes -->
-    <section id="attribute-method-details" class="method-section section">
-      <h3 class="section-header">Attributes</h3>
+    <section class="attribute-method-details" class="method-section">
+      <header>
+        <h3>Attributes</h3>
+      </header>
 
       <% attributes.each do |attrib| %>
       <div id="<%= attrib.aref %>" class="method-detail">
@@ -91,16 +86,17 @@
         </div>
       </div>
       <% end %>
-    </section><!-- attribute-method-details -->
+    </section>
     <% end %>
 
-    <!-- Methods -->
     <% klass.methods_by_type(section).each do |type, visibilities|
        next if visibilities.empty?
        visibilities.each do |visibility, methods|
          next if methods.empty? %>
-     <section id="<%= visibility %>-<%= type %>-<%= section.aref %>-method-details" class="method-section section">
-      <h3 class="section-header"><%= visibility.to_s.capitalize %> <%= type.capitalize %> Methods</h3>
+     <section id="<%= visibility %>-<%= type %>-<%= section.aref %>-method-details" class="method-section">
+       <header>
+         <h3><%= visibility.to_s.capitalize %> <%= type.capitalize %> Methods</h3>
+       </header>
 
     <% methods.each do |method| %>
       <div id="<%= method.aref %>" class="method-detail <%= method.is_alias_for ? "method-alias" : '' %>">
@@ -146,7 +142,7 @@
           <% if method.token_stream then %>
           <div class="method-source-code" id="<%= method.html_name %>-source">
             <pre><%= method.markup_code %></pre>
-          </div><!-- <%= method.html_name %>-source -->
+          </div>
           <% end %>
         </div>
 
@@ -167,13 +163,12 @@
           Alias for: <a href="<%= klass.aref_to method.is_alias_for.path %>"><%= h method.is_alias_for.name %></a>
         </div>
         <% end %>
-      </div><!-- <%= method.html_name %>-method -->
+      </div>
 
     <% end %>
-    </section><!-- <%= visibility %>-<%= type %>-method-details -->
+    </section>
   <% end
      end %>
-  </section><!-- <%= section.aref %> -->
+  </section>
 <% end %>
-
-</div><!-- documentation -->
+</main>

@@ -24,6 +24,9 @@ class TestGemIndexer < Gem::TestCase
     @d2_0_b = quick_spec 'd', '2.0.b'
     util_build_gem @d2_0_b
 
+    @default = new_default_spec 'default', 2
+    install_default_gems @default
+
     @tempdir = File.join(@tempdir, 'indexer')
 
     gems = File.join(@tempdir, 'gems')

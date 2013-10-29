@@ -511,26 +511,28 @@ void
 Init_thread(void)
 {
 #if UNDER_THREAD
-#define ALIAS_GLOBCAL_CONST(name) do {	              \
+#define ALIAS_GLOBAL_CONST(name) do {	              \
 	ID id = rb_intern_const(#name);	              \
 	if (!rb_const_defined_at(rb_cObject, id)) {   \
 	    rb_const_set(rb_cObject, id, rb_c##name); \
 	}                                             \
     } while (0)
+#define OUTER rb_cThread
 #else
-#define ALIAS_GLOBCAL_CONST(name) do { /* nothing */ } while (0)
+#define ALIAS_GLOBAL_CONST(name) do { /* nothing */ } while (0)
+#define OUTER 0
 #endif
 
     VALUE rb_cConditionVariable = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"ConditionVariable", rb_cObject, rb_struct_alloc_noinit,
 	"waiters", NULL);
     VALUE rb_cQueue = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"Queue", rb_cObject, rb_struct_alloc_noinit,
 	"que", "waiters", NULL);
     VALUE rb_cSizedQueue = rb_struct_define_without_accessor_under(
-	UNDER_THREAD ? rb_cThread : 0,
+	OUTER,
 	"SizedQueue", rb_cQueue, rb_struct_alloc_noinit,
 	"que", "waiters", "queue_waiters", "size", NULL);
 
@@ -567,7 +569,7 @@ Init_thread(void)
     rb_alias(rb_cSizedQueue, rb_intern("shift"), rb_intern("pop"));
 
     rb_provide("thread.rb");
-    ALIAS_GLOBCAL_CONST(ConditionVariable);
-    ALIAS_GLOBCAL_CONST(Queue);
-    ALIAS_GLOBCAL_CONST(SizedQueue);
+    ALIAS_GLOBAL_CONST(ConditionVariable);
+    ALIAS_GLOBAL_CONST(Queue);
+    ALIAS_GLOBAL_CONST(SizedQueue);
 }

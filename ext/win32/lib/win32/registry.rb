@@ -212,6 +212,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Win32 APIs
     #
     module API
+      include Constants
       extend Importer
       dlload "advapi32.dll"
       [
@@ -289,7 +290,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
-        name[0, unpackdw(size)/WCHAR_SIZE].encode
+        name[0, unpackdw(size)]
       end
 
       def EnumKey(hkey, index)
@@ -297,7 +298,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
         check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
-        [ name[0, unpackdw(size)/WCHAR_SIZE].encode, unpackqw(wtime) ]
+        [ name[0, unpackdw(size)], unpackqw(wtime) ]
       end
 
       def QueryValue(hkey, name)
@@ -557,6 +558,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         rescue Error
           break
         end
+        subkey = export_string(subkey)
         begin
           type, data = read(subkey)
         rescue Error
@@ -593,6 +595,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         rescue Error
           break
         end
+        subkey = export_string(subkey)
         yield subkey, wtime
         index += 1
       end
@@ -722,11 +725,14 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # method returns.
     #
     def write(name, type, data)
+      termsize = 0
       case type
       when REG_SZ, REG_EXPAND_SZ
-        data = data.to_s + "\0"
+        data = data.encode(WCHAR)
+        termsize = WCHAR_SIZE
       when REG_MULTI_SZ
-        data = data.to_a.join("\0") + "\0\0"
+        data = data.to_a.map {|s| s.encode(WCHAR)}.join(WCHAR_NUL) << WCHAR_NUL
+        termsize = WCHAR_SIZE
       when REG_BINARY
         data = data.to_s
       when REG_DWORD
@@ -738,7 +744,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       else
         raise TypeError, "Unsupported type #{type}"
       end
-      API.SetValue(@hkey, name, type, data, data.length)
+      API.SetValue(@hkey, name, type, data, data.bytesize + termsize)
     end
 
     #
@@ -881,6 +887,12 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
           info[#{i}]
         end
       __END__
+    end
+
+    private
+
+    def export_string(str, enc = Encoding.default_internal || LOCALE) # :nodoc:
+      str.encode(enc)
     end
   end
 end

@@ -38,7 +38,9 @@ g\ 0: g1 g\ 2 g\ 3 g4
     assert_equal %w(d1 d2).sort, Task['d'].prerequisites.sort
     assert_equal %w(e1 f1).sort, Task['e'].prerequisites.sort
     assert_equal %w(e1 f1).sort, Task['f'].prerequisites.sort
-    assert_equal ["g1", "g 2", "g 3", "g4"].sort, Task['g 0'].prerequisites.sort
+    assert_equal(
+      ["g1", "g 2", "g 3", "g4"].sort,
+      Task['g 0'].prerequisites.sort)
     assert_equal 7, Task.tasks.size
   end
 end

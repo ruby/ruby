@@ -1,9 +1,10 @@
-<body class="indexpage">
-<h1><%= h @title %></h1>
+<body id="top" class="table-of-contents">
+<main role="main">
+<h1 class="class"><%= h @title %></h1>
 
 <% simple_files = @files.select { |f| f.text? } %>
 <% unless simple_files.empty? then %>
-<h2>Pages</h2>
+<h2 id="pages">Pages</h2>
 <ul>
 <% simple_files.sort.each do |file| %>
   <li class="file">
@@ -12,8 +13,7 @@
    # HACK table_of_contents should not exist on Document
    table = file.parse(file.comment).table_of_contents
    unless table.empty? then %>
-    <img class="toc-toggle" src="images/transparent.png" alt="" title="toggle headings">
-    <ul class="initially-hidden">
+    <ul>
 <% table.each do |heading| %>
       <li><a href="<%= file.path %>#<%= heading.aref %>"><%= heading.plain_html %></a>
 <%   end %>
@@ -24,7 +24,7 @@
 </ul>
 <% end %>
 
-<h2 id="classes">Classes/Modules</h2>
+<h2 id="classes">Classes and Modules</h2>
 <ul>
 <% @modsort.each do |klass| %>
   <li class="<%= klass.type %>">
@@ -34,22 +34,25 @@
    table.concat klass.section_contents
 
    unless table.empty? then %>
-    <img class="toc-toggle" src="images/transparent.png" alt="" title="toggle headings">
-    <ul class="initially-hidden">
+    <ul>
 <% table.each do |item| %>
       <li><a href="<%= klass.path %>#<%= item.aref %>"><%= item.plain_html %></a>
 <%   end %>
     </ul>
 <% end %>
   </li>
-  <% end %>
+<% end %>
 </ul>
 
 <h2 id="methods">Methods</h2>
 <ul>
-  <% @store.all_classes_and_modules.map do |mod|
-       mod.method_list
-     end.flatten.sort.each do |method| %>
-    <li class="method"><a href="<%= method.path %>"><%= method.pretty_name %> &mdash; <%= method.parent.full_name %></a>
-  <% end %>
+<% @store.all_classes_and_modules.map do |mod|
+     mod.method_list
+   end.flatten.sort.each do |method| %>
+  <li class="method">
+    <a href="<%= method.path %>"><%= h method.pretty_name %></a>
+    &mdash;
+    <span class="container"><%= method.parent.full_name %></span>
+<% end %>
 </ul>
+</main>

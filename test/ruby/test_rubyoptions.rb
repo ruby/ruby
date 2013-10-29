@@ -546,9 +546,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
     bug7402 = '[ruby-core:49573]'
     status = assert_in_out_err(['-e', 'class Bogus; def to_str; exit true; end; end',
+                                '-e', '$".clear',
                                 '-e', '$".unshift Bogus.new',
+                                '-e', '(p $"; abort) unless $".size == 1',
                                 '-e', 'Process.kill :SEGV, $$'],
-                               "", //, /#<Bogus:/,
+                               "", [], /#<Bogus:/,
                                nil,
                                opts)
     assert_not_predicate(status, :success?, "segv but success #{bug7402}")

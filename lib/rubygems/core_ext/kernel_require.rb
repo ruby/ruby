@@ -38,6 +38,8 @@ module Kernel
   def require path
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
+    path = path.to_path if path.respond_to? :to_path
+
     spec = Gem.find_unresolved_default_spec(path)
     if spec
       Gem.remove_unresolved_default_spec(spec)

@@ -10,7 +10,10 @@
 #endif
 
 /* cache 'encoding name' => 'code page' into a hash */
-static VALUE rb_code_page;
+static struct code_page_table {
+    USHORT *table;
+    unsigned int count;
+} rb_code_page;
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
@@ -168,6 +171,30 @@ system_code_page(void)
     return AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 }
 
+void rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg);
+
+static int
+code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
+{
+    const char *n = (const char *)name;
+    if (strncmp("CP", n, 2) == 0) {
+	int code_page = atoi(n + 2);
+	if (code_page != 0) {
+	    struct code_page_table *cp = (struct code_page_table *)arg;
+	    unsigned int count = cp->count;
+	    USHORT *table = cp->table;
+	    if (count <= idx) {
+		unsigned int i = count;
+		cp->count = count = ((idx + 4) & ~31 | 28);
+		cp->table = table = realloc(table, count * sizeof(*table));
+		while (i < count) table[i++] = INVALID_CODE_PAGE;
+	    }
+	    table[idx] = (USHORT)code_page;
+	}
+    }
+    return ST_CONTINUE;
+}
+
 /*
   Return code page number of the encoding.
   Cache code page into a hash for performance since finding the code page in
@@ -176,59 +203,21 @@ system_code_page(void)
 static UINT
 code_page(rb_encoding *enc)
 {
-    VALUE code_page_value, name_key;
-    VALUE encoding, names_ary = Qundef, name;
-    char *enc_name;
-    struct RString fake_str;
-    ID names;
-    long i;
+    int enc_idx;
 
     if (!enc)
 	return system_code_page();
 
-    enc_name = (char *)rb_enc_name(enc);
-
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
-    RBASIC_SET_CLASS_RAW((VALUE)&fake_str, rb_cString);
-    fake_str.as.heap.len = strlen(enc_name);
-    fake_str.as.heap.ptr = enc_name;
-    fake_str.as.heap.aux.capa = fake_str.as.heap.len;
-    name_key = (VALUE)&fake_str;
-    ENCODING_CODERANGE_SET(name_key, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
-
-    code_page_value = rb_hash_lookup(rb_code_page, name_key);
-    if (code_page_value != Qnil)
-	return (UINT)FIX2INT(code_page_value);
-
-    name_key = rb_usascii_str_new2(enc_name);
-
-    encoding = rb_enc_from_encoding(enc);
-    if (!NIL_P(encoding)) {
-	CONST_ID(names, "names");
-	names_ary = rb_funcall(encoding, names, 0);
-    }
+    enc_idx = rb_enc_to_index(enc);
 
     /* map US-ASCII and ASCII-8bit as code page 1252 (us-ascii) */
-    if (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding()) {
-	UINT code_page = 1252;
-	rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-	return code_page;
+    if (enc_idx == rb_usascii_encindex() || enc_idx == rb_ascii8bit_encindex()) {
+	return 1252;
     }
 
-    if (names_ary != Qundef) {
-	for (i = 0; i < RARRAY_LEN(names_ary); i++) {
-	    name = RARRAY_PTR(names_ary)[i];
-	    if (strncmp("CP", RSTRING_PTR(name), 2) == 0) {
-		int code_page = atoi(RSTRING_PTR(name) + 2);
-		if (code_page != 0) {
-		    rb_hash_aset(rb_code_page, name_key, INT2FIX(code_page));
-		    return (UINT)code_page;
-		}
-	    }
-	}
-    }
+    if (0 <= enc_idx && (unsigned int)enc_idx < rb_code_page.count)
+	return rb_code_page.table[enc_idx];
 
-    rb_hash_aset(rb_code_page, name_key, INT2FIX(INVALID_CODE_PAGE));
     return INVALID_CODE_PAGE;
 }
 
@@ -395,12 +384,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
 	    xfree(wpath);
+	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
-	/* use filesystem encoding if expanding home dir */
-	path_encoding = rb_filesystem_encoding();
-	cp = path_cp = system_code_page();
+	if (path_cp == INVALID_CODE_PAGE || rb_enc_str_asciionly_p(path)) {
+	    /* use filesystem encoding if expanding home dir */
+	    path_encoding = rb_filesystem_encoding();
+	    cp = path_cp = system_code_page();
+	}
 
 	/* ignores dir since we are expanding home */
 	ignore_dir = 1;
@@ -463,6 +455,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
 		xfree(wpath);
 		xfree(wdir);
+		xfree(whome);
 		rb_raise(rb_eArgError, "non-absolute home");
 	    }
 
@@ -706,10 +699,8 @@ rb_file_load_ok(const char *path)
 }
 
 void
-rb_w32_init_file(void)
+Init_w32_codepage(void)
 {
-    rb_code_page = rb_hash_new();
-
-    /* prevent GC removing rb_code_page */
-    rb_gc_register_mark_object(rb_code_page);
+    if (rb_code_page.count) return;
+    rb_enc_foreach_name(code_page_i, (st_data_t)&rb_code_page);
 }

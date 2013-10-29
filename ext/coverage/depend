@@ -6,4 +6,6 @@ $(OBJS): $(HDRS) $(ruby_headers) \
   {$(VPATH)}id.h \
   $(top_srcdir)/method.h \
   $(top_srcdir)/ruby_atomic.h \
-  $(top_srcdir)/thread_pthread.h
+  $(top_srcdir)/thread_pthread.h \
+  $(top_srcdir)/internal.h \
+  $(top_srcdir)/thread_native.h

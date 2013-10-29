@@ -1,5 +1,5 @@
 require 'rubygems/test_case'
-require 'rubygems/source/specific_file'
+require 'rubygems/source'
 
 class TestGemSourceSpecificFile < Gem::TestCase
   def setup

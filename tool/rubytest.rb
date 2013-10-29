@@ -11,12 +11,13 @@ unless File.exist? ruby
   print "Try `make' first, then `make test', please.\n"
   exit false
 end
+ARGV[0] and opt = ARGV[0][/\A--run-opt=(.*)/, 1] and ARGV.shift
 
 $stderr.reopen($stdout)
 error = ''
 
 srcdir = File.expand_path('..', File.dirname(__FILE__))
-`#{ruby} #{srcdir}/sample/test.rb #{ARGV.join(' ')}`.each_line do |line|
+`#{ruby} #{opt} #{srcdir}/sample/test.rb #{ARGV.join(' ')}`.each_line do |line|
   if line =~ /^end of test/
     print "\ntest succeeded\n"
     exit true

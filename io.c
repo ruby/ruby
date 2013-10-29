@@ -1428,7 +1428,7 @@ io_write_m(VALUE io, VALUE str)
 VALUE
 rb_io_write(VALUE io, VALUE str)
 {
-    return rb_funcall(io, id_write, 1, str);
+    return rb_funcallv(io, id_write, 1, &str);
 }
 
 /*
@@ -4432,11 +4432,16 @@ rb_io_close_read(VALUE io)
     write_io = GetWriteIO(io);
     if (io != write_io) {
 	rb_io_t *wfptr;
-        rb_io_fptr_cleanup(fptr, FALSE);
 	GetOpenFile(write_io, wfptr);
+	wfptr->pid = fptr->pid;
+	fptr->pid = 0;
         RFILE(io)->fptr = wfptr;
-        RFILE(write_io)->fptr = NULL;
-        rb_io_fptr_finalize(fptr);
+	/* bind to write_io temporarily to get rid of memory/fd leak */
+	fptr->tied_io_for_writing = 0;
+	fptr->mode &= ~FMODE_DUPLEX;
+	RFILE(write_io)->fptr = fptr;
+	rb_io_fptr_cleanup(fptr, FALSE);
+	/* should not finalize fptr because another thread may be reading it */
         return Qnil;
     }
 
@@ -4489,12 +4494,12 @@ rb_io_close_write(VALUE io)
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
 
-    rb_io_close(write_io);
     if (io != write_io) {
 	GetOpenFile(io, fptr);
 	fptr->tied_io_for_writing = 0;
 	fptr->mode &= ~FMODE_DUPLEX;
     }
+    rb_io_close(write_io);
     return Qnil;
 }
 
@@ -4673,12 +4678,9 @@ rb_io_binmode(VALUE io)
     return io;
 }
 
-VALUE
-rb_io_ascii8bit_binmode(VALUE io)
+static void
+io_ascii8bit_binmode(rb_io_t *fptr)
 {
-    rb_io_t *fptr;
-
-    GetOpenFile(io, fptr);
     if (fptr->readconv) {
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
@@ -4696,6 +4698,15 @@ rb_io_ascii8bit_binmode(VALUE io)
     fptr->encs.ecflags = 0;
     fptr->encs.ecopts = Qnil;
     clear_codeconv(fptr);
+}
+
+VALUE
+rb_io_ascii8bit_binmode(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    io_ascii8bit_binmode(fptr);
 
     return io;
 }
@@ -6654,10 +6665,14 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         }
     }
     else {
-        if (close(fptr->fd) < 0)
-            rb_sys_fail_path(fptr->pathv);
-        fptr->fd = -1;
-        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int tmpfd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int err = 0;
+	if (rb_cloexec_dup2(tmpfd, fptr->fd) < 0)
+	    err = errno;
+	(void)close(tmpfd);
+	if (err) {
+	    rb_syserr_fail_path(err, fptr->pathv);
+	}
     }
 
     return file;
@@ -8413,18 +8428,18 @@ advice_arg_check(VALUE advice)
  *  specific pattern. On platforms that do not support the
  *  <em>posix_fadvise(2)</em> system call, this method is a no-op.
  *
- * _advice_ is one of the following symbols:
+ *  _advice_ is one of the following symbols:
  *
- *  * :normal - No advice to give; the default assumption for an open file.
- *  * :sequential - The data will be accessed sequentially:
- *     with lower offsets read before higher ones.
- *  * :random - The data will be accessed in random order.
- *  * :willneed - The data will be accessed in the near future.
- *  * :dontneed - The data will not be accessed in the near future.
- *  * :noreuse - The data will only be accessed once.
+ *  :normal::     No advice to give; the default assumption for an open file.
+ *  :sequential:: The data will be accessed sequentially
+ *                with lower offsets read before higher ones.
+ *  :random::     The data will be accessed in random order.
+ *  :willneed::   The data will be accessed in the near future.
+ *  :dontneed::   The data will not be accessed in the near future.
+ *  :noreuse::    The data will only be accessed once.
  *
- * The semantics of a piece of advice are platform-dependent. See
- * <em>man 2 posix_fadvise</em> for details.
+ *  The semantics of a piece of advice are platform-dependent. See
+ *  <em>man 2 posix_fadvise</em> for details.
  *
  *  "data" means the region of the current file that begins at
  *  _offset_ and extends for _len_ bytes. If _len_ is 0, the region
@@ -8433,18 +8448,19 @@ advice_arg_check(VALUE advice)
  *
  *  If an error occurs, one of the following exceptions will be raised:
  *
- *  * <code>IOError</code> - The <code>IO</code> stream is closed.
- *  * <code>Errno::EBADF</code> - The file descriptor of the current file is
-      invalid.
- *  * <code>Errno::EINVAL</code> - An invalid value for _advice_ was given.
- *  * <code>Errno::ESPIPE</code> - The file descriptor of the current
- *  * file refers to a FIFO or pipe. (Linux raises <code>Errno::EINVAL</code>
- *  * in this case).
- *  * <code>TypeError</code> - Either _advice_ was not a Symbol, or one of the
-      other arguments was not an <code>Integer</code>.
- *  * <code>RangeError</code> - One of the arguments given was too big/small.
+ *  <code>IOError</code>:: The <code>IO</code> stream is closed.
+ *  <code>Errno::EBADF</code>::
+ *    The file descriptor of the current file is invalid.
+ *  <code>Errno::EINVAL</code>:: An invalid value for _advice_ was given.
+ *  <code>Errno::ESPIPE</code>::
+ *    The file descriptor of the current file refers to a FIFO or
+ *    pipe. (Linux raises <code>Errno::EINVAL</code> in this case).
+ *  <code>TypeError</code>::
+ *    Either _advice_ was not a Symbol, or one of the
+ *    other arguments was not an <code>Integer</code>.
+ *  <code>RangeError</code>:: One of the arguments given was too big/small.
  *
- * This list is not exhaustive; other Errno:: exceptions are also possible.
+ *  This list is not exhaustive; other Errno:: exceptions are also possible.
  */
 static VALUE
 rb_io_advise(int argc, VALUE *argv, VALUE io)
@@ -8485,6 +8501,98 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  if optional <i>timeout</i> value is given and no <code>IO</code> object
  *  is ready in <i>timeout</i> seconds.
  *
+ *  <code>IO.select</code> peeks the buffer of <code>IO</code> objects for testing readability.
+ *  If the <code>IO</code> buffer is not empty,
+ *  <code>IO.select</code> immediately notify readability.
+ *  This "peek" is only happen for <code>IO</code> objects.
+ *  It is not happen for IO-like objects such as OpenSSL::SSL::SSLSocket.
+ *
+ *  The best way to use <code>IO.select</code> is invoking it
+ *  after nonblocking methods such as <code>read_nonblock</code>, <code>write_nonblock</code>, etc.
+ *  The methods raises an exception which is extended by
+ *  <code>IO::WaitReadable</code> or <code>IO::WaitWritable</code>.
+ *  The modules notify how the caller should wait with <code>IO.select</code>.
+ *  If <code>IO::WaitReadable</code> is raised, the caller should wait for reading.
+ *  If <code>IO::WaitWritable</code> is raised, the caller should wait for writing.
+ *
+ *  So, blocking read (<code>readpartial</code>) can be emulated using
+ *  <code>read_nonblock</code> and <code>IO.select</code> as follows:
+ *
+ *    begin
+ *      result = io_like.read_nonblock(maxlen)
+ *    rescue IO::WaitReadable
+ *      IO.select([io_like])
+ *      retry
+ *    rescue IO::WaitWritable
+ *      IO.select(nil, [io_like])
+ *      retry
+ *    end
+ *
+ *  Especially, the combination of nonblocking methods and
+ *  <code>IO.select</code> is preferred for <code>IO</code> like
+ *  objects such as <code>OpenSSL::SSL::SSLSocket</code>.
+ *  It has <code>to_io</code> method to return underlying <code>IO</code> object.
+ *  <code>IO.select</code> calls <code>to_io</code> to obtain the file descriptor to wait.
+ *
+ *  This means that readability notified by <code>IO.select</code> doesn't mean
+ *  readability from <code>OpenSSL::SSL::SSLSocket</code> object.
+ *
+ *  Most possible situation is <code>OpenSSL::SSL::SSLSocket</code> buffers some data.
+ *  <code>IO.select</code> doesn't see the buffer.
+ *  So <code>IO.select</code> can block when <code>OpenSSL::SSL::SSLSocket#readpartial</code> doesn't block.
+ *
+ *  However several more complicated situation exists.
+ *
+ *  SSL is a protocol which is sequence of records.
+ *  The record consists multiple bytes.
+ *  So, the remote side of SSL sends a partial record,
+ *  <code>IO.select</code> notifies readability but
+ *  <code>OpenSSL::SSL::SSLSocket</code> cannot decrypt a byte and
+ *  <code>OpenSSL::SSL::SSLSocket#readpartial</code> will blocks.
+ *
+ *  Also, the remote side can request SSL renegotiation which forces
+ *  the local SSL engine writes some data.
+ *  This means <code>OpenSSL::SSL::SSLSocket#readpartial</code> may
+ *  invoke <code>write</code> system call and it can block.
+ *  In such situation, <code>OpenSSL::SSL::SSLSocket#read_nonblock</code>
+ *  raises IO::WaitWritable instead of blocking.
+ *  So, the caller should wait for ready for writability as above example.
+ *
+ *  The combination of nonblocking methods and <code>IO.select</code> is
+ *  also useful for streams such as tty, pipe socket socket when
+ *  multiple process read form a stream.
+ *
+ *  Finally, Linux kernel developers doesn't guarantee that
+ *  readability of select(2) means readability of following read(2) even
+ *  for single process.
+ *  See select(2) manual on GNU/Linux system.
+ *
+ *  Invoking <code>IO.select</code> before <code>IO#readpartial</code> works well in usual.
+ *  However it is not the best way to use <code>IO.select</code>.
+ *
+ *  The writability notified by select(2) doesn't show
+ *  how many bytes writable.
+ *  <code>IO#write</code> method blocks until given whole string is written.
+ *  So, <code>IO#write(two or more bytes)</code> can block after writability is notified by <code>IO.select</code>.
+ *  <code>IO#write_nonblock</code> is required to avoid the blocking.
+ *
+ *  Blocking write (<code>write</code>) can be emulated using
+ *  <code>write_nonblock</code> and <code>IO.select</code> as follows:
+ *  IO::WaitReadable should also be rescued for SSL renegotiation in <code>OpenSSL::SSL::SSLSocket</code>.
+ *
+ *    while 0 < string.bytesize
+ *      begin
+ *        written = io_like.write_nonblock(string)
+ *      rescue IO::WaitReadable
+ *        IO.select([io_like])
+ *        retry
+ *      rescue IO::WaitWritable
+ *        IO.select(nil, [io_like])
+ *        retry
+ *      end
+ *      string = string.byteslice(written..-1)
+ *    end
+ *
  *  === Parameters
  *  read_array:: an array of <code>IO</code> objects that wait until ready for read
  *  write_array:: an array of <code>IO</code> objects that wait until ready for write
@@ -8496,6 +8604,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *      rp, wp = IO.pipe
  *      mesg = "ping "
  *      100.times {
+ *        # IO.select follows IO#read.  Not the best way to use IO.select.
  *        rs, ws, = IO.select([rp], [wp])
  *        if r = rs[0]
  *          ret = r.read(5)
@@ -10160,7 +10269,7 @@ static VALUE
 copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
-    VALUE src_io, dst_io;
+    VALUE src_io = stp->src, dst_io = stp->dst;
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
     const int common_oflags = 0
@@ -10173,20 +10282,18 @@ copy_stream_body(VALUE arg)
 
     stp->total = 0;
 
-    if (stp->src == argf ||
-        !(RB_TYPE_P(stp->src, T_FILE) ||
-          RB_TYPE_P(stp->src, T_STRING) ||
-          rb_respond_to(stp->src, rb_intern("to_path")))) {
+    if (src_io == argf ||
+        !(RB_TYPE_P(src_io, T_FILE) ||
+          RB_TYPE_P(src_io, T_STRING) ||
+          rb_respond_to(src_io, rb_intern("to_path")))) {
         src_fd = -1;
     }
     else {
-        src_io = RB_TYPE_P(stp->src, T_FILE) ? stp->src : Qnil;
-        if (NIL_P(src_io)) {
+	if (!RB_TYPE_P(src_io, T_FILE)) {
             VALUE args[2];
-            const int oflags = O_RDONLY|common_oflags;
-            FilePathValue(stp->src);
-            args[0] = stp->src;
-            args[1] = INT2NUM(oflags);
+	    FilePathValue(src_io);
+	    args[0] = src_io;
+	    args[1] = INT2NUM(O_RDONLY|common_oflags);
             src_io = rb_class_new_instance(2, args, rb_cFile);
             stp->src = src_io;
             stp->close_src = 1;
@@ -10197,20 +10304,18 @@ copy_stream_body(VALUE arg)
     }
     stp->src_fd = src_fd;
 
-    if (stp->dst == argf ||
-        !(RB_TYPE_P(stp->dst, T_FILE) ||
-          RB_TYPE_P(stp->dst, T_STRING) ||
-          rb_respond_to(stp->dst, rb_intern("to_path")))) {
+    if (dst_io == argf ||
+        !(RB_TYPE_P(dst_io, T_FILE) ||
+          RB_TYPE_P(dst_io, T_STRING) ||
+          rb_respond_to(dst_io, rb_intern("to_path")))) {
         dst_fd = -1;
     }
     else {
-        dst_io = RB_TYPE_P(stp->dst, T_FILE) ? stp->dst : Qnil;
-        if (NIL_P(dst_io)) {
+	if (!RB_TYPE_P(dst_io, T_FILE)) {
             VALUE args[3];
-            const int oflags = O_WRONLY|O_CREAT|O_TRUNC|common_oflags;
-            FilePathValue(stp->dst);
-            args[0] = stp->dst;
-            args[1] = INT2NUM(oflags);
+	    FilePathValue(dst_io);
+	    args[0] = dst_io;
+	    args[1] = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC|common_oflags);
             args[2] = INT2FIX(0666);
             dst_io = rb_class_new_instance(3, args, rb_cFile);
             stp->dst = dst_io;
@@ -10231,7 +10336,7 @@ copy_stream_body(VALUE arg)
 	SET_BINARY_MODE_WITH_SEEK_CUR(src_fptr);
 #endif
     if (dst_fptr)
-	rb_io_ascii8bit_binmode(dst_io);
+	io_ascii8bit_binmode(dst_fptr);
 
     if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf.len) {
         size_t len = src_fptr->rbuf.len;
@@ -10247,7 +10352,7 @@ copy_stream_body(VALUE arg)
                 rb_sys_fail(0);
         }
         else /* others such as StringIO */
-            rb_io_write(stp->dst, str);
+	    rb_io_write(dst_io, str);
         stp->total += len;
         if (stp->copy_length != (off_t)-1)
             stp->copy_length -= len;

@@ -1889,6 +1889,35 @@ check_setter_id(VALUE name, int (*valid_id_p)(ID), int (*valid_name_p)(VALUE),
     return id;
 }
 
+static int
+rb_is_attr_id(ID id)
+{
+    return rb_is_local_id(id) || rb_is_const_id(id);
+}
+
+static int
+rb_is_attr_name(VALUE name)
+{
+    return rb_is_local_name(name) || rb_is_const_name(name);
+}
+
+static const char invalid_attribute_name[] = "invalid attribute name `%"PRIsVALUE"'";
+
+static ID
+id_for_attr(VALUE name)
+{
+    return id_for_setter(name, attr, invalid_attribute_name);
+}
+
+ID
+rb_check_attr_id(ID id)
+{
+    if (!rb_is_attr_id(id)) {
+	rb_name_error_str(id, invalid_attribute_name, QUOTE_ID(id));
+    }
+    return id;
+}
+
 /*
  *  call-seq:
  *     attr_reader(symbol, ...)  -> nil
@@ -1908,7 +1937,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), TRUE, FALSE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), TRUE, FALSE, TRUE);
     }
     return Qnil;
 }
@@ -1918,7 +1947,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
 	rb_warning("optional boolean argument is obsoleted");
-	rb_attr(klass, rb_to_id(argv[0]), 1, RTEST(argv[1]), TRUE);
+	rb_attr(klass, id_for_attr(argv[0]), 1, RTEST(argv[1]), TRUE);
 	return Qnil;
     }
     return rb_mod_attr_reader(argc, argv, klass);
@@ -1940,7 +1969,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), FALSE, TRUE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), FALSE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -1968,7 +1997,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), TRUE, TRUE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), TRUE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -2005,6 +2034,12 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
  *
  *     Object.const_get 'Foo::Baz::VAL'         # => 10
  *     Object.const_get 'Foo::Baz::VAL', false  # => NameError
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_get 'foobar' #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
@@ -2107,6 +2142,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 /*
  *  call-seq:
  *     mod.const_set(sym, obj)    -> obj
+ *     mod.const_set(str, obj)    -> obj
  *
  *  Sets the named constant to the given object, returning that object.
  *  Creates a new constant if no constant with the given name previously
@@ -2114,6 +2150,12 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
  *
  *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.14285714285714
  *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.00126448926734968
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_set('foobar', 42) #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
@@ -2127,6 +2169,7 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 /*
  *  call-seq:
  *     mod.const_defined?(sym, inherit=true)   -> true or false
+ *     mod.const_defined?(str, inherit=true)   -> true or false
  *
  *  Checks for a constant with the given name in <i>mod</i>
  *  If +inherit+ is set, the lookup will also search
@@ -2137,6 +2180,12 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
  *     Math.const_defined? "PI"   #=> true
  *     IO.const_defined? :SYNC   #=> true
  *     IO.const_defined? :SYNC, false   #=> false
+ *
+ *  If neither +sym+ nor +str+ is not a valid constant name a NameError will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Hash.const_defined? 'foobar' #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE

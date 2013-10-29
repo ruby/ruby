@@ -1,19 +1,13 @@
-##
-# A Requirement is a set of one or more version restrictions. It supports a
-# few (<tt>=, !=, >, <, >=, <=, ~></tt>) different restriction operators.
-
-# REFACTOR: The fact that a requirement is singular or plural is kind of
-# awkward. Is Requirement the right name for this? Or should it be one
-# [op, number] pair, and we call the list of requirements something else?
-# Since a Requirement is held by a Dependency, maybe this should be made
-# singular and the list aspect should be pulled up into Dependency?
-
 require "rubygems/version"
 require "rubygems/deprecate"
 
 # If we're being loaded after yaml was already required, then
 # load our yaml + workarounds now.
 Gem.load_yaml if defined? ::YAML
+
+##
+# A Requirement is a set of one or more version restrictions. It supports a
+# few (<tt>=, !=, >, <, >=, <=, ~></tt>) different restriction operators.
 
 class Gem::Requirement
   OPS = { #:nodoc:
@@ -40,9 +34,6 @@ class Gem::Requirement
   #
   # If the input is "weird", the default version requirement is
   # returned.
-
-  # REFACTOR: There's no reason that this can't be unified with .new.
-  # .new is the standard Ruby factory method.
 
   def self.create input
     case input
@@ -77,11 +68,6 @@ class Gem::Requirement
   #     parse("> 1.0")                 # => [">", "1.0"]
   #     parse("1.0")                   # => ["=", "1.0"]
   #     parse(Gem::Version.new("1.0")) # => ["=,  "1.0"]
-
-  # REFACTOR: Little two element arrays like this have no real semantic
-  # value. I'd love to see something like this:
-  # Constraint = Struct.new(:operator, :version); (or similar)
-  # and have a Requirement be a list of Constraints.
 
   def self.parse obj
     return ["=", obj] if Gem::Version === obj

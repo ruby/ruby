@@ -175,4 +175,3 @@ class TestRDocRdInlineParser < RDoc::TestCase
   end
 
 end
-

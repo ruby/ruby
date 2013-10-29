@@ -99,7 +99,7 @@ class TestHash < Test::Unit::TestCase
         super(Object.new)
       end
     }.new
-    assert_raises(TypeError) { h.dup }
+    assert_raise(TypeError) { h.dup }
   end
 
   def test_clear_initialize_copy

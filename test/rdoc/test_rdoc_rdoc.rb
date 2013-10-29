@@ -108,7 +108,13 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list
-    files = @rdoc.normalized_file_list [__FILE__]
+    files = temp_dir do |dir|
+      flag_file = @rdoc.output_flag_file dir
+
+      FileUtils.touch flag_file
+
+      @rdoc.normalized_file_list [__FILE__, flag_file]
+    end
 
     files = files.map { |file| File.expand_path file }
 
@@ -160,6 +166,23 @@ class TestRDocRDoc < RDoc::TestCase
       assert_equal 'test.txt', top_level.absolute_name
       assert_equal 'test.txt', top_level.relative_name
     end
+  end
+
+  def test_parse_file_binary
+    @rdoc.store = RDoc::Store.new
+
+    root = File.dirname __FILE__
+
+    @rdoc.options.root = Pathname root
+
+    out, err = capture_io do
+      Dir.chdir root do
+        assert_nil @rdoc.parse_file 'binary.dat'
+      end
+    end
+
+    assert_empty out
+    assert_empty err
   end
 
   def test_parse_file_include_root

@@ -1456,6 +1456,21 @@ class TestArray < Test::Unit::TestCase
     $, = nil
   end
 
+  def test_to_h
+    kvp = Object.new
+    def kvp.to_ary
+      [:obtained, :via_to_ary]
+    end
+    array = [
+      [:key, :value],
+      [:ignore_me],
+      [:ignore, :me, :too],
+      :ignore_me,
+      kvp,
+    ]
+    assert_equal({key: :value, obtained: :via_to_ary}, array.to_h)
+  end
+
   def test_uniq
     a = []
     b = a.uniq
@@ -1792,6 +1807,11 @@ class TestArray < Test::Unit::TestCase
   def test_first2
     assert_equal([0], [0].first(2))
     assert_raise(ArgumentError) { [0].first(-1) }
+  end
+
+  def test_last2
+    assert_equal([0], [0].last(2))
+    assert_raise(ArgumentError) { [0].last(-1) }
   end
 
   def test_shift2
@@ -2300,8 +2320,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a.rotate!(13))
     assert_equal([], a.rotate!(-13))
     a = [].freeze
-    e = assert_raise(RuntimeError) {a.rotate!}
-    assert_match(/can't modify frozen/, e.message)
+    assert_raise_with_message(RuntimeError, /can't modify frozen/) {a.rotate!}
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end

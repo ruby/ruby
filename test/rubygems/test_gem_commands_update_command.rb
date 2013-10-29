@@ -373,6 +373,50 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert user_install, 'user_install must be set on the installer'
   end
 
+  def test_fetch_remote_gems
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
+  def test_fetch_remote_gems_error
+    Gem.sources.replace %w[http://nonexistent.example]
+
+    assert_raises Gem::RemoteFetcher::FetchError do
+      @cmd.fetch_remote_gems @a1
+    end
+  end
+
+  def test_fetch_remote_gems_mismatch
+    platform = Gem::Platform.new 'x86-freebsd9'
+    a2_p = quick_spec 'a', 2 do |s| s.platform = platform end
+
+    util_setup_spec_fetcher @a2, a2_p
+
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
+  def test_fetch_remote_gems_prerelease
+    @cmd.options[:prerelease] = true
+
+    expected = [
+      [Gem::NameTuple.new('a', v(2), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+      [Gem::NameTuple.new('a', v('3.a'), Gem::Platform::RUBY),
+        Gem::Source.new(@gem_repo)],
+    ]
+
+    assert_equal expected, @cmd.fetch_remote_gems(@a1)
+  end
+
   def test_handle_options_system
     @cmd.handle_options %w[--system]
 
@@ -405,4 +449,31 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal expected, @cmd.options
   end
 
+  def test_update_rubygems_arguments
+    @cmd.options[:system] = true
+
+    arguments = @cmd.update_rubygems_arguments
+
+    assert_equal '--prefix',           arguments.shift
+    assert_equal Gem.prefix,           arguments.shift
+    assert_equal '--no-rdoc',          arguments.shift
+    assert_equal '--no-ri',            arguments.shift
+    assert_equal '--previous-version', arguments.shift
+    assert_equal Gem::VERSION,         arguments.shift
+    assert_empty arguments
+  end
+
+  def test_update_rubygems_arguments_1_8_x
+    @cmd.options[:system] = '1.8.26'
+
+    arguments = @cmd.update_rubygems_arguments
+
+    assert_equal '--prefix',           arguments.shift
+    assert_equal Gem.prefix,           arguments.shift
+    assert_equal '--no-rdoc',          arguments.shift
+    assert_equal '--no-ri',            arguments.shift
+    assert_empty arguments
+  end
+
 end
+

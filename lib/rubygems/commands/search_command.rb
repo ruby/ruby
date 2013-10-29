@@ -36,11 +36,5 @@ To list local gems use the list command.
     "#{program_name} [STRING]"
   end
 
-  def execute
-    string = get_one_optional_argument
-    options[:name] = /#{string}/i
-    super
-  end
-
 end
 

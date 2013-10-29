@@ -34,12 +34,12 @@ class TestRakeDefinitions < Rake::TestCase
     t = Task[n1]
     assert Task === t, "Should be a Task"
     assert_equal n1.to_s, t.name
-    assert_equal [n2.to_s], t.prerequisites.collect{|n| n.to_s}
+    assert_equal [n2.to_s], t.prerequisites.map { |n| n.to_s }
     t.invoke
     t2 = Task[n2]
     assert_equal FileList[], t2.prerequisites
     t3 = Task[n3]
-    assert_equal [n1.to_s, n2.to_s], t3.prerequisites.collect{|n|n.to_s}
+    assert_equal [n1.to_s, n2.to_s], t3.prerequisites.map { |n| n.to_s }
   end
 
   def test_incremental_definitions
@@ -77,4 +77,3 @@ class TestRakeDefinitions < Rake::TestCase
   end
 
 end
-

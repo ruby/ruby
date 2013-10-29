@@ -30,7 +30,7 @@
 #include <ieeefp.h>
 #endif
 
-#if defined HAVE_FINITE && !defined finite
+#if defined HAVE_FINITE && !defined finite && !defined _WIN32
 extern int finite(double);
 #endif
 
@@ -3443,7 +3443,7 @@ fix_aref(VALUE fix, VALUE idx)
     i = FIX2LONG(idx);
 
     if (i < 0) return INT2FIX(0);
-    if (SIZEOF_LONG*CHAR_BIT-1 < i) {
+    if (SIZEOF_LONG*CHAR_BIT-1 <= i) {
 	if (val < 0) return INT2FIX(1);
 	return INT2FIX(0);
     }
@@ -4062,4 +4062,18 @@ Init_Numeric(void)
 
     sym_to = ID2SYM(rb_intern("to"));
     sym_by = ID2SYM(rb_intern("by"));
+}
+
+#undef rb_float_value
+double
+rb_float_value(VALUE v)
+{
+    return rb_float_value_inline(v);
+}
+
+#undef rb_float_new
+VALUE
+rb_float_new(double d)
+{
+    return rb_float_new_inline(d);
 }

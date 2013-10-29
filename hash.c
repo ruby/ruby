@@ -1682,7 +1682,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_keys(VALUE hash)
 {
     VALUE ary;
@@ -1712,7 +1712,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_values(VALUE hash)
 {
     VALUE ary;
@@ -2901,8 +2901,15 @@ env_each_pair(VALUE ehash)
     }
     FREE_ENVIRON(environ);
 
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_yield(rb_assoc_new(RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1)));
+    if (rb_block_arity() > 1) {
+	for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	    rb_yield_values(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
+	}
+    }
+    else {
+	for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	    rb_yield(rb_assoc_new(RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1)));
+	}
     }
     return ehash;
 }
@@ -3545,7 +3552,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Accessing a value in a Hash requires using its key:
  *
- *    puts grades["Jane Doe"] # => 10
+ *    puts grades["Jane Doe"] # => 0
  *
  *  === Common Uses
  *

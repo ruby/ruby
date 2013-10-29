@@ -102,7 +102,7 @@ class TestRakeRules < Rake::TestCase
     verbose(false) do
 
       create_file(".foo")
-      rule '.o' => lambda{".foo"} do |t|
+      rule '.o' => lambda { ".foo" } do |t|
         @runs << "#{t.name} - #{t.source}"
       end
       Task[OBJFILE].invoke
@@ -113,7 +113,7 @@ class TestRakeRules < Rake::TestCase
   def test_file_names_containing_percent_can_be_wrapped_in_lambda
     verbose(false) do
       create_file("foo%x")
-      rule '.o' => lambda{"foo%x"} do |t|
+      rule '.o' => lambda { "foo%x" } do |t|
         @runs << "#{t.name} - #{t.source}"
       end
       Task[OBJFILE].invoke
@@ -186,7 +186,7 @@ class TestRakeRules < Rake::TestCase
 
   def test_rule_with_two_sources_runs_if_both_sources_are_present
     create_timed_files(OBJFILE, SRCFILE, SRCFILE2)
-    rule OBJFILE => [lambda{SRCFILE}, lambda{SRCFILE2}] do
+    rule OBJFILE => [lambda { SRCFILE }, lambda { SRCFILE2 }] do
       @runs << :RULE
     end
     Task[OBJFILE].invoke
@@ -196,7 +196,7 @@ class TestRakeRules < Rake::TestCase
   def test_rule_with_two_sources_but_one_missing_does_not_run
     create_timed_files(OBJFILE, SRCFILE)
     delete_file(SRCFILE2)
-    rule OBJFILE => [lambda{SRCFILE}, lambda{SRCFILE2}] do
+    rule OBJFILE => [lambda { SRCFILE }, lambda { SRCFILE2 }] do
       @runs << :RULE
     end
     Task[OBJFILE].invoke
@@ -222,10 +222,10 @@ class TestRakeRules < Rake::TestCase
   def test_second_rule_runs_when_first_rule_doesnt
     create_timed_files(OBJFILE, SRCFILE)
     delete_file(SRCFILE2)
-    rule OBJFILE => [lambda{SRCFILE}, lambda{SRCFILE2}] do
+    rule OBJFILE => [lambda { SRCFILE }, lambda { SRCFILE2 }] do
       @runs << :RULE1
     end
-    rule OBJFILE => [lambda{SRCFILE}] do
+    rule OBJFILE => [lambda { SRCFILE }] do
       @runs << :RULE2
     end
     Task[OBJFILE].invoke
@@ -234,10 +234,10 @@ class TestRakeRules < Rake::TestCase
 
   def test_second_rule_doest_run_if_first_triggers
     create_timed_files(OBJFILE, SRCFILE, SRCFILE2)
-    rule OBJFILE => [lambda{SRCFILE}, lambda{SRCFILE2}] do
+    rule OBJFILE => [lambda { SRCFILE }, lambda { SRCFILE2 }] do
       @runs << :RULE1
     end
-    rule OBJFILE => [lambda{SRCFILE}] do
+    rule OBJFILE => [lambda { SRCFILE }] do
       @runs << :RULE2
     end
     Task[OBJFILE].invoke
@@ -246,10 +246,10 @@ class TestRakeRules < Rake::TestCase
 
   def test_second_rule_doest_run_if_first_triggers_with_reversed_rules
     create_timed_files(OBJFILE, SRCFILE, SRCFILE2)
-    rule OBJFILE => [lambda{SRCFILE}] do
+    rule OBJFILE => [lambda { SRCFILE }] do
       @runs << :RULE1
     end
-    rule OBJFILE => [lambda{SRCFILE}, lambda{SRCFILE2}] do
+    rule OBJFILE => [lambda { SRCFILE }, lambda { SRCFILE2 }] do
       @runs << :RULE2
     end
     Task[OBJFILE].invoke
@@ -298,9 +298,9 @@ class TestRakeRules < Rake::TestCase
     actions = []
     create_file("abc.xml")
     rule '.y' => '.xml' do actions << 'y' end
-    rule '.c' => '.y' do actions << 'c' end
-    rule '.o' => '.c' do actions << 'o' end
-    rule '.exe' => '.o' do actions << 'exe' end
+    rule '.c' => '.y' do actions << 'c'end
+    rule '.o' => '.c' do actions << 'o'end
+    rule '.exe' => '.o' do actions << 'exe'end
     Task["abc.exe"].invoke
     assert_equal ['y', 'c', 'o', 'exe'], actions
   end
@@ -319,9 +319,44 @@ class TestRakeRules < Rake::TestCase
   end
 
   def test_rules_with_bad_dependents_will_fail
-    rule "a" => [ 1 ] do |t| puts t.name end
+    rule "a" => [1] do |t| puts t.name end
     assert_raises(RuntimeError) do Task['a'].invoke end
   end
 
-end
+  def test_string_rule_with_args
+    delete_file(OBJFILE)
+    create_file(SRCFILE)
+    rule '.o', [:a] => SRCFILE do |t, args|
+      assert_equal 'arg', args.a
+    end
+    Task[OBJFILE].invoke('arg')
+  end
 
+  def test_regex_rule_with_args
+    delete_file(OBJFILE)
+    create_file(SRCFILE)
+    rule(/.o$/, [:a] => SRCFILE) do |t, args|
+      assert_equal 'arg', args.a
+    end
+    Task[OBJFILE].invoke('arg')
+  end
+
+  def test_string_rule_with_args_and_lambda_prereq
+    delete_file(OBJFILE)
+    create_file(SRCFILE)
+    rule '.o', [:a] => [lambda{SRCFILE}]do |t, args|
+      assert_equal 'arg', args.a
+    end
+    Task[OBJFILE].invoke('arg')
+  end
+
+  def test_regex_rule_with_args_and_lambda_prereq
+    delete_file(OBJFILE)
+    create_file(SRCFILE)
+    rule(/.o$/, [:a] => [lambda{SRCFILE}]) do |t, args|
+      assert_equal 'arg', args.a
+    end
+    Task[OBJFILE].invoke('arg')
+  end
+
+end

@@ -2189,8 +2189,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(u("\x82")+("\u3042"*9), ("\u3042"*10).byteslice(2, 28))
 
     bug7954 = '[ruby-dev:47108]'
-    assert_equal(false, "\u3042".byteslice(0, 2).valid_encoding?)
-    assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?)
+    assert_equal(false, "\u3042".byteslice(0, 2).valid_encoding?, bug7954)
+    assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
   def test_unknown_string_option
@@ -2255,6 +2255,19 @@ class TestString < Test::Unit::TestCase
     b = eval("# coding: ascii\n'hello'f")
     assert_equal Encoding::UTF_8, a.encoding
     assert_equal Encoding::US_ASCII, b.encoding
+  end
+
+  def test_eq_tilde_can_be_overridden
+    assert_separately([], <<-RUBY)
+      class String
+        undef =~
+        def =~(str)
+          "foo"
+        end
+      end
+
+      assert_equal("foo", "" =~ //)
+    RUBY
   end
 end
 

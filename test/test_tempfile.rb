@@ -206,6 +206,21 @@ puts Tempfile.new('foo').path
     end
   end
 
+  def test_tempfile_finalizer_does_not_run_if_unlinked
+    bug8768 = '[ruby-core:56521] [Bug #8768]'
+    args = %w(--disable-gems -rtempfile)
+    assert_in_out_err(args, <<-'EOS') do |(filename), (error)|
+      tmp = Tempfile.new('foo')
+      puts tmp.path
+      tmp.close
+      tmp.unlink
+      $DEBUG = true
+      EOS
+      assert_file.not_exist?(filename)
+      assert_nil(error, "#{bug8768} we used to get a confusing 'removing ...done' here")
+    end
+  end
+
   def test_size_flushes_buffer_before_determining_file_size
     t = tempfile("foo")
     t.write("hello")

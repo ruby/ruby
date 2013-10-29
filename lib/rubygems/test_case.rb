@@ -1095,14 +1095,50 @@ Also, a list:
     Gem::Version.create string
   end
 
+  ##
+  # A vendor_gem is used with a gem dependencies file.  The gem created here
+  # has no files, just a gem specification for the given +name+ and +version+.
+  #
+  # Yields the +specification+ to the block, if given
+
+  def vendor_gem name = 'a', version = 1
+    directory = File.join 'vendor', name
+
+    vendor_spec = Gem::Specification.new name, version do |specification|
+      yield specification if block_given?
+    end
+
+    FileUtils.mkdir_p directory
+
+    open File.join(directory, "#{name}.gemspec"), 'w' do |io|
+      io.write vendor_spec.to_ruby
+    end
+
+    return name, vendor_spec.version, directory
+  end
+
+  ##
+  # The StaticSet is a static set of gem specifications used for testing only.
+  # It is available by requiring Gem::TestCase.
+
   class StaticSet
+
+    ##
+    # Creates a new StaticSet for the given +specs+
+
     def initialize(specs)
       @specs = specs
     end
 
+    ##
+    # Adds +spec+ to this set.
+
     def add spec
       @specs << spec
     end
+
+    ##
+    # Finds +dep+ in this set.
 
     def find_spec(dep)
       @specs.reverse_each do |s|
@@ -1110,9 +1146,16 @@ Also, a list:
       end
     end
 
+    ##
+    # Finds all gems matching +dep+ in this set.
+
     def find_all(dep)
       @specs.find_all { |s| dep.matches_spec? s }
     end
+
+    ##
+    # Loads a Gem::Specification from this set which has the given +name+,
+    # version +ver+, +platform+.  The +source+ is ignored.
 
     def load_spec name, ver, platform, source
       dep = Gem::Dependency.new name, ver
@@ -1123,7 +1166,7 @@ Also, a list:
       end
     end
 
-    def prefetch(reqs)
+    def prefetch reqs # :nodoc:
     end
   end
 

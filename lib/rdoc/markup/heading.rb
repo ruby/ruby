@@ -48,6 +48,19 @@ RDoc::Markup::Heading =
   end
 
   ##
+  # Creates a fully-qualified label which will include the label from
+  # +context+.  This helps keep ids unique in HTML.
+
+  def label context = nil
+    label = aref
+
+    label = [context.aref, label].compact.join '-' if
+      context and context.respond_to? :aref
+
+    label
+  end
+
+  ##
   # HTML markup of the text of this label without the surrounding header
   # element.
 

@@ -168,12 +168,19 @@ end
 # This class was added to flush out problems in Rubinius' IO implementation.
 
 class TempIO < Tempfile
+
+  ##
+  # Creates a new TempIO that will be initialized to contain +string+.
+
   def initialize(string = '')
     super "TempIO"
     binmode
     write string
     rewind
   end
+
+  ##
+  # The content of the TempIO as a String.
 
   def string
     flush

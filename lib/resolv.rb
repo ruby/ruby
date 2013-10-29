@@ -166,6 +166,7 @@ class Resolv
 
   class Hosts
     begin
+      raise LoadError unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
       require 'win32/resolv'
       DefaultFileName = Win32::Resolv.get_hosts_path
     rescue LoadError

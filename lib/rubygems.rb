@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.1.3'
+  VERSION = '2.2.0'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -139,6 +139,7 @@ module Gem
     build_info
     cache
     doc
+    extensions
     gems
     specifications
   ]
@@ -158,6 +159,7 @@ module Gem
   @path_to_default_spec_map = {}
   @platforms = []
   @ruby = nil
+  @ruby_api_version = nil
   @sources = nil
 
   @post_build_hooks     ||= []
@@ -434,6 +436,18 @@ module Gem
     end
   ensure
     File.umask old_umask
+  end
+
+  ##
+  # The extension API version of ruby.  This includes the static vs non-static
+  # distinction as extensions cannot be shared between the two.
+
+  def self.extension_api_version # :nodoc:
+    if 'no' == RbConfig::CONFIG['ENABLE_SHARED'] then
+      "#{ruby_api_version}-static"
+    else
+      ruby_api_version
+    end
   end
 
   ##
@@ -820,6 +834,14 @@ module Gem
     end
 
     @ruby
+  end
+
+  ##
+  # Returns a String containing the API compatibility version of Ruby
+
+  def self.ruby_api_version
+    @ruby_api_version ||=
+      "#{ConfigMap[:MAJOR]}.#{ConfigMap[:MINOR]}.#{ConfigMap[:TEENY]}"
   end
 
   ##

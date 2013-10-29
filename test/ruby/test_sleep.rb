@@ -6,8 +6,15 @@ class TestSleep < Test::Unit::TestCase
     start = Time.now
     sleep 5
     slept = Time.now-start
-    bottom = /linux/ =~ RUBY_PLATFORM && /Linux ([\d.]+)/ =~ `uname -sr` && ($1.split('.')<=>%w/2 6 18/)<1 ? 4.98 : 5.0
-    assert_operator(bottom, :<=, slept)
+    bottom =
+      case RUBY_PLATFORM
+      when /linux/
+        4.98 if /Linux ([\d.]+)/ =~ `uname -sr` && ($1.split('.')<=>%w/2 6 18/)<1
+      when /mswin|mingw/
+        4.98
+      end
+    bottom ||= 5.0
+    assert_operator(slept, :>=, bottom)
     assert_operator(slept, :<=, 6.0, "[ruby-core:18015]: longer than expected")
   ensure
     GC.enable

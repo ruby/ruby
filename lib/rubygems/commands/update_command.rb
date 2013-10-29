@@ -110,7 +110,11 @@ command to remove old versions.
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples, _ = fetcher.search_for_dependency dependency
+    spec_tuples, errors = fetcher.search_for_dependency dependency
+
+    error = errors.find { |errors| errors.respond_to? :exception }
+
+    raise error if error
 
     spec_tuples
   end
@@ -134,7 +138,7 @@ command to remove old versions.
       g.name == spec.name and g.match_platform?
     end
 
-    highest_remote_gem = matching_gems.sort_by { |g,_| g.version }.last
+    highest_remote_gem = matching_gems.max_by { |g,_| g.version }
 
     highest_remote_gem ||= [Gem::NameTuple.null]
 
@@ -244,6 +248,9 @@ command to remove old versions.
     args << '--no-rdoc' unless options[:document].include? 'rdoc'
     args << '--no-ri'   unless options[:document].include? 'ri'
     args << '--no-format-executable' if options[:no_format_executable]
+    args << '--previous-version' << Gem::VERSION if
+      options[:system] == true or
+        Gem::Version.new(options[:system]) >= Gem::Version.new(2)
     args
   end
 

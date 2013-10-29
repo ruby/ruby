@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/symbol/symbol"
+require "-test-/symbol"
 
 module Test_Symbol
   class TestInadvertent < Test::Unit::TestCase
@@ -139,7 +139,7 @@ module Test_Symbol
     def test_public_send
       name = noninterned_name
       e = assert_raise(NoMethodError) {@obj.public_send(name, Feature5112)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
       assert_equal(name, e.name)
       assert_equal([Feature5112], e.args)
     end
@@ -147,7 +147,7 @@ module Test_Symbol
     def test_send
       name = noninterned_name
       e = assert_raise(NoMethodError) {@obj.send(name, Feature5112)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
       assert_equal(name, e.name)
       assert_equal([Feature5112], e.args)
     end
@@ -155,7 +155,7 @@ module Test_Symbol
     def test___send__
       name = noninterned_name
       e = assert_raise(NoMethodError) {@obj.__send__(name, Feature5112)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
       assert_equal(name, e.name)
       assert_equal([Feature5112], e.args)
     end
@@ -164,75 +164,103 @@ module Test_Symbol
       Thread.current[:test] = nil
       name = noninterned_name
       assert_nil(Thread.current[name])
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_thread_key?
       Thread.current[:test] = nil
       name = noninterned_name
       assert_not_send([Thread.current, :key?, name])
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_thread_variable_get
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_nil(Thread.current.thread_variable_get(name))
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_thread_variable?
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_not_send([Thread.current, :thread_variable?, name])
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_enumerable_inject_op
       name = noninterned_name
       assert_raise(NoMethodError) {[1, 2].inject(name)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_module_const_set
       name = noninterned_name
       mod = Module.new
       assert_raise(NameError) {mod.const_set(name, true)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_module_cvar_set
       name = noninterned_name
       mod = Module.new
       assert_raise(NameError) {mod.class_variable_set(name, true)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_object_ivar_set
       name = noninterned_name
       obj = Object.new
       assert_raise(NameError) {obj.instance_variable_set(name, true)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_struct_new
       name = noninterned_name
       assert_raise(NameError) {Struct.new(name)}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_struct_aref
       s = Struct.new(:foo).new
       name = noninterned_name
       assert_raise(NameError) {s[name]}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
     end
 
     def test_struct_aset
       s = Struct.new(:foo).new
       name = noninterned_name
       assert_raise(NameError) {s[name] = true}
-      assert_not_send([Bug::Symbol, :interned?, name])
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_reader
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_reader(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_writer
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_writer(name)}}
+      assert_not_interned(name)
+    end
+
+    def test_invalid_attr_accessor
+      name = noninterned_name("*")
+      mod = Module.new
+      assert_raise(NameError) {mod.module_eval {attr_accessor(name)}}
+      assert_not_interned(name)
     end
   end
 end

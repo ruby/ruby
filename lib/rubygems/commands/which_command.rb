@@ -45,9 +45,9 @@ requiring to see why it does not behave as you expect.
 
       if spec then
         if options[:search_gems_first] then
-          dirs = gem_paths(spec) + $LOAD_PATH
+          dirs = spec.full_require_paths + $LOAD_PATH
         else
-          dirs = $LOAD_PATH + gem_paths(spec)
+          dirs = $LOAD_PATH + spec.full_require_paths
         end
       end
 
@@ -79,10 +79,6 @@ requiring to see why it does not behave as you expect.
     end
 
     result
-  end
-
-  def gem_paths(spec)
-    spec.require_paths.collect { |d| File.join spec.full_gem_path, d }
   end
 
   def usage # :nodoc:

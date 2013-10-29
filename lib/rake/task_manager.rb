@@ -10,21 +10,21 @@ module Rake
       super
       @tasks = Hash.new
       @rules = Array.new
-      @scope = Array.new
+      @scope = Scope.make
       @last_description = nil
     end
 
     def create_rule(*args, &block)
-      pattern, _, deps = resolve_args(args)
+      pattern, args, deps = resolve_args(args)
       pattern = Regexp.new(Regexp.quote(pattern) + '$') if String === pattern
-      @rules << [pattern, deps, block]
+      @rules << [pattern, args, deps, block]
     end
 
     def define_task(task_class, *args, &block)
       task_name, arg_names, deps = resolve_args(args)
       task_name = task_class.scope_name(@scope, task_name)
       deps = [deps] unless deps.respond_to?(:to_ary)
-      deps = deps.collect {|d| d.to_s }
+      deps = deps.map { |d| d.to_s }
       task = intern(task_class, task_name)
       task.set_arg_names(arg_names) unless arg_names.empty?
       if Rake::TaskManager.record_task_metadata
@@ -72,7 +72,6 @@ module Rake
     #
     #   task :t
     #   task :t, [:a]
-    #   task :t, :a                 (deprecated)
     #
     def resolve_args_without_dependencies(args)
       task_name = args.shift
@@ -92,23 +91,13 @@ module Rake
     #
     #   task :t => [:d]
     #   task :t, [a] => [:d]
-    #   task :t, :needs => [:d]                 (deprecated)
-    #   task :t, :a, :needs => [:d]             (deprecated)
     #
     def resolve_args_with_dependencies(args, hash) # :nodoc:
       fail "Task Argument Error" if hash.size != 1
-      key, value = hash.map { |k, v| [k,v] }.first
+      key, value = hash.map { |k, v| [k, v] }.first
       if args.empty?
         task_name = key
         arg_names = []
-        deps = value
-      elsif key == :needs
-        Rake.application.deprecate(
-          "task :t, arg, :needs => [deps]",
-          "task :t, [args] => [deps]",
-          caller.detect { |c| c !~ /\blib\/rake\b/ })
-        task_name = args.shift
-        arg_names = args
         deps = value
       else
         task_name = args.shift
@@ -127,9 +116,9 @@ module Rake
     def enhance_with_matching_rule(task_name, level=0)
       fail Rake::RuleRecursionOverflowError,
         "Rule Recursion Too Deep" if level >= 16
-      @rules.each do |pattern, extensions, block|
+      @rules.each do |pattern, args, extensions, block|
         if pattern.match(task_name)
-          task = attempt_rule(task_name, extensions, block, level)
+          task = attempt_rule(task_name, args, extensions, block, level)
           return task if task
         end
       end
@@ -147,7 +136,7 @@ module Rake
     # List of all the tasks defined in the given scope (and its
     # sub-scopes).
     def tasks_in_scope(scope)
-      prefix = scope.join(":")
+      prefix = scope.path
       tasks.select { |t|
         /^#{prefix}:/ =~ t.name
       }
@@ -168,10 +157,10 @@ module Rake
       initial_scope ||= @scope
       task_name = task_name.to_s
       if task_name =~ /^rake:/
-        scopes = []
+        scopes = Scope.make
         task_name = task_name.sub(/^rake:/, '')
       elsif task_name =~ /^(\^+)/
-        scopes = initial_scope[0, initial_scope.size - $1.size]
+        scopes = initial_scope.trim($1.size)
         task_name = task_name.sub(/^(\^+)/, '')
       else
         scopes = initial_scope
@@ -181,12 +170,12 @@ module Rake
 
     # Lookup the task name
     def lookup_in_scope(name, scope)
-      n = scope.size
-      while n >= 0
-        tn = (scope[0,n] + [name]).join(':')
+      loop do
+        tn = scope.path_with_task_name(name)
         task = @tasks[tn]
         return task if task
-        n -= 1
+        break if scope.empty?
+        scope = scope.tail
       end
       nil
     end
@@ -195,19 +184,19 @@ module Rake
     # Return the list of scope names currently active in the task
     # manager.
     def current_scope
-      @scope.dup
+      @scope
     end
 
     # Evaluate the block in a nested namespace named +name+.  Create
     # an anonymous namespace if +name+ is nil.
     def in_namespace(name)
       name ||= generate_name
-      @scope.push(name)
+      @scope = Scope.new(name, @scope)
       ns = NameSpace.new(self, @scope)
       yield(ns)
       ns
     ensure
-      @scope.pop
+      @scope = @scope.tail
     end
 
     private
@@ -224,7 +213,7 @@ module Rake
       locations = caller
       i = 0
       while locations[i]
-        return locations[i+1] if locations[i] =~ /rake\/dsl_definition.rb/
+        return locations[i + 1] if locations[i] =~ /rake\/dsl_definition.rb/
         i += 1
       end
       nil
@@ -238,18 +227,19 @@ module Rake
     end
 
     def trace_rule(level, message)
-      options.trace_output.puts "#{"    "*level}#{message}" if Rake.application.options.trace_rules
+      options.trace_output.puts "#{"    " * level}#{message}" if
+        Rake.application.options.trace_rules
     end
 
     # Attempt to create a rule given the list of prerequisites.
-    def attempt_rule(task_name, extensions, block, level)
+    def attempt_rule(task_name, args, extensions, block, level)
       sources = make_sources(task_name, extensions)
-      prereqs = sources.collect { |source|
+      prereqs = sources.map { |source|
         trace_rule level, "Attempting Rule #{task_name} => #{source}"
         if File.exist?(source) || Rake::Task.task_defined?(source)
           trace_rule level, "(#{task_name} => #{source} ... EXIST)"
           source
-        elsif parent = enhance_with_matching_rule(source, level+1)
+        elsif parent = enhance_with_matching_rule(source, level + 1)
           trace_rule level, "(#{task_name} => #{source} ... ENHANCE)"
           parent.name
         else
@@ -257,7 +247,7 @@ module Rake
           return nil
         end
       }
-      task = FileTask.define_task({task_name => prereqs}, &block)
+      task = FileTask.define_task(task_name, {args => prereqs}, &block)
       task.sources = prereqs
       task
     end
@@ -265,7 +255,7 @@ module Rake
     # Make a list of sources from the list of file name extensions /
     # translation procs.
     def make_sources(task_name, extensions)
-      result = extensions.collect { |ext|
+      result = extensions.map { |ext|
         case ext
         when /%/
           task_name.pathmap(ext)

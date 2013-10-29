@@ -252,21 +252,10 @@ typedef uint64_t vm_state_version_t;
 typedef unsigned long vm_state_version_t;
 #endif
 
-struct rb_method_entry_struct;
-
-typedef struct method_cache_entry {
-    vm_state_version_t vm_state;
-    vm_state_version_t seq;
-    ID mid;
-    VALUE defined_class;
-    struct rb_method_entry_struct *me;
-} method_cache_entry_t;
-
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
-    struct st_table *mc_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
     /**
@@ -316,7 +305,6 @@ struct vtm; /* defined by timev.h */
 /* array.c */
 VALUE rb_ary_last(int, VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
-VALUE rb_ary_cat(VALUE, const VALUE *, long);
 void rb_ary_delete_same(VALUE, VALUE);
 
 /* bignum.c */
@@ -425,17 +413,15 @@ void Init_File(void);
 #   pragma GCC visibility push(default)
 # endif
 NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
+NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path));
 # if defined __GNUC__ && __GNUC__ >= 4
 #   pragma GCC visibility pop
 # endif
 # define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
+# define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
-#endif
-
-#ifdef _WIN32
-/* file.c, win32/file.c */
-void rb_w32_init_file(void);
+# define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
 #endif
 
 /* gc.c */
@@ -444,9 +430,15 @@ void *ruby_mimmalloc(size_t size);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 void rb_gc_writebarrier_remember_promoted(VALUE obj);
 
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));
+void ruby_sized_xfree(void *x, size_t size);
+#define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
+
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
+VALUE rb_hash_keys(VALUE hash);
+VALUE rb_hash_values(VALUE hash);
 
 /* inits.c */
 void rb_call_inits(void);
@@ -461,6 +453,13 @@ VALUE rb_io_flush_raw(VALUE, int);
 
 /* iseq.c */
 VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
+VALUE rb_iseq_path(VALUE iseqval);
+VALUE rb_iseq_absolute_path(VALUE iseqval);
+VALUE rb_iseq_label(VALUE iseqval);
+VALUE rb_iseq_base_label(VALUE iseqval);
+VALUE rb_iseq_first_lineno(VALUE iseqval);
+VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary fucntion */
+VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */
 VALUE rb_get_load_path(void);
@@ -490,6 +489,70 @@ int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
 VALUE rb_int_pred(VALUE num);
 
+#if USE_FLONUM
+#define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
+#define RUBY_BIT_ROTR(v, n) (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)))
+#endif
+
+static inline double
+rb_float_value_inline(VALUE v)
+{
+#if USE_FLONUM
+    if (FLONUM_P(v)) {
+	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
+	    union {
+		double d;
+		VALUE v;
+	    } t;
+
+	    VALUE b63 = (v >> 63);
+	    /* e: xx1... -> 011... */
+	    /*    xx0... -> 100... */
+	    /*      ^b63           */
+	    t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
+	    return t.d;
+	}
+	else {
+	    return 0.0;
+	}
+    }
+#endif
+    return ((struct RFloat *)v)->float_value;
+}
+
+static inline VALUE
+rb_float_new_inline(double d)
+{
+#if USE_FLONUM
+    union {
+	double d;
+	VALUE v;
+    } t;
+    int bits;
+
+    t.d = d;
+    bits = (int)((VALUE)(t.v >> 60) & 0x7);
+    /* bits contains 3 bits of b62..b60. */
+    /* bits - 3 = */
+    /*   b011 -> b000 */
+    /*   b100 -> b001 */
+
+    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
+	!((bits-3) & ~0x01)) {
+	return (RUBY_BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | 0x02;
+    }
+    else if (t.v == (VALUE)0) {
+	/* +0.0 */
+	return 0x8000000000000002;
+    }
+    /* out of range */
+#endif
+    return rb_float_new_in_heap(d);
+}
+
+#define rb_float_value(v) rb_float_value_inline(v)
+#define rb_float_new(d)   rb_float_new_inline(d)
+
 /* object.c */
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 
@@ -517,7 +580,7 @@ int rb_is_local_name(VALUE name);
 int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
 void rb_gc_mark_parser(void);
-void rb_gc_mark_symbols(void);
+void rb_gc_mark_symbols(int full_mark);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
@@ -683,6 +746,7 @@ VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
+void rb_backtrace_print_to(VALUE output);
 VALUE rb_vm_backtrace_object();
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -709,6 +773,9 @@ VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
+
+/* error.c */
+int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 
 /* file.c */
 #ifdef __APPLE__

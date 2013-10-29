@@ -33,13 +33,6 @@ class TestRDocParserRuby < RDoc::TestCase
     @tempfile2.close
   end
 
-  def mu_pp obj
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding(Encoding.default_external) if defined? Encoding
-    s.chomp
-  end
-
   def test_collect_first_comment
     p = util_parser <<-CONTENT
 # first
@@ -161,6 +154,35 @@ class C; end
     @parser.skip_tkspace
 
     assert_equal '/', @parser.get_symbol_or_name
+  end
+
+  def test_suppress_parents
+    a = @top_level.add_class RDoc::NormalClass, 'A'
+    b = a.add_class RDoc::NormalClass, 'B'
+    c = b.add_class RDoc::NormalClass, 'C'
+
+    util_parser ''
+
+    @parser.suppress_parents c, a
+
+    assert c.suppressed?
+    assert b.suppressed?
+    refute a.suppressed?
+  end
+
+  def test_suppress_parents_documented
+    a = @top_level.add_class RDoc::NormalClass, 'A'
+    b = a.add_class RDoc::NormalClass, 'B'
+    b.add_comment RDoc::Comment.new("hello"), @top_level
+    c = b.add_class RDoc::NormalClass, 'C'
+
+    util_parser ''
+
+    @parser.suppress_parents c, a
+
+    assert c.suppressed?
+    refute b.suppressed?
+    refute a.suppressed?
   end
 
   def test_look_for_directives_in_attr
@@ -392,6 +414,23 @@ class C; end
     assert_equal 0, klass.attributes.length
   end
 
+  def test_parse_attr_accessor_nodoc_track
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+
+    @options.visibility = :nodoc
+
+    util_parser "attr_accessor :foo, :bar # :nodoc:"
+
+    tk = @parser.get_tk
+
+    @parser.parse_attr_accessor klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    refute_empty klass.attributes
+  end
+
   def test_parse_attr_accessor_stopdoc
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -568,6 +607,26 @@ class C; end
     assert_equal 1, foo.line
   end
 
+  def test_parse_class_singleton
+    comment = RDoc::Comment.new "##\n# my class\n", @top_level
+
+    util_parser <<-RUBY
+class C
+  class << self
+  end
+end
+    RUBY
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    c = @top_level.classes.first
+    assert_equal 'C', c.full_name
+    assert_equal 0, c.offset
+    assert_equal 1, c.line
+  end
+
   def test_parse_class_ghost_method
     util_parser <<-CLASS
 class Foo
@@ -586,6 +645,29 @@ end
 
     blah = foo.method_list.first
     assert_equal 'Foo#blah', blah.full_name
+    assert_equal @top_level, blah.file
+  end
+
+  def test_parse_class_ghost_method_yields
+    util_parser <<-CLASS
+class Foo
+  ##
+  # :method:
+  # :call-seq:
+  #   yields(name)
+end
+    CLASS
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    assert_equal 'Foo#yields', blah.full_name
+    assert_equal 'yields(name)', blah.call_seq
     assert_equal @top_level, blah.file
   end
 
@@ -691,7 +773,7 @@ end
     assert_equal 2, foo.method_list.length
   end
 
-  def test_parse_const_fail_w_meta
+  def test_parse_const_fail_w_meta_method
     util_parser <<-CLASS
 class ConstFailMeta
   ##
@@ -711,6 +793,27 @@ end
     assert_equal 'ConstFailMeta', const_fail_meta.full_name
 
     assert_equal 1, const_fail_meta.attributes.length
+  end
+
+  def test_parse_const_third_party
+    util_parser <<-CLASS
+class A
+  true if B::C
+  true if D::E::F
+end
+    CLASS
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
+
+    a = @top_level.classes.first
+    assert_equal 'A', a.full_name
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_empty visible
   end
 
   def test_parse_class_nested_superclass
@@ -1002,6 +1105,23 @@ EOF
     assert_equal klass.current_section, foo.section
   end
 
+  def test_parse_comment_attr_attr_reader
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new "##\n# :attr_reader: foo\n", @top_level
+
+    util_parser "\n"
+
+    tk = @parser.get_tk
+
+    @parser.parse_comment klass, tk, comment
+
+    foo = klass.attributes.first
+    assert_equal 'foo',      foo.name
+    assert_equal 'R',        foo.rw
+  end
+
   def test_parse_comment_attr_stopdoc
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -1062,6 +1182,23 @@ EOF
     ]
 
     assert_equal stream, foo.token_stream
+  end
+
+  def test_parse_comment_method_args
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+
+    util_parser "\n"
+
+    tk = @parser.get_tk
+
+    @parser.parse_comment klass, tk,
+                          comment("##\n# :method: foo\n# :args: a, b\n")
+
+    foo = klass.method_list.first
+    assert_equal 'foo',  foo.name
+    assert_equal 'a, b', foo.params
   end
 
   def test_parse_comment_method_stopdoc
@@ -1203,27 +1340,7 @@ A::B::C = 1
     assert_equal 'comment', c.comment
   end
 
-  def test_parse_include
-    klass = RDoc::NormalClass.new 'C'
-    klass.parent = @top_level
-
-    comment = RDoc::Comment.new "# my include\n", @top_level
-
-    util_parser "include I"
-
-    @parser.get_tk # include
-
-    @parser.parse_include klass, comment
-
-    assert_equal 1, klass.includes.length
-
-    incl = klass.includes.first
-    assert_equal 'I', incl.name
-    assert_equal 'my include', incl.comment.text
-    assert_equal @top_level, incl.file
-  end
-
-  def test_parse_extend
+  def test_parse_extend_or_include_extend
     klass = RDoc::NormalClass.new 'C'
     klass.parent = @top_level
 
@@ -1233,7 +1350,7 @@ A::B::C = 1
 
     @parser.get_tk # extend
 
-    @parser.parse_extend klass, comment
+    @parser.parse_extend_or_include RDoc::Extend, klass, comment
 
     assert_equal 1, klass.extends.length
 
@@ -1241,6 +1358,26 @@ A::B::C = 1
     assert_equal 'I', ext.name
     assert_equal 'my extend', ext.comment.text
     assert_equal @top_level, ext.file
+  end
+
+  def test_parse_extend_or_include_include
+    klass = RDoc::NormalClass.new 'C'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new "# my include\n", @top_level
+
+    util_parser "include I"
+
+    @parser.get_tk # include
+
+    @parser.parse_extend_or_include RDoc::Include, klass, comment
+
+    assert_equal 1, klass.includes.length
+
+    incl = klass.includes.first
+    assert_equal 'I', incl.name
+    assert_equal 'my include', incl.comment.text
+    assert_equal @top_level, incl.file
   end
 
   def test_parse_meta_method
@@ -1644,6 +1781,34 @@ end
     assert_equal 'foo', foo.name
   end
 
+  def test_parse_method_nodoc
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    util_parser "def foo # :nodoc:\nend"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment('')
+
+    assert_empty klass.method_list
+  end
+
+  def test_parse_method_nodoc_track
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    @options.visibility = :nodoc
+
+    util_parser "def foo # :nodoc:\nend"
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment('')
+
+    refute_empty klass.method_list
+  end
+
   def test_parse_method_no_parens
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -1882,6 +2047,24 @@ end
     assert_equal 'foo', foo.name
     assert_equal 'this is my method', foo.comment.text
     assert_equal Encoding::CP852, foo.comment.text.encoding
+  end
+
+  def test_parse_statements_enddoc
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "\n# :enddoc:"
+
+    @parser.parse_statements klass, RDoc::Parser::Ruby::NORMAL, nil
+
+    assert klass.done_documenting
+  end
+
+  def test_parse_statements_enddoc_top_level
+    util_parser "\n# :enddoc:"
+
+    assert_throws :eof do
+      @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil
+    end
   end
 
   def test_parse_statements_identifier_meta_method
@@ -2367,6 +2550,16 @@ end
     # HACK where are the assertions?
   end
 
+  def test_parse_top_level_statements_enddoc
+    util_parser <<-CONTENT
+# :enddoc:
+    CONTENT
+
+    assert_throws :eof do
+      @parser.parse_top_level_statements @top_level
+    end
+  end
+
   def test_parse_top_level_statements_stopdoc
     @top_level.stop_doc
     content = "# this is the top-level comment"
@@ -2690,6 +2883,21 @@ end
     assert_equal 'A nice girl', m.comment.text
   end
 
+  def test_scan_class_nested_nodoc
+    content = <<-CONTENT
+class A::B # :nodoc:
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    visible = @store.all_classes_and_modules.select { |mod| mod.display? }
+
+    assert_empty visible.map { |mod| mod.full_name }
+  end
+
   def test_scan_constant_in_method
     content = <<-CONTENT # newline is after M is important
 module M
@@ -2780,6 +2988,30 @@ end
     assert c.documented?
   end
 
+  def test_scan_duplicate_module
+    content = <<-CONTENT
+# comment a
+module Foo
+end
+
+# comment b
+module Foo
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    foo = @top_level.modules.first
+
+    expected = [
+      RDoc::Comment.new('comment b', @top_level)
+    ]
+
+    assert_equal expected, foo.comment_location.map { |c, l| c }
+  end
+
   def test_scan_meta_method_block
     content = <<-CONTENT
 class C
@@ -2800,6 +3032,32 @@ class C
     @parser.scan
 
     assert_equal 2, @top_level.classes.first.method_list.length
+  end
+
+  def test_scan_method_semi_method
+    content = <<-CONTENT
+class A
+  def self.m() end; def self.m=() end
+end
+
+class B
+  def self.m() end
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    a = @store.find_class_named 'A'
+    assert a, 'missing A'
+
+    assert_equal 2, a.method_list.length
+
+    b = @store.find_class_named 'B'
+    assert b, 'missing B'
+
+    assert_equal 1, b.method_list.length
   end
 
   def test_scan_markup_override
@@ -2845,6 +3103,20 @@ end
     assert_equal 'rd', c.comment.format
 
     assert_equal 'rd', c.method_list.first.comment.format
+  end
+
+  def test_scan_rails_routes
+    util_parser <<-ROUTES_RB
+namespace :api do
+  scope module: :v1 do
+  end
+end
+    ROUTES_RB
+
+    @parser.scan
+
+    assert_empty @top_level.classes
+    assert_empty @top_level.modules
   end
 
   def test_scan_tomdoc_meta
@@ -2951,6 +3223,35 @@ end
 
     c = @store.find_class_named 'C'
     assert_equal %w[C::[]], c.method_list.map { |m| m.full_name }
+  end
+
+  def test_scan_visibility
+    util_parser <<-RUBY
+class C
+   def a() end
+
+   private :a
+
+   class << self
+     def b() end
+     private :b
+   end
+end
+    RUBY
+
+    @parser.scan
+
+    c = @store.find_class_named 'C'
+
+    c_a = c.find_method_named 'a'
+
+    assert_equal :private, c_a.visibility
+    refute c_a.singleton
+
+    c_b = c.find_method_named 'b'
+
+    assert_equal :private, c_b.visibility
+    refute c_b.singleton
   end
 
   def test_stopdoc_after_comment

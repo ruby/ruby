@@ -147,7 +147,7 @@ contents of a string.
   def test_handle_directive_blankline
     result = @pp.handle_directive '#', 'arg', 'a, b'
 
-    assert_equal "#\n", result
+    assert_equal "#:arg: a, b\n", result
   end
 
   def test_handle_directive_downcase
@@ -169,7 +169,7 @@ contents of a string.
   def test_handle_directive_arg_no_context
     result = @pp.handle_directive '', 'arg', 'a, b', nil
 
-    assert_equal "\n", result
+    assert_equal ":arg: a, b\n", result
   end
 
   def test_handle_directive_args

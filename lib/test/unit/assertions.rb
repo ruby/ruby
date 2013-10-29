@@ -27,6 +27,8 @@ module Test
       def assert(test, *msgs)
         case msg = msgs.first
         when String, Proc
+        when nil
+          msgs.shift
         else
           bt = caller.reject { |s| s.start_with?(MINI_DIR) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
@@ -96,9 +98,10 @@ module Test
           raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
         end
 
-        ex = assert_raise(exception, msg) {yield}
+        ex = assert_raise(exception, *msg) {yield}
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
         __send__(assert, expected, ex.message, msg)
+        ex
       end
 
       # :call-seq:

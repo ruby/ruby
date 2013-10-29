@@ -487,13 +487,16 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *     enum.to_a      -> array
- *     enum.entries   -> array
+ *     enum.to_a(*args)      -> array
+ *     enum.entries(*args)   -> array
  *
  *  Returns an array containing the items in <i>enum</i>.
  *
  *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
  *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ *
+ *     require 'prime'
+ *     Prime.entries 10                  #=> [2, 3, 5, 7]
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -504,6 +507,39 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
     OBJ_INFECT(ary, obj);
 
     return ary;
+}
+
+static VALUE
+enum_to_h_i(VALUE i, VALUE hash, int argc, VALUE *argv)
+{
+    ENUM_WANT_SVALUE();
+    rb_thread_check_ints();
+    i = rb_check_array_type(i);
+    if (!NIL_P(i) && RARRAY_LEN(i) == 2) {
+	rb_hash_aset(hash, RARRAY_AREF(i, 0), RARRAY_AREF(i, 1));
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.to_h(*args)  -> hash
+ *
+ *  Returns the result of interpreting <i>enum</i> as a list of
+ *  <tt>[key, value]</tt> pairs. Elements other than pairs of
+ *  values are ignored.
+ *
+ *     %i[hello world].each_with_index.to_h
+ *       # => {:hello => 0, :world => 1}
+ */
+
+static VALUE
+enum_to_h(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE hash = rb_hash_new();
+    rb_block_call(obj, id_each, argc, argv, enum_to_h_i, hash);
+    OBJ_INFECT(hash, obj);
+    return hash;
 }
 
 static VALUE
@@ -2755,6 +2791,7 @@ Init_Enumerable(void)
 
     rb_define_method(rb_mEnumerable, "to_a", enum_to_a, -1);
     rb_define_method(rb_mEnumerable, "entries", enum_to_a, -1);
+    rb_define_method(rb_mEnumerable, "to_h", enum_to_h, -1);
 
     rb_define_method(rb_mEnumerable, "sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable, "sort_by", enum_sort_by, 0);

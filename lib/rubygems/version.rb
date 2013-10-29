@@ -148,7 +148,7 @@ class Gem::Version
   # FIX: These are only used once, in .correct?. Do they deserve to be
   # constants?
   VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
-  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})*\s*\z/ # :nodoc:
+  ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/ # :nodoc:
 
   ##
   # A string representation of this Version.
@@ -174,10 +174,8 @@ class Gem::Version
   #   ver2 = Version.create(ver1)       # -> (ver1)
   #   ver3 = Version.create(nil)        # -> nil
 
-  # REFACTOR: There's no real reason this should be separate from #initialize.
-
   def self.create input
-    if input.respond_to? :version then
+    if self === input then # check yourself before you wreck yourself
       input
     elsif input.nil? then
       nil
@@ -188,7 +186,7 @@ class Gem::Version
 
   @@all = {}
 
-  def self.new version
+  def self.new version # :nodoc:
     @@all[version] ||= super
   end
 
@@ -255,17 +253,17 @@ class Gem::Version
     initialize array[0]
   end
 
-  def yaml_initialize(tag, map)
+  def yaml_initialize(tag, map) # :nodoc:
     @version = map['version']
     @segments = nil
     @hash = nil
   end
 
-  def to_yaml_properties
+  def to_yaml_properties # :nodoc:
     ["@version"]
   end
 
-  def encode_with coder
+  def encode_with coder # :nodoc:
     coder.add 'version', @version
   end
 

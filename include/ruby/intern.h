@@ -63,6 +63,7 @@ VALUE rb_ary_dup(VALUE);
 VALUE rb_ary_resurrect(VALUE ary);
 VALUE rb_ary_to_ary(VALUE);
 VALUE rb_ary_to_s(VALUE);
+VALUE rb_ary_cat(VALUE, const VALUE *, long);
 VALUE rb_ary_push(VALUE, VALUE);
 VALUE rb_ary_pop(VALUE);
 VALUE rb_ary_shift(VALUE);
@@ -375,7 +376,8 @@ void rb_define_alloc_func(VALUE, rb_alloc_func_t);
 void rb_undef_alloc_func(VALUE);
 rb_alloc_func_t rb_get_alloc_func(VALUE);
 void rb_clear_cache(void);
-void rb_clear_cache_by_class(VALUE);
+void rb_clear_constant_cache(void);
+void rb_clear_method_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
 void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
@@ -447,6 +449,7 @@ void rb_thread_atfork_before_exec(void);
 VALUE rb_exec_recursive(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
 VALUE rb_exec_recursive_paired(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE,VALUE);
 VALUE rb_exec_recursive_outer(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
+VALUE rb_exec_recursive_paired_outer(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE,VALUE);
 /* dir.c */
 VALUE rb_dir_getwd(void);
 /* file.c */

@@ -798,17 +798,12 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_each_line
     combination(STRINGS, STRINGS) {|s1, s2|
-      if !s1.valid_encoding? || !s2.valid_encoding?
-        assert_raise(ArgumentError, Encoding::CompatibilityError) { s1.each_line(s2) {} }
-        next
-      end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(Encoding::CompatibilityError) { s1.each_line(s2) {} }
         next
       end
       lines = []
       enccall(s1, :each_line, s2) {|line|
-        assert(line.valid_encoding?)
         assert_equal(s1.encoding, line.encoding)
         lines << line
       }

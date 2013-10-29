@@ -462,6 +462,10 @@ module OpenURI
       meta_setup_encoding if name == 'content-type'
     end
 
+    def meta_add_field(name, value) # :nodoc:
+      meta_add_field2(name, [value])
+    end
+
     # returns a Time that represents the Last-Modified field.
     def last_modified
       if vs = @metas['last-modified']

@@ -1380,6 +1380,19 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_close_read_write_separately
+    bug = '[ruby-list:49598]'
+    (1..10).each do |i|
+      assert_nothing_raised(IOError, "#{bug} trying ##{i}") do
+        IO.popen(EnvUtil.rubybin, "r+") {|f|
+          th = Thread.new {f.close_write}
+          f.close_read
+          th.join
+        }
+      end
+    end
+  end
+
   def test_pid
     r, w = IO.pipe
     assert_equal(nil, r.pid)
@@ -1394,6 +1407,17 @@ class TestIO < Test::Unit::TestCase
     assert_equal(pid2, pipe.pid)
     pipe.close
     assert_raise(IOError) { pipe.pid }
+  end
+
+  def test_pid_after_close_read
+    pid1 = pid2 = nil
+    IO.popen("exit ;", "r+") do |io|
+      pid1 = io.pid
+      io.close_read
+      pid2 = io.pid
+    end
+    assert_not_nil(pid1)
+    assert_equal(pid1, pid2)
   end
 
   def make_tempfile
@@ -2074,8 +2098,9 @@ End
       assert_equal(["foo\n", "bar\n", "baz\n"], a, bug)
 
       bug6054 = '[ruby-dev:45267]'
-      e = assert_raise(IOError, bug6054) {IO.foreach(t.path, mode:"w").next}
-      assert_match(/not opened for reading/, e.message, bug6054)
+      assert_raise_with_message(IOError, /not opened for reading/, bug6054) do
+        IO.foreach(t.path, mode:"w").next
+      end
     }
   end
 

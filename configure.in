@@ -645,6 +645,25 @@ else
   unset ac_c_werror_flag
 fi])
 
+RUBY_WERROR_FLAG([
+    AC_MSG_CHECKING([whether CFLAGS is valid])
+    AC_TRY_COMPILE([], [],
+	[AC_MSG_RESULT(yes)],
+	[
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([something wrong with CFLAGS="$CFLAGS"])
+	]
+    )
+    AC_MSG_CHECKING([whether LDFLAGS is valid])
+    AC_TRY_LINK([], [],
+	[AC_MSG_RESULT(yes)],
+	[
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
+	]
+    )
+])
+
 AC_DEFUN(RUBY_TRY_CFLAGS, [
     AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
     RUBY_WERROR_FLAG([
@@ -2897,7 +2916,8 @@ if test x"$cross_compiling" = xyes; then
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
-  RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
@@ -2919,7 +2939,8 @@ else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
   PREP='miniruby$(EXEEXT)'
-  RUNRUBY='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT) --'
+  RUNRUBY_COMMAND='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT) $(RUNRUBYOPT)'
+  RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
@@ -2929,6 +2950,7 @@ AC_SUBST(CROSS_COMPILING)
 AC_SUBST(MINIRUBY)
 AC_SUBST(BTESTRUBY)
 AC_SUBST(PREP)
+AC_SUBST(RUNRUBY_COMMAND)
 AC_SUBST(RUNRUBY)
 AC_SUBST(XRUBY)
 AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
@@ -3508,7 +3530,9 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(PLATFORM_DIR)
 
-MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'`"
+firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
+firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`
+MAKEFILES="Makefile $firstmf"
 MAKEFILES="`echo $MAKEFILES`"
 AC_SUBST(MAKEFILES)
 
@@ -3783,7 +3807,9 @@ AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
-AC_CONFIG_FILES($FIRSTMAKEFILE)
+if test x"$firstmf" != x; then
+    AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
+fi
 AC_CONFIG_FILES(Makefile, [
     tmpmk=confmk$$.tmp
     {

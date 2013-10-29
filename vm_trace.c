@@ -1280,6 +1280,8 @@ tracepoint_inspect(VALUE self)
     }
 }
 
+static void Init_postponed_job(void);
+
 /* This function is called from inits.c */
 void
 Init_vm_trace(void)
@@ -1370,62 +1372,126 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
+
+    /* initialized for postponed job */
+
+    Init_postponed_job();
 }
 
 typedef struct rb_postponed_job_struct {
-    unsigned long flags; /* reserve */
-    rb_thread_t *th; /* created thread, reserve */
+    unsigned long flags; /* reserved */
+    struct rb_thread_struct *th; /* created thread, reserved */
     rb_postponed_job_func_t func;
     void *data;
-    struct rb_postponed_job_struct *next;
 } rb_postponed_job_t;
 
-int
-rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
+#define MAX_POSTPONED_JOB                  1000
+#define MAX_POSTPONED_JOB_SPECIAL_ADDITION   24
+
+static void
+Init_postponed_job(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
-    rb_postponed_job_t *pjob = (rb_postponed_job_t *)ruby_xmalloc(sizeof(rb_postponed_job_t));
-    if (pjob == NULL) return 0; /* failed */
+    rb_vm_t *vm = GET_VM();
+    vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
+    vm->postponed_job_index = 0;
+}
+
+enum postponed_job_register_result {
+    PJRR_SUCESS      = 0,
+    PJRR_FULL        = 1,
+    PJRR_INTERRUPTED = 2
+};
+
+static enum postponed_job_register_result
+postponed_job_register(rb_thread_t *th, rb_vm_t *vm,
+		       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
+{
+    rb_postponed_job_t *pjob;
+
+    if (expected_index >= max) return PJRR_FULL; /* failed */
+
+    if (ATOMIC_CAS(vm->postponed_job_index, expected_index, expected_index+1) == expected_index) {
+	pjob = &vm->postponed_job_buffer[expected_index];
+    }
+    else {
+	return PJRR_INTERRUPTED;
+    }
 
     pjob->flags = flags;
     pjob->th = th;
     pjob->func = func;
     pjob->data = data;
 
-    pjob->next = vm->postponed_job;
-    vm->postponed_job = pjob;
-
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th);
-    return 1;
+
+    return PJRR_SUCESS;
 }
 
+
+/* return 0 if job buffer is full */
+int
+rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_vm_t *vm = th->vm;
+
+  begin:
+    switch (postponed_job_register(th, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
+      case PJRR_SUCESS     : return 1;
+      case PJRR_FULL       : return 0;
+      case PJRR_INTERRUPTED: goto begin;
+      default: rb_bug("unreachable\n");
+    }
+}
+
+/* return 0 if job buffer is full */
 int
 rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_postponed_job_t *pjob = vm->postponed_job;
+    rb_thread_t *th = GET_THREAD();
+    rb_vm_t *vm = th->vm;
+    rb_postponed_job_t *pjob;
+    int i, index;
 
-    while (pjob) {
+  begin:
+    index = vm->postponed_job_index;
+    for (i=0; i<index; i++) {
+	pjob = &vm->postponed_job_buffer[i];
 	if (pjob->func == func) {
+	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th);
 	    return 2;
 	}
-	pjob = pjob->next;
     }
-
-    return rb_postponed_job_register(flags, func, data);
+    switch (postponed_job_register(th, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
+      case PJRR_SUCESS     : return 1;
+      case PJRR_FULL       : return 0;
+      case PJRR_INTERRUPTED: goto begin;
+      default: rb_bug("unreachable\n");
+    }
 }
 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_postponed_job_t *pjob = vm->postponed_job, *next_pjob;
-    vm->postponed_job = 0;
+    rb_thread_t *th = GET_THREAD();
+    unsigned long saved_postponed_job_interrupt_mask = th->interrupt_mask & POSTPONED_JOB_INTERRUPT_MASK;
 
-    while (pjob) {
-	next_pjob = pjob->next;
-	pjob->func(pjob->data);
-	ruby_xfree(pjob);
-	pjob = next_pjob;
+    /* mask POSTPONED_JOB dispatch */
+    th->interrupt_mask |= POSTPONED_JOB_INTERRUPT_MASK;
+    {
+	TH_PUSH_TAG(th);
+	EXEC_TAG();
+	{
+	    int index;
+	    while ((index = vm->postponed_job_index) > 0) {
+		if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
+		    rb_postponed_job_t *pjob = &vm->postponed_job_buffer[index-1];
+		    (*pjob->func)(pjob->data);
+		}
+	    }
+	}
+	TH_POP_TAG();
     }
+    /* restore POSTPONED_JOB mask */
+    th->interrupt_mask &= ~(saved_postponed_job_interrupt_mask ^ POSTPONED_JOB_INTERRUPT_MASK);
 }

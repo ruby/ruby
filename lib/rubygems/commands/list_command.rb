@@ -33,13 +33,7 @@ To search for remote gems use the search command.
   end
 
   def usage # :nodoc:
-    "#{program_name} [STRING]"
-  end
-
-  def execute
-    string = get_one_optional_argument || ''
-    options[:name] = /^#{string}/i
-    super
+    "#{program_name} [STRING ...]"
   end
 
 end

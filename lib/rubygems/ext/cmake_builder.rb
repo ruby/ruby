@@ -1,3 +1,5 @@
+require 'rubygems/command'
+
 class Gem::Ext::CmakeBuilder < Gem::Ext::Builder
   def self.build(extension, directory, dest_path, results)
     unless File.exist?('Makefile') then

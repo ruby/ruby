@@ -41,24 +41,26 @@ module FileUtils
     unless options[:noop]
       res = rake_system(*cmd)
       status = $?
-      status = PseudoStatus.new(1) if !res && status.nil?
+      status = Rake::PseudoStatus.new(1) if !res && status.nil?
       shell_runner.call(res, status)
     end
   end
 
   def create_shell_runner(cmd) # :nodoc:
     show_command = cmd.join(" ")
-    show_command = show_command[0,42] + "..." unless $trace
-    lambda { |ok, status|
-      ok or fail "Command failed with status (#{status.exitstatus}): [#{show_command}]"
-    }
+    show_command = show_command[0, 42] + "..." unless $trace
+    lambda do |ok, status|
+      ok or
+        fail "Command failed with status (#{status.exitstatus}): " +
+        "[#{show_command}]"
+    end
   end
   private :create_shell_runner
 
   def set_verbose_option(options) # :nodoc:
     unless options.key? :verbose
       options[:verbose] =
-        Rake::FileUtilsExt.verbose_flag == Rake::FileUtilsExt::DEFAULT ||
+        (Rake::FileUtilsExt.verbose_flag == Rake::FileUtilsExt::DEFAULT) ||
         Rake::FileUtilsExt.verbose_flag
     end
   end
@@ -74,9 +76,9 @@ module FileUtils
   # Example:
   #   ruby %{-pe '$_.upcase!' <README}
   #
-  def ruby(*args,&block)
+  def ruby(*args, &block)
     options = (Hash === args.last) ? args.pop : {}
-    if args.length > 1 then
+    if args.length > 1
       sh(*([RUBY] + args + [options]), &block)
     else
       sh("#{RUBY} #{args.first}", options, &block)
@@ -88,7 +90,7 @@ module FileUtils
   #  Attempt to do a normal file link, but fall back to a copy if the link
   #  fails.
   def safe_ln(*args)
-    unless LN_SUPPORTED[0]
+    if ! LN_SUPPORTED[0]
       cp(*args)
     else
       begin

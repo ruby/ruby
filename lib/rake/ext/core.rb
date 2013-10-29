@@ -19,7 +19,8 @@ class Module
   #
   def rake_extension(method)
     if method_defined?(method)
-      $stderr.puts "WARNING: Possible conflict with Rake extension: #{self}##{method} already exists"
+      $stderr.puts "WARNING: Possible conflict with Rake extension: " +
+        "#{self}##{method} already exists"
     else
       yield
     end

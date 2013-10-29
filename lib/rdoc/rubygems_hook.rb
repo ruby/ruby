@@ -12,6 +12,7 @@ require 'rdoc'
 class RDoc::RubygemsHook
 
   include Gem::UserInteraction
+  extend  Gem::UserInteraction
 
   @rdoc_version = nil
   @specs = []
@@ -45,7 +46,8 @@ class RDoc::RubygemsHook
   # +specs+
 
   def self.generation_hook installer, specs
-    types     = installer.document
+    start = Time.now
+    types = installer.document
 
     generate_rdoc = types.include? 'rdoc'
     generate_ri   = types.include? 'ri'
@@ -53,6 +55,13 @@ class RDoc::RubygemsHook
     specs.each do |spec|
       new(spec, generate_rdoc, generate_ri).generate
     end
+
+    return unless generate_rdoc or generate_ri
+
+    duration = (Time.now - start).to_i
+    names    = specs.map(&:name).join ', '
+
+    say "Done installing documentation for #{names} after #{duration} seconds"
   end
 
   ##

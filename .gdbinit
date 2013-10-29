@@ -27,75 +27,8 @@ define rp
   else
   if ((VALUE)($arg0) & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     set $id = (($arg0) >> RUBY_SPECIAL_SHIFT)
-    if $id == '!' || $id == '+' || $id == '-' || $id == '*' || $id == '/' || $id == '%' || $id == '<' || $id == '>' || $id == '`'
-      printf "SYMBOL(:%c)\n", $id
-    else
-    if $id == idDot2
-      printf "%sSYMBOL%s(:..)\n", $color_type, $color_end
-    else
-    if $id == idDot3
-      printf "%sSYMBOL%s(:...)\n", $color_type, $color_end
-    else
-    if $id == idUPlus
-      printf "%sSYMBOL%s(:+@)\n", $color_type, $color_end
-    else
-    if $id == idUMinus
-      printf "%sSYMBOL%s(:-@)\n", $color_type, $color_end
-    else
-    if $id == idPow
-      printf "%sSYMBOL%s(:**)\n", $color_type, $color_end
-    else
-    if $id == idCmp
-      printf "%sSYMBOL%s(:<=>)\n", $color_type, $color_end
-    else
-    if $id == idLTLT
-      printf "%sSYMBOL%s(:<<)\n", $color_type, $color_end
-    else
-    if $id == idLE
-      printf "%sSYMBOL%s(:<=)\n", $color_type, $color_end
-    else
-    if $id == idGE
-      printf "%sSYMBOL%s(:>=)\n", $color_type, $color_end
-    else
-    if $id == idEq
-      printf "%sSYMBOL%s(:==)\n", $color_type, $color_end
-    else
-    if $id == idEqq
-      printf "%sSYMBOL%s(:===)\n", $color_type, $color_end
-    else
-    if $id == idNeq
-      printf "%sSYMBOL%s(:!=)\n", $color_type, $color_end
-    else
-    if $id == idEqTilde
-      printf "%sSYMBOL%s(:=~)\n", $color_type, $color_end
-    else
-    if $id == idNeqTilde
-      printf "%sSYMBOL%s(:!~)\n", $color_type, $color_end
-    else
-    if $id == idAREF
-      printf "%sSYMBOL%s(:[])\n", $color_type, $color_end
-    else
-    if $id == idASET
-      printf "%sSYMBOL%s(:[]=)\n", $color_type, $color_end
-    else
-      printf "%sSYMBOL%s(%ld)\n", $color_type, $color_end, $id
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
-    end
+    printf "%sSYMBOL%s: ", $color_type, $color_end
+    rp_id $id
   else
   if ($arg0) == RUBY_Qfalse
     echo false\n
@@ -147,39 +80,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRING
     printf "%sT_STRING%s: ", $color_type, $color_end
-    set print address off
-    output (char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
-    set print address on
-    printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
-            ((struct RString*)($arg0))->as.heap.len : \
-            (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
-    if !($flags & RUBY_FL_USER1)
-      printf "(embed) "
-    else
-      if ($flags & RUBY_FL_USER2)
-        printf "(shared) "
-      end
-      if ($flags & RUBY_FL_USER3)
-        printf "(assoc) "
-      end
-    end
-    printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == 0
-      printf "coderange:unknown "
-    else
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_7BIT
-      printf "coderange:7bit "
-    else
-    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_VALID
-      printf "coderange:valid "
-    else
-      printf "coderange:broken "
-    end
-    end
-    end
-    print (struct RString *)($arg0)
+    rp_string $arg0 $flags
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
     set $regsrc = ((struct RRegexp*)($arg0))->src
@@ -360,6 +261,158 @@ define rp
 end
 document rp
   Print a Ruby's VALUE.
+end
+
+define rp_id
+  set $id = (ID)$arg0
+  if $id == '!' || $id == '+' || $id == '-' || $id == '*' || $id == '/' || $id == '%' || $id == '<' || $id == '>' || $id == '`'
+    printf "(:%c)\n", $id
+  else
+  if $id == idDot2
+    printf "(:..)\n"
+  else
+  if $id == idDot3
+    printf "(:...)\n"
+  else
+  if $id == idUPlus
+    printf "(:+@)\n"
+  else
+  if $id == idUMinus
+    printf "(:-@)\n"
+  else
+  if $id == idPow
+    printf "(:**)\n"
+  else
+  if $id == idCmp
+    printf "(:<=>)\n"
+  else
+  if $id == idLTLT
+    printf "(:<<)\n"
+  else
+  if $id == idLE
+    printf "(:<=)\n"
+  else
+  if $id == idGE
+    printf "(:>=)\n"
+  else
+  if $id == idEq
+    printf "(:==)\n"
+  else
+  if $id == idEqq
+    printf "(:===)\n"
+  else
+  if $id == idNeq
+    printf "(:!=)\n"
+  else
+  if $id == idEqTilde
+    printf "(:=~)\n"
+  else
+  if $id == idNeqTilde
+    printf "(:!~)\n"
+  else
+  if $id == idAREF
+    printf "(:[])\n"
+  else
+  if $id == idASET
+    printf "(:[]=)\n"
+  else
+    if $id <= tLAST_OP_ID
+      printf "O"
+    else
+      set $id_type = $id & RUBY_ID_SCOPE_MASK
+      if $id_type == RUBY_ID_LOCAL
+        printf "l"
+      else
+      if $id_type == RUBY_ID_INSTANCE
+        printf "i"
+      else
+      if $id_type == RUBY_ID_GLOBAL
+        printf "G"
+      else
+      if $id_type == RUBY_ID_ATTRSET
+        printf "a"
+      else
+      if $id_type == RUBY_ID_CONST
+        printf "C"
+      else
+      if $id_type == RUBY_ID_CLASS
+        printf "c"
+      else
+        printf "j"
+      end
+      end
+      end
+      end
+      end
+      end
+    end
+    printf "(%ld): ", $id
+    rb_numtable_entry global_symbols.id_str $id
+    if $rb_numtable_rec
+      rp_string $rb_numtable_rec
+    else
+      echo undef\n
+    end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+end
+document rp_id
+  Print an ID.
+end
+
+define rp_string
+  set $flags = ((struct RBasic*)($arg0))->flags
+  set print address off
+  output (char *)(($flags & RUBY_FL_USER1) ? \
+	    ((struct RString*)($arg0))->as.heap.ptr : \
+	    ((struct RString*)($arg0))->as.ary)
+  set print address on
+  printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
+          ((struct RString*)($arg0))->as.heap.len : \
+          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  if !($flags & RUBY_FL_USER1)
+    printf "(embed) "
+  else
+    if ($flags & RUBY_FL_USER2)
+      printf "(shared) "
+    end
+    if ($flags & RUBY_FL_USER3)
+      printf "(assoc) "
+    end
+  end
+  printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == 0
+    printf "coderange:unknown "
+  else
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_7BIT
+    printf "coderange:7bit "
+  else
+  if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_VALID
+    printf "coderange:valid "
+  else
+    printf "coderange:broken "
+  end
+  end
+  end
+  print (struct RString *)($arg0)
+end
+document rp_string
+  Print the content of a String.
 end
 
 define rp_class
@@ -689,12 +742,8 @@ define rb_numtable_entry
 end
 
 define rb_id2name
-  rb_numtable_entry global_symbols.id_str (ID)$arg0
-  if $rb_numtable_rec
-    rp $rb_numtable_rec
-  else
-    echo undef\n
-  end
+  printf "%sID%s: ", $color_type, $color_end
+  rp_id $arg0
 end
 document rb_id2name
   Print the name of id

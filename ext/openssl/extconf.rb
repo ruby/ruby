@@ -154,5 +154,7 @@ have_macro("EVP_CTRL_GCM_GET_TAG", ['openssl/evp.h']) && $defs.push("-DHAVE_AUTH
 Logging::message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl")
+create_makefile("openssl") {|conf|
+  conf << "THREAD_MODEL = #{CONFIG["THREAD_MODEL"]}\n"
+}
 Logging::message "Done.\n"

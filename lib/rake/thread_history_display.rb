@@ -25,7 +25,7 @@ module Rake
           (stat[:time] * 1_000_000).round,
           stat[:thread],
           stat[:event],
-          stat[:data].map { |k,v| "#{k}:#{v}" }.join(" "))
+          stat[:data].map do |k, v| "#{k}:#{v}" end.join(" "))
       end
     end
 

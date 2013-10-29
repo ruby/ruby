@@ -187,7 +187,7 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #  ifdef HAVE_LIMITS_H
 #   include <limits.h>
 #  else
-    /* assuming 32bit(2's compliment) long */
+    /* assuming 32bit(2's complement) long */
 #   define LONG_MAX 2147483647
 #  endif
 # endif
@@ -568,10 +568,9 @@ int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
 int ruby_safe_level_4_error(void) __attribute__((error("$SAFE=4 is obsolete")));
+int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
 # ifdef RUBY_EXPORT
 #   define ruby_safe_level_4_warning() ruby_safe_level_4_error()
-# else
-int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
 # endif
 #define RUBY_SAFE_LEVEL_INVALID_P(level) \
     __extension__(__builtin_constant_p(level) && \
@@ -805,84 +804,9 @@ struct RFloat {
     double float_value;
 };
 
+double rb_float_value(VALUE);
+VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
-
-#if USE_FLONUM
-#define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
-#define RUBY_BIT_ROTR(v, n) (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)))
-
-static inline double
-rb_float_value(VALUE v)
-{
-    if (FLONUM_P(v)) {
-	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
-	    union {
-		double d;
-		VALUE v;
-	    } t;
-
-	    VALUE b63 = (v >> 63);
-	    /* e: xx1... -> 011... */
-	    /*    xx0... -> 100... */
-	    /*      ^b63           */
-	    t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
-	    return t.d;
-	}
-	else {
-	    return 0.0;
-	}
-    }
-    else {
-	return ((struct RFloat *)v)->float_value;
-    }
-}
-
-static inline VALUE
-rb_float_new(double d)
-{
-    union {
-	double d;
-	VALUE v;
-    } t;
-    int bits;
-
-    t.d = d;
-    bits = (int)((VALUE)(t.v >> 60) & 0x7);
-    /* bits contains 3 bits of b62..b60. */
-    /* bits - 3 = */
-    /*   b011 -> b000 */
-    /*   b100 -> b001 */
-
-    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
-	!((bits-3) & ~0x01)) {
-	return (RUBY_BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | 0x02;
-    }
-    else {
-	if (t.v == (VALUE)0) {
-	    /* +0.0 */
-	    return 0x8000000000000002;
-	}
-	else {
-	    /* out of range */
-	    return rb_float_new_in_heap(d);
-	}
-    }
-}
-
-#else /* USE_FLONUM */
-
-static inline double
-rb_float_value(VALUE v)
-{
-    return ((struct RFloat *)v)->float_value;
-}
-
-static inline VALUE
-rb_float_new(double d)
-{
-    return rb_float_new_in_heap(d);
-}
-#endif
 
 #define RFLOAT_VALUE(v) rb_float_value(v)
 #define DBL2NUM(dbl)  rb_float_new(dbl)
@@ -956,13 +880,12 @@ struct RArray {
 
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 
-/* DO NOT USE THIS MACRO DIRECTLY */
-#define RARRAY_RAWPTR(a) \
-  ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-   RARRAY(a)->as.ary : \
-   RARRAY(a)->as.heap.ptr)
+#define RARRAY_CONST_PTR(a) \
+  ((const VALUE *)((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
+		   RARRAY(a)->as.ary : \
+		   RARRAY(a)->as.heap.ptr))
 
-#define RARRAY_PTR_USE_START(a) RARRAY_RAWPTR(a)
+#define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR(a))
 #define RARRAY_PTR_USE_END(a) /* */
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
@@ -972,13 +895,13 @@ struct RArray {
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
-#define RARRAY_AREF(a, i)    (RARRAY_RAWPTR(a)[i])
+#define RARRAY_AREF(a, i)    (RARRAY_CONST_PTR(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary_ = (a); \
-    OBJ_WRITE(_ary_, &RARRAY_RAWPTR(_ary_)[i], (v)); \
+    OBJ_WRITE(_ary_, &RARRAY_CONST_PTR(_ary_)[i], (v)); \
 } while (0)
 
-#define RARRAY_PTR(a) ((VALUE *)RARRAY_RAWPTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
+#define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
 
 struct RRegexp {
     struct RBasic basic;
@@ -1131,14 +1054,14 @@ struct RStruct {
             (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
      RSTRUCT(st)->as.heap.len)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
-#define RSTRUCT_RAWPTR(st) \
+#define RSTRUCT_CONST_PTR(st) \
   ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
    RSTRUCT(st)->as.ary : \
    RSTRUCT(st)->as.heap.ptr)
-#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_RAWPTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
 
-#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_RAWPTR(st)[idx], (v))
-#define RSTRUCT_GET(st, idx)    (RSTRUCT_RAWPTR(st)[idx])
+#define RSTRUCT_SET(st, idx, v) OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
+#define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
 
 #ifndef RBIGNUM_EMBED_LEN_MAX
 # define RBIGNUM_EMBED_LEN_MAX ((int)((sizeof(VALUE)*3)/sizeof(BDIGIT)))
@@ -1247,7 +1170,7 @@ struct RBignum {
     RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT; \
 } while (0)
 
-#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x))))
+#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||SYMBOL_P(x))))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC
@@ -1277,7 +1200,7 @@ void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #endif
 
 static inline VALUE
-rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
+rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
@@ -1297,7 +1220,7 @@ rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
 }
 
 static inline VALUE
-rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
+rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_OBJ_WRITTEN
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
@@ -1315,7 +1238,7 @@ rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
 }
 
 static inline VALUE
-rb_obj_write(VALUE a, VALUE *slot, VALUE b, const char *filename, int line)
+rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WRITE
     RGENGC_LOGGING_WRITE(a, slot, b, filename, line);

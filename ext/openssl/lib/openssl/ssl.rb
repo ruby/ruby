@@ -148,10 +148,16 @@ module OpenSSL
       end
     end
 
+    ##
+    # SSLServer represents a TCP/IP server socket with Secure Sockets Layer.
     class SSLServer
       include SocketForwarder
+      # When true then #accept works exactly the same as TCPServer#accept
       attr_accessor :start_immediately
 
+      # Creates a new instance of SSLServer.
+      # * +srv+ is an instance of TCPServer.
+      # * +ctx+ is an instance of OpenSSL::SSL::SSLContext.
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx
@@ -164,18 +170,22 @@ module OpenSSL
         @start_immediately = true
       end
 
+      # Returns the TCPServer passed to the SSLServer when initialized.
       def to_io
         @svr
       end
 
+      # See TCPServer#listen for details.
       def listen(backlog=5)
         @svr.listen(backlog)
       end
 
+      # See BasicSocket#shutdown for details.
       def shutdown(how=Socket::SHUT_RDWR)
         @svr.shutdown(how)
       end
 
+      # Works similar to TCPServer#accept.
       def accept
         sock = @svr.accept
         begin
@@ -189,6 +199,7 @@ module OpenSSL
         end
       end
 
+      # See IO#close for details.
       def close
         @svr.close
       end

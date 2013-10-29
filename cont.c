@@ -15,9 +15,6 @@
 #include "gc.h"
 #include "eval_intern.h"
 
-#if ((defined(_WIN32) && _WIN32_WINNT >= 0x0400) || (defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT))) && !defined(__NetBSD__) && !defined(__sun) && !defined(__ia64) && !defined(FIBER_USE_NATIVE)
-#define FIBER_USE_NATIVE 1
-
 /* FIBER_USE_NATIVE enables Fiber performance improvement using system
  * dependent method such as make/setcontext on POSIX system or
  * CreateFiber() API on Windows.
@@ -29,12 +26,45 @@
  * in Proc. of 51th Programming Symposium, pp.21--28 (2010) (in Japanese).
  */
 
+#if !defined(FIBER_USE_NATIVE)
+# if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
+#   if 0
+#   elif defined(__NetBSD__)
 /* On our experience, NetBSD doesn't support using setcontext() and pthread
  * simultaneously.  This is because pthread_self(), TLS and other information
  * are represented by stack pointer (higher bits of stack pointer).
  * TODO: check such constraint on configure.
  */
-#elif !defined(FIBER_USE_NATIVE)
+#     define FIBER_USE_NATIVE 0
+#   elif defined(__sun)
+/* On Solaris because resuming any Fiber caused SEGV, for some reason.
+ */
+#     define FIBER_USE_NATIVE 0
+#   elif defined(__ia64)
+/* At least, Linux/ia64's getcontext(3) doesn't save register window.
+ */
+#     define FIBER_USE_NATIVE 0
+#   elif defined(__GNU__)
+/* GNU/Hurd doesn't fully support getcontext, setcontext, makecontext
+ * and swapcontext functions. Disabling their usage till support is
+ * implemented. More info at
+ * http://darnassus.sceen.net/~hurd-web/open_issues/glibc/#getcontext
+ */
+#     define FIBER_USE_NATIVE 0
+#   else
+#     define FIBER_USE_NATIVE 1
+#   endif
+# elif defined(_WIN32)
+#   if _WIN32_WINNT >= 0x0400
+/* only when _WIN32_WINNT >= 0x0400 on Windows because Fiber APIs are
+ * supported only such building (and running) environments.
+ * [ruby-dev:41192]
+ */
+#     define FIBER_USE_NATIVE 1
+#   endif
+# endif
+#endif
+#if !defined(FIBER_USE_NATIVE)
 #define FIBER_USE_NATIVE 0
 #endif
 
@@ -1151,7 +1181,7 @@ rb_fiber_start(void)
 	int argc;
 	const VALUE *argv, args = cont->value;
 	GetProcPtr(cont->saved_thread.first_proc, proc);
-	argv = (argc = cont->argc) > 1 ? RARRAY_RAWPTR(args) : &args;
+	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
 	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);

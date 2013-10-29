@@ -85,5 +85,10 @@ module Gem
     def wordy
       "Unable to download data from #{@source.uri} - #{@error.message}"
     end
+
+    ##
+    # The "exception" alias allows you to call raise on a SourceFetchProblem.
+
+    alias exception error
   end
 end

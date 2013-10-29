@@ -95,7 +95,7 @@
 #  ifdef HAVE_LIMITS_H
 #   include <limits.h>
 #  else
-    /* assuming 32bit(2's compliment) long */
+    /* assuming 32bit(2's complement) long */
 #   define LONG_MAX 2147483647
 #  endif
 # endif
@@ -1060,6 +1060,7 @@ number:			if ((dprec = prec) >= 0)
 			 * explicit precision of zero is no characters.''
 			 *	-- ANSI X3J11
 			 */
+			cp = ebuf;
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				if (uqval != 0 || prec != 0)

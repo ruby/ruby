@@ -53,14 +53,17 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   #
   # Use +mount_path+ when mounting the servlet somewhere other than /.
   #
+  # Use +extra_doc_dirs+ for additional documentation directories.
+  #
   # +server+ is provided automatically by WEBrick when mounting.  +stores+ and
   # +cache+ are provided automatically by the servlet.
 
-  def initialize server, stores, cache, mount_path = nil
+  def initialize server, stores, cache, mount_path = nil, extra_doc_dirs = []
     super server
 
     @cache      = cache
     @mount_path = mount_path
+    @extra_doc_dirs = extra_doc_dirs
     @stores     = stores
 
     @options = RDoc::Options.new
@@ -121,6 +124,10 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     else
       show_documentation req, res
     end
+  rescue WEBrick::HTTPStatus::NotFound => e
+    generator = generator_for RDoc::Store.new
+
+    not_found generator, req, res, e.message
   rescue WEBrick::HTTPStatus::Status
     raise
   rescue => e
@@ -270,6 +277,7 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
   # and the filesystem to the RDoc::Store for the documentation.
 
   def installed_docs
+    extra_counter = 0
     ri_paths.map do |path, type|
       store = RDoc::Store.new path, type
       exists = File.exist? store.cache_path
@@ -284,6 +292,11 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
         ['Site Documentation', 'site/', exists, type, path]
       when :home then
         ['Home Documentation', 'home/', exists, type, path]
+      when :extra then
+        extra_counter += 1
+        store.load_cache if exists
+        title = store.title || "Extra Documentation"
+        [title, "extra-#{extra_counter}/", exists, type, path]
       end
     end
   end
@@ -291,8 +304,9 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
   ##
   # Returns a 404 page built by +generator+ for +req+ on +res+.
 
-  def not_found generator, req, res
-    res.body = generator.generate_servlet_not_found req.path
+  def not_found generator, req, res, message = nil
+    message ||= "The page <kbd>#{ERB::Util.h req.path}</kbd> was not found"
+    res.body = generator.generate_servlet_not_found message
     res.status = 404
   end
 
@@ -300,7 +314,7 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
   # Enumerates the ri paths.  See RDoc::RI::Paths#each
 
   def ri_paths &block
-    RDoc::RI::Paths.each true, true, true, :all, &block
+    RDoc::RI::Paths.each true, true, true, :all, *@extra_doc_dirs, &block #TODO: pass extra_dirs
   end
 
   ##
@@ -344,6 +358,8 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
       when :home then
         path    = 'home'
         comment = 'Documentation from your home directory'
+      when :extra
+        comment = name
       end
 
       info << [name, '', path, '', comment]
@@ -397,6 +413,10 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
       RDoc::Store.new RDoc::RI::Paths.system_dir, :system
     when 'site' then
       RDoc::Store.new RDoc::RI::Paths.site_dir, :site
+    when /^extra-(\d+)$/ then
+      index = $1.to_i - 1
+      ri_dir = installed_docs[index][4]
+      RDoc::Store.new ri_dir, :extra
     else
       ri_dir, type = ri_paths.find do |dir, dir_type|
         next unless dir_type == :gem
@@ -404,11 +424,16 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
         source_name == dir[%r%/([^/]*)/ri$%, 1]
       end
 
-      raise RDoc::Error,
-            "could not find ri documentation for #{source_name}" unless
-        ri_dir
+      raise WEBrick::HTTPStatus::NotFound,
+            "Could not find gem \"#{source_name}\". Are you sure you installed it?" unless ri_dir
 
-      RDoc::Store.new ri_dir, type
+      store = RDoc::Store.new ri_dir, type
+
+      return store if File.exist? store.cache_path
+
+      raise WEBrick::HTTPStatus::NotFound,
+            "Could not find documentation for \"#{source_name}\". Please run `gem rdoc --ri gem_name`"
+
     end
   end
 

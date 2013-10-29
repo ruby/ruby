@@ -17,7 +17,7 @@ module Rake
       @mutex = Mutex.new
       @result = NOT_SET
       @error = NOT_SET
-      @args = args.collect { |a| begin; a.dup; rescue; a; end }
+      @args = args
       @block = block
     end
 

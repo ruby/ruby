@@ -495,10 +495,10 @@ make_seed_value(const uint32_t *ptr)
 {
     VALUE seed;
     size_t len;
+    uint32_t buf[DEFAULT_SEED_CNT+1];
 
     if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
         /* set leading-zero-guard */
-        uint32_t buf[DEFAULT_SEED_CNT+1];
         MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
         buf[DEFAULT_SEED_CNT] = 1;
         ptr = buf;
@@ -632,7 +632,7 @@ random_load(VALUE obj, VALUE dump)
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_RAWPTR(dump);
+    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
 	seed = ary[2];

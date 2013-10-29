@@ -5,6 +5,19 @@ require 'rubygems/dependency_list'
 require 'rubygems/installer'
 require 'tsort'
 
+##
+# A RequestSet groups a request to activate a set of dependencies.
+#
+#   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
+#   pg = Gem::Dependency.new 'pg', '~> 0.14'
+#
+#   set = Gem::RequestSet.new nokogiri, pg
+#
+#   requests = set.resolve
+#
+#   p requests.map { |r| r.full_name }
+#   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
+
 class Gem::RequestSet
 
   include TSort
@@ -23,6 +36,20 @@ class Gem::RequestSet
 
   attr_accessor :soft_missing
 
+  ##
+  # The set of vendor gems imported via load_gemdeps.
+
+  attr_reader :vendor_set # :nodoc:
+
+  ##
+  # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
+  # can then #resolve and #install the resolved list of dependencies.
+  #
+  #   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
+  #   pg = Gem::Dependency.new 'pg', '~> 0.14'
+  #
+  #   set = Gem::RequestSet.new nokogiri, pg
+
   def initialize *deps
     @dependencies = deps
 
@@ -32,6 +59,7 @@ class Gem::RequestSet
     @soft_missing   = false
     @sorted         = nil
     @specs          = nil
+    @vendor_set     = nil
 
     yield self if block_given?
   end
@@ -47,7 +75,7 @@ class Gem::RequestSet
   # Add +deps+ Gem::Dependency objects to the set.
 
   def import deps
-    @dependencies += deps
+    @dependencies.concat deps
   end
 
   def install options, &block
@@ -60,10 +88,13 @@ class Gem::RequestSet
     specs = []
 
     sorted_requests.each do |req|
-      if req.installed? and
-         @always_install.none? { |spec| spec == req.spec.spec } then
-        yield req, nil if block_given?
-        next
+      if req.installed? then
+        req.spec.spec.build_extensions
+
+        if @always_install.none? { |spec| spec == req.spec.spec } then
+          yield req, nil if block_given?
+          next
+        end
       end
 
       path = req.download cache_dir
@@ -118,7 +149,9 @@ class Gem::RequestSet
   # Load a dependency management file.
 
   def load_gemdeps path
-    gf = Gem::RequestSet::GemDepedencyAPI.new self, path
+    @vendor_set = Gem::DependencyResolver::VendorSet.new
+
+    gf = Gem::RequestSet::GemDependencyAPI.new self, path
     gf.load
   end
 
@@ -126,7 +159,15 @@ class Gem::RequestSet
   # Resolve the requested dependencies and return an Array of Specification
   # objects to be activated.
 
-  def resolve set = nil
+  def resolve set = Gem::DependencyResolver::IndexSet.new
+    sets = [set, @vendor_set].compact
+
+    set = if sets.size == 1 then
+            sets.first
+          else
+            Gem::DependencyResolver.compose_sets(*sets)
+          end
+
     resolver = Gem::DependencyResolver.new @dependencies, set
     resolver.development  = @development
     resolver.soft_missing = @soft_missing

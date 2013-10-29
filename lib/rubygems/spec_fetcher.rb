@@ -38,7 +38,12 @@ class Gem::SpecFetcher
   end
 
   def initialize
-    @update_cache = File.stat(Gem.user_home).uid == Process.uid
+    @update_cache =
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::EACCES, Errno::ENOENT
+        false
+      end
 
     @specs = {}
     @latest_specs = {}
@@ -225,13 +230,14 @@ class Gem::SpecFetcher
 
     tuples =
       begin
-        cache[source.uri] ||= source.load_specs(type)
+        cache[source.uri] ||=
+          source.load_specs(type).sort_by { |tup| tup.name }
       rescue Gem::RemoteFetcher::FetchError
         raise unless gracefully_ignore
         []
       end
 
-    tuples.sort_by { |tup| tup.name }
+    tuples
   end
 
 end

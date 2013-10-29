@@ -110,6 +110,21 @@ class TestRDocParser < RDoc::TestCase
     end
   end
 
+  def test_class_for_modeline
+    temp_dir do
+      content = "# -*- rdoc -*-\n= NEWS\n"
+
+      open 'NEWS', 'w' do |io| io.write content end
+      app = @store.add_file 'NEWS'
+
+      parser = @RP.for app, 'NEWS', content, @options, :stats
+
+      assert_kind_of RDoc::Parser::Simple, parser
+
+      assert_equal "= NEWS\n", parser.content
+    end
+  end
+
   def test_can_parse_modeline
     readme_ext = File.join Dir.tmpdir, "README.EXT.#{$$}"
 

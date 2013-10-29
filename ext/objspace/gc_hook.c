@@ -16,19 +16,40 @@
 #include "ruby/ruby.h"
 #include "ruby/debug.h"
 
+static int invoking; /* TODO: should not be global variable */
+
+static VALUE
+invoke_proc_ensure(void *dmy)
+{
+    invoking = 0;
+    return Qnil;
+}
+
+static VALUE
+invoke_proc_begin(VALUE proc)
+{
+    return rb_proc_call(proc, rb_ary_new());
+}
+
 static void
 invoke_proc(void *data)
 {
     VALUE proc = (VALUE)data;
-    rb_proc_call(proc, rb_ary_new());
+    invoking += 1;
+    rb_ensure(invoke_proc_begin, proc, invoke_proc_ensure, 0);
 }
 
 static void
 gc_start_end_i(VALUE tpval, void *data)
 {
-    rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
-    if (0) fprintf(stderr, "trace: %s\n", rb_tracearg_event_flag(tparg) == RUBY_INTERNAL_EVENT_GC_START ? "gc_start" : "gc_end");
-    rb_postponed_job_register(0, invoke_proc, data);
+    if (0) {
+	rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
+	fprintf(stderr, "trace: %s\n", rb_tracearg_event_flag(tparg) == RUBY_INTERNAL_EVENT_GC_START ? "gc_start" : "gc_end");
+    }
+
+    if (invoking == 0) {
+	rb_postponed_job_register(0, invoke_proc, data);
+    }
 }
 
 static VALUE
@@ -38,7 +59,9 @@ set_gc_hook(VALUE rb_mObjSpace, VALUE proc, rb_event_flag_t event, const char *t
     ID tp_key = rb_intern(tp_str);
     ID proc_key = rb_intern(proc_str);
 
-    if (RTEST(tpval = rb_ivar_get(rb_mObjSpace, tp_key))) {
+    /* disable previous keys */
+    if (rb_ivar_defined(rb_mObjSpace, tp_key) != 0 &&
+	RTEST(tpval = rb_ivar_get(rb_mObjSpace, tp_key))) {
 	rb_tracepoint_disable(tpval);
 	rb_ivar_set(rb_mObjSpace, tp_key, Qnil);
 	rb_ivar_set(rb_mObjSpace, proc_key, Qnil);

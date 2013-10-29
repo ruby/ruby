@@ -80,7 +80,7 @@ require 'date'
 #
 # #strptime works similar to +parse+ except that instead of using a heuristic
 # to detect the format of the input string, you provide a second argument that
-# is describes the format of the string. For example:
+# describes the format of the string. For example:
 #
 #   Time.strptime("2000-10-31", "%Y-%m-%d") #=> 2000-10-31 00:00:00 -0500
 
@@ -393,7 +393,11 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        Time.at(seconds)
+        if offset = d[:offset]
+          Time.at(seconds).localtime(offset)
+        else
+          Time.at(seconds)
+        end
       else
         year = d[:year]
         year = yield(year) if year && block_given?

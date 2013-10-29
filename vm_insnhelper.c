@@ -131,7 +131,7 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
     VALUE err_line = 0;
 
     if (iseq) {
-	int line_no = rb_iseq_first_lineno(iseq);
+	int line_no = FIX2INT(rb_iseq_first_lineno(iseq->self));
 
 	err_line = rb_sprintf("%s:%d:in `%s'",
 			      RSTRING_PTR(iseq->location.path),
@@ -792,7 +792,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 
     cfp->sp += space_size;
 
-    ptr = RARRAY_RAWPTR(ary);
+    ptr = RARRAY_CONST_PTR(ary);
     len = (rb_num_t)RARRAY_LEN(ary);
 
     if (flag & 0x02) {
@@ -846,7 +846,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     VALUE klass = CLASS_OF(recv);
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && RCLASS_EXT(klass)->seq == ci->seq)) {
+    if (LIKELY(GET_METHOD_STATE_VERSION() == ci->method_state && RCLASS_EXT(klass)->seq == ci->seq)) {
 	/* cache hit! */
 	return;
     }
@@ -856,7 +856,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     ci->klass = klass;
     ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
-    ci->vmstat = GET_VM_STATE_VERSION();
+    ci->method_state = GET_METHOD_STATE_VERSION();
     ci->seq = RCLASS_EXT(klass)->seq;
 #endif
 }
@@ -924,7 +924,7 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     rb_call_info_t ci;
     ci.mid = idEq;
     ci.klass = 0;
-    ci.vmstat = 0;
+    ci.method_state = 0;
     ci.me = NULL;
     ci.defined_class = 0;
     return opt_eq_func(obj1, obj2, &ci);
@@ -1068,7 +1068,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	}
 	else {
 	    long len = RARRAY_LEN(tmp);
-	    ptr = RARRAY_RAWPTR(tmp);
+	    ptr = RARRAY_CONST_PTR(tmp);
 	    cfp->sp -= 1;
 
 	    CHECK_VM_STACK_OVERFLOW(cfp, len);
@@ -1226,6 +1226,11 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
+	int i;
+	int arg_keywords_end = iseq->arg_keyword - (iseq->arg_block != -1);
+	for (i = iseq->arg_keywords; 0 < i; i--) {
+	    orig_argv[arg_keywords_end - i] = Qnil;
+	}
 	orig_argv[iseq->arg_keyword] = keyword_hash;
     }
 
@@ -1898,7 +1903,13 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      no_refinement_dispatch:
 		if (ci->me->def->body.orig_me) {
 		    ci->me = ci->me->def->body.orig_me;
-		    goto normal_method_dispatch;
+		    if (UNDEFINED_METHOD_ENTRY_P(ci->me)) {
+			ci->me = 0;
+			goto start_method_dispatch;
+		    }
+		    else {
+			goto normal_method_dispatch;
+		    }
 		}
 		else {
 		    klass = ci->me->klass;
@@ -2244,7 +2255,7 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
 	CHECK_VM_STACK_OVERFLOW(th->cfp, argc);
 
-	MEMCPY(argv, RARRAY_RAWPTR(ary), VALUE, argc);
+	MEMCPY(argv, RARRAY_CONST_PTR(ary), VALUE, argc);
     }
     else {
 	/* vm_push_frame current argv is at the top of sp because vm_invoke_block
@@ -2302,6 +2313,10 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
 
     /* keyword argument */
     if (iseq->arg_keyword != -1) {
+	int arg_keywords_end = iseq->arg_keyword - (iseq->arg_block != -1);
+	for (i = iseq->arg_keywords; 0 < i; i--) {
+	    argv[arg_keywords_end - i] = Qnil;
+	}
 	argv[iseq->arg_keyword] = keyword_hash;
     }
 
@@ -2405,7 +2420,7 @@ vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp == 0) {
-	rb_bug("m_core_set_postexe: unreachable");
+	rb_bug("vm_make_proc_with_iseq: unreachable");
     }
 
     blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);

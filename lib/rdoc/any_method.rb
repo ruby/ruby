@@ -9,8 +9,11 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   #   Added calls_super
   #   Added parent name and class
   #   Added section title
+  # 3::
+  #   RDoc 4.1
+  #   Added is_alias_for
 
-  MARSHAL_VERSION = 2 # :nodoc:
+  MARSHAL_VERSION = 3 # :nodoc:
 
   ##
   # Don't rename \#initialize to \::new
@@ -25,7 +28,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Different ways to call this method
 
-  attr_accessor :call_seq
+  attr_reader :call_seq
 
   ##
   # Parameters for this method
@@ -90,12 +93,49 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   end
 
   ##
+  # Sets the different ways you can call this method.  If an empty +call_seq+
+  # is given nil is assumed.
+  #
+  # See also #param_seq
+
+  def call_seq= call_seq
+    return if call_seq.empty?
+
+    @call_seq = call_seq
+  end
+
+  ##
+  # Loads is_alias_for from the internal name.  Returns nil if the alias
+  # cannot be found.
+
+  def is_alias_for # :nodoc:
+    case @is_alias_for
+    when RDoc::MethodAttr then
+      @is_alias_for
+    when Array then
+      return nil unless @store
+
+      klass_name, singleton, method_name = @is_alias_for
+
+      return nil unless klass = @store.find_class_or_module(klass_name)
+
+      @is_alias_for = klass.find_method method_name, singleton
+    end
+  end
+
+  ##
   # Dumps this AnyMethod for use by ri.  See also #marshal_load
 
   def marshal_dump
     aliases = @aliases.map do |a|
       [a.name, parse(a.comment)]
     end
+
+    is_alias_for = [
+      @is_alias_for.parent.full_name,
+      @is_alias_for.singleton,
+      @is_alias_for.name
+    ] if @is_alias_for
 
     [ MARSHAL_VERSION,
       @name,
@@ -112,6 +152,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       @parent.name,
       @parent.class,
       @section.title,
+      is_alias_for,
     ]
   end
 
@@ -126,7 +167,6 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     initialize_visibility
 
     @dont_rename_initialize = nil
-    @is_alias_for           = nil
     @token_stream           = nil
     @aliases                = []
     @parent                 = nil
@@ -150,6 +190,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @parent_name   = array[12]
     @parent_title  = array[13]
     @section_title = array[14]
+    @is_alias_for  = array[15]
 
     array[8].each do |new_name, comment|
       add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
@@ -174,7 +215,10 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   def name
     return @name if @name
 
-    @name = @call_seq[/^.*?\.(\w+)/, 1] || @call_seq if @call_seq
+    @name =
+      @call_seq[/^.*?\.(\w+)/, 1] ||
+      @call_seq[/^.*?(\w+)/, 1] ||
+      @call_seq if @call_seq
   end
 
   ##

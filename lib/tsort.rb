@@ -123,20 +123,59 @@ module TSort
   class Cyclic < StandardError
   end
 
-  #
   # Returns a topologically sorted array of nodes.
   # The array is sorted from children to parents, i.e.
   # the first element has no child and the last node has no parent.
   #
   # If there is a cycle, TSort::Cyclic is raised.
   #
+  #   class G
+  #     include TSort
+  #     def initialize(g)
+  #       @g = g
+  #     end
+  #     def tsort_each_child(n, &b) @g[n].each(&b) end
+  #     def tsort_each_node(&b) @g.each_key(&b) end
+  #   end
+  #
+  #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
+  #   p graph.tsort #=> [4, 2, 3, 1]
+  #
+  #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
+  #   p graph.tsort # raises TSort::Cyclic
+  #
   def tsort
+    each_node = method(:tsort_each_node)
+    each_child = method(:tsort_each_child)
+    TSort.tsort(each_node, each_child)
+  end
+
+  # Returns a topologically sorted array of nodes.
+  # The array is sorted from children to parents, i.e.
+  # the first element has no child and the last node has no parent.
+  #
+  # The graph is represented by _each_node_ and _each_child_.
+  # _each_node_ should have +call+ method which yields for each node in the graph.
+  # _each_child_ should have +call+ method which takes a node argument and yields for each child node.
+  #
+  # If there is a cycle, TSort::Cyclic is raised.
+  #
+  #   g = {1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   p TSort.tsort(each_node, each_child) #=> [4, 2, 3, 1]
+  #
+  #   g = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   p TSort.tsort(each_node, each_child) # raises TSort::Cyclic
+  #
+  def TSort.tsort(each_node, each_child)
     result = []
-    tsort_each {|element| result << element}
+    TSort.tsort_each(each_node, each_child) {|element| result << element}
     result
   end
 
-  #
   # The iterator version of the #tsort method.
   # <tt><em>obj</em>.tsort_each</tt> is similar to <tt><em>obj</em>.tsort.each</tt>, but
   # modification of _obj_ during the iteration may lead to unexpected results.
@@ -144,8 +183,45 @@ module TSort
   # #tsort_each returns +nil+.
   # If there is a cycle, TSort::Cyclic is raised.
   #
-  def tsort_each # :yields: node
-    each_strongly_connected_component {|component|
+  #   class G
+  #     include TSort
+  #     def initialize(g)
+  #       @g = g
+  #     end
+  #     def tsort_each_child(n, &b) @g[n].each(&b) end
+  #     def tsort_each_node(&b) @g.each_key(&b) end
+  #   end
+  #
+  #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
+  #   graph.tsort_each {|n| p n }
+  #   #=> 4
+  #   #   2
+  #   #   3
+  #   #   1
+  #
+  def tsort_each(&block) # :yields: node
+    each_node = method(:tsort_each_node)
+    each_child = method(:tsort_each_child)
+    TSort.tsort_each(each_node, each_child, &block)
+  end
+
+  # The iterator version of the TSort.tsort method.
+  #
+  # The graph is represented by _each_node_ and _each_child_.
+  # _each_node_ should have +call+ method which yields for each node in the graph.
+  # _each_child_ should have +call+ method which takes a node argument and yields for each child node.
+  #
+  #   g = {1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   TSort.tsort_each(each_node, each_child) {|n| p n }
+  #   #=> 4
+  #   #   2
+  #   #   3
+  #   #   1
+  #
+  def TSort.tsort_each(each_node, each_child) # :yields: node
+    TSort.each_strongly_connected_component(each_node, each_child) {|component|
       if component.size == 1
         yield component.first
       else
@@ -154,32 +230,121 @@ module TSort
     }
   end
 
-  #
   # Returns strongly connected components as an array of arrays of nodes.
   # The array is sorted from children to parents.
   # Each elements of the array represents a strongly connected component.
   #
+  #   class G
+  #     include TSort
+  #     def initialize(g)
+  #       @g = g
+  #     end
+  #     def tsort_each_child(n, &b) @g[n].each(&b) end
+  #     def tsort_each_node(&b) @g.each_key(&b) end
+  #   end
+  #
+  #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
+  #   p graph.strongly_connected_components #=> [[4], [2], [3], [1]]
+  #
+  #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
+  #   p graph.strongly_connected_components #=> [[4], [2, 3], [1]]
+  #
   def strongly_connected_components
+    each_node = method(:tsort_each_node)
+    each_child = method(:tsort_each_child)
+    TSort.strongly_connected_components(each_node, each_child)
+  end
+
+  # Returns strongly connected components as an array of arrays of nodes.
+  # The array is sorted from children to parents.
+  # Each elements of the array represents a strongly connected component.
+  #
+  # The graph is represented by _each_node_ and _each_child_.
+  # _each_node_ should have +call+ method which yields for each node in the graph.
+  # _each_child_ should have +call+ method which takes a node argument and yields for each child node.
+  #
+  #   g = {1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   p TSort.strongly_connected_components(each_node, each_child)
+  #   #=> [[4], [2], [3], [1]]
+  #
+  #   g = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   p TSort.strongly_connected_components(each_node, each_child)
+  #   #=> [[4], [2, 3], [1]]
+  #
+  def TSort.strongly_connected_components(each_node, each_child)
     result = []
-    each_strongly_connected_component {|component| result << component}
+    TSort.each_strongly_connected_component(each_node, each_child) {|component| result << component}
     result
   end
 
-  #
   # The iterator version of the #strongly_connected_components method.
   # <tt><em>obj</em>.each_strongly_connected_component</tt> is similar to
   # <tt><em>obj</em>.strongly_connected_components.each</tt>, but
   # modification of _obj_ during the iteration may lead to unexpected results.
   #
-  #
   # #each_strongly_connected_component returns +nil+.
   #
-  def each_strongly_connected_component # :yields: nodes
+  #   class G
+  #     include TSort
+  #     def initialize(g)
+  #       @g = g
+  #     end
+  #     def tsort_each_child(n, &b) @g[n].each(&b) end
+  #     def tsort_each_node(&b) @g.each_key(&b) end
+  #   end
+  #
+  #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
+  #   graph.each_strongly_connected_component {|scc| p scc }
+  #   #=> [4]
+  #   #   [2]
+  #   #   [3]
+  #   #   [1]
+  #
+  #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
+  #   graph.each_strongly_connected_component {|scc| p scc }
+  #   #=> [4]
+  #   #   [2, 3]
+  #   #   [1]
+  #
+  def each_strongly_connected_component(&block) # :yields: nodes
+    each_node = method(:tsort_each_node)
+    each_child = method(:tsort_each_child)
+    TSort.each_strongly_connected_component(each_node, each_child, &block)
+  end
+
+  # The iterator version of the TSort.strongly_connected_components method.
+  #
+  # The graph is represented by _each_node_ and _each_child_.
+  # _each_node_ should have +call+ method which yields for each node in the graph.
+  # _each_child_ should have +call+ method which takes a node argument and yields for each child node.
+  #
+  #   g = {1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   TSort.each_strongly_connected_component(each_node, each_child) {|scc| p scc }
+  #   #=> [4]
+  #   #   [2]
+  #   #   [3]
+  #   #   [1]
+  #
+  #   g = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+  #   each_node = lambda {|&b| g.each_key(&b) }
+  #   each_child = lambda {|n, &b| g[n].each(&b) }
+  #   TSort.each_strongly_connected_component(each_node, each_child) {|scc| p scc }
+  #   #=> [4]
+  #   #   [2, 3]
+  #   #   [1]
+  #
+  def TSort.each_strongly_connected_component(each_node, each_child) # :yields: nodes
     id_map = {}
     stack = []
-    tsort_each_node {|node|
+    each_node.call {|node|
       unless id_map.include? node
-        each_strongly_connected_component_from(node, id_map, stack) {|c|
+        TSort.each_strongly_connected_component_from(node, each_child, id_map, stack) {|c|
           yield c
         }
       end
@@ -187,7 +352,6 @@ module TSort
     nil
   end
 
-  #
   # Iterates over strongly connected component in the subgraph reachable from
   # _node_.
   #
@@ -195,18 +359,62 @@ module TSort
   #
   # #each_strongly_connected_component_from doesn't call #tsort_each_node.
   #
-  def each_strongly_connected_component_from(node, id_map={}, stack=[]) # :yields: nodes
+  #   class G
+  #     include TSort
+  #     def initialize(g)
+  #       @g = g
+  #     end
+  #     def tsort_each_child(n, &b) @g[n].each(&b) end
+  #     def tsort_each_node(&b) @g.each_key(&b) end
+  #   end
+  #
+  #   graph = G.new({1=>[2, 3], 2=>[4], 3=>[2, 4], 4=>[]})
+  #   graph.each_strongly_connected_component_from(2) {|scc| p scc }
+  #   #=> [4]
+  #   #   [2]
+  #
+  #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
+  #   graph.each_strongly_connected_component_from(2) {|scc| p scc }
+  #   #=> [4]
+  #   #   [2, 3]
+  #
+  def each_strongly_connected_component_from(node, id_map={}, stack=[], &block) # :yields: nodes
+    TSort.each_strongly_connected_component_from(node, method(:tsort_each_child), id_map, stack, &block)
+  end
+
+  # Iterates over strongly connected components in a graph.
+  # The graph is represented by _node_ and _each_child_.
+  #
+  # _node_ is the first node.
+  # _each_child_ should have +call+ method which takes a node argument
+  # and yields for each child node.
+  #
+  # Return value is unspecified.
+  #
+  # #TSort.each_strongly_connected_component_from is a class method and
+  # it doesn't need a class to represent a graph which includes TSort.
+  #
+  #   graph = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
+  #   each_child = lambda {|n, &b| graph[n].each(&b) }
+  #   TSort.each_strongly_connected_component_from(1, each_child) {|scc|
+  #     p scc
+  #   }
+  #   #=> [4]
+  #   #   [2, 3]
+  #   #   [1]
+  #
+  def TSort.each_strongly_connected_component_from(node, each_child, id_map={}, stack=[]) # :yields: nodes
     minimum_id = node_id = id_map[node] = id_map.size
     stack_length = stack.length
     stack << node
 
-    tsort_each_child(node) {|child|
+    each_child.call(node) {|child|
       if id_map.include? child
         child_id = id_map[child]
         minimum_id = child_id if child_id && child_id < minimum_id
       else
         sub_minimum_id =
-          each_strongly_connected_component_from(child, id_map, stack) {|c|
+          TSort.each_strongly_connected_component_from(child, each_child, id_map, stack) {|c|
             yield c
           }
         minimum_id = sub_minimum_id if sub_minimum_id < minimum_id
@@ -222,7 +430,6 @@ module TSort
     minimum_id
   end
 
-  #
   # Should be implemented by a extended class.
   #
   # #tsort_each_node is used to iterate for all nodes over a graph.
@@ -231,7 +438,6 @@ module TSort
     raise NotImplementedError.new
   end
 
-  #
   # Should be implemented by a extended class.
   #
   # #tsort_each_child is used to iterate for child nodes of _node_.

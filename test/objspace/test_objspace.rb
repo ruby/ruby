@@ -97,6 +97,18 @@ class TestObjSpace < Test::Unit::TestCase
     eom
   end
 
+  def test_reachable_objects_from_root
+    root_objects = ObjectSpace.reachable_objects_from_root
+
+    assert_operator(root_objects.size, :>, 0)
+
+    root_objects.each{|category, objects|
+      assert_kind_of(String, category)
+      assert_kind_of(Array, objects)
+      assert_operator(objects.size, :>, 0)
+    }
+  end
+
   def test_reachable_objects_size
     assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     ObjectSpace.each_object{|o|
@@ -109,7 +121,7 @@ class TestObjSpace < Test::Unit::TestCase
     eom
   end
 
-  def test_traceobject
+  def test_trace_object_allocations
     o0 = Object.new
     ObjectSpace.trace_object_allocations{
       o1 = Object.new; line1 = __LINE__; c1 = GC.count
@@ -138,5 +150,57 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(self.class.name, ObjectSpace.allocation_class_path(o3))
       assert_equal(__method__,      ObjectSpace.allocation_method_id(o3))
     }
+  end
+
+  def test_trace_object_allocations_start_stop_clear
+    begin
+      ObjectSpace.trace_object_allocations_start
+      begin
+        ObjectSpace.trace_object_allocations_start
+        begin
+          ObjectSpace.trace_object_allocations_start
+          obj0 = Object.new
+        ensure
+          ObjectSpace.trace_object_allocations_stop
+          obj1 = Object.new
+        end
+      ensure
+        ObjectSpace.trace_object_allocations_stop
+        obj2 = Object.new
+      end
+    ensure
+      ObjectSpace.trace_object_allocations_stop
+      obj3 = Object.new
+    end
+
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj0))
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj1))
+    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj2))
+    assert_equal(nil     , ObjectSpace.allocation_sourcefile(obj3)) # after tracing
+
+    ObjectSpace.trace_object_allocations_clear
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj0))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
+    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
+  end
+
+  def test_after_gc_start_hook_with_GC_stress
+    bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
+    assert_nothing_raised(Timeout::Error, bug8492) do
+      assert_in_out_err(%w[-robjspace], <<-'end;', /\A[1-9]/, timeout: 2)
+        stress, GC.stress = GC.stress, false
+        count = 0
+        ObjectSpace.after_gc_start_hook = proc {count += 1}
+        begin
+          GC.stress = true
+          3.times {Object.new}
+        ensure
+          GC.stress = stress
+          ObjectSpace.after_gc_start_hook = nil
+        end
+        puts count
+      end;
+    end
   end
 end

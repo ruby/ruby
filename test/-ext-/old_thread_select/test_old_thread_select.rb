@@ -5,6 +5,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
 
   ANCIENT_LINUX = RUBY_PLATFORM =~ /linux/ && `uname -r`.chomp < '2.6.32'
   DARWIN_10     = RUBY_PLATFORM =~ /darwin10/
+  WINDOWS       = RUBY_PLATFORM =~ /mswin|mingw/
 
   def with_pipe
     r, w = IO.pipe
@@ -45,8 +46,10 @@ class TestOldThreadSelect < Test::Unit::TestCase
         w.syswrite '.'
         rfds = [ r.fileno, r2.fileno ]
         rc = IO.old_thread_select(rfds, nil, nil, nil)
+        diff = Time.now - t0
         assert_equal [ r.fileno ], rfds, bug5306
         assert_equal 1, rc, bug5306
+        assert_operator diff, :>=, 0, "returned too early: diff=#{diff}"
       end
     end
   end
@@ -88,7 +91,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
       end
     end
 
-    unless ANCIENT_LINUX || DARWIN_10
+    unless ANCIENT_LINUX || DARWIN_10 || WINDOWS
       assert_operator diff, :>=, 1, "interrupted or short wait: diff=#{diff}"
     end
     assert_equal 0, rc

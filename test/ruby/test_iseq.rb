@@ -49,8 +49,7 @@ class TestISeq < Test::Unit::TestCase
   def test_unsupport_type
     ary = RubyVM::InstructionSequence.compile("p").to_a
     ary[9] = :foobar
-    e = assert_raise(TypeError) {RubyVM::InstructionSequence.load(ary)}
-    assert_match(/:foobar/, e.message)
+    assert_raise_with_message(TypeError, /:foobar/) {RubyVM::InstructionSequence.load(ary)}
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_disasm_encoding

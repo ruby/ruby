@@ -16,18 +16,33 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @executable = File.join(@gemhome, 'bin', 'executable')
   end
 
-  def test_execute_all_gem_names
-    @cmd.options[:args] = %w[a b]
-    @cmd.options[:all] = true
+  def test_execute_all_named
+    util_make_gems
 
-    assert_raises Gem::MockGemUi::TermError do
-      use_ui @ui do
-        @cmd.execute
-      end
+    default = new_default_spec 'default', '1'
+    install_default_gems default
+
+    gemhome2 = "#{@gemhome}2"
+
+    a_4 = quick_spec 'a', 4
+    install_gem a_4, :install_dir => gemhome2
+
+    Gem::Specification.dirs = [@gemhome, gemhome2]
+
+    assert_includes Gem::Specification.all_names, 'a-1'
+    assert_includes Gem::Specification.all_names, 'a-4'
+    assert_includes Gem::Specification.all_names, 'b-2'
+    assert_includes Gem::Specification.all_names, 'default-1'
+
+    @cmd.options[:all] = true
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
     end
 
-    assert_match(/\A(?:WARNING:  Unable to use symlinks on Windows, installing wrapper\n)?ERROR:  Gem names and --all may not be used together\n\z/,
-                 @ui.error)
+    assert_equal %w[a-4 a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
+                 Gem::Specification.all_names.sort
   end
 
   def test_execute_dependency_order
@@ -215,6 +230,15 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_equal %w[a-4 default-1], Gem::Specification.all_names.sort
+  end
+
+  def test_handle_options
+    @cmd.handle_options %w[]
+
+    assert_equal false,                    @cmd.options[:check_dev]
+    assert_equal nil,                      @cmd.options[:install_dir]
+    assert_equal true,                     @cmd.options[:user_install]
+    assert_equal Gem::Requirement.default, @cmd.options[:version]
   end
 
 end

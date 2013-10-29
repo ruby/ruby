@@ -95,8 +95,11 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 RUBY = $(RUBY_INSTALL_NAME)
 MINIRUBY = @MINIRUBY@\
 	$(MINIRUBYOPT)
-RUNRUBY_COMMAND = @RUNRUBY@ $(RUNRUBYOPT)
-RUNRUBY = $(RUNRUBY_COMMAND) $(RUN_OPTS)
+# RUNRUBY_COMMAND:: runruby.rb or baseruby. do not append options directly
+RUNRUBY_COMMAND = @RUNRUBY_COMMAND@
+# RUNRUBY:: run ruby with RUN_OPTS which is passed to ruby
+RUNRUBY = @RUNRUBY@ $(RUN_OPTS)
+# RUNRUBY_DEBUGGER:: debugging option for runruby.rb
 RUNRUBY_DEBUGGER = --debugger='gdb -x run.gdb --quiet --args'
 XRUBY = @XRUBY@
 BTESTRUBY = @BTESTRUBY@\
@@ -109,7 +112,7 @@ XRUBY_LIBDIR = @XRUBY_LIBDIR@
 XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 
-DEFAULT_PRELUDES = $(@USE_RUBYGEMS@_GEM_PRELUDE)
+DEFAULT_PRELUDES = $(GEM_PRELUDE)
 
 #### End of system configuration section. ####
 
@@ -255,16 +258,16 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 
 $(MKFILES): config.status
-		@[ -f Makefile ] && mv Makefile Makefile.old
-		MAKE=$(MAKE) $(SHELL) ./config.status
-		@cmp Makefile Makefile.old > /dev/null 2>&1 && echo Makefile unchanged && exit 0; \
+		@[ -f $@ ] && mv $@ $@.old
+		MAKE=$(MAKE) $(SHELL) ./config.status $@
+		@cmp $@ $@.old > /dev/null 2>&1 && echo $@ unchanged && exit 0; \
 		{ \
 		    echo "all:; -@rm -f conftest.mk"; \
 		    echo "conftest.mk: .force; @echo AUTO_REMAKE"; \
 		    echo ".force:"; \
 		} > conftest.mk || exit 1; \
 		$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
-		{ echo "Makefile updated, restart."; exit 1; }
+		{ echo "$@ updated, restart."; exit 1; }
 
 uncommon.mk: $(srcdir)/common.mk
 		sed 's/{\$$([^(){}]*)[^{}]*}//g' $< > $@

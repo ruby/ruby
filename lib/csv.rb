@@ -1116,6 +1116,7 @@ class CSV
   # but transcode it to UTF-8 before CSV parses it.
   #
   def self.foreach(path, options = Hash.new, &block)
+    return to_enum(__method__, path, options) unless block
     open(path, options) do |csv|
       csv.each(&block)
     end

@@ -365,7 +365,7 @@ static const rb_data_type_t stat_data_type = {
 };
 
 static VALUE
-stat_new_0(VALUE klass, struct stat *st)
+stat_new_0(VALUE klass, const struct stat *st)
 {
     struct stat *nst = 0;
 
@@ -376,8 +376,8 @@ stat_new_0(VALUE klass, struct stat *st)
     return TypedData_Wrap_Struct(klass, &stat_data_type, nst);
 }
 
-static VALUE
-stat_new(struct stat *st)
+VALUE
+rb_stat_new(const struct stat *st)
 {
     return stat_new_0(rb_cStat, st);
 }
@@ -987,7 +987,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
     if (rb_stat(fname, &st) < 0) {
 	rb_sys_fail_path(fname);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 }
 
 /*
@@ -1015,7 +1015,7 @@ rb_io_stat(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 }
 
 /*
@@ -1044,7 +1044,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
     if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 #else
     return rb_file_s_stat(klass, fname);
 #endif
@@ -1079,7 +1079,7 @@ rb_file_lstat(VALUE obj)
     if (lstat(RSTRING_PTR(path), &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    return stat_new(&st);
+    return rb_stat_new(&st);
 #else
     return rb_io_stat(obj);
 #endif
@@ -1395,6 +1395,22 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     return Qtrue;
+}
+
+static VALUE
+rb_file_exists_p(VALUE obj, VALUE fname)
+{
+    const char *s = "FileTest#";
+    if (obj == rb_mFileTest) {
+	s = "FileTest.";
+    }
+    else if (obj == rb_cFile ||
+	     (RB_TYPE_P(obj, T_CLASS) &&
+	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
+	s = "File.";
+    }
+    rb_warning("%sexists? is a deprecated name, use %sexist? instead", s, s);
+    return rb_file_exist_p(obj, fname);
 }
 
 /*
@@ -3408,15 +3424,26 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  *
  *  Converts a pathname to an absolute pathname. Relative paths are
  *  referenced from the current working directory of the process unless
- *  <i>dir_string</i> is given, in which case it will be used as the
+ *  +dir_string+ is given, in which case it will be used as the
  *  starting point. The given pathname may start with a
  *  ``<code>~</code>'', which expands to the process owner's home
- *  directory (the environment variable <code>HOME</code> must be set
+ *  directory (the environment variable +HOME+ must be set
  *  correctly). ``<code>~</code><i>user</i>'' expands to the named
  *  user's home directory.
  *
  *     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
- *     File.expand_path("../../bin", "/tmp/x")   #=> "/bin"
+ *
+ *  A simple example of using +dir_string+ is as follows.
+ *     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
+ *
+ *  A more complex example which also resolves parent directory is as follows.
+ *  Suppose we are in bin/mygem and want the absolute path of lib/mygem.rb.
+ *
+ *     File.expand_path("../../lib/mygem.rb", __FILE__)
+ *     #=> ".../path/to/project/lib/mygem.rb"
+ *
+ *  So first it resolves the parent of __FILE__, that is bin/, then go to the
+ *  parent, the root of the project and appends +lib/mygem.rb+.
  */
 
 VALUE
@@ -5579,7 +5606,7 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
-    define_filetest_function("exists?", rb_file_exist_p, 1);
+    define_filetest_function("exists?", rb_file_exists_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
@@ -5813,8 +5840,4 @@ Init_File(void)
     rb_define_method(rb_cStat, "setuid?",  rb_stat_suid, 0);
     rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
     rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
-
-#ifdef _WIN32
-    rb_w32_init_file();
-#endif
 }

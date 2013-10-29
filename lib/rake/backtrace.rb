@@ -1,13 +1,15 @@
 module Rake
   module Backtrace
-    SUPPRESSED_PATHS =
-      RbConfig::CONFIG.values_at(*RbConfig::CONFIG.
-                                 keys.grep(/(prefix|libdir)/)).uniq + [
-        File.join(File.dirname(__FILE__), ".."),
-      ].map { |f| Regexp.quote(File.expand_path(f)) }
-    SUPPRESSED_PATHS.reject! { |s| s.nil? || s =~ /^ *$/ }
+    SYS_KEYS  = RbConfig::CONFIG.keys.grep(/(prefix|libdir)/)
+    SYS_PATHS = RbConfig::CONFIG.values_at(*SYS_KEYS).uniq +
+      [ File.join(File.dirname(__FILE__), "..") ]
 
-    SUPPRESS_PATTERN = %r!(\A#{SUPPRESSED_PATHS.join('|')}|bin/rake:\d+)!i
+    SUPPRESSED_PATHS = SYS_PATHS.
+      map { |s| s.gsub("\\", "/") }.
+      map { |f| File.expand_path(f) }.
+      reject { |s| s.nil? || s =~ /^ *$/ }
+    SUPPRESSED_PATHS_RE = SUPPRESSED_PATHS.map { |f| Regexp.quote(f) }.join("|")
+    SUPPRESS_PATTERN = %r!(\A(#{SUPPRESSED_PATHS_RE})|bin/rake:\d+)!i
 
     def self.collapse(backtrace)
       pattern = Rake.application.options.suppress_backtrace_pattern ||

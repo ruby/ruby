@@ -1346,7 +1346,12 @@ gem 'other', version
     @installer.write_spec
 
     assert_path_exists @spec.spec_file
-    assert_equal @spec, eval(File.read(@spec.spec_file))
+
+    loaded = Gem::Specification.load @spec.spec_file
+
+    assert_equal @spec, loaded
+
+    assert_equal Gem.rubygems_version, @spec.installed_by_version
   end
 
   def test_write_spec_writes_cached_spec

@@ -18,9 +18,6 @@ module Rake
     FileUtilsExt.verbose_flag = DEFAULT
     FileUtilsExt.nowrite_flag = false
 
-    $fileutils_verbose = true
-    $fileutils_nowrite = false
-
     FileUtils.commands.each do |name|
       opts = FileUtils.options_of name
       default_options = []
@@ -90,7 +87,7 @@ module Rake
       oldvalue
     end
 
-    # Use this function to prevent potentially destructive Ruby code
+    # Use this function to prevent potentially destructive ruby code
     # from running when the :nowrite flag is set.
     #
     # Example:
@@ -138,7 +135,8 @@ module Rake
       optdecl.each do |name|
         h.delete name
       end
-      raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
+      raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless
+        h.empty?
     end
 
     extend self

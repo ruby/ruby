@@ -125,12 +125,15 @@ Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has the corresponding
 structure can be cast to retrieve the pointer to the struct.  The
 casting macro will be of the form RXXXX for each data type; for
-instance, RARRAY(obj).  See "ruby.h".
+instance, RARRAY(obj).  See "ruby.h".  However, we do not recommend
+to access RXXXX data directly because these data structure is complex.
+Use corresponding rb_xxx() functions to access internal struct.
+For example, to access an entry of array, use rb_ary_entry(ary, offset)
+and rb_ary_store(ary, offset, obj).
 
 There are some accessing macros for structure members, for example
 `RSTRING_LEN(str)' to get the size of the Ruby String object.  The
-allocated region can be accessed by `RSTRING_PTR(str)'.  For arrays,
-use `RARRAY_LEN(ary)' and `RARRAY_PTR(ary)' respectively.
+allocated region can be accessed by `RSTRING_PTR(str)'.
 
 Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
@@ -281,6 +284,10 @@ rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
 rb_ary_entry(VALUE ary, long offset) ::
 
   ary[offset]
+
+rb_ary_store(VALUE ary, long offset, VALUE obj) ::
+
+  ary[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len) ::
 

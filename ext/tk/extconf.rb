@@ -1487,8 +1487,8 @@ end
 
 def setup_for_macosx_framework(tclver, tkver)
   # use framework, but no tclConfig.sh
-  unless $LDFLAGS && $LDFLAGS.include?('-framework')
-    ($LDFLAGS ||= "") << ' -framework Tk -framework Tcl'
+  unless $LIBS && $LIBS.include?('-framework')
+    ($LIBS ||= "") << ' -framework Tk -framework Tcl'
   end
 
   if TkLib_Config["tcl-framework-header"]
