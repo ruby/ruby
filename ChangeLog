@@ -1,3 +1,8 @@
+Tue Oct 29 12:08:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (readline_getc): Consider
+	  NULL as input.
+
 Tue Oct 29 11:10:08 2013  Aman Gupta <ruby@tmm1.net>
 
 	* gc.c (gc_profile_total_time): fix off-by-one error in

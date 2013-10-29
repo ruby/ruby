@@ -204,6 +204,8 @@ static int
 readline_getc(FILE *input)
 {
     struct getc_struct data;
+    if (input == NULL) /* editline may give NULL as input. */
+        input = stdin;
     data.input = input;
     data.fd = fileno(input);
   again:
