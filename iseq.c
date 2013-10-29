@@ -168,9 +168,8 @@ static const rb_data_type_t iseq_data_type = {
 	iseq_free,
 	iseq_memsize,
     },              /* functions */
-    0,              /* parent */
-    0,              /* data */
-    FL_WB_PROTECTED /* flags */
+    NULL, NULL,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE

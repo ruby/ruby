@@ -1,3 +1,66 @@
+Tue Oct 29 20:01:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* add RUBY_TYPED_FREE_IMMEDIATELY to data types which only use
+	  safe functions during garbage collection such as xfree().
+
+	  On default, T_DATA objects are freed at same points as fianlizers.
+	  This approach protects issues such as reported by [ruby-dev:35578].
+	  However, freeing T_DATA objects immediately helps heap usage.
+
+	  Most of T_DATA (in other words, most of dfree functions) are safe.
+	  However, we turned off RUBY_TYPED_FREE_IMMEDIATELY by default
+	  for safety.
+
+	* cont.c: ditto.
+
+	* dir.c: ditto.
+
+	* encoding.c: ditto.
+
+	* enumerator.c: ditto.
+
+	* error.c: ditto.
+
+	* file.c: ditto.
+
+	* gc.c: ditto.
+
+	* io.c: ditto.
+
+	* iseq.c: ditto.
+
+	* marshal.c: ditto.
+
+	* parse.y: ditto.
+
+	* proc.c: ditto.
+
+	* process.c: ditto.
+
+	* random.c: ditto.
+
+	* thread.c: ditto.
+
+	* time.c: ditto.
+
+	* transcode.c: ditto.
+
+	* variable.c: ditto.
+
+	* vm.c: ditto.
+
+	* vm_backtrace.c: ditto.
+
+	* vm_trace.c: ditto.
+
+	* ext/bigdecimal/bigdecimal.c: ditto.
+
+	* ext/objspace/objspace.c: ditto.
+
+	* ext/stringio/stringio.c: ditto.
+
+	* ext/strscan/strscan.c: ditto.
+
 Tue Oct 29 19:48:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: fix typo (FL_WB_PROTECT -> FL_WB_PROTECTED).

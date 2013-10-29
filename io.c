@@ -7583,6 +7583,7 @@ argf_memsize(const void *ptr)
 static const rb_data_type_t argf_type = {
     "ARGF",
     {argf_mark, argf_free, argf_memsize},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static inline void

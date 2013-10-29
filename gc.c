@@ -1378,6 +1378,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    if (RTYPEDDATA_P(obj)) {
 		free_immediately = RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY;
 		RDATA(obj)->dfree = RANY(obj)->as.typeddata.type->function.dfree;
+		if (0 && free_immediately == 0) /* to expose non-free-immediate T_DATA */
+		  fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
 	    }
 	    if (RANY(obj)->as.data.dfree == RUBY_DEFAULT_FREE) {
 		xfree(DATA_PTR(obj));
@@ -5369,7 +5371,8 @@ static const rb_data_type_t weakmap_type = {
 	wmap_mark,
 	wmap_free,
 	wmap_memsize,
-    }
+    },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

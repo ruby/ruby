@@ -417,6 +417,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 static const rb_data_type_t cont_data_type = {
     "continuation",
     {cont_mark, cont_free, cont_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void
@@ -1032,6 +1033,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 static const rb_data_type_t fiber_data_type = {
     "fiber",
     {fiber_mark, fiber_free, fiber_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

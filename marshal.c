@@ -186,6 +186,7 @@ memsize_dump_arg(const void *ptr)
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static const char *
@@ -1021,6 +1022,7 @@ memsize_load_arg(const void *ptr)
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))

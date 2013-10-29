@@ -78,6 +78,7 @@ static const rb_data_type_t proc_data_type = {
 	proc_free,
 	proc_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE
@@ -276,6 +277,7 @@ const rb_data_type_t ruby_binding_data_type = {
 	binding_free,
 	binding_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -1104,6 +1106,7 @@ static const rb_data_type_t method_data_type = {
 	bm_free,
 	bm_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE
