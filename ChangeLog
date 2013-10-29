@@ -1,3 +1,24 @@
+Tue Oct 29 09:53:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* insns.def, vm.c, vm_insnhelper.c, vm_insnhelper.h, vm_method.c: split
+	  ruby_vm_global_state_version into two separate counters - one for the
+	  global method state and one for the global constant state. This means
+	  changes to constants do not affect method caches, and changes to
+	  methods do not affect constant caches. In particular, this means
+	  inclusions of modules containing constants no longer globally
+	  invalidate the method cache.
+
+	* class.c, eval.c, include/ruby/intern.h, insns.def, vm.c, vm_method.c:
+	  rename rb_clear_cache_by_class to rb_clear_method_cache_by_class
+
+	* class.c, include/ruby/intern.h, variable.c, vm_method.c: add
+	  rb_clear_constant_cache
+
+	* compile.c, vm_core.h, vm_insnhelper.c: rename vmstat field in
+	  rb_call_info_struct to method_state
+
+	* vm_method.c: rename vmstat field in struct cache_entry to method_state
+
 Mon Oct 28 23:26:04 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/readline/test_readline.rb (teardown): Clear Readline.input and

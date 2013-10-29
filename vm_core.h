@@ -162,7 +162,7 @@ typedef struct rb_call_info_struct {
     rb_iseq_t *blockiseq;
 
     /* inline cache: keys */
-    vm_state_version_t vmstat;
+    vm_state_version_t method_state;
     vm_state_version_t seq;
     VALUE klass;
 

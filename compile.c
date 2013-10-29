@@ -961,7 +961,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
 	    ci->flag |= VM_CALL_ARGS_SKIP_SETUP;
 	}
     }
-    ci->vmstat = 0;
+    ci->method_state = 0;
     ci->seq = 0;
     ci->blockptr = 0;
     ci->recv = Qundef;

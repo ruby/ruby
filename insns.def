@@ -218,7 +218,6 @@ setconstant
 {
     vm_check_if_namespace(cbase);
     rb_const_set(cbase, id, val);
-    rb_clear_cache_by_class(cbase);
 }
 
 /**
@@ -974,8 +973,6 @@ defineclass
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
     RESTORE_REGS();
-
-    rb_clear_cache_by_class(klass);
     NEXT_INSN();
 }
 
@@ -1186,7 +1183,7 @@ getinlinecache
 ()
 (VALUE val)
 {
-    if (ic->ic_vmstat == GET_VM_STATE_VERSION()) {
+    if (ic->ic_vmstat == GET_CONSTANT_STATE_VERSION()) {
 	val = ic->ic_value.value;
 	JUMP(dst);
     }
@@ -1211,7 +1208,7 @@ setinlinecache
 	rb_iseq_add_mark_object(GET_ISEQ(), val);
     }
     ic->ic_value.value = val;
-    ic->ic_vmstat = GET_VM_STATE_VERSION() - ruby_vm_const_missing_count;
+    ic->ic_vmstat = GET_CONSTANT_STATE_VERSION() - ruby_vm_const_missing_count;
     ruby_vm_const_missing_count = 0;
 }
 
