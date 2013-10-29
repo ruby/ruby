@@ -20,6 +20,11 @@ module Psych
       assert_match(/---\s*"/, yaml)
     end
 
+    def test_cycle_x
+      str = X.new 'abc'
+      assert_cycle str
+    end
+
     def test_dash_dot
       assert_cycle '-.'
       assert_cycle '+.'

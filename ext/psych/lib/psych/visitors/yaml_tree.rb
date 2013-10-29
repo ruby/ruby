@@ -267,8 +267,7 @@ module Psych
       def binary? string
         (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
           string.index("\x00") ||
-          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3 ||
-          string.class != String
+          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3
       end
       private :binary?
 
@@ -301,6 +300,8 @@ module Psych
         if ivars.empty?
           unless o.class == ::String
             tag = "!ruby/string:#{o.class}"
+            plain = false
+            quote = false
           end
           @emitter.scalar str, nil, tag, plain, quote, style
         else
