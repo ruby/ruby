@@ -1,3 +1,8 @@
+Wed Oct 30 12:44:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): add missing variables,
+	  PLATFORM_DIR and THREAD_MODEL.
+
 Wed Oct 30 12:20:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (v2w): Normalize a rational value to an integer if possible.

@@ -895,6 +895,8 @@ s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
 s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
 s,@sitearchhdrdir@,$$(sitehdrdir)/$${sitearch},;t t
 s,@vendorarchhdrdir@,$$(vendorhdrdir)/$${sitearch},;t t
+s,@PLATFORM_DIR@,$(PLATFORM_DIR),;t t
+s,@THREAD_MODEL@,$(THREAD_MODEL),;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
