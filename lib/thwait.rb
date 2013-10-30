@@ -15,7 +15,7 @@ require "e2mmap.rb"
 #
 # Example:
 #
-#   ThreadsWait.all_wait(thr1, thr2, ...) do |t|
+#   ThreadsWait.all_waits(thr1, thr2, ...) do |t|
 #     STDERR.puts "Thread #{t} has terminated."
 #   end
 #
