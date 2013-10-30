@@ -79,15 +79,9 @@ error !
 
 #define INSN_DISPATCH_SIG(insn)
 
-#if OPT_CONTEXT_THREADED_CODE
 #define INSN_ENTRY(insn) \
   LABEL(insn): \
   INSN_ENTRY_SIG(insn);
-#else
-#define INSN_ENTRY(insn) \
-  LABEL(insn): \
-  INSN_ENTRY_SIG(insn);
-#endif
 
 /* dispatcher */
 #if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
@@ -137,7 +131,7 @@ error !
 #if OPT_CONTEXT_THREADED_CODE
 
 #define INSN_DISPATCH()     \
-  __asm__ __volatile__("movq %%rsp, %0\npushq $0" : "=r" (rsp)); \
+  __asm__ __volatile__("movq %%rsp, %0\npushq $0" : "=r" (rsp) : : "%rsp"); \
   goto *(void const *)GET_CURRENT_INSN(); \
   {
 

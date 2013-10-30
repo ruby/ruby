@@ -42,6 +42,9 @@ vm_stack_overflow_for_insn(void)
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
+#if OPT_CONTEXT_THREADED_CODE
+__attribute__((optimize("no-omit-frame-pointer")))
+#endif
 vm_exec_core(rb_thread_t *th, VALUE initial)
 {
 
