@@ -1,3 +1,8 @@
+Wed Oct 30 12:08:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_uniq_bang): use rb_ary_modify_check() instead of
+	  rb_ary_modify() because the array will be unshared soon.
+
 Wed Oct 30 03:25:10 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: make less garbage when
