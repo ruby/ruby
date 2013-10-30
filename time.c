@@ -320,6 +320,11 @@ v2w_bignum(VALUE v)
 static inline wideval_t
 v2w(VALUE v)
 {
+    if (RB_TYPE_P(v, T_RATIONAL)) {
+        if (RRATIONAL(v)->den != LONG2FIX(1))
+            return v;
+        v = RRATIONAL(v)->num;
+    }
 #if WIDEVALUE_IS_WIDER
     if (FIXNUM_P(v)) {
         return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);

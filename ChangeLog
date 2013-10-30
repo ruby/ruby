@@ -1,3 +1,8 @@
+Wed Oct 30 12:20:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (v2w): Normalize a rational value to an integer if possible.
+	  [ruby-core:58070] [Bug #9059] reported by Isaac Schwabacher.
+
 Wed Oct 30 12:08:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_uniq_bang): use rb_ary_modify_check() instead of
