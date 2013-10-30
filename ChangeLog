@@ -46,7 +46,7 @@ Tue Oct 29 20:01:58 2013  Koichi Sasada  <ko1@atdot.net>
 	* add RUBY_TYPED_FREE_IMMEDIATELY to data types which only use
 	  safe functions during garbage collection such as xfree().
 
-	  On default, T_DATA objects are freed at same points as fianlizers.
+	  On default, T_DATA objects are freed at same points as finalizers.
 	  This approach protects issues such as reported by [ruby-dev:35578].
 	  However, freeing T_DATA objects immediately helps heap usage.
 
@@ -110,7 +110,7 @@ Tue Oct 29 19:48:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 Tue Oct 29 18:45:08 2013  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_trace.c (tp_free): remvoed because empty free function.
+	* vm_trace.c (tp_free): removed because empty free function.
 	  Use RUBY_TYPED_NEVER_FREE instead.
 
 Tue Oct 29 18:37:33 2013  Koichi Sasada  <ko1@atdot.net>
@@ -118,7 +118,7 @@ Tue Oct 29 18:37:33 2013  Koichi Sasada  <ko1@atdot.net>
 	* include/ruby/ruby.h: introduce new flags for T_TYPEDDATA.
 	  * RUBY_TYPED_FREE_IMMEDIATELY: free the data given by DATA_PTR()
 	    with dfree function immediately.  Otherwise (default), the data
-	    freed at finalizaton point.
+	    freed at finalization point.
 	  * RUBY_TYPED_WB_PROTECTED: make this object with FL_WB_PROTECT
 	    (not shady).
 
