@@ -1,3 +1,8 @@
+Thu Oct 31 23:22:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* object.c (rb_obj_cmp): [DOC] patched by Keith Bennett
+	  <kbennett AT verisign.com>.  [ruby-core:57887] [Backport #9024]
+
 Thu Oct 31 23:10:30 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/dl/test_base.rb: {libc, libm} detection now handle GNU/Hurd
