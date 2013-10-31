@@ -1,3 +1,8 @@
+Thu Oct 31 23:32:41 2013  Michal Rokos  <michal@rokos.cz>
+
+	* configure.in (sys/pstat.h): fix missing header check for
+	  missing/setproctitle.c on HP-UX.  [ruby-core:56644] [Bug #8792]
+
 Thu Oct 31 23:25:25 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/ossl_pkey_ec.c: Ensure compatibility to builds of
