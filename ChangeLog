@@ -1,3 +1,9 @@
+Thu Oct 31 23:42:39 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#unlink): finalizer is no longer needed
+	  after unlinking.  patched by by normalperson (Eric Wong) at
+	  [ruby-core:56521] [Bug #8768]
+
 Thu Oct 31 23:40:43 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/gserver.rb: [DOC] correct gserver.rb license [Bug #8913]
