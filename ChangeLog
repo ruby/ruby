@@ -1,3 +1,7 @@
+Thu Oct 31 23:40:43 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/gserver.rb: [DOC] correct gserver.rb license [Bug #8913]
+
 Thu Oct 31 23:35:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
