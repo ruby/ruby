@@ -1,3 +1,10 @@
+Thu Oct 31 23:10:30 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/dl/test_base.rb: {libc, libm} detection now handle GNU/Hurd
+	  correctly. Patch by Gabriele Giacone (1o5g4r8o@gmail.com).
+	  [Bug #8937][ruby-core:57311]
+	* test/fiddle/helper.rb: ditto.
+
 Thu Oct 31 23:05:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.strptime): Time.strptime('0', '%s') returns local

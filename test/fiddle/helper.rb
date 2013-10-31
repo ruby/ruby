@@ -38,6 +38,9 @@ when /kfreebsd/
 when /bsd|dragonfly/
   libc_so = "/usr/lib/libc.so"
   libm_so = "/usr/lib/libm.so"
+when /gnu/	#GNU/Hurd
+  libc_so = "/lib/libc.so.0.3"
+  libm_so = "/lib/libm.so.6"
 when /solaris/
   libdir = '/lib'
   case [0].pack('L!').size
