@@ -323,7 +323,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 
 	switch(def->type) {
 	  case VM_METHOD_TYPE_ISEQ:
-	    OBJ_WRITTEN(klass, Qundef, def->body.iseq);
+	    OBJ_WRITTEN(klass, Qundef, def->body.iseq->self);
 	    break;
 	  case VM_METHOD_TYPE_IVAR:
 	    OBJ_WRITTEN(klass, Qundef, def->body.attr.location);
