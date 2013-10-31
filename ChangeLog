@@ -1,3 +1,7 @@
+Fri Nov  1 01:08:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: print HWM (high water mark) if possible.
+
 Thu Oct 31 21:48:31 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/streamparser.rb: Add dependency file require.

@@ -25,6 +25,13 @@ puts script
 puts Benchmark::CAPTION
 puts tms
 puts "GC total time (sec): #{gc_time}"
+
+# show High-Water Mark on Linux
+if File.exist?('/proc/self/status') && /VmHWM:\s*(\d+.+)/ =~ File.read('/proc/self/status')
+  puts
+  puts "VmHWM: #{$1.chomp}"
+end
+
 puts
 puts "Summary of #{name} on #{desc}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
 puts "         (real time in sec, GC time in sec, GC count)"
