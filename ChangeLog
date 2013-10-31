@@ -1,3 +1,13 @@
+Thu Oct 31 23:05:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Time.strptime('0', '%s') returns local
+	  time Time object as Ruby 2.0 and before.
+
+Thu Oct 31 23:05:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.strptime): Use :offset.
+	  Patch by Felipe Contreras.  [ruby-core:57694]
+
 Thu Oct 31 22:49:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_close_read): duplex IO should wait its child process
