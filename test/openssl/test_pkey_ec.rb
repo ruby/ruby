@@ -11,6 +11,7 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     @keys = []
 
     OpenSSL::PKey::EC.builtin_curves.each do |curve, comment|
+      next if curve.start_with?("Oakley") # Oakley curves are not suitable for ECDSA
       group = OpenSSL::PKey::EC::Group.new(curve)
 
       key = OpenSSL::PKey::EC.new(group)
@@ -44,11 +45,12 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     end
   end
 
-  def test_encoding
+  def test_group_encoding
     for group in @groups
       for meth in [:to_der, :to_pem]
         txt = group.send(meth)
         gr = OpenSSL::PKey::EC::Group.new(txt)
+
         assert_equal(txt, gr.send(meth))
 
         assert_equal(group.generator.to_bn, gr.generator.to_bn)
@@ -58,7 +60,9 @@ class OpenSSL::TestEC < Test::Unit::TestCase
         assert_equal(group.degree, gr.degree)
       end
     end
+  end
 
+  def test_key_encoding
     for key in @keys
       group = key.group
 
