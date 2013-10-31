@@ -1,3 +1,13 @@
+Thu Oct 31 23:35:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (MAXEXP, MAXFRACT): calculate depending on constants in
+	  float.h.
+
+	* vsnprintf.c (BSD_vfprintf): limit length for cvt() to get rid of
+	  buffer overflow.  [ruby-core:57023] [Bug #8864]
+
+	* vsnprintf.c (exponent): make expbuf size more precise.
+
 Thu Oct 31 23:32:41 2013  Michal Rokos  <michal@rokos.cz>
 
 	* configure.in (sys/pstat.h): fix missing header check for
