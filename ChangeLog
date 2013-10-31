@@ -1,3 +1,22 @@
+Thu Oct 31 22:28:04 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* test/openssl/test_pkey_ec.rb: Skip tests for "Oakley" curves as
+	  they are not suitable for ECDSA.
+	  [ruby-core:54881] [Bug #8384]
+
+Thu Oct 31 22:28:04 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_pkey_ec.c: Ensure compatibility to builds of
+	  OpenSSL with OPENSSL_NO_EC2M defined, but OPENSSL_NO_EC not
+	  defined.
+	* test/openssl/test_pkey_ec.rb: Iterate over built-in curves
+	  (and assert their non-emptiness!) instead of hard-coding them, as
+	  this may cause problems with respect to the different availability
+	  of individual curves in individual OpenSSL builds.
+	  [ruby-core:54881] [Bug #8384]
+
+	  Thanks to Vit Ondruch for providing the patch!
+
 Sun Oct 27 01:04:28 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.0.13. [ruby-core:58031]

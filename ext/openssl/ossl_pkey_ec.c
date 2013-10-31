@@ -762,8 +762,10 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 method = EC_GFp_mont_method();
             } else if (id == s_GFp_nist) {
                 method = EC_GFp_nist_method();
+#if !defined(OPENSSL_NO_EC2M)
             } else if (id == s_GF2m_simple) {
                 method = EC_GF2m_simple_method();
+#endif
             }
 
             if (method) {
@@ -817,8 +819,10 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
             if (id == s_GFp) {
                 new_curve = EC_GROUP_new_curve_GFp;
+#if !defined(OPENSSL_NO_EC2M)
             } else if (id == s_GF2m) {
                 new_curve = EC_GROUP_new_curve_GF2m;
+#endif
             } else {
                 ossl_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
             }
