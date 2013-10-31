@@ -1,3 +1,16 @@
+Thu Oct 31 23:25:25 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
+
+	* ext/openssl/ossl_pkey_ec.c: Ensure compatibility to builds of
+	  OpenSSL with OPENSSL_NO_EC2M defined, but OPENSSL_NO_EC not
+	  defined.
+	* test/openssl/test_pkey_ec.rb: Iterate over built-in curves
+	  (and assert their non-emptiness!) instead of hard-coding them, as
+	  this may cause problems with respect to the different availability
+	  of individual curves in individual OpenSSL builds.
+	  [ruby-core:54881] [Bug #8384]
+
+	  Thanks to Vit Ondruch for providing the patch!
+
 Thu Oct 31 23:22:35 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* object.c (rb_obj_cmp): [DOC] patched by Keith Bennett
