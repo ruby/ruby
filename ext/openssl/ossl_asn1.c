@@ -1360,13 +1360,13 @@ ossl_asn1cons_each(VALUE self)
 
 /*
  * call-seq:
- *    ObjectId.register(object_id, short_name, long_name)
+ *    OpenSSL::ASN1::ObjectId.register(object_id, short_name, long_name)
  *
  * This adds a new ObjectId to the internal tables. Where +object_id+ is the
  * numerical form, +short_name+ is the short name, and +long_name+ is the long
  * name.
  *
- * Returns +true+ if successful. Raises an ASN1Error otherwise.
+ * Returns +true+ if successful. Raises an OpenSSL::ASN1::ASN1Error if it fails.
  *
  */
 static VALUE
@@ -1384,11 +1384,11 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 
 /* Document-method: OpenSSL::ASN1::ObjectId#sn
  *
- * The short name of the ObjectId, as defined in +openssl/objects.h+.
+ * The short name of the ObjectId, as defined in <openssl/objects.h>.
  */
 /* Document-method: OpenSSL::ASN1::ObjectId#short_name
  *
- * #short_name is an alias to #sn
+ * +short_name+ is an alias to +sn+
  */
 static VALUE
 ossl_asn1obj_get_sn(VALUE self)
@@ -1405,11 +1405,11 @@ ossl_asn1obj_get_sn(VALUE self)
 
 /* Document-method: OpenSSL::ASN1::ObjectId#ln
  *
- * The long name of the ObjectId, as defined in +openssl/objects.h+.
+ * The long name of the ObjectId, as defined in <openssl/objects.h>.
  */
-/* Document-method: OpenSSL::ASN1::ObjectId.long_name
+/* Document-method: OpenSSL::ASN1::ObjectId#long_name
  *
- * #long_name is an alias to #ln
+ * +long_name+ is an alias to +ln+
  */
 static VALUE
 ossl_asn1obj_get_ln(VALUE self)
@@ -1424,9 +1424,9 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
-/* Document-method: OpenSSL::ASN1::ObjectId#oid
+/* Document-method: OpenSSL::ASN1::ObjectId.oid
  *
- * The object identifier as a String.
+ * The object identifier as a +String+, e.g. "1.2.3.4.5"
  */
 static VALUE
 ossl_asn1obj_get_oid(VALUE self)
@@ -1808,6 +1808,10 @@ Init_ossl_asn1(void)
      * the final octet of the +BitString+'s +value+.
      *
      * == OpenSSL::ASN1::ObjectId
+     *
+     * NOTE: While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId,
+     * it is not typically allocated this way, but rather that are recieved from
+     * parsed ASN1 encodings.
      *
      * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
      * not typically allocated this way, but rather that are received from
