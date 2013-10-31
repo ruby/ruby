@@ -28,6 +28,7 @@ end # OpenSSL
 # Add double dispatch to Integer
 #
 class Integer
+  # Cast an Integer as an OpenSSL::BN (big num - multiprecision integer arithmetics)
   def to_bn
     OpenSSL::BN::new(self)
   end

@@ -1358,6 +1358,13 @@ ossl_asn1cons_each(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    OpenSSL::ASN1::ObjectId.register(oid, sn, ln)
+ *
+ * Returns true if it is successful. Raises OpenSSL::ASN1::ASN1Error if it fails.
+ *
+ */
 static VALUE
 ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 {
