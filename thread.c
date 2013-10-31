@@ -390,8 +390,8 @@ typedef struct rb_mutex_struct
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
     struct rb_thread_struct volatile *th;
-    int cond_waiting;
     struct rb_mutex_struct *next_mutex;
+    int cond_waiting;
     int allow_trap;
 } rb_mutex_t;
 

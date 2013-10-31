@@ -1,3 +1,8 @@
+Fri Nov  1 06:20:44 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_struct): reduce rb_mutex_t size by 8 bytes
+	  on 64bit platform. Patch by Eric Wong. [Feature #9068][ruby-core:58114]
+
 Fri Nov  1 01:08:33 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: print HWM (high water mark) if possible.
