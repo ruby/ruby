@@ -3,13 +3,14 @@
 ;; Authors: Yukihiro Matsumoto, Nobuyoshi Nakada, Akinori MUSHA
 ;; URL: http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/trunk/misc/
 ;; Created: 3 Sep 2012
-;; Package-Requires: ((ruby-mode "1.2"))
+;; Package-Requires: ((emacs "24.3") (ruby-mode "1.2"))
 ;; Keywords: ruby, languages
 
 ;;; Commentary:
 ;;
 ;; This package contains ruby-mode extensions yet to be merged into
-;; the Emacs distribution.
+;; the latest released version of Emacs distribution.  For older
+;; versions of Emacs, use ruby-mode.el bundled with CRuby.
 
 ;;; Code:
 
