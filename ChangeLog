@@ -1,3 +1,14 @@
+Thu Oct 31 22:49:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): duplex IO should wait its child process
+	  even after close_read.
+
+Thu Oct 31 22:49:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): keep fptr in write_io to be discarded, to
+	  fix freed pointer access when it is in use by other threads, and get
+	  rid of potential memory/fd leak.
+
 Mon Sep  2 17:21:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_parse.c (rfc2822_cb): check if wday is given, since it
