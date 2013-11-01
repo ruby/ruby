@@ -1,3 +1,11 @@
+Fri Nov  1 22:20:28 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (make_deferred): Refactoring. Collect codes which should be
+	  atomic.
+
+	* gc.c (make_io_deferred, obj_free, rb_objspace_call_finalizer,
+	  gc_page_sweep): Correspond to the above.
+
 Fri Nov  1 21:40:35 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (typedef struct rb_objspace): Refactoring. Move some members

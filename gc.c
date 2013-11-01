@@ -1283,16 +1283,18 @@ rb_free_const_table(st_table *tbl)
 }
 
 static inline void
-make_deferred(RVALUE *p)
+make_deferred(rb_objspace_t *objspace,RVALUE *p)
 {
     p->as.basic.flags = T_ZOMBIE;
+    p->as.free.next = heap_pages_deferred_final;
+    heap_pages_deferred_final = p;
 }
 
 static inline void
-make_io_deferred(RVALUE *p)
+make_io_deferred(rb_objspace_t *objspace,RVALUE *p)
 {
     rb_io_t *fptr = p->as.file.fptr;
-    make_deferred(p);
+    make_deferred(objspace, p);
     p->as.data.dfree = (void (*)(void*))rb_io_fptr_finalize;
     p->as.data.data = fptr;
 }
@@ -1391,7 +1393,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 		    (RDATA(obj)->dfree)(DATA_PTR(obj));
 		}
 		else {
-		    make_deferred(RANY(obj));
+		    make_deferred(objspace, RANY(obj));
 		    return 1;
 		}
 	    }
@@ -1408,7 +1410,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    make_io_deferred(RANY(obj));
+	    make_io_deferred(objspace, RANY(obj));
 	    return 1;
 	}
 	break;
@@ -1985,16 +1987,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
-		    make_deferred(RANY(p));
-		    RANY(p)->as.free.next = heap_pages_deferred_final;
-		    heap_pages_deferred_final = p;
+		    make_deferred(objspace, RANY(p));
 		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
 		if (RANY(p)->as.file.fptr) {
-		    make_io_deferred(RANY(p));
-		    RANY(p)->as.free.next = heap_pages_deferred_final;
-		    heap_pages_deferred_final = p;
+		    make_io_deferred(objspace, RANY(p));
 		}
 	    }
 	    p++;
@@ -2381,7 +2379,6 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     int i;
     size_t empty_num = 0, freed_num = 0, final_num = 0;
     RVALUE *p, *pend,*offset;
-    int deferred;
     bits_t *bits, bitset;
 
     rgengc_report(1, objspace, "page_sweep: start.\n");
@@ -2406,14 +2403,12 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			if (objspace->rgengc.during_minor_gc && RVALUE_PROMOTED(p)) rb_bug("page_sweep: %p (%s) is promoted.\n", p, obj_type_name((VALUE)p));
 			if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p (%s) is remembered.\n", p, obj_type_name((VALUE)p));
 #endif
-			if ((deferred = obj_free(objspace, (VALUE)p)) || (FL_TEST(p, FL_FINALIZE))) {
-			    if (!deferred) {
-				p->as.free.flags = T_ZOMBIE;
-				RDATA(p)->dfree = 0;
-			    }
-			    p->as.free.next = heap_pages_deferred_final;
-			    heap_pages_deferred_final = p;
-			    assert(BUILTIN_TYPE(p) == T_ZOMBIE);
+			if (obj_free(objspace, (VALUE)p)) {
+			    final_num++;
+			}
+			else if (FL_TEST(p, FL_FINALIZE)) {
+			    RDATA(p)->dfree = 0;
+			    make_deferred(objspace,p);
 			    final_num++;
 			}
 			else {
