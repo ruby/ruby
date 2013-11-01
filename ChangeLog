@@ -1,3 +1,8 @@
+Fri Nov  1 23:24:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (wmap_mark_map): mark live objects only, but delete zombies.
+	  [ruby-dev:47787] [Bug #9069]
+
 Fri Nov  1 22:45:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (struct heap_page, gc_page_sweep, gc_sweep): Refactoring for

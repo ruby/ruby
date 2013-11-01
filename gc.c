@@ -5302,7 +5302,10 @@ struct weakmap {
 static int
 wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
 {
-    gc_mark_ptr((rb_objspace_t *)arg, (VALUE)val);
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    VALUE obj = (VALUE)val;
+    if (!is_live_object(objspace, obj)) return ST_DELETE;
+    gc_mark_ptr(objspace, obj);
     return ST_CONTINUE;
 }
 
