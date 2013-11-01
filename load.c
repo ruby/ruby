@@ -558,16 +558,15 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static void
-rb_load_internal(VALUE fname, int wrap)
+static inline void
+rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 {
     int state;
-    rb_thread_t *th = GET_THREAD();
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
     volatile int loaded = FALSE;
     volatile int mild_compile_error;
-#if !defined __GNUC__ || (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
+#if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
 #endif
 
@@ -599,7 +598,7 @@ rb_load_internal(VALUE fname, int wrap)
     }
     POP_TAG();
 
-#if !defined __GNUC__ || (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
+#if !defined __GNUC__
     th = th0;
     fname = RB_GC_GUARD(fname);
 #endif
@@ -619,6 +618,12 @@ rb_load_internal(VALUE fname, int wrap)
 	/* exception during load */
 	rb_exc_raise(th->errinfo);
     }
+}
+
+static void
+rb_load_internal(VALUE fname, int wrap)
+{
+    rb_load_internal0(GET_THREAD(), fname, wrap);
 }
 
 void
