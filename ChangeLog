@@ -1,3 +1,8 @@
+Fri Nov  1 16:55:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): export with fixed length arguments, and
+	  allow nil as replacement string instead of omitting.
+
 Fri Nov  1 06:20:44 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_struct): reduce rb_mutex_t size by 8 bytes

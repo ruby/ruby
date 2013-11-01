@@ -2660,8 +2660,6 @@ str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
     return dencidx;
 }
 
-VALUE rb_str_scrub(int argc, VALUE *argv, VALUE str);
-
 static int
 str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 {
@@ -2697,14 +2695,11 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
 	    if (ecflags & ECONV_INVALID_MASK) {
+		VALUE rep = Qnil;
 		if (!NIL_P(ecopts)) {
-		    VALUE rep = rb_hash_aref(ecopts, sym_replace);
-		    dest = rb_str_scrub(1, &rep, str);
+		    rep = rb_hash_aref(ecopts, sym_replace);
 		}
-		else {
-		    dest = rb_str_scrub(0, NULL, str);
-		}
-		*self = dest;
+		*self = rb_str_scrub(str, rep);
 		return dencidx;
 	    }
             return NIL_P(arg2) ? -1 : dencidx;

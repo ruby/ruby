@@ -7973,20 +7973,18 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
  * @param repl the replacement character
  * @return If given string is invalid, returns a new string. Otherwise, returns Qnil.
  */
-static VALUE
-str_scrub0(int argc, VALUE *argv, VALUE str)
+VALUE
+rb_str_scrub(VALUE str, VALUE repl)
 {
     int cr = ENC_CODERANGE(str);
     rb_encoding *enc;
     int encidx;
-    VALUE repl;
 
     if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
 	return Qnil;
 
     enc = STR_ENC_GET(str);
-    rb_scan_args(argc, argv, "01", &repl);
-    if (argc != 0) {
+    if (!NIL_P(repl)) {
 	repl = str_compat_and_valid(repl, enc);
     }
 
@@ -8225,10 +8223,11 @@ str_scrub0(int argc, VALUE *argv, VALUE str)
  *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
  *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
  */
-VALUE
-rb_str_scrub(int argc, VALUE *argv, VALUE str)
+static VALUE
+str_scrub(int argc, VALUE *argv, VALUE str)
 {
-    VALUE new = str_scrub0(argc, argv, str);
+    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
+    VALUE new = rb_str_scrub(str, repl);
     return NIL_P(new) ? rb_str_dup(str): new;
 }
 
@@ -8249,7 +8248,8 @@ rb_str_scrub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_scrub_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE new = str_scrub0(argc, argv, str);
+    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
+    VALUE new = rb_str_scrub(str, repl);
     if (!NIL_P(new)) rb_str_replace(str, new);
     return str;
 }
@@ -8743,7 +8743,7 @@ Init_String(void)
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
-    rb_define_method(rb_cString, "scrub", rb_str_scrub, -1);
+    rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
