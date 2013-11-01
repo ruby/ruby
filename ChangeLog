@@ -1,3 +1,13 @@
+Fri Nov  1 22:45:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (struct heap_page, gc_page_sweep, gc_sweep): Refactoring for
+	  performance. Add before_sweep condition to heap_page structure.
+
+	* gc.c (rb_gc_force_recycle): Use before_sweep member.
+
+	* gc.c (heap_is_before_sweep, is_before_sweep): Remove. They has not
+	  already been used.
+
 Fri Nov  1 22:20:28 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (make_deferred): Refactoring. Collect codes which should be

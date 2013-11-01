@@ -474,6 +474,7 @@ struct heap_page {
     struct heap_page *prev;
     struct heap_page *free_next;
     rb_heap_t *heap;
+    int before_sweep;
 
     bits_t mark_bits[HEAP_BITMAP_LIMIT];
 #if USE_RGENGC
@@ -664,29 +665,6 @@ RVALUE_PROMOTE(VALUE obj)
 #endif
     }
 #endif
-}
-
-static inline int
-heap_is_before_sweep(VALUE obj, rb_heap_t *heap)
-{
-    struct heap_page *page;
-    if (is_lazy_sweeping(heap)) {
-	page = heap->sweep_pages;
-	while (page) {
-	    if (page->body == GET_PAGE_BODY(obj)) {
-		return TRUE;
-	    }
-	    page = page->next;
-	}
-    }
-    return FALSE;
-}
-
-static inline int
-is_before_sweep(VALUE obj)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return heap_is_before_sweep(obj, heap_eden);
 }
 
 static inline void
@@ -2383,6 +2361,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     rgengc_report(1, objspace, "page_sweep: start.\n");
 
+    sweep_page->before_sweep = 0;
+
     p = sweep_page->start; pend = p + sweep_page->limit;
     offset = p - NUM_IN_PAGE(p);
     bits = GET_HEAP_MARK_BITS(p);
@@ -2664,7 +2644,13 @@ gc_sweep(rb_objspace_t *objspace, int immediate_sweep)
 #endif
     }
     else {
+	struct heap_page *page;
 	gc_before_sweep(objspace);
+	page = heap_eden->sweep_pages;
+	while (page) {
+	    page->before_sweep = 1;
+	    page = page->next;
+	}
 	gc_heap_lazy_sweep(objspace, heap_eden);
     }
 
@@ -4295,7 +4281,7 @@ rb_gc_force_recycle(VALUE p)
 #if USE_RGENGC
     CLEAR_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(p), p);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(p), p);
-    if (!is_before_sweep(p)) {
+    if (!GET_HEAP_PAGE(p)->before_sweep) {
 	CLEAR_IN_BITMAP(GET_HEAP_MARK_BITS(p), p);
     }
 #endif
