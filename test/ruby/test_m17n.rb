@@ -1524,7 +1524,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub{u("\x81")} }
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub{e("\xA2\xAE")})
 
-    assert_equal("\x81", u("a\x81").scrub {|c| break c})
+    assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
 
     assert_equal("\uFFFD\u3042".encode("UTF-16BE"),
