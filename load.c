@@ -607,15 +607,15 @@ rb_load_internal(VALUE fname, int wrap)
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (!loaded && !FIXNUM_P(GET_THREAD()->errinfo)) {
+    if (!loaded && !FIXNUM_P(th->errinfo)) {
 	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
-	rb_exc_raise(GET_THREAD()->errinfo);
+	rb_exc_raise(th->errinfo);
     }
     if (state) {
 	rb_vm_jump_tag_but_local_jump(state);
     }
 
-    if (!NIL_P(GET_THREAD()->errinfo)) {
+    if (!NIL_P(th->errinfo)) {
 	/* exception during load */
 	rb_exc_raise(th->errinfo);
     }
