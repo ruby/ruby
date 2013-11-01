@@ -1497,6 +1497,7 @@ class TestM17N < Test::Unit::TestCase
     assert_not_same(str, str.scrub)
     str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
     assert_not_same(str, str.scrub)
+    assert_nothing_raised(ArgumentError) {str.scrub(nil)}
 
     assert_equal("\uFFFD\uFFFD\uFFFD", u("\x80\x80\x80").scrub)
     assert_equal("\uFFFDA", u("\xF4\x80\x80A").scrub)
@@ -1542,6 +1543,7 @@ class TestM17N < Test::Unit::TestCase
     assert_same(str, str.scrub!)
     str.force_encoding(Encoding::ISO_2022_JP) # dummy encoding
     assert_same(str, str.scrub!)
+    assert_nothing_raised(ArgumentError) {str.scrub!(nil)}
 
     str = u("\x80\x80\x80")
     str.scrub!
