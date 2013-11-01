@@ -10,7 +10,7 @@ Fri Nov  1 22:45:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (rb_gc_force_recycle): Use before_sweep member.
 
-	* gc.c (heap_is_before_sweep, is_before_sweep): Remove. They has not
+	* gc.c (heap_is_before_sweep, is_before_sweep): Remove. They have not
 	  already been used.
 
 Fri Nov  1 22:20:28 2013  Masaya Tarui  <tarui@ruby-lang.org>
