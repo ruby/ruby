@@ -1,3 +1,10 @@
+Sat Nov  2 07:08:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/logger.rb: Inter-process locking for log rotation
+	  Current implementation fails log rotation on multi process env.
+	  by sonots <sonots@gmail.com>
+	  https://github.com/ruby/ruby/pull/428 fix GH-428 [Bug #9046]
+
 Fri Nov  1 23:24:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (wmap_mark_map): mark live objects only, but delete zombies.

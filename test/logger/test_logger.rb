@@ -472,6 +472,111 @@ class TestLogDevice < Test::Unit::TestCase
       end
     end
   end
+
+  def test_shifting_size_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    logfile0 = logfile + '.0'
+    logfile1 = logfile + '.1'
+    logfile2 = logfile + '.2'
+    logfile3 = logfile + '.3'
+    tmpfile.close(true)
+    File.unlink(logfile) if File.exist?(logfile)
+    File.unlink(logfile0) if File.exist?(logfile0)
+    File.unlink(logfile1) if File.exist?(logfile1)
+    File.unlink(logfile2) if File.exist?(logfile2)
+    begin
+      logger = Logger.new(logfile, 4, 10)
+      r, w = IO.pipe
+      $stderr = w # To capture #warn output in Logger
+      pid1 = Process.fork do
+        10.times do
+          logger.info '0' * 15
+        end
+      end
+      pid2 = Process.fork do
+        10.times do
+          logger.info '0' * 15
+        end
+      end
+      Process.waitpid pid1
+      Process.waitpid pid2
+      w.close
+      stderr = r.read
+      r.close
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      $stderr = STDERR # restore
+      logger.close if logger
+      File.unlink(logfile) if File.exist?(logfile)
+      File.unlink(logfile0) if File.exist?(logfile0)
+      File.unlink(logfile1) if File.exist?(logfile1)
+      File.unlink(logfile2) if File.exist?(logfile2)
+    end
+  end
+
+  def test_shifting_age_in_multiprocess
+    yyyymmdd = Time.now.strftime("%Y%m%d")
+    filename1 = @filename + ".#{yyyymmdd}"
+    filename2 = @filename + ".#{yyyymmdd}.1"
+    filename3 = @filename + ".#{yyyymmdd}.2"
+    begin
+      logger = Logger.new(@filename, 'now')
+      r, w = IO.pipe
+      $stderr = w # To capture #warn output in Logger
+      pid1 = Process.fork do
+        10.times do
+          logger.info '0' * 15
+        end
+      end
+      pid2 = Process.fork do
+        10.times do
+          logger.info '0' * 15
+        end
+      end
+      Process.waitpid pid1
+      Process.waitpid pid2
+      w.close
+      stderr = r.read
+      r.close
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      $stderr = STDERR # restore
+      logger.close if logger
+      [filename1, filename2, filename3].each do |filename|
+        File.unlink(filename) if File.exist?(filename)
+      end
+    end
+  end
+
+  def test_open_logfile_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    tmpfile.close(true)
+    logdev = Logger::LogDevice.new(logfile)
+    File.unlink(logfile) if File.exist?(logfile)
+    begin
+      20.times do
+        pid1 = Process.fork do
+          logdev.send(:open_logfile, logfile)
+        end
+        pid2 = Process.fork do
+          logdev.send(:open_logfile, logfile)
+        end
+        Process.waitpid pid1
+        Process.waitpid pid2
+        assert_not_equal(2, File.readlines(logfile).grep(/# Logfile created on/).size)
+        File.unlink(logfile)
+      end
+    ensure
+      logdev.close if logdev
+      File.unlink(logfile) if File.exist?(logfile)
+    end
+  end
 end
 
 
