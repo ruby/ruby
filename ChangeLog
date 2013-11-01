@@ -1,3 +1,8 @@
+Fri Nov  1 20:53:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): fix typo, should yield invalid byte
+	  sequence to be scrubbed.  reported by znz at IRC.
+
 Fri Nov  1 17:25:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (is_live_object): finalizer may not run because of lazy-sweep.
