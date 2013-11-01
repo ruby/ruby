@@ -410,11 +410,13 @@ typedef struct rb_objspace {
 	double gc_sweep_start_time;
 	size_t total_allocated_object_num_at_gc_start;
 	size_t heap_used_at_gc_start;
+
+	/* basic statistics */
+	size_t count;
+	size_t total_allocated_object_num;
+	size_t total_freed_object_num;
     } profile;
     struct gc_list *global_list;
-    size_t count;
-    size_t total_allocated_object_num;
-    size_t total_freed_object_num;
     rb_event_flag_t hook_events; /* this place may be affinity with memory cache */
     VALUE gc_stress;
 
@@ -1159,7 +1161,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     if (rgengc_remembered(objspace, (VALUE)obj)) rb_bug("newobj: %p (%s) is remembered.\n", (void *)obj, obj_type_name(obj));
 #endif
 
-    objspace->total_allocated_object_num++;
+    objspace->profile.total_allocated_object_num++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
 
     return obj;
@@ -1866,7 +1868,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	struct heap_page *page = GET_HEAP_PAGE(p);
 
 	run_final(objspace, (VALUE)p);
-	objspace->total_freed_object_num++;
+	objspace->profile.total_freed_object_num++;
 
 	page->final_num--;
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), (VALUE)p);
@@ -2346,7 +2348,7 @@ lazy_sweep_enable(void)
 static size_t
 objspace_live_num(rb_objspace_t *objspace)
 {
-    return objspace->total_allocated_object_num - objspace->total_freed_object_num;
+    return objspace->profile.total_allocated_object_num - objspace->profile.total_freed_object_num;
 }
 
 static size_t
@@ -2455,7 +2457,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	}
     }
     heap_pages_swept_num += freed_num + empty_num;
-    objspace->total_freed_object_num += freed_num;
+    objspace->profile.total_freed_object_num += freed_num;
     heap_pages_final_num += final_num;
     sweep_page->final_num = final_num;
 
@@ -4303,7 +4305,7 @@ rb_gc_force_recycle(VALUE p)
     }
 #endif
 
-    objspace->total_freed_object_num++;
+    objspace->profile.total_freed_object_num++;
     heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), p);
 
     /* Disable counting swept_num because there are no meaning.
@@ -4403,10 +4405,10 @@ garbage_collect_body(rb_objspace_t *objspace, int full_mark, int immediate_sweep
 
     if (GC_NOTIFY) fprintf(stderr, "start garbage_collect(%d, %d, %d)\n", full_mark, immediate_sweep, reason);
 
-    objspace->count++;
+    objspace->profile.count++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
 
-    objspace->profile.total_allocated_object_num_at_gc_start = objspace->total_allocated_object_num;
+    objspace->profile.total_allocated_object_num_at_gc_start = objspace->profile.total_allocated_object_num;
     objspace->profile.heap_used_at_gc_start = heap_pages_used;
 
     gc_prof_setup_new_record(objspace, reason);
@@ -4571,7 +4573,7 @@ gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 size_t
 rb_gc_count(void)
 {
-    return rb_objspace.count;
+    return rb_objspace.profile.count;
 }
 
 /*
@@ -4671,7 +4673,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
         hash = rb_hash_new();
     }
 
-    rb_hash_aset(hash, sym_count, SIZET2NUM(objspace->count));
+    rb_hash_aset(hash, sym_count, SIZET2NUM(objspace->profile.count));
     /* implementation dependent counters */
     rb_hash_aset(hash, sym_heap_used, SIZET2NUM(heap_pages_used));
     rb_hash_aset(hash, sym_heap_final_num, SIZET2NUM(heap_pages_final_num));
@@ -4682,8 +4684,8 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     rb_hash_aset(hash, sym_heap_live_num, SIZET2NUM(objspace_live_num(objspace)));
     rb_hash_aset(hash, sym_heap_free_num, SIZET2NUM(objspace_free_num(objspace)));
 
-    rb_hash_aset(hash, sym_total_allocated_object, SIZET2NUM(objspace->total_allocated_object_num));
-    rb_hash_aset(hash, sym_total_freed_object, SIZET2NUM(objspace->total_freed_object_num));
+    rb_hash_aset(hash, sym_total_allocated_object, SIZET2NUM(objspace->profile.total_allocated_object_num));
+    rb_hash_aset(hash, sym_total_freed_object, SIZET2NUM(objspace->profile.total_freed_object_num));
 #if USE_RGENGC
     rb_hash_aset(hash, sym_minor_gc_count, SIZET2NUM(objspace->profile.minor_gc_count));
     rb_hash_aset(hash, sym_major_gc_count, SIZET2NUM(objspace->profile.major_gc_count));
@@ -5853,7 +5855,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
 {
     if (objspace->profile.run) {
 	gc_profile_record *record = gc_prof_record(objspace);
-	size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->total_freed_object_num;
+	size_t live = objspace->profile.total_allocated_object_num_at_gc_start - objspace->profile.total_freed_object_num;
 	size_t total = objspace->profile.heap_used_at_gc_start * HEAP_OBJ_LIMIT;
 
 #if GC_PROFILE_MORE_DETAIL
@@ -6021,7 +6023,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 	size_t i;
 	const gc_profile_record *record;
 
-	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->count));
+	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->profile.count));
 	append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
 
 	for (i = 0; i < count; i++) {

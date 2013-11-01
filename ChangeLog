@@ -1,3 +1,28 @@
+Fri Nov  1 21:40:35 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (typedef struct rb_objspace): Refactoring. Move some members
+	  into profile member.
+
+	* gc.c (newobj_of): Correspond to the above.
+
+	* gc.c (finalize_list): Ditto.
+
+	* gc.c (objspace_live_num): Ditto.
+
+	* gc.c (gc_page_sweep): Ditto.
+
+	* gc.c (rb_gc_force_recycle): Ditto.
+
+	* gc.c (garbage_collect_body): Ditto.
+
+	* gc.c (rb_gc_count): Ditto.
+
+	* gc.c (gc_stat): Ditto.
+
+	* gc.c (gc_prof_set_heap_info): Ditto.
+
+	* gc.c (gc_profile_dump_on): Ditto.
+
 Fri Nov  1 20:53:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scrub): fix typo, should yield invalid byte
