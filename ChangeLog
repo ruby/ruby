@@ -1,3 +1,8 @@
+Fri Nov  1 17:25:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (is_live_object): finalizer may not run because of lazy-sweep.
+	  [ruby-dev:47786] [Bug #9069]
+
 Fri Nov  1 16:55:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scrub): export with fixed length arguments, and

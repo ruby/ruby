@@ -2050,7 +2050,10 @@ is_dead_object(rb_objspace_t *objspace, VALUE ptr)
 static inline int
 is_live_object(rb_objspace_t *objspace, VALUE ptr)
 {
-    if (BUILTIN_TYPE(ptr) == 0) return FALSE;
+    switch (BUILTIN_TYPE(ptr)) {
+      case 0: case T_ZOMBIE:
+	return FALSE;
+    }
     if (RBASIC(ptr)->klass == 0) return FALSE;
     if (is_dead_object(objspace, ptr)) return FALSE;
     return TRUE;
