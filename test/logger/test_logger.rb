@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'logger'
 require 'tempfile'
+require_relative '../ruby/envutil'
 
 
 class TestLoggerSeverity < Test::Unit::TestCase
@@ -486,30 +487,16 @@ class TestLogDevice < Test::Unit::TestCase
     File.unlink(logfile1) if File.exist?(logfile1)
     File.unlink(logfile2) if File.exist?(logfile2)
     begin
-      logger = Logger.new(logfile, 4, 10)
-      r, w = IO.pipe
-      $stderr = w # To capture #warn output in Logger
-      pid1 = Process.fork do
+      stderr = run_children(2, [logfile], <<-'END')
+        logger = Logger.new(ARGV[0], 4, 10)
         10.times do
           logger.info '0' * 15
         end
-      end
-      pid2 = Process.fork do
-        10.times do
-          logger.info '0' * 15
-        end
-      end
-      Process.waitpid pid1
-      Process.waitpid pid2
-      w.close
-      stderr = r.read
-      r.close
+      END
       assert_no_match(/log shifting failed/, stderr)
       assert_no_match(/log writing failed/, stderr)
       assert_no_match(/log rotation inter-process lock failed/, stderr)
     ensure
-      $stderr = STDERR # restore
-      logger.close if logger
       File.unlink(logfile) if File.exist?(logfile)
       File.unlink(logfile0) if File.exist?(logfile0)
       File.unlink(logfile1) if File.exist?(logfile1)
@@ -523,30 +510,16 @@ class TestLogDevice < Test::Unit::TestCase
     filename2 = @filename + ".#{yyyymmdd}.1"
     filename3 = @filename + ".#{yyyymmdd}.2"
     begin
-      logger = Logger.new(@filename, 'now')
-      r, w = IO.pipe
-      $stderr = w # To capture #warn output in Logger
-      pid1 = Process.fork do
+      stderr = run_children(2, [@filename], <<-'END')
+        logger = Logger.new(ARGV[0], 'now')
         10.times do
           logger.info '0' * 15
         end
-      end
-      pid2 = Process.fork do
-        10.times do
-          logger.info '0' * 15
-        end
-      end
-      Process.waitpid pid1
-      Process.waitpid pid2
-      w.close
-      stderr = r.read
-      r.close
+      END
       assert_no_match(/log shifting failed/, stderr)
       assert_no_match(/log writing failed/, stderr)
       assert_no_match(/log rotation inter-process lock failed/, stderr)
     ensure
-      $stderr = STDERR # restore
-      logger.close if logger
       [filename1, filename2, filename3].each do |filename|
         File.unlink(filename) if File.exist?(filename)
       end
@@ -557,25 +530,33 @@ class TestLogDevice < Test::Unit::TestCase
     tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
     logfile = tmpfile.path
     tmpfile.close(true)
-    logdev = Logger::LogDevice.new(logfile)
-    File.unlink(logfile) if File.exist?(logfile)
     begin
       20.times do
-        pid1 = Process.fork do
+        run_children(2, [logfile], <<-'END')
+          logfile = ARGV[0]
+          logdev = Logger::LogDevice.new(logfile)
           logdev.send(:open_logfile, logfile)
-        end
-        pid2 = Process.fork do
-          logdev.send(:open_logfile, logfile)
-        end
-        Process.waitpid pid1
-        Process.waitpid pid2
-        assert_not_equal(2, File.readlines(logfile).grep(/# Logfile created on/).size)
+        END
+        assert_equal(1, File.readlines(logfile).grep(/# Logfile created on/).size)
         File.unlink(logfile)
       end
     ensure
-      logdev.close if logdev
       File.unlink(logfile) if File.exist?(logfile)
     end
+  end
+
+  private
+
+  def run_children(n, args, src)
+    r, w = IO.pipe
+    [w, *(1..n).map do
+       f = IO.popen([EnvUtil.rubybin, *%w[--disable=gems -rlogger -], *args], "w", err: w)
+       f.puts(src)
+       f
+     end].each(&:close)
+    stderr = r.read
+    r.close
+    stderr
   end
 end
 

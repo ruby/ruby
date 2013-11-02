@@ -633,8 +633,12 @@ private
       end
     end
 
-    def lock_shift_log
-      begin
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      def lock_shift_log
+        yield
+      end
+    else
+      def lock_shift_log
         retry_limit = 8
         retry_sleep = 0.1
         begin

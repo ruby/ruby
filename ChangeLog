@@ -1,3 +1,12 @@
+Sat Nov  2 15:14:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::LogDevice::LogDeviceMutex#lock_shift_log):
+	  open file can't be removed or renamed on Windows.  [ruby-dev:47790]
+	  [Bug #9046]
+
+	* test/logger/test_logger.rb (TestLogDevice#run_children): don't use
+	  fork.
+
 Sat Nov  2 07:08:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/logger.rb: Inter-process locking for log rotation
