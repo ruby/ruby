@@ -1,3 +1,8 @@
+Sun Nov  3 20:23:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc/webrick_testing.rb (stop_server): Don't try to shutdown
+	  the server if the server is not started.
+
 Sun Nov  3 09:35:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): deal with default loadable suffixes.

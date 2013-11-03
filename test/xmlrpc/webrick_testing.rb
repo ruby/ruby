@@ -34,6 +34,7 @@ module WEBrick_Testing
   end
 
   def stop_server
+    return if !defined?(@__server) || !@__server
     Timeout.timeout(5) {
       @__server.shutdown
       Thread.pass while @__started # wait until the server is down
