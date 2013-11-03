@@ -1,3 +1,7 @@
+Sun Nov  3 23:06:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sample/test.rb: Make temporary file names unique.
+
 Sun Nov  3 20:41:17 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc: Wrap definitions by TestXMLRPC module.

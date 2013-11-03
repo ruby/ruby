@@ -645,7 +645,8 @@ end
 
 test_check "while/until";
 
-tmp = open("while_tmp", "w")
+while_tmp = "while_tmp.#{$$}"
+tmp = open(while_tmp, "w")
 tmp.print "tvi925\n";
 tmp.print "tvi920\n";
 tmp.print "vt100\n";
@@ -655,7 +656,7 @@ tmp.close
 
 # test break
 
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 test_ok(tmp.kind_of?(File))
 
 while line = tmp.gets()
@@ -667,7 +668,7 @@ tmp.close
 
 # test next
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   next if /vt100/ =~ line
   $bad = 1 if /vt100/ =~ line
@@ -677,7 +678,7 @@ tmp.close
 
 # test redo
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   lastline = line
   line = line.gsub(/vt100/, 'VT100')
@@ -703,7 +704,7 @@ test_ok(sum == 220)
 
 # test interval
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   break if 3
   case line
@@ -714,8 +715,8 @@ end
 test_ok(!$bad)
 tmp.close
 
-File.unlink "while_tmp" or `/bin/rm -f "while_tmp"`
-test_ok(!File.exist?("while_tmp"))
+File.unlink while_tmp or `/bin/rm -f "#{while_tmp}"`
+test_ok(!File.exist?(while_tmp))
 
 i = 0
 until i>4
@@ -1969,21 +1970,22 @@ test_check "system"
 test_ok(`echo foobar` == "foobar\n")
 test_ok(`./miniruby -e 'print "foobar"'` == 'foobar')
 
-tmp = open("script_tmp", "w")
+script_tmp = "script_tmp.#{$$}"
+tmp = open(script_tmp, "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-test_ok(`./miniruby -s script_tmp -zzz` == 'true')
-test_ok(`./miniruby -s script_tmp -zzz=555` == '555')
+test_ok(`./miniruby -s #{script_tmp} -zzz` == 'true')
+test_ok(`./miniruby -s #{script_tmp} -zzz=555` == '555')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
 tmp.close
 
-test_ok(`./miniruby script_tmp -zzz=678` == '678')
+test_ok(`./miniruby #{script_tmp} -zzz=678` == '678')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 tmp.print "this is a leading junk\n";
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
@@ -1991,18 +1993,18 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-test_ok(`./miniruby -x script_tmp` == '')
-test_ok(`./miniruby -x script_tmp -zzz=555` == '555')
+test_ok(`./miniruby -x #{script_tmp}` == '')
+test_ok(`./miniruby -x #{script_tmp} -zzz=555` == '555')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 for i in 1..5
   tmp.print i, "\n"
 end
 tmp.close
 
-`./miniruby -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' #{script_tmp}`
 done = true
-tmp = open("script_tmp", "r")
+tmp = open(script_tmp, "r")
 while tmp.gets
   if $_.to_i % 5 != 0
     done = false
@@ -2012,8 +2014,8 @@ end
 tmp.close
 test_ok(done)
 
-File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
-File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+File.unlink script_tmp or `/bin/rm -f "#{script_tmp}"`
+File.unlink "#{script_tmp}.bak" or `/bin/rm -f "#{script_tmp}.bak"`
 
 test_check "const"
 TEST1 = 1
