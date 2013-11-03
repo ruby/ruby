@@ -1,5 +1,6 @@
 require 'timeout'
 
+module TestXMLRPC
 module WEBrick_Testing
   class DummyLog < WEBrick::BasicLog
     def initialize() super(self) end
@@ -42,4 +43,5 @@ module WEBrick_Testing
     @__server_thread.join
     @__server = nil
   end
+end
 end

@@ -3,6 +3,7 @@ require "xmlrpc/create"
 require "xmlrpc/parser"
 require "xmlrpc/config"
 
+module TestXMLRPC
 class Test_Features < Test::Unit::TestCase
 
   def setup
@@ -45,4 +46,5 @@ class Test_Features < Test::Unit::TestCase
     end
   end
 
+end
 end

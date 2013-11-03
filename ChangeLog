@@ -1,3 +1,7 @@
+Sun Nov  3 20:41:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Wrap definitions by TestXMLRPC module.
+
 Sun Nov  3 20:23:38 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc/webrick_testing.rb (stop_server): Don't try to shutdown
