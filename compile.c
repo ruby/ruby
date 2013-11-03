@@ -623,17 +623,40 @@ jump_to_vpc(unsigned char *code) /* size: 3 */
     return copy_instructions(code, instructions, sizeof(instructions));
 }
 
+static void
+get_instruction_target_range(VALUE *start_address, VALUE *end_address)
+{
+    static VALUE first_instruction_address = 0;
+    static VALUE last_instruction_address = 0;
+    if (0 == first_instruction_address) {
+        int i;
+        const void * const *table = rb_vm_get_insns_address_table();
+        first_instruction_address = last_instruction_address = (VALUE) table[0];
+        for (i = 1; i < VM_INSTRUCTION_SIZE; i++) {
+            if (first_instruction_address > (VALUE) table[0]) {
+                first_instruction_address = (VALUE) table[0];
+            }
+            if (last_instruction_address < (VALUE) table[0]) {
+                last_instruction_address = (VALUE) table[0];
+            }
+        }
+    }
+    *start_address = first_instruction_address;
+    *end_address = last_instruction_address;
+}
+
 static int
 is_valid_context_threading_region(void *start, VALUE size)
 {
-    const void * const *table = rb_vm_get_insns_address_table();
     VALUE s = (VALUE) start;
     VALUE e = s + size;
-    VALUE t = (VALUE) table[0];
-    if (s > t) {
-        return (s - t < UINT_MAX) && (e - t < UINT_MAX);
+    VALUE first_instruction_address, last_instruction_address;
+    get_instruction_target_range(&first_instruction_address, &last_instruction_address);
+    if (s > last_instruction_address) {
+        return (e - first_instruction_address) < INT_MAX;
+    } else {
+        return (last_instruction_address - s) < INT_MAX;
     }
-    return (t - s < UINT_MAX) && (t - e < UINT_MAX);
 }
 
 static void
@@ -657,7 +680,7 @@ alloc_context_threading_table(VALUE ctt_size)
 {
     rb_vm_t *vm = GET_VM();
     VALUE start_region_range, end_region_range, region_size, region_address;
-    const void * const *table;
+    VALUE first_instruction_address, last_instruction_address;
     static const VALUE TWO_MB = 2 * 1024 * 1024;
 
     /* Region is a tuple (size, next, free-list) */
@@ -690,14 +713,14 @@ alloc_context_threading_table(VALUE ctt_size)
         region = (VALUE *) region[1];
     }
     region_size = ((slot_count + 3) * sizeof(VALUE) + TWO_MB - 1) & ~(TWO_MB - 1);
-    table = rb_vm_get_insns_address_table();
     /* TODO start scan at end of last allocated region */
-    start_region_range = (((VALUE) table[VM_INSTRUCTION_SIZE - 1]) + INT_MIN) & ~(TWO_MB - 1);
-    end_region_range = (((VALUE) table[0]) + INT_MAX - region_size) & ~(TWO_MB - 1);
-    if (start_region_range > (VALUE) table[VM_INSTRUCTION_SIZE - 1]) {
+    get_instruction_target_range(&first_instruction_address, &last_instruction_address);
+    start_region_range = (last_instruction_address + INT_MIN + TWO_MB - 1) & ~(TWO_MB - 1);
+    end_region_range = (first_instruction_address + INT_MAX - region_size) & ~(TWO_MB - 1);
+    if (start_region_range > last_instruction_address) {
         start_region_range = 0;
     }
-    if (end_region_range < (VALUE) table[0]) {
+    if (end_region_range < first_instruction_address) {
         end_region_range = (SIZE_MAX - region_size) & ~(TWO_MB - 1);
     }
     for (region_address = start_region_range; region_address != end_region_range; region_address += TWO_MB) {

@@ -118,9 +118,8 @@ error !
 
 #define TC_DISPATCH(insn) \
   INSN_DISPATCH_SIG(insn); \
-  __asm__ __volatile__("movl $1, %%eax" : : : "%rax"); \
-  __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP)); \
-  goto *(void const *)GET_CURRENT_INSN()
+  __asm__ __volatile__("movl $1, %%eax\nret" : : "r" (REG_PC), "r" (REG_CFP), "g" (th), "g" (rsp) : "%rax"); \
+  __builtin_unreachable()
 
 #endif /* DISPATCH_DIRECT_THREADED_CODE */
 
@@ -136,8 +135,8 @@ error !
   {
 
 #define NEXT_INSN() \
-  __asm__ __volatile__("xor %%rax, %%rax" : : : "%rax"); \
-  __asm__ __volatile__("ret" : : "r" (REG_PC), "r" (REG_CFP))
+  __asm__ __volatile__("xor %%rax, %%rax\nret" : : "r" (REG_PC), "r" (REG_CFP), "g" (th), "g" (rsp) : "%rax"); \
+  __builtin_unreachable()
 
 #else
 

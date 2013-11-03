@@ -143,7 +143,14 @@ setinstancevariable
 (VALUE val)
 ()
 {
+#if OPT_CONTEXT_THREADED_CODE
+    /* Protect stacked return addresses */
+    __asm__ __volatile__("subq $16, %%rsp" : : : "%rsp");
+#endif
     vm_setinstancevariable(GET_SELF(), id, val, ic);
+#if OPT_CONTEXT_THREADED_CODE
+    __asm__ __volatile__("addq $16, %%rsp" : : : "%rsp");
+#endif
 }
 
 /**
