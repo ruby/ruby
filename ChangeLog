@@ -1,3 +1,15 @@
+Sun Nov  3 09:35:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): deal with default loadable suffixes.
+
+	* load.c (load_lock): initialize statically linked extensions.
+
+	* load.c (search_required, rb_require_safe): deal with statically
+	  linked extensions.
+
+	* load.c (ruby_init_ext): defer initalization of statically linked
+	  extensions until required actually.  [Bug #8883]
+
 Sat Nov  2 15:14:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (Logger::LogDevice::LogDeviceMutex#lock_shift_log):
