@@ -1,3 +1,7 @@
+Tue Nov  5 00:05:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* node.h: catch up comments for last commit.
+
 Tue Nov  5 00:02:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: rename FL_OLDGEN to FL_PROMOTED.
