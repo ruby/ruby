@@ -93,7 +93,7 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_MALLOC_LIMIT (16 /* 16 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
-#define GC_MALLOC_LIMIT_MAX (512 /* 512 MB */ * 1024 * 1024 /* 1MB */)
+#define GC_MALLOC_LIMIT_MAX (384 /* 384 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
 #define GC_MALLOC_LIMIT_GROWTH_FACTOR 2.0

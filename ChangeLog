@@ -1,3 +1,8 @@
+Tue Nov  5 04:03:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (GC_MALLOC_LIMIT_MAX): fix default value 512MB -> 384MB.
+	  512MB is huge.
+
 Tue Nov  5 03:31:23 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add 3gen GC patch, but disabled as default.
