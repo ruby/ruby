@@ -1362,6 +1362,9 @@ ossl_asn1cons_each(VALUE self)
  * call-seq:
  *    OpenSSL::ASN1::ObjectId.register(oid, sn, ln)
  *
+ * This adds a new ObjectId to the internal tables. +oid+ is the numerical form,
+ * +sn+ is the short name, and +ln+ is the long name.
+ * 
  * Returns true if it is successful. Raises OpenSSL::ASN1::ASN1Error if it fails.
  *
  */
@@ -1378,6 +1381,14 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     return Qtrue;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId.sn
+ *
+ * The short name of the ObjectId, as defined in <openssl/objects.h>.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId.short_name
+ *
+ * +short_name+ is an alias to +sn+
+ */
 static VALUE
 ossl_asn1obj_get_sn(VALUE self)
 {
@@ -1391,6 +1402,14 @@ ossl_asn1obj_get_sn(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId.ln
+ *
+ * The long name of the ObjectId, as defined in <openssl/objects.h>.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId.long_name
+ *
+ * +long_name+ is an alias to +ln+
+ */
 static VALUE
 ossl_asn1obj_get_ln(VALUE self)
 {
@@ -1404,6 +1423,10 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId.oid
+ *
+ * the object identifier as a +String+, e.g. "1.2.3.4.5"
+ */
 static VALUE
 ossl_asn1obj_get_oid(VALUE self)
 {
@@ -1784,6 +1807,10 @@ Init_ossl_asn1()
      * the final octet of the +BitString+'s +value+.
      *
      * == OpenSSL::ASN1::ObjectId
+     * 
+     * NOTE: While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId,
+     * it is not typically allocated this way, but rather that are recieved from 
+     * parsed ASN1 encodings.
      *
      * === Additional attributes
      * * +sn+: the short name as defined in <openssl/objects.h>.
