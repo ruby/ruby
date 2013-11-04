@@ -622,7 +622,7 @@ static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 #define FL_UNSET2(x,f)        do {if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) rb_bug("FL_UNSET2: SPECIAL_CONST"); RBASIC(x)->flags &= ~(f);} while (0)
 
 #define RVALUE_SHADY(obj)    (!FL_TEST2((check_bitmap_consistency((VALUE)obj)), FL_WB_PROTECTED))
-#define RVALUE_PROMOTED(obj) FL_TEST2(check_bitmap_consistency((VALUE)obj), FL_OLDGEN)
+#define RVALUE_PROMOTED(obj) FL_TEST2(check_bitmap_consistency((VALUE)obj), FL_PROMOTED)
 
 #define RVALUE_PROMOTED_FROM_BITMAP(x) MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(x),x)
 
@@ -632,9 +632,9 @@ check_bitmap_consistency(VALUE obj)
 #if RUBY_CHECK_MODE > 0
     int oldgen_bitmap = MARKED_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj) != 0;
 
-    if (FL_TEST2((obj), FL_OLDGEN) != oldgen_bitmap) {
+    if (FL_TEST2((obj), FL_PROMOTED) != oldgen_bitmap) {
 	rb_bug("check_bitmap_consistency: oldgen flag of %p (%s) is %d, but bitmap is %d",
-	       (void *)obj, obj_type_name(obj), FL_TEST2((obj), FL_OLDGEN), oldgen_bitmap);
+	       (void *)obj, obj_type_name(obj), FL_TEST2((obj), FL_PROMOTED), oldgen_bitmap);
     }
     if (FL_TEST2((obj), FL_WB_PROTECTED)) {
 	/* non-shady */
@@ -655,7 +655,7 @@ RVALUE_PROMOTE(VALUE obj)
 {
     check_bitmap_consistency(obj);
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
-    FL_SET2(obj, FL_OLDGEN);
+    FL_SET2(obj, FL_PROMOTED);
 #if RGENGC_PROFILE >= 1
     {
 	rb_objspace_t *objspace = &rb_objspace;
@@ -671,7 +671,7 @@ static inline void
 RVALUE_DEMOTE(VALUE obj)
 {
     check_bitmap_consistency(obj);
-    FL_UNSET2(obj, FL_OLDGEN);
+    FL_UNSET2(obj, FL_PROMOTED);
     CLEAR_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
 }
 #endif
@@ -3767,8 +3767,8 @@ gc_oldgen_bitmap2flag(struct heap_page *page)
     RVALUE *pend = p + page->limit;
 
     while (p < pend) {
-	if (MARKED_IN_BITMAP(oldgen_bits, p)) FL_SET2(p, FL_OLDGEN);
-	else                                  FL_UNSET2(p, FL_OLDGEN);
+	if (MARKED_IN_BITMAP(oldgen_bits, p)) FL_SET2(p, FL_PROMOTED);
+	else                                  FL_UNSET2(p, FL_PROMOTED);
 	p++;
     }
 }

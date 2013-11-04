@@ -1,3 +1,10 @@
+Tue Nov  5 00:02:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: rename FL_OLDGEN to FL_PROMOTED.
+	  This flag represents that "this object is promoted at least once."
+
+	* gc.c, debug.c, object.c: catch up this change.
+
 Mon Nov  4 22:20:16 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc: Don't use fixed ports: 8070 and 8071.

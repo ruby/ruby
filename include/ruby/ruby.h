@@ -1124,7 +1124,7 @@ struct RBignum {
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)
-#define FL_OLDGEN    (((VALUE)1)<<6)
+#define FL_PROMOTED  (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
 #define FL_UNTRUSTED FL_TAINT
@@ -1178,7 +1178,7 @@ struct RBignum {
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC
-#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_OLDGEN))
+#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_PROMOTED))
 #define OBJ_WB_PROTECTED(x)         (SPECIAL_CONST_P(x) ? 1 : FL_TEST_RAW((x), FL_WB_PROTECTED))
 #define OBJ_WB_UNPROTECT(x)         rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 
@@ -1215,7 +1215,7 @@ rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(
     if (FL_TEST_RAW((x), FL_WB_PROTECTED)) {
 	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
 
-	if (FL_TEST_RAW((x), FL_OLDGEN)) {
+	if (FL_TEST_RAW((x), FL_PROMOTED)) {
 	    rb_gc_writebarrier_unprotect_promoted(x);
 	}
     }
@@ -1232,8 +1232,8 @@ rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const 
 
 #if USE_RGENGC
     /* `a' should be an RVALUE object */
-    if (FL_TEST_RAW((a), FL_OLDGEN) &&
-	!SPECIAL_CONST_P(b) && !FL_TEST_RAW((b), FL_OLDGEN)) {
+    if (FL_TEST_RAW((a), FL_PROMOTED) &&
+	!SPECIAL_CONST_P(b) && !FL_TEST_RAW((b), FL_PROMOTED)) {
 	rb_gc_writebarrier(a, b);
     }
 #endif
