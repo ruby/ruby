@@ -1,3 +1,9 @@
+Mon Nov  4 10:08:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (TH_EXEC_TAG, TH_JUMP_TAG): get rid of undefined
+	  behavior of setjmp() in rhs of assignment expression.
+	  [ISO/IEC 9899:1999] 7.13.1.1
+
 Sun Nov  3 23:06:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* sample/test.rb: Make temporary file names unique.
