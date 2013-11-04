@@ -11,15 +11,16 @@ module WEBrick_Testing
     raise "already started" if defined?(@__server) && @__server
     @__started = false
 
+    @__server = WEBrick::HTTPServer.new(
+      {
+        :BindAddress => "localhost",
+        :Logger => DummyLog.new,
+        :AccessLog => [],
+      }.update(config))
+    yield @__server
+    @__started = true
+
     @__server_thread = Thread.new {
-      @__server = WEBrick::HTTPServer.new(
-        {
-          :BindAddress => "localhost",
-          :Logger => DummyLog.new,
-          :AccessLog => [],
-          :StartCallback => proc { @__started = true }
-        }.update(config))
-      yield @__server
       begin
         @__server.start
       rescue IOError => e
@@ -27,10 +28,6 @@ module WEBrick_Testing
       ensure
         @__started = false
       end
-    }
-
-    Timeout.timeout(5) {
-      Thread.pass until @__started # wait until the server is ready
     }
   end
 

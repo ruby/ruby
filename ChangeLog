@@ -1,3 +1,8 @@
+Mon Nov  4 15:25:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc/webrick_testing.rb (start_server): Initialize the server
+	  at main thread to fail early.
+
 Mon Nov  4 10:08:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (TH_EXEC_TAG, TH_JUMP_TAG): get rid of undefined
