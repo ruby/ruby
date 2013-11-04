@@ -1,3 +1,53 @@
+Tue Nov  5 03:31:23 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add 3gen GC patch, but disabled as default.
+
+	  RGenGC is designed as 2 generational GC, young and old generation.
+	  Young objects will be promoted to old objects after one GC.
+	  Old objects are not collect until major (full) GC.
+
+	  The issue of this approach is some objects can promoted as old
+	  objects accidentally and not freed until major GC.
+	  Major GC is not frequently so short-lived but accidentally becoming
+	  old objects are not freed.
+
+	  For example, the program "loop{Array.new(1_000_000)}" consumes huge
+	  memories because short lived objects (an array which has 1M
+	  elements) are promoted while GC and they are not freed before major
+	  GC.
+
+	  To solve this problem, generational GC with more generations
+	  technique is known. This patch implements three generations gen GC.
+
+	  At first, newly created objects are "Infant" objects.
+	  After surviving one GC, "Infant" objects are promoted to "Young"
+	  objects.
+	  "Young" objects are promoted to "Old" objects after surviving
+	  next GC.
+	  "Infant" and "Young" objects are collected if it is not marked
+	  while minor GC. So that this technique solves this problem.
+
+	  Representation of generations:
+	  * Infant: !FL_PROMOTED and !oldgen_bitmap [00]
+	  * Young :  FL_PROMOTED and !oldgen_bitmap [10]
+	  * Old   :  FL_PROMOTED and  oldgen_bitmap [11]
+
+	  The macro "RGENGC_THREEGEN" enables/disables this feature, and
+	  turned off as default because there are several problems.
+	  (1) Failed sometimes (Heisenbugs).
+	  (2) Performance down.
+	      Especially on write barriers. We need to detect Young or Old
+	      object by oldgen_bitmap. It is slower than checking flags.
+
+	  To evaluate this feature on more applications, I commit this patch.
+	  Reports are very welcome.
+
+	  This patch includes some refactoring (renaming names, etc).
+
+	* include/ruby/ruby.h: catch up 3gen GC.
+
+	* .gdbinit: fix to show a prompt "[PROMOTED]" for promoted objects.
+
 Tue Nov  5 00:05:51 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* node.h: catch up comments for last commit.

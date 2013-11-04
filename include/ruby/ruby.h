@@ -1213,11 +1213,10 @@ rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(
 #if USE_RGENGC
     /* `x' should be an RVALUE object */
     if (FL_TEST_RAW((x), FL_WB_PROTECTED)) {
-	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
-
 	if (FL_TEST_RAW((x), FL_PROMOTED)) {
 	    rb_gc_writebarrier_unprotect_promoted(x);
 	}
+	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
     }
 #endif
     return x;
@@ -1232,8 +1231,7 @@ rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const 
 
 #if USE_RGENGC
     /* `a' should be an RVALUE object */
-    if (FL_TEST_RAW((a), FL_PROMOTED) &&
-	!SPECIAL_CONST_P(b) && !FL_TEST_RAW((b), FL_PROMOTED)) {
+    if (FL_TEST_RAW((a), FL_PROMOTED) && !SPECIAL_CONST_P(b)) {
 	rb_gc_writebarrier(a, b);
     }
 #endif
