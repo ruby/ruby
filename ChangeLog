@@ -1,3 +1,7 @@
+Mon Nov  4 22:20:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Don't use fixed ports: 8070 and 8071.
+
 Mon Nov  4 15:25:52 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc/webrick_testing.rb (start_server): Initialize the server

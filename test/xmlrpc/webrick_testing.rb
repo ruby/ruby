@@ -20,6 +20,8 @@ module WEBrick_Testing
     yield @__server
     @__started = true
 
+    addr = @__server.listeners.first.connect_address
+
     @__server_thread = Thread.new {
       begin
         @__server.start
@@ -29,6 +31,8 @@ module WEBrick_Testing
         @__started = false
       end
     }
+
+    addr
   end
 
   def stop_server
