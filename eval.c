@@ -778,7 +778,7 @@ VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 {
     volatile VALUE result = Qnil;
-    int status;
+    volatile int status;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     struct rb_vm_protect_tag protect_tag;
@@ -792,16 +792,15 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     if ((status = TH_EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
+    else {
+	th->cfp = cfp;
+    }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
     if (state) {
 	*state = status;
-    }
-    if (status != 0) {
-	th->cfp = cfp;
-	return Qnil;
     }
 
     return result;
