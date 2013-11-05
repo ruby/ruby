@@ -2193,7 +2193,6 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
       case 0: case T_ZOMBIE:
 	return FALSE;
     }
-    if (RBASIC(ptr)->klass == 0) return FALSE;
     if (is_dead_object(objspace, ptr)) return FALSE;
     return TRUE;
 }

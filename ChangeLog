@@ -1,3 +1,8 @@
+Tue Nov  5 20:14:32 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (is_live_object): A hidden object may be a live object.
+	  [ruby-dev:47788] [Bug #9072]
+
 Tue Nov  5 13:37:19 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add support to estimate increase of oldspace memory usage.
