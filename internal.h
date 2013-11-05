@@ -819,6 +819,7 @@ st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c */
 size_t rb_gc_count();
+size_t rb_obj_memsize_of(VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

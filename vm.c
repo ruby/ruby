@@ -1673,7 +1673,9 @@ vm_memsize(const void *ptr)
     if (ptr) {
 	const rb_vm_t *vmobj = ptr;
 	size_t size = sizeof(rb_vm_t);
-	size += st_memsize(vmobj->living_threads);
+	if (vmobj->living_threads) {
+	    size += st_memsize(vmobj->living_threads);
+	}
 	if (vmobj->defined_strings) {
 	    size += DEFINED_EXPR * sizeof(VALUE);
 	}

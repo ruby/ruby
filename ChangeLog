@@ -1,3 +1,38 @@
+Tue Nov  5 13:37:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add support to estimate increase of oldspace memory usage.
+	  This is another approach to solve an issue discussed at r43530.
+	  This feature is diabled as default. 
+
+	  This feature measures an increment of memory consuption by oldgen
+	  objects. It measures memory consumption for each objects when
+	  the object is promoted. However, measurement of memory consumption
+	  is not accurate now. So that this measurement is `estimation'.
+
+	  To implement this feature, move memsize_of() function from
+	  ext/objspace/objspace.c and expose rb_obj_memsize_of().
+
+	  Some memsize() functions for T_DATA (T_TYPEDDATA) have problem to
+	  measure memory size, so that we ignores T_DATA objects now.
+	  For example, some functions skip NULL check for pointer.
+
+	  The macro RGENGC_ESTIMATE_OLDSPACE enables/disables this feature,
+	  and turned off as default.
+
+	  We need to compare 3gen GC and this feature carefully.
+	  (it is possible to enable both feature)
+	  We need a help to compare them.
+
+	* internal.h: expose rb_obj_memsize_of().
+
+	* ext/objspace/objspace.c: use rb_obj_memsize_of() function.
+
+	* cont.c (fiber_memsize): fix to check NULL.
+
+	* variable.c (autoload_memsize): ditto.
+
+	* vm.c (vm_memsize): ditto.
+
 Tue Nov  5 04:03:07 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (GC_MALLOC_LIMIT_MAX): fix default value 512MB -> 384MB.

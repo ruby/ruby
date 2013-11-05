@@ -18,131 +18,9 @@
 #include <ruby/re.h>
 #include "node.h"
 #include "gc.h"
-#include "regint.h"
 #include "internal.h"
 
-size_t rb_str_memsize(VALUE);
-size_t rb_ary_memsize(VALUE);
-size_t rb_io_memsize(const rb_io_t *);
-size_t rb_generic_ivar_memsize(VALUE);
-size_t rb_objspace_data_type_memsize(VALUE obj);
-
-static size_t
-memsize_of(VALUE obj)
-{
-    size_t size = 0;
-
-    if (SPECIAL_CONST_P(obj)) {
-	return 0;
-    }
-
-    if (FL_TEST(obj, FL_EXIVAR)) {
-	size += rb_generic_ivar_memsize(obj);
-    }
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-	if (!(RBASIC(obj)->flags & ROBJECT_EMBED) &&
-	    ROBJECT(obj)->as.heap.ivptr) {
-	    size += ROBJECT(obj)->as.heap.numiv * sizeof(VALUE);
-	}
-	break;
-      case T_MODULE:
-      case T_CLASS:
-	if (RCLASS_M_TBL(obj)) {
-	    size += st_memsize(RCLASS_M_TBL(obj));
-	}
-	if (RCLASS_IV_TBL(obj)) {
-	    size += st_memsize(RCLASS_IV_TBL(obj));
-	}
-	if (RCLASS_IV_INDEX_TBL(obj)) {
-	    size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
-	}
-	if (RCLASS(obj)->ptr->iv_tbl) {
-	    size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
-	}
-	if (RCLASS(obj)->ptr->const_tbl) {
-	    size += st_memsize(RCLASS(obj)->ptr->const_tbl);
-	}
-	size += sizeof(rb_classext_t);
-	break;
-      case T_STRING:
-	size += rb_str_memsize(obj);
-	break;
-      case T_ARRAY:
-	size += rb_ary_memsize(obj);
-	break;
-      case T_HASH:
-	if (RHASH(obj)->ntbl) {
-	    size += st_memsize(RHASH(obj)->ntbl);
-	}
-	break;
-      case T_REGEXP:
-	if (RREGEXP(obj)->ptr) {
-	    size += onig_memsize(RREGEXP(obj)->ptr);
-	}
-	break;
-      case T_DATA:
-	size += rb_objspace_data_type_memsize(obj);
-	break;
-      case T_MATCH:
-	if (RMATCH(obj)->rmatch) {
-            struct rmatch *rm = RMATCH(obj)->rmatch;
-	    size += onig_region_memsize(&rm->regs);
-	    size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
-	    size += sizeof(struct rmatch);
-	}
-	break;
-      case T_FILE:
-	if (RFILE(obj)->fptr) {
-	    size += rb_io_memsize(RFILE(obj)->fptr);
-	}
-	break;
-      case T_RATIONAL:
-      case T_COMPLEX:
-	break;
-      case T_ICLASS:
-	/* iClass shares table with the module */
-	break;
-
-      case T_FLOAT:
-	break;
-
-      case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    size += RBIGNUM_LEN(obj) * sizeof(BDIGIT);
-	}
-	break;
-      case T_NODE:
-	switch (nd_type(obj)) {
-	  case NODE_SCOPE:
-	    if (RNODE(obj)->u1.tbl) {
-		/* TODO: xfree(RANY(obj)->as.node.u1.tbl); */
-	    }
-	    break;
-	  case NODE_ALLOCA:
-	    /* TODO: xfree(RANY(obj)->as.node.u1.node); */
-	    ;
-	}
-	break;			/* no need to free iv_tbl */
-
-      case T_STRUCT:
-	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-	    RSTRUCT(obj)->as.heap.ptr) {
-	    size += sizeof(VALUE) * RSTRUCT_LEN(obj);
-	}
-	break;
-
-      case T_ZOMBIE:
-	break;
-
-      default:
-	rb_bug("objspace/memsize_of(): unknown data type 0x%x(%p)",
-	       BUILTIN_TYPE(obj), (void*)obj);
-    }
-
-    return size;
-}
+size_t rb_obj_memsize_of(VALUE);
 
 /*
  *  call-seq:
@@ -160,7 +38,7 @@ memsize_of(VALUE obj)
 static VALUE
 memsize_of_m(VALUE self, VALUE obj)
 {
-    return SIZET2NUM(memsize_of(obj));
+    return SIZET2NUM(rb_obj_memsize_of(obj));
 }
 
 struct total_data {
@@ -187,7 +65,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
 		  continue;
 	      default:
 		if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
-		    data->total += memsize_of(v);
+		    data->total += rb_obj_memsize_of(v);
 		}
 	    }
 	}
@@ -254,7 +132,7 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
 
     for (;v != (VALUE)vend; v += stride) {
 	if (RBASIC(v)->flags) {
-	    counts[BUILTIN_TYPE(v)] += memsize_of(v);
+	    counts[BUILTIN_TYPE(v)] += rb_obj_memsize_of(v);
 	}
     }
     return 0;
@@ -637,7 +515,7 @@ static size_t
 iow_size(const void *ptr)
 {
     VALUE obj = (VALUE)ptr;
-    return memsize_of(obj);
+    return rb_obj_memsize_of(obj);
 }
 
 static const rb_data_type_t iow_data_type = {

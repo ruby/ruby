@@ -1529,7 +1529,7 @@ static size_t
 autoload_memsize(const void *ptr)
 {
     const st_table *tbl = ptr;
-    return st_memsize(tbl);
+    return tbl ? st_memsize(tbl) : 0;
 }
 
 static const rb_data_type_t autoload_data_type = {

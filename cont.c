@@ -351,7 +351,8 @@ fiber_memsize(const void *ptr)
     size_t size = 0;
     if (ptr) {
 	size = sizeof(*fib);
-	if (fib->cont.type != ROOT_FIBER_CONTEXT) {
+	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	    fib->cont.saved_thread.local_storage != NULL) {
 	    size += st_memsize(fib->cont.saved_thread.local_storage);
 	}
 	size += cont_memsize(&fib->cont);

@@ -89,6 +89,7 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #ifndef GC_HEAP_GROWTH_MAX
 #define GC_HEAP_GROWTH_MAX 0 /* 0 is disable */
 #endif
+
 #ifndef GC_MALLOC_LIMIT
 #define GC_MALLOC_LIMIT (16 /* 16 MB */ * 1024 * 1024 /* 1MB */)
 #endif
@@ -97,6 +98,16 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
 #define GC_MALLOC_LIMIT_GROWTH_FACTOR 2.0
+#endif
+
+#ifndef GC_HEAP_OLDSPACE_MIN
+#define GC_HEAP_OLDSPACE_MIN (16 /* 16 MB */ * 1024 * 1024 /* 1MB */)
+#endif
+#ifndef GC_HEAP_OLDSPACE_GROWTH_FACTOR
+#define GC_HEAP_OLDSPACE_GROWTH_FACTOR 1.8
+#endif
+#ifndef GC_HEAP_OLDSPACE_MAX
+#define GC_HEAP_OLDSPACE_MAX (384 /* 384 MB */ * 1024 * 1024 /* 1MB */)
 #endif
 
 typedef struct {
@@ -170,6 +181,16 @@ static ruby_gc_params_t initial_params = {
  */
 #ifndef RGENGC_THREEGEN
 #define RGENGC_THREEGEN    0
+#endif
+
+/* RGENGC_ESTIMATE_OLDSPACE
+ * Enable/disable to estimate increase size of oldspace.
+ * If estimation exceeds threashold, then will invoke full GC.
+ * 0: disable estimation.
+ * 1: enable estimation.
+ */
+#ifndef RGENGC_ESTIMATE_OLDSPACE
+#define RGENGC_ESTIMATE_OLDSPACE 0
 #endif
 
 #else /* USE_RGENGC */
@@ -455,6 +476,11 @@ typedef struct rb_objspace {
 	size_t young_object_count;
 #endif
 
+#if RGENGC_ESTIMATE_OLDSPACE
+	size_t oldspace_increase;
+	size_t oldspace_increase_limit;
+#endif
+
 #if RGENGC_CHECK_MODE >= 2
 	/* for check mode */
 	VALUE parent_object;
@@ -612,6 +638,8 @@ static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
+static size_t obj_memsize_of(VALUE obj, int use_tdata);
+
 static double getrusage_time(void);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, int reason);
 static inline void gc_prof_timer_start(rb_objspace_t *);
@@ -655,6 +683,8 @@ check_gen_consistency(VALUE obj)
 	int old_flag = RVALUE_OLDEGN_BITMAP(obj) != 0;
 	int promoted_flag = FL_TEST2(obj, FL_PROMOTED);
 	rb_objspace_t *objspace = &rb_objspace;
+
+	obj_memsize_of((VALUE)obj, FALSE);
 
 	if (!is_pointer_to_heap(objspace, (void *)obj)) {
 	    rb_bug("check_gen_consistency: %p (%s) is not Ruby object.", (void *)obj, obj_type_name(obj));
@@ -815,6 +845,10 @@ rb_objspace_alloc(void)
     memset(objspace, 0, sizeof(*objspace));
     malloc_limit = initial_malloc_limit;
     ruby_gc_stress = ruby_initial_gc_stress;
+
+#if RGENGC_ESTIMATE_OLDSPACE
+    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MIN;
+#endif
 
     return objspace;
 }
@@ -2316,6 +2350,137 @@ rb_obj_id(VALUE obj)
     return nonspecial_obj_id(obj);
 }
 
+size_t rb_str_memsize(VALUE);
+size_t rb_ary_memsize(VALUE);
+size_t rb_io_memsize(const rb_io_t *);
+size_t rb_generic_ivar_memsize(VALUE);
+#include "regint.h"
+
+static size_t
+obj_memsize_of(VALUE obj, int use_tdata)
+{
+    size_t size = 0;
+
+    if (SPECIAL_CONST_P(obj)) {
+	return 0;
+    }
+
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	size += rb_generic_ivar_memsize(obj);
+    }
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+	if (!(RBASIC(obj)->flags & ROBJECT_EMBED) &&
+	    ROBJECT(obj)->as.heap.ivptr) {
+	    size += ROBJECT(obj)->as.heap.numiv * sizeof(VALUE);
+	}
+	break;
+      case T_MODULE:
+      case T_CLASS:
+	if (RCLASS_M_TBL(obj)) {
+	    size += st_memsize(RCLASS_M_TBL(obj));
+	}
+	if (RCLASS_EXT(obj)) {
+	    if (RCLASS_IV_TBL(obj)) {
+		size += st_memsize(RCLASS_IV_TBL(obj));
+	    }
+	    if (RCLASS_IV_INDEX_TBL(obj)) {
+		size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
+	    }
+	    if (RCLASS(obj)->ptr->iv_tbl) {
+		size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
+	    }
+	    if (RCLASS(obj)->ptr->const_tbl) {
+		size += st_memsize(RCLASS(obj)->ptr->const_tbl);
+	    }
+	    size += sizeof(rb_classext_t);
+	}
+	break;
+      case T_STRING:
+	size += rb_str_memsize(obj);
+	break;
+      case T_ARRAY:
+	size += rb_ary_memsize(obj);
+	break;
+      case T_HASH:
+	if (RHASH(obj)->ntbl) {
+	    size += st_memsize(RHASH(obj)->ntbl);
+	}
+	break;
+      case T_REGEXP:
+	if (RREGEXP(obj)->ptr) {
+	    size += onig_memsize(RREGEXP(obj)->ptr);
+	}
+	break;
+      case T_DATA:
+	if (use_tdata) size += rb_objspace_data_type_memsize(obj);
+	break;
+      case T_MATCH:
+	if (RMATCH(obj)->rmatch) {
+            struct rmatch *rm = RMATCH(obj)->rmatch;
+	    size += onig_region_memsize(&rm->regs);
+	    size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
+	    size += sizeof(struct rmatch);
+	}
+	break;
+      case T_FILE:
+	if (RFILE(obj)->fptr) {
+	    size += rb_io_memsize(RFILE(obj)->fptr);
+	}
+	break;
+      case T_RATIONAL:
+      case T_COMPLEX:
+	break;
+      case T_ICLASS:
+	/* iClass shares table with the module */
+	break;
+
+      case T_FLOAT:
+	break;
+
+      case T_BIGNUM:
+	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
+	    size += RBIGNUM_LEN(obj) * sizeof(BDIGIT);
+	}
+	break;
+      case T_NODE:
+	switch (nd_type(obj)) {
+	  case NODE_SCOPE:
+	    if (RNODE(obj)->u1.tbl) {
+		/* TODO: xfree(RANY(obj)->as.node.u1.tbl); */
+	    }
+	    break;
+	  case NODE_ALLOCA:
+	    /* TODO: xfree(RANY(obj)->as.node.u1.node); */
+	    ;
+	}
+	break;			/* no need to free iv_tbl */
+
+      case T_STRUCT:
+	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
+	    RSTRUCT(obj)->as.heap.ptr) {
+	    size += sizeof(VALUE) * RSTRUCT_LEN(obj);
+	}
+	break;
+
+      case T_ZOMBIE:
+	break;
+
+      default:
+	rb_bug("objspace/memsize_of(): unknown data type 0x%x(%p)",
+	       BUILTIN_TYPE(obj), (void*)obj);
+    }
+
+    return size;
+}
+
+size_t
+rb_obj_memsize_of(VALUE obj)
+{
+    return obj_memsize_of(obj, TRUE);
+}
+
 static int
 set_zero(st_data_t key, st_data_t val, st_data_t arg)
 {
@@ -2690,6 +2855,27 @@ gc_after_sweep(rb_objspace_t *objspace)
 	}
 #endif
     }
+
+#if RGENGC_ESTIMATE_OLDSPACE
+    if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
+	objspace->rgengc.need_major_gc = TRUE;
+	objspace->rgengc.oldspace_increase_limit *= GC_HEAP_OLDSPACE_GROWTH_FACTOR;
+	objspace->rgengc.oldspace_increase = 0;
+	if (objspace->rgengc.oldspace_increase_limit > GC_HEAP_OLDSPACE_MAX) {
+	    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MAX;
+	}
+    }
+    else {
+	objspace->rgengc.oldspace_increase_limit /= ((GC_HEAP_OLDSPACE_GROWTH_FACTOR - 1)/10 + 1);
+	if (objspace->rgengc.oldspace_increase_limit < GC_HEAP_OLDSPACE_MIN) {
+	    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MIN;
+	}
+    }
+    if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
+		   (unsigned int)objspace->rgengc.oldspace_increase,
+		   (unsigned int)objspace->rgengc.oldspace_increase_limit,
+		   (unsigned int)GC_HEAP_OLDSPACE_MAX);
+#endif
 
     gc_prof_set_heap_info(objspace);
 
@@ -3420,6 +3606,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		/* infant -> old */
 		objspace->rgengc.old_object_count++;
 		objspace->rgengc.parent_object_is_old = TRUE;
+
+#if RGENGC_ESTIMATE_OLDSPACE
+		objspace->rgengc.oldspace_increase += obj_memsize_of((VALUE)obj, FALSE);
+#endif
+
 #endif
 		rgengc_report(3, objspace, "gc_mark_children: promote infant -> young %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 	    }
@@ -3431,6 +3622,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		    /* young -> old */
 		    RVALUE_PROMOTE_YOUNG((VALUE)obj);
 		    objspace->rgengc.old_object_count++;
+#if RGENGC_ESTIMATE_OLDSPACE
+		    objspace->rgengc.oldspace_increase += obj_memsize_of((VALUE)obj, FALSE);
+#endif
 		    rgengc_report(3, objspace, "gc_mark_children: promote young -> old %p (%s).\n", (void *)obj, obj_type_name((VALUE)obj));
 		}
 		else {
@@ -5044,6 +5238,12 @@ rb_gc_set_params(void)
     get_envparam_int   ("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit, 0);
     get_envparam_int   ("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &initial_malloc_limit_growth_factor, 1.0);
+
+    /*
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MIN", &initial_oldspace_min, 0);
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &initial_oldspace_max, 0);
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &initial_oldspace_growth_factor, 0);
+     */
 }
 
 void
