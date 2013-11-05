@@ -1,3 +1,10 @@
+Wed Nov  6 04:14:25 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: process merge keys before
+	  reviving objects. Fixes GH psych #168
+	* test/psych/test_merge_keys.rb: test for change
+	  https://github.com/tenderlove/psych/issues/168
+
 Tue Nov  5 21:21:47 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_thread.rb (test_thread_join_in_trap):

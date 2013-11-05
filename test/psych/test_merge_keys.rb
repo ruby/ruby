@@ -2,6 +2,24 @@ require_relative 'helper'
 
 module Psych
   class TestMergeKeys < TestCase
+    class Product
+      attr_reader :bar
+    end
+
+    def test_mergekey_with_object
+      s = <<-eoyml
+foo: &foo
+  bar: 10
+product:
+  !ruby/object:#{Product.name}
+  <<: *foo
+      eoyml
+      hash = Psych.load s
+      assert_equal({"bar" => 10}, hash["foo"])
+      product = hash["product"]
+      assert_equal 10, product.bar
+    end
+
     def test_merge_nil
       yaml = <<-eoyml
 defaults: &defaults
