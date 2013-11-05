@@ -11,6 +11,10 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
     @shell.system_path = [@tmpdir]
   end
 
+  def teardown
+    Dir.rmdir(@tmpdir)
+  end
+
   def catch_command_start(tc = Object.new)
     @shell.process_controller.singleton_class.class_eval do
       define_method(:add_schedule) {|cmd| throw tc, cmd}
