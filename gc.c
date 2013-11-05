@@ -790,7 +790,7 @@ RVALUE_YOUNG_P(VALUE obj)
 
 static inline void
 RVALUE_PROMOTE_YOUNG(VALUE obj)
-{ 
+{
     check_gen_consistency(obj);
     if (RGENGC_CHECK_MODE && !RVALUE_YOUNG_P(obj)) rb_bug("RVALUE_PROMOTE_YOUNG: %p (%s) is not young object.", (void *)obj, obj_type_name(obj));
     MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
@@ -2891,7 +2891,7 @@ gc_after_sweep(rb_objspace_t *objspace)
     if (0) {
 	fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
 		(int)rb_gc_count(),
-		(int)objspace->profile.major_gc_count, 
+		(int)objspace->profile.major_gc_count,
 		(int)objspace->profile.minor_gc_count,
 		(int)objspace->profile.promote_infant_count,
 #if RGENGC_THREEGEN
