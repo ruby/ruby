@@ -2,9 +2,9 @@ Tue Nov  5 13:37:19 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add support to estimate increase of oldspace memory usage.
 	  This is another approach to solve an issue discussed at r43530.
-	  This feature is diabled as default. 
+	  This feature is disabled as default. 
 
-	  This feature measures an increment of memory consuption by oldgen
+	  This feature measures an increment of memory consumption by oldgen
 	  objects. It measures memory consumption for each objects when
 	  the object is promoted. However, measurement of memory consumption
 	  is not accurate now. So that this measurement is `estimation'.
