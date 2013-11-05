@@ -1,3 +1,7 @@
+Wed Nov  6 07:12:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: add some options to make quiet.
+
 Wed Nov  6 04:14:25 2013  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: process merge keys before
