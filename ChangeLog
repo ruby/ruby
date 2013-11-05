@@ -1,3 +1,7 @@
+Wed Nov  6 07:13:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (Init_GC): add GC::OPTS to show options.
+
 Wed Nov  6 07:12:17 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: add some options to make quiet.

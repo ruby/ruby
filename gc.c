@@ -6827,4 +6827,23 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
+
+    /* ::GC::OPTS, which shows GC build options */
+    {
+	VALUE opts;
+	rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
+#define OPT(o) if (o) rb_ary_push(opts, rb_str_new2(#o))
+	OPT(GC_DEBUG);
+	OPT(USE_RGENGC);
+	OPT(RGENGC_DEBUG);
+	OPT(RGENGC_CHECK_MODE);
+	OPT(RGENGC_PROFILE);
+	OPT(RGENGC_THREEGEN);
+	OPT(RGENGC_ESTIMATE_OLDSPACE);
+	OPT(GC_PROFILE_MORE_DETAIL);
+	OPT(GC_ENABLE_LAZY_SWEEP);
+	OPT(CALC_EXACT_MALLOC_SIZE);
+	OPT(CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE);
+#undef OPT
+    }
 }
