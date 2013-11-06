@@ -131,8 +131,8 @@ class TC_OpenStruct < Test::Unit::TestCase
     e = assert_raise(NoMethodError) { os.foo true }
     assert_equal :foo, e.name
     assert_equal [true], e.args
-    assert_match /#{__callee__}/, e.backtrace[0]
+    assert_match(/#{__callee__}/, e.backtrace[0])
     e = assert_raise(ArgumentError) { os.send :foo=, true, true }
-    assert_match /#{__callee__}/, e.backtrace[0]
+    assert_match(/#{__callee__}/, e.backtrace[0])
   end
 end
