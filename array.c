@@ -1070,7 +1070,9 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
         ARY_INCREASE_PTR(ary, n);
     }
     else {
-	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+n, VALUE, RARRAY_LEN(ary)-n);
+	RARRAY_PTR_USE(ary, ptr, {
+	    MEMMOVE(ptr, ptr + n, VALUE, RARRAY_LEN(ary)-n);
+	}); /* WB: no new reference */
     }
     ARY_INCREASE_LEN(ary, -n);
 

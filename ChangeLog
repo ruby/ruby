@@ -1,3 +1,8 @@
+Wed Nov  6 21:16:51 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_shift_m): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
 Wed Nov  6 21:05:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_reverse): use RARRAY_PTR_USE().
