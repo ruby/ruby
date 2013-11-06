@@ -1,3 +1,11 @@
+Wed Nov  6 21:30:55 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_before_sweep): Change algorithm of malloc_limit to
+	  conservative for closing to memory consumption of ruby 2.0.
+
+	* gc.c (GC_MALLOC_LIMIT, GC_MALLOC_LIMIT_GROWTH_FACTOR):
+	  Adjust parameters for new algorithm.
+
 Wed Nov  6 21:16:51 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_shift_m): use RARRAY_PTR_USE() without WB because
