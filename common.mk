@@ -1088,6 +1088,8 @@ help: PHONY
 	"  test-rubyspec:   run RubySpec test suite" \
 	"  update-rubyspec: update local copy of RubySpec" \
 	"  benchmark:       benchmark this ruby and COMPARE_RUBY" \
+	"  gcbench:         gc benchmark [GCBENCH_ITEM=<item_name>]" \
+	"  gcbench-rdoc:    gc benchmark with GCBENCH_ITEM=rdoc" \
 	"  install:         install all ruby distributions" \
 	"  install-nodoc:   install without rdoc" \
 	"  install-cross:   install cross compiling staff" \
