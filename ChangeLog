@@ -1,3 +1,22 @@
+Wed Nov  6 09:14:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_gc_short_lived.rb: added.
+	  These GC benchmarks do not reflect practical applications.
+	  They are only for tuning.
+
+	* benchmark/bm_vm1_gc_short_with_complex_long.rb: added.
+
+	* benchmark/bm_vm1_gc_short_with_long.rb: added.
+
+	* benchmark/bm_vm1_gc_short_with_symbol.rb: added.
+
+	* benchmark/bm_vm1_gc_wb_ary.rb: added.
+
+	* benchmark/bm_vm1_gc_wb_obj.rb: added.
+
+	* benchmark/bm_vm_thread_queue.rb: added.
+	  Thie benchmark is added to know how fast C verion of thread.so.
+
 Wed Nov  6 09:13:32 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: define RGENGC_ESTIMATE_OLDSPACE == 0 if USE_RGENGC is 0.
