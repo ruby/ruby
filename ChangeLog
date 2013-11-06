@@ -1,3 +1,7 @@
+Wed Nov  6 21:05:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_reverse): use RARRAY_PTR_USE().
+
 Wed Nov  6 19:30:44 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* common.mk (help): add texts about gcbench.

@@ -2176,13 +2176,15 @@ ary_reverse(VALUE *p1, VALUE *p2)
 VALUE
 rb_ary_reverse(VALUE ary)
 {
-    VALUE *p1, *p2;
+    VALUE *p2;
+    long len = RARRAY_LEN(ary);
 
     rb_ary_modify(ary);
-    if (RARRAY_LEN(ary) > 1) {
-	p1 = RARRAY_PTR(ary);
-	p2 = p1 + RARRAY_LEN(ary) - 1;	/* points last item */
-	ary_reverse(p1, p2);
+    if (len > 1) {
+	RARRAY_PTR_USE(ary, p1, {
+	    p2 = p1 + len - 1;	/* points last item */
+	    ary_reverse(p1, p2);
+	}); /* WB: no new reference */
     }
     return ary;
 }
