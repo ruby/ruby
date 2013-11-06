@@ -34,6 +34,11 @@ module OpenSSL::Buffering
 
   BLOCK_SIZE = 1024*16
 
+  ##
+  # Creates a new instance. 
+  #
+  # (+args+ are not used)
+
   def initialize(*args)
     @eof = false
     @rbuffer = ""
