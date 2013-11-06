@@ -50,7 +50,7 @@ define rp
     end
   else
   set $flags = ((struct RBasic*)($arg0))->flags
-  if ($flags & RUBY_FL_ELDERGEN)
+  if ($flags & RUBY_FL_PROMOTED)
     printf "[PROMOTED] "
   end
   if ($flags & RUBY_T_MASK) == RUBY_T_NONE
