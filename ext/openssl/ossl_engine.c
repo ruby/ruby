@@ -144,6 +144,16 @@ ossl_engine_s_engines(VALUE klass)
     return ary;
 }
 
+/* Document-method: OpenSSL::Engine.by_id
+ *
+ *
+ * Fetch the engine as specified by the +id+ String
+ *
+ *   OpenSSL::Engine.by_id("openssl")
+ *    => #<OpenSSL::Engine id="openssl" name="Software engine support">
+ *
+ * See OpenSSL::Engine.engines for the engines available to your runtime
+ */
 static VALUE
 ossl_engine_s_by_id(VALUE klass, VALUE id)
 {
