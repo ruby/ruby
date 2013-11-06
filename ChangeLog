@@ -1,3 +1,7 @@
+Wed Nov  6 16:32:32 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/open3.rb: tweaked grammar in comments
+
 Wed Nov  6 11:46:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_sample): use RARRAY_AREF() and RARRAY_PTR_USE()
