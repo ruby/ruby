@@ -1,3 +1,7 @@
+Wed Nov  6 10:37:07 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_and): defer hash creation and some refactoring.
+
 Wed Nov  6 09:14:31 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_gc_short_lived.rb: added.

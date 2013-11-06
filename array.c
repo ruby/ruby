@@ -4009,20 +4009,20 @@ static VALUE
 rb_ary_and(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3, v;
+    st_table *table;
     st_data_t vv;
     long i;
 
     ary2 = to_ary(ary2);
-    ary3 = rb_ary_new2(RARRAY_LEN(ary1) < RARRAY_LEN(ary2) ?
-	    RARRAY_LEN(ary1) : RARRAY_LEN(ary2));
+    ary3 = rb_ary_new();
+    if (RARRAY_LEN(ary2) == 0) return ary3;
     hash = ary_make_hash(ary2);
-
-    if (RHASH_EMPTY_P(hash))
-        return ary3;
+    table = rb_hash_tbl_raw(hash);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	vv = (st_data_t)(v = rb_ary_elt(ary1, i));
-	if (st_delete(rb_hash_tbl_raw(hash), &vv, 0)) {
+	v = RARRAY_AREF(ary1, i);
+	vv = (st_data_t)v;
+	if (st_delete(table, &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
