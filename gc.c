@@ -194,11 +194,14 @@ static ruby_gc_params_t initial_params = {
 #endif
 
 #else /* USE_RGENGC */
+
 #define RGENGC_DEBUG       0
 #define RGENGC_CHECK_MODE  0
 #define RGENGC_PROFILE     0
 #define RGENGC_THREEGEN    0
-#endif
+#define RGENGC_ESTIMATE_OLDSPACE 0
+
+#endif /* USE_RGENGC */
 
 #ifndef GC_PROFILE_MORE_DETAIL
 #define GC_PROFILE_MORE_DETAIL 0

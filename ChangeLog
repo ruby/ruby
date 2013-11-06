@@ -1,3 +1,7 @@
+Wed Nov  6 09:13:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: define RGENGC_ESTIMATE_OLDSPACE == 0 if USE_RGENGC is 0.
+
 Wed Nov  6 07:13:18 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (Init_GC): add GC::OPTS to show options.
