@@ -4516,7 +4516,7 @@ rb_ary_shuffle(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE nv, result, *ptr;
+    VALUE nv, result;
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
@@ -4524,19 +4524,14 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     if (OPTHASH_GIVEN_P(opts)) {
 	randgen = rb_hash_lookup2(opts, sym_random, randgen);
     }
-    ptr = RARRAY_PTR(ary);
     len = RARRAY_LEN(ary);
     if (argc == 0) {
-	if (len == 0) return Qnil;
-	if (len == 1) {
+	if (len < 2)
 	    i = 0;
-	}
-	else {
+	else
 	    i = RAND_UPTO(len);
-	    if ((len = RARRAY_LEN(ary)) <= i) return Qnil;
-	    ptr = RARRAY_PTR(ary);
-	}
-	return ptr[i];
+
+	return rb_ary_elt(ary, i);
     }
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
@@ -4549,28 +4544,23 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     }
     k = len;
     len = RARRAY_LEN(ary);
-    ptr = RARRAY_PTR(ary);
-    if (len < k) {
-	if (n <= numberof(idx)) {
-	    for (i = 0; i < n; ++i) {
-		if (rnds[i] >= len) {
-		    return rb_ary_new2(0);
-		}
-	    }
+    if (len < k && n <= numberof(idx)) {
+	for (i = 0; i < n; ++i) {
+	    if (rnds[i] >= len) return rb_ary_new_capa(0);
 	}
     }
     if (n > len) n = len;
     switch (n) {
       case 0:
-	return rb_ary_new2(0);
+	return rb_ary_new_capa(0);
       case 1:
 	i = rnds[0];
-	return rb_ary_new4(1, &ptr[i]);
+	return rb_ary_new_from_values(1, &RARRAY_AREF(ary, i));
       case 2:
 	i = rnds[0];
 	j = rnds[1];
 	if (j >= i) j++;
-	return rb_ary_new3(2, ptr[i], ptr[j]);
+	return rb_ary_new_from_args(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j));
       case 3:
 	i = rnds[0];
 	j = rnds[1];
@@ -4580,10 +4570,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    if (j >= i) l = i, g = ++j;
 	    if (k >= l && (++k >= g)) ++k;
 	}
-	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
+	return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
     }
     if (n <= numberof(idx)) {
-	VALUE *ptr_result;
 	long sorted[numberof(idx)];
 	sorted[0] = idx[0] = rnds[0];
 	for (i=1; i<n; i++) {
@@ -4595,24 +4584,26 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    memmove(&sorted[j+1], &sorted[j], sizeof(sorted[0])*(i-j));
 	    sorted[j] = idx[i] = k;
 	}
-	result = rb_ary_new2(n);
-	ptr_result = RARRAY_PTR(result);
-	for (i=0; i<n; i++) {
-	    ptr_result[i] = ptr[idx[i]];
-	}
+	result = rb_ary_new_capa(n);
+	RARRAY_PTR_USE(result, ptr_result, {
+	    for (i=0; i<n; i++) {
+		ptr_result[i] = RARRAY_AREF(ary, idx[i]);
+	    }
+	});
     }
     else {
-	VALUE *ptr_result;
-	result = rb_ary_new4(len, ptr);
+	result = rb_ary_subseq(ary, 0, len);
+	rb_ary_modify(result);
 	RBASIC_CLEAR_CLASS(result);
-	ptr_result = RARRAY_PTR(result);
 	RB_GC_GUARD(ary);
-	for (i=0; i<n; i++) {
-	    j = RAND_UPTO(len-i) + i;
-	    nv = ptr_result[j];
-	    ptr_result[j] = ptr_result[i];
-	    ptr_result[i] = nv;
-	}
+	RARRAY_PTR_USE(result, ptr_result, {
+	    for (i=0; i<n; i++) {
+		j = RAND_UPTO(len-i) + i;
+		nv = ptr_result[j];
+		ptr_result[j] = ptr_result[i];
+		ptr_result[i] = nv;
+	    }
+	});
 	RBASIC_SET_CLASS_RAW(result, rb_cArray);
     }
     ARY_SET_LEN(result, n);

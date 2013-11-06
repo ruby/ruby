@@ -1,3 +1,8 @@
+Wed Nov  6 11:46:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_sample): use RARRAY_AREF() and RARRAY_PTR_USE()
+	  instead of RARRAY_PTR().
+
 Wed Nov  6 10:37:07 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_and): defer hash creation and some refactoring.
