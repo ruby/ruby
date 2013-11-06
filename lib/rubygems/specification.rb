@@ -2293,7 +2293,7 @@ class Gem::Specification < Gem::BasicSpecification
       end
     end
 
-    if @installed_by_version then
+    if defined?(@installed_by_version) && @installed_by_version then
       result << nil
       result << "  s.installed_by_version = \"#{Gem::VERSION}\""
     end
