@@ -506,9 +506,6 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_age_in_multiprocess
     yyyymmdd = Time.now.strftime("%Y%m%d")
-    filename1 = @filename + ".#{yyyymmdd}"
-    filename2 = @filename + ".#{yyyymmdd}.1"
-    filename3 = @filename + ".#{yyyymmdd}.2"
     begin
       stderr = run_children(2, [@filename], <<-'END')
         logger = Logger.new(ARGV[0], 'now')
@@ -520,7 +517,7 @@ class TestLogDevice < Test::Unit::TestCase
       assert_no_match(/log writing failed/, stderr)
       assert_no_match(/log rotation inter-process lock failed/, stderr)
     ensure
-      [filename1, filename2, filename3].each do |filename|
+      Dir.glob("#{@filename}.#{yyyymmdd}{,.[1-9]*}") do |filename|
         File.unlink(filename) if File.exist?(filename)
       end
     end
