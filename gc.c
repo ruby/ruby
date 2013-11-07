@@ -2116,11 +2116,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     for (i = 0; i < heap_pages_used; i++) {
 	p = heap_pages_sorted[i]->start; pend = p + heap_pages_sorted[i]->limit;
 	while (p < pend) {
-	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) && RANY(p)->as.data.dfree &&
-		!rb_obj_is_thread((VALUE)p) &&
-		!rb_obj_is_mutex((VALUE)p) &&
-		!rb_obj_is_fiber((VALUE)p)) {
+	    switch (BUILTIN_TYPE(p)) {
+	      case T_DATA:
+		if (!DATA_PTR(p) || !RANY(p)->as.data.dfree) break;
+		if (rb_obj_is_thread((VALUE)p)) break;
+		if (rb_obj_is_mutex((VALUE)p)) break;
+		if (rb_obj_is_fiber((VALUE)p)) break;
 		p->as.free.flags = 0;
 		if (RTYPEDDATA_P(p)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
@@ -2131,11 +2132,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		else if (RANY(p)->as.data.dfree) {
 		    make_deferred(objspace, RANY(p));
 		}
-	    }
-	    else if (BUILTIN_TYPE(p) == T_FILE) {
+		break;
+	      case T_FILE:
 		if (RANY(p)->as.file.fptr) {
 		    make_io_deferred(objspace, RANY(p));
 		}
+		break;
 	    }
 	    p++;
 	}
