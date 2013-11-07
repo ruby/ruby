@@ -1,3 +1,8 @@
+Fri Nov  8 02:09:12 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/csv.rb: [DOC] Fix typo in CSV.parse_line by @funky-bibimbap
+	  [Fixes GH-430] https://github.com/ruby/ruby/pull/430
+
 Fri Nov  8 01:01:54 2013  Zachary Scott  <e@zzak.io>
 
 	* golf_prelude.rb: syntax formatting for whitespace [Fixes GH-425]
