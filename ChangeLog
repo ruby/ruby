@@ -1,3 +1,24 @@
+Thu Nov  7 19:36:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: modify malloc_limit strategy.
+
+	  * fix default vaues:
+	    GC_MALLOC_LIMIT_GROWTH_FACTOR
+	    GC_MALLOC_LIMIT: 8MB -> 16MB
+	    GC_MALLOC_LIMIT_MAX: 384MB -> 32MB
+
+	  * algorithm of malloc_limit increment.
+	    if (malloc_increase < malloc_limit) {
+	      next_malloc_limit = malloc_limit * factor
+	      if (malloc_limit > malloc_limit_max) {
+	        malloc_limit = malloc_increase
+	      }
+	    }
+	    This algorithm change malloc_limit from
+	    16MB -> 32MB slowly.
+	    If malloc_limit exceeds malloc_limit_max, then
+	    increase with malloc_increase.
+
 Thu Nov  7 11:06:05 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_shuffle_bang): use RARRAY_PTR_USE() without WB

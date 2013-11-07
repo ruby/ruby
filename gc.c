@@ -91,13 +91,13 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #endif
 
 #ifndef GC_MALLOC_LIMIT
-#define GC_MALLOC_LIMIT (8 * 1024 * 1024 /* 8MB */)
+#define GC_MALLOC_LIMIT (16 * 1024 * 1024 /* 16MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
-#define GC_MALLOC_LIMIT_MAX (384 * 1024 * 1024 /* 384MB */)
+#define GC_MALLOC_LIMIT_MAX (32 * 1024 * 1024 /* 32MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
-#define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.0
+#define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
 #endif
 
 #ifndef GC_HEAP_OLDSPACE_MIN
@@ -2807,6 +2807,8 @@ gc_before_sweep(rb_objspace_t *objspace)
     gc_prof_set_malloc_info(objspace);
 
     /* reset malloc info */
+    if (0) fprintf(stderr, "%d\t%d\t%d\n", (int)rb_gc_count(), (int)malloc_increase, (int)malloc_limit);
+
     {
 	size_t inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
 	size_t old_limit = malloc_limit;
@@ -2815,7 +2817,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    malloc_limit = (size_t)(inc * initial_malloc_limit_growth_factor);
 	    if (initial_malloc_limit_max > 0 && /* ignore max-check if 0 */
 		malloc_limit > initial_malloc_limit_max) {
-		malloc_limit = initial_malloc_limit_max;
+		malloc_limit = inc;
 	    }
 	}
 	else {
