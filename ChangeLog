@@ -1,3 +1,7 @@
+Thu Nov  7 10:34:12 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_sample): use rb_ary_dup().
+
 Thu Nov  7 09:39:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): errinfo should not

@@ -4596,8 +4596,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	});
     }
     else {
-	result = rb_ary_subseq(ary, 0, len);
-	rb_ary_modify(result);
+	result = rb_ary_dup(ary);
 	RBASIC_CLEAR_CLASS(result);
 	RB_GC_GUARD(ary);
 	RARRAY_PTR_USE(result, ptr_result, {
