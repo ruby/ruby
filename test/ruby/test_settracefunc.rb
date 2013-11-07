@@ -991,4 +991,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     assert_equal 9, n
   end
+
+  def test_isolated_raise_in_trace
+    bug9088 = '[ruby-dev:47793] [Bug #9088]'
+    assert_ruby_status([], <<-END, bug9088)
+    set_trace_func proc {raise rescue nil}
+    1.times {break}
+    END
+  end
 end

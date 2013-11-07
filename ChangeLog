@@ -1,3 +1,9 @@
+Thu Nov  7 09:39:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): errinfo should not
+	  be propagated to trace blocks so that no argument raise does not
+	  throw internal objects.  [ruby-dev:47793] [Bug #9088]
+
 Wed Nov  6 21:30:55 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_before_sweep): Change algorithm of malloc_limit to
