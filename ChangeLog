@@ -1,3 +1,9 @@
+Fri Nov  8 02:34:20 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/net/ftp.rb: [DOC] Document Net::FTP.mdtm and .set_socket and fix
+	  spelling typo, based on patch by @artfuldodger [Fixes GH-426]
+	  https://github.com/ruby/ruby/pull/426
+
 Fri Nov  8 02:14:37 2013  Zachary Scott  <e@zzak.io>
 
 	* array.c: [DOC] Add note about negative indices in Array overview

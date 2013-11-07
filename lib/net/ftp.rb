@@ -251,8 +251,9 @@ module Net
     end
 
     #
-    # WRITEME or make private
+    # Set the socket used to connect to the FTP server.
     #
+    # May raise FTPReplyError if +get_greeting+ is false.
     def set_socket(sock, get_greeting = true)
       synchronize do
         @sock = sock
@@ -310,7 +311,7 @@ module Net
     end
     private :getmultiline
 
-    # Recieves a response from the destination host.
+    # Receives a response from the destination host.
     #
     # Returns the response code or raises FTPTempError, FTPPermError, or
     # FTPProtoError
@@ -330,7 +331,7 @@ module Net
     end
     private :getresp
 
-    # Recieves a response.
+    # Receives a response.
     #
     # Raises FTPReplyError if the first position of the response code is not
     # equal 2.
@@ -897,7 +898,10 @@ module Net
     end
 
     #
-    # Issues the MDTM command.  TODO: more info.
+    # Returns the raw last modification time of the (remote) file in the format
+    # "YYYYMMDDhhmmss" (MDTM command).
+    #
+    # Use +mtime+ if you want a parsed Time instance.
     #
     def mdtm(filename)
       resp = sendcmd("MDTM " + filename)
@@ -1114,5 +1118,3 @@ end
 
 # Documentation comments:
 #  - sourced from pickaxe and nutshell, with improvements (hopefully)
-#  - three methods should be private (search WRITEME)
-#  - two methods need more information (search TODO)
