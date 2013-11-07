@@ -1,3 +1,8 @@
+Fri Nov  8 02:50:25 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/securerandom.rb: [DOC] specify arguments passed to ::random_bytes
+	  By @chastell [Fixes GH-412] https://github.com/ruby/ruby/pull/412
+
 Fri Nov  8 02:43:01 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/objspace/object_tracing.c: [DOC] trace_object_allocations_stop
