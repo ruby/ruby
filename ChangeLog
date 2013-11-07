@@ -1,3 +1,8 @@
+Thu Nov  7 11:06:05 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_shuffle_bang): use RARRAY_PTR_USE() without WB
+	  because there are not new relations.
+
 Thu Nov  7 10:34:12 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (rb_ary_sample): use rb_ary_dup().

@@ -4443,28 +4443,27 @@ static VALUE sym_random;
 static VALUE
 rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE *ptr, opts, *snap_ptr, randgen = rb_cRandom;
-    long i, snap_len;
+    VALUE opts, randgen = rb_cRandom;
+    long i, len;
 
     if (OPTHASH_GIVEN_P(opts)) {
 	randgen = rb_hash_lookup2(opts, sym_random, randgen);
     }
     rb_check_arity(argc, 0, 0);
     rb_ary_modify(ary);
-    i = RARRAY_LEN(ary);
-    ptr = RARRAY_PTR(ary);
-    snap_len = i;
-    snap_ptr = ptr;
-    while (i) {
-	long j = RAND_UPTO(i);
-	VALUE tmp;
-	if (snap_len != RARRAY_LEN(ary) || snap_ptr != RARRAY_PTR(ary)) {
-	    rb_raise(rb_eRuntimeError, "modified during shuffle");
+    i = len = RARRAY_LEN(ary);
+    RARRAY_PTR_USE(ary, ptr, {
+	while (i) {
+	    long j = RAND_UPTO(i);
+	    VALUE tmp;
+	    if (len != RARRAY_LEN(ary) || ptr != RARRAY_CONST_PTR(ary)) {
+		rb_raise(rb_eRuntimeError, "modified during shuffle");
+	    }
+	    tmp = ptr[--i];
+	    ptr[i] = ptr[j];
+	    ptr[j] = tmp;
 	}
-	tmp = ptr[--i];
-	ptr[i] = ptr[j];
-	ptr[j] = tmp;
-    }
+    }); /* WB: no new reference */
     return ary;
 }
 
