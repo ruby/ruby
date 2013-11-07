@@ -5404,7 +5404,8 @@ rb_ary_drop_while(VALUE ary)
  *
  *  Elements in an array can be retrieved using the Array#[] method.  It can
  *  take a single integer argument (a numeric index), a pair of arguments
- *  (start and length) or a range.
+ *  (start and length) or a range. Negative indices start counting from the end,
+ *  with -1 being the last element.
  *
  *     arr = [1, 2, 3, 4, 5, 6]
  *     arr[2]    #=> 3
@@ -5412,6 +5413,7 @@ rb_ary_drop_while(VALUE ary)
  *     arr[-3]   #=> 4
  *     arr[2, 3] #=> [3, 4, 5]
  *     arr[1..4] #=> [2, 3, 4, 5]
+ *     arr[1..-3] #=> [2, 3, 4]
  *
  *  Another way to access a particular array element is by using the #at method
  *
