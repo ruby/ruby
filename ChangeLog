@@ -1,3 +1,8 @@
+Fri Nov  8 01:01:54 2013  Zachary Scott  <e@zzak.io>
+
+	* golf_prelude.rb: syntax formatting for whitespace [Fixes GH-425]
+	  Patch by @edward https://github.com/ruby/ruby/pull/425
+
 Thu Nov  7 19:36:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: modify malloc_limit strategy.
