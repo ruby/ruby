@@ -207,8 +207,8 @@ trace_object_allocations_start(VALUE self)
  *
  * Stop tracing object allocations.
  *
- * Note that if ::trace_object_allocations_start is called n-times, then stop
- * tracing after calling ::trace_object_allocations_stop n-times.
+ * Note that if ::trace_object_allocations_start is called n-times, then
+ * tracing will stop after calling ::trace_object_allocations_stop n-times.
  *
  */
 static VALUE

@@ -1,3 +1,8 @@
+Fri Nov  8 02:43:01 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/objspace/object_tracing.c: [DOC] trace_object_allocations_stop
+	  By @srawlins [Fixes GH-421] https://github.com/ruby/ruby/pull/421
+
 Fri Nov  8 02:34:20 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/net/ftp.rb: [DOC] Document Net::FTP.mdtm and .set_socket and fix
