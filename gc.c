@@ -5446,7 +5446,7 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
 	else {
 	  retry:
 	    if (malloc_increase > malloc_limit) {
-		if (is_lazy_sweeping(heap_eden)) {
+		if (ruby_thread_has_gvl_p() && is_lazy_sweeping(heap_eden)) {
 		    gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
 		    goto retry;
 		}

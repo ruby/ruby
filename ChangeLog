@@ -1,3 +1,17 @@
+Fri Nov  8 02:44:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): check GVL before gc_rest_sweep().
+	  vm_malloc_increase() can be called without GVL.
+	  However, gc_rest_sweep() assumes acquiring GVL.
+	  To avoid this problem, check GVL before gc_rest_sweep().
+	  [Bug #9090]
+
+	  This workaround introduces possibility to set malloc_limit as
+	  wrong value (*1). However, this may be rare case. So I commit it.
+
+	  *1: Without rest_sweep() here, gc_rest_sweep() can decrease
+	      malloc_increase due to ruby_sized_xfree().
+
 Fri Nov  8 02:50:25 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/securerandom.rb: [DOC] specify arguments passed to ::random_bytes
