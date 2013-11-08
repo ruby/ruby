@@ -590,11 +590,11 @@ process_sflag(int *sflag)
 {
     if (*sflag > 0) {
 	long n;
-	VALUE *args;
+	const VALUE *args;
 	VALUE argv = rb_argv;
 
 	n = RARRAY_LEN(argv);
-	args = RARRAY_PTR(argv);
+	args = RARRAY_CONST_PTR(argv);
 	while (n > 0) {
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
