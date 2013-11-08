@@ -206,6 +206,9 @@ static ruby_gc_params_t initial_params = {
 #ifndef GC_PROFILE_MORE_DETAIL
 #define GC_PROFILE_MORE_DETAIL 0
 #endif
+#ifndef GC_PROFILE_DETAIL_MEMORY
+#define GC_PROFILE_DETAIL_MEMORY 0
+#endif
 #ifndef GC_ENABLE_LAZY_SWEEP
 #define GC_ENABLE_LAZY_SWEEP   1
 #endif
@@ -263,8 +266,12 @@ typedef struct gc_profile_record {
     double prepare_time;
     size_t removing_objects;
     size_t empty_objects;
+#if GC_PROFILE_DETAIL_MEMORY
+    long maxrss;
+    long minflt;
+    long majflt;
 #endif
-
+#endif
 #if CALC_EXACT_MALLOC_SIZE
     size_t allocated_size;
 #endif
@@ -6128,6 +6135,18 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 #if CALC_EXACT_MALLOC_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif
+#if GC_PROFILE_DETAIL_MEMORY
+#ifdef RUSAGE_SELF
+	{
+	    struct rusage usage;
+	    if (getrusage(RUSAGE_SELF, &usage) == 0) {
+		record->maxrss = usage.ru_maxrss;
+		record->minflt = usage.ru_minflt;
+		record->majflt = usage.ru_majflt;
+	    }
+	}
+#endif
+#endif
     }
 }
 
@@ -6442,6 +6461,9 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if RGENGC_PROFILE
 				    " OldgenObj RemNormObj RemShadObj"
 #endif
+#if GC_PROFILE_DETAIL_MEMORY
+				    " MaxRSS(KB) MinorFLT MajorFLT"
+#endif
 				    "\n"));
 
 	for (i = 0; i < count; i++) {
@@ -6454,6 +6476,10 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 #if RGENGC_PROFILE
 				   "%10"PRIuSIZE" %10"PRIuSIZE" %10"PRIuSIZE
 #endif
+#if GC_PROFILE_DETAIL_MEMORY
+				   "%11ld %8ld %8ld"
+#endif
+
 				   "\n",
 				   i+1,
 				   "-+O3S567R9abcdef!"[record->flags & GPR_FLAG_MAJOR_MASK], /* Stress,Rescan,Shady,Oldgen,NoFree */
@@ -6482,6 +6508,13 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 				   record->remembered_normal_objects,
 				   record->remembered_shady_objects
 #endif
+#if GC_PROFILE_DETAIL_MEMORY
+				   ,
+				   record->maxrss / 1024,
+				   record->minflt,
+				   record->majflt
+#endif
+
 		       ));
 	}
 #endif
@@ -6851,6 +6884,7 @@ Init_GC(void)
 	OPT(GC_ENABLE_LAZY_SWEEP);
 	OPT(CALC_EXACT_MALLOC_SIZE);
 	OPT(CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE);
+	OPT(GC_PROFILE_DETAIL_MEMORY);
 #undef OPT
     }
 }

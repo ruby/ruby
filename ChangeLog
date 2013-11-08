@@ -1,3 +1,9 @@
+Sat Nov  9 08:58:23 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c : Add GC_PROFILE_DETAIL_MEMORY option.
+	  If GC_PROFILE_MORE_DETAIL && GC_PROFILE_DETAIL_MEMORY,
+	  maxrss, minflt and majflt are added to each profile record.
+
 Sat Nov  9 07:41:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (rb_vm_backtrace_object, rb_gc_count): make prototype
