@@ -22,12 +22,6 @@
 
 size_t rb_obj_memsize_of(VALUE);
 
-size_t
-objspace_memsize_of(VALUE obj)
-{
-    return memsize_of(obj);
-}
-
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
@@ -725,6 +719,7 @@ reachable_objects_from_root(VALUE self)
 
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_gc_hook(VALUE rb_mObjSpace);
+void Init_objspace_dump(VALUE rb_mObjSpace);
 
 /*
  * Document-module: ObjectSpace

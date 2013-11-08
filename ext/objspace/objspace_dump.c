@@ -259,7 +259,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"generation\":%zu", ainfo->generation);
     }
 
-    if ((memsize = objspace_memsize_of(obj)) > 0)
+    if ((memsize = rb_obj_memsize_of(obj)) > 0)
 	dump_append(dc, ", \"memsize\":%zu", memsize);
 
     dump_append(dc, "}\n");
@@ -372,14 +372,13 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     if (output == sym_string)
 	dc.string = rb_str_new2("");
-    else if (output == sym_file) {
+    else if (output == sym_stdout)
+	dc.stream = stdout;
+    else {
+	output = sym_file;
 	fd = mkstemp(filename);
 	if (fd == -1) rb_sys_fail_path(rb_str_new_cstr(filename));
 	dc.stream = fdopen(fd, "w");
-    }
-    else {
-	output = sym_stdout;
-	dc.stream = stdout;
     }
 
     /* dump roots */

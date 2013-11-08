@@ -205,15 +205,16 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump
+    info = nil
     ObjectSpace.trace_object_allocations do
       str = "hello world"
       info = ObjectSpace.dump(str)
-
-      assert_match /"type":"STRING"/, info
-      assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
-      assert_match /"file":"#{Regexp.escape __FILE__}", "line":197/, info
-      assert_match /"method":"test_dump"/, info
     end
+
+    assert_match /"type":"STRING"/, info
+    assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
+    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{__LINE__-6}/, info
+    assert_match /"method":"test_dump"/, info
   end
 
   def test_dump_all
@@ -223,7 +224,7 @@ class TestObjSpace < Test::Unit::TestCase
         ObjectSpace.trace_object_allocations_start
         GC.start
         "this is a test string".force_encoding("UTF-8")
-        ObjectSpace.dump_all
+        ObjectSpace.dump_all(output: :stdout)
       end
 
       dump_my_heap_please
