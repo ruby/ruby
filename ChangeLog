@@ -1,3 +1,9 @@
+Fri Nov  8 10:49:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* enumerator.c (append_method): use RARRAY_CONST_PTR().
+
+	* enumerator.c (lazy_init_iterator): ditto.
+
 Fri Nov  8 02:44:29 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (vm_malloc_increase): check GVL before gc_rest_sweep().
