@@ -1,3 +1,9 @@
+Sat Nov  9 00:26:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (GetLastError): already defined in windows.h on nowadays
+	  cygwin, and caused the confliction with the system provided
+	  definition on cygwin64.  by @kou1okada [Fixes GH-433].
+
 Fri Nov  8 18:35:31 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* lib/open3.rb: receive arguments as keyword arguments.
