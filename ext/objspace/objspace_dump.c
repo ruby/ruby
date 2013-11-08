@@ -301,6 +301,8 @@ root_obj_i(const char *category, VALUE obj, void *data)
  *
  *  This method is only expected to work with C Ruby.
  *  This is an experimental method and is subject to change.
+ *  In particular, the function signature and output format are
+ *  not guaranteed to be compatible in future versions of ruby.
  */
 
 static VALUE
@@ -350,6 +352,8 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
  *
  *  This method is only expected to work with C Ruby.
  *  This is an experimental method and is subject to change.
+ *  In particular, the function signature and output format are
+ *  not guaranteed to be compatible in future versions of ruby.
  */
 
 static VALUE
