@@ -1,3 +1,13 @@
+Fri Nov  8 13:19:26 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (rb_io_open_with_args): use RARRAY_CONST_PTR().
+
+	* io.c (rb_scan_open_args): use const qualifier for above.
+
+	* io.c (rb_open_file): ditto.
+
+	* io.c (rb_io_open_with_args): ditto.
+
 Fri Nov  8 11:35:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* dir.c, pack.c, ruby.c, struct.c, vm_eval.c: use RARRAY_CONST_PTR().
