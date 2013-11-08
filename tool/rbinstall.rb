@@ -570,7 +570,7 @@ module Gem
     end
 
     def to_ruby
-        <<-GEMSPEC
+      <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}
   s.version = #{version.dump}
@@ -582,7 +582,7 @@ Gem::Specification.new do |s|
   s.email = #{email.inspect}
   s.files = #{files.inspect}
 end
-        GEMSPEC
+      GEMSPEC
     end
 
     def self.unresolved_deps
