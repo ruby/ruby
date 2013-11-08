@@ -1,3 +1,8 @@
+Sat Nov  9 07:41:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_vm_backtrace_object, rb_gc_count): make prototype
+	  declarations, not old-K&R style.
+
 Sat Nov  9 06:11:14 2013  vo.x (Vit Ondruch)  <vondruch@redhat.com>
 
 	* tool/rbinstall.rb (Gem::Specification#collect): make stable
