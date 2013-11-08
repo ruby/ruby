@@ -719,6 +719,7 @@ reachable_objects_from_root(VALUE self)
 
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_gc_hook(VALUE rb_mObjSpace);
+void Init_objspace_dump(VALUE rb_mObjSpace);
 
 /*
  * Document-module: ObjectSpace
@@ -770,4 +771,5 @@ Init_objspace(void)
 
     Init_object_tracing(rb_mObjSpace);
     Init_gc_hook(rb_mObjSpace);
+    Init_objspace_dump(rb_mObjSpace);
 }
