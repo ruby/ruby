@@ -747,7 +747,7 @@ void rb_backtrace_print_as_bugreport(void);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 void rb_backtrace_print_to(VALUE output);
-VALUE rb_vm_backtrace_object();
+VALUE rb_vm_backtrace_object(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_objspace_data_type_name(VALUE obj);
@@ -818,7 +818,7 @@ int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c */
-size_t rb_gc_count();
+size_t rb_gc_count(void);
 size_t rb_obj_memsize_of(VALUE);
 
 RUBY_SYMBOL_EXPORT_END
