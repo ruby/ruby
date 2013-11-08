@@ -599,7 +599,7 @@ module RbInstall
       end
 
       def collect
-        ruby_libraries + built_libraries
+        (ruby_libraries + built_libraries).sort
       end
 
       private

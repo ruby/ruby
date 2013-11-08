@@ -1,3 +1,11 @@
+Sat Nov  9 06:11:14 2013  vo.x (Vit Ondruch)  <vondruch@redhat.com>
+
+	* tool/rbinstall.rb (Gem::Specification#collect): make stable
+	  Gem::Specification.files in default .gemspecs the different order of
+	  "files" in .gemspec files makes them different therefore possibly
+	  conflicting in multilib scenario.  patch by vo.x (Vit Ondruch) at
+	  [ruby-core:57544] [Bug #8623].
+
 Sat Nov  9 01:59:18 2013  Aman Gupta <ruby@tmm1.net>
 
 	* ext/objspace/object_tracing.c: Add experimental methods to
