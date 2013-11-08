@@ -9,3 +9,6 @@ objspace.o: $(HDRS) $(ruby_headers) \
 	    $(top_srcdir)/regint.h $(top_srcdir)/internal.h
 gc_hook.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
 object_tracing.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h
+objspace_dump.o: $(HDRS) $(ruby_headers) $(hdrdir)/ruby/debug.h \
+	    $(hdrdir)/ruby/encoding.h $(hdrdir)/ruby/io.h \
+	    $(top_srcdir)/node.h $(top_srcdir)/vm_core.h $(top_srcdir)/gc.h

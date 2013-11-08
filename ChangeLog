@@ -1,3 +1,12 @@
+Sat Nov  9 01:59:18 2013  Aman Gupta <ruby@tmm1.net>
+
+	* ext/objspace/object_tracing.c: Add experimental methods to
+	  dump objectspace as json: ObjectSpace.dump_all and
+	  ObjectSpace.dump(obj). These methods are useful for debugging
+	  reference leaks and memory growth in large ruby applications.
+	  [Bug #9026] [ruby-core:57893] [Fixes GH-423]
+	* test/objspace/test_objspace.rb: tests for above.
+
 Sat Nov  9 00:26:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (GetLastError): already defined in windows.h on nowadays
