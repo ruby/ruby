@@ -16,6 +16,7 @@
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
 #include "ruby/io.h"
+#include "gc.h"
 #include "node.h"
 #include "vm_core.h"
 #include "objspace.h"
@@ -265,7 +266,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 }
 
 static int
-heap_i(void *vstart, void *vend, int stride, void *data)
+heap_i(void *vstart, void *vend, size_t stride, void *data)
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
@@ -322,7 +323,7 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 	dc.stream = stdout;
     else if (output == sym_file) {
 	fd = mkstemp(filename);
-	if (fd == -1) rb_sys_fail_path(filename);
+	if (fd == -1) rb_sys_fail_path(rb_str_new_cstr(filename));
 	dc.stream = fdopen(fd, "w");
     }
     else {
@@ -373,7 +374,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 	dc.string = rb_str_new2("");
     else if (output == sym_file) {
 	fd = mkstemp(filename);
-	if (fd == -1) rb_sys_fail_path(filename);
+	if (fd == -1) rb_sys_fail_path(rb_str_new_cstr(filename));
 	dc.stream = fdopen(fd, "w");
     }
     else {
