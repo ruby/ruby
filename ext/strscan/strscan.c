@@ -190,7 +190,8 @@ strscan_memsize(const void *ptr)
 
 static const rb_data_type_t strscanner_type = {
     "StringScanner",
-    {strscan_mark, strscan_free, strscan_memsize}
+    {strscan_mark, strscan_free, strscan_memsize},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

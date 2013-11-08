@@ -144,7 +144,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,2);
     close(slave);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
-    seteuid(getuid());
+    if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
 
     return rb_exec_async_signal_safe(carg->eargp, errbuf, sizeof(errbuf_len));

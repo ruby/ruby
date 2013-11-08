@@ -71,7 +71,8 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
-static vm_state_version_t ruby_vm_global_state_version = 1;
+static vm_state_version_t ruby_vm_method_state_version = 1;
+static vm_state_version_t ruby_vm_constant_state_version = 1;
 static vm_state_version_t ruby_vm_sequence = 1;
 
 #include "vm_insnhelper.h"
@@ -105,22 +106,6 @@ rb_vm_t *ruby_current_vm = 0;
 rb_event_flag_t ruby_vm_event_flags;
 
 static void thread_free(void *ptr);
-
-static void
-vm_clear_all_inline_method_cache(void)
-{
-    /* TODO: Clear all inline cache entries in all iseqs.
-             How to iterate all iseqs in sweep phase?
-             rb_objspace_each_objects() doesn't work at sweep phase.
-     */
-}
-
-static void
-vm_clear_all_cache()
-{
-    vm_clear_all_inline_method_cache();
-    ruby_vm_global_state_version = 1;
-}
 
 void
 rb_vm_inc_const_missing_count(void)
@@ -320,6 +305,7 @@ env_memsize(const void *ptr)
 static const rb_data_type_t env_data_type = {
     "VM/env",
     {env_mark, env_free, env_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -1687,7 +1673,9 @@ vm_memsize(const void *ptr)
     if (ptr) {
 	const rb_vm_t *vmobj = ptr;
 	size_t size = sizeof(rb_vm_t);
-	size += st_memsize(vmobj->living_threads);
+	if (vmobj->living_threads) {
+	    size += st_memsize(vmobj->living_threads);
+	}
 	if (vmobj->defined_strings) {
 	    size += DEFINED_EXPR * sizeof(VALUE);
 	}
@@ -1701,6 +1689,7 @@ vm_memsize(const void *ptr)
 static const rb_data_type_t vm_data_type = {
     "VM",
     {rb_vm_mark, vm_free, vm_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 
@@ -1978,6 +1967,7 @@ const rb_data_type_t ruby_threadptr_data_type = {
 	thread_free,
 	thread_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE
@@ -2091,12 +2081,12 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     OBJ_WRITE(miseq->self, &miseq->klass, klass);
     miseq->defined_method_id = id;
     rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, noex);
-    rb_clear_cache_by_class(klass);
+    rb_clear_method_cache_by_class(klass);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {
 	klass = rb_singleton_class(klass);
 	rb_add_method(klass, id, VM_METHOD_TYPE_ISEQ, miseq, NOEX_PUBLIC);
-	rb_clear_cache_by_class(klass);
+	rb_clear_method_cache_by_class(klass);
     }
 }
 
@@ -2146,8 +2136,8 @@ m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 {
     REWIND_CFP({
 	rb_undef(cbase, SYM2ID(sym));
-	rb_clear_cache_by_class(cbase);
-	rb_clear_cache_by_class(self);
+	rb_clear_method_cache_by_class(cbase);
+	rb_clear_method_cache_by_class(self);
     });
     return Qnil;
 }

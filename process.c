@@ -1366,6 +1366,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, free_exec_arg, memsize_exec_arg},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #ifdef _WIN32
@@ -6630,9 +6631,9 @@ get_clk_tck(void)
 
 /*
  *  call-seq:
- *     Process.times   -> aStructTms
+ *     Process.times   -> aProcessTms
  *
- *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>)
+ *  Returns a <code>Tms</code> structure (see <code>Process::Tms</code>)
  *  that contains user and system CPU times for this process,
  *  and also for children processes.
  *
@@ -7615,7 +7616,8 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-    rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);
+    rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
+    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms); /* for the backward compatibility */
 #endif
 
     SAVED_USER_ID = geteuid();

@@ -125,7 +125,7 @@ class Gem::DependencyResolver
     # If the existing activation indicates that there are other possibles for
     # it, then issue the conflict on the dependency for the activation itself.
     # Otherwise, issue it on the requester's request itself.
-    if existing.others_possible?
+    if existing.others_possible? or existing.request.requester.nil? then
       conflict =
         Gem::DependencyResolver::DependencyConflict.new dep, existing
     else

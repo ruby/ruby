@@ -156,7 +156,7 @@ module Psych
         if Psych.load_tags[o.tag]
           return revive(resolve_class(Psych.load_tags[o.tag]), o)
         end
-        return revive_hash({}, o) unless o.tag
+        return revive_hash(register(o, {}), o) unless o.tag
 
         case o.tag
         when /^!ruby\/struct:?(.*)?$/
@@ -256,7 +256,7 @@ module Psych
           set
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
-          revive_hash resolve_class($1).new, o
+          revive_hash register(o, resolve_class($1).new), o
 
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, class_loader.psych_omap.new)
@@ -266,7 +266,7 @@ module Psych
           map
 
         else
-          revive_hash({}, o)
+          revive_hash(register(o, {}), o)
         end
       end
 
@@ -295,8 +295,6 @@ module Psych
       end
 
       def revive_hash hash, o
-        @st[o.anchor] = hash if o.anchor
-
         o.children.each_slice(2) { |k,v|
           key = accept(k)
           val = accept(v)
@@ -334,10 +332,8 @@ module Psych
       end
 
       def revive klass, node
-        s = klass.allocate
-        @st[node.anchor] = s if node.anchor
-        h = Hash[*node.children.map { |c| accept c }]
-        init_with(s, h, node)
+        s = register(node, klass.allocate)
+        init_with(s, revive_hash({}, node), node)
       end
 
       def init_with o, h, node

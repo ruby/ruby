@@ -104,6 +104,7 @@ Gem::Specification.new do |s|
   s.name = 'stub_e'
   s.version = Gem::Version.new '2'
   s.extensions = ['ext/stub_e/extconf.rb']
+  s.installed_by_version = '2.2'
 end
       STUB
 

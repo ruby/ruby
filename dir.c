@@ -381,6 +381,7 @@ dir_memsize(const void *ptr)
 static const rb_data_type_t dir_data_type = {
     "dir",
     {dir_mark, dir_free, dir_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE dir_close(VALUE);
@@ -1406,12 +1407,20 @@ glob_helper(
 	    enum answer new_isdir = UNKNOWN;
 	    const char *name;
 	    size_t namlen;
+	    int dotfile = 0;
 	    IF_HAVE_HFS(VALUE utf8str = Qnil);
 
 	    if (recursive && dp->d_name[0] == '.') {
-		/* always skip current and parent directories not to recurse infinitely */
-		if (!dp->d_name[1]) continue;
-		if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
+		++dotfile;
+		if (!dp->d_name[1]) {
+		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
+		    if (!(flags & FNM_DOTMATCH)) continue;
+		    ++dotfile;
+		}
+		else if (dp->d_name[1] == '.' && !dp->d_name[2]) {
+		    /* always skip parent directories not to recurse infinitely */
+		    continue;
+		}
 	    }
 
 	    name = dp->d_name;
@@ -1430,7 +1439,7 @@ glob_helper(
 		break;
 	    }
 	    name = buf + pathlen + (dirsep != 0);
-	    if (recursive && ((flags & FNM_DOTMATCH) || dp->d_name[0] != '.')) {
+	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1)) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 #ifndef _WIN32
 		if (do_lstat(buf, &st, flags) == 0)
@@ -1755,7 +1764,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 }
 
 static VALUE
-dir_globs(long argc, VALUE *argv, int flags)
+dir_globs(long argc, const VALUE *argv, int flags)
 {
     VALUE ary = rb_ary_new();
     long i;
@@ -1882,7 +1891,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
     }
     else {
 	volatile VALUE v = ary;
-	ary = dir_globs(RARRAY_LEN(v), RARRAY_PTR(v), flags);
+	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), flags);
     }
 
     if (rb_block_given_p()) {
@@ -2157,6 +2166,13 @@ rb_file_directory_p()
 }
 #endif
 
+static VALUE
+rb_dir_exists_p(VALUE obj, VALUE fname)
+{
+    rb_warning("Dir.exists? is a deprecated name, use Dir.exist? instead");
+    return rb_file_directory_p(obj, fname);
+}
+
 /*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
@@ -2206,7 +2222,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
-    rb_define_singleton_method(rb_cDir,"exists?", rb_file_directory_p, 1);
+    rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);

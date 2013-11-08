@@ -6186,7 +6186,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 }
 
 static void
-rb_scan_open_args(int argc, VALUE *argv,
+rb_scan_open_args(int argc, const VALUE *argv,
         VALUE *fname_p, int *oflags_p, int *fmode_p,
         convconfig_t *convconfig_p, mode_t *perm_p)
 {
@@ -6208,7 +6208,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 }
 
 static VALUE
-rb_open_file(int argc, VALUE *argv, VALUE io)
+rb_open_file(int argc, const VALUE *argv, VALUE io)
 {
     VALUE fname;
     int oflags, fmode;
@@ -6479,7 +6479,7 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 }
 
 static VALUE
-rb_io_open_with_args(int argc, VALUE *argv)
+rb_io_open_with_args(int argc, const VALUE *argv)
 {
     VALUE io;
 
@@ -6665,10 +6665,14 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         }
     }
     else {
-        if (close(fptr->fd) < 0)
-            rb_sys_fail_path(fptr->pathv);
-        fptr->fd = -1;
-        fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int tmpfd = rb_sysopen(fptr->pathv, oflags, 0666);
+	int err = 0;
+	if (rb_cloexec_dup2(tmpfd, fptr->fd) < 0)
+	    err = errno;
+	(void)close(tmpfd);
+	if (err) {
+	    rb_syserr_fail_path(err, fptr->pathv);
+	}
     }
 
     return file;
@@ -7579,6 +7583,7 @@ argf_memsize(const void *ptr)
 static const rb_data_type_t argf_type = {
     "ARGF",
     {argf_mark, argf_free, argf_memsize},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static inline void
@@ -9458,7 +9463,7 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 	args = rb_ary_tmp_new(n);
 	rb_ary_push(args, path);
 	rb_ary_concat(args, v);
-	arg->io = rb_io_open_with_args((int)n, RARRAY_PTR(args));
+	arg->io = rb_io_open_with_args((int)n, RARRAY_CONST_PTR(args));
 	rb_ary_clear(args);	/* prevent from GC */
 	return;
     }

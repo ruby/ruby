@@ -725,6 +725,7 @@ _eom
   end
 
   def test_thread_join_in_trap
+    assert_separately [], <<-'EOS'
     assert_nothing_raised{
       t = Thread.new{ sleep 0.2; Process.kill(:INT, $$) }
 
@@ -734,7 +735,9 @@ _eom
 
       t.join
     }
+    EOS
 
+    assert_separately [], <<-'EOS'
     assert_equal(:normal_end,
                  begin
                    t = Thread.new{ sleep 0.2; Process.kill(:INT, $$); :normal_end }
@@ -745,6 +748,7 @@ _eom
                    t.value
                  end
                  )
+    EOS
   end
 
   def test_thread_join_current

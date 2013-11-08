@@ -1456,6 +1456,21 @@ class TestArray < Test::Unit::TestCase
     $, = nil
   end
 
+  def test_to_h
+    kvp = Object.new
+    def kvp.to_ary
+      [:obtained, :via_to_ary]
+    end
+    array = [
+      [:key, :value],
+      [:ignore_me],
+      [:ignore, :me, :too],
+      :ignore_me,
+      kvp,
+    ]
+    assert_equal({key: :value, obtained: :via_to_ary}, array.to_h)
+  end
+
   def test_uniq
     a = []
     b = a.uniq

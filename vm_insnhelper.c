@@ -846,7 +846,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     VALUE klass = CLASS_OF(recv);
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && RCLASS_EXT(klass)->seq == ci->seq)) {
+    if (LIKELY(GET_METHOD_STATE_VERSION() == ci->method_state && RCLASS_EXT(klass)->seq == ci->seq)) {
 	/* cache hit! */
 	return;
     }
@@ -856,7 +856,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     ci->klass = klass;
     ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
-    ci->vmstat = GET_VM_STATE_VERSION();
+    ci->method_state = GET_METHOD_STATE_VERSION();
     ci->seq = RCLASS_EXT(klass)->seq;
 #endif
 }
@@ -924,7 +924,7 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     rb_call_info_t ci;
     ci.mid = idEq;
     ci.klass = 0;
-    ci.vmstat = 0;
+    ci.method_state = 0;
     ci.me = NULL;
     ci.defined_class = 0;
     return opt_eq_func(obj1, obj2, &ci);

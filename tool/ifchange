@@ -4,6 +4,7 @@
 set -e
 timestamp=
 keepsuffix=
+empty=
 until [ $# -eq 0 ]; do
     case "$1" in
 	--timestamp)
@@ -17,6 +18,9 @@ until [ $# -eq 0 ]; do
 	    ;;
 	--keep=*)
 	    keepsuffix=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
+	--empty)
+	    empty=yes
 	    ;;
 	*)
 	    break
@@ -33,7 +37,7 @@ if [ "$temp" = - ]; then
     trap 'rm -f "$temp"' 0
 fi
 
-if cmp "$target" "$temp" >/dev/null 2>&1; then
+if [ -f "$target" -a ! -${empty:+f}${empty:-s} "$temp" ] || cmp "$target" "$temp" >/dev/null 2>&1; then
     echo "$target unchanged"
     rm -f "$temp"
 else

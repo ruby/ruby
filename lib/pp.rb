@@ -197,22 +197,12 @@ class PP < PrettyPrint
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
-    # A mask used in formating object_id's into a hexadecimal id
-    PointerMask = (1 << ([""].pack("p").size * 8)) - 1
-
-    case Object.new.inspect
-    when /\A\#<Object:0x([0-9a-f]+)>\z/
-      # String Formating for hexadecimal id
-      PointerFormat = "%0#{$1.length}x"
-    else
-      PointerFormat = "%x"
-    end
-
     # A convenience method, like object_group, but also reformats the Object's
     # object_id.
     def object_address_group(obj, &block)
-      id = PointerFormat % (obj.object_id * 2 & PointerMask)
-      group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
+      str = Kernel.instance_method(:to_s).bind(obj).call
+      str.chomp!('>')
+      group(1, str, '>', &block)
     end
 
     # A convenience method which is same as follows:

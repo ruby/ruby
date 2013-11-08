@@ -14,7 +14,7 @@
 #include "internal.h"
 
 #ifndef END_OF_ENUMERATION
-# ifdef __GNUC__
+# if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
 #   define END_OF_ENUMERATION(key)
 # else
 #   define END_OF_ENUMERATION(key) END_OF_##key##_PLACEHOLDER = 0

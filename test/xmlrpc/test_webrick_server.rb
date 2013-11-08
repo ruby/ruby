@@ -7,6 +7,7 @@ require "xmlrpc/server"
 require 'xmlrpc/client'
 require 'logger'
 
+module TestXMLRPC
 class Test_Webrick < Test::Unit::TestCase
   include WEBrick_Testing
 
@@ -46,10 +47,10 @@ class Test_Webrick < Test::Unit::TestCase
     return s
   end
 
-  def setup_http_server(port, use_ssl)
+  def setup_http_server(use_ssl)
     option = {
       :BindAddress => "localhost",
-      :Port => port,
+      :Port => 0,
       :SSLEnable => use_ssl,
     }
     if use_ssl
@@ -63,19 +64,18 @@ class Test_Webrick < Test::Unit::TestCase
     start_server(option) {|w| w.mount('/RPC2', create_servlet) }
   end
 
-  PORT = 8071
   def test_client_server
     # NOTE: I don't enable SSL testing as this hangs
     [false].each do |use_ssl|
       begin
-        setup_http_server(PORT, use_ssl)
-        @s = XMLRPC::Client.new3(:port => PORT, :use_ssl => use_ssl)
+        addr = setup_http_server(use_ssl)
+        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
         @s.user = 'admin'
         @s.password = 'admin'
         silent do
           do_test
         end
-        @s = XMLRPC::Client.new3(:port => PORT, :use_ssl => use_ssl)
+        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
         @s.user = '01234567890123456789012345678901234567890123456789012345678901234567890123456789'
         @s.password = 'guest'
         silent do
@@ -131,4 +131,5 @@ class Test_Webrick < Test::Unit::TestCase
     # multibyte characters
     assert_equal "あいうえおかきくけこ", @s.call('test.add', "あいうえお", "かきくけこ")
   end
+end
 end

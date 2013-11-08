@@ -5,6 +5,7 @@ require_relative 'webrick_testing'
 require "xmlrpc/server"
 require 'xmlrpc/client'
 
+module TestXMLRPC
 class TestCookie < Test::Unit::TestCase
   include WEBrick_Testing
 
@@ -65,18 +66,17 @@ class TestCookie < Test::Unit::TestCase
     s
   end
 
-  def setup_http_server(port)
-    option = {:Port => port}
+  def setup_http_server
+    option = {:Port => 0}
 
-    start_server(option) {|w| w.mount('/RPC2', create_servlet) }
+    addr = start_server(option) {|w| w.mount('/RPC2', create_servlet) }
 
-    @s = XMLRPC::Client.new3(:port => port)
+    @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port)
   end
 
-  PORT = 8070
   def test_cookie
     begin
-      setup_http_server(PORT)
+      setup_http_server
       do_test
     ensure
       stop_server
@@ -93,4 +93,5 @@ class TestCookie < Test::Unit::TestCase
     assert(@s.call("test.login", "valid-user", "secret"))
     assert_equal("Hello", @s.call("test.require_authenticate_echo", "Hello"))
   end
+end
 end

@@ -335,6 +335,7 @@ static const rb_data_type_t random_data_type = {
 	random_free,
 	random_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static rb_random_t *

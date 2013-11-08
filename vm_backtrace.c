@@ -112,6 +112,7 @@ location_memsize(const void *ptr)
 static const rb_data_type_t location_data_type = {
     "frame_info",
     {location_mark, location_free, location_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static inline rb_backtrace_location_t *
@@ -407,6 +408,7 @@ backtrace_memsize(const void *ptr)
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
     {backtrace_mark, backtrace_free, backtrace_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 int
@@ -1297,6 +1299,8 @@ rb_profile_frame_classpath(VALUE frame)
 	}
 	else if (FL_TEST(klass, FL_SINGLETON)) {
 	    klass = rb_ivar_get(klass, id__attached__);
+	    if (!RB_TYPE_P(klass, T_CLASS))
+		return rb_sprintf("#<%s:%p>", rb_class2name(rb_obj_class(klass)), (void*)klass);
 	}
 	return rb_class_path(klass);
     }

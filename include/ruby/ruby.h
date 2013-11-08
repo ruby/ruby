@@ -1008,6 +1008,10 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define RUBY_TYPED_DEFAULT_FREE RUBY_DEFAULT_FREE
 #define RUBY_TYPED_NEVER_FREE   RUBY_NEVER_FREE
 
+/* bits for rb_data_type_struct::flags */
+#define RUBY_TYPED_FREE_IMMEDIATELY  1 /* TYPE field */
+#define RUBY_TYPED_WB_PROTECTED      FL_WB_PROTECTED
+
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
@@ -1120,7 +1124,7 @@ struct RBignum {
 
 #define FL_SINGLETON FL_USER0
 #define FL_WB_PROTECTED (((VALUE)1)<<5)
-#define FL_OLDGEN    (((VALUE)1)<<6)
+#define FL_PROMOTED  (((VALUE)1)<<6)
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
 #define FL_UNTRUSTED FL_TAINT
@@ -1174,7 +1178,7 @@ struct RBignum {
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if USE_RGENGC
-#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_OLDGEN))
+#define OBJ_PROMOTED(x)             (SPECIAL_CONST_P(x) ? 0 : FL_TEST_RAW((x), FL_PROMOTED))
 #define OBJ_WB_PROTECTED(x)         (SPECIAL_CONST_P(x) ? 1 : FL_TEST_RAW((x), FL_WB_PROTECTED))
 #define OBJ_WB_UNPROTECT(x)         rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 
@@ -1200,7 +1204,7 @@ void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
 #endif
 
 static inline VALUE
-rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
+rb_obj_wb_unprotect(VALUE x, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT((void *)x, filename, line);
@@ -1209,18 +1213,17 @@ rb_obj_wb_unprotect(VALUE x, const char *filename, int line)
 #if USE_RGENGC
     /* `x' should be an RVALUE object */
     if (FL_TEST_RAW((x), FL_WB_PROTECTED)) {
-	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
-
-	if (FL_TEST_RAW((x), FL_OLDGEN)) {
+	if (FL_TEST_RAW((x), FL_PROMOTED)) {
 	    rb_gc_writebarrier_unprotect_promoted(x);
 	}
+	RBASIC(x)->flags &= ~FL_WB_PROTECTED;
     }
 #endif
     return x;
 }
 
 static inline VALUE
-rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
+rb_obj_written(VALUE a, RB_UNUSED_VAR(VALUE oldv), VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_OBJ_WRITTEN
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
@@ -1228,8 +1231,7 @@ rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
 
 #if USE_RGENGC
     /* `a' should be an RVALUE object */
-    if (FL_TEST_RAW((a), FL_OLDGEN) &&
-	!SPECIAL_CONST_P(b) && !FL_TEST_RAW((b), FL_OLDGEN)) {
+    if (FL_TEST_RAW((a), FL_PROMOTED) && !SPECIAL_CONST_P(b)) {
 	rb_gc_writebarrier(a, b);
     }
 #endif
@@ -1238,7 +1240,7 @@ rb_obj_written(VALUE a, VALUE oldv, VALUE b, const char *filename, int line)
 }
 
 static inline VALUE
-rb_obj_write(VALUE a, VALUE *slot, VALUE b, const char *filename, int line)
+rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename), RB_UNUSED_VAR(int line))
 {
 #ifdef RGENGC_LOGGING_WRITE
     RGENGC_LOGGING_WRITE(a, slot, b, filename, line);

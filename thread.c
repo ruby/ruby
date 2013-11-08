@@ -390,8 +390,8 @@ typedef struct rb_mutex_struct
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
     struct rb_thread_struct volatile *th;
-    int cond_waiting;
     struct rb_mutex_struct *next_mutex;
+    int cond_waiting;
     int allow_trap;
 } rb_mutex_t;
 
@@ -440,11 +440,20 @@ rb_thread_terminate_all(void)
 
 	TH_PUSH_TAG(th);
 	if ((state = TH_EXEC_TAG()) == 0) {
+	    /*
+	     * Thread exiting routine in thread_start_func_2 notify
+	     * me when the last sub-thread exit.
+	     */
 	    native_sleep(th, 0);
 	    RUBY_VM_CHECK_INTS_BLOCKING(th);
 	}
 	TH_POP_TAG();
 
+	/*
+	 * When caught an exception (e.g. Ctrl+C), let's broadcast
+	 * kill request again to ensure killing all threads even
+	 * if they are blocked on sleep, mutex, etc.
+	 */
 	if (state) {
 	    goto retry;
 	}
@@ -1956,6 +1965,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	postponed_job_interrupt = interrupt & POSTPONED_JOB_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
+	if (postponed_job_interrupt) {
+	    rb_postponed_job_flush(th->vm);
+	}
+
 	/* signal handling */
 	if (trap_interrupt && (th == th->vm->main_thread)) {
 	    enum rb_thread_status prev_status = th->status;
@@ -2003,10 +2016,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
 	    rb_thread_schedule_limits(limits_us);
 	}
-    }
-
-    if (postponed_job_interrupt) {
-	rb_postponed_job_flush(th->vm);
     }
 }
 
@@ -3948,6 +3957,7 @@ thgroup_memsize(const void *ptr)
 static const rb_data_type_t thgroup_data_type = {
     "thgroup",
     {NULL, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /*
@@ -4186,6 +4196,7 @@ mutex_memsize(const void *ptr)
 static const rb_data_type_t mutex_data_type = {
     "mutex",
     {mutex_mark, mutex_free, mutex_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE
@@ -4635,6 +4646,7 @@ thread_shield_mark(void *ptr)
 static const rb_data_type_t thread_shield_data_type = {
     "thread_shield",
     {thread_shield_mark, 0, 0,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

@@ -376,7 +376,8 @@ void rb_define_alloc_func(VALUE, rb_alloc_func_t);
 void rb_undef_alloc_func(VALUE);
 rb_alloc_func_t rb_get_alloc_func(VALUE);
 void rb_clear_cache(void);
-void rb_clear_cache_by_class(VALUE);
+void rb_clear_constant_cache(void);
+void rb_clear_method_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
 void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
@@ -773,6 +774,7 @@ VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
 size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
+VALUE rb_str_scrub(VALUE, VALUE);
 #if defined(__GNUC__) && !defined(__PCC__)
 #define rb_str_new_cstr(str) __extension__ (	\
 {						\

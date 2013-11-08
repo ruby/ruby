@@ -98,7 +98,7 @@ module Test
           raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
         end
 
-        ex = assert_raise(exception, msg) {yield}
+        ex = assert_raise(exception, *msg) {yield}
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
         __send__(assert, expected, ex.message, msg)
         ex

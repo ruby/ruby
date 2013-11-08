@@ -351,7 +351,8 @@ fiber_memsize(const void *ptr)
     size_t size = 0;
     if (ptr) {
 	size = sizeof(*fib);
-	if (fib->cont.type != ROOT_FIBER_CONTEXT) {
+	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	    fib->cont.saved_thread.local_storage != NULL) {
 	    size += st_memsize(fib->cont.saved_thread.local_storage);
 	}
 	size += cont_memsize(&fib->cont);
@@ -417,6 +418,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 static const rb_data_type_t cont_data_type = {
     "continuation",
     {cont_mark, cont_free, cont_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void
@@ -1032,6 +1034,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 static const rb_data_type_t fiber_data_type = {
     "fiber",
     {fiber_mark, fiber_free, fiber_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE

@@ -1798,12 +1798,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		s += sizeof(char *);
 
 		if (t) {
-		    VALUE a, *p, *pend;
+		    VALUE a;
+		    const VALUE *p, *pend;
 
 		    if (!(a = rb_str_associated(str))) {
 			rb_raise(rb_eArgError, "no associated pointer");
 		    }
-		    p = RARRAY_PTR(a);
+		    p = RARRAY_CONST_PTR(a);
 		    pend = p + RARRAY_LEN(a);
 		    while (p < pend) {
 			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
@@ -1840,12 +1841,13 @@ pack_unpack(VALUE str, VALUE fmt)
 		    s += sizeof(char *);
 
 		    if (t) {
-			VALUE a, *p, *pend;
+			VALUE a;
+			const VALUE *p, *pend;
 
 			if (!(a = rb_str_associated(str))) {
 			    rb_raise(rb_eArgError, "no associated pointer");
 			}
-			p = RARRAY_PTR(a);
+			p = RARRAY_CONST_PTR(a);
 			pend = p + RARRAY_LEN(a);
 			while (p < pend) {
 			    if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {

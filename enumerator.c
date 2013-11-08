@@ -168,6 +168,7 @@ static const rb_data_type_t enumerator_data_type = {
 	enumerator_free,
 	enumerator_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct enumerator *
@@ -989,7 +990,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
     }
     if (eargs != Qfalse) {
 	long   argc = RARRAY_LEN(eargs);
-	VALUE *argv = RARRAY_PTR(eargs);
+	const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
 
 	if (argc > 0) {
 	    rb_str_buf_cat2(str, "(");
@@ -1076,6 +1077,7 @@ static const rb_data_type_t yielder_data_type = {
 	yielder_free,
 	yielder_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct yielder *
@@ -1181,6 +1183,7 @@ static const rb_data_type_t generator_data_type = {
 	generator_free,
 	generator_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct generator *
@@ -1333,7 +1336,7 @@ lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 	if (argc > 0) {
 	    rb_ary_cat(args, argv, argc);
 	}
-	result = rb_yield_values2(len, RARRAY_PTR(args));
+	result = rb_yield_values2(len, RARRAY_CONST_PTR(args));
 	RB_GC_GUARD(args);
     }
     if (result == Qundef) rb_iter_break();

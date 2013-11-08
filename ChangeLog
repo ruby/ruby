@@ -1,3 +1,1003 @@
+Sat Nov  9 00:26:50 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (GetLastError): already defined in windows.h on nowadays
+	  cygwin, and caused the confliction with the system provided
+	  definition on cygwin64.  by @kou1okada [Fixes GH-433].
+
+Fri Nov  8 18:35:31 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* lib/open3.rb: receive arguments as keyword arguments.
+
+Fri Nov  8 13:19:26 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* io.c (rb_io_open_with_args): use RARRAY_CONST_PTR().
+
+	* io.c (rb_scan_open_args): use const qualifier for above.
+
+	* io.c (rb_open_file): ditto.
+
+	* io.c (rb_io_open_with_args): ditto.
+
+Fri Nov  8 11:35:06 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* dir.c, pack.c, ruby.c, struct.c, vm_eval.c: use RARRAY_CONST_PTR().
+
+Fri Nov  8 10:58:02 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* compile.c (iseq_build_from_ary_exception): use RARRAY_CONST_PTR().
+
+	* compile.c (iseq_build_from_ary_body): ditto.
+
+Fri Nov  8 10:49:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* enumerator.c (append_method): use RARRAY_CONST_PTR().
+
+	* enumerator.c (lazy_init_iterator): ditto.
+
+Fri Nov  8 02:44:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): check GVL before gc_rest_sweep().
+	  vm_malloc_increase() can be called without GVL.
+	  However, gc_rest_sweep() assumes acquiring GVL.
+	  To avoid this problem, check GVL before gc_rest_sweep().
+	  [Bug #9090]
+
+	  This workaround introduces possibility to set malloc_limit as
+	  wrong value (*1). However, this may be rare case. So I commit it.
+
+	  *1: Without rest_sweep() here, gc_rest_sweep() can decrease
+	      malloc_increase due to ruby_sized_xfree().
+
+Fri Nov  8 02:50:25 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/securerandom.rb: [DOC] specify arguments passed to ::random_bytes
+	  By @chastell [Fixes GH-412] https://github.com/ruby/ruby/pull/412
+
+Fri Nov  8 02:43:01 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/objspace/object_tracing.c: [DOC] trace_object_allocations_stop
+	  By @srawlins [Fixes GH-421] https://github.com/ruby/ruby/pull/421
+
+Fri Nov  8 02:34:20 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/net/ftp.rb: [DOC] Document Net::FTP.mdtm and .set_socket and fix
+	  spelling typo, based on patch by @artfuldodger [Fixes GH-426]
+	  https://github.com/ruby/ruby/pull/426
+
+Fri Nov  8 02:14:37 2013  Zachary Scott  <e@zzak.io>
+
+	* array.c: [DOC] Add note about negative indices in Array overview
+	  By @ckaenzig [Fixes GH-427] https://github.com/ruby/ruby/pull/427
+
+Fri Nov  8 02:09:12 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/csv.rb: [DOC] Fix typo in CSV.parse_line by @funky-bibimbap
+	  [Fixes GH-430] https://github.com/ruby/ruby/pull/430
+
+Fri Nov  8 01:01:54 2013  Zachary Scott  <e@zzak.io>
+
+	* golf_prelude.rb: syntax formatting for whitespace [Fixes GH-425]
+	  Patch by @edward https://github.com/ruby/ruby/pull/425
+
+Thu Nov  7 19:36:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: modify malloc_limit strategy.
+
+	  * fix default vaues:
+	    GC_MALLOC_LIMIT_GROWTH_FACTOR
+	    GC_MALLOC_LIMIT: 8MB -> 16MB
+	    GC_MALLOC_LIMIT_MAX: 384MB -> 32MB
+
+	  * algorithm of malloc_limit increment.
+	    if (malloc_increase < malloc_limit) {
+	      next_malloc_limit = malloc_limit * factor
+	      if (malloc_limit > malloc_limit_max) {
+	        malloc_limit = malloc_increase
+	      }
+	    }
+	    This algorithm change malloc_limit from
+	    16MB -> 32MB slowly.
+	    If malloc_limit exceeds malloc_limit_max, then
+	    increase with malloc_increase.
+
+Thu Nov  7 11:06:05 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_shuffle_bang): use RARRAY_PTR_USE() without WB
+	  because there are not new relations.
+
+Thu Nov  7 10:34:12 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_sample): use rb_ary_dup().
+
+Thu Nov  7 09:39:41 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): errinfo should not
+	  be propagated to trace blocks so that no argument raise does not
+	  throw internal objects.  [ruby-dev:47793] [Bug #9088]
+
+Wed Nov  6 21:30:55 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_before_sweep): Change algorithm of malloc_limit to
+	  conservative for closing to memory consumption of ruby 2.0.
+
+	* gc.c (GC_MALLOC_LIMIT, GC_MALLOC_LIMIT_GROWTH_FACTOR):
+	  Adjust parameters for new algorithm.
+
+Wed Nov  6 21:16:51 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_shift_m): use RARRAY_PTR_USE() without WB because
+	  there are not new relations.
+
+Wed Nov  6 21:05:20 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_reverse): use RARRAY_PTR_USE().
+
+Wed Nov  6 19:30:44 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* common.mk (help): add texts about gcbench.
+
+Wed Nov  6 16:32:32 2013  Martin Duerst <duerst@it.aoyama.ac.jp>
+
+	* lib/open3.rb: tweaked grammar in comments
+
+Wed Nov  6 11:46:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_sample): use RARRAY_AREF() and RARRAY_PTR_USE()
+	  instead of RARRAY_PTR().
+
+Wed Nov  6 10:37:07 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_and): defer hash creation and some refactoring.
+
+Wed Nov  6 09:14:31 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_gc_short_lived.rb: added.
+	  These GC benchmarks do not reflect practical applications.
+	  They are only for tuning.
+
+	* benchmark/bm_vm1_gc_short_with_complex_long.rb: added.
+
+	* benchmark/bm_vm1_gc_short_with_long.rb: added.
+
+	* benchmark/bm_vm1_gc_short_with_symbol.rb: added.
+
+	* benchmark/bm_vm1_gc_wb_ary.rb: added.
+
+	* benchmark/bm_vm1_gc_wb_obj.rb: added.
+
+	* benchmark/bm_vm_thread_queue.rb: added.
+	  This benchmark is added to know how fast C version of thread.so.
+
+Wed Nov  6 09:13:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: define RGENGC_ESTIMATE_OLDSPACE == 0 if USE_RGENGC is 0.
+
+Wed Nov  6 07:13:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (Init_GC): add GC::OPTS to show options.
+
+Wed Nov  6 07:12:17 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: add some options to make quiet.
+
+Wed Nov  6 04:14:25 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: process merge keys before
+	  reviving objects. Fixes GH psych #168
+	* test/psych/test_merge_keys.rb: test for change
+	  https://github.com/tenderlove/psych/issues/168
+
+Tue Nov  5 21:21:47 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_thread.rb (test_thread_join_in_trap):
+	  Run the test in a different process.
+
+Tue Nov  5 20:14:32 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (is_live_object): A hidden object may be a live object.
+	  [ruby-dev:47788] [Bug #9072]
+
+Tue Nov  5 13:37:19 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add support to estimate increase of oldspace memory usage.
+	  This is another approach to solve an issue discussed at r43530.
+	  This feature is disabled as default.
+
+	  This feature measures an increment of memory consumption by oldgen
+	  objects. It measures memory consumption for each objects when
+	  the object is promoted. However, measurement of memory consumption
+	  is not accurate now. So that this measurement is `estimation'.
+
+	  To implement this feature, move memsize_of() function from
+	  ext/objspace/objspace.c and expose rb_obj_memsize_of().
+
+	  Some memsize() functions for T_DATA (T_TYPEDDATA) have problem to
+	  measure memory size, so that we ignores T_DATA objects now.
+	  For example, some functions skip NULL check for pointer.
+
+	  The macro RGENGC_ESTIMATE_OLDSPACE enables/disables this feature,
+	  and turned off as default.
+
+	  We need to compare 3gen GC and this feature carefully.
+	  (it is possible to enable both feature)
+	  We need a help to compare them.
+
+	* internal.h: expose rb_obj_memsize_of().
+
+	* ext/objspace/objspace.c: use rb_obj_memsize_of() function.
+
+	* cont.c (fiber_memsize): fix to check NULL.
+
+	* variable.c (autoload_memsize): ditto.
+
+	* vm.c (vm_memsize): ditto.
+
+Tue Nov  5 04:03:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (GC_MALLOC_LIMIT_MAX): fix default value 512MB -> 384MB.
+	  512MB is huge.
+
+Tue Nov  5 03:31:23 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add 3gen GC patch, but disabled as default.
+
+	  RGenGC is designed as 2 generational GC, young and old generation.
+	  Young objects will be promoted to old objects after one GC.
+	  Old objects are not collect until major (full) GC.
+
+	  The issue of this approach is some objects can promoted as old
+	  objects accidentally and not freed until major GC.
+	  Major GC is not frequently so short-lived but accidentally becoming
+	  old objects are not freed.
+
+	  For example, the program "loop{Array.new(1_000_000)}" consumes huge
+	  memories because short lived objects (an array which has 1M
+	  elements) are promoted while GC and they are not freed before major
+	  GC.
+
+	  To solve this problem, generational GC with more generations
+	  technique is known. This patch implements three generations gen GC.
+
+	  At first, newly created objects are "Infant" objects.
+	  After surviving one GC, "Infant" objects are promoted to "Young"
+	  objects.
+	  "Young" objects are promoted to "Old" objects after surviving
+	  next GC.
+	  "Infant" and "Young" objects are collected if it is not marked
+	  while minor GC. So that this technique solves this problem.
+
+	  Representation of generations:
+	  * Infant: !FL_PROMOTED and !oldgen_bitmap [00]
+	  * Young :  FL_PROMOTED and !oldgen_bitmap [10]
+	  * Old   :  FL_PROMOTED and  oldgen_bitmap [11]
+
+	  The macro "RGENGC_THREEGEN" enables/disables this feature, and
+	  turned off as default because there are several problems.
+	  (1) Failed sometimes (Heisenbugs).
+	  (2) Performance down.
+	      Especially on write barriers. We need to detect Young or Old
+	      object by oldgen_bitmap. It is slower than checking flags.
+
+	  To evaluate this feature on more applications, I commit this patch.
+	  Reports are very welcome.
+
+	  This patch includes some refactoring (renaming names, etc).
+
+	* include/ruby/ruby.h: catch up 3gen GC.
+
+	* .gdbinit: fix to show a prompt "[PROMOTED]" for promoted objects.
+
+Tue Nov  5 00:05:51 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* node.h: catch up comments for last commit.
+
+Tue Nov  5 00:02:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: rename FL_OLDGEN to FL_PROMOTED.
+	  This flag represents that "this object is promoted at least once."
+
+	* gc.c, debug.c, object.c: catch up this change.
+
+Mon Nov  4 22:20:16 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Don't use fixed ports: 8070 and 8071.
+
+Mon Nov  4 15:25:52 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc/webrick_testing.rb (start_server): Initialize the server
+	  at main thread to fail early.
+
+Mon Nov  4 10:08:17 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (TH_EXEC_TAG, TH_JUMP_TAG): get rid of undefined
+	  behavior of setjmp() in rhs of assignment expression.
+	  [ISO/IEC 9899:1999] 7.13.1.1
+
+Sun Nov  3 23:06:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* sample/test.rb: Make temporary file names unique.
+
+Sun Nov  3 20:41:17 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc: Wrap definitions by TestXMLRPC module.
+
+Sun Nov  3 20:23:38 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/xmlrpc/webrick_testing.rb (stop_server): Don't try to shutdown
+	  the server if the server is not started.
+
+Sun Nov  3 09:35:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): deal with default loadable suffixes.
+
+	* load.c (load_lock): initialize statically linked extensions.
+
+	* load.c (search_required, rb_require_safe): deal with statically
+	  linked extensions.
+
+	* load.c (ruby_init_ext): defer initialization of statically linked
+	  extensions until required actually.  [Bug #8883]
+
+Sat Nov  2 15:14:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::LogDevice::LogDeviceMutex#lock_shift_log):
+	  open file can't be removed or renamed on Windows.  [ruby-dev:47790]
+	  [Bug #9046]
+
+	* test/logger/test_logger.rb (TestLogDevice#run_children): don't use
+	  fork.
+
+Sat Nov  2 07:08:43 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/logger.rb: Inter-process locking for log rotation
+	  Current implementation fails log rotation on multi process env.
+	  by sonots <sonots@gmail.com>
+	  https://github.com/ruby/ruby/pull/428 fix GH-428 [Bug #9046]
+
+Fri Nov  1 23:24:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (wmap_mark_map): mark live objects only, but delete zombies.
+	  [ruby-dev:47787] [Bug #9069]
+
+Fri Nov  1 22:45:54 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (struct heap_page, gc_page_sweep, gc_sweep): Refactoring for
+	  performance. Add before_sweep condition to heap_page structure.
+
+	* gc.c (rb_gc_force_recycle): Use before_sweep member.
+
+	* gc.c (heap_is_before_sweep, is_before_sweep): Remove. They have not
+	  already been used.
+
+Fri Nov  1 22:20:28 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (make_deferred): Refactoring. Collect codes which should be
+	  atomic.
+
+	* gc.c (make_io_deferred, obj_free, rb_objspace_call_finalizer,
+	  gc_page_sweep): Correspond to the above.
+
+Fri Nov  1 21:40:35 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (typedef struct rb_objspace): Refactoring. Move some members
+	  into profile member.
+
+	* gc.c (newobj_of): Correspond to the above.
+
+	* gc.c (finalize_list): Ditto.
+
+	* gc.c (objspace_live_num): Ditto.
+
+	* gc.c (gc_page_sweep): Ditto.
+
+	* gc.c (rb_gc_force_recycle): Ditto.
+
+	* gc.c (garbage_collect_body): Ditto.
+
+	* gc.c (rb_gc_count): Ditto.
+
+	* gc.c (gc_stat): Ditto.
+
+	* gc.c (gc_prof_set_heap_info): Ditto.
+
+	* gc.c (gc_profile_dump_on): Ditto.
+
+Fri Nov  1 20:53:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): fix typo, should yield invalid byte
+	  sequence to be scrubbed.  reported by znz at IRC.
+
+Fri Nov  1 17:25:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (is_live_object): finalizer may not run because of lazy-sweep.
+	  [ruby-dev:47786] [Bug #9069]
+
+Fri Nov  1 16:55:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): export with fixed length arguments, and
+	  allow nil as replacement string instead of omitting.
+
+Fri Nov  1 06:20:44 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_struct): reduce rb_mutex_t size by 8 bytes
+	  on 64bit platform. Patch by Eric Wong. [Feature #9068][ruby-core:58114]
+
+Fri Nov  1 01:08:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/gc/gcbench.rb: print HWM (high water mark) if possible.
+
+Thu Oct 31 21:48:31 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/streamparser.rb: Add dependency file require.
+	  [Bug #9062] [ruby-dev:47779]
+	  Reported by Ippei Obayashi. Thanks!!!
+
+Thu Oct 31 14:09:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_method_entry_make): fix to pass an ISeq value.
+	  OBJ_WRITTEN() accepts only VALUE.
+
+Wed Oct 30 19:07:57 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-additional.el (ruby-brace-to-do-end)
+	  (ruby-do-end-to-brace, ruby-toggle-block): Remove functions that
+	  are already in the latest released version of Emacs (24.3).
+	  [Bug #7565]
+
+Wed Oct 30 12:44:28 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): add missing variables,
+	  PLATFORM_DIR and THREAD_MODEL.
+
+Wed Oct 30 12:20:32 2013  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (v2w): Normalize a rational value to an integer if possible.
+	  [ruby-core:58070] [Bug #9059] reported by Isaac Schwabacher.
+
+Wed Oct 30 12:08:41 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_uniq_bang): use rb_ary_modify_check() instead of
+	  rb_ary_modify() because the array will be unshared soon.
+
+Wed Oct 30 03:25:10 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: make less garbage when
+	  testing if a string is binary.
+
+Wed Oct 30 03:08:24 2013  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: string subclasses should
+	  not be considered to be binary.  Fixes Psych / GH 166
+	  https://github.com/tenderlove/psych/issues/166
+
+	* test/psych/test_string.rb: test for fix
+
+Tue Oct 29 23:01:18 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_zip): some refactoring.
+
+Tue Oct 29 22:11:37 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (rb_ary_uniq_bang): use st_foreach() instead of for loop.
+
+Tue Oct 29 20:01:58 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* add RUBY_TYPED_FREE_IMMEDIATELY to data types which only use
+	  safe functions during garbage collection such as xfree().
+
+	  On default, T_DATA objects are freed at same points as finalizers.
+	  This approach protects issues such as reported by [ruby-dev:35578].
+	  However, freeing T_DATA objects immediately helps heap usage.
+
+	  Most of T_DATA (in other words, most of dfree functions) are safe.
+	  However, we turned off RUBY_TYPED_FREE_IMMEDIATELY by default
+	  for safety.
+
+	* cont.c: ditto.
+
+	* dir.c: ditto.
+
+	* encoding.c: ditto.
+
+	* enumerator.c: ditto.
+
+	* error.c: ditto.
+
+	* file.c: ditto.
+
+	* gc.c: ditto.
+
+	* io.c: ditto.
+
+	* iseq.c: ditto.
+
+	* marshal.c: ditto.
+
+	* parse.y: ditto.
+
+	* proc.c: ditto.
+
+	* process.c: ditto.
+
+	* random.c: ditto.
+
+	* thread.c: ditto.
+
+	* time.c: ditto.
+
+	* transcode.c: ditto.
+
+	* variable.c: ditto.
+
+	* vm.c: ditto.
+
+	* vm_backtrace.c: ditto.
+
+	* vm_trace.c: ditto.
+
+	* ext/bigdecimal/bigdecimal.c: ditto.
+
+	* ext/objspace/objspace.c: ditto.
+
+	* ext/stringio/stringio.c: ditto.
+
+	* ext/strscan/strscan.c: ditto.
+
+Tue Oct 29 19:48:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: fix typo (FL_WB_PROTECT -> FL_WB_PROTECTED).
+
+Tue Oct 29 18:45:08 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (tp_free): removed because empty free function.
+	  Use RUBY_TYPED_NEVER_FREE instead.
+
+Tue Oct 29 18:37:33 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: introduce new flags for T_TYPEDDATA.
+	  * RUBY_TYPED_FREE_IMMEDIATELY: free the data given by DATA_PTR()
+	    with dfree function immediately.  Otherwise (default), the data
+	    freed at finalization point.
+	  * RUBY_TYPED_WB_PROTECTED: make this object with FL_WB_PROTECT
+	    (not shady).
+
+	* gc.c (obj_free): support RUBY_TYPED_FREE_IMMEDIATELY.
+
+Tue Oct 29 16:49:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): decrease it more carefully.
+
+Tue Oct 29 16:24:52 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_page_resurrect): return a page in tomb heap even if
+	  freelist is NULL.
+
+Tue Oct 29 15:46:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): new macro, compare and swap size_t.
+
+Tue Oct 29 12:08:05 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (readline_getc): Consider
+	  NULL as input.
+
+Tue Oct 29 11:10:08 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c (gc_profile_total_time): fix off-by-one error in
+	  GC::Profiler.total_time.
+	* test/ruby/test_gc.rb (class TestGc): test for above.
+
+Tue Oct 29 09:53:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* insns.def, vm.c, vm_insnhelper.c, vm_insnhelper.h, vm_method.c: split
+	  ruby_vm_global_state_version into two separate counters - one for the
+	  global method state and one for the global constant state. This means
+	  changes to constants do not affect method caches, and changes to
+	  methods do not affect constant caches. In particular, this means
+	  inclusions of modules containing constants no longer globally
+	  invalidate the method cache.
+
+	* class.c, eval.c, include/ruby/intern.h, insns.def, vm.c, vm_method.c:
+	  rename rb_clear_cache_by_class to rb_clear_method_cache_by_class
+
+	* class.c, include/ruby/intern.h, variable.c, vm_method.c: add
+	  rb_clear_constant_cache
+
+	* compile.c, vm_core.h, vm_insnhelper.c: rename vmstat field in
+	  rb_call_info_struct to method_state
+
+	* vm_method.c: rename vmstat field in struct cache_entry to method_state
+
+Mon Oct 28 23:26:04 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/readline/test_readline.rb (teardown): Clear Readline.input and
+	  Readline.output.
+
+Mon Oct 28 21:35:31 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/-test-/file/depend, ext/-test-/postponed_job/depend,
+	  ext/-test-/tracepoint/depend: New files for dependencies.
+
+Mon Oct 28 15:32:18 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/depend (ossl.o): work around of dependency of
+	  thread_native.h, which depends on headers by THREAD_MODEL.
+	  [ruby-dev:47777]
+
+	* ext/openssl/extconf.rb: need THREAD_MODEL.
+
+Mon Oct 28 14:57:01 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (ruby_init_ext): share feature names between frame name and
+	  provided features.
+
+Mon Oct 28 14:41:27 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-electric.el: Import ruby-electric.el 2.1 from
+	  https://github.com/knu/ruby-electric.el.
+
+	  * Hitting the newline-and-indent key within a comment fires
+	    comment-indent-new-line.
+
+	  * Introduce a new feature
+	    `ruby-electric-autoindent-on-closing-char`.
+
+	  * Fix fallback behavior of ruby-electric-space/return that
+	    caused error with auto-complete.
+
+Mon Oct 28 13:17:17 2013  Or Cohen  <orc@fewbytes.com>
+
+	* error.c (name_err_to_s): remove no longer needed overriding, since
+	  r30455 which made exc_to_s almost same.  Fixes [GH-413].
+
+Mon Oct 28 12:42:11 2013  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk, ext/objspace/depend, ext/coverage/depend,
+	  ext/-test-/debug/depend, ext/date/depend: Update dependencies.
+
+Mon Oct 28 09:29:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* vm.c: vm_clear_all_cache is not necessary now we use a 64 bit counter
+	  for global state version.
+
+	* vm_insnhelper.h: ruby_vm_global_state_version overflow is unnecessary
+
+Mon Oct 28 07:47:32 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm_backtrace.c (rb_profile_frame_classpath): do not use rb_inspect
+	  directly, since it might have a custom implementation or show ivars.
+
+Mon Oct 28 04:10:41 2013  Aman Gupta <ruby@tmm1.net>
+
+	* vm_backtrace.c (rb_profile_frame_classpath): handle singleton
+	  methods defined directly on an object.
+	* test/-ext-/debug/test_profile_frames.rb: test for above.
+
+Mon Oct 28 00:52:36 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (new_struct): fix warning message, class name and encoding.
+
+Sun Oct 27 20:53:08 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c: Include ruby/thread.h for
+	  rb_thread_call_without_gvl2.
+	  (readline_rl_instream, readline_rl_outstream): Record FILE
+	  structures allocated by this extension.
+	  (getc_body): New function extracted from readline_getc.
+	  (getc_func): New function.
+	  (readline_getc): Use rb_thread_call_without_gvl2 to invoke getc_func.
+	  [ruby-dev:47033] [Bug #8749]
+	  (clear_rl_instream, clear_rl_outstream): Close FILE structure
+	  allocated by this extension reliably.  [ruby-core:57951] [Bug #9040]
+	  (readline_readline): Use clear_rl_instream and clear_rl_outstream.
+	  (readline_s_set_input): Set readline_rl_instream.
+	  (readline_s_set_output): Set readline_rl_outstream.
+	  (Init_readline): Don't call readline_s_set_input because
+	  readline_getc doesn't block other threads for any FILE structure now.
+
+	  [ruby-dev:47033] [Bug #8749] reported by Nobuhiro IMAI.
+	  [ruby-core:57951] [Bug #9040] reported by Eamonn Webster.
+
+Sat Oct 26 19:31:28 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c: catch up recent changes to compile on GC_DEBUG,
+	  RGENGC_CHECK_MODE.
+
+Sat Oct 26 19:08:00 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_initialize_copy): disallow to modify after
+	  initialized.
+
+Sat Oct 26 17:48:54 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (meta_add_field): : Re-implemented.
+	   [ruby-core:58017] [Bug #9051] patch by Eamonn Webster.
+
+Sat Oct 26 14:35:09 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_profile_dump_on): use "Page" terminology.
+
+Sat Oct 26 13:25:45 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_sweep, gc_heap_lazy_sweep): fix measurement code.
+	  We only need one sweep time measurement without lazy sweep.
+
+Sat Oct 26 11:59:13 2013  Tanaka Akira  <akr@fsij.org>
+
+	* addr2line.c: Include ELF header after system headers (especially
+	  sys/types.h) to avoid compilation failure,
+	  "usr/include/sh3/elf_machdep.h:4:2: error: #error Define _BYTE_ORDER!",
+	  on NetBSD/sh3 (dreamcast, hpcsh, landisk, mmeye).
+
+Sat Oct 26 11:35:22 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: tuning parameters.
+
+	* gc.c (GC_MALLOC_LIMIT): change default value to 16MB.
+
+	* gc.c (GC_MALLOC_LIMIT_GROWTH_FACTOR): change default value to 2.0.
+
+	* gc.c (gc_before_sweep): change decrease ratio of `malloc_limit'
+	  from 1/4 to 1/10.
+
+Sat Oct 26 11:30:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): do gc_rest_sweep() before GC.
+	  gc_rest_sweep() can reduce malloc_increase, so try it before GC.
+	  Otherwise, malloc_increase can be less than malloc_limit at
+	  gc_before_sweep(). This means that re-calculation of malloc_limit
+	  may be wrong value.
+
+Sat Oct 26 06:35:41 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_before_heap_sweep): Restructure code to mean clearly.
+	  heap->freelist is connected to end of list.
+
+Sat Oct 26 04:01:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_before_heap_sweep): fix freelist management.
+	  After rb_gc_force_recycle() for a object belonging to heap->freelist,
+	  `heap->using_page->freelist' is not null.
+
+Thu Oct 24 21:57:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* parse.y: Remove +(binary) and -(binary) special cases
+	  [Feature #9048]
+
+Thu Oct 24 12:45:53 2013  Zachary Scott  <e@zzak.io>
+
+	* object.c: [DOC] Document first argument also takes string for:
+
+	  rb_mod_const_get, rb_mod_const_set, rb_mod_const_defined
+
+	  Also added note about NameError exception for invalid constant name
+
+Thu Oct 24 12:23:58 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): add a comment why we need
+	  state check and call terminate_i again.
+
+Thu Oct 24 12:15:02 2013  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): add a comment why infinite
+	  sleep is safe.
+
+Thu Oct 24 07:41:42 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: add new initial_growth_max tuning parameter.
+	  [ruby-core:57928] [Bug #9035]
+	* gc.c (heap_set_increment): when initial_growth_max is set,
+	  do not grow number of slots by more than growth_max at a time.
+	* gc.c (rb_gc_set_params): load optional new tuning value from
+	  RUBY_HEAP_SLOTS_GROWTH_MAX environment variable.
+	* test/ruby/test_gc.rb (class TestGc): test for above.
+
+Thu Oct 24 01:34:12 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_infinity_float): suppress overflow in
+	  constant arithmetic warnings.  [ruby-core:57981] [Bug #9044]
+
+Thu Oct 24 00:11:24 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: raise NoMethodError with a #name and #args.
+	  Raise RuntimeError when modifying frozen instances
+	  instead of TypeError.
+	  (OpenStruct#each_pair): Return an enumerator with size
+	  (OpenStruct#delete): Use the converted argument.
+	  Patches by Kenichi Kamiya. [Fixes GH-383]
+
+	* test/ostruct/test_ostruct.rb: Added tests for above.
+
+Thu Oct 24 00:10:22 2013  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* array.c: Add Array#to_h [Feature #7292]
+
+	* enum.c: Add Enumerable#to_h
+
+Wed Oct 23 23:48:28 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: Rename free_min to min_free_slots and free_min_page to
+	  max_free_slots. The algorithm for heap growth is:
+	    if (swept_slots < min_free_slots) pages++
+	    if (swept_slots > max_free_slots) pages--
+
+Wed Oct 23 22:51:03 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): VC 2013 supports C99 mathematics
+	  functions.  [ruby-core:57981] [Bug #9044]
+
+Wed Oct 23 19:13:18 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: move increment from heap to heap_pages.
+	  Share `increment' information with heaps.
+
+	* gc.c: change ratio of heap_pages_free_min_page
+	  to 0.80.
+	  This change means slow down page freeing speed.
+
+Wed Oct 23 17:52:03 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (heap_pages_free_unused_pages): cast to (int) for size_t
+	  variable `i'.
+
+Wed Oct 23 17:39:35 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce tomb heap.
+	  Tomb heap is where zombie objects and ghost (freed slot) lived in.
+	  Separate from other heaps (now there is only eden heap) at sweeping
+	  helps freeing pages more efficiently.
+	  Before this patch, even if there is an empty page at former phase
+	  of sweeping, we can't free it.
+
+	  Algorithm:
+	    (1) Sweeping all pages in a heap and move empty pages from the
+	        heap to tomb_heap.
+	    (2) Check all existing pages and free a page
+	        if all slots of this page are empty and
+	           there is enough empty slots (checking by swept_num)
+
+	  To introduce this patch, there are several tuning of GC parameters.
+
+Wed Oct 23 14:20:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_prof_sweep_timer_stop): catch up recent changes
+	  to compile on GC_PROFILE_MORE_DETAIL=1.
+
+Wed Oct 23 11:43:27 2013  Zachary Scott  <e@zzak.io>
+
+	* file.c: [DOC] fix rdoc format of File#expand_path from r43386
+
+Tue Oct 22 21:58:28 2013  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm_core.h (enum): avoid syntax error.
+
+	* method.h: ditto.
+
+	* internal.h: ditto.
+
+Tue Oct 22 19:53:16 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (Init_heap): move logics from heap_pages_init() and remove
+	  heap_pages_init().
+
+Tue Oct 22 19:19:05 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: allow multiple heaps.
+	  Now, objects are managed by page. And a set of pages is called heap.
+	  This commit supports multiple heaps in the object space.
+
+	  * Functions heap_* and rb_heap_t manages heap data structure.
+	  * Functions heap_page_* and struct heap_page manage page data
+	    structure.
+	  * Functions heap_pages_* and struct rb_objspace_t::heap_pages
+	    maintains all pages.
+	    For example, pages are allocated from the heap_pages.
+
+	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/GC_design
+	  and https://bugs.ruby-lang.org/attachments/4015/data-heap_structure_with_multiple_heaps.png
+	  for more details.
+
+	  Now, there is only one heap called `eden', which is a space for all
+	  new generated objects.
+
+Tue Oct 22 18:26:12 2013  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (object_address_group): Use Kernel#to_s to obtain the class
+	  name and object address.
+	  This fix a problem caused by %p in C generates variable length
+	  address.
+	  Reported by ko1 via IRC.
+
+Tue Oct 22 16:57:48 2013  Benoit Daloze  <eregontp@gmail.com>
+
+	* file.c (File#expand_path): [DOC] improve documentation of File#expand_path.
+	  Based on patch by Prathamesh Sonpatki. [ruby-core:57734] [Bug #9002]
+
+Tue Oct 22 15:59:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): don't skip current directories if FNM_DOTMATCH
+	  is given.  [ruby-core:53108] [Bug #8006]
+
+Tue Oct 22 14:53:11 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: exterminate Zombies.
+	  There is a bug that T_ZOMBIE objects are not collected.
+	  Because there is a pass to miss finalizer postponed job
+	  with multi-threading. This patch solve this issue.
+
+	* vm_trace.c (rb_postponed_job_register_one): set
+	  RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th) if another same job
+	  is registered.
+	  There is a possibility to remain a postponed job without
+	  interrupt flag.
+
+	* vm_trace.c (rb_postponed_job_register_one): check interrupt
+	  carefully.
+
+	* vm_trace.c (rb_postponed_job_register_one): use additional space
+	  to avoid buffer full.
+
+	* gc.c (gc_finalize_deferred_register): check failure.
+
+	* thread.c (rb_threadptr_execute_interrupts): check
+	  `postponed_job_interrupt' immediately.  There is a possibility
+	  to miss this flag.
+
+Tue Oct 22 12:11:16 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if the given CFLAGS and LDFLAGS are working, and
+	  bail out early if not.
+
+Tue Oct 22 00:06:57 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_exists_p): warn deprecated name.  [Bug #9041]
+
+Mon Oct 21 23:57:53 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): should preserve outer errinfo, so that
+	  expected exception may not be lost.  [ruby-core:57949] [Bug #9038]
+
+Sun Oct 20 15:41:22 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): create a new, temporary FD via rb_sysopen and
+	  call rb_cloexec_dup2 on it to atomically replace the file fptr->fd
+	  points to.  This leaves no possible window where fptr->fd is invalid
+	  to userspace (even for any threads running w/o GVL).  based on the
+	  patch by Eric Wong <normalperson@yhbt.net> at [ruby-core:57943].
+	  [Bug #9036]
+
+Sun Oct 20 15:29:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_syserr_fail_path_in): new function split from
+	  rb_sys_fail_path_in to raise SystemCallError without errno.
+
+	* internal.h (rb_syserr_fail_path): like rb_sys_fail_path but without
+	  errno.
+
+Sun Oct 20 13:58:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_obj_wb_unprotect, rb_obj_written),
+	  (rb_obj_write): suppress unused-parameter warnings.
+
+Sun Oct 20 10:32:48 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update RubyGems to master 0886307.  This commit
+	  improves documentation and should bring ruby above 75% documented on
+	  rubyci.
+
+Sun Oct 20 09:30:56 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 3de7e0f.  Changes:
+
+	  Only attempt to build extensions for newly-installed gems.  This
+	  prevents compilation attempts at gem activation time for gems that
+	  already have extensions built.
+
+	  Fix crash in the dependency resolver for dependencies that cannot be
+	  resolved.
+
+	* test/rubygems:  ditto.
+
 Sun Oct 20 05:24:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_class2name): should return real class name, not

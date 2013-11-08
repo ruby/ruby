@@ -31,11 +31,19 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Array
+  * New methods
+    * Array#to_h converts an array of key-value pairs into a Hash.
+
 * Binding
   * New methods
     * Binding#local_variable_get(symbol)
     * Binding#local_variable_set(symbol, obj)
     * Binding#local_variable_defined?(symbol)
+
+* Enumerable
+  * New methods
+    * Enumerable#to_h converts a list of key-value pairs into a Hash.
 
 * GC
   * added environment variable:

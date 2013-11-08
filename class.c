@@ -900,8 +900,8 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module)
 	module = RCLASS_SUPER(module);
     }
 
-    if (method_changed) rb_clear_cache_by_class(klass);
-    if (constant_changed) rb_clear_cache();
+    if (method_changed) rb_clear_method_cache_by_class(klass);
+    if (constant_changed) rb_clear_constant_cache();
 
     return method_changed;
 }

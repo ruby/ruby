@@ -71,13 +71,13 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # NOTE RubyGems < 1.2 cannot load specification versions > 2.
 
-  CURRENT_SPECIFICATION_VERSION = 4
+  CURRENT_SPECIFICATION_VERSION = 4 # :nodoc:
 
   ##
   # An informal list of changes to the specification.  The highest-valued
   # key should be equal to the CURRENT_SPECIFICATION_VERSION.
 
-  SPECIFICATION_VERSION_HISTORY = {
+  SPECIFICATION_VERSION_HISTORY = { # :nodoc:
     -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
     1  => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
@@ -95,12 +95,18 @@ class Gem::Specification < Gem::BasicSpecification
     ]
   }
 
-  MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16, 3 => 17, 4 => 18 }
+  MARSHAL_FIELDS = { # :nodoc:
+    -1 => 16,
+     1 => 16,
+     2 => 16,
+     3 => 17,
+     4 => 18,
+  }
 
   today = Time.now.utc
-  TODAY = Time.utc(today.year, today.month, today.day)
+  TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
-  LOAD_CACHE = {}
+  LOAD_CACHE = {} # :nodoc:
 
   private_constant :LOAD_CACHE if defined? private_constant
 
@@ -153,7 +159,7 @@ class Gem::Specification < Gem::BasicSpecification
     :version                   => nil,
   }
 
-  Dupable = { }
+  Dupable = { } # :nodoc:
 
   @@default_value.each do |k,v|
     case v
@@ -503,6 +509,23 @@ class Gem::Specification < Gem::BasicSpecification
 
   def extra_rdoc_files
     @extra_rdoc_files ||= []
+  end
+
+  ##
+  # The version of RubyGems that installed this gem.  Returns
+  # <code>Gem::Version.new(0)</code> for gems installed by versions earlier
+  # than RubyGems 2.2.0.
+
+  def installed_by_version # :nodoc:
+    @installed_by_version ||= Gem::Version.new(0)
+  end
+
+  ##
+  # Sets the version of RubyGems that installed this gem.  See also
+  # #installed_by_version.
+
+  def installed_by_version= version # :nodoc:
+    @installed_by_version = Gem::Version.new version
   end
 
   ##
@@ -1377,7 +1400,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns the build_args used to install the gem
 
   def build_args
-    if File.exists? build_info_file
+    if File.exist? build_info_file
       File.readlines(build_info_file).map { |x| x.strip }
     else
       []
@@ -1391,6 +1414,7 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if default_gem?
     return if extensions.empty?
+    return if installed_by_version < Gem::Version.new('2.2')
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir) &&
               !File.exist?(File.join(base_dir, 'extensions'))
@@ -1468,10 +1492,11 @@ class Gem::Specification < Gem::BasicSpecification
     @date ||= TODAY
   end
 
-  DateTimeFormat = /\A
-                     (\d{4})-(\d{2})-(\d{2})
-                     (\s+ \d{2}:\d{2}:\d{2}\.\d+ \s* (Z | [-+]\d\d:\d\d) )?
-                   \Z/x
+  DateTimeFormat = # :nodoc:
+    /\A
+     (\d{4})-(\d{2})-(\d{2})
+     (\s+ \d{2}:\d{2}:\d{2}\.\d+ \s* (Z | [-+]\d\d:\d\d) )?
+     \Z/x
 
   ##
   # The date this gem was created
@@ -1776,6 +1801,7 @@ class Gem::Specification < Gem::BasicSpecification
     @activated = false
     self.loaded_from = nil
     @original_platform = nil
+    @installed_by_version = nil
 
     @@nil_attributes.each do |key|
       instance_variable_set "@#{key}", nil
@@ -1831,7 +1857,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   private :invalidate_memoized_attributes
 
-  def inspect
+  def inspect # :nodoc:
     if $DEBUG
       super
     else
@@ -1979,7 +2005,12 @@ class Gem::Specification < Gem::BasicSpecification
     q.group 2, 'Gem::Specification.new do |s|', 'end' do
       q.breakable
 
-      @@attributes.each do |attr_name|
+      attributes = @@attributes - [:name, :version]
+      attributes.unshift :installed_by_version
+      attributes.unshift :version
+      attributes.unshift :name
+
+      attributes.each do |attr_name|
         current_value = self.send attr_name
         if current_value != default_value(attr_name) or
            self.class.required_attribute? attr_name then
@@ -2260,6 +2291,11 @@ class Gem::Specification < Gem::BasicSpecification
          self.class.required_attribute? attr_name then
         result << "  s.#{attr_name} = #{ruby_code current_value}"
       end
+    end
+
+    if defined?(@installed_by_version) && @installed_by_version then
+      result << nil
+      result << "  s.installed_by_version = \"#{Gem::VERSION}\""
     end
 
     unless dependencies.empty? then

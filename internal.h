@@ -413,17 +413,15 @@ void Init_File(void);
 #   pragma GCC visibility push(default)
 # endif
 NORETURN(void rb_sys_fail_path_in(const char *func_name, VALUE path));
+NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path));
 # if defined __GNUC__ && __GNUC__ >= 4
 #   pragma GCC visibility pop
 # endif
 # define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
+# define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
 # define rb_sys_fail_path(path) rb_sys_fail_str(path)
-#endif
-
-#ifdef _WIN32
-/* file.c, win32/file.c */
-void rb_w32_init_file(void);
+# define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
 #endif
 
 /* gc.c */
@@ -432,7 +430,7 @@ void *ruby_mimmalloc(size_t size);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 void rb_gc_writebarrier_remember_promoted(VALUE obj);
 
-void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));;
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_ALLOC_SIZE((2));
 void ruby_sized_xfree(void *x, size_t size);
 #define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
 
@@ -821,6 +819,7 @@ st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c */
 size_t rb_gc_count();
+size_t rb_obj_memsize_of(VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

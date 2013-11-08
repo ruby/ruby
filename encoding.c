@@ -71,6 +71,7 @@ enc_memsize(const void *p)
 static const rb_data_type_t encoding_data_type = {
     "encoding",
     {0, 0, enc_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
@@ -623,6 +624,7 @@ load_encoding(const char *name)
     VALUE enclib = rb_sprintf("enc/%s.so", name);
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
+    VALUE errinfo;
     VALUE loaded;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
     int idx;
@@ -636,10 +638,11 @@ load_encoding(const char *name)
     OBJ_FREEZE(enclib);
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
+    errinfo = rb_errinfo();
     loaded = rb_protect(require_enc, enclib, 0);
     ruby_verbose = verbose;
     ruby_debug = debug;
-    rb_set_errinfo(Qnil);
+    rb_set_errinfo(errinfo);
     if (NIL_P(loaded)) return -1;
     if ((idx = rb_enc_registered(name)) < 0) return -1;
     if (enc_autoload_p(enc_table.list[idx].enc)) return -1;

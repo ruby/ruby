@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.0.1
+;; Version: 2.1
 
 ;;; Commentary:
 ;;
@@ -185,8 +185,8 @@ instead."
   "Keymap used in ruby-electric-mode")
 
 (defcustom ruby-electric-expand-delimiters-list '(all)
-  "*List of contexts where matching delimiter should be
-inserted. The word 'all' will do all insertions."
+  "*List of contexts where matching delimiter should be inserted.
+The word 'all' will do all insertions."
   :type `(set :extra-offset 8
               (const :tag "Everything" all)
               ,@(apply 'list
@@ -197,8 +197,13 @@ inserted. The word 'all' will do all insertions."
   :group 'ruby-electric)
 
 (defcustom ruby-electric-newline-before-closing-bracket nil
-  "*Controls whether a newline should be inserted before the
-closing bracket or not."
+  "*Non-nil means a newline should be inserted before an
+automatically inserted closing bracket."
+  :type 'boolean :group 'ruby-electric)
+
+(defcustom ruby-electric-autoindent-on-closing-char nil
+  "*Non-nil means the current line should be automatically
+indented when a closing character is manually typed in."
   :type 'boolean :group 'ruby-electric)
 
 (defvar ruby-electric-mode-hook nil
@@ -226,6 +231,17 @@ enabled."
   ruby-electric-mode-map
   (if ruby-electric-mode
       (run-hooks 'ruby-electric-mode-hook)))
+
+(defun ruby-electric-space/return-fallback ()
+  (if (or (eq this-original-command 'ruby-electric-space/return)
+          (null (ignore-errors
+                  ;; ac-complete may fail if there is nothing left to complete
+                  (call-interactively this-original-command)
+                  (setq this-command this-original-command))))
+      ;; fall back to a globally bound command
+      (let ((command (global-key-binding (char-to-string last-command-event) t)))
+        (and command
+             (call-interactively (setq this-command command))))))
 
 (defun ruby-electric-space/return (arg)
   (interactive "*P")
@@ -257,13 +273,12 @@ enabled."
                     (ruby-insert-end)))
                  ((eq action 'reindent)
                   (ruby-indent-line)))
-           (if (char-equal last-command-event ?\s)
-               (insert " ")
-             (funcall this-original-command))))
+           (ruby-electric-space/return-fallback)))
+        ((and (eq this-original-command 'newline-and-indent)
+              (ruby-electric-comment-at-point-p))
+         (call-interactively (setq this-command 'comment-indent-new-line)))
         (t
-         (if (char-equal last-command-event ?\s)
-             (insert " ")
-           (funcall (setq this-command this-original-command))))))
+         (ruby-electric-space/return-fallback))))
 
 (defun ruby-electric-code-at-point-p()
   (and ruby-electric-mode
@@ -274,6 +289,10 @@ enabled."
 (defun ruby-electric-string-at-point-p()
   (and ruby-electric-mode
        (consp (memq 'font-lock-string-face (text-properties-at (point))))))
+
+(defun ruby-electric-comment-at-point-p()
+  (and ruby-electric-mode
+       (consp (memq 'font-lock-comment-face (text-properties-at (point))))))
 
 (defun ruby-electric-escaped-p()
   (let ((f nil))
@@ -413,7 +432,9 @@ enabled."
     (forward-char))
    (t
     (setq this-command 'self-insert-command)
-    (self-insert-command 1))))
+    (self-insert-command 1)
+    (if ruby-electric-autoindent-on-closing-char
+        (ruby-indent-line)))))
 
 (defun ruby-electric-bar(arg)
   (interactive "*P")

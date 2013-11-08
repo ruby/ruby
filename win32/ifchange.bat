@@ -3,6 +3,7 @@
 
 set timestamp=
 set keepsuffix=
+set empty=
 :optloop
 for %%I in (%1) do set opt=%%~I
 if "%opt%" == "--timestamp" (
@@ -19,6 +20,10 @@ if "%opt%" == "--timestamp" (
     goto :optloop
 ) else if "%opt:~0,7%" == "--keep=" (
     set keepsuffix=%opt:~7%
+    shift
+    goto :optloop
+) else if "%opt%" == "--empty" (
+    set empty=yes
     shift
     goto :optloop
 )
@@ -66,15 +71,18 @@ del %2
 goto :end
 
 :nt
-if not exist %src% goto :end
 if exist %dest% (
+    if not exist %src% goto :nt_unchanged1
+    if "%empty%" == "" for %%I in (%src%) do if %%~zI == 0 goto :nt_unchanged
     fc.exe %dest% %src% > nul && (
-	echo %1 unchanged.
+      :nt_unchanged
 	del %src%
+      :nt_unchanged1
+	for %%I in (%1) do echo %%~I unchanged
 	goto :nt_end
     )
 )
-echo %1 updated.
+for %%I in (%1) do echo %%~I updated
 copy %src% %dest% > nul
 del %src%
 

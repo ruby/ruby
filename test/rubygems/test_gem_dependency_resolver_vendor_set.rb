@@ -19,6 +19,19 @@ class TestGemDependencyResolverVendorSet < Gem::TestCase
     assert_equal "#{name}-#{version}", spec.full_name
   end
 
+  def test_add_vendor_gem_missing
+    name, version, directory = vendor_gem
+
+    FileUtils.rm_r directory
+
+    e = assert_raises Gem::GemNotFoundException do
+      @set.add_vendor_gem name, directory
+    end
+
+    assert_equal "unable to find #{directory}/#{name}.gemspec for gem #{name}",
+                 e.message
+  end
+
   def test_find_all
     name, version, directory = vendor_gem
 

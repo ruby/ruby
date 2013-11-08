@@ -123,10 +123,12 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_MIN_SLOTS=100000/, "[ruby-core:39795]")
 
     env = {
-      "RUBY_HEAP_SLOTS_GROWTH_FACTOR" => "2.0"
+      "RUBY_HEAP_SLOTS_GROWTH_FACTOR" => "2.0",
+      "RUBY_HEAP_SLOTS_GROWTH_MAX" => "10000"
     }
     assert_normal_exit("exit", "", :child_env => env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_SLOTS_GROWTH_FACTOR=2.0/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /HEAP_SLOTS_GROWTH_MAX=10000/, "[ruby-core:57928]")
 
     env = {
       "RUBY_GC_MALLOC_LIMIT"               => "60000000",
@@ -162,6 +164,16 @@ class TestGc < Test::Unit::TestCase
     GC::Profiler.clear
     assert_equal(0, GC::Profiler.raw_data.size)
     eom
+  end
+
+  def test_profiler_total_time
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.start
+    assert_operator(GC::Profiler.total_time, :>, 0)
+  ensure
+    GC::Profiler.disable
   end
 
   def test_finalizing_main_thread

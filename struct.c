@@ -188,7 +188,7 @@ new_struct(VALUE name, VALUE super)
     }
     id = rb_to_id(name);
     if (rb_const_defined_at(super, id)) {
-	rb_warn("redefining constant Struct::%s", StringValuePtr(name));
+	rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
 	rb_mod_remove_const(super, ID2SYM(id));
     }
     return rb_define_class_id_under(super, id, super);
@@ -435,7 +435,7 @@ num_members(VALUE klass)
  */
 
 static VALUE
-rb_struct_initialize_m(int argc, VALUE *argv, VALUE self)
+rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = rb_obj_class(self);
     long i, n;
@@ -457,7 +457,7 @@ rb_struct_initialize_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
-    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_PTR(values), self);
+    return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
 }
 
 static VALUE

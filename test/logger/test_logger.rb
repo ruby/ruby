@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'logger'
 require 'tempfile'
+require_relative '../ruby/envutil'
 
 
 class TestLoggerSeverity < Test::Unit::TestCase
@@ -471,6 +472,88 @@ class TestLogDevice < Test::Unit::TestCase
         File.unlink(filename) if File.exist?(filename)
       end
     end
+  end
+
+  def test_shifting_size_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    logfile0 = logfile + '.0'
+    logfile1 = logfile + '.1'
+    logfile2 = logfile + '.2'
+    logfile3 = logfile + '.3'
+    tmpfile.close(true)
+    File.unlink(logfile) if File.exist?(logfile)
+    File.unlink(logfile0) if File.exist?(logfile0)
+    File.unlink(logfile1) if File.exist?(logfile1)
+    File.unlink(logfile2) if File.exist?(logfile2)
+    begin
+      stderr = run_children(2, [logfile], <<-'END')
+        logger = Logger.new(ARGV[0], 4, 10)
+        10.times do
+          logger.info '0' * 15
+        end
+      END
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      File.unlink(logfile) if File.exist?(logfile)
+      File.unlink(logfile0) if File.exist?(logfile0)
+      File.unlink(logfile1) if File.exist?(logfile1)
+      File.unlink(logfile2) if File.exist?(logfile2)
+    end
+  end
+
+  def test_shifting_age_in_multiprocess
+    yyyymmdd = Time.now.strftime("%Y%m%d")
+    begin
+      stderr = run_children(2, [@filename], <<-'END')
+        logger = Logger.new(ARGV[0], 'now')
+        10.times do
+          logger.info '0' * 15
+        end
+      END
+      assert_no_match(/log shifting failed/, stderr)
+      assert_no_match(/log writing failed/, stderr)
+      assert_no_match(/log rotation inter-process lock failed/, stderr)
+    ensure
+      Dir.glob("#{@filename}.#{yyyymmdd}{,.[1-9]*}") do |filename|
+        File.unlink(filename) if File.exist?(filename)
+      end
+    end
+  end
+
+  def test_open_logfile_in_multiprocess
+    tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
+    logfile = tmpfile.path
+    tmpfile.close(true)
+    begin
+      20.times do
+        run_children(2, [logfile], <<-'END')
+          logfile = ARGV[0]
+          logdev = Logger::LogDevice.new(logfile)
+          logdev.send(:open_logfile, logfile)
+        END
+        assert_equal(1, File.readlines(logfile).grep(/# Logfile created on/).size)
+        File.unlink(logfile)
+      end
+    ensure
+      File.unlink(logfile) if File.exist?(logfile)
+    end
+  end
+
+  private
+
+  def run_children(n, args, src)
+    r, w = IO.pipe
+    [w, *(1..n).map do
+       f = IO.popen([EnvUtil.rubybin, *%w[--disable=gems -rlogger -], *args], "w", err: w)
+       f.puts(src)
+       f
+     end].each(&:close)
+    stderr = r.read
+    r.close
+    stderr
   end
 end
 

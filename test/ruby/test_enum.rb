@@ -103,6 +103,33 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], @obj.to_a)
   end
 
+  def test_to_h
+    assert_equal({}, @obj.to_h)
+    obj = Object.new
+    def obj.each(*args)
+      yield args
+      yield [:key, :value]
+      yield [:ignore_me]
+      yield [:ignore, :me, :too]
+      yield :other_key, :other_value
+      yield :ignore_me
+      yield :ignore, :me, :too
+      yield
+      kvp = Object.new
+      def kvp.to_ary
+        [:obtained, :via_to_ary]
+      end
+      yield kvp
+    end
+    obj.extend Enumerable
+    assert_equal({
+      :hello => :world,
+      :key => :value,
+      :other_key => :other_value,
+      :obtained => :via_to_ary,
+    }, obj.to_h(:hello, :world))
+  end
+
   def test_inject
     assert_equal(12, @obj.inject {|z, x| z * x })
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })

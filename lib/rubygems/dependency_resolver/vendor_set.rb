@@ -28,6 +28,9 @@ class Gem::DependencyResolver::VendorSet
 
     spec = Gem::Specification.load gemspec
 
+    raise Gem::GemNotFoundException,
+          "unable to find #{gemspec} for gem #{name}" unless spec
+
     key = "#{spec.name}-#{spec.version}-#{spec.platform}"
 
     @specs[key] = spec

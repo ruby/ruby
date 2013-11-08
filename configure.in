@@ -645,6 +645,25 @@ else
   unset ac_c_werror_flag
 fi])
 
+RUBY_WERROR_FLAG([
+    AC_MSG_CHECKING([whether CFLAGS is valid])
+    AC_TRY_COMPILE([], [],
+	[AC_MSG_RESULT(yes)],
+	[
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([something wrong with CFLAGS="$CFLAGS"])
+	]
+    )
+    AC_MSG_CHECKING([whether LDFLAGS is valid])
+    AC_TRY_LINK([], [],
+	[AC_MSG_RESULT(yes)],
+	[
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
+	]
+    )
+])
+
 AC_DEFUN(RUBY_TRY_CFLAGS, [
     AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
     RUBY_WERROR_FLAG([

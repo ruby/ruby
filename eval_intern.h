@@ -108,14 +108,33 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
-#define TH_EXEC_TAG() ruby_setjmp(_th->tag->buf)
+/* clear th->state, and return the value */
+static inline int
+rb_threadptr_tag_state(rb_thread_t *th)
+{
+    int state = th->state;
+    th->state = 0;
+    return state;
+}
+
+NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, int));
+static inline void
+rb_threadptr_tag_jump(rb_thread_t *th, int st)
+{
+    ruby_longjmp(th->tag->buf, (th->state = st));
+}
+
+/*
+  setjmp() in assignment expression rhs is undefined behavior
+  [ISO/IEC 9899:1999] 7.13.1.1
+*/
+#define TH_EXEC_TAG() \
+    (ruby_setjmp(_th->tag->buf) ? rb_threadptr_tag_state(_th) : 0)
 
 #define EXEC_TAG() \
   TH_EXEC_TAG()
 
-#define TH_JUMP_TAG(th, st) do { \
-  ruby_longjmp((th)->tag->buf,(st)); \
-} while (0)
+#define TH_JUMP_TAG(th, st) rb_threadptr_tag_jump(th, st)
 
 #define JUMP_TAG(st) TH_JUMP_TAG(GET_THREAD(), (st))
 

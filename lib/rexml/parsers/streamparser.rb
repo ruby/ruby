@@ -1,3 +1,5 @@
+require "rexml/parsers/baseparser"
+
 module REXML
   module Parsers
     class StreamParser

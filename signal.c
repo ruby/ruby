@@ -55,7 +55,7 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 {
     rb_atomic_t old = *ptr;
     if (old == cmp) {
-      *ptr = newval;
+	*ptr = newval;
     }
     return old;
 }

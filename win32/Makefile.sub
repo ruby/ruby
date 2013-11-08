@@ -235,7 +235,10 @@ LIBS = $(LIBS) iphlpapi.lib
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+!if $(RT_VER) < 120
+MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
+!endif
 !endif
 DLNOBJ = dln.obj
 
@@ -633,6 +636,18 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
+!if $(RT_VER) >= 120
+#define HAVE_ACOSH 1
+#define HAVE_ASINH 1
+#define HAVE_ATANH 1
+#define HAVE_CBRT 1
+#define HAVE_LOG2 1
+#define log2(x) log2(x)
+#define HAVE_ERF 1
+#define HAVE_ERFC 1
+#define HAVE_ROUND 1
+#define HAVE_TGAMMA 1
+!endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
@@ -880,6 +895,8 @@ s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
 s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
 s,@sitearchhdrdir@,$$(sitehdrdir)/$${sitearch},;t t
 s,@vendorarchhdrdir@,$$(vendorhdrdir)/$${sitearch},;t t
+s,@PLATFORM_DIR@,$(PLATFORM_DIR),;t t
+s,@THREAD_MODEL@,$(THREAD_MODEL),;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t

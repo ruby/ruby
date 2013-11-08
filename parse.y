@@ -10147,8 +10147,6 @@ static const struct {
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
-    {'+',	"+(binary)"},
-    {'-',	"-(binary)"},
     {tPOW,	"**"},
     {tDSTAR,	"**"},
     {tUPLUS,	"+@"},
@@ -11020,6 +11018,7 @@ rb_data_type_t parser_data_type = {
 	parser_free,
 	parser_memsize,
     },
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 #ifndef RIPPER

@@ -362,6 +362,7 @@ stat_memsize(const void *p)
 static const rb_data_type_t stat_data_type = {
     "stat",
     {NULL, RUBY_TYPED_DEFAULT_FREE, stat_memsize,},
+    NULL, NULL, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE
@@ -1395,6 +1396,22 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     return Qtrue;
+}
+
+static VALUE
+rb_file_exists_p(VALUE obj, VALUE fname)
+{
+    const char *s = "FileTest#";
+    if (obj == rb_mFileTest) {
+	s = "FileTest.";
+    }
+    else if (obj == rb_cFile ||
+	     (RB_TYPE_P(obj, T_CLASS) &&
+	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
+	s = "File.";
+    }
+    rb_warning("%sexists? is a deprecated name, use %sexist? instead", s, s);
+    return rb_file_exist_p(obj, fname);
 }
 
 /*
@@ -3408,15 +3425,26 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
  *
  *  Converts a pathname to an absolute pathname. Relative paths are
  *  referenced from the current working directory of the process unless
- *  <i>dir_string</i> is given, in which case it will be used as the
+ *  +dir_string+ is given, in which case it will be used as the
  *  starting point. The given pathname may start with a
  *  ``<code>~</code>'', which expands to the process owner's home
- *  directory (the environment variable <code>HOME</code> must be set
+ *  directory (the environment variable +HOME+ must be set
  *  correctly). ``<code>~</code><i>user</i>'' expands to the named
  *  user's home directory.
  *
  *     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
- *     File.expand_path("../../bin", "/tmp/x")   #=> "/bin"
+ *
+ *  A simple example of using +dir_string+ is as follows.
+ *     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
+ *
+ *  A more complex example which also resolves parent directory is as follows.
+ *  Suppose we are in bin/mygem and want the absolute path of lib/mygem.rb.
+ *
+ *     File.expand_path("../../lib/mygem.rb", __FILE__)
+ *     #=> ".../path/to/project/lib/mygem.rb"
+ *
+ *  So first it resolves the parent of __FILE__, that is bin/, then go to the
+ *  parent, the root of the project and appends +lib/mygem.rb+.
  */
 
 VALUE
@@ -4274,7 +4302,6 @@ rb_file_truncate(VALUE obj, VALUE len)
 
 #ifdef __CYGWIN__
 #include <winerror.h>
-extern unsigned long __attribute__((stdcall)) GetLastError(void);
 #endif
 
 static VALUE
@@ -5579,7 +5606,7 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
-    define_filetest_function("exists?", rb_file_exist_p, 1);
+    define_filetest_function("exists?", rb_file_exists_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
