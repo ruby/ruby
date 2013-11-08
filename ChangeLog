@@ -1,3 +1,9 @@
+Fri Nov  8 10:58:02 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* compile.c (iseq_build_from_ary_exception): use RARRAY_CONST_PTR().
+
+	* compile.c (iseq_build_from_ary_body): ditto.
+
 Fri Nov  8 10:49:34 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* enumerator.c (append_method): use RARRAY_CONST_PTR().

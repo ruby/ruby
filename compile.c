@@ -5578,7 +5578,8 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
     int i;
 
     for (i=0; i<RARRAY_LEN(exception); i++) {
-	VALUE v, type, *ptr, eiseqval;
+	VALUE v, type, eiseqval;
+	const VALUE *ptr;
 	LABEL *lstart, *lend, *lcont;
 	int sp;
 
@@ -5587,7 +5588,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	if (RARRAY_LEN(v) != 6) {
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
 	}
-	ptr  = RARRAY_PTR(v);
+	ptr  = RARRAY_CONST_PTR(v);
 	type = get_exception_sym2type(ptr[0]);
 	if (ptr[1] == Qnil) {
 	    eiseqval = 0;
@@ -5644,7 +5645,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, struct st_table *labels_table)
 {
     /* TODO: body should be frozen */
-    VALUE *ptr = RARRAY_PTR(body);
+    const VALUE *ptr = RARRAY_CONST_PTR(body);
     long i, len = RARRAY_LEN(body);
     int j;
     int line_no = 0;
