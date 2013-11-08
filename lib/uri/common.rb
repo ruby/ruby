@@ -207,6 +207,8 @@ module URI
     #   #=> #<URI::LDAP:0x00000000b9e7e8 URL:ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
+      # fixing a vulnerability with 3+ slashes
+      uri.sub!(/\A\/{2,}/,'//')
       scheme, userinfo, host, port,
         registry, path, opaque, query, fragment = self.split(uri)
 
