@@ -94,7 +94,7 @@ Sat Nov  9 06:11:14 2013  vo.x (Vit Ondruch)  <vondruch@redhat.com>
 
 Sat Nov  9 01:59:18 2013  Aman Gupta <ruby@tmm1.net>
 
-	* ext/objspace/object_tracing.c: Add experimental methods to
+	* ext/objspace/objspace_dump.c: Add experimental methods to
 	  dump objectspace as json: ObjectSpace.dump_all and
 	  ObjectSpace.dump(obj). These methods are useful for debugging
 	  reference leaks and memory growth in large ruby applications.
