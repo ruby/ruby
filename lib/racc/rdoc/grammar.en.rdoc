@@ -95,7 +95,7 @@ An array of value of right-hand side (rhs).
 A stack of values.
 DO NOT MODIFY this stack unless you know what you are doing.
 
-== Operator Precedance
+== Operator Precedence
 
 This function is equal to '%prec' in yacc.
 To designate this block:

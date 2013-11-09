@@ -1,3 +1,8 @@
+Sun Nov 10 00:33:17 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/racc/rdoc/grammar.en.rdoc: [DOC] fix typo by Tsuyoshi Sawada
+	  [Bug #9077]
+
 Sat Nov  9 22:35:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (Gem::Specification.load): obtain spec date from
