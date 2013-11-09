@@ -229,5 +229,19 @@ class TestObjSpace < Test::Unit::TestCase
 
       dump_my_heap_please
     end;
+
+    assert_in_out_err(%w[-robjspace], <<-'end;') do |(output), (error)|
+      def dump_my_heap_please
+        ObjectSpace.trace_object_allocations_start
+        GC.start
+        "TEST STRING".force_encoding("UTF-8")
+        ObjectSpace.dump_all()
+      end
+
+      puts dump_my_heap_please
+    end;
+      skip if /is not supported/ =~ error
+      assert_match(entry, File.read(output))
+    end
   end
 end
