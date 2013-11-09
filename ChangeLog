@@ -1,3 +1,7 @@
+Sat Nov  9 14:54:52 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/rss/*: [DOC] document various constants @steveklabnik [Bug #8812]
+
 Sat Nov  9 14:50:09 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/rss.rb: [DOC] document Time#w3cdtf by @steveklabnik
