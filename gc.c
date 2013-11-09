@@ -1863,6 +1863,15 @@ rb_undefine_final(VALUE obj)
     return obj;
 }
 
+static void
+should_be_callable(VALUE block)
+{
+    if (!rb_respond_to(block, rb_intern("call"))) {
+	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
+		 rb_obj_classname(block));
+    }
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -1882,9 +1891,8 @@ define_final(int argc, VALUE *argv, VALUE os)
     if (argc == 1) {
 	block = rb_block_proc();
     }
-    else if (!rb_respond_to(block, rb_intern("call"))) {
-	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
-		 rb_obj_classname(block));
+    else {
+	should_be_callable(block);
     }
 
     return define_final0(obj, block);
@@ -1922,10 +1930,7 @@ VALUE
 rb_define_final(VALUE obj, VALUE block)
 {
     rb_check_frozen(obj);
-    if (!rb_respond_to(block, rb_intern("call"))) {
-	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
-		 rb_obj_classname(block));
-    }
+    should_be_callable(block);
     return define_final0(obj, block);
 }
 
