@@ -1,6 +1,7 @@
 Sat Nov  9 14:29:04 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/dl/cfunc.c: [DOC] fix typo in example [Bug #8944]
+	  Patched by Heesob Park
 
 Sat Nov  9 13:59:58 2013  Zachary Scott  <e@zzak.io>
 
