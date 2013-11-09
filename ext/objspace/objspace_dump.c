@@ -290,6 +290,46 @@ root_obj_i(const char *category, VALUE obj, void *data)
     dc->roots++;
 }
 
+static VALUE
+dump_output(struct dump_config *dc, VALUE opts, VALUE output, char *filename)
+{
+    if (RTEST(opts))
+	output = rb_hash_aref(opts, sym_output);
+
+    if (output == sym_stdout) {
+	dc->stream = stdout;
+	dc->string = Qnil;
+    }
+    else if (output == sym_file) {
+	int fd = mkstemp(filename);
+	dc->string = rb_filesystem_str_new_cstr(filename);
+	if (fd == -1) rb_sys_fail_path(dc->string);
+	dc->stream = fdopen(fd, "w");
+    }
+    else if (output == sym_string) {
+	dc->string = rb_str_new_cstr("");
+    }
+    else {
+	rb_raise(rb_eArgError, "wrong output option: %"PRIsVALUE, output);
+    }
+    return output;
+}
+
+static VALUE
+dump_result(struct dump_config *dc, VALUE output)
+{
+    if (output == sym_string) {
+	return dc->string;
+    }
+    else if (output == sym_file) {
+	fclose(dc->stream);
+	return dc->string;
+    }
+    else {
+	return Qnil;
+    }
+}
+
 /*
  *  call-seq:
  *    ObjectSpace.dump(obj[, output: :string]) # => "{ ... }"
@@ -307,38 +347,17 @@ root_obj_i(const char *category, VALUE obj, void *data)
 static VALUE
 objspace_dump(int argc, VALUE *argv, VALUE os)
 {
-    int fd;
     char filename[] = "/tmp/rubyobjXXXXXX";
     VALUE obj = Qnil, opts = Qnil, output;
     struct dump_config dc = {0,};
 
     rb_scan_args(argc, argv, "1:", &obj, &opts);
 
-    if (RTEST(opts))
-	output = rb_hash_aref(opts, sym_output);
-
-    if (output == sym_stdout)
-	dc.stream = stdout;
-    else if (output == sym_file) {
-	fd = mkstemp(filename);
-	if (fd == -1) rb_sys_fail_path(rb_str_new_cstr(filename));
-	dc.stream = fdopen(fd, "w");
-    }
-    else {
-	output = sym_string;
-	dc.string = rb_str_new2("");
-    }
+    output = dump_output(&dc, opts, sym_string, filename);
 
     dump_object(obj, &dc);
 
-    if (output == sym_string)
-	return dc.string;
-    else if (output == sym_file) {
-	fclose(dc.stream);
-	return rb_str_new2(filename);
-    }
-    else
-	return Qnil;
+    return dump_result(&dc, output);
 }
 
 /*
@@ -358,26 +377,13 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 static VALUE
 objspace_dump_all(int argc, VALUE *argv, VALUE os)
 {
-    int fd;
     char filename[] = "/tmp/rubyheapXXXXXX";
     VALUE opts = Qnil, output;
     struct dump_config dc = {0,};
 
     rb_scan_args(argc, argv, "0:", &opts);
 
-    if (RTEST(opts))
-	output = rb_hash_aref(opts, sym_output);
-
-    if (output == sym_string)
-	dc.string = rb_str_new2("");
-    else if (output == sym_stdout)
-	dc.stream = stdout;
-    else {
-	output = sym_file;
-	fd = mkstemp(filename);
-	if (fd == -1) rb_sys_fail_path(rb_str_new_cstr(filename));
-	dc.stream = fdopen(fd, "w");
-    }
+    output = dump_output(&dc, opts, sym_file, filename);
 
     /* dump roots */
     rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
@@ -386,14 +392,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
     /* dump all objects */
     rb_objspace_each_objects(heap_i, &dc);
 
-    if (output == sym_string)
-	return dc.string;
-    else if (output == sym_file) {
-	fclose(dc.stream);
-	return rb_str_new2(filename);
-    }
-    else
-	return Qnil;
+    return dump_result(&dc, output);
 }
 
 void
