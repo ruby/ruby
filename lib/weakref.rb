@@ -16,7 +16,7 @@ require "delegate"
 #
 # == Example
 #
-# With help from WeakRef, we can implement our own redimentary WeakHash class.
+# With help from WeakRef, we can implement our own rudimentary WeakHash class.
 #
 # We will call it WeakHash, since it's really just a Hash except all of it's
 # keys and values can be garbage collected.
@@ -33,7 +33,7 @@ require "delegate"
 # Hash#store to create a new WeakRef object with +key+ and +obj+ parameters
 # before passing them as our key-value pair to the hash.
 #
-# With this you will have to limit your self to String key's, otherwise you
+# With this you will have to limit your self to String keys, otherwise you
 # will get an ArgumentError because WeakRef cannot create a finalizer for a
 # Symbol. Symbols are immutable and cannot be garbage collected.
 #
@@ -57,10 +57,10 @@ require "delegate"
 #   puts c.inspect
 #   #=> WeakRef::RefError: Invalid Reference - probably recycled
 #
-# You can see the local variable +omg+ stayed, although it's reference in our
+# You can see the local variable +omg+ stayed, although its reference in our
 # hash object was garbage collected, along with the rest of the keys and
-# values. Also, when we tried to inspect our hash, we got a WeakRef::RefError,
-# this is because these objects were also garbage collected.
+# values. Also, when we tried to inspect our hash, we got a WeakRef::RefError.
+# This is because these objects were also garbage collected.
 
 class WeakRef < Delegator
 

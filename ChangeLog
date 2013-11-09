@@ -1,3 +1,8 @@
+Sun Nov 10 07:41:22 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/weakref.rb: [DOC] fix typos by @xaviershay [Fixes GH-439]
+	  https://github.com/ruby/ruby/pull/439
+
 Sun Nov 10 06:14:39 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): emit opt_str_freeze if the #freeze
