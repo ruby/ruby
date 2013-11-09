@@ -124,8 +124,8 @@ module EnvUtil
   end
   module_function :suppress_warning
 
-  def under_gc_stress
-    stress, GC.stress = GC.stress, true
+  def under_gc_stress(stress = true)
+    stress, GC.stress = GC.stress, stress
     yield
   ensure
     GC.stress = stress
