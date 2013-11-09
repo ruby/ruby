@@ -64,27 +64,20 @@ End
       !b
     END
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
-    fin = Struct.new(:garbage).new
-    class << fin
-      alias call garbage=
-    end
-    assertion = proc do
-      fin.garbage = nil
-      assert_nothing_raised(ArgumentError) {
-        EnvUtil.under_gc_stress do
-          3.times do
-            ObjectSpace.define_finalizer([], fin)
-          end
-          GC.start
+
+    code = proc do |priv|
+      <<-"CODE"
+      fin = Object.new
+      class << fin
+        #{priv}def call(id)
+          puts "finalized"
         end
-      }
-      assert_not_nil(fin.garbage)
+      end
+      ObjectSpace.define_finalizer([], fin)
+      CODE
     end
-    assertion.call
-    class << fin
-      private :call
-    end
-    assertion.call
+    assert_in_out_err([], code[""], ["finalized"])
+    assert_in_out_err([], code["private "], ["finalized"])
   end
 
   def test_each_object
