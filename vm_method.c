@@ -25,8 +25,8 @@ static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VAL
 #define attached            id__attached__
 
 struct cache_entry {
-    vm_state_version_t method_state;
-    vm_state_version_t seq;
+    rb_serial_t method_serial;
+    rb_serial_t class_serial;
     ID mid;
     rb_method_entry_t* me;
     VALUE defined_class;
@@ -39,7 +39,7 @@ static struct cache_entry global_method_cache[GLOBAL_METHOD_CACHE_SIZE];
 static void
 rb_class_clear_method_cache(VALUE klass)
 {
-    RCLASS_EXT(klass)->seq = rb_next_class_sequence();
+    RCLASS_EXT(klass)->class_serial = rb_next_class_serial();
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache);
 }
 
@@ -47,14 +47,14 @@ void
 rb_clear_cache(void)
 {
     rb_warning("rb_clear_cache() is deprecated.");
-    INC_METHOD_STATE_VERSION();
-    INC_CONSTANT_STATE_VERSION();
+    INC_METHOD_SERIAL();
+    INC_CONSTANT_SERIAL();
 }
 
 void
 rb_clear_constant_cache(void)
 {
-    INC_CONSTANT_STATE_VERSION();
+    INC_CONSTANT_SERIAL();
 }
 
 void
@@ -62,7 +62,7 @@ rb_clear_method_cache_by_class(VALUE klass)
 {
     if (klass && klass != Qundef) {
 	if (klass == rb_cBasicObject || klass == rb_cObject || klass == rb_mKernel) {
-	    INC_METHOD_STATE_VERSION();
+	    INC_METHOD_SERIAL();
 	}
 	else {
 	    rb_class_clear_method_cache(klass);
@@ -549,8 +549,8 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
     if (ruby_running) {
 	struct cache_entry *ent;
 	ent = GLOBAL_METHOD_CACHE(klass, id);
-	ent->seq = RCLASS_EXT(klass)->seq;
-	ent->method_state = GET_METHOD_STATE_VERSION();
+	ent->class_serial = RCLASS_EXT(klass)->class_serial;
+	ent->method_serial = GET_METHOD_SERIAL();
 	ent->defined_class = defined_class;
 	ent->mid = id;
 
@@ -588,8 +588,8 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 #if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
     ent = GLOBAL_METHOD_CACHE(klass, id);
-    if (ent->method_state == GET_METHOD_STATE_VERSION() &&
-	ent->seq == RCLASS_EXT(klass)->seq &&
+    if (ent->method_serial == GET_METHOD_SERIAL() &&
+	ent->class_serial == RCLASS_EXT(klass)->class_serial &&
 	ent->mid == id) {
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;

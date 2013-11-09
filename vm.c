@@ -71,9 +71,9 @@ static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
-static vm_state_version_t ruby_vm_method_state_version = 1;
-static vm_state_version_t ruby_vm_constant_state_version = 1;
-static vm_state_version_t ruby_vm_sequence = 1;
+static rb_serial_t ruby_vm_method_serial = 1;
+static rb_serial_t ruby_vm_constant_serial = 1;
+static rb_serial_t ruby_vm_class_serial = 1;
 
 #include "vm_insnhelper.h"
 #include "vm_insnhelper.c"
@@ -88,10 +88,10 @@ static vm_state_version_t ruby_vm_sequence = 1;
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
 
-vm_state_version_t
-rb_next_class_sequence(void)
+rb_serial_t
+rb_next_class_serial(void)
 {
-    return NEXT_CLASS_SEQUENCE();
+    return NEXT_CLASS_SERIAL();
 }
 
 VALUE rb_cRubyVM;

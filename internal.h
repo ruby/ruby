@@ -245,11 +245,11 @@ struct rb_subclass_entry {
 };
 
 #if defined(HAVE_LONG_LONG)
-typedef unsigned LONG_LONG vm_state_version_t;
+typedef unsigned LONG_LONG rb_serial_t;
 #elif defined(HAVE_UINT64_T)
-typedef uint64_t vm_state_version_t;
+typedef uint64_t rb_serial_t;
 #else
-typedef unsigned long vm_state_version_t;
+typedef unsigned long rb_serial_t;
 #endif
 
 struct rb_classext_struct {
@@ -264,7 +264,7 @@ struct rb_classext_struct {
      * included. Hopefully that makes sense.
      */
     rb_subclass_entry_t **module_subclasses;
-    vm_state_version_t seq;
+    rb_serial_t class_serial;
     VALUE origin;
     VALUE refined_class;
     rb_alloc_func_t allocator;
@@ -701,7 +701,7 @@ void ruby_kill(rb_pid_t pid, int sig);
 void Init_native_thread(void);
 
 /* vm_insnhelper.h */
-vm_state_version_t rb_next_class_sequence(void);
+rb_serial_t rb_next_class_serial(void);
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);

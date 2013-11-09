@@ -1,3 +1,18 @@
+Sat Nov  9 12:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* class.c: unify names of vm state version counters to 'serial'.
+	  This includes renaming 'vm_state_version_t' to 'rb_serial_t',
+	  'method_state' to 'method_serial', 'seq' to 'class_serial',
+	  'vmstat' to 'constant_serial', etc.
+
+	* insns.def: ditto
+	* internal.h: ditto
+	* vm.c: ditto
+	* vm_core.h: ditto
+	* vm_insnhelper.c: ditto
+	* vm_insnhelper.h: ditto
+	* vm_method.c: ditto
+
 Sat Nov  9 09:22:29 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_page_sweep, rgengc_rememberset_mark): Refactoring.

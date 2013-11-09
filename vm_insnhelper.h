@@ -259,11 +259,11 @@ enum vm_regan_acttype {
     CALL_METHOD(ci); \
 } while (0)
 
-#define NEXT_CLASS_SEQUENCE() (++ruby_vm_sequence)
-#define GET_METHOD_STATE_VERSION() (ruby_vm_method_state_version)
-#define INC_METHOD_STATE_VERSION() (++ruby_vm_method_state_version)
-#define GET_CONSTANT_STATE_VERSION() (ruby_vm_constant_state_version)
-#define INC_CONSTANT_STATE_VERSION() (++ruby_vm_constant_state_version)
+#define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
+#define GET_METHOD_SERIAL() (ruby_vm_method_serial)
+#define INC_METHOD_SERIAL() (++ruby_vm_method_serial)
+#define GET_CONSTANT_SERIAL() (ruby_vm_constant_serial)
+#define INC_CONSTANT_SERIAL() (++ruby_vm_constant_serial)
 
 static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);

@@ -510,7 +510,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
-	if (LIKELY((!is_attr && ic->ic_seq == RCLASS_EXT(klass)->seq) ||
+	if (LIKELY((!is_attr && ic->ic_class_serial == RCLASS_EXT(klass)->class_serial) ||
 		   (is_attr && ci->aux.index > 0))) {
 	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index - 1;
 	    long len = ROBJECT_NUMIV(obj);
@@ -533,7 +533,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 		    }
 		    if (!is_attr) {
 			ic->ic_value.index = index;
-			ic->ic_seq = RCLASS_EXT(klass)->seq;
+			ic->ic_class_serial = RCLASS_EXT(klass)->class_serial;
 		    }
 		    else { /* call_info */
 			ci->aux.index = index + 1;
@@ -565,7 +565,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	st_data_t index;
 
 	if (LIKELY(
-	    (!is_attr && ic->ic_seq == RCLASS_EXT(klass)->seq) ||
+	    (!is_attr && ic->ic_class_serial == RCLASS_EXT(klass)->class_serial) ||
 	    (is_attr && ci->aux.index > 0))) {
 	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index-1;
 	    long len = ROBJECT_NUMIV(obj);
@@ -582,7 +582,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 		if (!is_attr) {
 		    ic->ic_value.index = index;
-		    ic->ic_seq = RCLASS_EXT(klass)->seq;
+		    ic->ic_class_serial = RCLASS_EXT(klass)->class_serial;
 		}
 		else {
 		    ci->aux.index = index + 1;
@@ -846,7 +846,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     VALUE klass = CLASS_OF(recv);
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_METHOD_STATE_VERSION() == ci->method_state && RCLASS_EXT(klass)->seq == ci->seq)) {
+    if (LIKELY(GET_METHOD_SERIAL() == ci->method_serial && RCLASS_EXT(klass)->class_serial == ci->class_serial)) {
 	/* cache hit! */
 	return;
     }
@@ -856,8 +856,8 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     ci->klass = klass;
     ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
-    ci->method_state = GET_METHOD_STATE_VERSION();
-    ci->seq = RCLASS_EXT(klass)->seq;
+    ci->method_serial = GET_METHOD_SERIAL();
+    ci->class_serial = RCLASS_EXT(klass)->class_serial;
 #endif
 }
 
@@ -924,7 +924,7 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     rb_call_info_t ci;
     ci.mid = idEq;
     ci.klass = 0;
-    ci.method_state = 0;
+    ci.method_serial = 0;
     ci.me = NULL;
     ci.defined_class = 0;
     return opt_eq_func(obj1, obj2, &ci);
