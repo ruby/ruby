@@ -294,7 +294,7 @@ root_obj_i(const char *category, VALUE obj, void *data)
 #define dump_output(dc, opts, output, filename) dump_output(dc, opts, output)
 #endif
 static VALUE
-dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filename)
+dump_output(struct dump_config *dc, VALUE opts, VALUE output, char *filename)
 {
     if (RTEST(opts))
 	output = rb_hash_aref(opts, sym_output);
