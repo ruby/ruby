@@ -1,3 +1,9 @@
+Sat Nov  9 20:56:12 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* ext/objspace/object_tracing.c: use declarations in internal.h.
+
+	* ext/objspace/objspace.c: ditto
+
 Sat Nov  9 20:32:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/objspace/test_objspace.rb (test_dump_all): Make the test string

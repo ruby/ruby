@@ -16,8 +16,7 @@
 #include "ruby/ruby.h"
 #include "ruby/debug.h"
 #include "objspace.h"
-
-size_t rb_gc_count(void); /* from gc.c */
+#include "internal.h"
 
 struct traceobj_arg {
     int running;

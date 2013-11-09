@@ -20,8 +20,6 @@
 #include "gc.h"
 #include "internal.h"
 
-size_t rb_obj_memsize_of(VALUE);
-
 /*
  *  call-seq:
  *    ObjectSpace.memsize_of(obj) -> Integer
