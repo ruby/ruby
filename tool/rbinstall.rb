@@ -579,7 +579,8 @@ module Gem
 
     def self.last_date(path)
       return unless $vcs
-      return unless time = $vcs.get_revisions(path)[2]
+      time = $vcs.get_revisions(path)[2] rescue return
+      return unless time
       time.strftime("%Y-%m-%d")
     end
 

@@ -43,8 +43,8 @@ class VCS
   def get_revisions(path)
     path = relative_to(path)
     last, changed, modified, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
-    last or raise "last revision not found"
-    changed or raise "changed revision not found"
+    last or raise VCS::NotFoundError, "last revision not found"
+    changed or raise VCS::NotFoundError, "changed revision not found"
     modified &&= Time.parse(modified)
     return last, changed, modified, *rest
   end
