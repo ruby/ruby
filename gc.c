@@ -4267,13 +4267,13 @@ gc_marks_test(rb_objspace_t *objspace)
     rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
 
     /* run major (full) gc with temporary mark/rememberset */
-    stored_oldgen = objspace->rgengc.oldgen_object_count;
+    stored_oldgen = objspace->rgengc.old_object_count;
     stored_shady = objspace->rgengc.remembered_shady_object_count;
     {
 	gc_marks_body(objspace, TRUE);
     }
     objspace->rgengc.during_minor_gc = TRUE;
-    objspace->rgengc.oldgen_object_count = stored_oldgen;
+    objspace->rgengc.old_object_count = stored_oldgen;
     objspace->rgengc.remembered_shady_object_count = stored_shady;
 
     /* check */

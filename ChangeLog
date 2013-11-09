@@ -1,3 +1,8 @@
+Sat Nov  9 09:04:48 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (gc_marks_test): Bugfix. Fix a struct member name for build
+	  with RGENGC_CHECK_MODE.
+
 Sat Nov  9 08:58:23 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c : Add GC_PROFILE_DETAIL_MEMORY option.
