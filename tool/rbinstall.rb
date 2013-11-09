@@ -19,9 +19,16 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'ostruct'
 require 'rubygems'
+require_relative 'vcs'
 
 STDOUT.sync = true
 File.umask(0)
+
+begin
+  $vcs = VCS.detect(File.expand_path('../..', __FILE__))
+rescue VCS::NotFoundError
+  $vcs = nil
+end
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
@@ -560,13 +567,20 @@ module Gem
       super
       yield(self) if defined?(yield)
       self.executables ||= []
-      self.date ||= RUBY_RELEASE_DATE
     end
 
     def self.load(path)
       src = File.open(path, "rb") {|f| f.read}
       src.sub!(/\A#.*/, '')
-      eval(src, nil, path)
+      spec = eval(src, nil, path)
+      spec.date ||= last_date(path) || RUBY_RELEASE_DATE
+      spec
+    end
+
+    def self.last_date(path)
+      return unless $vcs
+      return unless time = $vcs.get_revisions(path)[2]
+      time.strftime("%Y-%m-%d")
     end
 
     def to_ruby

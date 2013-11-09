@@ -1,3 +1,9 @@
+Sat Nov  9 22:35:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (Gem::Specification.load): obtain spec date from
+	  VCS for the case using git, RUBY_RELEASE_DATE is the last resort.
+	  probably fixes [Bug #9085].
+
 Sat Nov  9 20:56:12 2013  Narihiro Nakamura  <authornari@gmail.com>
 
 	* ext/objspace/object_tracing.c: use declarations in internal.h.

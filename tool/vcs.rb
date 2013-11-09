@@ -1,5 +1,7 @@
 # vcs
 
+require 'time'
+
 ENV.delete('PWD')
 
 unless File.respond_to? :realpath
@@ -40,10 +42,11 @@ class VCS
   # +path+ was modified.
   def get_revisions(path)
     path = relative_to(path)
-    last, changed, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
+    last, changed, modified, *rest = Dir.chdir(@srcdir) {self.class.get_revisions(path)}
     last or raise "last revision not found"
     changed or raise "changed revision not found"
-    return last, changed, *rest
+    modified &&= Time.parse(modified)
+    return last, changed, modified, *rest
   end
 
   def relative_to(path)
@@ -84,7 +87,8 @@ class VCS
         end
       end
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
-      [last, changed]
+      modified = info_xml[/<date>([^<>]*)/, 1]
+      [last, changed, modified]
     end
   end
 
@@ -95,8 +99,14 @@ class VCS
       logcmd = %Q[git log -n1 --grep="^ *git-svn-id: .*@[0-9][0-9]* "]
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       last = `#{logcmd}`[idpat, 1]
-      changed = path ? `#{logcmd} "#{path}"`[idpat, 1] : last
-      [last, changed]
+      if path
+        log = `#{logcmd} "#{path}"`
+        changed = log[idpat, 1]
+        modified = `git log --format=%ai -- #{path}`
+      else
+        changed = last
+      end
+      [last, changed, modified]
     end
   end
 end
