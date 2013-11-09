@@ -625,8 +625,6 @@ void rb_gcdebug_print_obj_condition(VALUE obj);
 
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 static VALUE define_final0(VALUE obj, VALUE block);
-VALUE rb_define_final(VALUE obj, VALUE block);
-VALUE rb_undefine_final(VALUE obj);
 
 static void negative_size_allocation_error(const char *);
 static void *aligned_malloc(size_t, size_t);
@@ -1849,11 +1847,11 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
-    return rb_undefine_final(obj);
+    return rb_undefine_finalizer(obj);
 }
 
 VALUE
-rb_undefine_final(VALUE obj)
+rb_undefine_finalizer(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
     st_data_t data = obj;
@@ -1927,7 +1925,7 @@ define_final0(VALUE obj, VALUE block)
 }
 
 VALUE
-rb_define_final(VALUE obj, VALUE block)
+rb_define_finalizer(VALUE obj, VALUE block)
 {
     rb_check_frozen(obj);
     should_be_callable(block);
@@ -6006,8 +6004,8 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    rb_define_final(orig, w->final);
-    rb_define_final(wmap, w->final);
+    rb_define_finalizer(orig, w->final);
+    rb_define_finalizer(wmap, w->final);
     if (st_lookup(w->obj2wmap, (st_data_t)orig, &data)) {
 	rids = (VALUE)data;
     }
@@ -6732,7 +6730,7 @@ gcdebug_sential(VALUE obj, VALUE name)
 void
 rb_gcdebug_sentinel(VALUE obj, const char *name)
 {
-    rb_define_final(obj, rb_proc_new(gcdebug_sential, (VALUE)name));
+    rb_define_finalizer(obj, rb_proc_new(gcdebug_sential, (VALUE)name));
 }
 #endif /* GC_DEBUG */
 

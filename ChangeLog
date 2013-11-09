@@ -1,3 +1,8 @@
+Sun Nov 10 08:03:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_define_finalizer, rb_undefine_finalizer): rename and export
+	  finalizer functions.
+
 Sun Nov 10 07:41:22 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/weakref.rb: [DOC] fix typos by @xaviershay [Fixes GH-439]
