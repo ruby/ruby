@@ -1,3 +1,13 @@
+Sat Nov  9 12:45:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* insns.def: unify ic_constant_serial and ic_class_serial into one field
+	  ic_serial. This is possible because these fields are only ever used
+	  exclusively with each other.
+
+	* insns.def: ditto
+	* vm_core.h: ditto
+	* vm_insnhelper.c: ditto
+
 Sat Nov  9 12:31:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* class.c: unify names of vm state version counters to 'serial'.

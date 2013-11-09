@@ -131,8 +131,7 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 
 
 struct iseq_inline_cache_entry {
-    rb_serial_t ic_constant_serial;
-    rb_serial_t ic_class_serial;
+    rb_serial_t ic_serial;
     union {
 	size_t index;
 	VALUE value;
