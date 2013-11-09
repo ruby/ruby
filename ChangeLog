@@ -9,7 +9,7 @@ Sat Nov  9 14:54:52 2013  Zachary Scott  <e@zzak.io>
 Sat Nov  9 14:50:09 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/rss.rb: [DOC] document Time#w3cdtf by @steveklabnik
-	  [Bug #8821] ありがとうかににく
+	  [Bug #8821]
 
 Sat Nov  9 14:29:04 2013  Zachary Scott  <e@zzak.io>
 
