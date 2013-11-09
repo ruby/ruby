@@ -2662,7 +2662,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     p = sweep_page->start; pend = p + sweep_page->limit;
     offset = p - NUM_IN_PAGE(p);
-    bits = GET_HEAP_MARK_BITS(p);
+    bits = sweep_page->mark_bits;
 
     /* create guard : fill 1 out-of-range */
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
@@ -4478,7 +4478,7 @@ rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap)
 
     while (page) {
 	p = page->start;
-	bits = GET_HEAP_REMEMBERSET_BITS(p);
+	bits = page->rememberset_bits;
 	offset = p - NUM_IN_PAGE(p);
 
 	for (j=0; j < HEAP_BITMAP_LIMIT; j++) {
