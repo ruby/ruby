@@ -13,7 +13,7 @@ Sun Nov 10 06:14:39 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* vm.c (vm_init_redefined_flag): define BOP_FREEZE on String class as
 	  a basic operation
-	
+
 	* vm_insnhelper.h: ditto
 
 	[Feature #8992] [ruby-core:57705]
