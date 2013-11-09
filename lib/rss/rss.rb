@@ -3,6 +3,14 @@ require "time"
 class Time
   class << self
     unless respond_to?(:w3cdtf)
+      # This method converts a W3CDTF string date/time format to Time object.
+      #
+      # The W3CDTF format is defined here: http://www.w3.org/TR/NOTE-datetime
+      #
+      #   Time.w3cdtf('2003-02-15T13:50:05-05:00')
+      #   # => 2003-02-15 10:50:05 -0800
+      #   Time.w3cdtf('2003-02-15T13:50:05-05:00').class
+      #   # => Time
       def w3cdtf(date)
         if /\A\s*
             (-?\d+)-(\d\d)-(\d\d)
@@ -34,6 +42,13 @@ class Time
   end
 
   unless method_defined?(:w3cdtf)
+    # This method converts a Time object to a String. The String contains the
+    # time in W3CDTF date/time format.
+    #
+    # The W3CDTF format is defined here: http://www.w3.org/TR/NOTE-datetime
+    #
+    #  Time.now.w3cdtf
+    #  # => "2013-08-26T14:12:10.817124-07:00"
     def w3cdtf
       if usec.zero?
         fraction_digits = 0
