@@ -5449,7 +5449,7 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
 
     if (do_gc) {
 	if (ruby_gc_stress && !ruby_disable_gc_stress) {
-	    garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+	    garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
 	}
 	else {
 	  retry:
@@ -5458,7 +5458,7 @@ vm_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, in
 		    gc_rest_sweep(objspace); /* rest_sweep can reduce malloc_increase */
 		    goto retry;
 		}
-		garbage_collect_with_gvl(objspace, 0, 0, GPR_FLAG_MALLOC);
+		garbage_collect_with_gvl(objspace, FALSE, TRUE, GPR_FLAG_MALLOC);
 	    }
 	}
     }

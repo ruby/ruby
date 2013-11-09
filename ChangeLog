@@ -1,3 +1,9 @@
+Sun Nov 10 01:34:14 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (vm_malloc_increase): sweep immediately on GC due to malloc().
+	  To reduce memory usage, sweep as soon as possible.
+	  This behavior is same as Ruby 2.0.0 and before.
+
 Sun Nov 10 00:39:26 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/gc/gcbench.rb: output version description and GC::OPTS.
