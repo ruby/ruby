@@ -1,3 +1,8 @@
+Sat Nov  9 09:16:36 2013  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* gc.c (RVALUE_PROMOTE_INFANT): Refactoring. Remove duplicated nonsense
+	  code.
+
 Sat Nov  9 09:04:48 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* gc.c (gc_marks_test): Bugfix. Fix a struct member name for build

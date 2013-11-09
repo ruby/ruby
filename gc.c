@@ -778,12 +778,6 @@ RVALUE_PROMOTE_INFANT(VALUE obj)
 #endif
     }
 #endif
-
-#if !RGENGC_THREEGEN
-    /* infant -> old */
-    MARK_IN_BITMAP(GET_HEAP_OLDGEN_BITS(obj), obj);
-    check_gen_consistency(obj);
-#endif
 }
 
 #if RGENGC_THREEGEN
