@@ -218,12 +218,12 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_all
-    entry = /"value":"this is a test string", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please"/
+    entry = /"value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please"/
     assert_in_out_err(%w[-robjspace], <<-'end;', entry)
       def dump_my_heap_please
         ObjectSpace.trace_object_allocations_start
         GC.start
-        "this is a test string".force_encoding("UTF-8")
+        "TEST STRING".force_encoding("UTF-8")
         ObjectSpace.dump_all(output: :stdout)
       end
 

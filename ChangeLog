@@ -1,3 +1,9 @@
+Sat Nov  9 20:32:59 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/objspace/test_objspace.rb (test_dump_all): Make the test string
+	  shorter to be an embedded string on 32bit environment as well as
+	  64bit environment.
+
 Sat Nov  9 15:00:16 2013  Zachary Scott  <e@zzak.io>
 
 	* io.c: [DOC] ARGF.gets may return nil [Bug #9029] patch by znz
