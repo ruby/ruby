@@ -1,3 +1,7 @@
+Sun Nov 10 08:37:20 2013  Zachary Scott  <e@zzak.io>
+
+	* thread.c: [DOC] Remove duplicate reference
+
 Sun Nov 10 08:09:29 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/drb/drb.rb: [DOC] promote better windows-safe filename regular

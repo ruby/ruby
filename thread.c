@@ -2893,8 +2893,6 @@ rb_thread_aset(VALUE self, VALUE id, VALUE val)
  *  The value "bar" is returned for the thread local, where nil is returned
  *  for the fiber local.  The fiber is executed in the same thread, so the
  *  thread local values are available.
- *
- *  See also Thread#[]
  */
 
 static VALUE
