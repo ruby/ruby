@@ -1,3 +1,8 @@
+Sat Nov  9 13:59:58 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/test/unit/assertions.rb: [DOC] better example for assert_send()
+	  Patch by Andrew Grimm [Bug #8975]
+
 Sat Nov  9 12:45:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* insns.def: unify ic_constant_serial and ic_class_serial into one field
