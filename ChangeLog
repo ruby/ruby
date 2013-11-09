@@ -1,3 +1,9 @@
+Sun Nov 10 08:09:29 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/drb/drb.rb: [DOC] promote better windows-safe filename regular
+	  expression in DRb Logger example. Reported by Chris Pheonix
+	  [Bug #9074]
+
 Sun Nov 10 08:03:05 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_define_finalizer, rb_undefine_finalizer): rename and export

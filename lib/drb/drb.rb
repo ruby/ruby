@@ -231,7 +231,7 @@ require 'drb/eq'
 #       def get_logger(name)
 #           if !@loggers.has_key? name
 #               # make the filename safe, then declare it to be so
-#               fname = name.gsub(/[.\/]/, "_").untaint
+#               fname = name.gsub(/[.\/\\\:]/, "_").untaint
 #               @loggers[name] = Logger.new(name, @basedir + "/" + fname)
 #           end
 #           return @loggers[name]
