@@ -156,8 +156,6 @@ reachable_object_i(VALUE ref, void *data)
 static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
-    int enc;
-    long length;
     size_t memsize;
     struct allocation_info *ainfo;
     rb_io_t *fptr;
@@ -192,7 +190,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	    dump_append(dc, ", \"shared\":true");
 	else {
 	    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
-	    if (!STR_EMBED_P(obj) && !STR_NOCAPA_P(obj) && rb_str_capacity(obj) != RSTRING_LEN(obj))
+	    if (!STR_EMBED_P(obj) && !STR_NOCAPA_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
 		dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
 
 	    if (is_ascii_string(obj)) {
