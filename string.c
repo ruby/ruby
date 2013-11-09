@@ -8745,6 +8745,7 @@ Init_String(void)
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
+    rb_define_method(rb_cString, "freeze", rb_obj_freeze, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

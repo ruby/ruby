@@ -1,5 +1,6 @@
 # -*- mode: ruby; coding: us-ascii -*-
 firstline, predefined = __LINE__+1, %[\
+  freeze
   inspect
   intern
   object_id

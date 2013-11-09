@@ -1,3 +1,23 @@
+Sun Nov 10 06:14:39 2013  Charlie Somerville  <charliesome@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): emit opt_str_freeze if the #freeze
+	  method is called on a static string literal with no arguments.
+
+	* defs/id.def (firstline): add freeze so idFreeze is available
+
+	* insns.def (opt_str_freeze): add opt_str_freeze instruction which
+	  pushes a frozen string literal without allocating a new object if
+	  String#freeze is not overriden
+
+	* string.c (Init_String): define String#freeze
+
+	* vm.c (vm_init_redefined_flag): define BOP_FREEZE on String class as
+	  a basic operation
+	
+	* vm_insnhelper.h: ditto
+
+	[Feature #8992] [ruby-core:57705]
+
 Sun Nov 10 01:34:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (vm_malloc_increase): sweep immediately on GC due to malloc().

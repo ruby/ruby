@@ -4314,6 +4314,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_CALL:
+	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
+	    node->nd_mid == idFreeze && node->nd_args == NULL)
+	{
+	    VALUE str = rb_fstring(node->nd_recv->nd_lit);
+	    iseq_add_mark_object(iseq, str);
+	    ADD_INSN1(ret, line, opt_str_freeze, str);
+	    if (poped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	    break;
+	}
       case NODE_FCALL:
       case NODE_VCALL:{		/* VCALL: variable or call */
 	/*
