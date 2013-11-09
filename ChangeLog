@@ -1,3 +1,8 @@
+Sun Nov 10 00:36:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (should_be_callable): allow private call since rb_eval_cmd
+	  calls even private methods.
+
 Sun Nov 10 00:33:17 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/racc/rdoc/grammar.en.rdoc: [DOC] fix typo by Tsuyoshi Sawada

@@ -1866,7 +1866,7 @@ rb_undefine_final(VALUE obj)
 static void
 should_be_callable(VALUE block)
 {
-    if (!rb_respond_to(block, rb_intern("call"))) {
+    if (!rb_obj_respond_to(block, rb_intern("call"), TRUE)) {
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
