@@ -7965,16 +7965,16 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.gets(sep=$/)     -> string
- *     ARGF.gets(limit)      -> string
- *     ARGF.gets(sep, limit) -> string
+ *     ARGF.gets(sep=$/)     -> string or nil
+ *     ARGF.gets(limit)      -> string or nil
+ *     ARGF.gets(sep, limit) -> string or nil
  *
  *  Returns the next line from the current file in +ARGF+.
  *
  *  By default lines are assumed to be separated by +$/+; to use a different
  *  character as a separator, supply it as a +String+ for the _sep_ argument.
  *
- *  The optional  _limit_ argument specifies how many characters of each line
+ *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
  *
  */

@@ -1,3 +1,7 @@
+Sat Nov  9 15:00:16 2013  Zachary Scott  <e@zzak.io>
+
+	* io.c: [DOC] ARGF.gets may return nil [Bug #9029] patch by znz
+
 Sat Nov  9 14:54:52 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/rss/*: [DOC] document various constants @steveklabnik [Bug #8812]
