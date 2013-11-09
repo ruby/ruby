@@ -639,7 +639,7 @@ Init_dlcfunc(void)
      *   => "/lib64/libc.so.6"
      *   libc = DL::dlopen(libc_so)
      *   => #<DL::Handle:0x00000000e05b00>
-     *   @cfunc = DL::CFunc.new(libc,['strcpy'], DL::TYPE_VOIDP, 'strcpy')
+     *   @cfunc = DL::CFunc.new(libc['strcpy'], DL::TYPE_VOIDP, 'strcpy')
      *   => #<DL::CFunc:0x000000012daec0 ptr=0x007f62ca5a8300 type=1 name='strcpy'>
      *
      */

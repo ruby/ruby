@@ -1,3 +1,7 @@
+Sat Nov  9 14:29:04 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/dl/cfunc.c: [DOC] fix typo in example [Bug #8944]
+
 Sat Nov  9 13:59:58 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/test/unit/assertions.rb: [DOC] better example for assert_send()
