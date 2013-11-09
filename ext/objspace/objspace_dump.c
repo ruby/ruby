@@ -290,8 +290,11 @@ root_obj_i(const char *category, VALUE obj, void *data)
     dc->roots++;
 }
 
+#ifndef HAVE_MKSTEMP
+#define dump_output(dc, opts, output, filename) dump_output(dc, opts, output)
+#endif
 static VALUE
-dump_output(struct dump_config *dc, VALUE opts, VALUE output, char *filename)
+dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filename)
 {
     if (RTEST(opts))
 	output = rb_hash_aref(opts, sym_output);
@@ -301,10 +304,14 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, char *filename)
 	dc->string = Qnil;
     }
     else if (output == sym_file) {
+#ifdef HAVE_MKSTEMP
 	int fd = mkstemp(filename);
 	dc->string = rb_filesystem_str_new_cstr(filename);
 	if (fd == -1) rb_sys_fail_path(dc->string);
 	dc->stream = fdopen(fd, "w");
+#else
+	rb_raise(rb_eArgError, "output to temprary file is not supported");
+#endif
     }
     else if (output == sym_string) {
 	dc->string = rb_str_new_cstr("");
@@ -347,7 +354,9 @@ dump_result(struct dump_config *dc, VALUE output)
 static VALUE
 objspace_dump(int argc, VALUE *argv, VALUE os)
 {
+#ifdef HAVE_MKSTEMP
     char filename[] = "/tmp/rubyobjXXXXXX";
+#endif
     VALUE obj = Qnil, opts = Qnil, output;
     struct dump_config dc = {0,};
 
@@ -377,7 +386,9 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 static VALUE
 objspace_dump_all(int argc, VALUE *argv, VALUE os)
 {
+#ifdef HAVE_MKSTEMP
     char filename[] = "/tmp/rubyheapXXXXXX";
+#endif
     VALUE opts = Qnil, output;
     struct dump_config dc = {0,};
 
