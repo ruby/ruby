@@ -1,3 +1,7 @@
+Sat Nov  9 19:37:40 2013  Narihiro Nakamura  <authornari@gmail.com>
+
+	* internal.h: prototype declarations of gc.c collect up.
+
 Sat Nov  9 15:00:16 2013  Zachary Scott  <e@zzak.io>
 
 	* io.c: [DOC] ARGF.gets may return nil [Bug #9029] patch by znz
