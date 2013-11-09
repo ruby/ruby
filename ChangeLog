@@ -174,7 +174,7 @@ Thu Nov  7 19:36:09 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: modify malloc_limit strategy.
 
-	  * fix default vaues:
+	  * fix default values:
 	    GC_MALLOC_LIMIT_GROWTH_FACTOR
 	    GC_MALLOC_LIMIT: 8MB -> 16MB
 	    GC_MALLOC_LIMIT_MAX: 384MB -> 32MB
