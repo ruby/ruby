@@ -1,3 +1,9 @@
+Mon Nov 11 03:15:56 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (symbol2event_flag): add secret feature.
+	  add a_call/a_return events.
+	  a_call is call | b_call | c_call, and same as a_return.
+
 Mon Nov 11 02:51:17 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems: Update to RubyGems master 4bdc4f2.  Important changes
