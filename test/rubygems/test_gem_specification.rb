@@ -1260,6 +1260,32 @@ dependencies: []
     refute_path_exists gem_make_out
   end
 
+  def test_build_extensions_preview
+    ext_spec
+
+    extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
+    FileUtils.mkdir_p File.dirname extconf_rb
+
+    open extconf_rb, 'w' do |f|
+      f.write <<-'RUBY'
+        open 'Makefile', 'w' do |f|
+          f.puts "clean:\n\techo clean"
+          f.puts "default:\n\techo built"
+          f.puts "install:\n\techo installed"
+        end
+      RUBY
+    end
+
+    refute_empty @ext.extensions, 'sanity check'
+
+    @ext.installed_by_version = v('2.2.0.preview.2')
+
+    @ext.build_extensions
+
+    gem_make_out = File.join @ext.extension_install_dir, 'gem_make.out'
+    assert_path_exists gem_make_out
+  end
+
   def test_contains_requirable_file_eh
     code_rb = File.join @a1.gem_dir, 'lib', 'code.rb'
     FileUtils.mkdir_p File.dirname code_rb

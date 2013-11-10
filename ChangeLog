@@ -1,3 +1,9 @@
+Mon Nov 11 04:36:14 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/specification.rb:  Include 2.2.0.preview.2 when checking
+	  if extensions should be built.  Fixes a ruby-ci failure.
+	* test/rubygems/test_gem_specification.rb:  Test for the above.
+
 Mon Nov 11 03:15:56 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (symbol2event_flag): add secret feature.
