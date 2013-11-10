@@ -112,7 +112,7 @@ command to remove old versions.
 
     spec_tuples, errors = fetcher.search_for_dependency dependency
 
-    error = errors.find { |errors| errors.respond_to? :exception }
+    error = errors.find { |e| e.respond_to? :exception }
 
     raise error if error
 

@@ -873,6 +873,31 @@ dependencies: []
                  Gem::Specification.outdated_and_latest_version.to_a
   end
 
+  def test_self_remove_spec
+    assert_includes Gem::Specification.all_names, 'a-1'
+    assert_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+
+    Gem::Specification.remove_spec @a1
+
+    refute_includes Gem::Specification.all_names, 'a-1'
+    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+  end
+
+  def test_self_remove_spec_removed
+    open @a1.spec_file, 'w' do |io|
+      io.write @a1.to_ruby
+    end
+
+    Gem::Specification.reset
+
+    FileUtils.rm @a1.spec_file # bug #698
+
+    Gem::Specification.remove_spec @a1
+
+    refute_includes Gem::Specification.all_names, 'a-1'
+    refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+  end
+
   DATA_PATH = File.expand_path "../data", __FILE__
 
   def test_handles_private_null_type
@@ -1886,7 +1911,7 @@ Gem::Specification.new do |s|
   s.rubygems_version = "#{Gem::VERSION}"
   s.summary = "this is a summary"
 
-  s.installed_by_version = "#{Gem::VERSION}"
+  s.installed_by_version = "#{Gem::VERSION}" if s.respond_to? :installed_by_version
 
   if s.respond_to? :specification_version then
     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
@@ -2128,6 +2153,15 @@ end
     Dir.chdir @tempdir do
       @a1.add_runtime_dependency     'b', '>= 1.0.rc1'
       @a1.add_development_dependency 'c', '>= 2.0.rc2'
+      @a1.add_runtime_dependency     'd', '~> 1.2.3'
+      @a1.add_runtime_dependency     'e', '~> 1.2.3.4'
+      @a1.add_runtime_dependency     'g', '~> 1.2.3', '>= 1.2.3.4'
+      @a1.add_runtime_dependency     'h', '>= 1.2.3', '<= 2'
+      @a1.add_runtime_dependency     'i', '>= 1.2'
+      @a1.add_runtime_dependency     'j', '>= 1.2.3'
+      @a1.add_runtime_dependency     'k', '> 1.2'
+      @a1.add_runtime_dependency     'l', '> 1.2.3'
+      @a1.add_runtime_dependency     'm', '~> 2.1.0'
 
       use_ui @ui do
         @a1.validate
@@ -2136,9 +2170,57 @@ end
       expected = <<-EXPECTED
 #{w}:  prerelease dependency on b (>= 1.0.rc1) is not recommended
 #{w}:  prerelease dependency on c (>= 2.0.rc2, development) is not recommended
+#{w}:  pessimistic dependency on d (~> 1.2.3) may be overly strict
+  if d is semantically versioned, use:
+    add_runtime_dependency 'd', '~> 1.2', '>= 1.2.3'
+#{w}:  pessimistic dependency on e (~> 1.2.3.4) may be overly strict
+  if e is semantically versioned, use:
+    add_runtime_dependency 'e', '~> 1.2', '>= 1.2.3.4'
+#{w}:  open-ended dependency on i (>= 1.2) is not recommended
+  if i is semantically versioned, use:
+    add_runtime_dependency 'i', '~> 1.2'
+#{w}:  open-ended dependency on j (>= 1.2.3) is not recommended
+  if j is semantically versioned, use:
+    add_runtime_dependency 'j', '~> 1.2', '>= 1.2.3'
+#{w}:  open-ended dependency on k (> 1.2) is not recommended
+  if k is semantically versioned, use:
+    add_runtime_dependency 'k', '~> 1.2', '> 1.2'
+#{w}:  open-ended dependency on l (> 1.2.3) is not recommended
+  if l is semantically versioned, use:
+    add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
+#{w}:  pessimistic dependency on m (~> 2.1.0) may be overly strict
+  if m is semantically versioned, use:
+    add_runtime_dependency 'm', '~> 2.1', '>= 2.1.0'
+#{w}:  See http://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
-      assert_match expected, @ui.error, 'warning'
+      assert_equal expected, @ui.error, 'warning'
+    end
+  end
+
+  def test_validate_dependencies_open_ended
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.add_runtime_dependency 'b', '~> 1.2'
+      @a1.add_runtime_dependency 'b', '>= 1.2.3'
+
+      use_ui @ui do
+        e = assert_raises Gem::InvalidSpecificationException do
+          @a1.validate
+        end
+
+        expected = <<-EXPECTED
+duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
+    add_runtime_dependency 'b', '>= 1.2.3', '~> 1.2'
+        EXPECTED
+
+        assert_equal expected, e.message
+      end
+
+      assert_equal <<-EXPECTED, @ui.error
+#{w}:  See http://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
     end
   end
 

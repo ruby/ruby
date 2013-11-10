@@ -1,43 +1,15 @@
-class Gem::DependencyResolver::VendorSpecification
+##
+# A VendorSpecification represents a gem that has been unpacked into a project
+# and is being loaded through a gem dependencies file through the +path:+
+# option.
 
-  attr_reader :spec
-
-  attr_reader :set
-
-  def initialize set, spec, source=nil
-    @set    = set
-    @source = source
-    @spec   = spec
-  end
+class Gem::DependencyResolver::VendorSpecification < Gem::DependencyResolver::SpecSpecification
 
   def == other # :nodoc:
     self.class === other and
       @set  == other.set and
-      @spec == other.spec
-  end
-
-  def dependencies
-    @spec.dependencies
-  end
-
-  def full_name
-    "#{@spec.name}-#{@spec.version}"
-  end
-
-  def name
-    @spec.name
-  end
-
-  def platform
-    @spec.platform
-  end
-
-  def source
-    @source ||= Gem::Source::Vendor.new
-  end
-
-  def version
-    @spec.version
+      @spec == other.spec and
+      @source == other.source
   end
 
 end

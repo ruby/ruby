@@ -420,12 +420,13 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_latest_spec_for
-    a1  = quick_spec 'a', 1
-    a2  = quick_spec 'a', 2
-    a3a = quick_spec 'a', '3.a'
+    a2 = nil
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher a1, a2, a3a
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', '3.a'
+      a2 = fetcher.spec 'a', 2
+    end
 
     spec = Gem.latest_spec_for 'a'
 
@@ -433,12 +434,11 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_latest_rubygems_version
-    r1 = quick_spec 'rubygems-update', '1.8.23'
-    r2 = quick_spec 'rubygems-update', '1.8.24'
-    r3 = quick_spec 'rubygems-update', '2.0.0.preview3'
-
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher r1, r2, r3
+    spec_fetcher do |fetcher|
+      fetcher.spec 'rubygems-update', '1.8.23'
+      fetcher.spec 'rubygems-update', '1.8.24'
+      fetcher.spec 'rubygems-update', '2.0.0.preview3'
+    end
 
     version = Gem.latest_rubygems_version
 
@@ -446,12 +446,11 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_latest_version_for
-    a1  = quick_spec 'a', 1
-    a2  = quick_spec 'a', 2
-    a3a = quick_spec 'a', '3.a'
-
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher a1, a2, a3a
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+      fetcher.spec 'a', '3.a'
+    end
 
     version = Gem.latest_version_for 'a'
 

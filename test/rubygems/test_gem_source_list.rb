@@ -18,6 +18,10 @@ class TestGemSourceList < Gem::TestCase
     assert_equal [Gem::Source.new(@uri)], sl.sources
   end
 
+  def test_Enumerable
+    assert_includes Gem::SourceList.ancestors, Enumerable
+  end
+
   def test_append
     sl = Gem::SourceList.new
     source = (sl << @uri)
@@ -28,6 +32,16 @@ class TestGemSourceList < Gem::TestCase
     assert_equal source.uri.to_s, @uri
 
     assert_equal [source], sl.sources
+  end
+
+  def test_clear
+    sl = Gem::SourceList.new
+
+    sl << 'http://source.example'
+
+    sl.clear
+
+    assert_empty sl
   end
 
   def test_replace
@@ -47,6 +61,16 @@ class TestGemSourceList < Gem::TestCase
     @sl.each_source do |x|
       assert_equal @source, x
     end
+  end
+
+  def test_empty?
+    sl = Gem::SourceList.new
+
+    assert_empty sl
+
+    sl << 'http://source.example'
+
+    refute_empty sl
   end
 
   def test_equal_to_another_list

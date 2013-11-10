@@ -682,7 +682,7 @@ class TestGemDependencyInstaller < Gem::TestCase
         inst.install 'b'
       end
 
-      expected = "Unable to resolve dependency: b (= 1) requires a (>= 0)"
+      expected = "Unable to resolve dependency: 'b (= 1)' requires 'a (>= 0)'"
       assert_equal expected, e.message
     end
 
@@ -816,6 +816,17 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
   end
 
+  def test_install_platform_is_ignored_when_a_file_is_specified
+    _, a_gem = util_gem 'a', '1' do |s|
+      s.platform = Gem::Platform.new %w[cpu other_platform 1]
+    end
+
+    inst = Gem::DependencyInstaller.new :domain => :local
+    inst.install a_gem
+
+    assert_equal %w[a-1-cpu-other_platform-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
   if defined? OpenSSL then
     def test_install_security_policy
       util_setup_gems
@@ -902,6 +913,29 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     assert_equal @b1, s.spec
     assert_equal Gem::Source.new(@gem_repo), s.source
+  end
+
+  def test_find_spec_by_name_and_version_wildcard
+    util_gem 'a', 1
+    FileUtils.mv 'gems/a-1.gem', @tempdir
+
+    FileUtils.touch 'rdoc.gem'
+
+    inst = Gem::DependencyInstaller.new
+
+    available = inst.find_spec_by_name_and_version('*.gem')
+
+    assert_equal %w[a-1], available.each_spec.map { |spec| spec.full_name }
+  end
+
+  def test_find_spec_by_name_and_version_wildcard_bad_gem
+    FileUtils.touch 'rdoc.gem'
+
+    inst = Gem::DependencyInstaller.new
+
+    assert_raises Gem::Package::FormatError do
+      inst.find_spec_by_name_and_version '*.gem'
+    end
   end
 
   def test_find_spec_by_name_and_version_bad_gem

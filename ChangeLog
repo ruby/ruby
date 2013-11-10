@@ -1,3 +1,18 @@
+Mon Nov 11 02:51:17 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems: Update to RubyGems master 4bdc4f2.  Important changes
+	  in this commit:
+
+	  RubyGems now chooses the test server port reliably.  Patch by akr.
+
+	  Partial implementation of bundler's Gemfile format.
+
+	  Refactorings to improve the new resolver.
+
+	  Fixes bugs in the resolver.
+
+	* test/rubygems:  Tests for the above.
+
 Mon Nov 11 01:02:06 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/timeout.rb: [DOC] Add note about change from #8730 [Fixes GH-440]

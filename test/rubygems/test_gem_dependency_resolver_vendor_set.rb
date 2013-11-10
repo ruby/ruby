@@ -20,7 +20,7 @@ class TestGemDependencyResolverVendorSet < Gem::TestCase
   end
 
   def test_add_vendor_gem_missing
-    name, version, directory = vendor_gem
+    name, _, directory = vendor_gem
 
     FileUtils.rm_r directory
 
@@ -45,15 +45,19 @@ class TestGemDependencyResolverVendorSet < Gem::TestCase
 
     spec = @set.load_spec name, version, Gem::Platform::RUBY, nil
 
+    source = Gem::Source::Vendor.new directory
+
     expected = [
-      Gem::DependencyResolver::VendorSpecification.new(@set, spec, nil)
+      Gem::DependencyResolver::VendorSpecification.new(@set, spec, source)
     ]
 
     assert_equal expected, found
   end
 
   def test_load_spec
-    assert_raises KeyError do
+    error = Object.const_defined?(:KeyError) ? KeyError : IndexError
+
+    assert_raises error do
       @set.load_spec 'a', v(1), Gem::Platform::RUBY, nil
     end
   end

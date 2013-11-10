@@ -250,6 +250,14 @@ class Gem::DependencyInstaller
       if gem_name =~ /\.gem$/ and File.file? gem_name then
         src = Gem::Source::SpecificFile.new(gem_name)
         set.add src.spec, src
+      elsif gem_name =~ /\.gem$/ then
+        Dir[gem_name].each do |name|
+          begin
+            src = Gem::Source::SpecificFile.new name
+            set.add src.spec, src
+          rescue Gem::Package::FormatError
+          end
+        end
       else
         local = Gem::Source::Local.new
 

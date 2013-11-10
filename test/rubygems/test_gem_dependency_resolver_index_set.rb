@@ -3,50 +3,26 @@ require 'rubygems/dependency_resolver'
 
 class TestGemDependencyResolverIndexSet < Gem::TestCase
 
-  def test_load_spec
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
+  def setup
+    super
 
-    a_2   = quick_spec 'a', 2
-    a_2_p = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
-
-    Gem::Specification.add_specs a_2, a_2_p
-
-    util_setup_spec_fetcher a_2, a_2_p
-
-    source = Gem::Source.new @gem_repo
-    version = v 2
-
-    set = Gem::DependencyResolver::IndexSet.new
-
-    spec = set.load_spec 'a', version, Gem::Platform.local, source
-
-    assert_equal a_2_p.full_name, spec.full_name
+    @DR = Gem::DependencyResolver
   end
 
-  def test_load_spec_cached
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
+  def test_initialize
+    set = @DR::IndexSet.new
 
-    a_2   = quick_spec 'a', 2
-    a_2_p = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+    fetcher = set.instance_variable_get :@f
 
-    Gem::Specification.add_specs a_2, a_2_p
+    assert_same Gem::SpecFetcher.fetcher, fetcher
+  end
 
-    util_setup_spec_fetcher a_2, a_2_p
+  def test_initialize_source
+    set = @DR::IndexSet.new 'http://alternate.example'
 
-    source = Gem::Source.new @gem_repo
-    version = v 2
+    fetcher = set.instance_variable_get :@f
 
-    set = Gem::DependencyResolver::IndexSet.new
-
-    first = set.load_spec 'a', version, Gem::Platform.local, source
-
-    util_setup_spec_fetcher # clear
-
-    second = set.load_spec 'a', version, Gem::Platform.local, source
-
-    assert_same first, second
+    refute_same Gem::SpecFetcher.fetcher, fetcher
   end
 
 end

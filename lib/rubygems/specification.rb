@@ -856,12 +856,8 @@ class Gem::Specification < Gem::BasicSpecification
   # this resets the list of known specs.
 
   def self.dirs= dirs
-    # TODO: find extra calls to dir=
-    # warn "NOTE: dirs= called from #{caller.first} for #{dirs.inspect}"
-
     self.reset
 
-    # ugh
     @@dirs = Array(dirs).map { |dir| File.join dir, "specifications" }
   end
 
@@ -1105,9 +1101,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Removes +spec+ from the known specs.
 
   def self.remove_spec spec
-    # TODO: beat on the tests
-    raise "wtf: #{spec.full_name} not in #{all_names.inspect}" unless
-      _all.include? spec
     _all.delete spec
     stubs.delete_if { |s| s.full_name == spec.full_name }
   end
@@ -1400,7 +1393,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns the build_args used to install the gem
 
   def build_args
-    if File.exist? build_info_file
+    if File.exists? build_info_file
       File.readlines(build_info_file).map { |x| x.strip }
     else
       []
@@ -1788,6 +1781,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def init_with coder # :nodoc:
+    @installed_by_version ||= nil
     yaml_initialize coder.tag, coder.map
   end
 
@@ -2293,9 +2287,9 @@ class Gem::Specification < Gem::BasicSpecification
       end
     end
 
-    if defined?(@installed_by_version) && @installed_by_version then
+    if @installed_by_version then
       result << nil
-      result << "  s.installed_by_version = \"#{Gem::VERSION}\""
+      result << "  s.installed_by_version = \"#{Gem::VERSION}\" if s.respond_to? :installed_by_version"
     end
 
     unless dependencies.empty? then
@@ -2488,7 +2482,6 @@ class Gem::Specification < Gem::BasicSpecification
       end
     end
 
-    # FIX: uhhhh single element array.each?
     [:authors].each do |field|
       val = self.send field
       raise Gem::InvalidSpecificationException, "#{field} may not be empty" if
@@ -2540,7 +2533,6 @@ licenses is empty.  Use a license abbreviation from:
 
     # reject lazy developers:
 
-    # FIX: Doesn't this just evaluate to "FIXME" or "TODO"?
     lazy = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
 
     unless authors.grep(/FI XME|TO DO/x).empty? then
@@ -2586,19 +2578,80 @@ licenses is empty.  Use a license abbreviation from:
       warning "#{executable_path} is missing #! line" unless shebang
     end
 
+    validate_dependencies
+
+    true
+  ensure
+    if $! or @warnings > 0 then
+      alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
+    end
+  end
+
+  ##
+  # Checks that dependencies use requirements as we recommend.  Warnings are
+  # issued when dependencies are open-ended or overly strict for semantic
+  # versioning.
+
+  def validate_dependencies # :nodoc:
+    seen = {}
+
     dependencies.each do |dep|
+      if prev = seen[dep.name] then
+        raise Gem::InvalidSpecificationException, <<-MESSAGE
+duplicate dependency on #{dep}, (#{prev.requirement}) use:
+    add_runtime_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+        MESSAGE
+      end
+
+      seen[dep.name] = dep
+
       prerelease_dep = dep.requirements_list.any? do |req|
         Gem::Requirement.new(req).prerelease?
       end
 
       warning "prerelease dependency on #{dep} is not recommended" if
         prerelease_dep
-    end
 
-    true
-  ensure
-    if $! or @warnings > 0 then
-      alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
+      overly_strict = dep.requirement.requirements.length == 1 &&
+        dep.requirement.requirements.any? do |op, version|
+          op == '~>' and
+            not version.prerelease? and
+            version.segments.length > 2
+        end
+
+      if overly_strict then
+        _, dep_version = dep.requirement.requirements.first
+
+        base = dep_version.segments.first 2
+
+        warning <<-WARNING
+pessimistic dependency on #{dep} may be overly strict
+  if #{dep.name} is semantically versioned, use:
+    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}', '>= #{dep_version}'
+        WARNING
+      end
+
+      open_ended = dep.requirement.requirements.all? do |op, version|
+        not version.prerelease? and (op == '>' or op == '>=')
+      end
+
+      if open_ended then
+        op, dep_version = dep.requirement.requirements.first
+
+        base = dep_version.segments.first 2
+
+        bugfix = if op == '>' then
+                   ", '> #{dep_version}'"
+                 elsif op == '>=' and base != dep_version.segments then
+                   ", '>= #{dep_version}'"
+                 end
+
+        warning <<-WARNING
+open-ended dependency on #{dep} is not recommended
+  if #{dep.name} is semantically versioned, use:
+    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
+        WARNING
+      end
     end
   end
 
@@ -2633,7 +2686,10 @@ licenses is empty.  Use a license abbreviation from:
     return @version
   end
 
-  # FIX: have this handle the platform/new_platform/original_platform bullshit
+  def stubbed?
+    false
+  end
+
   def yaml_initialize(tag, vals) # :nodoc:
     vals.each do |ivar, val|
       case ivar
@@ -2667,6 +2723,8 @@ licenses is empty.  Use a license abbreviation from:
 
       instance_variable_set "@#{attribute}", value
     end
+
+    @installed_by_version ||= nil
   end
 
   def warning statement # :nodoc:

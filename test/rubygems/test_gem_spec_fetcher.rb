@@ -52,7 +52,22 @@ class TestGemSpecFetcher < Gem::TestCase
                   ['x',  Gem::Version.new(1),     'ruby']]
   end
 
-  def test_initialize_unwritable_home_dir
+  def test_initialize
+    fetcher = Gem::SpecFetcher.new
+
+    assert_same Gem.sources, fetcher.sources
+  end
+
+  def test_initialize_source
+    alternate = 'http://alternate.example'
+    fetcher = Gem::SpecFetcher.new alternate
+
+    refute_same Gem.sources, fetcher.sources
+
+    assert_equal alternate, fetcher.sources
+  end
+
+  def test_initialize_nonexistent_home_dir
     FileUtils.rmdir Gem.user_home
 
     assert Gem::SpecFetcher.new

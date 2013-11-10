@@ -168,16 +168,9 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
   def test_execute_remote
-    foo = quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1'
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 2, 'bar' => '> 1'
     end
-
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
-
-    util_setup_spec_fetcher foo
-
-    FileUtils.rm File.join(@gemhome, 'specifications', foo.spec_name)
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:domain] = :remote

@@ -21,10 +21,20 @@ class Gem::Requirement
   }
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
-  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*"
+  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*" # :nodoc:
+
+  ##
+  # A regular expression that matches a requirement
+
   PATTERN = /\A#{PATTERN_RAW}\z/
 
+  ##
+  # The default requirement matches any version
+
   DefaultRequirement = [">=", Gem::Version.new(0)]
+
+  ##
+  # Raised when a bad requirement is encountered
 
   class BadRequirementError < ArgumentError; end
 
@@ -108,9 +118,27 @@ class Gem::Requirement
   end
 
   ##
+  # Concatenates the +new+ requirements onto this requirement.
+
+  def concat new
+    new = new.flatten
+    new.compact!
+    new.uniq!
+    new = new.map { |r| self.class.parse r }
+
+    @requirements.concat new
+  end
+
+  ##
+  # Formats this requirement for use in a Gem::RequestSet::Lockfile.
+
+  def for_lockfile # :nodoc:
+    " (#{to_s})" unless [DefaultRequirement] == @requirements
+  end
+
+  ##
   # true if this gem has no requirements.
 
-  # FIX: maybe this should be using #default ?
   def none?
     if @requirements.size == 1
       @requirements[0] == DefaultRequirement
@@ -152,11 +180,11 @@ class Gem::Requirement
     yaml_initialize coder.tag, coder.map
   end
 
-  def to_yaml_properties
+  def to_yaml_properties # :nodoc:
     ["@requirements"]
   end
 
-  def encode_with(coder)
+  def encode_with coder # :nodoc:
     coder.add 'requirements', @requirements
   end
 
@@ -200,15 +228,13 @@ class Gem::Requirement
     as_list.join ", "
   end
 
-  # DOC: this should probably be :nodoc'd
-  def == other
+  def == other # :nodoc:
     Gem::Requirement === other and to_s == other.to_s
   end
 
   private
 
-  # DOC: this should probably be :nodoc'd
-  def fix_syck_default_key_in_requirements
+  def fix_syck_default_key_in_requirements # :nodoc:
     Gem.load_yaml
 
     # Fixup the Syck DefaultKey bug
@@ -220,9 +246,9 @@ class Gem::Requirement
   end
 end
 
-# This is needed for compatibility with older yaml
-# gemspecs.
-
 class Gem::Version
-  Requirement = Gem::Requirement
+  # This is needed for compatibility with older yaml
+  # gemspecs.
+
+  Requirement = Gem::Requirement # :nodoc:
 end

@@ -52,6 +52,24 @@ class Gem::Source
 
   alias_method :eql?, :==
 
+  ##
+  # Returns a Set that can fetch specifications from this source.
+
+  def dependency_resolver_set # :nodoc:
+    uri = api_uri
+
+    bundler_api_uri = api_uri + './api/v1/dependencies'
+
+    begin
+      fetcher = Gem::RemoteFetcher.fetcher
+      fetcher.fetch_path bundler_api_uri, nil, true
+    rescue Gem::RemoteFetcher::FetchError
+      Gem::DependencyResolver::IndexSet.new self
+    else
+      Gem::DependencyResolver::APISet.new bundler_api_uri
+    end
+  end
+
   def hash
     @uri.hash
   end

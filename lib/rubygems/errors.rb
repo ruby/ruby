@@ -19,8 +19,6 @@ module Gem
     attr_accessor :requirement
   end
 
-  # FIX: does this need to exist? The subclass is the only other reference
-  # I can find.
   class ErrorReason; end
 
   # Generated when trying to lookup a gem to indicate that the gem

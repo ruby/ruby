@@ -75,12 +75,6 @@ gems:
 
   PROXY_DATA = SERVER_DATA.gsub(/0.4.11/, '0.4.2')
 
-  # don't let 1.8 and 1.9 autotest collide
-  RUBY_VERSION =~ /(\d+)\.(\d+)\.(\d+)/
-  # don't let parallel runners collide
-  PROXY_PORT = process_based_port + 100 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
-  SERVER_PORT = process_based_port + 200 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
-
   DIR = File.expand_path(File.dirname(__FILE__))
 
   def setup
@@ -93,8 +87,8 @@ gems:
     self.class.enable_yaml = true
     self.class.enable_zip = false
 
-    base_server_uri = "http://localhost:#{SERVER_PORT}"
-    @proxy_uri = "http://localhost:#{PROXY_PORT}"
+    base_server_uri = "http://localhost:#{self.class.normal_server_port}"
+    @proxy_uri = "http://localhost:#{self.class.proxy_server_port}"
 
     @server_uri = base_server_uri + "/yaml"
     @server_z_uri = base_server_uri + "/yaml.Z"
@@ -712,10 +706,18 @@ gems:
     attr_accessor :enable_zip, :enable_yaml
 
     def start_servers
-      @normal_server ||= start_server(SERVER_PORT, SERVER_DATA)
-      @proxy_server  ||= start_server(PROXY_PORT, PROXY_DATA)
+      @normal_server ||= start_server(SERVER_DATA)
+      @proxy_server  ||= start_server(PROXY_DATA)
       @enable_yaml = true
       @enable_zip = false
+    end
+
+    def normal_server_port
+      @normal_server[:server].config[:Port]
+    end
+
+    def proxy_server_port
+      @proxy_server[:server].config[:Port]
     end
 
     DIR = File.expand_path(File.dirname(__FILE__))
@@ -763,45 +765,45 @@ gems:
 
     private
 
-    def start_server(port, data)
-      Thread.new do
+    def start_server(data)
+      null_logger = NilLog.new
+      s = WEBrick::HTTPServer.new(
+        :Port            => 0,
+        :DocumentRoot    => nil,
+        :Logger          => null_logger,
+        :AccessLog       => null_logger
+        )
+      s.mount_proc("/kill") { |req, res| s.shutdown }
+      s.mount_proc("/yaml") { |req, res|
+        if @enable_yaml
+          res.body = data
+          res['Content-Type'] = 'text/plain'
+          res['content-length'] = data.size
+        else
+          res.status = "404"
+          res.body = "<h1>NOT FOUND</h1>"
+          res['Content-Type'] = 'text/html'
+        end
+      }
+      s.mount_proc("/yaml.Z") { |req, res|
+        if @enable_zip
+          res.body = Zlib::Deflate.deflate(data)
+          res['Content-Type'] = 'text/plain'
+        else
+          res.status = "404"
+          res.body = "<h1>NOT FOUND</h1>"
+          res['Content-Type'] = 'text/html'
+        end
+      }
+      th = Thread.new do
         begin
-          null_logger = NilLog.new
-          s = WEBrick::HTTPServer.new(
-            :Port            => port,
-            :DocumentRoot    => nil,
-            :Logger          => null_logger,
-            :AccessLog       => null_logger
-            )
-          s.mount_proc("/kill") { |req, res| s.shutdown }
-          s.mount_proc("/yaml") { |req, res|
-            if @enable_yaml
-              res.body = data
-              res['Content-Type'] = 'text/plain'
-              res['content-length'] = data.size
-            else
-              res.status = "404"
-              res.body = "<h1>NOT FOUND</h1>"
-              res['Content-Type'] = 'text/html'
-            end
-          }
-          s.mount_proc("/yaml.Z") { |req, res|
-            if @enable_zip
-              res.body = Zlib::Deflate.deflate(data)
-              res['Content-Type'] = 'text/plain'
-            else
-              res.status = "404"
-              res.body = "<h1>NOT FOUND</h1>"
-              res['Content-Type'] = 'text/html'
-            end
-          }
           s.start
         rescue Exception => ex
-          abort ex.message
-          puts "ERROR during server thread: #{ex.message}"
+          abort "ERROR during server thread: #{ex.message}"
         end
       end
-      sleep 0.2                 # Give the servers time to startup
+      th[:server] = s
+      th
     end
 
     def cert(filename)

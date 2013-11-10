@@ -23,8 +23,6 @@ class TestStubSpecification < Gem::TestCase
   def test_initialize_extension
     stub = stub_with_extension
 
-    gem_dir = File.join stub.gems_dir, stub.full_name
-
     ext_install_dir = Pathname(stub.extension_install_dir)
     full_gem_path = Pathname(stub.full_gem_path)
     relative_install_dir = ext_install_dir.relative_path_from full_gem_path

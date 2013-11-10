@@ -196,5 +196,13 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
+  ##
+  # Whether this specification is stubbed - i.e. we have information
+  # about the gem from a stub line, without having to evaluate the
+  # entire gemspec file.
+  def stubbed?
+    raise NotImplementedError
+  end
+
 end
 

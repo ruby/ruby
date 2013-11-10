@@ -1,18 +1,21 @@
 ##
-# Represents a specification retrieved via the rubygems.org
-# API. This is used to avoid having to load the full
-# Specification object when all we need is the name, version,
-# and dependencies.
+# Represents a specification retrieved via the rubygems.org API.
+#
+# This is used to avoid loading the full Specification object when all we need
+# is the name, version, and dependencies.
 
-class Gem::DependencyResolver::APISpecification
+class Gem::DependencyResolver::APISpecification < Gem::DependencyResolver::Specification
 
-  attr_reader :dependencies
-  attr_reader :name
-  attr_reader :platform
-  attr_reader :set # :nodoc:
-  attr_reader :version
+  ##
+  # Creates an APISpecification for the given +set+ from the rubygems.org
+  # +api_data+.
+  #
+  # See http://guides.rubygems.org/rubygems-org-api/#misc_methods for the
+  # format of the +api_data+.
 
   def initialize(set, api_data)
+    super()
+
     @set = set
     @name = api_data[:name]
     @version = Gem::Version.new api_data[:number]
@@ -29,10 +32,6 @@ class Gem::DependencyResolver::APISpecification
       @version      == other.version and
       @platform     == other.platform and
       @dependencies == other.dependencies
-  end
-
-  def full_name
-    "#{@name}-#{@version}"
   end
 
 end

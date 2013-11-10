@@ -3,17 +3,20 @@
 # delay needed to download full Specification objects when only the +name+
 # and +version+ are needed.
 
-class Gem::DependencyResolver::IndexSpecification
+class Gem::DependencyResolver::IndexSpecification < Gem::DependencyResolver::Specification
 
-  attr_reader :name
-
-  attr_reader :platform
-
-  attr_reader :source
-
-  attr_reader :version
+  ##
+  # An IndexSpecification is created from the index format described in `gem
+  # help generate_index`.
+  #
+  # The +set+ contains other specifications for this (URL) +source+.
+  #
+  # The +name+, +version+ and +platform+ are the name, version and platform of
+  # the gem.
 
   def initialize set, name, version, source, platform
+    super()
+
     @set = set
     @name = name
     @version = version
@@ -23,12 +26,11 @@ class Gem::DependencyResolver::IndexSpecification
     @spec = nil
   end
 
+  ##
+  # The dependencies of the gem for this specification
+
   def dependencies
     spec.dependencies
-  end
-
-  def full_name
-    "#{@name}-#{@version}"
   end
 
   def inspect # :nodoc:
@@ -51,8 +53,16 @@ class Gem::DependencyResolver::IndexSpecification
     end
   end
 
-  def spec
-    @spec ||= @set.load_spec(@name, @version, @platform, @source)
+  ##
+  # Fetches a Gem::Specification for this IndexSpecification from the #source.
+
+  def spec # :nodoc:
+    @spec ||=
+      begin
+        tuple = Gem::NameTuple.new @name, @version, @platform
+
+        @source.fetch_spec tuple
+      end
   end
 
 end

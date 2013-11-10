@@ -32,6 +32,11 @@ class Gem::RequestSet
   attr_accessor :development
 
   ##
+  # Sets used for resolution
+
+  attr_reader :sets # :nodoc:
+
+  ##
   # Treat missing dependencies as silent errors
 
   attr_accessor :soft_missing
@@ -53,13 +58,15 @@ class Gem::RequestSet
   def initialize *deps
     @dependencies = deps
 
-    @always_install = []
-    @development    = false
-    @requests       = []
-    @soft_missing   = false
-    @sorted         = nil
-    @specs          = nil
-    @vendor_set     = nil
+    @always_install   = []
+    @dependency_names = {}
+    @development      = false
+    @requests         = []
+    @sets             = []
+    @soft_missing     = false
+    @sorted           = nil
+    @specs            = nil
+    @vendor_set       = nil
 
     yield self if block_given?
   end
@@ -68,7 +75,13 @@ class Gem::RequestSet
   # Declare that a gem of name +name+ with +reqs+ requirements is needed.
 
   def gem name, *reqs
-    @dependencies << Gem::Dependency.new(name, reqs)
+    if dep = @dependency_names[name] then
+      dep.requirement.concat reqs
+    else
+      dep = Gem::Dependency.new name, reqs
+      @dependency_names[name] = dep
+      @dependencies << dep
+    end
   end
 
   ##
@@ -78,7 +91,14 @@ class Gem::RequestSet
     @dependencies.concat deps
   end
 
-  def install options, &block
+  ##
+  # Installs gems for this RequestSet using the Gem::Installer +options+.
+  #
+  # If a +block+ is given an activation +request+ and +installer+ are yielded.
+  # The +installer+ will be +nil+ if a gem matching the request was already
+  # installed.
+
+  def install options, &block # :yields: request, installer
     if dir = options[:install_dir]
       return install_into dir, false, options, &block
     end
@@ -107,6 +127,21 @@ class Gem::RequestSet
     end
 
     specs
+  end
+
+  ##
+  # Installs from the gem dependencies files in the +:gemdeps+ option in
+  # +options+, yielding to the +block+ as in #install.
+  #
+  # If +:without_groups+ is given in the +options+, those groups in the gem
+  # dependencies file are not used.  See Gem::Installer for other +options+.
+
+  def install_from_gemdeps options, &block
+    load_gemdeps options[:gemdeps], options[:without_groups]
+
+    resolve
+
+    install options, &block
   end
 
   def install_into dir, force = true, options = {}
@@ -148,10 +183,11 @@ class Gem::RequestSet
   ##
   # Load a dependency management file.
 
-  def load_gemdeps path
+  def load_gemdeps path, without_groups = []
     @vendor_set = Gem::DependencyResolver::VendorSet.new
 
     gf = Gem::RequestSet::GemDependencyAPI.new self, path
+    gf.without_groups = without_groups if without_groups
     gf.load
   end
 
@@ -160,13 +196,10 @@ class Gem::RequestSet
   # objects to be activated.
 
   def resolve set = Gem::DependencyResolver::IndexSet.new
-    sets = [set, @vendor_set].compact
+    @sets << set
+    @sets << @vendor_set
 
-    set = if sets.size == 1 then
-            sets.first
-          else
-            Gem::DependencyResolver.compose_sets(*sets)
-          end
+    set = Gem::DependencyResolver.compose_sets(*@sets)
 
     resolver = Gem::DependencyResolver.new @dependencies, set
     resolver.development  = @development

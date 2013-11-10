@@ -3,6 +3,12 @@ require 'rubygems/dependency_resolver'
 
 class TestGemDependencyResolver < Gem::TestCase
 
+  def setup
+    super
+
+    @DR = Gem::DependencyResolver
+  end
+
   def make_dep(name, *req)
     Gem::Dependency.new(name, *req)
   end
@@ -21,7 +27,58 @@ class TestGemDependencyResolver < Gem::TestCase
 
     assert_equal exp, act, msg
   rescue Gem::DependencyResolutionError => e
-    flunk "#{e.message}\n#{e.conflict.explanation}"
+    flunk e.message
+  end
+
+  def test_self_compose_sets_multiple
+    index_set  = @DR::IndexSet.new
+    vendor_set = @DR::VendorSet.new
+
+    composed = @DR.compose_sets index_set, vendor_set
+
+    assert_kind_of Gem::DependencyResolver::ComposedSet, composed
+
+    assert_equal [index_set, vendor_set], composed.sets
+  end
+
+  def test_self_compose_sets_nil
+    index_set  = @DR::IndexSet.new
+
+    composed = @DR.compose_sets index_set, nil
+
+    assert_same index_set, composed
+
+    e = assert_raises ArgumentError do
+      @DR.compose_sets nil
+    end
+
+    assert_equal 'one set in the composition must be non-nil', e.message
+  end
+
+  def test_self_compose_sets_single
+    index_set  = @DR::IndexSet.new
+
+    composed = @DR.compose_sets index_set
+
+    assert_same index_set, composed
+  end
+
+  def test_handle_conflict
+    a1 = util_spec 'a', 1
+
+    r1 = Gem::DependencyResolver::DependencyRequest.new dep('a', '= 1'), nil
+    r2 = Gem::DependencyResolver::DependencyRequest.new dep('a', '= 2'), nil
+    r3 = Gem::DependencyResolver::DependencyRequest.new dep('a', '= 3'), nil
+
+    existing = Gem::DependencyResolver::ActivationRequest.new a1, r1, false
+
+    res = Gem::DependencyResolver.new [a1]
+
+    res.handle_conflict r2, existing
+    res.handle_conflict r2, existing
+    res.handle_conflict r3, existing
+
+    assert_equal 2, res.conflicts.length
   end
 
   def test_no_overlap_specificly
@@ -71,10 +128,15 @@ class TestGemDependencyResolver < Gem::TestCase
   end
 
   def test_picks_best_platform
-    is = Gem::DependencyResolver::IndexSpecification
+    is      = Gem::DependencyResolver::IndexSpecification
     unknown = Gem::Platform.new 'unknown'
-    a2_p1 = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
-    a3_p2 = quick_spec 'a', 3 do |s| s.platform = unknown end
+    a2_p1   = a3_p2 = nil
+
+    spec_fetcher do |fetcher|
+      a2_p1 = fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+      a3_p2 = fetcher.spec 'a', 3 do |s| s.platform = unknown end
+    end
+
     v2 = v(2)
     v3 = v(3)
     source = Gem::Source.new @gem_repo
@@ -183,8 +245,6 @@ class TestGemDependencyResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_equal "unable to resolve conflicting dependencies 'c (= 2)' and 'c (= 1)'", e.message
-
     deps = [make_dep("c", "= 2"), make_dep("c", "= 1")]
     assert_equal deps, e.conflicting_dependencies
 
@@ -209,7 +269,7 @@ class TestGemDependencyResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_equal "Unable to resolve dependency: (unknown) requires a (>= 0)",
+    assert_equal "Unable to resolve dependency: user requested 'a (>= 0)'",
                  e.message
 
     assert_equal "a (>= 0)", e.dependency.to_s
@@ -229,6 +289,37 @@ class TestGemDependencyResolver < Gem::TestCase
     assert_equal "a (= 3)", e.dependency.to_s
   end
 
+  def test_raises_and_reports_a_toplevel_request_properly
+    a1 = util_spec "a", "1"
+    ad = make_dep "a", "= 3"
+
+    r = Gem::DependencyResolver.new([ad], set(a1))
+
+    e = assert_raises Gem::UnsatisfiableDepedencyError do
+      r.resolve
+    end
+
+    assert_equal "Unable to resolve dependency: user requested 'a (= 3)'",
+                 e.message
+  end
+
+  def test_raises_and_reports_an_implicit_request_properly
+    a1 = util_spec "a", "1" do |s|
+      s.add_runtime_dependency 'b', '= 2'
+    end
+
+    ad = make_dep "a", "= 1"
+
+    r = Gem::DependencyResolver.new([ad], set(a1))
+
+    e = assert_raises Gem::UnsatisfiableDepedencyError do
+      r.resolve
+    end
+
+    assert_equal "Unable to resolve dependency: 'a (= 1)' requires 'b (= 2)'",
+                 e.message
+  end
+
   def test_raises_when_possibles_are_exhausted
     a1 = util_spec "a", "1", "c" => ">= 2"
     b1 = util_spec "b", "1", "c" => "= 1"
@@ -244,18 +335,22 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([ad, bd], s)
 
-    e = assert_raises Gem::ImpossibleDependenciesError do
+    e = assert_raises Gem::DependencyResolutionError do
       r.resolve
     end
 
-    assert_match "a-1 requires c (>= 2) but it conflicted", e.message
+    dependency = e.conflict.dependency
 
-    assert_equal "c (>= 2)", e.dependency.to_s
+    assert_equal 'a', dependency.name
+    assert_equal req('>= 0'), dependency.requirement
 
-    s, con = e.conflicts[0]
-    assert_equal "c-3", s.full_name
-    assert_equal "c (= 1)", con.dependency.to_s
-    assert_equal "b-1", con.requester.full_name
+    activated = e.conflict.activated
+    assert_equal 'c-2', activated.full_name
+
+    assert_equal dep('c', '>= 2'), activated.request.dependency
+
+    assert_equal [dep('c', '= 1'), dep('c', '>= 2')],
+                 e.conflict.conflicting_dependencies
   end
 
   def test_keeps_resolving_after_seeing_satisfied_dep
@@ -312,7 +407,7 @@ class TestGemDependencyResolver < Gem::TestCase
 
     r = Gem::DependencyResolver.new([d1, d2, d3], s)
 
-    assert_raises Gem::ImpossibleDependenciesError do
+    assert_raises Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -333,6 +428,42 @@ class TestGemDependencyResolver < Gem::TestCase
     assert_raises Gem::DependencyResolutionError do
       r.resolve
     end
+  end
+
+  def test_resolve_bug_699
+    a1 = util_spec 'a', '1', 'b' => '= 2',
+                             'c' => '~> 1.0.3'
+
+    b1 = util_spec 'b', '2', 'c' => '~> 1.0'
+
+    c1 = util_spec 'c', '1.0.9'
+    c2 = util_spec 'c', '1.1.0'
+    c3 = util_spec 'c', '1.2.0'
+
+    s = set a1, b1, c1, c2, c3
+
+    a_dep = dep 'a', '= 1'
+
+    r = Gem::DependencyResolver.new [a_dep], s
+
+    assert_resolves_to [a1, b1, c1], r
+  end
+
+  def test_resolve_rollback
+    a1 = util_spec 'a', 1
+    a2 = util_spec 'a', 2
+
+    b1 = util_spec 'b', 1, 'a' => '~> 1.0'
+    b2 = util_spec 'b', 2, 'a' => '~> 2.0'
+
+    s = set a1, a2, b1, b2
+
+    a_dep = dep 'a', '~> 1.0'
+    b_dep = dep 'b'
+
+    r = Gem::DependencyResolver.new [a_dep, b_dep], s
+
+    assert_resolves_to [a1, b1], r
   end
 
   # actionmailer 2.3.4
@@ -386,6 +517,23 @@ class TestGemDependencyResolver < Gem::TestCase
     selected = r.select_local_platforms [a1, a1_p1, a1_p2]
 
     assert_equal [a1, a1_p1], selected
+  end
+
+  def test_raises_and_explains_when_platform_prevents_install
+    a1 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new %w[c p 1]
+    end
+
+    ad = make_dep "a", "= 1"
+
+    r = Gem::DependencyResolver.new([ad], set(a1))
+
+    e = assert_raises Gem::UnsatisfiableDepedencyError do
+      r.resolve
+    end
+
+    assert_match "No match for 'a (= 1)' on this platform. Found: c-p-1",
+                 e.message
   end
 
 end

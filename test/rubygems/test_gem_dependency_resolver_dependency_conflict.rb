@@ -20,6 +20,26 @@ class TestGemDependencyResolverDependencyConflict < Gem::TestCase
     assert_equal expected, conflict.explanation
   end
 
+  def test_explanation_user_request
+    @DR = Gem::DependencyResolver
+
+    spec = quick_spec 'a', 2
+
+    a1_req = @DR::DependencyRequest.new dep('a', '= 1'), nil
+    a2_req = @DR::DependencyRequest.new dep('a', '= 2'), nil
+
+    activated = @DR::ActivationRequest.new spec, a2_req
+
+    conflict = @DR::DependencyConflict.new a1_req, activated
+
+    expected = <<-EXPECTED
+  Activated a-2 instead of (= 1) via:
+    user request (gem command or Gemfile)
+    EXPECTED
+
+    assert_equal expected, conflict.explanation
+  end
+
   def test_request_path
     root  =
       dependency_request dep('net-ssh', '>= 2.0.13'), 'rye', '0.9.8'

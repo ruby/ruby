@@ -1,12 +1,8 @@
-class Gem::DependencyResolver::InstalledSpecification
+##
+# An InstalledSpecification represents a gem that is already installed
+# locally.
 
-  attr_reader :spec
-
-  def initialize set, spec, source=nil
-    @set    = set
-    @source = source
-    @spec   = spec
-  end
+class Gem::DependencyResolver::InstalledSpecification < Gem::DependencyResolver::SpecSpecification
 
   def == other # :nodoc:
     self.class === other and
@@ -14,28 +10,24 @@ class Gem::DependencyResolver::InstalledSpecification
       @spec == other.spec
   end
 
-  def dependencies
-    @spec.dependencies
+  ##
+  # Returns +true+ if this gem is installable for the current platform.
+
+  def installable_platform?
+    # BACKCOMPAT If the file is coming out of a specified file, then we
+    # ignore the platform. This code can be removed in RG 3.0.
+    if @source.kind_of? Gem::Source::SpecificFile
+      return true
+    else
+      Gem::Platform.match @spec.platform
+    end
   end
 
-  def full_name
-    "#{@spec.name}-#{@spec.version}"
-  end
-
-  def name
-    @spec.name
-  end
-
-  def platform
-    @spec.platform
-  end
+  ##
+  # The source for this specification
 
   def source
     @source ||= Gem::Source::Installed.new
-  end
-
-  def version
-    @spec.version
   end
 
 end

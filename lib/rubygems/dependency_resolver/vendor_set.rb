@@ -13,17 +13,18 @@
 # The directory vendor/rake must contain an unpacked rake gem along with a
 # rake.gemspec (watching the given name).
 
-class Gem::DependencyResolver::VendorSet
+class Gem::DependencyResolver::VendorSet < Gem::DependencyResolver::Set
 
-  def initialize
-    @specs = {}
+  def initialize # :nodoc:
+    @directories = {}
+    @specs       = {}
   end
 
   ##
   # Adds a specification to the set with the given +name+ which has been
   # unpacked into the given +directory+.
 
-  def add_vendor_gem name, directory
+  def add_vendor_gem name, directory # :nodoc:
     gemspec = File.join directory, "#{name}.gemspec"
 
     spec = Gem::Specification.load gemspec
@@ -33,7 +34,8 @@ class Gem::DependencyResolver::VendorSet
 
     key = "#{spec.name}-#{spec.version}-#{spec.platform}"
 
-    @specs[key] = spec
+    @specs[key]        = spec
+    @directories[spec] = directory
   end
 
   ##
@@ -44,7 +46,8 @@ class Gem::DependencyResolver::VendorSet
     @specs.values.select do |spec|
       req.matches_spec? spec
     end.map do |spec|
-      Gem::DependencyResolver::VendorSpecification.new self, spec, nil
+      source = Gem::Source::Vendor.new @directories[spec]
+      Gem::DependencyResolver::VendorSpecification.new self, spec, source
     end
   end
 
@@ -53,16 +56,10 @@ class Gem::DependencyResolver::VendorSet
   # +source+ is defined when the specification was added to index it is not
   # used.
 
-  def load_spec name, version, platform, source
+  def load_spec name, version, platform, source # :nodoc:
     key = "#{name}-#{version}-#{platform}"
 
     @specs.fetch key
-  end
-
-  ##
-  # No prefetch is needed as the index is loaded at creation time.
-
-  def prefetch gems
   end
 
 end

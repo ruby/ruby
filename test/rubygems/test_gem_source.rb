@@ -68,6 +68,20 @@ class TestGemSource < Gem::TestCase
     assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
   end
 
+  def test_dependency_resolver_set_bundler_api
+    @fetcher.data["#{@gem_repo}api/v1/dependencies"] = 'data'
+
+    set = @source.dependency_resolver_set
+
+    assert_kind_of Gem::DependencyResolver::APISet, set
+  end
+
+  def test_dependency_resolver_set_marshal_api
+    set = @source.dependency_resolver_set
+
+    assert_kind_of Gem::DependencyResolver::IndexSet, set
+  end
+
   def test_fetch_spec
     spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = util_zip(Marshal.dump(@a1))

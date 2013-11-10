@@ -18,6 +18,11 @@ class Gem::SpecFetcher
   attr_reader :latest_specs # :nodoc:
 
   ##
+  # Sources for this SpecFetcher
+
+  attr_reader :sources # :nodoc:
+
+  ##
   # Cache of all released specs
 
   attr_reader :specs # :nodoc:
@@ -37,7 +42,16 @@ class Gem::SpecFetcher
     @fetcher = fetcher
   end
 
-  def initialize
+  ##
+  # Creates a new SpecFetcher.  Ordinarily you want to use
+  # Gem::SpecFetcher::fetcher which uses the Gem.sources.
+  #
+  # If you need to retrieve specifications from a different +source+, you can
+  # send it as an argument.
+
+  def initialize sources = nil
+    @sources = sources || Gem.sources
+
     @update_cache =
       begin
         File.stat(Gem.user_home).uid == Process.uid
@@ -197,7 +211,7 @@ class Gem::SpecFetcher
     errors = []
     list = {}
 
-    Gem.sources.each_source do |source|
+    @sources.each_source do |source|
       begin
         names = case type
                 when :latest

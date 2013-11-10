@@ -29,6 +29,14 @@ class Gem::Platform
     end
   end
 
+  def self.installable?(spec)
+    if spec.respond_to? :installable_platform?
+      spec.installable_platform?
+    else
+      match spec.platform
+    end
+  end
+
   def self.new(arch) # :nodoc:
     case arch
     when Gem::Platform::CURRENT then

@@ -8,10 +8,19 @@ class Gem::DependencyResolver::DependencyConflict
 
   attr_reader :dependency
 
+  attr_reader :failed_dep # :nodoc:
+
   def initialize(dependency, activated, failed_dep=dependency)
     @dependency = dependency
     @activated = activated
     @failed_dep = failed_dep
+  end
+
+  def == other
+    self.class === other and
+      @dependency == other.dependency and
+      @activated  == other.activated  and
+      @failed_dep == other.failed_dep
   end
 
   ##
@@ -70,6 +79,8 @@ class Gem::DependencyResolver::DependencyConflict
 
       current = current.request.requester
     end
+
+    path = ['user request (gem command or Gemfile)'] if path.empty?
 
     path
   end

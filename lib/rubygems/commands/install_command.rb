@@ -22,6 +22,7 @@ class Gem::Commands::InstallCommand < Gem::Command
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
       :format_executable => false,
       :version           => Gem::Requirement.default,
+      :without_groups    => [],
     })
 
     super 'install', 'Install a gem into the local repository', defaults
@@ -40,6 +41,13 @@ class Gem::Commands::InstallCommand < Gem::Command
       end unless v
 
       o[:gemdeps] = v
+    end
+
+    add_option(:"Install/Update", '--without GROUPS', Array,
+               'Omit the named groups (comma separated)',
+               'when installing from a gem dependencies',
+               'file') do |v,o|
+      o[:without_groups].concat v.map { |without| without.intern }
     end
 
     add_option(:"Install/Update", '--default',
@@ -133,8 +141,8 @@ to write the specification by hand.  For example:
   end
 
   def execute
-    if gf = options[:gemdeps] then
-      install_from_gemdeps gf
+    if options.include? :gemdeps then
+      install_from_gemdeps
       return # not reached
     end
 
@@ -154,14 +162,11 @@ to write the specification by hand.  For example:
     terminate_interaction exit_code
   end
 
-  def install_from_gemdeps gf # :nodoc:
+  def install_from_gemdeps # :nodoc:
     require 'rubygems/request_set'
     rs = Gem::RequestSet.new
-    rs.load_gemdeps gf
 
-    rs.resolve
-
-    specs = rs.install options do |req, inst|
+    specs = rs.install_from_gemdeps options do |req, inst|
       s = req.full_spec
 
       if inst

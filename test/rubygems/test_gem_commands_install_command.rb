@@ -855,4 +855,14 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal 'gem.deps.rb', @cmd.options[:gemdeps]
   end
 
+  def test_handle_options_without
+    @cmd.handle_options %w[--without test]
+
+    assert_equal [:test], @cmd.options[:without_groups]
+
+    @cmd.handle_options %w[--without test,development]
+
+    assert_equal [:test, :development], @cmd.options[:without_groups]
+  end
+
 end

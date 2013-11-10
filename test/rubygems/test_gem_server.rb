@@ -85,6 +85,30 @@ class TestGemServer < Gem::TestCase
     Marshal.load(@res.body)
   end
 
+  def test_latest_specs_gemdirs
+    data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = quick_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.latest_specs @req, @res
+
+    assert_equal 200, @res.status
+
+    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
+  end
+
   def test_latest_specs_gz
     data = StringIO.new "GET /latest_specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -120,8 +144,41 @@ class TestGemServer < Gem::TestCase
     assert_equal 2, @server.server.listeners.length
   end
 
+  def test_quick_gemdirs
+    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.quick @req, @res
+
+    assert_equal 404, @res.status
+
+    spec = quick_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    data.rewind
+
+    req = WEBrick::HTTPRequest.new :Logger => nil
+    res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+    req.parse data
+
+    server.quick req, res
+
+    assert_equal 200, res.status
+  end
+
   def test_quick_missing
-    data = StringIO.new "GET /quick/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
     @req.parse data
 
     @server.quick @req, @res
@@ -188,6 +245,29 @@ class TestGemServer < Gem::TestCase
     assert_equal 'text/html', @res['content-type']
   end
 
+  def test_root_gemdirs
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = quick_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'z 9', @res.body
+  end
+
   def test_specs
     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -201,6 +281,30 @@ class TestGemServer < Gem::TestCase
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
                   ['a', Gem::Version.new(2), Gem::Platform::RUBY]],
                  Marshal.load(@res.body)
+  end
+
+  def test_specs_gemdirs
+    data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = quick_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.specs @req, @res
+
+    assert_equal 200, @res.status
+
+    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
   end
 
   def test_specs_gz

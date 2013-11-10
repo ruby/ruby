@@ -60,12 +60,6 @@ class TestGemDependencyResolverVendorSpecification < Gem::TestCase
     assert_equal Gem::Platform::RUBY, v_spec.platform
   end
 
-  def test_source
-    v_spec = Gem::DependencyResolver::VendorSpecification.new @set, @spec
-
-    assert_equal Gem::Source::Vendor.new, v_spec.source
-  end
-
   def test_version
     spec = Gem::Specification.new 'a', 1
 

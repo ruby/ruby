@@ -4,15 +4,12 @@ require 'rubygems/dependency_resolver'
 class TestGemDependencyResolverInstallerSet < Gem::TestCase
 
   def test_load_spec
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
+    a_2_p = nil
 
-    a_2   = quick_spec 'a', 2
-    a_2_p = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
-
-    Gem::Specification.add_specs a_2, a_2_p
-
-    util_setup_spec_fetcher a_2, a_2_p
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+      a_2_p = fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+    end
 
     source = Gem::Source.new @gem_repo
     version = v 2

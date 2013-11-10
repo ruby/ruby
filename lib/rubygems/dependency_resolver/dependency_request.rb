@@ -32,6 +32,22 @@ class Gem::DependencyResolver::DependencyRequest
     @dependency.name
   end
 
+  # Indicate that the request is for a gem explicitly requested by the user
+  def explicit?
+    @requester.nil?
+  end
+
+  # Indicate that the requset is for a gem requested as a dependency of another gem
+  def implicit?
+    !explicit?
+  end
+
+  # Return a String indicating who caused this request to be added (only
+  # valid for implicit requests)
+  def request_context
+    @requester ? @requester.request : "(unknown)"
+  end
+
   def pretty_print q # :nodoc:
     q.group 2, '[Dependency request ', ']' do
       q.breakable
@@ -41,6 +57,10 @@ class Gem::DependencyResolver::DependencyRequest
       q.text ' requested by '
       q.pp @requester
     end
+  end
+
+  def requirement
+    @dependency.requirement
   end
 
   def to_s # :nodoc:

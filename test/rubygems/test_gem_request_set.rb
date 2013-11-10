@@ -6,6 +6,8 @@ class TestGemRequestSet < Gem::TestCase
     super
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
+
+    @DR = Gem::DependencyResolver
   end
 
   def test_gem
@@ -17,6 +19,15 @@ class TestGemRequestSet < Gem::TestCase
     assert_equal [Gem::Dependency.new("a", "=2")], rs.dependencies
   end
 
+  def test_gem_duplicate
+    rs = Gem::RequestSet.new
+
+    rs.gem 'a', '1'
+    rs.gem 'a', '2'
+
+    assert_equal [dep('a', '= 1', '= 2')], rs.dependencies
+  end
+
   def test_import
     rs = Gem::RequestSet.new
     rs.gem 'a'
@@ -24,6 +35,26 @@ class TestGemRequestSet < Gem::TestCase
     rs.import [dep('b')]
 
     assert_equal [dep('a'), dep('b')], rs.dependencies
+  end
+
+  def test_install_from_gemdeps
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    rs = Gem::RequestSet.new
+    installed = []
+
+    Tempfile.open 'gem.deps.rb' do |io|
+      io.puts 'gem "a"'
+      io.flush
+
+      rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+        installed << req.full_name
+      end
+    end
+
+    assert_includes installed, 'a-2'
   end
 
   def test_load_gemdeps
@@ -41,6 +72,19 @@ class TestGemRequestSet < Gem::TestCase
     assert rs.vendor_set
   end
 
+  def test_load_gemdeps_without_groups
+    rs = Gem::RequestSet.new
+
+    Tempfile.open 'gem.deps.rb' do |io|
+      io.puts 'gem "a", :group => :test'
+      io.flush
+
+      rs.load_gemdeps io.path, [:test]
+    end
+
+    assert_empty rs.dependencies
+  end
+
   def test_resolve
     a = util_spec "a", "2", "b" => ">= 2"
     b = util_spec "b", "2"
@@ -54,6 +98,21 @@ class TestGemRequestSet < Gem::TestCase
     names = res.map { |s| s.full_name }.sort
 
     assert_equal ["a-2", "b-2"], names
+  end
+
+  def test_resolve_incompatible
+    a1 = util_spec 'a', 1
+    a2 = util_spec 'a', 2
+
+    rs = Gem::RequestSet.new
+    rs.gem 'a', '= 1'
+    rs.gem 'a', '= 2'
+
+    set = StaticSet.new [a1, a2]
+
+    assert_raises Gem::UnsatisfiableDependencyError do
+      rs.resolve set
+    end
   end
 
   def test_resolve_vendor
@@ -82,6 +141,9 @@ class TestGemRequestSet < Gem::TestCase
     names = res.map { |s| s.full_name }.sort
 
     assert_equal ["a-1", "b-2"], names
+
+    assert_equal [@DR::IndexSet, @DR::VendorSet],
+                 rs.sets.map { |set| set.class }
   end
 
   def test_sorted_requests
@@ -99,13 +161,10 @@ class TestGemRequestSet < Gem::TestCase
   end
 
   def test_install_into
-    a, ad = util_gem "a", "1", "b" => "= 1"
-    b, bd = util_gem "b", "1"
-
-    util_setup_spec_fetcher a, b
-
-    @fetcher.data["http://gems.example.com/gems/#{a.file_name}"] = Gem.read_binary(ad)
-    @fetcher.data["http://gems.example.com/gems/#{b.file_name}"] = Gem.read_binary(bd)
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", "1", "b" => "= 1"
+      fetcher.gem "b", "1"
+    end
 
     rs = Gem::RequestSet.new
     rs.gem "a"

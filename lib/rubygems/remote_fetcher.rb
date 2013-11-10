@@ -78,7 +78,6 @@ class Gem::RemoteFetcher
   end
 
   ##
-  #
   # Given a source at +uri+, calculate what hostname to actually
   # connect to query the data for it.
 

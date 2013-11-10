@@ -1,5 +1,5 @@
 require 'rubygems/test_case'
-require 'rubygems/source/local'
+require 'rubygems/source'
 
 require 'fileutils'
 

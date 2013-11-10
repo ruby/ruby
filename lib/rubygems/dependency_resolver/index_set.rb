@@ -2,10 +2,17 @@
 # The global rubygems pool represented via the traditional
 # source index.
 
-class Gem::DependencyResolver::IndexSet
+class Gem::DependencyResolver::IndexSet < Gem::DependencyResolver::Set
 
-  def initialize
-    @f = Gem::SpecFetcher.fetcher
+  def initialize source = nil # :nodoc:
+    @f =
+      if source then
+        sources = Gem::SourceList.from [source]
+
+        Gem::SpecFetcher.new sources
+      else
+        Gem::SpecFetcher.fetcher
+      end
 
     @all = Hash.new { |h,k| h[k] = [] }
 
@@ -37,27 +44,6 @@ class Gem::DependencyResolver::IndexSet
     end
 
     res
-  end
-
-  ##
-  # Called from IndexSpecification to get a true Specification
-  # object.
-
-  def load_spec name, ver, platform, source
-    key = "#{name}-#{ver}-#{platform}"
-
-    @specs.fetch key do
-      tuple = Gem::NameTuple.new name, ver, platform
-
-      @specs[key] = source.fetch_spec tuple
-    end
-  end
-
-  ##
-  # No prefetching needed since we load the whole index in
-  # initially.
-
-  def prefetch gems
   end
 
 end

@@ -241,6 +241,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
+    Gem.send :remove_instance_variable, :@ruby_version if
+      Gem.instance_variables.include? :@ruby_version
 
     FileUtils.mkdir_p @gemhome
     FileUtils.mkdir_p @userhome
@@ -376,7 +378,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     gem = File.join @tempdir, "gems", "#{spec.full_name}.gem"
 
-    unless File.exist? gem
+    unless File.exists? gem
       use_ui Gem::MockGemUi.new do
         Dir.chdir @tempdir do
           Gem::Package.build spec
@@ -898,14 +900,35 @@ Also, a list:
       spec_fetcher.prerelease_specs[@uri] << spec.name_tuple
     end
 
-    v = Gem.marshal_version
+    # HACK for test_download_to_cache
+    unless Gem::RemoteFetcher === @fetcher then
+      v = Gem.marshal_version
 
-    Gem::Specification.each do |spec|
-      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
-      data = Marshal.dump spec
-      data_deflate = Zlib::Deflate.deflate data
-      @fetcher.data[path] = data_deflate
-    end unless Gem::RemoteFetcher === @fetcher # HACK for test_download_to_cache
+      specs = all.map { |spec| spec.name_tuple }
+      s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
+
+      latest_specs = Gem::Specification.latest_specs.map do |spec|
+        spec.name_tuple
+      end
+
+      l_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic latest_specs
+
+      prerelease_specs = prerelease.map { |spec| spec.name_tuple }
+      p_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic prerelease_specs
+
+      @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
+      @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
+      @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
+
+      v = Gem.marshal_version
+
+      Gem::Specification.each do |spec|
+        path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+        data = Marshal.dump spec
+        data_deflate = Zlib::Deflate.deflate data
+        @fetcher.data[path] = data_deflate
+      end
+    end
 
     nil # force errors
   end
@@ -1086,6 +1109,62 @@ Also, a list:
 
   def spec name, version, &block
     Gem::Specification.new name, v(version), &block
+  end
+
+  ##
+  # Creates a SpecFetcher pre-filled with the gems or specs defined in the
+  # block.
+  #
+  # Yields a +fetcher+ object that responds to +spec+ and +gem+.  +spec+ adds
+  # a specification to the SpecFetcher while +gem+ adds both a specification
+  # and the gem data to the RemoteFetcher so the built gem can be downloaded.
+  #
+  # If only the a-3 gem is supposed to be downloaded you can save setup
+  # time by creating only specs for the other versions:
+  #
+  #   spec_fetcher do |fetcher|
+  #     fetcher.spec 'a', 1
+  #     fetcher.spec 'a', 2, 'b' => 3 # dependency on b = 3
+  #     fetcher.gem 'a', 3 do |spec|
+  #       # spec is a Gem::Specification
+  #       # ...
+  #     end
+  #   end
+
+  def spec_fetcher
+    gems = {}
+
+    fetcher = Object.new
+    fetcher.instance_variable_set :@test,  self
+    fetcher.instance_variable_set :@gems,  gems
+
+    def fetcher.gem name, version, dependencies = nil, &block
+      spec, gem = @test.util_gem name, version, dependencies, &block
+
+      @gems[spec] = gem
+
+      spec
+    end
+
+    def fetcher.spec name, version, dependencies = nil, &block
+      spec = @test.util_spec name, version, dependencies, &block
+
+      @gems[spec] = nil
+
+      spec
+    end
+
+    yield fetcher
+
+    util_setup_fake_fetcher unless @fetcher
+    util_setup_spec_fetcher(*gems.keys)
+
+    gems.each do |spec, gem|
+      next unless gem
+
+      @fetcher.data["http://gems.example.com/gems/#{spec.file_name}"] =
+        Gem.read_binary(gem)
+    end
   end
 
   ##

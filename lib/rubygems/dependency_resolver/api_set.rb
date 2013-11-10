@@ -2,11 +2,21 @@
 # The global rubygems pool, available via the rubygems.org API.
 # Returns instances of APISpecification.
 
-class Gem::DependencyResolver::APISet
+class Gem::DependencyResolver::APISet < Gem::DependencyResolver::Set
 
-  def initialize
+  ##
+  # The URI for the dependency API this APISet uses.
+
+  attr_reader :dep_uri # :nodoc:
+
+  ##
+  # Creates a new APISet that will retrieve gems from +uri+ using the RubyGems
+  # API described at http://guides.rubygems.org/rubygems-org-api
+
+  def initialize uri = 'https://rubygems.org/api/v1/dependencies'
+    uri = URI uri unless URI === uri # for ruby 1.8
     @data = Hash.new { |h,k| h[k] = [] }
-    @dep_uri = URI 'https://rubygems.org/api/v1/dependencies'
+    @dep_uri = uri
   end
 
   ##
@@ -46,7 +56,7 @@ class Gem::DependencyResolver::APISet
   ##
   # Return data for all versions of the gem +name+.
 
-  def versions name
+  def versions name # :nodoc:
     if @data.key?(name)
       return @data[name]
     end

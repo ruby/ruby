@@ -2,23 +2,23 @@
 # A set of gems for installation sourced from remote sources and local .gem
 # files
 
-class Gem::DependencyResolver::InstallerSet
+class Gem::DependencyResolver::InstallerSet < Gem::DependencyResolver::Set
 
   ##
   # List of Gem::Specification objects that must always be installed.
 
-  attr_reader :always_install
+  attr_reader :always_install # :nodoc:
 
   ##
   # Only install gems in the always_install list
 
-  attr_accessor :ignore_dependencies
+  attr_accessor :ignore_dependencies # :nodoc:
 
   ##
   # Do not look in the installed set when finding specifications.  This is
   # used by the --install-dir option to `gem install`
 
-  attr_accessor :ignore_installed
+  attr_accessor :ignore_installed # :nodoc:
 
   def initialize domain
     @domain = domain
@@ -36,14 +36,14 @@ class Gem::DependencyResolver::InstallerSet
   ##
   # Should local gems should be considered?
 
-  def consider_local?
+  def consider_local? # :nodoc:
     @domain == :both or @domain == :local
   end
 
   ##
   # Should remote gems should be considered?
 
-  def consider_remote?
+  def consider_remote? # :nodoc:
     @domain == :both or @domain == :remote
   end
 
@@ -101,7 +101,7 @@ class Gem::DependencyResolver::InstallerSet
   ##
   # Loads remote prerelease specs if +dep+ is a prerelease dependency
 
-  def load_remote_specs dep
+  def load_remote_specs dep # :nodoc:
     types = [:released]
     types << :prerelease if dep.prerelease?
 
@@ -123,7 +123,7 @@ class Gem::DependencyResolver::InstallerSet
   # Called from IndexSpecification to get a true Specification
   # object.
 
-  def load_spec name, ver, platform, source
+  def load_spec name, ver, platform, source # :nodoc:
     key = "#{name}-#{ver}-#{platform}"
 
     @specs.fetch key do
@@ -131,12 +131,6 @@ class Gem::DependencyResolver::InstallerSet
 
       @specs[key] = source.fetch_spec tuple
     end
-  end
-
-  ##
-  # No prefetching needed since we load the whole index in initially.
-
-  def prefetch(reqs)
   end
 
   def pretty_print q # :nodoc:

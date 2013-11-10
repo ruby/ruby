@@ -30,7 +30,16 @@ class Gem::DependencyResolver
   attr_accessor :soft_missing
 
   def self.compose_sets *sets
-    Gem::DependencyResolver::ComposedSet.new(*sets)
+    sets.compact!
+
+    case sets.length
+    when 0 then
+      raise ArgumentError, 'one set in the composition must be non-nil'
+    when 1 then
+      sets.first
+    else
+      Gem::DependencyResolver::ComposedSet.new(*sets)
+    end
   end
 
   ##
@@ -53,10 +62,25 @@ class Gem::DependencyResolver
     @set = set || Gem::DependencyResolver::IndexSet.new
     @needed = needed
 
-    @conflicts    = nil
+    @conflicts    = []
     @development  = false
     @missing      = []
     @soft_missing = false
+  end
+
+  ##
+  # Creates an ActivationRequest for the given +dep+ and the last +possible+
+  # specification.
+  #
+  # Returns the Specification and the ActivationRequest
+
+  def activation_request dep, possible # :nodoc:
+    spec = possible.pop
+
+    activation_request =
+      Gem::DependencyResolver::ActivationRequest.new spec, dep, possible
+
+    return spec, activation_request
   end
 
   def requests s, act, reqs=nil
@@ -95,27 +119,38 @@ class Gem::DependencyResolver
   ##
   # Finds the State in +states+ that matches the +conflict+ so that we can try
   # other possible sets.
+  #
+  # If no good candidate is found, the first state is tried.
 
   def find_conflict_state conflict, states # :nodoc:
+    rejected = []
+
     until states.empty? do
-      if conflict.for_spec? states.last.spec
-        state = states.last
+      state = states.pop
+
+      if conflict.for_spec? state.spec
         state.conflicts << [state.spec, conflict]
         return state
-      else
-        states.pop
       end
+
+      rejected << state
     end
 
-    nil
+    return rejected.shift
+  ensure
+    rejected = rejected.concat states
+    states.replace rejected
   end
 
   ##
-  # Extracts the specifications that may be able to fulfill +dependency+
+  # Extracts the specifications that may be able to fulfill +dependency+ and
+  # returns those that match the local platform and all those that match.
 
   def find_possible dependency # :nodoc:
-    possible = @set.find_all dependency
-    select_local_platforms possible
+    all = @set.find_all dependency
+    matching_platform = select_local_platforms all
+
+    return matching_platform, all
   end
 
   def handle_conflict(dep, existing)
@@ -134,7 +169,7 @@ class Gem::DependencyResolver
         Gem::DependencyResolver::DependencyConflict.new depreq, existing, dep
     end
 
-    @conflicts << conflict
+    @conflicts << conflict unless @conflicts.include? conflict
 
     return conflict
   end
@@ -150,7 +185,29 @@ class Gem::DependencyResolver
   # +conflicts+ is a [DependencyRequest, DependencyConflict] hit tried to
   # activate the state.
   #
-  State = Struct.new(:needed, :specs, :dep, :spec, :possibles, :conflicts)
+  State = Struct.new(:needed, :specs, :dep, :spec, :possibles, :conflicts) do
+    def summary # :nodoc:
+      nd = needed.map { |s| s.to_s }.sort if nd
+
+      if specs then
+        ss = specs.map { |s| s.full_name }.sort
+        ss.unshift ss.length
+      end
+
+      d = dep.to_s
+      d << " from #{dep.requester.full_name}" if dep.requester
+
+      ps = possibles.map { |p| p.full_name }.sort
+      ps.unshift ps.length
+
+      cs = conflicts.map do |(s, c)|
+        [s.full_name, c.conflicting_dependencies.map { |cd| cd.to_s }]
+      end
+
+      { :needed => nd, :specs => ss, :dep => d, :spec => spec.full_name,
+        :possibles => ps, :conflicts => cs }
+    end
+  end
 
   ##
   # The meat of the algorithm. Given +needed+ DependencyRequest objects and
@@ -178,20 +235,22 @@ class Gem::DependencyResolver
 
         needed, specs = resolve_for_conflict needed, specs, state
 
+        states << state unless state.possibles.empty?
+
         next
       end
 
-      possible = find_possible dep
+      matching, all = find_possible dep
 
-      case possible.size
+      case matching.size
       when 0
-        resolve_for_zero dep
+        resolve_for_zero dep, all
       when 1
         needed, specs =
-          resolve_for_single needed, specs, dep, possible
+          resolve_for_single needed, specs, dep, matching
       else
         needed, specs =
-          resolve_for_multiple needed, specs, states, dep, possible
+          resolve_for_multiple needed, specs, states, dep, matching
       end
     end
 
@@ -208,10 +267,8 @@ class Gem::DependencyResolver
     raise Gem::ImpossibleDependenciesError.new state.dep, state.conflicts if
       state.possibles.empty?
 
-    spec = state.possibles.pop
-
     # Retry resolution with this spec and add it's dependencies
-    act = Gem::DependencyResolver::ActivationRequest.new spec, state.dep
+    spec, act = activation_request state.dep, state.possibles
 
     needed = requests spec, act, state.needed
     specs = Gem::List.prepend state.specs, act
@@ -230,19 +287,11 @@ class Gem::DependencyResolver
       [s.source, s.version, s.platform == Gem::Platform::RUBY ? -1 : 1]
     end
 
-    # To figure out which to pick, we keep resolving given each one being
-    # activated and if there isn't a conflict, we know we've found a full set.
-    #
-    # We use an until loop rather than reverse_each to keep the stack short
-    # since we're using a recursive algorithm.
-    spec = possible.pop
+    spec, act = activation_request dep, possible
 
     # We may need to try all of +possible+, so we setup state to unwind back
     # to current +needed+ and +specs+ so we can try another. This is code is
     # what makes conflict resolution possible.
-
-    act = Gem::DependencyResolver::ActivationRequest.new spec, dep
-
     states << State.new(needed, specs, dep, spec, possible, [])
 
     needed = requests spec, act, needed
@@ -256,8 +305,7 @@ class Gem::DependencyResolver
   # dependencies by adding them to +needed+.
 
   def resolve_for_single needed, specs, dep, possible # :nodoc:
-    spec = possible.first
-    act = Gem::DependencyResolver::ActivationRequest.new spec, dep, false
+    spec, act = activation_request dep, possible
 
     specs = Gem::List.prepend specs, act
 
@@ -274,11 +322,11 @@ class Gem::DependencyResolver
   ##
   # When there are no possible specifications for +dep+ our work is done.
 
-  def resolve_for_zero dep # :nodoc:
+  def resolve_for_zero dep, platform_mismatch # :nodoc:
     @missing << dep
 
     unless @soft_missing
-      raise Gem::UnsatisfiableDependencyError, dep
+      raise Gem::UnsatisfiableDependencyError.new(dep, platform_mismatch)
     end
   end
 
@@ -287,23 +335,30 @@ class Gem::DependencyResolver
 
   def select_local_platforms specs # :nodoc:
     specs.select do |spec|
-      Gem::Platform.match spec.platform
+      Gem::Platform.installable? spec
     end
   end
 
 end
 
-require 'rubygems/dependency_resolver/api_set'
-require 'rubygems/dependency_resolver/api_specification'
 require 'rubygems/dependency_resolver/activation_request'
-require 'rubygems/dependency_resolver/composed_set'
-require 'rubygems/dependency_resolver/current_set'
 require 'rubygems/dependency_resolver/dependency_conflict'
 require 'rubygems/dependency_resolver/dependency_request'
+
+require 'rubygems/dependency_resolver/set'
+require 'rubygems/dependency_resolver/api_set'
+require 'rubygems/dependency_resolver/composed_set'
+require 'rubygems/dependency_resolver/best_set'
+require 'rubygems/dependency_resolver/current_set'
 require 'rubygems/dependency_resolver/index_set'
+require 'rubygems/dependency_resolver/installer_set'
+require 'rubygems/dependency_resolver/lock_set'
+require 'rubygems/dependency_resolver/vendor_set'
+
+require 'rubygems/dependency_resolver/specification'
+require 'rubygems/dependency_resolver/spec_specification'
+require 'rubygems/dependency_resolver/api_specification'
 require 'rubygems/dependency_resolver/index_specification'
 require 'rubygems/dependency_resolver/installed_specification'
-require 'rubygems/dependency_resolver/installer_set'
-require 'rubygems/dependency_resolver/vendor_set'
 require 'rubygems/dependency_resolver/vendor_specification'
 

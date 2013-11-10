@@ -35,7 +35,7 @@ class Gem::DependencyResolutionError < Gem::Exception
     @conflict = conflict
     a, b = conflicting_dependencies
 
-    super "unable to resolve conflicting dependencies '#{a}' and '#{b}'"
+    super "conflicting dependencies #{a} and #{b}\n#{@conflict.explanation}"
   end
 
   def conflicting_dependencies
@@ -226,10 +226,17 @@ class Gem::UnsatisfiableDependencyError < Gem::Exception
   # Creates a new UnsatisfiableDepedencyError for the unsatisfiable
   # Gem::DependencyResolver::DependencyRequest +dep+
 
-  def initialize dep
-    requester = dep.requester ? dep.requester.request : '(unknown)'
-
-    super "Unable to resolve dependency: #{requester} requires #{dep}"
+  def initialize dep, platform_mismatch=nil
+    if platform_mismatch and !platform_mismatch.empty?
+      plats = platform_mismatch.map { |x| x.platform.to_s }.sort.uniq
+      super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
+    else
+      if dep.explicit?
+        super "Unable to resolve dependency: user requested '#{dep}'"
+      else
+        super "Unable to resolve dependency: '#{dep.request_context}' requires '#{dep}'"
+      end
+    end
 
     @dependency = dep
   end
