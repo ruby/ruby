@@ -155,7 +155,7 @@ with all sufficient information, see the ChangeLog file.
 
 * Proc
   * Returning from lambda proc now always exits from the Proc, not from the
-    method where the lambda is created.  Returing from non-lambda proc exits
+    method where the lambda is created.  Returning from non-lambda proc exits
     from the method, same as the former behavior.
 
 === Stdlib updates (outstanding ones only)
@@ -211,7 +211,7 @@ with all sufficient information, see the ChangeLog file.
 
 * REXML::Parsers::SAX2Parser
   * Fixes wrong number of arguments of entitydecl event. Document of the event
-    says "an array of the entity declaration" but implemenation passes two
+    says "an array of the entity declaration" but implementation passes two
     or more arguments. It is an implementation bug but it breaks backword
     compatibility.
 
