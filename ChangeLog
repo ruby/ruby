@@ -1,3 +1,9 @@
+Mon Nov 11 01:02:06 2013  Zachary Scott  <e@zzak.io>
+
+	* lib/timeout.rb: Added note about change from #8730 [Fixes GH-440]
+	* NEWS: Improve grammar on change to Timeout
+	  Patched by @srawlins in https://github.com/ruby/ruby/pull/440
+
 Sun Nov 10 23:47:05 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gc.c (rb_gcdebug_print_obj_condition): catch up recent changes

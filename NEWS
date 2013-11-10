@@ -251,7 +251,7 @@ with all sufficient information, see the ChangeLog file.
     * Tempfile.create
 
 * Timeout
-  * No longer an exception to terminate the given block can be rescued
+  * The exception to terminate the given block can no longer be rescued
     inside the block, by default, unless the exception class is given
     explicitly.
 
