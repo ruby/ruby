@@ -57,6 +57,9 @@ module Timeout
   # Returns the result of the block *if* the block completed before
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
   #
+  # The exception thrown to terminate the given block cannot be rescued inside
+  # the block unless +klass+ is given explicitly.
+  #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
