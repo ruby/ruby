@@ -43,6 +43,11 @@ with all sufficient information, see the ChangeLog file.
   * New methods
     * Enumerable#to_h converts a list of key-value pairs into a Hash.
 
+* Exception
+  * New methods
+    * Exception#cause provides the previous exception which has been caught
+      at where raising the new exception.
+
 * GC
   * added environment variable:
     * RUBY_HEAP_SLOTS_GROWTH_FACTOR: growth rate of the heap.
