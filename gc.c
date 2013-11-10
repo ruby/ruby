@@ -6706,7 +6706,7 @@ rb_gcdebug_print_obj_condition(VALUE obj)
 #if RGENGC_THREEGEN
     fprintf(stderr, "young?     : %s\n", RVALUE_YOUNG_P(obj) ? "true" : "false");
 #endif
-    fprintf(stderr, "old?       : %s\n", RVALUE_OLDGEN_P(obj) ? "true" : "false");
+    fprintf(stderr, "old?       : %s\n", RVALUE_OLD_P(obj) ? "true" : "false");
     fprintf(stderr, "shady?     : %s\n", RVALUE_SHADY(obj) ? "true" : "false");
     fprintf(stderr, "remembered?: %s\n", MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "true" : "false");
 #endif

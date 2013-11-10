@@ -1,3 +1,8 @@
+Sun Nov 10 23:47:05 2013  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c (rb_gcdebug_print_obj_condition): catch up recent changes
+	  to compile on GC_DEBUG.
+
 Sun Nov 10 22:16:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_cause): captured previous exception.
