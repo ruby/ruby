@@ -641,6 +641,10 @@ make_exception(int argc, VALUE *argv, int isstr)
 	if (argc > 2)
 	    set_backtrace(mesg, argv[2]);
     }
+    {
+	VALUE cause = get_errinfo();
+	if (!NIL_P(cause)) rb_iv_set(mesg, "cause", cause);
+    }
 
     return mesg;
 }

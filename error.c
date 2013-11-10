@@ -780,6 +780,14 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
     return exc_set_backtrace(exc, bt);
 }
 
+VALUE
+exc_cause(VALUE exc)
+{
+    ID id_cause;
+    CONST_ID(id_cause, "cause");
+    return rb_attr_get(exc, id_cause);
+}
+
 static VALUE
 try_convert_to_exception(VALUE obj)
 {
@@ -1742,6 +1750,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
+    rb_define_method(rb_eException, "cause", exc_cause, 0);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);

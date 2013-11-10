@@ -1,3 +1,10 @@
+Sun Nov 10 22:16:19 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_cause): captured previous exception.
+
+	* eval.c (make_exception): capture previous exception automagically.
+	  [Feature #8257]
+
 Sun Nov 10 08:37:20 2013  Zachary Scott  <e@zzak.io>
 
 	* thread.c: [DOC] Remove duplicate reference

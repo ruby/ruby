@@ -476,4 +476,19 @@ end.join
   def test_stackoverflow
     assert_raise(SystemStackError){m}
   end
+
+  def test_cause
+    msg = "[Feature #8257]"
+    e = assert_raise(StandardError) {
+      begin
+        raise msg
+      rescue => e
+        assert_nil(e.cause, msg)
+        raise StandardError
+      end
+    }
+    cause = e.cause
+    assert_instance_of(RuntimeError, cause, msg)
+    assert_equal(msg, cause.message, msg)
+  end
 end
