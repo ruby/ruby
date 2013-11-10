@@ -27,7 +27,7 @@ Sun Nov 10 06:14:39 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* insns.def (opt_str_freeze): add opt_str_freeze instruction which
 	  pushes a frozen string literal without allocating a new object if
-	  String#freeze is not overriden
+	  String#freeze is not overridden
 
 	* string.c (Init_String): define String#freeze
 
