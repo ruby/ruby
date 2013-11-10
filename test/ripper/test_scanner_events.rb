@@ -591,15 +591,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('tstring_end', '%Q[abcdef]')
   end
 
-  def test_tstring_suffix
-    assert_equal ['"f'],
-                 scan('tstring_end', '"abcdef"f')
-    assert_equal [']f'],
-                 scan('tstring_end', '%q[abcdef]f')
-    assert_equal [']f'],
-                 scan('tstring_end', '%Q[abcdef]f')
-  end
-
   def test_regexp_beg
     assert_equal [],
                  scan('regexp_beg', '')

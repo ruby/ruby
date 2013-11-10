@@ -27,8 +27,6 @@ with all sufficient information, see the ChangeLog file.
 
 * def-expr now returns the symbol of its name instead of nil.
 
-* Added 'f' suffix for string literals that returns a frozen String object.
-
 === Core classes updates (outstanding ones only)
 
 * Array

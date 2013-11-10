@@ -2201,60 +2201,6 @@ class TestString < Test::Unit::TestCase
       })
     end
     assert_equal "hello", str
-    assert_not_predicate str, :frozen?
-  end
-
-  def test_frozen_string
-    assert_equal "hello", "hello"f
-
-    assert_predicate "hello"f, :frozen?
-
-    f = -> { "hello"f }
-
-    assert_equal f.call.object_id, f.call.object_id
-  end
-
-  def test_frozen_dstring
-    assert_equal "hello123", "hello#{123}"f
-
-    assert_predicate "hello#{123}"f, :frozen?
-
-    i = 0
-    f = -> { "#{i += 1}"f }
-    assert_equal "1", f.call
-    assert_equal "2", f.call
-  end
-
-  def test_frozen_string_adjacent
-    str = nil
-    assert_nothing_raised(SyntaxError) do
-      eval(%{
-        str = "hello" "world"f
-      })
-    end
-    assert_equal "helloworld", str
-    assert_predicate str, :frozen?
-  end
-
-  def test_frozen_string_cannot_be_adjacent
-    assert_raise(SyntaxError) do
-      eval(%{
-        "hello"f "world"
-      })
-    end
-  end
-
-  def test_frozen_strings_are_deduplicated
-    a = "hello"f
-    b = "hello"f
-    assert_equal a.object_id, b.object_id
-  end
-
-  def test_frozen_strings_are_deduplicated_with_encoding
-    a = eval("# coding: utf-8\n'hello'f")
-    b = eval("# coding: ascii\n'hello'f")
-    assert_equal Encoding::UTF_8, a.encoding
-    assert_equal Encoding::US_ASCII, b.encoding
   end
 
   def test_eq_tilde_can_be_overridden

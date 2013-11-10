@@ -2865,8 +2865,6 @@ Thu Sep  5 17:25:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fstring): get rid of duplicating already frozen object.
 
-	* parse.y (str_suffix_gen): freeze in advance to reduce objects.
-
 Thu Sep  5 14:01:22 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/optparse.rb:  The Integer acceptable now allows binary and
@@ -2884,16 +2882,12 @@ Thu Sep  5 13:49:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
 
 	* internal.h: add rb_fstring() prototype
 
-	* parse.y (str_suffix_gen): deduplicate frozen string literals
-
 	* string.c (rb_fstring): deduplicate frozen string literals
 
 	* string.c (rb_str_free): delete fstrings from frozen_strings table when
 	  they are GC'd
 
 	* string.c (Init_String): initialize frozen_strings table
-
-	* test/ruby/test_string.rb: test frozen strings are deduplicated
 
 Thu Sep  5 12:48:00 2013  Kenta Murata  <mrkn@cookpad.com>
 
@@ -3178,11 +3172,6 @@ Mon Sep  2 23:46:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (num_step): Optimize for infinite loop.
 
-Mon Sep  2 23:46:10 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (parser_str_options): use valid suffix word only, as well as
-	  numeric literal, for the backward compatibility.
-
 Mon Sep  2 22:55:59 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (ISDIGIT): Unused macro removed.
@@ -3192,28 +3181,6 @@ Mon Sep  2 22:49:15 2013  Tanaka Akira  <akr@fsij.org>
 	* bignum.c (str2big_poweroftwo): Extracted from rb_cstr_to_inum.
 	  (str2big_normal): Ditto.
 	  (str2big_karatsuba): Ditto.
-
-Mon Sep  2 17:53:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (str_suffix_gen): String#b creates new string object, use
-	  force_encoding instead.
-
-Mon Sep  2 16:06:00 2013  Charlie Somerville  <charliesome@ruby-lang.org>
-
-	* NEWS: Add note about frozen string literals
-
-	* compile.c (case_when_optimizable_literal): optimize NODE_LIT strings
-	  in when clauses of case statements
-
-	* ext/ripper/eventids2.c: add tSTRING_SUFFIX
-
-	* parse.y: add 'f' suffix on string literals for frozen strings
-
-	* test/ripper/test_scanner_events.rb: add scanner tests
-
-	* test/ruby/test_string.rb: add frozen string tests
-
-	[Feature #8579] [ruby-core:55699]
 
 Mon Sep  2 14:39:29 2013  Akinori MUSHA  <knu@iDaemons.org>
 
