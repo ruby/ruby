@@ -7305,6 +7305,14 @@ parser_yylex(struct parser_params *parser)
 	warn_balanced("+", "unary operator");
 	return '+';
 
+  case 0xCE:
+    c = nextc();
+    if (c == 0xBB) {
+      lex_state = EXPR_ENDFN;
+      return tLAMBDA;
+    }
+    return 0xCE;
+
       case '-':
 	c = nextc();
 	if (IS_AFTER_OPERATOR()) {

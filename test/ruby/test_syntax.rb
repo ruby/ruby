@@ -230,6 +230,11 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("-> (x, y) {}", __FILE__, feature6390)
   end
 
+  def test_real_stabby_lamba
+    l = λ(x) { "HI #{x}" }
+    assert_equal "HI HATERS", l.call("HATERS")
+  end
+
   def test_do_block_in_cmdarg_begin
     bug6419 = '[ruby-dev:45631]'
     assert_valid_syntax("p begin 1.times do 1 end end", __FILE__, bug6419)
