@@ -1,3 +1,13 @@
+Mon Nov 11 22:14:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (rb_infinity_float): suppress overflow in
+	  constant arithmetic warnings.  [ruby-core:57981] [Bug #9044]
+
+Mon Nov 11 22:14:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): VC 2013 supports C99 mathematics
+	  functions.  [ruby-core:57981] [Bug #9044]
+
 Thu Oct 31 22:28:04 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* test/openssl/test_pkey_ec.rb: Skip tests for "Oakley" curves as

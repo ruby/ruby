@@ -308,6 +308,20 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #endif
 
 #include <float.h>
+
+#if defined _MSC_VER && _MSC_VER >= 1800 && defined INFINITY
+#pragma warning(push)
+#pragma warning(disable:4756)
+static inline float
+rb_infinity_float(void)
+{
+    return INFINITY;
+}
+#pragma warning(pop)
+#undef INFINITY
+#define INFINITY rb_infinity_float()
+#endif
+
 #if !defined __MINGW32__ || defined __NO_ISOCEXT
 #ifndef isnan
 #define isnan(x) _isnan(x)
