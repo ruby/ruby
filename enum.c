@@ -501,7 +501,7 @@ enum_flat_map(VALUE obj)
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_sized(enum_size(obj, 0, 0));
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
     OBJ_INFECT(ary, obj);

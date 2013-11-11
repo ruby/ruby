@@ -494,6 +494,18 @@ rb_ary_new(void)
 }
 
 VALUE
+rb_ary_new_sized(VALUE long_or_nil)
+{
+    if (NIL_P(long_or_nil)) {
+      return rb_ary_new2(RARRAY_EMBED_LEN_MAX);
+    }
+    else {
+      return ary_new(rb_cArray, NUM2LONG(long_or_nil));
+    }
+
+}
+
+VALUE
 rb_ary_new_from_args(long n, ...)
 {
     va_list ar;

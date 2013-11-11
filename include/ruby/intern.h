@@ -49,6 +49,7 @@ VALUE rb_assoc_new(VALUE, VALUE);
 VALUE rb_check_array_type(VALUE);
 VALUE rb_ary_new(void);
 VALUE rb_ary_new_capa(long capa);
+VALUE rb_ary_new_sized(VALUE long_or_nil);
 VALUE rb_ary_new_from_args(long n, ...);
 VALUE rb_ary_new_from_values(long n, const VALUE *elts);
 VALUE rb_ary_tmp_new(long);
