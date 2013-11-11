@@ -29,9 +29,6 @@
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
-#define HASH_DELETED  FL_USER1
-#define HASH_PROC_DEFAULT FL_USER2
-
 /*
  * Hash WB strategy:
  *  1. Check mutate st_* functions

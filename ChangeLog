@@ -1,3 +1,10 @@
+Mon Nov 11 18:31:12 2013  Aman Gupta <ruby@tmm1.net>
+
+	* internal.h: move common string/hash flags to include file.
+	* ext/objspace/objspace_dump.c: remove flags shared above.
+	* hash.c: ditto.
+	* string.c: ditto.
+
 Mon Nov 11 04:36:14 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/specification.rb:  Include 2.2.0.preview.2 when checking
