@@ -1,3 +1,9 @@
+Mon Nov 11 23:54:51 2013  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (cloexec_accept): Fix a compile error on
+	  Debian GNU/kFreeBSD.  Consider HAVE_ACCEPT4 is defined
+	  but SOCK_CLOEXEC is not defined.
+
 Mon Nov 11 22:14:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (rb_infinity_float): suppress overflow in
