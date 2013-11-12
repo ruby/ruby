@@ -17,12 +17,10 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     spec_fetcher do |fetcher|
       fetcher.spec 'foo', '1.0'
       fetcher.spec 'foo', '2.0'
+      fetcher.clear
+      fetcher.gem 'foo', '0.1'
+      fetcher.gem 'foo', '0.2'
     end
-
-    quick_gem 'foo', '0.1'
-    quick_gem 'foo', '0.2'
-
-    Gem::Specification.reset
 
     use_ui @ui do
       @cmd.execute

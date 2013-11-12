@@ -10,43 +10,14 @@ class TestGemSource < Gem::TestCase
   def setup
     super
 
-    util_setup_fake_fetcher
-
-    @a_pre = new_spec 'a', '1.a'
-
-    install_specs @a_pre
+    @specs = spec_fetcher do |fetcher|
+      fetcher.spec 'a', '1.a'
+      fetcher.gem  'a', 1
+      fetcher.spec 'a', 2
+      fetcher.spec 'b', 2
+    end
 
     @source = Gem::Source.new(@gem_repo)
-
-    Gem::Specification.remove_spec @b2
-
-    all = Gem::Specification.map { |spec|
-      Gem::NameTuple.new(spec.name, spec.version, spec.original_platform)
-    }.sort
-
-    @prerelease_specs, @specs = all.partition { |g| g.prerelease? }
-
-    # TODO: couldn't all of this come from the fake spec fetcher?
-    @latest_specs = Gem::Specification.latest_specs.sort.map { |spec|
-      Gem::NameTuple.new(spec.name, spec.version, spec.original_platform)
-    }
-
-    v = Gem.marshal_version
-    s_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@specs)))
-    l_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@latest_specs)))
-    p_zip = util_gzip(Marshal.dump(Gem::NameTuple.to_basic(@prerelease_specs)))
-    @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
-    @fetcher.data["#{@gem_repo}latest_specs.#{v}.gz"]     = l_zip
-    @fetcher.data["#{@gem_repo}prerelease_specs.#{v}.gz"] = p_zip
-
-    @released = Gem::NameTuple.from_list \
-                 [["a",      Gem::Version.new("1"),   "ruby"],
-                  ["a",      Gem::Version.new("2"),   "ruby"],
-                  ["a_evil", Gem::Version.new("9"),   "ruby"],
-                  ["c",      Gem::Version.new("1.2"), "ruby"],
-                  ['dep_x',  Gem::Version.new(1),     'ruby'],
-                  ["pl",     Gem::Version.new("1"),   "i386-linux"],
-                  ['x',  Gem::Version.new(1),     'ruby']]
   end
 
   def test_api_uri
@@ -83,59 +54,60 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_fetch_spec
-    spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
-    @fetcher.data["#{spec_uri}.rz"] = util_zip(Marshal.dump(@a1))
+    a1 = @specs['a-1']
+
+    spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
 
     spec = @source.fetch_spec tuple('a', Gem::Version.new(1), 'ruby')
-    assert_equal @a1.full_name, spec.full_name
+    assert_equal a1.full_name, spec.full_name
 
     cache_dir = @source.cache_dir URI.parse(spec_uri)
 
-    cache_file = File.join cache_dir, @a1.spec_name
+    cache_file = File.join cache_dir, a1.spec_name
 
     assert File.exist?(cache_file)
   end
 
   def test_fetch_spec_cached
-    spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}"
+    a1 = @specs['a-1']
+
+    spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = nil
 
     cache_dir = @source.cache_dir URI.parse(spec_uri)
     FileUtils.mkdir_p cache_dir
 
-    cache_file = File.join cache_dir, @a1.spec_name
+    cache_file = File.join cache_dir, a1.spec_name
 
     open cache_file, 'wb' do |io|
-      Marshal.dump @a1, io
+      Marshal.dump a1, io
     end
 
     spec = @source.fetch_spec tuple('a', Gem::Version.new(1), 'ruby')
-    assert_equal @a1.full_name, spec.full_name
+    assert_equal a1.full_name, spec.full_name
   end
 
   def test_fetch_spec_platform
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@pl1.original_name}.gemspec.rz"] =
-      util_zip(Marshal.dump(@pl1))
+    specs = spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
 
     spec = @source.fetch_spec tuple('pl', Gem::Version.new(1), 'i386-linux')
 
-    assert_equal @pl1.full_name, spec.full_name
+    assert_equal specs['pl-1-x86-linux'].full_name, spec.full_name
   end
 
   def test_fetch_spec_platform_ruby
-    @fetcher.data["#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{@a1.spec_name}.rz"] =
-      util_zip(Marshal.dump(@a1))
-
     spec = @source.fetch_spec tuple('a', Gem::Version.new(1), nil)
-    assert_equal @a1.full_name, spec.full_name
+    assert_equal @specs['a-1'].full_name, spec.full_name
 
     spec = @source.fetch_spec tuple('a', Gem::Version.new(1), '')
-    assert_equal @a1.full_name, spec.full_name
+    assert_equal @specs['a-1'].full_name, spec.full_name
   end
 
   def test_load_specs
-    expected = @released
-    assert_equal expected, @source.load_specs(:released)
+    released = @source.load_specs(:released).map { |spec| spec.full_name }
+    assert_equal %W[a-2 a-1 b-2], released
 
     cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
     assert File.exist?(cache_dir), "#{cache_dir} does not exist"
@@ -145,12 +117,14 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_load_specs_cached
+    latest_specs = @source.load_specs :latest
+
     # Make sure the cached version is actually different:
-    @latest_specs << Gem::NameTuple.new('cached', Gem::Version.new('1.0.0'), 'ruby')
+    latest_specs << Gem::NameTuple.new('cached', Gem::Version.new('1.0.0'), 'ruby')
 
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = nil
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}"] =
-      ' ' * Marshal.dump(@latest_specs).length
+      ' ' * Marshal.dump(latest_specs).length
 
     cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
 
@@ -159,20 +133,22 @@ class TestGemSource < Gem::TestCase
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
     open cache_file, 'wb' do |io|
-      Marshal.dump @latest_specs, io
+      Marshal.dump latest_specs, io
     end
 
-    latest_specs = @source.load_specs :latest
+    cached_specs = @source.load_specs :latest
 
-    assert_equal @latest_specs, latest_specs
+    assert_equal latest_specs, cached_specs
   end
 
   def test_load_specs_cached_empty
+    latest_specs = @source.load_specs :latest
+
     # Make sure the cached version is actually different:
-    @latest_specs << Gem::NameTuple.new('fixed', Gem::Version.new('1.0.0'), 'ruby')
+    latest_specs << Gem::NameTuple.new('fixed', Gem::Version.new('1.0.0'), 'ruby')
     # Setup valid data on the 'remote'
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
-          util_gzip(Marshal.dump(@latest_specs))
+          util_gzip(Marshal.dump(latest_specs))
 
     cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
 
@@ -182,12 +158,12 @@ class TestGemSource < Gem::TestCase
 
     open cache_file, 'wb' do |io|
       # Setup invalid data in the cache:
-      io.write Marshal.dump(@latest_specs)[0, 10]
+      io.write Marshal.dump(latest_specs)[0, 10]
     end
 
-    latest_specs = @source.load_specs :latest
+    fixed_specs = @source.load_specs :latest
 
-    assert_equal @latest_specs, latest_specs
+    assert_equal latest_specs, fixed_specs
   end
 
   def test_load_specs_from_unavailable_uri
@@ -200,7 +176,7 @@ class TestGemSource < Gem::TestCase
 
   def test_spaceship
     remote    = @source
-    specific  = Gem::Source::SpecificFile.new(@a1.cache_file)
+    specific  = Gem::Source::SpecificFile.new @specs['a-1'].cache_file
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 

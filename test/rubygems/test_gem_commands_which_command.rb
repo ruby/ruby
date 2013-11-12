@@ -68,7 +68,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
 
   def util_foo_bar
     files = %w[lib/foo_bar.rb lib/directory/baz.rb Rakefile]
-    @foo_bar = quick_spec 'foo_bar' do |gem|
+    @foo_bar = util_spec 'foo_bar' do |gem|
       gem.files = files
     end
 

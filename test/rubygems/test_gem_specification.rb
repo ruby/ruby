@@ -41,7 +41,7 @@ end
   EOF
 
   def make_spec_c1
-    @c1 = quick_spec 'a', '1' do |s|
+    @c1 = util_spec 'a', '1' do |s|
       s.executable = 'exec'
       s.extensions << 'ext/a/extconf.rb'
       s.test_file = 'test/suite.rb'
@@ -59,7 +59,7 @@ end
   end
 
   def ext_spec
-    @ext = quick_spec 'ext', '1' do |s|
+    @ext = util_spec 'ext', '1' do |s|
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'
       s.extensions = %w[ext/extconf.rb]
@@ -74,7 +74,7 @@ end
   def setup
     super
 
-    @a1 = quick_spec 'a', '1' do |s|
+    @a1 = util_spec 'a', '1' do |s|
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'
       s.requirements << 'A working computer'
@@ -85,11 +85,11 @@ end
       s.files = %w[lib/code.rb]
     end
 
-    @a2 = quick_spec 'a', '2' do |s|
+    @a2 = util_spec 'a', '2' do |s|
       s.files = %w[lib/code.rb]
     end
 
-    @a3 = quick_spec 'a', '3' do |s|
+    @a3 = util_spec 'a', '3' do |s|
       s.metadata['allowed_push_host'] = "https://privategemserver.com"
     end
 
@@ -840,37 +840,34 @@ dependencies: []
   end
 
   def test_self_outdated
-    util_clear_gems
-    util_setup_fake_fetcher true
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 4
 
-    a4 = quick_gem @a1.name, '4'
-    util_build_gem a4
-    util_setup_spec_fetcher @a1, @a2, @a3a, a4
+      fetcher.clear
 
-    Gem::Specification.remove_spec @a1
-    Gem::Specification.remove_spec @a2
-    Gem::Specification.remove_spec a4
+      fetcher.spec 'a', 3
+    end
 
     assert_equal %w[a], Gem::Specification.outdated
   end
 
   def test_self_outdated_and_latest_remotes
-    util_clear_gems
-    util_setup_fake_fetcher true
+    specs = spec_fetcher do |fetcher|
+      fetcher.spec 'a', 4
+      fetcher.spec 'b', 3
 
-    a4 = quick_gem @a1.name, '4'
-    util_build_gem a4
-    b3 = quick_gem @b2.name, '3'
-    util_build_gem b3
-    util_setup_spec_fetcher @a1, @a2, @a3a, a4, @b2, b3
+      fetcher.clear
 
-    Gem::Specification.remove_spec @a1
-    Gem::Specification.remove_spec @a2
-    Gem::Specification.remove_spec a4
-    Gem::Specification.remove_spec b3
+      fetcher.spec 'a', '3.a'
+      fetcher.spec 'b', 2
+    end
 
-    assert_equal [[@a3a, a4.version], [@b2, b3.version]],
-                 Gem::Specification.outdated_and_latest_version.to_a
+    expected = [
+      [specs['a-3.a'], v(4)],
+      [specs['b-2'],   v(3)],
+    ]
+
+    assert_equal expected, Gem::Specification.outdated_and_latest_version.to_a
   end
 
   def test_self_remove_spec
@@ -1062,7 +1059,7 @@ dependencies: []
   end
 
   def test_add_dependency_with_type
-    gem = quick_spec "awesome", "1.0" do |awesome|
+    gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_dependency true
       awesome.add_dependency :gem_name
     end
@@ -1071,7 +1068,7 @@ dependencies: []
   end
 
   def test_add_dependency_with_type_explicit
-    gem = quick_spec "awesome", "1.0" do |awesome|
+    gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_development_dependency "monkey"
     end
 
@@ -1370,7 +1367,7 @@ dependencies: []
 
     assert_empty @gem.dependent_gems
 
-    bonobo = quick_spec 'bonobo'
+    bonobo = util_spec 'bonobo'
 
     expected = [
       [@gem, @bonobo, [bonobo]],
@@ -1719,7 +1716,7 @@ dependencies: []
   end
 
   def test_prerelease_spec_adds_required_rubygems_version
-    @prerelease = quick_spec('tardis', '2.2.0.a')
+    @prerelease = util_spec('tardis', '2.2.0.a')
     refute @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.3.1'))
     assert @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.4.0'))
   end
@@ -2649,48 +2646,30 @@ WARNING:  licenses is empty.  Use a license abbreviation from:
   # KEEP a-3-x86-other_platform-1
 
   def test_latest_specs
-    util_clear_gems
-    util_setup_fake_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1 do |s|
+        s.platform = Gem::Platform.new 'x86-my_platform1'
+      end
 
-    quick_spec 'p', '1'
+      fetcher.spec 'a', 2
 
-    p1_curr = quick_spec 'p', '1' do |spec|
-      spec.platform = Gem::Platform::CURRENT
+      fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.new 'x86-my_platform1'
+      end
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = Gem::Platform.new 'x86-other_platform1'
+      end
+
+      fetcher.spec 'a', 3 do |s|
+        s.platform = Gem::Platform.new 'x86-other_platform1'
+      end
     end
-
-    quick_spec @a1.name, @a1.version do |s|
-      s.platform = Gem::Platform.new 'x86-my_platform1'
-    end
-
-    quick_spec @a1.name, @a1.version do |s|
-      s.platform = Gem::Platform.new 'x86-third_platform1'
-    end
-
-    quick_spec @a2.name, @a2.version do |s|
-      s.platform = Gem::Platform.new 'x86-my_platform1'
-    end
-
-    quick_spec @a2.name, @a2.version do |s|
-      s.platform = Gem::Platform.new 'x86-other_platform1'
-    end
-
-    quick_spec @a2.name, @a2.version.bump do |s|
-      s.platform = Gem::Platform.new 'x86-other_platform1'
-    end
-
-    Gem::Specification.remove_spec @b2
-    Gem::Specification.remove_spec @pl1
 
     expected = %W[
                   a-2
                   a-2-x86-my_platform-1
                   a-3-x86-other_platform-1
-                  a_evil-9
-                  c-1.2
-                  dep_x-1
-                  p-1
-                  #{p1_curr.full_name}
-                  x-1
                  ]
 
     latest_specs = Gem::Specification.latest_specs.map(&:full_name).sort
@@ -2857,7 +2836,7 @@ end
   end
 
   def util_setup_deps
-    @gem = quick_spec "awesome", "1.0" do |awesome|
+    @gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_runtime_dependency "bonobo", []
       awesome.add_development_dependency "monkey", []
     end

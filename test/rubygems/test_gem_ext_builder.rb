@@ -15,7 +15,7 @@ class TestGemExtBuilder < Gem::TestCase
 
     @orig_DESTDIR = ENV['DESTDIR']
 
-    @spec = quick_spec 'a'
+    @spec = util_spec 'a'
 
     @builder = Gem::Ext::Builder.new @spec, ''
   end

@@ -160,6 +160,164 @@ end
 # :startdoc:
 
 ##
+# The SpecFetcherSetup allows easy setup of a remote source in RubyGems tests:
+#
+#   spec_fetcher do |f|
+#     f.gem  'a', 1
+#     f.spec 'a', 2
+#     f.gem  'b', 1' 'a' => '~> 1.0'
+#     f.clear
+#   end
+#
+# The above declaration creates two gems, a-1 and b-1, with a dependency from
+# b to a.  The declaration creates an additional spec a-2, but no gem for it
+# (so it cannot be installed).
+#
+# After the gems are created they are removed from Gem.dir.
+
+class Gem::TestCase::SpecFetcherSetup
+
+  ##
+  # Executes a SpecFetcher setup block.  Yields an instance then creates the
+  # gems and specifications defined in the instance.
+
+  def self.declare test
+    setup = new test
+
+    yield setup
+
+    setup.execute
+  end
+
+  def initialize test # :nodoc:
+    @test  = test
+
+    @gems       = {}
+    @installed  = []
+    @operations = []
+  end
+
+  ##
+  # Removes any created gems or specifications from Gem.dir (the default
+  # install location).
+
+  def clear
+    @operations << [:clear]
+  end
+
+  def created_specs
+    created = {}
+
+    @gems.keys.each do |spec|
+      created[spec.full_name] = spec
+    end
+
+    created
+  end
+
+  ##
+  # Creates any defined gems or specifications
+
+  def execute # :nodoc:
+    execute_operations
+
+    setup_fetcher
+
+    created_specs
+  end
+
+  def execute_operations # :nodoc:
+    @operations.each do |operation, *arguments|
+      case operation
+      when :clear then
+        @test.util_clear_gems
+        @installed.clear
+      when :gem then
+        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+
+        write_spec spec
+
+        @gems[spec] = gem
+        @installed << spec
+      when :spec then
+        spec = @test.util_spec(*arguments, &arguments.pop)
+
+        write_spec spec
+
+        @gems[spec] = nil
+        @installed << spec
+      end
+    end
+  end
+
+  ##
+  # Creates a gem with +name+, +version+ and +deps+.  The created gem can be
+  # downloaded and installed.
+  #
+  # The specification will be yielded before gem creation for customization,
+  # but only the block or the dependencies may be set, not both.
+
+  def gem name, version, dependencies = nil, &block
+    @operations << [:gem, name, version, dependencies, block]
+  end
+
+  ##
+  # Creates a legacy platform spec with the name 'pl' and version 1
+
+  def legacy_platform
+    spec 'pl', 1 do |s|
+      s.platform = Gem::Platform.new 'i386-linux'
+      s.instance_variable_set :@original_platform, 'i386-linux'
+    end
+  end
+
+  def setup_fetcher # :nodoc;
+    require 'zlib'
+    require 'socket'
+    require 'rubygems/remote_fetcher'
+
+    @test.fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @test.fetcher
+
+    Gem::Specification.reset
+
+    @test.util_setup_spec_fetcher(*@gems.keys)
+
+    # This works around util_setup_spec_fetcher adding all created gems to the
+    # installed set.
+    Gem::Specification.reset
+    Gem::Specification.add_specs(*@installed)
+
+    @gems.each do |spec, gem|
+      next unless gem
+
+      @test.fetcher.data["http://gems.example.com/gems/#{spec.file_name}"] =
+        Gem.read_binary(gem)
+
+      FileUtils.cp gem, spec.cache_file
+    end
+  end
+
+  ##
+  # Creates a spec with +name+, +version+ and +deps+.  The created gem can be
+  # downloaded and installed.
+  #
+  # The specification will be yielded before creation for customization,
+  # but only the block or the dependencies may be set, not both.
+
+  def spec name, version, dependencies = nil, &block
+    @operations << [:spec, name, version, dependencies, block]
+  end
+
+  def write_spec spec # :nodoc:
+    open spec.spec_file, 'w' do |io|
+      io.write spec.to_ruby_for_cache
+    end
+  end
+
+end
+
+##
 # A StringIO duck-typed class that uses Tempfile instead of String as the
 # backing store.
 #

@@ -116,7 +116,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_nonexistent_binfile
-    quick_spec 'a', '2' do |s|
+    util_spec 'a', '2' do |s|
       s.executables = ['exec']
     end
     assert_raises(Gem::GemNotFoundException) do
@@ -125,7 +125,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_no_bin_file
-    quick_spec 'a', '1'
+    util_spec 'a', '1'
     assert_raises(ArgumentError) do
       Gem.bin_path('a', nil, '1')
     end
@@ -139,7 +139,7 @@ class TestGem < Gem::TestCase
 
   def test_self_bin_path_bin_file_gone_in_latest
     util_exec_gem
-    quick_spec 'a', '10' do |s|
+    util_spec 'a', '10' do |s|
       s.executables = []
     end
     # Should not find a-10's non-abin (bug)
@@ -183,7 +183,7 @@ class TestGem < Gem::TestCase
         fp.puts 'blah'
       end
 
-      foo = quick_spec 'foo' do |s| s.files = %w[data/foo.txt] end
+      foo = util_spec 'foo' do |s| s.files = %w[data/foo.txt] end
       install_gem foo
     end
 
@@ -420,17 +420,15 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_latest_spec_for
-    a2 = nil
-
-    spec_fetcher do |fetcher|
+    gems = spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
       fetcher.spec 'a', '3.a'
-      a2 = fetcher.spec 'a', 2
+      fetcher.spec 'a', 2
     end
 
     spec = Gem.latest_spec_for 'a'
 
-    assert_equal a2, spec
+    assert_equal gems['a-2'], spec
   end
 
   def test_self_latest_rubygems_version
@@ -458,7 +456,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_loaded_specs
-    foo = quick_spec 'foo'
+    foo = util_spec 'foo'
     install_gem foo
 
     foo.activate
@@ -959,13 +957,13 @@ class TestGem < Gem::TestCase
         fp.puts "class TestGem; PLUGINS_LOADED << 'plugin'; end"
       end
 
-      foo1 = quick_spec 'foo', '1' do |s|
+      foo1 = util_spec 'foo', '1' do |s|
         s.files << plugin_path
       end
 
       install_gem foo1
 
-      foo2 = quick_spec 'foo', '2' do |s|
+      foo2 = util_spec 'foo', '2' do |s|
         s.files << plugin_path
       end
 
@@ -1275,7 +1273,7 @@ class TestGem < Gem::TestCase
   end
 
   def util_exec_gem
-    spec, _ = quick_spec 'a', '4' do |s|
+    spec, _ = util_spec 'a', '4' do |s|
       s.executables = ['exec', 'abin']
     end
 

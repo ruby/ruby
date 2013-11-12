@@ -27,15 +27,12 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_exclude_prerelease
-    util_setup_fake_fetcher :prerelease
-    util_setup_spec_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'a', '2.pre'
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      read_binary(@a2_pre.cache_file)
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -47,18 +44,17 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_explicit_version_includes_prerelease
-    util_setup_fake_fetcher :prerelease
-    util_setup_spec_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'a', '2.a'
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      read_binary(@a2_pre.cache_file)
+    a2_pre = specs['a-2.a']
 
-    @cmd.handle_options [@a2_pre.name, '--version', @a2_pre.version.to_s,
+    @cmd.handle_options [a2_pre.name, '--version', a2_pre.version.to_s,
                          "--no-ri", "--no-rdoc"]
     assert @cmd.options[:prerelease]
-    assert @cmd.options[:version].satisfied_by?(@a2_pre.version)
+    assert @cmd.options[:version].satisfied_by?(a2_pre.version)
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -70,12 +66,15 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_local
-    util_setup_fake_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
     @cmd.options[:domain] = :local
 
-    FileUtils.mv @a2.cache_file, @tempdir
+    FileUtils.mv specs['a-2'].cache_file, @tempdir
 
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       orig_dir = Dir.pwd
@@ -97,12 +96,15 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   def test_execute_no_user_install
     skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
 
-    util_setup_fake_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
     @cmd.options[:user_install] = false
 
-    FileUtils.mv @a2.cache_file, @tempdir
+    FileUtils.mv specs['a-2'].cache_file, @tempdir
 
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       orig_dir = Dir.pwd
@@ -122,7 +124,8 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_local_missing
-    util_setup_fake_fetcher
+    spec_fetcher
+
     @cmd.options[:domain] = :local
 
     @cmd.options[:args] = %w[no_such_gem]
@@ -147,8 +150,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_nonexistent
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher
 
     @cmd.options[:args] = %w[nonexistent]
 
@@ -163,8 +165,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
   end
 
   def test_execute_bad_source
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher
 
     # This is needed because we need to exercise the cache path
     # within SpecFetcher
@@ -197,8 +198,9 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     misspelled = "nonexistent_with_hint"
     correctly_spelled = "non_existent_with_hint"
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher quick_spec(correctly_spelled, '2')
+    spec_fetcher do |fetcher|
+      fetcher.spec correctly_spelled, 2
+    end
 
     @cmd.options[:args] = [misspelled]
 
@@ -221,8 +223,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
     misspelled = "non-existent_with-hint"
     correctly_spelled = "nonexistent-with_hint"
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher quick_spec(correctly_spelled, '2')
+    spec_fetcher do |fetcher|
+      fetcher.spec correctly_spelled, 2
+      fetcher.clear
+    end
 
     @cmd.options[:args] = [misspelled]
 
@@ -257,17 +261,13 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_prerelease_skipped_when_no_flag_set
-    util_setup_fake_fetcher :prerelease
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2_pre
-
-    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
-      read_binary(@a1.cache_file)
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      read_binary(@a2_pre.cache_file)
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', '3.a'
+    end
 
     @cmd.options[:prerelease] = false
-    @cmd.options[:args] = [@a2_pre.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -279,17 +279,14 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_prerelease_wins_over_previous_ver
-    util_setup_fake_fetcher :prerelease
-    util_clear_gems
-    util_setup_spec_fetcher @a1, @a2_pre
-
-    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
-      read_binary(@a1.cache_file)
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      read_binary(@a2_pre.cache_file)
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', '2.a'
+      fetcher.clear
+    end
 
     @cmd.options[:prerelease] = true
-    @cmd.options[:args] = [@a2_pre.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -301,17 +298,13 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_prerelease_skipped_when_non_pre_available
-    util_setup_fake_fetcher :prerelease
-    util_clear_gems
-    util_setup_spec_fetcher @a2, @a2_pre
-
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      read_binary(@a2_pre.cache_file)
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '2.pre'
+      fetcher.gem 'a', 2
+    end
 
     @cmd.options[:prerelease] = true
-    @cmd.options[:args] = [@a2_pre.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -323,16 +316,19 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_rdoc
-    util_setup_fake_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
 
     Gem.done_installing(&Gem::RDoc.method(:generation_hook))
 
     @cmd.options[:document] = %w[rdoc ri]
     @cmd.options[:domain] = :local
 
-    FileUtils.mv @a2.cache_file, @tempdir
+    a2 = specs['a-2']
+    FileUtils.mv a2.cache_file, @tempdir
 
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       # Don't use Dir.chdir with a block, it warnings a lot because
@@ -351,22 +347,25 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     wait_for_child_process_to_exit
 
-    assert_path_exists File.join(@a2.doc_dir, 'ri')
-    assert_path_exists File.join(@a2.doc_dir, 'rdoc')
+    assert_path_exists File.join(a2.doc_dir, 'ri')
+    assert_path_exists File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_saves_build_args
-    util_setup_fake_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
 
     args = %w!--with-awesome=true --more-awesome=yes!
 
     Gem::Command.build_args = args
 
+    a2 = specs['a-2']
+    FileUtils.mv a2.cache_file, @tempdir
+
     @cmd.options[:domain] = :local
 
-    FileUtils.mv @a2.cache_file, @tempdir
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       # Don't use Dir.chdir with a block, it warnings a lot because
@@ -383,21 +382,19 @@ ERROR:  Possible alternatives: non_existent_with_hint
       end
     end
 
-    path = @a2.build_info_file
+    path = a2.build_info_file
     assert_path_exists path
 
-    assert_equal args, @a2.build_args
+    assert_equal args, a2.build_args
   end
 
 
   def test_execute_remote
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -411,17 +408,22 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_remote_ignores_files
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', 2
+    end
 
     @cmd.options[:domain] = :remote
 
-    FileUtils.mv @a2.cache_file, @tempdir
+    a1 = specs['a-1']
+    a2 = specs['a-2']
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a1.cache_file)
+    FileUtils.mv a2.cache_file, @tempdir
 
-    @cmd.options[:args] = [@a2.name]
+    @fetcher.data["#{@gem_repo}gems/#{a2.file_name}"] =
+      read_binary(a1.cache_file)
+
+    @cmd.options[:args] = [a2.name]
 
     gemdir     = File.join @gemhome, 'specifications'
 
@@ -451,14 +453,17 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_two
-    util_setup_fake_fetcher
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'b', 2
+    end
+
+    FileUtils.mv specs['a-2'].cache_file, @tempdir
+    FileUtils.mv specs['b-2'].cache_file, @tempdir
+
     @cmd.options[:domain] = :local
 
-    FileUtils.mv @a2.cache_file, @tempdir
-
-    FileUtils.mv @b2.cache_file, @tempdir
-
-    @cmd.options[:args] = [@a2.name, @b2.name]
+    @cmd.options[:args] = %w[a b]
 
     use_ui @ui do
       orig_dir = Dir.pwd
@@ -498,17 +503,17 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_conservative
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'b', 2
 
-    @fetcher.data["#{@gem_repo}gems/#{@b2.file_name}"] =
-      read_binary(@b2.cache_file)
+      fetcher.clear
 
-    uninstall_gem(@b2)
+      fetcher.gem 'a', 2
+    end
 
     @cmd.options[:conservative] = true
 
-    @cmd.options[:args] = [@a2.name, @b2.name]
+    @cmd.options[:args] = %w[a b]
 
     use_ui @ui do
       orig_dir = Dir.pwd
@@ -529,14 +534,14 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_parses_requirement_from_gemname
-    util_setup_fake_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'b', 2
+    end
+
     @cmd.options[:domain] = :local
 
-    FileUtils.mv @a2.cache_file, @tempdir
-
-    FileUtils.mv @b2.cache_file, @tempdir
-
-    req = "#{@a2.name}:10.0"
+    req = "a:10.0"
 
     @cmd.options[:args] = [req]
 
@@ -581,15 +586,14 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_show_source_problems_even_on_success
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.clear
+    end
 
     Gem.sources << "http://nonexistent.example"
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
@@ -608,11 +612,9 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_uses_from_a_gemdeps
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
-
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'a'"
@@ -632,12 +634,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_installs_from_a_gemdeps
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher @a2
-    util_clear_gems
-
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      read_binary(@a2.cache_file)
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.clear
+    end
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'a'"
@@ -657,15 +657,11 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_installs_deps_a_gemdeps
-    q, q_gem = util_gem 'q', '1.0'
-    r, r_gem = util_gem 'r', '2.0', 'q' => nil
-
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher q, r
-    util_clear_gems
-
-    add_to_fetcher q, q_gem
-    add_to_fetcher r, r_gem
+    spec_fetcher do |fetcher|
+      fetcher.gem 'q', '1.0'
+      fetcher.gem 'r', '2.0', 'q' => nil
+      fetcher.clear
+    end
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'r'"
@@ -688,16 +684,13 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_uses_deps_a_gemdeps
-    q, _     = util_gem 'q', '1.0'
-    r, r_gem = util_gem 'r', '2.0', 'q' => nil
+    spec_fetcher do |fetcher|
+      fetcher.gem 'r', '2.0', 'q' => nil
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher q, r
-    util_clear_gems
+      fetcher.clear
 
-    add_to_fetcher r, r_gem
-
-    Gem::Specification.add_specs q
+      fetcher.spec 'q', '1.0'
+    end
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'r'"
@@ -720,15 +713,11 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_installs_deps_a_gemdeps_into_a_path
-    q, q_gem = util_gem 'q', '1.0'
-    r, r_gem = util_gem 'r', '2.0', 'q' => nil
-
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher q, r
-    util_clear_gems
-
-    add_to_fetcher q, q_gem
-    add_to_fetcher r, r_gem
+    spec_fetcher do |fetcher|
+      fetcher.gem 'q', '1.0'
+      fetcher.gem 'r', '2.0', 'q' => nil
+      fetcher.clear
+    end
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'r'"
@@ -755,17 +744,13 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_with_gemdeps_path_ignores_system
-    q, q_gem = util_gem 'q', '1.0'
-    r, r_gem = util_gem 'r', '2.0', 'q' => nil
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'q', '1.0'
+      fetcher.gem 'r', '2.0', 'q' => nil
+      fetcher.clear
+    end
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher q, r
-    util_clear_gems
-
-    add_to_fetcher q, q_gem
-    add_to_fetcher r, r_gem
-
-    Gem::Specification.add_specs q
+    Gem::Specification.add_specs specs['q-1.0']
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'r'"
@@ -792,16 +777,12 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_uses_deps_a_gemdeps_with_a_path
-    q, q_gem = util_gem 'q', '1.0'
-    r, r_gem = util_gem 'r', '2.0', 'q' => nil
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'q', '1.0'
+      fetcher.gem 'r', '2.0', 'q' => nil
+    end
 
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher q, r
-    util_clear_gems
-
-    add_to_fetcher r, r_gem
-
-    i = Gem::Installer.new q_gem, :install_dir => "gf-path"
+    i = Gem::Installer.new specs['q-1.0'].cache_file, :install_dir => "gf-path"
     i.install
 
     assert File.file?("gf-path/specifications/q-1.0.gemspec"), "not installed"

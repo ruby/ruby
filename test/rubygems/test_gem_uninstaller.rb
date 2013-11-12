@@ -27,7 +27,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_ask_if_ok
-    c = quick_spec 'c'
+    c = util_spec 'c'
 
     uninstaller = Gem::Uninstaller.new nil
 

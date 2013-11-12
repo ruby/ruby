@@ -56,8 +56,6 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
-    uri = api_uri
-
     bundler_api_uri = api_uri + './api/v1/dependencies'
 
     begin

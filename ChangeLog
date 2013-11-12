@@ -1,3 +1,19 @@
+Tue Nov 12 09:16:24 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master b9213d7.  Changes include:
+
+	  Fixed tests on Windows (I hope) by forcing platform for
+	  platform-dependent tests.
+
+	  Fixed File.exists? warnings.
+
+	  Improved testing infrastructure.
+
+	* test/rubygems:  ditto.
+
+	* test/rdoc/test_rdoc_rubygems_hook.rb:  Switch to util_spec like
+	  RubyGems.
+
 Mon Nov 11 18:31:12 2013  Aman Gupta <ruby@tmm1.net>
 
 	* internal.h: move common string/hash flags to include file.

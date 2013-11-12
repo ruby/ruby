@@ -22,31 +22,22 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_get_path
-    util_setup_fake_fetcher
-    util_clear_gems
-    util_setup_spec_fetcher @a1
-
-    a1_data = nil
-
-    open @a1.cache_file, 'rb' do |fp|
-      a1_data = fp.read
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
     end
 
-    Gem::RemoteFetcher.fetcher.data['http://gems.example.com/gems/a-1.gem'] =
-      a1_data
-
-    dep = Gem::Dependency.new(@a1.name, @a1.version)
+    dep = Gem::Dependency.new 'a', 1
     assert_equal(
       @cmd.get_path(dep),
-      @a1.cache_file,
+      specs['a-1'].cache_file,
       'fetches a-1 and returns the cache path'
     )
 
-    FileUtils.rm @a1.cache_file
+    FileUtils.rm specs['a-1'].cache_file
 
     assert_equal(
       @cmd.get_path(dep),
-      @a1.cache_file,
+      specs['a-1'].cache_file,
       'when removed from cache, refetches a-1'
     )
   end
@@ -67,8 +58,9 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_gem_path
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', '3.a'
+    end
 
     Gem.clear_paths
 
@@ -88,8 +80,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_gem_path_missing
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher
+    spec_fetcher
 
     Gem.clear_paths
 
@@ -109,17 +100,12 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_remote
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher @a1, @a2
-    util_clear_gems
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.gem  'a', 2
 
-    a2_data = nil
-    open @a2.cache_file, 'rb' do |fp|
-      a2_data = fp.read
+      fetcher.clear
     end
-
-    Gem::RemoteFetcher.fetcher.data['http://gems.example.com/gems/a-2.gem'] =
-      a2_data
 
     Gem.configuration.verbose = :really
     @cmd.options[:args] = %w[a]
@@ -186,8 +172,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
   def test_execute_exact_match
-    foo_spec = quick_spec 'foo'
-    foo_bar_spec = quick_spec 'foo_bar'
+    foo_spec = util_spec 'foo'
+    foo_bar_spec = util_spec 'foo_bar'
 
     use_ui @ui do
       Dir.chdir @tempdir do

@@ -89,11 +89,15 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms
+    win_platform, Gem.win_platform = Gem.win_platform?, false
+
     with_engine_version 'ruby', '2.0.0' do
       @gda.gem 'a', :platforms => :ruby
 
       refute_empty @set.dependencies
     end
+  ensure
+    Gem.win_platform = win_platform
   end
 
   def test_gem_platforms_bundler_ruby
@@ -145,6 +149,8 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_platforms_maglev
+    win_platform, Gem.win_platform = Gem.win_platform?, false
+
     with_engine_version 'maglev', '1.0.0' do
       set = Gem::RequestSet.new
       gda = @GDA.new set, 'gem.deps.rb'
@@ -158,6 +164,8 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
       refute_empty set.dependencies
     end
+  ensure
+    Gem.win_platform = win_platform
   end
 
   def test_gem_platforms_multiple
@@ -308,19 +316,35 @@ end
   end
 
   def test_platform_mswin
+    win_platform, Gem.win_platform = Gem.win_platform?, false
+
     @gda.platform :mswin do
       @gda.gem 'a'
     end
 
     assert_empty @set.dependencies
+
+    Gem.win_platform = true
+
+    @gda.platform :mswin do
+      @gda.gem 'a'
+    end
+
+    refute_empty @set.dependencies
+  ensure
+    Gem.win_platform = win_platform
   end
 
   def test_platform_ruby
+    win_platform, Gem.win_platform = Gem.win_platform?, false
+
     @gda.platform :ruby do
       @gda.gem 'a'
     end
 
     assert_equal [dep('a')], @set.dependencies
+  ensure
+    Gem.win_platform = win_platform
   end
 
   def test_platforms

@@ -13,15 +13,15 @@ class TestGemIndexer < Gem::TestCase
     util_clear_gems
     util_make_gems
 
-    @d2_0 = quick_spec 'd', '2.0' do |s|
+    @d2_0 = util_spec 'd', '2.0' do |s|
       s.date = Gem::Specification::TODAY - 86400 * 3
     end
     util_build_gem @d2_0
 
-    @d2_0_a = quick_spec 'd', '2.0.a'
+    @d2_0_a = util_spec 'd', '2.0.a'
     util_build_gem @d2_0_a
 
-    @d2_0_b = quick_spec 'd', '2.0.b'
+    @d2_0_b = util_spec 'd', '2.0.b'
     util_build_gem @d2_0_b
 
     @default = new_default_spec 'default', 2
@@ -292,7 +292,7 @@ class TestGemIndexer < Gem::TestCase
   def with_system_gems
     Gem::Specification.reset
 
-    sys_gem = quick_spec 'systemgem', '1.0'
+    sys_gem = util_spec 'systemgem', '1.0'
     util_build_gem sys_gem
     Gem::Specification.add_spec sys_gem
     yield
@@ -311,11 +311,11 @@ class TestGemIndexer < Gem::TestCase
     assert File.directory?(quickdir)
     assert File.directory?(marshal_quickdir)
 
-    @d2_1 = quick_spec 'd', '2.1'
+    @d2_1 = util_spec 'd', '2.1'
     util_build_gem @d2_1
     @d2_1_tuple = [@d2_1.name, @d2_1.version, @d2_1.original_platform]
 
-    @d2_1_a = quick_spec 'd', '2.2.a'
+    @d2_1_a = util_spec 'd', '2.2.a'
     util_build_gem @d2_1_a
     @d2_1_a_tuple = [@d2_1_a.name, @d2_1_a.version, @d2_1_a.original_platform]
 

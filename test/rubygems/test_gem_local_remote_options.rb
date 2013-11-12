@@ -40,7 +40,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   end
 
   def test_clear_sources_option_idiot_proof
-    util_setup_fake_fetcher
+    spec_fetcher
 
     @cmd.add_local_remote_options
     @cmd.handle_options %W[--clear-sources]

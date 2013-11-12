@@ -89,7 +89,7 @@ class TestGemServer < Gem::TestCase
     data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     dir = "#{@gemhome}2"
 
-    spec = quick_spec 'z', 9
+    spec = util_spec 'z', 9
 
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
@@ -156,7 +156,7 @@ class TestGemServer < Gem::TestCase
 
     assert_equal 404, @res.status
 
-    spec = quick_spec 'z', 9
+    spec = util_spec 'z', 9
 
     specs_dir = File.join dir, 'specifications'
 
@@ -249,7 +249,7 @@ class TestGemServer < Gem::TestCase
     data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
     dir = "#{@gemhome}2"
 
-    spec = quick_spec 'z', 9
+    spec = util_spec 'z', 9
 
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir
@@ -287,7 +287,7 @@ class TestGemServer < Gem::TestCase
     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     dir = "#{@gemhome}2"
 
-    spec = quick_spec 'z', 9
+    spec = util_spec 'z', 9
 
     specs_dir = File.join dir, 'specifications'
     FileUtils.mkdir_p specs_dir

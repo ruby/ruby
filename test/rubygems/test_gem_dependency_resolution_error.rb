@@ -7,7 +7,7 @@ class TestGemDependencyResolutionError < Gem::TestCase
 
     @DR = Gem::DependencyResolver
 
-    @spec = quick_spec 'a', 2
+    @spec = util_spec 'a', 2
 
     @a1_req = @DR::DependencyRequest.new dep('a', '= 1'), nil
     @a2_req = @DR::DependencyRequest.new dep('a', '= 2'), nil

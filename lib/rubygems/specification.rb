@@ -1393,7 +1393,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns the build_args used to install the gem
 
   def build_args
-    if File.exists? build_info_file
+    if File.exist? build_info_file
       File.readlines(build_info_file).map { |x| x.strip }
     else
       []

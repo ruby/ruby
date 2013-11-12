@@ -9,7 +9,7 @@ class TestGemRDoc < Gem::TestCase
   def setup
     super
 
-    @a = quick_spec 'a' do |s|
+    @a = util_spec 'a' do |s|
       s.rdoc_options = %w[--main MyTitle]
       s.extra_rdoc_files = %w[README]
     end

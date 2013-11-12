@@ -510,9 +510,9 @@ class TestGemDependencyResolver < Gem::TestCase
   def test_select_local_platforms
     r = Gem::DependencyResolver.new nil, nil
 
-    a1    = quick_spec 'a', 1
-    a1_p1 = quick_spec 'a', 1 do |s| s.platform = Gem::Platform.local end
-    a1_p2 = quick_spec 'a', 1 do |s| s.platform = 'unknown'           end
+    a1    = util_spec 'a', 1
+    a1_p1 = util_spec 'a', 1 do |s| s.platform = Gem::Platform.local end
+    a1_p2 = util_spec 'a', 1 do |s| s.platform = 'unknown'           end
 
     selected = r.select_local_platforms [a1, a1_p1, a1_p2]
 

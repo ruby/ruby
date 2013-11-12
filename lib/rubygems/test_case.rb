@@ -30,7 +30,6 @@ require 'fileutils'
 require 'tmpdir'
 require 'uri'
 require 'rubygems/package'
-require 'rubygems/test_utilities'
 require 'pp'
 require 'zlib'
 require 'pathname'
@@ -83,6 +82,8 @@ end
 # Tests are always run at a safe level of 1.
 
 class Gem::TestCase < MiniTest::Unit::TestCase
+
+  attr_accessor :fetcher # :nodoc:
 
   def assert_activate expected, *specs
     specs.each do |spec|
@@ -197,7 +198,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_gem_path = ENV['GEM_PATH']
 
     @current_dir = Dir.pwd
-    @ui = Gem::MockGemUi.new
+    @fetcher     = nil
+    @ui          = Gem::MockGemUi.new
 
     tmpdir = File.expand_path Dir.tmpdir
     tmpdir.untaint
@@ -378,7 +380,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     gem = File.join @tempdir, "gems", "#{spec.full_name}.gem"
 
-    unless File.exists? gem
+    unless File.exist? gem then
       use_ui Gem::MockGemUi.new do
         Dir.chdir @tempdir do
           Gem::Package.build spec
@@ -503,28 +505,11 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     return spec
   end
 
-  def quick_spec name, version = '2'
-    # TODO: deprecate
-    require 'rubygems/specification'
+  ##
+  # TODO:  remove in RubyGems 3.0
 
-    spec = Gem::Specification.new do |s|
-      s.platform    = Gem::Platform::RUBY
-      s.name        = name
-      s.version     = version
-      s.author      = 'A User'
-      s.email       = 'example@example.com'
-      s.homepage    = 'http://example.com'
-      s.summary     = "this is a summary"
-      s.description = "This is a test description"
-
-      yield(s) if block_given?
-    end
-
-    spec.loaded_from = spec.spec_file
-
-    Gem::Specification.add_spec spec
-
-    return spec
+  def quick_spec name, version = '2' # :nodoc:
+    util_spec name, version
   end
 
   ##
@@ -561,7 +546,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
   def util_clear_gems
     FileUtils.rm_rf File.join(@gemhome, "gems") # TODO: use Gem::Dirs
+    FileUtils.mkdir File.join(@gemhome, "gems")
     FileUtils.rm_rf File.join(@gemhome, "specifications")
+    FileUtils.mkdir File.join(@gemhome, "specifications")
     Gem::Specification.reset
   end
 
@@ -612,10 +599,11 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   end
 
   ##
-  # Create a new spec (or gem if passed an array of files) and set it
-  # up properly. Use this instead of util_spec and util_gem.
+  # new_spec is deprecated as it is never used.
+  #
+  # TODO:  remove in RubyGems 3.0
 
-  def new_spec name, version, deps = nil, *files
+  def new_spec name, version, deps = nil, *files # :nodoc:
     require 'rubygems/specification'
 
     spec = Gem::Specification.new do |s|
@@ -656,7 +644,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   end
 
   def new_default_spec(name, version, deps = nil, *files)
-    spec = new_spec(name, version, deps)
+    spec = util_spec name, version, deps
+
     spec.loaded_from = File.join(@default_spec_dir, spec.spec_name)
     spec.files = files
 
@@ -674,24 +663,38 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   end
 
   ##
-  # Creates a spec with +name+, +version+ and +deps+.
+  # Creates a spec with +name+, +version+.  +deps+ can specify the dependency
+  # or a +block+ can be given for full customization of the specification.
 
-  def util_spec(name, version, deps = nil, &block)
-    # TODO: deprecate
-    raise "deps or block, not both" if deps and block
+  def util_spec name, version = 2, deps = nil # :yields: specification
+    raise "deps or block, not both" if deps and block_given?
+
+    spec = Gem::Specification.new do |s|
+      s.platform    = Gem::Platform::RUBY
+      s.name        = name
+      s.version     = version
+      s.author      = 'A User'
+      s.email       = 'example@example.com'
+      s.homepage    = 'http://example.com'
+      s.summary     = "this is a summary"
+      s.description = "This is a test description"
+
+      yield s if block_given?
+    end
 
     if deps then
-      block = proc do |s|
-        # Since Hash#each is unordered in 1.8, sort
-        # the keys and iterate that way so the tests are
-        # deteriminstic on all implementations.
-        deps.keys.sort.each do |n|
-          s.add_dependency n, (deps[n] || '>= 0')
-        end
+      # Since Hash#each is unordered in 1.8, sort the keys and iterate that
+      # way so the tests are deterministic on all implementations.
+      deps.keys.sort.each do |n|
+        spec.add_dependency n, (deps[n] || '>= 0')
       end
     end
 
-    quick_spec(name, version, &block)
+    spec.loaded_from = spec.spec_file
+
+    Gem::Specification.add_spec spec
+
+    return spec
   end
 
   ##
@@ -1132,38 +1135,8 @@ Also, a list:
   #   end
 
   def spec_fetcher
-    gems = {}
-
-    fetcher = Object.new
-    fetcher.instance_variable_set :@test,  self
-    fetcher.instance_variable_set :@gems,  gems
-
-    def fetcher.gem name, version, dependencies = nil, &block
-      spec, gem = @test.util_gem name, version, dependencies, &block
-
-      @gems[spec] = gem
-
-      spec
-    end
-
-    def fetcher.spec name, version, dependencies = nil, &block
-      spec = @test.util_spec name, version, dependencies, &block
-
-      @gems[spec] = nil
-
-      spec
-    end
-
-    yield fetcher
-
-    util_setup_fake_fetcher unless @fetcher
-    util_setup_spec_fetcher(*gems.keys)
-
-    gems.each do |spec, gem|
-      next unless gem
-
-      @fetcher.data["http://gems.example.com/gems/#{spec.file_name}"] =
-        Gem.read_binary(gem)
+    Gem::TestCase::SpecFetcherSetup.declare self do |spec_fetcher_setup|
+      yield spec_fetcher_setup if block_given?
     end
   end
 
@@ -1318,3 +1291,6 @@ Also, a list:
   end if defined?(OpenSSL::SSL)
 
 end
+
+require 'rubygems/test_utilities'
+

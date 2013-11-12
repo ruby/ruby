@@ -156,6 +156,10 @@ class RDoc::RubygemsHook
     args.concat @spec.require_paths
     args.concat @spec.extra_rdoc_files
 
+    puts
+    p @spec.extra_rdoc_files
+    puts
+
     case config_args = Gem.configuration[:rdoc]
     when String then
       args = args.concat config_args.split

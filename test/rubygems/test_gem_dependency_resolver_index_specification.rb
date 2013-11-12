@@ -31,11 +31,9 @@ class TestGemDependencyResolverIndexSpecification < Gem::TestCase
   end
 
   def test_spec
-    a_2_p = nil
-
-    spec_fetcher do |fetcher|
+    specs = spec_fetcher do |fetcher|
       fetcher.spec 'a', 2
-      a_2_p = fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+      fetcher.spec 'a', 2 do |s| s.platform = Gem::Platform.local end
     end
 
     source = Gem::Source.new @gem_repo
@@ -47,11 +45,11 @@ class TestGemDependencyResolverIndexSpecification < Gem::TestCase
 
     spec = i_spec.spec
 
-    assert_equal a_2_p.full_name, spec.full_name
+    assert_equal specs["a-2-#{Gem::Platform.local}"].full_name, spec.full_name
   end
 
   def test_spec_local
-    a_2_p = quick_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
+    a_2_p = util_spec 'a', 2 do |s| s.platform = Gem::Platform.local end
     Gem::Package.build a_2_p
 
     source = Gem::Source::Local.new

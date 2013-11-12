@@ -6,7 +6,7 @@ class TestGemDependencyResolverInstalledSpecification < Gem::TestCase
   def test_initialize
     set     = Gem::DependencyResolver::CurrentSet.new
 
-    source_spec = quick_spec 'a'
+    source_spec = util_spec 'a'
 
     spec = Gem::DependencyResolver::InstalledSpecification.new set, source_spec
 
