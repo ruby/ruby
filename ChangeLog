@@ -1,3 +1,16 @@
+Tue Nov 12 23:24:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUNRUBY): append -- only after runruby.rb, not
+	  cross-compiling baseruby, so that $(RUN_OPT) can be command line
+	  options.  [ruby-dev:47703] [Bug #8893]
+
+Tue Nov 12 23:24:35 2013  Masaki Matsushita  <glass.saga@gmail.com>
+
+	(partially merged from r42862)
+	* common.mk: use RUNRUBY instead of MINIRUBY because MINIRUBY can't
+	  require extension libraries. The patch is from nobu
+	  (Nobuyoshi Nakada).
+
 Mon Nov 11 23:54:51 2013  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (cloexec_accept): Fix a compile error on

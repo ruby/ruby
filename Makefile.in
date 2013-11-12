@@ -93,8 +93,11 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 RUBY = $(RUBY_INSTALL_NAME)
 MINIRUBY = @MINIRUBY@\
 	$(MINIRUBYOPT)
-RUNRUBY_COMMAND = @RUNRUBY@ $(RUNRUBYOPT)
-RUNRUBY = $(RUNRUBY_COMMAND) -- $(RUN_OPTS)
+# RUNRUBY_COMMAND:: runruby.rb or baseruby. do not append options directly
+RUNRUBY_COMMAND = @RUNRUBY_COMMAND@
+# RUNRUBY:: run ruby with RUN_OPTS which is passed to ruby
+RUNRUBY = @RUNRUBY@ $(RUN_OPTS)
+# RUNRUBY_DEBUGGER:: debugging option for runruby.rb
 RUNRUBY_DEBUGGER = --debugger='gdb -x run.gdb --quiet --args'
 XRUBY = @XRUBY@
 BTESTRUBY = @BTESTRUBY@\
