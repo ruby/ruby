@@ -1,3 +1,9 @@
+Tue Nov 12 23:33:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (Gem::Specification.load): obtain spec date from
+	  VCS for the case using git, RUBY_RELEASE_DATE is the last resort.
+	  probably fixes [Bug #9085].
+
 Tue Nov 12 23:24:35 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUNRUBY): append -- only after runruby.rb, not
