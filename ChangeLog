@@ -1,3 +1,20 @@
+Tue Nov 12 23:41:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): deal with default loadable suffixes.
+
+	* load.c (load_lock): initialize statically linked extensions.
+
+	* load.c (search_required, rb_require_safe): deal with statically
+	  linked extensions.
+
+	* load.c (ruby_init_ext): defer initialization of statically linked
+	  extensions until required actually.  [Bug #8883]
+
+Tue Nov 12 23:41:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (ruby_init_ext): share feature names between frame name and
+	  provided features.
+
 Tue Nov 12 23:33:08 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (Gem::Specification.load): obtain spec date from
