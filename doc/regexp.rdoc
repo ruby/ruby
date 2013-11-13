@@ -608,7 +608,7 @@ Example:
 
     m = /s(\w{2}).*(c)/.match('haystack') #=> #<MatchData "stac" 1:"ta" 2:"c">
     $~                                    #=> #<MatchData "stac" 1:"ta" 2:"c">
-    Regexp.latch_match                    #=> #<MatchData "stac" 1:"ta" 2:"c">
+    Regexp.last_match                     #=> #<MatchData "stac" 1:"ta" 2:"c">
 
     $&      #=> "stac"
             # same as m[0]

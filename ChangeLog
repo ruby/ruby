@@ -1,3 +1,8 @@
+Wed Nov 13 10:55:43 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/regexp.rdoc: [DOC] Fix typo in Special global variables section.
+	  Reported by Alex Johnson on ruby-doc.org
+
 Wed Nov 13 10:43:19 2013  Zachary Scott  <e@zzak.io>
 
 	* hash.c: [DOC] Adds an example for Hash#store
