@@ -1266,6 +1266,7 @@ static NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *     h["a"] = 9
  *     h["c"] = 4
  *     h   #=> {"a"=>9, "b"=>200, "c"=>4}
+ *     h.store("d", 42) #=> {"a"=>9, "b"=>200, "c"=>4, "d"=>42}
  *
  *  +key+ should not have its value changed while it is in use as a key (an
  *  <tt>unfrozen String</tt> passed as a key will be duplicated and frozen).

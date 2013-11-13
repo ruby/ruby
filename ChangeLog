@@ -1,3 +1,7 @@
+Wed Nov 13 10:43:19 2013  Zachary Scott  <e@zzak.io>
+
+	* hash.c: [DOC] Adds an example for Hash#store
+
 Wed Nov 13 09:03:40 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/regexp.rdoc: [DOC] add note about Bug #4044 as suggested by
