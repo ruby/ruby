@@ -29,12 +29,12 @@ module OpenSSL
     class << self
 
       ##
-      # Parses a given +str+ as a blob that contains configuration for openssl.
+      # Parses a given +string+ as a blob that contains configuration for openssl.
       #
       # If the source of the IO is a file, then consider using #parse_config.
-      def parse(str)
+      def parse(string)
         c = new()
-        parse_config(StringIO.new(str)).each do |section, hash|
+        parse_config(StringIO.new(string)).each do |section, hash|
           c[section] = hash
         end
         c
