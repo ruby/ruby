@@ -13,10 +13,27 @@
 require 'stringio'
 
 module OpenSSL
+  ##
+  # = OpenSSL::Config
+  #
+  # Configuration for the openssl library. See also
+  # http://www.openssl.org/docs/apps/config.html
+  #
+  # Many system's installation of openssl library will land a default system
+  # configuration. See the value of OpenSSL::Config::DEFAULT_CONFIG_FILE for
+  # the location of the file for your host.
+  #
+  #
   class Config
     include Enumerable
 
     class << self
+
+      ##
+      # parse +str+ as a blob that is the contents of a configuration file.
+      #
+      # If the configuration file source is an IO, then use
+      # OpenSSL::Config#parse_config instead
       def parse(str)
         c = new()
         parse_config(StringIO.new(str)).each do |section, hash|
@@ -25,8 +42,14 @@ module OpenSSL
         c
       end
 
+      ##
+      # load is an alias to OpenSSL::Config.new
       alias load new
 
+      ##
+      # parse the configuration data read from +io+
+      #
+      # raises ConfigError on invalid configuration data
       def parse_config(io)
         begin
           parse_config_lines(io)
@@ -209,6 +232,17 @@ module OpenSSL
       end
     end
 
+    ##
+    # Construct a new instance of an openssl configuration (OpenSSL::Config)
+    #
+    # This can be used in contexts like OpenSSL::X509::ExtensionFactory.config=
+    #
+    # If optional parameter +filename+ is provided, then it is read in and
+    # parsed.
+    # 
+    # This can raise IO exceptions based on the access or availability of
+    # the file, or ConfigError on parsing of the configuration.
+    #
     def initialize(filename = nil)
       @data = {}
       if filename
@@ -220,6 +254,19 @@ module OpenSSL
       end
     end
 
+    ##
+    # get the value of +key+ from +section+
+    #
+    #   c = OpenSSL::Config.load('foo.cnf')
+    #    => #<OpenSSL::Config sections=["default"]> 
+    #   puts c.to_s
+    #     [ default ]
+    #     foo=bar
+    #
+    #    => nil 
+    #   c.get_value('default','foo')
+    #    => "bar" 
+    #
     def get_value(section, key)
       if section.nil?
         raise TypeError.new('nil not allowed')
@@ -228,6 +275,8 @@ module OpenSSL
       get_key_string(section, key)
     end
 
+    ##
+    # this value getter is deprecated; See OpenSSL::Config#get_value instead
     def value(arg1, arg2 = nil)
       warn('Config#value is deprecated; use Config#get_value')
       if arg2.nil?
@@ -240,20 +289,65 @@ module OpenSSL
       get_key_string(section, key)
     end
 
+    ##
+    # set +key+ with +value+, in +section+
+    #
+    #   c = OpenSSL::Config.new
+    #    => #<OpenSSL::Config sections=[]>
+    #   puts c.to_s
+    #
+    #    => nil
+    #   c.add_value('default', 'foo', 'bar')
+    #    => "bar"
+    #   puts c.to_s
+    #     [ default ]
+    #     foo=bar
+    #
+    #    => nil
+    #
     def add_value(section, key, value)
       check_modify
       (@data[section] ||= {})[key] = value
     end
 
+    ##
+    # Get the +section+ from the current configuration
+    #
+    #   c = OpenSSL::Config.load('/home/vbatts/foo.cnf')
+    #    => #<OpenSSL::Config sections=["default"]>
+    #   puts c.to_s
+    #    [ default ]
+    #    foo=bar
+    #
+    #    => nil
+    #   c['default']
+    #    => {"foo"=>"bar"}
+    #
     def [](section)
       @data[section] || {}
     end
 
+    ##
+    # Config#section is deprecated; use Config#[]
     def section(name)
       warn('Config#section is deprecated; use Config#[]')
       @data[name] || {}
     end
 
+    ##
+    # Set +section+ name with a Hash +pairs+
+    #
+    #   c = OpenSSL::Config.new
+    #    => #<OpenSSL::Config sections=[]> 
+    #   c['default'] = {"foo"=>"bar","baz"=>"buz"}
+    #    => {"foo"=>"bar", "baz"=>"buz"} 
+    #   puts c.to_s
+    #    [ default ]
+    #    foo=bar
+    #    baz=buz
+    #
+    #    => nil
+    #
     def []=(section, pairs)
       check_modify
       @data[section] ||= {}
@@ -262,10 +356,34 @@ module OpenSSL
       end
     end
 
+    ##
+    # Get the names of all sections in the current configuration
     def sections
       @data.keys
     end
 
+    ##
+    # Get the parsable form of the current configuration
+    #
+    #   c = OpenSSL::Config.new
+    #    => #<OpenSSL::Config sections=[]>
+    #   c['default'] = {"foo"=>"bar","baz"=>"buz"}
+    #     => {"foo"=>"bar", "baz"=>"buz"}
+    #   puts c.to_s
+    #    [ default ]
+    #    foo=bar
+    #    baz=buz
+    #
+    #    => nil
+    #   c1 = OpenSSL::Config.parse(c.to_s)
+    #    => #<OpenSSL::Config sections=["default"]> 
+    #   puts c1
+    #    [ default ]
+    #    foo=bar
+    #    baz=buz
+    #
+    #    => nil
+    #
     def to_s
       ary = []
       @data.keys.sort.each do |section|
@@ -278,6 +396,14 @@ module OpenSSL
       ary.join
     end
 
+    ##
+    # For a block. Receive the section and its Hash pairs for the current
+    # configuration
+    #
+    #   c.each do |section, pairs|
+    #     [...]
+    #   end
+    #
     def each
       @data.each do |section, hash|
         hash.each do |key, value|
@@ -286,13 +412,15 @@ module OpenSSL
       end
     end
 
+    ##
+    # this class name, and the sections present
     def inspect
       "#<#{self.class.name} sections=#{sections.inspect}>"
     end
 
   protected
 
-    def data
+    def data # :nodoc:
       @data
     end
 

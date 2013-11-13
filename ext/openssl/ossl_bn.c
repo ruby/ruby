@@ -34,6 +34,13 @@
  * Classes
  */
 VALUE cBN;
+
+/* Document-class: OpenSSL::BNError
+ *
+ * BNError < OpenSSLError
+ *
+ * Generic Error for all of OpenSSL::BN (big num)
+ */
 VALUE eBNError;
 
 /*
@@ -102,13 +109,15 @@ ossl_bn_alloc(VALUE klass)
     return obj;
 }
 
-/*
- * call-seq:
- *    BN.new => aBN
- *    BN.new(bn) => aBN
- *    BN.new(integer) => aBN
- *    BN.new(string) => aBN
- *    BN.new(string, 0 | 2 | 10 | 16) => aBN
+/* Document-method: OpenSSL::BN.new
+ * 
+ *    OpenSSL::BN.new => aBN
+ *    OpenSSL::BN.new(bn) => aBN
+ *    OpenSSL::BN.new(integer) => aBN
+ *    OpenSSL::BN.new(string) => aBN
+ *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
+ *
+ * Construct a new OpenSSL BigNum object.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -402,7 +411,9 @@ BIGNUM_2c(mod_inverse)
 
 /*
  * call-seq:
- *    bn1 / bn2 => [result, remainder]
+ *    bn1 / bn2   -> [result, remainder]
+ *
+ * Division of OpenSSL::BN instances
  */
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
@@ -478,9 +489,13 @@ BIGNUM_BIT(set_bit)
 BIGNUM_BIT(clear_bit)
 BIGNUM_BIT(mask_bits)
 
-/*
- * call-seq:
- *    bn.bit_set?(bit) => true | false
+/* Document-method: OpenSSL::BN#bit_set?
+ *
+ * Returns boolean of whether +bit+ is set.
+ * Bitwise operations for openssl BIGNUMs.
+ *
+ *    bn.bit_set?(bit)   -> true | false
+ *
  */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
@@ -691,6 +706,13 @@ ossl_bn_copy(VALUE self, VALUE other)
 BIGNUM_CMP(cmp)
 BIGNUM_CMP(ucmp)
 
+/*
+ *  call-seq:
+ *     big.eql?(obj)   -> true or false
+ *
+ *  Returns <code>true</code> only if <i>obj</i> is a
+ *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
+ */
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
 {
