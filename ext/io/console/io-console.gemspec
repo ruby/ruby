@@ -16,4 +16,6 @@ Gem::Specification.new do |s|
   s.files = %w[console.c extconf.rb lib/console/size.rb]
   s.extensions = %w[extconf.rb]
   s.licenses = "ruby"
+  s.cert_chain  = %w[certs/nobu.pem]
+  s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
 end
