@@ -104,7 +104,6 @@ end
 # available on Rational objects.
 class Rational < Numeric
   # call-seq:
-  #   r.to_d        -> bigdecimal
   #   r.to_d(precision)   -> bigdecimal
   #
   # Converts a Rational to a BigDecimal.
