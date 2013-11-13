@@ -18,6 +18,9 @@
 # OpenSSL IO buffering mix-in module.
 #
 # This module allows an OpenSSL::SSL::SSLSocket to behave like an IO.
+#
+# You typically won't use this module directly, you can see it implemented in
+# OpenSSL::SSL::SSLSocket.
 
 module OpenSSL::Buffering
   include Enumerable
@@ -33,6 +36,9 @@ module OpenSSL::Buffering
   # Default size to read from or write to the SSLSocket for buffer operations.
 
   BLOCK_SIZE = 1024*16
+
+  ##
+  # Creates an instance of OpenSSL's buffering IO module.
 
   def initialize(*args)
     @eof = false

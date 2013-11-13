@@ -28,6 +28,9 @@ end # OpenSSL
 # Add double dispatch to Integer
 #
 class Integer
+  # Casts an Integer as an OpenSSL::BN
+  #
+  # See `man bn` for more info.
   def to_bn
     OpenSSL::BN::new(self)
   end

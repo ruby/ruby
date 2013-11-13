@@ -1,3 +1,15 @@
+Wed Nov 13 17:09:45 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/lib/openssl/*.rb: [DOC] Document the following:
+
+	  - Integer#to_bn
+	  - OpenSSL::Buffering module
+	  - Document deprecated OpenSSL::Digest::Digest compatibility class
+	  - OpenSSL::Config
+
+	  These changes were based on a patch by @vbatts via GH-436
+	  https://github.com/ruby/ruby/pull/436
+
 Wed Nov 13 10:55:43 2013  Zachary Scott  <e@zzak.io>
 
 	* doc/regexp.rdoc: [DOC] Fix typo in Special global variables section.
