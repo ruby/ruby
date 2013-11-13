@@ -1954,7 +1954,7 @@ do{\
 
     /* Document-class: OpenSSL::ASN1::ObjectId
      *
-     * Represents the primative object id for OpenSSL::ASN1
+     * Represents the primitive object id for OpenSSL::ASN1
      */
 #if 0
     cASN1ObjectId = rb_define_class_under(mASN1, "ObjectId", cASN1Primitive);  /* let rdoc know */
