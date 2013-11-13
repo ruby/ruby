@@ -854,6 +854,29 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal Gem::Source.new(@gem_repo), s.source
   end
 
+  def test_find_spec_by_name_and_version_wildcard
+    util_gem 'a', 1
+    FileUtils.mv 'gems/a-1.gem', @tempdir
+
+    FileUtils.touch 'rdoc.gem'
+
+    inst = Gem::DependencyInstaller.new
+
+    available = inst.find_spec_by_name_and_version('*.gem')
+
+    assert_equal %w[a-1], available.all_specs.map { |spec| spec.full_name }
+  end
+
+  def test_find_spec_by_name_and_version_wildcard_bad_gem
+    FileUtils.touch 'rdoc.gem'
+
+    inst = Gem::DependencyInstaller.new
+
+    assert_raises Gem::Package::FormatError do
+      inst.find_spec_by_name_and_version '*.gem'
+    end
+  end
+
   def test_find_spec_by_name_and_version_bad_gem
     FileUtils.touch 'rdoc.gem'
 

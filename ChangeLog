@@ -1,3 +1,9 @@
+Wed Nov 13 11:57:01 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.0.14. [ruby-core:58300]
+	  [Backport #9104]
+	  the patch is provided by drbrain (Eric Hodel).
+
 Tue Nov 12 23:41:43 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): deal with default loadable suffixes.
