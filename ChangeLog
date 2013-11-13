@@ -1,3 +1,8 @@
+Wed Nov 13 19:21:36 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] Document the required
+	  +precision+ argument for Rational#to_d [Bug #8958]
+
 Wed Nov 13 19:02:05 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/digest/*: [DOC] Fix several typos and broken http links.
