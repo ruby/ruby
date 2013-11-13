@@ -1358,6 +1358,17 @@ ossl_asn1cons_each(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    ObjectId.register(object_id, short_name, long_name)
+ *
+ * This adds a new ObjectId to the internal tables. Where +object_id+ is the
+ * numerical form, +short_name+ is the short name, and +long_name+ is the long
+ * name.
+ *
+ * Returns +true+ if successful. Raises an ASN1Error otherwise.
+ *
+ */
 static VALUE
 ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 {
@@ -1371,6 +1382,14 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     return Qtrue;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#sn
+ *
+ * The short name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId#short_name
+ *
+ * #short_name is an alias to #sn
+ */
 static VALUE
 ossl_asn1obj_get_sn(VALUE self)
 {
@@ -1384,6 +1403,14 @@ ossl_asn1obj_get_sn(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#ln
+ *
+ * The long name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId.long_name
+ *
+ * #long_name is an alias to #ln
+ */
 static VALUE
 ossl_asn1obj_get_ln(VALUE self)
 {
@@ -1397,6 +1424,10 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#oid
+ *
+ * The object identifier as a String.
+ */
 static VALUE
 ossl_asn1obj_get_oid(VALUE self)
 {
@@ -1778,6 +1809,10 @@ Init_ossl_asn1()
      *
      * == OpenSSL::ASN1::ObjectId
      *
+     * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
+     * not typically allocated this way, but rather that are recieved from
+     * parsed ASN1 encodings.
+     *
      * === Additional attributes
      * * +sn+: the short name as defined in <openssl/objects.h>.
      * * +ln+: the long name as defined in <openssl/objects.h>.
@@ -1917,6 +1952,10 @@ do{\
     OSSL_ASN1_DEFINE_CLASS(EndOfContent, Data);
 
 
+    /* Document-class: OpenSSL::ASN1::ObjectId
+     *
+     * Represents the primative object id for OpenSSL::ASN1
+     */
 #if 0
     cASN1ObjectId = rb_define_class_under(mASN1, "ObjectId", cASN1Primitive);  /* let rdoc know */
 #endif

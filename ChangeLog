@@ -1,3 +1,13 @@
+Wed Nov 13 18:03:00 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_asn1.c: [DOC] Document parts of
+	  OpenSSL::ASN1::ObjectId included a fix for the class overview, which
+	  previously showed the documentation for Constructive due to missing
+	  ObjectId overview. This patch also includes a note for Primative.
+
+	  Based on a patch by @vbatts via GH-436
+	  https://github.com/ruby/ruby/pull/436
+
 Wed Nov 13 17:19:36 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/config.rb: In #parse use +string+ for +str+
