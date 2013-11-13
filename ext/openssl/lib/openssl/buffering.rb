@@ -40,7 +40,7 @@ module OpenSSL::Buffering
   ##
   # Creates an instance of OpenSSL's buffering IO module.
 
-  def initialize(*args)
+  def initialize
     @eof = false
     @rbuffer = ""
     @sync = @io.sync
