@@ -4,7 +4,7 @@ Wed Nov 13 17:09:45 2013  Zachary Scott  <e@zzak.io>
 
 	  - Integer#to_bn
 	  - OpenSSL::Buffering module
-	  - Document deprecated OpenSSL::Digest::Digest compatibility class
+	  - Deprecated OpenSSL::Digest::Digest compatibility class
 	  - OpenSSL::Config
 
 	  These changes were based on a patch by @vbatts via GH-436
