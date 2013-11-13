@@ -79,10 +79,9 @@ wakeup_all_threads(VALUE list)
  */
 
 /*
- * Document-method: new
- * call-seq: new
+ * Document-method: ConditionVariable::new
  *
- * Creates a new condvar.
+ * Creates a new condition variable instance.
  */
 
 static VALUE
@@ -113,7 +112,7 @@ delete_current_thread(VALUE ary)
 }
 
 /*
- * Document-method: wait
+ * Document-method: ConditionVariable#wait
  * call-seq: wait(mutex, timeout=nil)
  *
  * Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
@@ -140,8 +139,7 @@ rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: signal
- * call-seq: signal
+ * Document-method: ConditionVariable#signal
  *
  * Wakes up the first thread in line waiting for this lock.
  */
@@ -154,8 +152,7 @@ rb_condvar_signal(VALUE self)
 }
 
 /*
- * Document-method: broadcast
- * call-seq: broadcast
+ * Document-method: ConditionVariable#broadcast
  *
  * Wakes up all threads waiting for this lock.
  */
@@ -174,32 +171,31 @@ rb_condvar_broadcast(VALUE self)
  *
  *  Example:
  *
- *    require 'thread'
- *    queue = Queue.new
+ *	require 'thread'
+ *    	queue = Queue.new
  *
- *  producer = Thread.new do
- *    5.times do |i|
- *	 sleep rand(i) # simulate expense
- *	 queue << i
- *	 puts "#{i} produced"
- *    end
- *  end
+ *	producer = Thread.new do
+ *	  5.times do |i|
+ *	     sleep rand(i) # simulate expense
+ *	     queue << i
+ *	     puts "#{i} produced"
+ *	  end
+ *	end
  *
- *  consumer = Thread.new do
- *    5.times do |i|
- *	 value = queue.pop
- *	 sleep rand(i/2) # simulate expense
- *	 puts "consumed #{value}"
- *    end
- *  end
+ *	consumer = Thread.new do
+ *	  5.times do |i|
+ *	     value = queue.pop
+ *	     sleep rand(i/2) # simulate expense
+ *	     puts "consumed #{value}"
+ *	  end
+ *	end
  *
  */
 
 /*
- * Document-method: new
- * call-seq: new
+ * Document-method: Queue::new
  *
- * Creates a new queue.
+ * Creates a new queue instance.
  */
 
 static VALUE
@@ -219,10 +215,10 @@ queue_do_push(VALUE self, VALUE obj)
 }
 
 /*
- * Document-method: push
- * call-seq: push(obj)
+ * Document-method: Queue#push
+ * call-seq: push(object)
  *
- * Pushes +obj+ to the queue.
+ * Pushes the given +object+ to the queue.
  */
 
 static VALUE
@@ -297,12 +293,14 @@ queue_pop_should_block(int argc, VALUE *argv)
 }
 
 /*
- * Document-method: pop
- * call_seq: pop(non_block=false)
+ * Document-method: Queue#pop
+ * call-seq: pop(non_block=false)
  *
- * Retrieves data from the queue.	If the queue is empty, the calling thread is
- * suspended until data is pushed onto the queue.  If +non_block+ is true, the
- * thread isn't suspended, and an exception is raised.
+ * Retrieves data from the queue.
+ *
+ * If the queue is empty, the calling thread is suspended until data is pushed
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
+ * exception is raised.
  */
 
 static VALUE
@@ -313,7 +311,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: empty?
+ * Document-method: Queue#empty?
  * call-seq: empty?
  *
  * Returns +true+ if the queue is empty.
@@ -326,8 +324,7 @@ rb_queue_empty_p(VALUE self)
 }
 
 /*
- * Document-method: clear
- * call-seq: clear
+ * Document-method: Queue#clear
  *
  * Removes all objects from the queue.
  */
@@ -340,8 +337,7 @@ rb_queue_clear(VALUE self)
 }
 
 /*
- * Document-method: length
- * call-seq: length
+ * Document-method: Queue#length
  *
  * Returns the length of the queue.
  */
@@ -354,8 +350,7 @@ rb_queue_length(VALUE self)
 }
 
 /*
- * Document-method: num_waiting
- * call-seq: num_waiting
+ * Document-method: Queue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -377,7 +372,7 @@ rb_queue_num_waiting(VALUE self)
  */
 
 /*
- * Document-method: new
+ * Document-method: SizedQueue::new
  * call-seq: new(max)
  *
  * Creates a fixed-length queue with a maximum size of +max+.
@@ -402,8 +397,7 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 }
 
 /*
- * Document-method: max
- * call-seq: max
+ * Document-method: SizedQueue#max
  *
  * Returns the maximum size of the queue.
  */
@@ -415,10 +409,10 @@ rb_szqueue_max_get(VALUE self)
 }
 
 /*
- * Document-method: max=
- * call-seq: max=(n)
+ * Document-method: SizedQueue#max=
+ * call-seq: max=(number)
  *
- * Sets the maximum size of the queue.
+ * Sets the maximum size of the queue to the given +number+.
  */
 
 static VALUE
@@ -441,11 +435,12 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 }
 
 /*
- * Document-method: push
- * call-seq: push(obj)
+ * Document-method: SizedQueue#push
+ * call-seq: push(object)
  *
- * Pushes +obj+ to the queue.  If there is no space left in the queue, waits
- * until space becomes available.
+ * Pushes +object+ to the queue.
+ *
+ * If there is no space left in the queue, waits until space becomes available.
  */
 
 static VALUE
@@ -475,10 +470,14 @@ szqueue_do_pop(VALUE self, VALUE should_block)
 }
 
 /*
- * Document-method: pop
- * call_seq: pop(non_block=false)
+ * Document-method: SizedQueue#pop
+ *  call-seq: pop(non_block=false)
  *
- * Returns the number of threads waiting on the queue.
+ * Retrieves data from the queue.
+ *
+ * If the queue is empty, the calling thread is suspended until data is pushed
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
+ * exception is raised.
  */
 
 static VALUE
@@ -489,8 +488,7 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: pop
- * call_seq: pop(non_block=false)
+ * Document-method: SizedQueue#num_waiting
  *
  * Returns the number of threads waiting on the queue.
  */
@@ -535,6 +533,12 @@ Init_thread(void)
 	OUTER,
 	"SizedQueue", rb_cQueue, rb_struct_alloc_noinit,
 	"que", "waiters", "queue_waiters", "size", NULL);
+
+#if 0
+    rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */
+    rb_cQueue = rb_define_class("Queue", rb_cObject); /* teach rdoc Queue */
+    rb_cSizedQueue = rb_define_class("SizedQueue", rb_cObject); /* teach rdoc SizedQueue */
+#endif
 
     id_sleep = rb_intern("sleep");
 

@@ -1,3 +1,15 @@
+Thu Nov 14 02:37:14 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/thread/thread.c: [DOC] This patch accomplishes the following:
+
+	  - Teach RDoc about ConditionVariable
+	  - Teach RDoc about Queue
+	  - Teach RDoc about SizedQueue
+	  - Use fully-qualified namespace for Document-method
+	    This is necessary to separate definitions between classes
+	  - Fix rdoc bug in call_seq vs. call-seq
+	  - Correct doc for SizedQueue#pop patch by @jackdanger [Bug #8988]
+
 Thu Nov 14 01:11:54 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] +precision+ is required
