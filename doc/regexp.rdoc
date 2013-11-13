@@ -121,7 +121,9 @@ The following metacharacters also behave like character classes:
 * <tt>/./</tt> - Any character except a newline.
 * <tt>/./m</tt> - Any character (the +m+ modifier enables multiline mode)
 * <tt>/\w/</tt> - A word character (<tt>[a-zA-Z0-9_]</tt>)
-* <tt>/\W/</tt> - A non-word character (<tt>[^a-zA-Z0-9_]</tt>)
+* <tt>/\W/</tt> - A non-word character (<tt>[^a-zA-Z0-9_]</tt>).
+  Please take a look at {Bug #4044}[https://bugs.ruby-lang.org/issues/4044] if
+  using <tt>/\W/</tt> with the <tt>/i</tt> modifier.
 * <tt>/\d/</tt> - A digit character (<tt>[0-9]</tt>)
 * <tt>/\D/</tt> - A non-digit character (<tt>[^0-9]</tt>)
 * <tt>/\h/</tt> - A hexdigit character (<tt>[0-9a-fA-F]</tt>)

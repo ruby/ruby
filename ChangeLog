@@ -1,3 +1,9 @@
+Wed Nov 13 09:03:40 2013  Zachary Scott  <e@zzak.io>
+
+	* doc/regexp.rdoc: [DOC] add note about Bug #4044 as suggested by
+	  duerst-san in [ruby-core:43612] [Fixes GH-443] Patched by @rosenfeld
+	  https://github.com/ruby/ruby/pull/443
+
 Tue Nov 12 10:15:14 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/insure_session.rb:  Remove unused test file.
