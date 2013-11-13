@@ -1,3 +1,12 @@
+Wed Nov 13 19:02:05 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/digest/*: [DOC] Fix several typos and broken http links.
+	  Improved examples for Digest overview and fixed a broken example in
+	  Digest::HMAC overview. This patch also adds a description of
+	  Digest::SHA256.bubblebabble to the Digest overview.
+
+	  Patched by @stomar [Bug #9027]
+
 Wed Nov 13 18:32:12 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_config.c: [DOC] Document the following:

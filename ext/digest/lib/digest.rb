@@ -21,7 +21,7 @@ module Digest
   end
 
   class ::Digest::Class
-    # creates a digest object and reads a given file, _name_.
+    # Creates a digest object and reads a given file, _name_.
     # Optional arguments are passed to the constructor of the digest
     # class.
     #
@@ -40,7 +40,7 @@ module Digest
   end
 
   module Instance
-    # updates the digest with the contents of a given file _name_ and
+    # Updates the digest with the contents of a given file _name_ and
     # returns self.
     def file(name)
       File.open(name, "rb") {|f|

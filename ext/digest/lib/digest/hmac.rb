@@ -41,7 +41,7 @@ module Digest
   #     hmac.update(buf)
   #   end
   #
-  #   puts hmac.bubblebabble
+  #   puts hmac.hexdigest
   #
   class HMAC < Digest::Class
 
