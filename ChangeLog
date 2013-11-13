@@ -1,3 +1,13 @@
+Wed Nov 13 18:32:12 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/ossl_config.c: [DOC] Document the following:
+
+	  - OpenSSL::ConfigError
+	  - OpenSSL::Config::DEFAULT_CONFIG_FILE
+
+	  Patched by @vbatts via GH-436
+	  https://github.com/ruby/ruby/pull/436
+
 Wed Nov 13 18:03:00 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/ossl_asn1.c: [DOC] Document parts of
