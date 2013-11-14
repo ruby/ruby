@@ -187,7 +187,8 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
       tag = cipher.auth_tag
 
       decipher = new_decryptor('aes-128-gcm', key, iv)
-      decipher.auth_tag = tag[0..-2] << tag[-1].succ
+      tag.setbyte(-1, (tag.getbyte(-1) + 1) & 0xff)
+      decipher.auth_tag = tag
       decipher.auth_data = "aad"
 
       assert_raise OpenSSL::Cipher::CipherError do
