@@ -1,3 +1,8 @@
+Thu Nov 14 23:39:00 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] remove example of
+	  Rational#to_d without argument. [Bug #8958]
+
 Thu Nov 14 20:24:15 2013  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix compile error on Solaris

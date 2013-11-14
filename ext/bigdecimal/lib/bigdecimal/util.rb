@@ -115,8 +115,6 @@ class Rational < Numeric
   #
   #   r = (22/7.0).to_r
   #   # => (7077085128725065/2251799813685248)
-  #   r.to_d
-  #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
   #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
   def to_d(precision)
