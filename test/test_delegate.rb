@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'delegate'
+require './lib/delegate'
 
 class TestDelegateClass < Test::Unit::TestCase
   module M
@@ -47,6 +47,9 @@ class TestDelegateClass < Test::Unit::TestCase
   class Foo
     def m
       :m
+    end
+    def open
+      :opened
     end
     def delegate_test_m
       :m
@@ -132,5 +135,14 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, foo.send(:delegate_test_private))
     assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
     assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
+  end
+
+  def test_private_methods_from_kernel_dont_interfer
+    foo = Foo.new
+    d = SimpleDelegator.new(foo)
+    assert_equal(:opened, foo.open)
+    assert_equal(:opened, d.open)
+    assert_equal(:opened, foo.send(:open))
+    assert_equal(:opened, d.send(:open))
   end
 end
