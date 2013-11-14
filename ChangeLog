@@ -1,4 +1,7 @@
-Thu Nov 14 11:33:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov 14 11:35:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_foreach_ensure): restore iter_lev to the previous
+	  value, not just decrement.  [ruby-dev:47803] [Bug #9105]
 
 	* hash.c (foreach_safe_i, hash_foreach_iter): deal with error detected
 	  by ST_CHECK.

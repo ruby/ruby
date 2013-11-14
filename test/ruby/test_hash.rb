@@ -930,6 +930,22 @@ class TestHash < Test::Unit::TestCase
       h.clear
       c.call
     end
+
+    bug9105 = '[ruby-dev:47803] [Bug #9105]'
+    h = @cls[1=>2, 3=>4]
+    c = nil
+    f = false
+    h.each {callcc {|c2| c = c2}}
+    unless f
+      f = true
+      c.call
+    end
+    assert_nothing_raised(RuntimeError, bug9105) do
+      h.each {|i, j|
+        h.delete(i);
+        assert_not_equal(false, i, bug9105)
+      }
+    end
   end
 
   def test_compare_by_identity
