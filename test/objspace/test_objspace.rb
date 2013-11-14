@@ -204,17 +204,38 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
-  def test_dump
+  def test_dump_to_default
+    line = nil
     info = nil
     ObjectSpace.trace_object_allocations do
+      line = __LINE__ + 1
       str = "hello world"
       info = ObjectSpace.dump(str)
     end
+    assert_dump_object(info, line)
+  end
 
+  def test_dump_to_io
+    line = nil
+    info = IO.pipe do |r, w|
+      th = Thread.start {r.read}
+      ObjectSpace.trace_object_allocations do
+        line = __LINE__ + 1
+        str = "hello world"
+        ObjectSpace.dump(str, output: w)
+      end
+      w.close
+      th.value
+    end
+    assert_dump_object(info, line)
+  end
+
+  def assert_dump_object(info, line)
+    loc = caller_locations(1, 1)[0]
     assert_match /"type":"STRING"/, info
     assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
-    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{__LINE__-6}/, info
-    assert_match /"method":"test_dump"/, info
+    assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
+    assert_match /"method":"#{loc.base_label}"/, info
   end
 
   def test_dump_all
@@ -235,13 +256,14 @@ class TestObjSpace < Test::Unit::TestCase
         ObjectSpace.trace_object_allocations_start
         GC.start
         "TEST STRING".force_encoding("UTF-8")
-        ObjectSpace.dump_all()
+        ObjectSpace.dump_all().path
       end
 
       puts dump_my_heap_please
     end;
       skip if /is not supported/ =~ error
       assert_match(entry, File.read(output))
+      File.unlink(output)
     end
   end
 end

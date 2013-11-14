@@ -1,3 +1,13 @@
+Fri Nov 15 01:06:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/objspace_dump.c (dump_output): allow IO object as
+	  output, and use Tempfile.create and return open file instead of
+	  mkstemp() and path name for :file output.
+	  [ruby-core:58266] [Bug #9102]
+
+	* test/objspace/test_objspace.rb (TestObjSpace#dump_my_heap_please):
+	  remove temporary output file.
+
 Thu Nov 14 23:39:00 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb: [DOC] remove example of
