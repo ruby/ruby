@@ -91,7 +91,7 @@ typedef unsigned int rb_atomic_t;
 #  define ATOMIC_SIZE_INC(var) atomic_inc_ulong(&(var))
 #  define ATOMIC_SIZE_DEC(var) atomic_dec_ulong(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_ulong(&(var), (val))
-#  define ATOMIC_SIZE_CAS(var, oldval, val) atomic_cas_ulong(&(var), (val))
+#  define ATOMIC_SIZE_CAS(var, oldval, val) atomic_cas_ulong(&(var), (oldval), (val))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) atomic_add_int(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) atomic_add_int(&(var), -(val))

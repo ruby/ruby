@@ -1,3 +1,8 @@
+Thu Nov 14 20:24:15 2013  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix compile error on Solaris
+	  since r43460.
+
 Thu Nov 14 19:53:00 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_cipher.rb (test_aes_gcm_wrong_tag): Don't use
