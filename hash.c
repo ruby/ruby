@@ -141,10 +141,12 @@ struct foreach_safe_arg {
 };
 
 static int
-foreach_safe_i(st_data_t key, st_data_t value, struct foreach_safe_arg *arg)
+foreach_safe_i(st_data_t key, st_data_t value, st_data_t args, int error)
 {
     int status;
+    struct foreach_safe_arg *arg = (void *)args;
 
+    if (error) return ST_STOP;
     status = (*arg->func)(key, value, arg->arg);
     if (status == ST_CONTINUE) {
 	return ST_CHECK;
@@ -174,12 +176,13 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp)
+hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
     int status;
     st_table *tbl;
 
+    if (error) return ST_STOP;
     tbl = RHASH(arg->hash)->ntbl;
     status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
     if (RHASH(arg->hash)->ntbl != tbl) {

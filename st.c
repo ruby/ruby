@@ -948,7 +948,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    val = PVAL(table, i);
 	    hash = PHASH(table, i);
 	    if (key == never) continue;
-	    retval = (*func)(key, val, arg);
+	    retval = (*func)(key, val, arg, 0);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (retval == ST_CHECK) {
@@ -987,7 +987,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    if (ptr->key == never)
 		goto unpacked_continue;
 	    i = ptr->hash % table->num_bins;
-	    retval = (*func)(ptr->key, ptr->record, arg);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
@@ -1037,7 +1037,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    key = PKEY(table, i);
 	    val = PVAL(table, i);
 	    hash = PHASH(table, i);
-	    retval = (*func)(key, val, arg);
+	    retval = (*func)(key, val, arg, 0);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (!ptr) return 0;
@@ -1064,7 +1064,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     if (ptr != 0) {
 	do {
 	    i = ptr->hash % table->num_bins;
-	    retval = (*func)(ptr->key, ptr->record, arg);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
 	    switch (retval) {
 	      case ST_CONTINUE:
@@ -1105,7 +1105,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             st_data_t key, val;
             key = PKEY(table, i);
             val = PVAL(table, i);
-            retval = (*func)(key, val, arg);
+            retval = (*func)(key, val, arg, 0);
             switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
                 for (j = 0; j < table->num_entries; j++) {

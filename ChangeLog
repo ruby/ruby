@@ -1,3 +1,10 @@
+Thu Nov 14 11:33:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (foreach_safe_i, hash_foreach_iter): deal with error detected
+	  by ST_CHECK.
+
+	* st.c (st_foreach_check): call with non-error argument in normal case.
+
 Thu Nov 14 02:37:14 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/thread/thread.c: [DOC] This patch accomplishes the following:
