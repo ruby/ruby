@@ -43,7 +43,7 @@
 class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
-    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
+    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash,:open].each do |m|
       undef_method m
     end
   end
