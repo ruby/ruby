@@ -5,13 +5,6 @@ Sat Nov 16 00:18:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* test/ruby/test_beginendblock.rb: test for above.
 
-Fri Nov 15 22:21:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* hash.c (hash_foreach_iter, hash_foreach_ensure, rb_hash_foreach):
-	  deal with iteration level when reentering by callcc.  temporary
-	  measure until rollback of ensure is introduced.  [ruby-dev:47807]
-	  [Bug #9105]
-
 Fri Nov 15 17:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#send): override to get rid of global function interference.
@@ -45,10 +38,7 @@ Thu Nov 14 19:53:00 2013  Tanaka Akira  <akr@fsij.org>
 	  EVP_CIPHER_CTX_ctrl (and internally aes_gcm_ctrl) fail.
 	  [ruby-core:55143] [Bug #8439] reported by Vit Ondruch.
 
-Thu Nov 14 11:35:37 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* hash.c (hash_foreach_ensure): restore iter_lev to the previous
-	  value, not just decrement.  [ruby-dev:47803] [Bug #9105]
+Thu Nov 14 11:33:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (foreach_safe_i, hash_foreach_iter): deal with error detected
 	  by ST_CHECK.
