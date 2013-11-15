@@ -350,7 +350,9 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	*option = COMPILE_OPTION_FALSE;
     }
     else if (opt == Qtrue) {
-	memset(option, 1, sizeof(rb_compile_option_t));
+	int i;
+	for (i = 0; i < (int)(sizeof(rb_compile_option_t) / sizeof(int)); ++i)
+	    ((int *)option)[i] = 1;
     }
     else if (CLASS_OF(opt) == rb_cHash) {
 	*option = COMPILE_OPTION_DEFAULT;
