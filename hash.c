@@ -201,6 +201,13 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 }
 
 static VALUE
+hash_foreach_ensure_rollback(VALUE hash)
+{
+    RHASH_ITER_LEV(hash)++;
+    return 0;
+}
+
+static VALUE
 hash_foreach_ensure(VALUE hash)
 {
     if (--RHASH_ITER_LEV(hash) == 0) {
@@ -3765,4 +3772,7 @@ Init_Hash(void)
      * See ENV (the class) for more details.
      */
     rb_define_global_const("ENV", envtbl);
+
+    /* for callcc */
+    ruby_register_rollback_func_for_ensure(hash_foreach_ensure, hash_foreach_ensure_rollback);
 }

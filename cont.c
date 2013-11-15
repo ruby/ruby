@@ -107,6 +107,8 @@ typedef struct rb_context_struct {
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
     size_t machine_stack_size;
+    rb_ensure_entry_t *ensure_array;
+    rb_ensure_list_t *ensure_list;
 } rb_context_t;
 
 enum fiber_status {
@@ -223,6 +225,7 @@ cont_free(void *ptr)
 #if FIBER_USE_NATIVE
 	if (cont->type == CONTINUATION_CONTEXT) {
 	    /* cont */
+	    ruby_xfree(cont->ensure_array);
 	    RUBY_FREE_UNLESS_NULL(cont->machine_stack);
 	}
 	else {
@@ -253,6 +256,7 @@ cont_free(void *ptr)
 #endif
 	}
 #else /* not FIBER_USE_NATIVE */
+	ruby_xfree(cont->ensure_array);
 	RUBY_FREE_UNLESS_NULL(cont->machine_stack);
 #endif
 #ifdef __ia64
@@ -485,6 +489,22 @@ cont_capture(volatile int *stat)
 
     cont_save_machine_stack(th, cont);
 
+    /* backup ensure_list to array for search in another context */
+    {
+	rb_ensure_list_t *p;
+	int size = 0;
+	rb_ensure_entry_t *entry;
+	for (p=th->ensure_list; p; p=p->next)
+	    size++;
+	entry = cont->ensure_array = ALLOC_N(rb_ensure_entry_t,size+1);
+	for (p=th->ensure_list; p; p=p->next) {
+	    if (!p->entry.marker)
+		p->entry.marker = rb_ary_tmp_new(0); /* dummy object */
+	    *entry++ = p->entry;
+	}
+	entry->marker = 0;
+    }
+
     if (ruby_setjmp(cont->jmpbuf)) {
 	volatile VALUE value;
 
@@ -546,6 +566,8 @@ cont_restore_thread(rb_context_t *cont)
     th->first_proc = sth->first_proc;
     th->root_lep = sth->root_lep;
     th->root_svar = sth->root_svar;
+    th->ensure_list = sth->ensure_list;
+
 }
 
 #if FIBER_USE_NATIVE
@@ -917,6 +939,80 @@ make_passing_arg(int argc, VALUE *argv)
     }
 }
 
+/* CAUTION!! : Currently, error in rollback_func is not supported  */
+/* same as rb_protect if set rollback_func to NULL */
+void
+ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS))
+{
+    st_table **table_p = &GET_VM()->ensure_rollback_table;
+    if (UNLIKELY(*table_p == NULL)) {
+	*table_p = st_init_numtable();
+    }
+    st_insert(*table_p, (st_data_t)ensure_func, (st_data_t)rollback_func);
+}
+
+static inline VALUE
+lookup_rollback_func(VALUE (*ensure_func)(ANYARGS))
+{
+    st_table *table = GET_VM()->ensure_rollback_table;
+    st_data_t val;
+    if (table && st_lookup(table, (st_data_t)ensure_func, &val))
+	return (VALUE) val;
+    return Qundef;
+}
+
+
+static inline void
+rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *target)
+{
+    rb_ensure_list_t *p;
+    rb_ensure_entry_t *entry;
+    size_t i;
+    size_t cur_size;
+    size_t target_size;
+    size_t base_point;
+    VALUE (*func)(ANYARGS);
+
+    cur_size = 0;
+    for (p=current; p; p=p->next)
+	cur_size++;
+    target_size = 0;
+    for (entry=target; entry->marker; entry++)
+	target_size++;
+
+    /* search common stack point */
+    p = current;
+    base_point = cur_size;
+    while (base_point) {
+	if (target_size >= base_point &&
+	    p->entry.marker == target[target_size - base_point].marker)
+	    break;
+	base_point --;
+	p = p->next;
+    }
+
+    /* rollback function check */
+    for (i=0; i < target_size - base_point; i++) {
+	if (!lookup_rollback_func(target[i].e_proc)) {
+	    rb_raise(rb_eRuntimeError, "continuation called from out of critical rb_ensure scope");
+	}
+    }
+    /* pop ensure stack */
+    while (cur_size > base_point) {
+	/* escape from ensure block */
+	(*current->entry.e_proc)(current->entry.data2);
+	current = current->next;
+	cur_size--;
+    }
+    /* push ensure stack */
+    while (i--) {
+	func = (VALUE (*)(ANYARGS)) lookup_rollback_func(target[i].e_proc);
+	if ((VALUE)func != Qundef) {
+	    (*func)(target[i].data2);
+	}
+    }
+}
+
 /*
  *  call-seq:
  *     cont.call(args, ...)
@@ -954,6 +1050,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
 	}
     }
+    rollback_ensure_stack(contval, th->ensure_list, cont->ensure_array);
 
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);

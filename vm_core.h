@@ -387,6 +387,9 @@ typedef struct rb_vm_struct {
     /* hook */
     rb_hook_list_t event_hooks;
 
+    /* relation table of ensure - rollback for callcc */
+    struct st_table *ensure_rollback_table;
+
     /* postponed_job */
     struct rb_postponed_job_struct *postponed_job_buffer;
     int postponed_job_index;
@@ -507,6 +510,17 @@ typedef struct rb_thread_list_struct{
 } rb_thread_list_t;
 
 
+typedef struct rb_ensure_entry {
+    VALUE marker;
+    VALUE (*e_proc)(ANYARGS);
+    VALUE data2;
+} rb_ensure_entry_t;
+
+typedef struct rb_ensure_list {
+    struct rb_ensure_list *next;
+    struct rb_ensure_entry entry;
+} rb_ensure_list_t;
+
 typedef struct rb_thread_struct {
     VALUE self;
     rb_vm_t *vm;
@@ -625,6 +639,9 @@ typedef struct rb_thread_struct {
     VALUE fiber;
     VALUE root_fiber;
     rb_jmpbuf_t root_jmpbuf;
+
+    /* ensure & callcc */
+    rb_ensure_list_t *ensure_list;
 
     /* misc */
     int method_missing_reason;
