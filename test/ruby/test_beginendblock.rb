@@ -176,13 +176,12 @@ EOW
 
   def test_callcc_at_exit
     bug9110 = '[ruby-core:58329][Bug #9110]'
-    ruby = EnvUtil.rubybin
     script = <<EOS
 require "continuation"
 c = nil
 at_exit { c.call }
 at_exit { callcc {|_c| c = _c } }
 EOS
-    assert system(ruby, "-e", script)
+    assert_normal_exit(script, bug9110)
   end
 end
