@@ -1,3 +1,10 @@
+Fri Nov 15 22:21:34 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_foreach_iter, hash_foreach_ensure, rb_hash_foreach):
+	  deal with iteration level when reentering by callcc.  temporary
+	  measure until rollback of ensure is introduced.  [ruby-dev:47807]
+	  [Bug #9105]
+
 Fri Nov 15 17:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#send): override to get rid of global function interference.

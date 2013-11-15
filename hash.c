@@ -173,7 +173,7 @@ struct hash_foreach_arg {
     VALUE hash;
     rb_foreach_func *func;
     VALUE arg;
-    int iter_lev;
+    VALUE marker;
 };
 
 static int
@@ -188,6 +188,10 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
     if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
+    }
+    if (DATA_PTR(arg->marker)) {
+	RHASH_ITER_LEV(arg->hash)++;
+	DATA_PTR(arg->marker) = 0;
     }
     switch (status) {
       case ST_DELETE:
@@ -207,7 +211,10 @@ hash_foreach_ensure(VALUE arg)
     struct hash_foreach_arg *argp = (struct hash_foreach_arg *)arg;
     VALUE hash = argp->hash;
 
-    if ((RHASH_ITER_LEV(hash) = argp->iter_lev) == 0) {
+    if (DATA_PTR(argp->marker)) return 0;
+    DATA_PTR(argp->marker) = (void *)-1;
+
+    if (--RHASH_ITER_LEV(hash) == 0) {
 	if (FL_TEST(hash, HASH_DELETED)) {
 	    st_cleanup_safe(RHASH(hash)->ntbl, (st_data_t)Qundef);
 	    FL_UNSET(hash, HASH_DELETED);
@@ -236,7 +243,8 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
-    arg.iter_lev = RHASH_ITER_LEV(hash)++;
+    arg.marker = Data_Wrap_Struct(0, 0, 0, 0);
+    RHASH_ITER_LEV(hash)++;
     rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, (VALUE)&arg);
 }
 
