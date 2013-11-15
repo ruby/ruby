@@ -74,6 +74,7 @@ class Delegator < BasicObject
       $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
     end
   end
+  alias send method_missing
 
   #
   # Checks for a method provided by this the delegate object by forwarding the

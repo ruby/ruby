@@ -133,4 +133,16 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
     assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
   end
+
+  def test_global_function
+    klass = Class.new do
+      def open
+      end
+    end
+    obj = klass.new
+    d = SimpleDelegator.new(obj)
+    assert_nothing_raised(ArgumentError) {obj.open}
+    assert_nothing_raised(ArgumentError) {d.open}
+    assert_nothing_raised(ArgumentError) {d.send(:open)}
+  end
 end
