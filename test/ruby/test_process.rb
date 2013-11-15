@@ -1190,6 +1190,7 @@ class TestProcess < Test::Unit::TestCase
       pid = spawn(RUBY, "foo")
       Thread.new { sleep 1; Process.kill(:SIGQUIT, pid) }
       Process.wait(pid)
+      t = Time.now
       s = $?
       assert_equal([false, true, false],
                    [s.exited?, s.signaled?, s.stopped?],
@@ -1201,6 +1202,7 @@ class TestProcess < Test::Unit::TestCase
          s.inspect])
       assert_equal(false, s.exited?)
       assert_equal(nil, s.success?)
+      EnvUtil.diagnostic_reports("QUIT", RUBY, pid, t)
     end
   end
 

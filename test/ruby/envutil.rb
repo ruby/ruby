@@ -155,6 +155,34 @@ module EnvUtil
     $VERBOSE = verbose
   end
   module_function :with_default_internal
+
+  if /darwin/ =~ RUBY_PLATFORM
+    DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
+    DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
+    def self.diagnostic_reports(signame, cmd, pid, now)
+      return unless %w[ABRT QUIT SEGV ILL].include?(signame)
+      cmd = File.basename(cmd)
+      path = DIAGNOSTIC_REPORTS_PATH
+      timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
+      pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
+      first = true
+      3.times do
+        first ? (first = false) : sleep(1)
+        Dir.glob(pat) do |name|
+          log = File.read(name) rescue next
+          if /\AProcess:\s+#{cmd} \[#{pid}\]$/ =~ log
+            File.unlink(name)
+            File.unlink("#{path}/.#{File.basename(name)}.plist")
+            return log
+          end
+        end
+      end
+      nil
+    end
+  else
+    def self.diagnostic_reports(signame, cmd, pid, now)
+    end
+  end
 end
 
 module Test
@@ -221,10 +249,12 @@ module Test
 
       FailDesc = proc do |status, message = "", out = ""|
         pid = status.pid
+        now = Time.now
         faildesc = proc do
           signo = status.termsig
           signame = Signal.signame(signo)
           sigdesc = "signal #{signo}"
+          log = EnvUtil.diagnostic_reports(signame, EnvUtil.rubybin, pid, now)
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
@@ -240,6 +270,9 @@ module Test
             full_message << "\n#{out.gsub(/^/, '| ')}"
             full_message << "\n" if /\n\z/ !~ full_message
           end
+          if log
+            full_message << "\n#{log.gsub(/^/, '| ')}"
+          end
           full_message
         end
         faildesc
@@ -247,6 +280,9 @@ module Test
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
+        if signo = status.termsig
+          EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
+        end
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
           raise "test_stderr ignored, use block only or without block" if test_stderr != []
