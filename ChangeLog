@@ -1,6 +1,8 @@
 Sun Nov 17 06:33:32 2013  Shota Fukumori  <her@sorah.jp>
 
-	* configure.in: Use $LIBS for base of $SOLIBS, also in darwin
+	* configure.in: Use $LIBS for base of $SOLIBS, also in darwin.
+	  By this fix, environment that libgmp is located in $LIBS can build
+	  ruby.
 
 Sun Nov 17 01:56:32 2013  Tanaka Akira  <akr@fsij.org>
 
