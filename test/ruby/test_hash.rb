@@ -950,6 +950,37 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def test_callcc_escape
+    bug9105 = '[ruby-dev:47803] [Bug #9105]'
+    assert_nothing_raised(RuntimeError, bug9105) do
+      h=@cls[]
+      cnt=0
+      c = callcc {|c|c}
+      h[cnt] = true
+      h.each{|i|
+        cnt+=1
+        c.call if cnt == 1
+      }
+    end
+  end
+
+  def test_callcc_reenter
+    bug9105 = '[ruby-dev:47803] [Bug #9105]'
+    assert_nothing_raised(RuntimeError, bug9105) do
+      h = @cls[1=>2,3=>4]
+      c = nil
+      f = false
+      h.each { |i|
+        callcc {|c2| c = c2 } unless c
+        h.delete(1) if f
+      }
+      unless f
+        f = true
+        c.call
+      end
+    end
+  end
+
   def test_threaded_iter_level
     bug9105 = '[ruby-dev:47807] [Bug #9105]'
     h = @cls[1=>2]
