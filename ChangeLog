@@ -1,3 +1,7 @@
+Sun Nov 17 06:33:32 2013  Shota Fukumori  <her@sorah.jp>
+
+	* configure.in: Use $LIBS for base of $SOLIBS, also in darwin
+
 Sun Nov 17 01:56:32 2013  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): Show error
