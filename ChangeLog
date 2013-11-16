@@ -1,3 +1,13 @@
+Sat Nov 16 18:28:08 2013  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/ultralightparser.rb
+	  (REXML::Parsers::UltraLightParser#parse): Fix wrong :start_doctype
+	  position.
+	  [Bug #9061] [ruby-dev:47778]
+	  Patch by Ippei Obayashi. Thanks!!!
+
+	* test/rexml/parser/test_ultra_light.rb: Add a test for this case.
+
 Sat Nov 16 02:13:56 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* cont.c : Introduce ensure rollback mechanism. Please see below.
