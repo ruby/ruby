@@ -625,7 +625,7 @@ fiber_machine_stack_alloc(size_t size)
 	errno = 0;
 	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 	if (ptr == MAP_FAILED) {
-	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber errno: %d", errno);
+	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber: %s", strerror(errno));
 	}
 
 	/* guard page setup */

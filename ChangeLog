@@ -1,3 +1,10 @@
+Sun Nov 17 01:43:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): Show error
+	  message instead of error number.
+
+	* cont.c (fiber_machine_stack_alloc): Ditto.
+
 Sat Nov 16 18:28:08 2013  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/ultralightparser.rb

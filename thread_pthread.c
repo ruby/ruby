@@ -1470,7 +1470,7 @@ rb_thread_create_timer_thread(void)
 
 	err = pthread_attr_init(&attr);
 	if (err != 0) {
-	    fprintf(stderr, "[FATAL] Failed to initialize pthread attr(errno: %d)\n", err);
+	    fprintf(stderr, "[FATAL] Failed to initialize pthread attr: %s\n", strerror(err));
 	    exit(EXIT_FAILURE);
         }
 # ifdef PTHREAD_STACK_MIN
@@ -1503,7 +1503,7 @@ rb_thread_create_timer_thread(void)
 	err = pthread_create(&timer_thread_id, NULL, thread_timer, &GET_VM()->gvl);
 #endif
 	if (err != 0) {
-	    fprintf(stderr, "[FATAL] Failed to create timer thread (errno: %d)\n", err);
+	    fprintf(stderr, "[FATAL] Failed to create timer thread: %s\n", strerror(err));
 	    exit(EXIT_FAILURE);
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
