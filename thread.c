@@ -652,7 +652,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     err = native_thread_create(th);
     if (err) {
 	th->status = THREAD_KILLED;
-	rb_raise(rb_eThreadError, "can't create Thread (%d)", err);
+	rb_raise(rb_eThreadError, "can't create Thread: %s", strerror(err));
     }
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
     return thval;
