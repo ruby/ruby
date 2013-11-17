@@ -5710,7 +5710,7 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 
 
 static int
-tr_find(unsigned int c, char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
+tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
     if (c < 256) {
 	return table[c] != 0;
