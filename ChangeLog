@@ -1,3 +1,8 @@
+Mon Nov 18 22:45:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (rb_exec_end_proc): unlink and free procs data before
+	  calling for each procs.  [Bug #9110]
+
 Sun Nov 17 06:33:32 2013  Shota Fukumori  <her@sorah.jp>
 
 	* configure.in: Use $LIBS for base of $SOLIBS, also in darwin.

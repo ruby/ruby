@@ -96,9 +96,8 @@ rb_mark_end_proc(void)
 void
 rb_exec_end_proc(void)
 {
-    struct end_proc_data *volatile link;
-    struct end_proc_data *ephemeral_end_procs_head = ephemeral_end_procs;
-    struct end_proc_data *end_procs_head = end_procs;
+    struct end_proc_data volatile endproc;
+    struct end_proc_data volatile *link;
     int status;
     volatile int safe = rb_safe_level();
     rb_thread_t *th = GET_THREAD();
@@ -107,6 +106,9 @@ rb_exec_end_proc(void)
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
 	ephemeral_end_procs = link->next;
+	endproc = *link;
+	xfree((void *)link);
+	link = &endproc;
 
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
@@ -123,6 +125,9 @@ rb_exec_end_proc(void)
     while (end_procs) {
 	link = end_procs;
 	end_procs = link->next;
+	endproc = *link;
+	xfree((void *)link);
+	link = &endproc;
 
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
@@ -134,18 +139,6 @@ rb_exec_end_proc(void)
 	    error_handle(status);
 	    if (!NIL_P(th->errinfo)) errinfo = th->errinfo;
 	}
-    }
-
-    link = ephemeral_end_procs_head;
-    while (link) {
-	xfree(link);
-	link = link->next;
-    }
-
-    link = end_procs_head;
-    while (link) {
-	xfree(link);
-	link = link->next;
     }
 
     rb_set_safe_level_force(safe);
