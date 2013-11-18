@@ -574,6 +574,29 @@ num_zero_p(VALUE num)
 
 /*
  *  call-seq:
+ *     num.nonzero  ->  self or nil
+ *
+ *  Returns +self+ if +num+ is not zero, +nil+ otherwise.
+ *
+ *  This behavior is useful when chaining comparisons:
+ *
+ *     a = %w( z Bb bB bb BB a aA Aa AA A )
+ *     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero || a <=> b }
+ *     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ */
+
+static VALUE
+num_nonzero(VALUE num)
+{
+    if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
+	return Qnil;
+    }
+    return num;
+}
+
+
+/*
+ *  call-seq:
  *     num.nonzero?  ->  true or false
  *
  *  Returns +true+ if +num+ is not zero, +false+ otherwise.
@@ -3846,6 +3869,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "real?", num_real_p, 0);
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
+    rb_define_method(rb_cNumeric, "nonzero", num_nonzero, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
 
     rb_define_method(rb_cNumeric, "floor", num_floor, 0);
