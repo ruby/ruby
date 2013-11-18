@@ -61,6 +61,5 @@ rb_call_inits(void)
     CALL(Complex);
     CALL(version);
     CALL(vm_trace);
-    CALL(sizes);
 }
 #undef CALL
