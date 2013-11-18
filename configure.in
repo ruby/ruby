@@ -2123,7 +2123,7 @@ main()
 ],
 	rb_cv_localtime_overflow=yes,
 	rb_cv_localtime_overflow=no,
-	rb_cv_localtime_overflow=yes)])
+	rb_cv_localtime_overflow=no)])
 if test "$rb_cv_localtime_overflow" = no; then
   AC_DEFINE(LOCALTIME_OVERFLOW_PROBLEM)
 fi

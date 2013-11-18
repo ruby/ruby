@@ -1,3 +1,10 @@
+Tue Nov 19 07:21:56 2013  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (LOCALTIME_OVERFLOW_PROBLEM): Define it for cross
+	  compiling.
+	  [ruby-core:58391] [Bug #9119] Reported by Luis Lavena.
+	  Analyzed by Heesob Park.
+
 Tue Nov 19 05:55:05 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/rubygems_hook.rb:  Remove debugging puts committed by
