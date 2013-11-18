@@ -29,6 +29,15 @@ static void vm_analysis_insn(int insn);
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
+NORETURN(static void vm_stack_overflow_for_insn(void));
+static void
+vm_stack_overflow_for_insn(void)
+{
+    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
+	   "Please contact ruby-core/dev with your (a part of) script. "
+	   "This check will be removed soon.");
+}
+
 #if !OPT_CALL_THREADED_CODE
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
