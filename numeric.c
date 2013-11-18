@@ -574,24 +574,18 @@ num_zero_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.nonzero?  ->  self or nil
+ *     num.nonzero?  ->  true or false
  *
- *  Returns +self+ if +num+ is not zero, +nil+ otherwise.
- *
- *  This behavior is useful when chaining comparisons:
- *
- *     a = %w( z Bb bB bb BB a aA Aa AA A )
- *     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
- *     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ *  Returns +true+ if +num+ is not zero, +false+ otherwise.
  */
 
 static VALUE
 num_nonzero_p(VALUE num)
 {
-    if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
-	return Qnil;
+    if (rb_equal(num, INT2FIX(0))) {
+	return Qfalse;
     }
-    return num;
+    return Qtrue;
 }
 
 /*
