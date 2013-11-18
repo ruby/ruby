@@ -485,7 +485,7 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
 #define STACKADDR_AVAILABLE 1
 #undef MAINSTACKADDR_AVAILABLE
-#define MAINSTACKADDR_AVAILABLE 0
+#define MAINSTACKADDR_AVAILABLE 1
 void *pthread_get_stackaddr_np(pthread_t);
 size_t pthread_get_stacksize_np(pthread_t);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
@@ -677,7 +677,20 @@ ruby_init_stack(volatile VALUE *addr
         native_main_thread.register_stack_start = (VALUE*)bsp;
     }
 #endif
+#if MAINSTACKADDR_AVAILABLE
+    if (native_main_thread.stack_maxsize) return;
     {
+	void* stackaddr;
+	size_t size;
+	if (get_main_stack(&stackaddr, &size) == 0) {
+	    native_main_thread.stack_maxsize = size;
+	    native_main_thread.stack_start = stackaddr;
+	    return;
+	}
+    }
+#endif
+    {
+#if defined(HAVE_GETRLIMIT)
 #if defined(PTHREAD_STACK_DEFAULT)
 # if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
 #  error "PTHREAD_STACK_DEFAULT is too small"
@@ -686,15 +699,7 @@ ruby_init_stack(volatile VALUE *addr
 #else
 	size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
 #endif
-	size_t space = space_size(size);
-#if MAINSTACKADDR_AVAILABLE
-	void* stackaddr;
-	STACK_GROW_DIR_DETECTION;
-	if (get_main_stack(&stackaddr, &size) == 0) {
-            space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
-        }
-	native_main_thread.stack_maxsize = size - space;
-#elif defined(HAVE_GETRLIMIT)
+	size_t space;
 	int pagesize = getpagesize();
 	struct rlimit rlim;
         STACK_GROW_DIR_DETECTION;

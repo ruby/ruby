@@ -1,3 +1,8 @@
+Mon Nov 18 22:47:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): set stack_start properly by
+	  get_main_stack() if possible.
+
 Mon Nov 18 22:45:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_jump.c (rb_exec_end_proc): unlink and free procs data before
