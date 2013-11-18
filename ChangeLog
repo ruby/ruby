@@ -1,3 +1,8 @@
+Tue Nov 19 05:55:05 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/rubygems_hook.rb:  Remove debugging puts committed by
+	  accident.
+
 Mon Nov 18 22:47:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (TH_PUSH_TAG, TH_EXEC_TAG): refine stack overflow
