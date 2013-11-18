@@ -1823,7 +1823,7 @@ rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 
     TH_PUSH_TAG(th);
 
-    th->tag->tag = tag;
+    _tag.tag = tag;
 
     if ((state = TH_EXEC_TAG()) == 0) {
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */

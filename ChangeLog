@@ -1,4 +1,12 @@
-Mon Nov 18 22:47:11 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov 18 22:47:54 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (TH_PUSH_TAG, TH_EXEC_TAG): refine stack overflow
+	  detection.  chain local tag after setjmp() successed on it, because
+	  calling setjmp() also can overflow the stack.
+	  [ruby-dev:47804] [Bug #9109]
+
+	* vm_eval.c (rb_catch_obj): now th->tag points previous tag until
+	  TH_EXEC_TAG().
 
 	* thread_pthread.c (ruby_init_stack): set stack_start properly by
 	  get_main_stack() if possible.
