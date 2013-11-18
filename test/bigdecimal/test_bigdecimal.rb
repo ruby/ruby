@@ -1,5 +1,6 @@
 require_relative "testbase"
 require_relative "../ruby/envutil"
+require 'bigdecimal/math'
 
 require 'thread'
 
@@ -1321,9 +1322,21 @@ class TestBigDecimal < Test::Unit::TestCase
     EOS
   end
 
+  def test_BigMath_log_with_string
+    assert_raise(ArgumentError) do
+      BigMath.log("foo", 20)
+    end
+  end
+
   def test_BigMath_log_with_nil
     assert_raise(ArgumentError) do
       BigMath.log(nil, 20)
+    end
+  end
+
+  def test_BigMath_log_with_non_integer_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, 0.5)
     end
   end
 
@@ -1339,7 +1352,19 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
-  def test_BigMath_log_with_zerp_precision
+  def test_BigMath_log_with_zero_arg
+    assert_raise(Math::DomainError) do
+      BigMath.log(0, 20)
+    end
+  end
+
+  def test_BigMath_log_with_negative_arg
+    assert_raise(Math::DomainError) do
+      BigMath.log(-1, 20)
+    end
+  end
+
+  def test_BigMath_log_with_zero_precision
     assert_raise(ArgumentError) do
       BigMath.log(1, 0)
     end
@@ -1375,6 +1400,13 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_BigMath_log_with_float_nan
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert(BigMath.log(Float::NAN, 20).nan?)
+    end
+  end
+
   def test_BigMath_log_with_1
     assert_in_delta(0.0, BigMath.log(1, 20))
     assert_in_delta(0.0, BigMath.log(1.0, 20))
@@ -1382,7 +1414,7 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_BigMath_log_with_exp_1
-    assert_in_delta(1.0, BigMath.log(BigMath.exp(1, 20), 20))
+    assert_in_delta(1.0, BigMath.log(BigMath.E(10), 10))
   end
 
   def test_BigMath_log_with_2
@@ -1391,14 +1423,26 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_delta(Math.log(2), BigMath.log(BigDecimal(2), 20))
   end
 
-  def test_BigMath_log_with_square_of_exp_2
-    assert_in_delta(2, BigMath.log(BigMath.exp(1, 20)**2, 20))
+  def test_BigMath_log_with_square_of_E
+    assert_in_delta(2, BigMath.log(BigMath.E(20)**2, 20))
+  end
+
+  def test_BigMath_log_with_high_precision_case
+    e   = BigDecimal('2.71828182845904523536028747135266249775724709369996')
+    e_3 = e.mult(e, 50).mult(e, 50)
+    log_3 = BigMath.log(e_3, 50)
+    assert_in_delta(3, log_3, 0.0000000000_0000000000_0000000000_0000000000_0000000001)
   end
 
   def test_BigMath_log_with_42
     assert_in_delta(Math.log(42), BigMath.log(42, 20))
     assert_in_delta(Math.log(42), BigMath.log(42.0, 20))
     assert_in_delta(Math.log(42), BigMath.log(BigDecimal(42), 20))
+  end
+
+  def test_BigMath_log_with_101
+    # this is mainly a performance test (should be very fast, not the 0.3 s)
+    assert_in_delta(Math.log(101), BigMath.log(101, 20), 1E-20)
   end
 
   def test_BigMath_log_with_reciprocal_of_42
