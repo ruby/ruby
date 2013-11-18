@@ -447,16 +447,19 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_zero_nonzero
     VS.each {|a|
       z = a.zero?
-      n = a.nonzero?
+      n = a.nonzero
+      p = a.nonzero?
       if a == 0
         assert_equal(true, z, "(#{a}).zero?")
-        assert_equal(nil, n, "(#{a}).nonzero?")
+        assert_equal(nil, n, "(#{a}).nonzero")
+        assert_equal(false, p, "(#{a}).nonzero?")
       else
         assert_equal(false, z, "(#{a}).zero?")
-        assert_equal(a, n, "(#{a}).nonzero?")
+        assert_equal(a, n, "(#{a}).nonzero")
+        assert_equal(true, p, "(#{a}).nonzero?")
         check_class(n)
       end
-      assert(z ^ n, "(#{a}).zero? ^ (#{a}).nonzero?")
+      assert(z ^ p, "(#{a}).zero? ^ (#{a}).nonzero?")
     }
   end
 
