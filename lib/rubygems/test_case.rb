@@ -233,6 +233,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
                    ruby
                  end
 
+    @git = ENV['GIT'] || 'git'
+
     Gem.ensure_gem_subdirectories @gemhome
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
@@ -370,6 +372,64 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     Gem.pre_install_hooks.clear
     Gem.pre_reset_hooks.clear
     Gem.pre_uninstall_hooks.clear
+  end
+
+  ##
+  # A git_gem is used with a gem dependencies file.  The gem created here
+  # has no files, just a gem specification for the given +name+ and +version+.
+  #
+  # Yields the +specification+ to the block, if given
+
+  def git_gem name = 'a', version = 1
+    have_git?
+
+    directory = File.join 'git', name
+    directory = File.expand_path directory
+
+    git_spec = Gem::Specification.new name, version do |specification|
+      yield specification if block_given?
+    end
+
+    FileUtils.mkdir_p directory
+
+    gemspec = "#{name}.gemspec"
+
+    open File.join(directory, gemspec), 'w' do |io|
+      io.write git_spec.to_ruby
+    end
+
+    head = nil
+
+    Dir.chdir directory do
+      unless File.exist? '.git' then
+        system @git, 'init', '--quiet'
+        system @git, 'config', 'user.name',  'RubyGems Tests'
+        system @git, 'config', 'user.email', 'rubygems@example'
+      end
+
+      system @git, 'add', gemspec
+      system @git, 'commit', '-a', '-m', 'a non-empty commit message', '--quiet'
+      head = Gem::Util.popen('git', 'rev-parse', 'master').strip
+    end
+
+    return name, git_spec.version, directory, head
+  end
+
+  ##
+  # Skips this test unless you have a git executable
+
+  def have_git?
+    return if in_path? @git
+
+    skip 'cannot find git executable, use GIT environment variable to set'
+  end
+
+  def in_path? executable # :nodoc:
+    return true if %r%\A([A-Z]:|/)% =~ executable and File.exist? executable
+
+    ENV['PATH'].split(File::PATH_SEPARATOR).any? do |directory|
+      File.exist? File.join directory, executable
+    end
   end
 
   ##
@@ -1082,21 +1142,21 @@ Also, a list:
   end
 
   ##
-  # Constructs a Gem::DependencyResolver::DependencyRequest from a
+  # Constructs a Gem::Resolver::DependencyRequest from a
   # Gem::Dependency +dep+, a +from_name+ and +from_version+ requesting the
   # dependency and a +parent+ DependencyRequest
 
   def dependency_request dep, from_name, from_version, parent = nil
     remote = Gem::Source.new @uri
 
-    parent ||= Gem::DependencyResolver::DependencyRequest.new \
+    parent ||= Gem::Resolver::DependencyRequest.new \
       dep, nil
 
-    spec = Gem::DependencyResolver::IndexSpecification.new \
+    spec = Gem::Resolver::IndexSpecification.new \
       nil, from_name, from_version, remote, Gem::Platform::RUBY
-    activation = Gem::DependencyResolver::ActivationRequest.new spec, parent
+    activation = Gem::Resolver::ActivationRequest.new spec, parent
 
-    Gem::DependencyResolver::DependencyRequest.new dep, activation
+    Gem::Resolver::DependencyRequest.new dep, activation
   end
 
   ##

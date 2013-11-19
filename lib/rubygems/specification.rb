@@ -12,6 +12,7 @@ require 'rubygems/platform'
 require 'rubygems/deprecate'
 require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
+require 'rubygems/util/stringio'
 
 # :stopdoc:
 # date.rb can't be loaded for `make install` due to miniruby
@@ -2165,7 +2166,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Used by Gem::DependencyResolver to order Gem::Specification objects
+  # Used by Gem::Resolver to order Gem::Specification objects
 
   def source # :nodoc:
     self
@@ -2363,7 +2364,7 @@ class Gem::Specification < Gem::BasicSpecification
       builder << self
       ast = builder.tree
 
-      io = StringIO.new
+      io = Gem::StringSink.new
       io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
 
       Psych::Visitors::Emitter.new(io).accept(ast)

@@ -56,6 +56,12 @@ class Gem::Commands::InstallCommand < Gem::Command
       o[:install_as_default] = v
     end
 
+    add_option(:"Install/Update", '--explain',
+               'Rather than install the gems, indicate which would',
+               'be installed') do |v,o|
+      o[:explain] = v
+    end
+
     @installed_specs = nil
   end
 
@@ -185,8 +191,23 @@ to write the specification by hand.  For example:
     return if options[:conservative] and
       not Gem::Dependency.new(name, version).matching_specs.empty?
 
+    req = Gem::Requirement.create(version)
+
     inst = Gem::DependencyInstaller.new options
-    inst.install name, Gem::Requirement.create(version)
+
+    if options[:explain]
+      request_set = inst.resolve_dependencies name, req
+
+      puts "Gems to install:"
+
+      request_set.specs.map { |s| s.full_name }.sort.each do |s|
+        puts "  #{s}"
+      end
+
+      return
+    else
+      inst.install name, req
+    end
 
     @installed_specs.push(*inst.installed_gems)
 

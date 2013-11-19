@@ -13,7 +13,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
 
     @set = Gem::RequestSet.new
 
-    @vendor_set = Gem::DependencyResolver::VendorSet.new
+    @vendor_set = Gem::Resolver::VendorSet.new
 
     @set.instance_variable_set :@vendor_set, @vendor_set
 
@@ -96,7 +96,7 @@ DEPENDENCIES
     assert_equal [Gem::Platform::RUBY], @lockfile.platforms
 
     lockfile_set = @set.sets.find do |set|
-      Gem::DependencyResolver::LockSet === set
+      Gem::Resolver::LockSet === set
     end
 
     assert lockfile_set, 'could not find a LockSet'

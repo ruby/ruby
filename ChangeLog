@@ -1,3 +1,28 @@
+Tue Nov 19 09:33:52 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 6a3d9f9.  Changes include:
+
+	  Compatibly renamed Gem::DependencyResolver to Gem::Resolver.
+
+	  Added support for git gems in gem.deps.rb and Gemfile.
+
+	  Fixed resolver bugs.
+
+	* test/rubygems: ditto.
+
+	* lib/rubygems/LICENSE.txt:  Updated to license from RubyGems trunk.
+	  [ruby-trunk - Bug #9086]
+
+	* lib/rubygems/commands/which_command.rb:  RubyGems now indicates
+	  failure when any file is missing.  [ruby-trunk - Bug #9004]
+
+	* lib/rubygems/ext/builder:  Extensions are now installed into the
+	  extension install directory and the first directory in the require
+	  path from the gem.  This allows backwards compatibility with msgpack
+	  and other gems that calculate full require paths.
+	  [ruby-trunk - Bug #9106]
+
+
 Tue Nov 19 07:21:56 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (LOCALTIME_OVERFLOW_PROBLEM): Define it for cross

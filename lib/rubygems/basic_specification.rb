@@ -107,7 +107,7 @@ class Gem::BasicSpecification
       File.join full_gem_path, path
     end
 
-    full_paths << extension_install_dir unless @extensions.empty?
+    full_paths.unshift extension_install_dir unless @extensions.empty?
 
     full_paths
   end
@@ -155,6 +155,10 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
+  def raw_require_paths # :nodoc:
+    @require_paths
+  end
+
   ##
   # Paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
   # activated.
@@ -179,7 +183,7 @@ class Gem::BasicSpecification
       File.join '..', '..', 'extensions', Gem::Platform.local.to_s,
                 Gem.extension_api_version, full_name
 
-    @require_paths + [relative_extension_install_dir]
+    [relative_extension_install_dir].concat @require_paths
   end
 
   ##

@@ -1004,6 +1004,10 @@ gem 'other', version
     skip '1.9.2 and earlier mkmf.rb does not create TOUCH' if
       RUBY_VERSION < '1.9.3'
 
+    if RUBY_VERSION == "1.9.3" and RUBY_PATCHLEVEL <= 194
+      skip "TOUCH was introduced into 1.9.3 after p194"
+    end
+
     @spec.require_paths = ["."]
 
     @spec.extensions << "extconf.rb"
@@ -1038,8 +1042,14 @@ gem 'other', version
     puts '-' * 78
     puts File.read File.join(@gemhome, 'gems', 'a-2', 'Makefile')
     puts '-' * 78
-    puts File.read File.join(@gemhome, 'gems', 'a-2', 'gem_make.out')
-    puts '-' * 78
+
+    path = File.join(@gemhome, 'gems', 'a-2', 'gem_make.out')
+
+    if File.exists?(path)
+      puts File.read(path)
+      puts '-' * 78
+    end
+
     raise
   end
 

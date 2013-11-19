@@ -73,12 +73,27 @@ module Gem
   # data from a source
 
   class SourceFetchProblem < ErrorReason
+
+    ##
+    # Creates a new SourceFetchProblem for the given +source+ and +error+.
+
     def initialize(source, error)
       @source = source
       @error = error
     end
 
-    attr_reader :source, :error
+    ##
+    # The source that had the fetch problem.
+
+    attr_reader :source
+
+    ##
+    # The fetch error which is an Exception subclass.
+
+    attr_reader :error
+
+    ##
+    # An English description of the error.
 
     def wordy
       "Unable to download data from #{@source.uri} - #{@error.message}"

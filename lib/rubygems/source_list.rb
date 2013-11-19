@@ -1,5 +1,18 @@
 require 'rubygems/source'
 
+##
+# The SourceList represents the sources rubygems has been configured to use.
+# A source may be created from an array of sources:
+#
+#   Gem::SourceList.from %w[https://rubygems.example https://internal.example]
+#
+# Or by adding them:
+#
+#   sources = Gem::SourceList.new
+#   sources.add 'https://rubygems.example'
+#
+# The most common way to get a SourceList is Gem.sources.
+
 class Gem::SourceList
 
   include Enumerable
@@ -91,7 +104,7 @@ class Gem::SourceList
     @sources.empty?
   end
 
-  def ==(other)
+  def == other # :nodoc:
     to_a == other
   end
 

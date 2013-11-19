@@ -10,9 +10,11 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @set = Gem::RequestSet.new
 
-    @vendor_set = Gem::DependencyResolver::VendorSet.new
+    @git_set    = Gem::Resolver::GitSet.new
+    @vendor_set = Gem::Resolver::VendorSet.new
 
     @gda = @GDA.new @set, 'gem.deps.rb'
+    @gda.instance_variable_set :@git_set,    @git_set
     @gda.instance_variable_set :@vendor_set, @vendor_set
   end
 
@@ -48,12 +50,83 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       Gem.instance_variables.include? :@ruby_version
   end
 
+  def test_gemspec_without_group
+    @gda.send :add_dependencies, [:development], [dep('a', '= 1')]
+
+    assert_equal [dep('a', '= 1')], @set.dependencies
+
+    @gda.without_groups << :development
+
+    @gda.send :add_dependencies, [:development], [dep('b', '= 2')]
+
+    assert_equal [dep('a', '= 1')], @set.dependencies
+  end
+
   def test_gem
     @gda.gem 'a'
 
     assert_equal [dep('a')], @set.dependencies
 
     assert_equal %w[a], @gda.requires['a']
+  end
+
+  def test_gem_git
+    @gda.gem 'a', :git => 'git/a'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git/a master], @git_set.repositories['a']
+  end
+
+  def test_gem_git_branch
+    @gda.gem 'a', :git => 'git/a', :branch => 'other', :tag => 'v1'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git/a other], @git_set.repositories['a']
+  end
+
+  def test_gem_git_gist
+    @gda.gem 'a', :gist => 'a'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[https://gist.github.com/a.git master],
+                 @git_set.repositories['a']
+  end
+
+  def test_gem_git_ref
+    @gda.gem 'a', :git => 'git/a', :ref => 'abcd123', :branch => 'other'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git/a abcd123], @git_set.repositories['a']
+  end
+
+  def test_gem_git_submodules
+    @gda.gem 'a', :git => 'git/a', :submodules => true
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git/a master], @git_set.repositories['a']
+    assert_equal %w[git/a], @git_set.need_submodules.keys
+  end
+
+  def test_gem_git_tag
+    @gda.gem 'a', :git => 'git/a', :tag => 'v1'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git/a v1], @git_set.repositories['a']
+  end
+
+  def test_gem_github
+    @gda.gem 'a', :github => 'example/repository'
+
+    assert_equal [dep('a')], @set.dependencies
+
+    assert_equal %w[git://github.com/example/repository.git master],
+                 @git_set.repositories['a']
   end
 
   def test_gem_group
@@ -282,6 +355,130 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     end
 
     assert_equal [:a, :b, :c, :d], groups.sort_by { |group| group.to_s }
+  end
+
+  def test_gemspec
+    spec = util_spec 'a', 1, 'b' => 2
+    spec.add_development_dependency 'c', 3
+
+    open 'a.gemspec', 'w' do |io|
+      io.write spec.to_ruby_for_cache
+    end
+
+    @gda.gemspec
+
+    assert_equal [dep('b', '= 2'), dep('c', '=3')], @set.dependencies
+
+    assert_equal %w[a], @gda.requires['a']
+  end
+
+  def test_gemspec_bad
+    FileUtils.touch 'a.gemspec'
+
+    e = assert_raises ArgumentError do
+      capture_io do
+        @gda.gemspec
+      end
+    end
+
+    assert_equal 'invalid gemspec ./a.gemspec', e.message
+  end
+
+  def test_gemspec_development_group
+    spec = util_spec 'a', 1, 'b' => 2
+    spec.add_development_dependency 'c', 3
+
+    open 'a.gemspec', 'w' do |io|
+      io.write spec.to_ruby_for_cache
+    end
+
+    @gda.without_groups << :other
+
+    @gda.gemspec :development_group => :other
+
+    assert_equal [dep('b', '= 2')], @set.dependencies
+
+    assert_equal %w[a], @gda.requires['a']
+  end
+
+  def test_gemspec_multiple
+    open 'a.gemspec', 'w' do |io|
+      spec = util_spec 'a', 1, 'b' => 2
+      io.write spec.to_ruby_for_cache
+    end
+
+    open 'b.gemspec', 'w' do |io|
+      spec = util_spec 'b', 2, 'c' => 3
+      io.write spec.to_ruby_for_cache
+    end
+
+    e = assert_raises ArgumentError do
+      @gda.gemspec
+    end
+
+    assert_equal "found multiple gemspecs at #{@tempdir}, use the name: option to specify the one you want", e.message
+  end
+
+  def test_gemspec_name
+    open 'a.gemspec', 'w' do |io|
+      spec = util_spec 'a', 1, 'b' => 2
+      io.write spec.to_ruby_for_cache
+    end
+
+    open 'b.gemspec', 'w' do |io|
+      spec = util_spec 'b', 2, 'c' => 3
+      io.write spec.to_ruby_for_cache
+    end
+
+    @gda.gemspec :name => 'b'
+
+    assert_equal [dep('c', '= 3')], @set.dependencies
+  end
+
+  def test_gemspec_named
+    spec = util_spec 'a', 1, 'b' => 2
+
+    open 'other.gemspec', 'w' do |io|
+      io.write spec.to_ruby_for_cache
+    end
+
+    @gda.gemspec
+
+    assert_equal [dep('b', '= 2')], @set.dependencies
+  end
+
+  def test_gemspec_none
+    e = assert_raises ArgumentError do
+      @gda.gemspec
+    end
+
+    assert_equal "no gemspecs found at #{@tempdir}", e.message
+  end
+
+  def test_gemspec_path
+    spec = util_spec 'a', 1, 'b' => 2
+
+    FileUtils.mkdir 'other'
+
+    open 'other/a.gemspec', 'w' do |io|
+      io.write spec.to_ruby_for_cache
+    end
+
+    @gda.gemspec :path => 'other'
+
+    assert_equal [dep('b', '= 2')], @set.dependencies
+  end
+
+  def test_git
+    @gda.git 'git://example/repo.git' do
+      @gda.gem 'a'
+      @gda.gem 'b'
+    end
+
+    assert_equal [dep('a'), dep('b')], @set.dependencies
+
+    assert_equal %w[git://example/repo.git master], @git_set.repositories['a']
+    assert_equal %w[git://example/repo.git master], @git_set.repositories['b']
   end
 
   def test_group

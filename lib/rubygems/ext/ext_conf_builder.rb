@@ -10,7 +10,7 @@ require 'tempfile'
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   FileEntry = FileUtils::Entry_ # :nodoc:
 
-  def self.build(extension, directory, dest_path, results, args=[])
+  def self.build(extension, directory, dest_path, results, args=[], lib_dir=nil)
     tmp_dest = Dir.mktmpdir(".gem.", ".")
 
     t = nil
@@ -44,6 +44,12 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         if tmp_dest
           FileEntry.new(tmp_dest).traverse do |ent|
+            # TODO remove in RubyGems 3
+            if lib_dir then
+              libent = ent.class.new lib_dir, ent.rel
+              libent.exist? or ent.copy libent.path
+            end
+
             destent = ent.class.new(dest_path, ent.rel)
             destent.exist? or File.rename(ent.path, destent.path)
           end

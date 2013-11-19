@@ -28,7 +28,9 @@ class Gem::Source
     case other
     when Gem::Source::Installed,
          Gem::Source::Local,
-         Gem::Source::SpecificFile then
+         Gem::Source::SpecificFile,
+         Gem::Source::Git,
+         Gem::Source::Vendor then
       -1
     when Gem::Source then
       if !@uri
@@ -62,9 +64,9 @@ class Gem::Source
       fetcher = Gem::RemoteFetcher.fetcher
       fetcher.fetch_path bundler_api_uri, nil, true
     rescue Gem::RemoteFetcher::FetchError
-      Gem::DependencyResolver::IndexSet.new self
+      Gem::Resolver::IndexSet.new self
     else
-      Gem::DependencyResolver::APISet.new bundler_api_uri
+      Gem::Resolver::APISet.new bundler_api_uri
     end
   end
 
@@ -90,12 +92,15 @@ class Gem::Source
       end
   end
 
-  def fetch_spec(name)
+  ##
+  # Fetches a specification for the given +name_tuple+.
+
+  def fetch_spec name_tuple
     fetcher = Gem::RemoteFetcher.fetcher
 
-    spec_file_name = name.spec_name
+    spec_file_name = name_tuple.spec_name
 
-    uri = @uri + "#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}"
+    uri = api_uri + "#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}"
 
     cache_dir = cache_dir uri
 
@@ -139,7 +144,7 @@ class Gem::Source
     file       = FILES[type]
     fetcher    = Gem::RemoteFetcher.fetcher
     file_name  = "#{file}.#{Gem.marshal_version}"
-    spec_path  = @uri + "#{file_name}.gz"
+    spec_path  = api_uri + "#{file_name}.gz"
     cache_dir  = cache_dir spec_path
     local_file = File.join(cache_dir, file_name)
     retried    = false
@@ -163,18 +168,22 @@ class Gem::Source
 
   def download(spec, dir=Dir.pwd)
     fetcher = Gem::RemoteFetcher.fetcher
-    fetcher.download spec, @uri.to_s, dir
+    fetcher.download spec, api_uri.to_s, dir
   end
 
   def pretty_print q # :nodoc:
     q.group 2, '[Remote:', ']' do
       q.breakable
       q.text @uri.to_s
+      if api = api_uri
+        g.text api
+      end
     end
   end
 
 end
 
+require 'rubygems/source/git'
 require 'rubygems/source/installed'
 require 'rubygems/source/specific_file'
 require 'rubygems/source/local'

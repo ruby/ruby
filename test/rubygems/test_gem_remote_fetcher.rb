@@ -165,7 +165,7 @@ gems:
   def test_api_endpoint
     uri = URI.parse "http://gems.example.com/foo"
     target = MiniTest::Mock.new
-    target.expect :target, "http://blah.com"
+    target.expect :target, "blah.com"
 
     dns = MiniTest::Mock.new
     dns.expect :getresource, target, [String, Object]

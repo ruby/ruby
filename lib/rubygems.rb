@@ -8,7 +8,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = '2.2.0'
+  VERSION = '2.2.0.preview.2'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -302,7 +302,6 @@ module Gem
   # The path where gem executables are to be installed.
 
   def self.bindir(install_dir=Gem.dir)
-    # TODO: move to Gem::Dirs
     return File.join install_dir, 'bin' unless
       install_dir.to_s == Gem.default_dir.to_s
     Gem.default_bindir
@@ -362,16 +361,21 @@ module Gem
     Zlib::Deflate.deflate data
   end
 
-  # DOC: needs doc'd or :nodoc'd
+  # Retrieve the PathSupport object that RubyGems uses to
+  # lookup files.
+
   def self.paths
     @paths ||= Gem::PathSupport.new
   end
 
-  # DOC: needs doc'd or :nodoc'd
+  # Initialize the filesystem paths to use from +env+.
+  # +env+ is a hash-like object (typically ENV) that
+  # is queried for 'GEM_HOME', 'GEM_PATH', and 'GEM_SPEC_CACHE'
+
   def self.paths=(env)
     clear_paths
     @paths = Gem::PathSupport.new env
-    Gem::Specification.dirs = @paths.path # FIX: home is at end
+    Gem::Specification.dirs = @paths.path
   end
 
   ##
@@ -380,12 +384,10 @@ module Gem
   # FIXME deprecate these once everything else has been done -ebh
 
   def self.dir
-    # TODO: raise "no"
     paths.home
   end
 
   def self.path
-    # TODO: raise "no"
     paths.path
   end
 
@@ -552,42 +554,30 @@ module Gem
 
   private_class_method :find_home
 
+  # FIXME deprecate these in 3.0
+
   ##
   # Zlib::GzipReader wrapper that unzips +data+.
 
   def self.gunzip(data)
-    # TODO: move to utils
-    require 'stringio'
-    require 'zlib'
-    data = StringIO.new data
-
-    unzipped = Zlib::GzipReader.new(data).read
-    unzipped.force_encoding Encoding::BINARY if Object.const_defined? :Encoding
-    unzipped
+    require 'rubygems/util'
+    Gem::Util.gunzip data
   end
 
   ##
   # Zlib::GzipWriter wrapper that zips +data+.
 
   def self.gzip(data)
-    # TODO: move to utils
-    require 'stringio'
-    require 'zlib'
-    zipped = StringIO.new
-    zipped.set_encoding Encoding::BINARY if Object.const_defined? :Encoding
-
-    Zlib::GzipWriter.wrap zipped do |io| io.write data end
-
-    zipped.string
+    require 'rubygems/util'
+    Gem::Util.gzip data
   end
 
   ##
   # A Zlib::Inflate#inflate wrapper
 
   def self.inflate(data)
-    # TODO: move to utils
-    require 'zlib'
-    Zlib::Inflate.inflate data
+    require 'rubygems/util'
+    Gem::Util.inflate data
   end
 
   ##
@@ -693,7 +683,6 @@ module Gem
     file = $1
     lineno = $2.to_i
 
-    # TODO: it is ALWAYS joined! STUPID!
     [file, lineno]
   end
 
@@ -974,7 +963,6 @@ module Gem
     paths = nil if paths == [nil]
     paths = paths.first if Array === Array(paths).first
     self.paths = { "GEM_HOME" => home, "GEM_PATH" => paths }
-    # TODO: self.paths = home, paths
   end
 
   ##
@@ -1169,7 +1157,8 @@ module Gem
   autoload :ConfigFile,         'rubygems/config_file'
   autoload :Dependency,         'rubygems/dependency'
   autoload :DependencyList,     'rubygems/dependency_list'
-  autoload :DependencyResolver, 'rubygems/dependency_resolver'
+  autoload :Resolver,           'rubygems/resolver'
+  autoload :DependencyResolver, 'rubygems/resolver'
   autoload :PathSupport,        'rubygems/path_support'
   autoload :Platform,           'rubygems/platform'
   autoload :RequestSet,         'rubygems/request_set'

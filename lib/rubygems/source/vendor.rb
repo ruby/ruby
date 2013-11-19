@@ -3,8 +3,22 @@
 
 class Gem::Source::Vendor < Gem::Source::Installed
 
-  def initialize uri
-    @uri = uri
+  ##
+  # Creates a new Vendor source for a gem that was unpacked at +path+.
+
+  def initialize path
+    @uri = path
+  end
+
+  def <=> other
+    case other
+    when Gem::Source::Vendor then
+      0
+    when Gem::Source then
+      1
+    else
+      nil
+    end
   end
 
 end

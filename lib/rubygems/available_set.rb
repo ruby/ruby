@@ -116,7 +116,7 @@ class Gem::AvailableSet
 
   ##
   #
-  # Used by the DependencyResolver, the protocol to use a AvailableSet as a
+  # Used by the Resolver, the protocol to use a AvailableSet as a
   # search Set.
 
   def find_all(req)
@@ -127,7 +127,7 @@ class Gem::AvailableSet
     end
 
     match.map do |t|
-      Gem::DependencyResolver::InstalledSpecification.new(self, t.spec, t.source)
+      Gem::Resolver::InstalledSpecification.new(self, t.spec, t.source)
     end
   end
 

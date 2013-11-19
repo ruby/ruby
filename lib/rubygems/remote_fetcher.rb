@@ -90,7 +90,7 @@ class Gem::RemoteFetcher
     rescue Resolv::ResolvError
       uri
     else
-      URI.parse "#{res.target}#{uri.path}"
+      URI.parse "#{uri.scheme}://#{res.target}#{uri.path}"
     end
   end
 

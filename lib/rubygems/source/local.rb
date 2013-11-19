@@ -1,5 +1,10 @@
+##
+# The local source finds gems in the current directory for fulfilling
+# dependencies.
+
 class Gem::Source::Local < Gem::Source
-  def initialize
+
+  def initialize # :nodoc:
     @specs   = nil
     @api_uri = nil
     @uri     = nil
@@ -26,7 +31,7 @@ class Gem::Source::Local < Gem::Source
     "#<%s specs: %p>" % [self.class, keys]
   end
 
-  def load_specs(type)
+  def load_specs type # :nodoc:
     names = []
 
     @specs = {}
@@ -68,8 +73,8 @@ class Gem::Source::Local < Gem::Source
     names
   end
 
-  def find_gem(gem_name, version=Gem::Requirement.default,
-               prerelease=false)
+  def find_gem gem_name, version = Gem::Requirement.default, # :nodoc:
+               prerelease = false
     load_specs :complete
 
     found = []
@@ -91,7 +96,7 @@ class Gem::Source::Local < Gem::Source
     found.max_by { |s| s.version }
   end
 
-  def fetch_spec(name)
+  def fetch_spec name # :nodoc:
     load_specs :complete
 
     if data = @specs[name]
@@ -101,7 +106,7 @@ class Gem::Source::Local < Gem::Source
     end
   end
 
-  def download(spec, cache_dir=nil)
+  def download spec, cache_dir = nil # :nodoc:
     load_specs :complete
 
     @specs.each do |name, data|

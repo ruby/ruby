@@ -23,7 +23,7 @@ class Gem::DependencyError < Gem::Exception; end
 class Gem::DependencyRemovalException < Gem::Exception; end
 
 ##
-# Raised by Gem::DependencyResolver when a Gem::DependencyConflict reaches the
+# Raised by Gem::Resolver when a Gem::Dependency::Conflict reaches the
 # toplevel.  Indicates which dependencies were incompatible through #conflict
 # and #conflicting_dependencies
 
@@ -117,7 +117,7 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
 end
 
 ##
-# Raised by Gem::DependencyResolver when dependencies conflict and create the
+# Raised by Gem::Resolver when dependencies conflict and create the
 # inability to find a valid possible spec for a request.
 
 class Gem::ImpossibleDependenciesError < Gem::Exception
@@ -211,20 +211,20 @@ class Gem::SystemExitException < SystemExit
 end
 
 ##
-# Raised by DependencyResolver when a dependency requests a gem for which
+# Raised by Resolver when a dependency requests a gem for which
 # there is no spec.
 
 class Gem::UnsatisfiableDependencyError < Gem::Exception
 
   ##
   # The unsatisfiable dependency.  This is a
-  # Gem::DependencyResolver::DependencyRequest, not a Gem::Dependency
+  # Gem::Resolver::DependencyRequest, not a Gem::Dependency
 
   attr_reader :dependency
 
   ##
   # Creates a new UnsatisfiableDepedencyError for the unsatisfiable
-  # Gem::DependencyResolver::DependencyRequest +dep+
+  # Gem::Resolver::DependencyRequest +dep+
 
   def initialize dep, platform_mismatch=nil
     if platform_mismatch and !platform_mismatch.empty?

@@ -44,7 +44,9 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @cmd.handle_options %w[foo_bar missinglib]
 
     use_ui @ui do
-      @cmd.execute
+      assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
     end
 
     assert_equal "#{@foo_bar.full_gem_path}/lib/foo_bar.rb\n", @ui.output

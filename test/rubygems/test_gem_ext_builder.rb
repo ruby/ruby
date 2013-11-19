@@ -98,21 +98,25 @@ install:
   end
 
   def test_build_extensions
-    @spec.extensions << 'extconf.rb'
+    @spec.extensions << 'ext/extconf.rb'
 
-    FileUtils.mkdir_p @spec.gem_dir
+    ext_dir = File.join @spec.gem_dir, 'ext'
 
-    extconf_rb = File.join @spec.gem_dir, 'extconf.rb'
+    FileUtils.mkdir_p ext_dir
+
+    extconf_rb = File.join ext_dir, 'extconf.rb'
 
     open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
-          f.puts "clean:\n\techo cleaned"
-          f.puts "default:\n\techo built"
-          f.puts "install:\n\techo installed"
-        end
+        require 'mkmf'
+
+        create_makefile 'a'
       RUBY
     end
+
+    ext_lib_dir = File.join ext_dir, 'lib'
+    FileUtils.mkdir ext_lib_dir
+    FileUtils.touch File.join ext_lib_dir, 'a.rb'
 
     use_ui @ui do
       @builder.build_extensions
@@ -121,6 +125,8 @@ install:
     assert_path_exists @spec.extension_install_dir
     assert_path_exists @spec.gem_build_complete_path
     assert_path_exists File.join @spec.extension_install_dir, 'gem_make.out'
+    assert_path_exists File.join @spec.extension_install_dir, 'a.rb'
+    assert_path_exists File.join @spec.gem_dir, 'lib', 'a.rb'
   end
 
   def test_build_extensions_none

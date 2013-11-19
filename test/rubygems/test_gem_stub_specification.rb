@@ -31,7 +31,7 @@ class TestStubSpecification < Gem::TestCase
     assert_equal 'stub_e',                      stub.name
     assert_equal v(2),                          stub.version
     assert_equal Gem::Platform::RUBY,           stub.platform
-    assert_equal ['lib', relative_install_dir], stub.require_paths
+    assert_equal [relative_install_dir, 'lib'], stub.require_paths
     assert_equal %w[ext/stub_e/extconf.rb],     stub.extensions
   end
 
@@ -78,8 +78,8 @@ class TestStubSpecification < Gem::TestCase
     stub = stub_with_extension
 
     expected = [
-      File.join(stub.full_gem_path, 'lib'),
       stub.extension_install_dir,
+      File.join(stub.full_gem_path, 'lib'),
     ]
 
     assert_equal expected, stub.full_require_paths

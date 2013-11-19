@@ -7,7 +7,7 @@ class TestGemRequestSet < Gem::TestCase
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
 
-    @DR = Gem::DependencyResolver
+    @DR = Gem::Resolver
   end
 
   def test_gem
@@ -69,6 +69,7 @@ class TestGemRequestSet < Gem::TestCase
 
     assert_equal [dep('a')], rs.dependencies
 
+    assert rs.git_set
     assert rs.vendor_set
   end
 
@@ -98,6 +99,32 @@ class TestGemRequestSet < Gem::TestCase
     names = res.map { |s| s.full_name }.sort
 
     assert_equal ["a-2", "b-2"], names
+  end
+
+  def test_resolve_git
+    name, _, repository, = git_gem
+
+    rs = Gem::RequestSet.new
+
+    Tempfile.open 'gem.deps.rb' do |io|
+      io.puts <<-gems_deps_rb
+        gem "#{name}", :git => "#{repository}"
+      gems_deps_rb
+
+      io.flush
+
+      rs.load_gemdeps io.path
+    end
+
+    res = rs.resolve
+    assert_equal 1, res.size
+
+    names = res.map { |s| s.full_name }.sort
+
+    assert_equal %w[a-1], names
+
+    assert_equal [@DR::IndexSet, @DR::GitSet, @DR::VendorSet],
+                 rs.sets.map { |set| set.class }
   end
 
   def test_resolve_incompatible
@@ -142,7 +169,7 @@ class TestGemRequestSet < Gem::TestCase
 
     assert_equal ["a-1", "b-2"], names
 
-    assert_equal [@DR::IndexSet, @DR::VendorSet],
+    assert_equal [@DR::IndexSet, @DR::GitSet, @DR::VendorSet],
                  rs.sets.map { |set| set.class }
   end
 

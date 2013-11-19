@@ -1733,7 +1733,7 @@ dependencies: []
     full_gem_path = Pathname(@ext.full_gem_path)
     relative_install_dir = ext_install_dir.relative_path_from full_gem_path
 
-    assert_equal ['lib', relative_install_dir.to_s], @ext.require_paths
+    assert_equal [relative_install_dir.to_s, 'lib'], @ext.require_paths
   ensure
     RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
   end
@@ -1744,8 +1744,8 @@ dependencies: []
     @ext.require_path = 'lib'
 
     expected = [
-      File.join(@gemhome, 'gems', @ext.original_name, 'lib'),
       @ext.extension_install_dir,
+      File.join(@gemhome, 'gems', @ext.original_name, 'lib'),
     ]
 
     assert_equal expected, @ext.full_require_paths

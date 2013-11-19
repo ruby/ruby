@@ -44,13 +44,13 @@ class TestGemSource < Gem::TestCase
 
     set = @source.dependency_resolver_set
 
-    assert_kind_of Gem::DependencyResolver::APISet, set
+    assert_kind_of Gem::Resolver::APISet, set
   end
 
   def test_dependency_resolver_set_marshal_api
     set = @source.dependency_resolver_set
 
-    assert_kind_of Gem::DependencyResolver::IndexSet, set
+    assert_kind_of Gem::Resolver::IndexSet, set
   end
 
   def test_fetch_spec
