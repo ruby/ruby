@@ -41,7 +41,7 @@ module Gem::Util
 
   def self.popen *command
     begin
-      r, = IO.popen command
+      r, = IO.popen command, &:read
     rescue TypeError # ruby 1.8 only supports string command
       r, w = IO.pipe
 
@@ -54,12 +54,13 @@ module Gem::Util
 
       w.close
 
-      Process.wait pid
-
-      r
+      begin
+        return r.read
+      ensure
+        Process.wait pid
+      end
     end
 
-    r.read
   end
 
 end
