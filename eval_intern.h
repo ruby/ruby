@@ -104,6 +104,12 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define TH_POP_TAG2() \
   _th->tag = _tag.prev
 
+#define TH_PUSH_TAG2() (_th->tag = &_tag, 0)
+
+#define TH_TMPPOP_TAG() TH_POP_TAG2()
+
+#define TH_REPUSH_TAG() TH_PUSH_TAG2()
+
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
@@ -128,7 +134,7 @@ rb_threadptr_tag_jump(rb_thread_t *th, int st)
   [ISO/IEC 9899:1999] 7.13.1.1
 */
 #define TH_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(_th) : (_th->tag = &_tag, 0))
+    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(_th) : TH_PUSH_TAG2())
 
 #define EXEC_TAG() \
   TH_EXEC_TAG()
