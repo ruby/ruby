@@ -90,7 +90,7 @@ class Gem::Source::Git < Gem::Source
 
       success &&=
         system @git, 'submodule', 'update',
-               '--quiet', '--init', '--recursive' if @need_submodules
+               '--quiet', '--init', '--recursive', out: IO::NULL if @need_submodules
 
       success
     end
