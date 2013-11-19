@@ -1,3 +1,12 @@
+Tue Nov 19 21:27:33 2013  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/utils.rb (spawn_server): Specify zero for port to
+	  avoid reusing an allocated port.
+
+	* test/net/http/test_http.rb: Don't specify port here.
+
+	* test/net/http/test_https.rb: Ditto.
+
 Tue Nov 19 18:52:10 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_is_swept_object): use heap_page::before_sweep flag.

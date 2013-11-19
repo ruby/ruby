@@ -46,7 +46,7 @@ module TestNetHTTPUtils
     @config = self.class::CONFIG
     server_config = {
       :BindAddress => config('host'),
-      :Port => config('port'),
+      :Port => 0,
       :Logger => WEBrick::Log.new(NullWriter.new),
       :AccessLog => [],
       :ShutdownSocketWithoutClose => true,
@@ -65,7 +65,7 @@ module TestNetHTTPUtils
     @server = WEBrick::HTTPServer.new(server_config)
     @server.mount('/', Servlet, config('chunked'))
     @server.start
-    @config['port'] = @server[:Port] if @config['port'] == 0
+    @config['port'] = @server[:Port]
     n_try_max = 5
     begin
       TCPSocket.open(config('host'), config('port')).close
