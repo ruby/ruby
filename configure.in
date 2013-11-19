@@ -242,6 +242,29 @@ test x"$target_alias" = x &&
 target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
 ac_install_sh='' # unusable for extension libraries.
 
+AS_CASE($target_os,
+	[darwin*], [os_version_style=major+0],
+	[os_version_style=full])
+AC_ARG_WITH(os-version-style,
+	AS_HELP_STRING([--with-os-version-style=TYPE],
+		       [OS version number for target and target_os [[full]]]
+		       [(full|teeny|minor+0|minor|major+0|major|none)]),
+	[os_version_style=$withval])
+os_version_style_transform=
+AS_CASE("${os_version_style}",
+	[full|teeny], [],
+	[minor+0], [os_version_style_transform=['s/\([0-9]\.[0-9][0-9]*\)\.[0-9][.0-9]*$/\1.0/']],
+	[minor],   [os_version_style_transform=['s/\([0-9]\.[0-9][0-9]*\)\.[0-9][.0-9]*$/\1/']],
+	[major+0], [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1.0/']],
+	[major],   [os_version_style_transform=['s/\([0-9]\)\.[0-9][.0-9]*$/\1/']],
+	[none],    [os_version_style_transform=['s/[0-9]\.[0-9][.0-9]*$//']],
+	[AC_MSG_ERROR(unknown --with-os-version-style: $withval)])
+AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
+	[
+	target=`echo ${target} | sed "$os_version_style_transform"`
+	target_os=`echo ${target_os} | sed "$os_version_style_transform"`
+	])
+
 AC_DEFUN([RUBY_APPEND_OPTION],
 	[# RUBY_APPEND_OPTION($1, $2)
 	AS_CASE([" [$]{$1-} "],

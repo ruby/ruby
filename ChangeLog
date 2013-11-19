@@ -1,3 +1,8 @@
+Tue Nov 19 23:38:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--with-os-version-style): option to transform target
+	  OS version string.
+
 Tue Nov 19 21:27:33 2013  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/utils.rb (spawn_server): Specify zero for port to
