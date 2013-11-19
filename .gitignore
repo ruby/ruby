@@ -104,6 +104,9 @@ y.tab.c
 /ext/dl/callback/callback-*.c
 /ext/dl/callback/callback.c
 
+# /ext/rbconfig/
+/ext/rbconfig/sizeof/sizes.c
+
 # /ext/ripper/
 /ext/ripper/eventids1.c
 /ext/ripper/eventids2table.c
