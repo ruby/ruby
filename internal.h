@@ -435,6 +435,8 @@ void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR
 void ruby_sized_xfree(void *x, size_t size);
 #define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
 
+void rb_gc_resurrect(VALUE ptr);
+
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)

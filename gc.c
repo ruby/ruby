@@ -3571,6 +3571,20 @@ rb_gc_mark(VALUE ptr)
     gc_mark(&rb_objspace, ptr);
 }
 
+/* resurrect non-marked `obj' if obj is before swept */
+
+void
+rb_gc_resurrect(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (is_lazy_sweeping(heap_eden) &&
+	!gc_marked(objspace, obj) &&
+	!is_swept_object(objspace, obj)) {
+	gc_mark_ptr(objspace, obj);
+    }
+}
+
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 {

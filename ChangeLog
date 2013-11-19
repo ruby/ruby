@@ -1,3 +1,14 @@
+Tue Nov 19 18:45:40 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_gc_resurrect): added.
+	  rb_fstring() used rb_gc_mark() to avoid freeing used string.
+	  However, rb_gc_mark() set mark bit *and* pushes mark_stack.
+	  rb_gc_resurrect() does only set mark bit if it is before sweeping.
+
+	* string.c (rb_fstring): use rb_gc_resurrect.
+
+	* internal.h: add decl.
+
 Tue Nov 19 09:47:02 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc master a1195ce.  Changes include:
