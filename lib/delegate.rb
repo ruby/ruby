@@ -74,7 +74,18 @@ class Delegator < BasicObject
       $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
     end
   end
-  alias send method_missing
+
+  #
+  # Handles the magic of delegation through \_\_getobj\_\_.
+  #
+  def send(m, *args, &block)
+    target = self.__getobj__
+    begin
+      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
+    ensure
+      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
+    end
+  end
 
   #
   # Checks for a method provided by this the delegate object by forwarding the

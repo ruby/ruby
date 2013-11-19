@@ -145,4 +145,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {d.open}
     assert_nothing_raised(ArgumentError) {d.send(:open)}
   end
+
+  def test_send_method_in_delegator
+    d = Class.new(SimpleDelegator) do
+      def foo
+        "foo"
+      end
+    end.new(Object.new)
+    assert_equal("foo", d.send(:foo))
+  end
 end
