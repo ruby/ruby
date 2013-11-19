@@ -214,7 +214,9 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     begin
       FileUtils.ln src, dst
+      nlink = File.stat(dst).nlink if File.identical? src, dst
       FileUtils.rm dst
+      return if nlink == 1
     rescue SystemCallError
       return
     end
