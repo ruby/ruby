@@ -2168,12 +2168,8 @@ is_id_value(rb_objspace_t *objspace, VALUE ptr)
 static inline int
 heap_is_swept_object(rb_objspace_t *objspace, rb_heap_t *heap, VALUE ptr)
 {
-    struct heap_page *page = heap->sweep_pages;
-    while (page) {
-	if ((VALUE)page->start <= ptr && ptr < (VALUE)(page->start + page->limit)) return FALSE;
-	page = page->next;
-    }
-    return TRUE;
+    struct heap_page *page = GET_HEAP_PAGE(ptr);
+    return page->before_sweep ? FALSE : TRUE;
 }
 
 static inline int
