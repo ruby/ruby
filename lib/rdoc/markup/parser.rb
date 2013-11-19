@@ -535,8 +535,8 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Calculates the column (by character) and line of the current token from
-  # +scanner+ based on +byte_offset+.
+  # Calculates the column (by character) and line of the current token based
+  # on +byte_offset+.
 
   def token_pos byte_offset
     offset = char_pos byte_offset

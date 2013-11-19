@@ -1,3 +1,13 @@
+Tue Nov 19 09:47:02 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc master a1195ce.  Changes include:
+
+	  Improved accessibility of the main sidebar navigation.
+
+	  Fixed handling of regexp options in HTML source highlighting.
+
+	* test/rdoc:  ditto.
+
 Tue Nov 19 09:33:52 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master 6a3d9f9.  Changes include:

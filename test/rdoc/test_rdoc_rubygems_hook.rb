@@ -10,7 +10,7 @@ class TestRDocRubygemsHook < Gem::TestCase
     skip 'requires RubyGems 1.9+' unless
       Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.9')
 
-    @a = util_spec 'a' do |s|
+    @a = util_spec 'a', 2 do |s|
       s.rdoc_options = %w[--main MyTitle]
       s.extra_rdoc_files = %w[README]
     end

@@ -193,7 +193,8 @@ nav h2 {
   text-align: center;
 }
 
-nav h3 {
+nav h3,
+#table-of-contents-navigation {
   margin: 0;
   padding: 2px 8px 2px 8px;
   text-align: right;
@@ -213,8 +214,13 @@ nav p {
   border-top: 0;
 }
 
-#home-section h2,
-#home-section h3 {
+#home-section h2 {
+  text-align: center;
+}
+
+#table-of-contents-navigation {
+  font-size: 1.2em;
+  font-weight: bold;
   text-align: center;
 }
 

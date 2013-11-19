@@ -242,6 +242,26 @@ U
     assert_equal expected, tokens
   end
 
+  def test_class_tokenize_regexp_options
+    tokens = RDoc::RubyLex.tokenize "/hAY/i", nil
+
+    expected = [
+      @TK::TkREGEXP.new( 0, 1,  0, "/hAY/i"),
+      @TK::TkNL    .new( 6, 1,  6, "\n"),
+    ]
+
+    assert_equal expected, tokens
+
+    tokens = RDoc::RubyLex.tokenize "/hAY/ix", nil
+
+    expected = [
+      @TK::TkREGEXP.new( 0, 1,  0, "/hAY/ix"),
+      @TK::TkNL    .new( 7, 1,  7, "\n"),
+    ]
+
+    assert_equal expected, tokens
+  end
+
   def test_class_tokenize_regexp_backref
     tokens = RDoc::RubyLex.tokenize "/[csh](..) [csh]\\1 in/", nil
 
