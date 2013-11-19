@@ -3336,8 +3336,12 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
     sign = bary_pack(+1, BARY_ARGS(div_bary), &numwords, 1, sizeof(numwords), 0,
         INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    if (sign == 2)
+    if (sign == 2) {
+#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
+	*nlz_bits_ret = 0;
+#endif
         return (size_t)-1;
+    }
     *nlz_bits_ret = nlz_bits;
     return numwords;
 }
