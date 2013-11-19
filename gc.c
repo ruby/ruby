@@ -5313,7 +5313,7 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
 
     objspace->mark_func_data = &mfd;
     {
-	gc_mark_roots(objspace, FALSE, &data.category);
+	gc_mark_roots(objspace, TRUE, &data.category);
     }
     objspace->mark_func_data = 0;
 }

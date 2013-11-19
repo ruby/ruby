@@ -1,3 +1,7 @@
+Tue Nov 19 18:49:32 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_objspace_reachable_objects_from_root): do major marking.
+
 Tue Nov 19 18:45:40 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_resurrect): added.
