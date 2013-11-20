@@ -177,7 +177,7 @@ class TestRand < Test::Unit::TestCase
   end
 
   def test_big_seed
-    assert_random_int(%w(1143843490), 0x100000000, 2**1000000-1)
+    assert_random_int(%w(2757555016), 0x100000000, 2**1000000-1)
   end
 
   def test_random_gc
