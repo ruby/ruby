@@ -1,3 +1,9 @@
+Wed Nov 20 15:20:00 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_mutex_unlock_on_trap): extend waiting
+	  time to invocation of signal handler from 0.01 sec to 0.2 sec.
+	  RubyCI report error on mswin. reported by @unak
+
 Wed Nov 13 11:57:01 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.0.14. [ruby-core:58300]

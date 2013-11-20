@@ -889,7 +889,7 @@ Thread.new(Thread.current) {|mth|
       m.lock
       puts "locked"
       Process.kill("INT", $$)
-      sleep 0.01
+      sleep 0.2
       puts m.locked?
     INPUT
   end
