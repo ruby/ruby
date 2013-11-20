@@ -10155,7 +10155,8 @@ rb_gc_mark_symbols(int full_mark)
 	rb_mark_tbl(global_symbols.id_str);
 	rb_gc_mark_locations(global_symbols.op_sym,
 			     global_symbols.op_sym + numberof(global_symbols.op_sym));
-	global_symbols.minor_marked = 1;
+
+	if (!full_mark) global_symbols.minor_marked = 1;
     }
 }
 #endif /* !RIPPER */

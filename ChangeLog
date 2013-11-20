@@ -1,3 +1,10 @@
+Wed Nov 20 17:34:13 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (rb_gc_mark_symbols): set global_symbols.minor_marked only
+	  when full_mark is 0.
+	  rb_gc_mark_symbols() (with full_mark == 1) can be called by other
+	  than GC (such as rb_objspace_reachable_objects_from_root()).
+
 Wed Nov 20 11:46:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: merge JSON 1.8.1.
