@@ -480,8 +480,10 @@ end.join
   def test_machine_stackoverflow
     bug9109 = '[ruby-dev:47804] [Bug #9109]'
     assert_separately([], <<-SRC)
-    h = {a: ->{h[:a].call}}
-    assert_raise(SystemStackError, #{bug9109.dump}) {h[:a].call}
+    assert_raise(SystemStackError, #{bug9109.dump}) {
+      h = {a: ->{h[:a].call}}
+      h[:a].call
+    }
     SRC
   end
 
