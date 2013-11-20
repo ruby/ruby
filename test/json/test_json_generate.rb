@@ -3,7 +3,6 @@
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
-require_relative '../ruby/envutil.rb'
 
 class TestJSONGenerate < Test::Unit::TestCase
   include JSON
@@ -216,14 +215,15 @@ EOT
   end
 
   def test_gc
-    assert_separately %w[-rjson --disable-gems], <<-EOS, timeout: 5
+    require_relative '../ruby/envutil.rb'
+    assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
       bignum_too_long_to_embed_as_string = 1234567890123456789012345
       expect = bignum_too_long_to_embed_as_string.to_s
       GC.stress = true
 
       10.times do |i|
         tmp = bignum_too_long_to_embed_as_string.to_json
-        assert_equal expect, tmp
+        raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
       end
     EOS
   end if GC.respond_to?(:stress=)
@@ -252,15 +252,43 @@ EOT
     assert_equal '5', state2.array_nl
   end
 
-  def test_broken_bignum # [ruby-core:38867]
-    assert_separately %w[-rjson --disable-gems], <<-EOS, timeout: 5
-      Bignum.class_eval do
-        def to_s
+  def test_configure_hash_conversion
+    state = JSON.state.new
+    state.configure(:indent => '1')
+    assert_equal '1', state.indent
+    state = JSON.state.new
+    foo = 'foo'
+    assert_raise(TypeError) do
+      state.configure(foo)
+    end
+    def foo.to_h
+      { :indent => '2' }
+    end
+    state.configure(foo)
+    assert_equal '2', state.indent
+  end
+
+  if defined?(JSON::Ext::Generator)
+    def test_broken_bignum # [ruby-core:38867]
+      pid = fork do
+        Bignum.class_eval do
+          def to_s
+          end
+        end
+        begin
+          JSON::Ext::Generator::State.new.generate(1<<64)
+          exit 1
+        rescue TypeError
+          exit 0
         end
       end
-      assert_raise(TypeError){ JSON::Ext::Generator::State.new.generate(1<<64) }
-    EOS
-  end if defined?(JSON::Ext::Generator)
+      _, status = Process.waitpid2(pid)
+      assert status.success?
+    rescue NotImplementedError
+      # forking to avoid modifying core class of a parent process and
+      # introducing race conditions of tests are run in parallel
+    end
+  end
 
   def test_hash_likeness_set_symbol
     state = JSON.state.new
@@ -285,5 +313,11 @@ EOT
     state_hash = state.to_hash
     assert_kind_of Hash, state_hash
     assert_equal :bar, state_hash[:foo]
+  end
+
+  def test_json_generate
+    assert_raise JSON::GeneratorError do
+      assert_equal true, JSON.generate(["\xea"])
+    end
   end
 end

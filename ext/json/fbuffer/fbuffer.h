@@ -67,7 +67,7 @@ static VALUE fbuffer_to_s(FBuffer *fb);
 static FBuffer *fbuffer_alloc(unsigned long initial_length)
 {
     FBuffer *fb;
-    if (initial_length == 0) initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
+    if (initial_length <= 0) initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
     fb = ALLOC(FBuffer);
     memset((void *) fb, 0, sizeof(FBuffer));
     fb->initial_length = initial_length;
@@ -117,9 +117,9 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    fbuffer_append(fb, newstr, len);
-
     RB_GC_GUARD(str);
+
+    fbuffer_append(fb, newstr, len);
 }
 #endif
 

@@ -16,7 +16,7 @@ class Range
   def as_json(*)
     {
       JSON.create_id  => self.class.name,
-      'a'             => [ first, self.end, exclude_end? ]
+      'a'             => [ first, last, exclude_end? ]
     }
   end
 

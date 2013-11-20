@@ -1,5 +1,1 @@
-generator.o: generator.c $(HDRS) $(ruby_headers) $(srcdir)/../fbuffer/fbuffer.h \
-  $(hdrdir)/ruby/encoding.h \
-  $(hdrdir)/ruby/oniguruma.h \
-  $(hdrdir)/ruby/re.h \
-  $(hdrdir)/ruby/regex.h \
+generator.o: generator.c generator.h $(srcdir)/../fbuffer/fbuffer.h

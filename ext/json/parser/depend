@@ -1,3 +1,1 @@
-parser.o: parser.c parser.rl $(HDRS) $(ruby_headers) $(srcdir)/../fbuffer/fbuffer.h \
-  $(hdrdir)/ruby/encoding.h \
-  $(hdrdir)/ruby/oniguruma.h \
+parser.o: parser.c parser.h $(srcdir)/../fbuffer/fbuffer.h

@@ -179,10 +179,9 @@ module JSON
   end
 
   # Generate a JSON document from the Ruby data structure _obj_ and return
-  # it. _state_ is
-  # * a JSON::State object,
+  # it. _state_ is * a JSON::State object,
   # * or a Hash like object (responding to to_hash),
-  # * or an object convertible into a hash by a to_h method,
+  # * an object convertible into a hash by a to_h method,
   # that is used as or to configure a State object.
   #
   # It defaults to a state object, that creates the shortest possible JSON text
@@ -413,10 +412,7 @@ module JSON
   end
 
   # Shortuct for iconv.
-  if ::String.method_defined?(:encode) &&
-    # XXX Rubinius doesn't support ruby 1.9 encoding yet
-    defined?(RUBY_ENGINE) && RUBY_ENGINE != 'rbx'
-  then
+  if ::String.method_defined?(:encode)
     # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)
       string.encode(to, from)

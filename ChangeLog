@@ -1,3 +1,18 @@
+Wed Nov 20 11:46:38 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: merge JSON 1.8.1.
+	  https://github.com/nurse/json/compare/002ac2771ce32776b32ccd2d06e5604de6c36dcd...e09ffc0d7da25d0393873936c118c188c78dbac3
+	* Remove Rubinius exception since transcoding should be working now.
+	* Fix https://github.com/flori/json/issues/162 reported by Marc-Andre
+	  Lafortune <github_rocks@marc-andre.ca>. Thanks!
+	* Applied patches by Yui NARUSE <naruse@airemix.jp> to suppress
+	  warning with -Wchar-subscripts and better validate UTF-8 strings.
+	* Applied patch by ginriki@github to remove unnecessary if.
+	* Add load/dump interface to JSON::GenericObject to make
+	  serialize :some_attribute, JSON::GenericObject
+	  work in Rails active models for convenient
+	  SomeModel#some_attribute.foo.bar access to serialised JSON data.
+
 Wed Nov 20 01:39:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/constant.rb (RDoc::Constant#documented?): workaround for
