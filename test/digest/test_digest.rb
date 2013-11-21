@@ -7,7 +7,7 @@ require 'test/unit'
 require 'tempfile'
 
 require 'digest'
-%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2].each do |lib|
+%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble].each do |lib|
   begin
     require lib
   rescue LoadError
@@ -102,6 +102,11 @@ module TestDigest
       md.update('a' * 97)
       md.hexdigest
     }
+  end
+
+  def test_bubblebabble
+    expected = "xopoh-fedac-fenyh-nehon-mopel-nivor-lumiz-rypon-gyfot-cosyz-rimez-lolyv-pekyz-rosud-ricob-surac-toxox"
+    assert_equal Digest::SHA256.bubblebabble('message'), expected
   end
 
   class TestMD5 < Test::Unit::TestCase

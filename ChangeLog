@@ -1,3 +1,7 @@
+Thu Nov 21 10:30:47 2013  Zachary Scott  <e@zzak.io>
+
+	* test/digest/test_digest.rb: Add test for Digest::SHA256.bubblebabble
+
 Wed Nov 20 20:54:01 2013  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* tool/instruction.rb : fix typo.
