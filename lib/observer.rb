@@ -15,12 +15,13 @@
 # module, which provides the methods for managing the associated observer
 # objects.
 #
-# The observers must implement a method called +update+ to receive
-# notifications.
-#
 # The observable object must:
 # * assert that it has +#changed+
 # * call +#notify_observers+
+#
+# An observer subscribes to updates using +Observable#add_observer+, which 
+# also specifies the method the observable will call when +#notify_observers+ is 
+# called. By default, the method +#notify_observers+ calls is +#update+.
 #
 # === Example
 #
