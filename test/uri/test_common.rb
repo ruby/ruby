@@ -29,6 +29,18 @@ class TestCommon < Test::Unit::TestCase
 		 URI.extract('From: XXX [mailto:xxx@xxx.xxx.xxx]').sort)
   end
 
+  def test_parse
+    assert_equal('localhost',
+		 URI.parse('localhost').host)
+    assert_equal('127.0.0.1',
+		 URI.parse('127.0.0.1').host)
+    assert_equal('fe80::11:11:11',
+		 URI.parse('fe80::11:11:11').host)
+    assert_equal('www.ruby-lang.org',
+		 URI.parse('www.ruby-lang.org').host)
+  end
+
+
   def test_regexp
     assert_instance_of Regexp, URI.regexp
     assert_instance_of Regexp, URI.regexp(['http'])
