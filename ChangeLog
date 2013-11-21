@@ -1,3 +1,8 @@
+Thu Nov 21 16:32:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#method_missing): try private methods defined in
+	  Kernel after the target.  [Fixes GH-449]
+
 Thu Nov 21 16:25:08 2013  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/uri/test_generic.rb (URI#test_merge): Test uri + URI(path)
@@ -119,11 +124,6 @@ Wed Nov 20 01:39:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/constant.rb (RDoc::Constant#documented?): workaround for
 	  NoMethodError when the original of alias is not found.
-
-Wed Nov 20 01:27:33 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/delegate.rb (Delegator#send): separate from method_missing so
-	  that super calls proper method.
 
 Tue Nov 19 23:38:49 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -286,11 +286,6 @@ Sat Nov 16 00:18:36 2013  Masaki Matsushita  <glass.saga@gmail.com>
 	  when reentering by callcc. [ruby-core:58329] [Bug #9110]
 
 	* test/ruby/test_beginendblock.rb: test for above.
-
-Fri Nov 15 17:07:31 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/delegate.rb (Delegator#send): override to get rid of global function interference.
-	  [Fixes GH-449]
 
 Fri Nov 15 01:06:04 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -46,6 +46,10 @@ class Delegator < BasicObject
     [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
       undef_method m
     end
+    private_instance_methods.each do |m|
+      next if /\Ablock_given\?\z|iterator\?\z/ =~ m
+      undef_method m
+    end
   end
   include kernel
 
@@ -69,21 +73,15 @@ class Delegator < BasicObject
   def method_missing(m, *args, &block)
     target = self.__getobj__
     begin
-      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
+      if target.respond_to?(m)
+        target.__send__(m, *args, &block)
+      elsif ::Kernel.respond_to?(m, true)
+        ::Kernel.instance_method(m).bind(self).(*args, &block)
+      else
+        super(m, *args, &block)
+      end
     ensure
-      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
-    end
-  end
-
-  #
-  # Handles the magic of delegation through \_\_getobj\_\_.
-  #
-  def send(m, *args, &block)
-    target = self.__getobj__
-    begin
-      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
-    ensure
-      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
+      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:(?:#{[__LINE__-7, __LINE__-5, __LINE__-3].join('|')}):"o =~ t} if $@
     end
   end
 
