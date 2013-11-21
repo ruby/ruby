@@ -1,3 +1,8 @@
+Thu Nov 21 16:25:08 2013  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/uri/test_generic.rb (URI#test_merge): Test uri + URI(path)
+	  in addition to uri + path.
+
 Thu Nov 21 15:36:08 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/openssl/lib/openssl/buffering.rb: [DOC] Fix HEREDOC comment for
