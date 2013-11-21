@@ -3816,7 +3816,9 @@ VpAlloc(size_t mx, const char *szVal)
     size_t mf = VpGetPrecLimit();
     VALUE buf;
 
-    mx = (mx + BASE_FIG - 1) / BASE_FIG + 1;    /* Determine allocation unit. */
+    mx = (mx + BASE_FIG - 1) / BASE_FIG;    /* Determine allocation unit. */
+    if (mx == 0) ++mx;
+
     if (szVal) {
 	while (ISSPACE(*szVal)) szVal++;
 	if (*szVal != '#') {

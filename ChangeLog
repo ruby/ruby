@@ -1,3 +1,8 @@
+Thu Nov 21 21:40:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpAlloc): Fix the expr to adjust the size
+	  of the digit array.
+
 Thu Nov 21 21:36:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_sqrt): Fix the precision of
