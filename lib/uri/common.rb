@@ -121,6 +121,11 @@ module URI
       case uri
       when ''
         # null uri
+      when @regexp[:HOST]
+        scheme, opaque, userinfo, host, port,
+          registry, path, query, fragment = \
+        nil, nil, nil, $~[0], nil,
+          nil, nil, nil, nil
 
       when @regexp[:ABS_URI]
         scheme, opaque, userinfo, host, port,
