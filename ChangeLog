@@ -1,3 +1,7 @@
+Thu Nov 21 16:50:16 2013  Zachary Scott  <e@zzak.io>
+
+	* test/digest/test_digest.rb: Add more tests for digest/bubblebabble
+
 Thu Nov 21 16:32:47 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator#method_missing): try private methods defined in
