@@ -1,3 +1,11 @@
+Thu Nov 21 21:36:00 2013  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_sqrt): Fix the precision of
+	  the result BigDecimal of sqrt.
+	  [Bug #5266] [ruby-dev:44450]
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for the above changes.
+
 Thu Nov 21 18:49:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (vm_xrealloc, vm_xfree): use malloc_usable_size() to obtain old

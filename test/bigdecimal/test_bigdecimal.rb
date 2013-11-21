@@ -804,6 +804,20 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal.new("1").sqrt(1))
   end
 
+  def test_sqrt_5266
+    x = BigDecimal('2' + '0'*100)
+    assert_equal('0.14142135623730950488016887242096980785696718753769480731',
+                 x.sqrt(56).to_s(56).split(' ')[0])
+    assert_equal('0.1414213562373095048801688724209698078569671875376948073',
+                 x.sqrt(55).to_s(55).split(' ')[0])
+
+    x = BigDecimal('2' + '0'*200)
+    assert_equal('0.14142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727350138462',
+                 x.sqrt(110).to_s(110).split(' ')[0])
+    assert_equal('0.1414213562373095048801688724209698078569671875376948073176679737990732478462107038850387534327641572735013846',
+                 x.sqrt(109).to_s(109).split(' ')[0])
+  end
+
   def test_fix
     x = BigDecimal.new("1.1")
     assert_equal(1, x.fix)

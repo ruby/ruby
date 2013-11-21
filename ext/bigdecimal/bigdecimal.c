@@ -1591,10 +1591,10 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
     size_t mx, n;
 
     GUARD_OBJ(a, GetVpValue(self, 1));
-    mx = a->Prec *(VpBaseFig() + 1);
+    mx = a->Prec * (VpBaseFig() + 1);
 
-    n = GetPositiveInt(nFig) + VpDblFig() + 1;
-    if(mx <= n) mx = n;
+    n = GetPositiveInt(nFig) + VpDblFig() + BASE_FIG;
+    if (mx <= n) mx = n;
     GUARD_OBJ(c, VpCreateRbObject(mx, "0"));
     VpSqrt(c, a);
     return ToValue(c);
@@ -5654,6 +5654,7 @@ VpSqrt(Real *y, Real *x)
 
     n = (SIGNED_VALUE)y->MaxPrec;
     if (x->MaxPrec > (size_t)n) n = (ssize_t)x->MaxPrec;
+
     /* allocate temporally variables  */
     f = VpAlloc(y->MaxPrec * (BASE_FIG + 2), "#1");
     r = VpAlloc((n + n) * (BASE_FIG + 2), "#1");
@@ -5691,8 +5692,7 @@ VpSqrt(Real *y, Real *x)
 	if (VpIsZero(f))         goto converge;
 	VpAddSub(r, f, y, 1);    /* r = y + f  */
 	VpAsgn(y, r, 1);         /* y = r      */
-	if (f->exponent <= prec) goto converge;
-    } while(++nr < n);
+    } while (++nr < n);
 
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
