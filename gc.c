@@ -111,22 +111,22 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #endif
 
 typedef struct {
-    unsigned int initial_heap_min_slots;
-    unsigned int initial_heap_min_free_slots;
-    double initial_growth_factor;
-    unsigned int initial_growth_max;
-    unsigned int initial_malloc_limit_min;
-    unsigned int initial_malloc_limit_max;
-    double initial_malloc_limit_growth_factor;
-    unsigned int initial_oldspace_limit_min;
-    unsigned int initial_oldspace_limit_max;
-    double initial_oldspace_limit_growth_factor;
+    unsigned int heap_min_slots;
+    unsigned int heap_min_free_slots;
+    double growth_factor;
+    unsigned int growth_max;
+    unsigned int malloc_limit_min;
+    unsigned int malloc_limit_max;
+    double malloc_limit_growth_factor;
+    unsigned int oldspace_limit_min;
+    unsigned int oldspace_limit_max;
+    double oldspace_limit_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
 #endif
 } ruby_gc_params_t;
 
-static ruby_gc_params_t initial_params = {
+static ruby_gc_params_t gc_params = {
     GC_HEAP_MIN_SLOTS,
     GC_HEAP_MIN_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
@@ -559,7 +559,7 @@ struct heap_page {
 /* Aliases */
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*GET_VM()->objspace)
-#define ruby_initial_gc_stress	initial_params.gc_stress
+#define ruby_initial_gc_stress	gc_params.gc_stress
 VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
@@ -590,17 +590,6 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define ruby_gc_stress		objspace->gc_stress
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
-
-#define initial_malloc_limit_min           initial_params.initial_malloc_limit_min
-#define initial_malloc_limit_max           initial_params.initial_malloc_limit_max
-#define initial_malloc_limit_growth_factor initial_params.initial_malloc_limit_growth_factor
-#define initial_oldspace_limit_min         initial_params.initial_oldspace_limit_min
-#define initial_oldspace_limit_max         initial_params.initial_oldspace_limit_max
-#define initial_oldspace_limit_growth_factor initial_params.initial_oldspace_limit_growth_factor
-#define initial_heap_min_slots	           initial_params.initial_heap_min_slots
-#define initial_heap_min_free_slots	   initial_params.initial_heap_min_free_slots
-#define initial_growth_factor	           initial_params.initial_growth_factor
-#define initial_growth_max	           initial_params.initial_growth_max
 
 #define is_lazy_sweeping(heap) ((heap)->sweep_pages != 0)
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -848,9 +837,9 @@ rb_objspace_alloc(void)
     memset(objspace, 0, sizeof(*objspace));
     ruby_gc_stress = ruby_initial_gc_stress;
 
-    malloc_limit = initial_malloc_limit_min;
+    malloc_limit = gc_params.malloc_limit_min;
 #if RGENGC_ESTIMATE_OLDSPACE
-    objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_min;
+    objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_min;
 #endif
 
     return objspace;
@@ -1137,9 +1126,9 @@ static void
 heap_set_increment(rb_objspace_t *objspace)
 {
     size_t used = heap_pages_used - heap_tomb->used;
-    size_t next_used_limit = (size_t)(used * initial_growth_factor);
-    if (initial_growth_max > 0) {
-	size_t max_used_limit = (size_t)(used + initial_growth_max/HEAP_OBJ_LIMIT);
+    size_t next_used_limit = (size_t)(used * gc_params.growth_factor);
+    if (gc_params.growth_max > 0) {
+	size_t max_used_limit = (size_t)(used + gc_params.growth_max/HEAP_OBJ_LIMIT);
 	if (next_used_limit > max_used_limit) next_used_limit = max_used_limit;
     }
     if (next_used_limit == heap_pages_used) next_used_limit++;
@@ -1617,7 +1606,7 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    heap_add_pages(objspace, heap_eden, initial_heap_min_slots / HEAP_OBJ_LIMIT);
+    heap_add_pages(objspace, heap_eden, gc_params.heap_min_slots / HEAP_OBJ_LIMIT);
 
     init_mark_stack(&objspace->mark_stack);
 
@@ -2794,12 +2783,12 @@ gc_before_sweep(rb_objspace_t *objspace)
     total_limit_num = objspace_limit_num(objspace);
 
     heap_pages_min_free_slots = (size_t)(total_limit_num * 0.30);
-    if (heap_pages_min_free_slots < initial_heap_min_free_slots) {
-	heap_pages_min_free_slots = initial_heap_min_free_slots;
+    if (heap_pages_min_free_slots < gc_params.heap_min_free_slots) {
+	heap_pages_min_free_slots = gc_params.heap_min_free_slots;
     }
     heap_pages_max_free_slots = (size_t)(total_limit_num * 0.80);
-    if (heap_pages_max_free_slots < initial_heap_min_slots) {
-	heap_pages_max_free_slots = initial_heap_min_slots;
+    if (heap_pages_max_free_slots < gc_params.heap_min_slots) {
+	heap_pages_max_free_slots = gc_params.heap_min_slots;
     }
     if (0) fprintf(stderr, "heap_pages_min_free_slots: %d, heap_pages_max_free_slots: %d\n",
 		   (int)heap_pages_min_free_slots, (int)heap_pages_max_free_slots);
@@ -2817,16 +2806,16 @@ gc_before_sweep(rb_objspace_t *objspace)
 	size_t old_limit = malloc_limit;
 
 	if (inc > malloc_limit) {
-	    malloc_limit = (size_t)(inc * initial_malloc_limit_growth_factor);
-	    if (initial_malloc_limit_max > 0 && /* ignore max-check if 0 */
-		malloc_limit > initial_malloc_limit_max) {
+	    malloc_limit = (size_t)(inc * gc_params.malloc_limit_growth_factor);
+	    if (gc_params.malloc_limit_max > 0 && /* ignore max-check if 0 */
+		malloc_limit > gc_params.malloc_limit_max) {
 		malloc_limit = inc;
 	    }
 	}
 	else {
 	    malloc_limit = (size_t)(malloc_limit * 0.98); /* magic number */
-	    if (malloc_limit < initial_malloc_limit_min) {
-		malloc_limit = initial_malloc_limit_min;
+	    if (malloc_limit < gc_params.malloc_limit_min) {
+		malloc_limit = gc_params.malloc_limit_min;
 	    }
 	}
 
@@ -2848,23 +2837,23 @@ gc_before_sweep(rb_objspace_t *objspace)
 	if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
 	    objspace->rgengc.need_major_gc = TRUE;
 	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit * initial_oldspace_limit_growth_factor);
-	    if (objspace->rgengc.oldspace_increase_limit > initial_oldspace_limit_max) {
-		objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_max;
+	      (size_t)(objspace->rgengc.oldspace_increase_limit * gc_params.oldspace_limit_growth_factor);
+	    if (objspace->rgengc.oldspace_increase_limit > gc_params.oldspace_limit_max) {
+		objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_max;
 	    }
 	}
 	else {
 	    objspace->rgengc.oldspace_increase_limit =
-	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((initial_oldspace_limit_growth_factor - 1)/10 + 1));
-	    if (objspace->rgengc.oldspace_increase_limit < initial_oldspace_limit_min) {
-		objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_min;
+	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((gc_params.oldspace_limit_growth_factor - 1)/10 + 1));
+	    if (objspace->rgengc.oldspace_increase_limit < gc_params.oldspace_limit_min) {
+		objspace->rgengc.oldspace_increase_limit = gc_params.oldspace_limit_min;
 	    }
 	}
 
 	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
 		       (unsigned int)objspace->rgengc.oldspace_increase,
 		       (unsigned int)objspace->rgengc.oldspace_increase_limit,
-		       (unsigned int)initial_oldspace_limit_max);
+		       (unsigned int)gc_params.oldspace_limit_max);
     }
     else {
 	/* major GC */
@@ -5263,27 +5252,27 @@ rb_gc_set_params(void)
 {
     if (rb_safe_level() > 0) return;
 
-    get_envparam_int   ("RUBY_FREE_MIN", &initial_heap_min_free_slots, 0);
+    get_envparam_int   ("RUBY_FREE_MIN", &gc_params.heap_min_free_slots, 0);
 
-    get_envparam_double("RUBY_HEAP_SLOTS_GROWTH_FACTOR", &initial_growth_factor, 1.0);
-    get_envparam_int   ("RUBY_HEAP_SLOTS_GROWTH_MAX", &initial_growth_max, 0);
-    if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &initial_heap_min_slots, 0)) {
+    get_envparam_double("RUBY_HEAP_SLOTS_GROWTH_FACTOR", &gc_params.growth_factor, 1.0);
+    get_envparam_int   ("RUBY_HEAP_SLOTS_GROWTH_MAX", &gc_params.growth_max, 0);
+    if (get_envparam_int("RUBY_HEAP_MIN_SLOTS", &gc_params.heap_min_slots, 0)) {
 	size_t min_size;
 	rb_objspace_t *objspace = &rb_objspace;
 
-	min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
+	min_size = gc_params.heap_min_slots / HEAP_OBJ_LIMIT;
 	if (min_size > heap_eden->used) {
 	    heap_add_pages(objspace, heap_eden, min_size - heap_eden->used);
 	}
     }
 
-    get_envparam_int("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit_min, 0);
-    get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, 0);
-    get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &initial_malloc_limit_growth_factor, 1.0);
+    get_envparam_int("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
+    get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
+    get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0);
 
-    get_envparam_int("RUBY_GC_HEAP_OLDSPACE", &initial_oldspace_limit_min, 0);
-    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &initial_oldspace_limit_max, 0);
-    get_envparam_double("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &initial_oldspace_limit_growth_factor, 1.0);
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE", &gc_params.oldspace_limit_min, 0);
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &gc_params.oldspace_limit_max, 0);
+    get_envparam_double("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &gc_params.oldspace_limit_growth_factor, 1.0);
 }
 
 void

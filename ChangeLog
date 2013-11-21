@@ -1,3 +1,10 @@
+Thu Nov 21 17:43:29 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename initial_xxx variables to gc_params.xxx.
+	  They are not only used initial values.
+
+	  Chikanaga-san: Congratulations on RubyPrize!
+
 Thu Nov 21 17:16:00 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: enable "RGENGC_ESTIMATE_OLDSPACE" option as default.
