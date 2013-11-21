@@ -63,6 +63,7 @@ Thu Nov 21 13:32:53 2013  Zachary Scott  <e@zzak.io>
 	* ext/openssl/ossl_engine.c: [DOC] Documentation for OpenSSL::Engine
 	  This patch is based off work by @vbatts in GH-436 completing the
 	  documentation for this class and its methods.
+	  https://github.com/ruby/ruby/pull/436
 
 Thu Nov 21 10:45:22 2013  Zachary Scott  <e@zzak.io>
 
