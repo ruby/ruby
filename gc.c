@@ -39,6 +39,8 @@
 # ifdef _WIN32
 #   define malloc_usable_size(a) _msize(a)
 # endif
+#else
+# include <malloc.h>
 #endif
 
 #if /* is ASAN enabled? */ \
