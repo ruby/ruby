@@ -90,8 +90,8 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_HEAP_GROWTH_MAX 0 /* 0 is disable */
 #endif
 
-#ifndef GC_MALLOC_LIMIT
-#define GC_MALLOC_LIMIT (16 * 1024 * 1024 /* 16MB */)
+#ifndef GC_MALLOC_LIMIT_MIN
+#define GC_MALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
 #ifndef GC_MALLOC_LIMIT_MAX
 #define GC_MALLOC_LIMIT_MAX (32 * 1024 * 1024 /* 32MB */)
@@ -100,14 +100,14 @@ rb_gc_guarded_ptr(volatile VALUE *ptr)
 #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
 #endif
 
-#ifndef GC_HEAP_OLDSPACE_MIN
-#define GC_HEAP_OLDSPACE_MIN (16 * 1024 * 1024 /* 16MB */)
+#ifndef GC_OLDSPACE_LIMIT_MIN
+#define GC_OLDSPACE_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
-#ifndef GC_HEAP_OLDSPACE_GROWTH_FACTOR
-#define GC_HEAP_OLDSPACE_GROWTH_FACTOR 1.8
+#ifndef GC_OLDSPACE_LIMIT_GROWTH_FACTOR
+#define GC_OLDSPACE_LIMIT_GROWTH_FACTOR 1.2
 #endif
-#ifndef GC_HEAP_OLDSPACE_MAX
-#define GC_HEAP_OLDSPACE_MAX (384 * 1024 * 1024 /* 384MB */)
+#ifndef GC_OLDSPACE_LIMIT_MAX
+#define GC_OLDSPACE_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
 typedef struct {
@@ -115,9 +115,12 @@ typedef struct {
     unsigned int initial_heap_min_free_slots;
     double initial_growth_factor;
     unsigned int initial_growth_max;
-    unsigned int initial_malloc_limit;
+    unsigned int initial_malloc_limit_min;
     unsigned int initial_malloc_limit_max;
     double initial_malloc_limit_growth_factor;
+    unsigned int initial_oldspace_limit_min;
+    unsigned int initial_oldspace_limit_max;
+    double initial_oldspace_limit_growth_factor;
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     VALUE gc_stress;
 #endif
@@ -128,9 +131,12 @@ static ruby_gc_params_t initial_params = {
     GC_HEAP_MIN_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX,
-    GC_MALLOC_LIMIT,
+    GC_MALLOC_LIMIT_MIN,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
+    GC_OLDSPACE_LIMIT_MIN,
+    GC_OLDSPACE_LIMIT_MAX,
+    GC_OLDSPACE_LIMIT_GROWTH_FACTOR,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
 #endif
@@ -162,7 +168,7 @@ static ruby_gc_params_t initial_params = {
  * 3: show all references
  */
 #ifndef RGENGC_CHECK_MODE
-#define RGENGC_CHECK_MODE  0
+#define RGENGC_CHECK_MODE  3
 #endif
 
 /* RGENGC_PROFILE
@@ -190,7 +196,7 @@ static ruby_gc_params_t initial_params = {
  * 1: enable estimation.
  */
 #ifndef RGENGC_ESTIMATE_OLDSPACE
-#define RGENGC_ESTIMATE_OLDSPACE 0
+#define RGENGC_ESTIMATE_OLDSPACE 1
 #endif
 
 #else /* USE_RGENGC */
@@ -556,7 +562,7 @@ struct heap_page {
 #define ruby_initial_gc_stress	initial_params.gc_stress
 VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
-static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}};
+static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
 VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 
@@ -585,9 +591,12 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define monitor_level           objspace->rgengc.monitor_level
 #define monitored_object_table  objspace->rgengc.monitored_object_table
 
-#define initial_malloc_limit	           initial_params.initial_malloc_limit
+#define initial_malloc_limit_min           initial_params.initial_malloc_limit_min
 #define initial_malloc_limit_max           initial_params.initial_malloc_limit_max
 #define initial_malloc_limit_growth_factor initial_params.initial_malloc_limit_growth_factor
+#define initial_oldspace_limit_min         initial_params.initial_oldspace_limit_min
+#define initial_oldspace_limit_max         initial_params.initial_oldspace_limit_max
+#define initial_oldspace_limit_growth_factor initial_params.initial_oldspace_limit_growth_factor
 #define initial_heap_min_slots	           initial_params.initial_heap_min_slots
 #define initial_heap_min_free_slots	   initial_params.initial_heap_min_free_slots
 #define initial_growth_factor	           initial_params.initial_growth_factor
@@ -837,11 +846,11 @@ rb_objspace_alloc(void)
 {
     rb_objspace_t *objspace = malloc(sizeof(rb_objspace_t));
     memset(objspace, 0, sizeof(*objspace));
-    malloc_limit = initial_malloc_limit;
     ruby_gc_stress = ruby_initial_gc_stress;
 
+    malloc_limit = initial_malloc_limit_min;
 #if RGENGC_ESTIMATE_OLDSPACE
-    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MIN;
+    objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_min;
 #endif
 
     return objspace;
@@ -2816,8 +2825,8 @@ gc_before_sweep(rb_objspace_t *objspace)
 	}
 	else {
 	    malloc_limit = (size_t)(malloc_limit * 0.98); /* magic number */
-	    if (malloc_limit < initial_malloc_limit) {
-		malloc_limit = initial_malloc_limit;
+	    if (malloc_limit < initial_malloc_limit_min) {
+		malloc_limit = initial_malloc_limit_min;
 	    }
 	}
 
@@ -2832,6 +2841,38 @@ gc_before_sweep(rb_objspace_t *objspace)
 	    }
 	}
     }
+
+    /* reset oldspace info */
+#if RGENGC_ESTIMATE_OLDSPACE
+    if (objspace->rgengc.during_minor_gc) {
+	if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
+	    objspace->rgengc.need_major_gc = TRUE;
+	    objspace->rgengc.oldspace_increase_limit =
+	      (size_t)(objspace->rgengc.oldspace_increase_limit * initial_oldspace_limit_growth_factor);
+	    if (objspace->rgengc.oldspace_increase_limit > initial_oldspace_limit_max) {
+		objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_max;
+	    }
+	}
+	else {
+	    objspace->rgengc.oldspace_increase_limit =
+	      (size_t)(objspace->rgengc.oldspace_increase_limit / ((initial_oldspace_limit_growth_factor - 1)/10 + 1));
+	    if (objspace->rgengc.oldspace_increase_limit < initial_oldspace_limit_min) {
+		objspace->rgengc.oldspace_increase_limit = initial_oldspace_limit_min;
+	    }
+	}
+
+	if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
+		       (unsigned int)objspace->rgengc.oldspace_increase,
+		       (unsigned int)objspace->rgengc.oldspace_increase_limit,
+		       (unsigned int)initial_oldspace_limit_max);
+    }
+    else {
+	/* major GC */
+	objspace->rgengc.oldspace_increase = 0;
+    }
+    
+#endif
+
 }
 
 static void
@@ -2853,27 +2894,6 @@ gc_after_sweep(rb_objspace_t *objspace)
 	}
 #endif
     }
-
-#if RGENGC_ESTIMATE_OLDSPACE
-    if (objspace->rgengc.oldspace_increase > objspace->rgengc.oldspace_increase_limit) {
-	objspace->rgengc.need_major_gc = TRUE;
-	objspace->rgengc.oldspace_increase_limit *= GC_HEAP_OLDSPACE_GROWTH_FACTOR;
-	objspace->rgengc.oldspace_increase = 0;
-	if (objspace->rgengc.oldspace_increase_limit > GC_HEAP_OLDSPACE_MAX) {
-	    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MAX;
-	}
-    }
-    else {
-	objspace->rgengc.oldspace_increase_limit /= ((GC_HEAP_OLDSPACE_GROWTH_FACTOR - 1)/10 + 1);
-	if (objspace->rgengc.oldspace_increase_limit < GC_HEAP_OLDSPACE_MIN) {
-	    objspace->rgengc.oldspace_increase_limit = GC_HEAP_OLDSPACE_MIN;
-	}
-    }
-    if (0) fprintf(stderr, "%d\t%d\t%u\t%u\t%d\n", (int)rb_gc_count(), objspace->rgengc.need_major_gc,
-		   (unsigned int)objspace->rgengc.oldspace_increase,
-		   (unsigned int)objspace->rgengc.oldspace_increase_limit,
-		   (unsigned int)GC_HEAP_OLDSPACE_MAX);
-#endif
 
     gc_prof_set_heap_info(objspace);
 
@@ -5257,15 +5277,13 @@ rb_gc_set_params(void)
 	}
     }
 
-    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit, 0);
-    get_envparam_int   ("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, 0);
+    get_envparam_int("RUBY_GC_MALLOC_LIMIT", &initial_malloc_limit_min, 0);
+    get_envparam_int("RUBY_GC_MALLOC_LIMIT_MAX", &initial_malloc_limit_max, 0);
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &initial_malloc_limit_growth_factor, 1.0);
 
-    /*
-    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MIN", &initial_oldspace_min, 0);
-    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &initial_oldspace_max, 0);
-    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &initial_oldspace_growth_factor, 0);
-     */
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE", &initial_oldspace_limit_min, 0);
+    get_envparam_int("RUBY_GC_HEAP_OLDSPACE_MAX", &initial_oldspace_limit_max, 0);
+    get_envparam_double("RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR", &initial_oldspace_limit_growth_factor, 1.0);
 }
 
 void

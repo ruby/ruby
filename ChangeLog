@@ -1,3 +1,16 @@
+Thu Nov 21 17:16:00 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: enable "RGENGC_ESTIMATE_OLDSPACE" option as default.
+	  Without this option, some application consumes huge memory.
+	  (and there are only a few performance down)
+
+	  Introduced new environment variables:
+	  * RUBY_GC_HEAP_OLDSPACE (default 16MB)
+	  * RUBY_GC_HEAP_OLDSPACE_MAX (default 128 MB)
+	  * RUBY_GC_HEAP_OLDSPACE_GROWTH_FACTOR (default 1.2)
+
+	* gc.c (initial_malloc_limit): rename to initial_malloc_limit_min.
+
 Thu Nov 21 16:51:34 2013  Zachary Scott  <e@zzak.io>
 
 	* ext/digest/bubblebabble/bubblebabble.c: Teach RDoc digest/bubblebabble
