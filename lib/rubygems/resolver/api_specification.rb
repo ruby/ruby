@@ -34,5 +34,42 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       @dependencies == other.dependencies
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, '[APISpecification', ']' do
+      q.breakable
+      q.text "name: #{name}"
+
+      q.breakable
+      q.text "version: #{version}"
+
+      q.breakable
+      q.text "platform: #{platform}"
+
+      q.breakable
+      q.text 'dependencies:'
+      q.breakable
+      q.pp @dependencies
+
+      q.breakable
+      q.text "set uri: #{@set.dep_uri}"
+    end
+  end
+
+  ##
+  # Fetches a Gem::Specification for this APISpecification.
+
+  def spec # :nodoc:
+    @spec ||=
+      begin
+        tuple = Gem::NameTuple.new @name, @version, @platform
+
+        source.fetch_spec tuple
+      end
+  end
+
+  def source # :nodoc:
+    @set.source
+  end
+
 end
 

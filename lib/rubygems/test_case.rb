@@ -1149,8 +1149,10 @@ Also, a list:
   def dependency_request dep, from_name, from_version, parent = nil
     remote = Gem::Source.new @uri
 
-    parent ||= Gem::Resolver::DependencyRequest.new \
-      dep, nil
+    unless parent then
+      parent_dep = dep from_name, from_version
+      parent = Gem::Resolver::DependencyRequest.new parent_dep, nil
+    end
 
     spec = Gem::Resolver::IndexSpecification.new \
       nil, from_name, from_version, remote, Gem::Platform::RUBY

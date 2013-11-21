@@ -115,7 +115,7 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # A Hash containing gem names and files to require from those gems.
 
-  attr_reader :requires
+  attr_reader :requires # :nodoc:
 
   ##
   # A set of gems that are loaded via the +:path+ option to #gem
@@ -125,7 +125,7 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # The groups of gems to exclude from installation
 
-  attr_accessor :without_groups
+  attr_accessor :without_groups # :nodoc:
 
   ##
   # Creates a new GemDependencyAPI that will add dependencies to the
@@ -282,6 +282,8 @@ class Gem::RequestSet::GemDependencyAPI
     true
   end
 
+  private :gem_github
+
   ##
   # Handles the :group and :groups +options+ for the gem with the given
   # +name+.
@@ -361,7 +363,7 @@ class Gem::RequestSet::GemDependencyAPI
   def gem_requires name, options # :nodoc:
     if options.include? :require then
       if requires = options.delete(:require) then
-        @requires[name].concat requires
+        @requires[name].concat Array requires
       end
     else
       @requires[name] << name
@@ -369,6 +371,11 @@ class Gem::RequestSet::GemDependencyAPI
   end
 
   private :gem_requires
+
+  ##
+  # :category: Gem Dependencies DSL
+  #
+  # Block form for specifying gems from a git +repository+.
 
   def git repository
     @current_repository = repository
@@ -424,6 +431,8 @@ class Gem::RequestSet::GemDependencyAPI
 
   ##
   # :category: Gem Dependencies DSL
+  #
+  # Block form for restricting gems to a particular platform.
 
   def platform what
     @current_platform = what
@@ -436,6 +445,8 @@ class Gem::RequestSet::GemDependencyAPI
 
   ##
   # :category: Gem Dependencies DSL
+  #
+  # Block form for restricting gems to a particular platform.
 
   alias :platforms :platform
 

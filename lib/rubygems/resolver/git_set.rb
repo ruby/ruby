@@ -42,38 +42,27 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   # Finds all git gems matching +req+
 
   def find_all req
-    @repositories.keys.select do |name|
-      name == req.name
-    end.map do |name|
-      @specs[name] || load_spec(name)
-    end.select do |spec|
+    prefetch nil
+
+    specs.values.select do |spec|
       req.matches_spec? spec
     end
-  end
-
-  def load_spec name
-    repository, reference = @repositories[name]
-
-    source = Gem::Source::Git.new name, repository, reference
-
-    spec = source.load_spec name
-
-    git_spec =
-      Gem::Resolver::GitSpecification.new self, spec, source
-
-    @specs[name] = git_spec
   end
 
   ##
   # Prefetches specifications from the git repositories in this set.
 
   def prefetch reqs
-    names = reqs.map { |req| req.name }
+    return unless @specs.empty?
 
-    @repositories.each_key do |name|
-      next unless names.include? name
+    @repositories.each do |name, (repository, reference)|
+      source = Gem::Source::Git.new name, repository, reference
 
-      load_spec name
+      source.specs.each do |spec|
+        git_spec = Gem::Resolver::GitSpecification.new self, spec, source
+
+        @specs[spec.name] = git_spec
+      end
     end
   end
 

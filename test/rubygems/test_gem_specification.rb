@@ -2447,8 +2447,8 @@ duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
     end
 
     assert_match <<-warning, @ui.error
-WARNING:  licenses is empty.  Use a license abbreviation from:
-  http://opensource.org/licenses/alphabetical
+WARNING:  licenses is empty, but is recommended.  Use a license abbreviation from:
+http://opensource.org/licenses/alphabetical
     warning
   end
 

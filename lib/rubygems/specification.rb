@@ -27,6 +27,7 @@ class Date; end
 #   Gem::Specification.new do |s|
 #     s.name        = 'example'
 #     s.version     = '0.1.0'
+#     s.licenses    = ['MIT']
 #     s.summary     = "This is an example!"
 #     s.description = "Much longer explanation of the example!"
 #     s.authors     = ["Ruby Coder"]
@@ -530,6 +531,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # :category: Recommended gemspec attributes
   # The license for this gem.
   #
   # The license must be a short name, no more than 64 characters.
@@ -538,7 +540,12 @@ class Gem::Specification < Gem::BasicSpecification
   # text of the license should be inside of the gem when you build it.
   #
   # See http://opensource.org/licenses/alphabetical for a list of licenses and
-  # their abbreviations (or short names).
+  # their abbreviations (or short names).  GitHub also provides a
+  # license picker at http://choosealicense.com/
+  #
+  #  According to copyright law, not having an OSI-approved open source license
+  #  means you have no rights to use the code for any purpose-- in other words,
+  #  "all rights reserved".
   #
   # You can set multiple licenses with #licenses=
   #
@@ -550,6 +557,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # :category: Recommended gemspec attributes
   # The license(s) for the library.
   #
   # Each license must be a short name, no more than 64 characters.
@@ -2526,8 +2534,8 @@ class Gem::Specification < Gem::BasicSpecification
     }
 
     warning <<-warning if licenses.empty?
-licenses is empty.  Use a license abbreviation from:
-  http://opensource.org/licenses/alphabetical
+licenses is empty, but is recommended.  Use a license abbreviation from:
+http://opensource.org/licenses/alphabetical
     warning
 
     validate_permissions

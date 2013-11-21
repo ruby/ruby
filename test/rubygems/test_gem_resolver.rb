@@ -44,6 +44,21 @@ class TestGemResolver < Gem::TestCase
     assert_equal [index_set, vendor_set], composed.sets
   end
 
+  def test_self_compose_sets_nest
+    index_set  = @DR::IndexSet.new
+    vendor_set = @DR::VendorSet.new
+
+    inner = @DR.compose_sets index_set, vendor_set
+
+    current_set = @DR::CurrentSet.new
+
+    composed = @DR.compose_sets inner, current_set
+
+    assert_kind_of Gem::Resolver::ComposedSet, composed
+
+    assert_equal [index_set, vendor_set, current_set], composed.sets
+  end
+
   def test_self_compose_sets_nil
     index_set  = @DR::IndexSet.new
 

@@ -272,10 +272,12 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_require
     @gda.gem 'a', :require => %w[b c]
+    @gda.gem 'd', :require => 'e'
 
-    assert_equal [dep('a')], @set.dependencies
+    assert_equal [dep('a'), dep('d')], @set.dependencies
 
     assert_equal %w[b c], @gda.requires['a']
+    assert_equal %w[e],   @gda.requires['d']
   end
 
   def test_gem_require_false

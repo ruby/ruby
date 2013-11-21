@@ -29,8 +29,22 @@ class Gem::Resolver
 
   attr_accessor :soft_missing
 
+  ##
+  # Combines +sets+ into a ComposedSet that allows specification lookup in a
+  # uniform manner.  If one of the +sets+ is itself a ComposedSet its sets are
+  # flattened into the result ComposedSet.
+
   def self.compose_sets *sets
     sets.compact!
+
+    sets = sets.map do |set|
+      case set
+      when Gem::Resolver::ComposedSet then
+        set.sets
+      else
+        set
+      end
+    end.flatten
 
     case sets.length
     when 0 then
@@ -74,6 +88,15 @@ class Gem::Resolver
     if DEBUG_RESOLVER
       d = data.map { |x| x.inspect }.join(", ")
       STDOUT.printf "%20s %s\n", stage.to_s.upcase, d
+    end
+  end
+
+  def explain_list(stage, data)
+    if DEBUG_RESOLVER
+      STDOUT.printf "%20s (%d entries)\n", stage.to_s.upcase, data.size
+      data.each do |d|
+        STDOUT.printf "%20s %s\n", "", d
+      end
     end
   end
 
@@ -134,8 +157,6 @@ class Gem::Resolver
   # If no good candidate is found, the first state is tried.
 
   def find_conflict_state conflict, states # :nodoc:
-    rejected = []
-
     until states.empty? do
       state = states.pop
 
@@ -145,14 +166,9 @@ class Gem::Resolver
         state.conflicts << [state.spec, conflict]
         return state
       end
-
-      rejected << state
     end
 
-    return rejected.shift
-  ensure
-    rejected = rejected.concat states
-    states.replace rejected
+    nil
   end
 
   ##
@@ -172,14 +188,23 @@ class Gem::Resolver
 
     # If the existing activation indicates that there are other possibles for
     # it, then issue the conflict on the dependency for the activation itself.
-    # Otherwise, issue it on the requester's request itself.
-    if existing.others_possible? or existing.request.requester.nil? then
+    # Otherwise, if there was a requester, issue it on the requester's
+    # request itself.
+    # Finally, if the existing request has no requester (toplevel) unwind to
+    # it anyway.
+
+    if existing.others_possible?
       conflict =
         Gem::Resolver::Conflict.new dep, existing
-    else
+    elsif dep.requester
       depreq = dep.requester.request
       conflict =
         Gem::Resolver::Conflict.new depreq, existing, dep
+    elsif existing.request.requester.nil?
+      conflict =
+        Gem::Resolver::Conflict.new dep, existing
+    else
+      raise Gem::DependencyError, "Unable to figure out how to unwind conflict"
     end
 
     @conflicts << conflict unless @conflicts.include? conflict
@@ -234,6 +259,8 @@ class Gem::Resolver
     while !needed.empty?
       dep = needed.remove
       explain :try, [dep, dep.requester ? dep.requester.request : :toplevel]
+      explain_list :next5, needed.next5
+      explain_list :specs, Array(specs).map { |x| x.full_name }.sort
 
       # If there is already a spec activated for the requested name...
       if specs && existing = specs.find { |s| dep.name == s.name }
@@ -284,7 +311,7 @@ class Gem::Resolver
     # Retry resolution with this spec and add it's dependencies
     spec, act = activation_request state.dep, state.possibles
 
-    needed = requests spec, act, state.needed
+    needed = requests spec, act, state.needed.dup
     specs = Gem::List.prepend state.specs, act
 
     return needed, specs

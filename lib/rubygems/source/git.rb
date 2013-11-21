@@ -36,9 +36,11 @@ class Gem::Source::Git < Gem::Source
   attr_reader :need_submodules
 
   ##
-  # Creates a new git gem source for a gem with the given +name+ that will be
-  # loaded from +reference+ in +repository+.  If +submodules+ is true,
-  # submodules will be checked out when the gem is installed.
+  # Creates a new git gem source for a gems from loaded from +repository+ at
+  # the given +reference+.  The +name+ is only used to track the repository
+  # back to a gem dependencies file, it has no real significance as a git
+  # repository may contain multiple gems.  If +submodules+ is true, submodules
+  # will be checked out when the gem is installed.
 
   def initialize name, repository, reference, submodules = false
     super(nil)
@@ -126,34 +128,6 @@ class Gem::Source::Git < Gem::Source
   end
 
   ##
-  # Loads a Gem::Specification for +name+ from this git repository.
-
-  def load_spec name
-    cache
-
-    gemspec_reference = "#{@reference}:#{name}.gemspec"
-
-    Dir.chdir repo_cache_dir do
-      source = Gem::Util.popen @git, 'show', gemspec_reference
-
-      source.force_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
-      source.untaint
-
-      begin
-        spec = eval source, binding, gemspec_reference
-
-        return spec if Gem::Specification === spec
-
-        warn "git gem specification for #{@repository} #{gemspec_reference} is not a Gem::Specification (#{spec.class} instead)."
-      rescue SignalException, SystemExit
-        raise
-      rescue SyntaxError, Exception
-        warn "invalid git gem specification for #{@repository} #{gemspec_reference}"
-      end
-    end
-  end
-
-  ##
   # The directory where the git gem's repository will be cached.
 
   def repo_cache_dir # :nodoc:
@@ -164,9 +138,26 @@ class Gem::Source::Git < Gem::Source
   # Converts the git reference for the repository into a commit hash.
 
   def rev_parse # :nodoc:
-    # HACK no safe equivalent of ` exists on 1.8.7
     Dir.chdir repo_cache_dir do
       Gem::Util.popen(@git, 'rev-parse', @reference).strip
+    end
+  end
+
+  ##
+  # Loads all gemspecs in the repository
+
+  def specs
+    checkout
+
+    Dir.chdir install_dir do
+      Dir['{,*,*/*}.gemspec'].map do |spec_file|
+        directory = File.dirname spec_file
+        file      = File.basename spec_file
+
+        Dir.chdir directory do
+          Gem::Specification.load file
+        end
+      end.compact
     end
   end
 

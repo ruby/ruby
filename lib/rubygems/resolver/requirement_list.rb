@@ -37,4 +37,8 @@ class Gem::Resolver::RequirementList
   def remove
     @list.shift
   end
+
+  def next5
+    @list[0,5]
+  end
 end

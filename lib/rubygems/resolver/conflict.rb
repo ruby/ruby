@@ -4,11 +4,21 @@
 
 class Gem::Resolver::Conflict
 
+  ##
+  # The specification that was activated prior to the conflict
+
   attr_reader :activated
+
+  ##
+  # The dependency that is in conflict with the activated gem.
 
   attr_reader :dependency
 
   attr_reader :failed_dep # :nodoc:
+
+  ##
+  # Creates a new resolver conflict when +dependency+ is in conflict with an
+  # already +activated+ specification.
 
   def initialize(dependency, activated, failed_dep=dependency)
     @dependency = dependency
@@ -16,12 +26,15 @@ class Gem::Resolver::Conflict
     @failed_dep = failed_dep
   end
 
-  def == other
+  def == other # :nodoc:
     self.class === other and
       @dependency == other.dependency and
       @activated  == other.activated  and
       @failed_dep == other.failed_dep
   end
+
+  ##
+  # A string explanation of the conflict.
 
   def explain
     "<Conflict wanted: #{@failed_dep}, had: #{activated.spec.full_name}>"
@@ -41,10 +54,14 @@ class Gem::Resolver::Conflict
     activated   = @activated.spec.full_name
     requirement = @failed_dep.dependency.requirement
 
-    "  Activated %s instead of (%s) via:\n    %s\n" % [
-      activated, requirement, request_path.join(', ')
+    "  Activated %s via:\n    %s\n  instead of (%s) via:\n    %s\n" % [
+      activated,   request_path(@activated).join(', '),
+      requirement, request_path(requester).join(', '),
     ]
   end
+
+  ##
+  # Returns true if the conflicting dependency's name matches +spec+.
 
   def for_spec?(spec)
     @dependency.name == spec.name
@@ -72,16 +89,17 @@ class Gem::Resolver::Conflict
   end
 
   ##
-  # Path of specifications that requested this dependency
+  # Path of activations from the +current+ list.
 
-  def request_path
-    current = requester
-    path    = []
+  def request_path current
+    path = []
 
     while current do
-      path << current.spec.full_name
+      spec_name   = current.spec.full_name
+      requirement = current.request.dependency.requirement
+      path << "#{current.spec.full_name} (#{requirement})"
 
-      current = current.request.requester
+      current = current.parent
     end
 
     path = ['user request (gem command or Gemfile)'] if path.empty?
@@ -98,5 +116,8 @@ class Gem::Resolver::Conflict
 
 end
 
-Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict
+##
+# TODO: Remove in RubyGems 3
+
+Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict # :nodoc:
 

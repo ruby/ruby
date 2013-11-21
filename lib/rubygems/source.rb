@@ -1,12 +1,29 @@
 require 'uri'
 require 'fileutils'
 
+##
+# A Source knows how to list and fetch gems from a RubyGems marshal index.
+#
+# There are other Source subclasses for installed gems, local gems, the
+# bundler dependency API and so-forth.
+
 class Gem::Source
-  FILES = {
+
+  include Comparable
+
+  FILES = { # :nodoc:
     :released   => 'specs',
     :latest     => 'latest_specs',
     :prerelease => 'prerelease_specs',
   }
+
+  ##
+  # The URI this source will fetch gems from.
+
+  attr_reader :uri
+
+  ##
+  # Creates a new Source which will use the index located at +uri+.
 
   def initialize(uri)
     unless uri.kind_of? URI
@@ -17,12 +34,16 @@ class Gem::Source
     @api_uri = nil
   end
 
-  attr_reader :uri
+  ##
+  # Use an SRV record on the host to look up the true endpoint for the index.
 
-  def api_uri
+  def api_uri # :nodoc:
     require 'rubygems/remote_fetcher'
     @api_uri ||= Gem::RemoteFetcher.fetcher.api_endpoint uri
   end
+
+  ##
+  # Sources are ordered by installation preference.
 
   def <=>(other)
     case other
@@ -46,13 +67,11 @@ class Gem::Source
     end
   end
 
-  include Comparable
-
-  def ==(other)
+  def == other # :nodoc:
     self.class === other and @uri == other.uri
   end
 
-  alias_method :eql?, :==
+  alias_method :eql?, :== # :nodoc:
 
   ##
   # Returns a Set that can fetch specifications from this source.
@@ -70,7 +89,7 @@ class Gem::Source
     end
   end
 
-  def hash
+  def hash # :nodoc:
     @uri.hash
   end
 
@@ -82,6 +101,9 @@ class Gem::Source
     escaped_path = uri.path.sub(/^\/([a-z]):\//i, '/\\1-/')
     File.join Gem.spec_cache_dir, "#{uri.host}%#{uri.port}", File.dirname(escaped_path)
   end
+
+  ##
+  # Returns true when it is possible and safe to update the cache directory.
 
   def update_cache?
     @update_cache ||=
@@ -166,6 +188,10 @@ class Gem::Source
     end
   end
 
+  ##
+  # Downloads +spec+ and writes it to +dir+.  See also
+  # Gem::RemoteFetcher#download.
+
   def download(spec, dir=Dir.pwd)
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.download spec, api_uri.to_s, dir
@@ -176,7 +202,7 @@ class Gem::Source
       q.breakable
       q.text @uri.to_s
       if api = api_uri
-        g.text api
+        q.text api.to_s
       end
     end
   end

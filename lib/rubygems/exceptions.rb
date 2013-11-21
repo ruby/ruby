@@ -223,7 +223,7 @@ class Gem::UnsatisfiableDependencyError < Gem::Exception
   attr_reader :dependency
 
   ##
-  # Creates a new UnsatisfiableDepedencyError for the unsatisfiable
+  # Creates a new UnsatisfiableDependencyError for the unsatisfiable
   # Gem::Resolver::DependencyRequest +dep+
 
   def initialize dep, platform_mismatch=nil

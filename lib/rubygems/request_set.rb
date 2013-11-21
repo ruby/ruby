@@ -2,6 +2,7 @@ require 'rubygems'
 require 'rubygems/dependency'
 require 'rubygems/dependency_list'
 require 'rubygems/installer'
+require 'rubygems/resolver'
 require 'tsort'
 
 ##
@@ -146,7 +147,15 @@ class Gem::RequestSet
 
     resolve
 
-    install options, &block
+    if options[:explain]
+      puts "Gems to install:"
+
+      specs.map { |s| s.full_name }.sort.each do |s|
+        puts "  #{s}"
+      end
+    else
+      install options, &block
+    end
   end
 
   def install_into dir, force = true, options = {}
@@ -201,7 +210,7 @@ class Gem::RequestSet
   # Resolve the requested dependencies and return an Array of Specification
   # objects to be activated.
 
-  def resolve set = Gem::Resolver::IndexSet.new
+  def resolve set = Gem::Resolver::BestSet.new
     @sets << set
     @sets << @git_set
     @sets << @vendor_set
@@ -253,7 +262,7 @@ class Gem::RequestSet
         end
       else
         unless @soft_missing
-          raise Gem::DependencyError, "Unresolved depedency found during sorting - #{dep}"
+          raise Gem::DependencyError, "Unresolved dependency found during sorting - #{dep} (requested by #{node.spec.full_name})"
         end
       end
     end

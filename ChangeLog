@@ -1,3 +1,15 @@
+Fri Nov 22 08:27:13 2013  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems master 50a8210.  Important changes
+	  in this commit:
+
+	  RubyGems now automatically checks for gem.deps.rb or Gemfile when
+	  running ruby executables.  This behavior is similar to `bundle exec
+	  rake`.  This change may be reverted before Ruby 2.1.0 if too many bugs
+	  are found.
+
+	* test/rubygems:  ditto.
+
 Thu Nov 21 22:33:59 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: RGENGC_CHECK_MODE should be 0.

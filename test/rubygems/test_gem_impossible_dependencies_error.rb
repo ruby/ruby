@@ -28,10 +28,14 @@ class TestGemImpossibleDependenciesError < Gem::TestCase
 
     expected = <<-EXPECTED
 rye-0.9.8 requires net-ssh (>= 2.0.13) but it conflicted:
-  Activated net-ssh-2.6.5 instead of (~> 2.2.2) via:
-    net-ssh-2.6.5, rye-0.9.8
-  Activated net-ssh-2.2.2 instead of (>= 2.6.5) via:
-    net-ssh-2.2.2, rye-0.9.8
+  Activated net-ssh-2.6.5 via:
+    net-ssh-2.6.5 (>= 2.0.13), rye-0.9.8 (= 0.9.8)
+  instead of (~> 2.2.2) via:
+    net-ssh-2.6.5 (>= 2.0.13), rye-0.9.8 (= 0.9.8)
+  Activated net-ssh-2.2.2 via:
+    net-ssh-2.2.2 (>= 2.0.13), rye-0.9.8 (= 0.9.8)
+  instead of (>= 2.6.5) via:
+    net-ssh-2.2.2 (>= 2.0.13), rye-0.9.8 (= 0.9.8)
     EXPECTED
 
     assert_equal expected, error.message

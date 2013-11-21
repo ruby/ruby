@@ -215,50 +215,6 @@ module Gem
     end
   end
 
-  def self.detect_gemdeps
-    if path = ENV['RUBYGEMS_GEMDEPS']
-      path = path.dup.untaint
-
-      if path == "-"
-        here = Dir.pwd.untaint
-        start = here
-
-        begin
-          while true
-            path = GEM_DEP_FILES.find { |f| File.file?(f) }
-
-            if path
-              path = File.join here, path
-              break
-            end
-
-            Dir.chdir ".."
-
-            # If we're at a toplevel, stop.
-            return if Dir.pwd == here
-
-            here = Dir.pwd
-          end
-        ensure
-          Dir.chdir start
-        end
-      end
-
-      path.untaint
-
-      return unless File.file? path
-
-      rs = Gem::RequestSet.new
-      rs.load_gemdeps path
-
-      rs.resolve_current.map do |s|
-        sp = s.full_spec
-        sp.activate
-        sp
-      end
-    end
-  end
-
   ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, the gem's default_executable is chosen, otherwise the
@@ -1033,6 +989,61 @@ module Gem
     end
 
     load_plugin_files files
+  end
+
+  ##
+  # Looks for gem dependency files (gem.deps.rb, Gemfile, Isolate) from the
+  # current directory up and activates the gems in the first file found.
+  #
+  # This is run automatically when rubygems starts.  To disable, set
+  # the <code>RUBYGEMS_GEMDEPS=</code> environment variable to an empty
+  # string.
+
+  def self.use_gemdeps
+    return unless path = ENV['RUBYGEMS_GEMDEPS'] || '-'
+    path = path.dup.untaint
+
+    if path == "-"
+      here = Dir.pwd.untaint
+      start = here
+
+      begin
+        while true
+          path = GEM_DEP_FILES.find { |f| File.file?(f) }
+
+          if path
+            path = File.join here, path
+            break
+          end
+
+          Dir.chdir ".."
+
+          # If we're at a toplevel, stop.
+          return if Dir.pwd == here
+
+          here = Dir.pwd
+        end
+      ensure
+        Dir.chdir start
+      end
+    end
+
+    path.untaint
+
+    return unless File.file? path
+
+    rs = Gem::RequestSet.new
+    rs.load_gemdeps path
+
+    rs.resolve_current.map do |s|
+      sp = s.full_spec
+      sp.activate
+      sp
+    end
+  end
+
+  class << self
+    alias detect_gemdeps use_gemdeps # :nodoc:
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class

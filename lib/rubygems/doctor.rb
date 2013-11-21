@@ -27,9 +27,12 @@ class Gem::Doctor
     ['gems',           ''],
   ]
 
-  raise 'Update REPOSITORY_EXTENSION_MAP' unless
-    Gem::REPOSITORY_SUBDIRECTORIES.sort ==
+  missing =
+    Gem::REPOSITORY_SUBDIRECTORIES.sort -
       REPOSITORY_EXTENSION_MAP.map { |(k,_)| k }.sort
+
+  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ', '}" unless
+    missing.empty?
 
   ##
   # Creates a new Gem::Doctor that will clean up +gem_repository+.  Only one

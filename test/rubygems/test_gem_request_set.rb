@@ -123,7 +123,7 @@ class TestGemRequestSet < Gem::TestCase
 
     assert_equal %w[a-1], names
 
-    assert_equal [@DR::IndexSet, @DR::GitSet, @DR::VendorSet],
+    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet],
                  rs.sets.map { |set| set.class }
   end
 
@@ -169,7 +169,7 @@ class TestGemRequestSet < Gem::TestCase
 
     assert_equal ["a-1", "b-2"], names
 
-    assert_equal [@DR::IndexSet, @DR::GitSet, @DR::VendorSet],
+    assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet],
                  rs.sets.map { |set| set.class }
   end
 

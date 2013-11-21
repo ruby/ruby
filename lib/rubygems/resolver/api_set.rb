@@ -10,13 +10,28 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   attr_reader :dep_uri # :nodoc:
 
   ##
-  # Creates a new APISet that will retrieve gems from +uri+ using the RubyGems
-  # API described at http://guides.rubygems.org/rubygems-org-api
+  # The Gem::Source that gems are fetched from
 
-  def initialize uri = 'https://rubygems.org/api/v1/dependencies'
-    uri = URI uri unless URI === uri # for ruby 1.8
-    @data = Hash.new { |h,k| h[k] = [] }
-    @dep_uri = uri
+  attr_reader :source
+
+  ##
+  # The corresponding place to fetch gems.
+
+  attr_reader :uri
+
+  ##
+  # Creates a new APISet that will retrieve gems from +uri+ using the RubyGems
+  # API URL +dep_uri+ which is described at
+  # http://guides.rubygems.org/rubygems-org-api
+
+  def initialize dep_uri = 'https://rubygems.org/api/v1/dependencies'
+    dep_uri = URI dep_uri unless URI === dep_uri # for ruby 1.8
+
+    @dep_uri = dep_uri
+    @uri     = dep_uri + '../../..'
+
+    @data   = Hash.new { |h,k| h[k] = [] }
+    @source = Gem::Source.new @uri
   end
 
   ##
@@ -41,15 +56,35 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
   def prefetch reqs
     names = reqs.map { |r| r.dependency.name }
-    needed = names.find_all { |d| !@data.key?(d) }
+    needed = names - @data.keys
 
     return if needed.empty?
 
     uri = @dep_uri + "?gems=#{needed.sort.join ','}"
     str = Gem::RemoteFetcher.fetcher.fetch_path uri
 
+    loaded = []
+
     Marshal.load(str).each do |ver|
-      @data[ver[:name]] << ver
+      name = ver[:name]
+
+      @data[name] << ver
+      loaded << name
+    end
+
+    (needed - loaded).each do |missing|
+      @data[missing] = []
+    end
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, '[APISet', ']' do
+      q.breakable
+      q.text "URI: #{@dep_uri}"
+
+      q.breakable
+      q.text 'gem names:'
+      q.pp @data.keys
     end
   end
 
