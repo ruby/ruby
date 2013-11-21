@@ -356,17 +356,42 @@ rb_obj_clone(VALUE obj)
  *     obj.dup -> an_object
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
- *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>dup</code> copies the tainted state of <i>obj</i>. See also
- *  the discussion under <code>Object#clone</code>. In general,
- *  <code>clone</code> and <code>dup</code> may have different semantics
- *  in descendant classes. While <code>clone</code> is used to duplicate
- *  an object, including its internal state, <code>dup</code> typically
- *  uses the class of the descendant object to create the new instance.
+ *  <i>obj</i> are copied, but not the objects they reference. <code>dup</code>
+ *  copies the tainted state of <i>obj</i>.
  *
  *  This method may have class-specific behavior.  If so, that
  *  behavior will be documented under the #+initialize_copy+ method of
  *  the class.
+ *
+ *  === on dup vs clone
+ *
+ *  In general, <code>clone</code> and <code>dup</code> may have different
+ *  semantics in descendant classes. While <code>clone</code> is used to
+ *  duplicate an object, including its internal state, <code>dup</code>
+ *  typically uses the class of the descendant object to create the new
+ *  instance.
+ *
+ *  When using #dup any modules that the object has been extended with will not
+ *  be copied.
+ *
+ *	class Klass
+ *	  attr_accessor :str
+ *	end
+ *
+ *	module Foo
+ *	  def foo; 'foo'; end
+ *	end
+ *
+ *	s1 = Klass.new #=> #<Klass:0x401b3a38>
+ *	s1.extend(Foo) #=> #<Klass:0x401b3a38>
+ *	s1.foo #=> "foo"
+ *
+ *	s2 = s1.clone #=> #<Klass:0x401b3a38>
+ *	s2.foo #=> "foo"
+ *
+ *	s3 = s1.dup #=> #<Klass:0x401b3a38>
+ *	s3.foo #=> NoMethodError: undefined method `foo' for #<Klass:0x401b3a38>
+ *
  */
 
 VALUE

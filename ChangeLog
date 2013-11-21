@@ -1,3 +1,10 @@
+Thu Nov 21 14:18:24 2013  Zachary Scott  <e@zzak.io>
+
+	* object.c: [DOC] Clarify Object#dup vs #clone [Bug #9128]
+	  Moving existing doc for this comparison to separate section of #dup
+	  Adding examples to document behavior of #dup with Module#extend.
+	  Based on a patch by stevegoobermanhill
+
 Thu Nov 21 14:06:02 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_marks_check): do not dump all refs.
