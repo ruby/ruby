@@ -5553,6 +5553,10 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size
 	return 0;
     }
 
+#ifdef HAVE_MALLOC_USABLE_SIZE
+    old_size = malloc_usable_size(ptr);
+#endif
+
     vm_malloc_increase(objspace, new_size, old_size, FALSE);
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -5587,7 +5591,13 @@ vm_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 	ATOMIC_SIZE_SUB(objspace->malloc_params.allocated_size, cem_oldsize);
 	ATOMIC_SIZE_DEC(objspace->malloc_params.allocations);
     }
+#endif
 
+#ifdef HAVE_MALLOC_USABLE_SIZE
+    old_size = malloc_usable_size(ptr);
+#endif
+
+#if CALC_EXACT_MALLOC_SIZE
     if (CALC_EXACT_MALLOC_SIZE_CHECK_OLD_SIZE && old_size > 0 && cem_oldsize - sizeof(size_t) != old_size) {
 	fprintf(stderr, "vm_xfree: old_size mismatch: expected %d, but %d\n", (int)(cem_oldsize-sizeof(size_t)), (int)old_size);
     }

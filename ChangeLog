@@ -1,3 +1,8 @@
+Thu Nov 21 18:49:02 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (vm_xrealloc, vm_xfree): use malloc_usable_size() to obtain old
+	  size if available.
+
 Thu Nov 21 18:47:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (SimpleDelegator#__getobj__): target object must be set.
