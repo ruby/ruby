@@ -133,7 +133,7 @@ class Tempfile < DelegateClass(File)
     @clean_proc = Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
-    create(basename, *rest) do |tmpname, n, opts|
+    ::Dir::Tmpname.create(basename, *rest) do |tmpname, n, opts|
       mode = File::RDWR|File::CREAT|File::EXCL
       perm = 0600
       if opts
