@@ -203,6 +203,7 @@ File.open(path, "w").close
 puts Tempfile.new('foo').path
     EOS
       assert !File.exist?(filename)
+      assert_nil(error)
     end
   end
 
@@ -294,7 +295,6 @@ puts Tempfile.new('foo').path
   end
 
   def test_tempfile_encoding_ascii8bit
-    default_external=Encoding.default_external
     t = tempfile("TEST",:encoding=>"ascii-8bit")
     t.write("\xE6\x9D\xBE\xE6\xB1\x9F")
     t.rewind
@@ -302,7 +302,6 @@ puts Tempfile.new('foo').path
   end
 
   def test_tempfile_encoding_ascii8bit2
-    default_external=Encoding.default_external
     t = tempfile("TEST",Dir::tmpdir,:encoding=>"ascii-8bit")
     t.write("\xE6\x9D\xBE\xE6\xB1\x9F")
     t.rewind
