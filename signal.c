@@ -627,7 +627,7 @@ rb_get_next_signal(void)
 }
 
 
-#ifdef USE_SIGALTSTACK
+#if defined(USE_SIGALTSTACK) || defined(_WIN32)
 static void
 check_stack_overflow(const void *addr)
 {
@@ -638,7 +638,11 @@ check_stack_overflow(const void *addr)
 	ruby_thread_stack_overflow(th);
     }
 }
+#ifdef _WIN32
+#define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
+#else
 #define CHECK_STACK_OVERFLOW() check_stack_overflow(info->si_addr)
+#endif
 #else
 #define CHECK_STACK_OVERFLOW() (void)0
 #endif

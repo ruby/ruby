@@ -1,3 +1,20 @@
+Thu Nov 21 14:46:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval_intern.h (SAVE_ROOT_JMPBUF): workaround for the failure of
+	  test/ruby/test_exception.rb on Windows.
+	  wrap by __try and __exception statements on mswin to raise SIGSEGV
+	  when EXCEPTION_STACK_OVERFLOW is occurred, because MSVCRT doesn't
+	  handle the exception.
+	  however, (1) mingw-gcc doesn't support __try and __exception
+	  statements, and (2) we cannot retry SystemStackError after this
+	  change yet (maybe crashed) because SEH and longjmp() are too
+	  uncongenial.
+
+	* signal.c (check_stack_overflow, CHECK_STACK_OVERFLOW): now defined on
+	  Windows, too.
+
+	* thread_win32.c (ruby_stack_overflowed_p): ditto.
+
 Thu Nov 21 14:18:24 2013  Zachary Scott  <e@zzak.io>
 
 	* object.c: [DOC] Clarify Object#dup vs #clone [Bug #9128]

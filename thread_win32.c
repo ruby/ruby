@@ -748,6 +748,12 @@ native_reset_timer_thread(void)
     }
 }
 
+int
+ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
+{
+    return rb_thread_raised_p(th, RAISED_STACKOVERFLOW);
+}
+
 #ifdef RUBY_ALLOCA_CHKSTK
 void
 ruby_alloca_chkstk(size_t len, void *sp)
