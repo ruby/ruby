@@ -492,11 +492,8 @@ typedef struct rb_objspace {
 #endif
 
 #if RGENGC_CHECK_MODE >= 2
-	/* for check mode */
-	VALUE parent_object;
-	unsigned int  monitor_level;
-	st_table *monitored_object_table;
-	int have_saved_bitmaps;
+	struct st_table *allrefs_table;
+	size_t error_count;
 #endif
     } rgengc;
 #endif /* USE_RGENGC */
@@ -535,11 +532,6 @@ struct heap_page {
 #if USE_RGENGC
     bits_t rememberset_bits[HEAP_BITMAP_LIMIT];
     bits_t oldgen_bits[HEAP_BITMAP_LIMIT];
-#if RGENGC_CHECK_MODE >= 2
-    bits_t saved_mark_bits[HEAP_BITMAP_LIMIT];
-    bits_t saved_rememberset_bits[HEAP_BITMAP_LIMIT];
-    bits_t saved_oldgen_bits[HEAP_BITMAP_LIMIT];
-#endif
 #endif
 };
 
@@ -3105,9 +3097,10 @@ pop_mark_stack(mark_stack_t *stack, VALUE *data)
     if (stack->index == 1) {
         *data = stack->chunk->data[--stack->index];
         pop_mark_stack_chunk(stack);
-        return TRUE;
     }
-    *data = stack->chunk->data[--stack->index];
+    else {
+	*data = stack->chunk->data[--stack->index];
+    }
     return TRUE;
 }
 
@@ -3115,9 +3108,9 @@ static void
 init_mark_stack(mark_stack_t *stack)
 {
     int i;
-
-    push_mark_stack_chunk(stack);
-    stack->limit = STACK_CHUNK_SIZE;
+ 
+    if (0) push_mark_stack_chunk(stack);
+    stack->index = stack->limit = STACK_CHUNK_SIZE;
 
     for (i=0; i < 4; i++) {
         add_stack_chunk_cache(stack, stack_chunk_alloc());
@@ -3461,66 +3454,6 @@ static void
 rgengc_check_shady(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_RGENGC
-#if RGENGC_CHECK_MODE >= 2
-#define SAVED_OLD(x) MARKED_IN_BITMAP(GET_HEAP_PAGE(x)->saved_oldgen_bits, (x))
-#define SAVED_REM(x) MARKED_IN_BITMAP(GET_HEAP_PAGE(x)->saved_rememberset_bits, (x))
-    VALUE parent = objspace->rgengc.parent_object;
-
-    if (objspace->rgengc.have_saved_bitmaps && !monitor_level) {
-	/* check WB sanity */
-	if (!SAVED_OLD(obj) &&                          /* obj is infant object (newly created or shady) */
-	    (!FIXNUM_P(parent) && SAVED_OLD(parent)) && /* parent was old */
-	    !SAVED_REM(parent) &&                       /* parent was not remembered */
-	    !SAVED_REM(obj)) {                          /* obj was not remembered */
-	    fprintf(stderr, "rgengc_check_shady: !!! WB miss: %p (%s) -> %p (%s)\n",
-		    (void *)parent, obj_type_name(parent),
-		    (void *)obj, obj_type_name(obj));
-	    if(!st_lookup(monitored_object_table, (st_data_t)obj, NULL)) {
-		st_insert(monitored_object_table, (st_data_t)obj, 1);
-	    }
-	}
-    } else if (monitor_level) {
-	st_data_t v;
-	if (st_lookup(monitored_object_table, (st_data_t)obj, &v)) {
-	    if (v == monitor_level) {
-		if (FIXNUM_P(parent)) {
-		    fprintf(stderr, "rgengc_check_shady: %14s [line %d] -> %p (%s) %d\n",
-			    "",FIX2INT(parent), (void *)obj, obj_type_name(obj),monitor_level);
-		}
-		else {
-		    if (st_lookup(monitored_object_table, (st_data_t)parent, &v)) {
-			if(parent == obj) {
-			    /* skip self reference infomation */
-			}
-			else
-			    fprintf(stderr, "rgengc_check_shady: %14u %p (%-8s) -> %p (%-8s) %d\n",(unsigned int)v,
-				    (void *)parent, obj_type_name(parent), (void *)obj, obj_type_name(obj),monitor_level);
-		    } else {
-			char const *marker = NULL;
-			if (SAVED_REM(parent)) {
-			    if (SAVED_OLD(parent))
-				marker = "REMEMBERED OLD";
-			    else
-				marker = "REMEMBERED";
-			} else {
-			    if (SAVED_OLD(parent))
-				marker = "!!!!!!!!!!!!! NO REMEMBERED OLD !!!!!!!!!!!!! ";
-			    else {
-				marker = "NO PROMOTED";
-				st_insert(monitored_object_table, (st_data_t)parent, v+1);
-			    }
-			}
-			fprintf(stderr, "rgengc_check_shady: %-14s %p (%-8s) -> %p (%-8s) %d\n",
-				marker,
-				(void *)parent, obj_type_name(parent), (void *)obj, obj_type_name(obj),monitor_level);
-		    }
-		}
-	    }
-	}
-    }
-#undef SAVED_OLD
-#undef SAVED_REM
-#endif /* RGENGC_CHECK_MODE >= 2 */
     if (objspace->rgengc.parent_object_is_old) {
 	if (RVALUE_SHADY(obj)) {
 	    if (rgengc_remember(objspace, obj)) {
@@ -3586,10 +3519,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 {
     register RVALUE *obj = RANY(ptr);
 
-#if RGENGC_CHECK_MODE >= 2
-    objspace->rgengc.parent_object = (VALUE)ptr;
-#endif
-
     goto marking;		/* skip */
 
   again:
@@ -3598,9 +3527,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	if (!is_markable_object(objspace, ptr)) return;
 	rgengc_check_shady(objspace, ptr);
 	if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
-#if RGENGC_CHECK_MODE >= 2
-	objspace->rgengc.parent_object = (VALUE)ptr;
-#endif
     }
     else {
 	gc_mark(objspace, ptr);
@@ -3948,6 +3874,9 @@ gc_mark_stacked_objects(rb_objspace_t *objspace)
 
     if (!mstack->index) return;
     while (pop_mark_stack(mstack, &obj)) {
+	if (!gc_marked(objspace, obj)) {
+	    rb_bug("gc_mark_stacked_objects: %p (%s) is infant, but not marked.", (void *)obj, obj_type_name(obj));
+	}
         gc_mark_children(objspace, obj);
     }
     shrink_stack_chunk_cache(mstack);
@@ -4032,6 +3961,7 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
+    if (categoryp) *categoryp = "xxx";
 
 #if RGENGC_PRINT_TICK
     tick_t start_tick = tick();
@@ -4041,14 +3971,6 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
     if (mark_ticks_categories[0] == 0) {
 	atexit(show_mark_ticks);
     }
-#endif
-
-#if RGENGC_CHECK_MODE > 1
-#define MARK_CHECKPOINT_DEBUG(category) do { \
-    objspace->rgengc.parent_object = INT2FIX(__LINE__); \
-} while (0)
-#else /* RGENGC_CHECK_MODE > 1 */
-#define MARK_CHECKPOINT_DEBUG(category)
 #endif
 
 #if RGENGC_PRINT_TICK
@@ -4068,7 +3990,6 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
 
 #define MARK_CHECKPOINT(category) do { \
     if (categoryp) *categoryp = category; \
-    MARK_CHECKPOINT_DEBUG(category); \
     MARK_CHECKPOINT_PRINT_TICK(category); \
 } while (0)
 
@@ -4116,10 +4037,6 @@ gc_mark_roots(rb_objspace_t *objspace, int full_mark, const char **categoryp)
     MARK_CHECKPOINT("live_method_entries");
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
-    /* marking-loop */
-    MARK_CHECKPOINT("stacked_objects");
-    gc_mark_stacked_objects(objspace);
-
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
 }
@@ -4134,10 +4051,6 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     objspace->rgengc.parent_object_is_old = FALSE;
     objspace->rgengc.during_minor_gc = full_mark ? FALSE : TRUE;
 
-#if RGENGC_CHECK_MODE >= 2
-    objspace->rgengc.parent_object = Qundef;
-#endif
-
     if (objspace->rgengc.during_minor_gc) {
 	objspace->profile.minor_gc_count++;
 	rgengc_rememberset_mark(objspace, heap_eden);
@@ -4148,6 +4061,7 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
     }
 #endif
     gc_mark_roots(objspace, full_mark, 0);
+    gc_mark_stacked_objects(objspace);
 
     /* cleanup */
     rgengc_report(1, objspace, "gc_marks_body: end (%s)\n", full_mark ? "full" : "minor");
@@ -4155,171 +4069,256 @@ gc_marks_body(rb_objspace_t *objspace, int full_mark)
 
 #if RGENGC_CHECK_MODE >= 2
 
-static void
-gc_oldgen_bitmap2flag(struct heap_page *page)
-{
-    bits_t *oldgen_bits = &page->oldgen_bits[0];
-    RVALUE *p = page->start;
-    RVALUE *pend = p + page->limit;
+#define MAKE_ROOTSIG(obj) (((VALUE)(obj) << 1) | 0x01)
+#define IS_ROOTSIG(obj)   ((VALUE)(obj) & 0x01)
+#define GET_ROOTSIG(obj)  ((const char *)((VALUE)(obj) >> 1))
 
-    while (p < pend) {
-	if (MARKED_IN_BITMAP(oldgen_bits, p)) FL_SET2(p, FL_PROMOTED);
-	else                                  FL_UNSET2(p, FL_PROMOTED);
-	p++;
+struct reflist {
+    VALUE *list;
+    int pos;
+    int size;
+};
+
+static struct reflist *
+reflist_create(VALUE obj)
+{
+    struct reflist *refs = xmalloc(sizeof(struct reflist));
+    refs->size = 1;
+    refs->list = ALLOC_N(VALUE, refs->size);
+    refs->list[0] = obj;
+    refs->pos = 1;
+    return refs;
+}
+
+static void
+reflist_destruct(struct reflist *refs)
+{
+    xfree(refs->list);
+    xfree(refs);
+}
+
+static void
+reflist_add(struct reflist *refs, VALUE obj)
+{
+    if (refs->pos == refs->size) {
+	refs->size *= 2;
+	SIZED_REALLOC_N(refs->list, VALUE, refs->size, refs->size/2);
+    }
+    refs->list[refs->pos++] = obj;
+}
+
+static void
+reflist_dump(struct reflist *refs)
+{
+    int i;
+    for (i=0; i<refs->pos; i++) {
+	VALUE obj = refs->list[i];
+	if (IS_ROOTSIG(obj)) { /* root */
+	    fprintf(stderr, "<root@%s>", GET_ROOTSIG(obj));
+	}
+	else {
+	    fprintf(stderr, "<%p@%s>", (void *)obj, obj_type_name(obj));
+	}
+	if (i+1 < refs->pos) fprintf(stderr, ", ");
     }
 }
 
-static bits_t *
-gc_export_bitmaps(rb_objspace_t *objspace)
+static int
+reflist_refered_from_machine_context(struct reflist *refs)
 {
-    bits_t *exported_bitmaps = (bits_t *)malloc(HEAP_BITMAP_SIZE * heap_pages_used * 3);
-    size_t i;
-
-    if (exported_bitmaps == 0) rb_bug("gc_store_bitmaps: not enough memory to test.\n");
-
-    for (i=0; i<heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
-
-	memcpy(&exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], &page->mark_bits[0],        HEAP_BITMAP_SIZE);
-	memcpy(&exported_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], &page->rememberset_bits[0], HEAP_BITMAP_SIZE);
-	memcpy(&exported_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], &page->oldgen_bits[0],      HEAP_BITMAP_SIZE);
+    int i;
+    for (i=0; i<refs->pos; i++) {
+	VALUE obj = refs->list[i];
+	if (IS_ROOTSIG(obj) && strcmp(GET_ROOTSIG(obj), "machine_context") == 0) return 1;
     }
-
-    return exported_bitmaps;
+    return 0;
 }
 
-static void
-gc_restore_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
-{
-    size_t i;
-
-    for (i=0; i<heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
-
-	/* restore bitmaps */
-	memcpy(&page->mark_bits[0],        &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
-	memcpy(&page->rememberset_bits[0], &exported_bitmaps[(3*i+1)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
-	memcpy(&page->oldgen_bits[0],      &exported_bitmaps[(3*i+2)*HEAP_BITMAP_LIMIT], HEAP_BITMAP_SIZE);
-
-	/* restore oldgen flags */
-	gc_oldgen_bitmap2flag(page);
-    }
-}
-
-static void
-gc_free_exported_bitmaps(rb_objspace_t *objspace, bits_t *exported_bitmaps)
-{
-    free(exported_bitmaps);
-}
-
-static void
-gc_save_bitmaps(rb_objspace_t *objspace)
-{
-    size_t i;
-
-    for (i=0; i<heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
-
-	/* save bitmaps */
-	memcpy(&page->saved_mark_bits[0],        &page->mark_bits[0],        HEAP_BITMAP_SIZE);
-	memcpy(&page->saved_rememberset_bits[0], &page->rememberset_bits[0], HEAP_BITMAP_SIZE);
-	memcpy(&page->saved_oldgen_bits[0],      &page->oldgen_bits[0],      HEAP_BITMAP_SIZE);
-    }
-
-    objspace->rgengc.have_saved_bitmaps = TRUE;
-}
-
-static void
-gc_load_bitmaps(rb_objspace_t *objspace)
-{
-    size_t i;
-
-    for (i=0; i<heap_pages_used; i++) {
-	struct heap_page *page = heap_pages_sorted[i];
-
-	/* load bitmaps */
-	memcpy(&page->mark_bits[0],        &page->saved_mark_bits[0],        HEAP_BITMAP_SIZE);
-	memcpy(&page->rememberset_bits[0], &page->saved_rememberset_bits[0], HEAP_BITMAP_SIZE);
-	memcpy(&page->oldgen_bits[0],      &page->saved_oldgen_bits[0],      HEAP_BITMAP_SIZE);
-
-	gc_oldgen_bitmap2flag(page);
-    }
-}
-
-static void
-gc_marks_test(rb_objspace_t *objspace)
-{
-    bits_t *exported_bitmaps;
-    size_t i;
-    size_t stored_oldgen, stored_shady;
-    /*
-     * Now, we have 2 types bitmaps:
-     *   saved_bitmap:    before minor marking
-     *   exported_bitmap: after minor marking
+struct allrefs {
+    rb_objspace_t *objspace;
+    /* a -> obj1
+     * b -> obj1
+     * c -> obj1
+     * c -> obj2
+     * d -> obj3
+     * #=> {obj1 => [a, b, c], obj2 => [c, d]}
      */
+    struct st_table *references;
+    const char *category;
+    VALUE root_obj;
+};
 
-    /* inhibit gc for st's operation */
-    dont_gc = 1;
+static void
+allrefs_add(struct allrefs *data, VALUE obj)
+{
+    struct reflist *refs;
 
-    if(!monitored_object_table)
-	monitored_object_table = st_init_numtable();
-    gc_save_bitmaps(objspace);
-
-    rgengc_report(1, objspace, "gc_marks_test: minor gc\n");
-    {
-	gc_marks_body(objspace, FALSE);
-    }
-    exported_bitmaps = gc_export_bitmaps(objspace);
-
-    rgengc_report(1, objspace, "gc_marks_test: test-full-gc\n");
-
-    /* run major (full) gc with temporary mark/rememberset */
-    stored_oldgen = objspace->rgengc.old_object_count;
-    stored_shady = objspace->rgengc.remembered_shady_object_count;
-    {
-	gc_marks_body(objspace, TRUE);
-    }
-    objspace->rgengc.during_minor_gc = TRUE;
-    objspace->rgengc.old_object_count = stored_oldgen;
-    objspace->rgengc.remembered_shady_object_count = stored_shady;
-
-    /* check */
-    for (i=0; i<heap_pages_used; i++) {
-	bits_t *minor_mark_bits = &exported_bitmaps[(3*i+0)*HEAP_BITMAP_LIMIT];
-	bits_t *major_mark_bits = heap_pages_sorted[i]->mark_bits;
-	RVALUE *p = heap_pages_sorted[i]->start;
-	RVALUE *pend = p + heap_pages_sorted[i]->limit;
-
-	while (p < pend) {
-	    if (MARKED_IN_BITMAP(major_mark_bits, p) &&  /* should be lived */
-		!MARKED_IN_BITMAP(minor_mark_bits, p)) { /* not marked -> BUG! */
-		fprintf(stderr, "gc_marks_test: %p (%s) is living, but not marked && not promoted.\n", p, obj_type_name((VALUE)p));
-		st_insert(monitored_object_table, (st_data_t)p, 1);
-	    }
-	    p++;
-	}
-    }
-
-    if (monitored_object_table->num_entries) {
-	if (RGENGC_CHECK_MODE >= 3) {
-	    st_index_t old_num;
-	    do {
-		old_num = monitored_object_table->num_entries;
-		monitor_level ++;
-		fprintf(stderr, "!!!! restart major gc for get more information !!!!\n");
-		gc_load_bitmaps(objspace);
-		gc_marks_body(objspace, TRUE);
-	    } while (old_num != monitored_object_table->num_entries);
-	}
-	rb_bug("WriteBarrier Error\n");
+    if (st_lookup(data->references, obj, (st_data_t *)&refs)) {
+	reflist_add(refs, data->root_obj);
     }
     else {
-	gc_restore_exported_bitmaps(objspace, exported_bitmaps);
-	gc_free_exported_bitmaps(objspace, exported_bitmaps);
-	objspace->rgengc.have_saved_bitmaps = FALSE;
+	refs = reflist_create(data->root_obj);
+	st_insert(data->references, obj, (st_data_t)refs);
     }
-    dont_gc = 0;
 }
+
+static void
+allrefs_i(VALUE obj, void *ptr)
+{
+    struct allrefs *data = (struct allrefs *)ptr;
+    allrefs_add(data, obj);
+}
+
+static void
+allrefs_roots_i(VALUE obj, void *ptr)
+{
+    struct allrefs *data = (struct allrefs *)ptr;
+    if (strlen(data->category) == 0) rb_bug("!!!");
+    data->root_obj = MAKE_ROOTSIG(data->category);
+    allrefs_add(data, obj);
+    push_mark_stack(&data->objspace->mark_stack, obj);
+}
+
+static st_table *
+objspace_allrefs(rb_objspace_t *objspace)
+{
+    struct allrefs data;
+    struct mark_func_data_struct mfd;
+    VALUE obj;
+
+    rb_gc_disable();
+
+    data.objspace = objspace;
+    data.references = st_init_numtable();
+
+    mfd.mark_func = allrefs_roots_i;
+    mfd.data = &data;
+
+    /* traverse root objects */
+    objspace->mark_func_data = &mfd;
+    gc_mark_roots(objspace, TRUE, &data.category);
+    objspace->mark_func_data = 0;
+
+    /* traverse rest objects reachable from root objects */
+    while (pop_mark_stack(&objspace->mark_stack, &obj)) {
+	rb_objspace_reachable_objects_from(data.root_obj = obj, allrefs_i, &data);
+    }
+    shrink_stack_chunk_cache(&objspace->mark_stack);
+
+    rb_gc_enable();
+    return data.references;
+}
+
+static int
+objspaec_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
+{
+    struct reflist *refs = (struct reflist *)value;
+    reflist_destruct(refs);
+    return ST_CONTINUE;
+}
+
+static void
+objspaec_allrefs_destruct(struct st_table *refs)
+{
+    st_foreach(refs, objspaec_allrefs_destruct_i, 0);
+    st_free_table(refs);
+}
+
+#if RGENGC_CHECK_MODE >= 3
+static int
+allrefs_dump_i(st_data_t k, st_data_t v, st_data_t ptr)
+{
+    VALUE obj = (VALUE)k;
+    struct reflist *refs = (struct reflist *)v;
+    fprintf(stderr, "[allrefs_dump_i] %p (%s%s%s) <- ",
+	    (void *)obj, obj_type_name(obj),
+	    RVALUE_OLD_P(obj) ? "[O]" : "[Y]",
+	    RVALUE_SHADY(obj) ? "[S]" : "",
+	    MARKED_IN_BITMAP(GET_HEAP_REMEMBERSET_BITS(obj), obj) ? "[R]" : "");
+    reflist_dump(refs);
+    fprintf(stderr, "\n");
+    return ST_CONTINUE;
+}
+
+static void
+allrefs_dump(rb_objspace_t *objspace)
+{
+    fprintf(stderr, "[all refs] (size: %d)\n", (int)objspace->rgengc.allrefs_table->num_entries);
+    st_foreach(objspace->rgengc.allrefs_table, allrefs_dump_i, 0);
+}
+#endif
+
+static int
+gc_check_before_marks_i(st_data_t k, st_data_t v, void *ptr)
+{
+    VALUE obj = k;
+    struct reflist *refs = (struct reflist *)v;
+    rb_objspace_t *objspace = (rb_objspace_t *)ptr;
+
+    /* check WB sanity */
+    if (!RVALUE_OLD_P(obj)) {
+	int i;
+	for (i=0; i<refs->pos; i++) {
+	    VALUE parent = refs->list[i];
+	    if (!IS_ROOTSIG(parent) && RVALUE_OLD_P(parent)) {
+		/* parent is old */
+		if (!MARKED_IN_BITMAP(GET_HEAP_PAGE(parent)->rememberset_bits, parent) &&
+		    !MARKED_IN_BITMAP(GET_HEAP_PAGE(obj)->rememberset_bits, obj)) {
+		    fprintf(stderr, "gc_marks_check_i: WB miss %p (%s) -> %p (%s)\n",
+			    (void *)parent, obj_type_name(parent),
+			    (void *)obj, obj_type_name(obj));
+		    objspace->rgengc.error_count++;
+		}
+	    }
+	}
+    }
+    return ST_CONTINUE;
+}
+
+static int
+gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
+{
+    VALUE obj = k;
+    struct reflist *refs = (struct reflist *)v;
+    rb_objspace_t *objspace = (rb_objspace_t *)ptr;
+
+    /* object should be marked or oldgen */
+    if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj)) {
+	fprintf(stderr, "gc_check_after_marks_i: %p (%s) is not marked and not oldgen.\n", (void *)obj, obj_type_name(obj));
+	fprintf(stderr, "gc_check_after_marks_i: %p is referred from ", (void *)obj);
+	reflist_dump(refs);
+
+	if (reflist_refered_from_machine_context(refs)) {
+	    fprintf(stderr, " (marked from machine stack).\n");
+	    /* marked from machine context can be false positive */
+	}
+	else {
+	    objspace->rgengc.error_count++;
+	    fprintf(stderr, "\n");
+	}
+    }
+    return ST_CONTINUE;
+}
+
+static void
+gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
+{
+    objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
+    allrefs_dump(objspace);
+
+    st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
+
+    if (objspace->rgengc.error_count > 0) {
+#if RGENGC_CHECK_MODE >= 3
+	allrefs_dump(objspace);
+#endif
+	rb_bug("%s: GC has problem.", checker_name);
+    }
+
+    objspaec_allrefs_destruct(objspace->rgengc.allrefs_table);
+    objspace->rgengc.allrefs_table = 0;
+}
+
 #endif /* RGENGC_CHECK_MODE >= 2 */
 
 static void
@@ -4334,6 +4333,10 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	objspace->mark_func_data = 0;
 
 #if USE_RGENGC
+
+#if RGENGC_CHECK_MODE >= 2
+	gc_marks_check(objspace, gc_check_before_marks_i, "before_marks");
+#endif
 	if (full_mark == TRUE) { /* major/full GC */
 	    objspace->rgengc.remembered_shady_object_count = 0;
 	    objspace->rgengc.old_object_count = 0;
@@ -4348,11 +4351,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	    objspace->rgengc.old_object_limit = objspace->rgengc.old_object_count * 2;
 	}
 	else { /* minor GC */
-#if RGENGC_CHECK_MODE >= 2
-	    gc_marks_test(objspace);
-#else
 	    gc_marks_body(objspace, FALSE);
-#endif
 	}
 
 #if RGENGC_PROFILE > 0
@@ -4360,6 +4359,10 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 	    gc_profile_record *record = gc_prof_record(objspace);
 	    record->old_objects = objspace->rgengc.old_object_count;
 	}
+#endif
+
+#if RGENGC_CHECK_MODE >= 2
+	gc_marks_check(objspace, gc_check_after_marks_i, "after_marks");
 #endif
 
 #else /* USE_RGENGC */

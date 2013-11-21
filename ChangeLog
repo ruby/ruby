@@ -1,3 +1,28 @@
+Thu Nov 21 13:43:07 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change RGENGC_CHECK_MODE (>= 2) logic.
+	  Basically, make an object graph of all of living objects before and
+	  after marking and check status.
+
+	  [Before marking: check WB sanity]
+	  If there is a non-old object `obj' pointed from old object
+	  (`parent') then `parent' or `obj' should be remembered.
+
+	  [After marking: check marking miss]
+	  Traversible objects with the object graph should be marked.
+	  (However, this alert about objects pointed by machine context
+	   can be false positive. We only display alert.)
+
+	  [Implementation memo]
+	  objspace_allrefs() creates an object graph.
+	  The object graph is represented by st_table, key is object (VALUE)
+	  and value is referring objects. Referring objects are stored by
+	  "struct reflist".
+
+	* gc.c (init_mark_stack): do not use push_mark_stack_chunk() at init.
+	  This pre-allocation causes failure on is_mark_stask_empty()
+	  without any pushing.
+
 Thu Nov 21 13:40:20 2013  Zachary Scott  <e@zzak.io>
 
 	* lib/observer.rb: [DOC] Clarify default observer method.
