@@ -1,3 +1,9 @@
+Thu Nov 21 14:06:02 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_check): do not dump all refs.
+
+	* gc.c (allrefs_dump_i): fix output format.
+
 Thu Nov 21 13:43:07 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change RGENGC_CHECK_MODE (>= 2) logic.

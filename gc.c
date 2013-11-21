@@ -4230,7 +4230,7 @@ allrefs_dump_i(st_data_t k, st_data_t v, st_data_t ptr)
 {
     VALUE obj = (VALUE)k;
     struct reflist *refs = (struct reflist *)v;
-    fprintf(stderr, "[allrefs_dump_i] %p (%s%s%s) <- ",
+    fprintf(stderr, "[allrefs_dump_i] %p (%s%s%s%s) <- ",
 	    (void *)obj, obj_type_name(obj),
 	    RVALUE_OLD_P(obj) ? "[O]" : "[Y]",
 	    RVALUE_SHADY(obj) ? "[S]" : "",
@@ -4304,7 +4304,6 @@ static void
 gc_marks_check(rb_objspace_t *objspace, int (*checker_func)(ANYARGS), const char *checker_name)
 {
     objspace->rgengc.allrefs_table = objspace_allrefs(objspace);
-    allrefs_dump(objspace);
 
     st_foreach(objspace->rgengc.allrefs_table, checker_func, (st_data_t)objspace);
 
