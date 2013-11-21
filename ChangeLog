@@ -1,3 +1,7 @@
+Thu Nov 21 22:33:59 2013  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: RGENGC_CHECK_MODE should be 0.
+
 Thu Nov 21 21:40:00 2013  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpAlloc): Fix the expr to adjust the size
