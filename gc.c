@@ -2870,7 +2870,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	/* major GC */
 	objspace->rgengc.oldspace_increase = 0;
     }
-    
+
 #endif
 
 }
