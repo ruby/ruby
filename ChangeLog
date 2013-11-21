@@ -1,3 +1,9 @@
+Thu Nov 21 18:47:29 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator#__getobj__): target object must be set.
+
+	* lib/delegate.rb (DelegateClass#__getobj__): ditto.
+
 Thu Nov 21 18:28:42 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): use class method to get rid

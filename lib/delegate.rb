@@ -43,11 +43,14 @@
 class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
+    alias __raise__ raise
     [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
-      next if /\Ablock_given\?\z|iterator\?\z/ =~ m
+      if /\Ablock_given\?\z|iterator\?\z|\A__raise__\z/ =~ m
+        next
+      end
       undef_method m
     end
   end
@@ -152,7 +155,7 @@ class Delegator < BasicObject
   # method calls are being delegated to.
   #
   def __getobj__
-    raise NotImplementedError, "need to define `__getobj__'"
+    __raise__ ::NotImplementedError, "need to define `__getobj__'"
   end
 
   #
@@ -160,7 +163,7 @@ class Delegator < BasicObject
   # to _obj_.
   #
   def __setobj__(obj)
-    raise NotImplementedError, "need to define `__setobj__'"
+    __raise__ ::NotImplementedError, "need to define `__setobj__'"
   end
 
   #
@@ -303,6 +306,7 @@ end
 class SimpleDelegator<Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
+    __raise__ ::ArgumentError, "not delegated" unless defined?(@delegate_sd_obj)
     @delegate_sd_obj
   end
 
@@ -321,7 +325,7 @@ class SimpleDelegator<Delegator
   #   puts names[1]    # => Sinclair
   #
   def __setobj__(obj)
-    raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
+    __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
     @delegate_sd_obj = obj
   end
 end
@@ -377,10 +381,11 @@ def DelegateClass(superclass)
   methods -= [:to_s,:inspect,:=~,:!~,:===]
   klass.module_eval do
     def __getobj__  # :nodoc:
+      __raise__ ::ArgumentError, "not delegated" unless defined?(@delegate_dc_obj)
       @delegate_dc_obj
     end
     def __setobj__(obj)  # :nodoc:
-      raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
+      __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
     methods.each do |method|

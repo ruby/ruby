@@ -154,4 +154,18 @@ class TestDelegateClass < Test::Unit::TestCase
     end.new(Object.new)
     assert_equal("foo", d.send(:foo))
   end
+
+  def test_unset_simple_delegator
+    d = SimpleDelegator.allocate
+    assert_raise_with_message(ArgumentError, /not delegated/) {
+      d.__getobj__
+    }
+  end
+
+  def test_unset_delegate_class
+    d = IV.allocate
+    assert_raise_with_message(ArgumentError, /not delegated/) {
+      d.__getobj__
+    }
+  end
 end
