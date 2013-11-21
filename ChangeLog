@@ -1,3 +1,7 @@
+Thu Nov 21 16:51:34 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/digest/bubblebabble/bubblebabble.c: Teach RDoc digest/bubblebabble
+
 Thu Nov 21 16:50:16 2013  Zachary Scott  <e@zzak.io>
 
 	* test/digest/test_digest.rb: Add more tests for digest/bubblebabble
