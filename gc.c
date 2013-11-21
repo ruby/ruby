@@ -3108,7 +3108,7 @@ static void
 init_mark_stack(mark_stack_t *stack)
 {
     int i;
- 
+
     if (0) push_mark_stack_chunk(stack);
     stack->index = stack->limit = STACK_CHUNK_SIZE;
 
