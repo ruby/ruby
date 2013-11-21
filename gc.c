@@ -35,6 +35,12 @@
 # define __has_feature(x) 0
 #endif
 
+#ifndef HAVE_MALLOC_USABLE_SIZE
+# ifdef _WIN32
+#   define malloc_usable_size(a) _msize(a)
+# endif
+#endif
+
 #if /* is ASAN enabled? */ \
     __has_feature(address_sanitizer) /* Clang */ || \
     defined(__SANITIZE_ADDRESS__)  /* GCC 4.8.x */

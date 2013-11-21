@@ -1009,6 +1009,7 @@ main()
 		ac_cv_type_struct_timeval=yes
                 ac_cv_func_clock_gettime=yes
                 ac_cv_func_clock_getres=yes
+		ac_cv_func_malloc_usable_size=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <windows.h>
 		  	      @%:@include <iphlpapi.h>])
