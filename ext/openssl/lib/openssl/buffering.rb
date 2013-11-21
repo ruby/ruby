@@ -1,4 +1,4 @@
-=begin
+<<EOL
 = $RCSfile$ -- Buffering mix-in module.
 
 = Info
@@ -12,7 +12,7 @@
 
 = Version
   $Id$
-=end
+EOL
 
 ##
 # OpenSSL IO buffering mix-in module.

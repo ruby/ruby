@@ -1,3 +1,8 @@
+Thu Nov 21 15:36:08 2013  Zachary Scott  <e@zzak.io>
+
+	* ext/openssl/lib/openssl/buffering.rb: [DOC] Fix HEREDOC comment for
+	  OpenSSL::Buffering which breaks overview because of RDoc bug
+
 Thu Nov 21 14:46:57 2013  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval_intern.h (SAVE_ROOT_JMPBUF): workaround for the failure of
