@@ -1,3 +1,8 @@
+Sat Nov 23 08:43:23 2013  Aman Gupta <ruby@tmm1.net>
+
+	* gc.c: Rename heap_pages_swept_num to heap_pages_swept_slots to
+	  clarify meaning (number of slots, not pages).
+
 Sat Nov 23 08:23:23 2013  Aman Gupta <ruby@tmm1.net>
 
 	* lib/set.rb (class SortedSet): Fix source_location for methods

@@ -412,9 +412,9 @@ typedef struct rb_objspace {
 	RVALUE *range[2];
 
 	size_t limit;
-	size_t swept_num;
 	size_t increment;
 
+	size_t swept_slots;
 	size_t min_free_slots;
 	size_t max_free_slots;
 
@@ -586,7 +586,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heap_pages_length       objspace->heap_pages.length
 #define heap_pages_lomem	objspace->heap_pages.range[0]
 #define heap_pages_himem	objspace->heap_pages.range[1]
-#define heap_pages_swept_num	objspace->heap_pages.swept_num
+#define heap_pages_swept_slots	objspace->heap_pages.swept_slots
 #define heap_pages_increment	objspace->heap_pages.increment
 #define heap_pages_min_free_slots	objspace->heap_pages.min_free_slots
 #define heap_pages_max_free_slots	objspace->heap_pages.max_free_slots
@@ -978,10 +978,10 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 	struct heap_page *page = heap_pages_sorted[i];
 
 	if (page->heap == heap_tomb && page->final_num == 0) {
-	    if (heap_pages_swept_num - page->limit > heap_pages_max_free_slots) {
-		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_num: %d, heap_pages_max_free_slots: %d\n",
-			       (int)i, page, (int)heap_pages_swept_num, (int)heap_pages_max_free_slots);
-		heap_pages_swept_num -= page->limit;
+	    if (heap_pages_swept_slots - page->limit > heap_pages_max_free_slots) {
+		if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
+			       (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
+		heap_pages_swept_slots -= page->limit;
 		heap_unlink_page(objspace, heap_tomb, page);
 		heap_page_free(objspace, page);
 		continue;
@@ -2027,7 +2027,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 
 	page->final_num--;
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), (VALUE)p);
-	heap_pages_swept_num++;
+	heap_pages_swept_slots++;
 
 	p = tmp;
     }
@@ -2734,7 +2734,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	    sweep_page->free_next = NULL;
 	}
     }
-    heap_pages_swept_num += freed_num + empty_num;
+    heap_pages_swept_slots += freed_num + empty_num;
     objspace->profile.total_freed_object_num += freed_num;
     heap_pages_final_num += final_num;
     sweep_page->final_num = final_num;
@@ -2796,7 +2796,7 @@ gc_before_sweep(rb_objspace_t *objspace)
 	rb_sweep_method_entry(GET_VM());
     }
 
-    heap_pages_swept_num = 0;
+    heap_pages_swept_slots = 0;
     total_limit_num = objspace_limit_num(objspace);
 
     heap_pages_min_free_slots = (size_t)(total_limit_num * 0.30);
@@ -2886,11 +2886,11 @@ gc_after_sweep(rb_objspace_t *objspace)
 {
     rb_heap_t *heap = heap_eden;
 
-    rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_num: %d, min_free_slots: %d\n",
-		  (int)heap->limit, (int)heap_pages_swept_num, (int)heap_pages_min_free_slots);
+    rgengc_report(1, objspace, "after_gc_sweep: heap->limit: %d, heap->swept_slots: %d, min_free_slots: %d\n",
+		  (int)heap->limit, (int)heap_pages_swept_slots, (int)heap_pages_min_free_slots);
 
-    if (heap_pages_swept_num < heap_pages_min_free_slots) {
-	heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_num) / HEAP_OBJ_LIMIT);
+    if (heap_pages_swept_slots < heap_pages_min_free_slots) {
+	heap_set_increment(objspace, (heap_pages_min_free_slots - heap_pages_swept_slots) / HEAP_OBJ_LIMIT);
 	heap_increment(objspace, heap);
 
 #if USE_RGENGC
@@ -4731,9 +4731,9 @@ rb_gc_force_recycle(VALUE p)
     objspace->profile.total_freed_object_num++;
     heap_page_add_freeobj(objspace, GET_HEAP_PAGE(p), p);
 
-    /* Disable counting swept_num because there are no meaning.
+    /* Disable counting swept_slots because there are no meaning.
      * if (!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(p), p)) {
-     *   objspace->heap.swept_num++;
+     *   objspace->heap.swept_slots++;
      * }
      */
 }
