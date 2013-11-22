@@ -2107,7 +2107,7 @@ break2:
         for (; c >= '0' && c <= '9'; c = *++s) {
 have_dig:
             nz++;
-            if (nf > DBL_DIG * 2) continue;
+            if (nf > DBL_DIG * 4) continue;
             if (c -= '0') {
                 nf += nz;
                 for (i = 1; i < nz; i++)
