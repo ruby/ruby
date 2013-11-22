@@ -1,7 +1,7 @@
 /*
- *
+ * 
  * nkf.h - Header file for nkf
- *
+ * 
  */
 
 #ifndef NKF_H

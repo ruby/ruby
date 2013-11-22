@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1987, Fujitsu LTD. (Itaru ICHIKAWA).
- * Copyright (c) 1996-2010, The nkf Project.
+ * Copyright (c) 1996-2013, The nkf Project.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -21,10 +21,10 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #define NKF_VERSION "2.1.3"
-#define NKF_RELEASE_DATE "2012-11-22"
+#define NKF_RELEASE_DATE "2013-11-22"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
-    "Copyright (C) 1996-2012, The nkf Project."
+    "Copyright (C) 1996-2013, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"
@@ -6150,9 +6150,10 @@ kanji_convert(FILE *f)
 		    }
 		}
 		else {
+		    i_ungetc(c1,f);
 		    /* lonely ESC  */
 		    (*oconv)(0, ESC);
-		    SEND;
+		    SKIP;
 		}
 	    } else if (c1 == ESC && iconv == s_iconv) {
 		/* ESC in Shift_JIS */
@@ -6189,9 +6190,10 @@ kanji_convert(FILE *f)
 		    }
 		}
 		else {
+		    i_ungetc(c1,f);
 		    /* lonely ESC  */
 		    (*oconv)(0, ESC);
-		    SEND;
+		    SKIP;
 		}
 	    } else if (c1 == LF || c1 == CR) {
 		if (broken_f&4) {

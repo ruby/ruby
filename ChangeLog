@@ -1,3 +1,7 @@
+Fri Nov 22 14:03:00 2013  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf: merge nkf 2.1.3 2a2f2c5.
+
 Fri Nov 22 12:43:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): ignore too long fraction part, which does not
