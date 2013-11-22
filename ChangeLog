@@ -1,3 +1,8 @@
+Fri Nov 22 12:44:56 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): ignore too long fraction part, which does not
+	  affect the result.
+
 Fri Nov  1 00:08:21 2013  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* test/openssl/test_pkey_ec.rb: Skip tests for "Oakley" curves as

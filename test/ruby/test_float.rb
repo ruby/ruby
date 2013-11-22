@@ -519,4 +519,16 @@ class TestFloat < Test::Unit::TestCase
       sleep(0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1)
     end
   end
+
+  def test_long_string
+    assert_normal_exit(<<-'end;')
+    assert_in_epsilon(10.0, ("1."+"1"*300000).to_f*9)
+    end;
+  end
+
+  def test_long_string
+    assert_normal_exit(<<-'end;')
+    assert_in_epsilon(10.0, ("1."+"1"*300000).to_f*9)
+    end;
+  end
 end
