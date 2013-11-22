@@ -1,3 +1,8 @@
+Sat Nov 23 08:23:23 2013  Aman Gupta <ruby@tmm1.net>
+
+	* lib/set.rb (class SortedSet): Fix source_location for methods
+	  defined via eval.
+
 Sat Nov 23 03:44:03 2013  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems master dcce4ff.  Important changes

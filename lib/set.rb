@@ -574,7 +574,7 @@ class SortedSet < Set
       begin
         require 'rbtree'
 
-        module_eval %{
+        module_eval <<-END, __FILE__, __LINE__+1
           def initialize(*args)
             @hash = RBTree.new
             super
@@ -585,9 +585,9 @@ class SortedSet < Set
             super
           end
           alias << add
-        }
+        END
       rescue LoadError
-        module_eval %{
+        module_eval <<-END, __FILE__, __LINE__+1
           def initialize(*args)
             @keys = nil
             super
@@ -647,7 +647,7 @@ class SortedSet < Set
             (@keys = @hash.keys).sort! unless @keys
             @keys
           end
-        }
+        END
       end
       module_eval {
         # a hack to shut up warning
