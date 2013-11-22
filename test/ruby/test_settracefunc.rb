@@ -786,7 +786,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     thread_self = nil
     created_thread = nil
     TracePoint.new(:thread_begin, :thread_end){|tp|
-      next if Thread.current != created_thread
       events << [Thread.current,
                  tp.event,
                  tp.lineno,  #=> 0
@@ -799,6 +798,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       created_thread = Thread.new{thread_self = self}
       created_thread.join
     }
+    events.reject!{|i| i[0] != created_thread}
     assert_equal(self, thread_self)
     assert_equal([created_thread, :thread_begin, 0, nil, nil, nil, Thread], events[0])
     assert_equal([created_thread, :thread_end, 0, nil, nil, nil, Thread], events[1])
